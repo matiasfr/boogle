@@ -1,21 +1,11 @@
-# Boogle
+@AGENTS.md
 
-Multiplayer browser game: three.js + cannon-es, bundled with Vite, networked with PeerJS (one browser is the host). Server code is in `server/`.
+## Claude Code only
 
-Before designing or implementing a feature, read:
-- `DESIGN.md`: the play and technical principles. Follow them; if a request conflicts with one, say which and ask before bending it.
-- `PLAN.md`: the phased roadmap. Tick checkboxes when you finish an item.
-- `src/net/README.md`: the room interface. Game code talks to that interface, never to PeerJS directly.
+- Shared project settings are in `.claude/settings.json`: an allowlist for routine commands and a hook that runs Prettier and ESLint on each JS/CSS file you edit. Personal tweaks go in `.claude/settings.local.json` (gitignored).
+- Project skills: `/ship` (commit and ship), `/new-feature <name>` (scaffold a plug-in), `/playtest-notes` (log a playtest).
 
-Rules that are easy to miss:
-- Shared simulation (water, terrain edits, crops, weather, tide) must be deterministic: integers, fixed update order, seeded RNG from `src/sim/rng.js`, no `Math.random()`.
-- Clients send edit events; the host stamps and broadcasts them. Don't sync bulk state except host snapshots.
-- No claude.ai artifact build or alternate transports.
-
-Commands: `npm run dev`; `npm run check` (lint + unit tests + build, a few seconds, run before every push); `npm run check:full` (adds server tests and the headless network test, for changes to `src/net*`, `src/world/sync.js` or `server/`).
-
-Tests stay light for rapid iteration (see CONTRIBUTING.md, Testing): unit tests in `test/` for pure logic only (no three.js/DOM/browser/network), each file well under a second; test determinism, conservation, ordering and validation, not visuals or tuning. Don't commit Playwright scripts as tests unless asked.
-
-Contributing workflow: `CONTRIBUTING.md` and `AGENTS.md`. Commit straight to `main` and ship with `npm run ship` (rebase onto latest main, check, push, retry), not `git push`. On rebase conflicts keep both sides' changes. New features go in `src/features/` (auto-loaded; `onFrame`/`onStart` from `src/loop.js`; own CSS and DOM) so `main.js`, `style.css` and `index.html` rarely change. `main` auto-deploys; use a branch/PR only for risky changes.
-
-When running as the GitHub Action (@claude): commit to a `claude/` branch and open a PR with `gh pr create` (imperative title; body says what changed and which DESIGN.md principle it serves). Run `npm ci && npm run check` first. `.github/workflows/automerge.yml` squash-merges `claude/*` PRs once CI passes; open a draft or add the `no-automerge` label when a human should review first (risky changes to networking, sync or persistence).
+### As the GitHub Action (@claude, ci-autofix, nightly simplify)
+- Run `npm ci && npm run check` before committing (plus `npm run test:net` if you touched networking).
+- Commit to a `claude/<topic>` branch and open a PR with `gh pr create`: imperative title; body says what changed and which DESIGN.md principle it serves. Never push to `main`.
+- `automerge.yml` squash-merges non-draft `claude/*` PRs once CI passes. For risky changes (network protocol, sync, persistence) open a draft or add the `no-automerge` label so a human reviews first.
