@@ -11,7 +11,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 
 ## Rules that are easy to miss
 - **Pick a sync kind per piece of state:** Local, Owner, Host or Lockstep (table in DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
-- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it.
+- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it. ESLint enforces this for `LOCKSTEP_FILES` (`eslint.config.js`); a new lockstep module outside `src/sim/` joins that list.
 - **Cosmetic stays separate.** Particles, ripples, sounds may use floats and `Math.random()`, in their own modules, never read by the sim.
 - **Sync edits, not state** (Lockstep). Clients `submitEdit`; the host stamps and broadcasts. Bulk state travels only as host snapshots. Authority table: DESIGN.md, "Clear authority".
 - **Room interface only.** Game code talks to `createPeerRoom` (`src/net/README.md`), never to PeerJS directly. No alternate transports, no claude.ai artifact build.
@@ -22,7 +22,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
 - Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
 - Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
-- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`); `registerOp`, `registerState`, `onTick` in `src/world/sync.js` (Lockstep). Pure logic lives in `src/sim/` (no three.js, no DOM) so it can be unit-tested.
+- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`); `registerOp`, `registerState`, `onTick` in `src/world/sync.js` (Lockstep). Pure **shared** logic lives in `src/sim/` (no three.js, no DOM, lockstep-safe math) so it can be unit-tested; cosmetic helpers needing sin/pow/random stay with their feature.
 - Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`. Keep edits there to a line or two.
 
 ## Commands

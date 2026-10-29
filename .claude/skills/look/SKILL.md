@@ -31,6 +31,8 @@ failure. Not part of `npm run check` (they take 15-80 s each); run the one for y
 risky shared changes. `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
+`reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it
+after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/net.js` attach/fail.
 
 ```js
 export default {

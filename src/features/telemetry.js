@@ -10,10 +10,10 @@
 // the room was running mixed builds (`mixedBuilds`, src/builds.js; a yes or no, never the build ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
-import { onStart } from '../loop.js';
-import { net, getRoomId } from '../net.js';
+import { net, getRoomId, onNetState } from '../net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
 import { mixedBuilds } from '../builds.js';
+import { coarseUa, firstFrame, scrub } from '../report-format.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
@@ -23,45 +23,6 @@ const BATCH = 10; // the server takes up to 10 per POST
 const FLUSH_MS = 10000;
 const STUCK_MS = 30000; // still 'connecting' this long after starting (or restarting) to connect
 const SETTLE_MS = 3000; // a successful join reports after this, once peers' presence (and builds) has arrived
-
-const BROWSERS = [
-  ['Edge', /Edg\/(\d+)/],
-  ['Firefox', /Firefox\/(\d+)/],
-  ['Chrome', /Chrome\/(\d+)/],
-  ['Safari', /Version\/(\d+).*Safari/],
-];
-const SYSTEMS = [
-  ['Android', /Android/],
-  ['iOS', /iPhone|iPad/],
-  ['Windows', /Windows/],
-  ['Mac', /Mac OS X/],
-  ['Linux', /Linux/],
-];
-function coarseUa(ua) {
-  const b = BROWSERS.map(([name, re]) => [name, re.exec(ua)]).find(([, m]) => m);
-  const os = SYSTEMS.find(([, re]) => re.test(ua));
-  return `${b ? `${b[0]} ${b[1][1]}` : 'other'} ${os ? os[0] : 'other'}`;
-}
-
-// First stack frame, without the origin or query string: "at step (/boogle/assets/index-abc.js:1:2345)".
-function firstFrame(stack) {
-  const line = String(stack || '')
-    .split('\n')
-    .find((l) => /\bat\b|@/.test(l) && /:\d+/.test(l));
-  return line
-    ? line
-        .trim()
-        .replace(/[a-z-]+:\/\/[^/\s)]+/g, '')
-        .replace(/\?[^:)\s]*/g, '')
-        .slice(0, 150)
-    : '';
-}
-
-// Peer ids (`boogle-<room>-c<random>`) and other id-like tokens (12+ letters/digits with a digit) out of messages.
-const scrub = (msg) =>
-  String(msg)
-    .replace(/boogle-[a-z0-9-]+/gi, 'boogle-*')
-    .replace(/\b(?=[a-z]*\d)[a-z0-9]{12,}\b/gi, '*');
 
 if (SERVER) {
   const url = new URL('/report', SERVER);
@@ -111,39 +72,43 @@ if (SERVER) {
   onDesync(({ keys }) => report('desync', { keys: keys.join(',') || 'tick/order' }));
   onSnapFail(({ from, reason }) => report('snapshot', { from, reason }));
 
-  // ---- connection: net.js keeps state 'connecting' | 'live' | 'solo'; watch its transitions ----
-  onStart(() => {
-    let prev = net.state;
-    let prevRetries = net.retries || 0;
-    let since = performance.now(); // when net.state last changed (polled once a second)
-    let role = '?'; // known once we were in a room
-    let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
-    let okSent = false;
-    let stuckSent = false;
-    setInterval(() => {
-      const now = performance.now();
-      const s = net.state;
-      const retries = net.retries || 0;
-      if (net.room) role = net.room.isHost() ? 'host' : 'client';
-      const base = { role, hadTurn: net.turn, mixedBuilds: mixedBuilds() };
-      if (s === 'solo' && (prev !== 'solo' || retries !== prevRetries)) {
-        report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base });
-      } else if (s === 'live' && prev !== 'live' && !okSent) {
+  // ---- connection: net.js reports every change of net.state ('connecting' | 'live' | 'solo') ----
+  let since = performance.now(); // when the current attempt started connecting (page load for the first one)
+  let role = '?'; // known once we were in a room
+  let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
+  let failed = 0; // failed attempts before the first good join
+  let okSent = false;
+  let stuckSent = false;
+  let stuckTimer = 0;
+  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds() });
+  const armStuck = () => {
+    clearTimeout(stuckTimer);
+    stuckTimer = setTimeout(() => {
+      if (net.state !== 'connecting' || stuckSent) return;
+      stuckSent = true;
+      report('connect', { result: 'stuck', ...base() });
+    }, STUCK_MS);
+  };
+  if (net.state === 'connecting') armStuck();
+  onNetState((s, prev) => {
+    if (net.room) role = net.room.isHost() ? 'host' : 'client';
+    if (s !== 'connecting') clearTimeout(stuckTimer);
+    if (s === 'connecting' && prev !== 'connecting') {
+      since = performance.now();
+      armStuck();
+    } else if (s === 'live') {
+      if (!okSent) {
         okSent = true;
-        const ms = Math.round(now - since); // ms spent 'connecting'
-        setTimeout(
-          () => report('connect', { result: 'ok', ms, retries, ...base, mixedBuilds: mixedBuilds() }),
-          SETTLE_MS,
-        );
-      } else if (s === 'connecting' && prev === 'connecting' && !stuckSent && now - since > STUCK_MS) {
-        stuckSent = true;
-        report('connect', { result: 'stuck', ...base });
+        const ms = Math.round(performance.now() - since); // ms spent 'connecting'
+        const at = { ms, retries: failed, ...base() };
+        setTimeout(() => report('connect', { result: 'ok', ...at, mixedBuilds: mixedBuilds() }), SETTLE_MS);
       }
-      if (s === 'live') wasLive = true;
-      else if (s === 'solo') wasLive = false;
-      if (s !== prev) since = now;
-      prev = s;
-      prevRetries = retries;
-    }, 1000);
+      wasLive = true;
+    } else if (s === 'solo') {
+      // every failed attempt, including a retry that never reached a room (solo -> solo)
+      if (!okSent) failed++;
+      report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base() });
+      wasLive = false;
+    }
   });
 }
