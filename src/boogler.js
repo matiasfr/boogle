@@ -55,7 +55,8 @@ const ATTEND_RANGE = 5;
 export const PUFF_MS = 750;
 
 // What a player is doing with him (published by each player) and what he is doing (published by the host).
-export const ACT = { NONE: 0, TALK: 1, RIDE: 2, PET: 3 };
+// 3 was PET (petting now happens inside TALK): never reuse it, old tabs may still send it and it must read as NONE.
+export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
@@ -74,8 +75,8 @@ let group = null;
 let parts = null;
 let body = null;
 
-// `me` is this player's side of things, written by src/boogler-play.js: act (ACT), wary (he runs from us), and the
-// face to pull while we talk (mood, speaking).
+// `me` is this player's side of things, written by src/boogler-play.js: act (ACT; petting is part of TALK), wary (he
+// runs from us), and the face to pull while we talk (mood, speaking).
 export const boogler = {
   disp,
   labelPos: new THREE.Vector3(),
@@ -228,7 +229,7 @@ function think(dt) {
   for (const v of visitors()) {
     const d = Math.hypot(v.x - sim.x, v.z - sim.z);
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
-    else if (v.act === ACT.TALK || v.act === ACT.PET) {
+    else if (v.act === ACT.TALK) {
       if (d < focusD) [focus, focusD] = [v, d];
     } else if (v.wary && d < threatD) [threat, threatD] = [v, d];
   }
