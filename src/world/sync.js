@@ -14,8 +14,10 @@
 //                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
-// Edits a client submitted that the old host never stamped are lost. A client that receives an edit for a tick it already
-// passed, or a hash mismatch, asks for a snapshot (w:need) and replaces its state.
+// Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
+// reconnecting after a stall) are held and sent when it is back, or stamped here if this tab came back as the host.
+// A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
+// replaces its state.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -27,6 +29,7 @@ const MAX_STEPS = 5; // ticks per frame
 const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messages at 16 KB, escaping can double)
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
+const MAX_HELD = 64; // edits kept while the room is reconnecting
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -71,6 +74,7 @@ export function createSync() {
   let snapId = 0;
   const served = new Map();
   let out = []; // stamped edits waiting to be broadcast
+  let held = []; // edits this client submitted while the room was down; sent (or stamped) when it reconnects
   let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
   let lastSavedHash = null;
@@ -140,10 +144,26 @@ export function createSync() {
     if (mode === 'client') {
       const e = { ...edit, p: selfId };
       if (JSON.stringify(e).length > MAX_EDIT_JSON) return false;
+      if (!connected) {
+        if (held.length >= MAX_HELD) return false;
+        held.push(e); // send() would drop it: hold it until the room is back
+        return true;
+      }
       send({ t: 'w:edit', e });
       return true;
     }
     return stamp(edit, selfId);
+  }
+  // The room is back (peer-room reports the new role before the connection). Deliver what was held.
+  function onConnected(c) {
+    connected = c;
+    if (!c || !held.length) return;
+    const list = held;
+    held = [];
+    for (const e of list) {
+      if (mode === 'client') send({ t: 'w:edit', e });
+      else if (mode === 'host') stamp(e, selfId);
+    }
   }
 
   // ------------------------------------------------------------ tick
@@ -497,10 +517,11 @@ export function createSync() {
     };
     ready = false;
     queue = [];
+    held = [];
     connected = true;
     cleanup = [
       r.onMessage(onMessage),
-      r.onConnection((c) => (connected = c)),
+      r.onConnection(onConnected),
       r.onHostChange((isHost) => {
         if (isHost) becomeHost();
         else if (mode !== 'client') becomeClient();

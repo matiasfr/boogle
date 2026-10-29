@@ -10,15 +10,15 @@ function makeNet() {
     queue: [],
     peers,
     add(id, host) {
-      const p = { id, host, msg: new Set(), hostCb: new Set(), alive: true };
+      const p = { id, host, msg: new Set(), hostCb: new Set(), connCb: new Set(), alive: true, up: true };
       p.room = {
         selfId: id,
         isHost: () => p.host,
         send(m) {
-          net.queue.push({ from: p, m: JSON.parse(JSON.stringify(m)) });
+          if (p.up) net.queue.push({ from: p, m: JSON.parse(JSON.stringify(m)) });
         },
         onMessage: (h) => (p.msg.add(h), () => p.msg.delete(h)),
-        onConnection: () => () => {},
+        onConnection: (h) => (p.connCb.add(h), () => p.connCb.delete(h)),
         onHostChange: (h) => (p.hostCb.add(h), () => p.hostCb.delete(h)),
       };
       peers.push(p);
@@ -30,8 +30,13 @@ function makeNet() {
       net.queue = [];
       for (const { from, m } of q) {
         if (!from.alive) continue;
-        for (const p of peers) if (p !== from && p.alive) for (const h of p.msg) h(m, from.id);
+        for (const p of peers) if (p !== from && p.alive && p.up) for (const h of p.msg) h(m, from.id);
       }
+    },
+    // A peer's room drops and later comes back (peer-room's reconnect after a stall): nothing in or out meanwhile.
+    setUp(p, up) {
+      p.up = up;
+      for (const h of p.connCb) h(up);
     },
     killHost() {
       const old = peers.find((p) => p.host && p.alive);
@@ -154,6 +159,30 @@ test('host migration continues', async () => {
   assert.equal(clients[1].grid[1], 7);
   assert.equal(clients[0].grid[1], 7);
   assert.ok(same(all));
+});
+
+test('an edit submitted while the room is reconnecting still reaches the host', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  assert.ok(clients[0].s.submitEdit({ op: 'add', i: 2, j: 1, v: 9 }));
+  await run(net, all, 20);
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[9], 9);
+  assert.ok(same(all));
+});
+
+test('an edit held while reconnecting is stamped locally if this tab comes back as host', async () => {
+  const { net, clients, all } = await setup(2);
+  net.setUp(clients[0].p, false);
+  clients[0].s.submitEdit({ op: 'add', i: 3, j: 0, v: 2 });
+  await run(net, all, 5);
+  net.killHost(); // clients[0] claims the host id, then its connection is reported up (peer-room's order)
+  net.setUp(clients[0].p, true);
+  await run(net, all, 120);
+  assert.equal(clients[0].s.worldStatus().mode, 'host');
+  assert.equal(clients[0].grid[12], 2);
+  assert.equal(clients[1].grid[12], 2);
 });
 
 test('unloadable snapshots are reported (peer chunk, local copy, server)', async () => {
