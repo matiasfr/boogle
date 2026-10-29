@@ -51,3 +51,19 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 - **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid are migrated by
   `src/world/legacy-grid.js`; a future grid change needs the same treatment.
 - Stamps change the base ground, not player edits: sand dug or piled on top keeps its depth.
+
+## Underground POIs (the caves)
+
+The heightfield has no holes or overhangs, so `src/pois/caves/` is its own little world below it, plugged in through
+a few hooks anyone can reuse:
+
+- `setTerrainHoles` (`src/terrain.js`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
+  hillside. Visual only.
+- Collision groups (`GROUP` in `src/physics.js`): the ground and surface scenery are `SCENERY`, the cave's colliders
+  `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.
+  Bodies moved by code (remote players, the Boogler, windmill sails) use `NOT_SCENERY` and skip static stuff entirely.
+- `groundProbe.under` (`src/physics.js`): the floor under a point, for code that would otherwise read the terrain.
+- `camConstraints` (`src/player.js`): keep the camera somewhere special (inside the tunnels).
+- `atmosphere.underground` (`src/sky.js`): 0..1, dims the sky light and closes the fog in.
+
+`npm run scenario -- caves` walks through them, throws the ball about and floats it on the pond.

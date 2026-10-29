@@ -30,6 +30,7 @@ const TURNS = 2.5;
 const START_A = Math.PI; // the stair's foot faces inland (west)
 const SEGS = 90; // physics ramp segments
 const GAP = (2.3 / (TOWER_H / TURNS)) * Math.PI * 2; // deck left open above the last stretch of stair (head room)
+const RAIL_FROM = 0.035; // the first bit of stair has no railing, so it's easy to step on from the side
 const END_A = START_A + TURNS * Math.PI * 2;
 
 const towerR = (y) => R_BOT + (R_TOP - R_BOT) * THREE.MathUtils.clamp((y - BASE_Y) / TOWER_H, 0, 1);
@@ -161,11 +162,12 @@ function build() {
       q.setFromEuler(new THREE.Euler(0, -a, 0)),
       s.set(STAIR_W, 0.12, arc * 1.15),
     );
-    if (k % 3 === 0) put(box, at(a, rin + STAIR_W - 0.06, y + 0.5), '#2d3035', q.identity(), s.set(0.06, 1.0, 0.06));
+    if (k % 3 === 0 && u > RAIL_FROM)
+      put(box, at(a, rin + STAIR_W - 0.06, y + 0.5), '#2d3035', q.identity(), s.set(0.06, 1.0, 0.06));
   }
   const railPts = [];
   for (let k = 0; k <= 120; k++) {
-    const u = k / 120,
+    const u = RAIL_FROM + (k / 120) * (1 - RAIL_FROM),
       y = stairY(u);
     railPts.push(at(stairA(u), towerR(y) + 0.03 + STAIR_W - 0.06, y + 1.0));
   }
@@ -185,7 +187,7 @@ function build() {
       w1 = at(stairA(u1), r1 + STAIR_W / 2 + 0.05, stairY(u1) + 0.5);
     const wall = boxBetween(w0, w1, 0.1, 1.2);
     wall.size.z *= 1.1;
-    addCannonBox(stairBody, wall);
+    if (u0 >= RAIL_FROM) addCannonBox(stairBody, wall);
   }
   // Deck ring and its railing, the tower, the lantern room, the plinth.
   for (let k = 0; k < 24; k++) {

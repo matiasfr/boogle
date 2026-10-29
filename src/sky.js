@@ -5,7 +5,7 @@
 // SUN_DIR (constants.js) is the key light's direction, read by the shadow-casting light in player.js and the water's
 // glints. This module points it at the sun by day and at the moon by night.
 import * as THREE from 'three';
-import { SUN_DIR } from './constants.js';
+import { SUN_DIR, FOG_NEAR, FOG_FAR } from './constants.js';
 import { lerp, smoothstep, srgbVec } from './math.js';
 import { scene, camera, renderer, sun, sky } from './scene.js';
 import { waterMat } from './water-render.js';
@@ -299,6 +299,11 @@ function placeBillboard(group, dir) {
   group.lookAt(camera.position);
 }
 
+// Set every frame by features that take the camera somewhere the sky can't reach: underground = 0..1 (the caves).
+// The sky's light fades to a dim, warm ambient and the fog closes in, dark.
+export const atmosphere = { underground: 0 };
+const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#6d6155'), ground: new THREE.Color('#2a241e') };
+
 export function updateSky(dt, elapsed) {
   if (!sunGroup) return;
   let s = skyAt(worldMs(dt));
@@ -343,6 +348,17 @@ export function updateSky(dt, elapsed) {
     hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day);
     hemi.groundColor.copy(L.hemiGroundNight).lerp(L.hemiGroundDay, day);
     hemi.intensity = lerp(0.7, 1.25, day);
+  }
+  const ug = atmosphere.underground;
+  scene.fog.near = lerp(FOG_NEAR, 2.5, ug);
+  scene.fog.far = lerp(FOG_FAR, 46, ug);
+  if (ug > 0) {
+    scene.fog.color.lerp(CAVE.fog, ug);
+    if (hemi) {
+      hemi.color.lerp(CAVE.sky, ug);
+      hemi.groundColor.lerp(CAVE.ground, ug);
+      hemi.intensity *= lerp(1, 0.32, ug);
+    }
   }
 
   const cm = clouds[0]?.material;
