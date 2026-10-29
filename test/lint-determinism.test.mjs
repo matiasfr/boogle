@@ -20,6 +20,16 @@ test('lockstep code may not use Math.random, Math.sin, ** or Date.now', async ()
   }
 });
 
+test('nor sneak them past the lint as Date() or globalThis.Math.*', async () => {
+  for (const code of ['Date();', 'globalThis.Math.sin(1);', 'window.Math.random();', 'self.Math.pow(2, 3);']) {
+    const rules = await lint(code);
+    assert.ok(
+      rules.some((r) => r?.startsWith('no-restricted-')),
+      `${code} should be reported, got ${rules}`,
+    );
+  }
+});
+
 test('Math.sqrt and plain arithmetic are allowed', async () => {
   assert.deepEqual(await lint('export const x = Math.sqrt(2) * 3 + 1 / 4 - Math.floor(0.5);\n'), []);
 });
