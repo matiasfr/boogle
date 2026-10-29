@@ -42,7 +42,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 - Water + garden: **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
 - Trust: the host validates edits (reach, rate limits). We're playing with friends, so a cheating host isn't a concern.
 
-**Keep the claude.ai version working.** All networking sits behind one **transport interface**, so the game doesn't care whether it's on PeerJS, the claude.ai `room`, or same-browser `BroadcastChannel`. (PeerJS may also work inside the artifact, but test before relying on it, since the artifact sandbox may block connections to our signaling server.)
+**PeerJS is the only transport.** We're dropping the claude.ai artifact `room` and the same-browser `BroadcastChannel` fallback, and the repo no longer targets claude.ai. Local testing works with PeerJS too: two tabs on one machine connect to each other like any two peers.
 
 ---
 
@@ -51,20 +51,20 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 - [ ] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/terrain.js`, `src/water-render.js`, `src/physics.js`, `src/ball.js`, `src/player.js`, `src/net/`, `src/hud.js`, `src/input.js`, `src/main.js`.
 - [ ] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
 - [ ] Add Prettier + a minimal ESLint config.
-- [ ] Keep a build step that inlines everything back into one HTML file so we can still publish to claude.ai.
 
-**Done when:** the game behaves exactly as before, and `npm run dev` / `npm run build:artifact` both work.
+**Done when:** the game behaves exactly as before and `npm run dev` / `npm run build` work.
 
 ## Phase 1: PeerJS networking
 
-- [ ] Define the transport interface the game already uses: `presence(patch)`, `onPeers(handler)`, `onConnection(handler)`, `peers()`. Today it's implemented by the claude.ai `room` and `createLocalRoom()` (BroadcastChannel).
-- [ ] Add `createPeerRoom(roomId)` implementing it on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
-- [ ] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) to the interface for edits. Implement it for all three transports.
+- [ ] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
+- [ ] Write `src/net/peer-room.js` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
+- [ ] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
+- [ ] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
 - [ ] Prototype against the public PeerJS cloud server first; then self-host `peerjs-server` and add TURN credentials.
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
 - [ ] Host the static client on GitHub Pages / Netlify.
 
-**Done when:** friends on different networks can play together from a URL, and the island survives the host closing their tab. **Playtest question:** does it feel as smooth as the claude.ai version?
+**Done when:** friends on different networks can play together from a URL, and the island survives the host closing their tab. **Playtest question:** does the ball feel responsive for players who don't own it?
 
 ## Phase 2: Water you can play in (easy wins)
 
@@ -132,5 +132,4 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - Where to host the PeerServer + snapshot storage (Fly, Railway, Render), and which TURN provider?
 - Is it OK that whoever is host carries more CPU and upload load? (Fine for a handful of friends; revisit if lobbies grow past ~8.)
 - One shared island, or rooms per friend group (`?room=`)?
-- Do we keep shipping the claude.ai artifact version alongside the hosted one?
 - How hard is the tide? Pure toy, or can you actually lose the garden?
