@@ -106,7 +106,7 @@ function frame(now) {
   updatePreview();
   updateHud();
   runFrame('late', ctx);
-  if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
+  if (net.room && (me.entered || ball.mine || net.room.isHost()) && now - net.lastSend >= SEND_MS) sendPresence();
   waterMat.uniforms.uTime.value = elapsed;
   renderer.render(scene, camera);
 }

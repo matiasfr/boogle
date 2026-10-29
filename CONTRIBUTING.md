@@ -57,6 +57,7 @@ We're in **rapid iteration**: a few people building and playtesting together, ma
   | Your player's movement | You (client) |
   | The beach ball | Its current owner (epoch rule in `src/ball.js`) |
   | Water, terrain edits, garden, weather | The host peer |
+  | The Boogler (wandering NPC) | The host peer, published in its presence (`src/boogler.js`) |
   | Persistence (snapshots) | The host, saved to our server |
 
 - **Small and readable.** Plain modules, small files, no new dependencies without a reason in the commit message. Measure before optimizing.

@@ -66,6 +66,7 @@ Clients send small **edit events** (dig, pile, plant, harvest, splash) over the 
 | Your player's movement | You (client) |
 | The beach ball | Its current owner (epoch rule in [`src/ball.js`](src/ball.js)) |
 | Water, terrain edits, garden, weather | The host peer |
+| The Boogler (wandering NPC) | The host peer, published in its presence ([`src/boogler.js`](src/boogler.js)) |
 | Persistence (snapshots) | The host, saved to our server |
 
 ### PeerJS only

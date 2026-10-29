@@ -41,6 +41,9 @@ function mergeParts(parts) {
   return out;
 }
 
+// Footprints of trees and rocks ({ x, z, r } on the ground plane), for things that walk around them.
+export const obstacles = [];
+
 export function createProps() {
   const rng = mulberry32(20261028);
   const parts = [];
@@ -65,6 +68,7 @@ export function createProps() {
     if (Math.abs(groundHeight(x + 1, z) - h) > 0.7 || Math.abs(groundHeight(x, z + 1) - h) > 0.7) continue;
     if (trees.some((t) => Math.hypot(t.x - x, t.z - z) < 4.5)) continue;
     trees.push({ x, z, h });
+    obstacles.push({ x, z, r: 0.5 });
   }
   const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 1, 7);
   const frondGeo = new THREE.ConeGeometry(0.55, 3.3, 4, 1).translate(0, 1.65, 0);
@@ -126,6 +130,7 @@ export function createProps() {
     m.compose(new THREE.Vector3(x, h + r * 0.15, z), q, s.set(r * 1.1, r * 0.75, r));
     addPart(parts, rockGeo, m, rng() < 0.5 ? '#a19b90' : '#8a857c');
     addStaticSpheres([{ x, y: h + r * 0.1, z, r: r * 0.82 }]);
+    obstacles.push({ x, z, r: r * 0.95 });
     rocks++;
   }
 

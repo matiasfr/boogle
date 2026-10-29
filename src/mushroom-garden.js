@@ -5,6 +5,7 @@ import * as CANNON from 'cannon-es';
 import { CELL, HALF, REACH, isTouch, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
+import { obstacles } from './props.js';
 import { world, groundMat, playerMat, ballMat } from './physics.js';
 import { me } from './player.js';
 import { registerOp, registerState, onTick, submitEdit } from './world/sync.js';
@@ -290,6 +291,7 @@ export function createStall() {
   body.position.set(STALL.x, y, STALL.z);
   body.quaternion.setFromEuler(0, STALL.yaw, 0);
   world.addBody(body);
+  obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
 }
 
 // ---------------------------------------------------------------- held tool
