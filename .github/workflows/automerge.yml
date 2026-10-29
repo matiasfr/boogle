@@ -1,8 +1,15 @@
-name: Auto-merge Claude PRs
+name: Auto-merge
 
-# When CI passes on a PR that Claude opened (branch `claude/*` in this repo), squash-merge it into main.
+# Merges green work into main, then deploys. Two ways in:
+# - `npm run ship` pushes a ship/<name>-<sha> branch and CI runs on that push. This opens its PR (red or green, so
+#   ci-autofix.yml and people have somewhere to look) and, when green, merges it with a merge commit: the shipper's
+#   local commits stay exactly what main has, so their next ship rebases cleanly.
+# - A PR from any other branch in this repo (claude/* from Claude, a friend's feature branch): squash-merged when CI
+#   on it is green.
 # Opt out per PR with the `no-automerge` label, or by leaving it as a draft.
-# A merge made with GITHUB_TOKEN doesn't trigger push workflows, so this also starts the Pages deploy.
+# A PR that conflicts with main is handed to ci-autofix.yml, which merges main into the branch.
+# Merges made with GITHUB_TOKEN don't trigger push workflows, so this also starts the deploys and CI on main.
+# Opening PRs needs Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
 
 on:
   workflow_run:
@@ -21,33 +28,106 @@ concurrency:
 jobs:
   merge:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      startsWith(github.event.workflow_run.head_branch, 'claude/') &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch != 'main' &&
+      (
+        (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success') ||
+        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/'))
+      )
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       BRANCH: ${{ github.event.workflow_run.head_branch }}
       SHA: ${{ github.event.workflow_run.head_sha }}
+      GREEN: ${{ github.event.workflow_run.conclusion == 'success' }}
+      SHIPPER: ${{ github.event.workflow_run.actor.login }}
     steps:
-      - name: Find the PR
+      - name: Find or open the PR
         id: pr
         run: |
-          pr=$(gh pr list --head "$BRANCH" --state open --json number,isDraft,headRefOid,labels \
-            --jq '[.[] | select(.isDraft | not) | select(.headRefOid == env.SHA) | select([.labels[].name] | index("no-automerge") | not)][0].number // empty')
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$pr" ] && [[ "$BRANCH" == ship/* ]]; then
+            commits=$(gh api "repos/$GH_REPO/compare/main...$SHA" --jq '.commits')
+            n=$(jq length <<<"$commits")
+            if [ "$n" = 0 ]; then
+              echo "Everything on $BRANCH is already on main; deleting the branch."
+              gh api -X DELETE "repos/$GH_REPO/git/refs/heads/$BRANCH" || true
+              exit 0
+            fi
+            title=$(jq -r '.[-1].commit.message | split("\n")[0]' <<<"$commits")
+            [ "$n" -gt 1 ] && title="$title (+$((n - 1)) more)"
+            # The shipper's login is kept out of sight (no @, so no notification); ci-autofix.yml mentions them if
+            # it gives up.
+            body=$(jq -r --arg who "$SHIPPER" '
+              "Shipped with `npm run ship`; merges itself when CI is green.\n\n"
+              + (map("### " + .commit.message) | join("\n\n"))
+              + "\n\n<!-- shipper: " + $who + " -->"' <<<"$commits")
+            pr=$(gh api "repos/$GH_REPO/pulls" -f head="$BRANCH" -f base=main -f title="$title" -f body="$body" \
+              --jq .number) || {
+              echo "::error::Couldn't open a PR for $BRANCH. Is 'Allow GitHub Actions to create and approve pull requests' on?"
+              exit 1
+            }
+            echo "Opened #$pr for $BRANCH."
+          fi
           echo "number=$pr" >> "$GITHUB_OUTPUT"
-          if [ -z "$pr" ]; then echo "No open, non-draft PR at $SHA for $BRANCH (or labelled no-automerge); skipping."; fi
-      - name: Squash-merge
-        if: steps.pr.outputs.number != ''
-        run: gh pr merge "${{ steps.pr.outputs.number }}" --squash --delete-branch --match-head-commit "$SHA"
-      - name: Deploy
-        if: steps.pr.outputs.number != ''
-        run: gh workflow run deploy.yml --ref main
-      - name: Deploy server
-        if: steps.pr.outputs.number != ''
+
+      - name: Merge
+        id: merge
+        if: env.GREEN == 'true' && steps.pr.outputs.number != ''
+        env:
+          PR: ${{ steps.pr.outputs.number }}
         run: |
-          if gh pr diff "${{ steps.pr.outputs.number }}" --name-only | grep -q '^server/'; then
+          # GitHub works out mergeability in the background; UNKNOWN means not yet.
+          for _ in 1 2 3 4 5 6; do
+            info=$(gh pr view "$PR" --json isDraft,headRefOid,labels,mergeable,title)
+            [ "$(jq -r .mergeable <<<"$info")" != UNKNOWN ] && break
+            sleep 5
+          done
+          if [ "$(jq -r '.isDraft or .headRefOid != env.SHA or ([.labels[].name] | index("no-automerge") != null)' <<<"$info")" = true ]; then
+            echo "#$PR is a draft, labelled no-automerge, or has moved past $SHA; skipping."
+            exit 0
+          fi
+          if [ "$(jq -r .mergeable <<<"$info")" = CONFLICTING ]; then
+            echo "#$PR conflicts with main; asking ci-autofix.yml to merge main into $BRANCH."
+            gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
+            exit 0
+          fi
+          if [[ "$BRANCH" == ship/* ]]; then
+            gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA"
+          else
+            gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA"
+          fi
+          echo "merged=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy, and run CI on main
+        if: steps.merge.outputs.merged == 'true'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          gh workflow run deploy.yml --ref main
+          gh workflow run ci.yml --ref main
+          if gh pr diff "$PR" --name-only | grep -q '^server/'; then
             gh workflow run deploy-server.yml --ref main
           fi
+
+      # main just moved: close ship PRs it already contains, and hand PRs it now conflicts with to ci-autofix.yml
+      # (a PR in conflict gets no pull_request CI, so nothing else would wake it).
+      - name: Tidy the other open PRs
+        if: steps.merge.outputs.merged == 'true'
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          sleep 10 # let GitHub recompute mergeability against the new main
+          gh pr list --state open --json number,headRefName,headRefOid,isDraft,isCrossRepository \
+            --jq '.[] | select((.isDraft or .isCrossRepository) | not)
+                      | select(.headRefName | startswith("ship/") or startswith("claude/"))
+                      | "\(.number) \(.headRefName) \(.headRefOid)"' |
+            while read -r num ref sha; do
+              if [[ "$ref" == ship/* ]] && [ "$(gh api "repos/$GH_REPO/compare/main...$sha" --jq .ahead_by)" = 0 ]; then
+                gh pr close "$num" --delete-branch --comment "Everything in here is already on main (it went in with #$PR)."
+              elif [ "$(gh pr view "$num" --json mergeable --jq .mergeable)" = CONFLICTING ]; then
+                echo "#$num now conflicts with main; asking ci-autofix.yml to merge main into $ref."
+                gh workflow run ci-autofix.yml --ref main -f branch="$ref" -f reason=conflict
+              fi
+            done

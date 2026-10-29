@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# npm run ship: rebase your commits onto the latest main, run the checks, push. Retries if someone pushed meanwhile.
-# Runs the heavy checks too (check:full) when your commits touch networking, world sync or the server.
+# npm run ship: rebase your commits onto the latest main, run the checks, push them to a ship/<you>-<sha> branch.
+# CI runs on that branch. Green: automerge.yml opens a PR, merges it into main and deploys. Red: ci-autofix.yml has
+# Claude push a fix to the branch. main itself only takes PRs.
+# Runs the fast checks (check) here; CI runs the heavy ones (server tests, headless network test) on the branch.
+# `npm run ship -- --wait` waits until your commits are on main.
 set -euo pipefail
 
 # On a rebase conflict, ship asks Claude Code (if installed) to resolve it, keeping both sides' changes.
@@ -26,23 +29,21 @@ resolve_with_claude() {
   echo "ship: conflicts resolved by Claude; checks will verify the result."
 }
 
-cd "$(git rev-parse --show-toplevel)"
-branch=$(git rev-parse --abbrev-ref HEAD)
-if [ "$branch" != "main" ]; then
-  echo "ship: you're on '$branch'. Ship from main, or open a PR for this branch." >&2
-  exit 1
-fi
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-  echo "ship: you have uncommitted changes. Commit (or stash) them first." >&2
-  exit 1
-fi
+ship() {
+  local wait=0
+  [ "${1:-}" = "--wait" ] && wait=1
 
-for attempt in 1 2 3; do
+  cd "$(git rev-parse --show-toplevel)"
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "ship: you have uncommitted changes. Commit (or stash) them first." >&2
+    exit 1
+  fi
+
   git fetch -q origin main
   if ! git rebase -q origin/main && ! resolve_with_claude; then
     cat >&2 <<'EOF'
 
-ship: your commits conflict with changes a friend pushed.
+ship: your commits conflict with changes a friend shipped.
   1. Fix the files git lists as conflicted (or ask Claude: "resolve the rebase conflicts, keep both changes").
   2. git add <files> && git rebase --continue
   3. npm run ship again
@@ -52,25 +53,45 @@ EOF
   fi
 
   if [ -z "$(git log --oneline origin/main..HEAD)" ]; then
-    echo "ship: nothing to push; you're up to date with main."
+    echo "ship: nothing to ship; you're up to date with main."
     exit 0
   fi
 
-  changed=$(git diff --name-only origin/main..HEAD)
-  if echo "$changed" | grep -qE '^(src/net|src/world/sync\.js|server/)'; then
-    echo "ship: networking/sync/server changed, running the full checks..."
-    npm run --silent check:full
-  else
-    npm run --silent check
-  fi
+  npm run --silent check
 
+  # A new branch per ship. Shipping again before the last one merged opens a second PR that also carries the
+  # first's commits; both merge cleanly (merge commits keep your commits as they are), and automerge.yml closes a PR
+  # whose commits are already on main.
+  local who branch n repo
+  who=$(git config user.name || true)
+  who=$(printf '%s' "${who:-someone}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//' | cut -c1-20)
+  branch="ship/${who:-someone}-$(git rev-parse --short=7 HEAD)"
   n=$(git rev-list --count origin/main..HEAD)
-  if SHIP=1 git push -q origin HEAD:main; then
-    echo "ship: pushed $n commit(s). Live site updates in about a minute."
-    exit 0
-  fi
-  echo "ship: someone pushed while checks ran; rebasing again ($attempt/3)..."
-done
+  git push -q origin "HEAD:refs/heads/$branch"
 
-echo "ship: main keeps moving; try again in a moment." >&2
-exit 1
+  repo=$(git remote get-url origin | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')
+  cat <<EOF
+ship: pushed $n commit(s) to $branch.
+  CI runs on it now (a minute or two). Green: a bot opens the PR, merges it and deploys. Red, or in conflict with
+  main: Claude pushes a fix to the branch (twice at most, then the PR @mentions you).
+  CI: https://github.com/$repo/actions?query=branch%3A${branch//\//%2F}
+  PR: https://github.com/$repo/pulls?q=is%3Apr+head%3A${branch//\//%2F}
+EOF
+  [ "$wait" = 1 ] || exit 0
+
+  # Merge commits keep our commits as they are, so "on main" is plain ancestry.
+  local head
+  head=$(git rev-parse HEAD)
+  for _ in $(seq 1 60); do
+    sleep 15
+    git fetch -q origin main
+    if git merge-base --is-ancestor "$head" origin/main; then
+      echo "ship: merged into main; the live site updates in about a minute."
+      exit 0
+    fi
+  done
+  echo "ship: not on main after 15 minutes; check the PR link above." >&2
+  exit 1
+}
+
+ship "$@"
