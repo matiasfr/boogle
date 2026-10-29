@@ -138,6 +138,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 test('report: stored as one JSON line per report, cleaned and truncated', async () => {
   const s = await start();
   try {
+    const day = today(); // before the POST, so a run across midnight UTC still finds the file
     let r = await report(s.base, { room: 'beach', kind: 'error', detail: 'x'.repeat(2000), tick: 7, ua: 'Chrome 130' });
     assert.equal(r.status, 204);
     r = await report(
@@ -149,7 +150,7 @@ test('report: stored as one JSON line per report, cleaned and truncated', async 
       'application/json',
     );
     assert.equal(r.status, 204);
-    const lines = (await fs.readFile(path.join(s.dataDir, 'reports', `${today()}.jsonl`), 'utf8')).trim().split('\n');
+    const lines = (await fs.readFile(path.join(s.dataDir, 'reports', `${day}.jsonl`), 'utf8')).trim().split('\n');
     const rows = lines.map((l) => JSON.parse(l));
     assert.equal(rows.length, 3);
     assert.ok(rows.every((x) => typeof x.at === 'string' && x.room === 'beach'));
@@ -197,6 +198,24 @@ test('report: per-IP rate limit and daily size cap', async () => {
   }
 });
 
+test('report: the first write of a day deletes report files older than 30 days', async () => {
+  const s = await start();
+  try {
+    const dir = path.join(s.dataDir, 'reports');
+    const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    await fs.mkdir(dir, { recursive: true });
+    for (const name of [`${daysAgo(40)}.jsonl`, `${daysAgo(5)}.jsonl`, 'notes.txt']) {
+      await fs.writeFile(path.join(dir, name), '{}\n');
+    }
+    assert.equal((await report(s.base, { room: 'a', kind: 'error', detail: 'e' })).status, 204);
+    const left = (await fs.readdir(dir)).sort();
+    assert.ok(!left.includes(`${daysAgo(40)}.jsonl`));
+    assert.ok(left.includes(`${daysAgo(5)}.jsonl`) && left.includes('notes.txt'));
+  } finally {
+    await s.stop();
+  }
+});
+
 test('reports: GET needs REPORT_TOKEN and the bearer token', async () => {
   let s = await start();
   try {
@@ -206,12 +225,13 @@ test('reports: GET needs REPORT_TOKEN and the bearer token', async () => {
   }
   s = await start({ REPORT_TOKEN: 'tok' });
   try {
+    const day = today();
     await report(s.base, { room: 'a', kind: 'snapshot', detail: { from: 'peer', reason: 'parse' } });
     const get = (q, auth) => fetch(`${s.base}/reports${q}`, { headers: auth ? { authorization: auth } : {} });
     assert.equal((await get('')).status, 401);
     assert.equal((await get('', 'Bearer nope')).status, 401);
     assert.equal((await get('?day=yesterday', 'Bearer tok')).status, 400);
-    const r = await get(`?day=${today()}`, 'Bearer tok');
+    const r = await get(`?day=${day}`, 'Bearer tok');
     assert.equal(r.status, 200);
     assert.deepEqual(JSON.parse((await r.text()).trim()).detail, { from: 'peer', reason: 'parse' });
     const empty = await get('?day=2000-01-01', 'Bearer tok');

@@ -12,7 +12,7 @@ One small Node 20+ service (Express + the official `peer` package) that gives th
 | `GET /ice` | `{ iceServers: [...] }` with Google STUN, plus TURN if configured. |
 | `GET /healthz` | `ok` |
 
-Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`. No database. CORS applies to every endpoint.
+Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. No database. CORS applies to every endpoint.
 
 ## Environment variables
 

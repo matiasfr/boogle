@@ -10,6 +10,7 @@ const STUN = 'stun:stun.l.google.com:19302';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect']);
 const REPORT_BATCH = 10; // reports per POST
+const REPORT_KEEP_DAYS = 30;
 
 function parseTrustProxy(v) {
   if (v === undefined || v === '') return 1; // one hop: Fly / Render / Railway
@@ -245,14 +246,24 @@ export function createService(config) {
 
   // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
   // Appended as JSON lines to DATA_DIR/reports/YYYY-MM-DD.jsonl (UTC day), capped per day. Clients send text/plain
-  // (navigator.sendBeacon) so no CORS preflight is needed.
+  // (navigator.sendBeacon) so no CORS preflight is needed. The first write of a new day deletes files older than
+  // REPORT_KEEP_DAYS.
   const reportDir = path.join(cfg.dataDir, 'reports');
   const daySizes = new Map(); // day -> bytes written (read from disk on first use)
   const today = () => new Date().toISOString().slice(0, 10);
 
+  async function pruneReports(day) {
+    const oldest = new Date(Date.parse(day) - REPORT_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
+    for (const name of await fs.readdir(reportDir).catch(() => [])) {
+      const d = /^(\d{4}-\d{2}-\d{2})\.jsonl$/.exec(name)?.[1];
+      if (d && d < oldest) await fs.rm(path.join(reportDir, name), { force: true });
+    }
+  }
+
   async function daySize(day) {
     if (!daySizes.has(day)) {
       daySizes.clear(); // only today's counter matters
+      await pruneReports(day).catch((e) => cfg.log('report prune failed', e.message));
       try {
         daySizes.set(day, (await fs.stat(path.join(reportDir, `${day}.jsonl`))).size);
       } catch (e) {

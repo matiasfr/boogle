@@ -54,6 +54,12 @@ function firstFrame(stack) {
     : '';
 }
 
+// Peer ids (`boogle-<room>-c<random>`) and other id-like tokens (12+ letters/digits with a digit) out of messages.
+const scrub = (msg) =>
+  String(msg)
+    .replace(/boogle-[a-z0-9-]+/gi, 'boogle-*')
+    .replace(/\b(?=[a-z]*\d)[a-z0-9]{12,}\b/gi, '*');
+
 if (SERVER) {
   const url = new URL('/report', SERVER);
   const ua = coarseUa(navigator.userAgent || '');
@@ -88,13 +94,14 @@ if (SERVER) {
 
   // ---- errors ----
   addEventListener('error', (e) => {
+    if (!e.filename && !e.error) return; // 'Script error.': a cross-origin script, nothing to go on
     if (e.filename && !e.filename.startsWith(location.origin)) return; // extensions, third-party scripts
     const at = firstFrame(e.error?.stack) || `${e.filename?.replace(location.origin, '') ?? ''}:${e.lineno ?? 0}`;
-    report('error', { msg: String(e.message || 'error').slice(0, 200), at });
+    report('error', { msg: scrub(e.message || 'error').slice(0, 200), at });
   });
   addEventListener('unhandledrejection', (e) => {
     const r = e.reason;
-    report('error', { msg: `unhandled: ${String(r?.message ?? r).slice(0, 190)}`, at: firstFrame(r?.stack) });
+    report('error', { msg: `unhandled: ${scrub(r?.message ?? r).slice(0, 190)}`, at: firstFrame(r?.stack) });
   });
 
   // ---- shared world ----
@@ -105,7 +112,7 @@ if (SERVER) {
   onStart(() => {
     let prev = net.state;
     let prevRetries = net.retries || 0;
-    let since = performance.now();
+    let since = performance.now(); // when net.state last changed (polled once a second)
     let role = '?'; // known once we were in a room
     let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
     let okSent = false;
@@ -120,7 +127,7 @@ if (SERVER) {
         report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base });
       } else if (s === 'live' && prev !== 'live' && !okSent) {
         okSent = true;
-        report('connect', { result: 'ok', ms: Math.round(now), retries, ...base });
+        report('connect', { result: 'ok', ms: Math.round(now - since), retries, ...base }); // ms spent 'connecting'
       } else if (s === 'connecting' && prev === 'connecting' && !stuckSent && now - since > STUCK_MS) {
         stuckSent = true;
         report('connect', { result: 'stuck', ...base });
