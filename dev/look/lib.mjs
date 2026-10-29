@@ -106,7 +106,8 @@ export class Game {
     await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
       timeout: 90000,
     });
-    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 30000 });
+    // A deployed site (`--url`) over a slow link can take a while to load.
+    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
     await g.page.waitForFunction(() => window.__debugCam && window.__water, null, { timeout: 20000 });

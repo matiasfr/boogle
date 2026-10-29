@@ -1,4 +1,6 @@
 // Scenario runner: `npm run scenario -- <name>...` or `npm run scenarios` (all). See .claude/skills/look/SKILL.md.
+// `--url <game>` (or LOOK_URL) plays an already running or deployed game instead of starting a local stack; only
+// scenarios that stay off /src/ imports work on a built site (e.g. `smoke`, through window.boogle.sync).
 //
 // A scenario is dev/scenarios/<name>.mjs:
 //   export default { about: 'one line', async run(t) { ... } };
@@ -6,7 +8,8 @@
 //   t.open({ name, room, size, hud })   a player (Game from dev/look/lib.mjs); same `room` = same island
 //   t.check(label, ok, detail)          records PASS/FAIL (never throws); put images in the detail
 //   t.sleep(ms), t.VIEWS, t.out         helpers and the image directory (.look/scenarios/<name>/)
-// Players are closed for you. A scenario that throws, or runs past 120 s, fails.
+// Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
+// failure every player's last frame is saved as <name>-final-still.png.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +22,8 @@ const all = fs
   .map((f) => f.slice(0, -4))
   .sort();
 const args = process.argv.slice(2);
+const at = args.indexOf('--url');
+const url = at >= 0 ? args.splice(at, 2)[1] : process.env.LOOK_URL || null;
 const names = args.length ? args : all;
 const bad = names.filter((n) => !all.includes(n));
 if (bad.length) {
@@ -30,7 +35,7 @@ let stack,
   browser,
   failed = 0;
 try {
-  stack = await startStack({ url: process.env.LOOK_URL || null });
+  stack = await startStack({ url });
   browser = await launch();
   for (const name of names) {
     const mod = (await import(path.join(here, name + '.mjs'))).default;
@@ -56,11 +61,12 @@ try {
       },
     };
     const t0 = Date.now();
+    const limit = mod.timeout || 120000;
     let timer;
     try {
       await Promise.race([
         mod.run(t),
-        new Promise((_, rej) => (timer = setTimeout(() => rej(new Error('timed out after 120 s')), 120000))),
+        new Promise((_, rej) => (timer = setTimeout(() => rej(new Error(`timed out after ${limit / 1000} s`)), limit))),
       ]);
     } catch (e) {
       bads++;
@@ -72,6 +78,9 @@ try {
         bads++;
         console.log(`  FAIL  page errors in ${g.name}: ${g.errors.slice(0, 2).join(' | ')}`);
       }
+    }
+    for (const g of games) {
+      if (bads) await g.still(`${g.name}-final`).catch(() => {});
       await g.close().catch(() => {});
     }
     console.log(`  ${bads ? 'FAILED' : 'ok'} in ${((Date.now() - t0) / 1000).toFixed(1)} s; images: ${out}`);
