@@ -85,6 +85,7 @@ function poll(dt) {
 
   // Before the island: A presses "Jump in".
   if (!me.entered) {
+    input.stickX = input.stickY = 0;
     if (down[0] && !pressed[0] && !dom.enterBtn.disabled) dom.enterBtn.click();
     down.forEach((d, i) => (pressed[i] = d));
     return;
@@ -116,6 +117,7 @@ onStart(() => {
   addEventListener('gamepaddisconnected', () => poll(0));
   // Touching the screen hands control back to the touch overlay.
   addEventListener('touchstart', () => setActive(false), { passive: true });
+  // input.js zeroes the stick on blur; the next poll reads the pad afresh.
   addEventListener('blur', releaseAll);
 });
 

@@ -59,17 +59,13 @@ export function initInput() {
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
+    // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
+    if (e.key === 'Meta') input.keys.clear();
     if (e.key === 'Shift') setFlatten(false);
     if (e.code === 'KeyQ') setHold(null, 'dig');
     if (e.code === 'KeyZ') setHold(null, 'pile');
     if (e.code === 'KeyE' && me.entered) actionUp();
   });
-  addEventListener('blur', () => {
-    input.keys.clear();
-    setFlatten(false);
-    setHold(null);
-  });
-
   let drag = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('mousedown', (e) => {
@@ -161,16 +157,17 @@ export function initInput() {
       look.y = e.clientY;
     }
   });
+  function releaseStick() {
+    stick.id = null;
+    input.stickX = input.stickY = 0;
+    stickEl.style.display = 'none';
+  }
+  // pointerup is not guaranteed (system gestures, backgrounding), so any of these ends the touch.
   function endTouch(e) {
-    if (e.pointerId === stick.id) {
-      stick.id = null;
-      input.stickX = input.stickY = 0;
-      stickEl.style.display = 'none';
-    }
+    if (e.pointerId === stick.id) releaseStick();
     if (e.pointerId === look.id) look.id = null;
   }
-  touchEl.addEventListener('pointerup', endTouch);
-  touchEl.addEventListener('pointercancel', endTouch);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     me.jumpQueued = 0.15;
@@ -231,9 +228,19 @@ export function initInput() {
   registerAction('zoom-in', { pad: 'up', label: 'Camera closer', ...zoom(-1) });
   registerAction('zoom-out', { pad: 'down', label: 'Camera farther', ...zoom(1) });
 
+  // Losing focus or hiding the page can swallow the matching keyup/pointerup: treat everything as released.
+  function releaseAll() {
+    input.keys.clear();
+    input.sprint = false;
+    releaseStick();
+    look.id = null;
+    setFlatten(false);
+    setHold(null);
+  }
+  addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      input.keys.clear();
+      releaseAll();
       releaseBall();
     }
     sendPresence();
