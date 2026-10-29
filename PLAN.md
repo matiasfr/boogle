@@ -2,16 +2,11 @@
 
 Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends shape water together to grow a shared garden, while the beach ball stays the main toy.
 
-The design direction comes from the research report "boogle Multiplayer Design: Deterministic Water Simulation for Cooperative Beach Farming". Its short version: **water is the glue between the ball and the farm.** Players dig channels and pile sand to steer water. Crops grow where the soil is wet. The tide is the shared threat. The garden persists, so the next visitor finds what the last one left.
+The design direction comes from the [research report](docs/research/water-farming-multiplayer.md). Its short version: **water is the glue between the ball and the farm.** Players dig channels and pile sand to steer water. Crops grow where the soil is wet. The tide is the shared threat. The garden persists, so the next visitor finds what the last one left.
 
 ## Guiding rules
 
-1. **Toys before chores.** Every new system should be fun to mess with before it has goals. If dig/pile/water isn't fun with no crops at all, crops won't save it.
-2. **Cooperation is automatic, not negotiated.** Watering someone's plant helps them. Nobody can wreck someone else's crops; only the environment (tide, drought) threatens them.
-3. **Farming is never required.** Someone who just wants to throw the ball around should still have a great time.
-4. **Telegraph every water event** 30–60 s ahead (a wave on the horizon, clouds), so drop-in players instantly have a shared goal.
-5. **Determinism from day one** for anything simulated: integer water amounts, fixed update order, seeded weather. Retrofitting this later is far harder.
-6. **Playtest each phase with 2–4 real people** before starting the next. Each phase below ends with the question the playtest should answer.
+The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question its playtest (2–4 real people) should answer.
 
 ## Key decision: PeerJS (WebRTC), with one browser as host
 
