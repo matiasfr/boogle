@@ -69,5 +69,5 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 ## Docs that follow the code
 
-AGENTS.md, `src/world/README.md` and the `/new-feature` skill describe the rules-module pattern and the edit-generator
-requirement once B1 and B2 land.
+AGENTS.md, `src/world/README.md`, the `/new-feature` skill and DESIGN.md's "In code" paragraph (under "Pick how each
+feature shares state") describe the rules-module pattern and the edit-generator requirement once B1 and B2 land.

@@ -45,7 +45,8 @@ function peerColor(peer) {
 //                                  local ms, ready for createSnaps (src/snaps.js).
 //   addHostField(key, getter, onValue)  Host state: only the host publishes getter(); every tab hears onValue(value,
 //                                  time, peer) for each fresh value. A different peer means the host changed.
-//   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does).
+//   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does); one-off events go
+//                                  here as room.send/onMessage (reliable, ordered, not to self), not in presence.
 const presenceFields = [];
 const remoteHooks = [];
 const roomHooks = [];
