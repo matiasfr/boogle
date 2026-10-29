@@ -14,7 +14,6 @@ import { me, updateIntent, updateCamera, updatePreview, handPosition } from './p
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
 import { updateSplash } from './splash.js';
-import { updateStreak } from './streak.js';
 import { updateWorld } from './world/sync.js';
 import { initInput } from './input.js';
 
@@ -101,7 +100,6 @@ function frame(now) {
   updateSplash(dt, elapsed, ball, me, remotes);
   updatePreview();
   updateHud();
-  updateStreak(now);
   if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
   waterMat.uniforms.uTime.value = elapsed;
   renderer.render(scene, camera);
