@@ -9,7 +9,7 @@ import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
-import { booglerForPresence, noteBoogler } from './boogler.js';
+import { createSnaps } from './snaps.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
 // state: 'connecting' | 'live' | 'solo'
@@ -37,9 +37,15 @@ function peerColor(peer) {
   return Math.abs(h) % COLORS.length;
 }
 
-// Extension hooks so features never edit buildPresence/upsertPeer: addPresenceField(key, getter) merges a small JSON
-// value (or null to omit) into our presence; onRemotePresence(fn) calls fn(remote, pr) after each fresh update from
-// a peer; onRoomReady(fn) calls fn(room) once the room exists (immediately if it already does).
+// Extension hooks so features never edit buildPresence/upsertPeer (which kind to use: DESIGN.md, "Pick how each
+// feature shares state"). Presence goes out every SEND_MS on an unreliable channel, latest value wins, so keep fields
+// small; one that rarely changes costs next to nothing.
+//   addPresenceField(key, getter)  Owner state: merges a small JSON value (or null to omit) into our presence.
+//   onRemotePresence(fn)           fn(remote, pr, time) after each fresh update from a peer; time is the sample's
+//                                  local ms, ready for createSnaps (src/snaps.js).
+//   addHostField(key, getter, onValue)  Host state: only the host publishes getter(); every tab hears onValue(value,
+//                                  time, peer) for each fresh value. A different peer means the host changed.
+//   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does).
 const presenceFields = [];
 const remoteHooks = [];
 const roomHooks = [];
@@ -48,6 +54,12 @@ export function addPresenceField(key, getter) {
 }
 export function onRemotePresence(fn) {
   remoteHooks.push(fn);
+}
+export function addHostField(key, getter, onValue) {
+  presenceFields.push([key, () => (net.room?.isHost() ? getter() : null)]);
+  remoteHooks.push((r, pr, time) => {
+    if (pr[key] !== null && pr[key] !== undefined) onValue(pr[key], time, r.peer);
+  });
 }
 export function onRoomReady(fn) {
   if (net.room) fn(net.room);
@@ -64,7 +76,6 @@ export function buildPresence() {
     r: null,
     s: null,
     b: null,
-    g: booglerForPresence(),
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -93,7 +104,7 @@ export function buildPresence() {
     } catch {
       // a broken feature must not break presence
     }
-    if (v !== null && v !== undefined && !(key in pr)) pr[key] = v;
+    if (!(key in pr)) pr[key] = v ?? null; // null deletes the key, so a field that stops is not repeated forever
   }
   return pr;
 }
@@ -113,8 +124,8 @@ function getRemote(peer) {
       colorIdx: peerColor(peer),
       visible: false,
       entered: false,
-      snaps: [],
-      ballSnaps: [],
+      snaps: createSnaps(),
+      ballSnaps: createSnaps(),
       ball: null,
       lastT: -1,
       off: null,
@@ -173,29 +184,24 @@ function upsertPeer(peer) {
   }
   r.entered = finiteArr(pr.p, 3);
   if (r.entered && fresh) {
-    r.snaps.push({ time, p: pr.p, r: Number.isFinite(pr.r) ? pr.r : 0, s: pr.s });
-    if (r.snaps.length > 40) r.snaps.shift();
+    r.snaps.push(time, { p: pr.p, r: Number.isFinite(pr.r) ? pr.r : 0, s: pr.s });
   }
   if (!r.entered) {
-    r.snaps.length = 0;
+    r.snaps.clear();
     dropRemoteBody(r);
   }
-  if (pr.g && fresh) noteBoogler(peer.peer, pr.g, time);
   const b = pr.b;
   if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
     r.ball = b;
-    if (fresh) {
-      r.ballSnaps.push({ time, p: b.p, v: b.v, q: b.q, h: b.h });
-      if (r.ballSnaps.length > 40) r.ballSnaps.shift();
-    }
+    if (fresh) r.ballSnaps.push(time, { p: b.p, v: b.v, q: b.q, h: b.h });
   } else {
     r.ball = null;
-    r.ballSnaps.length = 0;
+    r.ballSnaps.clear();
   }
   if (fresh)
     for (const fn of remoteHooks) {
       try {
-        fn(r, pr);
+        fn(r, pr, time);
       } catch (e) {
         console.warn('[boogle] presence hook failed', e);
       }
@@ -300,20 +306,11 @@ export async function connectRoom() {
 }
 
 // ---------------------------------------------------------------- remote interpolation
-function sampleSnaps(snaps, t) {
-  if (!snaps.length) return null;
-  while (snaps.length > 2 && snaps[1].time <= t) snaps.shift();
-  const a = snaps[0],
-    b = snaps[1];
-  if (!b || t <= a.time) return { a, b: a, u: 0, over: Math.max(0, t - a.time) };
-  return { a, b, u: Math.min(1, (t - a.time) / Math.max(1, b.time - a.time)), over: Math.max(0, t - b.time) };
-}
-
 export function updateRemotes(now) {
   const rt = now - INTERP_MS;
   for (const r of remotes.values()) {
     if (r.entered && r.snaps.length) {
-      const s = sampleSnaps(r.snaps, rt);
+      const s = r.snaps.sample(rt);
       r.target.set(lerp(s.a.p[0], s.b.p[0], s.u), lerp(s.a.p[1], s.b.p[1], s.u), lerp(s.a.p[2], s.b.p[2], s.u));
       r.yaw = angleLerp(s.a.r, s.b.r, s.u);
       r.state = s.b.s;
@@ -338,7 +335,7 @@ export function updateRemotes(now) {
         r.avatar.add(r.label);
       }
     }
-    if (r.ball && r.ballSnaps.length) r.ballSample = sampleSnaps(r.ballSnaps, rt);
+    if (r.ball && r.ballSnaps.length) r.ballSample = r.ballSnaps.sample(rt);
     else r.ballSample = null;
   }
 }
