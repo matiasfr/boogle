@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS } from './constants.js';
-import { lerp, angleLerp, finiteArr, r2, r3, sanitizeName } from './math.js';
+import { lerp, angleLerp, finiteArr, r2, sanitizeName } from './math.js';
 import { scene } from './scene.js';
 import { world, teleport } from './physics.js';
 import { makeAvatar, makeLabel, makePlayerBody } from './avatars.js';
 import { me } from './player.js';
-import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { createSnaps } from './snaps.js';
+import { mergeFields, hostField } from './presence-fields.js';
 
-// Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
+// Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
 // state: 'connecting' | 'live' | 'solo'; turn: our ICE config includes a TURN server (for connection reports)
 export const net = { room: null, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null, turn: false };
 export const remotes = new Map();
@@ -45,7 +45,8 @@ function peerColor(peer) {
 //                                  local ms, ready for createSnaps (src/snaps.js).
 //   addHostField(key, getter, onValue)  Host state: only the host publishes getter(); every tab hears onValue(value,
 //                                  time, peer) for each fresh value. A different peer means the host changed.
-//   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does).
+//   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does); one-off events go
+//                                  here as room.send/onMessage (reliable, ordered, not to self), not in presence.
 const presenceFields = [];
 const remoteHooks = [];
 const roomHooks = [];
@@ -56,10 +57,9 @@ export function onRemotePresence(fn) {
   remoteHooks.push(fn);
 }
 export function addHostField(key, getter, onValue) {
-  presenceFields.push([key, () => (net.room?.isHost() ? getter() : null)]);
-  remoteHooks.push((r, pr, time) => {
-    if (pr[key] !== null && pr[key] !== undefined) onValue(pr[key], time, r.peer);
-  });
+  const h = hostField(getter, onValue, () => !!net.room?.isHost());
+  presenceFields.push([key, h.get]);
+  remoteHooks.push((r, pr, time) => h.hear(pr[key], time, r.peer));
 }
 export function onRoomReady(fn) {
   if (net.room) fn(net.room);
@@ -75,7 +75,6 @@ export function buildPresence() {
     p: null,
     r: null,
     s: null,
-    b: null,
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -85,28 +84,7 @@ export function buildPresence() {
     pr.r = r2(me.yaw);
     pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
   }
-  if (ball.mine) {
-    const bp = ball.body.position,
-      bq = ball.body.quaternion;
-    const bv = ball.held && me.body ? me.body.velocity : ball.body.velocity;
-    pr.b = {
-      e: ball.myE,
-      p: [r2(bp.x), r2(bp.y), r2(bp.z)],
-      v: [r2(bv.x), r2(bv.y), r2(bv.z)],
-      q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
-      h: ball.held ? 1 : 0,
-    };
-  }
-  for (const [key, get] of presenceFields) {
-    let v = null;
-    try {
-      v = get();
-    } catch {
-      // a broken feature must not break presence
-    }
-    if (!(key in pr)) pr[key] = v ?? null; // null deletes the key, so a field that stops is not repeated forever
-  }
-  return pr;
+  return mergeFields(pr, presenceFields); // a null field deletes its key (src/presence-fields.js)
 }
 
 export function sendPresence() {
@@ -125,8 +103,6 @@ function getRemote(peer) {
       visible: false,
       entered: false,
       snaps: createSnaps(),
-      ballSnaps: createSnaps(),
-      ball: null,
       lastT: -1,
       off: null,
       avatar: null,
@@ -189,14 +165,6 @@ function upsertPeer(peer) {
   if (!r.entered) {
     r.snaps.clear();
     dropRemoteBody(r);
-  }
-  const b = pr.b;
-  if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
-    r.ball = b;
-    if (fresh) r.ballSnaps.push(time, { p: b.p, v: b.v, q: b.q, h: b.h });
-  } else {
-    r.ball = null;
-    r.ballSnaps.clear();
   }
   if (fresh)
     for (const fn of remoteHooks) {
@@ -303,6 +271,9 @@ export async function connectRoom() {
     if (net.state !== 'solo') setNet(connected ? 'live' : 'connecting');
   }, fail);
   room.onPeers(onPeersChange, fail);
+  // Host fields follow the role at once: a demoted host (even one still on the title screen, which sends no presence
+  // otherwise) clears them before it rejoins, and a new host publishes them without waiting for its next send.
+  room.onHostChange(() => sendPresence());
   sendPresence();
 }
 
@@ -336,7 +307,5 @@ export function updateRemotes(now) {
         r.avatar.add(r.label);
       }
     }
-    if (r.ball && r.ballSnaps.length) r.ballSample = r.ballSnaps.sample(rt);
-    else r.ballSample = null;
   }
 }

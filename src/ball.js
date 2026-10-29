@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BALL_R, BALL_MASS, BALL_SPAWN, REACH } from './constants.js';
-import { lerp } from './math.js';
+import { BALL_R, BALL_MASS, BALL_SPAWN, REACH, INTERP_MS } from './constants.js';
+import { lerp, finiteArr, r2, r3 } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { world, ballMat, teleport } from './physics.js';
 import { me, handPosition, carryPosition, throwVelocity } from './player.js';
-import { net, remotes, sendPresence } from './net.js';
+import { net, remotes, sendPresence, addPresenceField, onRemotePresence } from './net.js';
+import { createSnaps } from './snaps.js';
 
 function beachBallTexture() {
   const c = document.createElement('canvas');
@@ -138,6 +139,34 @@ export function respawnBall() {
   sendPresence();
 }
 
+// Owner state (DESIGN.md): the tab that simulates the ball publishes it as `b: { e, p, v, q, h }` (epoch, position,
+// velocity, quaternion, held); a held ball reports its holder's velocity. Other tabs keep each peer's last claim on
+// its remote record (r.ball, r.ballSnaps) and smooth only the owner's.
+addPresenceField('b', () => {
+  if (!ball.mine) return null;
+  const bp = ball.body.position,
+    bq = ball.body.quaternion;
+  const bv = ball.held && me.body ? me.body.velocity : ball.body.velocity;
+  return {
+    e: ball.myE,
+    p: [r2(bp.x), r2(bp.y), r2(bp.z)],
+    v: [r2(bv.x), r2(bv.y), r2(bv.z)],
+    q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
+    h: ball.held ? 1 : 0,
+  };
+});
+onRemotePresence((r, pr, time) => {
+  const b = pr.b;
+  r.ballSnaps ??= createSnaps();
+  if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
+    r.ball = b;
+    r.ballSnaps.push(time, { p: b.p, v: b.v, q: b.q, h: b.h });
+  } else {
+    r.ball = null;
+    r.ballSnaps.clear();
+  }
+});
+
 // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner.
 export function resolveBallOwner(now) {
   let best = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
@@ -171,7 +200,8 @@ const tmpQa = new THREE.Quaternion(),
   tmpQb = new THREE.Quaternion();
 
 function updateBallDisplayFromRemote() {
-  const s = ball.owner?.remote?.ballSample;
+  const r = ball.owner?.remote;
+  const s = r?.ball && r.ballSnaps?.length ? r.ballSnaps.sample(performance.now() - INTERP_MS) : null;
   if (!s) return;
   const { a, b, u, over } = s;
   const ex = Math.min(over, 150) / 1000;

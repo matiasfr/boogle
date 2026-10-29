@@ -1,10 +1,11 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w }`
-// (r = yaw, w = 1 while walking). Everyone else interpolates those snapshots, like a remote player. He is not part of
-// the deterministic world sim (he never changes terrain, water or crops), so his brain can use floats; it still uses
-// the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that hear nothing from a host for a
-// few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops) is cosmetic and local.
+// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
+// (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
+// remote player. He is not part of the deterministic world sim (he never changes terrain, water or crops), so his brain
+// can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
+// hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
+// is cosmetic and local.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler-play.js): the host stops for

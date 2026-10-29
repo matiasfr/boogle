@@ -30,7 +30,8 @@ export default {
     const heard = { player: 0, ball: 0, boogler: 0 };
     let walked = 0,
       last = null;
-    for (let k = 0; k < 8; k++) {
+    // Keep sampling (capped) until the client has seen him walk 2 m: an idle Boogler tests no Host interpolation.
+    for (let k = 0; k < 8 || (walked < 2 && k < 40); k++) {
       await t.sleep(600);
       for (const [tab, keys] of [
         [host, ['player', 'ball']],
@@ -48,14 +49,15 @@ export default {
           }
       }
     }
-    // A tab that walked him itself (stale host) would drift metres from the host's path within a few seconds.
+    // A tab that walked him itself (stale host) would drift metres from the host's path within a few seconds, but only
+    // if he moved, so the Host check also requires that he walked.
     const ok = (key) => heard[key] > 0 && worst[key] < 1.5;
     const say = (key) => `${worst[key].toFixed(2)} m over ${heard[key]} samples`;
     t.check('each tab draws the other player where its presence says (Owner)', ok('player'), say('player'));
     t.check("the ball shows where its owner's presence says (Owner)", ok('ball'), say('ball'));
     t.check(
       'the client draws the Boogler where the host field says (Host)',
-      ok('boogler'),
+      ok('boogler') && walked >= 2,
       `${say('boogler')}; he walked ${walked.toFixed(1)} m`,
     );
   },
