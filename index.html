@@ -1,0 +1,1736 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8">
+<title>Boogle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+  /* Full-bleed 3D island; HUD chips pinned to screen corners; lobby card centered over the live scene. */
+  :root {
+    --ink: #13243f;
+    --ink-soft: #4b5d7a;
+    --paper: #ffffff;
+    --sun: #ffc93d;
+    --sea: #0f9fc0;
+    --sky: #bfe6f5;
+    --glass: rgba(12, 28, 52, 0.58);
+    --glass-line: rgba(255, 255, 255, 0.24);
+    --on-glass: #f3f8ff;
+    --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: light;
+  }
+  html, body { height: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--sky);
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; color: var(--on-glass); }
+  .hud-tl {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: calc(14px + env(safe-area-inset-left, 0px));
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .brand { font-family: var(--font-display); font-size: 26px; line-height: 1; color: var(--paper); text-shadow: 0 2px 0 rgba(19, 36, 63, 0.5); }
+  .roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .roster li, .net, .hint {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    background: var(--glass); border: 1px solid var(--glass-line); border-radius: 999px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-weight: 700; font-size: 13px;
+  }
+  .roster li { padding: 4px 11px 4px 6px; }
+  .roster .dot { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55); flex: none; }
+  .roster .you { font-weight: 600; opacity: 0.65; }
+  .hud-tr { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); }
+  .net { padding: 5px 12px 5px 9px; font-variant-numeric: tabular-nums; }
+  .net-dot { width: 9px; height: 9px; border-radius: 50%; background: #c6cbd4; flex: none; }
+  .net[data-state="live"] .net-dot { background: #5ee08a; box-shadow: 0 0 0 3px rgba(94, 224, 138, 0.25); }
+  .net[data-state="local"] .net-dot { background: var(--sun); }
+  .net[data-state="solo"] .net-dot { background: #ff8a6b; }
+
+  .reticle {
+    position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+    background: var(--paper); box-shadow: 0 0 0 2px rgba(19, 36, 63, 0.55); display: none;
+  }
+  .charge {
+    position: absolute; left: 50%; top: calc(50% + 26px); width: 132px; height: 9px; transform: translateX(-50%);
+    border-radius: 999px; background: rgba(12, 28, 52, 0.5); border: 1px solid var(--glass-line); overflow: hidden; display: none;
+  }
+  .charge-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ffe58a, var(--sun) 45%, #ff7a45); }
+  .hint { position: absolute; left: 50%; top: 64%; transform: translateX(-50%); padding: 7px 14px; font-size: 14px; white-space: nowrap; }
+  .help {
+    position: absolute;
+    left: calc(14px + env(safe-area-inset-left, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: none; flex-direction: column; gap: 6px;
+    padding: 12px 14px; border-radius: 16px;
+    background: var(--glass); border: 1px solid var(--glass-line);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-size: 13px; font-weight: 600;
+  }
+  .help div { display: flex; align-items: center; gap: 4px; }
+  .help span { margin-left: 6px; opacity: 0.85; }
+  kbd {
+    font: 800 11px/1 var(--font-body); color: var(--on-glass);
+    background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); border-bottom-width: 2px;
+    border-radius: 6px; padding: 3px 6px; min-width: 12px; text-align: center;
+  }
+  body.playing .reticle { display: block; }
+  body.playing:not(.touch):not(.help-hidden) .help { display: flex; }
+  body.touch .reticle { display: none; }
+
+  .touch { position: fixed; inset: 0; touch-action: none; display: none; }
+  body.touch.playing .touch { display: block; }
+  .stick {
+    position: absolute; width: 124px; height: 124px; margin: -62px 0 0 -62px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16); border: 2px solid rgba(255, 255, 255, 0.5); display: none;
+  }
+  .knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(255, 255, 255, 0.75); }
+  .tbtn {
+    position: absolute; width: 76px; height: 76px; border-radius: 50%;
+    font: 400 17px/1 var(--font-display); color: var(--paper);
+    background: var(--glass); border: 2px solid rgba(255, 255, 255, 0.6);
+    touch-action: none; -webkit-user-select: none; user-select: none;
+  }
+  .tbtn.grab { right: calc(22px + env(safe-area-inset-right, 0px)); bottom: calc(110px + env(safe-area-inset-bottom, 0px)); background: rgba(255, 170, 40, 0.75); }
+  .tbtn.jump { right: calc(108px + env(safe-area-inset-right, 0px)); bottom: calc(34px + env(safe-area-inset-bottom, 0px)); }
+
+  .lobby {
+    position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+    background: linear-gradient(180deg, rgba(19, 36, 63, 0) 30%, rgba(19, 36, 63, 0.35));
+  }
+  .card {
+    width: min(400px, 100%); box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 16px;
+    padding: 26px 24px 20px;
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 24px; box-shadow: 0 8px 0 var(--ink);
+  }
+  .card h1 { margin: 0; font: 400 56px/0.9 var(--font-display); letter-spacing: 0.5px; text-wrap: balance; }
+  .card h1 .o { color: var(--sea); }
+  .sub { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.45; font-weight: 500; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field label, .field .label { font-size: 12px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-soft); }
+  .field input {
+    font: 700 17px var(--font-body); color: var(--ink);
+    padding: 11px 13px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); outline: none;
+  }
+  .field input:focus-visible { box-shadow: 0 0 0 4px rgba(15, 159, 192, 0.3); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 9px; }
+  .swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; padding: 0; }
+  .swatch[aria-checked="true"] { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .swatch:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; }
+  .enter {
+    font: 400 24px/1 var(--font-display); letter-spacing: 0.5px; color: var(--ink); cursor: pointer;
+    padding: 15px 18px 13px; background: var(--sun);
+    border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .enter:hover { background: #ffd35e; }
+  .enter:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+  .enter:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; }
+  .enter:disabled { opacity: 0.6; cursor: progress; }
+  .here { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  @media (prefers-reduced-motion: reduce) { .enter { transition: none; } }
+</style>
+
+<canvas id="view" tabindex="0" aria-label="Boogle island, 3D view"></canvas>
+
+<div class="hud">
+  <div class="hud-tl">
+    <div class="brand">Boogle</div>
+    <ul class="roster" id="roster"></ul>
+  </div>
+  <div class="hud-tr"><span class="net" id="net" data-state="connecting"><span class="net-dot"></span><span id="net-label">Connecting</span></span></div>
+  <div class="reticle" id="reticle"></div>
+  <div class="charge" id="charge"><div class="charge-fill" id="charge-fill"></div></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="help" id="help">
+    <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
+    <div><kbd>Space</kbd><span>Jump, swim up</span></div>
+    <div><kbd>Shift</kbd><span>Sprint</span></div>
+    <div><kbd>Click</kbd><span>Grab the ball</span></div>
+    <div><kbd>Hold</kbd><span>Charge, release to throw</span></div>
+    <div><kbd>R</kbd><span>Bring the ball back</span></div>
+    <div><kbd>H</kbd><span>Hide these controls</span></div>
+  </div>
+</div>
+
+<div class="touch" id="touch">
+  <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+  <button class="tbtn jump" id="btn-jump" type="button">Jump</button>
+  <button class="tbtn grab" id="btn-grab" type="button">Grab</button>
+</div>
+
+<div class="lobby" id="lobby">
+  <form class="card" id="join" autocomplete="off">
+    <h1>B<span class="o">oo</span>gle</h1>
+    <p class="sub" id="lobby-sub">One island, one beach ball, and everyone who has this page open. Pick a name and jump in.</p>
+    <div class="field">
+      <label for="name-input">Your name</label>
+      <input id="name-input" name="name" maxlength="16" placeholder="Dat Frinco" spellcheck="false">
+    </div>
+    <div class="field">
+      <span class="label" id="color-label">Color</span>
+      <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="color-label"></div>
+    </div>
+    <button class="enter" id="enter" type="submit" disabled>Loading island</button>
+    <p class="here" id="here">Looking for friends on the island</p>
+  </form>
+</div>
+
+<script>
+  setTimeout(() => {
+    if (window.__boogleBooted) return;
+    document.getElementById('lobby-sub').textContent = 'The 3D engine did not load. Check your connection and reload the page.';
+  }, 10000);
+</script>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
+
+window.__boogleBooted = true;
+
+// ---------------------------------------------------------------- constants
+const FIXED = 1 / 60;
+const GRAVITY = 18;
+const SEA = 0;
+const ISLAND_R = 52;
+const GRID_RES = 129;
+const GRID_SIZE = 160;
+const CELL = GRID_SIZE / (GRID_RES - 1);
+const HALF = GRID_SIZE / 2;
+const SEABED = -7.5;
+const BALL_R = 0.45;
+const BALL_MASS = 0.6;
+const PLAYER_R = 0.45;
+const PLAYER_MASS = 70;
+const HEAD_OFFSET = 0.8;
+const REACH = 2.4;
+const SEND_MS = 50;
+const INTERP_MS = 120;
+const COURT = { x: 12, z: 21, r: 8 };
+const SPAWN = { x: 14, z: 26 };
+const BALL_SPAWN = { x: 12, z: 20 };
+const SUN_DIR = new THREE.Vector3(0.45, 0.78, 0.32).normalize();
+const FOG_HEX = '#bfe6f5';
+const FOG_NEAR = 110;
+const FOG_FAR = 520;
+const COLORS = ['#ff6b5a', '#ffc23d', '#7fd14a', '#19c3b3', '#3d9bff', '#9b6bff', '#ff6fb5', '#ff9a3d'];
+const DEFAULT_NAME = 'Dat Frinco';
+
+const $ = id => document.getElementById(id);
+const canvas = $('view');
+const lobbyEl = $('lobby');
+const joinForm = $('join');
+const nameInput = $('name-input');
+const swatchesEl = $('swatches');
+const enterBtn = $('enter');
+const hereEl = $('here');
+const rosterEl = $('roster');
+const netEl = $('net');
+const netLabel = $('net-label');
+const hintEl = $('hint');
+const chargeEl = $('charge');
+const chargeFill = $('charge-fill');
+const grabBtn = $('btn-grab');
+const jumpBtn = $('btn-jump');
+const touchEl = $('touch');
+const stickEl = $('stick');
+const knobEl = $('knob');
+
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (isTouch) document.body.classList.add('touch');
+
+// ---------------------------------------------------------------- math
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const r2 = v => Math.round(v * 100) / 100;
+const r3 = v => Math.round(v * 1000) / 1000;
+const finiteArr = (a, n) => Array.isArray(a) && a.length === n && a.every(Number.isFinite);
+function angleLerp(a, b, t) {
+  const d = ((((b - a) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return a + d * t;
+}
+function mulberry32(seed) {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function srgbVec(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+// Terrain must be bit-identical on every client, so noise uses integer hashing only.
+function hash2(ix, iz) {
+  let h = (Math.imul(ix, 374761393) + Math.imul(iz, 668265263) + 1013904223) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function valueNoise(x, z) {
+  const ix = Math.floor(x), iz = Math.floor(z);
+  const fx = x - ix, fz = z - iz;
+  const u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  const a = hash2(ix, iz), b = hash2(ix + 1, iz), c = hash2(ix, iz + 1), d = hash2(ix + 1, iz + 1);
+  return lerp(lerp(a, b, u), lerp(c, d, u), v) * 2 - 1;
+}
+function fbm(x, z) {
+  let s = 0, amp = 0.5, f = 1;
+  for (let o = 0; o < 4; o++) { s += amp * valueNoise(x * f, z * f); f *= 2.03; amp *= 0.5; }
+  return s;
+}
+function naturalHeight(x, z) {
+  const d = Math.hypot(x, z * 1.12) / ISLAND_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
+  const hill = 6.5 * Math.exp(-((x + 12) ** 2 + (z + 6) ** 2) / (2 * 13 * 13));
+  const bumps = fbm(x * 0.08, z * 0.08) * 1.1 * (1 - smoothstep(0.55, 0.85, d));
+  const inland = 1.3 + hill + bumps + 0.9 * (1 - smoothstep(0.3, 0.8, d));
+  return lerp(inland, SEABED, smoothstep(0.8, 1.12, d));
+}
+const COURT_H = naturalHeight(COURT.x, COURT.z);
+const courtWeight = (x, z) => 1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
+function islandHeight(x, z) {
+  return lerp(naturalHeight(x, z), COURT_H, courtWeight(x, z));
+}
+
+// heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame).
+const heights = [];
+for (let i = 0; i < GRID_RES; i++) {
+  const col = new Array(GRID_RES);
+  for (let j = 0; j < GRID_RES; j++) col[j] = islandHeight(i * CELL - HALF, HALF - j * CELL);
+  heights.push(col);
+}
+function groundHeight(x, z) {
+  const fi = (x + HALF) / CELL, fj = (HALF - z) / CELL;
+  if (fi < 0 || fj < 0 || fi >= GRID_RES - 1 || fj >= GRID_RES - 1) return SEABED;
+  const i = Math.floor(fi), j = Math.floor(fj), u = fi - i, v = fj - j;
+  return lerp(lerp(heights[i][j], heights[i + 1][j], u), lerp(heights[i][j + 1], heights[i + 1][j + 1], u), v);
+}
+
+// ---------------------------------------------------------------- renderer & scene
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+} catch {
+  $('lobby-sub').textContent = 'This browser cannot start WebGL, which Boogle needs to draw the island.';
+  throw new Error('WebGL unavailable');
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.NoToneMapping;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(FOG_HEX, FOG_NEAR, FOG_FAR);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / Math.max(1, innerHeight);
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.25));
+const sun = new THREE.DirectionalLight('#fff3da', 2.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, near: 1, far: 180 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(700, 32, 16),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { uTop: { value: srgbVec('#3d9de3') }, uHorizon: { value: srgbVec(FOG_HEX) }, uSun: { value: SUN_DIR } },
+    vertexShader: `varying vec3 vDir; void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `
+      uniform vec3 uTop; uniform vec3 uHorizon; uniform vec3 uSun; varying vec3 vDir;
+      void main() {
+        vec3 d = normalize(vDir);
+        vec3 col = mix(uHorizon, uTop, pow(max(d.y, 0.0), 0.6));
+        float s = max(dot(d, uSun), 0.0);
+        col += vec3(1.0, 0.95, 0.8) * (pow(s, 900.0) * 1.2 + pow(s, 30.0) * 0.18);
+        gl_FragColor = vec4(min(col, 1.0), 1.0);
+      }`,
+  }),
+);
+sky.renderOrder = -1;
+scene.add(sky);
+
+// Concatenate many small vertex-colored geometries into one draw call.
+function addPart(parts, geo, matrix, color) {
+  const g = geo.index ? geo.toNonIndexed() : geo.clone();
+  g.applyMatrix4(matrix);
+  const c = new THREE.Color(color);
+  const n = g.attributes.position.count;
+  const col = new Float32Array(n * 3);
+  for (let k = 0; k < n; k++) { col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  parts.push(g);
+}
+function mergeParts(parts) {
+  let total = 0;
+  for (const g of parts) total += g.attributes.position.count;
+  const pos = new Float32Array(total * 3), nrm = new Float32Array(total * 3), col = new Float32Array(total * 3);
+  let off = 0;
+  for (const g of parts) {
+    pos.set(g.attributes.position.array, off * 3);
+    nrm.set(g.attributes.normal.array, off * 3);
+    col.set(g.attributes.color.array, off * 3);
+    off += g.attributes.position.count;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return out;
+}
+
+// ---------------------------------------------------------------- terrain
+{
+  const n = GRID_RES;
+  const pos = new Float32Array(n * n * 3);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const k = (j * n + i) * 3;
+    pos[k] = i * CELL - HALF; pos[k + 1] = heights[i][j]; pos[k + 2] = HALF - j * CELL;
+  }
+  const idx = [];
+  for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
+    const a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setIndex(idx);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  const nrm = geo.attributes.normal.array;
+  const col = new Float32Array(n * n * 3);
+  const WET = new THREE.Color('#c9ad78'), SAND = new THREE.Color('#efd89d'), GRASS = new THREE.Color('#7cc650');
+  const GRASS_DK = new THREE.Color('#4e9a3d'), ROCK = new THREE.Color('#9d978c');
+  const c = new THREE.Color(), g = new THREE.Color();
+  for (let k = 0; k < n * n; k++) {
+    const x = pos[k * 3], h = pos[k * 3 + 1], z = pos[k * 3 + 2], ny = nrm[k * 3 + 1];
+    const nse = valueNoise(x * 0.3, z * 0.3);
+    c.copy(WET).lerp(SAND, smoothstep(-1.5, 0.4, h));
+    const grassy = smoothstep(1.35, 1.75, h + nse * 0.25);
+    g.copy(GRASS).lerp(GRASS_DK, smoothstep(-0.2, 0.6, nse) * 0.7 + smoothstep(4, 8, h) * 0.3);
+    c.lerp(g, grassy);
+    c.lerp(ROCK, smoothstep(0.86, 0.72, ny) * grassy);
+    c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
+    col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
+  mesh.receiveShadow = true;
+  mesh.castShadow = true;
+  scene.add(mesh);
+}
+
+// ---------------------------------------------------------------- water
+const heightTex = (() => {
+  const data = new Uint8Array(GRID_RES * GRID_RES * 4);
+  for (let j = 0; j < GRID_RES; j++) for (let i = 0; i < GRID_RES; i++) {
+    const k = (j * GRID_RES + i) * 4;
+    data[k] = Math.round(clamp((heights[i][j] + 10) / 20, 0, 1) * 255);
+    data[k + 3] = 255;
+  }
+  const t = new THREE.DataTexture(data, GRID_RES, GRID_RES, THREE.RGBAFormat);
+  t.magFilter = t.minFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+})();
+const waterMat = new THREE.ShaderMaterial({
+  transparent: true,
+  uniforms: {
+    uTime: { value: 0 }, uHeight: { value: heightTex }, uSun: { value: SUN_DIR },
+    uSky: { value: srgbVec('#a9dcf3') }, uFog: { value: srgbVec(FOG_HEX) },
+    uFogNear: { value: FOG_NEAR }, uFogFar: { value: FOG_FAR },
+  },
+  vertexShader: `
+    uniform float uTime; varying vec3 vWorld;
+    void main() {
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      w.y += sin(w.x * 0.21 + uTime * 1.3) * 0.06 + cos(w.z * 0.17 - uTime * 1.1) * 0.06;
+      vWorld = w.xyz;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: `
+    uniform float uTime; uniform sampler2D uHeight; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog;
+    uniform float uFogNear; uniform float uFogFar; varying vec3 vWorld;
+    const float HALF = ${HALF.toFixed(4)}; const float CELL = ${CELL.toFixed(6)}; const float RES = ${GRID_RES.toFixed(1)};
+    void main() {
+      vec2 uv = vec2((vWorld.x + HALF) / CELL + 0.5, (HALF - vWorld.z) / CELL + 0.5) / RES;
+      float ground = texture2D(uHeight, uv).r * 20.0 - 10.0;
+      float depth = max(vWorld.y - ground, 0.0);
+      vec3 col = mix(vec3(0.42, 0.90, 0.86), vec3(0.10, 0.70, 0.80), smoothstep(0.0, 2.5, depth));
+      col = mix(col, vec3(0.05, 0.38, 0.64), smoothstep(2.5, 9.0, depth));
+      vec2 p = vWorld.xz; float t = uTime;
+      float n1 = sin(p.x * 0.43 + t * 1.2) * cos(p.y * 0.37 - t * 0.9);
+      float n2 = sin((p.x + p.y) * 1.1 - t * 1.9);
+      float n3 = cos((p.x - p.y) * 0.8 + t * 1.4);
+      vec3 nrm = normalize(vec3(n1 * 0.12 + n2 * 0.06, 1.0, n3 * 0.06 - n1 * 0.08));
+      vec3 viewDir = normalize(cameraPosition - vWorld);
+      float spec = pow(max(dot(nrm, normalize(uSun + viewDir)), 0.0), 140.0);
+      float fres = pow(1.0 - max(viewDir.y, 0.0), 4.0);
+      col = mix(col, uSky, fres * 0.45);
+      float band = 1.0 - smoothstep(0.0, 0.6, depth);
+      float ripple = 0.5 + 0.5 * sin(depth * 10.0 - t * 2.4 + sin(p.x * 0.15 + p.y * 0.11) * 3.0);
+      float foam = band * smoothstep(0.45, 0.85, ripple * 0.7 + band * 0.5);
+      col = mix(col, vec3(1.0), foam * 0.9);
+      col += vec3(1.0, 0.97, 0.88) * spec * 0.9;
+      float alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5.0, depth)), foam * 0.95);
+      float f = smoothstep(uFogNear, uFogFar, length(cameraPosition - vWorld));
+      gl_FragColor = vec4(mix(col, uFog, f), mix(alpha, 1.0, f));
+    }`,
+});
+{
+  const geo = new THREE.PlaneGeometry(1300, 1300, 260, 260);
+  geo.rotateX(-Math.PI / 2);
+  scene.add(new THREE.Mesh(geo, waterMat));
+}
+
+// ---------------------------------------------------------------- physics world
+const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
+world.broadphase = new CANNON.SAPBroadphase(world);
+world.allowSleep = false;
+const groundMat = new CANNON.Material('ground');
+const playerMat = new CANNON.Material('player');
+const ballMat = new CANNON.Material('ball');
+world.addContactMaterial(new CANNON.ContactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 }));
+world.addContactMaterial(new CANNON.ContactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 }));
+world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 }));
+world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
+{
+  const body = new CANNON.Body({ mass: 0, material: groundMat });
+  body.addShape(new CANNON.Heightfield(heights, { elementSize: CELL }));
+  body.position.set(-HALF, 0, HALF);
+  body.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  world.addBody(body);
+}
+function addStaticSpheres(spheres) {
+  const body = new CANNON.Body({ mass: 0, material: groundMat });
+  for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x, s.y, s.z));
+  world.addBody(body);
+}
+
+// ---------------------------------------------------------------- props: palms, rocks, clouds
+{
+  const rng = mulberry32(20261028);
+  const parts = [];
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), s = new THREE.Vector3(1, 1, 1);
+  const trees = [];
+  const clear = (x, z, r) => Math.hypot(x - SPAWN.x, z - SPAWN.z) > r && Math.hypot(x - COURT.x, z - COURT.z) > COURT.r + 3;
+  for (let tries = 0; tries < 900 && trees.length < 36; tries++) {
+    const x = (rng() * 2 - 1) * 62, z = (rng() * 2 - 1) * 58;
+    const h = groundHeight(x, z);
+    if (h < 0.9 || h > 6.5 || !clear(x, z, 9)) continue;
+    if (Math.abs(groundHeight(x + 1, z) - h) > 0.7 || Math.abs(groundHeight(x, z + 1) - h) > 0.7) continue;
+    if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 4.5)) continue;
+    trees.push({ x, z, h });
+  }
+  const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 1, 7);
+  const frondGeo = new THREE.ConeGeometry(0.55, 3.3, 4, 1).translate(0, 1.65, 0);
+  const nutGeo = new THREE.IcosahedronGeometry(0.2, 0);
+  for (const t of trees) {
+    const lean = rng() * Math.PI * 2, leanAmt = 0.18 + rng() * 0.3, height = 4.4 + rng() * 2.2;
+    const colliders = [];
+    let prev = new THREE.Vector3(t.x, t.h - 0.3, t.z);
+    const segs = 7;
+    for (let k = 0; k < segs; k++) {
+      const f = (k + 1) / segs;
+      const off = leanAmt * f * f * height;
+      const next = new THREE.Vector3(t.x + Math.cos(lean) * off, t.h + f * height, t.z + Math.sin(lean) * off);
+      const dir = next.clone().sub(prev);
+      const len = dir.length();
+      const r = 0.27 - 0.1 * (k / segs);
+      q.setFromUnitVectors(up, dir.normalize());
+      m.compose(prev.clone().lerp(next, 0.5), q, s.set(r, len * 1.05, r));
+      addPart(parts, trunkGeo, m, k % 2 ? '#9a6a3e' : '#80552d');
+      colliders.push({ x: prev.x, y: prev.y + 0.25, z: prev.z, r: 0.32 });
+      prev = next;
+    }
+    const top = prev;
+    const fronds = 7 + Math.floor(rng() * 2);
+    for (let k = 0; k < fronds; k++) {
+      const ang = (k / fronds) * Math.PI * 2 + rng() * 0.4;
+      const droop = 0.25 + rng() * 0.45;
+      const mm = new THREE.Matrix4().makeTranslation(top.x, top.y, top.z)
+        .multiply(new THREE.Matrix4().makeRotationY(ang))
+        .multiply(new THREE.Matrix4().makeRotationZ(-(Math.PI / 2 + droop)))
+        .multiply(new THREE.Matrix4().makeScale(0.16, 1, 1));
+      addPart(parts, frondGeo, mm, k % 2 ? '#3f9b3a' : '#57b845');
+    }
+    for (let k = 0; k < 3; k++) {
+      const a = rng() * Math.PI * 2;
+      addPart(parts, nutGeo, m.makeTranslation(top.x + Math.cos(a) * 0.25, top.y - 0.25, top.z + Math.sin(a) * 0.25), '#6b4423');
+    }
+    addStaticSpheres(colliders);
+  }
+
+  const rockGeo = new THREE.IcosahedronGeometry(1, 0);
+  let rocks = 0;
+  for (let tries = 0; tries < 600 && rocks < 22; tries++) {
+    const x = (rng() * 2 - 1) * 60, z = (rng() * 2 - 1) * 56;
+    const h = groundHeight(x, z);
+    if (h < -1.2 || h > 8 || !clear(x, z, 8)) continue;
+    if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 3)) continue;
+    const r = 0.6 + rng() * 1.3;
+    q.setFromEuler(new THREE.Euler(rng() * 3, rng() * 3, rng() * 3));
+    m.compose(new THREE.Vector3(x, h + r * 0.15, z), q, s.set(r * 1.1, r * 0.75, r));
+    addPart(parts, rockGeo, m, rng() < 0.5 ? '#a19b90' : '#8a857c');
+    addStaticSpheres([{ x, y: h + r * 0.1, z, r: r * 0.82 }]);
+    rocks++;
+  }
+
+  const props = new THREE.Mesh(mergeParts(parts), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }));
+  props.castShadow = true;
+  props.receiveShadow = true;
+  scene.add(props);
+}
+
+const clouds = [];
+{
+  const rng = mulberry32(77);
+  const puff = new THREE.IcosahedronGeometry(1, 1);
+  const mat = new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#d8ecff', emissiveIntensity: 0.45, flatShading: true });
+  for (let c = 0; c < 9; c++) {
+    const parts = [];
+    const m = new THREE.Matrix4();
+    for (let k = 0; k < 5; k++) {
+      const r = 5 + rng() * 6;
+      m.compose(new THREE.Vector3((k - 2) * 6 + rng() * 3, rng() * 3, rng() * 6 - 3), new THREE.Quaternion(), new THREE.Vector3(r, r * 0.6, r));
+      addPart(parts, puff, m, '#ffffff');
+    }
+    const mesh = new THREE.Mesh(mergeParts(parts), mat);
+    const a = rng() * Math.PI * 2, d = 140 + rng() * 180;
+    mesh.position.set(Math.cos(a) * d, 55 + rng() * 35, Math.sin(a) * d);
+    scene.add(mesh);
+    clouds.push(mesh);
+  }
+}
+
+// ---------------------------------------------------------------- ball
+function beachBallTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  ['#ff4f4f', '#ffffff', '#2f8cff', '#ffffff', '#ffcf33', '#ffffff'].forEach((col, k) => {
+    g.fillStyle = col;
+    g.fillRect((k * 512) / 6, 0, 512 / 6 + 1, 256);
+  });
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 512, 20);
+  g.fillRect(0, 236, 512, 20);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const ball = {
+  body: new CANNON.Body({ mass: BALL_MASS, material: ballMat, linearDamping: 0.12, angularDamping: 0.3 }),
+  mesh: new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 32, 18), new THREE.MeshStandardMaterial({ map: beachBallTexture(), roughness: 0.4 })),
+  e: 0,          // highest ownership epoch seen anywhere
+  myE: 0,        // epoch of this tab's current claim
+  mine: false,   // this tab simulates the ball and publishes it
+  held: false,
+  owner: null,   // { peer, e, remote } of whoever currently simulates the ball
+  orphanSince: 0,
+  disp: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
+};
+ball.body.addShape(new CANNON.Sphere(BALL_R));
+ball.mesh.castShadow = true;
+scene.add(ball.mesh);
+world.addBody(ball.body);
+ball.disp.p.set(BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + BALL_R + 0.4, BALL_SPAWN.z);
+
+function teleport(body, x, y, z) {
+  body.position.set(x, y, z);
+  body.previousPosition.set(x, y, z);
+  body.interpolatedPosition.set(x, y, z);
+}
+// sim: dynamic and collides. ghost: kinematic, positioned by hand or by the network, no collision response.
+function setBallMode(mode) {
+  const b = ball.body;
+  if (mode === 'sim') {
+    b.type = CANNON.Body.DYNAMIC;
+    b.collisionResponse = true;
+  } else {
+    b.type = CANNON.Body.KINEMATIC;
+    b.collisionResponse = false;
+    b.velocity.setZero();
+    b.angularVelocity.setZero();
+  }
+}
+setBallMode('ghost');
+teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
+ball.mesh.position.copy(ball.disp.p);
+
+// ---------------------------------------------------------------- avatars
+const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
+const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);
+const eyeMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3 });
+const pupilMat = new THREE.MeshStandardMaterial({ color: '#13243f', roughness: 0.3 });
+const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
+
+// Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.
+function makeAvatar(colorIdx) {
+  const group = new THREE.Group();
+  const inner = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: COLORS[colorIdx], roughness: 0.55 });
+  const body = new THREE.Mesh(capsuleGeo, mat);
+  body.position.y = HEAD_OFFSET / 2;
+  body.castShadow = true;
+  inner.add(body);
+  for (const sx of [-0.16, 0.16]) {
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(sx, 0.95, -0.37);
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+    pupil.position.set(sx, 0.95, -0.47);
+    inner.add(eye, pupil);
+  }
+  group.add(inner);
+  group.userData = { inner, mat, phase: 0 };
+  return group;
+}
+function animateAvatar(avatar, speed, airborne, dt) {
+  const u = avatar.userData;
+  const moving = clamp(speed / 5, 0, 1.6);
+  u.phase += dt * (4 + speed * 1.6);
+  u.inner.position.y = airborne ? 0.05 : Math.abs(Math.sin(u.phase)) * 0.09 * moving;
+  u.inner.rotation.x = lerp(u.inner.rotation.x, -0.16 * Math.min(moving, 1), 1 - Math.exp(-dt * 10));
+  const squash = airborne ? 1.05 : 1 - Math.abs(Math.cos(u.phase)) * 0.04 * moving;
+  u.inner.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
+}
+function makeLabel(text) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  g.font = '700 30px Figtree, system-ui, sans-serif';
+  const w = Math.min(248, g.measureText(text).width + 30);
+  g.fillStyle = 'rgba(12, 28, 52, 0.62)';
+  g.beginPath();
+  if (g.roundRect) g.roundRect((256 - w) / 2, 10, w, 44, 22); else g.rect((256 - w) / 2, 10, w, 44);
+  g.fill();
+  g.fillStyle = '#ffffff';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, 128, 33, 230);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sprite.scale.set(1.9, 0.475, 1);
+  sprite.position.y = 2.05;
+  sprite.renderOrder = 10;
+  return sprite;
+}
+function makePlayerBody(kinematic) {
+  const b = new CANNON.Body({
+    mass: kinematic ? 0 : PLAYER_MASS,
+    type: kinematic ? CANNON.Body.KINEMATIC : CANNON.Body.DYNAMIC,
+    material: playerMat,
+    fixedRotation: true,
+  });
+  b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, 0, 0));
+  b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, HEAD_OFFSET, 0));
+  b.updateMassProperties();
+  return b;
+}
+
+// ---------------------------------------------------------------- local player
+const me = {
+  entered: false,
+  name: '',
+  colorIdx: 0,
+  body: null,
+  avatar: null,
+  yaw: 0,
+  coyote: 0,
+  jumpQueued: 0,
+  swimming: false,
+  sprint: false,
+  holding: false,
+  charging: false,
+  chargeStart: 0,
+  suppressUp: false,
+  lostBallAt: -1e9,
+  wish: new THREE.Vector3(),
+};
+const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 6.5 };
+const input = { keys: new Set(), stickX: 0, stickY: 0 };
+
+function camForward(out = new THREE.Vector3()) {
+  const cp = Math.cos(cam.pitch);
+  return out.set(-Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp);
+}
+function playerPos() {
+  return me.body ? me.body.interpolatedPosition : new CANNON.Vec3(SPAWN.x, 2, SPAWN.z);
+}
+// Right hand, on the camera's shoulder side; must stay over PLAYER_R + BALL_R from the body axis.
+function handPosition(out = new THREE.Vector3()) {
+  const p = playerPos();
+  const s = Math.sin(me.yaw), c = Math.cos(me.yaw);
+  return out.set(p.x - s * 0.85 + c * 0.55, p.y + 0.75, p.z - c * 0.85 - s * 0.55);
+}
+function aimDirection(from) {
+  const fwd = camForward();
+  const target = camera.position.clone().addScaledVector(fwd, 30);
+  const dir = target.sub(from).normalize();
+  dir.y += 0.12;
+  return dir.normalize();
+}
+const chargeAmount = () => clamp((performance.now() - me.chargeStart) / 900, 0, 1);
+function throwVelocity(c, from) {
+  const dir = aimDirection(from);
+  const power = 8 + c * 20;
+  const v = me.body ? me.body.velocity : { x: 0, z: 0 };
+  return new THREE.Vector3(dir.x * power + v.x * 0.5, dir.y * power + 1.5, dir.z * power + v.z * 0.5);
+}
+
+function enterIsland(saved = {}) {
+  if (me.entered) return;
+  me.name = sanitizeName(saved.name ?? nameInput.value) || DEFAULT_NAME;
+  if (Number.isInteger(saved.colorIdx)) me.colorIdx = saved.colorIdx;
+  me.entered = true;
+  document.body.classList.add('playing');
+  lobbyEl.hidden = true;
+  const ang = Math.random() * Math.PI * 2, rr = Math.random() * 3;
+  const pos = finiteArr(saved.pos, 3) ? saved.pos : null;
+  const x = pos ? pos[0] : SPAWN.x + Math.cos(ang) * rr;
+  const z = pos ? pos[2] : SPAWN.z + Math.sin(ang) * rr;
+  const y = pos ? Math.max(pos[1], groundHeight(x, z) + PLAYER_R + 0.1) : groundHeight(x, z) + PLAYER_R + 0.6;
+  me.body = makePlayerBody(false);
+  teleport(me.body, x, y, z);
+  world.addBody(me.body);
+  me.avatar = makeAvatar(me.colorIdx);
+  scene.add(me.avatar);
+  if (Number.isFinite(saved.yaw)) cam.yaw = saved.yaw;
+  me.yaw = cam.yaw;
+  try {
+    localStorage.setItem('boogle.name', me.name);
+    localStorage.setItem('boogle.color', String(me.colorIdx));
+  } catch {}
+  sendPresence();
+  renderPeople();
+}
+
+// ---------------------------------------------------------------- ball ownership
+function ballInReach() {
+  if (!me.entered) return false;
+  return handPosition().distanceTo(ball.disp.p) < REACH;
+}
+function remoteHoldsBall() {
+  return !ball.mine && !!ball.owner?.remote && ball.held;
+}
+function claimBall(held) {
+  ball.myE = ball.e + 1;
+  ball.e = ball.myE;
+  ball.mine = true;
+  ball.held = held;
+  ball.owner = { peer: net.myPeer ?? '', e: ball.myE, remote: null };
+  ball.orphanSince = 0;
+  const { p, q, v } = ball.disp;
+  teleport(ball.body, p.x, p.y, p.z);
+  ball.body.quaternion.set(q.x, q.y, q.z, q.w);
+  if (held) {
+    setBallMode('ghost');
+  } else {
+    setBallMode('sim');
+    ball.body.velocity.set(v.x, v.y, v.z);
+  }
+  sendPresence();
+}
+function releaseBall() {
+  if (!ball.mine) return;
+  ball.mine = false;
+  ball.held = false;
+  me.holding = false;
+  me.charging = false;
+  me.lostBallAt = performance.now();
+  setBallMode('ghost');
+  sendPresence();
+}
+function grabBall() {
+  if (ball.mine) {
+    setBallMode('ghost');
+    ball.held = true;
+  } else {
+    claimBall(true);
+  }
+  me.holding = true;
+  sendPresence();
+}
+function throwBall(c) {
+  if (!ball.mine || !me.holding) return;
+  const hand = handPosition();
+  const vel = throwVelocity(c, hand);
+  me.holding = false;
+  ball.held = false;
+  setBallMode('sim');
+  teleport(ball.body, hand.x, hand.y, hand.z);
+  ball.body.velocity.set(vel.x, vel.y, vel.z);
+  const len = Math.hypot(vel.x, vel.z) || 1;
+  ball.body.angularVelocity.set((vel.z / len) * 8, 0, (-vel.x / len) * 8);
+  sendPresence();
+}
+function respawnBall() {
+  if (!ball.mine) claimBall(false);
+  me.holding = false;
+  me.charging = false;
+  ball.held = false;
+  setBallMode('sim');
+  teleport(ball.body, BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + 3, BALL_SPAWN.z);
+  ball.body.velocity.setZero();
+  ball.body.angularVelocity.setZero();
+  sendPresence();
+}
+function actionDown() {
+  if (!me.entered) return;
+  if (me.holding) {
+    me.charging = true;
+    me.chargeStart = performance.now();
+    return;
+  }
+  if (ballInReach()) {
+    grabBall();
+    me.suppressUp = true;
+  }
+}
+function actionUp() {
+  if (me.suppressUp) { me.suppressUp = false; return; }
+  if (me.charging) {
+    me.charging = false;
+    throwBall(chargeAmount());
+  }
+}
+
+// Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner.
+function resolveBallOwner(now) {
+  let best = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
+  for (const r of remotes.values()) {
+    const b = r.ball;
+    if (!b) continue;
+    if (!best || b.e > best.e || (b.e === best.e && r.peer > best.peer)) best = { peer: r.peer, e: b.e, remote: r };
+    ball.e = Math.max(ball.e, b.e);
+  }
+  if (ball.mine && best?.remote) releaseBall();
+  ball.owner = best;
+  if (best?.remote) ball.held = !!best.remote.ball.h;
+  if (best) { ball.orphanSince = 0; return; }
+
+  if (net.state === 'solo') { claimBall(false); return; }
+  if (!net.room) return;
+  if (!ball.orphanSince) ball.orphanSince = now;
+  if (now - ball.orphanSince < 600 || now - net.readyAt < 1500 || !net.myPeer || document.hidden) return;
+  let lowest = net.myPeer;
+  for (const r of remotes.values()) if (r.visible && r.peer < lowest) lowest = r.peer;
+  if (lowest === net.myPeer) claimBall(false);
+}
+
+// ---------------------------------------------------------------- physics step hooks
+world.addEventListener('preStep', () => {
+  for (const r of remotes.values()) {
+    if (!r.body) continue;
+    const p = r.body.position;
+    const dx = r.target.x - p.x, dy = r.target.y - p.y, dz = r.target.z - p.z;
+    if (dx * dx + dy * dy + dz * dz > 36) {
+      teleport(r.body, r.target.x, r.target.y, r.target.z);
+      r.body.velocity.setZero();
+    } else {
+      r.body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+    }
+  }
+
+  const b = me.body;
+  if (b) {
+    me.coyote -= FIXED;
+    const depth = SEA - (b.position.y + 0.35);
+    me.swimming = depth > 0;
+    const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
+    const accel = me.coyote > 0 ? 70 : me.swimming ? 18 : 14;
+    let dx = me.wish.x * speed - b.velocity.x, dz = me.wish.z * speed - b.velocity.z;
+    const dl = Math.hypot(dx, dz), maxDv = accel * FIXED;
+    if (dl > maxDv) { dx *= maxDv / dl; dz *= maxDv / dl; }
+    b.velocity.x += dx;
+    b.velocity.z += dz;
+    if (me.jumpQueued > 0) {
+      if (me.coyote > 0) {
+        b.velocity.y = 7.6;
+        me.coyote = 0;
+        me.jumpQueued = 0;
+      } else if (me.swimming) {
+        b.velocity.y = Math.max(b.velocity.y, 4.5);
+        me.jumpQueued = 0;
+      }
+    }
+    if (depth > 0) b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
+    const rr = Math.hypot(b.position.x, b.position.z);
+    if (rr > 72) {
+      const nx = b.position.x / rr, nz = b.position.z / rr;
+      const out = b.velocity.x * nx + b.velocity.z * nz;
+      if (out > -2) { b.velocity.x -= nx * (out + 2); b.velocity.z -= nz * (out + 2); }
+    }
+  }
+
+  if (ball.mine && !ball.held) {
+    const bb = ball.body;
+    if (bb.position.y - groundHeight(bb.position.x, bb.position.z) < BALL_R + 0.08) {
+      const k = 1 - (Math.hypot(bb.velocity.x, bb.velocity.z) < 0.5 ? 10 : 1.2) * FIXED;
+      bb.velocity.x *= k;
+      bb.velocity.z *= k;
+      bb.angularVelocity.scale(k, bb.angularVelocity);
+    }
+    const sub = clamp((SEA - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
+    if (sub > 0) {
+      const rr = Math.hypot(bb.position.x, bb.position.z) || 1;
+      bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * bb.velocity.y * sub;
+      bb.force.x += (-0.9 * bb.velocity.x - (bb.position.x / rr) * 0.8) * BALL_MASS * sub;
+      bb.force.z += (-0.9 * bb.velocity.z - (bb.position.z / rr) * 0.8) * BALL_MASS * sub;
+    }
+  }
+});
+
+world.addEventListener('postStep', () => {
+  const b = me.body;
+  if (!b) return;
+  for (const c of world.contacts) {
+    if (!c.enabled || (c.bi !== b && c.bj !== b)) continue;
+    const ny = c.bi === b ? -c.ni.y : c.ni.y;
+    if (ny > 0.55) { me.coyote = 0.1; break; }
+  }
+});
+
+// ---------------------------------------------------------------- networking
+// Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
+// Presence is open to every admitted viewer, so friends can play with view-only access.
+const net = { room: null, local: false, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null, permission: null };
+const remotes = new Map();
+
+function sanitizeName(s) {
+  return String(s ?? '').replace(/[\p{Cc}\p{Cf}]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+}
+function peerColor(peer) {
+  let h = 0;
+  for (const ch of peer) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return Math.abs(h) % COLORS.length;
+}
+function buildPresence() {
+  const pr = {
+    v: document.hidden ? 0 : 1, t: Math.round(performance.now()), n: null, c: null, p: null, r: null, s: null, b: null,
+    x: net.error, pm: net.permission,
+  };
+  if (me.entered && me.body) {
+    const p = me.body.position;
+    pr.n = me.name;
+    pr.c = me.colorIdx;
+    pr.p = [r2(p.x), r2(p.y), r2(p.z)];
+    pr.r = r2(me.yaw);
+    pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
+  }
+  if (ball.mine) {
+    const bp = ball.body.position, bq = ball.body.quaternion;
+    const bv = ball.held && me.body ? me.body.velocity : ball.body.velocity;
+    pr.b = {
+      e: ball.myE,
+      p: [r2(bp.x), r2(bp.y), r2(bp.z)],
+      v: [r2(bv.x), r2(bv.y), r2(bv.z)],
+      q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
+      h: ball.held ? 1 : 0,
+    };
+  }
+  return pr;
+}
+function sendPresence() {
+  if (!net.room) return;
+  net.lastSend = performance.now();
+  net.room.presence(buildPresence()).catch(() => {});
+}
+
+function getRemote(peer) {
+  let r = remotes.get(peer);
+  if (!r) {
+    r = {
+      peer, name: '', colorIdx: peerColor(peer), visible: false, entered: false,
+      snaps: [], ballSnaps: [], ball: null, lastT: -1, off: null,
+      avatar: null, body: null, label: null, labelText: '',
+      target: new THREE.Vector3(), yaw: 0, state: 0, speed: 0, prevPos: new THREE.Vector3(),
+    };
+    remotes.set(peer, r);
+  }
+  return r;
+}
+function dropRemoteBody(r) {
+  if (r.avatar) { scene.remove(r.avatar); r.avatar.userData.mat.dispose(); r.avatar = null; }
+  if (r.label) { r.label.material.map.dispose(); r.label.material.dispose(); r.label = null; r.labelText = ''; }
+  if (r.body) { world.removeBody(r.body); r.body = null; }
+}
+function upsertPeer(peer) {
+  if (peer.sameTab) { net.myPeer = peer.peer; return; }
+  const pr = peer.presence || {};
+  const r = getRemote(peer.peer);
+  r.visible = pr.v === 1;
+  r.name = sanitizeName(pr.n) || DEFAULT_NAME;
+  r.colorIdx = Number.isInteger(pr.c) && pr.c >= 0 && pr.c < COLORS.length ? pr.c : peerColor(peer.peer);
+  const hasT = Number.isFinite(pr.t);
+  const fresh = hasT && pr.t !== r.lastT;
+  let time = 0;
+  if (fresh) {
+    r.lastT = pr.t;
+    const arrival = performance.now();
+    const off = arrival - pr.t;
+    r.off = r.off === null || off < r.off ? off : r.off + (off - r.off) * 0.01;
+    time = pr.t + r.off;
+  }
+  r.entered = finiteArr(pr.p, 3);
+  if (r.entered && fresh) {
+    r.snaps.push({ time, p: pr.p, r: Number.isFinite(pr.r) ? pr.r : 0, s: pr.s });
+    if (r.snaps.length > 40) r.snaps.shift();
+  }
+  if (!r.entered) { r.snaps.length = 0; dropRemoteBody(r); }
+  const b = pr.b;
+  if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
+    r.ball = b;
+    if (fresh) {
+      r.ballSnaps.push({ time, p: b.p, v: b.v, q: b.q, h: b.h });
+      if (r.ballSnaps.length > 40) r.ballSnaps.shift();
+    }
+  } else {
+    r.ball = null;
+    r.ballSnaps.length = 0;
+  }
+}
+function removePeer(peer) {
+  const r = remotes.get(peer);
+  if (!r) return;
+  dropRemoteBody(r);
+  remotes.delete(peer);
+}
+function onPeersChange(change) {
+  if (!net.readyAt) net.readyAt = performance.now();
+  for (const p of change.joined) upsertPeer(p);
+  for (const p of change.updated) upsertPeer(p);
+  for (const p of change.left) removePeer(p.peer);
+  renderPeople();
+}
+function setNet(state) {
+  net.state = state;
+  netEl.dataset.state = state;
+  if (state === 'solo') {
+    for (const peer of [...remotes.keys()]) removePeer(peer);
+  }
+  renderPeople();
+}
+
+// Opened as a local file there is no artifact runtime; tabs of the same file share a room over BroadcastChannel.
+function createLocalRoom() {
+  if (!('BroadcastChannel' in window)) return null;
+  const ch = new BroadcastChannel('boogle-local-room');
+  const self = Math.random().toString(36).slice(2, 12);
+  const others = new Map();
+  const handlers = new Set();
+  let mine = {};
+  let pending = { joined: [], left: [], updated: [] };
+  let scheduled = false;
+  const entry = (peer, presence, sameTab) => Object.freeze({
+    peer, by: null, isMe: sameTab, sameTab, kind: 'viewer', guest: false,
+    presence: Object.freeze({ ...presence }), updatedAt: Date.now(),
+  });
+  let meEntry = entry(self, mine, true);
+  const snapshot = () => Object.freeze([meEntry, ...[...others.values()].map(o => o.entry)]);
+  function flush() {
+    scheduled = false;
+    const change = { peers: snapshot(), ...pending };
+    pending = { joined: [], left: [], updated: [] };
+    handlers.forEach(h => h(change));
+  }
+  function queue(kind, e) {
+    pending[kind].push(e);
+    if (!scheduled) { scheduled = true; setTimeout(flush, 16); }
+  }
+  const post = () => ch.postMessage({ type: 'p', peer: self, presence: mine });
+  ch.onmessage = ({ data }) => {
+    if (!data || data.peer === self) return;
+    const known = others.get(data.peer);
+    if (data.type === 'bye') {
+      if (known) { others.delete(data.peer); queue('left', known.entry); }
+      return;
+    }
+    const e = entry(data.peer, data.presence || {}, false);
+    others.set(data.peer, { entry: e, seen: Date.now() });
+    queue(known ? 'updated' : 'joined', e);
+    if (!known) post();
+  };
+  setInterval(() => {
+    post();
+    const now = Date.now();
+    for (const [k, o] of others) if (now - o.seen > 3000) { others.delete(k); queue('left', o.entry); }
+  }, 1000);
+  addEventListener('pagehide', () => ch.postMessage({ type: 'bye', peer: self }));
+  post();
+  return {
+    presence(patch) {
+      mine = { ...mine };
+      for (const [k, v] of Object.entries(patch)) { if (v === null) delete mine[k]; else mine[k] = v; }
+      meEntry = entry(self, mine, true);
+      queue('updated', meEntry);
+      post();
+      return Promise.resolve();
+    },
+    peers: snapshot,
+    onPeers(h) {
+      handlers.add(h);
+      setTimeout(() => h({ peers: snapshot(), joined: snapshot(), left: [], updated: [] }), 0);
+      return () => handlers.delete(h);
+    },
+    connected: () => true,
+    onConnection(h) { setTimeout(() => h(true), 0); return () => {}; },
+  };
+}
+
+async function connectRoom() {
+  let room = null;
+  if (window.claude?.use) {
+    try { room = await window.claude.use('room'); } catch { room = null; }
+  } else {
+    room = createLocalRoom();
+    net.local = !!room;
+  }
+  if (!room) {
+    net.error = 'room_null';
+    setNet('solo');
+    readRoomPermission();
+    return;
+  }
+  net.room = room;
+  const fail = e => {
+    if (net.state === 'solo') return;
+    net.error = String(e?.code || 'unknown');
+    console.warn('[boogle] room unavailable:', e);
+    setNet('solo');
+    readRoomPermission();
+  };
+  room.onConnection(connected => { if (net.state !== 'solo') setNet(connected ? (net.local ? 'local' : 'live') : 'connecting'); }, fail);
+  room.onPeers(onPeersChange, fail);
+  sendPresence();
+}
+
+async function readRoomPermission() {
+  if (!window.claude?.use) return;
+  try {
+    const perms = await window.claude.use('permissions');
+    net.permission = perms ? await perms.state('room') : 'no_permissions_api';
+  } catch {
+    net.permission = 'state_failed';
+  }
+  peopleKey = '';
+  renderPeople();
+  sendPresence();
+}
+
+async function prefillFromProfile() {
+  if (!window.claude?.use) return;
+  try {
+    const user = await window.claude.use('user');
+    if (!user) return;
+    const info = await user.me();
+    const first = sanitizeName((info.name || '').split(/\s+/)[0]);
+    if (first && !nameInput.value && !nameTouched) nameInput.value = first;
+  } catch {}
+}
+
+// ---------------------------------------------------------------- per-frame updates
+function sampleSnaps(snaps, t) {
+  if (!snaps.length) return null;
+  while (snaps.length > 2 && snaps[1].time <= t) snaps.shift();
+  const a = snaps[0], b = snaps[1];
+  if (!b || t <= a.time) return { a, b: a, u: 0, over: Math.max(0, t - a.time) };
+  return { a, b, u: Math.min(1, (t - a.time) / Math.max(1, b.time - a.time)), over: Math.max(0, t - b.time) };
+}
+const tmpQa = new THREE.Quaternion(), tmpQb = new THREE.Quaternion();
+
+function updateRemotes(now, dt) {
+  const rt = now - INTERP_MS;
+  for (const r of remotes.values()) {
+    if (r.entered && r.snaps.length) {
+      const s = sampleSnaps(r.snaps, rt);
+      r.target.set(lerp(s.a.p[0], s.b.p[0], s.u), lerp(s.a.p[1], s.b.p[1], s.u), lerp(s.a.p[2], s.b.p[2], s.u));
+      r.yaw = angleLerp(s.a.r, s.b.r, s.u);
+      r.state = s.b.s;
+      if (!r.avatar) {
+        r.avatar = makeAvatar(r.colorIdx);
+        r.avatar.position.copy(r.target);
+        r.prevPos.copy(r.target);
+        scene.add(r.avatar);
+        r.body = makePlayerBody(true);
+        teleport(r.body, r.target.x, r.target.y, r.target.z);
+        world.addBody(r.body);
+      }
+      r.avatar.userData.mat.color.set(COLORS[r.colorIdx]);
+      if (r.labelText !== r.name) {
+        if (r.label) { r.avatar.remove(r.label); r.label.material.map.dispose(); r.label.material.dispose(); }
+        r.label = makeLabel(r.name);
+        r.labelText = r.name;
+        r.avatar.add(r.label);
+      }
+    }
+    if (r.ball && r.ballSnaps.length) r.ballSample = sampleSnaps(r.ballSnaps, rt);
+    else r.ballSample = null;
+  }
+}
+
+function updateBallDisplayFromRemote() {
+  const s = ball.owner?.remote?.ballSample;
+  if (!s) return;
+  const { a, b, u, over } = s;
+  const ex = Math.min(over, 150) / 1000;
+  ball.disp.p.set(
+    lerp(a.p[0], b.p[0], u) + b.v[0] * ex,
+    lerp(a.p[1], b.p[1], u) + b.v[1] * ex,
+    lerp(a.p[2], b.p[2], u) + b.v[2] * ex,
+  );
+  tmpQa.set(a.q[0], a.q[1], a.q[2], a.q[3]).normalize();
+  tmpQb.set(b.q[0], b.q[1], b.q[2], b.q[3]).normalize();
+  ball.disp.q.slerpQuaternions(tmpQa, tmpQb, u);
+  ball.disp.v.set(b.v[0], b.v[1], b.v[2]);
+}
+
+function updateIntent(dt) {
+  const k = input.keys;
+  me.sprint = k.has('ShiftLeft') || k.has('ShiftRight');
+  let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+  let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+  f -= input.stickY;
+  s += input.stickX;
+  const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
+  const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+  me.wish.set(fx * f + rx * s, 0, fz * f + rz * s);
+  if (me.wish.lengthSq() > 1) me.wish.normalize();
+  if (!me.entered) me.wish.set(0, 0, 0);
+  me.jumpQueued = Math.max(0, me.jumpQueued - dt);
+
+  let targetYaw = null;
+  if (me.holding || me.charging) targetYaw = cam.yaw;
+  else if (me.wish.lengthSq() > 0.01) targetYaw = Math.atan2(-me.wish.x, -me.wish.z);
+  if (targetYaw !== null) me.yaw = angleLerp(me.yaw, targetYaw, 1 - Math.exp(-dt * 12));
+}
+
+function prepareBall() {
+  if (ball.mine && ball.held && me.body) {
+    const h = handPosition();
+    teleport(ball.body, h.x, h.y, h.z);
+  } else if (!ball.mine) {
+    updateBallDisplayFromRemote();
+    teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
+  }
+}
+
+function afterStep(now) {
+  if (ball.mine) {
+    const bp = ball.body.position;
+    if (!ball.held && (Math.abs(bp.x) > HALF - 3 || Math.abs(bp.z) > HALF - 3 || bp.y < -15)) respawnBall();
+    const ip = ball.held ? bp : ball.body.interpolatedPosition;
+    ball.disp.p.set(ip.x, ip.y, ip.z);
+    const q = ball.body.quaternion;
+    ball.disp.q.set(q.x, q.y, q.z, q.w);
+    const v = ball.body.velocity;
+    ball.disp.v.set(v.x, v.y, v.z);
+  }
+
+  if (me.body) {
+    const p = me.body.position;
+    if (p.y < -25) {
+      teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
+      me.body.velocity.setZero();
+    }
+    // Walking into a slow ball takes ownership so the push resolves in this tab's simulation.
+    if (!ball.mine && ball.owner && !ball.held && now - me.lostBallAt > 400 && ball.disp.v.length() < 5) {
+      const bpos = ball.disp.p;
+      const dy = clamp(bpos.y - p.y, 0, HEAD_OFFSET);
+      const d = Math.hypot(bpos.x - p.x, bpos.y - (p.y + dy), bpos.z - p.z);
+      if (d < PLAYER_R + BALL_R + 0.08) claimBall(false);
+    }
+  }
+}
+
+const tmpV = new THREE.Vector3();
+function syncVisuals(dt) {
+  if (ball.mine) {
+    if (ball.held) handPosition(ball.mesh.position);
+    else ball.mesh.position.copy(ball.disp.p);
+    ball.mesh.quaternion.copy(ball.disp.q);
+  } else {
+    const k = 1 - Math.exp(-dt * 25);
+    ball.mesh.position.lerp(ball.disp.p, k);
+    ball.mesh.quaternion.slerp(ball.disp.q, k);
+  }
+
+  if (me.avatar && me.body) {
+    const ip = me.body.interpolatedPosition;
+    me.avatar.position.set(ip.x, ip.y, ip.z);
+    me.avatar.rotation.y = me.yaw;
+    animateAvatar(me.avatar, Math.hypot(me.body.velocity.x, me.body.velocity.z), me.coyote <= 0 && !me.swimming, dt);
+  }
+  for (const r of remotes.values()) {
+    if (!r.avatar) continue;
+    r.avatar.position.copy(r.target);
+    r.avatar.rotation.y = r.yaw;
+    const speed = dt > 0 ? tmpV.copy(r.target).sub(r.prevPos).setY(0).length() / dt : 0;
+    r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
+    r.prevPos.copy(r.target);
+    animateAvatar(r.avatar, r.speed, r.state === 1, dt);
+  }
+}
+
+const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), fwd = new THREE.Vector3();
+let elapsed = 0;
+function updateCamera(dt) {
+  if (!me.entered || !me.body) {
+    const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
+    camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);
+    camera.lookAt(0, 3, 0);
+  } else {
+    const ip = me.body.interpolatedPosition;
+    camForward(fwd);
+    const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+    camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
+    camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
+    const floor = Math.max(groundHeight(camPos.x, camPos.z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
+    camPos.y = Math.max(camPos.y, floor);
+    camera.position.copy(camPos);
+    camera.lookAt(camLook.addScaledVector(fwd, 8));
+  }
+  sky.position.copy(camera.position);
+  const focus = me.body ? me.body.interpolatedPosition : { x: 0, y: 0, z: 0 };
+  sun.target.position.set(focus.x, focus.y, focus.z);
+  sun.position.set(focus.x + SUN_DIR.x * 80, focus.y + SUN_DIR.y * 80, focus.z + SUN_DIR.z * 80);
+  for (const c of clouds) {
+    c.position.x += dt * 1.2;
+    if (c.position.x > 340) c.position.x = -340;
+  }
+}
+
+// ---------------------------------------------------------------- throw preview
+const dotTex = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.arc(16, 16, 13, 0, Math.PI * 2);
+  g.fill();
+  return new THREE.CanvasTexture(c);
+})();
+const PREVIEW_N = 48;
+const previewGeo = new THREE.BufferGeometry();
+previewGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PREVIEW_N * 3), 3));
+const preview = new THREE.Points(previewGeo, new THREE.PointsMaterial({ map: dotTex, size: 0.2, transparent: true, opacity: 0.9, alphaTest: 0.3, depthWrite: false }));
+preview.frustumCulled = false;
+preview.visible = false;
+scene.add(preview);
+function updatePreview() {
+  preview.visible = me.charging;
+  if (!me.charging) return;
+  const p = handPosition();
+  const v = throwVelocity(chargeAmount(), p);
+  const arr = previewGeo.attributes.position.array;
+  let n = 0;
+  for (; n < PREVIEW_N; n++) {
+    arr[n * 3] = p.x; arr[n * 3 + 1] = p.y; arr[n * 3 + 2] = p.z;
+    for (let k = 0; k < 3; k++) {
+      v.y -= GRAVITY * (1 / 60);
+      p.addScaledVector(v, 1 / 60);
+    }
+    if (p.y < groundHeight(p.x, p.z) || p.y < SEA - 0.3) { n++; break; }
+  }
+  previewGeo.setDrawRange(0, n);
+  previewGeo.attributes.position.needsUpdate = true;
+}
+
+// ---------------------------------------------------------------- HUD
+let lastHint = null;
+function updateHud() {
+  chargeEl.style.display = me.charging ? 'block' : 'none';
+  if (me.charging) chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
+  let hint = '';
+  if (me.entered) {
+    const tap = isTouch;
+    if (!tap && !locked && !lockFailed) hint = 'Click the island to look around';
+    else if (me.charging) hint = 'Release to throw';
+    else if (me.holding) hint = tap ? 'Hold Throw, release to let go' : 'Hold click, release to throw';
+    else if (ballInReach()) hint = remoteHoldsBall() ? (tap ? 'Tap Grab to steal the ball' : 'Click to steal the ball') : (tap ? 'Tap Grab to pick up the ball' : 'Click to grab the ball');
+  }
+  if (hint !== lastHint) {
+    lastHint = hint;
+    hintEl.textContent = hint;
+    hintEl.hidden = !hint;
+  }
+  grabBtn.textContent = me.holding ? 'Throw' : 'Grab';
+}
+
+let peopleKey = '';
+function renderPeople() {
+  const on = [...remotes.values()].filter(r => r.entered);
+  const key = JSON.stringify([net.state, net.error, net.permission, me.entered && [me.name, me.colorIdx], on.map(r => [r.name, r.colorIdx])]);
+  if (key === peopleKey) return;
+  peopleKey = key;
+  rosterEl.replaceChildren();
+  const addRow = (name, colorIdx, isYou) => {
+    const li = document.createElement('li');
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = COLORS[colorIdx];
+    const label = document.createElement('span');
+    label.textContent = name;
+    li.append(dot, label);
+    if (isYou) {
+      const you = document.createElement('span');
+      you.className = 'you';
+      you.textContent = 'you';
+      li.append(you);
+    }
+    rosterEl.append(li);
+  };
+  if (me.entered) addRow(me.name, me.colorIdx, true);
+  for (const r of on) addRow(r.name, r.colorIdx, false);
+
+  const count = on.length + (me.entered ? 1 : 0);
+  if (net.state === 'solo') netLabel.textContent = `Solo · ${net.error ?? 'room unavailable'}${net.permission ? ` · ${net.permission}` : ''}`;
+  else if (net.state === 'connecting') netLabel.textContent = 'Connecting';
+  else netLabel.textContent = `${net.local ? 'Local test' : 'Live'} · ${count} on the island`;
+
+  if (net.state === 'solo') {
+    hereEl.textContent = net.error === 'room_null'
+      ? 'Multiplayer only runs inside the claude.ai artifact viewer. Open the claude.ai link while signed in to play with friends.'
+      : 'Multiplayer is unavailable in this view, so the island is yours alone.';
+  }
+  else if (!on.length) hereEl.textContent = 'Nobody else is on the island yet. Share this page to bring friends.';
+  else {
+    const names = on.map(r => r.name);
+    hereEl.textContent = names.length === 1 ? `${names[0]} is on the island.` : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are on the island.`;
+  }
+}
+
+// ---------------------------------------------------------------- input
+let locked = false;
+let lockFailed = false;
+function requestLock() {
+  if (isTouch || locked || !canvas.requestPointerLock) return;
+  try {
+    const p = canvas.requestPointerLock();
+    if (p && p.catch) p.catch(() => { lockFailed = true; });
+  } catch {
+    lockFailed = true;
+  }
+}
+document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; });
+document.addEventListener('pointerlockerror', () => { lockFailed = true; });
+
+const typing = () => document.activeElement === nameInput;
+addEventListener('keydown', e => {
+  if (!me.entered || typing()) return;
+  input.keys.add(e.code);
+  if (e.code === 'Space') { me.jumpQueued = 0.15; e.preventDefault(); }
+  if (e.code.startsWith('Arrow')) e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === 'KeyE') actionDown();
+  if (e.code === 'KeyR') respawnBall();
+  if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
+});
+addEventListener('keyup', e => {
+  input.keys.delete(e.code);
+  if (e.code === 'KeyE' && me.entered) actionUp();
+});
+addEventListener('blur', () => { input.keys.clear(); });
+
+let drag = null;
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousedown', e => {
+  if (!me.entered) return;
+  canvas.focus();
+  if (!locked) {
+    requestLock();
+    drag = { x: e.clientX, y: e.clientY, moved: false };
+  }
+  if (e.button === 0) actionDown();
+});
+addEventListener('mousemove', e => {
+  if (!me.entered) return;
+  if (locked) {
+    cam.yaw -= e.movementX * 0.0024;
+    cam.pitch = clamp(cam.pitch - e.movementY * 0.0024, -1.25, 0.9);
+  } else if (drag && e.buttons) {
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.moved = true;
+      me.charging = false;
+    }
+    if (drag.moved) {
+      cam.yaw -= e.movementX * 0.005;
+      cam.pitch = clamp(cam.pitch - e.movementY * 0.004, -1.25, 0.9);
+    }
+  }
+});
+addEventListener('mouseup', e => {
+  if (!me.entered || e.button !== 0) { drag = null; return; }
+  if (drag?.moved) { me.suppressUp = false; drag = null; return; }
+  drag = null;
+  actionUp();
+});
+canvas.addEventListener('wheel', e => {
+  cam.dist = clamp(cam.dist + e.deltaY * 0.01, 3, 12);
+  e.preventDefault();
+}, { passive: false });
+
+const stick = { id: null, ox: 0, oy: 0 };
+const look = { id: null, x: 0, y: 0 };
+touchEl.addEventListener('pointerdown', e => {
+  if (e.target.closest('.tbtn')) return;
+  if (e.clientX < innerWidth * 0.45 && stick.id === null) {
+    stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY;
+    stickEl.style.left = `${e.clientX}px`;
+    stickEl.style.top = `${e.clientY}px`;
+    stickEl.style.display = 'block';
+    knobEl.style.transform = '';
+  } else if (look.id === null) {
+    look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY;
+  }
+  touchEl.setPointerCapture?.(e.pointerId);
+});
+touchEl.addEventListener('pointermove', e => {
+  if (e.pointerId === stick.id) {
+    let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy;
+    const len = Math.hypot(dx, dy);
+    if (len > 50) { dx *= 50 / len; dy *= 50 / len; }
+    input.stickX = dx / 50;
+    input.stickY = dy / 50;
+    knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+  } else if (e.pointerId === look.id) {
+    cam.yaw -= (e.clientX - look.x) * 0.006;
+    cam.pitch = clamp(cam.pitch - (e.clientY - look.y) * 0.005, -1.25, 0.9);
+    look.x = e.clientX; look.y = e.clientY;
+  }
+});
+function endTouch(e) {
+  if (e.pointerId === stick.id) {
+    stick.id = null;
+    input.stickX = input.stickY = 0;
+    stickEl.style.display = 'none';
+  }
+  if (e.pointerId === look.id) look.id = null;
+}
+touchEl.addEventListener('pointerup', endTouch);
+touchEl.addEventListener('pointercancel', endTouch);
+jumpBtn.addEventListener('pointerdown', e => { e.stopPropagation(); me.jumpQueued = 0.15; });
+grabBtn.addEventListener('pointerdown', e => { e.stopPropagation(); actionDown(); });
+grabBtn.addEventListener('pointerup', e => { e.stopPropagation(); actionUp(); });
+grabBtn.addEventListener('pointercancel', () => { me.charging = false; me.suppressUp = false; });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    input.keys.clear();
+    releaseBall();
+  }
+  sendPresence();
+});
+
+// ---------------------------------------------------------------- lobby
+let nameTouched = false;
+nameInput.addEventListener('input', () => { nameTouched = true; });
+function renderSwatches() {
+  swatchesEl.replaceChildren();
+  COLORS.forEach((col, k) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `swatch-${k}`;
+    b.className = 'swatch';
+    b.style.background = col;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(k === me.colorIdx));
+    b.setAttribute('aria-label', `Color ${k + 1}`);
+    b.addEventListener('click', () => { me.colorIdx = k; renderSwatches(); });
+    swatchesEl.append(b);
+  });
+}
+joinForm.addEventListener('submit', e => {
+  e.preventDefault();
+  enterIsland();
+  canvas.focus();
+  requestLock();
+});
+
+// ---------------------------------------------------------------- loop & boot
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  elapsed += dt;
+  updateRemotes(now, dt);
+  resolveBallOwner(now);
+  updateIntent(dt);
+  prepareBall();
+  world.step(FIXED, dt, 4);
+  afterStep(now);
+  syncVisuals(dt);
+  updateCamera(dt);
+  updatePreview();
+  updateHud();
+  if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
+  waterMat.uniforms.uTime.value = elapsed;
+  renderer.render(scene, camera);
+}
+
+function start(data = {}) {
+  let storedName = '', storedColor = NaN;
+  try {
+    storedName = localStorage.getItem('boogle.name') || '';
+    storedColor = parseInt(localStorage.getItem('boogle.color') ?? '', 10);
+  } catch {}
+  if (storedName) nameInput.value = storedName;
+  me.colorIdx = Number.isInteger(storedColor) && storedColor >= 0 && storedColor < COLORS.length ? storedColor : Math.floor(Math.random() * COLORS.length);
+  renderSwatches();
+  enterBtn.disabled = false;
+  enterBtn.textContent = 'Jump in';
+  prefillFromProfile();
+  connectRoom();
+  if (data.entered) enterIsland(data);
+  renderPeople();
+  requestAnimationFrame(t => { last = t; frame(t); });
+}
+
+window.boogle = { THREE, CANNON, scene, world, camera, me, ball, net, remotes };
+
+window.claude?.hot?.snapshot?.(() => ({
+  entered: me.entered,
+  name: me.name,
+  colorIdx: me.colorIdx,
+  yaw: cam.yaw,
+  pos: me.body ? [me.body.position.x, me.body.position.y, me.body.position.z] : null,
+}));
+if (window.claude?.hot?.ready) window.claude.hot.ready(start);
+else start(window.claude?.hot?.data ?? {});
+</script>
+
+</body></html>
