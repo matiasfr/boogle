@@ -4,6 +4,13 @@ import globals from 'globals';
 const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 
+// Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Add rules modules here.
+const LOCKSTEP_FILES = ['src/sim/**/*.js', 'src/world/terrain-logic.js'];
+const det = (what) => `${what} is not deterministic across browsers; see DESIGN.md "Determinism from day one".`;
+const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'pow', 'exp']
+  .concat(['expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
+  .map((property) => ({ object: 'Math', property, message: det(`Math.${property}`) + ' Use a table or polynomial.' }));
+
 export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/'] },
   js.configs.recommended,
@@ -49,6 +56,26 @@ export default [
         },
       ],
       'no-restricted-globals': ['error', 'window', 'document', 'navigator', 'localStorage'],
+    },
+  },
+  // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
+  // for these files would replace it).
+  {
+    files: LOCKSTEP_FILES,
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { object: 'Math', property: 'random', message: det('Math.random') + ' Use mulberry32 from src/sim/rng.js.' },
+        ...UNSAFE_MATH,
+        { object: 'Date', property: 'now', message: det('Date.now') + ' Use the world tick.' },
+        { object: 'performance', property: 'now', message: det('performance.now') + ' Use the world tick.' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: "BinaryExpression[operator='**']", message: det('**') + ' Multiply, or use a table.' },
+        { selector: "AssignmentExpression[operator='**=']", message: det('**=') + ' Multiply, or use a table.' },
+        { selector: "NewExpression[callee.name='Date']", message: det('new Date()') + ' Use the world tick.' },
+      ],
     },
   },
   {

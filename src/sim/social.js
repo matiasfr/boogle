@@ -31,11 +31,11 @@ export function createLimiter(max, windowMs) {
   };
 }
 
-// Major pentatonic from C4 across the eight player colours: any mix of players sounds consonant.
-const SEMITONES = [0, 2, 4, 7, 9, 12, 14, 16];
+// Major pentatonic from C4 across the eight player colours (semitones 0 2 4 7 9 12 14 16): any mix of players sounds
+// consonant. A table, not 2 ** (s / 12), so src/sim/ stays free of browser-rounded math.
+const PENTATONIC_HZ = [261.63, 293.67, 329.63, 392.0, 440.01, 523.26, 587.34, 659.27];
 export function honkFreq(colorIdx) {
-  const s = SEMITONES[Number.isInteger(colorIdx) ? ((colorIdx % 8) + 8) % 8 : 0];
-  return 261.63 * 2 ** (s / 12);
+  return PENTATONIC_HZ[Number.isInteger(colorIdx) ? ((colorIdx % 8) + 8) % 8 : 0];
 }
 
 // Feed every honk (ours and received) to add(id, now). When `min` different players honked within `windowMs`, it
