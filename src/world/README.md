@@ -1,6 +1,6 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (terrain edits, water, weather, tide) lives behind this module. It follows DESIGN.md: **sync edits, not state**, integer-only, fixed order, host-authoritative.
+Everything players can change and everyone must agree on (terrain edits, water, weather, tide) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
 
 ## Pieces
 

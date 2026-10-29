@@ -59,14 +59,15 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 | **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Water, sand, mushrooms |
 
 - **Physics is never lockstep.** cannon-es (and three.js math) isn't bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball rolls on dug sand) and change it only by submitting edits (a splash).
-- **Crossing kinds goes through edits.** A player digging, a ball splashing, an NPC planting: the actor submits an edit and the lockstep sim applies it.
-- **Anything that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever hosts next.
+- **Crossing kinds goes through edits.** A player digging, a ball splashing, an NPC planting, a thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
+- **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever hosts next. Your own things (hotbar, friendship with The Boogler) are yours, kept in localStorage.
+- **Tide and weather are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth, can flood the water grid and need no snapshot. Their visuals read the same function.
 - **The scene graph is a view.** three.js objects are updated from state (lockstep ticks run at 10/s and rendering interpolates between them); never read game state back out of a mesh.
 
 ### Determinism from day one
 Lockstep state must produce bit-identical results on every machine:
 - conserved quantities are integers (water as 0–255 units per cell, sand in centimetres), so totals stay exact and snapshots stay small;
-- other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and cannon-es call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`, `src/world/terrain-logic.js`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
+- other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and cannon-es call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`, `src/world/terrain-logic.js`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
 - fixed update order and a fixed tick rate;
 - seeded randomness ([`mulberry32`](src/sim/rng.js)), never `Math.random()` in shared logic;
 - events (tide, weather) are a pure function of tick + seed.

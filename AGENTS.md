@@ -11,7 +11,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 
 ## Rules that are easy to miss
 - **Pick a sync kind per piece of state:** Local, Owner, Host or Lockstep (table in DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
-- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2` (browsers round them differently), or three.js/cannon-es math in it.
+- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it.
 - **Cosmetic stays separate.** Particles, ripples, sounds may use floats and `Math.random()`, in their own modules, never read by the sim.
 - **Sync edits, not state** (Lockstep). Clients `submitEdit`; the host stamps and broadcasts. Bulk state travels only as host snapshots. Authority table: DESIGN.md, "Clear authority".
 - **Room interface only.** Game code talks to `createPeerRoom` (`src/net/README.md`), never to PeerJS directly. No alternate transports, no claude.ai artifact build.
