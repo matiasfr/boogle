@@ -16,8 +16,9 @@
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
 // Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
 // reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
-// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each; edits submitted meanwhile queue
-// behind them. Held edits older than HELD_MAX_MS are dropped (stats.heldDropped): the player has moved on.
+// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each. Held edits older than HELD_MAX_MS
+// are dropped (stats.heldDropped): the player has moved on. So is the rest of the backlog once a fresh edit is submitted
+// with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
 
@@ -33,7 +34,7 @@ const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
 // Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under the shovel's 220 ms repeat
-// so a button held through the reconnect drains the backlog instead of growing it toward HELD_MAX_MS.
+// so a fresh edit waiting for its slot goes out before the next repeat replaces it.
 const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
@@ -89,7 +90,7 @@ export function createSync() {
   let snapId = 0;
   const served = new Map();
   let out = []; // stamped edits waiting to be broadcast
-  let held = []; // [{ e, at }] edits this client submitted while the room was down; released by releaseHeld
+  let held = []; // [{ e, at, fresh }] edits submitted while the room was down (or one waiting for its slot); releaseHeld
   let heldAt = 0; // wall time the next held edit may go
   let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
@@ -159,17 +160,31 @@ export function createSync() {
     if (!isObj(edit) || !ops.has(edit.op) || !isInt(edit.i) || !isInt(edit.j)) return false;
     const e = { ...edit, p: selfId };
     if (mode === 'client' && JSON.stringify(e).length > MAX_EDIT_JSON) return false;
-    // Hold it while the room is down (send() would drop it), and behind any edits still held: going out at once
-    // would overtake them and take their per-player rate-limit slot.
-    if (held.length || (mode === 'client' && !connected)) {
+    // Nowhere to deliver it yet (the room is down, so send() would drop it, or a reclaimed host is still loading): hold it.
+    if (mode === 'client' ? !connected : held.length && !canRelease()) {
       if (held.length >= MAX_HELD) return false;
       held.push({ e, at: wall });
       return true;
     }
+    // The room is back: a fresh edit replaces whatever is still held (the player has moved on; draining the backlog
+    // first would turn a held shovel into seconds of input lag). It waits only for the slot after the last released
+    // edit, so it does not take that one's per-player rate-limit slot.
+    if (held.length) {
+      stats.heldDropped += held.length;
+      held = [];
+    }
+    if (wall < heldAt && canRelease()) {
+      held.push({ e, at: wall, fresh: true });
+      return true;
+    }
+    return deliver(e);
+  }
+  function deliver(e) {
     if (mode !== 'client') return stamp(e, selfId);
     send({ t: 'w:edit', e });
     return true;
   }
+  const canRelease = () => connected && (mode === 'client' || ready);
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c) {
     connected = c;
@@ -180,11 +195,10 @@ export function createSync() {
       held.shift();
       stats.heldDropped++;
     }
-    if (!held.length || !connected || wall < heldAt) return;
-    if (mode === 'client') send({ t: 'w:edit', e: held.shift().e });
-    else if (mode === 'host' && ready) stamp(held.shift().e, selfId);
-    else return; // a reclaimed host still loading: keep them until it is ready
-    heldAt = wall + HELD_EVERY_MS;
+    if (!held.length || !canRelease() || wall < heldAt) return; // a reclaimed host keeps them until it is ready
+    const { e, fresh } = held.shift();
+    deliver(e);
+    if (!fresh) heldAt = wall + HELD_EVERY_MS; // a fresh edit is live input again: its caller paces the next one
   }
 
   // ------------------------------------------------------------ tick

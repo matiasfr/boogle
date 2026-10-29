@@ -196,35 +196,65 @@ test('edits held while reconnecting are all accepted by a rate-limited op, in or
   assert.ok(same(all));
 });
 
-test('edits submitted while held ones drain queue behind them: all accepted, in order', async () => {
+test('a fresh edit after a reconnect replaces the held backlog and goes out in the next slot', async () => {
   const { net, host, clients, all } = await setup(1);
   net.setUp(clients[0].p, false);
   for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v }));
   await run(net, all, 10);
   net.setUp(clients[0].p, true);
+  await run(net, all, 1); // the first held edit goes out
   for (let v = 5; v <= 8; v++) {
     assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held shovel button
     await run(net, all, 5);
   }
   await run(net, all, 60);
-  assert.deepEqual(host.log, ['c0:1', 'c0:2', 'c0:3', 'c0:4', 'c0:5', 'c0:6', 'c0:7', 'c0:8']);
-  assert.equal(host.grid[2], 36);
+  assert.equal(clients[0].s.worldStatus().heldDropped, 3);
+  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the shovel's own repeat, which can be
+  // too soon after 5 for the host's rate limit: at most that one live edit is lost.
+  assert.deepEqual(host.log.slice(0, 2), ['c0:1', 'c0:5']);
+  assert.deepEqual(host.log.slice(-2), ['c0:7', 'c0:8']);
   assert.ok(same(all));
 });
 
-test('a reclaimed host stamps held edits before ones submitted while they drain', async () => {
+test('live input after a reconnect is back to normal latency', async () => {
+  const { net, host, clients, all } = await setup(1);
+  const c = clients[0];
+  let v = 0;
+  const dig = async () => {
+    assert.ok(c.s.submitEdit({ op: 'slow', i: 0, j: 2, v: ++v }));
+    await run(net, all, 5); // the shovel's repeat, rounded up to whole frames like the held-edit pacing
+  };
+  net.setUp(c.p, false);
+  for (let k = 0; k < 16; k++) await dig(); // 4 s down with the button held
+  net.setUp(c.p, true);
+  for (let k = 0; k < 20; k++) await dig(); // 5 s more
+  await run(net, all, 15); // with the 5 frames after the last dig: 1 s
+  assert.equal(host.log.at(-1), `c0:${v}`, 'the last edit lands within 1 s, not seconds behind a backlog');
+  const live = host.log.slice(host.log.indexOf('c0:17')).map((l) => Number(l.slice(3)));
+  assert.ok(live.length >= 19, 'live edits are accepted (at most one lost to the rate limit after the delayed one)');
+  assert.ok(
+    live.every((x, k) => k === 0 || x > live[k - 1]),
+    'in order',
+  );
+  assert.ok(same(all));
+});
+
+test('a reclaimed host stamps held edits, then fresh ones in their place', async () => {
   const { net, clients, all } = await setup(2);
   net.setUp(clients[0].p, false);
   for (let v = 1; v <= 3; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }));
   net.killHost();
   net.setUp(clients[0].p, true);
+  await run(net, all, 1); // the first held edit is stamped
   for (let v = 4; v <= 6; v++) {
-    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }));
+    clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }); // 5 can be too soon after the delayed 4 (rate limit)
     await run(net, all, 5);
   }
   await run(net, all, 120);
   assert.equal(clients[0].s.worldStatus().mode, 'host');
-  assert.deepEqual(clients[0].log, ['c0:1', 'c0:2', 'c0:3', 'c0:4', 'c0:5', 'c0:6']);
+  assert.equal(clients[0].s.worldStatus().heldDropped, 2);
+  assert.deepEqual(clients[0].log.slice(0, 2), ['c0:1', 'c0:4']);
+  assert.equal(clients[0].log.at(-1), 'c0:6');
   assert.ok(same(all)); // c1 has not re-pinned the new host yet: it converges by snapshot
 });
 
