@@ -42,6 +42,7 @@ export function createSync() {
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
+  const snapFailFns = []; // fn({ from: 'peer'|'local'|'server', reason }) when a snapshot could not be loaded
   const stats = { resyncs: 0, snapsSent: 0, snapsLoaded: 0, hashOk: 0, hashBad: 0, lateEdits: 0, saves: 0 };
   let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad = null; // { tick, keys } of the latest mismatch
@@ -74,6 +75,9 @@ export function createSync() {
   let lastSavedHash = null;
   let nextSave = SAVE_MS;
 
+  const snapFail = (from, reason) => {
+    for (const fn of snapFailFns) fn({ from, reason });
+  };
   const send = (m) => {
     if (!room || !connected) return;
     try {
@@ -269,13 +273,14 @@ export function createSync() {
     const text = asm.parts.join('');
     asm = null;
     try {
-      applyPayload(JSON.parse(text));
+      if (!applyPayload(JSON.parse(text))) snapFail('peer', 'invalid');
     } catch (err) {
       console.warn('[world] bad snapshot', err);
+      snapFail('peer', err instanceof SyntaxError ? 'parse' : 'load');
     }
   }
   function applyPayload(p) {
-    if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return;
+    if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
     queue = p.pend.filter(
       (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
@@ -287,6 +292,7 @@ export function createSync() {
     awaiting = false;
     stats.snapsLoaded++;
     for (const fn of snapFns) fn(world.tick);
+    return true;
   }
 
   // ------------------------------------------------------------ messages
@@ -363,22 +369,27 @@ export function createSync() {
   }
   async function loadPersisted() {
     let best = null;
-    const consider = (s) => {
-      if (validSnap(s) && (!best || s.tick > best.tick)) best = s;
+    const consider = (s, from) => {
+      if (s === null || s === undefined) return;
+      if (!validSnap(s)) return snapFail(from, 'invalid');
+      if (!best || s.tick > best.tick) best = s;
     };
     try {
-      consider(JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null'));
+      consider(JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null'), 'local');
     } catch {
-      // corrupt local copy
+      snapFail('local', 'parse'); // corrupt local copy
     }
     if (cfg.serverUrl) {
       try {
         const res = await cfg.fetch(new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl), {
           signal: AbortSignal.timeout(3000),
         });
-        if (res.ok) consider((await res.json()).data);
-      } catch {
-        // server unreachable: local copy or fresh
+        if (res.ok) consider((await res.json()).data, 'server');
+        else if (res.status !== 404) snapFail('server', `http ${res.status}`);
+      } catch (err) {
+        // unreachable or garbled: go on with the local copy or a fresh world
+        const reason = err instanceof SyntaxError ? 'parse' : err?.name === 'TimeoutError' ? 'timeout' : 'unreachable';
+        snapFail('server', reason);
       }
     }
     return best;
@@ -464,6 +475,7 @@ export function createSync() {
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
+    onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
     submitEdit,
@@ -487,6 +499,7 @@ export const {
   onSnapshot,
   onDesync,
   onHashSent,
+  onSnapFail,
   stateHashes,
   setSelfId,
   submitEdit,

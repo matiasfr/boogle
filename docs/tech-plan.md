@@ -13,7 +13,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       `Date.now`, `performance.now` and `new Date()` in lockstep code (`src/sim/**`, `src/world/terrain-logic.js`, and
       the rules modules from B1). Cosmetic helpers that live in `src/sim/` today (`honkFreq`, the moon's `illum`) move
       out or are marked cosmetic. A tiny test proves the rule fires.
-- [ ] **A2. Reports to the server.** `POST /report` on `server/` (small JSON, rate-limited, appended to a daily JSONL
+- [x] **A2. Reports to the server.** `POST /report` on `server/` (small JSON, rate-limited, appended to a daily JSONL
       file) and `GET /reports` behind a token. A plug-in feature (`src/features/telemetry.js`) sends JS errors, desyncs
       (which state key, which tick), snapshot load failures and connection failures, only when `VITE_BOOGLE_SERVER` is
       set. Nothing personal: room, kind, short detail, build, coarse browser.

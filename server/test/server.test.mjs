@@ -127,6 +127,101 @@ test('snapshot: MAX_ROOMS enforced, existing rooms still updatable', async () =>
   }
 });
 
+const report = (base, body, type = 'text/plain') =>
+  fetch(`${base}/report`, {
+    method: 'POST',
+    headers: { 'content-type': type },
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+const today = () => new Date().toISOString().slice(0, 10);
+
+test('report: stored as one JSON line per report, cleaned and truncated', async () => {
+  const s = await start();
+  try {
+    let r = await report(s.base, { room: 'beach', kind: 'error', detail: 'x'.repeat(2000), tick: 7, ua: 'Chrome 130' });
+    assert.equal(r.status, 204);
+    r = await report(
+      s.base,
+      [
+        { room: 'beach', kind: 'connect', detail: { phase: 'join', hadTurn: false, nested: { no: 1 } }, extra: 'drop' },
+        { room: 'beach', kind: 'desync', detail: 'water', tick: 120 },
+      ],
+      'application/json',
+    );
+    assert.equal(r.status, 204);
+    const lines = (await fs.readFile(path.join(s.dataDir, 'reports', `${today()}.jsonl`), 'utf8')).trim().split('\n');
+    const rows = lines.map((l) => JSON.parse(l));
+    assert.equal(rows.length, 3);
+    assert.ok(rows.every((x) => typeof x.at === 'string' && x.room === 'beach'));
+    assert.equal(rows[0].detail.length, 500);
+    assert.equal(rows[0].tick, 7);
+    assert.deepEqual(rows[1].detail, { phase: 'join', hadTurn: false });
+    assert.equal(rows[1].extra, undefined);
+    assert.equal(rows[2].kind, 'desync');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('report: invalid kind/room/body 400, oversize 413', async () => {
+  const s = await start();
+  try {
+    assert.equal((await report(s.base, { room: 'beach', kind: 'party', detail: '' })).status, 400);
+    assert.equal((await report(s.base, { room: 'Bad Room', kind: 'error', detail: '' })).status, 400);
+    assert.equal((await report(s.base, [])).status, 400);
+    assert.equal((await report(s.base, [{ room: 'a', kind: 'error' }, 'nope'])).status, 400);
+    assert.equal((await report(s.base, '{nope')).status, 400);
+    assert.equal((await report(s.base, { room: 'a', kind: 'error', detail: 'x'.repeat(9000) })).status, 413);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('report: per-IP rate limit and daily size cap', async () => {
+  let s = await start({ REPORT_RATE_PER_MIN: '2' });
+  try {
+    const codes = [];
+    for (let i = 0; i < 3; i++) codes.push((await report(s.base, { room: 'a', kind: 'error', detail: 'e' })).status);
+    assert.deepEqual(codes, [204, 204, 429]);
+  } finally {
+    await s.stop();
+  }
+  s = await start({ REPORT_MAX_BYTES_PER_DAY: '600' });
+  try {
+    const body = { room: 'a', kind: 'error', detail: 'x'.repeat(150) };
+    assert.equal((await report(s.base, body)).status, 204);
+    assert.equal((await report(s.base, body)).status, 204);
+    assert.equal((await report(s.base, body)).status, 507);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('reports: GET needs REPORT_TOKEN and the bearer token', async () => {
+  let s = await start();
+  try {
+    assert.equal((await fetch(`${s.base}/reports`)).status, 404);
+  } finally {
+    await s.stop();
+  }
+  s = await start({ REPORT_TOKEN: 'tok' });
+  try {
+    await report(s.base, { room: 'a', kind: 'snapshot', detail: { from: 'peer', reason: 'parse' } });
+    const get = (q, auth) => fetch(`${s.base}/reports${q}`, { headers: auth ? { authorization: auth } : {} });
+    assert.equal((await get('')).status, 401);
+    assert.equal((await get('', 'Bearer nope')).status, 401);
+    assert.equal((await get('?day=yesterday', 'Bearer tok')).status, 400);
+    const r = await get(`?day=${today()}`, 'Bearer tok');
+    assert.equal(r.status, 200);
+    assert.deepEqual(JSON.parse((await r.text()).trim()).detail, { from: 'peer', reason: 'parse' });
+    const empty = await get('?day=2000-01-01', 'Bearer tok');
+    assert.equal(empty.status, 200);
+    assert.equal(await empty.text(), '');
+  } finally {
+    await s.stop();
+  }
+});
+
 test('/ice: STUN only by default', async () => {
   const s = await start();
   try {
@@ -194,13 +289,14 @@ test('CORS: default *, and allow-list', async () => {
     });
     assert.equal(pre.status, 204);
     assert.match(pre.headers.get('access-control-allow-methods'), /PUT/);
+    assert.match(pre.headers.get('access-control-allow-methods'), /POST/);
   } finally {
     await s.stop();
   }
 
   s = await start({ ALLOWED_ORIGINS: 'https://good.example,https://also.example' });
   try {
-    for (const p of ['/healthz', '/ice', '/rooms/a/snapshot', '/peerjs/peerjs/id']) {
+    for (const p of ['/healthz', '/ice', '/rooms/a/snapshot', '/report', '/peerjs/peerjs/id']) {
       const good = await fetch(`${s.base}${p}`, { headers: { origin: 'https://good.example' } });
       assert.equal(good.headers.get('access-control-allow-origin'), 'https://good.example', p);
       const bad = await fetch(`${s.base}${p}`, { headers: { origin: 'https://evil.example' } });

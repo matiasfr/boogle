@@ -155,3 +155,35 @@ test('host migration continues', async () => {
   assert.equal(clients[0].grid[1], 7);
   assert.ok(same(all));
 });
+
+test('unloadable snapshots are reported (peer chunk, local copy, server)', async () => {
+  const { net, clients, all } = await setup(1);
+  const seen = [];
+  clients[0].s.onSnapFail((f) => seen.push(f));
+  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 99, n: 1, k: 0, s: '{nope' }, 'h');
+  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 98, n: 1, k: 0, s: '{"snap":1}' }, 'h');
+  await run(net, all, 2);
+  assert.deepEqual(seen, [
+    { from: 'peer', reason: 'parse' },
+    { from: 'peer', reason: 'invalid' },
+  ]);
+
+  const solo = createSync();
+  const fails = [];
+  solo.onSnapFail((f) => fails.push(f));
+  const room = { selfId: 'x', isHost: () => true, send() {}, onMessage: () => () => {}, onConnection: () => () => {} };
+  room.onHostChange = () => () => {};
+  solo.attachWorld(room, {
+    roomId: 'test',
+    serverUrl: 'http://server.invalid',
+    storage: { getItem: () => '{corrupt', setItem() {} },
+    fetch: async () => ({ ok: true, json: async () => ({ data: { tick: -1 } }) }),
+  });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(fails, [
+    { from: 'local', reason: 'parse' },
+    { from: 'server', reason: 'invalid' },
+  ]);
+  assert.ok(solo.worldStatus().ready, 'starts fresh anyway');
+  solo.detachWorld();
+});

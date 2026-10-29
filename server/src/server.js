@@ -7,6 +7,9 @@ import { ExpressPeerServer } from 'peer';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const STUN = 'stun:stun.l.google.com:19302';
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect']);
+const REPORT_BATCH = 10; // reports per POST
 
 function parseTrustProxy(v) {
   if (v === undefined || v === '') return 1; // one hop: Fly / Render / Railway
@@ -39,6 +42,9 @@ export function loadConfig(env = process.env, overrides = {}) {
     turnSecret: env.TURN_SECRET || '',
     turnTtl: Number(env.TURN_TTL ?? 86400),
     aliveTimeout: Number(env.PEER_ALIVE_TIMEOUT ?? 60000),
+    reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
+    reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
+    reportToken: env.REPORT_TOKEN || '',
     log: (...a) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -70,6 +76,28 @@ function createRateLimiter({ perMinute }) {
   };
   middleware.stop = () => clearInterval(sweep);
   return middleware;
+}
+
+// One client report, cleaned: known kind, short strings, `detail` a string or a flat object of primitives.
+// Returns null if it can't be salvaged. Nothing from the request itself (IP, headers) is kept.
+const cut = (v, n) => (typeof v === 'string' ? v.slice(0, n) : undefined);
+function cleanReport(r) {
+  if (!r || typeof r !== 'object' || Array.isArray(r) || !REPORT_KINDS.has(r.kind)) return null;
+  if (typeof r.room !== 'string' || !ROOM_ID_RE.test(r.room)) return null;
+  let detail = cut(r.detail, 500);
+  if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
+    detail = {};
+    for (const [k, v] of Object.entries(r.detail).slice(0, 12)) {
+      if (typeof v === 'string') detail[k.slice(0, 32)] = v.slice(0, 200);
+      else if (typeof v === 'boolean' || v === null || (typeof v === 'number' && Number.isFinite(v)))
+        detail[k.slice(0, 32)] = v;
+    }
+  }
+  const out = { room: r.room, kind: r.kind, detail: detail ?? null };
+  if (Number.isSafeInteger(r.tick)) out.tick = r.tick;
+  if (typeof r.build === 'string') out.build = cut(r.build, 40);
+  if (typeof r.ua === 'string') out.ua = cut(r.ua, 60);
+  return out;
 }
 
 function iceServers(cfg) {
@@ -108,7 +136,7 @@ export function createService(config) {
       res.append('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+      res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
       res.set('Access-Control-Allow-Headers', req.get('access-control-request-headers') || 'Content-Type');
       res.set('Access-Control-Max-Age', '600');
       return res.status(204).end();
@@ -215,6 +243,78 @@ export function createService(config) {
     },
   );
 
+  // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
+  // Appended as JSON lines to DATA_DIR/reports/YYYY-MM-DD.jsonl (UTC day), capped per day. Clients send text/plain
+  // (navigator.sendBeacon) so no CORS preflight is needed.
+  const reportDir = path.join(cfg.dataDir, 'reports');
+  const daySizes = new Map(); // day -> bytes written (read from disk on first use)
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  async function daySize(day) {
+    if (!daySizes.has(day)) {
+      daySizes.clear(); // only today's counter matters
+      try {
+        daySizes.set(day, (await fs.stat(path.join(reportDir, `${day}.jsonl`))).size);
+      } catch (e) {
+        if (e.code !== 'ENOENT') throw e;
+        daySizes.set(day, 0);
+      }
+    }
+    return daySizes.get(day);
+  }
+
+  app.post(
+    '/report',
+    createRateLimiter({ perMinute: cfg.reportRatePerMin }),
+    express.json({ limit: '8kb', type: ['application/json', 'text/plain'] }),
+    async (req, res, next) => {
+      const list = (Array.isArray(req.body) ? req.body : [req.body]).slice(0, REPORT_BATCH).map(cleanReport);
+      if (!list.length || list.includes(null)) {
+        return res.status(400).json({ error: `body must be a report { room, kind, detail } or an array of them` });
+      }
+      const at = new Date().toISOString();
+      const day = at.slice(0, 10);
+      const text = list.map((r) => JSON.stringify({ at, ...r }) + '\n').join('');
+      try {
+        const status = await withLock(`reports:${day}`, async () => {
+          const size = await daySize(day);
+          const bytes = Buffer.byteLength(text);
+          if (size + bytes > cfg.reportMaxBytesPerDay) return 507;
+          await fs.mkdir(reportDir, { recursive: true });
+          await fs.appendFile(path.join(reportDir, `${day}.jsonl`), text);
+          daySizes.set(day, size + bytes);
+          return 204;
+        });
+        if (status === 507) return res.status(507).json({ error: 'report storage full for today' });
+        res.status(204).end();
+      } catch (e) {
+        next(e);
+      }
+    },
+  );
+
+  // Read back one day's reports. Exists only when REPORT_TOKEN is set; needs `Authorization: Bearer <token>`.
+  app.get('/reports', async (req, res, next) => {
+    if (!cfg.reportToken) return res.status(404).json({ error: 'not found' });
+    const given = Buffer.from(req.get('authorization') || '');
+    const want = Buffer.from(`Bearer ${cfg.reportToken}`);
+    if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+    const day = req.query.day ?? today();
+    if (typeof day !== 'string' || !DAY_RE.test(day)) return res.status(400).json({ error: 'day must be YYYY-MM-DD' });
+    try {
+      const text = await fs.readFile(path.join(reportDir, `${day}.jsonl`), 'utf8').catch((e) => {
+        if (e.code === 'ENOENT') return '';
+        throw e;
+      });
+      res.set('Cache-Control', 'no-store');
+      res.type('application/x-ndjson').send(text);
+    } catch (e) {
+      next(e);
+    }
+  });
+
   // ---- PeerJS signaling ----
   const server = http.createServer(app);
   let connected = 0;
@@ -246,7 +346,7 @@ export function createService(config) {
   app.use((req, res) => res.status(404).json({ error: 'not found' }));
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
-    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload too large (max 256kb)' });
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload too large' });
     if (err.type === 'entity.parse.failed' || err instanceof SyntaxError)
       return res.status(400).json({ error: 'invalid JSON' });
     if (err.status && err.status < 500) return res.status(err.status).json({ error: err.message });
