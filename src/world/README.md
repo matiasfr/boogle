@@ -47,7 +47,7 @@ Integer units: heights and water depths are stored in **centimetres** (`Int16`/`
 1. Apply that tick's edits (host sequence order).
 2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
 
-Shared logic must not use `Math.random`, `Date.now`, or floats that feed back into state. Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
+Shared logic must not use `Math.random`, `Date.now`, or float math that differs between browsers (`Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2`, `hypot`); conserved quantities stay integers. See DESIGN.md, "Determinism from day one". Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
 
 ## Status
 

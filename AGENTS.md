@@ -10,7 +10,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - [src/net/README.md](src/net/README.md) (room interface) before touching multiplayer; [src/world/README.md](src/world/README.md) (world contract) before touching shared state.
 
 ## Rules that are easy to miss
-- **Deterministic shared sim** (water, terrain edits, mushrooms, weather, tide): integers, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()` or floats that feed back into shared state.
+- **Deterministic shared sim** (water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()` or `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2` in shared state. Small host-owned things can broadcast state instead (DESIGN.md, "Determinism from day one").
 - **Cosmetic stays separate.** Particles, ripples, sounds may use floats and `Math.random()`, in their own modules, never read by the sim.
 - **Sync edits, not state.** Clients `submitEdit`; the host stamps and broadcasts. Bulk state travels only as host snapshots. Authority table: DESIGN.md, "Clear authority".
 - **Room interface only.** Game code talks to `createPeerRoom` (`src/net/README.md`), never to PeerJS directly. No alternate transports, no claude.ai artifact build.

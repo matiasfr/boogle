@@ -49,16 +49,20 @@ Loose physics, splashes and collapsing sand walls are features. Prefer mechanics
 ## Technical principles
 
 ### Determinism from day one
-Anything simulated and shared (water, terrain edits, crops, weather, tide) must produce bit-identical results on every machine:
-- integer quantities (water as 0–255 units per cell, not floats);
-- fixed update order and a fixed tick rate;
-- seeded randomness ([`mulberry32`](src/sim/rng.js)) and integer hashing for noise, never `Math.random()` in shared logic;
-- events (tide, weather) are a pure function of tick + seed.
+Shared things are kept in step one of two ways. Pick per system:
 
-Cosmetic-only effects (ripples, particles, splashes) can use floats and the GPU and don't need to match across machines. Keep the two layers separate.
+- **Lockstep** (water, terrain edits, mushrooms): every machine runs the same sim from the same edits. Use it when the state is big and changes in many places at once, so sending it would cost too much. Results must be bit-identical on every machine:
+  - conserved quantities are integers (water as 0–255 units per cell, sand in centimetres), so totals stay exact and snapshots stay small;
+  - other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2` or `hypot` in shared logic (browsers round them differently): use a lookup table or our own polynomial. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
+  - fixed update order and a fixed tick rate;
+  - seeded randomness ([`mulberry32`](src/sim/rng.js)), never `Math.random()` in shared logic;
+  - events (tide, weather) are a pure function of tick + seed.
+- **Host state** (the Boogler, small shared props, values that are a few dozen numbers): the host owns the value and broadcasts it, and clients interpolate. Nothing has to match bit for bit, so any math is fine.
+
+Cosmetic-only effects (ripples, particles, splashes) can use floats and the GPU and don't need to match across machines. Keep them separate from both.
 
 ### Sync edits, not state
-Clients send small **edit events** (dig, pile, plant, harvest, splash) over the reliable channel. The host stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as periodic host snapshots (with a hash) for late joiners and desync recovery.
+For lockstep systems, clients send small **edit events** (dig, pile, plant, harvest, splash) over the reliable channel. The host stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as periodic host snapshots (with a hash) for late joiners and desync recovery. Host-state systems send the values themselves.
 
 ### Clear authority
 | Thing | Authority |
