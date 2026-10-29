@@ -101,12 +101,24 @@ export function installStepHooks({ me, ball, remotes }) {
         bb.velocity.z *= k;
         bb.angularVelocity.scale(k, bb.angularVelocity);
       }
-      const sub = clamp((SEA - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
+      // Surf: the surface bobs with the same waves the sea shader draws, and a slow, smoothly varying
+      // current runs along the shore. A gentle, surging inward drift keeps the ball washing in eventually.
+      const t = world.time;
+      const px = bb.position.x,
+        pz = bb.position.z;
+      const surf = SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
+      const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
       if (sub > 0) {
-        const rr = Math.hypot(bb.position.x, bb.position.z) || 1;
+        const rr = Math.hypot(px, pz) || 1;
+        const nx = px / rr,
+          nz = pz / rr;
+        const along = 0.9 * Math.sin(t * 0.045 + 1.3) + 0.5 * Math.sin(t * 0.13 + rr * 0.05);
+        const inward = 0.28 + 0.22 * Math.sin(t * 0.35 + rr * 0.1) + 0.12 * Math.sin(t * 0.11);
+        const cx = -nx * inward - nz * along,
+          cz = -nz * inward + nx * along;
         bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * bb.velocity.y * sub;
-        bb.force.x += (-0.9 * bb.velocity.x - (bb.position.x / rr) * 0.8) * BALL_MASS * sub;
-        bb.force.z += (-0.9 * bb.velocity.z - (bb.position.z / rr) * 0.8) * BALL_MASS * sub;
+        bb.force.x += (cx - bb.velocity.x) * 0.9 * BALL_MASS * sub;
+        bb.force.z += (cz - bb.velocity.z) * 0.9 * BALL_MASS * sub;
       }
     }
   });

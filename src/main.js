@@ -13,6 +13,7 @@ import { ball, claimBall, respawnBall, resolveBallOwner, prepareBall } from './b
 import { me, updateIntent, updateCamera, updatePreview, handPosition } from './player.js';
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
+import { updateSplash } from './splash.js';
 import { initInput } from './input.js';
 
 createTerrainMesh();
@@ -94,6 +95,7 @@ function frame(now) {
   syncVisuals(dt);
   updateCamera(elapsed);
   updateClouds(dt);
+  updateSplash(dt, elapsed, ball, me, remotes);
   updatePreview();
   updateHud();
   if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
