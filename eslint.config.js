@@ -5,7 +5,7 @@ const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Add rules modules here.
-const LOCKSTEP_FILES = ['src/sim/**/*.js', 'src/world/terrain-logic.js'];
+const LOCKSTEP_FILES = ['src/sim/**/*.js', 'src/world/terrain-logic.js', 'src/world/grid.js'];
 const det = (what) => `${what} is not deterministic across browsers; see DESIGN.md "Determinism from day one".`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'pow', 'exp']
   .concat(['expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])

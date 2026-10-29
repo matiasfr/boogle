@@ -14,21 +14,21 @@ import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync
 import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
 import { PATCH } from '../sim/mushrooms.js';
 import { migrateTerrainDeltas } from './legacy-grid.js';
+import { baseCm as islandBaseCm } from '../island/index.js';
 
 const N = GRID_RES;
 export const REACH = 4.5; // metres from the player to the aimed spot
 const REPEAT_MS = 220; // client-side repeat while a button is held (host limit is 200 ms)
 
 // ---------------------------------------------------------------- state
-// Base heights, quantized once. The court is sand too, so it is editable even where it sits above the beach band.
+// Base heights in cm (src/island/ground.js, already quantized: every machine simulates on the same ground), copied so
+// the sim owns its own. The court is sand too, so it is editable even where it sits above the beach band.
 // Only the home square (constants.js HOME) is editable: that is where the shared water runs.
-const baseCm = new Int16Array(N * N);
+const baseCm = islandBaseCm.slice();
 const editable = new Uint8Array(N * N);
 for (let i = 0; i < N; i++)
   for (let j = 0; j < N; j++) {
     const idx = i * N + j;
-    baseCm[idx] = Math.round(heights[i][j] * 100);
-    heights[i][j] = baseCm[idx] / 100; // every machine simulates on the same quantized ground
     const x = i * CELL - HALF,
       z = HALF - j * CELL;
     const onCourt = Math.hypot(x - COURT.x, z - COURT.z) <= COURT.r + 3;

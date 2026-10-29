@@ -4,7 +4,8 @@
 //
 // Order inside a tick: edits apply (terrain deltas change) -> terrain-edits flushes its mesh -> this module
 // copies changed ground into the sim, wakes those cells and steps the water -> the surface mesh retargets.
-import { GRID_RES, CELL, HALF, SEA, HOME } from '../constants.js';
+import { GRID_RES, CELL, HALF, SEA } from '../constants.js';
+import { homeBox } from './grid.js';
 import { clamp } from '../math.js';
 import { groundHeight } from '../terrain.js';
 import { createWater } from '../sim/water.js';
@@ -39,10 +40,7 @@ const CFG = WATER_CONFIG;
 // Only the home square (constants.js HOME) is simulated: the mainland has no shared water, so the sim costs what it
 // always did however big the island gets.
 const full = regionFromBase(terrain.base, N, CFG.regionBelowCm, CFG.regionPad);
-const homeI0 = Math.round((HOME.x0 + HALF) / CELL),
-  homeI1 = Math.round((HOME.x1 + HALF) / CELL),
-  homeJ0 = Math.round((HALF - HOME.z1) / CELL),
-  homeJ1 = Math.round((HALF - HOME.z0) / CELL);
+const { i0: homeI0, i1: homeI1, j0: homeJ0, j1: homeJ1 } = homeBox();
 const i0 = Math.max(full.i0, homeI0),
   j0 = Math.max(full.j0, homeJ0);
 const W = Math.min(full.i0 + full.w - 1, homeI1) - i0 + 1,
