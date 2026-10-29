@@ -22,7 +22,7 @@ The networking code (search `// ---- networking` in `index.html`) picks a transp
 | Inside the claude.ai artifact viewer | `window.claude.use('room')` presence | Anyone with the artifact open |
 | Anywhere else (localhost, a static host) | `BroadcastChannel('boogle-local-room')` | Other tabs in the **same browser** only |
 
-So until the WebSocket server in [PLAN.md](PLAN.md) (Phase 1) lands, playing with friends off claude.ai doesn't work. Open two tabs to test multiplayer locally.
+So until PeerJS networking from [PLAN.md](PLAN.md) (Phase 1) lands, playing with friends off claude.ai doesn't work. Open two tabs to test multiplayer locally.
 
 ### How sync works
 
