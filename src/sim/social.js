@@ -2,7 +2,7 @@
 // pitch table and the "three honks within a second make a chord" detector. No DOM, no randomness, runs in Node tests.
 
 export const PING_KINDS = { ball: 'Ball!', dig: 'Dig!', look: 'Look!' };
-const BOUND = 80; // island half-size in metres (HALF)
+const BOUND = 255; // map half-size in metres (HALF in src/constants.js)
 
 // Returns a clean { x, y, z, k } or null. Anything unexpected is rejected, never trusted.
 export function validatePing(msg) {

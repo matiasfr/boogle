@@ -2,7 +2,7 @@
 // src/world/README.md), so it runs the same on every client and in Node tests.
 
 // Dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H).
-export const PATCH = { i0: 78, j0: 52, w: 10, h: 10 };
+export const PATCH = { i0: 218, j0: 192, w: 20, h: 20 };
 // Minimum Chebyshev distance in cells between two plots, so grown caps do not overlap much.
 export const SPACING = 3;
 export const GROW_TICKS = 40;

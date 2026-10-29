@@ -2,7 +2,7 @@
 // Shared state lives in src/sim/gifts.js and changes only through world/sync edits. The pocket is yours alone
 // (DESIGN.md: personal rewards) and stays in localStorage.
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, REACH, isTouch, reducedMotion } from './constants.js';
+import { CELL, HALF, GRID_RES, HOME, REACH, isTouch, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { world as physics } from './physics.js';
@@ -11,6 +11,7 @@ import { me } from './player.js';
 import { ball } from './ball.js';
 import { net } from './net.js';
 import { world, registerOp, registerState, onTick, submitEdit } from './world/sync.js';
+import { isLegacyCell, fromLegacy } from './world/legacy-grid.js';
 import { PATCH } from './sim/mushrooms.js';
 import { GIFTS } from './sim/gift-catalog.js';
 import {
@@ -38,6 +39,16 @@ const SHORE_MAX_CM = 70;
 const layout = { trees: [], shore: [] };
 export const gifts = createGifts(layout);
 const myId = () => net.room?.selfId ?? 'local';
+// Items saved by an older, smaller island sit on its 129-cell grid: move them to the same spot on today's grid.
+function migrateGiftCells(json) {
+  const it = json?.it;
+  if (!Array.isArray(it)) return json;
+  const out = it.slice();
+  for (let k = 0; k + 5 < out.length; k += 6)
+    if (isLegacyCell(out[k + 2], out[k + 3])) [out[k + 2], out[k + 3]] = fromLegacy(out[k + 2], out[k + 3]);
+  return { ...json, it: out };
+}
+
 const cellX = (i) => i * CELL - HALF;
 const cellZ = (j) => HALF - j * CELL;
 const fx = { falling: new Map(), wobble: new Map(), leaving: [] };
@@ -61,7 +72,7 @@ registerOp('gift.take', {
 });
 registerState('gifts', {
   serialize: () => serializeGifts(gifts),
-  load: (json) => loadGifts(gifts, json),
+  load: (json) => loadGifts(gifts, migrateGiftCells(json)),
   hash: () => hashGifts(gifts),
 });
 onTick((t) => tickGifts(gifts, t, world.seed));
@@ -70,8 +81,12 @@ onTick((t) => tickGifts(gifts, t, world.seed));
 export function createGifts3d() {
   for (const t of trees.slice(0, MAX_TREES))
     layout.trees.push({ i: Math.round((t.x + HALF) / CELL), j: Math.round((HALF - t.z) / CELL) });
+  // Things wash up on the home beaches only (constants.js HOME), where the players and the Boogler hang out.
   for (let i = 0; i < GRID_RES; i++)
     for (let j = 0; j < GRID_RES; j++) {
+      const hx = cellX(i),
+        hz = cellZ(j);
+      if (hx < HOME.x0 + 2 || hx > HOME.x1 - 2 || hz < HOME.z0 + 2 || hz > HOME.z1 - 2) continue;
       const cm = Math.round(heights[i][j] * 100);
       if (cm < SHORE_MIN_CM || cm > SHORE_MAX_CM) continue;
       if (i >= PATCH.i0 - 3 && i < PATCH.i0 + PATCH.w + 3 && j >= PATCH.j0 - 3 && j < PATCH.j0 + PATCH.h + 3) continue;

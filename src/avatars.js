@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from './constants.js';
 import { clamp, lerp } from './math.js';
-import { playerMat } from './physics.js';
+import { playerMat, NOT_SCENERY } from './physics.js';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
 const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);
@@ -72,6 +72,7 @@ export function makePlayerBody(kinematic) {
     type: kinematic ? CANNON.Body.KINEMATIC : CANNON.Body.DYNAMIC,
     material: playerMat,
     fixedRotation: true,
+    collisionFilterMask: kinematic ? NOT_SCENERY : -1, // remote players are moved by the network, not by the ground
   });
   b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, 0, 0));
   b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, HEAD_OFFSET, 0));

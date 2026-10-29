@@ -2,7 +2,7 @@
 // then adapts applied edits to the terrain mesh, the physics heightfield and the water height texture.
 // Also owns the shovel tool: mode, aiming, the target ring and the hold-to-repeat loop.
 import * as THREE from 'three';
-import { GRID_RES, CELL, HALF, COURT, BALL_R, PLAYER_R } from '../constants.js';
+import { GRID_RES, CELL, HALF, HOME, COURT, BALL_R, PLAYER_R } from '../constants.js';
 import { clamp } from '../math.js';
 import { heights, groundHeight, setCellHeight, refreshRegion, startSettle } from '../terrain.js';
 import { refreshGround } from '../physics.js';
@@ -13,6 +13,7 @@ import { ball } from '../ball.js';
 import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
 import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
 import { PATCH } from '../sim/mushrooms.js';
+import { migrateTerrainDeltas } from './legacy-grid.js';
 
 const N = GRID_RES;
 export const REACH = 4.5; // metres from the player to the aimed spot
@@ -20,6 +21,7 @@ const REPEAT_MS = 220; // client-side repeat while a button is held (host limit 
 
 // ---------------------------------------------------------------- state
 // Base heights, quantized once. The court is sand too, so it is editable even where it sits above the beach band.
+// Only the home square (constants.js HOME) is editable: that is where the shared water runs.
 const baseCm = new Int16Array(N * N);
 const editable = new Uint8Array(N * N);
 for (let i = 0; i < N; i++)
@@ -27,10 +29,14 @@ for (let i = 0; i < N; i++)
     const idx = i * N + j;
     baseCm[idx] = Math.round(heights[i][j] * 100);
     heights[i][j] = baseCm[idx] / 100; // every machine simulates on the same quantized ground
-    const onCourt = Math.hypot(i * CELL - HALF - COURT.x, HALF - j * CELL - COURT.z) <= COURT.r + 3;
+    const x = i * CELL - HALF,
+      z = HALF - j * CELL;
+    const onCourt = Math.hypot(x - COURT.x, z - COURT.z) <= COURT.r + 3;
+    const home = x > HOME.x0 + 2 && x < HOME.x1 - 2 && z > HOME.z0 + 2 && z < HOME.z1 - 2;
     const inGarden =
       i >= PATCH.i0 - 4 && i <= PATCH.i0 + PATCH.w + 1 && j >= PATCH.j0 - 2 && j <= PATCH.j0 + PATCH.h + 1;
-    editable[idx] = !inGarden && (onCourt || (baseCm[idx] >= EDIT_MIN_CM && baseCm[idx] <= EDIT_MAX_CM)) ? 1 : 0;
+    const sandy = onCourt || (baseCm[idx] >= EDIT_MIN_CM && baseCm[idx] <= EDIT_MAX_CM);
+    editable[idx] = home && !inGarden && sandy ? 1 : 0;
   }
 updateHeightTexels(0, 0, N - 1, N - 1);
 refreshGround();
@@ -40,8 +46,9 @@ registerOp('dig', { validate: terrain.validate, apply: terrain.apply });
 registerOp('pile', { validate: terrain.validate, apply: terrain.apply });
 registerOp('flatten', { validate: terrain.validate, apply: terrain.apply });
 registerState('terrain', {
-  serialize: terrain.serialize,
+  serialize: () => ({ ...terrain.serialize(), n: N }),
   load(json) {
+    if (json && json.n === undefined && Array.isArray(json.d)) json = { ...json, d: migrateTerrainDeltas(json.d, N) };
     for (const idx of terrain.load(json)) markDirty(idx);
   },
   hash: terrain.hash,

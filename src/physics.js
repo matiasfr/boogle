@@ -20,7 +20,13 @@ world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { fricti
 world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
 
 // The shape reads `heights` directly, so edits only need to invalidate its caches (see refreshGround).
-const groundBody = new CANNON.Body({ mass: 0, material: groundMat });
+// Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
+// need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and
+// anyone underground (the caves switch players and the ball to the CAVE group's colliders instead of the ground).
+export const GROUP = { DEFAULT: 1, SCENERY: 2, CAVE: 4 };
+export const NOT_SCENERY = ~GROUP.SCENERY;
+
+export const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
 const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
 groundBody.addShape(groundShape);
 groundBody.position.set(-HALF, 0, HALF);
@@ -38,8 +44,18 @@ export function refreshGround() {
 }
 
 export function addStaticSpheres(spheres) {
-  const body = new CANNON.Body({ mass: 0, material: groundMat });
-  for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x, s.y, s.z));
+  // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.
+  let cx = 0,
+    cy = 0,
+    cz = 0;
+  for (const s of spheres) {
+    cx += s.x / spheres.length;
+    cy += s.y / spheres.length;
+    cz += s.z / spheres.length;
+  }
+  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
+  for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x - cx, s.y - cy, s.z - cz));
+  body.position.set(cx, cy, cz);
   world.addBody(body);
   return body;
 }
@@ -104,14 +120,13 @@ export function installStepHooks({ me, ball, remotes }) {
       }
       if (depth > 0)
         b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
-      const rr = Math.hypot(b.position.x, b.position.z);
-      if (rr > 72) {
-        const nx = b.position.x / rr,
-          nz = b.position.z / rr;
-        const out = b.velocity.x * nx + b.velocity.z * nz;
-        if (out > -2) {
-          b.velocity.x -= nx * (out + 2);
-          b.velocity.z -= nz * (out + 2);
+      // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
+      const lim = HALF - 18;
+      for (const ax of ['x', 'z']) {
+        const p = b.position[ax];
+        if (Math.abs(p) > lim) {
+          const out = Math.sign(p) * b.velocity[ax];
+          if (out > -2) b.velocity[ax] -= Math.sign(p) * (out + 2);
         }
       }
     }

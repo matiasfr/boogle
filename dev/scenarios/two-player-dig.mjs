@@ -7,14 +7,23 @@ export default {
     const B = await t.open({ name: 'Bob', room });
     const connected = await B.waitFor(`window.boogle.net.room && window.boogle.remotes.size >= 1`, { timeout: 30000 });
     t.check('the players see each other', connected >= 0);
-    const cell = { i: 70, j: 90 }; // beach, north-west of the court
-    const read = `const { terrain } = await import('/src/world/terrain-edits.js'); return terrain.delta[${cell.i * 129 + cell.j}];`;
+    const N = 409,
+      HALF = 255; // src/constants.js GRID_RES, HALF (1.25 m cells)
+    // The diggable beach cell nearest a spot west of the court.
+    const cell = await A.eval(`const { terrain } = await import('/src/world/terrain-edits.js');
+      for (let r = 0; r < 60; r++) for (let di = -r; di <= r; di++) for (const dj of [-r, r]) {
+        const i = 190 + di, j = 186 + dj;
+        if (terrain.mask[i * ${N} + j]) return { i, j };
+      }
+      return null;`);
+    t.check('found a diggable beach cell', !!cell, JSON.stringify(cell));
+    const read = `const { terrain } = await import('/src/world/terrain-edits.js'); return terrain.delta[${cell.i * N + cell.j}];`;
     const before = await A.eval(read);
     await B.eval(
       `const { submitEdit } = await import('/src/world/sync.js'); submitEdit({ op: 'dig', i: ${cell.i}, j: ${cell.j} });`,
     );
     const seen = await A.waitFor(
-      `(async () => { const { terrain } = await import('/src/world/terrain-edits.js'); return terrain.delta[${cell.i * 129 + cell.j}] < ${before}; })()`,
+      `(async () => { const { terrain } = await import('/src/world/terrain-edits.js'); return terrain.delta[${cell.i * N + cell.j}] < ${before}; })()`,
       { timeout: 15000 },
     );
     t.check("B's dig reaches A", seen >= 0, seen + ' ms');
@@ -30,8 +39,8 @@ export default {
       `A ${JSON.stringify(stA)} B ${JSON.stringify(stB)}`,
     );
     await A.view({
-      cam: [cell.i * 1.25 - 80 + 5, 4, 80 - cell.j * 1.25 + 5],
-      look: [cell.i * 1.25 - 80, 0, 80 - cell.j * 1.25],
+      cam: [cell.i * 1.25 - HALF + 5, 4, HALF - cell.j * 1.25 + 5],
+      look: [cell.i * 1.25 - HALF, 0, HALF - cell.j * 1.25],
     });
     await A.still('A-sees-pit');
   },

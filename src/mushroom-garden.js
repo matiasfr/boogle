@@ -10,6 +10,7 @@ import { obstacles } from './props.js';
 import { world, groundMat, playerMat, ballMat } from './physics.js';
 import { me } from './player.js';
 import { registerOp, registerState, onTick, submitEdit } from './world/sync.js';
+import { isLegacyCell, LEGACY_SHIFT } from './world/legacy-grid.js';
 import {
   GROW_TICKS,
   inPatch,
@@ -46,7 +47,15 @@ registerOp('mush.water', {
 });
 registerState('mushrooms', {
   serialize: () => serializeGarden(garden),
-  load: (json) => loadGarden(garden, json),
+  load: (json) =>
+    loadGarden(
+      garden,
+      Array.isArray(json)
+        ? json.map((v, k) =>
+            k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v,
+          )
+        : json,
+    ),
   hash: () => hashGarden(garden),
 });
 onTick(() => tickGarden(garden));

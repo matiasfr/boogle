@@ -20,6 +20,7 @@
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "look": "node dev/look/look.mjs",
     "perf": "node dev/look/perf.mjs",
+    "island-map": "node dev/island/map.mjs",
     "scenario": "node dev/scenarios/run.mjs",
     "scenarios": "node dev/scenarios/run.mjs",
     "ship": "bash scripts/ship.sh",

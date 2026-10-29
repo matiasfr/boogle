@@ -381,6 +381,8 @@ const tmpColor = new THREE.Color();
 // Console handle (window.boogle.sky): sky.state, sky.preview(0.55) for sunset, sky.preview(0.8, 0.5) for a full moon at
 // night, sky.preview(null) to follow the world clock again. Local only.
 const state = { frac: 0, phase: 0, illum: 0, day: 1, sunDir, moonDir };
+// Read-only view of the current sky for other modules: day (0 night .. 1 day), frac, phase, illum.
+export const skyNow = state;
 export const skyDebug = {
   state,
   preview(frac, phase = null) {

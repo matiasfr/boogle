@@ -4,7 +4,7 @@
 //
 // Order inside a tick: edits apply (terrain deltas change) -> terrain-edits flushes its mesh -> this module
 // copies changed ground into the sim, wakes those cells and steps the water -> the surface mesh retargets.
-import { GRID_RES, CELL, HALF, SEA } from '../constants.js';
+import { GRID_RES, CELL, HALF, SEA, HOME } from '../constants.js';
 import { clamp } from '../math.js';
 import { groundHeight } from '../terrain.js';
 import { createWater } from '../sim/water.js';
@@ -35,8 +35,19 @@ const N = GRID_RES;
 const CFG = WATER_CONFIG;
 
 // ------------------------------------------------------------------ the sim
-const region = regionFromBase(terrain.base, N, CFG.regionBelowCm, CFG.regionPad);
-const { i0, j0, w: W, h: H } = region;
+// Only the home square (constants.js HOME) is simulated: the mainland has no shared water, so the sim costs what it
+// always did however big the island gets.
+const full = regionFromBase(terrain.base, N, CFG.regionBelowCm, CFG.regionPad);
+const homeI0 = Math.round((HOME.x0 + HALF) / CELL),
+  homeI1 = Math.round((HOME.x1 + HALF) / CELL),
+  homeJ0 = Math.round((HALF - HOME.z1) / CELL),
+  homeJ1 = Math.round((HALF - HOME.z0) / CELL);
+const i0 = Math.max(full.i0, homeI0),
+  j0 = Math.max(full.j0, homeJ0);
+const W = Math.min(full.i0 + full.w - 1, homeI1) - i0 + 1,
+  H = Math.min(full.j0 + full.h - 1, homeJ1) - j0 + 1;
+const region = { i0, j0, w: W, h: H };
+const regionKey = `${i0},${j0},${W},${H}`;
 const simTerrain = new Int32Array(W * H);
 function copyGround(a0, b0, a1, b1) {
   for (let a = Math.max(a0, i0); a <= Math.min(a1, i0 + W - 1); a++)
@@ -84,9 +95,11 @@ registerState('water', {
     const s = water.serialize();
     const cells = [];
     for (let c = 0; c < W * H; c++) if (water.depth[c] !== seaFill(c)) cells.push(c, water.depth[c]);
-    return { ...s, cells };
+    return { ...s, cells, region: regionKey };
   },
   load(json) {
+    // Cells are region-relative: water saved over a different region (an older island) is dropped and the sea refills.
+    if (json.region !== regionKey) json = { ...json, cells: [] };
     copyGround(0, 0, N - 1, N - 1); // terrain state was loaded just before this one
     const d = new Int32Array(W * H);
     for (let c = 0; c < d.length; c++) d[c] = seaFill(c);

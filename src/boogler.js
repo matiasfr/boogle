@@ -15,8 +15,9 @@ import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from './constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene, camera } from './scene.js';
-import { world, playerMat, teleport } from './physics.js';
-import { obstacles } from './props.js';
+import { world, playerMat, teleport, NOT_SCENERY } from './physics.js';
+import { blockedAt } from './props.js';
+import { island } from './island/index.js';
 import { PATCH } from './sim/mushrooms.js';
 import { me } from './player.js';
 import { net, remotes } from './net.js';
@@ -33,9 +34,14 @@ const FACE_HEX = '#1d1640';
 const SPEED = 1.5; // m/s
 const TURN = 3.2; // rad/s
 const MIN_H = 0.45; // stays on dry land
-const MAX_H = 7.5;
+const MAX_H = 30; // the whole island, massif included
 const MAX_STEP = 0.55; // max height change per metre of path
-const ISLAND_LIMIT = 48;
+const MAP_LIMIT = HALF - 25;
+// Home is the mushroom garden: he drifts back towards it, and only now and then sets off to see the rest of the island.
+const HOME_X = (PATCH.i0 + PATCH.w / 2) * CELL - HALF,
+  HOME_Z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
+const HOME_RANGE = 22; // metres around the garden where he just potters about
+const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere far
 const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
 const LABEL_Y = 1.15; // label anchor above the ground
@@ -77,10 +83,10 @@ export const boogler = {
 
 // ---------------------------------------------------------------- terrain checks
 function blocked(x, z, pad = 0) {
-  if (Math.hypot(x, z) > ISLAND_LIMIT) return true;
+  if (Math.abs(x) > MAP_LIMIT || Math.abs(z) > MAP_LIMIT) return true;
   const h = groundHeight(x, z);
   if (h < MIN_H || h > MAX_H) return true;
-  for (const o of obstacles) if (Math.hypot(o.x - x, o.z - z) < o.r + W_R + pad) return true;
+  if (blockedAt(x, z, W_R + pad)) return true;
   // Keep off the mushroom patch so he never looks like he's trampling the garden.
   const m = (W_R + pad) / CELL + 0.5,
     i = (x + HALF) / CELL,
@@ -104,12 +110,15 @@ function pathClear(x0, z0, x1, z1) {
   return true;
 }
 
-function pickTarget() {
-  for (let tries = 0; tries < 24; tries++) {
-    const a = rng() * Math.PI * 2,
-      d = range(5, 20);
-    const x = sim.x + Math.cos(a) * d,
-      z = sim.z + Math.sin(a) * d;
+// Where he's heading on a trip away from home (a POI or a random far spot), or null while pottering about.
+let trip = null;
+
+function tryStep(a, dmin, dmax) {
+  for (let tries = 0; tries < 12; tries++) {
+    const aa = a + (rng() - 0.5) * (tries < 6 ? 0.9 : 2.6),
+      d = range(dmin, dmax);
+    const x = sim.x + Math.cos(aa) * d,
+      z = sim.z + Math.sin(aa) * d;
     if (pathClear(sim.x, sim.z, x, z)) {
       sim.tx = x;
       sim.tz = z;
@@ -117,6 +126,30 @@ function pickTarget() {
     }
   }
   return false;
+}
+
+function pickTarget() {
+  const homeD = Math.hypot(HOME_X - sim.x, HOME_Z - sim.z);
+  if (!trip && homeD < HOME_RANGE * 1.5 && rng() < TRIP_CHANCE) {
+    // Off to see a POI (or somewhere random), standing a little way from it.
+    const spots = island.keepOut;
+    if (spots.length && rng() < 0.7) {
+      const k = spots[Math.floor(rng() * spots.length)];
+      const a = rng() * Math.PI * 2;
+      trip = { x: k.x + Math.cos(a) * (k.r + 6), z: k.z + Math.sin(a) * (k.r + 6) };
+    } else trip = { x: range(-HALF + 60, HALF - 60), z: range(-HALF + 60, 20) };
+  }
+  if (trip) {
+    const d = Math.hypot(trip.x - sim.x, trip.z - sim.z);
+    if (d < 8 || rng() < 0.03)
+      trip = null; // arrived (or got bored on the way)
+    else if (tryStep(Math.atan2(trip.z - sim.z, trip.x - sim.x), 8, Math.min(22, d))) return true;
+    else trip = null;
+  }
+  // Pottering: random little walks, pulled back towards the garden the further he strays.
+  const pull = clamp((homeD - HOME_RANGE) / 40, 0, 0.85);
+  if (rng() < pull && tryStep(Math.atan2(HOME_Z - sim.z, HOME_X - sim.x), 6, 18)) return true;
+  return tryStep(rng() * Math.PI * 2, 5, 20);
 }
 
 function findStart() {
@@ -249,7 +282,7 @@ export function booglerForPresence() {
 // Called from net.js with every fresh presence that carries `g` (only the host's does).
 export function noteBoogler(peer, g, time) {
   if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
-  if (Math.abs(g.p[0]) > 100 || Math.abs(g.p[1]) > 100) return;
+  if (Math.abs(g.p[0]) > HALF || Math.abs(g.p[1]) > HALF) return;
   if (peer !== src) {
     src = peer;
     snaps.length = 0;
@@ -423,7 +456,12 @@ export function createBoogler() {
   group = parts.root;
   scene.add(group);
 
-  body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: playerMat });
+  body = new CANNON.Body({
+    mass: 0,
+    type: CANNON.Body.KINEMATIC,
+    material: playerMat,
+    collisionFilterMask: NOT_SCENERY,
+  });
   body.addShape(new CANNON.Cylinder(W_R, W_R, H_R * 2, 14), new CANNON.Vec3(0, BODY_Y, 0));
   teleport(body, s.x, groundHeight(s.x, s.z), s.z);
   world.addBody(body);
