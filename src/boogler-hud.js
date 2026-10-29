@@ -1,6 +1,6 @@
-// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts
-// and his speech bubble), and a pointer pinned to the nearest screen edge (aimed at him, with his distance) while he's
-// off screen, so he's always easy to find.
+// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts,
+// his speech bubble, and the interact prompt when he is what you would interact with), and a pointer pinned to the
+// nearest screen edge (aimed at him, with his distance) while he's off screen, so he's always easy to find.
 import { boogler, booglerScreen } from './boogler.js';
 import { me } from './player.js';
 import { MAX_LEVEL } from './boogler-friendship.js';
@@ -11,7 +11,7 @@ const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
 const MARKUP = `
   <div class="boogler-tag" hidden>
     <div class="boogler-say" hidden><div class="boogler-say-text"></div></div>
-    <div class="boogler-tag-bob">The Boogler<span class="boogler-tag-bond"></span></div>
+    <div class="boogler-tag-bob">The Boogler<span class="boogler-tag-bond"></span><span class="boogler-tag-prompt" hidden></span></div>
   </div>
   <div class="boogler-find" hidden>
     <div class="boogler-find-arrow"></div>
@@ -42,6 +42,7 @@ function dom() {
   el = {
     tag: q('.boogler-tag'),
     bond: q('.boogler-tag-bond'),
+    prompt: q('.boogler-tag-prompt'),
     say: q('.boogler-say'),
     sayText: q('.boogler-say-text'),
     find: q('.boogler-find'),
@@ -63,6 +64,12 @@ const bondShown = { text: '', wary: false };
 export function setTagBond(level, wary) {
   bondText = wary ? 'avoiding you' : '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
   bondShown.wary = wary;
+}
+
+// The interact prompt's markup (src/features/prompt.js), shown in the tag; '' for none.
+const prompt = { html: '', shown: '' };
+export function setTagPrompt(html) {
+  prompt.html = html;
 }
 
 let lastDist = '';
@@ -89,6 +96,16 @@ export function updateBooglerHud() {
     d.say.classList.add('pop');
   }
   if (!talking) bubble.shown = '';
+  if (prompt.html !== prompt.shown) {
+    const fresh = !prompt.shown;
+    d.prompt.innerHTML = prompt.shown = prompt.html;
+    d.prompt.hidden = !prompt.html;
+    if (fresh && prompt.html) {
+      d.prompt.classList.remove('pop');
+      void d.prompt.offsetWidth; // restart the pop-in animation
+      d.prompt.classList.add('pop');
+    }
+  }
 
   const showFind = !s.onScreen && me.entered;
   d.find.hidden = !showFind;

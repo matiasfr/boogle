@@ -1,5 +1,6 @@
-// The Boogler as a friend: pet him, talk to him, give him presents, and ride him (he hates it). Ride too long and he
-// puffs up an orb that launches you off, then tells you off. Get launched too often and he runs when you come near.
+// The Boogler as a friend: talk to him (the interact button, see talkTarget), and in the talk pet him and give him what
+// you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
+// Get launched too often and he runs when you come near.
 //
 // Friendship is personal (src/boogler-friendship.js), saved in localStorage per room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler.js) reads act and wary, and every client plays
@@ -8,11 +9,10 @@ import { FIXED } from './constants.js';
 import { world as physics } from './physics.js';
 import { me } from './player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from './net.js';
-import { registerAction } from './controls.js';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
 import { booglerHearts, booglerPuff } from './boogler-fx.js';
 import { booglerSay, setTagBond } from './boogler-hud.js';
-import { dialogue, showDialogue, closeDialogue } from './boogler-dialogue.js';
+import { dialogue, showDialogue, closeDialogue, dialogueReact } from './boogler-dialogue.js';
 import { openTalk, talkView, pickTalk } from './boogler-talk.js';
 import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './boogler-lines.js';
 import {
@@ -28,8 +28,8 @@ import {
 import { heldId, useOne } from './inventory.js';
 import { GIFTS, giftIndex } from './sim/gift-catalog.js';
 
-const PET_RANGE = 2.6; // metres from his centre
-const TALK_RANGE = 3.6;
+const TALK_RANGE = 3.6; // metres from his centre
+const HALF_WIDTH = 0.8;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
@@ -96,7 +96,9 @@ function playRemoteEvents() {
 
 function celebrate(level) {
   emit(EV.LEVEL);
-  booglerSay(named(LEVEL_UP[level]), 3200);
+  const line = named(LEVEL_UP[level]);
+  if (dialogue.open) dialogueReact({ line, mood: 'joy', hearts: true, bond: bond(f()) });
+  else booglerSay(line, 3200);
 }
 
 // ---------------------------------------------------------------- distance
@@ -225,7 +227,7 @@ function render() {
   const v = talk && talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
-  showDialogue(v, bond(f()), answer, hangUp);
+  showDialogue(v, bond(f()), answer, hangUp, petInTalk);
 }
 
 function answer(i) {
@@ -236,8 +238,8 @@ function answer(i) {
     const t = out.gave.taste;
     emit(t === 'love' || t === 'like' ? EV.LOVE : t === 'dislike' ? EV.YUCK : EV.PAT);
   }
-  if (out.levelUp) celebrate(out.levelUp);
   render();
+  if (out.levelUp) celebrate(out.levelUp);
 }
 
 function hangUp() {
@@ -255,27 +257,24 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-// ---------------------------------------------------------------- petting (a grab target, see src/hands.js)
-let petUntil = 0;
-export function petTarget() {
-  if (!me.entered || !me.body || dialogue.open || riding() || dist() > PET_RANGE) return null;
-  return { label: 'pet', button: 'Pet', run: booglerAction };
+// The interact target (see interactTarget in src/hands.js). Range is to his middle; `r` makes the pick measure to his
+// edge, so a ball at his feet does not win over him.
+export function talkTarget() {
+  if (!me.entered || dialogue.open || dist() > TALK_RANGE) return null;
+  return { id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk };
 }
 
-function booglerAction() {
+function petInTalk() {
   const r = pet(f(), Date.now());
   save();
-  petUntil = performance.now() + 1200;
   emit(r.kind === 'happy' ? EV.PET : r.kind === 'wary' ? EV.YUCK : EV.PAT);
-  booglerSay(pick(PET[r.kind]), 1300);
+  dialogueReact({
+    line: pick(PET[r.kind]),
+    mood: r.kind === 'wary' ? 'grump' : 'joy',
+    hearts: r.kind === 'happy',
+    bond: bond(f()),
+  });
   if (r.levelUp) celebrate(r.levelUp);
-  return true;
-}
-
-export function booglerHint() {
-  if (!me.entered || !me.body || dialogue.open || riding() || dist() >= TALK_RANGE) return null;
-  const g = giftList()[0];
-  return g && !GIFTS[g.kind].key ? 'C to give' : 'C to talk';
 }
 
 // ---------------------------------------------------------------- frame
@@ -288,23 +287,6 @@ export function setupBooglerPlay() {
   onRemotePresence((r, pr) => {
     r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? pr.bg : null;
   });
-  addEventListener('keydown', (e) => {
-    if (!me.entered || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target?.tagName === 'INPUT') return;
-    if (e.code === 'KeyC') booglerTalk();
-  });
-  registerAction('talk', { pad: 'right', label: 'Talk to The Boogler', down: booglerTalk });
-  const touch = document.getElementById('touch');
-  if (touch) {
-    const btn = document.createElement('button');
-    btn.className = 'tbtn talk';
-    btn.type = 'button';
-    btn.textContent = 'Talk';
-    btn.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      booglerTalk();
-    });
-    touch.append(btn);
-  }
 }
 
 export function updateBooglerPlay(dt, now) {
@@ -313,7 +295,7 @@ export function updateBooglerPlay(dt, now) {
     boogler.me.wary = isWary(f(), Date.now());
   }
   if (me.entered && me.body) updateRide(dt, now);
-  boogler.me.act = dialogue.open ? ACT.TALK : riding() ? ACT.RIDE : now < petUntil ? ACT.PET : ACT.NONE;
+  boogler.me.act = dialogue.open ? ACT.TALK : riding() ? ACT.RIDE : ACT.NONE;
   playRemoteEvents();
 
   const d = dist();
@@ -322,5 +304,4 @@ export function updateBooglerPlay(dt, now) {
     booglerSay(pick(FLEE), 1200);
   }
   setTagBond(bond(f()).level, boogler.me.wary);
-  document.body.classList.toggle('near-boogler', d < TALK_RANGE && !dialogue.open);
 }

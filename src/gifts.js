@@ -422,17 +422,21 @@ function dropEdit(t, x, z) {
   return submitEdit({ op: 'fruit.drop', i, j, t, d });
 }
 
-// What grabbing would do here: { label, button, run } to pick something up or shake a palm, { text } when your hotbar
-// has no room for the thing in reach, or null.
+// What interacting would do here (see interactTarget in src/hands.js): { id, verb, at, run } to pick something up or
+// shake a palm, { id, verb, at, blocked } when your hotbar has no room for the thing in reach, or null.
+const promptAt = new THREE.Vector3();
 export function giftTarget() {
   if (!me.entered || !me.body) return null;
   const it = nearestItem();
   if (it) {
-    const g = GIFTS[it.kind];
-    if (roomFor(g.id) < 0 || inv.slots.filter((s) => !s).length <= pending.size) return { text: 'Hotbar full' };
+    const at = itemPos(it, promptAt);
+    at.y += 0.35;
+    if (roomFor(GIFTS[it.kind].id) < 0 || inv.slots.filter((s) => !s).length <= pending.size)
+      return { id: `item${it.id}`, verb: 'Pick up', at, blocked: 'Hotbar full' };
     return {
-      label: 'pick up',
-      button: 'Pick up',
+      id: `item${it.id}`,
+      verb: 'Pick up',
+      at,
       run: () => {
         if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
       },
@@ -441,7 +445,8 @@ export function giftTarget() {
   const t = nearestRipeTree();
   if (t >= 0) {
     const p = me.body.position;
-    return { label: 'shake the palm', button: 'Shake', run: () => dropEdit(t, p.x, p.z) };
+    const at = promptAt.set(trees[t].x, groundHeight(trees[t].x, trees[t].z) + 1.7, trees[t].z);
+    return { id: `palm${t}`, verb: 'Shake', at, run: () => dropEdit(t, p.x, p.z) };
   }
   return null;
 }
