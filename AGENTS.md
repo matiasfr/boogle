@@ -28,6 +28,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - `npm run dev`: local game at http://localhost:5173 (`?room=<name>`, `?netdebug=1`).
 - `npm run check`: lint + unit tests + build, a few seconds. Run before every push.
 - `npm run check:full`: adds server tests and the headless network test (~30 s). Run when you touch `src/net*`, `src/world/sync.js` or `server/`.
+- `npm run perf`: draw calls and triangles in ~8 s; compare before/after changes that add meshes or lights.
 - `npm run ship`: how you push (below). `cd server && npm test`: server tests alone.
 
 ## Tests stay light

@@ -59,6 +59,12 @@ not tune the look); put the image paths in check details so a failure is diagnos
 `submitEdit` over aiming the mouse. Real-time motion scores depend on the machine, so compare before/after on the
 same machine, never against absolute numbers from elsewhere.
 
+## 3. Render cost: `npm run perf`
+
+About 8 s. Prints draw calls, shadow-pass calls, triangles, geometries and shader programs, for the island as
+entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running game). The counts are exact;
+headless fps is not, so it isn't reported. Run it before and after anything that adds meshes or lights, and compare.
+
 ## Loop for a feature
 Write or extend a scenario that fails without your feature, implement, run it, Read the stills/sheets/heatmaps,
 fix what looks wrong, repeat. Commit the scenario with the feature.
