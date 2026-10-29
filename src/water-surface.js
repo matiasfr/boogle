@@ -9,6 +9,14 @@ import { scene, camera, renderer } from './scene.js';
 import { waterMat } from './water-render.js';
 import { groundHeight } from './terrain.js';
 
+// Look tunables. The sim's thin film flip-flops between two depths every tick (e.g. 3 <-> 6 cm), so the drawn
+// depth and flow ease slowly (about half a second) and only the average shows; streaks are slow and soft.
+export const SURFACE_LOOK = {
+  easePerSec: 2.2, // 1/time-constant of the displayed depth and flow
+  streakSpeed: 0.35, // streak scroll speed per m/s of current
+  streakAmount: 0.4, // streak brightness 0..1
+};
+
 export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
   const W = water.width,
     H = water.height,
@@ -63,6 +71,7 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
       uRip: u.uRip,
       uSun: u.uSun,
       uSky: u.uSky,
+      uStreak: { value: new THREE.Vector2(SURFACE_LOOK.streakSpeed, SURFACE_LOOK.streakAmount) },
       uFog: u.uFog,
       uFogNear: u.uFogNear,
       uFogFar: u.uFogFar,
@@ -76,7 +85,7 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: `
-      uniform float uTime; uniform vec4 uRip[8]; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog;
+      uniform float uTime; uniform vec4 uRip[8]; uniform vec3 uSun; uniform vec3 uSky; uniform vec2 uStreak; uniform vec3 uFog;
       uniform float uFogNear; uniform float uFogFar; varying vec3 vWorld; varying vec4 vInfo;
       void main() {
         float depth = vInfo.x;
@@ -95,8 +104,8 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
         // flow streaks: bright dashes sliding downstream, stronger where it moves fast
         float along = dot(p, dir), across = dot(p, vec2(-dir.y, dir.x));
         float lane = smoothstep(0.55, 0.95, sin(across * 6.5 + sin(along * 0.8) * 1.4));
-        float dash = smoothstep(0.1, 0.8, sin(along * 1.7 - t * (1.6 + sp * 3.0)));
-        float streak = lane * dash * smoothstep(0.08, 0.5, sp) * (1.0 - smoothstep(0.3, 0.9, depth) * 0.7);
+        float dash = smoothstep(-0.3, 0.9, sin(along * 1.3 - t * (0.25 + sp * uStreak.x)));
+        float streak = lane * dash * smoothstep(0.08, 0.5, sp) * (1.0 - smoothstep(0.3, 0.9, depth) * 0.7) * uStreak.y;
         float edge = 1.0 - smoothstep(0.0, 0.04, depth);
         float foam = edge * (0.4 + 0.3 * sin(p.x * 1.7 + p.y * 1.3 - t * 1.5)) + streak * 0.7;
         float ring = 0.0;
@@ -208,14 +217,14 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
   // Every frame: ease the cells that changed towards the latest tick.
   function frame(dt) {
     if (moving.length === 0) return;
-    const k = 1 - Math.exp(-dt * 16);
+    const k = 1 - Math.exp(-dt * SURFACE_LOOK.easePerSec);
     const keep = [];
     for (const c of moving) {
       const t = c * 4;
       let far = false;
       for (let q = 0; q < 4; q++) {
         const diff = tgt[t + q] - disp[t + q];
-        if (Math.abs(diff) > (q === 0 ? 0.0008 : 0.01)) {
+        if (Math.abs(diff) > (q === 0 ? 0.0004 : 0.004)) {
           disp[t + q] += diff * k;
           far = true;
         } else disp[t + q] = tgt[t + q];
@@ -292,7 +301,7 @@ export function createSpringFx(sx, sz) {
   let cursor = 0;
   return function update(dt, surfaceY) {
     const top = Math.max(surfaceY, y0, SEA);
-    acc += dt * (reducedMotion ? 10 : 30);
+    acc += dt * (reducedMotion ? 4 : 9);
     while (acc >= 1) {
       acc -= 1;
       const i = cursor;
@@ -302,16 +311,16 @@ export function createSpringFx(sx, sz) {
       p[i * 3] = sx + Math.cos(a) * r;
       p[i * 3 + 1] = top + 0.02;
       p[i * 3 + 2] = sz + Math.sin(a) * r;
-      v[i * 3] = Math.cos(a) * (0.2 + Math.random() * 0.5);
-      v[i * 3 + 1] = 1.6 + Math.random() * 1.8;
-      v[i * 3 + 2] = Math.sin(a) * (0.2 + Math.random() * 0.5);
-      life[i] = 0.5 + Math.random() * 0.4;
+      v[i * 3] = Math.cos(a) * (0.1 + Math.random() * 0.25);
+      v[i * 3 + 1] = 0.9 + Math.random() * 0.9;
+      v[i * 3 + 2] = Math.sin(a) * (0.1 + Math.random() * 0.25);
+      life[i] = 0.4 + Math.random() * 0.3;
       size[i] = 0.1 + Math.random() * 0.1;
     }
     for (let i = 0; i < MAX; i++) {
       if (life[i] <= 0) continue;
       life[i] -= dt;
-      v[i * 3 + 1] -= 9 * dt;
+      v[i * 3 + 1] -= 6 * dt;
       p[i * 3] += v[i * 3] * dt;
       p[i * 3 + 1] += v[i * 3 + 1] * dt;
       p[i * 3 + 2] += v[i * 3 + 2] * dt;

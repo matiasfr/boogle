@@ -31,7 +31,7 @@ export default {
     t.check('the stream shows some motion (it flows)', m.score > 0.3, `score ${m.score.toFixed(2)}`);
     t.check(
       'the stream is calm, not frantic',
-      m.score < 6,
+      m.score < 2.5,
       `score ${m.score.toFixed(2)} ${m.sheet} ${m.heat} ${still}`,
     );
 
@@ -39,6 +39,6 @@ export default {
     await t.sleep(1500);
     const sp = await g.motion('spring', { frames: 8, seconds: 2 });
     await g.still('spring');
-    t.check('the spring is calm', sp.score < 6, `score ${sp.score.toFixed(2)} ${sp.sheet}`);
+    t.check('the spring is calm', sp.score < 2.5, `score ${sp.score.toFixed(2)} ${sp.sheet}`);
   },
 };
