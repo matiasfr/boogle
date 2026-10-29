@@ -39,5 +39,5 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - Commit small, focused changes with imperative messages ("Add splashes for the ball"), then run **`npm run ship`**, not `git push`. It rebases onto the latest `main`, runs `check` (or `check:full` for networking/sync/server), pushes, and retries if `main` moved.
 - On a rebase conflict, keep **both** sides' changes (they are usually independent features). `ship` asks Claude Code to do this automatically; if it can't, resolve, `git add`, `git rebase --continue`, `npm run ship` again.
 - Never force-push `main` or skip hooks (`--no-verify`) unless a human asks.
-- Risky changes (network protocol, sync, persistence, anything that could break everyone's island) go on a branch with a PR instead.
+- Networking, sync and persistence changes ship the same way; no human review needed. `ship` runs `check:full` for them.
 - If CI is red on `main`, `ci-autofix.yml` opens a fix PR; if you're around, fixing it beats starting something new.

@@ -1,6 +1,6 @@
 <!--
-Most changes go straight to main with `npm run ship`. PRs are for risky changes (network protocol, sync,
-persistence) and for Claude's claude/* branches, which auto-merge when CI is green unless labelled `no-automerge`.
+Most changes go straight to main with `npm run ship`. PRs are for Claude's claude/* branches (networking
+and sync changes included, no human review needed), which auto-merge when CI is green unless labelled `no-automerge`.
 -->
 
 ## What and why
