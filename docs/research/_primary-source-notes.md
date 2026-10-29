@@ -8,109 +8,7 @@ Raw facts for the research reports. No design proposals here.
 - **secondary**: the page itself could not be loaded or was not tried. The fact comes from search-result snippets or press coverage. Cite it with care.
 - **failed**: the fetch errored, or the page did not contain the fact. The reason is given.
 
-## 1. World models
-
-### Google DeepMind: Genie 2 (fetched)
-
-- URL: https://deepmind.google/discover/blog/genie-2-a-large-scale-foundation-world-model/
-- Date: 4 Dec 2024. "Genie 2 was led by Jack Parker-Holder with technical leadership by Stephen Spencer."
-- Consistency: "Genie 2 can generate consistent worlds for up to a minute, with the majority of examples shown lasting 10-20s."
-- Memory: "capable of remembering parts of the world that are no longer in view."
-- Real-time: a distilled version "can play... in real-time with a reduction in quality of the outputs" (the samples shown come from the undistilled base model).
-- Resolution: not stated on the page.
-- Status: research is "still in its early stage with substantial room for improvement on both agent and environment generation capabilities."
-- The page now links to "Try Project Genie" on labs.google.
-
-### Google DeepMind: Genie 3 (fetched)
-
-- URL: https://deepmind.google/discover/blog/genie-3-a-new-frontier-for-world-models/
-- Date and authors: "August 5, 2025", by Jack Parker-Holder and Shlomi Fruchter.
-- Output: "at a resolution of 720p", "in real time at 24 frames per second."
-- Consistency: environments "remain largely consistent for several minutes", with visual memory reaching back about one minute.
-- Promptable world events: "Promptable world events make it possible to change the generated world", for example changing the weather or adding objects and characters.
-- Availability: "limited research preview, providing early access to a small cohort of academics and creators."
-- Limitations listed on the page:
-  - The set of actions agents can take is restricted.
-  - Modelling multiple interacting agents is unsolved.
-  - Real places cannot be simulated with "perfect geographic accuracy."
-  - Legible text usually appears only when it is in the prompt.
-  - Interaction lasts only "a few minutes of continuous interaction."
-
-### Google: Project Genie (fetched)
-
-- URL: https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/
-- Date: 29 Jan 2026. Authors: Diego Rivas (Group PM, Google DeepMind), Elliott Breece (PM, Google Labs), Suz Chambers (Director, Google Creative Lab).
-- Availability: "Starting today, we're rolling out access to Project Genie for Google AI Ultra subscribers in the U.S (18+)." It is "Not available to Google AI Ultra for Business users." Other territories will follow "in due course."
-- Built on: Genie 3, Nano Banana Pro and Gemini.
-- Session limit: "Limitations in generations to 60 seconds."
-- Other limitations:
-  - Worlds may not follow prompts or real physics.
-  - "Characters can sometimes be less controllable", with higher control latency.
-  - The promptable world events announced for Genie 3 in August 2025 are **not** in this prototype yet.
-- Price: the post gives no price and only links to the AI plans page.
-- Price (secondary: Technobezz, Digit, Gizmodo coverage): Google AI Ultra costs about $249.99 a month.
-- Resolution (secondary): about 720p at 24 fps.
-- 60-second cap (secondary: The Register, via search snippets): DeepMind says sessions can technically run longer, but it chose 60 s to limit compute cost and serve more users.
-- 2026 updates: no update after launch on session length or resolution was found. A TechSpot headline says access was expanded, but the snippet does not give the date or the regions.
-
-### World Labs: Marble (fetched)
-
-- URL: https://www.worldlabs.ai/blog/marble-world-model. Date: 12 Nov 2025. Published by World Labs, with no individual author.
-- Availability: "generally available for anyone to use", at marble.worldlabs.ai.
-- Output formats:
-  - Gaussian splats, "the highest-fidelity representation for Marble worlds."
-  - Triangle meshes: low-fidelity collider meshes and high-quality meshes.
-  - Video.
-- Splats render in the browser with Spark, World Labs' open-source renderer, which "integrates with THREE.js".
-- Plan limits (fetched: https://docs.worldlabs.ai/marble/support/account-billing):
-  - Free: "up to 4 world generations."
-  - Standard: "up to 12", 20,000 credits, includes export.
-  - Pro: "up to 25", "Includes commercial rights to generated worlds", high-quality textured mesh export.
-  - Max: "up to 75."
-- Prices: the docs mention only Standard at $20 a month and Pro at $35 a month, in an example. Max at $95 a month is secondary (third-party aggregators).
-
-### Decart / Etched: Oasis (fetched)
-
-- URL: https://oasis-model.github.io. Date: 31 Oct 2024. Authors: Decart's AI team, with Etched contributors.
-- Speed: "Oasis generates real-time output in 20 frames per second". The page also says "our model must generate a new frame every 0.04 seconds."
-- Resolution: not stated. The page says "we can run models like Oasis in 4K" once Etched's Sohu chip is available.
-- Secondary: Tom's Hardware reports 360p.
-- A 500M-parameter checkpoint can run locally.
-- Limitations named on the page:
-  - "Limited memory over long horizons."
-  - "the temporal consistency of uncertain objects."
-  - Distant video is fuzzy.
-  - Inventory control is imprecise.
-
-### Decart: Mirage / MirageLSD (secondary)
-
-- Decart's own page was not retrieved.
-- Coverage from July 2025 (eWeek, PetaPixel, The Decoder):
-  - It is a live-stream video-to-video diffusion model running at 20 fps and 768×432.
-  - Latency is about 100 ms per frame by Wired's figure, while eWeek quotes Decart's budget as under 40 ms per frame.
-  - It is autoregressive, frame by frame, trained with "diffusion forcing" and "history augmentation."
-- Later Decart claims (secondary, unverified):
-  - Oasis 2.0 at 1080p and 30 fps.
-  - Oasis 3 (June 2026) at about 22 fps, aimed at robotics.
-
-### Microsoft: Muse / WHAM (fetched)
-
-- URL: https://www.microsoft.com/en-us/research/blog/introducing-muse-our-first-generative-ai-model-designed-for-gameplay-ideation/
-- Date and author: 19 Feb 2025, by Katja Hofmann. The paper appeared in Nature.
-- Output: "generate game visuals, controller actions, or both" at "300×180 px resolution", up from 128×128 in the earliest models.
-- Training data: "more than 1 billion images and controller actions" ("over 7 years of continuous human gameplay"), from Ninja Theory's Bleeding Edge. The largest model is WHAM-1.6B.
-- Access: open weights, sample data and the WHAM Demonstrator, on Azure AI Foundry.
-
-### Tencent: HunyuanWorld 1.0 (fetched)
-
-- URL: https://github.com/Tencent-Hunyuan/HunyuanWorld-1.0
-- Release: 26 Jul 2025. "We release the first open-source, simulation-capable, immersive 3D world generation model".
-- Output: a panorama (`panorama.png`) first, then a layered 3D mesh scene, with "mesh export capabilities for seamless compatibility with existing computer graphics pipelines". Draco export is supported.
-- Lite version (15 Aug 2025): "now supports running on Consumer-grade GPUs such as 4090!"
-- The license is in the repo's LICENSE file, which was not read.
-- Secondary (The Decoder etc.): scenes are 360° panoramas with limited free movement.
-
-## 2. Game feel and vehicles
+## 1. Game feel and vehicles
 
 ### Steve Swink, *Game Feel* (secondary: the book itself was not fetched)
 
@@ -182,7 +80,7 @@ Raw facts for the research reports. No design proposals here.
   - The constructor resets these to fixed values, so passing them does nothing: `steering`, `rotation`, `deltaRotation`, `suspensionForce`, `suspensionLength`, `slipInfo`, `skidInfo`.
   - Boogle pins cannon-es 0.20.0 (`package.json`). These defaults were read from `master`.
 
-## 3. Exploration, level design, social multiplayer
+## 2. Exploration, level design, social multiplayer
 
 ### Breath of the Wild, CEDEC 2017 (fetched: a translation summary, not the talk)
 
@@ -250,7 +148,7 @@ Raw facts for the research reports. No design proposals here.
 - Sources disagree on whether the visitor bonus stacks on the base. One guide's "about 80% total" is an interpretation.
 - Sources: https://aiterusawato.github.io/satogu/acnh/flowers/advanced.html and the Bell Tree Forums "ACNH Guide On Hybrids" thread (not fetched).
 
-## 4. Progression, lore and tech trees
+## 3. Progression, lore and tech trees
 
 ### Outer Wilds
 
@@ -330,7 +228,7 @@ Raw facts for the research reports. No design proposals here.
 - Pikmin 4: "Treasures are the main type of collectible item". The Treasure Catalog lets you "read notes from Schnauz, Olimar, and Louie."
 - Secondary (Pikipedia "Corpulent Nut"): its English note is ten words long, and the Japanese original is longer.
 
-## 5. Friendslop: sales and design
+## 4. Friendslop: sales and design
 
 ### PEAK (Aggro Crab and Landfall)
 
@@ -367,14 +265,13 @@ Raw facts for the research reports. No design proposals here.
 
 ## Tally
 
-- Pages fetched successfully: 33.
+- Pages fetched successfully: 33, counting the world-model pages since removed from this file.
 - Failed (403, truncated, or no relevant content): 7. These were GameSkinny (Outer Wilds), Axios (Outer Wilds), PC Gamer (Valheim roadmap), GamesRadar (PEAK 11M), GamesRadar (strand games), and two ACNH flower guide pages.
 - Primary source not found (covered by secondary only):
   - Space Dust Racing raycast tips
   - Rocket League talk content
   - Nijman talk video
   - Swink book text
-  - Decart Mirage page
   - ACNH datamine
   - Sky talk contents
   - Smith/Worch slides PDF
