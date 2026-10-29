@@ -76,8 +76,15 @@ export function createSync() {
   let lastSavedHash = null;
   let nextSave = SAVE_MS;
 
+  // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
   const snapFail = (from, reason) => {
-    for (const fn of snapFailFns) fn({ from, reason });
+    for (const fn of snapFailFns) {
+      try {
+        fn({ from, reason });
+      } catch (e) {
+        console.warn('[world] onSnapFail listener failed', e);
+      }
+    }
   };
   const send = (m) => {
     if (!room || !connected) return;
@@ -349,8 +356,13 @@ export function createSync() {
   // ------------------------------------------------------------ profiling (npm run perf only)
   // Times every op apply, onApplied/onTick handler and state hash until stop(), which returns one { label: ms } row
   // per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so normal play pays
-  // nothing; it only reads the clock, and nothing it measures feeds back into the sim.
+  // nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time (a second would
+  // wrap the first one's wrappers, and stopping them out of order would leave timers in place).
+  let profiling = false;
   function profileTicks(now = () => performance.now()) {
+    if (profiling) throw new Error('profileTicks: already profiling; stop() the first one');
+    profiling = true;
+    let active = true;
     const rows = new Map(); // tick -> { label: ms }
     const timed =
       (label, fn) =>
@@ -380,6 +392,7 @@ export function createSync() {
     swapAll(tickFns, 'tick');
     return {
       stop() {
+        if (active) profiling = active = false;
         for (const fn of undo.splice(0)) fn();
         return [...rows.values()];
       },

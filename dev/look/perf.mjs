@@ -50,14 +50,18 @@ const PROFILE = (n) => `
   const { water } = window.__water;
   const active = [];
   const prof = profileTicks();
-  for (let k = 0; k < ${n}; k++) {
-    window.__perfEach?.(k);
-    updateWorld(TICK_MS / 1000);
-    if (k % 20 === 19 && worldStatus().mode !== 'host') stateHashes();
-    if (k % 10 === 0) active.push(water.stats().active);
-    if (k % 5 === 4) await new Promise((r) => setTimeout(r, 0));
+  let rows;
+  try {
+    for (let k = 0; k < ${n}; k++) {
+      window.__perfEach?.(k);
+      updateWorld(TICK_MS / 1000);
+      if (k % 20 === 19 && worldStatus().mode !== 'host') stateHashes();
+      if (k % 10 === 0) active.push(water.stats().active);
+      if (k % 5 === 4) await new Promise((r) => setTimeout(r, 0));
+    }
+  } finally {
+    rows = prof.stop(); // always put the real handlers back (profileTicks allows one profiler at a time)
   }
-  const rows = prof.stop();
   return { rows, active, cells: water.depth.length, mode: worldStatus().mode, isolated: crossOriginIsolated };`;
 
 // Busy water: pour FLOOD_CM over the home beach and lowlands with a snapshot (it drains back to the sea for many

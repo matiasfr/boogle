@@ -159,6 +159,9 @@ test('host migration continues', async () => {
 test('unloadable snapshots are reported (peer chunk, local copy, server)', async () => {
   const { net, clients, all } = await setup(1);
   const seen = [];
+  clients[0].s.onSnapFail(() => {
+    throw new Error('a broken listener does not turn one failure into two');
+  });
   clients[0].s.onSnapFail((f) => seen.push(f));
   for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 99, n: 1, k: 0, s: '{nope' }, 'h');
   for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 98, n: 1, k: 0, s: '{"snap":1}' }, 'h');
@@ -202,6 +205,7 @@ test('profileTicks times each handler per tick and changes nothing', () => {
     b = solo();
   let clock = 0;
   const prof = a.profileTicks(() => clock++); // every timed call reads as 1 ms
+  assert.throws(() => a.profileTicks(), /already profiling/);
   for (const s of [a, b]) {
     s.submitEdit({ op: 'add', i: 0, j: 0, v: 5 });
     for (let k = 0; k < 3; k++) s.updateWorld(0.1);
@@ -213,4 +217,5 @@ test('profileTicks times each handler per tick and changes nothing', () => {
   const before = clock;
   a.updateWorld(0.1);
   assert.equal(clock, before); // stop() put the original handlers back
+  a.profileTicks().stop(); // and a new profiler may start
 });
