@@ -1,48 +1,63 @@
-// Island gifts in the game: fruit on the palms, things washed up on the beach, and your pocket.
-// Shared state lives in src/sim/gifts.js and changes only through world/sync edits. The pocket is yours alone
-// (DESIGN.md: personal rewards) and stays in localStorage.
+// Island gifts in the game: fruit on the palms, things washed up on the beach, things players threw, and the frisbee
+// on the lighthouse deck. Shared state lives in src/sim/gifts.js and changes only through world/sync edits; what you
+// carry is your hotbar (src/inventory.js).
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, HOME, REACH, isTouch, reducedMotion } from './constants.js';
+import { CELL, HALF, GRID_RES, HOME, REACH, PLAYER_R, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { world as physics } from './physics.js';
 import { trees, obstacles } from './props.js';
-import { me } from './player.js';
+import { me, throwFrom } from './player.js';
 import { ball } from './ball.js';
 import { net } from './net.js';
 import { world, registerOp, registerState, onTick, submitEdit } from './world/sync.js';
 import { isLegacyCell, fromLegacy } from './world/legacy-grid.js';
+import { waterField } from './water-field.js';
 import { PATCH } from './sim/mushrooms.js';
-import { GIFTS } from './sim/gift-catalog.js';
+import { GIFTS, giftIndex } from './sim/gift-catalog.js';
 import {
   MAX_TREES,
   REGROW_TICKS,
   DROP_OFFSETS,
+  ON_GROUND,
+  SRC,
   createGifts,
   canDrop,
+  canToss,
   dropFruit,
   findItem,
   takeItem,
+  tossItem,
   treeFruit,
   tickGifts,
   serializeGifts,
   loadGifts,
   hashGifts,
 } from './sim/gifts.js';
+import { itemModel } from './item-models.js';
+import { STEP, flyPath, dropPoint } from './flight.js';
+import { inv, take, roomFor } from './inventory.js';
+import { plantOk, plantSeed } from './mushroom-garden.js';
+import { FRISBEE_SPOT } from './pois/lighthouse/index.js';
+import { splash } from './splash.js';
 
-export const POCKET_MAX = 6;
 const SHAKE_R = 2.1; // metres from a palm's base
 const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
 const SHORE_MIN_CM = 12;
 const SHORE_MAX_CM = 70;
+const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
+const SEEDS = giftIndex('seeds');
+const LOST = -3; // `gift.toss` only: the throw ended in water or nowhere a seed can grow, so nothing lands
 
-const layout = { trees: [], shore: [] };
+const layout = { trees: [], shore: [], perches: [] };
+const perchSpots = []; // world positions, parallel to layout.perches
 export const gifts = createGifts(layout);
 const myId = () => net.room?.selfId ?? 'local';
 // Items saved by an older, smaller island sit on its 129-cell grid: move them to the same spot on today's grid.
+// Snapshots with `v` are already on today's grid (and may use any cell).
 function migrateGiftCells(json) {
   const it = json?.it;
-  if (!Array.isArray(it)) return json;
+  if (!Array.isArray(it) || json.v) return json;
   const out = it.slice();
   for (let k = 0; k + 5 < out.length; k += 6)
     if (isLegacyCell(out[k + 2], out[k + 3])) [out[k + 2], out[k + 3]] = fromLegacy(out[k + 2], out[k + 3]);
@@ -51,7 +66,12 @@ function migrateGiftCells(json) {
 
 const cellX = (i) => i * CELL - HALF;
 const cellZ = (j) => HALF - j * CELL;
-const fx = { falling: new Map(), wobble: new Map(), leaving: [] };
+const cellOf = (x, z) => [
+  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
+  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
+];
+const isInt = Number.isSafeInteger;
+const fx = { falling: new Map(), wobble: new Map(), leaving: [], arriving: new Map() };
 
 registerOp('fruit.drop', {
   validate: (e) => canDrop(gifts, e.t, world.tick, e.d),
@@ -64,10 +84,31 @@ registerOp('fruit.drop', {
 });
 registerOp('gift.take', {
   validate: (e) => Number.isSafeInteger(e.id) && !!findItem(gifts, e.id),
-  apply: (e) => {
+  apply: (e, tick) => {
     pending.delete(e.id);
-    const it = takeItem(gifts, e.id);
-    if (it && e.p === myId()) addToPocket(it.kind);
+    const it = takeItem(gifts, e.id, tick);
+    if (!it || e.p !== myId()) return;
+    // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
+    if (!take(GIFTS[it.kind].id, 1, !me.charging)) throwItem(it.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
+  },
+});
+const launchOk = (l) => Array.isArray(l) && l.length === 6 && l.every((v) => isInt(v) && Math.abs(v) < 1e5);
+registerOp('gift.toss', {
+  validate: (e) => {
+    if (!launchOk(e.l) || !isInt(e.n) || !isInt(e.k) || !GIFTS[e.k] || GIFTS[e.k].src === 'ball') return false;
+    if (e.y === LOST) return true;
+    if (e.k === SEEDS) return plantOk(e.i, e.j);
+    return canToss(e.k, e.i, e.j, e.y) && e.i < GRID_RES && e.j < GRID_RES;
+  },
+  apply: (e, tick) => {
+    const fl = claimFlight(e);
+    if (e.y === LOST) return;
+    if (e.k === SEEDS) {
+      plantSeed(e.i, e.j);
+      return;
+    }
+    const it = tossItem(gifts, e.k, e.i, e.j, e.y, tick);
+    if (it) fx.arriving.set(it.id, fl);
   },
 });
 registerState('gifts', {
@@ -95,205 +136,25 @@ export function createGifts3d() {
       if (obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 0.8)) continue;
       layout.shore.push([i, j]);
     }
+  // The frisbee's perch: its cell only names it in the shared state; it is drawn at the exact spot on the deck.
+  const [pi, pj] = [Math.round((FRISBEE_SPOT.x + HALF) / CELL), Math.round((HALF - FRISBEE_SPOT.z) / CELL)];
+  layout.perches.push({ i: pi, j: pj, kind: giftIndex('frisbee') });
+  perchSpots.push(new THREE.Vector3(FRISBEE_SPOT.x, FRISBEE_SPOT.y, FRISBEE_SPOT.z));
   buildTreeFruit();
   physics.addEventListener('postStep', knockFruit);
 }
 
-// ---------------------------------------------------------------- pocket
-const pocket = [];
-let pocketVersion = 0;
-try {
-  const saved = JSON.parse(localStorage.getItem('boogle.pocket') ?? '[]');
-  if (Array.isArray(saved))
-    for (const k of saved) if (Number.isInteger(k) && GIFTS[k] && pocket.length < POCKET_MAX) pocket.push(k);
-} catch {
-  // storage unavailable or corrupt: start with empty pockets
-}
-function savePocket() {
-  pocketVersion++;
-  try {
-    localStorage.setItem('boogle.pocket', JSON.stringify(pocket));
-  } catch {
-    // storage unavailable; the pocket lasts until reload
+function itemPos(it, out) {
+  if (it.src === SRC.PERCH) {
+    const k = layout.perches.findIndex((p) => p.i === it.i && p.j === it.j);
+    if (k >= 0) return out.copy(perchSpots[k]);
   }
-}
-function addToPocket(kind) {
-  if (pocket.length >= POCKET_MAX) return;
-  pocket.push(kind);
-  savePocket();
-}
-export const pocketItems = () => pocket.map((kind) => ({ kind, label: GIFTS[kind].name }));
-export function takeFromPocket(kind) {
-  const k = pocket.indexOf(kind);
-  if (k < 0) return false;
-  pocket.splice(k, 1);
-  savePocket();
-  return true;
+  const x = cellX(it.i),
+    z = cellZ(it.j);
+  return out.set(x, it.y === ON_GROUND || it.src === SRC.PERCH ? groundHeight(x, z) : it.y / 100, z);
 }
 
-// ---------------------------------------------------------------- models
-const matCache = new Map();
-function mat(color, extra) {
-  const key = color + (extra ? JSON.stringify(extra) : '');
-  if (!matCache.has(key))
-    matCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.65, flatShading: true, ...extra }));
-  return matCache.get(key);
-}
-function add(g, geo, color, { p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1], m } = {}) {
-  const mesh = new THREE.Mesh(geo, m ?? mat(color));
-  mesh.position.set(...p);
-  mesh.rotation.set(...r);
-  mesh.scale.set(...s);
-  mesh.castShadow = true;
-  g.add(mesh);
-  return mesh;
-}
-const sphere = (r, w = 10, h = 8) => new THREE.SphereGeometry(r, w, h);
-const box = (x, y, z) => new THREE.BoxGeometry(x, y, z);
-const cyl = (a, b, h, n = 8) => new THREE.CylinderGeometry(a, b, h, n);
-const PI = Math.PI;
-const glass = (color, opacity) => ({
-  m: mat(color, { transparent: true, opacity, roughness: 0.15, flatShading: false }),
-});
-
-// Each builder fills a group resting on y = 0.
-const BUILD = {
-  coconut: (g) => add(g, sphere(0.2), '#6b4423', { p: [0, 0.18, 0], s: [1, 0.92, 1] }),
-  mango: (g) => {
-    add(g, sphere(0.15), '#ffb02e', { p: [0, 0.13, 0], s: [1, 0.85, 1.35] });
-    add(g, new THREE.ConeGeometry(0.04, 0.12, 4), '#4e9a3d', { p: [0, 0.26, 0.12], r: [0.6, 0, 0] });
-  },
-  banana: (g) => {
-    for (const [k, y] of [
-      [-0.06, 0.05],
-      [0, 0.09],
-      [0.06, 0.05],
-    ])
-      add(g, new THREE.TorusGeometry(0.2, 0.05, 6, 10, PI * 0.7), '#ffe066', { p: [k, y, -0.1], r: [PI / 2, 0, 0.6] });
-  },
-  pomegranate: (g) => {
-    add(g, sphere(0.16), '#c8243a', { p: [0, 0.15, 0] });
-    add(g, cyl(0.035, 0.05, 0.07, 6), '#8a1a28', { p: [0, 0.32, 0] });
-  },
-  apricot: (g) => add(g, sphere(0.11, 9, 7), '#ff9a4a', { p: [0, 0.1, 0] }),
-  shell: (g) => {
-    add(g, new THREE.ConeGeometry(0.16, 0.34, 7), '#ffc7c2', { p: [0, 0.13, 0], r: [0, 0, PI / 2] });
-    add(g, sphere(0.12), '#fff0ec', { p: [-0.15, 0.1, 0], s: [0.4, 1, 1] });
-  },
-  starfish: (g) => {
-    add(g, sphere(0.08), '#ff7b4a', { p: [0, 0.03, 0], s: [1, 0.4, 1] });
-    for (let k = 0; k < 5; k++) {
-      const a = (k / 5) * PI * 2;
-      add(g, new THREE.ConeGeometry(0.06, 0.24, 4), '#ff7b4a', {
-        p: [Math.cos(a) * 0.15, 0.03, -Math.sin(a) * 0.15],
-        r: [0, a, -PI / 2],
-        s: [1, 1, 0.45],
-      });
-    }
-  },
-  driftwood: (g) => {
-    add(g, cyl(0.06, 0.09, 0.9, 6), '#9c8a74', { p: [0, 0.07, 0], r: [0, 0.3, PI / 2] });
-    add(g, cyl(0.03, 0.04, 0.32, 5), '#8b7a64', { p: [0.15, 0.08, 0.12], r: [0, -0.9, PI / 2] });
-  },
-  seaweed: (g) => {
-    for (const [a, c] of [
-      [0, '#3b7d3a'],
-      [1.1, '#4f9a46'],
-      [2.3, '#2f6a35'],
-    ])
-      add(g, sphere(1, 6, 4), c, { p: [0, 0.04, 0], r: [0, a, 0], s: [0.3, 0.07, 0.1] });
-  },
-  flipflop: (g) => {
-    add(g, box(0.14, 0.03, 0.32), '#3dc7ff', { p: [0, 0.015, 0] });
-    add(g, new THREE.TorusGeometry(0.055, 0.012, 4, 10, PI), '#ffffff', { p: [0, 0.03, -0.05], r: [0, PI / 2, 0] });
-  },
-  boot: (g) => {
-    add(g, box(0.18, 0.11, 0.32), '#6b4a2e', { p: [0, 0.055, 0.06] });
-    add(g, box(0.18, 0.34, 0.15), '#6b4a2e', { p: [0, 0.17, -0.08] });
-    add(g, box(0.2, 0.04, 0.17), '#4f3520', { p: [0, 0.34, -0.08] });
-  },
-  duck: (g) => {
-    add(g, sphere(0.13), '#ffd23f', { p: [0, 0.11, 0], s: [1.25, 0.9, 1] });
-    add(g, sphere(0.085), '#ffd23f', { p: [0.1, 0.25, 0] });
-    add(g, new THREE.ConeGeometry(0.035, 0.08, 6), '#ff8a2b', { p: [0.2, 0.24, 0], r: [0, 0, -PI / 2] });
-    for (const z of [-0.045, 0.045]) add(g, sphere(0.015, 6, 4), '#13243f', { p: [0.16, 0.28, z] });
-  },
-  sunglasses: (g) => {
-    for (const x of [-0.08, 0.08]) add(g, cyl(0.065, 0.065, 0.02, 14), '#1d1d2b', { p: [x, 0.012, 0] });
-    add(g, box(0.05, 0.015, 0.015), '#ff4fa3', { p: [0, 0.015, -0.02] });
-    for (const x of [-0.145, 0.145]) add(g, box(0.012, 0.012, 0.2), '#ff4fa3', { p: [x, 0.012, 0.09] });
-  },
-  sponge: (g) => add(g, box(0.22, 0.12, 0.16), '#ffe14d', { p: [0, 0.06, 0] }),
-  float: (g) => {
-    add(g, sphere(0.17, 14, 10), '', { p: [0, 0.17, 0], ...glass('#6ec6ff', 0.75) });
-    for (const ry of [0, PI / 2])
-      add(g, new THREE.TorusGeometry(0.172, 0.012, 4, 16), '#c9b48a', { p: [0, 0.17, 0], r: [0, ry, 0] });
-  },
-  bottle: (g) => {
-    add(g, cyl(0.07, 0.07, 0.26, 10), '', { p: [0, 0.07, 0], r: [0, 0, PI / 2], ...glass('#4fae6d', 0.55) });
-    add(g, cyl(0.03, 0.05, 0.08, 8), '', { p: [0.17, 0.07, 0], r: [0, 0, PI / 2], ...glass('#4fae6d', 0.55) });
-    add(g, cyl(0.032, 0.032, 0.05, 8), '#b07a45', { p: [0.23, 0.07, 0], r: [0, 0, PI / 2] });
-    add(g, cyl(0.045, 0.045, 0.18, 8), '#fffaf0', { p: [0, 0.07, 0], r: [0, 0, PI / 2] });
-  },
-  card: (g) => {
-    add(g, box(0.2, 0.012, 0.12), '#f4f1e8', { p: [0, 0.006, 0] });
-    add(g, box(0.2, 0.014, 0.03), '#ff6b5a', { p: [0, 0.007, 0.03] });
-  },
-  melon: (g) => add(g, sphere(0.2, 12, 8), '#e8d36a', { p: [0, 0.17, 0], s: [1, 0.85, 1.5] }),
-  teacup: (g) => {
-    const prof = [
-      [0, 0],
-      [0.055, 0],
-      [0.07, 0.015],
-      [0.13, 0.095],
-      [0.12, 0.1],
-      [0.06, 0.025],
-      [0, 0.025],
-    ].map(([x, y]) => new THREE.Vector2(x, y));
-    add(g, new THREE.LatheGeometry(prof, 18), '', {
-      m: mat('#f7f7f2', { side: THREE.DoubleSide, flatShading: false }),
-    });
-    add(g, new THREE.TorusGeometry(0.115, 0.008, 4, 20), '#2f6bd8', { p: [0, 0.08, 0], r: [PI / 2, 0, 0] });
-  },
-  book: (g) => {
-    add(g, box(0.26, 0.06, 0.34), '#2f8cff', { p: [0, 0.03, 0] });
-    add(g, box(0.25, 0.05, 0.32), '#f6f0dc', { p: [0.012, 0.03, 0] });
-  },
-  abacus: (g) => {
-    for (const z of [-0.12, 0.12]) add(g, box(0.4, 0.03, 0.03), '#b5763a', { p: [0, 0.02, z] });
-    for (const x of [-0.19, 0.19]) add(g, box(0.03, 0.03, 0.27), '#b5763a', { p: [x, 0.02, 0] });
-    for (let r = 0; r < 4; r++) {
-      const z = -0.08 + r * 0.055;
-      add(g, cyl(0.005, 0.005, 0.36, 4), '#7d5230', { p: [0, 0.02, z], r: [0, 0, PI / 2] });
-      for (let b = 0; b < 4; b++)
-        add(g, sphere(0.022, 6, 4), b % 2 ? '#ffcf33' : '#e5483b', { p: [-0.13 + b * 0.05 + (r % 2) * 0.1, 0.02, z] });
-    }
-  },
-  doppi: (g) => {
-    add(g, cyl(0.16, 0.18, 0.12, 4), '#1f2a24', { p: [0, 0.06, 0], r: [0, PI / 4, 0] });
-    for (let k = 0; k < 4; k++) {
-      const a = (k / 4) * PI * 2;
-      add(g, sphere(0.035, 6, 4), '#fffaf0', {
-        p: [Math.sin(a) * 0.13, 0.06, Math.cos(a) * 0.13],
-        r: [0, a, 0],
-        s: [0.6, 1, 0.3],
-      });
-    }
-  },
-};
-
-const templates = new Map();
-function makeModel(kind) {
-  const id = GIFTS[kind].id;
-  if (!templates.has(id)) {
-    const g = new THREE.Group();
-    (BUILD[id] ?? BUILD.coconut)(g);
-    templates.set(id, g);
-  }
-  return templates.get(id).clone();
-}
-
-// A twinkle over washed-up things, so they are easy to spot from up the beach.
+// A twinkle over washed-up things and the frisbee on its perch, so they are easy to spot from afar.
 const sparkleMat = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -332,7 +193,7 @@ function buildTreeFruit() {
     }
   });
   for (const [kind, slots] of slotsByKind) {
-    const src = makeModel(kind).children[0];
+    const src = itemModel(GIFTS[kind].id).children[0];
     const mesh = new THREE.InstancedMesh(src.geometry, src.material, slots.length);
     mesh.castShadow = true;
     mesh.frustumCulled = false;
@@ -359,15 +220,89 @@ function updateTreeFruit(now) {
   }
 }
 
+// ---------------------------------------------------------------- flights
+// Everything in the air, for everyone: { mesh, points, t0, rest, lost, nonce, done }. The thrower starts a flight the
+// moment they let go; everyone else replays it from the launch when the `gift.toss` edit arrives.
+const flights = [];
+const seedGeo = new THREE.SphereGeometry(0.07, 8, 6);
+const seedMat = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9 });
+
+function startFlight(kind, p, v, nonce) {
+  const glide = GIFTS[kind].id === 'frisbee';
+  const path = flyPath(p, v, glide);
+  const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind].id);
+  mesh.position.copy(p);
+  scene.add(mesh);
+  const fl = { mesh, glide, nonce, t0: performance.now(), done: false, ...path };
+  flights.push(fl);
+  return fl;
+}
+
+function claimFlight(e) {
+  const mine = e.p === myId() && flights.find((f) => f.nonce === e.n);
+  if (mine) return mine;
+  const [x, y, z, vx, vy, vz] = e.l.map((v) => v / 100);
+  return startFlight(e.k, new THREE.Vector3(x, y, z), new THREE.Vector3(vx, vy, vz), e.n);
+}
+
+function endFlight(fl) {
+  fl.done = true;
+  scene.remove(fl.mesh);
+  flights.splice(flights.indexOf(fl), 1);
+  if (fl.lost) splash(fl.rest.x, fl.rest.z, 0.5, waterField.surfaceAt(fl.rest.x, fl.rest.z));
+}
+
+function updateFlights(now) {
+  for (let k = flights.length - 1; k >= 0; k--) {
+    const fl = flights[k];
+    const t = Math.max(0, (now - fl.t0) / 1000 / STEP); // a frame's timestamp can predate a flight started mid-frame
+    const n = Math.floor(t);
+    if (n >= fl.points.length - 1) {
+      endFlight(fl);
+      continue;
+    }
+    fl.mesh.position.lerpVectors(fl.points[n], fl.points[n + 1], t - n);
+    const age = t * STEP;
+    if (fl.glide) fl.mesh.rotation.set(0.12, age * 18, 0.08);
+    else fl.mesh.rotation.set(age * 9, age * 4, age * 6);
+  }
+}
+
+// The shared item's height once a flight is snapped to cell (i, j): whatever lies under the cell's centre.
+function landingY(kind, fl, i, j) {
+  if (fl.lost) return LOST;
+  if (kind === SEEDS) return plantOk(i, j) ? ON_GROUND : LOST;
+  const x = cellX(i),
+    z = cellZ(j);
+  const under = dropPoint(new THREE.Vector3(x, fl.rest.y + 0.4, z));
+  if (waterField.surfaceAt(x, z) > under.y + 0.05) return LOST;
+  return under.y - groundHeight(x, z) < 0.15 ? ON_GROUND : Math.round(under.y * 100);
+}
+
+// Throws `kind` from p with velocity v: it flies for everyone and lands as a shared item, or a seed plants itself where
+// it lands. Returns false if the edit could not be sent (the caller keeps the item).
+export function throwItem(kind, p, v) {
+  const nonce = (Math.random() * 2 ** 30) | 0;
+  const fl = startFlight(kind, p, v, nonce);
+  const [i, j] = cellOf(fl.rest.x, fl.rest.z);
+  const y = landingY(kind, fl, i, j);
+  const l = [p.x, p.y, p.z, v.x, v.y, v.z].map((c) => Math.round(c * 100));
+  if (submitEdit({ op: 'gift.toss', i, j, k: kind, y, n: nonce, l })) return true;
+  endFlight(fl);
+  return false;
+}
+
 // ---------------------------------------------------------------- ground items
-const visuals = new Map(); // id -> { root, sparkle, phase, y, vy, settled }
+const visuals = new Map(); // id -> { root, sparkle, phase, y, vy, flight, slide }
+const PI = Math.PI;
+const at = new THREE.Vector3();
 
 function makeVisual(it) {
   const root = new THREE.Group();
-  root.add(makeModel(it.kind));
+  root.add(itemModel(GIFTS[it.kind].id));
   root.rotation.y = ((it.id * 2.399) % (PI * 2)) - PI;
   let sparkle = null;
-  if (it.src === 0) {
+  if (it.src === SRC.SHORE || it.src === SRC.PERCH) {
     sparkle = new THREE.Sprite(sparkleMat);
     sparkle.position.y = 0.6;
     root.add(sparkle);
@@ -375,7 +310,9 @@ function makeVisual(it) {
   scene.add(root);
   const from = fx.falling.get(it.id);
   fx.falling.delete(it.id);
-  return { root, sparkle, phase: it.id * 1.7, y: from ?? null, vy: 0 };
+  const flight = fx.arriving.get(it.id) ?? null;
+  fx.arriving.delete(it.id);
+  return { root, sparkle, phase: it.id * 1.7, y: from ?? null, vy: 0, flight, slide: 1 };
 }
 
 function updateItems(dt, now, target) {
@@ -384,9 +321,15 @@ function updateItems(dt, now, target) {
     live.add(it.id);
     let v = visuals.get(it.id);
     if (!v) visuals.set(it.id, (v = makeVisual(it)));
-    const x = cellX(it.i),
-      z = cellZ(it.j);
-    const gy = groundHeight(x, z);
+    // A thrown thing stays hidden until its flight comes down, then slides from there onto its cell.
+    v.root.visible = !v.flight || v.flight.done;
+    if (!v.root.visible) continue;
+    if (v.flight) {
+      v.slide = 0;
+      v.from = v.flight.rest;
+      v.flight = null;
+    }
+    const { x, y: gy, z } = itemPos(it, at);
     let y = gy;
     if (v.y !== null) {
       v.vy -= 18 * dt;
@@ -397,8 +340,12 @@ function updateItems(dt, now, target) {
         if (!v.vy) v.y = null;
       }
       y = v.y ?? gy;
-    } else if (it.src === 0 && !reducedMotion) y += Math.sin(now / 700 + v.phase) * 0.02;
+    } else if (it.src === SRC.SHORE && !reducedMotion) y += Math.sin(now / 700 + v.phase) * 0.02;
     v.root.position.set(x, y, z);
+    if (v.slide < 1) {
+      v.slide = Math.min(1, v.slide + dt / 0.18);
+      v.root.position.lerpVectors(v.from, v.root.position, 1 - (1 - v.slide) ** 2);
+    }
     const pulse = target === it.id && !reducedMotion ? 1.15 + Math.sin(now / 120) * 0.08 : 1;
     v.root.scale.setScalar(pulse);
     if (v.sparkle) {
@@ -439,8 +386,10 @@ function nearestItem() {
     bestD = REACH;
   const now = performance.now();
   for (const it of gifts.items) {
-    if (now - (pending.get(it.id) ?? -1e9) < 2000) continue;
-    const d = Math.hypot(cellX(it.i) - p.x, cellZ(it.j) - p.z);
+    if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
+    itemPos(it, at);
+    if (Math.abs(p.y - PLAYER_R - at.y) > PICK_DY) continue;
+    const d = Math.hypot(at.x - p.x, at.z - p.z);
     if (d < bestD) {
       best = it;
       bestD = d;
@@ -473,15 +422,16 @@ function dropEdit(t, x, z) {
   return submitEdit({ op: 'fruit.drop', i, j, t, d });
 }
 
-function currentAction() {
+// What grabbing would do here: { label, button, run } to pick something up or shake a palm, { text } when your hotbar
+// has no room for the thing in reach, or null.
+export function giftTarget() {
   if (!me.entered || !me.body) return null;
   const it = nearestItem();
   if (it) {
     const g = GIFTS[it.kind];
-    if (pocket.length + pending.size >= POCKET_MAX)
-      return { text: 'Your pockets are full. Give The Boogler a present!' };
+    if (roomFor(g.id) < 0 || inv.slots.filter((s) => !s).length <= pending.size) return { text: 'Hotbar full' };
     return {
-      label: `pick up the ${g.name}`,
+      label: 'pick up',
       button: 'Pick up',
       run: () => {
         if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
@@ -494,20 +444,6 @@ function currentAction() {
     return { label: 'shake the palm', button: 'Shake', run: () => dropEdit(t, p.x, p.z) };
   }
   return null;
-}
-
-export function pickupAction() {
-  const a = currentAction();
-  if (!a?.run) return false;
-  a.run();
-  return true;
-}
-
-export function pickupHint() {
-  const a = currentAction();
-  if (!a) return null;
-  if (!a.run) return { text: a.text };
-  return { text: `${isTouch ? `Tap ${a.button}` : 'Click'} to ${a.label}`, button: a.button };
 }
 
 // The ball knocks ripe fruit loose when it hits a palm. Only the ball's owner reports it.
@@ -528,43 +464,11 @@ function knockFruit() {
   }
 }
 
-// ---------------------------------------------------------------- HUD: pocket chips
-let pocketEl = null;
-let shownVersion = -1;
-function updatePocketHud() {
-  if (!pocketEl) {
-    const hud = document.querySelector('.hud');
-    if (!hud) return;
-    pocketEl = document.createElement('div');
-    pocketEl.className = 'pocket';
-    pocketEl.hidden = true;
-    hud.append(pocketEl);
-  }
-  const show = me.entered && pocket.length > 0;
-  if (pocketEl.hidden === show) pocketEl.hidden = !show;
-  if (shownVersion === pocketVersion) return;
-  shownVersion = pocketVersion;
-  pocketEl.replaceChildren();
-  const label = document.createElement('span');
-  label.className = 'pocket-label';
-  label.textContent = `Pocket ${pocket.length}/${POCKET_MAX}`;
-  pocketEl.append(label);
-  for (const kind of pocket) {
-    const chip = document.createElement('span');
-    chip.className = 'pocket-chip';
-    const dot = document.createElement('span');
-    dot.className = 'pocket-dot';
-    dot.style.background = GIFTS[kind].color;
-    chip.append(dot, GIFTS[kind].name);
-    pocketEl.append(chip);
-  }
-}
-
 export function updateGifts(dt, now) {
   if (!fruitMeshes.size) return;
   for (const [id, at] of pending) if (now - at > 4000) pending.delete(id);
   const target = nearestItem()?.id;
   updateTreeFruit(now);
+  updateFlights(now);
   updateItems(dt, now, target);
-  updatePocketHud();
 }

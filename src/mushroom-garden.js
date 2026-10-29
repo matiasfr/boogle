@@ -1,19 +1,24 @@
-// Mushroom garden in the game: the seed stall, the watering can, mushroom meshes and their bouncy colliders.
-// Shared state lives in src/sim/mushrooms.js and changes only through world/sync edits.
+// Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
+// Shared state lives in src/sim/mushrooms.js and changes only through world/sync edits. Seeds and the watering can are
+// hotbar items (src/inventory.js); src/hands.js calls plantFront and pour when you use them.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { CELL, HALF, REACH, isTouch, reducedMotion } from './constants.js';
+import { CELL, HALF, GRID_RES, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { obstacles } from './props.js';
-import { world, groundMat, playerMat, ballMat } from './physics.js';
+import { world, groundMat, playerMat, ballMat, GROUP } from './physics.js';
 import { me } from './player.js';
 import { registerOp, registerState, onTick, submitEdit } from './world/sync.js';
 import { isLegacyCell, LEGACY_SHIFT } from './world/legacy-grid.js';
+import { waterField } from './water-field.js';
+import { dropPoint } from './flight.js';
+import { splash } from './splash.js';
+import { itemModel } from './item-models.js';
+import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from './inventory.js';
 import {
   GROW_TICKS,
-  inPatch,
   createGarden,
   canPlant,
   plant,
@@ -32,36 +37,53 @@ const STEM_TOP_R = 0.32;
 const STEM_BASE_R = 0.42;
 const CAP_R = 1.9;
 const CAP_T = 0.35;
+const MIN_BODY = 0.12; // a sprout this small has no collider yet
+const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale has moved this much
+const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
 const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
-const garden = createGarden();
-const tool = { kind: null, seeds: 0, pourUntil: 0 };
+export const garden = createGarden();
+const pourAt = { until: 0 };
+
+const cellX = (i) => i * CELL - HALF;
+const cellZ = (j) => HALF - j * CELL;
+
+// Host check before a seed goes in: open, dry land with nothing (rock, tree, wall, cap) over the spot.
+export function plantOk(i, j) {
+  if (!canPlant(garden, i, j) || i < 1 || j < 1 || i > GRID_RES - 2 || j > GRID_RES - 2) return false;
+  const x = cellX(i),
+    z = cellZ(j),
+    g = heights[i][j];
+  if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
+  return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
+}
+// A thrown seed that landed somewhere plantOk accepted (src/gifts.js `gift.toss`).
+export const plantSeed = (i, j) => plant(garden, i, j);
 
 registerOp('mush.plant', {
-  validate: (e) => canPlant(garden, e.i, e.j),
+  validate: (e) => plantOk(e.i, e.j),
   apply: (e) => plant(garden, e.i, e.j),
 });
 registerOp('mush.water', {
   validate: (e) => canWater(garden, e.i, e.j),
-  apply: (e) => water(garden, e.i, e.j),
+  apply: (e) => {
+    if (!water(garden, e.i, e.j)) return;
+    const x = cellX(e.i),
+      z = cellZ(e.j);
+    splash(x, z, 0.12, groundHeight(x, z));
+  },
 });
+// Snapshots from before the island grew are bare arrays on the old 129-cell grid; move those cells.
+const migrate = (json) =>
+  Array.isArray(json)
+    ? json.map((v, k) => (k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v))
+    : json;
 registerState('mushrooms', {
   serialize: () => serializeGarden(garden),
-  load: (json) =>
-    loadGarden(
-      garden,
-      Array.isArray(json)
-        ? json.map((v, k) =>
-            k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v,
-          )
-        : json,
-    ),
+  load: (json) => loadGarden(garden, migrate(json)),
   hash: () => hashGarden(garden),
 });
 onTick(() => tickGarden(garden));
-
-const cellX = (i) => i * CELL - HALF;
-const cellZ = (j) => HALF - j * CELL;
 
 // ---------------------------------------------------------------- physics
 const mushroomMat = new CANNON.Material('mushroom');
@@ -70,13 +92,26 @@ world.addContactMaterial(new CANNON.ContactMaterial(mushroomMat, ballMat, { fric
 
 const capBodies = new Map(); // body -> visual
 
-function addMushroomBody(x, y, z) {
-  const body = new CANNON.Body({ mass: 0, material: mushroomMat });
-  body.addShape(new CANNON.Cylinder(STEM_TOP_R, STEM_BASE_R, STEM_H, 10), new CANNON.Vec3(0, STEM_H / 2, 0));
-  body.addShape(new CANNON.Cylinder(CAP_R, CAP_R * 0.85, CAP_T, 16), new CANNON.Vec3(0, STEM_H + CAP_T / 2, 0));
-  body.position.set(x, y, z);
-  world.addBody(body);
-  return body;
+// Cannon shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
+function shapeBody(v, s) {
+  if (!v.body) {
+    v.body = new CANNON.Body({ mass: 0, material: mushroomMat, collisionFilterGroup: GROUP.SCENERY });
+    v.body.position.copy(v.root.position);
+    world.addBody(v.body);
+    capBodies.set(v.body, v);
+  }
+  const b = v.body;
+  while (b.shapes.length) b.removeShape(b.shapes[0]);
+  b.addShape(
+    new CANNON.Cylinder(STEM_TOP_R * s, STEM_BASE_R * s, STEM_H * s, 10),
+    new CANNON.Vec3(0, (STEM_H * s) / 2, 0),
+  );
+  b.addShape(
+    new CANNON.Cylinder(CAP_R * s, CAP_R * 0.85 * s, CAP_T * s, 16),
+    new CANNON.Vec3(0, (STEM_H + CAP_T / 2) * s, 0),
+  );
+  b.aabbNeedsUpdate = true;
+  v.bodyS = s;
 }
 
 world.addEventListener('postStep', () => {
@@ -86,11 +121,36 @@ world.addEventListener('postStep', () => {
     const other = c.bi === b ? c.bj : c.bj === b ? c.bi : null;
     const vis = other && capBodies.get(other);
     if (!vis) continue;
-    if (b.position.y < other.position.y + STEM_H) continue;
-    b.velocity.y = BOUNCE_SPEED;
+    if (b.position.y < other.position.y + STEM_H * vis.bodyS) continue;
+    b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
     me.coyote = 0;
     vis.squishAt = performance.now();
     break;
+  }
+});
+
+// A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top).
+world.addEventListener('preStep', () => {
+  const b = me.body;
+  if (!b) return;
+  for (const v of visuals.values()) {
+    if (!v.body || v.shown >= 1) continue;
+    const base = v.root.position,
+      s = v.bodyS;
+    const feet = b.position.y - PLAYER_R;
+    if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) continue;
+    const dx = b.position.x - base.x,
+      dz = b.position.z - base.z;
+    const d = Math.hypot(dx, dz);
+    if (d >= CAP_R * s + PLAYER_R) continue;
+    const nx = d > 0.01 ? dx / d : 1,
+      nz = d > 0.01 ? dz / d : 0;
+    const out = b.velocity.x * nx + b.velocity.z * nz;
+    if (out >= PUSH) continue;
+    b.velocity.x += nx * (PUSH - out);
+    b.velocity.z += nz * (PUSH - out);
+    b.velocity.y = Math.max(b.velocity.y, 2.5);
+    v.squishAt = performance.now();
   }
 });
 
@@ -143,14 +203,11 @@ function makeMushroomMesh() {
   return g;
 }
 
-const visuals = new Map(); // "i,j" -> { root, mound, sprout, shroom, body, shown, squishAt }
+const visuals = new Map(); // "i,j" -> { root, mound, sprout, shroom, body, bodyS, shown, squishAt }
 
 function makeVisual(p) {
-  const x = cellX(p.i),
-    z = cellZ(p.j),
-    y = heights[p.i][p.j];
   const root = new THREE.Group();
-  root.position.set(x, y, z);
+  root.position.set(cellX(p.i), heights[p.i][p.j], cellZ(p.j));
   const mound = new THREE.Mesh(moundGeo, moundMat);
   mound.receiveShadow = true;
   const sprout = new THREE.Mesh(sproutGeo, sproutMat);
@@ -159,7 +216,7 @@ function makeVisual(p) {
   shroom.scale.setScalar(0.001);
   root.add(mound, sprout, shroom);
   scene.add(root);
-  return { root, mound, sprout, shroom, body: null, shown: 0, squishAt: 0 };
+  return { root, mound, sprout, shroom, body: null, bodyS: 0, shown: 0, squishAt: 0 };
 }
 
 // Overshoots then settles, so the mushroom pops up.
@@ -170,6 +227,15 @@ function updateMushrooms(dt, now) {
     const key = `${p.i},${p.j}`;
     let v = visuals.get(key);
     if (!v) visuals.set(key, (v = makeVisual(p)));
+    // Mushrooms grow anywhere now, sand included, so they follow the ground when someone digs beside them.
+    const gy = heights[p.i][p.j];
+    if (v.root.position.y !== gy) {
+      v.root.position.y = gy;
+      if (v.body) {
+        v.body.position.y = gy;
+        v.body.aabbNeedsUpdate = true;
+      }
+    }
     const target = p.g / GROW_TICKS;
     v.shown = reducedMotion ? target : Math.min(target, v.shown + (dt * 10) / GROW_TICKS);
     v.mound.material = p.g > 0 ? wetMat : moundMat;
@@ -178,18 +244,13 @@ function updateMushrooms(dt, now) {
     const sinceSquish = (now - v.squishAt) / 1000;
     const squish = !reducedMotion && sinceSquish < 0.5 ? Math.sin(sinceSquish * 25) * 0.18 * (1 - sinceSquish * 2) : 0;
     v.shroom.scale.set(s * (1 + squish * 0.5), s * (1 - squish), s * (1 + squish * 0.5));
-    if (p.g >= GROW_TICKS && !v.body) {
-      v.body = addMushroomBody(v.root.position.x, v.root.position.y, v.root.position.z);
-      capBodies.set(v.body, v);
-    }
+    if (s >= MIN_BODY && (Math.abs(s - v.bodyS) >= RESHAPE || (v.shown >= 1 && v.bodyS !== s))) shapeBody(v, s);
   }
 }
 
 // ---------------------------------------------------------------- stall
 const wood = new THREE.MeshStandardMaterial({ color: '#b07a45', roughness: 0.9, flatShading: true });
 const woodDk = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9, flatShading: true });
-const canMat = new THREE.MeshStandardMaterial({ color: '#4fa3d9', roughness: 0.35, metalness: 0.3 });
-const bagMat = new THREE.MeshStandardMaterial({ color: '#d8b98a', roughness: 1, flatShading: true });
 
 function stripedAwning() {
   const c = document.createElement('canvas');
@@ -203,37 +264,6 @@ function stripedAwning() {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, side: THREE.DoubleSide });
-}
-
-function makeCan() {
-  const g = new THREE.Group();
-  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.34, 14).translate(0, 0.17, 0), canMat));
-  const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.04, 0.42, 8), canMat);
-  spout.position.set(0, 0.24, -0.27);
-  spout.rotation.x = -0.9;
-  const rose = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.035, 0.05, 10), canMat);
-  rose.position.set(0, 0.39, -0.44);
-  rose.rotation.x = -0.9;
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.025, 6, 12, Math.PI), canMat);
-  handle.position.set(0, 0.34, 0.02);
-  handle.rotation.y = Math.PI / 2;
-  g.add(spout, rose, handle);
-  g.traverse((o) => (o.castShadow = true));
-  return g;
-}
-
-function makeSeedBag() {
-  const g = new THREE.Group();
-  const bag = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6).scale(1, 1.15, 0.8), bagMat);
-  bag.position.y = 0.16;
-  const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.08, 8), woodDk);
-  tie.position.y = 0.33;
-  const label = new THREE.Mesh(new THREE.CircleGeometry(0.07, 10), capMat);
-  label.position.set(0, 0.17, -0.13);
-  label.rotation.y = Math.PI;
-  g.add(bag, tie, label);
-  g.traverse((o) => (o.castShadow = true));
-  return g;
 }
 
 const stall = new THREE.Group();
@@ -256,11 +286,11 @@ const pickups = []; // { kind, local: Vector3, world: Vector3 }
   stall.add(awning);
   box(0.9, 0.3, 0.6, woodDk, -0.7, 1.11, 0);
   for (let k = 0; k < 3; k++) {
-    const bag = makeSeedBag();
+    const bag = itemModel('seeds');
     bag.position.set(-0.95 + k * 0.25, 1.2, (k % 2) * 0.12 - 0.05);
     stall.add(bag);
   }
-  const can = makeCan();
+  const can = itemModel('can');
   can.position.set(0.75, 0.96, 0);
   can.rotation.y = 0.6;
   stall.add(can);
@@ -298,35 +328,12 @@ export function createStall() {
   stall.updateMatrixWorld(true);
   for (const p of pickups) p.world = stall.localToWorld(p.local.clone());
 
-  const body = new CANNON.Body({ mass: 0, material: groundMat });
+  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
   body.addShape(new CANNON.Box(new CANNON.Vec3(1.4, 0.5, 0.45)), new CANNON.Vec3(0, 0.5, 0));
   body.position.set(STALL.x, y, STALL.z);
   body.quaternion.setFromEuler(0, STALL.yaw, 0);
   world.addBody(body);
   obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
-}
-
-// ---------------------------------------------------------------- held tool
-const heldCan = makeCan();
-const heldBag = makeSeedBag();
-heldCan.visible = heldBag.visible = false;
-scene.add(heldCan, heldBag);
-
-function leftHand(out) {
-  const p = me.body.interpolatedPosition;
-  const s = Math.sin(me.yaw),
-    c = Math.cos(me.yaw);
-  return out.set(p.x - s * 0.55 - c * 0.55, p.y + 0.35, p.z - c * 0.55 + s * 0.55);
-}
-
-function updateHeld(now) {
-  heldCan.visible = !!me.body && tool.kind === 'can';
-  heldBag.visible = !!me.body && tool.kind === 'seeds';
-  const held = heldCan.visible ? heldCan : heldBag.visible ? heldBag : null;
-  if (!held) return;
-  leftHand(held.position);
-  held.rotation.set(0, me.yaw, 0);
-  if (held === heldCan && now < tool.pourUntil) held.rotateX(-0.9);
 }
 
 // ---------------------------------------------------------------- actions
@@ -346,11 +353,45 @@ function nearestPickup() {
   return best;
 }
 
+// What grabbing at the stall would do: { label, button, run }, { text } when there is no room, or null.
+export function stallTarget() {
+  if (!me.entered) return null;
+  const pick = nearestPickup();
+  if (pick?.kind === 'seeds') {
+    if (inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) return null;
+    if (roomFor('seeds') < 0) return { text: 'Hotbar full' };
+    return { label: 'take seeds', button: 'Take', run: () => take('seeds', SEEDS_PER_VISIT) };
+  }
+  if (pick?.kind === 'can' && !has('can')) {
+    if (roomFor('can') < 0) return { text: 'Hotbar full' };
+    return { label: 'take the can', button: 'Take', run: () => take('can') };
+  }
+  return null;
+}
+
 function plantCell() {
   const p = me.body.interpolatedPosition;
   const x = p.x - Math.sin(me.yaw) * 0.9,
     z = p.z - Math.cos(me.yaw) * 0.9;
   return { i: Math.round((x + HALF) / CELL), j: Math.round((HALF - z) / CELL) };
+}
+
+let plantedAt = -1e9; // a seed in flight to the host is not in the garden yet: no second one on its heels
+// { i, j } where a seed would go in front of you, or { text } saying why not.
+export function plantTarget() {
+  if (!me.body) return null;
+  const { i, j } = plantCell();
+  if (plantOk(i, j) && performance.now() - plantedAt > 500) return { i, j };
+  return { text: "Can't plant here" };
+}
+
+export function plantFront() {
+  const t = plantTarget();
+  if (!t || t.text) return false;
+  if (!submitEdit({ op: 'mush.plant', i: t.i, j: t.j })) return false;
+  plantedAt = performance.now();
+  useOne();
+  return true;
 }
 
 function plotToWater() {
@@ -368,77 +409,16 @@ function plotToWater() {
   return best;
 }
 
-// Returns { label, run } for what a click would do right now, or null.
-function currentAction() {
-  if (!me.entered || !me.body) return null;
-  const pick = nearestPickup();
-  if (pick?.kind === 'seeds' && !(tool.kind === 'seeds' && tool.seeds >= SEEDS_PER_VISIT)) {
-    return {
-      label: 'take mushroom seeds',
-      button: 'Take',
-      run: () => Object.assign(tool, { kind: 'seeds', seeds: SEEDS_PER_VISIT }),
-    };
-  }
-  if (pick?.kind === 'can' && tool.kind !== 'can') {
-    return { label: 'take the watering can', button: 'Take', run: () => (tool.kind = 'can') };
-  }
-  if (tool.kind === 'seeds') {
-    const { i, j } = plantCell();
-    if (!canPlant(garden, i, j)) return null;
-    return {
-      label: 'bury a seed',
-      button: 'Plant',
-      run: () => {
-        if (submitEdit({ op: 'mush.plant', i, j }) && --tool.seeds <= 0) tool.kind = null;
-      },
-    };
-  }
-  if (tool.kind === 'can') {
-    const plot = plotToWater();
-    if (!plot) return null;
-    return {
-      label: 'water the seed',
-      button: 'Water',
-      run: () => {
-        if (submitEdit({ op: 'mush.water', i: plot.i, j: plot.j })) tool.pourUntil = performance.now() + 600;
-      },
-    };
-  }
-  return null;
-}
-
-export function gardenAction() {
-  const a = currentAction();
-  if (!a) return false;
-  a.run();
+// Tips the can (src/features/hotbar.js draws it pouring) and waters the nearest buried seed, if there is one.
+export function pour() {
+  if (!me.body) return false;
+  pourAt.until = performance.now() + 600;
+  const plot = plotToWater();
+  if (plot) submitEdit({ op: 'mush.water', i: plot.i, j: plot.j });
   return true;
 }
-
-export function gardenHint() {
-  const a = currentAction();
-  if (a) return { text: `${isTouch ? `Tap ${a.button}` : 'Click'} to ${a.label}`, button: a.button };
-  if (tool.kind === 'seeds') {
-    const { i, j } = plantCell();
-    return { text: inPatch(i, j) ? 'Too close to another mushroom' : 'Bury seeds in the dirt by the stall' };
-  }
-  if (tool.kind === 'can') return { text: 'Water a buried seed to grow it' };
-  return null;
-}
-
-export const seedCount = () => (tool.kind === 'seeds' ? tool.seeds : 0);
-export function giveSeed() {
-  if (seedCount() <= 0) return false;
-  if (--tool.seeds <= 0) tool.kind = null;
-  return true;
-}
-
-export function toolLabel() {
-  if (tool.kind === 'seeds') return `Mushroom seeds ×${tool.seeds}`;
-  if (tool.kind === 'can') return 'Watering can';
-  return '';
-}
+export const pouring = () => performance.now() < pourAt.until;
 
 export function updateGarden(dt, now) {
   updateMushrooms(dt, now);
-  updateHeld(now);
 }

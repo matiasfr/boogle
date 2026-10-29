@@ -2,19 +2,16 @@ import { isTouch } from './constants.js';
 import { clamp } from './math.js';
 import { canvas } from './scene.js';
 import { me, cam } from './player.js';
-import { actionDown, actionUp, respawnBall, releaseBall } from './ball.js';
+import { respawnBall, releaseBall } from './ball.js';
 import { sendPresence } from './net.js';
 import { dom } from './hud.js';
-import { toggleShovel, shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
-import { gardenAction } from './mushroom-garden.js';
-import { pickupAction } from './gifts.js';
-import { booglerAction } from './boogler-play.js';
+import { shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
+import { useDown, useUp, grabDown, grabUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
+import { cycle } from './inventory.js';
 import { registerAction } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
-
-export const use = () => actionDown() || pickupAction() || booglerAction() || gardenAction();
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
@@ -50,14 +47,12 @@ export function initInput() {
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
     if (e.repeat) return;
-    if (e.code === 'KeyE') use();
+    if (e.code === 'KeyE') grabDown();
     if (e.code === 'KeyR') respawnBall();
-    if (e.code === 'KeyF') toggleShovel();
-    // Q digs, Z piles (hold to repeat); turns the shovel on if needed, never while the ball is in hand.
-    if ((e.code === 'KeyQ' || e.code === 'KeyZ') && !me.holding && !me.charging) {
-      toggleShovel(true);
+    if (e.code === 'KeyF') toggleShovelHand();
+    // Q digs, Z piles (hold to repeat); pulls the shovel out if needed, never mid-throw.
+    if ((e.code === 'KeyQ' || e.code === 'KeyZ') && !me.charging && ensureShovel())
       setHold(e.code === 'KeyQ' ? 'dig' : 'pile');
-    }
     if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
   });
   addEventListener('keyup', (e) => {
@@ -68,7 +63,7 @@ export function initInput() {
     if (e.code === 'Space') me.jumpHeld = false;
     if (e.code === 'KeyQ') setHold(null, 'dig');
     if (e.code === 'KeyZ') setHold(null, 'pile');
-    if (e.code === 'KeyE' && me.entered) actionUp();
+    if (e.code === 'KeyE' && me.entered) grabUp();
   });
   let drag = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -81,7 +76,7 @@ export function initInput() {
     }
     if (shovelActive() && (e.button === 0 || e.button === 2))
       setHold(e.button === 2 ? 'pile' : e.shiftKey ? 'flatten' : 'dig');
-    else if (e.button === 0) use();
+    else if (e.button === 0) useDown();
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -111,7 +106,7 @@ export function initInput() {
       return;
     }
     drag = null;
-    actionUp();
+    useUp();
   });
   canvas.addEventListener(
     'wheel',
@@ -180,11 +175,11 @@ export function initInput() {
   for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, () => (me.jumpHeld = false));
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    use();
+    touchDown();
   });
   grabBtn.addEventListener('pointerup', (e) => {
     e.stopPropagation();
-    actionUp();
+    useUp();
   });
   grabBtn.addEventListener('pointercancel', () => {
     me.charging = false;
@@ -194,7 +189,7 @@ export function initInput() {
   const { shovelBtn, digBtn, pileBtn } = dom;
   shovelBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    toggleShovel();
+    toggleShovelHand();
   });
   for (const [btn, kind] of [
     [digBtn, 'dig'],
@@ -202,18 +197,16 @@ export function initInput() {
   ]) {
     btn.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
-      setHold(kind);
+      if (ensureShovel()) setHold(kind);
     });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
   }
 
   // Gamepad layout for the built-in controls (src/controls.js; features register their own).
-  // Like Q/Z: holding dig, pile or flatten turns the shovel on, never while the ball is in hand.
+  // Like Q/Z: holding dig, pile or flatten pulls the shovel out, never mid-throw.
   const hold = (kind) => ({
     down: () => {
-      if (me.holding || me.charging) return;
-      toggleShovel(true);
-      setHold(kind);
+      if (!me.charging && ensureShovel()) setHold(kind);
     },
     up: () => setHold(null, kind),
   });
@@ -224,12 +217,14 @@ export function initInput() {
     down: () => ((me.jumpQueued = 0.15), (me.jumpHeld = true)),
     up: () => (me.jumpHeld = false),
   });
-  registerAction('use', { pad: 'x', label: 'Grab / throw (hold to charge)', down: use, up: actionUp });
-  registerAction('respawn', { pad: 'b', label: 'Bring the ball back', down: respawnBall });
-  registerAction('shovel', { pad: 'lb', label: 'Shovel on/off', down: () => toggleShovel() });
+  registerAction('use', { pad: 'x', label: 'Use what you hold (hold to throw a thing)', down: useDown, up: useUp });
+  registerAction('grab', { pad: 'b', label: 'Grab, or throw what you hold (hold)', down: grabDown, up: grabUp });
+  registerAction('respawn', { pad: 'view', label: 'Bring the ball back', down: respawnBall });
+  registerAction('slot-prev', { pad: 'lb', label: 'Hotbar: previous slot', down: () => cycle(-1) });
+  registerAction('slot-next', { pad: 'rb', label: 'Hotbar: next slot', down: () => cycle(1) });
   registerAction('dig', { pad: 'rt', label: 'Dig (hold)', ...hold('dig') });
   registerAction('pile', { pad: 'lt', label: 'Pile (hold)', ...hold('pile') });
-  registerAction('flatten', { pad: 'rb', label: 'Flatten (hold)', ...hold('flatten') });
+  registerAction('flatten', { pad: 'r3', label: 'Flatten (hold)', ...hold('flatten') });
   // Click once to sprint, like most console games: it stays on until the stick is let go (src/player.js).
   registerAction('sprint', {
     pad: 'l3',
@@ -252,6 +247,7 @@ export function initInput() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       releaseAll();
+      me.charging = false;
       releaseBall();
     }
     sendPresence();

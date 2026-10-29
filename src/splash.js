@@ -66,7 +66,7 @@ function addRipple(x, z, strength) {
 }
 
 // strength 0..1
-function splash(x, z, strength, level = SEA) {
+export function splash(x, z, strength, level = SEA) {
   strength = Math.min(Math.max(strength, 0), 1);
   addRipple(x, z, 0.35 + strength * 0.65);
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));

@@ -81,7 +81,7 @@ For lockstep systems, clients send small **edit events** (dig, pile, plant, harv
 | The beach ball | Its current owner (epoch rule in [`src/ball.js`](src/ball.js)) |
 | Water, terrain edits, garden, weather | The host peer |
 | The Boogler (wandering NPC) | The host peer, published in its presence ([`src/boogler.js`](src/boogler.js)) |
-| Your friendship with The Boogler, your pocket | You (client), kept in localStorage ([`src/boogler-play.js`](src/boogler-play.js)) |
+| Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler-play.js`](src/boogler-play.js), [`src/inventory.js`](src/inventory.js)) |
 | Persistence (snapshots) | The host, saved to our server |
 
 ### PeerJS only

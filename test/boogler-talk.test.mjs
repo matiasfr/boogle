@@ -111,19 +111,30 @@ test('asking ahead of the friendship gets deflected, and pushing makes him go qu
   assert.equal(talkView(openTalk(f, ctx())).mood, 'grump');
 });
 
-test('gifts come out of the pocket and can forgive a wary Boogler', () => {
+test('he takes what is in your hand and it can forgive a wary Boogler', () => {
   const f = createFriend();
   for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
   const duck = giftIndex('duck');
   const pocket = [duck];
   const t = openTalk(f, ctx({ pocket }));
   assert.equal(talkView(t).mood, 'grump');
-  pickTalk(t, optIndex(t, 'brought you'));
-  const out = pickTalk(t, optIndex(t, `gift ${duck}`));
+  const out = pickTalk(t, optIndex(t, `I brought you a gift ${duck}`));
   assert.deepEqual(out.gave, { kind: duck, taste: 'like' });
   assert.equal(pocket.length, 0);
   assert.equal(isWary(f, 1e6), false);
   assert.match(talkView(t).say, /forgiven/);
+});
+
+test('he turns down key items and leaves them in your hand', () => {
+  for (const id of ['shovel', 'ball']) {
+    const kind = giftIndex(id);
+    const pocket = [kind];
+    const t = openTalk(createFriend(), ctx({ pocket }));
+    const out = pickTalk(t, optIndex(t, `gift ${kind}`));
+    assert.equal(out.gave, null);
+    assert.deepEqual(pocket, [kind]);
+    assert.ok(talkView(t).opts.length >= 2);
+  }
 });
 
 test('the kick-off talk ends after one exchange', () => {

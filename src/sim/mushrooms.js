@@ -1,15 +1,17 @@
 // Mushroom garden: buried seeds that grow into bouncy mushrooms once watered. Pure and integer-only (see
-// src/world/README.md), so it runs the same on every client and in Node tests.
+// src/world/README.md), so it runs the same on every client and in Node tests. Seeds go in anywhere; the game layer
+// (src/mushroom-garden.js) refuses water, rocks and trees before an edit reaches this state.
 
-// Dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H).
+// The seed stall's dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H). Kept clear of trees, beach
+// gifts and digging; mushrooms grow there or anywhere else.
 export const PATCH = { i0: 218, j0: 192, w: 20, h: 20 };
 // Minimum Chebyshev distance in cells between two plots, so grown caps do not overlap much.
 export const SPACING = 3;
-export const GROW_TICKS = 40;
+export const GROW_TICKS = 120;
+export const MAX_PLOTS = 60;
+const MAX_CELL = 4096;
 
-export function inPatch(i, j) {
-  return i >= PATCH.i0 && i < PATCH.i0 + PATCH.w && j >= PATCH.j0 && j < PATCH.j0 + PATCH.h;
-}
+const inGrid = (i, j) => Number.isInteger(i) && Number.isInteger(j) && i >= 0 && j >= 0 && i < MAX_CELL && j < MAX_CELL;
 
 // g: 0 = buried and dry, 1..GROW_TICKS-1 = growing, GROW_TICKS = grown.
 export function createGarden() {
@@ -21,7 +23,7 @@ function findPlot(garden, i, j) {
 }
 
 export function canPlant(garden, i, j) {
-  if (!Number.isInteger(i) || !Number.isInteger(j) || !inPatch(i, j)) return false;
+  if (!inGrid(i, j) || garden.plots.length >= MAX_PLOTS) return false;
   return !garden.plots.some((p) => Math.max(Math.abs(p.i - i), Math.abs(p.j - j)) < SPACING);
 }
 
@@ -46,20 +48,21 @@ export function tickGarden(garden) {
 }
 
 export function serializeGarden(garden) {
-  return garden.plots.flatMap((p) => [p.i, p.j, p.g]);
+  return { v: 2, p: garden.plots.flatMap((p) => [p.i, p.j, p.g]) };
 }
 
-export function loadGarden(garden, flat) {
+// Accepts the current { v: 2, p } form or a bare flat array (older snapshots; the caller migrates their cells).
+export function loadGarden(garden, json) {
   garden.plots = [];
-  if (!Array.isArray(flat)) return;
-  for (let k = 0; k + 2 < flat.length; k += 3) {
+  const flat = Array.isArray(json) ? json : json?.v === 2 && Array.isArray(json.p) ? json.p : [];
+  for (let k = 0; k + 2 < flat.length && garden.plots.length < MAX_PLOTS; k += 3) {
     const [i, j, g] = flat.slice(k, k + 3);
-    if (inPatch(i, j) && Number.isInteger(g) && g >= 0 && g <= GROW_TICKS) garden.plots.push({ i, j, g });
+    if (inGrid(i, j) && Number.isInteger(g) && g >= 0 && g <= GROW_TICKS) garden.plots.push({ i, j, g });
   }
 }
 
 export function hashGarden(garden) {
   let h = 2166136261;
-  for (const v of serializeGarden(garden)) h = Math.imul(h ^ v, 16777619);
+  for (const v of serializeGarden(garden).p) h = Math.imul(h ^ v, 16777619);
   return h >>> 0;
 }

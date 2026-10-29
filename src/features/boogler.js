@@ -15,7 +15,7 @@ onStart(() => {
   if (window.boogle) window.boogle.boogler = boogler; // debug handle
   const help = document.getElementById('help');
   for (const [key, text] of [
-    ['C', 'Talk to The Boogler, or give him a present'],
+    ['C', 'Talk to The Boogler, or give him what you hold'],
     ['Click', 'Pet him, pick things up, shake a palm'],
   ]) {
     const row = document.createElement('div');

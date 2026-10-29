@@ -1,0 +1,106 @@
+/* Hotbar: eight slots along the bottom, the held item's name fading in above them. */
+.hotbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.hotbar-name {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.hotbar-name.shown {
+  opacity: 1;
+}
+.hotbar-slots {
+  display: flex;
+  gap: 5px;
+  pointer-events: auto;
+}
+.hotbar-slot {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 2px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--on-glass);
+  touch-action: none;
+  transition:
+    transform 0.12s,
+    border-color 0.12s;
+}
+.hotbar-slot.on {
+  border-color: var(--sun);
+  transform: translateY(-4px);
+}
+.hotbar-icon {
+  position: absolute;
+  inset: 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  object-fit: contain;
+  pointer-events: none;
+}
+.hotbar-key,
+.hotbar-n {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.hotbar-key {
+  top: 4px;
+  left: 5px;
+  opacity: 0.75;
+}
+.hotbar-n {
+  right: 5px;
+  bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top and the shovel chip below it. */
+body.touch .hotbar {
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  flex-direction: column-reverse;
+}
+body.touch .hotbar-slot {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+body.touch .hotbar-key {
+  display: none;
+}
+body.touch .shovel-chip {
+  top: calc(62px + env(safe-area-inset-top, 0px));
+}
+.tbtn.toss {
+  display: none;
+  right: calc(108px + env(safe-area-inset-right, 0px));
+  bottom: calc(274px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 14px;
+}
+body.holding-thing .tbtn.toss {
+  display: block;
+}

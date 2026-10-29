@@ -1,8 +1,9 @@
 // Everything you can give The Boogler. Ground items in the shared world store an index into GIFTS, so only append.
 //
-// src: 'tree' grows on the palms, 'shore' washes up on the beach (weight = relative chance), 'stall' is the
-// mushroom seed from the seed stall. taste: how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike').
-// line: what he says when you hand it over.
+// src: 'tree' grows on the palms, 'shore' washes up on the beach (weight = relative chance), 'stall' comes from the
+// seed stall, 'perch' waits on a perch (the lighthouse deck), 'tool' and 'ball' are carried, never spawned.
+// taste: how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'). line: what he says when you hand it
+// over. key: he refuses it, and line is why.
 export const GIFTS = [
   {
     id: 'coconut',
@@ -205,6 +206,40 @@ export const GIFTS = [
     src: 'stall',
     taste: 'like',
     line: 'A mushroom seed! I will plant it and grow an empire. A small empire. A bouncy one.',
+  },
+  {
+    id: 'can',
+    name: 'watering can',
+    color: '#4fa3d9',
+    src: 'stall',
+    taste: 'meh',
+    line: 'A watering can. I will water myself every morning. Grow, Boogler, grow! ...Nothing. Maybe tomorrow.',
+  },
+  {
+    id: 'shovel',
+    name: 'shovel',
+    color: '#c9a36b',
+    src: 'tool',
+    key: true,
+    taste: 'meh',
+    line: 'Your shovel? No, no. Without a shovel you are just a person standing on sand. Keep it.',
+  },
+  {
+    id: 'frisbee',
+    name: 'frisbee',
+    color: '#ff4fa3',
+    src: 'perch',
+    taste: 'like',
+    line: 'A frisbee! A plate that flies! At home we would put plov on it. Then nobody would throw it.',
+  },
+  {
+    id: 'ball',
+    name: 'beach ball',
+    color: '#ff4f4f',
+    src: 'ball',
+    key: true,
+    taste: 'meh',
+    line: 'The beach ball? That belongs to everybody. If I take it, everybody is sad, and then everybody is sad at me.',
   },
 ];
 

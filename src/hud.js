@@ -1,12 +1,9 @@
 import { COLORS, isTouch } from './constants.js';
 import { me, enterIsland, chargeAmount } from './player.js';
 import { net, remotes } from './net.js';
-import { ballInReach, remoteHoldsBall } from './ball.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
-import { gardenHint, toolLabel } from './mushroom-garden.js';
-import { pickupHint } from './gifts.js';
-import { booglerHint } from './boogler-play.js';
+import { handsHint } from './hands.js';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -20,7 +17,6 @@ export const dom = {
   netEl: $('net'),
   netLabel: $('net-label'),
   hintEl: $('hint'),
-  toolEl: $('tool'),
   chargeEl: $('charge'),
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
@@ -38,34 +34,18 @@ export function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
   let hint = '';
-  let garden = null;
+  const hands = me.entered ? handsHint() : null;
   if (me.entered) {
-    const tap = isTouch;
-    if (!tap && !inputState.locked && !inputState.lockFailed) hint = 'Click the island to look around';
-    else if (me.charging) hint = 'Release to throw';
-    else if (me.holding) hint = tap ? 'Hold Throw, release to let go' : 'Hold click, release to throw';
-    else if (ballInReach()) {
-      hint = remoteHoldsBall()
-        ? tap
-          ? 'Tap Grab to steal the ball'
-          : 'Click to steal the ball'
-        : tap
-          ? 'Tap Grab to pick up the ball'
-          : 'Click to grab the ball';
-    } else if ((garden = pickupHint() ?? booglerHint() ?? gardenHint())) hint = garden.text;
+    if (!isTouch && !inputState.locked && !inputState.lockFailed) hint = 'Click the island to look around';
+    else if (!me.charging) hint = hands?.text ?? '';
   }
   if (hint !== lastHint) {
     lastHint = hint;
     dom.hintEl.textContent = hint;
     dom.hintEl.hidden = !hint;
   }
-  const grab = me.holding ? 'Throw' : (garden?.button ?? 'Grab');
+  const grab = hands?.button ?? 'Grab';
   if (dom.grabBtn.textContent !== grab) dom.grabBtn.textContent = grab;
-  const label = me.entered ? toolLabel() : '';
-  if (dom.toolEl.textContent !== label) {
-    dom.toolEl.textContent = label;
-    dom.toolEl.hidden = !label;
-  }
 }
 
 let peopleKey = '';

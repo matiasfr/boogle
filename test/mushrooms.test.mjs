@@ -4,6 +4,7 @@ import {
   PATCH,
   SPACING,
   GROW_TICKS,
+  MAX_PLOTS,
   createGarden,
   plant,
   canPlant,
@@ -16,12 +17,19 @@ import {
 
 const { i0, j0 } = PATCH;
 
-test('plants only inside the dirt patch', () => {
+test('plants on any whole grid cell, not just the dirt patch', () => {
   const g = createGarden();
-  assert.equal(plant(g, i0 - 1, j0), false);
-  assert.equal(plant(g, i0 + PATCH.w, j0), false);
+  assert.equal(plant(g, -1, j0), false);
   assert.equal(plant(g, i0 + 0.5, j0), false);
   assert.equal(plant(g, i0, j0), true);
+  assert.equal(plant(g, i0 + PATCH.w + 30, j0 - 100), true);
+  assert.equal(plant(g, 2, 2), true);
+});
+
+test('stops taking seeds at MAX_PLOTS', () => {
+  const g = createGarden();
+  for (let k = 0; k < MAX_PLOTS; k++) assert.equal(plant(g, (k % 10) * SPACING, Math.floor(k / 10) * SPACING), true);
+  assert.equal(canPlant(g, 500, 500), false);
 });
 
 test('rejects plots closer than SPACING', () => {
@@ -56,11 +64,21 @@ test('snapshot round-trips and hashes match', () => {
   assert.notEqual(hashGarden(b), hashGarden(a));
 });
 
-test('load drops plots outside the patch or with bad growth', () => {
+test('load drops plots off the grid or with bad growth', () => {
   const g = createGarden();
-  loadGarden(g, [i0, j0, 0, 0, 0, 0, i0 + 4, j0, GROW_TICKS + 1, i0 + 4, j0 + 4, 3]);
+  loadGarden(g, { v: 2, p: [i0, j0, 0, -1, 0, 0, i0 + 4, j0, GROW_TICKS + 1, i0 + 4, j0 + 4, 3, 1.5, 2, 0] });
   assert.deepEqual(g.plots, [
     { i: i0, j: j0, g: 0 },
     { i: i0 + 4, j: j0 + 4, g: 3 },
   ]);
+});
+
+test('load still reads the older bare-array form', () => {
+  const g = createGarden();
+  loadGarden(g, [i0, j0, 2]);
+  assert.deepEqual(g.plots, [{ i: i0, j: j0, g: 2 }]);
+  for (const bad of [null, 'x', { v: 3, p: [i0, j0, 0] }]) {
+    loadGarden(g, bad);
+    assert.equal(g.plots.length, 0);
+  }
 });
