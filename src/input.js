@@ -219,11 +219,11 @@ export function initInput() {
   registerAction('dig', { pad: 'rt', label: 'Dig (hold)', ...hold('dig') });
   registerAction('pile', { pad: 'lt', label: 'Pile (hold)', ...hold('pile') });
   registerAction('flatten', { pad: 'rb', label: 'Flatten (hold)', ...hold('flatten') });
+  // Click once to sprint, like most console games: it stays on until the stick is let go (src/player.js).
   registerAction('sprint', {
     pad: 'l3',
-    label: 'Sprint (hold)',
+    label: 'Sprint (click, stays on while moving)',
     down: () => (input.sprint = true),
-    up: () => (input.sprint = false),
   });
   registerAction('zoom-in', { pad: 'up', label: 'Camera closer', ...zoom(-1) });
   registerAction('zoom-out', { pad: 'down', label: 'Camera farther', ...zoom(1) });
