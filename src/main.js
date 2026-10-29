@@ -16,6 +16,7 @@ import { renderPeople, updateHud, initLobby } from './hud.js';
 import { updateSplash } from './splash.js';
 import { updateStreak } from './streak.js';
 import { updateWorld } from './world/sync.js';
+import { updateShovel } from './world/terrain-edits.js';
 import { initInput } from './input.js';
 
 createTerrainMesh();
@@ -98,6 +99,7 @@ function frame(now) {
   updateCamera(elapsed);
   updateClouds(dt);
   updateWorld(dt);
+  updateShovel();
   updateSplash(dt, elapsed, ball, me, remotes);
   updatePreview();
   updateHud();
