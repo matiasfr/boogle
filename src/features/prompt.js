@@ -1,7 +1,7 @@
 // The interact prompt: what E (pad B, the touch action button) would act on, marked where it is with the button and the
-// verb, "[E] Pick up" over a shell or "[E] Talk" under The Boogler's name. A full hotbar greys it and says so. Hidden
-// while you wind up a throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you
-// press.
+// verb, "[E] Pick up" floating over a shell, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
+// itself; see registerInteractable in src/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
+// throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
 import * as THREE from 'three';
 import { onFrame } from '../loop.js';
@@ -9,11 +9,10 @@ import { camera } from '../scene.js';
 import { me } from '../player.js';
 import { interactTarget } from '../hands.js';
 import { dialogue } from '../boogler-dialogue.js';
-import { setTagPrompt } from '../boogler-hud.js';
 import { glyph, inputKind } from '../glyphs.js';
 
 const ndc = new THREE.Vector3();
-const ui = { root: null, html: '', id: '', kind: '' };
+const ui = { root: null, html: '', id: '', kind: '', show: null, showId: '' };
 
 const chip = (t) =>
   `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph('interact')}<span>${t.verb}</span></span>` +
@@ -33,8 +32,12 @@ onFrame(
     const t = me.entered && !me.charging && !dialogue.open ? interactTarget() : null;
     const kind = inputKind();
     const html = t ? chip(t) : '';
-    setTagPrompt(t?.id === 'boogler' ? html : '');
-    const id = t && t.id !== 'boogler' ? t.id : '';
+    // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
+    if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');
+    ui.show = t?.show ?? null;
+    ui.showId = ui.show ? t.id : '';
+    ui.show?.(html);
+    const id = t && !t.show ? t.id : '';
     if (!id) {
       ui.root.hidden = true;
       ui.id = '';

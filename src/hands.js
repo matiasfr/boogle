@@ -1,4 +1,4 @@
-// What your hands do with the hotbar (src/inventory.js).
+// What your hands do with the hotbar (src/inventory.js), and the one interact button.
 //
 //   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and
 //                            flies on release; the shovel digs, the can pours, seeds go in at your feet. Empty hands
@@ -7,11 +7,27 @@
 //                            release never throws.
 //   touchDown                the touch context button: interacts when something is in reach, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
-//   interactTarget()         the one thing in front of you: { id, verb, at, run } (talk to The Boogler, pick up, take,
-//                            shake a palm, grab the ball), { id, verb, at, blocked } when your hotbar has no room for it
-//                            and nothing that would act is in reach, or null. `at` is where its prompt goes.
+//   interactTarget()         the one thing in front of you (see below), or null
 //   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
+//
+// Interactables plug in, like actions in src/controls.js:
+//
+//   registerInteractable(fn)   fn() returns an array of targets in reach right now ([] for none). It is asked every
+//                              frame (for the prompt, src/features/prompt.js) and on every press, so keep it cheap and
+//                              do not cache. Register once, from your feature file or module.
+//   target                     { id, verb, at, r?, run | blocked, show? }
+//     id       a stable string per thing; the prompt pops in again when it changes
+//     verb     the word on the prompt ('Pick up', 'Talk')
+//     at       a world point (THREE.Vector3) where the prompt floats; its x, z also rank the pick
+//     r        metres to measure to the edge of something big (The Boogler), default 0
+//     run      () what the press does; or blocked: why it cannot ('Hotbar full'), shown greyed, and the press does nothing
+//     show     (html) optional: draw the prompt yourself (The Boogler shows it in his name tag) instead of floating it at
+//              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
+//     Other fields are yours (gifts put the item id on theirs).
+//
+// The pick is src/sim/interact-pick.js: something that would act beats something blocked, then nearest wins, with a
+// nudge toward where you look. Ties go to the provider registered first.
 //
 // Thrown things other than the beach ball fly and land through src/gifts.js; the ball keeps its own physics.
 import * as THREE from 'three';
@@ -19,9 +35,8 @@ import { me, cam, chargeAmount, throwFrom, throwVelocity } from './player.js';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from './ball.js';
 import { inv, heldId, take, useOne, drop, has, roomFor, slotOf, select, onHotbarChange } from './inventory.js';
 import { toggleShovel, setHold } from './world/terrain-edits.js';
-import { giftTargets, throwItem } from './gifts.js';
-import { stallTargets, plantTarget, plantFront, pour } from './mushroom-garden.js';
-import { talkTarget } from './boogler-play.js';
+import { throwItem } from './gifts.js';
+import { plantTarget, plantFront, pour } from './mushroom-garden.js';
 import { giftIndex } from './sim/gift-catalog.js';
 import { pickInteract } from './sim/interact-pick.js';
 
@@ -47,27 +62,29 @@ function grabTheBall() {
   me.suppressUp = true;
 }
 
-function ballTarget() {
-  if (!ballInReach() || (ball.mine && ball.held)) return null;
-  const at = ballAt.copy(ball.disp.p).setY(ball.disp.p.y + 0.5);
-  const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
-  return roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall };
+const providers = [];
+export function registerInteractable(fn) {
+  providers.push(fn);
 }
 
-// The pick itself is src/sim/interact-pick.js: something that would act beats something blocked, then nearest wins, with
-// a nudge toward where you look; `r` measures to the edge of something big.
+// The beach ball is the hands' own interactable.
+registerInteractable(() => {
+  if (!ballInReach() || (ball.mine && ball.held)) return [];
+  const at = ballAt.copy(ball.disp.p).setY(ball.disp.p.y + 0.5);
+  const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
+  return [roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
+});
+
 export function interactTarget() {
   if (!me.entered || !me.body) return null;
   const p = me.body.interpolatedPosition;
-  const targets = [ballTarget(), ...giftTargets(), ...stallTargets(), talkTarget()];
+  const targets = providers.flatMap((fn) => fn());
   return pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
 }
 
 // Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
-function interact() {
-  if (me.charging) return false;
-  const t = interactTarget();
-  if (!t?.run) return false;
+function interact(t = interactTarget()) {
+  if (me.charging || !t?.run) return false;
   t.run();
   return true;
 }
@@ -127,7 +144,10 @@ export const interactDown = () => (me.entered && me.body ? interact() : false);
 export const interactUp = () => {
   me.suppressUp = false;
 };
-export const touchDown = () => (interactTarget()?.run ? interact() : useDown());
+export function touchDown() {
+  const t = interactTarget();
+  return t?.run ? interact(t) : useDown();
+}
 export const throwDown = windUp;
 
 // The shovel is always at hand: Q, Z and F pull it out (a fresh one if you threw yours away).

@@ -4,7 +4,8 @@ import './boogler.css';
 import { onFrame, onStart } from '../loop.js';
 import { boogler, createBoogler, updateBoogler } from '../boogler.js';
 import { updateBooglerHud } from '../boogler-hud.js';
-import { setupBooglerPlay, updateBooglerPlay } from '../boogler-play.js';
+import { setupBooglerPlay, updateBooglerPlay, talkTargets } from '../boogler-play.js';
+import { registerInteractable } from '../hands.js';
 import { updateBooglerFx } from '../boogler-fx.js';
 import { updateDialogue } from '../boogler-dialogue.js';
 
@@ -14,6 +15,7 @@ onStart(() => {
   setupBooglerPlay();
   if (window.boogle) window.boogle.boogler = boogler; // debug handle
 });
+registerInteractable(talkTargets); // Talk, in his name tag
 onFrame(({ dt, now }) => updateBoogler(dt, now));
 onFrame(({ dt, now }) => {
   updateBooglerPlay(dt, now);
