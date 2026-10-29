@@ -9,7 +9,6 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots + hashes, late-join and persistence. |
 | `terrain-edits.js` | Phase 3: dig/pile ops, integer sand layer on top of the base heightfield, updating mesh/physics/water height texture. |
 | `../sim/water.js` | Phase 4: pure integer column water simulation (no three.js, no DOM). |
-| `../sim/garden.js` | Phase 5: pure crop/hydration/growth logic (no three.js, no DOM). |
 
 `src/sim/*` modules are pure functions over typed arrays so they can run in Node tests and, later, a Web Worker. Rendering and input code adapts them to the game.
 
@@ -45,7 +44,7 @@ Integer units: heights and water depths are stored in **centimetres** (`Int16`/`
 
 ### Ordering inside one tick
 1. Apply that tick's edits (host sequence order).
-2. Run `onTick` handlers in registration order (water flow, then garden growth, then weather).
+2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
 
 Shared logic must not use `Math.random`, `Date.now`, or floats that feed back into state. Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
 
