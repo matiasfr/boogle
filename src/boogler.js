@@ -1,6 +1,6 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: the host decides where he walks and publishes it in its presence as `g: { p:[x,z], r, w }`
+// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w }`
 // (r = yaw, w = 1 while walking). Everyone else interpolates those snapshots, like a remote player. He is not part of
 // the deterministic world sim (he never changes terrain, water or crops), so his brain can use floats; it still uses
 // the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that hear nothing from a host for a
@@ -21,7 +21,8 @@ import { island } from './island/index.js';
 import { MAINLAND } from './island/shape.js';
 import { PATCH } from './sim/mushrooms.js';
 import { me } from './player.js';
-import { net, remotes } from './net.js';
+import { net, remotes, addHostField } from './net.js';
+import { createSnaps } from './snaps.js';
 
 // Shape: about three times as wide as he is tall.
 const W_R = 0.8; // half width
@@ -62,7 +63,7 @@ const range = (a, b) => a + rng() * (b - a);
 const sim = { x: 0, z: 0, yaw: 0, walking: false, tx: 0, tz: 0, wait: 1, mode: MODE.CALM, fleeCheck: 0 };
 const disp = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
 const target = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
-const snaps = [];
+const snaps = createSnaps();
 let src = null;
 let lastSnapAt = 0;
 let simulating = false;
@@ -279,29 +280,23 @@ function think(dt) {
 }
 
 // ---------------------------------------------------------------- network
-export function booglerForPresence() {
-  if (!group || !simulating || !net.room?.isHost()) return null;
-  return { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode };
+function publish() {
+  return simulating ? { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode } : null;
 }
 
-// Called from net.js with every fresh presence that carries `g` (only the host's does).
-export function noteBoogler(peer, g, time) {
+function hear(g, time, peer) {
   if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
   if (Math.abs(g.p[0]) > HALF || Math.abs(g.p[1]) > HALF) return;
   if (peer !== src) {
     src = peer;
-    snaps.length = 0;
+    snaps.clear();
   }
-  snaps.push({ time, x: g.p[0], z: g.p[1], r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
-  if (snaps.length > 40) snaps.shift();
+  snaps.push(time, { x: g.p[0], z: g.p[1], r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
   lastSnapAt = performance.now();
 }
 
 function sampleSnaps(t) {
-  while (snaps.length > 2 && snaps[1].time <= t) snaps.shift();
-  const a = snaps[0],
-    b = snaps[1] || a;
-  const u = b === a || t <= a.time ? 0 : Math.min(1, (t - a.time) / Math.max(1, b.time - a.time));
+  const { a, b, u } = snaps.sample(t);
   target.x = lerp(a.x, b.x, u);
   target.z = lerp(a.z, b.z, u);
   target.yaw = angleLerp(a.r, b.r, u);
@@ -460,6 +455,7 @@ export function createBoogler() {
   parts = buildModel();
   group = parts.root;
   scene.add(group);
+  addHostField('g', publish, hear);
 
   body = new CANNON.Body({
     mass: 0,

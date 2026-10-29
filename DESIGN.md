@@ -58,6 +58,8 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 | **Host** | Shared, small (a few dozen numbers), changes over time | The host; it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
 | **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Water, sand, mushrooms |
 
+In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/net.js`](src/net.js)); Lockstep is `registerOp`, `registerState` and `onTick` ([`src/world/sync.js`](src/world/sync.js)). Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/snaps.js). Lockstep ticks at 10 Hz, compares hashes every 2 s and saves to the server every 30 s.
+
 - **Physics is never lockstep.** cannon-es (and three.js math) isn't bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball rolls on dug sand) and change it only by submitting edits (a splash).
 - **Crossing kinds goes through edits.** A player digging, a ball splashing, an NPC planting, a thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
 - **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever hosts next. Your own things (hotbar, friendship with The Boogler) are yours, kept in localStorage.
