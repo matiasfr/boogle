@@ -1,16 +1,17 @@
-// The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one fresh room, see
+// The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room, see
 // each other, the client digs, the client throws the ball, and both tabs end the same tick with the same per-state
 // hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.js), so it runs
 // on the built site too: `npm run scenario -- smoke --url https://matiasfr.github.io/boogle/`.
-// Its room is smoke-<run id>, so it never lands in a friend's room.
-const id = (process.env.GITHUB_RUN_ID || Date.now().toString(36)) + '-' + Math.random().toString(36).slice(2, 6);
+// Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
+// else a fresh smoke-<random> one; never a friend's room.
+const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 const SYNC = 'const s = window.boogle.sync;';
 
 export default {
   about: 'two tabs join, see each other, dig, throw the ball, and agree on every world hash',
   timeout: 300000, // generous: two software-rendered tabs on a busy runner can drop to a few frames per second
   async run(t) {
-    const room = ('smoke-' + id).slice(0, 32);
+    const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
     const A = await t.open({ name: 'Alice', room, size });
     const B = await t.open({ name: 'Bob', room, size });
@@ -40,11 +41,12 @@ export default {
     if (hostIdx < 0) return;
     const [host, client] = hostIdx === 0 ? [A, B] : [B, A];
 
-    // The client digs the diggable cell nearest a beach spot west of the court; the host sees the pit.
-    const cell = await client.eval(`${SYNC} const { mask, n } = s.terrain;
+    // The client digs the diggable cell nearest a beach spot west of the court (skipping holes earlier runs in a
+    // reused room dug near the -150 cm floor); the host sees the pit.
+    const cell = await client.eval(`${SYNC} const { mask, delta, n } = s.terrain;
       for (let r = 0; r < 60; r++) for (let di = -r; di <= r; di++) for (const dj of [-r, r]) {
         const i = 190 + di, j = 186 + dj;
-        if (mask[i * n + j]) return { i, j, idx: i * n + j };
+        if (mask[i * n + j] && delta[i * n + j] > -100) return { i, j, idx: i * n + j };
       }
       return null;`);
     if (!t.check('found a diggable beach cell', !!cell, JSON.stringify(cell))) return;

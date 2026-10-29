@@ -22,8 +22,16 @@ const all = fs
   .map((f) => f.slice(0, -4))
   .sort();
 const args = process.argv.slice(2);
-const at = args.indexOf('--url');
-const url = at >= 0 ? args.splice(at, 2)[1] : process.env.LOOK_URL || null;
+const at = args.findIndex((a) => a === '--url' || a.startsWith('--url='));
+let url = process.env.LOOK_URL || null;
+if (at >= 0) {
+  const [flag] = args.splice(at, 1);
+  url = flag === '--url' ? args.splice(at, 1)[0] : flag.slice('--url='.length);
+  if (!url || url.startsWith('--')) {
+    console.error('--url needs a value: --url <game> or --url=<game>');
+    process.exit(2);
+  }
+}
 const names = args.length ? args : all;
 const bad = names.filter((n) => !all.includes(n));
 if (bad.length) {
