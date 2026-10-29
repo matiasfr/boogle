@@ -100,7 +100,7 @@ export const waterMat = new THREE.ShaderMaterial({
 });
 
 export function createWaterMesh() {
-  const geo = new THREE.PlaneGeometry(1300, 1300, 260, 260);
+  const geo = new THREE.PlaneGeometry(1300, 1300, 100, 100); // ~13 m quads; the vertex wave is ~30 m long
   geo.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geo, waterMat);
   scene.add(mesh);
