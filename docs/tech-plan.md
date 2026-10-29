@@ -9,33 +9,37 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 ## Wave A: independent, small
 
-- [ ] **A1. Determinism lint.** ESLint bans `Math.random`, `Math.sin/cos/tan/pow/exp/log/atan2/hypot/...`, `**`,
-      `Date.now`, `performance.now` and `new Date()` in lockstep code (`src/sim/**`, `src/world/terrain-logic.js`, and
-      the rules modules from B1). Cosmetic helpers that live in `src/sim/` today (`honkFreq`, the moon's `illum`) move
-      out or are marked cosmetic. A tiny test proves the rule fires.
+- [x] **A1. Determinism lint.** ESLint bans `Math.random`, `Math.sin/cos/tan/pow/exp/log/atan2/hypot/...`, `**`,
+      `Date.now`, `performance.now`, `new Date()` and `Date()` in lockstep code (`src/sim/**`,
+      `src/world/terrain-logic.js`, and the rules modules from B1). Cosmetic helpers that live in `src/sim/` today
+      (`honkFreq`, the moon's `illum`) move out or are marked cosmetic. A tiny test proves the rule fires.
 - [x] **A2. Reports to the server.** `POST /report` on `server/` (small JSON, rate-limited, appended to a daily JSONL
       file) and `GET /reports` behind a token. A plug-in feature (`src/features/telemetry.js`) sends JS errors, desyncs
       (which state key, which tick), snapshot load failures and connection failures, only when `VITE_BOOGLE_SERVER` is
       set. Nothing personal: room, kind, short detail, build, coarse browser.
 - [x] **A3. Nightly live smoke test.** A scheduled GitHub Actions job opens two headless tabs on the deployed site, digs
       and throws the ball, checks the world hashes agree, and opens (or updates) an issue on failure.
-- [x] **A4. Server deploy job + TURN measurement (PLAN Phase 1).** (human steps in server/README.md remain) A workflow deploys `server/` to Fly.io on changes
+- [x] **A4. Server deploy job + TURN measurement (PLAN Phase 1).** A workflow deploys `server/` to Fly.io on changes
       to `server/` when a `FLY_API_TOKEN` secret exists (skips cleanly otherwise). Connection reports from A2 say
       whether a failed join had a relay candidate, so "how many connections fail without TURN" has an answer.
       *Needs a human:* create the Fly app and volume, set the secrets and the `VITE_BOOGLE_SERVER` repo variable.
+      *2026-10-29:* deploy job done (`.github/workflows/deploy-server.yml`). Connection reports carry `hadTurn` only
+      (our ICE config listed a TURN server); whether a relay candidate was gathered or used is not observed yet. The
+      human steps in server/README.md remain.
 - [x] **A5. Measure the sim.** `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
       *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
-      play). Four runs, headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run
-      back to back. Idle island: whole tick avg 0.3 to 1.0 ms, p95 0.7 to 4 ms. Busy water (6511 home cells flooded
-      40 cm, ~6400 of 13287 cells active, a channel dug at the rate limit): whole tick avg 2.3 to 3.7 ms, p95 6.4 to
-      11 ms; of that, the sim alone (water step + sea pin, ops, gifts, mushrooms, hashes) p95 about 3.5 ms (water
-      step p95 1.8 to 4.9 ms) and the render-side handlers (water surface scan, terrain flush and adapter) about the
-      same again. Max values (up to ~100 ms) are GC, JIT warm-up and preemption on the loaded box, not the sim.
-      Hashes (host, every 20 ticks) cost ~2 to 5 ms for water, once. **C4: no worker for now.** One tick per 100 ms
-      whose sim part costs ~1 ms on average and ~3.5 ms at p95, even with busy water, fits in a 16 ms frame, and the
-      render-side half (mesh, physics, texture updates) would stay on the main thread anyway. Cheaper first: spread the water hash, keep sleeping settled
-      cells. Revisit if sim-only p95 passes ~6 ms on a real laptop or the simulated region grows past the home square.
+      play). Headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run back to back;
+      runs vary widely. Idle island: whole tick avg 0.3 to 1.0 ms, p95 0.7 to 4 ms. Busy water (6511 home cells
+      flooded 40 cm, ~6400 of 13287 cells active, a channel dug at the rate limit): in four runs, whole tick avg 2.3
+      to 3.7 ms, p95 6.4 to 11 ms, of which the sim alone (water step + sea pin, ops, gifts, mushrooms, hashes) p95
+      about 3.5 ms (water step p95 1.8 to 4.9 ms); a reviewer's run on the same loaded box measured sim-only p95
+      9.5 ms and the render-side water surface scan p95 15 ms. Max values (up to ~100 ms) are GC, JIT warm-up and
+      preemption on the loaded box, not the sim. Hashes (host, every 20 ticks) cost ~2 to 5 ms for water, once.
+      **C4: no worker for now.** The render-side surface scan, not the sim, is the larger cost, and it feeds the mesh
+      on the main thread, so a sim worker would not remove it. Cheaper next step: spread the surface scan and the
+      water hash over several ticks, and keep sleeping settled cells. Revisit if sim-only p95 passes ~6 ms on a real
+      laptop or the simulated region grows past the home square.
 
 ## Wave B: the world rules (sequential)
 
