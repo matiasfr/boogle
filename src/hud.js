@@ -97,7 +97,7 @@ export function renderPeople() {
   for (const r of on) addRow(r.name, r.colorIdx, false);
 
   const count = on.length + (me.entered ? 1 : 0);
-  if (net.state === 'solo') dom.netLabel.textContent = 'Solo · room unavailable';
+  if (net.state === 'solo') dom.netLabel.textContent = `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 

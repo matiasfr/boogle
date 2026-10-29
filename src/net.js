@@ -8,7 +8,7 @@ import { me } from './player.js';
 import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
-import { attachWorld, setSelfId } from './world/sync.js';
+import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { booglerForPresence, noteBoogler } from './boogler.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
@@ -210,6 +210,20 @@ async function serverOptions() {
   }
 }
 
+// Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
+// unless the browser can't do WebRTC at all.
+let retryTimer = 0;
+function scheduleRetry(e) {
+  if (e?.code === 'browser-incompatible' || retryTimer) return;
+  net.retries = (net.retries || 0) + 1;
+  const wait = Math.min(5000 * net.retries, 30000);
+  net.retryAt = Date.now() + wait;
+  retryTimer = setTimeout(() => {
+    retryTimer = 0;
+    if (net.state === 'solo' && !net.room) connectRoom();
+  }, wait);
+}
+
 export async function connectRoom() {
   let room;
   try {
@@ -218,16 +232,29 @@ export async function connectRoom() {
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     net.error = String(e?.code || e?.type || 'connect_failed');
+    scheduleRetry(e);
     setNet('solo');
     return;
   }
+  net.retries = 0;
+  net.retryAt = 0;
+  net.error = null;
   net.room = room;
+  setNet('connecting');
   setSelfId(room.selfId);
   attachWorld(room, { roomId: getRoomId(), serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
     net.error = String(e?.code || e?.type || 'unknown');
     console.warn('[boogle] room unavailable:', e);
+    detachWorld();
+    try {
+      room.close();
+    } catch {
+      /* already closed */
+    }
+    net.room = null;
+    scheduleRetry(e);
     setNet('solo');
   };
   room.onConnection((connected) => {
