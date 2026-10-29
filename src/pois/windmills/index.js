@@ -169,7 +169,13 @@ function build() {
     }
     body.position.set(hub.x, hub.y, hub.z);
     world.addBody(body);
-    mills.push({ rotor, body, axis: new THREE.Vector3(0, 0, -1).applyEuler(rotor.rotation), phase: k * 0.7 });
+    mills.push({
+      rotor,
+      body,
+      base: rotor.quaternion.clone(), // fixed tilt + yaw; the spin is applied on top of this, never on itself
+      axis: new THREE.Vector3(0, 0, -1).applyEuler(rotor.rotation),
+      phase: k * 0.7,
+    });
   });
 
   // Hay bales round the fields, a fence along the track.
@@ -226,7 +232,7 @@ const tmpQ = new THREE.Quaternion(),
 
 function orient(mill, t, out) {
   spinQ.setFromAxisAngle(zAxis, sailAngle(t, mill.phase));
-  return out.setFromEuler(mill.rotor.rotation).multiply(spinQ);
+  return out.copy(mill.base).multiply(spinQ);
 }
 
 function spinBodies() {

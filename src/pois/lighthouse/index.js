@@ -108,7 +108,8 @@ function build() {
   }
 
   // Gallery deck: the tower's cap plus a ring, open over the top of the stair.
-  put(cyl(R_TOP + 0.15, R_TOP + 0.15, 0.4, 24), new THREE.Vector3(CX, DECK_Y - 0.2, CZ), '#5b6168');
+  // Cap sits a hair above the tower top and the ring so their top faces don't z-fight.
+  put(cyl(R_TOP + 0.15, R_TOP + 0.15, 0.4, 24), new THREE.Vector3(CX, DECK_Y - 0.18, CZ), '#5b6168');
   const ringN = 40;
   const deckStart = END_A % (Math.PI * 2),
     deckSpan = Math.PI * 2 - GAP;
@@ -116,14 +117,14 @@ function build() {
     const a0 = deckStart + (k / ringN) * deckSpan,
       a1 = deckStart + ((k + 1) / ringN) * deckSpan;
     const am = (a0 + a1) / 2,
-      rm = (R_TOP + DECK_R) / 2;
+      rm = (R_TOP + 0.1 + DECK_R + 0.05) / 2; // starts just under the cap's rim, not across it
     const chord = 2 * DECK_R * Math.sin((a1 - a0) / 2) * 1.05;
     put(
       box,
       at(am, rm, DECK_Y - 0.15),
       '#5b6168',
       q.setFromEuler(new THREE.Euler(0, -am, 0)),
-      s.set(DECK_R - R_TOP + 0.1, 0.3, chord),
+      s.set(DECK_R - R_TOP - 0.05, 0.3, chord),
     );
     if (k % 2 === 0) put(box, at(a0, DECK_R - 0.08, DECK_Y + 0.55), '#2d3035', q.identity(), s.set(0.07, 1.1, 0.07));
   }
