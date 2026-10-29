@@ -13,3 +13,5 @@ Rules that are easy to miss:
 - No claude.ai artifact build or alternate transports.
 
 Commands: `npm run dev`, `npm run build`, `npm run lint`. Server: `cd server && npm test`.
+
+Contributing workflow, checks and PR rules: `CONTRIBUTING.md`. Run `npm run check` before pushing.
