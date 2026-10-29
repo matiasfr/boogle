@@ -6,12 +6,14 @@
 //
 // Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`, so "how many joins
 // fail without TURN" (PLAN Phase 1) has an answer. Whether a relay candidate was actually gathered or used is not
-// visible from here without reaching into peer-room's RTCPeerConnections, so it is not reported.
+// visible from here without reaching into peer-room's RTCPeerConnections, so it is not reported. They also say whether
+// the room was running mixed builds (`mixedBuilds`, src/builds.js; a yes or no, never the build ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
 import { onStart } from '../loop.js';
 import { net, getRoomId } from '../net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
+import { mixedBuilds } from '../builds.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
@@ -20,6 +22,7 @@ const MAX_SAME = 2;
 const BATCH = 10; // the server takes up to 10 per POST
 const FLUSH_MS = 10000;
 const STUCK_MS = 30000; // still 'connecting' this long after starting (or restarting) to connect
+const SETTLE_MS = 3000; // a successful join reports after this, once peers' presence (and builds) has arrived
 
 const BROWSERS = [
   ['Edge', /Edg\/(\d+)/],
@@ -122,12 +125,16 @@ if (SERVER) {
       const s = net.state;
       const retries = net.retries || 0;
       if (net.room) role = net.room.isHost() ? 'host' : 'client';
-      const base = { role, hadTurn: net.turn };
+      const base = { role, hadTurn: net.turn, mixedBuilds: mixedBuilds() };
       if (s === 'solo' && (prev !== 'solo' || retries !== prevRetries)) {
         report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base });
       } else if (s === 'live' && prev !== 'live' && !okSent) {
         okSent = true;
-        report('connect', { result: 'ok', ms: Math.round(now - since), retries, ...base }); // ms spent 'connecting'
+        const ms = Math.round(now - since); // ms spent 'connecting'
+        setTimeout(
+          () => report('connect', { result: 'ok', ms, retries, ...base, mixedBuilds: mixedBuilds() }),
+          SETTLE_MS,
+        );
       } else if (s === 'connecting' && prev === 'connecting' && !stuckSent && now - since > STUCK_MS) {
         stuckSent = true;
         report('connect', { result: 'stuck', ...base });

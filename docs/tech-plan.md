@@ -40,6 +40,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       on the main thread, so a sim worker would not remove it. Cheaper next step: spread the surface scan and the
       water hash over several ticks, and keep sleeping settled cells. Revisit if sim-only p95 passes ~6 ms on a real
       laptop or the simulated region grows past the home square.
+- [x] **A6. Mixed builds.** Tabs poll `version.json` and reload onto a new deploy; presence carries each build.
 
 ## Wave B: the world rules (sequential)
 
