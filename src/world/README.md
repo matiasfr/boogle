@@ -51,4 +51,4 @@ Shared logic must not use `Math.random`, `Date.now`, or floats that feed back in
 
 ## Status
 
-`sync.js` currently runs **locally only** (edits apply on this client at the next tick). The networked version replaces its internals without changing this contract.
+Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `worldStatus()` (debug). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.
