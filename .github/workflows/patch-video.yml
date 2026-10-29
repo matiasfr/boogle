@@ -65,7 +65,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true # Claude's messages in the log, to see why a run stopped
           claude_args: >-
+            --model claude-opus-5-5
             --allowed-tools "Read,Write,Edit,Glob,Grep,Agent,Bash(npm run *),Bash(npm ci),Bash(node *),Bash(npx *),Bash(ffmpeg *),Bash(ffprobe *),Bash(git *),Bash(gh pr create:*),Bash(gh pr view:*),Bash(ls *),Bash(cat *),Bash(mkdir *)"
           prompt: |
             You are the patch-video loop for Boogle, running unattended in GitHub Actions (no GPU: clips record in
@@ -96,6 +98,7 @@ jobs:
             .look/reels/*.mp4
             .look/**/*sheet*.png
             .look/publish.json
+            ${{ runner.temp }}/claude-execution-output.json
           if-no-files-found: ignore
           retention-days: 14
 
