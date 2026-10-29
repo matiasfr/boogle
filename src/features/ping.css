@@ -1,0 +1,116 @@
+/* Context pings: a coloured card pinned over the target, or to the screen edge with an arrow when off-screen. */
+.ping-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ping {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+.ping-card {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  translate: -50% -12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px 7px;
+  border-radius: 16px;
+  border: 3px solid var(--ink, #13243f);
+  background: var(--c);
+  color: var(--ink, #13243f);
+  white-space: nowrap;
+  transform-origin: 50% 100%;
+  animation: ping-pop 0.38s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  box-shadow: 0 4px 0 rgba(19, 36, 63, 0.35);
+}
+.ping-card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  translate: -50% 0;
+  border: 8px solid transparent;
+  border-top: 9px solid var(--ink, #13243f);
+  border-bottom: 0;
+}
+.ping-card b {
+  font: 400 24px/1 var(--font-display, 'Lilita One', system-ui, sans-serif);
+  letter-spacing: 0.01em;
+}
+.ping-card span {
+  font:
+    700 12px/1 Figtree,
+    system-ui,
+    sans-serif;
+  opacity: 0.85;
+}
+.ping-arrow,
+.ping-dist {
+  display: none;
+}
+.ping.off .ping-card {
+  translate: -50% 50%;
+}
+.ping.off .ping-card::after {
+  display: none;
+}
+.ping.off .ping-arrow {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: -12px 0 0 -12px;
+  border-left: 24px solid var(--c);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  transform-origin: 12px 12px;
+  filter: drop-shadow(0 0 0 var(--ink, #13243f)) drop-shadow(0 2px 2px rgba(19, 36, 63, 0.5));
+  translate: 0 0;
+}
+.ping.off .ping-dist {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% 34px;
+  white-space: nowrap;
+  font:
+    700 12px/1 Figtree,
+    system-ui,
+    sans-serif;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(19, 36, 63, 0.8);
+}
+@keyframes ping-pop {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ping-card {
+    animation: none;
+  }
+}
+
+.tbtn.ping-btn {
+  right: calc(194px + env(safe-area-inset-right, 0px));
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  background: rgba(255, 111, 181, 0.78);
+}

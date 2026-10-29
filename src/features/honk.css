@@ -1,0 +1,9 @@
+/* Touch "Honk" button, left of Ping along the bottom. */
+.tbtn.honk-btn {
+  right: calc(268px + env(safe-area-inset-right, 0px));
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  background: rgba(255, 194, 61, 0.82);
+}
