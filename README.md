@@ -51,6 +51,12 @@ Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's b
 
 WASD move · Space jump/swim · Shift sprint · Click grab, hold to charge, release to throw · R bring the ball back · H hide help. Touch devices get a stick and Grab/Jump buttons.
 
+## Deploying
+
+Every push to `main` builds and deploys to GitHub Pages (https://matiasfr.github.io/boogle/) via `.github/workflows/deploy.yml`, which runs lint, then `BASE=/boogle/ npm run build`. You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
+
+To use our own signaling server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
+
 ## Roadmap
 
 See [PLAN.md](PLAN.md).
