@@ -37,6 +37,7 @@ let served = null; // the newer build the server has, once seen
 let toast = null;
 
 function reload() {
+  if (!served) return; // the toast's pad action outlives a mismatch that went away
   session.set(served);
   location.reload();
 }
@@ -71,7 +72,14 @@ async function check() {
     const res = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: 'no-store' });
     if (!res.ok) return;
     const build = String((await res.json())?.build ?? '').slice(0, 12);
-    if (!build || build.startsWith('dev') || build === BUILD) return;
+    if (!build || build.startsWith('dev')) return;
+    if (build === BUILD) {
+      // Back in step (a CDN edge served an older version.json, or a deploy was rolled back): drop the toast.
+      served = null;
+      toast?.remove();
+      toast = null;
+      return;
+    }
     served = build;
   } catch {
     return; // offline or no version.json: try again later
