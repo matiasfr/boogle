@@ -67,7 +67,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 The sea already makes the ball float and players swim (see the `preStep` buoyancy code). Build on that first, because it needs no new sim.
 
 - [x] **Splashes.** When the ball hits water fast, spawn splash particles and a ripple ring in the water shader. Players jumping in splash too. (Report idea #4)
-- [ ] **Keepy-uppy streak.** Count consecutive touches before the ball hits the ground or water, across all players. Show it big on screen, and keep a best-ever streak in the host's snapshot. (Report idea #5, co-op version)
+- [x] **Keepy-uppy streak.** Count consecutive touches before the ball hits the ground or water, across all players. Show it big on screen, and keep a best-ever streak in the host's snapshot. (Report idea #5, co-op version)
 - [x] Ball drifts gently in the surf instead of only being pushed toward shore.
 
 **Done when:** people spontaneously play a game with the ball in the water. **Playtest question:** are people trying to beat the streak together?
