@@ -13,6 +13,7 @@ import { ball, claimBall, respawnBall, resolveBallOwner, prepareBall } from './b
 import { me, updateIntent, updateCamera, updatePreview, handPosition } from './player.js';
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
+import { updateStreak } from './streak.js';
 import { initInput } from './input.js';
 
 createTerrainMesh();
@@ -96,6 +97,7 @@ function frame(now) {
   updateClouds(dt);
   updatePreview();
   updateHud();
+  updateStreak(now);
   if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
   waterMat.uniforms.uTime.value = elapsed;
   renderer.render(scene, camera);

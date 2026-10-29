@@ -8,6 +8,7 @@ import { me } from './player.js';
 import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
+import { bestForPresence, attachStreak, streak } from './streak.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
 // state: 'connecting' | 'live' | 'solo'
@@ -45,6 +46,7 @@ export function buildPresence() {
     r: null,
     s: null,
     b: null,
+    best: bestForPresence(),
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -64,6 +66,7 @@ export function buildPresence() {
       v: [r2(bv.x), r2(bv.y), r2(bv.z)],
       q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
       h: ball.held ? 1 : 0,
+      k: streak.k,
     };
   }
   return pr;
@@ -151,6 +154,7 @@ function upsertPeer(peer) {
     r.snaps.length = 0;
     dropRemoteBody(r);
   }
+  r.best = Number.isInteger(pr.best) ? pr.best : 0;
   const b = pr.b;
   if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
     r.ball = b;
@@ -218,6 +222,7 @@ export async function connectRoom() {
     return;
   }
   net.room = room;
+  attachStreak(room);
   const fail = (e) => {
     if (net.state === 'solo') return;
     net.error = String(e?.code || e?.type || 'unknown');
