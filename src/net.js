@@ -37,6 +37,23 @@ function peerColor(peer) {
   return Math.abs(h) % COLORS.length;
 }
 
+// Extension hooks so features never edit buildPresence/upsertPeer: addPresenceField(key, getter) merges a small JSON
+// value (or null to omit) into our presence; onRemotePresence(fn) calls fn(remote, pr) after each fresh update from
+// a peer; onRoomReady(fn) calls fn(room) once the room exists (immediately if it already does).
+const presenceFields = [];
+const remoteHooks = [];
+const roomHooks = [];
+export function addPresenceField(key, getter) {
+  presenceFields.push([key, getter]);
+}
+export function onRemotePresence(fn) {
+  remoteHooks.push(fn);
+}
+export function onRoomReady(fn) {
+  if (net.room) fn(net.room);
+  else roomHooks.push(fn);
+}
+
 export function buildPresence() {
   const pr = {
     v: document.hidden ? 0 : 1,
@@ -68,6 +85,15 @@ export function buildPresence() {
       q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
       h: ball.held ? 1 : 0,
     };
+  }
+  for (const [key, get] of presenceFields) {
+    let v = null;
+    try {
+      v = get();
+    } catch {
+      // a broken feature must not break presence
+    }
+    if (v !== null && v !== undefined && !(key in pr)) pr[key] = v;
   }
   return pr;
 }
@@ -166,6 +192,14 @@ function upsertPeer(peer) {
     r.ball = null;
     r.ballSnaps.length = 0;
   }
+  if (fresh)
+    for (const fn of remoteHooks) {
+      try {
+        fn(r, pr);
+      } catch (e) {
+        console.warn('[boogle] presence hook failed', e);
+      }
+    }
 }
 
 function removePeer(peer) {
@@ -242,6 +276,7 @@ export async function connectRoom() {
   net.room = room;
   setNet('connecting');
   setSelfId(room.selfId);
+  for (const fn of roomHooks.splice(0)) fn(room);
   attachWorld(room, { roomId: getRoomId(), serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
