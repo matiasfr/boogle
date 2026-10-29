@@ -9,6 +9,7 @@ import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { createSnaps } from './snaps.js';
+import { mergeFields, hostField } from './presence-fields.js';
 
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
 // state: 'connecting' | 'live' | 'solo'; turn: our ICE config includes a TURN server (for connection reports)
@@ -55,10 +56,9 @@ export function onRemotePresence(fn) {
   remoteHooks.push(fn);
 }
 export function addHostField(key, getter, onValue) {
-  presenceFields.push([key, () => (net.room?.isHost() ? getter() : null)]);
-  remoteHooks.push((r, pr, time) => {
-    if (pr[key] !== null && pr[key] !== undefined) onValue(pr[key], time, r.peer);
-  });
+  const h = hostField(getter, onValue, () => !!net.room?.isHost());
+  presenceFields.push([key, h.get]);
+  remoteHooks.push((r, pr, time) => h.hear(pr[key], time, r.peer));
 }
 export function onRoomReady(fn) {
   if (net.room) fn(net.room);
@@ -83,16 +83,7 @@ export function buildPresence() {
     pr.r = r2(me.yaw);
     pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
   }
-  for (const [key, get] of presenceFields) {
-    let v = null;
-    try {
-      v = get();
-    } catch {
-      // a broken feature must not break presence
-    }
-    if (!(key in pr)) pr[key] = v ?? null; // null deletes the key, so a field that stops is not repeated forever
-  }
-  return pr;
+  return mergeFields(pr, presenceFields); // a null field deletes its key (src/presence-fields.js)
 }
 
 export function sendPresence() {
