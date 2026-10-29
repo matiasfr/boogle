@@ -12,6 +12,8 @@ Rules that are easy to miss:
 - Clients send edit events; the host stamps and broadcasts them. Don't sync bulk state except host snapshots.
 - No claude.ai artifact build or alternate transports.
 
-Commands: `npm run dev`, `npm run build`, `npm run lint`. Server: `cd server && npm test`.
+Commands: `npm run dev`; `npm run check` (lint + unit tests + build, a few seconds, run before every push); `npm run check:full` (adds server tests and the headless network test, for changes to `src/net*`, `src/world/sync.js` or `server/`).
+
+Tests stay light for rapid iteration (see CONTRIBUTING.md, Testing): unit tests in `test/` for pure logic only (no three.js/DOM/browser/network), each file well under a second; test determinism, conservation, ordering and validation, not visuals or tuning. Don't commit Playwright scripts as tests unless asked.
 
 Contributing workflow: `CONTRIBUTING.md`. We commit straight to `main` once `npm run check` passes (it auto-deploys); use a branch/PR only for risky changes.

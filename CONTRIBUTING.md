@@ -29,7 +29,7 @@ Layout: `src/` game client (`src/net/` is multiplayer, see [src/net/README.md](s
 
 We're in **rapid iteration**: a few people building and playtesting together, many times a day. So:
 
-1. **Commit straight to `main`** once `npm run check` passes (lint, build, unit tests, server tests, network test). Pull (`git pull --rebase`) before pushing.
+1. **Commit straight to `main`** once `npm run check` passes (lint, unit tests, build; a few seconds). Pull (`git pull --rebase`) before pushing.
 2. Keep commits small and focused. Message in the imperative, like the git log: "Add splashes for the ball", "Fix host migration flapping".
 3. `main` auto-deploys to the live site in about a minute, so `main` must always be playable. After pushing, open the live site in two tabs (or with a friend) and check your change.
 4. If CI goes red on `main`, fixing it beats starting anything new. Revert if the fix isn't quick.
@@ -61,10 +61,21 @@ We're in **rapid iteration**: a few people building and playtesting together, ma
 
 ## Testing
 
-- **Networking** (anything in `src/net/`, `src/net.js`, ball ownership, message formats): run `npm run test:net`. It starts a local PeerServer and three headless Chromium pages and checks host election, presence, messaging and migration. Also try two real tabs with `?netdebug=1`. If you add behavior to the room interface, add a check to `dev/peer-test/`.
-- **Visual changes:** run `npm run dev` and look at it, ideally in two tabs. If you open a PR, attach a screenshot or GIF. Playwright is installed, so scripted screenshots work too.
-- **Server:** `cd server && npm test` (`node:test`).
-- **Everything:** `npm run check`.
+Tests exist to keep us moving fast, not to slow us down. The playtest is the real test; automated tests guard the things a playtest can't see (determinism, sync, conservation) or that would break everyone's island.
+
+**Keep tests light:**
+- `npm run check` (lint, unit tests, build) must stay **under ~10 seconds**. Run it before every push.
+- Unit tests (`test/*.test.mjs`, `node:test`) cover **pure logic only**: `src/sim/*`, `src/world/*` state, validation, serialize/load/hash. No three.js, DOM, browsers or network in unit tests. Each test file should run in well under a second; shrink grids and tick counts until it does.
+- Test the **rules that would silently break** (determinism, conservation, ordering, validation), not rendering details or tuning numbers that change every day. One good property test beats ten snapshot tests.
+- **Browser and network tests are heavy:** `npm run test:net` (headless Chromium + local PeerServer, ~30 s) and `cd server && npm test`. Run them when you touch `src/net*`, `src/world/sync.js` or `server/`; CI runs them on every push anyway (`npm run check:full` runs everything locally).
+- Ad-hoc Playwright scripts for screenshots or one-off checks are welcome, but don't commit them as tests unless they guard something important.
+- Delete or simplify tests that are flaky, slow or keep breaking on harmless changes.
+
+**What to check by area:**
+- **Networking** (`src/net/`, `src/net.js`, ball ownership, message formats): `npm run test:net`, plus two real tabs with `?netdebug=1`. New room-interface behavior gets a check in `dev/peer-test/`.
+- **Shared simulation** (`src/sim/`, `src/world/`): a determinism test (same inputs → same hash) and a serialize/load round-trip, in `test/`.
+- **Visual and feel changes:** no automated test. Run `npm run dev`, look at it in two tabs, then playtest.
+- **Server:** `cd server && npm test`.
 
 ### Playtesting with friends
 
@@ -74,4 +85,4 @@ Playtest continuously: whenever something new lands, jump on the live site, `htt
 
 - `CLAUDE.md` is loaded automatically. Ask Claude to read `DESIGN.md`, `PLAN.md` and `src/net/README.md` before designing a feature.
 - Mention `@claude` in a PR or issue to run the Claude assistant ([.github/workflows/claude.yml](.github/workflows/claude.yml)).
-- Review AI-written code like any other: run it, read the diff, check it against the rules above (especially determinism and the room interface), and make sure `npm run check` passes.
+- Review AI-written code like any other: run it, read the diff, check it against the rules above (especially determinism and the room interface), and make sure `npm run check` passes. Ask Claude for light tests that follow the Testing section; push back on slow or browser-based tests for things a unit test or a playtest covers.

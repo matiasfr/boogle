@@ -77,5 +77,6 @@ This is a friends' project. Prefer plain modules, few dependencies and code some
 ## How we work
 
 - **Playtest constantly with 2–4 real people.** We iterate in small steps straight on `main` and play each change on the live site. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
+- **Light tests, real playtests.** Automated tests guard determinism, sync and conservation, and stay fast enough to run before every push; fun and feel are judged by playing.
 - **Every feature says which principle it serves**, and calls out any principle it bends.
 - **Changing a principle is a commit to this file**, with the reason.
