@@ -26,7 +26,9 @@
     "ship": "bash scripts/ship.sh",
     "prepare": "git config core.hooksPath .githooks || true",
     "clip": "node dev/video/clip.mjs",
-    "reel": "node dev/video/reel.mjs"
+    "reel": "node dev/video/reel.mjs",
+    "video:changes": "node dev/video/changes.mjs",
+    "video:publish": "node dev/video/publish.mjs"
   },
   "dependencies": {
     "cannon-es": "0.20.0",

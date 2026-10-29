@@ -5,13 +5,15 @@ description: Record clips and GIFs of the running game and cut them into trailer
 
 # Clips and videos
 
-Two commands, both built on the look harness (`dev/look/lib.mjs`: Vite, local signaling, headless Chromium). Output
+Commands built on the look harness (`dev/look/lib.mjs`: Vite, local signaling, headless Chromium). Output
 goes to `.look/` (gitignored).
 
 | What | Command | Source | Output |
 | --- | --- | --- | --- |
 | Record clips | `npm run clip -- <shot>... [--gif]` | `dev/video/shots/<shot>.mjs` | `.look/clips/<label>.mp4` (+ `.gif`) |
 | Cut a video | `npm run reel -- <name>` | `dev/video/reels/<name>.mjs` | `.look/reels/<name>.mp4` |
+| What's new since the last video | `npm run video:changes` | git log since the newest `video-*` tag | a flagged list |
+| Publish and get a share link | `npm run video:publish -- <mp4> --title ...` | a finished video | a GitHub release + share page |
 
 Either command also takes a path to a shot or reel kept outside the repo (`npm run clip -- .look/wip/x.mjs`): use that
 for one-off or prototype-branch footage that shouldn't be committed.
@@ -77,3 +79,39 @@ captions are HTML in the game's fonts and colours (`dev/video/reel.mjs`); the ba
 (`dev/video/music.mjs`) and loudness-normalized. Put each payoff inside its caption's on-screen time, keep segments
 3-8 s, and make a contact sheet of the final video (`fps=1/2.5,...tile=6x5`) before sharing it. Over 30 MB, also
 make a smaller copy (`-crf 23`) for sending.
+
+## 4. Publish: `npm run video:publish`
+
+```
+npm run video:publish -- .look/reels/x.mp4 --title "Patch notes: Nov 5" --summary "One sentence." \
+  --feature "The island grew 12x" --feature "Befriend The Boogler" [--dry]
+```
+
+Hosting: the video file lives on a GitHub release `video-<date>` (video.mp4 about 15-25 MB, poster.jpg, meta.json),
+never in git. The Pages deploy (`.github/workflows/deploy.yml` runs `dev/video/site.mjs`) turns every `video-*`
+release into a share page at `https://matiasfr.github.io/boogle/updates/<tag>/` (player, link-preview tags, a "Play
+Boogle" button) and an index at `/updates/`. The script starts that deploy, waits for the page to answer, and prints
+the share link. `--dry` makes the files under `.look/publish/<tag>/` without releasing. Publishing is public: only
+publish when asked to (or by the patch video loop below). Pages has a 1 GB site limit: past about 40 videos, delete
+old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` into `<dir>/updates/`, run
+`node dev/video/site.mjs <dir>` and serve `<dir>`.
+
+## 5. Patch video loop
+
+What the scheduled task on Matias's Mac runs (weekly). Unattended: never stop to ask.
+
+1. `git pull` on `main`, then `npm run video:changes`. Count the new things a player would notice and enjoy (a new
+   place, creature, toy, mechanic or interaction). A `+` line is a lead, not a count. Fixes, tuning, performance,
+   tooling and QoL don't count (they can go on a QoL card). Fewer than 3: stop and report "not enough yet" (no video,
+   no notification).
+2. For each feature, read its commit and code, then write or extend a shot in `dev/video/shots/` (one shot file per
+   area, a few clips each). Record with `npm run clip`, read every contact sheet (section 2), and fix framing until
+   each payoff is clearly on screen.
+3. Write `dev/video/reels/patch-<mon><day>.mjs` (copy the structure of `patch-oct29.mjs`): an intro card, one
+   captioned clip per feature, a QoL card if there are enough small changes, an outro card. 45-75 s.
+4. `npm run reel`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
+   inside captions, HUD overlap). Apply its fixes, re-render, and check the final contact sheet yourself.
+5. `npm run video:publish` with a title, a one-sentence summary and one `--feature` per feature.
+6. Commit the new shots and reel ("Add the <date> patch video shots"), `npm run ship`.
+7. Send the share link with a push notification (and say it in the final message).
+
