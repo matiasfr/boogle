@@ -1,9 +1,12 @@
 name: CI
 
+# Runs on PRs, on main, and on the ship/* branches `npm run ship` pushes (their checks count as the PR's required
+# checks: same commit). automerge.yml dispatches it on main after each merge, since a bot merge doesn't fire push.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'ship/**']
+  workflow_dispatch:
 
 permissions:
   contents: read

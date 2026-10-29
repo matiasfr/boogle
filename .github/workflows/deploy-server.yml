@@ -2,7 +2,7 @@ name: Deploy server to Fly.io
 
 # Tests server/ and deploys it to Fly.io when it changes on main (or by hand). Without a FLY_API_TOKEN secret the
 # deploy job is skipped, not failed, so forks and friends without Fly stay green. Setup: server/README.md.
-# automerge.yml dispatches this for merged claude/* PRs that touch server/ (GITHUB_TOKEN merges don't fire push).
+# automerge.yml dispatches this for merged PRs that touch server/ (GITHUB_TOKEN merges don't fire push).
 
 on:
   push:

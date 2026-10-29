@@ -61,7 +61,7 @@ Keep it on a single machine: the volume is per-machine and signaling state is in
 
 ## Continuous deploy
 
-`.github/workflows/deploy-server.yml` runs the server tests and then `flyctl deploy` (one machine) on every push to `main` that touches `server/`, on merged `claude/*` PRs that touch it (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
+`.github/workflows/deploy-server.yml` runs the server tests and then `flyctl deploy` (one machine) on every push to `main` that touches `server/`, on merged PRs that touch it (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
 
 Human checklist, once:
 

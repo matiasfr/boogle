@@ -1,6 +1,7 @@
 <!--
-Most changes go straight to main with `npm run ship`. PRs are for Claude's claude/* branches (networking
-and sync changes included, no human review needed), which auto-merge when CI is green unless labelled `no-automerge`.
+Most changes arrive through `npm run ship`, which pushes a ship/* branch; a bot opens its PR. Any non-draft PR from this
+repo (networking and sync changes included, no human review needed) auto-merges when CI is green unless labelled
+`no-automerge`.
 -->
 
 ## What and why
