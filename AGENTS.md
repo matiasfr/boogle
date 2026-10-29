@@ -8,6 +8,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - [DESIGN.md](DESIGN.md): play and technical principles. Follow them; if a request conflicts with one, say which and ask before bending it. Every feature names the principle it serves (commit body or PR).
 - [PLAN.md](PLAN.md): the roadmap. Tick its checkboxes in the same commit that finishes an item.
 - [src/net/README.md](src/net/README.md) (room interface) before touching multiplayer; [src/world/README.md](src/world/README.md) (world contract) before touching shared state.
+- Need an image asset (texture, sprite, icon)? See [docs/asset-generation.md](docs/asset-generation.md).
 
 ## Rules that are easy to miss
 - **Deterministic shared sim** (water, terrain edits, mushrooms, weather, tide): integers, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()` or floats that feed back into shared state.
