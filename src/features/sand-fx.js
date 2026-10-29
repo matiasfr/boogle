@@ -7,6 +7,7 @@ import { groundHeight, updateSettle } from '../terrain.js';
 import { remotes } from '../net.js';
 import { me } from '../player.js';
 import { onFrame } from '../loop.js';
+import { getAudio } from '../audio.js';
 import { terrain, onTerrainCells, isMyEdit } from '../world/terrain-edits.js';
 
 // ---------------------------------------------------------------- spray
@@ -160,33 +161,24 @@ function updateSandFx(dt) {
 }
 
 // ---------------------------------------------------------------- audio
+// Uses the shared context from audio.js (it handles the mobile gesture unlock); our bus and noise are built once it runs.
 let ctx = null;
 let master = null;
 let noise = null;
-function unlock() {
-  try {
-    if (!ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      ctx = new AC();
-      const comp = ctx.createDynamicsCompressor(); // five people digging should stay pleasant
-      comp.threshold.value = -22;
-      comp.ratio.value = 6;
-      master = ctx.createGain();
-      master.gain.value = 0.7;
-      master.connect(comp);
-      comp.connect(ctx.destination);
-      noise = ctx.createBuffer(1, ctx.sampleRate >> 1, ctx.sampleRate);
-      const d = noise.getChannelData(0);
-      for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-  } catch {
-    ctx = null;
+function ready() {
+  const a = getAudio();
+  if (!a) return false;
+  if (ctx !== a.ctx) {
+    ctx = a.ctx;
+    master = ctx.createGain();
+    master.gain.value = 0.9; // the shared bus sits a little hotter than our old one
+    master.connect(a.out);
+    noise = ctx.createBuffer(1, ctx.sampleRate >> 1, ctx.sampleRate);
+    const d = noise.getChannelData(0);
+    for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
   }
+  return true;
 }
-// Audio may only start after a user gesture.
-for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, unlock, { passive: true });
 
 function burst(t, { type = 'bandpass', f0, f1, q = 1, dur, gain, attack = 0.006 }) {
   const src = ctx.createBufferSource();
@@ -218,7 +210,7 @@ function tone(t, f0, f1, dur, gain) {
 }
 // depth01: 0 shallow .. 1 deepest hole. Deeper sounds lower and duller.
 function sound(kind, vol, depth01, wet) {
-  if (!ctx || ctx.state !== 'running') return;
+  if (!ready()) return;
   const t = ctx.currentTime + 0.005;
   const j = 0.92 + Math.random() * 0.16;
   if (kind === 'dig' && wet) {
