@@ -1,23 +1,37 @@
-name: Auto-fix red main
+name: Auto-fix CI
 
-# When CI fails on a push to main (usually two changes that pass alone but break together),
-# Claude investigates and opens a fix PR from a claude/ branch; automerge.yml merges it once CI is green.
+# Two jobs:
+# - main: CI failed on main (usually two changes that pass alone but break together). Claude opens a fix PR from a
+#   claude/ branch; automerge.yml merges it once CI is green. automerge.yml dispatches CI on main after every merge,
+#   since bot merges don't fire push.
+# - branch: CI failed on a ship/* or claude/* branch, or automerge.yml found its PR in conflict with main. Claude
+#   merges main in (keeping both sides), fixes what's red and pushes to the branch, which merges itself once green.
+#   Two tries per branch (counted by "Autofix:" commits); then it @mentions whoever shipped it on the PR.
 
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
-
-concurrency:
-  group: ci-autofix
-  cancel-in-progress: false
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to fix
+        required: true
+      reason:
+        description: ci (red CI) or conflict (conflicts with main)
+        default: conflict
 
 jobs:
-  fix:
-    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.event == 'push'
+  main:
+    if: >-
+      github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: ci-autofix-main
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: read
@@ -39,13 +53,119 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: |
             actions: read
-          claude_args: '--allowed-tools "Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
+          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git checkout -b:*),Bash(git add:*),Bash(git commit:*),Bash(git push -u origin claude/*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
           prompt: |
             CI run ${{ github.event.workflow_run.html_url }} failed on main at ${{ github.event.workflow_run.head_sha }}.
-            Several friends push to main at once, so this is most likely two recent commits that each passed but conflict.
+            Several friends ship to main at once, so this is most likely two recent changes that each passed but conflict.
             1. Read the failing job logs (`gh run view ${{ github.event.workflow_run.id }} --log-failed`) and the recent commits.
             2. If an open PR from a claude/ branch already fixes this, stop.
             3. Make the smallest fix that keeps every collaborator's intent (don't revert a feature unless there is no other fix).
                Follow AGENTS.md and CLAUDE.md. Run `npm run check` (and `npm run test:net` if networking failed).
-            4. Commit to a new `claude/fix-main-<short sha>` branch and open a PR titled "Fix main: <what broke>".
+            4. Commit to a new `claude/fix-main-<short sha>` branch, push it, and open a PR titled "Fix main: <what broke>".
                It is squash-merged automatically when CI passes.
+
+  branch:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (startsWith(github.event.workflow_run.head_branch, 'ship/') ||
+        startsWith(github.event.workflow_run.head_branch, 'claude/')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: ci-autofix-${{ inputs.branch || github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write # the give-up comment
+      issues: read
+      id-token: write
+      actions: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      BRANCH: ${{ inputs.branch || github.event.workflow_run.head_branch }}
+      REASON: ${{ inputs.reason || 'ci' }}
+      FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+      - name: Decide whether to try
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "start=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ -n "$FAILED_SHA" ] && [ "$(git rev-parse HEAD)" != "$FAILED_SHA" ]; then
+            echo "$BRANCH has moved past $FAILED_SHA; its newer CI run decides."
+            exit 0
+          fi
+          pr=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0] | select(.isDraft | not) | .number')
+          if [[ "$BRANCH" != ship/* ]] && [ -z "$pr" ]; then
+            echo "No open, non-draft PR for $BRANCH; leaving it to whoever is working on it."
+            exit 0
+          fi
+          # One "Autofix:" commit per try (see the prompt).
+          tries=$(git log --format=%s origin/main..HEAD | grep -c '^Autofix:' || true)
+          if [ "$tries" -lt 2 ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Claude already tried twice on $BRANCH; handing it back."
+            echo "giveup=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.go == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - if: steps.gate.outputs.go == 'true'
+        run: npm ci
+      - uses: anthropics/claude-code-action@v1
+        id: claude
+        if: steps.gate.outputs.go == 'true'
+        continue-on-error: true
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
+          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git fetch:*),Bash(git merge:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
+          prompt: |
+            You are on branch ${{ env.BRANCH }} of a friends' game (Boogle); it merges itself into main once CI is green.
+            ${{ env.REASON == 'conflict' && 'automerge.yml found it in conflict with main.' || format('CI run {0}/{1}/actions/runs/{2} failed on it.', github.server_url, github.repository, github.event.workflow_run.id) }}
+            Get it mergeable and green, keeping the author's intent. Follow AGENTS.md and CLAUDE.md.
+            Make exactly ONE commit, its message starting "Autofix: " (the two-try limit counts these commits).
+            1. `git fetch origin main`, then `git merge --no-commit origin/main` unless the branch already contains
+               main. On conflicts keep BOTH sides' changes (they are usually independent features; combine them,
+               never drop either side).
+            2. If CI failed, read the failing logs (`gh run view <run id> --log-failed`), find the root cause and fix
+               it in the same commit. Don't skip, disable or weaken a test, and don't revert the branch's feature.
+            3. Run `npm run check` (and `npm run check:full` if the branch touches src/net*, src/world/sync.js or
+               server/), then commit: "Autofix: merge main and <what you fixed>", or "Autofix: <what you fixed>".
+            4. `git push origin HEAD:${{ env.BRANCH }}`. Never force-push.
+            If you can't fix it, push nothing and say why.
+      - name: Check that a fix went up
+        id: pushed
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          git fetch -q origin "$BRANCH"
+          if [ "$(git rev-parse "origin/$BRANCH")" = "${{ steps.gate.outputs.start }}" ]; then
+            echo "Claude pushed nothing to $BRANCH; handing it back."
+            echo "giveup=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Hand it back
+        if: steps.gate.outputs.giveup == 'true' || steps.pushed.outputs.giveup == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          [ -n "$pr" ] || { echo "No open PR for $BRANCH to comment on."; exit 0; }
+          who=$(gh pr view "$pr" --json body,author \
+            --jq '((.body // "") | capture("<!-- shipper: (?<w>[^ ]+) -->") | .w) // .author.login')
+          case "$who" in app/* | *'[bot]' | github-actions) mention="" ;; *) mention="@$who " ;; esac
+          if [ "$REASON" = conflict ]; then what="merge main into it"; else what="get CI green"; fi
+          gh pr comment "$pr" --body "${mention}Claude couldn't $what, so this PR is stuck until someone fixes it.
+          Run: $GITHUB_SERVER_URL/$GH_REPO/actions/runs/${RUN_ID:-$GITHUB_RUN_ID}
+          Fix it on \`$BRANCH\` (\`git fetch origin $BRANCH && git checkout $BRANCH\`, fix, push) and it merges itself once green, or close the PR."
