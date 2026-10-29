@@ -16,6 +16,6 @@ Commands: `npm run dev`; `npm run check` (lint + unit tests + build, a few secon
 
 Tests stay light for rapid iteration (see CONTRIBUTING.md, Testing): unit tests in `test/` for pure logic only (no three.js/DOM/browser/network), each file well under a second; test determinism, conservation, ordering and validation, not visuals or tuning. Don't commit Playwright scripts as tests unless asked.
 
-Contributing workflow: `CONTRIBUTING.md`. We commit straight to `main` once `npm run check` passes (it auto-deploys); use a branch/PR only for risky changes.
+Contributing workflow: `CONTRIBUTING.md` and `AGENTS.md`. Commit straight to `main` and ship with `npm run ship` (rebase onto latest main, check, push, retry), not `git push`. On rebase conflicts keep both sides' changes. `main` auto-deploys; use a branch/PR only for risky changes.
 
 When running as the GitHub Action (@claude): commit to a `claude/` branch and open a PR with `gh pr create` (imperative title; body says what changed and which DESIGN.md principle it serves). Run `npm ci && npm run check` first. `.github/workflows/automerge.yml` squash-merges `claude/*` PRs once CI passes; open a draft or add the `no-automerge` label when a human should review first (risky changes to networking, sync or persistence).
