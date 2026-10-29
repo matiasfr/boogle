@@ -7,6 +7,7 @@ import { scene } from './scene.js';
 import { world, ballMat, teleport } from './physics.js';
 import { me, handPosition, throwVelocity, chargeAmount } from './player.js';
 import { net, remotes, sendPresence } from './net.js';
+import { onTouch, onRespawn } from './streak.js';
 
 function beachBallTexture() {
   const c = document.createElement('canvas');
@@ -72,6 +73,7 @@ export function remoteHoldsBall() {
 }
 
 export function claimBall(held) {
+  onTouch();
   ball.myE = ball.e + 1;
   ball.e = ball.myE;
   ball.mine = true;
@@ -103,6 +105,7 @@ export function releaseBall() {
 
 export function grabBall() {
   if (ball.mine) {
+    onTouch();
     setBallMode('ghost');
     ball.held = true;
   } else {
@@ -127,6 +130,7 @@ export function throwBall(c) {
 }
 
 export function respawnBall() {
+  onRespawn();
   if (!ball.mine) claimBall(false);
   me.holding = false;
   me.charging = false;
