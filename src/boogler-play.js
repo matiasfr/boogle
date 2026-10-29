@@ -258,9 +258,10 @@ export function booglerTalk() {
 }
 
 // The interact target (see interactTarget in src/hands.js). Range is to his middle; `r` makes the pick measure to his
-// edge, so a ball at his feet does not win over him.
+// edge, so a ball at his feet does not win over him. Not while you ride him: on his back he is always nearest, and
+// would hide the ball and everything else behind a Talk that only says "Get off me first!".
 export function talkTarget() {
-  if (!me.entered || dialogue.open || dist() > TALK_RANGE) return null;
+  if (!me.entered || dialogue.open || riding() || dist() > TALK_RANGE) return null;
   return { id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk };
 }
 

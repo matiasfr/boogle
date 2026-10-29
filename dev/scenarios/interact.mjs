@@ -1,7 +1,7 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you pet him from the talk box; C does nothing. A shore item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, and a failed planting says why.
+// E does nothing while you wind up a throw, riding him puts the ball first, and a failed planting says why.
 const TP = (x, z) => `
   const { teleport } = await import('/src/physics.js');
   const { groundHeight } = await import('/src/terrain.js');
@@ -22,6 +22,21 @@ const beside = (check) => `(async () => {
   ${TP('bog.x + 2', 'bog.z')} ${FACE('bog.x', 'bog.z')}
   await new Promise((r) => setTimeout(r, 150));
   return ${check};
+})()`;
+// On his back: keep climbing on until he counts it as a ride, then put the ball in reach beside you.
+const onBack = (check) => `(async () => {
+  const { boogler, ACT } = await import('/src/boogler.js');
+  const { ball } = await import('/src/ball.js');
+  const { teleport } = await import('/src/physics.js');
+  const b = window.boogle.me.body, c = boogler.center, p = b.position;
+  if (boogler.me.act !== ACT.RIDE) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
+  else if (!ball.held) {
+    teleport(ball.body, p.x + 0.9, p.y + 0.3, p.z);
+    ball.body.velocity.set(0, 0, 0);
+    ball.disp.p.copy(ball.body.position);
+  }
+  await new Promise((r) => setTimeout(r, 150));
+  return boogler.me.act === ACT.RIDE && ${check};
 })()`;
 const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt')}.includes('Talk')`;
 
@@ -170,6 +185,15 @@ export default {
     await g.wait(0.4);
     const padShot = await g.still('pad');
     t.check('on a gamepad his tag says B Talk', padMs >= 0, `${padMs} ms; ${padShot}`);
+
+    // Riding him, he is not something to talk to: the ball beside you gets the prompt, and his tag has none.
+    const rideMs = await g.waitFor(
+      onBack(`${shown('.prompt')} && ${text('.prompt')}.includes('Grab') && !${shown('.boogler-tag-prompt')}`),
+      { timeout: 20000 },
+    );
+    const rideShot = await g.still('riding');
+    await g.eval(`${TP('window.boogle.boogler.disp.x + 4', 'window.boogle.boogler.disp.z')}`);
+    t.check('riding him, the ball gets the prompt, not Talk', rideMs >= 0, `${rideMs} ms; ${rideShot}`);
     t.check('no page errors', !g.errors.length, g.errors.join(' | '));
 
     // Touch: the action button says Talk, and the prompt has no glyph.
