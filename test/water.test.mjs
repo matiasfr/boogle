@@ -45,7 +45,6 @@ test('spring channel reaches a target basin', () => {
   w.setSource(5, 20, 5);
   run(w, 400);
   assert.ok(w.depth[32 * 40 + 20] > 20, 'basin center should hold water');
-  assert.ok(w.wetness(32, 20, 3) === 0);
   assert.equal(w.depth[10 * 40 + 5], 0, 'water stays in channel');
   assert.equal(bal(w), 0);
 });
@@ -132,14 +131,12 @@ test('active set goes quiet on still water', () => {
   assert.notEqual(w.hash(), before);
 });
 
-test('thin films evaporate; wetness reports distance', () => {
+test('thin films evaporate; removeWater clamps', () => {
   const t = mk(20, 20, () => 100);
   const w = createWater({ width: 20, height: 20, terrain: t, seaEdges: 0, evapInterval: 5 });
   w.addWater(10, 10, 1);
   run(w, 10);
   assert.equal(total(w), 0);
   w.addWater(10, 10, 50);
-  assert.equal(w.wetness(10, 13, 4), 3);
-  assert.equal(w.wetness(10, 17, 4), 255);
   assert.equal(w.removeWater(10, 10, 999), 50);
 });

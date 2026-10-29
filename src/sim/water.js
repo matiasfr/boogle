@@ -29,10 +29,9 @@
 //   i is the "row"). Use w.idx(i,j). `terrain` is read live each step (Int32Array, cm).
 //
 // API: createWater({width,height,terrain,sea=0,seaEdges=15,flowRate=160,quietTicks=6,
-//        evapInterval=20,evapMax=1,wetMin=1}) ->
+//        evapInterval=20,evapMax=1}) ->
 //   depth, idx(i,j), addWater, removeWater (returns removed), setSource/clearSource, setSeaLevel,
-//   step, wake(i,j,r=1), wetness(i,j,R) (Chebyshev distance to nearest cell with depth>=wetMin,
-//   255 if none within R), isWet(i,j,R), serialize, load, hash, stats.
+//   step, wake(i,j,r=1), serialize, load, hash, stats.
 // seaEdges bitmask: 1 = i=0 side, 2 = i=width-1, 4 = j=0, 8 = j=height-1. 0 = no sea.
 
 const MAX_DEPTH = 1 << 20;
@@ -48,7 +47,6 @@ export function createWater(opts) {
   const K = Math.max(1, opts.quietTicks ?? 6) | 0;
   const evapInterval = (opts.evapInterval ?? 20) | 0;
   const evapMax = (opts.evapMax ?? 1) | 0;
-  const wetMin = (opts.wetMin ?? 1) | 0;
 
   const depth = new Int32Array(N);
   const act = new Uint8Array(N);
@@ -201,21 +199,6 @@ export function createWater(opts) {
     return m;
   }
 
-  function wetness(i, j, R) {
-    if (!inb(i, j)) return 255;
-    for (let r = 0; r <= R; r++) {
-      const a0 = Math.max(0, i - r),
-        a1 = Math.min(width - 1, i + r);
-      const b0 = Math.max(0, j - r),
-        b1 = Math.min(height - 1, j + r);
-      for (let a = a0; a <= a1; a++)
-        for (let b = b0; b <= b1; b++) {
-          if (Math.max(Math.abs(a - i), Math.abs(b - j)) !== r) continue;
-          if (depth[a * height + b] >= wetMin) return r;
-        }
-    }
-    return 255;
-  }
 
   function hash() {
     let h = 0x811c9dc5;
@@ -291,8 +274,6 @@ export function createWater(opts) {
     serialize,
     load,
     stats,
-    wetness,
-    isWet: (i, j, R) => wetness(i, j, R) <= R,
     addWater,
     removeWater,
     setSource(i, j, cmPerTick) {
