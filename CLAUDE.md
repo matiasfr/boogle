@@ -9,6 +9,7 @@
 - `/ship`: commit and push with `npm run ship`.
 - `/new-feature <name>`: scaffold a plug-in in `src/features/`.
 - `/look`: see the running game (stills, motion, scenarios). Use it to check any visual, feel, physics or multiplayer change.
+- `/video`: record clips and GIFs of the game and cut them into trailers or patch-notes videos.
 - `/playtest-notes`: log a play session to `docs/playtests.md`.
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`.
 

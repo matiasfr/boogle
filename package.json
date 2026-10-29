@@ -24,7 +24,9 @@
     "scenario": "node dev/scenarios/run.mjs",
     "scenarios": "node dev/scenarios/run.mjs",
     "ship": "bash scripts/ship.sh",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "clip": "node dev/video/clip.mjs",
+    "reel": "node dev/video/reel.mjs"
   },
   "dependencies": {
     "cannon-es": "0.20.0",

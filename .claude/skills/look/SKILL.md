@@ -65,6 +65,11 @@ About 8 s. Prints draw calls, shadow-pass calls, triangles, geometries and shade
 entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running game). The counts are exact;
 headless fps is not, so it isn't reported. Run it before and after anything that adds meshes or lights, and compare.
 
+## 4. Clips and videos
+
+Recording video clips and GIFs, and cutting them into trailers: see the `video` skill (`npm run clip`,
+`npm run reel`).
+
 ## Loop for a feature
 Write or extend a scenario that fails without your feature, implement, run it, Read the stills/sheets/heatmaps,
 fix what looks wrong, repeat. Commit the scenario with the feature.
