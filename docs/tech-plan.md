@@ -19,7 +19,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       set. Nothing personal: room, kind, short detail, build, coarse browser.
 - [x] **A3. Nightly live smoke test.** A scheduled GitHub Actions job opens two headless tabs on the deployed site, digs
       and throws the ball, checks the world hashes agree, and opens (or updates) an issue on failure.
-- [ ] **A4. Server deploy job + TURN measurement (PLAN Phase 1).** A workflow deploys `server/` to Fly.io on changes
+- [x] **A4. Server deploy job + TURN measurement (PLAN Phase 1).** (human steps in server/README.md remain) A workflow deploys `server/` to Fly.io on changes
       to `server/` when a `FLY_API_TOKEN` secret exists (skips cleanly otherwise). Connection reports from A2 say
       whether a failed join had a relay candidate, so "how many connections fail without TURN" has an answer.
       *Needs a human:* create the Fly app and volume, set the secrets and the `VITE_BOOGLE_SERVER` repo variable.

@@ -59,6 +59,19 @@ curl https://<app>.fly.dev/healthz
 
 Keep it on a single machine: the volume is per-machine and signaling state is in memory. `fly.toml` sets `min_machines_running = 1` and disables auto-stop so WebSockets stay up. Render/Railway work too (Dockerfile, mount a disk at `/data`, set `DATA_DIR=/data`).
 
+## Continuous deploy
+
+`.github/workflows/deploy-server.yml` runs the server tests and then `flyctl deploy` (one machine) on every push to `main` that touches `server/`, on merged `claude/*` PRs that touch it (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
+
+Human checklist, once:
+
+1. [ ] `cd server && fly launch --no-deploy --copy-config --name <your-unique-app-name>`, then put that name in `fly.toml` (or set a `FLY_APP` repo variable to it).
+2. [ ] `fly volumes create boogle_data --size 1 --region iad` (one volume, same region as `primary_region`).
+3. [ ] `fly secrets set ALLOWED_ORIGINS=https://<you>.github.io`, plus TURN (`TURN_URLS` with `TURN_USERNAME`/`TURN_CREDENTIAL`, or `TURN_SECRET`) and `REPORT_TOKEN` if your server has `/report`.
+4. [ ] `fly tokens create deploy` and save it as the `FLY_API_TOKEN` repo secret: `gh secret set FLY_API_TOKEN`.
+5. [ ] Run the workflow once (`gh workflow run deploy-server.yml`) and check `curl https://<app>.fly.dev/healthz` says `ok`.
+6. [ ] Point the game at it: `gh variable set VITE_BOOGLE_SERVER --body https://<app>.fly.dev` (read by `deploy.yml`), then re-run the Pages deploy.
+
 ## Getting TURN
 
 Without TURN, players behind strict NATs or school/corporate networks can't connect. Options:
