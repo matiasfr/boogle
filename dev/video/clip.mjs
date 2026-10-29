@@ -90,6 +90,8 @@ try {
           query: [shot.query, o.query].filter(Boolean).join('&'),
           name: o.name || 'p' + (games.length + 1),
         });
+        // Software GL (no GPU, e.g. CI) can take far longer than Playwright's 30 s default for a screenshot.
+        g.page.setDefaultTimeout(180000);
         const rec = g.record.bind(g);
         g.record = (label, r = {}) => {
           const each = r.each;

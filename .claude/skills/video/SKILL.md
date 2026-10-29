@@ -103,7 +103,7 @@ gate). A shell gate first counts commits touching game files since the last vide
 --count`, at least 3), so quiet days cost nothing. Claude then does steps 1-4 and opens a `claude/*` PR instead of
 step 6. It writes `.look/publish.json` (the `video:publish` fields as JSON) instead of step 5. The workflow then
 publishes with `--from .look/publish.json` and comments the share link in the "Patch videos" issue, mentioning the
-owner, instead of step 7. CI has no GPU: clips record in software GL, slower but just as smooth. To run the loop by
+owner, instead of step 7. It runs on a macOS runner, which has a GPU (Linux runners only have software GL: 1-2 s per frame). To run the loop by
 hand, follow the steps below. It is unattended: never stop to ask.
 
 1. `git pull` on `main`, then `npm run video:changes`. Count the new things a player would notice and enjoy (a new
