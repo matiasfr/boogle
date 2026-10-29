@@ -41,6 +41,7 @@ export function addStaticSpheres(spheres) {
   const body = new CANNON.Body({ mass: 0, material: groundMat });
   for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x, s.y, s.z));
   world.addBody(body);
+  return body;
 }
 
 export function teleport(body, x, y, z) {

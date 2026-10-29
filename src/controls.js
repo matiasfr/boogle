@@ -68,5 +68,10 @@ export function registerAction(id, { pad, label = id, down = null, up = null, he
 }
 
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
+// While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
+// runs no action. setPadModal(null) hands the pad back.
+let modal = null;
+export const setPadModal = (fn) => (modal = fn);
+export const padModal = () => modal;
 export const listActions = () => PAD.map((p) => bySlot.get(p)).filter(Boolean);
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));

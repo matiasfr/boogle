@@ -9,7 +9,7 @@ import { me, cam } from '../player.js';
 import { clamp } from '../math.js';
 import { dom } from '../hud.js';
 import { canvas } from '../scene.js';
-import { PAD, PAD_LABEL, actionForSlot, listActions, registerAction } from '../controls.js';
+import { PAD, PAD_LABEL, actionForSlot, listActions, registerAction, padModal } from '../controls.js';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -20,6 +20,7 @@ const pressed = new Array(PAD.length).fill(false);
 let active = false;
 let card = null;
 let introduced = false;
+let modalOn = false;
 
 // iPadOS also drives whatever has focus with the pad (a focused button gets "pressed" by A), so keep focus on the
 // canvas while the pad plays. Leave text fields alone: the name box may be mid-edit.
@@ -93,6 +94,20 @@ function poll(dt) {
   });
   if (!active && (lx || ly || rx || ry || down.some(Boolean))) setActive(true);
   if (!active) return;
+
+  // A modal moves focus between its own buttons, so it skips claimFocus. Held actions get their release on entry.
+  const modal = padModal();
+  if (modal) {
+    if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i]) actionForSlot(PAD[i])?.up?.();
+    modalOn = true;
+    input.stickX = input.stickY = 0;
+    down.forEach((d, i) => {
+      if (d && !pressed[i]) modal(PAD[i]);
+      pressed[i] = d;
+    });
+    return;
+  }
+  modalOn = false;
   if (down.some((d, i) => d && !pressed[i])) claimFocus();
 
   // Before the island: A presses "Jump in".

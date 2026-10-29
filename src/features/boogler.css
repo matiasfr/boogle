@@ -106,3 +106,255 @@
     animation: none;
   }
 }
+
+/* Friendship hearts under his name, and his speech bubble above it. */
+.boogler-tag-bob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.boogler-tag-bond {
+  margin-top: 2px;
+  font: 800 13px/1 var(--font-body);
+  letter-spacing: 1px;
+  color: #ff5d8f;
+  -webkit-text-stroke: 0;
+  text-shadow:
+    0 1px 0 rgba(19, 36, 63, 0.6),
+    0 0 6px rgba(19, 36, 63, 0.35);
+}
+.boogler-tag-bond:empty {
+  display: none;
+}
+.boogler-tag-bond.wary {
+  letter-spacing: 0;
+  color: #ffd2c4;
+}
+.boogler-say {
+  position: absolute;
+  left: 0;
+  bottom: 58px;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+}
+.boogler-say-text {
+  position: relative;
+  max-width: 240px;
+  width: max-content;
+  padding: 8px 13px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--ink);
+  font: 700 15px/1.25 var(--font-body);
+  text-align: center;
+  text-wrap: balance;
+}
+.boogler-say-text::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  translate: -50% 0;
+  border: 8px solid transparent;
+  border-top: 10px solid var(--ink);
+  border-bottom-width: 0;
+}
+.boogler-say.pop {
+  animation: boogler-say-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes boogler-say-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Touch: a Talk button while he is close. */
+.tbtn.talk {
+  display: none;
+  right: calc(108px + env(safe-area-inset-right, 0px));
+  bottom: calc(198px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  background: rgba(155, 107, 255, 0.85);
+}
+body.near-boogler .tbtn.talk {
+  display: block;
+}
+
+/* The talk box. A transparent backdrop keeps clicks off the island while it is open. */
+.bd {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(19, 36, 63, 0) 55%, rgba(19, 36, 63, 0.28));
+}
+.bd-card {
+  width: min(580px, 100%);
+  box-sizing: border-box;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 14px 18px 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 7px 0 var(--ink);
+  animation: bd-in 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes bd-in {
+  from {
+    transform: translateY(24px) scale(0.97);
+    opacity: 0;
+  }
+}
+.bd-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bd-face {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #efe8ff;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+}
+.bd-face svg {
+  width: 38px;
+  height: 38px;
+}
+.bd-name {
+  font: 400 24px/1 var(--font-display);
+  letter-spacing: 0.3px;
+}
+.bd-bond {
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  transform-origin: 100% 50%;
+}
+.bd-hearts {
+  color: #ff4f8b;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+.bd-level {
+  text-align: right;
+}
+.bd-bar {
+  grid-column: 1 / -1;
+  height: 5px;
+  border-radius: 999px;
+  background: #f1e9f4;
+  overflow: hidden;
+}
+.bd-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff9cc0, #ff4f8b);
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bd-bond.up {
+  animation: bd-up 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bd-up {
+  30% {
+    transform: scale(1.18);
+  }
+}
+.bd-say {
+  margin: 12px 2px 12px;
+  min-height: 2.9em;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 600;
+  text-wrap: pretty;
+}
+.bd-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bd-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  font: 700 15px/1.3 var(--font-body);
+  color: var(--ink);
+  background: #f5f1ff;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease,
+    background-color 120ms ease;
+  animation: bd-opt-in 200ms ease-out backwards;
+}
+.bd-opt:nth-child(2) {
+  animation-delay: 40ms;
+}
+.bd-opt:nth-child(3) {
+  animation-delay: 80ms;
+}
+.bd-opt:nth-child(n + 4) {
+  animation-delay: 120ms;
+}
+@keyframes bd-opt-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+.bd-opt:hover,
+.bd-opt:focus-visible,
+body.gamepad .bd-opt:focus {
+  background: var(--sun);
+  outline: none;
+}
+.bd-opt:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.bd-opt kbd {
+  flex: none;
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--ink);
+}
+body.touch .bd-opt kbd {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .boogler-say.pop,
+  .bd-card,
+  .bd-opt,
+  .bd-bond.up {
+    animation: none;
+  }
+  .bd-bar i {
+    transition: none;
+  }
+}
