@@ -1,0 +1,22 @@
+name: Feature idea
+description: Suggest something for the island
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would players do, and what is the fun moment?
+    validations:
+      required: true
+  - type: textarea
+    id: principle
+    attributes:
+      label: Which DESIGN.md principle does it serve (or bend)?
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: PLAN.md phase
+      description: Which phase does it belong to, or is it new?

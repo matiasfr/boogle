@@ -1,0 +1,36 @@
+name: Bug report
+description: Something is broken or feels wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open ?room=test in two tabs\n2. ..."
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 130 on macOS
+    validations:
+      required: true
+  - type: input
+    id: room
+    attributes:
+      label: Room name and URL
+      description: Live site or local dev? Were you the host?
+      placeholder: https://matiasfr.github.io/boogle/?room=test
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console / ?netdebug=1 logs
+      description: Add ?netdebug=1 to the URL, reproduce, and paste the console output.
+      render: text
