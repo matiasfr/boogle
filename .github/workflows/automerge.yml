@@ -27,11 +27,13 @@ concurrency:
 
 jobs:
   merge:
+    # A ship/* push after its PR opens runs CI twice (push and pull_request); only the push run counts.
     if: >-
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch != 'main' &&
       (
-        (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success') ||
+        (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' &&
+         !startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
         (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/'))
       )
     runs-on: ubuntu-latest
