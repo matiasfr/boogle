@@ -303,6 +303,9 @@ export async function connectRoom() {
     if (net.state !== 'solo') setNet(connected ? 'live' : 'connecting');
   }, fail);
   room.onPeers(onPeersChange, fail);
+  // Host fields follow the role at once: a demoted host (even one still on the title screen, which sends no presence
+  // otherwise) clears them before it rejoins, and a new host publishes them without waiting for its next send.
+  room.onHostChange(() => sendPresence());
   sendPresence();
 }
 
