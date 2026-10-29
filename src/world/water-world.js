@@ -142,7 +142,7 @@ registerOp('slosh', {
 });
 
 onApplied((edit) => {
-  if (edit.op === 'dig' || edit.op === 'pile') dirtyGround(edit.i - 1, edit.j - 1, edit.i + 1, edit.j + 1);
+  if (edit.op === 'dig' || edit.op === 'pile') dirtyGround(edit.i - 2, edit.j - 2, edit.i + 2, edit.j + 2);
 });
 
 onTick(() => {
