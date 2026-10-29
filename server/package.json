@@ -1,0 +1,20 @@
+{
+  "name": "boogle-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PeerJS signaling, snapshot storage and ICE config for Boogle",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/server.test.mjs"
+  },
+  "dependencies": {
+    "express": "5.3.0",
+    "peer": "1.0.2"
+  }
+}
