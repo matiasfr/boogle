@@ -98,7 +98,13 @@ old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` int
 
 ## 5. Patch video loop
 
-What the scheduled task on Matias's Mac runs (weekly). Unattended: never stop to ask.
+`.github/workflows/patch-video.yml` runs this daily (and on demand from the Actions tab, with `force` to skip the
+gate). A shell gate first counts commits touching game files since the last video (`npm run video:changes --
+--count`, at least 3), so quiet days cost nothing. Claude then does steps 1-4 and opens a `claude/*` PR instead of
+step 6. It writes `.look/publish.json` (the `video:publish` fields as JSON) instead of step 5. The workflow then
+publishes with `--from .look/publish.json` and comments the share link in the "Patch videos" issue, mentioning the
+owner, instead of step 7. CI has no GPU: clips record in software GL, slower but just as smooth. To run the loop by
+hand, follow the steps below. It is unattended: never stop to ask.
 
 1. `git pull` on `main`, then `npm run video:changes`. Count the new things a player would notice and enjoy (a new
    place, creature, toy, mechanic or interaction). A `+` line is a lead, not a count. Fixes, tuning, performance,

@@ -1,5 +1,5 @@
 // Publish a finished video: `npm run video:publish -- <video.mp4> --title "..." [--summary "..."] [--feature "..."]...
-// [--target <commit>] [--dry]`. Makes a share-sized copy (H.264, about 15-25 MB) and a poster frame, then creates a GitHub release
+// [--target <commit>] [--from request.json] [--dry]`. Makes a share-sized copy (H.264, about 15-25 MB) and a poster frame, then creates a GitHub release
 // `video-<date>` with video.mp4, poster.jpg and meta.json. The deploy workflow (dev/video/site.mjs) turns every
 // video-* release into a share page at https://<owner>.github.io/<repo>/updates/<tag>/. This script starts that
 // deploy, waits until the page is live and prints the share link. The tag marks the last commit the video covers
@@ -17,6 +17,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--summary') opt.summary = argv[++k];
   else if (a === '--feature') opt.features.push(argv[++k]);
   else if (a === '--target') opt.target = argv[++k];
+  else if (a === '--from')
+    Object.assign(opt, JSON.parse(fs.readFileSync(argv[++k], 'utf8'))); // the same fields as JSON
   else if (a === '--dry') opt.dry = true;
   else if (!a.startsWith('-')) opt.file = a;
   else {
@@ -124,4 +126,5 @@ while (!live && Date.now() - t0 < 15 * 60000) {
   );
 }
 console.log(live ? `share link: ${url}` : `not live after 15 min; check the deploy run. Link: ${url}`);
+if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `url=${url}\ntag=${tag}\nlive=${live}\n`);
 process.exitCode = live ? 0 : 1;
