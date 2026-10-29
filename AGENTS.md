@@ -33,7 +33,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - Unit tests (`test/*.test.mjs`, `node:test`) cover pure logic only (`src/sim/*`, `src/world/*` state, validation, serialize/load/hash): no three.js, DOM, browser or network. Each file well under a second; shrink grids and tick counts until it is.
 - Test what would silently break: determinism (same inputs, same hash), conservation, ordering, validation, serialize/load round-trips. Not visuals or tuning numbers.
 - Networking changes: `npm run test:net`; new room-interface behavior gets a check in `dev/peer-test/`.
-- Visual and feel changes: no automated test; run the game in two tabs. Don't commit ad-hoc Playwright scripts as tests.
+- Visual and feel changes: validate in the running game with `npm run look` (stills, motion sheets, heatmaps, motion score) and scenario checks (`npm run scenario -- <name>`, `dev/scenarios/`; see `.claude/skills/look/SKILL.md`): write or extend a scenario, run it, read the images, iterate. Scenarios are not part of `check`. Don't commit ad-hoc Playwright scripts as tests.
 
 ## Shipping
 - Commit small, focused changes with imperative messages ("Add splashes for the ball"), then run **`npm run ship`**, not `git push`. It rebases onto the latest `main`, runs `check` (or `check:full` for networking/sync/server), pushes, and retries if `main` moved.

@@ -155,3 +155,6 @@ vite.config.ts.timestamp-*
 .claude/worktrees/
 .claude/settings.local.json
 CLAUDE.local.md
+
+# npm run look output
+.look/
