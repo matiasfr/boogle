@@ -16,8 +16,8 @@
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
 // Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
 // reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
-// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each. Held edits older than HELD_MAX_MS
-// are dropped (stats.heldDropped): the player has moved on.
+// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each; edits submitted meanwhile queue
+// behind them. Held edits older than HELD_MAX_MS are dropped (stats.heldDropped): the player has moved on.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
 
@@ -32,7 +32,9 @@ const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messag
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
-const HELD_EVERY_MS = 250; // release held edits this far apart (ops rate-limit a player to one per 2 ticks)
+// Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under the shovel's 220 ms repeat
+// so a button held through the reconnect drains the backlog instead of growing it toward HELD_MAX_MS.
+const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
@@ -155,18 +157,18 @@ export function createSync() {
 
   function submitEdit(edit) {
     if (!isObj(edit) || !ops.has(edit.op) || !isInt(edit.i) || !isInt(edit.j)) return false;
-    if (mode === 'client') {
-      const e = { ...edit, p: selfId };
-      if (JSON.stringify(e).length > MAX_EDIT_JSON) return false;
-      if (!connected) {
-        if (held.length >= MAX_HELD) return false;
-        held.push({ e, at: wall }); // send() would drop it: hold it until the room is back
-        return true;
-      }
-      send({ t: 'w:edit', e });
+    const e = { ...edit, p: selfId };
+    if (mode === 'client' && JSON.stringify(e).length > MAX_EDIT_JSON) return false;
+    // Hold it while the room is down (send() would drop it), and behind any edits still held: going out at once
+    // would overtake them and take their per-player rate-limit slot.
+    if (held.length || (mode === 'client' && !connected)) {
+      if (held.length >= MAX_HELD) return false;
+      held.push({ e, at: wall });
       return true;
     }
-    return stamp(edit, selfId);
+    if (mode !== 'client') return stamp(e, selfId);
+    send({ t: 'w:edit', e });
+    return true;
   }
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c) {

@@ -196,6 +196,38 @@ test('edits held while reconnecting are all accepted by a rate-limited op, in or
   assert.ok(same(all));
 });
 
+test('edits submitted while held ones drain queue behind them: all accepted, in order', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v }));
+  await run(net, all, 10);
+  net.setUp(clients[0].p, true);
+  for (let v = 5; v <= 8; v++) {
+    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held shovel button
+    await run(net, all, 5);
+  }
+  await run(net, all, 60);
+  assert.deepEqual(host.log, ['c0:1', 'c0:2', 'c0:3', 'c0:4', 'c0:5', 'c0:6', 'c0:7', 'c0:8']);
+  assert.equal(host.grid[2], 36);
+  assert.ok(same(all));
+});
+
+test('a reclaimed host stamps held edits before ones submitted while they drain', async () => {
+  const { net, clients, all } = await setup(2);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 3; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }));
+  net.killHost();
+  net.setUp(clients[0].p, true);
+  for (let v = 4; v <= 6; v++) {
+    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }));
+    await run(net, all, 5);
+  }
+  await run(net, all, 120);
+  assert.equal(clients[0].s.worldStatus().mode, 'host');
+  assert.deepEqual(clients[0].log, ['c0:1', 'c0:2', 'c0:3', 'c0:4', 'c0:5', 'c0:6']);
+  assert.ok(same(all)); // c1 has not re-pinned the new host yet: it converges by snapshot
+});
+
 test('an edit held while reconnecting is stamped locally if this tab comes back as host', async () => {
   const { net, clients, all } = await setup(2);
   net.setUp(clients[0].p, false);
