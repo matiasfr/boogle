@@ -16,7 +16,7 @@ import {
   loadGifts,
   hashGifts,
 } from '../src/sim/gifts.js';
-import { GIFTS } from '../src/gift-catalog.js';
+import { GIFTS } from '../src/sim/gift-catalog.js';
 
 const SEED = 20261028;
 const layout = () => ({

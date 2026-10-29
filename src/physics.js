@@ -2,6 +2,10 @@ import * as CANNON from 'cannon-es';
 import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS } from './constants.js';
 import { clamp } from './math.js';
 import { groundHeight, heights } from './terrain.js';
+import { waterField } from './water-field.js';
+
+const cur = { x: 0, z: 0 };
+const PLAYER_DRIFT = 0.6; // share of a stream's speed that carries a wading player
 
 export const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
 world.broadphase = new CANNON.SAPBroadphase(world);
@@ -66,12 +70,20 @@ export function installStepHooks({ me, ball, remotes }) {
     const b = me.body;
     if (b) {
       me.coyote -= FIXED;
-      const depth = SEA - (b.position.y + 0.35);
+      const surfY = waterField.surfaceAt(b.position.x, b.position.z);
+      const depth = surfY - (b.position.y + 0.35);
       me.swimming = depth > 0;
       const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
       const accel = me.coyote > 0 ? 70 : me.swimming ? 18 : 14;
-      let dx = me.wish.x * speed - b.velocity.x,
-        dz = me.wish.z * speed - b.velocity.z;
+      let cx = 0,
+        cz = 0;
+      if (depth > 0.05) {
+        waterField.currentAt(b.position.x, b.position.z, cur); // streams carry waders downstream
+        cx = cur.x * PLAYER_DRIFT;
+        cz = cur.z * PLAYER_DRIFT;
+      }
+      let dx = me.wish.x * speed + cx - b.velocity.x,
+        dz = me.wish.z * speed + cz - b.velocity.z;
       const dl = Math.hypot(dx, dz),
         maxDv = accel * FIXED;
       if (dl > maxDv) {
@@ -117,19 +129,31 @@ export function installStepHooks({ me, ball, remotes }) {
       const t = world.time;
       const px = bb.position.x,
         pz = bb.position.z;
-      const surf = SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
+      const simSurf = waterField.surfaceAt(px, pz);
+      const inSim = simSurf > SEA + 0.06; // a pool or stream above sea level: no waves, no sea drift
+      const surf = inSim ? simSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
       const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
       if (sub > 0) {
-        const rr = Math.hypot(px, pz) || 1;
-        const nx = px / rr,
-          nz = pz / rr;
-        const along = 0.9 * Math.sin(t * 0.045 + 1.3) + 0.5 * Math.sin(t * 0.13 + rr * 0.05);
-        const inward = 0.28 + 0.22 * Math.sin(t * 0.35 + rr * 0.1) + 0.12 * Math.sin(t * 0.11);
-        const cx = -nx * inward - nz * along,
+        let cx, cz, grip;
+        if (inSim) {
+          // carried downstream: pulled towards the local flow, more firmly the deeper the water
+          waterField.currentAt(px, pz, cur);
+          cx = cur.x;
+          cz = cur.z;
+          grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);
+        } else {
+          const rr = Math.hypot(px, pz) || 1;
+          const nx = px / rr,
+            nz = pz / rr;
+          const along = 0.9 * Math.sin(t * 0.045 + 1.3) + 0.5 * Math.sin(t * 0.13 + rr * 0.05);
+          const inward = 0.28 + 0.22 * Math.sin(t * 0.35 + rr * 0.1) + 0.12 * Math.sin(t * 0.11);
+          cx = -nx * inward - nz * along;
           cz = -nz * inward + nx * along;
+          grip = sub;
+        }
         bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * bb.velocity.y * sub;
-        bb.force.x += (cx - bb.velocity.x) * 0.9 * BALL_MASS * sub;
-        bb.force.z += (cz - bb.velocity.z) * 0.9 * BALL_MASS * sub;
+        bb.force.x += (cx - bb.velocity.x) * 0.9 * BALL_MASS * grip;
+        bb.force.z += (cz - bb.velocity.z) * 0.9 * BALL_MASS * grip;
       }
     }
   });

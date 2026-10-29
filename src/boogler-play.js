@@ -7,7 +7,8 @@
 import { FIXED, isTouch } from './constants.js';
 import { world as physics } from './physics.js';
 import { me } from './player.js';
-import { remotes, getRoomId } from './net.js';
+import { remotes, getRoomId, addPresenceField, onRemotePresence } from './net.js';
+import { registerAction } from './controls.js';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
 import { booglerHearts, booglerPuff } from './boogler-fx.js';
 import { booglerSay, setTagBond } from './boogler-hud.js';
@@ -26,7 +27,7 @@ import {
 } from './boogler-friendship.js';
 import { pocketItems, takeFromPocket } from './gifts.js';
 import { seedCount, giveSeed } from './mushroom-garden.js';
-import { giftIndex } from './gift-catalog.js';
+import { giftIndex } from './sim/gift-catalog.js';
 
 const PET_RANGE = 2.6; // metres from his centre
 const TALK_RANGE = 3.6;
@@ -63,9 +64,6 @@ const named = (s) => s.replaceAll('{name}', me.name || 'friend');
 // ---------------------------------------------------------------- presence and shared reactions
 let ev = EV.NONE,
   evN = 0;
-export function booglerVisitorPresence() {
-  return [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN];
-}
 
 function play(kind) {
   if (kind === EV.PET) {
@@ -259,15 +257,6 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-export function booglerGive() {
-  if (!me.entered || dialogue.open || dist() > TALK_RANGE || riding()) return false;
-  if (!giftList().length) {
-    booglerSay('Your pockets look empty to me.', 1600);
-    return true;
-  }
-  return converse('gift');
-}
-
 // ---------------------------------------------------------------- petting (click / E, see src/input.js)
 let petUntil = 0;
 export function booglerAction() {
@@ -287,9 +276,9 @@ export function booglerHint() {
   const d = dist();
   if (d < PET_RANGE) {
     if (isTouch) return { text: 'Tap Pet to pet The Boogler, or Talk to chat', button: 'Pet' };
-    return { text: `Click to pet · T to talk${giftList().length ? ' · G to give a present' : ''}`, button: 'Pet' };
+    return { text: `Click to pet · C to talk${giftList().length ? ' or give a present' : ''}`, button: 'Pet' };
   }
-  if (d < TALK_RANGE) return { text: isTouch ? 'Tap Talk to chat with The Boogler' : 'T to talk to The Boogler' };
+  if (d < TALK_RANGE) return { text: isTouch ? 'Tap Talk to chat with The Boogler' : 'C to talk to The Boogler' };
   if (boogler.me.wary && d < 10)
     return { text: 'The Boogler is avoiding you. Catch him and say sorry, or bring a present.' };
   return null;
@@ -301,11 +290,15 @@ let fleeSayAt = 0;
 
 export function setupBooglerPlay() {
   installRidePhysics();
-  addEventListener('keydown', (e) => {
-    if (!me.entered || e.repeat || e.target?.tagName === 'INPUT') return;
-    if (e.code === 'KeyT') booglerTalk();
-    if (e.code === 'KeyG') booglerGive();
+  addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
+  onRemotePresence((r, pr) => {
+    r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? pr.bg : null;
   });
+  addEventListener('keydown', (e) => {
+    if (!me.entered || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target?.tagName === 'INPUT') return;
+    if (e.code === 'KeyC') booglerTalk();
+  });
+  registerAction('talk', { pad: 'right', label: 'Talk to The Boogler', down: booglerTalk });
   const touch = document.getElementById('touch');
   if (touch) {
     const btn = document.createElement('button');

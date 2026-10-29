@@ -2,6 +2,7 @@
 // Shared state lives in src/sim/mushrooms.js and changes only through world/sync edits.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, isTouch, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
@@ -95,7 +96,21 @@ const capProfile = [
 ].map(([x, y]) => new THREE.Vector2(x, y));
 const capGeo = new THREE.LatheGeometry(capProfile, 20);
 const stemGeo = new THREE.CylinderGeometry(STEM_TOP_R, STEM_BASE_R, STEM_H, 12).translate(0, STEM_H / 2, 0);
-const spotGeo = new THREE.SphereGeometry(1, 8, 4).scale(1, 0.25, 1);
+// All six cap spots in one geometry: one draw per mushroom instead of six.
+const spotGeo = mergeGeometries(
+  [
+    [0.3, 0.55, 0.22],
+    [2.2, 0.9, 0.18],
+    [3.9, 0.75, 0.2],
+    [5.3, 1.15, 0.15],
+    [1.3, 1.25, 0.14],
+    [0, 0, 0.2],
+  ].map(([a, r, s]) =>
+    new THREE.SphereGeometry(s, 8, 4)
+      .scale(1, 0.25, 1)
+      .translate(Math.cos(a) * r, CAP_T * (r > 1.1 ? 0.95 : 1.02), Math.sin(a) * r),
+  ),
+);
 const moundGeo = new THREE.SphereGeometry(0.42, 10, 6).scale(1, 0.35, 1);
 const sproutGeo = new THREE.ConeGeometry(0.07, 0.35, 5).translate(0, 0.17, 0);
 const capMat = new THREE.MeshStandardMaterial({ color: '#e5483b', roughness: 0.6, flatShading: true });
@@ -110,24 +125,12 @@ function makeMushroomMesh() {
   const stem = new THREE.Mesh(stemGeo, stemMat);
   const cap = new THREE.Group();
   cap.position.y = STEM_H;
-  cap.add(new THREE.Mesh(capGeo, capMat));
-  for (const [a, r, s] of [
-    [0.3, 0.55, 0.22],
-    [2.2, 0.9, 0.18],
-    [3.9, 0.75, 0.2],
-    [5.3, 1.15, 0.15],
-    [1.3, 1.25, 0.14],
-    [0, 0, 0.2],
-  ]) {
-    const spot = new THREE.Mesh(spotGeo, spotMat);
-    spot.scale.setScalar(s);
-    spot.position.set(Math.cos(a) * r, CAP_T * (r > 1.1 ? 0.95 : 1.02), Math.sin(a) * r);
-    cap.add(spot);
-  }
+  const capMesh = new THREE.Mesh(capGeo, capMat);
+  capMesh.castShadow = capMesh.receiveShadow = stem.castShadow = stem.receiveShadow = true;
+  const spots = new THREE.Mesh(spotGeo, spotMat); // sits on the cap, so its shadow would never show
+  spots.receiveShadow = true;
+  cap.add(capMesh, spots);
   g.add(stem, cap);
-  g.traverse((o) => {
-    o.castShadow = o.receiveShadow = true;
-  });
   return g;
 }
 

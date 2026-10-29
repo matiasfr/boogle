@@ -1,7 +1,8 @@
 // The talk box: The Boogler's line typed out, your answers as buttons (or number keys), and the friendship meter.
-// While it is open it swallows game keys and clicks, and frees the mouse pointer.
+// While it is open it swallows game keys and clicks, takes the gamepad, and frees the mouse pointer.
 import { reducedMotion } from './constants.js';
 import { input, requestLock } from './input.js';
+import { setPadModal } from './controls.js';
 import { MAX_LEVEL } from './boogler-friendship.js';
 import { boogler } from './boogler.js';
 
@@ -87,6 +88,27 @@ function choose(i) {
   cur.onPick(i);
 }
 
+const focusedOpt = () => document.activeElement?.closest?.('.bd-opt') ?? null;
+function moveFocus(dir) {
+  const btns = [...el.opts.querySelectorAll('button')];
+  const k = btns.indexOf(document.activeElement);
+  const next = k < 0 ? (dir > 0 ? 0 : btns.length - 1) : (k + dir + btns.length) % btns.length;
+  btns[next]?.focus({ preventScroll: true });
+}
+
+// D-pad picks an answer, A or X skips the typing and then says it, B walks away. With no answer picked yet, A picks
+// the first one rather than saying it.
+function padPress(slot) {
+  if (!cur) return;
+  if (slot === 'b') cur.onClose?.();
+  else if (slot === 'up' || slot === 'down') moveFocus(slot === 'down' ? 1 : -1);
+  else if (slot === 'a' || slot === 'x') {
+    if (cur.typing) finishTyping();
+    else if (focusedOpt()) focusedOpt().click();
+    else moveFocus(1);
+  }
+}
+
 // view: { say, mood, opts }; bond: { level, name, frac }; onPick(i) answers; onClose() runs on Escape.
 export function showDialogue(view, bond, onPick, onClose) {
   const d = dom();
@@ -95,6 +117,7 @@ export function showDialogue(view, bond, onPick, onClose) {
   d.root.hidden = false;
   if (opening) {
     input.keys.clear();
+    setPadModal(padPress);
     if (document.pointerLockElement) document.exitPointerLock();
   }
   d.face.innerHTML = face(view.mood);
@@ -145,6 +168,7 @@ export function closeDialogue() {
   if (!dialogue.open) return;
   dialogue.open = false;
   cur = null;
+  setPadModal(null);
   boogler.me.speaking = false;
   el.root.hidden = true;
   requestLock();
@@ -175,7 +199,7 @@ addEventListener(
     if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
       e.preventDefault();
       if (cur.typing) finishTyping();
-      else if (!e.repeat) document.activeElement?.closest?.('.bd-opt')?.click();
+      else if (!e.repeat) focusedOpt()?.click();
       return;
     }
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
@@ -186,11 +210,7 @@ addEventListener(
     }
     if (e.code === 'ArrowDown' || e.code === 'ArrowUp' || e.code === 'KeyS' || e.code === 'KeyW') {
       e.preventDefault();
-      const btns = [...el.opts.querySelectorAll('button')];
-      const k = btns.indexOf(document.activeElement);
-      const dir = e.code === 'ArrowDown' || e.code === 'KeyS' ? 1 : -1;
-      const next = k < 0 ? (dir > 0 ? 0 : btns.length - 1) : (k + dir + btns.length) % btns.length;
-      btns[next]?.focus({ preventScroll: true });
+      moveFocus(e.code === 'ArrowDown' || e.code === 'KeyS' ? 1 : -1);
     }
   },
   { capture: true },

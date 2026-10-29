@@ -25,6 +25,7 @@ export const me = {
   charging: false,
   chargeStart: 0,
   suppressUp: false,
+  down: false,
   lostBallAt: -1e9,
   wish: new THREE.Vector3(),
 };
@@ -88,7 +89,8 @@ export function enterIsland() {
 
 export function updateIntent(dt) {
   const k = input.keys;
-  me.sprint = k.has('ShiftLeft') || k.has('ShiftRight');
+  if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests
+  me.sprint = input.sprint || k.has('ShiftLeft') || k.has('ShiftRight');
   let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
   let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
   f -= input.stickY;
@@ -99,8 +101,8 @@ export function updateIntent(dt) {
     rz = -Math.sin(cam.yaw);
   me.wish.set(fx * f + rx * s, 0, fz * f + rz * s);
   if (me.wish.lengthSq() > 1) me.wish.normalize();
-  if (!me.entered) me.wish.set(0, 0, 0);
-  me.jumpQueued = Math.max(0, me.jumpQueued - dt);
+  if (!me.entered || me.down) me.wish.set(0, 0, 0); // me.down: knocked flat by a fast ball (features/impact.js)
+  me.jumpQueued = me.down ? 0 : Math.max(0, me.jumpQueued - dt);
 
   let targetYaw = null;
   if (me.holding || me.charging) targetYaw = cam.yaw;

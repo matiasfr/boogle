@@ -1,6 +1,6 @@
 // How The Boogler feels about you. Personal (DESIGN.md: communal world, personal rewards): each player keeps their own
 // friendship in localStorage and nobody else can change it. Pure, with `now` passed in (ms), so it runs in Node tests.
-import { GIFTS } from './gift-catalog.js';
+import { GIFTS } from './sim/gift-catalog.js';
 
 export const LEVELS = [
   { at: 0, name: 'Stranger' },

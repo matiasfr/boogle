@@ -58,7 +58,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 - [x] Self-hostable server in `server/` (PeerJS signaling, `/ice` with TURN support, snapshot storage). Game reads `VITE_BOOGLE_SERVER`.
 - [ ] Deploy `server/` (Fly.io) and add TURN credentials.
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
-- [ ] Host the static client on GitHub Pages / Netlify.
+- [x] Host the static client on GitHub Pages / Netlify.
 
 **Done when:** friends on different networks can play together from a URL, and the island survives the host closing their tab. **Playtest question:** does the ball feel responsive for players who don't own it?
 
@@ -82,23 +82,23 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] Persist the terrain diff (only changed cells) in the host's snapshot.
 
 **Sand fun pass:**
-- Readable sand: edit-driven vertex colours (dark cool dug, pale warm piled, wet near sea level), slope shade, crest highlight.
-- 5x5 brush: dig 40/20 cm plus a 5 cm rim on the outer ring, pile mirrors it, bucket 1600; new `flatten` op (Shift+click / touch button); Q dig, Z pile keys.
-- Juice: sand spray and dust, crater dip-and-spring (render-only), camera nudge, procedural WebAudio sounds (dry/wet/pat), also for remote edits.
-- Target ring shows the footprint and bucket fill, turns red with a reason; hold-and-drag carves a continuous path.
+- [x] Readable sand: edit-driven vertex colours (dark cool dug, pale warm piled, wet near sea level), slope shade, crest highlight.
+- [x] 5x5 brush: dig 40/20 cm plus a 5 cm rim on the outer ring, pile mirrors it, bucket 1600; new `flatten` op (Shift+click / touch button); Q dig, Z pile keys.
+- [x] Juice: sand spray and dust, crater dip-and-spring (render-only), camera nudge, procedural WebAudio sounds (dry/wet/pat), also for remote edits.
+- [x] Target ring shows the footprint and bucket fill, turns red with a reason; hold-and-drag carves a continuous path.
 
 **Done when:** players can build a sand wall and the ball bounces off it. **Playtest question:** do people build things for fun with nothing to protect?
 
 ## Phase 4: Living water (the core sim)
 
 - [x] A **2.5D column water sim**, not 3D voxels. The island has no overhangs, so 3D buys almost nothing for a big cost. Each cell has terrain height plus integer water depth (0–255). Water flows to lower neighbors by a fixed integer rule in a fixed scan order, so every machine gets bit-identical results.
-- [ ] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
+- [x] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
 - [ ] The sim is one JS module run in a Web Worker on every client. The host's copy is authoritative; it sends a compact snapshot every few seconds plus a hash, and clients that disagree adopt the snapshot. The host also saves it to snapshot storage.
-- [ ] A **freshwater spring** on the hill that feeds a stream down toward the beach.
-- [ ] Rendering: draw a second water surface mesh over the sim region from the depth grid. Keep a separate cosmetic layer (ripples, splashes) that is local and doesn't need to match across clients.
-- [ ] Ball + sim water: the ball floats in sim water as it does in the sea; splashes add a little water to nearby cells (sent as an edit by the ball owner).
+- [x] ~~A **freshwater spring** on the hill that feeds a stream down toward the beach.~~ Removed to keep the code small; water comes from the sea.
+- [x] Rendering: draw a second water surface mesh over the sim region from the depth grid. Keep a separate cosmetic layer (ripples, splashes) that is local and doesn't need to match across clients.
+- [x] Ball + sim water: the ball floats in sim water as it does in the sea; splashes add a little water to nearby cells (sent as an edit by the ball owner).
 
-**Done when:** people can dig a channel from the spring and watch water run down it. **Playtest question:** do people cheer when the water reaches where they wanted?
+**Done when:** people can dig a channel from the sea and watch water run into it. **Playtest question:** do people cheer when the water reaches where they wanted?
 
 ## Phase 5: The garden (on hold)
 
@@ -133,6 +133,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Later / stretch
 
+- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/controls.js`; touch overlay hides while a pad is in use.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.

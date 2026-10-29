@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SUN_DIR, FOG_HEX, FOG_NEAR, FOG_FAR } from './constants.js';
+import { SUN_DIR, FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from './constants.js';
 import { srgbVec } from './math.js';
 
 export const canvas = document.getElementById('view');
@@ -14,7 +14,7 @@ try {
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.NoToneMapping;
 
 export const scene = new THREE.Scene();
@@ -32,7 +32,7 @@ resize();
 scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.25));
 export const sun = new THREE.DirectionalLight('#fff3da', 2.4);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.setScalar(isTouch ? 1024 : 2048); // phones: a quarter of the shadow fill cost
 Object.assign(sun.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, near: 1, far: 180 });
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;

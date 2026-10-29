@@ -12,7 +12,7 @@ import { ball } from './ball.js';
 import { net } from './net.js';
 import { world, registerOp, registerState, onTick, submitEdit } from './world/sync.js';
 import { PATCH } from './sim/mushrooms.js';
-import { GIFTS } from './gift-catalog.js';
+import { GIFTS } from './sim/gift-catalog.js';
 import {
   MAX_TREES,
   REGROW_TICKS,

@@ -9,11 +9,12 @@ import { toggleShovel, shovelActive, setHold, setFlatten } from './world/terrain
 import { gardenAction } from './mushroom-garden.js';
 import { pickupAction } from './gifts.js';
 import { booglerAction } from './boogler-play.js';
+import { registerAction } from './controls.js';
 
-export const input = { keys: new Set(), stickX: 0, stickY: 0 };
+export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
 
-const use = () => actionDown() || pickupAction() || booglerAction() || gardenAction();
+export const use = () => actionDown() || pickupAction() || booglerAction() || gardenAction();
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
@@ -60,17 +61,13 @@ export function initInput() {
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
+    // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
+    if (e.key === 'Meta') input.keys.clear();
     if (e.key === 'Shift') setFlatten(false);
     if (e.code === 'KeyQ') setHold(null, 'dig');
     if (e.code === 'KeyZ') setHold(null, 'pile');
     if (e.code === 'KeyE' && me.entered) actionUp();
   });
-  addEventListener('blur', () => {
-    input.keys.clear();
-    setFlatten(false);
-    setHold(null);
-  });
-
   let drag = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('mousedown', (e) => {
@@ -162,16 +159,17 @@ export function initInput() {
       look.y = e.clientY;
     }
   });
+  function releaseStick() {
+    stick.id = null;
+    input.stickX = input.stickY = 0;
+    stickEl.style.display = 'none';
+  }
+  // pointerup is not guaranteed (system gestures, backgrounding), so any of these ends the touch.
   function endTouch(e) {
-    if (e.pointerId === stick.id) {
-      stick.id = null;
-      input.stickX = input.stickY = 0;
-      stickEl.style.display = 'none';
-    }
+    if (e.pointerId === stick.id) releaseStick();
     if (e.pointerId === look.id) look.id = null;
   }
-  touchEl.addEventListener('pointerup', endTouch);
-  touchEl.addEventListener('pointercancel', endTouch);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     me.jumpQueued = 0.15;
@@ -205,9 +203,46 @@ export function initInput() {
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
   }
 
+  // Gamepad layout for the built-in controls (src/controls.js; features register their own).
+  // Like Q/Z: holding dig, pile or flatten turns the shovel on, never while the ball is in hand.
+  const hold = (kind) => ({
+    down: () => {
+      if (me.holding || me.charging) return;
+      toggleShovel(true);
+      setHold(kind);
+    },
+    up: () => setHold(null, kind),
+  });
+  const zoom = (dir) => ({ held: (dt) => (cam.dist = clamp(cam.dist + dir * 6 * dt, 3, 12)) });
+  registerAction('jump', { pad: 'a', label: 'Jump', down: () => (me.jumpQueued = 0.15) });
+  registerAction('use', { pad: 'x', label: 'Grab / throw (hold to charge)', down: use, up: actionUp });
+  registerAction('respawn', { pad: 'b', label: 'Bring the ball back', down: respawnBall });
+  registerAction('shovel', { pad: 'lb', label: 'Shovel on/off', down: () => toggleShovel() });
+  registerAction('dig', { pad: 'rt', label: 'Dig (hold)', ...hold('dig') });
+  registerAction('pile', { pad: 'lt', label: 'Pile (hold)', ...hold('pile') });
+  registerAction('flatten', { pad: 'rb', label: 'Flatten (hold)', ...hold('flatten') });
+  // Click once to sprint, like most console games: it stays on until the stick is let go (src/player.js).
+  registerAction('sprint', {
+    pad: 'l3',
+    label: 'Sprint (click, stays on while moving)',
+    down: () => (input.sprint = true),
+  });
+  registerAction('zoom-in', { pad: 'up', label: 'Camera closer', ...zoom(-1) });
+  registerAction('zoom-out', { pad: 'down', label: 'Camera farther', ...zoom(1) });
+
+  // Losing focus or hiding the page can swallow the matching keyup/pointerup: treat everything as released.
+  function releaseAll() {
+    input.keys.clear();
+    input.sprint = false;
+    releaseStick();
+    look.id = null;
+    setFlatten(false);
+    setHold(null);
+  }
+  addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      input.keys.clear();
+      releaseAll();
       releaseBall();
     }
     sendPresence();

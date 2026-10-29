@@ -2,7 +2,7 @@
 // src/world/README.md), so every client agrees on what lies where. Ops: `fruit.drop` (shake a palm or hit it with the
 // ball), `gift.take` (pick something up). State key: `gifts`.
 import { mulberry32 } from './rng.js';
-import { GIFTS } from '../gift-catalog.js';
+import { GIFTS } from './gift-catalog.js';
 
 export const MAX_TREES = 64;
 export const REGROW_TICKS = 2400;

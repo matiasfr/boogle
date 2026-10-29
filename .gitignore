@@ -151,5 +151,10 @@ vite.config.ts.timestamp-*
 # macOS
 .DS_Store
 
-# Local agent worktrees
+# Claude Code: .claude/settings.json, hooks/ and skills/ are shared and committed; these are personal or local.
 .claude/worktrees/
+.claude/settings.local.json
+CLAUDE.local.md
+
+# npm run look output
+.look/

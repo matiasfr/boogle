@@ -5,6 +5,7 @@ import { SEA, BALL_R, GRAVITY, reducedMotion } from './constants.js';
 import { scene, camera, renderer } from './scene.js';
 import { waterMat } from './water-render.js';
 import { groundHeight } from './terrain.js';
+import { waterField } from './water-field.js';
 
 const MAX = reducedMotion ? 120 : 480;
 const MAX_RIPPLES = 8;
@@ -13,6 +14,7 @@ const FEET = 0.35; // waterline offset used by the swim code in physics.js
 const pos = new Float32Array(MAX * 3);
 const vel = new Float32Array(MAX * 3);
 const life = new Float32Array(MAX); // seconds left, <= 0 = free
+const floorY = new Float32Array(MAX).fill(SEA); // water level each droplet falls back into
 const size = new Float32Array(MAX);
 const alpha = new Float32Array(MAX);
 const maxLife = new Float32Array(MAX);
@@ -64,7 +66,7 @@ function addRipple(x, z, strength) {
 }
 
 // strength 0..1
-function splash(x, z, strength) {
+function splash(x, z, strength, level = SEA) {
   strength = Math.min(Math.max(strength, 0), 1);
   addRipple(x, z, 0.35 + strength * 0.65);
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));
@@ -77,7 +79,8 @@ function splash(x, z, strength) {
     const r = Math.random() * (0.15 + strength * 0.35);
     const sp = spread * (0.3 + Math.random() * 0.7);
     pos[i * 3] = x + Math.cos(a) * r;
-    pos[i * 3 + 1] = SEA + 0.05;
+    pos[i * 3 + 1] = level + 0.05;
+    floorY[i] = level;
     pos[i * 3 + 2] = z + Math.sin(a) * r;
     vel[i * 3] = Math.cos(a) * sp;
     vel[i * 3 + 1] = up * (0.45 + Math.random() * 0.75);
@@ -96,7 +99,7 @@ const ballTrack = makeTracker(-BALL_R);
 const meTrack = makeTracker(-FEET);
 const remoteTracks = new Map();
 
-function track(t, x, y, z, vyHint, dt, minSpeed, scale) {
+function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
   const bottom = y + t.bottomOffset;
   const prev = t.y;
   const moved = Math.abs(x - t.x) + Math.abs(z - t.z) + Math.abs(bottom - prev);
@@ -105,11 +108,13 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale) {
   t.z = z;
   t.cool -= dt;
   if (Number.isNaN(prev) || moved > 4 || dt <= 0) return; // teleport or first sample
-  if (prev > SEA && bottom <= SEA && t.cool <= 0 && groundHeight(x, z) < SEA - 0.1) {
+  const level = waterField.surfaceAt(x, z); // the sea, or a pool/stream from the sim where that is higher
+  if (prev > level && bottom <= level && t.cool <= 0 && groundHeight(x, z) < level - 0.1) {
     const vy = vyHint !== null ? vyHint : (bottom - prev) / dt;
     const speed = -vy;
     if (speed >= minSpeed) {
-      splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1);
+      splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1, level);
+      if (isMyBall && waterField.onBallImpact) waterField.onBallImpact(x, z, speed);
       t.cool = 0.2;
     }
   }
@@ -118,7 +123,7 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale) {
 export function updateSplash(dt, elapsed, ball, me, remotes) {
   elapsedNow = elapsed;
   const bp = ball.mesh.position;
-  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1);
+  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1, ball.mine);
 
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -143,7 +148,7 @@ export function updateSplash(dt, elapsed, ball, me, remotes) {
     pos[i3] += vel[i3] * dt;
     pos[i3 + 1] += vel[i3 + 1] * dt;
     pos[i3 + 2] += vel[i3 + 2] * dt;
-    if (life[i] <= 0 || (pos[i3 + 1] < SEA && vel[i3 + 1] < 0)) {
+    if (life[i] <= 0 || (pos[i3 + 1] < floorY[i] && vel[i3 + 1] < 0)) {
       life[i] = 0;
       pos[i3 + 1] = -1000;
       alpha[i] = 0;

@@ -59,7 +59,8 @@ export function updateHud() {
     dom.hintEl.textContent = hint;
     dom.hintEl.hidden = !hint;
   }
-  dom.grabBtn.textContent = me.holding ? 'Throw' : (garden?.button ?? 'Grab');
+  const grab = me.holding ? 'Throw' : (garden?.button ?? 'Grab');
+  if (dom.grabBtn.textContent !== grab) dom.grabBtn.textContent = grab;
   const label = me.entered ? toolLabel() : '';
   if (dom.toolEl.textContent !== label) {
     dom.toolEl.textContent = label;
@@ -99,7 +100,8 @@ export function renderPeople() {
   for (const r of on) addRow(r.name, r.colorIdx, false);
 
   const count = on.length + (me.entered ? 1 : 0);
-  if (net.state === 'solo') dom.netLabel.textContent = 'Solo · room unavailable';
+  if (net.state === 'solo')
+    dom.netLabel.textContent = `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 

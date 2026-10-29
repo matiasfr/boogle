@@ -1,7 +1,7 @@
 // Conversations with The Boogler: a menu of topics, story chapters unlocked by friendship level, small talk, gifts,
 // and what he says after kicking you off. Pure: the caller passes the friendship, a context and an rng.
 //
-//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'gift' | 'kick' }
+//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick' }
 //   talkView(t)                     -> { say, mood, opts: [string] } or null once the talk is over
 //   pickTalk(t, i)                  answer with option i; returns { levelUp, gave } for the caller to celebrate
 //
@@ -50,7 +50,7 @@ import {
   settle,
   RULES,
 } from './boogler-friendship.js';
-import { GIFTS } from './gift-catalog.js';
+import { GIFTS } from './sim/gift-catalog.js';
 
 export const THREAD_ORDER = ['home', 'mom', 'biz'];
 const node = (say, opts, mood = 'smile') => ({ say, mood, opts });
@@ -63,7 +63,6 @@ export function openTalk(f, ctx) {
   if (start === 'kick') t.node = kickNode(t);
   else if (isQuiet(f, ctx.now)) t.node = quietNode(t);
   else if (isWary(f, ctx.now)) t.node = waryNode(t);
-  else if (start === 'gift' && ctx.gifts().length) t.node = giftNode(t, () => menuNode(t, pick(t, AFTER)));
   else t.node = menuNode(t, pick(t, GREETINGS[levelOf(f.pts)]));
   return t;
 }

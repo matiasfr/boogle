@@ -3,7 +3,14 @@ import { createPeerRoom } from '../../src/net/peer-room.js';
 
 const q = new URLSearchParams(location.search);
 const T = (window.T = {
-  room: null, events: [], left: [], msgs: {}, lat: [], conn: [], hostChanges: [], errors: [],
+  room: null,
+  events: [],
+  left: [],
+  msgs: {},
+  lat: [],
+  conn: [],
+  hostChanges: [],
+  errors: [],
   async start() {
     const room = (T.room = await createPeerRoom({
       roomId: q.get('room'),
@@ -11,13 +18,16 @@ const T = (window.T = {
       iceServers: q.get('stun') ? [{ urls: 'stun:stun.l.google.com:19302' }] : [],
       debug: Number(q.get('debug') || 0),
     }));
-    room.onConnection(c => T.conn.push({ at: Date.now(), c }), e => T.errors.push(String(e.code)));
-    room.onHostChange(h => T.hostChanges.push({ at: Date.now(), h }));
+    room.onConnection(
+      (c) => T.conn.push({ at: Date.now(), c }),
+      (e) => T.errors.push(String(e.code)),
+    );
+    room.onHostChange((h) => T.hostChanges.push({ at: Date.now(), h }));
     room.onMessage((m, from) => {
       if (m.from !== from) T.errors.push('from mismatch');
       (T.msgs[from] ||= []).push(m.n);
     });
-    room.onPeers(ch => {
+    room.onPeers((ch) => {
       const at = Date.now();
       for (const p of ch.left) T.left.push({ peer: p.peer, at });
       for (const p of [...ch.joined, ...ch.updated]) {
@@ -27,21 +37,27 @@ const T = (window.T = {
     });
     return room.selfId;
   },
-  burst(count) { for (let i = 0; i < count; i++) T.room.send({ from: T.room.selfId, n: i }); },
+  burst(count) {
+    for (let i = 0; i < count; i++) T.room.send({ from: T.room.selfId, n: i });
+  },
   latency(count, every) {
-    return new Promise(res => {
+    return new Promise((res) => {
       let n = 0;
       const t = setInterval(() => {
         T.room.presence({ kind: 'lat', n: n++, ts: Date.now() });
-        if (n >= count) { clearInterval(t); res(); }
+        if (n >= count) {
+          clearInterval(t);
+          res();
+        }
       }, every);
     });
   },
   snap() {
     const r = T.room;
     return {
-      self: r.selfId, host: r.isHost(),
-      peers: r.peers().map(p => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
+      self: r.selfId,
+      host: r.isHost(),
+      peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };
   },
 });

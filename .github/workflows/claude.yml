@@ -30,6 +30,15 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Node and dependencies, so Claude can run `npm run check` and the project's format/lint hook works.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -47,5 +56,4 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # Let Claude open PRs from its claude/* branches; automerge.yml merges them once CI is green.
-          claude_args: '--allowed-tools "Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(npm run check),Bash(npm ci)"'
-
+          claude_args: '--allowed-tools "Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr edit:*),Bash(npm run *),Bash(npm ci)"'

@@ -8,9 +8,8 @@ import { me } from './player.js';
 import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
-import { attachWorld, setSelfId } from './world/sync.js';
+import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { booglerForPresence, noteBoogler } from './boogler.js';
-import { booglerVisitorPresence } from './boogler-play.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
 // state: 'connecting' | 'live' | 'solo'
@@ -38,6 +37,23 @@ function peerColor(peer) {
   return Math.abs(h) % COLORS.length;
 }
 
+// Extension hooks so features never edit buildPresence/upsertPeer: addPresenceField(key, getter) merges a small JSON
+// value (or null to omit) into our presence; onRemotePresence(fn) calls fn(remote, pr) after each fresh update from
+// a peer; onRoomReady(fn) calls fn(room) once the room exists (immediately if it already does).
+const presenceFields = [];
+const remoteHooks = [];
+const roomHooks = [];
+export function addPresenceField(key, getter) {
+  presenceFields.push([key, getter]);
+}
+export function onRemotePresence(fn) {
+  remoteHooks.push(fn);
+}
+export function onRoomReady(fn) {
+  if (net.room) fn(net.room);
+  else roomHooks.push(fn);
+}
+
 export function buildPresence() {
   const pr = {
     v: document.hidden ? 0 : 1,
@@ -49,7 +65,6 @@ export function buildPresence() {
     s: null,
     b: null,
     g: booglerForPresence(),
-    bg: null,
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -58,7 +73,6 @@ export function buildPresence() {
     pr.p = [r2(p.x), r2(p.y), r2(p.z)];
     pr.r = r2(me.yaw);
     pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
-    pr.bg = booglerVisitorPresence();
   }
   if (ball.mine) {
     const bp = ball.body.position,
@@ -71,6 +85,15 @@ export function buildPresence() {
       q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
       h: ball.held ? 1 : 0,
     };
+  }
+  for (const [key, get] of presenceFields) {
+    let v = null;
+    try {
+      v = get();
+    } catch {
+      // a broken feature must not break presence
+    }
+    if (v !== null && v !== undefined && !(key in pr)) pr[key] = v;
   }
   return pr;
 }
@@ -104,7 +127,6 @@ function getRemote(peer) {
       state: 0,
       speed: 0,
       prevPos: new THREE.Vector3(),
-      bg: null,
     };
     remotes.set(peer, r);
   }
@@ -159,7 +181,6 @@ function upsertPeer(peer) {
     dropRemoteBody(r);
   }
   if (pr.g && fresh) noteBoogler(peer.peer, pr.g, time);
-  r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? pr.bg : null;
   const b = pr.b;
   if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
     r.ball = b;
@@ -171,6 +192,14 @@ function upsertPeer(peer) {
     r.ball = null;
     r.ballSnaps.length = 0;
   }
+  if (fresh)
+    for (const fn of remoteHooks) {
+      try {
+        fn(r, pr);
+      } catch (e) {
+        console.warn('[boogle] presence hook failed', e);
+      }
+    }
 }
 
 function removePeer(peer) {
@@ -215,6 +244,20 @@ async function serverOptions() {
   }
 }
 
+// Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
+// unless the browser can't do WebRTC at all.
+let retryTimer = 0;
+function scheduleRetry(e) {
+  if (e?.code === 'browser-incompatible' || retryTimer) return;
+  net.retries = (net.retries || 0) + 1;
+  const wait = Math.min(5000 * net.retries, 30000);
+  net.retryAt = Date.now() + wait;
+  retryTimer = setTimeout(() => {
+    retryTimer = 0;
+    if (net.state === 'solo' && !net.room) connectRoom();
+  }, wait);
+}
+
 export async function connectRoom() {
   let room;
   try {
@@ -223,16 +266,30 @@ export async function connectRoom() {
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     net.error = String(e?.code || e?.type || 'connect_failed');
+    scheduleRetry(e);
     setNet('solo');
     return;
   }
+  net.retries = 0;
+  net.retryAt = 0;
+  net.error = null;
   net.room = room;
+  setNet('connecting');
   setSelfId(room.selfId);
+  for (const fn of roomHooks.splice(0)) fn(room);
   attachWorld(room, { roomId: getRoomId(), serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
     net.error = String(e?.code || e?.type || 'unknown');
     console.warn('[boogle] room unavailable:', e);
+    detachWorld();
+    try {
+      room.close();
+    } catch {
+      /* already closed */
+    }
+    net.room = null;
+    scheduleRetry(e);
     setNet('solo');
   };
   room.onConnection((connected) => {

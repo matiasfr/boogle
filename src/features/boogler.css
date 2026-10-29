@@ -329,7 +329,8 @@ body.near-boogler .tbtn.talk {
   }
 }
 .bd-opt:hover,
-.bd-opt:focus-visible {
+.bd-opt:focus-visible,
+body.gamepad .bd-opt:focus {
   background: var(--sun);
   outline: none;
 }

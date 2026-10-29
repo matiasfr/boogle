@@ -13,6 +13,7 @@ import { ball, claimBall, respawnBall, resolveBallOwner, prepareBall } from './b
 import { me, updateIntent, updateCamera, updatePreview, handPosition } from './player.js';
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
+import './world/water-world.js';
 import { initInput } from './input.js';
 import { createStall } from './mushroom-garden.js';
 import { runFrame, runStart } from './loop.js';
