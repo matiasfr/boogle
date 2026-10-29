@@ -11,6 +11,7 @@ import { net, remotes, onRoomReady } from '../net.js';
 import { dom } from '../hud.js';
 import { getAudio } from '../audio.js';
 import { onFrame, onStart } from '../loop.js';
+import { registerAction } from '../controls.js';
 import { createLimiter, createChordDetector, honkFreq } from '../sim/social.js';
 
 export const TUNE = {
@@ -289,6 +290,7 @@ onStart(() => {
     if (e.code !== 'KeyT' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing()) return;
     honkNow();
   });
+  registerAction('honk', { pad: 'y', label: 'Honk', down: honkNow });
   const row = document.createElement('div');
   row.innerHTML = '<kbd>T</kbd><span>Honk (three friends at once make a chord)</span>';
   document.getElementById('help')?.append(row);

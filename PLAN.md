@@ -124,6 +124,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Later / stretch
 
+- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/controls.js`; touch overlay hides while a pad is in use.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.

@@ -20,6 +20,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 ## Features plug in; they don't edit shared files
 - New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
 - Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
+- Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
 - Shared state goes through `src/world/sync.js` (`registerOp`, `registerState`, `onTick`); pure logic lives in `src/sim/` (no three.js, no DOM) so it can be unit-tested.
 - Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`. Keep edits there to a line or two.
 

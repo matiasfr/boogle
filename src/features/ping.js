@@ -14,6 +14,7 @@ import { terrain } from '../world/terrain-edits.js';
 import { dom } from '../hud.js';
 import { getAudio } from '../audio.js';
 import { onFrame, onStart } from '../loop.js';
+import { registerAction } from '../controls.js';
 import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
 
 export const TUNE = {
@@ -240,6 +241,7 @@ onStart(() => {
     pingNow();
   });
 
+  registerAction('ping', { pad: 'left', label: 'Ping where you look', down: pingNow });
   const row = document.createElement('div');
   row.innerHTML = '<kbd>G</kbd><span>Ping where you look (or middle click)</span>';
   document.getElementById('help')?.append(row);

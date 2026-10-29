@@ -7,11 +7,12 @@ import { sendPresence } from './net.js';
 import { dom } from './hud.js';
 import { toggleShovel, shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
 import { gardenAction } from './mushroom-garden.js';
+import { registerAction } from './controls.js';
 
-export const input = { keys: new Set(), stickX: 0, stickY: 0 };
+export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
 
-const use = () => actionDown() || gardenAction();
+export const use = () => actionDown() || gardenAction();
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
@@ -202,6 +203,33 @@ export function initInput() {
     });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
   }
+
+  // Gamepad layout for the built-in controls (src/controls.js; features register their own).
+  // Like Q/Z: holding dig, pile or flatten turns the shovel on, never while the ball is in hand.
+  const hold = (kind) => ({
+    down: () => {
+      if (me.holding || me.charging) return;
+      toggleShovel(true);
+      setHold(kind);
+    },
+    up: () => setHold(null, kind),
+  });
+  const zoom = (dir) => ({ held: (dt) => (cam.dist = clamp(cam.dist + dir * 6 * dt, 3, 12)) });
+  registerAction('jump', { pad: 'a', label: 'Jump', down: () => (me.jumpQueued = 0.15) });
+  registerAction('use', { pad: 'x', label: 'Grab / throw (hold to charge)', down: use, up: actionUp });
+  registerAction('respawn', { pad: 'b', label: 'Bring the ball back', down: respawnBall });
+  registerAction('shovel', { pad: 'lb', label: 'Shovel on/off', down: () => toggleShovel() });
+  registerAction('dig', { pad: 'rt', label: 'Dig (hold)', ...hold('dig') });
+  registerAction('pile', { pad: 'lt', label: 'Pile (hold)', ...hold('pile') });
+  registerAction('flatten', { pad: 'rb', label: 'Flatten (hold)', ...hold('flatten') });
+  registerAction('sprint', {
+    pad: 'l3',
+    label: 'Sprint (hold)',
+    down: () => (input.sprint = true),
+    up: () => (input.sprint = false),
+  });
+  registerAction('zoom-in', { pad: 'up', label: 'Camera closer', ...zoom(-1) });
+  registerAction('zoom-out', { pad: 'down', label: 'Camera farther', ...zoom(1) });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
