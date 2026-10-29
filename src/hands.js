@@ -3,7 +3,8 @@
 //   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and
 //                            flies on release; the shovel digs, the can pours, seeds go in at your feet. Empty hands
 //                            interact.
-//   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it.
+//   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
+//                            release never throws.
 //   touchDown                the touch context button: interacts when something is in reach, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
 //   interactTarget()         the one thing in front of you: { id, verb, at, run } (talk to The Boogler, pick up, take,
@@ -75,7 +76,9 @@ export function interactTarget() {
   return best;
 }
 
+// Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
 function interact() {
+  if (me.charging) return false;
   const t = interactTarget();
   if (!t?.run) return false;
   t.run();
@@ -133,7 +136,10 @@ export function useUp() {
 }
 
 export const interactDown = () => (me.entered && me.body ? interact() : false);
-export const interactUp = releaseThrow;
+// E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.
+export const interactUp = () => {
+  me.suppressUp = false;
+};
 export const touchDown = () => (interactTarget()?.run ? interact() : useDown());
 export const throwDown = windUp;
 

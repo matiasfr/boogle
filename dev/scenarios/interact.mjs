@@ -1,7 +1,7 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you pet him from the talk box; C does nothing. A shore item gets a floating Pick up prompt,
-// and a failed planting says why.
+// E does nothing while you wind up a throw, and a failed planting says why.
 const TP = (x, z) => `
   const { teleport } = await import('/src/physics.js');
   const { groundHeight } = await import('/src/terrain.js');
@@ -97,6 +97,25 @@ export default {
       'E picks it up, and the hotbar names it with Throw',
       got >= 0 && tag.includes('Throw'),
       `"${tag}"; ${tagShot}`,
+    );
+
+    // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X then B alike).
+    const wind = await g.eval(`${INV}
+      const { STALL } = await import('/src/mushroom-garden.js');
+      const { me } = window.boogle;
+      I.take('mango');
+      ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
+      await new Promise((r) => setTimeout(r, 300));
+      const at = H.interactTarget()?.id ?? '';
+      H.useDown();
+      H.interactDown(); H.interactUp();
+      const out = { at, charging: me.charging, held: I.heldId(), can: I.has('can') };
+      me.charging = false;
+      return out;`);
+    t.check(
+      'mid-throw at the stall, E neither takes nor throws',
+      wind.at.startsWith('stall-') && wind.charging && wind.held === 'mango' && !wind.can,
+      JSON.stringify(wind),
     );
 
     // Seeds on ground they cannot go in: the click says why.

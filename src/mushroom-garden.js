@@ -40,7 +40,7 @@ const CAP_T = 0.35;
 const MIN_BODY = 0.12; // a sprout this small has no collider yet
 const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale has moved this much
 const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
-const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
+export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
 export const garden = createGarden();
 const pourAt = { until: 0 };
