@@ -2,6 +2,9 @@ name: Feature idea
 description: Suggest something for the island
 labels: [idea]
 body:
+  - type: markdown
+    attributes:
+      value: Mention @claude in the issue (or a comment) to have Claude build it as an auto-merging PR.
   - type: textarea
     id: idea
     attributes:

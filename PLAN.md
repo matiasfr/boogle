@@ -58,7 +58,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 - [x] Self-hostable server in `server/` (PeerJS signaling, `/ice` with TURN support, snapshot storage). Game reads `VITE_BOOGLE_SERVER`.
 - [ ] Deploy `server/` (Fly.io) and add TURN credentials.
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
-- [ ] Host the static client on GitHub Pages / Netlify.
+- [x] Host the static client on GitHub Pages / Netlify.
 
 **Done when:** friends on different networks can play together from a URL, and the island survives the host closing their tab. **Playtest question:** does the ball feel responsive for players who don't own it?
 
@@ -82,10 +82,10 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] Persist the terrain diff (only changed cells) in the host's snapshot.
 
 **Sand fun pass:**
-- Readable sand: edit-driven vertex colours (dark cool dug, pale warm piled, wet near sea level), slope shade, crest highlight.
-- 5x5 brush: dig 40/20 cm plus a 5 cm rim on the outer ring, pile mirrors it, bucket 1600; new `flatten` op (Shift+click / touch button); Q dig, Z pile keys.
-- Juice: sand spray and dust, crater dip-and-spring (render-only), camera nudge, procedural WebAudio sounds (dry/wet/pat), also for remote edits.
-- Target ring shows the footprint and bucket fill, turns red with a reason; hold-and-drag carves a continuous path.
+- [x] Readable sand: edit-driven vertex colours (dark cool dug, pale warm piled, wet near sea level), slope shade, crest highlight.
+- [x] 5x5 brush: dig 40/20 cm plus a 5 cm rim on the outer ring, pile mirrors it, bucket 1600; new `flatten` op (Shift+click / touch button); Q dig, Z pile keys.
+- [x] Juice: sand spray and dust, crater dip-and-spring (render-only), camera nudge, procedural WebAudio sounds (dry/wet/pat), also for remote edits.
+- [x] Target ring shows the footprint and bucket fill, turns red with a reason; hold-and-drag carves a continuous path.
 
 **Done when:** players can build a sand wall and the ball bounces off it. **Playtest question:** do people build things for fun with nothing to protect?
 

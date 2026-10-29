@@ -1,29 +1,16 @@
+<!--
+Most changes go straight to main with `npm run ship`. PRs are for risky changes (network protocol, sync,
+persistence) and for Claude's claude/* branches, which auto-merge when CI is green unless labelled `no-automerge`.
+-->
+
 ## What and why
 
-<!-- One or two sentences. What changes, and why does the game need it? -->
-
-## Design
-
-- **Principle served** (see [DESIGN.md](../DESIGN.md)):
-- **Principle bent, if any** (and why it is worth it):
-- **PLAN.md item** (ticked in this PR?):
+<!-- One or two sentences. Which DESIGN.md principle does it serve, and does it bend any? -->
 
 ## How I tested
 
-<!-- Commands run, and what you did by hand. For anything networked: two or more tabs, ?netdebug=1. -->
+<!-- `npm run check`, plus `npm run test:net` for networking. Two tabs with ?netdebug=1 for anything multiplayer. -->
 
-- [ ] Solo
-- [ ] Two or more tabs / people in the same room
-- [ ] `npm run test:net` (networking changes)
+## Risk
 
-## Screenshots / GIF
-
-<!-- Required for visual changes. Delete if not applicable. -->
-
-## Checklist
-
-- [ ] `npm run check` passes
-- [ ] Shared sim code is deterministic (no `Math.random()`, integers, fixed order)
-- [ ] Game code uses the room interface, not PeerJS
-- [ ] PLAN.md / docs updated if needed
-- [ ] `main` stays playable after this merges (it auto-deploys)
+<!-- Anything that could break everyone's island (wire format, snapshots, host migration)? Delete if none. -->

@@ -1,8 +1,9 @@
 # Networking
 
 `peer-room.js` is the one module the game talks to for multiplayer. `src/net.js` (game-side presence, remotes and
-interpolation) imports `createPeerRoom` from here and uses nothing else. The current file is a solo-only stub; the
-real PeerJS implementation (see [PLAN.md](../../PLAN.md), Phase 1) must keep this interface.
+interpolation) imports `createPeerRoom` from here and uses nothing else. It implements the host-peer design in
+[PLAN.md](../../PLAN.md) ("Key decision"); message types and host migration are documented at the top of the file.
+Changes must keep this interface; run `npm run test:net` after touching it.
 
 ```js
 const room = await createPeerRoom({ roomId, signal /* optional {host,port,path,secure} */, iceServers /* optional */ });

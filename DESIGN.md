@@ -52,7 +52,7 @@ Loose physics, splashes and collapsing sand walls are features. Prefer mechanics
 Anything simulated and shared (water, terrain edits, crops, weather, tide) must produce bit-identical results on every machine:
 - integer quantities (water as 0–255 units per cell, not floats);
 - fixed update order and a fixed tick rate;
-- seeded randomness ([`mulberry32`](src/math.js)) and integer hashing for noise, never `Math.random()` in shared logic;
+- seeded randomness ([`mulberry32`](src/sim/rng.js)) and integer hashing for noise, never `Math.random()` in shared logic;
 - events (tide, weather) are a pure function of tick + seed.
 
 Cosmetic-only effects (ripples, particles, splashes) can use floats and the GPU and don't need to match across machines. Keep the two layers separate.
