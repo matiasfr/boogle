@@ -65,6 +65,18 @@ function makePeer(net, id, host) {
       log.push(`${e.p}:${e.v}`);
     },
   });
+  const last = new Map(); // like terrain/slosh: one edit per player per 2 ticks, recorded in validate
+  s.registerOp('slow', {
+    validate: (e, ctx) => {
+      if (ctx.tick - (last.get(e.p) ?? -1e9) < 2) return false;
+      last.set(e.p, ctx.tick);
+      return true;
+    },
+    apply: (e) => {
+      grid[e.i * 4 + e.j] += e.v;
+      log.push(`${e.p}:${e.v}`);
+    },
+  });
   const p = net.add(id, host);
   s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234 });
   return { s, grid, log, p };
@@ -172,6 +184,18 @@ test('an edit submitted while the room is reconnecting still reaches the host', 
   assert.ok(same(all));
 });
 
+test('edits held while reconnecting are all accepted by a rate-limited op, in order', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v: v * 10 ** v }));
+  await run(net, all, 10);
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[2], 43210);
+  assert.deepEqual(host.log, ['c0:10', 'c0:200', 'c0:3000', 'c0:40000']);
+  assert.ok(same(all));
+});
+
 test('an edit held while reconnecting is stamped locally if this tab comes back as host', async () => {
   const { net, clients, all } = await setup(2);
   net.setUp(clients[0].p, false);
@@ -183,6 +207,32 @@ test('an edit held while reconnecting is stamped locally if this tab comes back 
   assert.equal(clients[0].s.worldStatus().mode, 'host');
   assert.equal(clients[0].grid[12], 2);
   assert.equal(clients[1].grid[12], 2);
+});
+
+test('a held edit waits for a reclaimed host to finish loading', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const c = makePeer(net, 'c0', false); // never got a snapshot: not ready when it takes over
+  net.setUp(c.p, false);
+  assert.ok(c.s.submitEdit({ op: 'add', i: 1, j: 2, v: 6 }));
+  net.killHost(); // becomeHost awaits loadPersisted
+  net.setUp(c.p, true);
+  assert.equal(c.s.worldStatus().ready, false);
+  await run(net, [host, c], 20);
+  assert.equal(c.s.worldStatus().mode, 'host');
+  assert.equal(c.grid[6], 6);
+});
+
+test('an edit held past the age limit is dropped and counted', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  clients[0].s.submitEdit({ op: 'add', i: 2, j: 3, v: 8 });
+  await run(net, all, 120); // 6 s
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[11], 0);
+  assert.equal(clients[0].s.worldStatus().heldDropped, 1);
+  assert.ok(same(all));
 });
 
 test('unloadable snapshots are reported (peer chunk, local copy, server)', async () => {

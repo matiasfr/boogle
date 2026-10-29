@@ -15,7 +15,9 @@
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
 // Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
-// reconnecting after a stall) are held and sent when it is back, or stamped here if this tab came back as the host.
+// reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
+// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each. Held edits older than HELD_MAX_MS
+// are dropped (stats.heldDropped): the player has moved on.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
 
@@ -30,6 +32,8 @@ const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messag
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
+const HELD_EVERY_MS = 250; // release held edits this far apart (ops rate-limit a player to one per 2 ticks)
+const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -47,7 +51,16 @@ export function createSync() {
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
   const snapFailFns = []; // fn({ from: 'peer'|'local'|'server', reason }) when a snapshot could not be loaded
-  const stats = { resyncs: 0, snapsSent: 0, snapsLoaded: 0, hashOk: 0, hashBad: 0, lateEdits: 0, saves: 0 };
+  const stats = {
+    resyncs: 0,
+    snapsSent: 0,
+    snapsLoaded: 0,
+    hashOk: 0,
+    hashBad: 0,
+    lateEdits: 0,
+    saves: 0,
+    heldDropped: 0,
+  };
   let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad = null; // { tick, keys } of the latest mismatch
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -74,7 +87,8 @@ export function createSync() {
   let snapId = 0;
   const served = new Map();
   let out = []; // stamped edits waiting to be broadcast
-  let held = []; // edits this client submitted while the room was down; sent (or stamped) when it reconnects
+  let held = []; // [{ e, at }] edits this client submitted while the room was down; released by releaseHeld
+  let heldAt = 0; // wall time the next held edit may go
   let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
   let lastSavedHash = null;
@@ -146,7 +160,7 @@ export function createSync() {
       if (JSON.stringify(e).length > MAX_EDIT_JSON) return false;
       if (!connected) {
         if (held.length >= MAX_HELD) return false;
-        held.push(e); // send() would drop it: hold it until the room is back
+        held.push({ e, at: wall }); // send() would drop it: hold it until the room is back
         return true;
       }
       send({ t: 'w:edit', e });
@@ -154,16 +168,21 @@ export function createSync() {
     }
     return stamp(edit, selfId);
   }
-  // The room is back (peer-room reports the new role before the connection). Deliver what was held.
+  // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c) {
     connected = c;
-    if (!c || !held.length) return;
-    const list = held;
-    held = [];
-    for (const e of list) {
-      if (mode === 'client') send({ t: 'w:edit', e });
-      else if (mode === 'host') stamp(e, selfId);
+  }
+  // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick and trip rate limits.
+  function releaseHeld() {
+    while (held.length && wall - held[0].at > HELD_MAX_MS) {
+      held.shift();
+      stats.heldDropped++;
     }
+    if (!held.length || !connected || wall < heldAt) return;
+    if (mode === 'client') send({ t: 'w:edit', e: held.shift().e });
+    else if (mode === 'host' && ready) stamp(held.shift().e, selfId);
+    else return; // a reclaimed host still loading: keep them until it is ready
+    heldAt = wall + HELD_EVERY_MS;
   }
 
   // ------------------------------------------------------------ tick
@@ -197,6 +216,7 @@ export function createSync() {
   // Called from the frame loop with real elapsed seconds; runs whole ticks only.
   function updateWorld(dt) {
     wall += dt * 1000;
+    releaseHeld();
     if (mode === 'client') {
       if (awaiting && wall - needAt > 2000) {
         needAt = wall;
@@ -542,6 +562,7 @@ export function createSync() {
     room = null;
     mode = 'local';
     ready = true;
+    held = [];
     epoch++;
   }
 
