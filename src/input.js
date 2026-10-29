@@ -5,7 +5,7 @@ import { me, cam } from './player.js';
 import { actionDown, actionUp, respawnBall, releaseBall } from './ball.js';
 import { sendPresence } from './net.js';
 import { dom } from './hud.js';
-import { toggleShovel, shovelActive, setHold } from './world/terrain-edits.js';
+import { toggleShovel, shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
 import { gardenAction } from './mushroom-garden.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0 };
@@ -39,6 +39,7 @@ export function initInput() {
   addEventListener('keydown', (e) => {
     if (!me.entered || typing()) return;
     input.keys.add(e.code);
+    if (e.key === 'Shift') setFlatten(true);
     if (e.code === 'Space') {
       me.jumpQueued = 0.15;
       e.preventDefault();
@@ -48,14 +49,23 @@ export function initInput() {
     if (e.code === 'KeyE') use();
     if (e.code === 'KeyR') respawnBall();
     if (e.code === 'KeyF') toggleShovel();
+    // Q digs, Z piles (hold to repeat); turns the shovel on if needed, never while the ball is in hand.
+    if ((e.code === 'KeyQ' || e.code === 'KeyZ') && !me.holding && !me.charging) {
+      toggleShovel(true);
+      setHold(e.code === 'KeyQ' ? 'dig' : 'pile');
+    }
     if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
+    if (e.key === 'Shift') setFlatten(false);
+    if (e.code === 'KeyQ') setHold(null, 'dig');
+    if (e.code === 'KeyZ') setHold(null, 'pile');
     if (e.code === 'KeyE' && me.entered) actionUp();
   });
   addEventListener('blur', () => {
     input.keys.clear();
+    setFlatten(false);
     setHold(null);
   });
 
@@ -68,7 +78,8 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (shovelActive() && (e.button === 0 || e.button === 2)) setHold(e.button === 0 ? 'dig' : 'pile');
+    if (shovelActive() && (e.button === 0 || e.button === 2))
+      setHold(e.button === 2 ? 'pile' : e.shiftKey ? 'flatten' : 'dig');
     else if (e.button === 0) use();
   });
   addEventListener('mousemove', (e) => {

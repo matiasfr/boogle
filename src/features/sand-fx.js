@@ -1,11 +1,13 @@
 // Cosmetic dig/pile juice: a pooled spray of sand clumps, a tiny camera nudge and procedural WebAudio sounds.
 // Local only. Never networked, never read by the simulation, so Math.random is fine here.
 import * as THREE from 'three';
-import { scene, camera } from './scene.js';
-import { reducedMotion } from './constants.js';
-import { groundHeight } from './terrain.js';
-import { remotes } from './net.js';
-import { me } from './player.js';
+import { scene, camera } from '../scene.js';
+import { reducedMotion, CELL, HALF } from '../constants.js';
+import { groundHeight, updateSettle } from '../terrain.js';
+import { remotes } from '../net.js';
+import { me } from '../player.js';
+import { onFrame } from '../loop.js';
+import { terrain, onTerrainCells, isMyEdit } from '../world/terrain-edits.js';
 
 // ---------------------------------------------------------------- spray
 const MAX = 220;
@@ -43,7 +45,8 @@ const m4 = new THREE.Matrix4(),
 
 function emit(x, y, z, vx, vy, vz, size, life, dust, color) {
   let k = P.n;
-  if (k >= MAX) k = Math.floor(Math.random() * MAX); // pool full: recycle a random slot
+  if (k >= MAX)
+    k = Math.floor(Math.random() * MAX); // pool full: recycle a random slot
   else P.n++;
   P.pos.set([x, y, z], k * 3);
   P.vel.set([vx, vy, vz], k * 3);
@@ -90,14 +93,25 @@ function puff(x, y, z, k) {
   for (let q = 0; q < n; q++) {
     const a = Math.random() * Math.PI * 2,
       sp = 0.8 + Math.random() * 1.6;
-    emit(x + Math.cos(a) * 0.9, y + 0.2, z + Math.sin(a) * 0.9, Math.cos(a) * sp, 0.8 + Math.random() * 1.5, Math.sin(a) * sp, 0.18 + Math.random() * 0.2, 0.7 + Math.random() * 0.4, true, C_DUST);
+    emit(
+      x + Math.cos(a) * 0.9,
+      y + 0.2,
+      z + Math.sin(a) * 0.9,
+      Math.cos(a) * sp,
+      0.8 + Math.random() * 1.5,
+      Math.sin(a) * sp,
+      0.18 + Math.random() * 0.2,
+      0.7 + Math.random() * 0.4,
+      true,
+      C_DUST,
+    );
   }
 }
 
 let nudge = 0;
-export function updateSandFx(dt) {
+function updateSandFx(dt) {
   let n = P.n;
-  for (let k = 0; k < n; ) {
+  for (let k = 0; k < n;) {
     P.life[k] -= dt;
     const o = k * 3;
     const dust = P.dust[k];
@@ -241,7 +255,7 @@ function play(kind, vol, depth01, wet, who, own) {
 
 // ---------------------------------------------------------------- entry point
 // fx: { op, p, own, x, z, y (ground), depth (cm dug at the centre, 0..150), wet }
-export function playEditFx(fx) {
+function playEditFx(fx) {
   const k = fx.own ? 1 : 0.5;
   const camD = Math.hypot(camera.position.x - fx.x, camera.position.z - fx.z);
   const vol = (fx.own ? 1 : 0.55) / (1 + (camD * camD) / 400);
@@ -262,3 +276,23 @@ export function playEditFx(fx) {
   play(kind, vol * (fx.op === 'flatten' ? 0.6 : 1), depth01, fx.wet, fx.p, fx.own);
   if (fx.own && !reducedMotion) nudge = kind === 'dig' ? 1 : 0.6;
 }
+
+// Every applied edit (ours and remote players') triggers juice; remote ones are quieter and smaller.
+onTerrainCells((edit) => {
+  const c = edit.i * terrain.n + edit.j;
+  const eff = (terrain.base[c] + terrain.delta[c]) / 100;
+  playEditFx({
+    op: edit.op,
+    p: edit.p,
+    own: isMyEdit(edit),
+    x: edit.i * CELL - HALF,
+    z: HALF - edit.j * CELL,
+    y: Math.max(eff, 0),
+    depth: -terrain.delta[c],
+    wet: eff <= 0.05,
+  });
+});
+onFrame(({ dt }) => {
+  updateSettle(dt);
+  updateSandFx(dt);
+});

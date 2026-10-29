@@ -43,7 +43,7 @@ const GRASS_DK = new THREE.Color('#4e9a3d'),
   ROCK = new THREE.Color('#9d978c'),
   DIRT = new THREE.Color('#7a5534');
 // Edited sand: dug is dark, saturated and cool-brown (almost black-brown when wet); piled is pale and warm.
-const DUG = new THREE.Color('#7a5538'),
+const DUG = new THREE.Color('#68442a'),
   DUG_WET = new THREE.Color('#3f3a3c'),
   PILED = new THREE.Color('#fff3c8'),
   CREST = new THREE.Color('#fffbe6');
@@ -72,11 +72,11 @@ function paintVertex(out, k, x, h, z, ny, lap = 0) {
   let shade = 1;
   const wet = 1 - smoothstep(SEA - 0.1, SEA + 0.35, h); // at or under sea level
   if (d < -0.01) {
-    c.lerp(DUG, Math.min(1, -d / 0.25) * 0.95);
+    c.lerp(DUG, Math.min(1, -d / 0.12));
     c.lerp(DUG_WET, wet * Math.min(1, -d / 0.2));
-    shade *= 1 - Math.min(0.3, Math.max(0, lap) * 1.4); // hollows darken toward the middle
+    shade *= 1 - Math.min(0.4, Math.max(0, lap) * 2.2); // hollows darken toward the middle
   } else if (d > 0.01) {
-    c.lerp(PILED, Math.min(1, d / 0.3) * 0.85);
+    c.lerp(PILED, Math.min(1, d / 0.12));
     c.lerp(CREST, Math.min(0.55, Math.max(0, -lap) * 2.6) * Math.min(1, d / 0.12)); // crests catch the light
   }
   const i = k % GRID_RES,
@@ -84,7 +84,7 @@ function paintVertex(out, k, x, h, z, ny, lap = 0) {
   if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
     c.copy(DIRT).offsetHSL(0, 0, nse * 0.04);
   const edited = Math.min(1, Math.abs(d) / 0.15);
-  shade *= 1 - edited * 0.28 * (1 - smoothstep(0.7, 0.97, ny)); // steep faces on edits read as shadow
+  shade *= 1 - edited * 0.45 * (1 - smoothstep(0.7, 0.97, ny)); // steep faces on edits read as shadow
   out[k * 3] = c.r * shade;
   out[k * 3 + 1] = c.g * shade;
   out[k * 3 + 2] = c.b * shade;
@@ -123,7 +123,9 @@ export function refreshRegion(i0, j0, i1, j1) {
       nrm[k * 3] = -dx * il;
       nrm[k * 3 + 1] = il;
       nrm[k * 3 + 2] = -dz * il;
-      const lap = (editDelta[j * n + ie] + editDelta[j * n + iw] + editDelta[jn * n + i] + editDelta[js * n + i]) / 4 - editDelta[k];
+      const lap =
+        (editDelta[j * n + ie] + editDelta[j * n + iw] + editDelta[jn * n + i] + editDelta[js * n + i]) / 4 -
+        editDelta[k];
       paintVertex(col, k, pos[k * 3], h, pos[k * 3 + 2], nrm[k * 3 + 1], lap);
     }
   terrainGeo.attributes.position.needsUpdate = true;

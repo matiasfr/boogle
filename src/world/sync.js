@@ -260,7 +260,9 @@ export function createSync() {
   function applyPayload(p) {
     if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return;
     loadSnapshot(p.snap);
-    queue = p.pend.filter((q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op));
+    queue = p.pend.filter(
+      (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
+    );
     if (isInt(p.seq)) seq = Math.max(seq, p.seq);
     hostTick = world.tick;
     hostTickAt = wall;
@@ -332,7 +334,12 @@ export function createSync() {
     }
     if (cfg.serverUrl && body.length < 250000) {
       const url = new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl);
-      const init = { method: 'PUT', headers: { 'content-type': 'application/json' }, body, keepalive: unloading && body.length < 60000 };
+      const init = {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body,
+        keepalive: unloading && body.length < 60000,
+      };
       cfg.fetch(url, init).catch(() => {});
       stats.saves++;
     }
@@ -349,7 +356,9 @@ export function createSync() {
     }
     if (cfg.serverUrl) {
       try {
-        const res = await cfg.fetch(new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl), { signal: AbortSignal.timeout(3000) });
+        const res = await cfg.fetch(new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl), {
+          signal: AbortSignal.timeout(3000),
+        });
         if (res.ok) consider((await res.json()).data);
       } catch {
         // server unreachable: local copy or fresh

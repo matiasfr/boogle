@@ -81,6 +81,12 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] Update locally: the cannon-es `Heightfield` (call `updateMaxValue()` / rebuild affected data), the terrain mesh vertices and normals, and the height texture.
 - [x] Persist the terrain diff (only changed cells) in the host's snapshot.
 
+**Sand fun pass:**
+- Readable sand: edit-driven vertex colours (dark cool dug, pale warm piled, wet near sea level), slope shade, crest highlight.
+- 5x5 brush: dig 40/20 cm plus a 5 cm rim on the outer ring, pile mirrors it, bucket 1600; new `flatten` op (Shift+click / touch button); Q dig, Z pile keys.
+- Juice: sand spray and dust, crater dip-and-spring (render-only), camera nudge, procedural WebAudio sounds (dry/wet/pat), also for remote edits.
+- Target ring shows the footprint and bucket fill, turns red with a reason; hold-and-drag carves a continuous path.
+
 **Done when:** players can build a sand wall and the ball bounces off it. **Playtest question:** do people build things for fun with nothing to protect?
 
 ## Phase 4: Living water (the core sim)

@@ -108,7 +108,10 @@ test('host rejects invalid edits', async () => {
   clients[0].s.submitEdit({ op: 'add', i: 9, j: 0, v: 1 });
   clients[0].s.submitEdit({ op: 'add', i: 0, j: 0, v: 1.5 });
   await run(net, all, 30);
-  assert.equal(host.grid.reduce((a, b) => a + b), 0);
+  assert.equal(
+    host.grid.reduce((a, b) => a + b),
+    0,
+  );
 });
 
 test('late joiner converges via snapshot (incl. in-flight edits)', async () => {

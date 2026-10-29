@@ -199,7 +199,6 @@ export function createWater(opts) {
     return m;
   }
 
-
   function hash() {
     let h = 0x811c9dc5;
     const mix = (v) => {

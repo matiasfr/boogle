@@ -21,7 +21,8 @@ export const BRUSH = [{ di: 0, dj: 0, ring: 0, cm: CENTER_CM }];
 for (const ring of [1, 2])
   for (let di = -2; di <= 2; di++)
     for (let dj = -2; dj <= 2; dj++)
-      if (Math.max(Math.abs(di), Math.abs(dj)) === ring) BRUSH.push({ di, dj, ring, cm: ring === 1 ? RING_CM : RIM_CM });
+      if (Math.max(Math.abs(di), Math.abs(dj)) === ring)
+        BRUSH.push({ di, dj, ring, cm: ring === 1 ? RING_CM : RIM_CM });
 
 const mix = (h, x) => Math.imul(h ^ (x | 0), 16777619) >>> 0;
 function hashStr(h, s) {

@@ -131,7 +131,8 @@ export function updateSplash(dt, elapsed, ball, me, remotes) {
     const p = r.target;
     track(t, p.x, p.y, p.z, null, dt, 3.5, 0.5);
   }
-  if (remoteTracks.size > remotes.size) for (const k of remoteTracks.keys()) if (!remotes.has(k)) remoteTracks.delete(k);
+  if (remoteTracks.size > remotes.size)
+    for (const k of remoteTracks.keys()) if (!remotes.has(k)) remoteTracks.delete(k);
 
   let n = 0;
   for (let i = 0; i < MAX; i++) {

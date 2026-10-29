@@ -40,6 +40,33 @@ body.shovel .tbtn.shovel {
   right: calc(194px + env(safe-area-inset-right, 0px));
 }
 body.shovel .tbtn.dig,
-body.shovel .tbtn.pile {
+body.shovel .tbtn.pile,
+body.shovel .tbtn.flat {
   display: block;
+}
+.tbtn.flat {
+  display: none;
+  right: calc(280px + env(safe-area-inset-right, 0px));
+  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+/* Bucket gauge in the chip, rejection reason under the reticle. */
+.shovel-chip {
+  background-image: linear-gradient(90deg, rgba(255, 154, 61, 0.55) var(--fill, 0%), transparent var(--fill, 0%));
+}
+.shovel-reason {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(190, 40, 30, 0.82);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.shovel-reason[hidden] {
+  display: none;
 }
