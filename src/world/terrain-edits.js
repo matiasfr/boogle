@@ -89,7 +89,7 @@ onApplied((edit) => {
   animateNext = true;
   const cells = terrain.lastCells();
   for (const fn of cellsFns) fn(edit, cells);
-});
+}, 'terrain adapter');
 let animateNext = false;
 
 function liftIfBuried(body, r) {
@@ -124,7 +124,7 @@ export function flushTerrain() {
   liftIfBuried(me.body, PLAYER_R);
   if (ball.mine) liftIfBuried(ball.body, BALL_R);
 }
-onTick(flushTerrain);
+onTick(flushTerrain, 'terrain flush');
 
 // ---------------------------------------------------------------- shovel tool
 export const shovel = { on: false, hold: null, flat: false, target: null, lastMs: 0, lastCell: null };

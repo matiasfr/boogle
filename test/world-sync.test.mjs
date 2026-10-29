@@ -187,3 +187,30 @@ test('unloadable snapshots are reported (peer chunk, local copy, server)', async
   assert.ok(solo.worldStatus().ready, 'starts fresh anyway');
   solo.detachWorld();
 });
+
+test('profileTicks times each handler per tick and changes nothing', () => {
+  const solo = () => {
+    const s = createSync();
+    let total = 0;
+    s.registerState('n', { serialize: () => total, load: (v) => (total = v), hash: () => total });
+    s.registerOp('add', { apply: (e) => (total += e.v) });
+    s.onTick((t) => (total += t), 'grow');
+    s.onApplied(() => {});
+    return s;
+  };
+  const a = solo(),
+    b = solo();
+  let clock = 0;
+  const prof = a.profileTicks(() => clock++); // every timed call reads as 1 ms
+  for (const s of [a, b]) {
+    s.submitEdit({ op: 'add', i: 0, j: 0, v: 5 });
+    for (let k = 0; k < 3; k++) s.updateWorld(0.1);
+  }
+  a.stateHashes();
+  const rows = prof.stop();
+  assert.deepEqual(rows, [{ 'op add': 1, 'applied #0': 1, grow: 1 }, { grow: 1 }, { grow: 1, 'hash n': 1 }]);
+  assert.equal(a.worldHash(), b.worldHash());
+  const before = clock;
+  a.updateWorld(0.1);
+  assert.equal(clock, before); // stop() put the original handlers back
+});

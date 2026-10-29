@@ -32,8 +32,9 @@ registerState(key, {
   load(json) { },            // replace state from a snapshot
   hash() { },                // -> uint32 of the state, for desync detection
 })
-onTick(fn)                   // fn(tick) every sim tick, in registration order, after that tick's edits are applied
-onApplied(fn)                // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
+onApplied(fn, label?)        // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+                             // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
 ```

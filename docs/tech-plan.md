@@ -23,8 +23,19 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       to `server/` when a `FLY_API_TOKEN` secret exists (skips cleanly otherwise). Connection reports from A2 say
       whether a failed join had a relay candidate, so "how many connections fail without TURN" has an answer.
       *Needs a human:* create the Fly app and volume, set the secrets and the `VITE_BOOGLE_SERVER` repo variable.
-- [ ] **A5. Measure the sim.** `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
+- [x] **A5. Measure the sim.** `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
+      *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
+      play). Four runs, headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run
+      back to back. Idle island: whole tick avg 0.3 to 1.0 ms, p95 0.7 to 4 ms. Busy water (6511 home cells flooded
+      40 cm, ~6400 of 13287 cells active, a channel dug at the rate limit): whole tick avg 2.3 to 3.7 ms, p95 6.4 to
+      11 ms; of that, the sim alone (water step + sea pin, ops, gifts, mushrooms, hashes) p95 about 3.5 ms (water
+      step p95 1.8 to 4.9 ms) and the render-side handlers (water surface scan, terrain flush and adapter) about the
+      same again. Max values (up to ~100 ms) are GC, JIT warm-up and preemption on the loaded box, not the sim.
+      Hashes (host, every 20 ticks) cost ~2 to 5 ms for water, once. **C4: no worker for now.** One tick per 100 ms
+      whose sim part costs ~1 ms on average and ~3.5 ms at p95, even with busy water, fits in a 16 ms frame, and the
+      render-side half (mesh, physics, texture updates) would stay on the main thread anyway. Cheaper first: spread the water hash, keep sleeping settled
+      cells. Revisit if sim-only p95 passes ~6 ms on a real laptop or the simulated region grows past the home square.
 
 ## Wave B: the world rules (sequential)
 

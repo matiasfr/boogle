@@ -83,7 +83,7 @@ registerState('mushrooms', {
   load: (json) => loadGarden(garden, migrate(json)),
   hash: () => hashGarden(garden),
 });
-onTick(() => tickGarden(garden));
+onTick(() => tickGarden(garden), 'mushrooms');
 
 // ---------------------------------------------------------------- physics
 const mushroomMat = new CANNON.Material('mushroom');

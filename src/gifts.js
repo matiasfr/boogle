@@ -116,7 +116,7 @@ registerState('gifts', {
   load: (json) => loadGifts(gifts, migrateGiftCells(json)),
   hash: () => hashGifts(gifts),
 });
-onTick((t) => tickGifts(gifts, t, world.seed));
+onTick((t) => tickGifts(gifts, t, world.seed), 'gifts');
 
 // Called once props exist and before the first world tick (onStart), so every client builds the same layout.
 export function createGifts3d() {

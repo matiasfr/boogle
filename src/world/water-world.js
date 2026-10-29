@@ -148,7 +148,7 @@ registerOp('slosh', {
 
 onApplied((edit) => {
   if (edit.op === 'dig' || edit.op === 'pile') dirtyGround(edit.i - 2, edit.j - 2, edit.i + 2, edit.j + 2);
-});
+}, 'water ground');
 
 onTick(() => {
   if (groundDirty) {
@@ -162,8 +162,8 @@ onTick(() => {
   water.step();
   pinSea();
   stepMs = stepMs * 0.9 + (performance.now() - t0) * 0.1;
-  surface.scan();
-});
+}, 'water');
+onTick(() => surface.scan(), 'water surface'); // render-side: retarget the mesh to the new depths
 onSnapshot(() => {
   copyGround(0, 0, N - 1, N - 1);
   surface.syncAll();

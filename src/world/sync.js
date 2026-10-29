@@ -39,6 +39,7 @@ export function createSync() {
   const states = new Map();
   const tickFns = [];
   const appliedFns = [];
+  const labels = new Map(); // handler fn -> name shown by profileTicks
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
@@ -93,6 +94,10 @@ export function createSync() {
   }
   function registerState(key, handlers) {
     states.set(key, handlers);
+  }
+  function addHandler(list, fn, label) {
+    list.push(fn);
+    if (label) labels.set(fn, label);
   }
 
   // ------------------------------------------------------------ edits
@@ -341,6 +346,46 @@ export function createSync() {
     }
   }
 
+  // ------------------------------------------------------------ profiling (npm run perf only)
+  // Times every op apply, onApplied/onTick handler and state hash until stop(), which returns one { label: ms } row
+  // per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so normal play pays
+  // nothing; it only reads the clock, and nothing it measures feeds back into the sim.
+  function profileTicks(now = () => performance.now()) {
+    const rows = new Map(); // tick -> { label: ms }
+    const timed =
+      (label, fn) =>
+      (...args) => {
+        const t0 = now();
+        try {
+          return fn(...args);
+        } finally {
+          if (!rows.has(world.tick)) rows.set(world.tick, {});
+          const row = rows.get(world.tick);
+          row[label] = (row[label] ?? 0) + now() - t0;
+        }
+      };
+    const undo = [];
+    const swap = (map, key, h, field, label) => {
+      map.set(key, { ...h, [field]: timed(label, h[field]) });
+      undo.push(() => map.set(key, h));
+    };
+    for (const [op, h] of ops) swap(ops, op, h, 'apply', `op ${op}`);
+    for (const [k, s] of states) swap(states, k, s, 'hash', `hash ${k}`);
+    const swapAll = (list, kind) =>
+      list.forEach((fn, k) => {
+        list[k] = timed(labels.get(fn) || `${kind} #${k}`, fn);
+        undo.push(() => (list[k] = fn));
+      });
+    swapAll(appliedFns, 'applied');
+    swapAll(tickFns, 'tick');
+    return {
+      stop() {
+        for (const fn of undo.splice(0)) fn();
+        return [...rows.values()];
+      },
+    };
+  }
+
   // ------------------------------------------------------------ roles + persistence
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   function persist(unloading) {
@@ -470,8 +515,8 @@ export function createSync() {
     world,
     registerOp,
     registerState,
-    onTick: (fn) => tickFns.push(fn),
-    onApplied: (fn) => appliedFns.push(fn),
+    onTick: (fn, label) => addHandler(tickFns, fn, label), // label: its name in `npm run perf`
+    onApplied: (fn, label) => addHandler(appliedFns, fn, label),
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
@@ -486,6 +531,7 @@ export function createSync() {
     attachWorld,
     detachWorld,
     worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, subsystems, lastBad }),
+    profileTicks,
   };
 }
 
@@ -510,4 +556,5 @@ export const {
   attachWorld,
   detachWorld,
   worldStatus,
+  profileTicks,
 } = S;
