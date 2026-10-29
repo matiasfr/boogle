@@ -10,8 +10,7 @@
 // the room was running mixed builds (`mixedBuilds`, src/builds.js; a yes or no, never the build ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
-import { onStart } from '../loop.js';
-import { net, getRoomId } from '../net.js';
+import { net, getRoomId, onNetState } from '../net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
 import { mixedBuilds } from '../builds.js';
 
@@ -111,39 +110,43 @@ if (SERVER) {
   onDesync(({ keys }) => report('desync', { keys: keys.join(',') || 'tick/order' }));
   onSnapFail(({ from, reason }) => report('snapshot', { from, reason }));
 
-  // ---- connection: net.js keeps state 'connecting' | 'live' | 'solo'; watch its transitions ----
-  onStart(() => {
-    let prev = net.state;
-    let prevRetries = net.retries || 0;
-    let since = performance.now(); // when net.state last changed (polled once a second)
-    let role = '?'; // known once we were in a room
-    let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
-    let okSent = false;
-    let stuckSent = false;
-    setInterval(() => {
-      const now = performance.now();
-      const s = net.state;
-      const retries = net.retries || 0;
-      if (net.room) role = net.room.isHost() ? 'host' : 'client';
-      const base = { role, hadTurn: net.turn, mixedBuilds: mixedBuilds() };
-      if (s === 'solo' && (prev !== 'solo' || retries !== prevRetries)) {
-        report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base });
-      } else if (s === 'live' && prev !== 'live' && !okSent) {
+  // ---- connection: net.js reports every change of net.state ('connecting' | 'live' | 'solo') ----
+  let since = performance.now(); // when the current attempt started connecting (page load for the first one)
+  let role = '?'; // known once we were in a room
+  let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
+  let failed = 0; // failed attempts before the first good join
+  let okSent = false;
+  let stuckSent = false;
+  let stuckTimer = 0;
+  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds() });
+  const armStuck = () => {
+    clearTimeout(stuckTimer);
+    stuckTimer = setTimeout(() => {
+      if (net.state !== 'connecting' || stuckSent) return;
+      stuckSent = true;
+      report('connect', { result: 'stuck', ...base() });
+    }, STUCK_MS);
+  };
+  if (net.state === 'connecting') armStuck();
+  onNetState((s, prev) => {
+    if (net.room) role = net.room.isHost() ? 'host' : 'client';
+    if (s !== 'connecting') clearTimeout(stuckTimer);
+    if (s === 'connecting' && prev !== 'connecting') {
+      since = performance.now();
+      armStuck();
+    } else if (s === 'live') {
+      if (!okSent) {
         okSent = true;
-        const ms = Math.round(now - since); // ms spent 'connecting'
-        setTimeout(
-          () => report('connect', { result: 'ok', ms, retries, ...base, mixedBuilds: mixedBuilds() }),
-          SETTLE_MS,
-        );
-      } else if (s === 'connecting' && prev === 'connecting' && !stuckSent && now - since > STUCK_MS) {
-        stuckSent = true;
-        report('connect', { result: 'stuck', ...base });
+        const ms = Math.round(performance.now() - since); // ms spent 'connecting'
+        const at = { ms, retries: failed, ...base() };
+        setTimeout(() => report('connect', { result: 'ok', ...at, mixedBuilds: mixedBuilds() }), SETTLE_MS);
       }
-      if (s === 'live') wasLive = true;
-      else if (s === 'solo') wasLive = false;
-      if (s !== prev) since = now;
-      prev = s;
-      prevRetries = retries;
-    }, 1000);
+      wasLive = true;
+    } else if (s === 'solo') {
+      // every failed attempt, including a retry that never reached a room (solo -> solo)
+      if (!okSent) failed++;
+      report('connect', { result: 'fail', phase: wasLive ? 'lost' : 'join', error: net.error, ...base() });
+      wasLive = false;
+    }
   });
 }

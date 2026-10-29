@@ -12,8 +12,20 @@ import { createSnaps } from './snaps.js';
 import { mergeFields, hostField } from './presence-fields.js';
 
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
-// state: 'connecting' | 'live' | 'solo'; turn: our ICE config includes a TURN server (for connection reports)
-export const net = { room: null, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null, turn: false };
+// state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); turn: our ICE config includes a TURN server
+// (for connection reports); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
+// attempt while solo (0: none scheduled).
+export const net = {
+  room: null,
+  myPeer: null,
+  readyAt: 0,
+  lastSend: 0,
+  state: 'connecting',
+  error: null,
+  turn: false,
+  retries: 0,
+  retryAt: 0,
+};
 export const remotes = new Map();
 
 // Room comes from the URL (?room=beach); anything outside [a-z0-9-]{1,32} is stripped.
@@ -47,9 +59,13 @@ function peerColor(peer) {
 //                                  time, peer) for each fresh value. A different peer means the host changed.
 //   onRoomReady(fn)                fn(room) once the room exists (immediately if it already does); one-off events go
 //                                  here as room.send/onMessage (reliable, ordered, not to self), not in presence.
+//   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
+//                                  state === prev: 'solo' -> 'solo' is a retry that failed before reaching a room.
+//                                  Details are on net (error, retries, room). Local only; never sends anything.
 const presenceFields = [];
 const remoteHooks = [];
 const roomHooks = [];
+const stateHooks = [];
 export function addPresenceField(key, getter) {
   presenceFields.push([key, getter]);
 }
@@ -64,6 +80,9 @@ export function addHostField(key, getter, onValue) {
 export function onRoomReady(fn) {
   if (net.room) fn(net.room);
   else roomHooks.push(fn);
+}
+export function onNetState(fn) {
+  stateHooks.push(fn);
 }
 
 export function buildPresence() {
@@ -192,12 +211,20 @@ function onPeersChange(change) {
 }
 
 export function setNet(state) {
+  const prev = net.state;
   net.state = state;
   dom.netEl.dataset.state = state;
   if (state === 'solo') {
     for (const peer of [...remotes.keys()]) removePeer(peer);
   }
   renderPeople();
+  for (const fn of stateHooks) {
+    try {
+      fn(state, prev);
+    } catch (e) {
+      console.warn('[boogle] net state hook failed', e);
+    }
+  }
 }
 
 // Our own server (see server/README.md): set VITE_BOOGLE_SERVER=https://your-app.fly.dev at build/dev time.
@@ -224,7 +251,7 @@ async function serverOptions() {
 let retryTimer = 0;
 function scheduleRetry(e) {
   if (e?.code === 'browser-incompatible' || retryTimer) return;
-  net.retries = (net.retries || 0) + 1;
+  net.retries += 1;
   const wait = Math.min(5000 * net.retries, 30000);
   net.retryAt = Date.now() + wait;
   retryTimer = setTimeout(() => {
