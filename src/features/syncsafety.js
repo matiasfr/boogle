@@ -63,7 +63,8 @@ if (DEBUG) {
         .join('  ');
       el.textContent =
         `sync ${s.mode}${s.ready ? '' : ' (waiting)'}  tick ${world.tick}  queued ${s.queued}\n` +
-        `hash ok ${s.hashOk}  bad ${s.hashBad}  resyncs ${s.resyncs}  late ${s.lateEdits}\n` +
+        `hash ok ${s.hashOk}  bad ${s.hashBad}  resyncs ${s.resyncs}  late ${s.lateEdits}` +
+        `  held drop ${s.heldDropped}\n` +
         (s.mode === 'host' ? 'authoritative: per-state hashes sent every 2 s' : subs || 'no hash check yet') +
         (s.lastBad ? `\nlast desync: tick ${s.lastBad.tick} in ${s.lastBad.keys.join(', ')}` : '') +
         `\nbuild ${BUILD}  ${other ? `✗ mixed: ${other}` : '✓ same as everyone heard'}`;
