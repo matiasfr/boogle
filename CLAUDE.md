@@ -8,7 +8,7 @@ Before designing or implementing a feature, read:
 - `src/net/README.md`: the room interface. Game code talks to that interface, never to PeerJS directly.
 
 Rules that are easy to miss:
-- Shared simulation (water, terrain edits, crops, weather, tide) must be deterministic: integers, fixed update order, seeded RNG from `src/math.js`, no `Math.random()`.
+- Shared simulation (water, terrain edits, crops, weather, tide) must be deterministic: integers, fixed update order, seeded RNG from `src/sim/rng.js`, no `Math.random()`.
 - Clients send edit events; the host stamps and broadcasts them. Don't sync bulk state except host snapshots.
 - No claude.ai artifact build or alternate transports.
 

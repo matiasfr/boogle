@@ -35,7 +35,7 @@
 // {ok:false, reason}. They validate fully, so the host can call validatePlant/validateWater/validateHarvest
 // and clients call the op itself in apply() (deterministic; same result everywhere).
 
-import { mulberry32 } from '../math.js';
+import { mulberry32 } from './rng.js';
 
 export const TICKS_PER_SEC = 10;
 export const DAY_TICKS = 20 * 60 * TICKS_PER_SEC; // 12000

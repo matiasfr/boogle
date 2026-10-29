@@ -20,7 +20,7 @@ import { TICK_MS, world, submitEdit, registerOp, registerState, onTick, onApplie
 
 TICK_MS                      // 100: sim runs at 10 ticks/s
 world.tick                   // integer, current sim tick (same on every client once synced)
-world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/math.js)
+world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/sim/rng.js)
 
 registerOp(op, {
   validate(edit, ctx) { },   // host only: return true to accept. ctx = { from, tick }. Reject out-of-range, rate abuse.
