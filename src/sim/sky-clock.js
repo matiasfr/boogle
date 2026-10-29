@@ -20,7 +20,7 @@ export function arcAngle(frac) {
 }
 
 // Lit fraction of the moon's face: 0 at new, 1 at full. A smoothstep in the distance from full stands in for
-// (1 - cos(2 PI phase)) / 2 (off by 0.01 at most) using only + - * /, so this module stays lockstep-safe.
+// (1 - cos(2 PI phase)) / 2 (off by about 0.01 at most) using only + - * /, so this module stays lockstep-safe.
 function litFraction(phase) {
   const d = Math.abs(2 * phase - 1);
   return 1 - d * d * (3 - 2 * d);
