@@ -1,20 +1,22 @@
 // Publish a finished video: `npm run video:publish -- <video.mp4> --title "..." [--summary "..."] [--feature "..."]...
-// [--dry]`. Makes a share-sized copy (H.264, about 15-25 MB) and a poster frame, then creates a GitHub release
+// [--target <commit>] [--dry]`. Makes a share-sized copy (H.264, about 15-25 MB) and a poster frame, then creates a GitHub release
 // `video-<date>` with video.mp4, poster.jpg and meta.json. The deploy workflow (dev/video/site.mjs) turns every
 // video-* release into a share page at https://<owner>.github.io/<repo>/updates/<tag>/. This script starts that
-// deploy, waits until the page is live and prints the share link. See .claude/skills/video/SKILL.md.
+// deploy, waits until the page is live and prints the share link. The tag marks the last commit the video covers
+// (--target, default main's tip): `npm run video:changes` starts from there. See .claude/skills/video/SKILL.md.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { run } from '../look/lib.mjs';
 
 const argv = process.argv.slice(2);
-const opt = { file: null, title: null, summary: '', features: [], dry: false };
+const opt = { file: null, title: null, summary: '', features: [], target: null, dry: false };
 for (let k = 0; k < argv.length; k++) {
   const a = argv[k];
   if (a === '--title') opt.title = argv[++k];
   else if (a === '--summary') opt.summary = argv[++k];
   else if (a === '--feature') opt.features.push(argv[++k]);
+  else if (a === '--target') opt.target = argv[++k];
   else if (a === '--dry') opt.dry = true;
   else if (!a.startsWith('-')) opt.file = a;
   else {
@@ -23,7 +25,9 @@ for (let k = 0; k < argv.length; k++) {
   }
 }
 if (!opt.file || !opt.title || !fs.existsSync(opt.file)) {
-  console.error('npm run video:publish -- <video.mp4> --title "..." [--summary "..."] [--feature "..."]... [--dry]');
+  console.error(
+    'npm run video:publish -- <video.mp4> --title "..." [--summary "..."] [--feature "..."]... [--target <commit>] [--dry]',
+  );
   process.exit(2);
 }
 
@@ -102,6 +106,7 @@ sh('gh', [
   '--notes-file',
   path.join(dir, 'notes.md'),
   '--latest=false',
+  ...(opt.target ? ['--target', sh('git', ['rev-parse', opt.target])] : []),
   video,
   poster,
   path.join(dir, 'meta.json'),

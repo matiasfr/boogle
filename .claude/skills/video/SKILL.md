@@ -84,7 +84,7 @@ make a smaller copy (`-crf 23`) for sending.
 
 ```
 npm run video:publish -- .look/reels/x.mp4 --title "Patch notes: Nov 5" --summary "One sentence." \
-  --feature "The island grew 12x" --feature "Befriend The Boogler" [--dry]
+  --feature "The island grew 12x" --feature "Befriend The Boogler" [--target <commit>] [--dry]
 ```
 
 Hosting: the video file lives on a GitHub release `video-<date>` (video.mp4 about 15-25 MB, poster.jpg, meta.json),
@@ -111,7 +111,8 @@ What the scheduled task on Matias's Mac runs (weekly). Unattended: never stop to
    captioned clip per feature, a QoL card if there are enough small changes, an outro card. 45-75 s.
 4. `npm run reel`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
    inside captions, HUD overlap). Apply its fixes, re-render, and check the final contact sheet yourself.
-5. `npm run video:publish` with a title, a one-sentence summary and one `--feature` per feature.
+5. `npm run video:publish` with a title, a one-sentence summary, one `--feature` per feature and `--target` set to
+   the newest commit the video covers (`npm run video:changes` starts from that tag next time).
 6. Commit the new shots and reel ("Add the <date> patch video shots"), `npm run ship`.
 7. Send the share link with a push notification (and say it in the final message).
 
