@@ -19,8 +19,8 @@ import { me, cam, chargeAmount, throwFrom, throwVelocity } from './player.js';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from './ball.js';
 import { inv, heldId, take, useOne, drop, has, roomFor, slotOf, select, onHotbarChange } from './inventory.js';
 import { toggleShovel, setHold } from './world/terrain-edits.js';
-import { giftTarget, throwItem } from './gifts.js';
-import { stallTarget, plantTarget, plantFront, pour } from './mushroom-garden.js';
+import { giftTargets, throwItem } from './gifts.js';
+import { stallTargets, plantTarget, plantFront, pour } from './mushroom-garden.js';
 import { talkTarget } from './boogler-play.js';
 import { giftIndex } from './sim/gift-catalog.js';
 import { pickInteract } from './sim/interact-pick.js';
@@ -59,7 +59,7 @@ function ballTarget() {
 export function interactTarget() {
   if (!me.entered || !me.body) return null;
   const p = me.body.interpolatedPosition;
-  const targets = [ballTarget(), giftTarget(), stallTarget(), talkTarget()];
+  const targets = [ballTarget(), ...giftTargets(), ...stallTargets(), talkTarget()];
   return pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
 }
 

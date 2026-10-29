@@ -337,34 +337,23 @@ export function createStall() {
 }
 
 // ---------------------------------------------------------------- actions
-function nearestPickup() {
-  if (!me.body) return null;
-  const at = me.body.interpolatedPosition;
-  let best = null,
-    bestD = REACH + 0.6;
-  for (const p of pickups) {
-    if (!p.world) continue;
-    const d = Math.hypot(p.world.x - at.x, p.world.z - at.z);
-    if (d < bestD) {
-      best = p;
-      bestD = d;
-    }
+// What interacting at the stall could do (see interactTarget in src/hands.js): for each pickup in reach
+// { id, verb, at, run }, or { id, verb, at, blocked } when there is no room. The can is left out while you hold one, and
+// the seeds while your stack is full; the other pickup stays on offer.
+export function stallTargets() {
+  if (!me.entered || !me.body) return [];
+  const p = me.body.interpolatedPosition;
+  const out = [];
+  for (const pick of pickups) {
+    if (!pick.world || Math.hypot(pick.world.x - p.x, pick.world.z - p.z) >= REACH + 0.6) continue;
+    if (pick.kind === 'can' && has('can')) continue;
+    if (pick.kind === 'seeds' && inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) continue;
+    const at = pick.world.clone().setY(pick.world.y + 0.35);
+    const t = { id: `stall-${pick.kind}`, verb: 'Take', at };
+    if (roomFor(pick.kind) < 0) out.push({ ...t, blocked: 'Hotbar full' });
+    else out.push({ ...t, run: () => (pick.kind === 'seeds' ? take('seeds', SEEDS_PER_VISIT) : take('can')) });
   }
-  return best;
-}
-
-// What interacting at the stall would do (see interactTarget in src/hands.js): { id, verb, at, run },
-// { id, verb, at, blocked } when there is no room, or null.
-const promptAt = new THREE.Vector3();
-export function stallTarget() {
-  if (!me.entered) return null;
-  const pick = nearestPickup();
-  if (!pick || (pick.kind === 'can' && has('can'))) return null;
-  if (pick.kind === 'seeds' && inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) return null;
-  const at = promptAt.copy(pick.world).setY(pick.world.y + 0.35);
-  const id = `stall-${pick.kind}`;
-  if (roomFor(pick.kind) < 0) return { id, verb: 'Take', at, blocked: 'Hotbar full' };
-  return { id, verb: 'Take', at, run: () => (pick.kind === 'seeds' ? take('seeds', SEEDS_PER_VISIT) : take('can')) };
+  return out;
 }
 
 function plantCell() {

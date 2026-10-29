@@ -1,7 +1,8 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you pet him from the talk box; C does nothing. A shore item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, riding him puts the ball first, and a failed planting says why.
+// E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
+// ball first, and a failed planting says why.
 const TP = (x, z) => `
   const { teleport } = await import('/src/physics.js');
   const { groundHeight } = await import('/src/terrain.js');
@@ -131,6 +132,58 @@ export default {
       'mid-throw at the stall, E neither takes nor throws',
       wind.at.startsWith('stall-') && wind.charging && wind.held === 'mango' && !wind.can,
       JSON.stringify(wind),
+    );
+
+    // A shell behind you does not hide the ripe palm you face: drop a shell on open ground past a ripe palm, stand
+    // between them facing the palm, and the prompt says Shake while the shell is still in reach.
+    const palm = await g.eval(`${INV}
+      const G = await import('/src/gifts.js');
+      const { trees } = await import('/src/props.js');
+      const { groundHeight } = await import('/src/terrain.js');
+      const { teleport } = await import('/src/physics.js');
+      const { camera } = await import('/src/scene.js');
+      const { cam } = await import('/src/player.js');
+      const { giftIndex } = await import('/src/sim/gift-catalog.js');
+      const { CELL, HALF, SEA } = await import('/src/constants.js');
+      const b = window.boogle.me.body, items = window.boogle.gifts.items, shell = giftIndex('shell');
+      const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+      const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
+      I.select(-1);
+      for (let k = 0; k < trees.length; k++) {
+        const P = trees[k];
+        teleport(b, P.x + 1.2, groundHeight(P.x + 1.2, P.z) + 0.6, P.z);
+        if (!G.giftTargets().some((t) => t.id === 'palm' + k)) continue;
+        for (let a = 0; a < 8; a++) {
+          const ux = Math.cos((a * Math.PI) / 4), uz = Math.sin((a * Math.PI) / 4);
+          const bx = P.x + ux * 2.5, bz = P.z + uz * 2.5;
+          if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
+          const had = new Set(items.map((it) => it.id));
+          const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
+          if (!G.throwItem(shell, from, from.clone().set(0, -0.5, 0))) continue;
+          let it = null;
+          for (let n = 0; n < 50 && !it; n++, await nap(100)) it = items.find((x) => !had.has(x.id) && x.kind === shell);
+          if (!it) continue;
+          await nap(600); // its flight comes down
+          const sx = it.i * CELL - HALF, sz = HALF - it.j * CELL;
+          const gap = Math.hypot(P.x - sx, P.z - sz), wx = (P.x - sx) / gap, wz = (P.z - sz) / gap;
+          const ahead = Math.min(1.8, gap - 0.8), x = P.x - wx * ahead, z = P.z - wz * ahead;
+          teleport(b, x, groundHeight(x, z) + 0.6, z);
+          b.velocity.set(0, 0, 0);
+          cam.yaw = Math.atan2(-wx, -wz);
+          cam.pitch = -0.2;
+          await nap(300);
+          return { palm: 'palm' + k, item: 'item' + it.id, behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id) };
+        }
+      }
+      return null;`);
+    const shakeMs = palm
+      ? await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Shake')`, { timeout: 10000 })
+      : -1;
+    const shakeShot = await g.still('shake');
+    t.check(
+      'a shell behind you does not hide the ripe palm ahead: the prompt says Shake',
+      shakeMs >= 0 && palm.ids.includes(palm.item) && palm.ids.includes(palm.palm),
+      `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
     );
 
     // Seeds on ground they cannot go in: the click says why.
