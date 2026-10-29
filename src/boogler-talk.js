@@ -2,7 +2,8 @@
 // and what he says after kicking you off. Pure: the caller passes the friendship, a context and an rng.
 //
 //   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick' }
-//   talkView(t)                     -> { say, mood, opts: [string] } or null once the talk is over
+//   talkView(t)                     -> { say, mood, opts: [string], gifts: [catalog index | -1] } or null once the
+//                                      talk is over; gifts[i] is what answer i hands over
 //   pickTalk(t, i)                  answer with option i; returns { levelUp, gave } for the caller to celebrate
 //
 // gifts() lists what the player can hand over: [{ kind, label }] (what is in their hand). give(kind) takes it from them
@@ -69,7 +70,8 @@ export function openTalk(f, ctx) {
 
 export function talkView(t) {
   if (!t.node) return null;
-  return { say: fill(t, t.node.say), mood: t.node.mood, opts: t.node.opts.map((o) => fill(t, o.say)) };
+  const { say, mood, opts } = t.node;
+  return { say: fill(t, say), mood, opts: opts.map((o) => fill(t, o.say)), gifts: opts.map((o) => o.gift ?? -1) };
 }
 
 export function pickTalk(t, i) {
@@ -226,7 +228,9 @@ function giftOpts(t, after) {
   return t.ctx
     .gifts()
     .slice(0, 2)
-    .map((g) => opt(GIFT_ASK.replace('{gift}', withArticle(g.label)), () => giveNode(t, g.kind, after)));
+    .map((g) =>
+      opt(GIFT_ASK.replace('{gift}', withArticle(g.label)), () => giveNode(t, g.kind, after), { gift: g.kind }),
+    );
 }
 
 function giveNode(t, kind, after) {

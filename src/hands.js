@@ -1,25 +1,31 @@
 // What your hands do with the hotbar (src/inventory.js).
 //
-//   useDown/useUp    click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and flies on
-//                    release; the shovel digs, the can pours, seeds go in at your feet. Empty hands grab.
-//   grabDown/grabUp  E, pad B: pick up what is in reach, take from the stall, shake a palm, pet The Boogler. With
-//                    nothing in reach it winds up a throw of whatever you hold, tools included.
-//   touchDown        the touch context button: grabs when something is in reach, otherwise uses
-//   throwDown        the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
-//   handsHint()      the hint line and the touch context button's label
+//   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and
+//                            flies on release; the shovel digs, the can pours, seeds go in at your feet. Empty hands
+//                            interact.
+//   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it.
+//   touchDown                the touch context button: interacts when something is in reach, otherwise uses
+//   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
+//   interactTarget()         the one thing in front of you: { id, verb, at, run } (talk to The Boogler, pick up, take,
+//                            shake a palm, grab the ball), { id, verb, at, blocked } when your hotbar has no room for it,
+//                            or null. `at` is where its prompt goes.
+//   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
+//   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
 // Thrown things other than the beach ball fly and land through src/gifts.js; the ball keeps its own physics.
-import { isTouch } from './constants.js';
-import { me, chargeAmount, throwFrom, throwVelocity } from './player.js';
+import * as THREE from 'three';
+import { me, cam, chargeAmount, throwFrom, throwVelocity } from './player.js';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from './ball.js';
 import { inv, heldId, take, useOne, drop, has, roomFor, slotOf, select, onHotbarChange } from './inventory.js';
 import { toggleShovel, setHold } from './world/terrain-edits.js';
 import { giftTarget, throwItem } from './gifts.js';
 import { stallTarget, plantTarget, plantFront, pour } from './mushroom-garden.js';
-import { petTarget, booglerHint } from './boogler-play.js';
+import { talkTarget } from './boogler-play.js';
 import { giftIndex } from './sim/gift-catalog.js';
 
-const USE_BUTTON = { shovel: 'Dig', can: 'Water', seeds: 'Plant' };
+const USE_VERB = { shovel: 'Dig', can: 'Water', seeds: 'Plant' };
+const FACING = 0.6; // metres closer a target straight ahead counts as, against one beside you
+const ballAt = new THREE.Vector3();
 
 // The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
 function syncBall() {
@@ -40,21 +46,47 @@ function grabTheBall() {
   me.suppressUp = true;
 }
 
-// What grabbing would do: { label, button, run }, { text } when something is in reach but there is no room, or null.
-function grabTarget() {
-  if (!me.entered || !me.body) return null;
-  if (ballInReach() && !(ball.mine && ball.held)) {
-    if (roomFor('ball') < 0) return { text: 'Hotbar full' };
-    return { label: remoteHoldsBall() ? 'steal the ball' : 'grab the ball', button: 'Grab', run: grabTheBall };
-  }
-  return giftTarget() ?? stallTarget() ?? petTarget();
+function ballTarget() {
+  if (!ballInReach() || (ball.mine && ball.held)) return null;
+  const at = ballAt.copy(ball.disp.p).setY(ball.disp.p.y + 0.5);
+  const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
+  return roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall };
 }
 
-function grab() {
-  const t = grabTarget();
+// Nearest wins, with a nudge toward where you look; `r` measures to the edge of something big.
+export function interactTarget() {
+  if (!me.entered || !me.body) return null;
+  const p = me.body.interpolatedPosition;
+  const fx = -Math.sin(cam.yaw),
+    fz = -Math.cos(cam.yaw);
+  let best = null,
+    bestScore = Infinity;
+  for (const t of [ballTarget(), giftTarget(), stallTarget(), talkTarget()]) {
+    if (!t) continue;
+    const dx = t.at.x - p.x,
+      dz = t.at.z - p.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const score = d - (t.r ?? 0) - (FACING * (dx * fx + dz * fz)) / d;
+    if (score < bestScore) {
+      best = t;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function interact() {
+  const t = interactTarget();
   if (!t?.run) return false;
   t.run();
   return true;
+}
+
+export const handsNote = { text: '', until: 0 };
+function deny(text) {
+  handsNote.text = text;
+  handsNote.until = performance.now() + 1400;
+  return false;
 }
 
 function windUp() {
@@ -88,10 +120,10 @@ export function releaseThrow() {
 export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
-  if (!id) return grab();
+  if (!id) return interact();
   if (id === 'shovel') return (setHold('dig'), true);
   if (id === 'can') return pour();
-  if (id === 'seeds') return plantFront();
+  if (id === 'seeds') return plantFront() || deny(plantTarget()?.text ?? '');
   return windUp();
 }
 
@@ -100,9 +132,9 @@ export function useUp() {
   releaseThrow();
 }
 
-export const grabDown = () => (me.entered && me.body ? grab() || windUp() : false);
-export const grabUp = releaseThrow;
-export const touchDown = () => (grabTarget()?.run ? grab() : useDown());
+export const interactDown = () => (me.entered && me.body ? interact() : false);
+export const interactUp = releaseThrow;
+export const touchDown = () => (interactTarget()?.run ? interact() : useDown());
 export const throwDown = windUp;
 
 // The shovel is always at hand: Q, Z and F pull it out (a fresh one if you threw yours away).
@@ -120,21 +152,9 @@ export function toggleShovelHand() {
   ensureShovel();
 }
 
-// { text, button }: a short hint line (keyboard only; touch reads its button) and the touch context button's label.
-export function handsHint() {
-  if (!me.entered || !me.body) return null;
+export function useVerb() {
   const id = heldId();
-  const near = grabTarget();
-  const button = near?.run ? near.button : id ? (USE_BUTTON[id] ?? 'Throw') : 'Grab';
-  if (near?.text) return { text: near.text, button };
-  if (isTouch) return { text: '', button };
-  const parts = [];
-  if (id === 'seeds' && plantTarget()?.text) parts.push(plantTarget().text);
-  else if (id) parts.push(`Click to ${USE_BUTTON[id]?.toLowerCase() ?? 'throw'}`);
-  if (near?.run) parts.push(`${id ? 'E' : 'Click'} to ${near.label}`);
-  const talk = booglerHint();
-  if (talk) parts.push(talk);
-  return { text: parts.join(' · '), button };
+  return id ? (USE_VERB[id] ?? 'Throw') : null;
 }
 
 // Every frame, before the hotbar is drawn.

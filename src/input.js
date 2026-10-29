@@ -6,7 +6,7 @@ import { respawnBall, releaseBall } from './ball.js';
 import { sendPresence } from './net.js';
 import { dom } from './hud.js';
 import { shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
-import { useDown, useUp, grabDown, grabUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
+import { useDown, useUp, interactDown, interactUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
 import { cycle } from './inventory.js';
 import { registerAction } from './controls.js';
 
@@ -47,7 +47,7 @@ export function initInput() {
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
     if (e.repeat) return;
-    if (e.code === 'KeyE') grabDown();
+    if (e.code === 'KeyE') interactDown();
     if (e.code === 'KeyR') respawnBall();
     if (e.code === 'KeyF') toggleShovelHand();
     // Q digs, Z piles (hold to repeat); pulls the shovel out if needed, never mid-throw.
@@ -63,7 +63,7 @@ export function initInput() {
     if (e.code === 'Space') me.jumpHeld = false;
     if (e.code === 'KeyQ') setHold(null, 'dig');
     if (e.code === 'KeyZ') setHold(null, 'pile');
-    if (e.code === 'KeyE' && me.entered) grabUp();
+    if (e.code === 'KeyE' && me.entered) interactUp();
   });
   let drag = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -218,7 +218,12 @@ export function initInput() {
     up: () => (me.jumpHeld = false),
   });
   registerAction('use', { pad: 'x', label: 'Use what you hold (hold to throw a thing)', down: useDown, up: useUp });
-  registerAction('grab', { pad: 'b', label: 'Grab, or throw what you hold (hold)', down: grabDown, up: grabUp });
+  registerAction('interact', {
+    pad: 'b',
+    label: 'Talk, pick up, take, shake a palm',
+    down: interactDown,
+    up: interactUp,
+  });
   registerAction('respawn', { pad: 'view', label: 'Bring the ball back', down: respawnBall });
   registerAction('slot-prev', { pad: 'lb', label: 'Hotbar: previous slot', down: () => cycle(-1) });
   registerAction('slot-next', { pad: 'rb', label: 'Hotbar: next slot', down: () => cycle(1) });

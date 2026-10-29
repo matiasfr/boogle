@@ -1,0 +1,185 @@
+// Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
+// with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
+// the talk, with its icon; you pet him from the talk box; C does nothing. A shore item gets a floating Pick up prompt,
+// and a failed planting says why.
+const TP = (x, z) => `
+  const { teleport } = await import('/src/physics.js');
+  const { groundHeight } = await import('/src/terrain.js');
+  const b = window.boogle.me.body;
+  teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
+  b.velocity.set(0, 0, 0);`;
+const INV = `const I = await import('/src/inventory.js'); const H = await import('/src/hands.js');`;
+const FACE = (x, z) => `
+  const { cam } = await import('/src/player.js');
+  const p = window.boogle.me.body.position;
+  cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z)); cam.pitch = -0.25;`;
+const text = (sel) => `(document.querySelector('${sel}')?.textContent ?? '')`;
+const shown = (sel) =>
+  `(() => { const e = document.querySelector('${sel}'); return !!e && !e.closest('[hidden]'); })()`;
+// He wanders: step up beside him on every poll until `check` holds.
+const beside = (check) => `(async () => {
+  const bog = window.boogle.boogler.disp;
+  ${TP('bog.x + 2', 'bog.z')} ${FACE('bog.x', 'bog.z')}
+  await new Promise((r) => setTimeout(r, 150));
+  return ${check};
+})()`;
+const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt')}.includes('Talk')`;
+
+export default {
+  about: 'one Talk prompt by The Boogler, gifts and pets in the talk, Pick up over items, a reason when planting fails',
+  async run(t) {
+    const g = await t.open({ name: 'talker', hud: 'play' });
+
+    // Holding a mango next to The Boogler: the prompt in his tag says Talk.
+    await g.eval(`${INV} I.take('mango');`);
+    const talkMs = await g.waitFor(beside(TAG_TALK), { timeout: 20000 });
+    await g.wait(0.4);
+    const near = await g.still('near');
+    t.check('holding a mango by The Boogler, his tag says E Talk', talkMs >= 0, `${talkMs} ms; ${near}`);
+
+    await g.key('KeyC');
+    await g.wait(0.3);
+    t.check('C no longer opens anything', await g.eval(`return document.querySelector('.bd')?.hidden ?? true;`));
+
+    // E talks; the mango is an answer with its icon.
+    await g.key('KeyE');
+    await g.waitFor(`!document.querySelector('.bd-opts')?.hidden`, { timeout: 15000 });
+    await g.wait(0.4);
+    const gift = await g.eval(`
+      const b = [...document.querySelectorAll('.bd-opt')].find((b) => b.textContent.includes('a mango'));
+      return { has: !!b, icon: !!b?.querySelector('img.bd-gift')?.src };`);
+    const talk = await g.still('talk');
+    t.check(
+      'E opens the talk; the mango is an answer with its icon',
+      gift.has && gift.icon,
+      `${JSON.stringify(gift)}; ${talk}`,
+    );
+
+    // Pet him from the talk box: he answers in a bubble over the card and scores a pet.
+    const PETS = `(await (async () => {
+      const { getRoomId } = await import('/src/net.js');
+      return JSON.parse(localStorage.getItem('boogle.boogler.' + getRoomId()) ?? 'null')?.pets?.length ?? 0; })())`;
+    const before = await g.eval(`return ${PETS};`);
+    await g.eval(`document.querySelector('.bd-face').click();`);
+    await g.wait(0.25);
+    const pet = await g.eval(`
+      return { pop: !document.querySelector('.bd-pop').hidden, line: ${text('.bd-pop-text')}, pets: ${PETS} };`);
+    const petShot = await g.still('pet');
+    t.check(
+      'petting the portrait answers in a bubble and counts as a pet',
+      pet.pop && pet.line && pet.pets === before + 1,
+      `${JSON.stringify(pet)} (before ${before}); ${petShot}`,
+    );
+
+    await g.eval(`document.querySelector('.bd-close').click();`);
+    await g.wait(0.2);
+    t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
+
+    // A shore item, empty hands: a floating Pick up prompt over it, and E picks it up.
+    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0)`, { timeout: 30000 });
+    const item = await g.eval(`
+      const { CELL, HALF } = await import('/src/constants.js');
+      const it = window.boogle.gifts.items.find((it) => it.src === 0);
+      return { kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
+    await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
+    const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
+    await g.wait(0.4);
+    const itemShot = await g.still('item');
+    t.check('a Pick up prompt floats over the shore item', pickMs >= 0, `${pickMs} ms; ${itemShot}`);
+    await g.key('KeyE');
+    const got = await g.waitFor(
+      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.js'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
+    );
+    await g.wait(0.3);
+    const tag = await g.eval(`return ${text('.hotbar-name')};`);
+    const tagShot = await g.still('held');
+    t.check(
+      'E picks it up, and the hotbar names it with Throw',
+      got >= 0 && tag.includes('Throw'),
+      `"${tag}"; ${tagShot}`,
+    );
+
+    // Seeds on ground they cannot go in: the click says why.
+    const spot = await g.eval(`${INV}
+      const G = await import('/src/mushroom-garden.js');
+      const { me } = window.boogle;
+      I.take('seeds', 3);
+      for (let r = 0; r < 40; r += 2)
+        for (let a = 0; a < 12; a++) {
+          const x = ${item.x} + r * Math.cos(a / 1.9), z = ${item.z} + r * Math.sin(a / 1.9);
+          ${TP('x', 'z')}
+          me.yaw = 0;
+          if (G.plantTarget()?.text) return { x, z };
+        }
+      return null;`);
+    if (spot) {
+      await g.eval(`${INV} H.useDown(); H.useUp();`);
+      await g.wait(0.3);
+      const note = await g.eval(`return { on: ${shown('.hotbar-note.shown')}, text: ${text('.hotbar-note')} };`);
+      const noteShot = await g.still('cant-plant');
+      t.check(
+        'a failed planting says why',
+        note.on && note.text.includes("Can't plant"),
+        `${JSON.stringify(note)}; ${noteShot}`,
+      );
+    } else t.check('found ground where seeds cannot go', false);
+
+    // Before the pointer is captured, the hint is a mouse glyph and a verb.
+    const look = await g.eval(`
+      const { inputState } = await import('/src/input.js');
+      const was = { ...inputState };
+      Object.assign(inputState, { locked: false, lockFailed: false });
+      await new Promise((r) => setTimeout(r, 400));
+      const h = document.getElementById('hint');
+      const out = { shown: !h.hidden, mouse: !!h.querySelector('.g-mouse'), text: h.textContent.trim() };
+      Object.assign(inputState, was);
+      return out;`);
+    t.check(
+      'the look-around hint is a mouse glyph and a verb',
+      look.shown && look.mouse && look.text === 'Look around',
+      JSON.stringify(look),
+    );
+
+    // A gamepad: the same prompt with the B button.
+    await g.eval(`document.body.classList.add('gamepad');`);
+    const padMs = await g.waitFor(
+      beside(`${TAG_TALK} && !!document.querySelector('.boogler-tag-prompt .g-pad[data-b="b"]')`),
+      {
+        timeout: 20000,
+      },
+    );
+    await g.wait(0.4);
+    const padShot = await g.still('pad');
+    t.check('on a gamepad his tag says B Talk', padMs >= 0, `${padMs} ms; ${padShot}`);
+    t.check('no page errors', !g.errors.length, g.errors.join(' | '));
+
+    // Touch: the action button says Talk, and the prompt has no glyph.
+    const thumb = await t.open({
+      name: 'thumb',
+      hud: true,
+      size: [844, 390],
+      init: () => {
+        const mm = window.matchMedia.bind(window);
+        window.matchMedia = (q) => (q === '(pointer: coarse)' ? { ...mm(q), matches: true, media: q } : mm(q));
+      },
+    });
+    await thumb.eval(`${INV} I.take('mango');`);
+    const tapMs = await thumb.waitFor(
+      beside(
+        `${TAG_TALK} && document.getElementById('btn-grab').textContent === 'Talk' && !document.querySelector('.boogler-tag-prompt .g')`,
+      ),
+      { timeout: 20000 },
+    );
+    await thumb.wait(0.4);
+    const touchShot = await thumb.still('touch');
+    t.check('on touch the action button says Talk', tapMs >= 0, `${tapMs} ms; ${touchShot}`);
+    await thumb.eval(
+      `document.getElementById('btn-grab').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));`,
+    );
+    const tapTalk = await thumb.waitFor(`!document.querySelector('.bd')?.hidden && !!document.querySelector('.bd')`);
+    await thumb.wait(0.6);
+    const touchTalk = await thumb.still('touch-talk');
+    t.check('tapping it opens the talk', tapTalk >= 0, touchTalk);
+    t.check('no page errors on touch', !thumb.errors.length, thumb.errors.join(' | '));
+  },
+};

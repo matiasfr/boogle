@@ -6,15 +6,15 @@
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { renderer } from '../scene.js';
 import { me, ITEM_HAND } from '../player.js';
-import { ball } from '../ball.js';
 import { remotes, addPresenceField, onRemotePresence } from '../net.js';
 import { inv, SLOTS, heldId, select } from '../inventory.js';
-import { updateHands, throwDown, releaseThrow } from '../hands.js';
+import { updateHands, throwDown, releaseThrow, useVerb, handsNote } from '../hands.js';
 import { shovel } from '../world/terrain-edits.js';
 import { pouring } from '../mushroom-garden.js';
 import { itemModel } from '../item-models.js';
+import { iconFor } from '../item-icons.js';
+import { glyph, inputKind } from '../glyphs.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 import { reducedMotion } from '../constants.js';
 
@@ -71,63 +71,20 @@ function updateInHand(now) {
   }
 }
 
-// ---------------------------------------------------------------- icons
-// Each item's slot icon is its own model, rendered once to a small image.
-const ICON = 96;
-const icons = new Map();
-const iconScene = new THREE.Scene();
-iconScene.add(new THREE.HemisphereLight('#ffffff', '#8a7a66', 2.2));
-const keyLight = new THREE.DirectionalLight('#ffffff', 2.2);
-keyLight.position.set(2, 3, 2);
-iconScene.add(keyLight);
-const iconCam = new THREE.PerspectiveCamera(28, 1, 0.01, 50);
-let iconTarget = null;
-const toSrgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
-
-function iconFor(id) {
-  if (icons.has(id)) return icons.get(id);
-  iconTarget ??= new THREE.WebGLRenderTarget(ICON, ICON);
-  const model = id === 'ball' ? new THREE.Mesh(ball.mesh.geometry, ball.mesh.material) : itemModel(id);
-  if (id === 'shovel') model.rotation.z = -0.8; // diagonal, so a long thin thing fills the square
-  model.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(model);
-  const size = box.getSize(new THREE.Vector3()).length() || 1;
-  model.position.sub(box.getCenter(new THREE.Vector3()));
-  iconScene.add(model);
-  iconCam.position.set(size * 1.2, size * 1.25, size * 1.9);
-  iconCam.lookAt(0, 0, 0);
-  const prev = { target: renderer.getRenderTarget(), color: renderer.getClearColor(new THREE.Color()) };
-  const prevAlpha = renderer.getClearAlpha();
-  renderer.setRenderTarget(iconTarget);
-  renderer.setClearColor(0x000000, 0);
-  renderer.clear();
-  renderer.render(iconScene, iconCam);
-  const px = new Uint8Array(ICON * ICON * 4);
-  renderer.readRenderTargetPixels(iconTarget, 0, 0, ICON, ICON, px);
-  renderer.setRenderTarget(prev.target);
-  renderer.setClearColor(prev.color, prevAlpha);
-  iconScene.remove(model);
-  // Render targets hold linear colour and rows bottom-up: convert and flip into a canvas.
-  const c = document.createElement('canvas');
-  c.width = c.height = ICON;
-  const g = c.getContext('2d');
-  const img = g.createImageData(ICON, ICON);
-  for (let y = 0; y < ICON; y++)
-    for (let x = 0; x < ICON; x++) {
-      const from = ((ICON - 1 - y) * ICON + x) * 4,
-        to = (y * ICON + x) * 4;
-      const a = px[from + 3] / 255;
-      for (let k = 0; k < 3; k++) img.data[to + k] = a ? Math.round(toSrgb(px[from + k] / 255 / a) * 255) : 0;
-      img.data[to + 3] = px[from + 3];
-    }
-  g.putImageData(img, 0, 0);
-  const url = c.toDataURL();
-  icons.set(id, url);
-  return url;
-}
-
 // ---------------------------------------------------------------- HUD
-const ui = { root: null, name: null, slots: [], toss: null, version: -1, nameUntil: 0 };
+const NAME_MS = 2400;
+const ALT_VERB = { shovel: 'Pile' };
+const ui = {
+  root: null,
+  name: null,
+  note: null,
+  slots: [],
+  toss: null,
+  version: -1,
+  kind: '',
+  nameUntil: 0,
+  noteAt: 0,
+};
 const label = (s) => {
   if (!s) return '';
   const name = s.id === 'ball' ? 'Beach ball' : GIFTS[giftIndex(s.id)].name;
@@ -140,8 +97,13 @@ function buildHud() {
   ui.root = document.createElement('div');
   ui.root.className = 'hotbar';
   ui.root.hidden = true;
+  const tags = document.createElement('div');
+  tags.className = 'hotbar-tags';
   ui.name = document.createElement('div');
   ui.name.className = 'hotbar-name';
+  ui.note = document.createElement('div');
+  ui.note.className = 'hotbar-note';
+  tags.append(ui.name, ui.note);
   const row = document.createElement('div');
   row.className = 'hotbar-slots';
   for (let k = 0; k < SLOTS; k++) {
@@ -165,7 +127,7 @@ function buildHud() {
     row.append(b);
     ui.slots.push(b);
   }
-  ui.root.append(ui.name, row);
+  ui.root.append(tags, row);
   hud.append(ui.root);
 
   const touch = document.getElementById('touch');
@@ -187,11 +149,24 @@ function buildHud() {
   }
 }
 
+// The held thing's name, and on a computer or gamepad what its buttons do.
+function nameTag(s, kind) {
+  if (!s) return '';
+  const verb = useVerb();
+  if (!verb || kind === 'touch') return `<span>${label(s)}</span>`;
+  const use = (g, v) => `<span class="hotbar-use">${g}${v}</span>`;
+  const alt = ALT_VERB[s.id];
+  return `<span>${label(s)}</span>${use(glyph('use'), verb)}${alt ? use(glyph('alt'), alt) : ''}`;
+}
+
 function renderHud(now) {
   ui.root.hidden = !me.entered;
   document.body.classList.toggle('holding-thing', !!heldId());
-  if (ui.version !== inv.version) {
+  const kind = inputKind();
+  if (ui.version !== inv.version || ui.kind !== kind) {
+    if (ui.version !== inv.version) ui.nameUntil = now + NAME_MS;
     ui.version = inv.version;
+    ui.kind = kind;
     inv.slots.forEach((s, k) => {
       const b = ui.slots[k];
       const img = b.querySelector('img');
@@ -201,10 +176,18 @@ function renderHud(now) {
       if (s) img.src = iconFor(s.id);
       b.querySelector('.hotbar-n').textContent = s?.id === 'seeds' ? String(s.n) : '';
     });
-    ui.name.textContent = label(inv.slots[inv.sel]);
-    ui.nameUntil = now + 1800;
+    ui.name.innerHTML = nameTag(inv.slots[inv.sel], kind);
   }
-  ui.name.classList.toggle('shown', !!ui.name.textContent && now < ui.nameUntil);
+  const noting = now < handsNote.until && !!handsNote.text;
+  if (noting && ui.noteAt !== handsNote.until) {
+    ui.noteAt = handsNote.until;
+    ui.note.textContent = handsNote.text;
+    ui.note.classList.remove('shake');
+    void ui.note.offsetWidth; // restart the shake
+    ui.note.classList.add('shake');
+  }
+  ui.note.classList.toggle('shown', noting);
+  ui.name.classList.toggle('shown', !noting && !!ui.name.innerHTML && now < ui.nameUntil);
 }
 
 // ---------------------------------------------------------------- keys, presence, frame
@@ -218,7 +201,7 @@ onStart(() => {
   const help = document.getElementById('help');
   for (const [key, text] of [
     ['1-8', 'Hold something from your hotbar (again: empty hands)'],
-    ['E', 'Pick up, pet, take; or hold to throw what you hold'],
+    ['E', 'Talk, pick up, take, shake a palm'],
   ]) {
     const row = document.createElement('div');
     const kbd = document.createElement('kbd');
