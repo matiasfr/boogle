@@ -8,8 +8,8 @@
 //   touchDown                the touch context button: interacts when something is in reach, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
 //   interactTarget()         the one thing in front of you: { id, verb, at, run } (talk to The Boogler, pick up, take,
-//                            shake a palm, grab the ball), { id, verb, at, blocked } when your hotbar has no room for it,
-//                            or null. `at` is where its prompt goes.
+//                            shake a palm, grab the ball), { id, verb, at, blocked } when your hotbar has no room for it
+//                            and nothing that would act is in reach, or null. `at` is where its prompt goes.
 //   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
@@ -23,9 +23,9 @@ import { giftTarget, throwItem } from './gifts.js';
 import { stallTarget, plantTarget, plantFront, pour } from './mushroom-garden.js';
 import { talkTarget } from './boogler-play.js';
 import { giftIndex } from './sim/gift-catalog.js';
+import { pickInteract } from './sim/interact-pick.js';
 
 const USE_VERB = { shovel: 'Dig', can: 'Water', seeds: 'Plant' };
-const FACING = 0.6; // metres closer a target straight ahead counts as, against one beside you
 const ballAt = new THREE.Vector3();
 
 // The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
@@ -54,26 +54,13 @@ function ballTarget() {
   return roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall };
 }
 
-// Nearest wins, with a nudge toward where you look; `r` measures to the edge of something big.
+// The pick itself is src/sim/interact-pick.js: something that would act beats something blocked, then nearest wins, with
+// a nudge toward where you look; `r` measures to the edge of something big.
 export function interactTarget() {
   if (!me.entered || !me.body) return null;
   const p = me.body.interpolatedPosition;
-  const fx = -Math.sin(cam.yaw),
-    fz = -Math.cos(cam.yaw);
-  let best = null,
-    bestScore = Infinity;
-  for (const t of [ballTarget(), giftTarget(), stallTarget(), talkTarget()]) {
-    if (!t) continue;
-    const dx = t.at.x - p.x,
-      dz = t.at.z - p.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const score = d - (t.r ?? 0) - (FACING * (dx * fx + dz * fz)) / d;
-    if (score < bestScore) {
-      best = t;
-      bestScore = score;
-    }
-  }
-  return best;
+  const targets = [ballTarget(), giftTarget(), stallTarget(), talkTarget()];
+  return pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
 }
 
 // Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
