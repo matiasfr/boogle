@@ -20,13 +20,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run lint
-      # format:check is not enforced yet: the repo does not pass `prettier --check .` today.
+      # format:check is not enforced: the repo is Prettier-clean and Claude Code's hook formats each edited file,
+      # but a red main for whitespace isn't worth it yet.
       - run: npm run build
       - run: npm run test:unit
 
@@ -40,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: server/package-lock.json
       - run: npm ci
@@ -53,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
         env:

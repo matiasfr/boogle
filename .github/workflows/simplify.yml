@@ -48,7 +48,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.skip == '0'
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
         if: steps.gate.outputs.skip == '0'
@@ -64,7 +64,8 @@ jobs:
 
             Look for: duplicated logic that should reuse an existing helper, dead or unused code and exports,
             needless complexity, obvious inefficiencies in per-frame code (allocations in hot loops, repeated work),
-            stale comments, and leftovers from cut features (garden/crops, keepy-uppy streak).
+            stale comments, and leftovers from cut features (the old crop/garden sim, keepy-uppy streak; the mushroom stall
+            in src/mushroom-garden.js is current, keep it).
             Rules:
             - No behavior or gameplay changes, no tuning changes, no new features, no new dependencies.
             - Don't touch determinism-sensitive logic (src/sim/, src/world/*-logic.js, src/world/sync.js) unless the change
