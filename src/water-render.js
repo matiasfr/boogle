@@ -41,6 +41,8 @@ export const waterMat = new THREE.ShaderMaterial({
     uHeight: { value: heightTex },
     uSun: { value: SUN_DIR },
     uSky: { value: srgbVec('#a9dcf3') },
+    uLight: { value: new THREE.Vector3(1, 1, 1) }, // overall light tint (day/night, src/sky.js)
+    uSpecCol: { value: new THREE.Vector3(1.0, 0.97, 0.88) }, // glint colour of the key light (sun or moon)
     uFog: { value: srgbVec(FOG_HEX) },
     uFogNear: { value: FOG_NEAR },
     uFogFar: { value: FOG_FAR },
@@ -54,7 +56,7 @@ export const waterMat = new THREE.ShaderMaterial({
       gl_Position = projectionMatrix * viewMatrix * w;
     }`,
   fragmentShader: `
-    uniform float uTime; uniform vec4 uRip[8]; uniform sampler2D uHeight; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog;
+    uniform float uTime; uniform vec4 uRip[8]; uniform sampler2D uHeight; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog; uniform vec3 uLight; uniform vec3 uSpecCol;
     uniform float uFogNear; uniform float uFogFar; varying vec3 vWorld;
     const float HALF = ${HALF.toFixed(4)}; const float CELL = ${CELL.toFixed(6)}; const float RES = ${GRID_RES.toFixed(1)};
     void main() {
@@ -89,7 +91,8 @@ export const waterMat = new THREE.ShaderMaterial({
       col += vec3(0.25, 0.3, 0.3) * ring;
       foam = max(foam, clamp(ring, 0.0, 1.0));
       col = mix(col, vec3(1.0), foam * 0.9);
-      col += vec3(1.0, 0.97, 0.88) * spec * 0.9;
+      col *= uLight;
+      col += uSpecCol * spec * 0.9;
       float alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5.0, depth)), foam * 0.95);
       float f = smoothstep(uFogNear, uFogFar, length(cameraPosition - vWorld));
       gl_FragColor = vec4(mix(col, uFog, f), mix(alpha, 1.0, f));
