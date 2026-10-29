@@ -62,6 +62,7 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true, // both sides in one draw instead of back-then-front
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
