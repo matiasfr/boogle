@@ -6,7 +6,8 @@ name: Auto-fix CI
 #   since bot merges don't fire push.
 # - branch: CI failed on a ship/* or claude/* branch, or automerge.yml found its PR in conflict with main. Claude
 #   merges main in (keeping both sides), fixes what's red and pushes to the branch, which merges itself once green.
-#   Two tries per branch (counted by "Autofix:" commits); then it @mentions whoever shipped it on the PR.
+#   Two tries per branch (counted by "Autofix:" commits); then it @mentions whoever shipped it on the PR, once per
+#   commit.
 
 on:
   workflow_run:
@@ -103,9 +104,21 @@ jobs:
             echo "$BRANCH has moved past $FAILED_SHA; its newer CI run decides."
             exit 0
           fi
+          # A repeat conflict dispatch, queued behind the run that merged main in, has nothing left to merge.
+          if [ "$REASON" = conflict ] && git merge-base --is-ancestor origin/main HEAD; then
+            echo "$BRANCH already contains main; nothing to merge."
+            exit 0
+          fi
           pr=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0] | select(.isDraft | not) | .number')
           if [[ "$BRANCH" != ship/* ]] && [ -z "$pr" ]; then
             echo "No open, non-draft PR for $BRANCH; leaving it to whoever is working on it."
+            exit 0
+          fi
+          # Already handed back at this commit ("Hand it back" leaves a marker); the next push resets it.
+          head=$(git rev-parse HEAD)
+          if [ -n "$pr" ] && [ "$(gh pr view "$pr" --json comments \
+            --jq "any(.comments[].body; contains(\"autofix-gave-up: $head\"))")" = true ]; then
+            echo "Already handed $BRANCH back at $head; waiting for someone to push."
             exit 0
           fi
           # One "Autofix:" commit per try (see the prompt).
@@ -168,4 +181,5 @@ jobs:
           if [ "$REASON" = conflict ]; then what="merge main into it"; else what="get CI green"; fi
           gh pr comment "$pr" --body "${mention}Claude couldn't $what, so this PR is stuck until someone fixes it.
           Run: $GITHUB_SERVER_URL/$GH_REPO/actions/runs/${RUN_ID:-$GITHUB_RUN_ID}
-          Fix it on \`$BRANCH\` (\`git fetch origin $BRANCH && git checkout $BRANCH\`, fix, push) and it merges itself once green, or close the PR."
+          Fix it on \`$BRANCH\` (\`git fetch origin $BRANCH && git checkout $BRANCH\`, fix, push) and it merges itself once green, or close the PR.
+          <!-- autofix-gave-up: ${{ steps.gate.outputs.start }} -->"
