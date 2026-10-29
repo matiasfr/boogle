@@ -7,11 +7,13 @@ import { sendPresence } from './net.js';
 import { dom } from './hud.js';
 import { toggleShovel, shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
 import { gardenAction } from './mushroom-garden.js';
+import { pickupAction } from './gifts.js';
+import { booglerAction } from './boogler-play.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0 };
 export const inputState = { locked: false, lockFailed: false };
 
-const use = () => actionDown() || gardenAction();
+const use = () => actionDown() || pickupAction() || booglerAction() || gardenAction();
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;

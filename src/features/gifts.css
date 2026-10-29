@@ -1,0 +1,43 @@
+/* Pocket: what you are carrying for The Boogler, just above the tool label. */
+.pocket {
+  position: absolute;
+  left: 50%;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+.pocket-label,
+.pocket-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pocket-label {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.pocket-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.6);
+}
+body.touch .pocket {
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100vw - 230px);
+}

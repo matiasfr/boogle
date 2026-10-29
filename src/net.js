@@ -10,6 +10,7 @@ import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, setSelfId } from './world/sync.js';
 import { booglerForPresence, noteBoogler } from './boogler.js';
+import { booglerVisitorPresence } from './boogler-play.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
 // state: 'connecting' | 'live' | 'solo'
@@ -48,6 +49,7 @@ export function buildPresence() {
     s: null,
     b: null,
     g: booglerForPresence(),
+    bg: null,
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -56,6 +58,7 @@ export function buildPresence() {
     pr.p = [r2(p.x), r2(p.y), r2(p.z)];
     pr.r = r2(me.yaw);
     pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
+    pr.bg = booglerVisitorPresence();
   }
   if (ball.mine) {
     const bp = ball.body.position,
@@ -101,6 +104,7 @@ function getRemote(peer) {
       state: 0,
       speed: 0,
       prevPos: new THREE.Vector3(),
+      bg: null,
     };
     remotes.set(peer, r);
   }
@@ -155,6 +159,7 @@ function upsertPeer(peer) {
     dropRemoteBody(r);
   }
   if (pr.g && fresh) noteBoogler(peer.peer, pr.g, time);
+  r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? pr.bg : null;
   const b = pr.b;
   if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
     r.ball = b;

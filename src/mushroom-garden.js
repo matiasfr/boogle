@@ -413,6 +413,13 @@ export function gardenHint() {
   return null;
 }
 
+export const seedCount = () => (tool.kind === 'seeds' ? tool.seeds : 0);
+export function giveSeed() {
+  if (seedCount() <= 0) return false;
+  if (--tool.seeds <= 0) tool.kind = null;
+  return true;
+}
+
 export function toolLabel() {
   if (tool.kind === 'seeds') return `Mushroom seeds ×${tool.seeds}`;
   if (tool.kind === 'can') return 'Watering can';

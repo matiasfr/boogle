@@ -5,6 +5,8 @@ import { ballInReach, remoteHoldsBall } from './ball.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
 import { gardenHint, toolLabel } from './mushroom-garden.js';
+import { pickupHint } from './gifts.js';
+import { booglerHint } from './boogler-play.js';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -50,7 +52,7 @@ export function updateHud() {
         : tap
           ? 'Tap Grab to pick up the ball'
           : 'Click to grab the ball';
-    } else if ((garden = gardenHint())) hint = garden.text;
+    } else if ((garden = pickupHint() ?? booglerHint() ?? gardenHint())) hint = garden.text;
   }
   if (hint !== lastHint) {
     lastHint = hint;

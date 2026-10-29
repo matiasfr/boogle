@@ -43,6 +43,8 @@ function mergeParts(parts) {
 
 // Footprints of trees and rocks ({ x, z, r } on the ground plane), for things that walk around them.
 export const obstacles = [];
+// Palms in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles], body }.
+export const trees = [];
 
 export function createProps() {
   const rng = mulberry32(20261028);
@@ -51,7 +53,6 @@ export function createProps() {
     q = new THREE.Quaternion(),
     up = new THREE.Vector3(0, 1, 0),
     s = new THREE.Vector3(1, 1, 1);
-  const trees = [];
   const gx0 = PATCH.i0 * CELL - HALF - 6,
     gx1 = (PATCH.i0 + PATCH.w) * CELL - HALF + 3,
     gz0 = HALF - (PATCH.j0 + PATCH.h) * CELL - 3,
@@ -72,7 +73,6 @@ export function createProps() {
   }
   const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 1, 7);
   const frondGeo = new THREE.ConeGeometry(0.55, 3.3, 4, 1).translate(0, 1.65, 0);
-  const nutGeo = new THREE.IcosahedronGeometry(0.2, 0);
   for (const t of trees) {
     const lean = rng() * Math.PI * 2,
       leanAmt = 0.18 + rng() * 0.3,
@@ -105,16 +105,9 @@ export function createProps() {
         .multiply(new THREE.Matrix4().makeScale(0.16, 1, 1));
       addPart(parts, frondGeo, mm, k % 2 ? '#3f9b3a' : '#57b845');
     }
-    for (let k = 0; k < 3; k++) {
-      const a = rng() * Math.PI * 2;
-      addPart(
-        parts,
-        nutGeo,
-        m.makeTranslation(top.x + Math.cos(a) * 0.25, top.y - 0.25, top.z + Math.sin(a) * 0.25),
-        '#6b4423',
-      );
-    }
-    addStaticSpheres(colliders);
+    t.top = top;
+    t.hang = [rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2];
+    t.body = addStaticSpheres(colliders);
   }
 
   const rockGeo = new THREE.IcosahedronGeometry(1, 0);

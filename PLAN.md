@@ -122,6 +122,15 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 **Done when:** a group of players spontaneously defends the garden together. **Playtest question:** is it fun or stressful? Tune tide size and frequency.
 
+## The Boogler: a friend to make
+
+- [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler-friendship.js`).
+- [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler-lines.js`, `src/boogler-talk.js`).
+- [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler-play.js`).
+- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`; your pocket holds six.
+
+**Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
+
 ## Later / stretch
 
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
