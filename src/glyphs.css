@@ -1,0 +1,49 @@
+/* Button glyphs in prompts: paper keycaps, a mouse with the pressed button lit, coloured gamepad face buttons. */
+.g {
+  flex: none;
+  box-sizing: border-box;
+  color: var(--ink);
+}
+.g-key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  font: 800 13px/1 var(--font-body);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-bottom-width: 4px;
+  border-radius: 7px;
+}
+.g-mouse {
+  width: 17px;
+  height: 24px;
+  overflow: visible;
+}
+.g-pad {
+  display: inline-grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  font: 400 14px/1 var(--font-display);
+  color: #fff;
+  background: #3a7be0;
+}
+.g-pad[data-b='a'] {
+  background: #3fae4a;
+}
+.g-pad[data-b='b'] {
+  background: #e2453c;
+}
+.g-pad[data-b='y'] {
+  background: #f2b81a;
+}
+.g-pad[data-b='lt'] {
+  width: 32px;
+  border-radius: 9px 9px 12px 12px;
+  font-size: 12px;
+  background: #4b5d7a;
+}

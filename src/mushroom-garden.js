@@ -353,20 +353,18 @@ function nearestPickup() {
   return best;
 }
 
-// What grabbing at the stall would do: { label, button, run }, { text } when there is no room, or null.
+// What interacting at the stall would do (see interactTarget in src/hands.js): { id, verb, at, run },
+// { id, verb, at, blocked } when there is no room, or null.
+const promptAt = new THREE.Vector3();
 export function stallTarget() {
   if (!me.entered) return null;
   const pick = nearestPickup();
-  if (pick?.kind === 'seeds') {
-    if (inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) return null;
-    if (roomFor('seeds') < 0) return { text: 'Hotbar full' };
-    return { label: 'take seeds', button: 'Take', run: () => take('seeds', SEEDS_PER_VISIT) };
-  }
-  if (pick?.kind === 'can' && !has('can')) {
-    if (roomFor('can') < 0) return { text: 'Hotbar full' };
-    return { label: 'take the can', button: 'Take', run: () => take('can') };
-  }
-  return null;
+  if (!pick || (pick.kind === 'can' && has('can'))) return null;
+  if (pick.kind === 'seeds' && inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) return null;
+  const at = promptAt.copy(pick.world).setY(pick.world.y + 0.35);
+  const id = `stall-${pick.kind}`;
+  if (roomFor(pick.kind) < 0) return { id, verb: 'Take', at, blocked: 'Hotbar full' };
+  return { id, verb: 'Take', at, run: () => (pick.kind === 'seeds' ? take('seeds', SEEDS_PER_VISIT) : take('can')) };
 }
 
 function plantCell() {
@@ -377,12 +375,12 @@ function plantCell() {
 }
 
 let plantedAt = -1e9; // a seed in flight to the host is not in the garden yet: no second one on its heels
-// { i, j } where a seed would go in front of you, or { text } saying why not.
+// { i, j } where a seed would go in front of you, { text } saying why not, or null just after a planting.
 export function plantTarget() {
   if (!me.body) return null;
   const { i, j } = plantCell();
-  if (plantOk(i, j) && performance.now() - plantedAt > 500) return { i, j };
-  return { text: "Can't plant here" };
+  if (!plantOk(i, j)) return { text: "Can't plant here" };
+  return performance.now() - plantedAt > 500 ? { i, j } : null;
 }
 
 export function plantFront() {

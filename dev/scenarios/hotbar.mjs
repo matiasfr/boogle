@@ -28,7 +28,7 @@ export default {
       return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
     await g.eval(TP(item.x + 0.6, item.z));
     await g.wait(0.5);
-    await g.eval(`${INV} H.grabDown(); H.grabUp();`);
+    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
     const held = await g.waitFor(
       `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.js'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
     );
@@ -58,7 +58,7 @@ export default {
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
-      H.grabDown(); H.grabUp();
+      H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
       I.select(I.slotOf('shovel'));
       const onBack = ball.held && !window.boogle.me.holding && I.has('ball');
@@ -171,7 +171,7 @@ export default {
     });
     const deck = await g.still('deck');
     t.check('the frisbee waits on the lighthouse deck', perched, deck);
-    await g.eval(`${INV} H.grabDown(); H.grabUp();`);
+    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
     const got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`);
     t.check('you can pick the frisbee up', got >= 0);
     await g.eval(`window.__debugCam.clear();`);
