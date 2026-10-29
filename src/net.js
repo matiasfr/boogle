@@ -1,17 +1,16 @@
 import * as THREE from 'three';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS } from './constants.js';
-import { lerp, angleLerp, finiteArr, r2, r3, sanitizeName } from './math.js';
+import { lerp, angleLerp, finiteArr, r2, sanitizeName } from './math.js';
 import { scene } from './scene.js';
 import { world, teleport } from './physics.js';
 import { makeAvatar, makeLabel, makePlayerBody } from './avatars.js';
 import { me } from './player.js';
-import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { createSnaps } from './snaps.js';
 
-// Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
+// Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
 // state: 'connecting' | 'live' | 'solo'; turn: our ICE config includes a TURN server (for connection reports)
 export const net = { room: null, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null, turn: false };
 export const remotes = new Map();
@@ -75,7 +74,6 @@ export function buildPresence() {
     p: null,
     r: null,
     s: null,
-    b: null,
   };
   if (me.entered && me.body) {
     const p = me.body.position;
@@ -84,18 +82,6 @@ export function buildPresence() {
     pr.p = [r2(p.x), r2(p.y), r2(p.z)];
     pr.r = r2(me.yaw);
     pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
-  }
-  if (ball.mine) {
-    const bp = ball.body.position,
-      bq = ball.body.quaternion;
-    const bv = ball.held && me.body ? me.body.velocity : ball.body.velocity;
-    pr.b = {
-      e: ball.myE,
-      p: [r2(bp.x), r2(bp.y), r2(bp.z)],
-      v: [r2(bv.x), r2(bv.y), r2(bv.z)],
-      q: [r3(bq.x), r3(bq.y), r3(bq.z), r3(bq.w)],
-      h: ball.held ? 1 : 0,
-    };
   }
   for (const [key, get] of presenceFields) {
     let v = null;
@@ -125,8 +111,6 @@ function getRemote(peer) {
       visible: false,
       entered: false,
       snaps: createSnaps(),
-      ballSnaps: createSnaps(),
-      ball: null,
       lastT: -1,
       off: null,
       avatar: null,
@@ -189,14 +173,6 @@ function upsertPeer(peer) {
   if (!r.entered) {
     r.snaps.clear();
     dropRemoteBody(r);
-  }
-  const b = pr.b;
-  if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
-    r.ball = b;
-    if (fresh) r.ballSnaps.push(time, { p: b.p, v: b.v, q: b.q, h: b.h });
-  } else {
-    r.ball = null;
-    r.ballSnaps.clear();
   }
   if (fresh)
     for (const fn of remoteHooks) {
@@ -339,7 +315,5 @@ export function updateRemotes(now) {
         r.avatar.add(r.label);
       }
     }
-    if (r.ball && r.ballSnaps.length) r.ballSample = r.ballSnaps.sample(rt);
-    else r.ballSample = null;
   }
 }
