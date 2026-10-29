@@ -13,8 +13,14 @@ async function start(env = {}, overrides = {}) {
   const port = await svc.listen(0);
   const base = `http://127.0.0.1:${port}`;
   return {
-    base, port, dataDir, svc,
-    async stop() { await svc.close(); await fs.rm(dataDir, { recursive: true, force: true }); },
+    base,
+    port,
+    dataDir,
+    svc,
+    async stop() {
+      await svc.close();
+      await fs.rm(dataDir, { recursive: true, force: true });
+    },
   };
 }
 
@@ -31,7 +37,9 @@ test('healthz', async () => {
     const r = await fetch(`${s.base}/healthz`);
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'ok');
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('snapshot: 404 -> PUT -> GET, stale tick 409, equal/newer ok', async () => {
@@ -63,7 +71,9 @@ test('snapshot: 404 -> PUT -> GET, stale tick 409, equal/newer ok', async () => 
     // atomic write leaves no temp files
     const files = await fs.readdir(s.dataDir);
     assert.deepEqual(files, ['garden-1.json']);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('snapshot: invalid roomId 400, invalid body 400, bad JSON 400', async () => {
@@ -76,7 +86,9 @@ test('snapshot: invalid roomId 400, invalid body 400, bad JSON 400', async () =>
     assert.equal((await put(s.base, 'ok', { tick: 'x', writerId: 'a', data: 1 })).status, 400);
     assert.equal((await put(s.base, 'ok', { tick: 1, data: 1 })).status, 400);
     assert.equal((await put(s.base, 'ok', null, '{nope')).status, 400);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('snapshot: oversize body 413', async () => {
@@ -86,7 +98,9 @@ test('snapshot: oversize body 413', async () => {
     assert.equal(r.status, 413);
     const ok = await put(s.base, 'big', { tick: 1, writerId: 'a', data: 'x'.repeat(200 * 1024) });
     assert.equal(ok.status, 200);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('snapshot: per-IP PUT rate limit', async () => {
@@ -96,7 +110,9 @@ test('snapshot: per-IP PUT rate limit', async () => {
     for (let i = 0; i < 5; i++) codes.push((await put(s.base, 'rl', { tick: i, writerId: 'a', data: i })).status);
     assert.deepEqual(codes, [200, 200, 200, 429, 429]);
     assert.equal((await fetch(`${s.base}/rooms/rl/snapshot`)).status, 200); // GET not limited
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('snapshot: MAX_ROOMS enforced, existing rooms still updatable', async () => {
@@ -106,7 +122,9 @@ test('snapshot: MAX_ROOMS enforced, existing rooms still updatable', async () =>
     assert.equal((await put(s.base, 'r2', { tick: 1, writerId: 'a', data: 1 })).status, 200);
     assert.equal((await put(s.base, 'r3', { tick: 1, writerId: 'a', data: 1 })).status, 507);
     assert.equal((await put(s.base, 'r1', { tick: 2, writerId: 'a', data: 2 })).status, 200);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/ice: STUN only by default', async () => {
@@ -114,22 +132,28 @@ test('/ice: STUN only by default', async () => {
   try {
     const j = await (await fetch(`${s.base}/ice`)).json();
     assert.deepEqual(j, { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/ice: static TURN credentials', async () => {
   const s = await start({
     TURN_URLS: 'turn:turn.example.com:3478, turns:turn.example.com:5349',
-    TURN_USERNAME: 'user', TURN_CREDENTIAL: 'pass',
+    TURN_USERNAME: 'user',
+    TURN_CREDENTIAL: 'pass',
   });
   try {
     const j = await (await fetch(`${s.base}/ice`)).json();
     assert.equal(j.iceServers.length, 2);
     assert.deepEqual(j.iceServers[1], {
       urls: ['turn:turn.example.com:3478', 'turns:turn.example.com:5349'],
-      username: 'user', credential: 'pass',
+      username: 'user',
+      credential: 'pass',
     });
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/ice: TURN_SECRET ephemeral credentials', async () => {
@@ -145,14 +169,18 @@ test('/ice: TURN_SECRET ephemeral credentials', async () => {
     const expected = crypto.createHmac('sha1', 's3cret').update(t.username).digest('base64');
     assert.equal(t.credential, expected);
     assert.deepEqual(t.urls, ['turn:turn.example.com:3478']);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/ice: TURN_URLS without credentials adds nothing', async () => {
   const s = await start({ TURN_URLS: 'turn:turn.example.com:3478' });
   try {
     assert.equal((await (await fetch(`${s.base}/ice`)).json()).iceServers.length, 1);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('CORS: default *, and allow-list', async () => {
@@ -166,7 +194,9 @@ test('CORS: default *, and allow-list', async () => {
     });
     assert.equal(pre.status, 204);
     assert.match(pre.headers.get('access-control-allow-methods'), /PUT/);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 
   s = await start({ ALLOWED_ORIGINS: 'https://good.example,https://also.example' });
   try {
@@ -176,7 +206,9 @@ test('CORS: default *, and allow-list', async () => {
       const bad = await fetch(`${s.base}${p}`, { headers: { origin: 'https://evil.example' } });
       assert.equal(bad.headers.get('access-control-allow-origin'), null, p);
     }
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/peerjs: signaling endpoints respond', async () => {
@@ -192,7 +224,9 @@ test('/peerjs: signaling endpoints respond', async () => {
 
     // discovery disabled
     assert.equal((await fetch(`${s.base}/peerjs/peerjs/peers`)).status, 401);
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });
 
 test('/peerjs: websocket handshake yields OPEN', { skip: typeof WebSocket === 'undefined' }, async () => {
@@ -202,9 +236,18 @@ test('/peerjs: websocket handshake yields OPEN', { skip: typeof WebSocket === 'u
     const msg = await new Promise((resolve, reject) => {
       const ws = new WebSocket(url);
       const t = setTimeout(() => reject(new Error('ws timeout')), 3000);
-      ws.onmessage = (e) => { clearTimeout(t); ws.close(); resolve(JSON.parse(e.data)); };
-      ws.onerror = () => { clearTimeout(t); reject(new Error('ws error')); };
+      ws.onmessage = (e) => {
+        clearTimeout(t);
+        ws.close();
+        resolve(JSON.parse(e.data));
+      };
+      ws.onerror = () => {
+        clearTimeout(t);
+        reject(new Error('ws error'));
+      };
     });
     assert.equal(msg.type, 'OPEN');
-  } finally { await s.stop(); }
+  } finally {
+    await s.stop();
+  }
 });

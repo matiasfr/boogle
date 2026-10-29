@@ -17,7 +17,10 @@ function parseTrustProxy(v) {
 }
 
 function list(v) {
-  return (v || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return (v || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Read config from env, with overrides (used by tests). */
@@ -147,7 +150,9 @@ export function createService(config) {
     const next = prev.then(fn, fn);
     const tail = next.catch(() => {});
     locks.set(id, tail);
-    tail.then(() => { if (locks.get(id) === tail) locks.delete(id); });
+    tail.then(() => {
+      if (locks.get(id) === tail) locks.delete(id);
+    });
     return next;
   }
 
@@ -162,7 +167,9 @@ export function createService(config) {
       if (!snap) return res.status(404).json({ error: 'not found' });
       res.set('Cache-Control', 'no-store');
       res.json(snap);
-    } catch (e) { next(e); }
+    } catch (e) {
+      next(e);
+    }
   });
 
   app.put(
@@ -174,9 +181,14 @@ export function createService(config) {
       const id = req.params.roomId;
       const b = req.body;
       if (
-        !b || typeof b !== 'object' || Array.isArray(b) ||
-        typeof b.tick !== 'number' || !Number.isFinite(b.tick) ||
-        typeof b.writerId !== 'string' || b.writerId.length < 1 || b.writerId.length > 128 ||
+        !b ||
+        typeof b !== 'object' ||
+        Array.isArray(b) ||
+        typeof b.tick !== 'number' ||
+        !Number.isFinite(b.tick) ||
+        typeof b.writerId !== 'string' ||
+        b.writerId.length < 1 ||
+        b.writerId.length > 128 ||
         !('data' in b)
       ) {
         return res.status(400).json({ error: 'body must be { tick: number, writerId: string, data: any }' });
@@ -184,7 +196,8 @@ export function createService(config) {
       try {
         const result = await withLock(id, async () => {
           const current = await readSnapshot(id);
-          if (current && current.tick > b.tick) return { status: 409, body: { error: 'stale tick', tick: current.tick } };
+          if (current && current.tick > b.tick)
+            return { status: 409, body: { error: 'stale tick', tick: current.tick } };
           if (!current && !knownRooms.has(id) && knownRooms.size >= cfg.maxRooms) {
             return { status: 507, body: { error: 'room limit reached' } };
           }
@@ -196,7 +209,9 @@ export function createService(config) {
           return { status: 200, body: { ok: true, tick: doc.tick } };
         });
         res.status(result.status).json(result.body);
-      } catch (e) { next(e); }
+      } catch (e) {
+        next(e);
+      }
     },
   );
 
@@ -210,8 +225,14 @@ export function createService(config) {
     proxied: cfg.trustProxy,
     corsOptions: { origin: anyOrigin ? true : cfg.allowedOrigins },
   });
-  peerApp.on('connection', () => { connected++; cfg.log(`[peer] connect, active=${connected}`); });
-  peerApp.on('disconnect', () => { connected = Math.max(0, connected - 1); cfg.log(`[peer] disconnect, active=${connected}`); });
+  peerApp.on('connection', () => {
+    connected++;
+    cfg.log(`[peer] connect, active=${connected}`);
+  });
+  peerApp.on('disconnect', () => {
+    connected = Math.max(0, connected - 1);
+    cfg.log(`[peer] disconnect, active=${connected}`);
+  });
   // peer re-arms recursive housekeeping setTimeouts and has no stop API, which keeps the
   // event loop alive after close(). Tests opt in to unref'd timers; production exits explicitly.
   if (cfg.unrefTimers && !globalThis.__boogleUnref) {
@@ -226,7 +247,8 @@ export function createService(config) {
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload too large (max 256kb)' });
-    if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) return res.status(400).json({ error: 'invalid JSON' });
+    if (err.type === 'entity.parse.failed' || err instanceof SyntaxError)
+      return res.status(400).json({ error: 'invalid JSON' });
     if (err.status && err.status < 500) return res.status(err.status).json({ error: err.message });
     cfg.log('[error]', err);
     res.status(500).json({ error: 'internal error' });
@@ -246,9 +268,15 @@ export function createService(config) {
     },
     close() {
       return new Promise((resolve) => {
-        const force = setTimeout(() => { server.closeAllConnections?.(); resolve(); }, 5000);
+        const force = setTimeout(() => {
+          server.closeAllConnections?.();
+          resolve();
+        }, 5000);
         force.unref();
-        server.close(() => { clearTimeout(force); resolve(); });
+        server.close(() => {
+          clearTimeout(force);
+          resolve();
+        });
         server.closeIdleConnections?.();
       });
     },
