@@ -4,7 +4,7 @@
 //     an upward bounce instead of replacing it (src/physics.js feelTune), so mushroom bounces chain
 //   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
-//   - swimming: the dig button dives; let go and you pop back up, breaching out of the water
+//   - swimming: dig (Q) and pad LT dive; let go and you pop back up, breaching out of the water
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk
@@ -110,17 +110,17 @@ function dive() {
 const swimDive = () => on() && me.swimming;
 
 onStart(() => {
-  // the dig buttons dive while swimming (Q, pad dig); elsewhere they dig as before
+  // Q and pad LT (pile) dive while swimming; elsewhere they dig and pile as before
   addEventListener('keydown', (e) => {
     if (e.code === 'KeyQ' && !e.repeat && swimDive()) dive();
   });
   addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
-  const dig = listActions().find((a) => a.id === 'dig');
-  if (dig) {
-    const down = dig.down,
-      up = dig.up;
-    dig.down = () => (swimDive() ? dive() : down?.());
-    dig.up = () => ((diving = 0), up?.());
+  const pile = listActions().find((a) => a.id === 'pile');
+  if (pile) {
+    const down = pile.down,
+      up = pile.up;
+    pile.down = () => (swimDive() ? dive() : down?.());
+    pile.up = () => ((diving = 0), up?.());
   }
 });
 
