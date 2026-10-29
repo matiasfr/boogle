@@ -136,6 +136,11 @@ addPresenceField('fl', () =>
 );
 onRemotePresence((r, pr) => {
   const f = pr.fl;
+  // Temporary: same stale-repeat guard as kd in impact.js (old-build tabs never clear fl). Remove once every tab
+  // runs b0a3a7b or later.
+  const left = Array.isArray(f) ? f[1] : undefined;
+  if (left !== undefined && left === r.flLast) return;
+  r.flLast = left;
   if (Array.isArray(f) && KINDS[f[0]] && Number.isFinite(f[1]) && f[1] > 0 && f[1] <= 2000)
     r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
 });
