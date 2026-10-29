@@ -24,7 +24,7 @@
   "dependencies": {
     "cannon-es": "0.20.0",
     "peerjs": "1.5.4",
-    "three": "0.160.0"
+    "three": "0.186.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

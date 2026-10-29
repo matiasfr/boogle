@@ -14,7 +14,7 @@ try {
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.NoToneMapping;
 
 export const scene = new THREE.Scene();
