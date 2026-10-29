@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Water lab</title>
+    <style>
+      body {
+        margin: 0;
+        background: #111;
+        color: #ddd;
+        font: 13px monospace;
+      }
+      #wrap {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+      }
+      canvas {
+        width: 768px;
+        height: 768px;
+        image-rendering: pixelated;
+        cursor: crosshair;
+      }
+      pre {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap">
+      <canvas id="c" width="96" height="96"></canvas>
+      <div>
+        <pre id="info"></pre>
+        <p>click: dig<br />shift-click: pile<br />right-click: add water<br />space: pause<br />[ ] : sea level</p>
+      </div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
