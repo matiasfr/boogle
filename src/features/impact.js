@@ -261,7 +261,7 @@ function checkFaceplant(now, speed) {
     return;
   }
   if (now < immuneUntil || speed < TUNE.faceplantSpeed || ball.held) return;
-  if (now - lastHeldByMe < 700 || me.holding || me.charging) return; // your own throws never flop you
+  if (now - lastHeldByMe < 700 || now - (me.bumpAt ?? -1e9) < 700 || me.holding || me.charging) return; // your own throws never flop you
   const b = me.body.position;
   const head = tmpV.set(b.x, b.y + HEAD_OFFSET, b.z);
   const d = head.distanceTo(ball.disp.p);
