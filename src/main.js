@@ -13,12 +13,12 @@ import { ball, claimBall, respawnBall, resolveBallOwner, prepareBall } from './b
 import { me, updateIntent, updateCamera, updatePreview, handPosition } from './player.js';
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
-import { updateSplash } from './splash.js';
-import { updateWorld } from './world/sync.js';
-import { updateShovel } from './world/terrain-edits.js';
-import { startBackgroundClock } from './world/background.js';
 import { initInput } from './input.js';
-import { createStall, updateGarden } from './mushroom-garden.js';
+import { createStall } from './mushroom-garden.js';
+import { runFrame, runStart } from './loop.js';
+
+// Every feature module in src/features/ registers its own hooks (see src/loop.js).
+import.meta.glob('./features/*.js', { eager: true });
 
 createTerrainMesh();
 createWaterMesh();
@@ -97,15 +97,15 @@ function frame(now) {
   prepareBall();
   world.step(FIXED, dt, 4);
   afterStep(now);
+  const ctx = { now, dt, elapsed };
+  runFrame('world', ctx);
   syncVisuals(dt);
   updateCamera(elapsed);
   updateClouds(dt);
-  updateWorld(dt);
-  updateShovel();
-  updateGarden(dt, now);
-  updateSplash(dt, elapsed, ball, me, remotes);
+  runFrame('update', ctx);
   updatePreview();
   updateHud();
+  runFrame('late', ctx);
   if (net.room && (me.entered || ball.mine) && now - net.lastSend >= SEND_MS) sendPresence();
   waterMat.uniforms.uTime.value = elapsed;
   renderer.render(scene, camera);
@@ -113,10 +113,10 @@ function frame(now) {
 
 function start() {
   initInput();
-  startBackgroundClock(updateWorld); // keeps the shared world ticking in a hidden tab
   initLobby();
   connectRoom();
   renderPeople();
+  runStart();
   requestAnimationFrame((t) => {
     last = t;
     frame(t);

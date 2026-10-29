@@ -29,7 +29,7 @@ Layout: `src/` game client (`src/net/` is multiplayer, see [src/net/README.md](s
 
 We're in **rapid iteration**: a few people building and playtesting together, many times a day. So:
 
-1. **Commit straight to `main`, then run `npm run ship`** instead of `git push`. It rebases your commits onto whatever friends pushed, runs `npm run check` (lint, unit tests, build; a few seconds; `check:full` if you touched networking, sync or the server), pushes, and retries if `main` moved during the checks. If it stops on a conflict, resolve it keeping both changes (Claude Code is good at this), `git rebase --continue`, and ship again.
+1. **Commit straight to `main`, then run `npm run ship`** instead of `git push`. It rebases your commits onto whatever friends pushed, runs `npm run check` (lint, unit tests, build; a few seconds; `check:full` if you touched networking, sync or the server), pushes, and retries if `main` moved during the checks. On a conflict it asks Claude Code (if installed) to merge both changes automatically, then the checks verify the result; otherwise resolve it keeping both changes, `git rebase --continue`, and ship again. We don't hand-review merges: we're iterating fast and accept the small risk of losing a line now and then. If CI ever goes red on `main`, Claude opens a fix PR automatically and it merges when green.
    A plain `git push` to `main` is guarded by a pre-push hook that `npm install` sets up: it runs `npm run check` and refuses if `main` has new commits. `git push --no-verify` skips it in an emergency.
 2. Keep commits small and focused. Message in the imperative, like the git log: "Add splashes for the ball", "Fix host migration flapping".
 3. `main` auto-deploys to the live site in about a minute, so `main` must always be playable. After pushing, open the live site in two tabs (or with a friend) and check your change.
@@ -43,6 +43,8 @@ We're in **rapid iteration**: a few people building and playtesting together, ma
 - Pick work from [PLAN.md](PLAN.md) and tick its checkboxes in the same commit.
 
 ## Code rules
+
+- **Add features as plug-ins** to avoid merge conflicts: a new file in `src/features/` (auto-loaded) that uses `onFrame`/`onStart` from `src/loop.js`, imports its own CSS, and creates its own DOM. Keep edits to `src/main.js`, `src/style.css`, `index.html` to a line or two. Details in [AGENTS.md](AGENTS.md).
 
 - **Determinism.** Shared simulation (water, terrain edits, crops, weather, tide) uses integers, a fixed update order and a fixed tick rate. Randomness comes from the seeded RNG in `src/math.js`; never `Math.random()` in shared logic.
 - **Cosmetic vs gameplay.** Ripples, particles and splashes may use floats and `Math.random()`, but keep them in separate modules from the shared sim and never feed them back into it.

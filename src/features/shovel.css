@@ -1,0 +1,45 @@
+/* Shovel HUD chip and touch buttons (Phase 3). */
+.shovel-chip {
+  position: absolute;
+  left: 50%;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: pre;
+}
+.shovel-chip[data-mode='dig'] {
+  border-color: #ff9a3d;
+}
+.shovel-chip[data-mode='pile'] {
+  border-color: #fff2c4;
+}
+.tbtn.shovel {
+  right: calc(22px + env(safe-area-inset-right, 0px));
+  bottom: calc(198px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 14px;
+}
+body.shovel .tbtn.shovel {
+  background: rgba(255, 154, 61, 0.85);
+}
+.tbtn.dig,
+.tbtn.pile {
+  display: none;
+  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+.tbtn.dig {
+  right: calc(108px + env(safe-area-inset-right, 0px));
+}
+.tbtn.pile {
+  right: calc(194px + env(safe-area-inset-right, 0px));
+}
+body.shovel .tbtn.dig,
+body.shovel .tbtn.pile {
+  display: block;
+}

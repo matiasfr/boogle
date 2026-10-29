@@ -3,6 +3,29 @@
 # Runs the heavy checks too (check:full) when your commits touch networking, world sync or the server.
 set -euo pipefail
 
+# On a rebase conflict, ship asks Claude Code (if installed) to resolve it, keeping both sides' changes.
+# SHIP_NO_AI=1 turns that off.
+resolve_with_claude() {
+  command -v claude >/dev/null 2>&1 && [ -z "${SHIP_NO_AI:-}" ] || return 1
+  local tries=0
+  while [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]; do
+    tries=$((tries + 1))
+    [ "$tries" -le 10 ] || return 1
+    local files
+    files=$(git diff --name-only --diff-filter=U)
+    if [ -n "$files" ]; then
+      echo "ship: asking Claude to resolve conflicts in: $(echo $files)"
+      claude -p "A git rebase stopped on conflicts in: $files. Resolve every conflict so BOTH sides' changes are kept (they are usually independent features; combine them, never drop either side). Follow AGENTS.md. Remove all conflict markers, then git add the resolved files. Do not run git rebase --continue or commit." \
+        --permission-mode acceptEdits --allowedTools "Read,Edit,Write,Grep,Glob,Bash(git add:*),Bash(git status:*),Bash(git diff:*)" >/dev/null || return 1
+      if git diff --name-only --diff-filter=U | grep -q . || git grep -nE '^(<<<<<<<|>>>>>>>) ' -- $files >/dev/null 2>&1; then
+        return 1
+      fi
+    fi
+    GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 || true
+  done
+  echo "ship: conflicts resolved by Claude; checks will verify the result."
+}
+
 cd "$(git rev-parse --show-toplevel)"
 branch=$(git rev-parse --abbrev-ref HEAD)
 if [ "$branch" != "main" ]; then
@@ -16,7 +39,7 @@ fi
 
 for attempt in 1 2 3; do
   git fetch -q origin main
-  if ! git rebase -q origin/main; then
+  if ! git rebase -q origin/main && ! resolve_with_claude; then
     cat >&2 <<'EOF'
 
 ship: your commits conflict with changes a friend pushed.

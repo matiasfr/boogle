@@ -1,0 +1,51 @@
+name: Auto-fix red main
+
+# When CI fails on a push to main (usually two changes that pass alone but break together),
+# Claude investigates and opens a fix PR from a claude/ branch; automerge.yml merges it once CI is green.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: ci-autofix
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
+          claude_args: '--allowed-tools "Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
+          prompt: |
+            CI run ${{ github.event.workflow_run.html_url }} failed on main at ${{ github.event.workflow_run.head_sha }}.
+            Several friends push to main at once, so this is most likely two recent commits that each passed but conflict.
+            1. Read the failing job logs (`gh run view ${{ github.event.workflow_run.id }} --log-failed`) and the recent commits.
+            2. If an open PR from a claude/ branch already fixes this, stop.
+            3. Make the smallest fix that keeps every collaborator's intent (don't revert a feature unless there is no other fix).
+               Follow AGENTS.md and CLAUDE.md. Run `npm run check` (and `npm run test:net` if networking failed).
+            4. Commit to a new `claude/fix-main-<short sha>` branch and open a PR titled "Fix main: <what broke>".
+               It is squash-merged automatically when CI passes.
