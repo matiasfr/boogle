@@ -48,21 +48,31 @@ Loose physics, splashes and collapsing sand walls are features. Prefer mechanics
 
 ## Technical principles
 
+### Pick how each feature shares state
+Every feature, including ones we haven't thought of yet, puts each piece of its state in one of four kinds. Use the cheapest kind that works:
+
+| Kind | Use when | Who computes it | Math | Today |
+|---|---|---|---|---|
+| **Local** | Nobody else needs to see it, or it only decorates | Each tab | Anything, including `Math.random()` and the GPU | Particles, ripples, sounds, camera shake |
+| **Owner** | One player drives it, or physics moves it | The owner's tab; others smooth its broadcast pose. Ownership changes hands by epoch | Anything (cannon-es, three.js math) | Your avatar, the beach ball |
+| **Host** | Shared, small (a few dozen numbers), changes over time | The host; it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
+| **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Water, sand, mushrooms |
+
+- **Physics is never lockstep.** cannon-es (and three.js math) isn't bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball rolls on dug sand) and change it only by submitting edits (a splash).
+- **Crossing kinds goes through edits.** A player digging, a ball splashing, an NPC planting: the actor submits an edit and the lockstep sim applies it.
+- **Anything that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever hosts next.
+- **The scene graph is a view.** three.js objects are updated from state (lockstep ticks run at 10/s and rendering interpolates between them); never read game state back out of a mesh.
+
 ### Determinism from day one
-Shared things are kept in step one of two ways. Pick per system:
-
-- **Lockstep** (water, terrain edits, mushrooms): every machine runs the same sim from the same edits. Use it when the state is big and changes in many places at once, so sending it would cost too much. Results must be bit-identical on every machine:
-  - conserved quantities are integers (water as 0–255 units per cell, sand in centimetres), so totals stay exact and snapshots stay small;
-  - other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2` or `hypot` in shared logic (browsers round them differently): use a lookup table or our own polynomial. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
-  - fixed update order and a fixed tick rate;
-  - seeded randomness ([`mulberry32`](src/sim/rng.js)), never `Math.random()` in shared logic;
-  - events (tide, weather) are a pure function of tick + seed.
-- **Host state** (the Boogler, small shared props, values that are a few dozen numbers): the host owns the value and broadcasts it, and clients interpolate. Nothing has to match bit for bit, so any math is fine.
-
-Cosmetic-only effects (ripples, particles, splashes) can use floats and the GPU and don't need to match across machines. Keep them separate from both.
+Lockstep state must produce bit-identical results on every machine:
+- conserved quantities are integers (water as 0–255 units per cell, sand in centimetres), so totals stay exact and snapshots stay small;
+- other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and cannon-es call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`, `src/world/terrain-logic.js`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
+- fixed update order and a fixed tick rate;
+- seeded randomness ([`mulberry32`](src/sim/rng.js)), never `Math.random()` in shared logic;
+- events (tide, weather) are a pure function of tick + seed.
 
 ### Sync edits, not state
-For lockstep systems, clients send small **edit events** (dig, pile, plant, harvest, splash) over the reliable channel. The host stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as periodic host snapshots (with a hash) for late joiners and desync recovery. Host-state systems send the values themselves.
+For lockstep systems, clients send small **edit events** (dig, pile, plant, harvest, splash) over the reliable channel. The host stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as periodic host snapshots (with a hash) for late joiners and desync recovery. Owner and Host state send the values themselves.
 
 ### Clear authority
 | Thing | Authority |
