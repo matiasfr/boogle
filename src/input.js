@@ -6,9 +6,12 @@ import { actionDown, actionUp, respawnBall, releaseBall } from './ball.js';
 import { sendPresence } from './net.js';
 import { dom } from './hud.js';
 import { toggleShovel, shovelActive, setHold } from './world/terrain-edits.js';
+import { gardenAction } from './mushroom-garden.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0 };
 export const inputState = { locked: false, lockFailed: false };
+
+const use = () => actionDown() || gardenAction();
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
@@ -42,7 +45,7 @@ export function initInput() {
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
     if (e.repeat) return;
-    if (e.code === 'KeyE') actionDown();
+    if (e.code === 'KeyE') use();
     if (e.code === 'KeyR') respawnBall();
     if (e.code === 'KeyF') toggleShovel();
     if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
@@ -66,7 +69,7 @@ export function initInput() {
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
     if (shovelActive() && (e.button === 0 || e.button === 2)) setHold(e.button === 0 ? 'dig' : 'pile');
-    else if (e.button === 0) actionDown();
+    else if (e.button === 0) use();
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -162,7 +165,7 @@ export function initInput() {
   });
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    actionDown();
+    use();
   });
   grabBtn.addEventListener('pointerup', (e) => {
     e.stopPropagation();

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { SPAWN, COURT } from './constants.js';
+import { SPAWN, COURT, CELL, HALF } from './constants.js';
+import { PATCH } from './sim/mushrooms.js';
 import { mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene } from './scene.js';
@@ -48,8 +49,14 @@ export function createProps() {
     up = new THREE.Vector3(0, 1, 0),
     s = new THREE.Vector3(1, 1, 1);
   const trees = [];
+  const gx0 = PATCH.i0 * CELL - HALF - 6,
+    gx1 = (PATCH.i0 + PATCH.w) * CELL - HALF + 3,
+    gz0 = HALF - (PATCH.j0 + PATCH.h) * CELL - 3,
+    gz1 = HALF - PATCH.j0 * CELL + 4;
   const clear = (x, z, r) =>
-    Math.hypot(x - SPAWN.x, z - SPAWN.z) > r && Math.hypot(x - COURT.x, z - COURT.z) > COURT.r + 3;
+    Math.hypot(x - SPAWN.x, z - SPAWN.z) > r &&
+    Math.hypot(x - COURT.x, z - COURT.z) > COURT.r + 3 &&
+    !(x > gx0 && x < gx1 && z > gz0 && z < gz1);
   for (let tries = 0; tries < 900 && trees.length < 36; tries++) {
     const x = (rng() * 2 - 1) * 62,
       z = (rng() * 2 - 1) * 58;

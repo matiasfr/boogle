@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ISLAND_R, GRID_RES, CELL, HALF, SEABED, COURT } from './constants.js';
 import { lerp, smoothstep, fbm, valueNoise } from './math.js';
 import { scene } from './scene.js';
+import { PATCH } from './sim/mushrooms.js';
 
 function naturalHeight(x, z) {
   const d = Math.hypot(x, z * 1.12) / ISLAND_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
@@ -40,7 +41,8 @@ const WET = new THREE.Color('#c9ad78'),
   GRASS = new THREE.Color('#7cc650');
 const GRASS_DK = new THREE.Color('#4e9a3d'),
   ROCK = new THREE.Color('#9d978c'),
-  DUG = new THREE.Color('#9a7f52');
+  DUG = new THREE.Color('#9a7f52'),
+  DIRT = new THREE.Color('#7a5534');
 const tmpC = new THREE.Color(),
   tmpG = new THREE.Color();
 // Metres of player edits per vertex (index j*GRID_RES+i, the mesh order); drives colour only.
@@ -62,6 +64,10 @@ function paintVertex(out, k, x, h, z, ny) {
   c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
   if (d < 0) c.lerp(DUG, Math.min(1, -d / 0.4) * 0.9);
   else if (d > 0) c.lerp(SAND, Math.min(1, d / 0.6) * 0.5);
+  const i = k % GRID_RES,
+    j = (k - i) / GRID_RES;
+  if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
+    c.copy(DIRT).offsetHSL(0, 0, nse * 0.04);
   out[k * 3] = c.r;
   out[k * 3 + 1] = c.g;
   out[k * 3 + 2] = c.b;

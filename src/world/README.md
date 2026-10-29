@@ -9,6 +9,7 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots + hashes, late-join and persistence. |
 | `terrain-edits.js` | Phase 3: dig/pile ops, integer sand layer on top of the base heightfield, updating mesh/physics/water height texture. |
 | `../sim/water.js` | Phase 4: pure integer column water simulation (no three.js, no DOM). |
+| `../sim/mushrooms.js` | Mushroom patch: buried seeds, watering, growth ticks (ops `mush.plant`, `mush.water`, state `mushrooms`). |
 
 `src/sim/*` modules are pure functions over typed arrays so they can run in Node tests and, later, a Web Worker. Rendering and input code adapts them to the game.
 

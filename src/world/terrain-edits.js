@@ -12,6 +12,7 @@ import { me, camForward } from '../player.js';
 import { ball } from '../ball.js';
 import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
 import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
+import { PATCH } from '../sim/mushrooms.js';
 
 const N = GRID_RES;
 export const REACH = 4.5; // metres from the player to the aimed spot
@@ -27,7 +28,9 @@ for (let i = 0; i < N; i++)
     baseCm[idx] = Math.round(heights[i][j] * 100);
     heights[i][j] = baseCm[idx] / 100; // every machine simulates on the same quantized ground
     const onCourt = Math.hypot(i * CELL - HALF - COURT.x, HALF - j * CELL - COURT.z) <= COURT.r + 3;
-    editable[idx] = onCourt || (baseCm[idx] >= EDIT_MIN_CM && baseCm[idx] <= EDIT_MAX_CM) ? 1 : 0;
+    const inGarden =
+      i >= PATCH.i0 - 4 && i <= PATCH.i0 + PATCH.w + 1 && j >= PATCH.j0 - 2 && j <= PATCH.j0 + PATCH.h + 1;
+    editable[idx] = !inGarden && (onCourt || (baseCm[idx] >= EDIT_MIN_CM && baseCm[idx] <= EDIT_MAX_CM)) ? 1 : 0;
   }
 updateHeightTexels(0, 0, N - 1, N - 1);
 refreshGround();

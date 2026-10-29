@@ -18,11 +18,13 @@ import { updateWorld } from './world/sync.js';
 import { updateShovel } from './world/terrain-edits.js';
 import { startBackgroundClock } from './world/background.js';
 import { initInput } from './input.js';
+import { createStall, updateGarden } from './mushroom-garden.js';
 
 createTerrainMesh();
 createWaterMesh();
 createProps();
 createClouds();
+createStall();
 installStepHooks({ me, ball, remotes });
 
 function afterStep(now) {
@@ -100,6 +102,7 @@ function frame(now) {
   updateClouds(dt);
   updateWorld(dt);
   updateShovel();
+  updateGarden(dt, now);
   updateSplash(dt, elapsed, ball, me, remotes);
   updatePreview();
   updateHud();
