@@ -2,22 +2,35 @@
 
 One island, one beach ball, and everyone who has the page open.
 
-Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [cannon-es](https://github.com/pmndrs/cannon-es). Everything currently lives in a single file, `index.html`.
+Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [cannon-es](https://github.com/pmndrs/cannon-es). It is bundled with [Vite](https://vite.dev).
 
 ## Run it locally
 
-The page loads three.js and cannon-es from jsDelivr as ES modules, so serve it over HTTP instead of opening the file directly:
-
 ```sh
-python3 -m http.server 8000
-# then open http://localhost:8000
+npm install
+npm run dev
+# then open the URL Vite prints (http://localhost:5173)
 ```
+
+Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run lint`, `npm run format`. Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
+
+## Code layout
+
+`index.html` holds only the markup; the game lives in `src/`:
+
+- `main.js`: boot and the frame loop. `style.css`: all styles.
+- `constants.js`, `math.js`: shared tuning values, math and noise helpers.
+- `terrain.js`, `water-render.js`, `scene.js`, `props.js`: heightfield and mesh, sea shader, renderer/camera/lights/sky, palms/rocks/clouds.
+- `physics.js`: cannon-es world, materials, ground body and the buoyancy/movement step hooks.
+- `ball.js`, `player.js`, `avatars.js`: the ball and its ownership rules, the local player and camera, avatar meshes.
+- `net.js`: presence build/apply, remote players and interpolation. `net/peer-room.js` is the transport (see `net/README.md`); right now it is a solo-only stub until the PeerJS version lands.
+- `hud.js`, `input.js`: HUD, roster and lobby; keyboard, mouse, touch and pointer lock.
 
 ## Multiplayer
 
 Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's browser hosts the island and everyone else connects to it. See [PLAN.md](PLAN.md) for the design.
 
-> **Status:** the PeerJS transport is Phase 1 of the plan and not written yet. `index.html` still contains the networking code from the original prototype, which will be replaced.
+> **Status:** the PeerJS transport is Phase 1 of the plan and not written yet. `src/net/peer-room.js` is a stub that runs the island solo; the presence and ball-ownership code in `src/net.js` is already written against its interface.
 
 ### How sync works
 

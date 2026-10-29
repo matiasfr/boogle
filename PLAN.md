@@ -48,18 +48,18 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 
 ## Phase 0: Repo hygiene (small)
 
-- [ ] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/terrain.js`, `src/water-render.js`, `src/physics.js`, `src/ball.js`, `src/player.js`, `src/net/`, `src/hud.js`, `src/input.js`, `src/main.js`.
-- [ ] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
-- [ ] Add Prettier + a minimal ESLint config.
+- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/terrain.js`, `src/water-render.js`, `src/physics.js`, `src/ball.js`, `src/player.js`, `src/net/`, `src/hud.js`, `src/input.js`, `src/main.js`.
+- [x] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
+- [x] Add Prettier + a minimal ESLint config.
 
 **Done when:** the game behaves exactly as before and `npm run dev` / `npm run build` work.
 
 ## Phase 1: PeerJS networking
 
-- [ ] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
+- [x] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
 - [ ] Write `src/net/peer-room.js` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
 - [ ] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
-- [ ] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
+- [x] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
 - [ ] Prototype against the public PeerJS cloud server first; then self-host `peerjs-server` and add TURN credentials.
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
 - [ ] Host the static client on GitHub Pages / Netlify.
