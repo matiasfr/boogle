@@ -44,7 +44,10 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
   quantized to centimetres once (`src/world/terrain-edits.js`), so every client builds the same heightfield.
 - **Home is special.** The shared water sim, sand digging and beach gifts only run inside `HOME` (`src/constants.js`):
-  the original island's square. Keep POIs out of it unless they mean to change home.
+  the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
+  exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME` on ground above the
+  sand band (`EDIT_MAX_CM` in `src/world/terrain-logic.js`, 1.6 m), where nobody can dig under it; the lighthouse
+  hill and the west end of the windmill farm do.
 - **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid are migrated by
   `src/world/legacy-grid.js`; a future grid change needs the same treatment.
 - Stamps change the base ground, not player edits: sand dug or piled on top keeps its depth.

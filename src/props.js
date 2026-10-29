@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SPAWN, COURT, CELL, HALF } from './constants.js';
 import { island } from './island/index.js';
+import { MASSIF } from './island/shape.js';
 import { PATCH } from './sim/mushrooms.js';
 import { mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
@@ -232,13 +233,16 @@ export function createProps() {
 
   // Mainland: palms along the coasts, round trees in the meadows, boulders (more of them up on the massif).
   const wild = mulberry32(20261029);
-  const outsideHome = (x, z) => Math.abs(x) > 62 || Math.abs(z) > 58;
+  // Beyond the home island's shore, clear of spawn, the court, the garden and home's own palms.
+  const outsideHome = (x, z) =>
+    x * x + z * z > 48 * 48 && clear(x, z, 9) && !trees.some((t) => (t.x - x) ** 2 + (t.z - z) ** 2 < 16);
+  const onMassif = (x, z) => ((x - MASSIF.x) / MASSIF.rx) ** 2 + ((z - MASSIF.z) / MASSIF.rz) ** 2 < 1.5;
   const spots = [];
   const spaced = (x, z, d) => !spots.some((p) => (p.x - x) ** 2 + (p.z - z) ** 2 < d * d);
   const place = (count, tries, test, add) => {
     for (let n = 0, k = 0; k < tries && n < count; k++) {
-      const x = (wild() * 2 - 1) * (HALF - 20),
-        z = (wild() * 2 - 1) * (HALF - 20);
+      const x = (wild() * 2 - 1) * 140,
+        z = -40 + (wild() * 2 - 1) * 110;
       const h = groundHeight(x, z);
       if (!outsideHome(x, z) || island.keptOut(x, z, 3) || !test(x, z, h)) continue;
       spots.push({ x, z });
@@ -247,8 +251,8 @@ export function createProps() {
     }
   };
   place(
-    130,
-    9000,
+    55,
+    6000,
     (x, z, h) => h > 0.9 && h < 3.2 && flatEnough(x, z, h, 0.7) && spaced(x, z, 5),
     (x, z, h) => {
       const t = { x, z, h };
@@ -257,17 +261,19 @@ export function createProps() {
     },
   );
   place(
-    170,
-    9000,
+    70,
+    6000,
     (x, z, h) => h > 2.4 && h < 15 && flatEnough(x, z, h, 0.9) && spaced(x, z, 6.5),
     (x, z, h) => addBroadleaf(tiles.at(x, z), x, h, z, wild, (c) => tiles.collide(x, z, c)),
   );
   place(
-    120,
-    6000,
-    (x, z, h) => h > 0.4 && (h > 9 ? wild() < 0.9 : wild() < 0.35) && spaced(x, z, 3.5),
+    55,
+    4000,
+    (x, z, h) => h > 0.4 && (onMassif(x, z) ? wild() < 0.9 : wild() < 0.3) && spaced(x, z, 3.5),
     (x, z, h) =>
-      addRock(tiles.at(x, z), x, h, z, 0.6 + wild() * (h > 9 ? 2.2 : 1.3), wild, (c) => tiles.collide(x, z, c)),
+      addRock(tiles.at(x, z), x, h, z, 0.6 + wild() * (onMassif(x, z) ? 2.2 : 1.3), wild, (c) =>
+        tiles.collide(x, z, c),
+      ),
   );
 
   const group = new THREE.Group();

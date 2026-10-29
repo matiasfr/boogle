@@ -3,8 +3,10 @@
 // Two landmasses joined into one island:
 // - home: the original island around the origin (spawn, court, mushroom garden). Inside HOME_KEEP metres of the origin
 //   the ground is exactly what it always was, so nothing there moves.
-// - mainland: a much bigger island to the north (-z), with rolling meadows, an eastern cape and a rocky massif in the
-//   north-west. Points of interest are placed on it by their site files (src/pois/*/site.js).
+// - mainland: a few times home's size, to the north (-z), with rolling meadows, an eastern plain, a western point and
+//   a rocky massif in the north-west. Points of interest are placed on it by their site files (src/pois/*/site.js).
+//   Kept small on purpose: everything is a short sprint from spawn (about 10-15 s), so friends stay in sight of
+//   each other, and the lighthouse hill in the middle is visible from everywhere.
 //
 // Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; terrain-edits.js quantizes
 // them to centimetres once, so the shared sim never sees raw floats.
@@ -14,15 +16,15 @@ export const SEABED = -7.5;
 const HOME_R = 52;
 export const HOME_KEEP = 22; // metres from the origin where the home ground is untouched
 
-// Mainland: a noisy ellipse north of home.
-export const MAINLAND = { x: 0, z: -105, rx: 205, rz: 108 };
+// Mainland: a noisy ellipse north of home, small enough that everything is a short run from spawn.
+export const MAINLAND = { x: 6, z: -66, rx: 96, rz: 56 };
 // Lobes that stick out of the mainland (capes and points), as extra ellipses unioned with it.
 const LOBES = [
-  { x: 178, z: -52, rx: 54, rz: 30 }, // east cape (lighthouse)
-  { x: -150, z: -30, rx: 52, rz: 38 }, // south-west point, towards home
+  { x: 86, z: -36, rx: 34, rz: 26 }, // east plain (windmill farm)
+  { x: -78, z: -20, rx: 30, rz: 22 }, // west point, closing the west cove
 ];
-// The north-west massif: a broad, rocky upland the caves run under.
-export const MASSIF = { x: -95, z: -140, rx: 72, rz: 50, h: 24 };
+// The north-west massif: a rocky upland.
+export const MASSIF = { x: -54, z: -92, rx: 42, rz: 30, h: 15 };
 
 // Original island, unchanged.
 export function homeHeight(x, z) {

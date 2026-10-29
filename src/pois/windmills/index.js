@@ -10,7 +10,7 @@ import { onStart, onFrame } from '../../loop.js';
 import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.js';
 import { sharedSeconds } from '../../shared-time.js';
-import site, { MILLS } from './site.js';
+import site, { MILLS, TRACK } from './site.js';
 
 const TOWER_H = 7.2;
 const R_BOTTOM = 2.5,
@@ -182,8 +182,8 @@ function build() {
   const rng = mulberry32(31);
   const bale = new THREE.CylinderGeometry(0.75, 0.75, 1.3, 10);
   for (let k = 0; k < 14; k++) {
-    const lx = -36 + rng() * 72,
-      lz = -32 + rng() * 64;
+    const lx = -25 + rng() * 50,
+      lz = -22 + rng() * 44;
     if (MILLS.some((p) => Math.hypot(p.x - lx, p.z - lz) < 8)) continue;
     const [x, z] = frame.toWorld(lx, lz);
     const y = groundHeight(x, z);
@@ -193,15 +193,17 @@ function build() {
     b.position.set(x, y + 0.72, z);
     world.addBody(b);
   }
-  // Fences either side of the track where it runs through the wheat (local track: (0, 14) -> (-6, 60)).
-  const railYaw = Math.atan2(frame.fx, frame.fz) + Math.atan2(-6, 46);
+  // Fences either side of the track where it runs through the wheat (local z 13 to 22.5).
+  const [[ax, az], [bx, bz]] = TRACK.slice(1);
+  const slope = (bx - ax) / (bz - az);
+  const railYaw = Math.atan2(frame.fx, frame.fz) + Math.atan2(bx - ax, bz - az);
   for (const side of [-2.1, 2.1])
-    for (let d = 15; d <= 33; d += 2.25) {
-      const lx = -((d - 14) / 46) * 6 + side;
+    for (let d = 13; d <= 22; d += 2.25) {
+      const lx = ax + (d - az) * slope + side;
       const [x, z] = frame.toWorld(lx, d);
       put(staticParts, box, x, groundHeight(x, z) + 0.45, z, 0.13, 1, 0.13, '#7b5a3a');
-      if (d + 2.25 > 33) continue;
-      const [x2, z2] = frame.toWorld(lx - (1.125 / 46) * 6, d + 1.125);
+      if (d + 2.25 > 22) continue;
+      const [x2, z2] = frame.toWorld(lx + 1.125 * slope, d + 1.125);
       for (const h of [0.45, 0.8])
         put(
           staticParts,

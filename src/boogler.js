@@ -18,6 +18,7 @@ import { scene, camera } from './scene.js';
 import { world, playerMat, teleport, NOT_SCENERY } from './physics.js';
 import { blockedAt } from './props.js';
 import { island } from './island/index.js';
+import { MAINLAND } from './island/shape.js';
 import { PATCH } from './sim/mushrooms.js';
 import { me } from './player.js';
 import { net, remotes } from './net.js';
@@ -137,7 +138,11 @@ function pickTarget() {
       const k = spots[Math.floor(rng() * spots.length)];
       const a = rng() * Math.PI * 2;
       trip = { x: k.x + Math.cos(a) * (k.r + 6), z: k.z + Math.sin(a) * (k.r + 6) };
-    } else trip = { x: range(-HALF + 60, HALF - 60), z: range(-HALF + 60, 20) };
+    } else
+      trip = {
+        x: range(MAINLAND.x - MAINLAND.rx, MAINLAND.x + MAINLAND.rx),
+        z: range(MAINLAND.z - MAINLAND.rz, 0),
+      };
   }
   if (trip) {
     const d = Math.hypot(trip.x - sim.x, trip.z - sim.z);

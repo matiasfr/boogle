@@ -5,9 +5,11 @@ const FIND_AND_DIG = `
   const { water, region } = window.__water; const H = region.h;
   const { GRID_RES: N, HALF, CELL } = await import('/src/constants.js');
   const mid = Math.round(HALF / CELL); // the origin's cell
-  // a beach cell 20-60 cm above the sea, editable, with open sea (ground < -30 cm) within 3 cells
+  // a beach cell 20-60 cm above the sea, editable, with open sea (ground < -30 cm) within 3 cells, well inside the
+  // simulated water region (the sea outside it is not simulated, so a pit at its edge may have nothing to fill from)
   let pick = null;
-  for (let i = 4; i < N - 4 && !pick; i++) for (let j = 4; j < N - 4 && !pick; j++) {
+  for (let i = region.i0 + 8; i < region.i0 + region.w - 8 && !pick; i++)
+    for (let j = region.j0 + 8; j < region.j0 + region.h - 8 && !pick; j++) {
     const g = i * N + j, b = terrain.base[g];
     if (!terrain.mask[g] || b < 20 || b > 60 || Math.hypot(i - mid, j - mid) < 20) continue;
     let near = false;
