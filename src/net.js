@@ -8,6 +8,7 @@ import { me } from './player.js';
 import { ball } from './ball.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
+import { attachWorld, setSelfId } from './world/sync.js';
 import { bestForPresence, attachStreak, streak } from './streak.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
@@ -223,6 +224,8 @@ export async function connectRoom() {
   }
   net.room = room;
   attachStreak(room);
+  setSelfId(room.selfId);
+  attachWorld(room, { roomId: getRoomId(), serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
     net.error = String(e?.code || e?.type || 'unknown');
