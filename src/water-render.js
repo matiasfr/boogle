@@ -4,19 +4,34 @@ import { clamp, srgbVec } from './math.js';
 import { heights } from './terrain.js';
 import { scene } from './scene.js';
 
+// Ground height packed into 16 bits (R = high byte, G = low byte) so centimetre edits show up.
+function encodeHeight(data, k, h) {
+  const v = Math.round(clamp((h + 10) / 20, 0, 1) * 65535);
+  data[k] = v >> 8;
+  data[k + 1] = v & 255;
+  data[k + 3] = 255;
+}
+
 const heightTex = (() => {
   const data = new Uint8Array(GRID_RES * GRID_RES * 4);
   for (let j = 0; j < GRID_RES; j++)
     for (let i = 0; i < GRID_RES; i++) {
       const k = (j * GRID_RES + i) * 4;
-      data[k] = Math.round(clamp((heights[i][j] + 10) / 20, 0, 1) * 255);
-      data[k + 3] = 255;
+      encodeHeight(data, k, heights[i][j]);
     }
   const t = new THREE.DataTexture(data, GRID_RES, GRID_RES, THREE.RGBAFormat);
   t.magFilter = t.minFilter = THREE.LinearFilter;
   t.needsUpdate = true;
   return t;
 })();
+
+// Refresh the height texels for cells i0..i1, j0..j1 (inclusive) after terrain edits.
+export function updateHeightTexels(i0, j0, i1, j1) {
+  const data = heightTex.image.data;
+  for (let j = j0; j <= j1; j++)
+    for (let i = i0; i <= i1; i++) encodeHeight(data, (j * GRID_RES + i) * 4, heights[i][j]);
+  heightTex.needsUpdate = true;
+}
 
 export const waterMat = new THREE.ShaderMaterial({
   transparent: true,
@@ -44,7 +59,8 @@ export const waterMat = new THREE.ShaderMaterial({
     const float HALF = ${HALF.toFixed(4)}; const float CELL = ${CELL.toFixed(6)}; const float RES = ${GRID_RES.toFixed(1)};
     void main() {
       vec2 uv = vec2((vWorld.x + HALF) / CELL + 0.5, (HALF - vWorld.z) / CELL + 0.5) / RES;
-      float ground = texture2D(uHeight, uv).r * 20.0 - 10.0;
+      vec4 ht = texture2D(uHeight, uv);
+      float ground = (ht.r * 255.0 * 256.0 + ht.g * 255.0) / 65535.0 * 20.0 - 10.0;
       float depth = max(vWorld.y - ground, 0.0);
       vec3 col = mix(vec3(0.42, 0.90, 0.86), vec3(0.10, 0.70, 0.80), smoothstep(0.0, 2.5, depth));
       col = mix(col, vec3(0.05, 0.38, 0.64), smoothstep(2.5, 9.0, depth));

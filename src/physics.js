@@ -15,12 +15,22 @@ world.addContactMaterial(new CANNON.ContactMaterial(playerMat, playerMat, { fric
 world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 }));
 world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
 
-{
-  const body = new CANNON.Body({ mass: 0, material: groundMat });
-  body.addShape(new CANNON.Heightfield(heights, { elementSize: CELL }));
-  body.position.set(-HALF, 0, HALF);
-  body.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-  world.addBody(body);
+// The shape reads `heights` directly, so edits only need to invalidate its caches (see refreshGround).
+const groundBody = new CANNON.Body({ mass: 0, material: groundMat });
+const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
+groundBody.addShape(groundShape);
+groundBody.position.set(-HALF, 0, HALF);
+groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+world.addBody(groundBody);
+
+// Call after changing `heights` in place so collisions use the new ground immediately.
+export function refreshGround() {
+  groundShape.update();
+  groundShape.updateMinValue();
+  groundShape.updateMaxValue();
+  groundShape.updateBoundingSphereRadius();
+  groundBody.updateBoundingRadius();
+  groundBody.aabbNeedsUpdate = true;
 }
 
 export function addStaticSpheres(spheres) {

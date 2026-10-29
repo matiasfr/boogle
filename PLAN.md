@@ -76,10 +76,10 @@ The sea already makes the ball float and players swim (see the `preStep` buoyanc
 
 The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 world units) shared by the mesh, the physics body and the water shader's height texture. Editing it is the foundation for everything after.
 
-- [ ] Two new verbs on a tool key/button: **dig** (take sand from a cell) and **pile** (drop it on a cell), with a carry limit so sand is conserved. Only sand cells near the beach and garden are editable; rock and grass aren't.
-- [ ] Edits go to the host over the reliable channel as events `{i, j, op, player}`. The host validates them (reach, rate limit), stamps a tick, and broadcasts them. Every client applies them in tick order.
-- [ ] Update locally: the cannon-es `Heightfield` (call `updateMaxValue()` / rebuild affected data), the terrain mesh vertices and normals, and the height texture.
-- [ ] Persist the terrain diff (only changed cells) in the host's snapshot.
+- [x] Two new verbs on a tool key/button: **dig** (take sand from a cell) and **pile** (drop it on a cell), with a carry limit so sand is conserved. Only sand cells near the beach and garden are editable; rock and grass aren't.
+- [x] Edits go to the host over the reliable channel as events `{i, j, op, player}`. The host validates them (reach, rate limit), stamps a tick, and broadcasts them. Every client applies them in tick order.
+- [x] Update locally: the cannon-es `Heightfield` (call `updateMaxValue()` / rebuild affected data), the terrain mesh vertices and normals, and the height texture.
+- [x] Persist the terrain diff (only changed cells) in the host's snapshot.
 
 **Done when:** players can build a sand wall and the ball bounces off it. **Playtest question:** do people build things for fun with nothing to protect?
 

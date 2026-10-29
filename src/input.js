@@ -5,6 +5,7 @@ import { me, cam } from './player.js';
 import { actionDown, actionUp, respawnBall, releaseBall } from './ball.js';
 import { sendPresence } from './net.js';
 import { dom } from './hud.js';
+import { toggleShovel, shovelActive, setHold } from './world/terrain-edits.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0 };
 export const inputState = { locked: false, lockFailed: false };
@@ -43,6 +44,7 @@ export function initInput() {
     if (e.repeat) return;
     if (e.code === 'KeyE') actionDown();
     if (e.code === 'KeyR') respawnBall();
+    if (e.code === 'KeyF') toggleShovel();
     if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
   });
   addEventListener('keyup', (e) => {
@@ -51,6 +53,7 @@ export function initInput() {
   });
   addEventListener('blur', () => {
     input.keys.clear();
+    setHold(null);
   });
 
   let drag = null;
@@ -62,7 +65,8 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (e.button === 0) actionDown();
+    if (shovelActive() && (e.button === 0 || e.button === 2)) setHold(e.button === 0 ? 'dig' : 'pile');
+    else if (e.button === 0) actionDown();
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -81,6 +85,7 @@ export function initInput() {
     }
   });
   addEventListener('mouseup', (e) => {
+    if (e.button === 0 || e.button === 2) setHold(null);
     if (!me.entered || e.button !== 0) {
       drag = null;
       return;
@@ -167,6 +172,22 @@ export function initInput() {
     me.charging = false;
     me.suppressUp = false;
   });
+
+  const { shovelBtn, digBtn, pileBtn } = dom;
+  shovelBtn.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    toggleShovel();
+  });
+  for (const [btn, kind] of [
+    [digBtn, 'dig'],
+    [pileBtn, 'pile'],
+  ]) {
+    btn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      setHold(kind);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
+  }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
