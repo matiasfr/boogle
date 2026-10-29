@@ -15,9 +15,8 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // One table of named viewpoints: camera position, look-at target (world metres, y up).
 export const VIEWS = {
-  spring: { cam: [-10.5, 10, -5.5], look: [-13.8, 8.0, -8.8] },
-  stream: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
-  mouth: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
+  hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
+  shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };

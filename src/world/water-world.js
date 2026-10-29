@@ -10,7 +10,7 @@ import { groundHeight } from '../terrain.js';
 import { createWater } from '../sim/water.js';
 import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../sim/water-region.js';
 import { waterField } from '../water-field.js';
-import { createWaterSurface, createSpringFx } from '../water-surface.js';
+import { createWaterSurface } from '../water-surface.js';
 import { registerOp, registerState, onTick, onApplied, onSnapshot, submitEdit, world } from './sync.js';
 import { terrain } from './terrain-edits.js'; // import first: its onTick (mesh flush) must run before ours
 
@@ -20,7 +20,6 @@ export const WATER_CONFIG = {
   seaPinBelowCm: -220, // ground deeper than this is open sea: held at sea level (water that reaches it is absorbed)
   regionPad: 3, // extra cells around the island box
   flowRate: 160, // sim: how fast levels equalise (water.js: 256 = as fast as allowed)
-  spring: { x: -12, z: -9, cmPerTick: 8 }, // the hill spring: 8 cm/tick = 80 cm/s into one cell
   // Physics (owner-side only): how hard sim water pushes balls and swimmers.
   flowMax: 2.6, // m/s cap on the current speed
   flowGain: 7, // current m/s per unit of surface slope
@@ -61,12 +60,7 @@ for (let c = 0; c < W * H; c++) water.depth[c] = seaFill(c);
 
 const cellX = (x) => Math.round((x + HALF) / CELL);
 const cellZ = (z) => Math.round((HALF - z) / CELL);
-const spring = { i: cellX(CFG.spring.x) - i0, j: cellZ(CFG.spring.z) - j0 };
-water.setSource(spring.i, spring.j, CFG.spring.cmPerTick);
-const springX = (i0 + spring.i) * CELL - HALF;
-const springZ = HALF - (j0 + spring.j) * CELL;
-
-// Deep sea cells are pinned to sea level after every step: the ocean is an infinite reservoir, so a stream
+// Deep sea cells are pinned to sea level after every step: the ocean is an infinite reservoir, so water
 // reaching the sea disappears into it instead of heaping up, and holes dug at the shore always find water.
 const seaCells = [];
 for (let c = 0; c < W * H; c++) if (simTerrain[c] < CFG.seaPinBelowCm) seaCells.push(c);
@@ -82,8 +76,6 @@ function pinSea() {
 
 const surface = createWaterSurface({ water, i0, j0, flowMax: CFG.flowMax, flowGain: CFG.flowGain });
 surface.syncAll();
-const springFx = createSpringFx(springX, springZ);
-const springIdx = spring.i * H + spring.j;
 
 // ------------------------------------------------------------------ sync: state, ops, tick
 // The sea part of the depth grid is implied by the ground, so snapshots only carry cells that differ from it.
@@ -218,14 +210,12 @@ surface.mesh.onBeforeRender = () => {
   const dt = Math.min((now - lastMs) / 1000, 0.1);
   lastMs = now;
   surface.frame(dt);
-  springFx(dt, (simTerrain[springIdx] + water.depth[springIdx]) / 100);
 };
 
 // Debug / test handle.
 window.__water = {
   water,
   region,
-  spring: { ...spring, x: springX, z: springZ },
   stats: () => ({ ...water.stats(), stepMs, W, H }),
   hash: water.hash,
   fast(n) {
