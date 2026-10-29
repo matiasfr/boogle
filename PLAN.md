@@ -4,6 +4,8 @@ Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy wher
 
 The design direction comes from the [research report](docs/research/water-farming-multiplayer.md). Its short version: **water is the glue between the ball and the farm.** Players dig channels and pile sand to steer water. Crops grow where the soil is wet. The tide is the shared threat. The garden persists, so the next visitor finds what the last one left.
 
+Engineering groundwork (lint, replay test, snapshot versions, telemetry) is tracked in [docs/tech-plan.md](docs/tech-plan.md).
+
 ## Guiding rules
 
 The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question our ongoing playtests (2–4 real people, notes in [docs/playtests.md](docs/playtests.md)) should answer.

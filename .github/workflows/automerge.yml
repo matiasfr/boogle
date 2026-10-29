@@ -45,3 +45,9 @@ jobs:
       - name: Deploy
         if: steps.pr.outputs.number != ''
         run: gh workflow run deploy.yml --ref main
+      - name: Deploy server
+        if: steps.pr.outputs.number != ''
+        run: |
+          if gh pr diff "${{ steps.pr.outputs.number }}" --name-only | grep -q '^server/'; then
+            gh workflow run deploy-server.yml --ref main
+          fi

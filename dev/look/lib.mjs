@@ -85,7 +85,8 @@ export const launch = ({ gpu = false } = {}) =>
 export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
-  // init (a function or script run before the page's own code, e.g. to seed localStorage)
+  // init (a function or script run before the page's own code, e.g. to seed localStorage),
+  // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -95,6 +96,16 @@ export class Game {
     g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] } });
     if (opts.clock) await g.ctx.clock.install();
     if (opts.init) await g.ctx.addInitScript(opts.init);
+    const doc = new URL(stack.base);
+    if (opts.isolated)
+      await g.ctx.route(
+        (u) => u.origin === doc.origin && u.pathname === doc.pathname,
+        async (route) => {
+          const res = await route.fetch();
+          const coi = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'credentialless' };
+          await route.fulfill({ response: res, headers: { ...res.headers(), ...coi } });
+        },
+      );
     g.page = await g.ctx.newPage();
     g.errors = [];
     g.page.on('pageerror', (e) => {
@@ -106,7 +117,8 @@ export class Game {
     await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
       timeout: 90000,
     });
-    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 30000 });
+    // A deployed site (`--url`) over a slow link can take a while to load.
+    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
     await g.page.waitForFunction(() => window.__debugCam && window.__water, null, { timeout: 20000 });

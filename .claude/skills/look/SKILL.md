@@ -28,7 +28,9 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes.
+risky shared changes. `--url <game>` runs against a running or deployed build instead of a local stack; there are no
+`/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
+`src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
 
 ```js
 export default {
@@ -59,11 +61,15 @@ not tune the look); put the image paths in check details so a failure is diagnos
 `submitEdit` over aiming the mouse. Real-time motion scores depend on the machine, so compare before/after on the
 same machine, never against absolute numbers from elsewhere.
 
-## 3. Render cost: `npm run perf`
+## 3. Render and sim cost: `npm run perf`
 
-About 8 s. Prints draw calls, shadow-pass calls, triangles, geometries and shader programs, for the island as
-entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running game). The counts are exact;
-headless fps is not, so it isn't reported. Run it before and after anything that adds meshes or lights, and compare.
+About a minute, or more on a loaded machine. Prints draw calls, shadow-pass calls, triangles, geometries and shader
+programs, for the island as entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running
+game). The counts are exact; headless fps is not, so it isn't reported. Then ms per lockstep tick (avg, p95, max), per op, `onApplied`/`onTick`
+handler and state hash, on the idle island and with busy water (beach flooded, a channel being dug): name your
+handler with `onTick(fn, 'label')`. Those are wall-clock times on a software-rendering machine: compare before/after
+on the same machine. `-- --render` or `-- --sim` runs one half. Run it before and after anything that adds meshes,
+lights or per-tick sim work, and compare.
 
 ## 4. Clips and videos
 

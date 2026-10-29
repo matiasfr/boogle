@@ -14,8 +14,13 @@
 //                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
-// Edits a client submitted that the old host never stamped are lost. A client that receives an edit for a tick it already
-// passed, or a hash mismatch, asks for a snapshot (w:need) and replaces its state.
+// Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
+// reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
+// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each. Held edits older than HELD_MAX_MS
+// are dropped (stats.heldDropped): the player has moved on. So is the rest of the backlog once a fresh edit is submitted
+// with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
+// A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
+// replaces its state.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -27,6 +32,11 @@ const MAX_STEPS = 5; // ticks per frame
 const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messages at 16 KB, escaping can double)
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
+const MAX_HELD = 64; // edits kept while the room is reconnecting
+// Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under the shovel's 220 ms repeat
+// so a fresh edit waiting for its slot goes out before the next repeat replaces it.
+const HELD_EVERY_MS = 210;
+const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -39,10 +49,21 @@ export function createSync() {
   const states = new Map();
   const tickFns = [];
   const appliedFns = [];
+  const labels = new Map(); // handler fn -> name shown by profileTicks
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
-  const stats = { resyncs: 0, snapsSent: 0, snapsLoaded: 0, hashOk: 0, hashBad: 0, lateEdits: 0, saves: 0 };
+  const snapFailFns = []; // fn({ from: 'peer'|'local'|'server', reason }) when a snapshot could not be loaded
+  const stats = {
+    resyncs: 0,
+    snapsSent: 0,
+    snapsLoaded: 0,
+    hashOk: 0,
+    hashBad: 0,
+    lateEdits: 0,
+    saves: 0,
+    heldDropped: 0,
+  };
   let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad = null; // { tick, keys } of the latest mismatch
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -69,11 +90,23 @@ export function createSync() {
   let snapId = 0;
   const served = new Map();
   let out = []; // stamped edits waiting to be broadcast
+  let held = []; // [{ e, at, fresh }] edits submitted while the room was down (or one waiting for its slot); releaseHeld
+  let heldAt = 0; // wall time the next held edit may go
   let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
   let lastSavedHash = null;
   let nextSave = SAVE_MS;
 
+  // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
+  const snapFail = (from, reason) => {
+    for (const fn of snapFailFns) {
+      try {
+        fn({ from, reason });
+      } catch (e) {
+        console.warn('[world] onSnapFail listener failed', e);
+      }
+    }
+  };
   const send = (m) => {
     if (!room || !connected) return;
     try {
@@ -89,6 +122,10 @@ export function createSync() {
   }
   function registerState(key, handlers) {
     states.set(key, handlers);
+  }
+  function addHandler(list, fn, label) {
+    list.push(fn);
+    if (label) labels.set(fn, label);
   }
 
   // ------------------------------------------------------------ edits
@@ -121,13 +158,47 @@ export function createSync() {
 
   function submitEdit(edit) {
     if (!isObj(edit) || !ops.has(edit.op) || !isInt(edit.i) || !isInt(edit.j)) return false;
-    if (mode === 'client') {
-      const e = { ...edit, p: selfId };
-      if (JSON.stringify(e).length > MAX_EDIT_JSON) return false;
-      send({ t: 'w:edit', e });
+    const e = { ...edit, p: selfId };
+    if (mode === 'client' && JSON.stringify(e).length > MAX_EDIT_JSON) return false;
+    // Nowhere to deliver it yet (the room is down, so send() would drop it, or a reclaimed host is still loading): hold it.
+    if (mode === 'client' ? !connected : held.length && !canRelease()) {
+      if (held.length >= MAX_HELD) return false;
+      held.push({ e, at: wall });
       return true;
     }
-    return stamp(edit, selfId);
+    // The room is back: a fresh edit replaces whatever is still held (the player has moved on; draining the backlog
+    // first would turn a held shovel into seconds of input lag). It waits only for the slot after the last released
+    // edit, so it does not take that one's per-player rate-limit slot.
+    if (held.length) {
+      stats.heldDropped += held.length;
+      held = [];
+    }
+    if (wall < heldAt && canRelease()) {
+      held.push({ e, at: wall, fresh: true });
+      return true;
+    }
+    return deliver(e);
+  }
+  function deliver(e) {
+    if (mode !== 'client') return stamp(e, selfId);
+    send({ t: 'w:edit', e });
+    return true;
+  }
+  const canRelease = () => connected && (mode === 'client' || ready);
+  // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
+  function onConnected(c) {
+    connected = c;
+  }
+  // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick and trip rate limits.
+  function releaseHeld() {
+    while (held.length && wall - held[0].at > HELD_MAX_MS) {
+      held.shift();
+      stats.heldDropped++;
+    }
+    if (!held.length || !canRelease() || wall < heldAt) return; // a reclaimed host keeps them until it is ready
+    const { e, fresh } = held.shift();
+    deliver(e);
+    if (!fresh) heldAt = wall + HELD_EVERY_MS; // a fresh edit is live input again: its caller paces the next one
   }
 
   // ------------------------------------------------------------ tick
@@ -161,6 +232,7 @@ export function createSync() {
   // Called from the frame loop with real elapsed seconds; runs whole ticks only.
   function updateWorld(dt) {
     wall += dt * 1000;
+    releaseHeld();
     if (mode === 'client') {
       if (awaiting && wall - needAt > 2000) {
         needAt = wall;
@@ -269,13 +341,14 @@ export function createSync() {
     const text = asm.parts.join('');
     asm = null;
     try {
-      applyPayload(JSON.parse(text));
+      if (!applyPayload(JSON.parse(text))) snapFail('peer', 'invalid');
     } catch (err) {
       console.warn('[world] bad snapshot', err);
+      snapFail('peer', err instanceof SyntaxError ? 'parse' : 'load');
     }
   }
   function applyPayload(p) {
-    if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return;
+    if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
     queue = p.pend.filter(
       (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
@@ -287,6 +360,7 @@ export function createSync() {
     awaiting = false;
     stats.snapsLoaded++;
     for (const fn of snapFns) fn(world.tick);
+    return true;
   }
 
   // ------------------------------------------------------------ messages
@@ -335,6 +409,52 @@ export function createSync() {
     }
   }
 
+  // ------------------------------------------------------------ profiling (npm run perf only)
+  // Times every op apply, onApplied/onTick handler and state hash until stop(), which returns one { label: ms } row
+  // per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so normal play pays
+  // nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time (a second would
+  // wrap the first one's wrappers, and stopping them out of order would leave timers in place).
+  let profiling = false;
+  function profileTicks(now = () => performance.now()) {
+    if (profiling) throw new Error('profileTicks: already profiling; stop() the first one');
+    profiling = true;
+    let active = true;
+    const rows = new Map(); // tick -> { label: ms }
+    const timed =
+      (label, fn) =>
+      (...args) => {
+        const t0 = now();
+        try {
+          return fn(...args);
+        } finally {
+          if (!rows.has(world.tick)) rows.set(world.tick, {});
+          const row = rows.get(world.tick);
+          row[label] = (row[label] ?? 0) + now() - t0;
+        }
+      };
+    const undo = [];
+    const swap = (map, key, h, field, label) => {
+      map.set(key, { ...h, [field]: timed(label, h[field]) });
+      undo.push(() => map.set(key, h));
+    };
+    for (const [op, h] of ops) swap(ops, op, h, 'apply', `op ${op}`);
+    for (const [k, s] of states) swap(states, k, s, 'hash', `hash ${k}`);
+    const swapAll = (list, kind) =>
+      list.forEach((fn, k) => {
+        list[k] = timed(labels.get(fn) || `${kind} #${k}`, fn);
+        undo.push(() => (list[k] = fn));
+      });
+    swapAll(appliedFns, 'applied');
+    swapAll(tickFns, 'tick');
+    return {
+      stop() {
+        if (active) profiling = active = false;
+        for (const fn of undo.splice(0)) fn();
+        return [...rows.values()];
+      },
+    };
+  }
+
   // ------------------------------------------------------------ roles + persistence
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   function persist(unloading) {
@@ -363,22 +483,27 @@ export function createSync() {
   }
   async function loadPersisted() {
     let best = null;
-    const consider = (s) => {
-      if (validSnap(s) && (!best || s.tick > best.tick)) best = s;
+    const consider = (s, from) => {
+      if (s === null || s === undefined) return;
+      if (!validSnap(s)) return snapFail(from, 'invalid');
+      if (!best || s.tick > best.tick) best = s;
     };
     try {
-      consider(JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null'));
+      consider(JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null'), 'local');
     } catch {
-      // corrupt local copy
+      snapFail('local', 'parse'); // corrupt local copy
     }
     if (cfg.serverUrl) {
       try {
         const res = await cfg.fetch(new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl), {
           signal: AbortSignal.timeout(3000),
         });
-        if (res.ok) consider((await res.json()).data);
-      } catch {
-        // server unreachable: local copy or fresh
+        if (res.ok) consider((await res.json()).data, 'server');
+        else if (res.status !== 404) snapFail('server', `http ${res.status}`);
+      } catch (err) {
+        // unreachable or garbled: go on with the local copy or a fresh world
+        const reason = err instanceof SyntaxError ? 'parse' : err?.name === 'TimeoutError' ? 'timeout' : 'unreachable';
+        snapFail('server', reason);
       }
     }
     return best;
@@ -428,10 +553,11 @@ export function createSync() {
     };
     ready = false;
     queue = [];
+    held = [];
     connected = true;
     cleanup = [
       r.onMessage(onMessage),
-      r.onConnection((c) => (connected = c)),
+      r.onConnection(onConnected),
       r.onHostChange((isHost) => {
         if (isHost) becomeHost();
         else if (mode !== 'client') becomeClient();
@@ -452,6 +578,7 @@ export function createSync() {
     room = null;
     mode = 'local';
     ready = true;
+    held = [];
     epoch++;
   }
 
@@ -459,11 +586,12 @@ export function createSync() {
     world,
     registerOp,
     registerState,
-    onTick: (fn) => tickFns.push(fn),
-    onApplied: (fn) => appliedFns.push(fn),
+    onTick: (fn, label) => addHandler(tickFns, fn, label), // label: its name in `npm run perf`
+    onApplied: (fn, label) => addHandler(appliedFns, fn, label),
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
+    onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
     submitEdit,
@@ -474,6 +602,7 @@ export function createSync() {
     attachWorld,
     detachWorld,
     worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, subsystems, lastBad }),
+    profileTicks,
   };
 }
 
@@ -487,6 +616,7 @@ export const {
   onSnapshot,
   onDesync,
   onHashSent,
+  onSnapFail,
   stateHashes,
   setSelfId,
   submitEdit,
@@ -497,4 +627,5 @@ export const {
   attachWorld,
   detachWorld,
   worldStatus,
+  profileTicks,
 } = S;

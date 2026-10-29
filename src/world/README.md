@@ -32,8 +32,9 @@ registerState(key, {
   load(json) { },            // replace state from a snapshot
   hash() { },                // -> uint32 of the state, for desync detection
 })
-onTick(fn)                   // fn(tick) every sim tick, in registration order, after that tick's edits are applied
-onApplied(fn)                // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
+onApplied(fn, label?)        // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+                             // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
 ```
@@ -52,4 +53,4 @@ Shared logic must not use `Math.random`, `Date.now`, or float math that differs 
 
 ## Status
 
-Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `worldStatus()` (debug). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.
+Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `onDesync(fn)` (a hash check failed: `{ tick, keys }`), `onSnapFail(fn)` (a snapshot from a peer, localStorage or the server could not be loaded: `{ from, reason }`), `worldStatus()` (debug). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.

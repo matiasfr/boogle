@@ -12,8 +12,8 @@ import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { createSnaps } from './snaps.js';
 
 // Presence carries everything: players publish where they are, and the ball's owner also publishes the ball.
-// state: 'connecting' | 'live' | 'solo'
-export const net = { room: null, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null };
+// state: 'connecting' | 'live' | 'solo'; turn: our ICE config includes a TURN server (for connection reports)
+export const net = { room: null, myPeer: null, readyAt: 0, lastSend: 0, state: 'connecting', error: null, turn: false };
 export const remotes = new Map();
 
 // Room comes from the URL (?room=beach); anything outside [a-z0-9-]{1,32} is stripped.
@@ -243,6 +243,7 @@ async function serverOptions() {
   try {
     const res = await fetch(new URL('/ice', url));
     const { iceServers } = await res.json();
+    net.turn = Array.isArray(iceServers) && iceServers.some((s) => [s?.urls].flat().some((u) => /^turns?:/.test(u)));
     return { signal, iceServers };
   } catch (e) {
     console.warn('[boogle] could not fetch ICE servers, using defaults:', e);
