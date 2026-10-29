@@ -4,6 +4,7 @@ import { net, remotes } from './net.js';
 import { ballInReach, remoteHoldsBall } from './ball.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
+import { gardenHint, toolLabel } from './mushroom-garden.js';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -17,6 +18,7 @@ export const dom = {
   netEl: $('net'),
   netLabel: $('net-label'),
   hintEl: $('hint'),
+  toolEl: $('tool'),
   chargeEl: $('charge'),
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
@@ -34,6 +36,7 @@ export function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
   let hint = '';
+  let garden = null;
   if (me.entered) {
     const tap = isTouch;
     if (!tap && !inputState.locked && !inputState.lockFailed) hint = 'Click the island to look around';
@@ -47,14 +50,19 @@ export function updateHud() {
         : tap
           ? 'Tap Grab to pick up the ball'
           : 'Click to grab the ball';
-    }
+    } else if ((garden = gardenHint())) hint = garden.text;
   }
   if (hint !== lastHint) {
     lastHint = hint;
     dom.hintEl.textContent = hint;
     dom.hintEl.hidden = !hint;
   }
-  dom.grabBtn.textContent = me.holding ? 'Throw' : 'Grab';
+  dom.grabBtn.textContent = me.holding ? 'Throw' : (garden?.button ?? 'Grab');
+  const label = me.entered ? toolLabel() : '';
+  if (dom.toolEl.textContent !== label) {
+    dom.toolEl.textContent = label;
+    dom.toolEl.hidden = !label;
+  }
 }
 
 let peopleKey = '';

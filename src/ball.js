@@ -143,12 +143,14 @@ export function actionDown() {
   if (me.holding) {
     me.charging = true;
     me.chargeStart = performance.now();
-    return;
+    return true;
   }
   if (ballInReach()) {
     grabBall();
     me.suppressUp = true;
+    return true;
   }
+  return false;
 }
 
 export function actionUp() {
