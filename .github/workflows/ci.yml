@@ -28,6 +28,7 @@ jobs:
       - run: npm run lint
       # format:check is not enforced yet: the repo does not pass `prettier --check .` today.
       - run: npm run build
+      - run: npm run test:unit
 
   server:
     runs-on: ubuntu-latest

@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "test:net": "node dev/peer-test/run.mjs",
     "format:check": "prettier --check .",
-    "check": "npm run lint && npm run build && npm --prefix server test && npm run test:net"
+    "check": "npm run lint && npm run build && npm run test:unit && npm --prefix server test && npm run test:net",
+    "test:unit": "node --test 'test/**/*.test.mjs'"
   },
   "dependencies": {
     "cannon-es": "0.20.0",
