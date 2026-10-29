@@ -8,6 +8,7 @@ import { input } from '../input.js';
 import { me, cam } from '../player.js';
 import { clamp } from '../math.js';
 import { dom } from '../hud.js';
+import { canvas } from '../scene.js';
 import { PAD, PAD_LABEL, actionForSlot, listActions, registerAction } from '../controls.js';
 
 const DEAD = 0.15; // stick deadzone
@@ -20,12 +21,22 @@ let active = false;
 let card = null;
 let introduced = false;
 
+// iPadOS also drives whatever has focus with the pad (a focused button gets "pressed" by A), so keep focus on the
+// canvas while the pad plays. Leave text fields alone: the name box may be mid-edit.
+function claimFocus() {
+  const el = document.activeElement;
+  if (el === canvas || el?.matches?.('input, textarea')) return;
+  el?.blur?.();
+  canvas.focus({ preventScroll: true });
+}
+
 const dead = (v) => (Math.abs(v) < DEAD ? 0 : (Math.sign(v) * (Math.abs(v) - DEAD)) / (1 - DEAD));
 
 function setActive(on) {
   if (active === on) return;
   active = on;
   document.body.classList.toggle('gamepad', on);
+  if (on) claimFocus();
   if (on && !introduced) {
     introduced = true;
     showCard(true);
@@ -82,6 +93,7 @@ function poll(dt) {
   });
   if (!active && (lx || ly || rx || ry || down.some(Boolean))) setActive(true);
   if (!active) return;
+  if (down.some((d, i) => d && !pressed[i])) claimFocus();
 
   // Before the island: A presses "Jump in".
   if (!me.entered) {
