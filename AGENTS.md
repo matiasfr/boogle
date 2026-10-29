@@ -13,6 +13,7 @@ For any coding agent (Claude Code, Codex, Cursor, …) working in this repo. Cla
 - A plain `git push` to main is guarded by the pre-push hook (installed by `npm install`): it runs `npm run check` and refuses if `main` moved on.
 - `main` auto-deploys to the live site. If CI goes red on main, `ci-autofix.yml` has Claude open a fix PR that auto-merges when green; if you're around, fixing it beats starting anything new.
 - Risky changes (networking protocol, sync, persistence) go on a branch with a PR instead.
+- A nightly cleanup agent (`.github/workflows/simplify.yml`) reviews the last couple of days' changes and opens a small behavior-preserving `claude/simplify-*` PR that auto-merges when green. Run it on demand from the Actions tab.
 
 ## Tests
 Keep them light (CONTRIBUTING.md, Testing): unit tests in `test/` for pure logic only, each file well under a second. Visual and feel changes are verified by running the game, not by committed browser tests.
