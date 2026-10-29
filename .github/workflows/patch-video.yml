@@ -1,6 +1,6 @@
 name: Patch video
 
-# Daily: if enough player-visible features landed since the last patch video (the newest video-* release), Claude
+# Every morning (Pacific): if enough player-visible features landed since the last patch video (the newest video-* release), Claude
 # records them, has the cut reviewed, and opens a claude/* PR with the new shots (automerge.yml merges it). Then this
 # workflow publishes the video as a release with a share page (dev/video/publish.mjs) and posts the link in the
 # "Patch videos" issue, mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
@@ -8,7 +8,7 @@ name: Patch video
 
 on:
   schedule:
-    - cron: '23 15 * * *' # daily, 15:23 UTC
+    - cron: '23 14 * * *' # daily, 14:23 UTC: video ready about 7:50 am PDT, 6:50 am PST
   workflow_dispatch:
     inputs:
       force:
