@@ -107,8 +107,9 @@ jobs:
             echo "$BRANCH has moved past $FAILED_SHA; its newer CI run decides."
             exit 0
           fi
-          # A repeat conflict dispatch, queued behind the run that merged main in, has nothing left to merge.
-          if [ "$REASON" = conflict ] && git merge-base --is-ancestor origin/main HEAD; then
+          # A repeat conflict dispatch, queued behind the run that merged main in, has nothing left to merge. Only for
+          # automatic dispatches: a person dispatching by hand (reason defaults to conflict) still gets a run.
+          if [ "$REASON" = conflict ] && [ "$GITHUB_ACTOR" = 'github-actions[bot]' ] && git merge-base --is-ancestor origin/main HEAD; then
             echo "$BRANCH already contains main; nothing to merge."
             exit 0
           fi

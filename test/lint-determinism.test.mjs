@@ -32,7 +32,13 @@ test('lockstep code may not use Math.random, Math.sin, ** or Date.now', async ()
 });
 
 test('nor sneak them past the lint as Date() or globalThis.Math.*', async () => {
-  for (const code of ['Date();', 'globalThis.Math.sin(1);', 'window.Math.random();', 'self.Math.pow(2, 3);']) {
+  for (const code of [
+    'Date();',
+    'globalThis.Math.sin(1);',
+    'window.Math.random();',
+    'self.Math.pow(2, 3);',
+    'globalThis.crypto.randomUUID();',
+  ]) {
     const rules = await lint(code);
     assert.ok(
       rules.some((r) => r?.startsWith('no-restricted-')),

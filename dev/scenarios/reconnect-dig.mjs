@@ -8,7 +8,7 @@
 // a forced stall adds timing flakiness to a job that files issues.
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 const SYNC = 'const s = window.boogle.sync;';
-const STALL_MS = 4500;
+const STALL_MS = 4000; // past peer-room's 3 s silence limit, with room left under sync's 5 s held-edit age
 
 export default {
   about: 'the host stalls, the client digs while reconnecting, and the dig lands once both are back',

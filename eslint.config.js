@@ -82,8 +82,9 @@ export default [
         { selector: "NewExpression[callee.name='Date']", message: det('new Date()') + ' Use the world tick.' },
         { selector: "CallExpression[callee.name='Date']", message: det('Date()') + ' Use the world tick.' },
         {
-          selector: "MemberExpression[object.property.name='Math'][object.object.name=/^(globalThis|window|self)$/]",
-          message: 'Write Math.x, not globalThis.Math.x, so the determinism lint can check it.',
+          selector:
+            'MemberExpression[object.property.name=/^(Math|crypto|Date|performance)$/][object.object.name=/^(globalThis|window|self)$/]',
+          message: 'Write Math.x (crypto.x, ...), not globalThis.Math.x, so the determinism lint can check it.',
         },
       ],
     },
