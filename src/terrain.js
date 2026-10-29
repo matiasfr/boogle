@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ISLAND_R, GRID_RES, CELL, HALF, SEABED, COURT } from './constants.js';
+import { ISLAND_R, GRID_RES, CELL, HALF, SEABED, COURT, SEA, reducedMotion } from './constants.js';
 import { lerp, smoothstep, fbm, valueNoise } from './math.js';
 import { scene } from './scene.js';
 import { PATCH } from './sim/mushrooms.js';
@@ -41,16 +41,23 @@ const WET = new THREE.Color('#c9ad78'),
   GRASS = new THREE.Color('#7cc650');
 const GRASS_DK = new THREE.Color('#4e9a3d'),
   ROCK = new THREE.Color('#9d978c'),
-  DUG = new THREE.Color('#9a7f52'),
   DIRT = new THREE.Color('#7a5534');
+// Edited sand: dug is dark, saturated and cool-brown (almost black-brown when wet); piled is pale and warm.
+const DUG = new THREE.Color('#7a5538'),
+  DUG_WET = new THREE.Color('#3f3a3c'),
+  PILED = new THREE.Color('#fff3c8'),
+  CREST = new THREE.Color('#fffbe6');
 const tmpC = new THREE.Color(),
   tmpG = new THREE.Color();
 // Metres of player edits per vertex (index j*GRID_RES+i, the mesh order); drives colour only.
 const editDelta = new Float32Array(GRID_RES * GRID_RES);
+// Render-only height offset per vertex (metres): the crater "dip and spring back". Never touches heights[][].
+const visOff = new Float32Array(GRID_RES * GRID_RES);
 let terrainGeo = null;
 
-// Writes the vertex colour for mesh vertex k into out[k*3..]. x/z/h are world coords, ny the normal's y.
-function paintVertex(out, k, x, h, z, ny) {
+// Writes the vertex colour for mesh vertex k into out[k*3..]. x/z/h are world coords, ny the normal's y,
+// lap how much the mean of the neighbouring edits sits above this vertex's edit (>0 in a hollow, <0 on a crest).
+function paintVertex(out, k, x, h, z, ny, lap = 0) {
   const d = editDelta[k];
   const nse = valueNoise(x * 0.3, z * 0.3);
   const c = tmpC,
@@ -62,15 +69,25 @@ function paintVertex(out, k, x, h, z, ny) {
   c.lerp(g, grassy);
   c.lerp(ROCK, smoothstep(0.86, 0.72, ny) * grassy);
   c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
-  if (d < 0) c.lerp(DUG, Math.min(1, -d / 0.4) * 0.9);
-  else if (d > 0) c.lerp(SAND, Math.min(1, d / 0.6) * 0.5);
+  let shade = 1;
+  const wet = 1 - smoothstep(SEA - 0.1, SEA + 0.35, h); // at or under sea level
+  if (d < -0.01) {
+    c.lerp(DUG, Math.min(1, -d / 0.25) * 0.95);
+    c.lerp(DUG_WET, wet * Math.min(1, -d / 0.2));
+    shade *= 1 - Math.min(0.3, Math.max(0, lap) * 1.4); // hollows darken toward the middle
+  } else if (d > 0.01) {
+    c.lerp(PILED, Math.min(1, d / 0.3) * 0.85);
+    c.lerp(CREST, Math.min(0.55, Math.max(0, -lap) * 2.6) * Math.min(1, d / 0.12)); // crests catch the light
+  }
   const i = k % GRID_RES,
     j = (k - i) / GRID_RES;
   if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
     c.copy(DIRT).offsetHSL(0, 0, nse * 0.04);
-  out[k * 3] = c.r;
-  out[k * 3 + 1] = c.g;
-  out[k * 3 + 2] = c.b;
+  const edited = Math.min(1, Math.abs(d) / 0.15);
+  shade *= 1 - edited * 0.28 * (1 - smoothstep(0.7, 0.97, ny)); // steep faces on edits read as shadow
+  out[k * 3] = c.r * shade;
+  out[k * 3 + 1] = c.g * shade;
+  out[k * 3 + 2] = c.b * shade;
 }
 
 // Set one grid cell's height (metres) in place, plus how far it is from the base terrain (metres, colour only).
@@ -95,18 +112,59 @@ export function refreshRegion(i0, j0, i1, j1) {
     for (let i = a; i <= b; i++) {
       const k = j * n + i;
       const h = heights[i][j];
-      pos[k * 3 + 1] = h;
-      const dx = (heights[Math.min(n - 1, i + 1)][j] - heights[Math.max(0, i - 1)][j]) / (2 * CELL);
-      const dz = (heights[i][Math.max(0, j - 1)] - heights[i][Math.min(n - 1, j + 1)]) / (2 * CELL);
+      pos[k * 3 + 1] = h + visOff[k];
+      const ie = Math.min(n - 1, i + 1),
+        iw = Math.max(0, i - 1),
+        jn = Math.max(0, j - 1),
+        js = Math.min(n - 1, j + 1);
+      const dx = (heights[ie][j] + visOff[j * n + ie] - heights[iw][j] - visOff[j * n + iw]) / (2 * CELL);
+      const dz = (heights[i][jn] + visOff[jn * n + i] - heights[i][js] - visOff[js * n + i]) / (2 * CELL);
       const il = 1 / Math.hypot(dx, 1, dz);
       nrm[k * 3] = -dx * il;
       nrm[k * 3 + 1] = il;
       nrm[k * 3 + 2] = -dz * il;
-      paintVertex(col, k, pos[k * 3], h, pos[k * 3 + 2], nrm[k * 3 + 1]);
+      const lap = (editDelta[j * n + ie] + editDelta[j * n + iw] + editDelta[jn * n + i] + editDelta[js * n + i]) / 4 - editDelta[k];
+      paintVertex(col, k, pos[k * 3], h, pos[k * 3 + 2], nrm[k * 3 + 1], lap);
     }
   terrainGeo.attributes.position.needsUpdate = true;
   terrainGeo.attributes.normal.needsUpdate = true;
   terrainGeo.attributes.color.needsUpdate = true;
+}
+
+// Visual-only settle: after a batch of heights changed, show the old shape and let it drop (or rise) to the new one
+// with a little overshoot, over ~140 ms. oldH is the box's previous heights, row-major [(i-i0)*(j1-j0+1)+(j-j0)].
+const SETTLE_S = 0.14;
+const settle = new Map(); // vertex k -> { d: start offset (m), t: seconds elapsed }
+const easeBack = (t) => 1 + 5 * (t - 1) ** 3 + 4 * (t - 1) ** 2; // overshoots ~25% then returns to 1
+export function startSettle(i0, j0, i1, j1, oldH) {
+  if (reducedMotion) return;
+  const w = j1 - j0 + 1;
+  for (let i = i0; i <= i1; i++)
+    for (let j = j0; j <= j1; j++) {
+      const k = j * GRID_RES + i;
+      const d = oldH[(i - i0) * w + (j - j0)] + visOff[k] - heights[i][j];
+      if (Math.abs(d) > 0.005) settle.set(k, { d, t: 0 });
+    }
+}
+export function updateSettle(dt) {
+  if (!settle.size) return;
+  let i0 = GRID_RES,
+    j0 = GRID_RES,
+    i1 = 0,
+    j1 = 0;
+  for (const [k, s] of settle) {
+    s.t += dt;
+    const u = Math.min(1, s.t / SETTLE_S);
+    visOff[k] = u >= 1 ? 0 : s.d * (1 - easeBack(u));
+    if (u >= 1) settle.delete(k);
+    const i = k % GRID_RES,
+      j = (k - i) / GRID_RES;
+    i0 = Math.min(i0, i);
+    i1 = Math.max(i1, i);
+    j0 = Math.min(j0, j);
+    j1 = Math.max(j1, j);
+  }
+  refreshRegion(i0, j0, i1, j1);
 }
 
 export function createTerrainMesh() {

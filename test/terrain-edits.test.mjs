@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createTerrainState, CARRY_MAX, MAX_DELTA, MIN_DELTA, RATE_TICKS } from '../src/world/terrain-logic.js';
+import { createTerrainState, CARRY_MAX, MAX_DELTA, MIN_DELTA, RATE_TICKS, RIM_CM } from '../src/world/terrain-logic.js';
 
 const N = 16;
 function make() {
@@ -24,22 +24,39 @@ test('conservation: dig and pile never create sand', () => {
   let x = 12345;
   const rnd = (m) => ((x = (Math.imul(x, 1103515245) + 12345) >>> 0) >>> 8) % m;
   for (let k = 0; k < 500; k++) {
-    go(s, edit(rnd(2) ? 'dig' : 'pile', 1 + rnd(N - 2), 1 + rnd(N - 2), rnd(2) ? 'a' : 'b'));
+    const op = ['dig', 'pile', 'flatten'][rnd(3)];
+    go(s, { ...edit(op, 1 + rnd(N - 2), 1 + rnd(N - 2), rnd(2) ? 'a' : 'b'), h: 20 + rnd(60) });
     assert.equal(total(s, ['a', 'b']), 0);
     assert.ok(s.carryOf('a') >= 0 && s.carryOf('a') <= CARRY_MAX);
   }
   for (const d of s.delta) assert.ok(d >= MIN_DELTA && d <= MAX_DELTA);
 });
 
-test('dig fills the bucket, pile spends it', () => {
+test('dig takes 40/20 from the 3x3, rims the 5x5, rest goes in the bucket', () => {
   const s = make();
   assert.ok(go(s, edit('dig', 8, 8)));
-  assert.equal(s.carryOf('a'), 100);
-  assert.equal(s.delta[8 * N + 8], -20);
-  assert.equal(s.delta[7 * N + 8], -10);
+  assert.equal(s.delta[8 * N + 8], -40);
+  assert.equal(s.delta[7 * N + 8], -20);
+  assert.equal(s.delta[6 * N + 8], RIM_CM);
+  assert.equal(s.delta[6 * N + 6], RIM_CM);
+  assert.equal(s.carryOf('a'), 200 - 16 * RIM_CM);
+  assert.equal(total(s, ['a']), 0);
   assert.ok(go(s, edit('pile', 8, 8)));
-  assert.equal(s.carryOf('a'), 0);
-  assert.equal(s.delta[8 * N + 8], 0);
+  assert.ok(s.carryOf('a') >= 0);
+  assert.equal(total(s, ['a']), 0);
+});
+
+test('flatten moves the brush toward the given height, through the bucket', () => {
+  const s = make();
+  for (let k = 0; k < 3; k++) go(s, edit('dig', 8, 8));
+  const before = Math.abs(s.delta[8 * N + 8]);
+  assert.ok(go(s, { ...edit('flatten', 8, 8), h: 50 }));
+  assert.ok(Math.abs(s.delta[8 * N + 8]) < before);
+  assert.equal(total(s, ['a']), 0);
+  assert.equal(s.check({ ...edit('flatten', 8, 8), h: 1.5 }, 99999), 'int');
+  assert.equal(s.check({ ...edit('flatten', 8, 8), h: 50 }, 99999), null); // rims above 50 still to level
+  const flat = make();
+  assert.equal(flat.check({ ...edit('flatten', 8, 8), h: 50 }, 99999), 'nothing-to-move');
 });
 
 test('validation rejects bad edits', () => {
@@ -64,16 +81,13 @@ test('validation rejects bad edits', () => {
 
 test('full bucket and depth limit stop digging', () => {
   const s = make();
-  for (let k = 0; k < 20; k++) go(s, edit('dig', 8, 8));
-  assert.equal(s.carryOf('a'), CARRY_MAX);
-  assert.equal(s.check(edit('dig', 8, 8), 99999), 'bucket-full');
+  for (let i = 2; i <= 11; i += 3) for (let j = 2; j <= 11; j += 3) go(s, edit('dig', i, j));
+  for (let i = 2; i <= 13; i += 3) for (let j = 2; j <= 13; j += 3) go(s, edit('dig', i, j, 'a'));
+  assert.equal(s.check(edit('dig', 13, 2), 99999), 'bucket-full');
   const t = make();
-  for (let k = 0; k < 40; k++) {
-    go(t, edit('dig', 8, 8));
-    go(t, edit('pile', 5, 5, 'b')); // no-ops
-    t.apply(edit('pile', 10, 10), tick); // empty carry after a dig-heavy run is a safe no-op
-  }
-  assert.ok(t.delta.every((d) => d >= MIN_DELTA));
+  for (let k = 0; k < 40; k++) go(t, edit('dig', 8, 8));
+  assert.equal(t.check(edit('dig', 8, 8), 99999), 'too-deep');
+  assert.ok(t.delta.every((d) => d >= MIN_DELTA && d <= MAX_DELTA));
 });
 
 test('serialize/load round-trip and order-independent hash', () => {

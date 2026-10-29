@@ -4,14 +4,15 @@
 import * as THREE from 'three';
 import { GRID_RES, CELL, HALF, COURT, BALL_R, PLAYER_R } from '../constants.js';
 import { clamp } from '../math.js';
-import { heights, groundHeight, setCellHeight, refreshRegion } from '../terrain.js';
+import { heights, groundHeight, setCellHeight, refreshRegion, startSettle } from '../terrain.js';
+import { playEditFx } from '../sand-fx.js';
 import { refreshGround } from '../physics.js';
 import { updateHeightTexels } from '../water-render.js';
 import { scene, camera } from '../scene.js';
 import { me, camForward } from '../player.js';
 import { ball } from '../ball.js';
 import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
-import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
+import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM, FULL_MARGIN } from './terrain-logic.js';
 import { PATCH } from '../sim/mushrooms.js';
 
 const N = GRID_RES;
@@ -38,6 +39,7 @@ export const terrain = createTerrainState({ base: baseCm, n: N, editable });
 
 registerOp('dig', { validate: terrain.validate, apply: terrain.apply });
 registerOp('pile', { validate: terrain.validate, apply: terrain.apply });
+registerOp('flatten', { validate: terrain.validate, apply: terrain.apply });
 registerState('terrain', {
   serialize: terrain.serialize,
   load(json) {
@@ -64,15 +66,30 @@ function markDirty(idx) {
 let myId = 'local';
 let submitted = null;
 
+// Hook for other systems (water, wake effects): fn(edit, cells) after every applied edit, cells = [[index, signedCm]]
+// where index = i*GRID_RES+j and a positive amount means sand was added to that cell. Do not mutate cells.
+const cellsFns = [];
+export const onTerrainCells = (fn) => cellsFns.push(fn);
+
 onApplied((edit) => {
   if (submitted && submitted.op === edit.op && submitted.i === edit.i && submitted.j === edit.j) {
     myId = edit.p;
     submitted = null;
   }
-  // The brush touches the 3x3 around (i, j); mark its corners, the box covers the rest.
-  markDirty(Math.max(0, edit.i - 1) * N + Math.max(0, edit.j - 1));
-  markDirty(Math.min(N - 1, edit.i + 1) * N + Math.min(N - 1, edit.j + 1));
+  // The brush touches the 5x5 around (i, j); mark its corners, the box covers the rest.
+  markDirty(Math.max(0, edit.i - 2) * N + Math.max(0, edit.j - 2));
+  markDirty(Math.min(N - 1, edit.i + 2) * N + Math.min(N - 1, edit.j + 2));
+  animateNext = true;
+  const cells = terrain.lastCells();
+  for (const fn of cellsFns) fn(edit, cells);
+  // Cosmetic juice, local only (also for remote players' edits, at lower intensity).
+  const c = edit.i * N + edit.j;
+  const x = edit.i * CELL - HALF,
+    z = HALF - edit.j * CELL;
+  const eff = (baseCm[c] + terrain.delta[c]) / 100;
+  playEditFx({ op: edit.op, p: edit.p, own: edit.p === myId, x, z, y: Math.max(eff, 0), depth: -terrain.delta[c], wet: eff <= 0.05 });
 });
+let animateNext = false;
 
 function liftIfBuried(body, r) {
   if (!body) return;
@@ -90,11 +107,16 @@ export function flushTerrain() {
   if (!dirty) return;
   const [i0, j0, i1, j1] = dirty;
   dirty = null;
+  const animate = animateNext;
+  animateNext = false;
+  const oldH = animate ? new Float32Array((i1 - i0 + 1) * (j1 - j0 + 1)) : null;
   for (let i = i0; i <= i1; i++)
     for (let j = j0; j <= j1; j++) {
       const idx = i * N + j;
+      if (oldH) oldH[(i - i0) * (j1 - j0 + 1) + (j - j0)] = heights[i][j];
       setCellHeight(i, j, (baseCm[idx] + terrain.delta[idx]) / 100, terrain.delta[idx] / 100);
     }
+  if (oldH) startSettle(i0, j0, i1, j1, oldH); // render-only dip and spring back
   refreshRegion(i0, j0, i1, j1);
   refreshGround();
   updateHeightTexels(i0, j0, i1, j1);
@@ -103,145 +125,3 @@ export function flushTerrain() {
 }
 onTick(flushTerrain);
 
-// ---------------------------------------------------------------- shovel tool
-export const shovel = { on: false, hold: null, target: null, lastMs: 0 };
-
-export function toggleShovel(force) {
-  shovel.on = force ?? !shovel.on;
-  if (!shovel.on) shovel.hold = null;
-  document.body.classList.toggle('shovel', shovel.on);
-}
-// Whether the shovel should take clicks right now (the ball wins while it is in hand).
-export const shovelActive = () => shovel.on && me.entered && !me.holding && !me.charging;
-export function setHold(kind) {
-  shovel.hold = kind;
-  if (kind) shovel.lastMs = 0;
-}
-export const carryAmount = () => terrain.carryOf(myId);
-
-const cellOf = (x, z) => [
-  clamp(Math.round((x + HALF) / CELL), 1, N - 2),
-  clamp(Math.round((HALF - z) / CELL), 1, N - 2),
-];
-
-const fwd = new THREE.Vector3();
-// Aim: march the camera ray down to the ground, then pull the spot in to within reach of the player.
-function aim() {
-  if (!me.body) return null;
-  camForward(fwd);
-  const o = camera.position;
-  let hit = null;
-  let prev = 0;
-  for (let t = 0.3; t < 70; t += 0.3) {
-    const x = o.x + fwd.x * t,
-      y = o.y + fwd.y * t,
-      z = o.z + fwd.z * t;
-    if (y <= groundHeight(x, z)) {
-      let lo = prev,
-        hi = t;
-      for (let k = 0; k < 6; k++) {
-        const m = (lo + hi) / 2;
-        if (o.y + fwd.y * m <= groundHeight(o.x + fwd.x * m, o.z + fwd.z * m)) hi = m;
-        else lo = m;
-      }
-      hit = { x: o.x + fwd.x * hi, z: o.z + fwd.z * hi };
-      break;
-    }
-    prev = t;
-  }
-  const p = me.body.position;
-  let dx, dz;
-  if (hit) {
-    dx = hit.x - p.x;
-    dz = hit.z - p.z;
-  } else {
-    dx = fwd.x;
-    dz = fwd.z;
-  }
-  const len = Math.hypot(dx, dz) || 1;
-  const k = Math.min(len, REACH) / len;
-  const x = p.x + dx * k,
-    z = p.z + dz * k;
-  const [i, j] = cellOf(x, z);
-  return { i, j, x: i * CELL - HALF, z: HALF - j * CELL };
-}
-
-// Target ring: a thin strip hugging the ground around the aimed cell.
-const RING_SEG = 40;
-const ringGeo = new THREE.BufferGeometry();
-ringGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((RING_SEG + 1) * 2 * 3), 3));
-{
-  const idx = [];
-  for (let s = 0; s < RING_SEG; s++) {
-    const a = s * 2;
-    idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-  }
-  ringGeo.setIndex(idx);
-}
-const ringMat = new THREE.MeshBasicMaterial({
-  color: 0xffffff,
-  transparent: true,
-  opacity: 0.85,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-});
-const ring = new THREE.Mesh(ringGeo, ringMat);
-ring.frustumCulled = false;
-ring.visible = false;
-ring.renderOrder = 5;
-scene.add(ring);
-const RING_COLORS = { dig: 0xff9a3d, pile: 0xfff2c4, bad: 0xff5a4d };
-
-function placeRing(t) {
-  const a = ringGeo.attributes.position.array;
-  for (let s = 0; s <= RING_SEG; s++) {
-    const ang = (s / RING_SEG) * Math.PI * 2;
-    const c = Math.cos(ang),
-      sn = Math.sin(ang);
-    for (let side = 0; side < 2; side++) {
-      const r = side ? 1.9 : 1.65;
-      const x = t.x + c * r,
-        z = t.z + sn * r;
-      const k = (s * 2 + side) * 3;
-      a[k] = x;
-      a[k + 1] = Math.max(groundHeight(x, z), 0.02) + 0.07;
-      a[k + 2] = z;
-    }
-  }
-  ringGeo.attributes.position.needsUpdate = true;
-}
-
-const chipEl = () => document.getElementById('shovel-chip');
-let lastChip = '';
-
-// Called every frame from main.js.
-export function updateShovel() {
-  const active = shovelActive();
-  const t = active ? aim() : null;
-  shovel.target = t;
-  ring.visible = !!t;
-  const chip = chipEl();
-  if (chip) {
-    const text = shovel.on ? `Shovel  Sand ${carryAmount()}/${CARRY_MAX}` : '';
-    if (text !== lastChip) {
-      lastChip = text;
-      chip.textContent = text;
-      chip.hidden = !shovel.on;
-    }
-    chip.dataset.mode = shovel.hold ?? '';
-  }
-  if (!t) return;
-  const kind = shovel.hold ?? 'dig';
-  const ok = terrain.plan(kind, t.i, t.j, myId).length > 0;
-  ringMat.color.setHex(ok ? RING_COLORS[kind] : RING_COLORS.bad);
-  placeRing(t);
-  if (shovel.hold && active) {
-    const now = performance.now();
-    if (now - shovel.lastMs >= REPEAT_MS) {
-      shovel.lastMs = now;
-      const edit = { op: shovel.hold, i: t.i, j: t.j };
-      submitted = { ...edit };
-      submitEdit(edit);
-    }
-  }
-}
