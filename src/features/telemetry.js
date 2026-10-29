@@ -13,6 +13,7 @@
 import { net, getRoomId, onNetState } from '../net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
 import { mixedBuilds } from '../builds.js';
+import { coarseUa, firstFrame, scrub } from '../report-format.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
@@ -22,45 +23,6 @@ const BATCH = 10; // the server takes up to 10 per POST
 const FLUSH_MS = 10000;
 const STUCK_MS = 30000; // still 'connecting' this long after starting (or restarting) to connect
 const SETTLE_MS = 3000; // a successful join reports after this, once peers' presence (and builds) has arrived
-
-const BROWSERS = [
-  ['Edge', /Edg\/(\d+)/],
-  ['Firefox', /Firefox\/(\d+)/],
-  ['Chrome', /Chrome\/(\d+)/],
-  ['Safari', /Version\/(\d+).*Safari/],
-];
-const SYSTEMS = [
-  ['Android', /Android/],
-  ['iOS', /iPhone|iPad/],
-  ['Windows', /Windows/],
-  ['Mac', /Mac OS X/],
-  ['Linux', /Linux/],
-];
-function coarseUa(ua) {
-  const b = BROWSERS.map(([name, re]) => [name, re.exec(ua)]).find(([, m]) => m);
-  const os = SYSTEMS.find(([, re]) => re.test(ua));
-  return `${b ? `${b[0]} ${b[1][1]}` : 'other'} ${os ? os[0] : 'other'}`;
-}
-
-// First stack frame, without the origin or query string: "at step (/boogle/assets/index-abc.js:1:2345)".
-function firstFrame(stack) {
-  const line = String(stack || '')
-    .split('\n')
-    .find((l) => /\bat\b|@/.test(l) && /:\d+/.test(l));
-  return line
-    ? line
-        .trim()
-        .replace(/[a-z-]+:\/\/[^/\s)]+/g, '')
-        .replace(/\?[^:)\s]*/g, '')
-        .slice(0, 150)
-    : '';
-}
-
-// Peer ids (`boogle-<room>-c<random>`) and other id-like tokens (12+ letters/digits with a digit) out of messages.
-const scrub = (msg) =>
-  String(msg)
-    .replace(/boogle-[a-z0-9-]+/gi, 'boogle-*')
-    .replace(/\b(?=[a-z]*\d)[a-z0-9]{12,}\b/gi, '*');
 
 if (SERVER) {
   const url = new URL('/report', SERVER);
