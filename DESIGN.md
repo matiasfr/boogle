@@ -2,7 +2,7 @@
 
 Boogle is a drop-in island for a handful of friends: one beach ball, sand you can shape, water that flows where you let it, and a shared garden that keeps growing while nobody is online.
 
-These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, in a PR, with a reason. [PLAN.md](PLAN.md) says *what* we're building next; this file says *how we decide*. The evidence behind these principles (precedents from Townscaper, Animal Crossing, Timberborn, From Dust, Noita, Factorio and others, plus a ranked idea list) is in [docs/research/water-farming-multiplayer.md](docs/research/water-farming-multiplayer.md).
+These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [PLAN.md](PLAN.md) says *what* we're building next; this file says *how we decide*. The evidence behind these principles (precedents from Townscaper, Animal Crossing, Timberborn, From Dust, Noita, Factorio and others, plus a ranked idea list) is in [docs/research/water-farming-multiplayer.md](docs/research/water-farming-multiplayer.md).
 
 ## The core loop
 
@@ -76,6 +76,6 @@ This is a friends' project. Prefer plain modules, few dependencies and code some
 
 ## How we work
 
-- **Playtest every phase with 2–4 real people** before starting the next. Each phase in PLAN.md ends with the question the playtest should answer; write down what happened.
-- **A feature PR says which principle it serves**, and calls out any principle it bends.
-- **Changing a principle is a PR to this file**, with the reason.
+- **Playtest constantly with 2–4 real people.** We iterate in small steps straight on `main` and play each change on the live site. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
+- **Every feature says which principle it serves**, and calls out any principle it bends.
+- **Changing a principle is a commit to this file**, with the reason.

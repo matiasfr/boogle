@@ -6,7 +6,7 @@ The design direction comes from the [research report](docs/research/water-farmin
 
 ## Guiding rules
 
-The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question its playtest (2–4 real people) should answer.
+The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question our ongoing playtests (2–4 real people, notes in [docs/playtests.md](docs/playtests.md)) should answer.
 
 ## Key decision: PeerJS (WebRTC), with one browser as host
 

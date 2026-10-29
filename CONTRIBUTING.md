@@ -27,17 +27,19 @@ Layout: `src/` game client (`src/net/` is multiplayer, see [src/net/README.md](s
 
 ## Workflow
 
-1. Branch from `main`. One idea per branch.
-2. Keep PRs small. Title in the imperative, like the git log: "Add splashes for the ball", "Fix host migration flapping".
-3. Run `npm run check` before pushing (lint, build, server tests, network test).
-4. CI must be green before merging.
-5. `main` auto-deploys to GitHub Pages, so `main` must always be playable. If in doubt, open the live site in two tabs after merging.
+We're in **rapid iteration**: a few people building and playtesting together, many times a day. So:
+
+1. **Commit straight to `main`** once `npm run check` passes (lint, build, unit tests, server tests, network test). Pull (`git pull --rebase`) before pushing.
+2. Keep commits small and focused. Message in the imperative, like the git log: "Add splashes for the ball", "Fix host migration flapping".
+3. `main` auto-deploys to the live site in about a minute, so `main` must always be playable. After pushing, open the live site in two tabs (or with a friend) and check your change.
+4. If CI goes red on `main`, fixing it beats starting anything new. Revert if the fix isn't quick.
+5. Use a branch and PR only when you want review or the change is risky or large (networking protocol, sync, persistence, anything that could break everyone's island). Ask `@claude` or a friend to review.
 
 ## Design rules
 
-- Every feature PR names the [DESIGN.md](DESIGN.md) principle it serves and flags any it bends. The PR template asks for this.
-- If a change conflicts with a principle, either change the idea or change the principle: that is a PR to DESIGN.md, with the reason.
-- Pick work from [PLAN.md](PLAN.md) and tick its checkboxes in the same PR.
+- Every feature names the [DESIGN.md](DESIGN.md) principle it serves and flags any it bends (in the commit message body, or the PR template if you open one).
+- If a change conflicts with a principle, either change the idea or change the principle in DESIGN.md, with the reason, in its own commit.
+- Pick work from [PLAN.md](PLAN.md) and tick its checkboxes in the same commit.
 
 ## Code rules
 
@@ -54,19 +56,19 @@ Layout: `src/` game client (`src/net/` is multiplayer, see [src/net/README.md](s
   | Water, terrain edits, garden, weather | The host peer |
   | Persistence (snapshots) | The host, saved to our server |
 
-- **Small and readable.** Plain modules, small files, no new dependencies without a reason in the PR description. Measure before optimizing.
-- **Style.** ESLint (`npm run lint`) and Prettier (single quotes, 120 columns, `npm run format`). Format only the files you touch; don't mix reformatting into feature PRs.
+- **Small and readable.** Plain modules, small files, no new dependencies without a reason in the commit message. Measure before optimizing.
+- **Style.** ESLint (`npm run lint`) and Prettier (single quotes, 120 columns, `npm run format`). Format only the files you touch; keep reformatting in its own commit.
 
 ## Testing
 
 - **Networking** (anything in `src/net/`, `src/net.js`, ball ownership, message formats): run `npm run test:net`. It starts a local PeerServer and three headless Chromium pages and checks host election, presence, messaging and migration. Also try two real tabs with `?netdebug=1`. If you add behavior to the room interface, add a check to `dev/peer-test/`.
-- **Visual changes:** run `npm run dev` and look at it, ideally in two tabs. Attach a screenshot or GIF to the PR. Playwright is installed, so scripted screenshots work too.
+- **Visual changes:** run `npm run dev` and look at it, ideally in two tabs. If you open a PR, attach a screenshot or GIF. Playwright is installed, so scripted screenshots work too.
 - **Server:** `cd server && npm test` (`node:test`).
 - **Everything:** `npm run check`.
 
 ### Playtesting with friends
 
-Each phase in PLAN.md ends with a question. When the phase is done, play it with 2 to 4 people on the live site, `https://matiasfr.github.io/boogle/?room=<name>`, then write down what happened (who, how long, what was fun, what broke, answer to the phase question) in the PR or issue, and link it from PLAN.md. Use the bug report template for anything broken, with `?netdebug=1` logs.
+Playtest continuously: whenever something new lands, jump on the live site, `https://matiasfr.github.io/boogle/?room=<name>`, with whoever is around. Each phase in PLAN.md ends with a question; jot down the answer and anything fun or broken (a line or two in `docs/playtests.md` is enough). Use the bug report template for anything broken, with `?netdebug=1` logs.
 
 ## Working with Claude Code
 
