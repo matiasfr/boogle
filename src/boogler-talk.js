@@ -5,7 +5,8 @@
 //   talkView(t)                     -> { say, mood, opts: [string] } or null once the talk is over
 //   pickTalk(t, i)                  answer with option i; returns { levelUp, gave } for the caller to celebrate
 //
-// gifts() lists what the player can hand over: [{ kind, label }]. give(kind) takes it from them (false if it's gone).
+// gifts() lists what the player can hand over: [{ kind, label }] (what is in their hand). give(kind) takes it from them
+// (false if it's gone). He turns down key items (catalog `key`) without calling give.
 import {
   THREADS,
   SMALL_TALK,
@@ -31,8 +32,7 @@ import {
   SORRY_NO,
   SORRY_OPTS,
   GIFT_ASK,
-  GIFT_PROMPT,
-  GIFT_NONE,
+  GIFT_KEPT_OPTS,
   GIFT_FORGAVE,
   GIFT_CAPPED,
   GIFT_REPEAT,
@@ -121,7 +121,7 @@ function threadVisible(f, id) {
 }
 
 function menuNode(t, say) {
-  const { f, ctx } = t;
+  const { f } = t;
   const opts = [opt("How's it going?", () => smallTalk(t))];
   for (const id of THREAD_ORDER) {
     if (!threadVisible(f, id)) continue;
@@ -129,7 +129,7 @@ function menuNode(t, say) {
     const ask = THREADS[id].ask[s.done ? 2 : s.started ? 1 : 0];
     opts.push(opt(ask, () => enterThread(t, id)));
   }
-  if (ctx.gifts().length) opts.push(opt(GIFT_ASK, () => giftNode(t, () => menuNode(t, pick(t, AFTER)))));
+  opts.push(...giftOpts(t, () => menuNode(t, pick(t, AFTER))));
   opts.push(
     opt(pick(t, BYE), () =>
       node(
@@ -221,18 +221,22 @@ function smallTalk(t) {
 }
 
 // ---------------------------------------------------------------- gifts
-function giftNode(t, after) {
-  const { ctx } = t;
-  const opts = ctx
+const withArticle = (label) => `${/^[aeiou]/i.test(label) ? 'an' : 'a'} ${label}`;
+function giftOpts(t, after) {
+  return t.ctx
     .gifts()
-    .slice(0, 6)
-    .map((g) => opt(`Here, a ${g.label}.`, () => giveNode(t, g.kind, after)));
-  opts.push(opt(GIFT_NONE, after));
-  return node(GIFT_PROMPT, opts, 'joy');
+    .slice(0, 2)
+    .map((g) => opt(GIFT_ASK.replace('{gift}', withArticle(g.label)), () => giveNode(t, g.kind, after)));
 }
 
 function giveNode(t, kind, after) {
   const { f, ctx } = t;
+  if (GIFTS[kind].key)
+    return node(
+      GIFTS[kind].line,
+      GIFT_KEPT_OPTS.map((s) => opt(s, after)),
+      'smile',
+    );
   if (!ctx.give(kind)) return after();
   const r = giveGift(f, kind, ctx.now);
   t.out.gave = { kind, taste: r.taste };
@@ -287,7 +291,7 @@ function waryNode(t) {
       );
     }),
   ];
-  if (ctx.gifts().length) opts.push(opt(GIFT_ASK, () => giftNode(t, backToMenu(t))));
+  opts.push(...giftOpts(t, backToMenu(t)));
   opts.push(opt(pick(t, BYE), end));
   return node(pick(t, WARY), opts, 'grump');
 }

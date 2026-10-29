@@ -1107,9 +1107,8 @@ export const SORRY_YES = '...Okay. I accept a little bit of the sorry. Keep it u
 export const SORRY_NO = 'You already said sorry. Sorry is not a present.';
 export const SORRY_OPTS = ['Okay.', 'Fair enough.'];
 
-export const GIFT_ASK = 'I brought you something.';
-export const GIFT_PROMPT = 'A present? For me? What is it?';
-export const GIFT_NONE = 'Never mind.';
+export const GIFT_ASK = 'I brought you {gift}.';
+export const GIFT_KEPT_OPTS = ['Fair enough.', 'Worth a try.'];
 export const GIFT_FORGAVE = '...Fine. You are forgiven. Mostly.';
 export const GIFT_CAPPED = 'So many presents today! I will keep it, but you are spoiling me.';
 export const GIFT_REPEAT = 'Another one! You really like giving me these.';

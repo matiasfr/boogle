@@ -18,7 +18,7 @@ const STAND = (x, z) => `
   const b = window.boogle.me.body;
   b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);
   return groundHeight(${x}, ${z});`;
-const ACT = `return (await import('/src/gifts.js')).pickupAction()`;
+const ACT = `return (await import('/src/hands.js')).grabDown()`;
 
 export default {
   about: 'shake fruit off a palm and pocket it; finds on the beach',

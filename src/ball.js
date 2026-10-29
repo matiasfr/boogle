@@ -5,7 +5,7 @@ import { lerp } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { world, ballMat, teleport } from './physics.js';
-import { me, handPosition, throwVelocity, chargeAmount } from './player.js';
+import { me, handPosition, carryPosition, throwVelocity } from './player.js';
 import { net, remotes, sendPresence } from './net.js';
 
 function beachBallTexture() {
@@ -138,32 +138,6 @@ export function respawnBall() {
   sendPresence();
 }
 
-export function actionDown() {
-  if (!me.entered) return;
-  if (me.holding) {
-    me.charging = true;
-    me.chargeStart = performance.now();
-    return true;
-  }
-  if (ballInReach()) {
-    grabBall();
-    me.suppressUp = true;
-    return true;
-  }
-  return false;
-}
-
-export function actionUp() {
-  if (me.suppressUp) {
-    me.suppressUp = false;
-    return;
-  }
-  if (me.charging) {
-    me.charging = false;
-    throwBall(chargeAmount());
-  }
-}
-
 // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner.
 export function resolveBallOwner(now) {
   let best = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
@@ -214,7 +188,7 @@ function updateBallDisplayFromRemote() {
 
 export function prepareBall() {
   if (ball.mine && ball.held && me.body) {
-    const h = handPosition();
+    const h = carryPosition();
     teleport(ball.body, h.x, h.y, h.z);
   } else if (!ball.mine) {
     updateBallDisplayFromRemote();

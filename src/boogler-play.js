@@ -4,7 +4,7 @@
 // Friendship is personal (src/boogler-friendship.js), saved in localStorage per room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler.js) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
-import { FIXED, isTouch } from './constants.js';
+import { FIXED } from './constants.js';
 import { world as physics } from './physics.js';
 import { me } from './player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from './net.js';
@@ -25,9 +25,8 @@ import {
   rideLimit,
   isWary,
 } from './boogler-friendship.js';
-import { pocketItems, takeFromPocket } from './gifts.js';
-import { seedCount, giveSeed } from './mushroom-garden.js';
-import { giftIndex } from './sim/gift-catalog.js';
+import { heldId, useOne } from './inventory.js';
+import { GIFTS, giftIndex } from './sim/gift-catalog.js';
 
 const PET_RANGE = 2.6; // metres from his centre
 const TALK_RANGE = 3.6;
@@ -35,7 +34,6 @@ const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
 const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
-const SEEDS = giftIndex('seeds');
 
 let friend = null;
 let storeKey = '';
@@ -203,10 +201,10 @@ function updateRide(dt, now) {
 // ---------------------------------------------------------------- talking
 let talk = null;
 
+// He is offered whatever is in your hand, and takes it from there (one seed off a stack).
 function giftList() {
-  const list = seedCount() ? [{ kind: SEEDS, label: 'mushroom seed' }] : [];
-  for (const g of pocketItems()) if (!list.some((x) => x.kind === g.kind)) list.push(g);
-  return list;
+  const id = heldId();
+  return id ? [{ kind: giftIndex(id), label: GIFTS[giftIndex(id)].name }] : [];
 }
 
 function converse(start) {
@@ -217,7 +215,7 @@ function converse(start) {
     rng: Math.random,
     start,
     gifts: giftList,
-    give: (kind) => (kind === SEEDS ? giveSeed() : takeFromPocket(kind)),
+    give: (kind) => heldId() === GIFTS[kind].id && !!useOne(),
   });
   render();
   return true;
@@ -257,10 +255,14 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-// ---------------------------------------------------------------- petting (click / E, see src/input.js)
+// ---------------------------------------------------------------- petting (a grab target, see src/hands.js)
 let petUntil = 0;
-export function booglerAction() {
-  if (!me.entered || !me.body || dialogue.open || riding() || dist() > PET_RANGE) return false;
+export function petTarget() {
+  if (!me.entered || !me.body || dialogue.open || riding() || dist() > PET_RANGE) return null;
+  return { label: 'pet', button: 'Pet', run: booglerAction };
+}
+
+function booglerAction() {
   const r = pet(f(), Date.now());
   save();
   petUntil = performance.now() + 1200;
@@ -271,17 +273,9 @@ export function booglerAction() {
 }
 
 export function booglerHint() {
-  if (!me.entered || !me.body || dialogue.open) return null;
-  if (riding()) return { text: "You're riding The Boogler. He won't put up with it for long!" };
-  const d = dist();
-  if (d < PET_RANGE) {
-    if (isTouch) return { text: 'Tap Pet to pet The Boogler, or Talk to chat', button: 'Pet' };
-    return { text: `Click to pet · C to talk${giftList().length ? ' or give a present' : ''}`, button: 'Pet' };
-  }
-  if (d < TALK_RANGE) return { text: isTouch ? 'Tap Talk to chat with The Boogler' : 'C to talk to The Boogler' };
-  if (boogler.me.wary && d < 10)
-    return { text: 'The Boogler is avoiding you. Catch him and say sorry, or bring a present.' };
-  return null;
+  if (!me.entered || !me.body || dialogue.open || riding() || dist() >= TALK_RANGE) return null;
+  const g = giftList()[0];
+  return g && !GIFTS[g.kind].key ? 'C to give' : 'C to talk';
 }
 
 // ---------------------------------------------------------------- frame

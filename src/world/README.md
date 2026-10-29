@@ -10,7 +10,7 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 | `terrain-edits.js` | Phase 3: dig/pile ops, integer sand layer on top of the base heightfield, updating mesh/physics/water height texture. |
 | `../sim/water.js` | Phase 4: pure integer column water simulation (no three.js, no DOM). |
 | `../sim/mushrooms.js` | Mushroom patch: buried seeds, watering, growth ticks (ops `mush.plant`, `mush.water`, state `mushrooms`). |
-| `../sim/gifts.js` | Island gifts: fruit on the palms and things washing up on the beach (ops `fruit.drop`, `gift.take`, state `gifts`). |
+| `../sim/gifts.js` | Island gifts: fruit on the palms, things washing up on the beach, thrown things and perched ones (ops `fruit.drop`, `gift.take`, `gift.toss`, state `gifts`). |
 
 `src/sim/*` modules are pure functions over typed arrays so they can run in Node tests and, later, a Web Worker. Rendering and input code adapts them to the game.
 

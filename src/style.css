@@ -159,16 +159,6 @@ body {
   font-size: 14px;
   white-space: nowrap;
 }
-.tool {
-  position: absolute;
-  left: 50%;
-  top: auto;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  padding: 7px 14px;
-  font-size: 14px;
-  white-space: nowrap;
-}
 .help {
   position: absolute;
   left: calc(14px + env(safe-area-inset-left, 0px));

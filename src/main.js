@@ -10,7 +10,7 @@ import { world, installStepHooks, teleport } from './physics.js';
 import { createProps, createClouds, updateClouds } from './props.js';
 import { animateAvatar } from './avatars.js';
 import { ball, claimBall, respawnBall, resolveBallOwner, prepareBall } from './ball.js';
-import { me, updateIntent, updateCamera, updatePreview, handPosition } from './player.js';
+import { me, updateIntent, updateCamera, updatePreview, carryPosition } from './player.js';
 import { net, remotes, connectRoom, updateRemotes, sendPresence } from './net.js';
 import { renderPeople, updateHud, initLobby } from './hud.js';
 import './world/water-world.js';
@@ -59,7 +59,7 @@ function afterStep(now) {
 const tmpV = new THREE.Vector3();
 function syncVisuals(dt) {
   if (ball.mine) {
-    if (ball.held) handPosition(ball.mesh.position);
+    if (ball.held) carryPosition(ball.mesh.position);
     else ball.mesh.position.copy(ball.disp.p);
     ball.mesh.quaternion.copy(ball.disp.q);
   } else {
