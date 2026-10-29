@@ -150,12 +150,23 @@ try {
   await victim.page.close();
   const watchers = BCD.filter(p => p !== victim);
   const leftMs = await waitFor(async () => (await Promise.all(watchers.map(p => ev(p.page, id => window.T.left.some(l => l.peer === id), victim.selfId)))).every(Boolean), 8000);
-  check('crashing a client -> others get left', leftMs >= 0, `${Date.now() - tClient} ms`);
+  check('closing a client page -> others get left', leftMs >= 0 && Date.now() - tClient < 5000, `${Date.now() - tClient} ms`);
   check('still exactly one host', (await Promise.all(watchers.map(snap))).filter(s => s.host).length === 1);
   await ev(other.page, () => window.T.room.close());
   const hostPage = BCD.find((p, i) => hostFlags[i]);
   const gracefulMs = await waitFor(() => ev(hostPage.page, id => window.T.left.some(l => l.peer === id), other.selfId), 3000);
   check('graceful room.close() -> left within 3 s', gracefulMs >= 0, gracefulMs + ' ms');
+  // a hard crash: the renderer dies, so nothing is sent (no 'bye', no unload handlers); only heartbeats can notice
+  const E = await open('E'), F = await open('F');
+  const HEF = [hostPage, E, F];
+  check('two more pages join', (await waitFor(async () => (await Promise.all(HEF.map(async p => (await snap(p)).peers.length))).every(n => n === 3), 6000)) >= 0);
+  await Promise.all(HEF.map(p => ev(p.page, () => { window.T.left.length = 0; })));
+  const tHard = Date.now();
+  const cdp = await E.ctx.newCDPSession(E.page);
+  cdp.send('Page.crash').catch(() => {}); // never resolves: the renderer is gone
+  const hardWatchers = [hostPage, F];
+  const hardMs = await waitFor(async () => (await Promise.all(hardWatchers.map(p => ev(p.page, id => window.T.left.some(l => l.peer === id), E.selfId)))).every(Boolean), 8000);
+  check('hard-crashed client -> others get left within 5 s', hardMs >= 0 && Date.now() - tHard < 5000, `${Date.now() - tHard} ms`);
   const BD = [hostPage];
   const errs = await Promise.all(BD.map(p => ev(p.page, () => window.T.errors)));
   check('no error callbacks / sender mismatches', errs.every(e => e.length === 0), JSON.stringify(errs));

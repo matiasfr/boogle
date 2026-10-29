@@ -13,21 +13,25 @@
 // Wire messages (all plain objects with a `t` field; anything else is ignored):
 //   client -> host   u: { t:'p', s, d }            my full presence `d`, sequence `s`
 //                    r: { t:'m', d }               send() payload, host relays it with the origin id
-//                    r: { t:'hb' } | { t:'bye' }   heartbeat (1 s) / leaving
+//                    r: { t:'hb' } | { t:'bye' }   heartbeat (0.5 s) / leaving
 //   host -> client   r: { t:'list', peers:[{id,s,d}], last }   everyone currently known (chunked), sent on connect
 //                    u: { t:'p', id, s, d }        a peer's presence (relayed; includes the host's own)
 //                    r: { t:'left', id, s }        a peer is gone (s = last seq seen, so late 'p' can't resurrect it)
 //                    r: { t:'m', from, d }         relayed send() payload
-//                    r: { t:'hb' }                 heartbeat (1 s); a client that hears nothing for 5 s assumes the host died
+//                    r: { t:'hb' }                 heartbeat (0.5 s); a client that hears nothing for 3 s assumes the host died
 // Ids in messages are the tab's stable selfId, never PeerJS ids, so identities survive host migration.
-// Host drops a client after 5 s of silence. After a migration, peers that haven't come back within GRACE_MS are
+// Host drops a client after 3 s of silence (and announces `left` at once). Either side also treats the WebRTC
+// connection itself going 'failed'/'closed' (or 'disconnected' for > 1.5 s) as the peer being gone; a hard-killed
+// renderer sends nothing and its channels can linger for tens of seconds, so the heartbeat is the reliable signal.
+// A side whose own timers stalled (frozen tab, sleep) forgives the silence it could not have measured. After a migration, peers that haven't come back within GRACE_MS are
 // reported as `left` (instead of flapping everyone at the moment the host dies).
 
 import { Peer } from 'peerjs';
 
 const MAX_MSG = 16000;        // max JSON size of one presence / message (peerjs JSON channel refuses >= 16300 bytes)
-const HEARTBEAT_MS = 1000;
-const DEAD_MS = 5000;
+const HEARTBEAT_MS = 500;     // background tabs clamp timers to 1 s, still well inside DEAD_MS
+const DEAD_MS = 3000;
+const PC_GRACE_MS = 1500;     // RTCPeerConnection 'disconnected' may recover (ICE restart / brief network blip); 'failed'/'closed' may not
 const GRACE_MS = 9000;        // after (re)connecting, how long peers from before a migration may stay silent (> DEAD_MS + max retry delay + connect)
 const SIGNAL_TIMEOUT_MS = 8000; // registering an id with the signaling server
 const OPEN_TIMEOUT_MS = 10000;  // WebRTC connection to the host (both channels + peer list); generous for TURN and slow devices
@@ -47,6 +51,22 @@ const err = (code, msg) => Object.assign(new Error(msg || code), { code });
 const safeRoom = s => s.replace(/[^A-Za-z0-9]/g, c => '_' + c.charCodeAt(0).toString(16));
 
 function safeSend(conn, msg) { try { conn.send(msg); } catch { /* connection closing */ } }
+
+// Calls onGone (once) when the underlying RTCPeerConnection of a DataConnection fails, closes, or stays disconnected.
+// Needed because a data channel can stay 'open' for a long time after the other end died.
+function watchPc(conn, onGone, timers) {
+  const pc = conn.peerConnection;
+  if (!pc || !pc.addEventListener) return;
+  let t = 0;
+  const check = () => {
+    clearTimeout(t);
+    const st = pc.connectionState || pc.iceConnectionState;
+    if (st === 'failed' || st === 'closed') onGone();
+    else if (st === 'disconnected') { t = setTimeout(check, PC_GRACE_MS); timers.push(t); }
+  };
+  pc.addEventListener('connectionstatechange', check);
+  pc.addEventListener('iceconnectionstatechange', check);
+}
 
 // Latest-wins sender: at most one pending packet per key, spaced >= MIN_GAP_MS, held back while buffers are full.
 function makeSender(getConn) {
@@ -99,10 +119,11 @@ export async function createPeerRoom(opts = {}) {
   }
   const peersHandlers = new Set(), connHandlers = new Set(), msgHandlers = new Set(), hostHandlers = new Set(), errHandlers = new Set();
   let pj = new Set(), pu = new Set(), pl = new Map(), flushTimer = 0;
+  let shown = new Set(); // ids in pj that peers() has already handed out (so their departure must still be announced)
   function note(kind, id, entry) {
     if (kind === 'j') { if (pl.delete(id)) pu.add(id); else pj.add(id); }
     else if (kind === 'u') { if (!pj.has(id)) pu.add(id); }
-    else if (pj.delete(id)) { /* never announced */ pu.delete(id); } else { pu.delete(id); pl.set(id, entry); }
+    else if (pj.delete(id) && !shown.delete(id)) { /* never announced or seen */ pu.delete(id); } else { pu.delete(id); pl.set(id, entry); }
     if (!flushTimer) flushTimer = setTimeout(flush, 8);
   }
   function flush() {
@@ -114,10 +135,11 @@ export async function createPeerRoom(opts = {}) {
       left: [...pl.values()],
       updated: [...pu].map(get).filter(Boolean),
     };
-    pj = new Set(); pu = new Set(); pl = new Map();
+    pj = new Set(); pu = new Set(); pl = new Map(); shown = new Set();
     if (change.joined.length || change.left.length || change.updated.length) call(peersHandlers, change);
   }
   function list() {
+    if (!cache) for (const id of pj) shown.add(id);
     if (!cache) cache = Object.freeze([table.get(SELF_ID).entry, ...[...table].filter(([id]) => id !== SELF_ID).map(([, r]) => r.entry)]);
     return cache;
   }
@@ -253,6 +275,7 @@ export async function createPeerRoom(opts = {}) {
       const gone = () => { if (hostClients.get(id) === rec && rec[label] === conn) dropClient(id, rec.ready ? 'soon' : 0); };
       conn.on('close', gone);
       conn.on('error', gone);
+      conn.on('open', () => watchPc(conn, () => { if (hostClients.get(id) === rec && rec[label] === conn) dropClient(id, 'now'); }, timers));
     });
     peer.on('close', () => r.end());
     peer.on('error', e => dbg('host peer error', e.type));
@@ -263,10 +286,15 @@ export async function createPeerRoom(opts = {}) {
       }, 2000);
       timers.push(t);
     });
+    let lastTick = Date.now();
     timers.push(setInterval(() => {
       const now = Date.now();
+      const stalled = now - lastTick > 3 * HEARTBEAT_MS; // our own timers were frozen: silence from clients proves nothing
+      lastTick = now;
       for (const [id, c] of [...hostClients]) {
-        if (now - c.seen > DEAD_MS) dropClient(id);
+        if (stalled) c.seen = now;
+        // a silent client is not the host dying (we are running), so announce straight away
+        if (now - c.seen > DEAD_MS) dropClient(id, c.ready ? 'now' : 0);
         else if (c.ready) safeSend(c.r, { t: 'hb' });
       }
     }, HEARTBEAT_MS));
@@ -334,8 +362,13 @@ export async function createPeerRoom(opts = {}) {
     const ok = await Promise.race([opened.then(() => Promise.race([gotList.then(() => true), timeout])), failed, timeout]);
     if (!ok || r.done) { r.teardown(); return null; }
 
+    for (const c of [u, rel]) watchPc(c, () => { dbg('host connection lost'); r.end(); }, timers);
+    let lastTick = Date.now();
     timers.push(setInterval(() => {
-      if (Date.now() - lastData > DEAD_MS) { dbg('host silent'); r.end(); return; }
+      const now = Date.now();
+      if (now - lastTick > 3 * HEARTBEAT_MS) lastData = now; // our own timers were frozen
+      lastTick = now;
+      if (now - lastData > DEAD_MS) { dbg('host silent'); r.end(); return; }
       safeSend(rel, { t: 'hb' });
     }, HEARTBEAT_MS));
     timers.push(setTimeout(() => { // drop peers the new host never mentioned
