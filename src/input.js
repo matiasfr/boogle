@@ -45,6 +45,7 @@ export function initInput() {
     if (e.key === 'Shift') setFlatten(true);
     if (e.code === 'Space') {
       me.jumpQueued = 0.15;
+      me.jumpHeld = true;
       e.preventDefault();
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
@@ -64,6 +65,7 @@ export function initInput() {
     // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
     if (e.key === 'Meta') input.keys.clear();
     if (e.key === 'Shift') setFlatten(false);
+    if (e.code === 'Space') me.jumpHeld = false;
     if (e.code === 'KeyQ') setHold(null, 'dig');
     if (e.code === 'KeyZ') setHold(null, 'pile');
     if (e.code === 'KeyE' && me.entered) actionUp();
@@ -173,7 +175,9 @@ export function initInput() {
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     me.jumpQueued = 0.15;
+    me.jumpHeld = true;
   });
+  for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, () => (me.jumpHeld = false));
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     use();
@@ -214,7 +218,12 @@ export function initInput() {
     up: () => setHold(null, kind),
   });
   const zoom = (dir) => ({ held: (dt) => (cam.dist = clamp(cam.dist + dir * 6 * dt, 3, 12)) });
-  registerAction('jump', { pad: 'a', label: 'Jump', down: () => (me.jumpQueued = 0.15) });
+  registerAction('jump', {
+    pad: 'a',
+    label: 'Jump',
+    down: () => ((me.jumpQueued = 0.15), (me.jumpHeld = true)),
+    up: () => (me.jumpHeld = false),
+  });
   registerAction('use', { pad: 'x', label: 'Grab / throw (hold to charge)', down: use, up: actionUp });
   registerAction('respawn', { pad: 'b', label: 'Bring the ball back', down: respawnBall });
   registerAction('shovel', { pad: 'lb', label: 'Shovel on/off', down: () => toggleShovel() });

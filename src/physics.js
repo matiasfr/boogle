@@ -66,6 +66,9 @@ export function teleport(body, x, y, z) {
   body.interpolatedPosition.set(x, y, z);
 }
 
+// Controller feel knobs (src/features/feel.js changes them when the `feel` prototype flag is on).
+export const feelTune = { jumpAdd: false, brakeAccel: 70 };
+
 // Registered from main.js with the game state so this module stays free of import cycles.
 export function installStepHooks({ me, ball, remotes }) {
   world.addEventListener('preStep', () => {
@@ -90,7 +93,8 @@ export function installStepHooks({ me, ball, remotes }) {
       const depth = surfY - (b.position.y + 0.35);
       me.swimming = depth > 0;
       const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
-      const accel = me.coyote > 0 ? 70 : me.swimming ? 18 : 14;
+      const braking = me.wish.x * b.velocity.x + me.wish.z * b.velocity.z < 0;
+      const accel = me.coyote > 0 ? (braking ? feelTune.brakeAccel : 70) : me.swimming ? 18 : 14;
       let cx = 0,
         cz = 0;
       if (depth > 0.05) {
@@ -110,7 +114,7 @@ export function installStepHooks({ me, ball, remotes }) {
       b.velocity.z += dz;
       if (me.jumpQueued > 0) {
         if (me.coyote > 0) {
-          b.velocity.y = 7.6;
+          b.velocity.y = feelTune.jumpAdd ? Math.min(Math.max(b.velocity.y, 0), 6) + 7.6 : 7.6; // add: bounces chain
           me.coyote = 0;
           me.jumpQueued = 0;
         } else if (me.swimming) {
