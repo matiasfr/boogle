@@ -15,7 +15,7 @@ import * as CANNON from 'cannon-es';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from './constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
-import { scene, camera } from './scene.js';
+import { scene, camera, toScreen } from './scene.js';
 import { world, playerMat, teleport, NOT_SCENERY } from './physics.js';
 import { blockedAt } from './props.js';
 import { island } from './island/index.js';
@@ -615,6 +615,8 @@ export function updateBoogler(dt, now) {
 
 // Screen-space position for the HUD label and edge pointer (boogler-hud.js).
 const vp = new THREE.Vector3();
+const centerOn = { x: 0, y: 0, behind: false },
+  labelOn = { x: 0, y: 0, behind: false };
 export function booglerScreen(width, height) {
   camera.updateMatrixWorld();
   vp.copy(boogler.center).applyMatrix4(camera.matrixWorldInverse);
@@ -623,14 +625,8 @@ export function booglerScreen(width, height) {
   let dx = vp.x,
     dy = -vp.y;
   if (Math.hypot(dx, dy) < 1e-4) dy = 1;
-  const ndc = boogler.center.clone().project(camera);
-  const onScreen = inFront && Math.abs(ndc.x) < 0.96 && Math.abs(ndc.y) < 0.96;
-  const label = boogler.labelPos.clone().project(camera);
-  return {
-    onScreen,
-    dirX: dx,
-    dirY: dy,
-    labelX: (label.x * 0.5 + 0.5) * width,
-    labelY: (-label.y * 0.5 + 0.5) * height,
-  };
+  const c = toScreen(boogler.center, centerOn, width, height);
+  const onScreen = inFront && Math.abs((c.x / width) * 2 - 1) < 0.96 && Math.abs((c.y / height) * 2 - 1) < 0.96;
+  const label = toScreen(boogler.labelPos, labelOn, width, height);
+  return { onScreen, dirX: dx, dirY: dy, labelX: label.x, labelY: label.y };
 }

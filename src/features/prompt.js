@@ -3,15 +3,14 @@
 // itself; see registerInteractable in src/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
-import * as THREE from 'three';
 import { onFrame } from '../loop.js';
-import { camera } from '../scene.js';
+import { toScreen } from '../scene.js';
 import { me } from '../player.js';
 import { interactTarget } from '../hands.js';
 import { dialogue } from '../boogler-dialogue.js';
 import { glyph, inputKind } from '../glyphs.js';
 
-const ndc = new THREE.Vector3();
+const onScreen = { x: 0, y: 0, behind: false };
 const ui = { root: null, html: '', id: '', kind: '', show: null, showId: '' };
 
 const chip = (t) =>
@@ -55,12 +54,10 @@ onFrame(
       void inner.offsetWidth; // restart the pop-in animation
       inner.classList.add('pop');
     }
-    ndc.copy(t.at).project(camera);
-    const visible = ndc.z < 1 && Math.abs(ndc.x) < 1 && Math.abs(ndc.y) < 1;
+    const { x, y, behind } = toScreen(t.at, onScreen, innerWidth, innerHeight);
+    const visible = !behind && x > 0 && x < innerWidth && y > 0 && y < innerHeight;
     ui.root.hidden = !visible;
     if (!visible) return;
-    const x = (ndc.x * 0.5 + 0.5) * innerWidth,
-      y = (-ndc.y * 0.5 + 0.5) * innerHeight;
     ui.root.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
   },
   { phase: 'late' },
