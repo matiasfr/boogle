@@ -188,10 +188,29 @@ export function setNet(state) {
   renderPeople();
 }
 
+// Our own server (see server/README.md): set VITE_BOOGLE_SERVER=https://your-app.fly.dev at build/dev time.
+// Without it, PeerJS's free public signaling server and default STUN are used (fine for trying things out).
+async function serverOptions() {
+  const base = import.meta.env.VITE_BOOGLE_SERVER;
+  if (!base) return {};
+  const url = new URL(base);
+  const secure = url.protocol === 'https:';
+  const signal = { host: url.hostname, port: Number(url.port) || (secure ? 443 : 80), path: '/peerjs', secure };
+  try {
+    const res = await fetch(new URL('/ice', url));
+    const { iceServers } = await res.json();
+    return { signal, iceServers };
+  } catch (e) {
+    console.warn('[boogle] could not fetch ICE servers, using defaults:', e);
+    return { signal };
+  }
+}
+
 export async function connectRoom() {
   let room;
   try {
-    room = await createPeerRoom({ roomId: getRoomId() });
+    const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)
+    room = await createPeerRoom({ roomId: getRoomId(), debug, ...(await serverOptions()) });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     net.error = String(e?.code || e?.type || 'connect_failed');

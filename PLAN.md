@@ -52,10 +52,11 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 ## Phase 1: PeerJS networking
 
 - [x] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
-- [ ] Write `src/net/peer-room.js` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
-- [ ] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
+- [x] Write `src/net/peer-room.js` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
+- [x] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
 - [x] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
-- [ ] Prototype against the public PeerJS cloud server first; then self-host `peerjs-server` and add TURN credentials.
+- [x] Self-hostable server in `server/` (PeerJS signaling, `/ice` with TURN support, snapshot storage). Game reads `VITE_BOOGLE_SERVER`.
+- [ ] Deploy `server/` (Fly.io) and add TURN credentials.
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
 - [ ] Host the static client on GitHub Pages / Netlify.
 

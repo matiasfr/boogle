@@ -25,14 +25,21 @@ Other scripts: `npm run build` (production bundle in `dist/`), `npm run preview`
 - `terrain.js`, `water-render.js`, `scene.js`, `props.js`: heightfield and mesh, sea shader, renderer/camera/lights/sky, palms/rocks/clouds.
 - `physics.js`: cannon-es world, materials, ground body and the buoyancy/movement step hooks.
 - `ball.js`, `player.js`, `avatars.js`: the ball and its ownership rules, the local player and camera, avatar meshes.
-- `net.js`: presence build/apply, remote players and interpolation. `net/peer-room.js` is the transport (see `net/README.md`); right now it is a solo-only stub until the PeerJS version lands.
+- `net.js`: presence build/apply, remote players and interpolation. `net/peer-room.js` is the transport (see `net/README.md`); see the protocol notes at the top of that file.
 - `hud.js`, `input.js`: HUD, roster and lobby; keyboard, mouse, touch and pointer lock.
 
 ## Multiplayer
 
+### Playing with friends
+
+- **Quick try:** `npm run dev` uses PeerJS's free public signaling server. Share the same `?room=` name with friends.
+- **Our server:** copy `.env.example` to `.env` and set `VITE_BOOGLE_SERVER` to your deployed `server/` URL (see [server/README.md](server/README.md)). The game then uses our signaling server and fetches TURN settings from `/ice`.
+- **Local two-tab test:** run `cd server && npm run dev`, set `VITE_BOOGLE_SERVER=http://localhost:9000`, run `npm run dev`, and open two tabs. Add `?netdebug=1` to the URL for connection logs.
+
+
 Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's browser hosts the island and everyone else connects to it. See [PLAN.md](PLAN.md) for the design.
 
-> **Status:** the PeerJS transport is Phase 1 of the plan and not written yet. `src/net/peer-room.js` is a stub that runs the island solo; the presence and ball-ownership code in `src/net.js` is already written against its interface.
+> **Status:** working. `src/net/peer-room.js` implements the host-peer room; `npm run test:net` runs a 22-check multiplayer test (3 headless browsers + a local PeerJS server).
 
 ### How sync works
 
