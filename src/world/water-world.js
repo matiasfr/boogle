@@ -20,7 +20,7 @@ export const WATER_CONFIG = {
   seaPinBelowCm: -220, // ground deeper than this is open sea: held at sea level (water that reaches it is absorbed)
   regionPad: 3, // extra cells around the island box
   flowRate: 160, // sim: how fast levels equalise (water.js: 256 = as fast as allowed)
-  spring: { x: -12, z: -9, cmPerTick: 3 }, // the hill spring: 3 cm/tick = 30 cm/s into one cell
+  spring: { x: -12, z: -9, cmPerTick: 8 }, // the hill spring: 8 cm/tick = 80 cm/s into one cell
   // Physics (owner-side only): how hard sim water pushes balls and swimmers.
   flowMax: 2.6, // m/s cap on the current speed
   flowGain: 7, // current m/s per unit of surface slope
