@@ -22,6 +22,7 @@ export const waterMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: {
     uTime: { value: 0 },
+    uRip: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
     uHeight: { value: heightTex },
     uSun: { value: SUN_DIR },
     uSky: { value: srgbVec('#a9dcf3') },
@@ -38,7 +39,7 @@ export const waterMat = new THREE.ShaderMaterial({
       gl_Position = projectionMatrix * viewMatrix * w;
     }`,
   fragmentShader: `
-    uniform float uTime; uniform sampler2D uHeight; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog;
+    uniform float uTime; uniform vec4 uRip[8]; uniform sampler2D uHeight; uniform vec3 uSun; uniform vec3 uSky; uniform vec3 uFog;
     uniform float uFogNear; uniform float uFogFar; varying vec3 vWorld;
     const float HALF = ${HALF.toFixed(4)}; const float CELL = ${CELL.toFixed(6)}; const float RES = ${GRID_RES.toFixed(1)};
     void main() {
@@ -59,6 +60,18 @@ export const waterMat = new THREE.ShaderMaterial({
       float band = 1.0 - smoothstep(0.0, 0.6, depth);
       float ripple = 0.5 + 0.5 * sin(depth * 10.0 - t * 2.4 + sin(p.x * 0.15 + p.y * 0.11) * 3.0);
       float foam = band * smoothstep(0.45, 0.85, ripple * 0.7 + band * 0.5);
+      float ring = 0.0;
+      for (int i = 0; i < 8; i++) {
+        vec4 rp = uRip[i];
+        if (rp.w <= 0.0) continue;
+        float age = t - rp.z;
+        float rad = age * (1.6 + rp.w * 1.2);
+        float w = 0.12 + age * 0.12;
+        float x = (length(p - rp.xy) - rad) / w;
+        ring += exp(-x * x) * rp.w * exp(-age * 1.1) * step(0.0, age);
+      }
+      col += vec3(0.25, 0.3, 0.3) * ring;
+      foam = max(foam, clamp(ring, 0.0, 1.0));
       col = mix(col, vec3(1.0), foam * 0.9);
       col += vec3(1.0, 0.97, 0.88) * spec * 0.9;
       float alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5.0, depth)), foam * 0.95);
