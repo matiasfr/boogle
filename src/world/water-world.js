@@ -4,13 +4,13 @@
 //
 // Order inside a tick: edits apply (terrain deltas change) -> terrain-edits flushes its mesh -> this module
 // copies changed ground into the sim, wakes those cells and steps the water -> the surface mesh retargets.
-import { GRID_RES, CELL, HALF, SEA } from '../constants.js';
+import { GRID_RES, CELL, HALF, SEA, HOME } from '../constants.js';
 import { clamp } from '../math.js';
 import { groundHeight } from '../terrain.js';
 import { createWater } from '../sim/water.js';
 import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../sim/water-region.js';
 import { waterField } from '../water-field.js';
-import { createWaterSurface, createSpringFx } from '../water-surface.js';
+import { createWaterSurface } from '../water-surface.js';
 import { registerOp, registerState, onTick, onApplied, onSnapshot, submitEdit, world } from './sync.js';
 import { terrain } from './terrain-edits.js'; // import first: its onTick (mesh flush) must run before ours
 
@@ -20,7 +20,6 @@ export const WATER_CONFIG = {
   seaPinBelowCm: -220, // ground deeper than this is open sea: held at sea level (water that reaches it is absorbed)
   regionPad: 3, // extra cells around the island box
   flowRate: 160, // sim: how fast levels equalise (water.js: 256 = as fast as allowed)
-  spring: { x: -12, z: -9, cmPerTick: 8 }, // the hill spring: 8 cm/tick = 80 cm/s into one cell
   // Physics (owner-side only): how hard sim water pushes balls and swimmers.
   flowMax: 2.6, // m/s cap on the current speed
   flowGain: 7, // current m/s per unit of surface slope
@@ -36,8 +35,19 @@ const N = GRID_RES;
 const CFG = WATER_CONFIG;
 
 // ------------------------------------------------------------------ the sim
-const region = regionFromBase(terrain.base, N, CFG.regionBelowCm, CFG.regionPad);
-const { i0, j0, w: W, h: H } = region;
+// Only the home square (constants.js HOME) is simulated: the mainland has no shared water, so the sim costs what it
+// always did however big the island gets.
+const full = regionFromBase(terrain.base, N, CFG.regionBelowCm, CFG.regionPad);
+const homeI0 = Math.round((HOME.x0 + HALF) / CELL),
+  homeI1 = Math.round((HOME.x1 + HALF) / CELL),
+  homeJ0 = Math.round((HALF - HOME.z1) / CELL),
+  homeJ1 = Math.round((HALF - HOME.z0) / CELL);
+const i0 = Math.max(full.i0, homeI0),
+  j0 = Math.max(full.j0, homeJ0);
+const W = Math.min(full.i0 + full.w - 1, homeI1) - i0 + 1,
+  H = Math.min(full.j0 + full.h - 1, homeJ1) - j0 + 1;
+const region = { i0, j0, w: W, h: H };
+const regionKey = `${i0},${j0},${W},${H}`;
 const simTerrain = new Int32Array(W * H);
 function copyGround(a0, b0, a1, b1) {
   for (let a = Math.max(a0, i0); a <= Math.min(a1, i0 + W - 1); a++)
@@ -61,12 +71,7 @@ for (let c = 0; c < W * H; c++) water.depth[c] = seaFill(c);
 
 const cellX = (x) => Math.round((x + HALF) / CELL);
 const cellZ = (z) => Math.round((HALF - z) / CELL);
-const spring = { i: cellX(CFG.spring.x) - i0, j: cellZ(CFG.spring.z) - j0 };
-water.setSource(spring.i, spring.j, CFG.spring.cmPerTick);
-const springX = (i0 + spring.i) * CELL - HALF;
-const springZ = HALF - (j0 + spring.j) * CELL;
-
-// Deep sea cells are pinned to sea level after every step: the ocean is an infinite reservoir, so a stream
+// Deep sea cells are pinned to sea level after every step: the ocean is an infinite reservoir, so water
 // reaching the sea disappears into it instead of heaping up, and holes dug at the shore always find water.
 const seaCells = [];
 for (let c = 0; c < W * H; c++) if (simTerrain[c] < CFG.seaPinBelowCm) seaCells.push(c);
@@ -82,8 +87,6 @@ function pinSea() {
 
 const surface = createWaterSurface({ water, i0, j0, flowMax: CFG.flowMax, flowGain: CFG.flowGain });
 surface.syncAll();
-const springFx = createSpringFx(springX, springZ);
-const springIdx = spring.i * H + spring.j;
 
 // ------------------------------------------------------------------ sync: state, ops, tick
 // The sea part of the depth grid is implied by the ground, so snapshots only carry cells that differ from it.
@@ -92,9 +95,11 @@ registerState('water', {
     const s = water.serialize();
     const cells = [];
     for (let c = 0; c < W * H; c++) if (water.depth[c] !== seaFill(c)) cells.push(c, water.depth[c]);
-    return { ...s, cells };
+    return { ...s, cells, region: regionKey };
   },
   load(json) {
+    // Cells are region-relative: water saved over a different region (an older island) is dropped and the sea refills.
+    if (json.region !== regionKey) json = { ...json, cells: [] };
     copyGround(0, 0, N - 1, N - 1); // terrain state was loaded just before this one
     const d = new Int32Array(W * H);
     for (let c = 0; c < d.length; c++) d[c] = seaFill(c);
@@ -218,14 +223,12 @@ surface.mesh.onBeforeRender = () => {
   const dt = Math.min((now - lastMs) / 1000, 0.1);
   lastMs = now;
   surface.frame(dt);
-  springFx(dt, (simTerrain[springIdx] + water.depth[springIdx]) / 100);
 };
 
 // Debug / test handle.
 window.__water = {
   water,
   region,
-  spring: { ...spring, x: springX, z: springZ },
   stats: () => ({ ...water.stats(), stepMs, W, H }),
   hash: water.hash,
   fast(n) {

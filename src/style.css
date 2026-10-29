@@ -215,7 +215,7 @@ body.touch .reticle {
   display: none;
 }
 
-.touch {
+div.touch {
   position: fixed;
   inset: 0;
   touch-action: none;

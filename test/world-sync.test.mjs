@@ -131,7 +131,10 @@ test('late joiner converges via snapshot (incl. in-flight edits)', async () => {
 test('injected desync is detected by hash and repaired', async () => {
   const { net, host, clients, all } = await setup();
   clients[1].grid[5] = 999;
+  const seen = [];
+  clients[1].s.onDesync((d) => seen.push(d));
   await run(net, all, 120);
+  assert.ok(seen.length >= 1 && seen[0].keys.length === 1, JSON.stringify(seen)); // names the diverged state
   assert.equal(clients[1].grid[5], 0);
   assert.ok(clients[1].s.worldStatus().resyncs >= 1);
   assert.ok(same(all));

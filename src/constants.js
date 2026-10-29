@@ -3,12 +3,14 @@ import * as THREE from 'three';
 export const FIXED = 1 / 60;
 export const GRAVITY = 18;
 export const SEA = 0;
-export const ISLAND_R = 52;
-export const GRID_RES = 129;
-export const GRID_SIZE = 160;
+// Terrain grid: 1.25 m cells over a 510 m square around the origin (see src/island/ for the island's shape).
+export const GRID_RES = 409;
+export const GRID_SIZE = 510;
 export const CELL = GRID_SIZE / (GRID_RES - 1);
 export const HALF = GRID_SIZE / 2;
 export const SEABED = -7.5;
+// The original island's square: the shared water sim, sand digging and beach gifts stay inside it.
+export const HOME = { x0: -80, x1: 80, z0: -80, z1: 80 };
 export const BALL_R = 0.45;
 export const BALL_MASS = 0.6;
 export const PLAYER_R = 0.45;

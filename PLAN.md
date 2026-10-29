@@ -94,11 +94,11 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] A **2.5D column water sim**, not 3D voxels. The island has no overhangs, so 3D buys almost nothing for a big cost. Each cell has terrain height plus integer water depth (0–255). Water flows to lower neighbors by a fixed integer rule in a fixed scan order, so every machine gets bit-identical results.
 - [x] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
 - [ ] The sim is one JS module run in a Web Worker on every client. The host's copy is authoritative; it sends a compact snapshot every few seconds plus a hash, and clients that disagree adopt the snapshot. The host also saves it to snapshot storage.
-- [x] A **freshwater spring** on the hill that feeds a stream down toward the beach.
+- [x] ~~A **freshwater spring** on the hill that feeds a stream down toward the beach.~~ Removed to keep the code small; water comes from the sea.
 - [x] Rendering: draw a second water surface mesh over the sim region from the depth grid. Keep a separate cosmetic layer (ripples, splashes) that is local and doesn't need to match across clients.
 - [x] Ball + sim water: the ball floats in sim water as it does in the sea; splashes add a little water to nearby cells (sent as an edit by the ball owner).
 
-**Done when:** people can dig a channel from the spring and watch water run down it. **Playtest question:** do people cheer when the water reaches where they wanted?
+**Done when:** people can dig a channel from the sea and watch water run into it. **Playtest question:** do people cheer when the water reaches where they wanted?
 
 ## Phase 5: The garden (on hold)
 
@@ -122,8 +122,18 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 **Done when:** a group of players spontaneously defends the garden together. **Playtest question:** is it fun or stressful? Tune tide size and frequency.
 
+## The Boogler: a friend to make
+
+- [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler-friendship.js`).
+- [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler-lines.js`, `src/boogler-talk.js`).
+- [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler-play.js`).
+- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`; your pocket holds six.
+
+**Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
+
 ## Later / stretch
 
+- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/controls.js`; touch overlay hides while a pad is in use.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.

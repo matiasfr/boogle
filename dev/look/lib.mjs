@@ -12,12 +12,15 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const run = (cmd, args) =>
+  new Promise((res, rej) =>
+    spawn(cmd, args, { stdio: 'inherit' }).on('close', (c) => (c ? rej(new Error(`${cmd} exit ${c}`)) : res())),
+  );
 
 // One table of named viewpoints: camera position, look-at target (world metres, y up).
 export const VIEWS = {
-  spring: { cam: [-10.5, 10, -5.5], look: [-13.8, 8.0, -8.8] },
-  stream: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
-  mouth: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
+  hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
+  shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };
@@ -32,16 +35,17 @@ const freePort = () =>
 
 // Starts Vite on a free port and a local PeerJS signaling server (so rooms work offline). With `url`, only
 // uses that already-running game (no signaling server: the game's own settings apply).
-export async function startStack({ url = null } = {}) {
+// `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
+export async function startStack({ url = null, root: dir = root } = {}) {
   if (url) return { base: url, close: async () => {} };
   const sigPort = await freePort();
   const signaling = PeerServer({ port: sigPort, host: '127.0.0.1', path: '/peerjs' });
   const port = await freePort();
   const vite = spawn(
     process.execPath,
-    [path.join(root, 'node_modules/vite/bin/vite.js'), '--port', String(port), '--strictPort', '--host', '127.0.0.1'],
+    [path.join(dir, 'node_modules/vite/bin/vite.js'), '--port', String(port), '--strictPort', '--host', '127.0.0.1'],
     {
-      cwd: root,
+      cwd: dir,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env, VITE_BOOGLE_SERVER: `http://127.0.0.1:${sigPort}` },
     },
@@ -68,13 +72,20 @@ export async function startStack({ url = null } = {}) {
   };
 }
 
-export const launch = () =>
+// Software GL by default (same pictures on every machine). `gpu` uses the real GPU where there is one (Metal on a
+// Mac): about 60 fps instead of 7, for clips.
+export const launch = ({ gpu = false } = {}) =>
   chromium.launch({
-    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    args:
+      gpu && process.platform === 'darwin'
+        ? ['--use-angle=metal', '--ignore-gpu-blocklist']
+        : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
   });
 
 export class Game {
-  // opts: room, name, size [w,h], hud (keep the HUD in pictures), out (directory for images), label prefix
+  // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
+  // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
+  // init (a function or script run before the page's own code, e.g. to seed localStorage)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -82,6 +93,8 @@ export class Game {
     g.prefix = opts.prefix || '';
     g.size = opts.size || [960, 600];
     g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] } });
+    if (opts.clock) await g.ctx.clock.install();
+    if (opts.init) await g.ctx.addInitScript(opts.init);
     g.page = await g.ctx.newPage();
     g.errors = [];
     g.page.on('pageerror', (e) => {
@@ -90,12 +103,17 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}`);
+    await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
+      timeout: 90000,
+    });
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 30000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
     await g.page.waitForFunction(() => window.__debugCam && window.__water, null, { timeout: 20000 });
-    if (!opts.hud) await g.page.addStyleTag({ content: '.hud, .touch, .lobby { display: none !important }' });
+    // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the help card,
+    // roster, net pill or reticle (cleaner footage); true keeps everything.
+    const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.help, .hud-tl, .hud-tr, .reticle' : null;
+    if (hide) await g.page.addStyleTag({ content: `${hide}, .touch, .lobby { display: none !important }` });
     await sleep(300);
     fs.mkdirSync(g.out, { recursive: true });
     return g;
@@ -189,6 +207,64 @@ export class Game {
     save(sheet, res.sheetUrl);
     save(heat, res.heatUrl);
     return { score: res.score, hotFrac: res.hotFrac, sheet, heat };
+  }
+
+  // Video in virtual time: pauses the page clock (needs `clock` at open), then per frame advances it 1/fps s and
+  // screenshots, so the clip plays smoothly however slowly the page renders. `each(t, k)` runs before each frame
+  // (t = seconds into the clip): move the debug camera, send input, poke state. Writes <out>/clips/<label>.mp4
+  // (H.264 via ffmpeg) and, with `gif`, a palette GIF next to it. Returns the paths.
+  async record(label, { seconds = 4, fps = 30, each = null, gif = false, gifWidth = 480 } = {}) {
+    const dir = path.join(this.out, 'clips');
+    fs.mkdirSync(dir, { recursive: true });
+    const mp4 = path.join(dir, `${this.prefix}${label}.mp4`);
+    const ff = spawn('ffmpeg', [
+      '-y',
+      '-loglevel',
+      'error',
+      '-f',
+      'image2pipe',
+      '-framerate',
+      String(fps),
+      '-i',
+      '-',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'slow',
+      '-crf',
+      '16',
+      '-pix_fmt',
+      'yuv420p',
+      '-movflags',
+      '+faststart',
+      mp4,
+    ]);
+    const done = new Promise((res, rej) => ff.on('close', (c) => (c ? rej(new Error('ffmpeg exit ' + c)) : res())));
+    if (!this.paused) {
+      await this.page.clock.pauseAt((await this.page.evaluate(() => Date.now())) + 50);
+      this.paused = true;
+    }
+    const n = Math.round(seconds * fps);
+    for (let k = 0; k < n; k++) {
+      if (each) await each(k / fps, k);
+      await this.page.clock.runFor(1000 / fps);
+      ff.stdin.write(await this.page.screenshot({ type: 'jpeg', quality: 95 }));
+    }
+    ff.stdin.end();
+    await done;
+    const out = { mp4 };
+    if (gif) {
+      out.gif = mp4.replace(/\.mp4$/, '.gif');
+      const vf = `fps=15,scale=${gifWidth}:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4`;
+      await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', mp4, '-vf', vf, out.gif]);
+    }
+    return out;
+  }
+
+  // Let page time pass (virtual when the clock is paused, real otherwise) without recording.
+  async wait(seconds) {
+    if (this.paused) await this.page.clock.runFor(seconds * 1000);
+    else await sleep(seconds * 1000);
   }
 
   async close() {

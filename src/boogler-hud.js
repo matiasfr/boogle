@@ -1,13 +1,18 @@
-// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen, and a pointer pinned to the
-// nearest screen edge (aimed at him, with his distance) while he's off screen, so he's always easy to find.
+// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts
+// and his speech bubble), and a pointer pinned to the nearest screen edge (aimed at him, with his distance) while he's
+// off screen, so he's always easy to find.
 import { boogler, booglerScreen } from './boogler.js';
 import { me } from './player.js';
+import { MAX_LEVEL } from './boogler-friendship.js';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
 const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
 
 const MARKUP = `
-  <div class="boogler-tag" hidden><div class="boogler-tag-bob">The Boogler</div></div>
+  <div class="boogler-tag" hidden>
+    <div class="boogler-say" hidden><div class="boogler-say-text"></div></div>
+    <div class="boogler-tag-bob">The Boogler<span class="boogler-tag-bond"></span></div>
+  </div>
   <div class="boogler-find" hidden>
     <div class="boogler-find-arrow"></div>
     <div class="boogler-find-badge" role="img" aria-label="The Boogler is this way">
@@ -36,12 +41,28 @@ function dom() {
   const q = (c) => wrap.querySelector(c);
   el = {
     tag: q('.boogler-tag'),
+    bond: q('.boogler-tag-bond'),
+    say: q('.boogler-say'),
+    sayText: q('.boogler-say-text'),
     find: q('.boogler-find'),
     arrow: q('.boogler-find-arrow'),
     dist: q('.boogler-find-dist'),
   };
   hud.prepend(...wrap.children);
   return el;
+}
+
+const bubble = { text: '', until: 0, shown: '' };
+export function booglerSay(text, ms = 1600) {
+  bubble.text = text;
+  bubble.until = performance.now() + ms;
+}
+
+let bondText = null;
+const bondShown = { text: '', wary: false };
+export function setTagBond(level, wary) {
+  bondText = wary ? 'avoiding you' : '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
+  bondShown.wary = wary;
 }
 
 let lastDist = '';
@@ -54,6 +75,20 @@ export function updateBooglerHud() {
 
   d.tag.hidden = !s.onScreen;
   if (s.onScreen) d.tag.style.transform = `translate(${s.labelX.toFixed(1)}px, ${s.labelY.toFixed(1)}px)`;
+  const bondNow = me.entered ? (bondText ?? '') : '';
+  if (bondNow !== bondShown.text) {
+    d.bond.textContent = bondShown.text = bondNow;
+    d.bond.classList.toggle('wary', bondShown.wary);
+  }
+  const talking = s.onScreen && performance.now() < bubble.until;
+  if (d.say.hidden === talking) d.say.hidden = !talking;
+  if (talking && bubble.shown !== bubble.text) {
+    d.sayText.textContent = bubble.shown = bubble.text;
+    d.say.classList.remove('pop');
+    void d.say.offsetWidth; // restart the pop-in animation
+    d.say.classList.add('pop');
+  }
+  if (!talking) bubble.shown = '';
 
   const showFind = !s.onScreen && me.entered;
   d.find.hidden = !showFind;

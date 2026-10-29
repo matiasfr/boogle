@@ -89,7 +89,8 @@ export function enterIsland() {
 
 export function updateIntent(dt) {
   const k = input.keys;
-  me.sprint = k.has('ShiftLeft') || k.has('ShiftRight');
+  if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests
+  me.sprint = input.sprint || k.has('ShiftLeft') || k.has('ShiftRight');
   let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
   let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
   f -= input.stickY;
@@ -109,6 +110,10 @@ export function updateIntent(dt) {
   if (targetYaw !== null) me.yaw = angleLerp(me.yaw, targetYaw, 1 - Math.exp(-dt * 12));
 }
 
+// Features that need the third-person camera somewhere special (the caves keep it inside the tunnel) push
+// fn(look, pos) -> true when they placed `pos` themselves; then the usual "stay above the ground" rule is skipped.
+export const camConstraints = [];
+
 const camPos = new THREE.Vector3(),
   camLook = new THREE.Vector3(),
   fwd = new THREE.Vector3();
@@ -124,8 +129,10 @@ export function updateCamera(elapsed) {
       rz = -Math.sin(cam.yaw);
     camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
     camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
-    const floor = Math.max(groundHeight(camPos.x, camPos.z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
-    camPos.y = Math.max(camPos.y, floor);
+    if (!camConstraints.some((fn) => fn(camLook, camPos))) {
+      const floor = Math.max(groundHeight(camPos.x, camPos.z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
+      camPos.y = Math.max(camPos.y, floor);
+    }
     camera.position.copy(camPos);
     camera.lookAt(camLook.addScaledVector(fwd, 8));
   }

@@ -2,12 +2,11 @@
 // terrain mesh) whose vertex heights are terrain + depth, drawn with a shader that matches the sea.
 // Hidden where the water is thinner than a few cm and where it is just the sea (the sea plane draws that,
 // so there is no z-fighting). Only cells that changed are touched, and they ease towards their new values
-// between the 10 Hz sim ticks. Also owns the spring's bubbles and stones. Local only; never synced.
+// between the 10 Hz sim ticks. Local only; never synced.
 import * as THREE from 'three';
-import { HALF, CELL, SEA, reducedMotion } from './constants.js';
-import { scene, camera, renderer } from './scene.js';
+import { HALF, CELL } from './constants.js';
+import { scene } from './scene.js';
 import { waterMat } from './water-render.js';
-import { groundHeight } from './terrain.js';
 
 // Look tunables. The sim's thin film flip-flops between two depths every tick (e.g. 3 <-> 6 cm), so the drawn
 // depth and flow ease slowly (about half a second) and only the average shows; streaks are slow and soft.
@@ -63,6 +62,7 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true, // both sides in one draw instead of back-then-front
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
@@ -238,99 +238,4 @@ export function createWaterSurface({ water, i0, j0, flowMax, flowGain }) {
   }
 
   return { mesh, scan, frame, syncAll, flowTarget: tgt };
-}
-
-// ------------------------------------------------------------------- the spring: stones and bubbles
-export function createSpringFx(sx, sz) {
-  const group = new THREE.Group();
-  const y0 = groundHeight(sx, sz);
-  const rockMat = new THREE.MeshStandardMaterial({ color: '#9d978c', roughness: 0.95, flatShading: true });
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 7) * Math.PI * 2 + 0.3;
-    const s = 0.28 + ((k * 37) % 5) * 0.05;
-    const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rockMat);
-    const rx = sx + Math.cos(a) * 1.15,
-      rz = sz + Math.sin(a) * 1.15;
-    rock.position.set(rx, groundHeight(rx, rz) + s * 0.35, rz);
-    rock.rotation.set(k, k * 2, k * 3);
-    rock.scale.y = 0.7;
-    rock.castShadow = true;
-    group.add(rock);
-  }
-  scene.add(group);
-
-  const MAX = reducedMotion ? 20 : 56;
-  const p = new Float32Array(MAX * 3),
-    v = new Float32Array(MAX * 3),
-    life = new Float32Array(MAX),
-    size = new Float32Array(MAX),
-    alpha = new Float32Array(MAX);
-  for (let i = 0; i < MAX; i++) p[i * 3 + 1] = -1000;
-  const g = new THREE.BufferGeometry();
-  const pa = new THREE.BufferAttribute(p, 3).setUsage(THREE.DynamicDrawUsage);
-  const sa = new THREE.BufferAttribute(size, 1).setUsage(THREE.DynamicDrawUsage);
-  const aa = new THREE.BufferAttribute(alpha, 1).setUsage(THREE.DynamicDrawUsage);
-  g.setAttribute('position', pa);
-  g.setAttribute('aSize', sa);
-  g.setAttribute('aAlpha', aa);
-  const pm = new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    uniforms: { uScale: { value: 500 } },
-    vertexShader: `
-      attribute float aSize; attribute float aAlpha; uniform float uScale; varying float vA;
-      void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vA = aAlpha; gl_PointSize = max(aSize * uScale / max(-mv.z, 0.1), 1.0);
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: `
-      varying float vA;
-      void main() {
-        float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard;
-        float rim = smoothstep(0.55, 0.95, d);
-        gl_FragColor = vec4(mix(vec3(0.62, 0.92, 1.0), vec3(1.0), rim), vA * (0.35 + 0.65 * rim));
-      }`,
-  });
-  const pts = new THREE.Points(g, pm);
-  pts.frustumCulled = false;
-  pts.renderOrder = 6;
-  scene.add(pts);
-
-  let acc = 0;
-  let cursor = 0;
-  return function update(dt, surfaceY) {
-    const top = Math.max(surfaceY, y0, SEA);
-    acc += dt * (reducedMotion ? 4 : 9);
-    while (acc >= 1) {
-      acc -= 1;
-      const i = cursor;
-      cursor = (cursor + 1) % MAX;
-      const a = Math.random() * Math.PI * 2,
-        r = Math.random() * 0.35;
-      p[i * 3] = sx + Math.cos(a) * r;
-      p[i * 3 + 1] = top + 0.02;
-      p[i * 3 + 2] = sz + Math.sin(a) * r;
-      v[i * 3] = Math.cos(a) * (0.1 + Math.random() * 0.25);
-      v[i * 3 + 1] = 0.9 + Math.random() * 0.9;
-      v[i * 3 + 2] = Math.sin(a) * (0.1 + Math.random() * 0.25);
-      life[i] = 0.4 + Math.random() * 0.3;
-      size[i] = 0.1 + Math.random() * 0.1;
-    }
-    for (let i = 0; i < MAX; i++) {
-      if (life[i] <= 0) continue;
-      life[i] -= dt;
-      v[i * 3 + 1] -= 6 * dt;
-      p[i * 3] += v[i * 3] * dt;
-      p[i * 3 + 1] += v[i * 3 + 1] * dt;
-      p[i * 3 + 2] += v[i * 3 + 2] * dt;
-      if (life[i] <= 0 || p[i * 3 + 1] < top) {
-        life[i] = 0;
-        p[i * 3 + 1] = -1000;
-        alpha[i] = 0;
-      } else alpha[i] = Math.min(1, life[i] * 3) * 0.9;
-    }
-    pa.needsUpdate = sa.needsUpdate = aa.needsUpdate = true;
-    pm.uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
-  };
 }

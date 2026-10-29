@@ -1,0 +1,129 @@
+name: Patch video
+
+# Daily: if enough player-visible features landed since the last patch video (the newest video-* release), Claude
+# records them, has the cut reviewed, and opens a claude/* PR with the new shots (automerge.yml merges it). Then this
+# workflow publishes the video as a release with a share page (dev/video/publish.mjs) and posts the link in the
+# "Patch videos" issue, mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
+# Run it by hand from the Actions tab; `force` skips the cheap commit-count gate (Claude still judges the features).
+
+on:
+  schedule:
+    - cron: '23 15 * * *' # daily, 15:23 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Skip the commit-count gate
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # release
+  issues: write # the link
+  actions: write # start the Pages deploy
+  pull-requests: read
+  id-token: write # claude-code-action
+
+concurrency:
+  group: patch-video
+  cancel-in-progress: false
+
+jobs:
+  video:
+    # macOS runners have a GPU (Metal): ~60 ms per recorded frame vs 1-2 s in Linux software GL. Free for public repos.
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MIN_COMMITS: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Count game commits since the last video
+        id: gate
+        run: |
+          n=$(node dev/video/changes.mjs --count)
+          echo "commits=$n" >> "$GITHUB_OUTPUT"
+          echo "$n commits touch game files since the last video (need $MIN_COMMITS)"
+          node dev/video/changes.mjs >> "$GITHUB_STEP_SUMMARY" || true
+          if [ "$n" -ge "$MIN_COMMITS" ] || [ "${{ inputs.force }}" = "true" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.go
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies, Chromium and ffmpeg
+        if: steps.gate.outputs.go
+        run: |
+          npm ci
+          npx playwright install chromium
+          which ffmpeg || brew install ffmpeg
+
+      - name: Make the video (Claude)
+        if: steps.gate.outputs.go
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true # Claude's messages in the log, to see why a run stopped
+          claude_args: >-
+            --model claude-opus-5-5
+            --allowed-tools "Read,Write,Edit,Glob,Grep,Agent,Bash(npm run *),Bash(npm ci),Bash(node *),Bash(npx *),Bash(ffmpeg *),Bash(ffprobe *),Bash(git *),Bash(gh pr create:*),Bash(gh pr view:*),Bash(ls *),Bash(cat *),Bash(mkdir *)"
+          prompt: |
+            You are the patch-video loop for Boogle, running unattended in GitHub Actions on a macOS runner (GPU
+            recording works as on a Mac; never pass --sw). Read AGENTS.md and .claude/skills/video/SKILL.md, then follow
+            section "5. Patch video loop" with these CI specifics:
+
+            - Step 1: `npm run video:changes`. If fewer than 3 new things a player would notice and enjoy, stop:
+              write nothing to .look/publish.json and end with "No patch video: <why>".
+            - Steps 2-4 as written: shots in dev/video/shots/, record with `npm run clip`, Read every contact sheet,
+              write dev/video/reels/patch-<mon><day>.mjs, `npm run reel`, then spawn a reviewer subagent that reviews
+              the rendered video and makes its own fixes, and check the final contact sheet yourself. Only main's
+              features; never prototypes or other branches.
+            - Instead of publishing yourself, write .look/publish.json:
+              {"file": ".look/reels/patch-<mon><day>.mp4", "title": "Patch notes: <Mon> <day>",
+               "summary": "<one sentence>", "features": ["<one line per feature>"], "target": "<newest commit covered>"}
+              The workflow publishes it after you finish.
+            - Instead of `npm run ship`: run `npm run check`, commit only dev/video/ changes on a new branch
+              claude/patch-video-<yyyy-mm-dd> (imperative message; body names DESIGN.md "How we work"), push it, and
+              open a non-draft PR with `gh pr create` (automerge.yml merges it when CI passes).
+            - Run every command in the foreground with a long timeout (recording takes minutes). Never use
+              run_in_background or Monitor: this session ends as soon as you end your turn, killing anything still
+              running. Bash is limited to the allowed commands, one per call (no `&&`, `;` or redirection): use the
+              Write and Edit tools to create, change or rename files.
+            - End with a short summary: features covered, anything the reviewer flagged but couldn't fix.
+
+      - name: Keep the cut and contact sheets
+        if: always() && steps.gate.outputs.go
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-video
+          path: |
+            .look/reels/*.mp4
+            .look/**/*sheet*.png
+            .look/publish.json
+            ${{ runner.temp }}/claude-execution-output.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish
+        id: publish
+        if: steps.gate.outputs.go && hashFiles('.look/publish.json') != ''
+        run: node dev/video/publish.mjs --from .look/publish.json
+
+      - name: Send the link
+        if: steps.publish.outputs.url
+        env:
+          URL: ${{ steps.publish.outputs.url }}
+          OWNER: ${{ github.repository_owner }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title=$(node -p "require('./.look/publish.json').title")
+          issue=$(gh issue list --state open --search 'Patch videos in:title' --json number,title \
+            --jq '[.[] | select(.title == "Patch videos")][0].number // empty')
+          if [ -z "$issue" ]; then
+            issue=$(gh issue create --title "Patch videos" \
+              --body "Every published patch video is posted here (from .github/workflows/patch-video.yml)." | grep -o '[0-9]*$')
+          fi
+          gh issue comment "$issue" --body "@$OWNER new patch video, **$title**: $URL (run: $RUN)"

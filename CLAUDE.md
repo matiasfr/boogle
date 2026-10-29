@@ -2,10 +2,18 @@
 
 ## Claude Code only
 
-- Shared project settings are in `.claude/settings.json`: an allowlist for routine commands and a hook that runs Prettier and ESLint on each JS/CSS file you edit. Personal tweaks go in `.claude/settings.local.json` (gitignored).
-- Project skills: `/ship` (commit and ship), `/new-feature <name>` (scaffold a plug-in), `/playtest-notes` (log a playtest).
+### Setup
+- `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.mjs`) that runs Prettier on each file you edit (plus ESLint for JS). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
 
-### As the GitHub Action (@claude, ci-autofix, nightly simplify)
-- Run `npm ci && npm run check` before committing (plus `npm run test:net` if you touched networking).
-- Commit to a `claude/<topic>` branch and open a PR with `gh pr create`: imperative title; body says what changed and which DESIGN.md principle it serves. Never push to `main`.
-- `automerge.yml` squash-merges non-draft `claude/*` PRs once CI passes. Networking, sync and persistence changes need no human review; open them as normal PRs (run `npm run check:full` first).
+### Project skills
+- `/ship`: commit and push with `npm run ship`.
+- `/new-feature <name>`: scaffold a plug-in in `src/features/`.
+- `/look`: see the running game (stills, motion, scenarios). Use it to check any visual, feel, physics or multiplayer change.
+- `/video`: record clips and GIFs of the game and cut them into trailers or patch-notes videos.
+- `/playtest-notes`: log a play session to `docs/playtests.md`.
+- Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`.
+
+### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
+- Run `npm ci && npm run check` before committing; `npm run check:full` if you touched `src/net*`, `src/world/sync.js` or `server/`.
+- Never push to `main`. Commit to a `claude/<topic>` branch and open a PR with `gh pr create`: imperative title; body says what changed and which DESIGN.md principle it serves.
+- `automerge.yml` squash-merges non-draft `claude/*` PRs once CI passes, then deploys. Open networking, sync and persistence PRs the same way: no draft, no `no-automerge` label.

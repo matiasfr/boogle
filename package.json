@@ -19,10 +19,16 @@
     "test:unit": "node --test --test-timeout=5000 'test/**/*.test.mjs'",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "look": "node dev/look/look.mjs",
+    "perf": "node dev/look/perf.mjs",
+    "island-map": "node dev/island/map.mjs",
     "scenario": "node dev/scenarios/run.mjs",
     "scenarios": "node dev/scenarios/run.mjs",
     "ship": "bash scripts/ship.sh",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "clip": "node dev/video/clip.mjs",
+    "reel": "node dev/video/reel.mjs",
+    "video:changes": "node dev/video/changes.mjs",
+    "video:publish": "node dev/video/publish.mjs"
   },
   "dependencies": {
     "cannon-es": "0.20.0",

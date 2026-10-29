@@ -1,20 +1,15 @@
 import * as THREE from 'three';
-import { ISLAND_R, GRID_RES, CELL, HALF, SEABED, COURT, SEA, reducedMotion } from './constants.js';
-import { lerp, smoothstep, fbm, valueNoise } from './math.js';
+import { GRID_RES, CELL, HALF, SEABED, COURT, SEA, reducedMotion } from './constants.js';
+import { lerp, smoothstep, valueNoise } from './math.js';
 import { scene } from './scene.js';
 import { PATCH } from './sim/mushrooms.js';
+import { island } from './island/index.js';
 
-function naturalHeight(x, z) {
-  const d = Math.hypot(x, z * 1.12) / ISLAND_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
-  const hill = 6.5 * Math.exp(-((x + 12) ** 2 + (z + 6) ** 2) / (2 * 13 * 13));
-  const bumps = fbm(x * 0.08, z * 0.08) * 1.1 * (1 - smoothstep(0.55, 0.85, d));
-  const inland = 1.3 + hill + bumps + 0.9 * (1 - smoothstep(0.3, 0.8, d));
-  return lerp(inland, SEABED, smoothstep(0.8, 1.12, d));
-}
-const COURT_H = naturalHeight(COURT.x, COURT.z);
+// The island's ground (src/island/: natural shape plus every POI's stamps), with the volleyball court levelled.
+const COURT_H = island.heightAt(COURT.x, COURT.z);
 const courtWeight = (x, z) => 1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
 function islandHeight(x, z) {
-  return lerp(naturalHeight(x, z), COURT_H, courtWeight(x, z));
+  return lerp(island.heightAt(x, z), COURT_H, courtWeight(x, z));
 }
 
 // heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame).
@@ -48,16 +43,27 @@ const DUG = new THREE.Color('#68442a'),
   PILED = new THREE.Color('#fff3c8'),
   CREST = new THREE.Color('#fffbe6');
 const tmpC = new THREE.Color(),
-  tmpG = new THREE.Color();
+  tmpG = new THREE.Color(),
+  tmpP = new THREE.Color();
+// POI paint per vertex (index j*GRID_RES+i): sRGB colour and amount, from the site stamps (src/island/stamps.js).
+const poiPaint = new Float32Array(GRID_RES * GRID_RES * 4);
+for (let j = 0; j < GRID_RES; j++)
+  for (let i = 0; i < GRID_RES; i++) {
+    const p = island.paintAt(i * CELL - HALF, HALF - j * CELL);
+    if (p) poiPaint.set(p, (j * GRID_RES + i) * 4);
+  }
 // Metres of player edits per vertex (index j*GRID_RES+i, the mesh order); drives colour only.
 const editDelta = new Float32Array(GRID_RES * GRID_RES);
 // Render-only height offset per vertex (metres): the crater "dip and spring back". Never touches heights[][].
 const visOff = new Float32Array(GRID_RES * GRID_RES);
-let terrainGeo = null;
+// The mesh is split into TILE x TILE-cell tiles so the camera and the shadow pass only draw the ones in view.
+const TILE = 51;
+const tiles = []; // { i0, j0, w, h, geo } (w, h in vertices); deep-sea tiles are skipped
+const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 
-// Writes the vertex colour for mesh vertex k into out[k*3..]. x/z/h are world coords, ny the normal's y,
+// Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y,
 // lap how much the mean of the neighbouring edits sits above this vertex's edit (>0 in a hollow, <0 on a crest).
-function paintVertex(out, k, x, h, z, ny, lap = 0) {
+function paintVertex(out, o, k, x, h, z, ny, lap = 0) {
   const d = editDelta[k];
   const nse = valueNoise(x * 0.3, z * 0.3);
   const c = tmpC,
@@ -68,7 +74,10 @@ function paintVertex(out, k, x, h, z, ny, lap = 0) {
   g.copy(GRASS).lerp(GRASS_DK, smoothstep(-0.2, 0.6, nse) * 0.7 + smoothstep(4, 8, h) * 0.3);
   c.lerp(g, grassy);
   c.lerp(ROCK, smoothstep(0.86, 0.72, ny) * grassy);
+  c.lerp(ROCK, smoothstep(11, 22, h) * 0.55 * grassy); // the massif turns stony towards the top
   c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
+  const pa = poiPaint[k * 4 + 3];
+  if (pa > 0) c.lerp(tmpP.setRGB(poiPaint[k * 4], poiPaint[k * 4 + 1], poiPaint[k * 4 + 2], THREE.SRGBColorSpace), pa);
   let shade = 1;
   const wet = 1 - smoothstep(SEA - 0.1, SEA + 0.35, h); // at or under sea level
   if (d < -0.01) {
@@ -85,9 +94,9 @@ function paintVertex(out, k, x, h, z, ny, lap = 0) {
     c.copy(DIRT).offsetHSL(0, 0, nse * 0.04);
   const edited = Math.min(1, Math.abs(d) / 0.15);
   shade *= 1 - edited * 0.45 * (1 - smoothstep(0.7, 0.97, ny)); // steep faces on edits read as shadow
-  out[k * 3] = c.r * shade;
-  out[k * 3 + 1] = c.g * shade;
-  out[k * 3 + 2] = c.b * shade;
+  out[o * 3] = c.r * shade;
+  out[o * 3 + 1] = c.g * shade;
+  out[o * 3 + 2] = c.b * shade;
 }
 
 // Set one grid cell's height (metres) in place, plus how far it is from the base terrain (metres, colour only).
@@ -97,40 +106,50 @@ export function setCellHeight(i, j, h, deltaM = 0) {
   editDelta[j * GRID_RES + i] = deltaM;
 }
 
+// Writes position, normal and colour of grid vertex (i, j) into a tile's arrays at local index o.
+function writeVertex(t, o, i, j) {
+  const n = GRID_RES;
+  const k = j * n + i;
+  const pos = t.geo.attributes.position.array,
+    nrm = t.geo.attributes.normal.array,
+    col = t.geo.attributes.color.array;
+  const h = heights[i][j];
+  pos[o * 3] = i * CELL - HALF;
+  pos[o * 3 + 1] = h + visOff[k];
+  pos[o * 3 + 2] = HALF - j * CELL;
+  const ie = Math.min(n - 1, i + 1),
+    iw = Math.max(0, i - 1),
+    jn = Math.max(0, j - 1),
+    js = Math.min(n - 1, j + 1);
+  const dx = (heights[ie][j] + visOff[j * n + ie] - heights[iw][j] - visOff[j * n + iw]) / (2 * CELL);
+  const dz = (heights[i][jn] + visOff[jn * n + i] - heights[i][js] - visOff[js * n + i]) / (2 * CELL);
+  const il = 1 / Math.hypot(dx, 1, dz);
+  nrm[o * 3] = -dx * il;
+  nrm[o * 3 + 1] = il;
+  nrm[o * 3 + 2] = -dz * il;
+  const lap =
+    (editDelta[j * n + ie] + editDelta[j * n + iw] + editDelta[jn * n + i] + editDelta[js * n + i]) / 4 - editDelta[k];
+  paintVertex(col, o, k, pos[o * 3], h, pos[o * 3 + 2], il, lap);
+}
+
 // Rebuild mesh positions, normals and colours for cells i0..i1, j0..j1 (inclusive) and their neighbours.
 export function refreshRegion(i0, j0, i1, j1) {
-  if (!terrainGeo) return;
   const n = GRID_RES;
   const a = Math.max(0, i0 - 1),
     b = Math.min(n - 1, i1 + 1),
     c0 = Math.max(0, j0 - 1),
     d0 = Math.min(n - 1, j1 + 1);
-  const pos = terrainGeo.attributes.position.array,
-    nrm = terrainGeo.attributes.normal.array,
-    col = terrainGeo.attributes.color.array;
-  for (let j = c0; j <= d0; j++)
-    for (let i = a; i <= b; i++) {
-      const k = j * n + i;
-      const h = heights[i][j];
-      pos[k * 3 + 1] = h + visOff[k];
-      const ie = Math.min(n - 1, i + 1),
-        iw = Math.max(0, i - 1),
-        jn = Math.max(0, j - 1),
-        js = Math.min(n - 1, j + 1);
-      const dx = (heights[ie][j] + visOff[j * n + ie] - heights[iw][j] - visOff[j * n + iw]) / (2 * CELL);
-      const dz = (heights[i][jn] + visOff[jn * n + i] - heights[i][js] - visOff[js * n + i]) / (2 * CELL);
-      const il = 1 / Math.hypot(dx, 1, dz);
-      nrm[k * 3] = -dx * il;
-      nrm[k * 3 + 1] = il;
-      nrm[k * 3 + 2] = -dz * il;
-      const lap =
-        (editDelta[j * n + ie] + editDelta[j * n + iw] + editDelta[jn * n + i] + editDelta[js * n + i]) / 4 -
-        editDelta[k];
-      paintVertex(col, k, pos[k * 3], h, pos[k * 3 + 2], nrm[k * 3 + 1], lap);
-    }
-  terrainGeo.attributes.position.needsUpdate = true;
-  terrainGeo.attributes.normal.needsUpdate = true;
-  terrainGeo.attributes.color.needsUpdate = true;
+  for (const t of tiles) {
+    const ta = Math.max(a, t.i0),
+      tb = Math.min(b, t.i0 + t.w - 1),
+      tc = Math.max(c0, t.j0),
+      td = Math.min(d0, t.j0 + t.h - 1);
+    if (ta > tb || tc > td) continue;
+    for (let j = tc; j <= td; j++) for (let i = ta; i <= tb; i++) writeVertex(t, (j - t.j0) * t.w + (i - t.i0), i, j);
+    const at = t.geo.attributes;
+    at.position.needsUpdate = at.normal.needsUpdate = at.color.needsUpdate = true;
+    t.geo.computeBoundingSphere();
+  }
 }
 
 // Visual-only settle: after a batch of heights changed, show the old shape and let it drop (or rise) to the new one
@@ -171,38 +190,74 @@ export function updateSettle(dt) {
 
 export function createTerrainMesh() {
   const n = GRID_RES;
-  const pos = new Float32Array(n * n * 3);
-  for (let j = 0; j < n; j++)
-    for (let i = 0; i < n; i++) {
-      const k = (j * n + i) * 3;
-      pos[k] = i * CELL - HALF;
-      pos[k + 1] = heights[i][j];
-      pos[k + 2] = HALF - j * CELL;
+  const group = new THREE.Group();
+  for (let ti = 0; ti < n - 1; ti += TILE)
+    for (let tj = 0; tj < n - 1; tj += TILE) {
+      const w = Math.min(TILE, n - 1 - ti) + 1,
+        h = Math.min(TILE, n - 1 - tj) + 1;
+      let top = -Infinity;
+      for (let i = ti; i < ti + w; i++) for (let j = tj; j < tj + h; j++) top = Math.max(top, heights[i][j]);
+      if (top < SEABED + 1.2) continue; // open sea floor: the sea draws over it, never edited
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
+      const idx = [];
+      for (let j = 0; j < h - 1; j++)
+        for (let i = 0; i < w - 1; i++) {
+          const a = j * w + i,
+            b = a + 1,
+            c = a + w,
+            d = c + 1;
+          idx.push(a, b, c, b, d, c);
+        }
+      geo.setIndex(idx);
+      const t = { i0: ti, j0: tj, w, h, geo };
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) writeVertex(t, j * w + i, ti + i, tj + j);
+      geo.computeBoundingSphere();
+      tiles.push(t);
+      const mesh = new THREE.Mesh(geo, terrainMat);
+      mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      group.add(mesh);
     }
-  const idx = [];
-  for (let j = 0; j < n - 1; j++)
-    for (let i = 0; i < n - 1; i++) {
-      const a = j * n + i,
-        b = a + 1,
-        c = a + n,
-        d = c + 1;
-      idx.push(a, b, c, b, d, c);
-    }
-  const geo = new THREE.BufferGeometry();
-  geo.setIndex(idx);
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.computeVertexNormals();
-  const nrm = geo.attributes.normal.array;
-  const col = new Float32Array(n * n * 3);
-  for (let k = 0; k < n * n; k++) paintVertex(col, k, pos[k * 3], pos[k * 3 + 1], pos[k * 3 + 2], nrm[k * 3 + 1]);
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  terrainGeo = geo;
-  const mesh = new THREE.Mesh(
-    geo,
-    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
-  );
-  mesh.receiveShadow = true;
-  mesh.castShadow = true;
-  scene.add(mesh);
-  return mesh;
+  scene.add(group);
+  return group;
 }
+
+// ---------------------------------------------------------------- holes (cave mouths)
+// Up to MAX_HOLES capsules, each { a: [x, y, z], b: [x, y, z], r, floor }: the ground is not drawn inside a capsule
+// above its floor height, so a tunnel can open out of a hillside (src/pois/caves/). Visual only; physics is separate.
+const MAX_HOLES = 6;
+const holeA = Array.from({ length: MAX_HOLES }, () => new THREE.Vector4(0, 0, 0, 0)),
+  holeB = Array.from({ length: MAX_HOLES }, () => new THREE.Vector4(0, 0, 0, 0));
+export function setTerrainHoles(list) {
+  holeA.forEach((v, k) => {
+    const h = list[k];
+    v.set(...(h ? h.a : [0, 0, 0]), h ? h.r : 0);
+    holeB[k].set(...(h ? h.b : [0, 0, 0]), h ? h.floor : 0);
+  });
+}
+terrainMat.onBeforeCompile = (shader) => {
+  shader.uniforms.uHoleA = { value: holeA };
+  shader.uniforms.uHoleB = { value: holeB };
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vGround;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGround = position;');
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <common>',
+      `#include <common>
+      varying vec3 vGround; uniform vec4 uHoleA[${MAX_HOLES}]; uniform vec4 uHoleB[${MAX_HOLES}];`,
+    )
+    .replace(
+      '#include <clipping_planes_fragment>',
+      `#include <clipping_planes_fragment>
+      for (int k = 0; k < ${MAX_HOLES}; k++) {
+        if (uHoleA[k].w <= 0.0) continue;
+        vec3 pa = vGround - uHoleA[k].xyz, ba = uHoleB[k].xyz - uHoleA[k].xyz;
+        float t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        if (length(pa - ba * t) < uHoleA[k].w && vGround.y > uHoleB[k].w) discard;
+      }`,
+    );
+};

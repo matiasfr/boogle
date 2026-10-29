@@ -10,9 +10,9 @@ Unit tests cover pure logic. For "does it actually work in the running game" (th
 ## 1. Inspect: `npm run look`
 
 ```
-npm run look -- --view stream                         # preset: spring | stream | mouth | court | overview
+npm run look -- --view hill                           # preset: hill | shore | court | overview
 npm run look -- --cam -10,12,-14 --look -22,3.5,-21   # any pose (metres, y up); --fov 60
-npm run look -- --view spring --eval setup.js --warm 5 --region 0.3,0.3,0.4,0.4
+npm run look -- --view shore --eval setup.js --warm 5 --region 0.3,0.3,0.4,0.4
 ```
 
 Writes `<name>-still.png`, `<name>-motion.png` (contact sheet: `--frames 8` over `--seconds 2`, timestamped),
@@ -48,7 +48,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.eval(fn | 'async body with return')` runs in the page; game modules via `await import('/src/...')`; state handles
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
-- `g.view('stream' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/features/debug-cam.js`).
+- `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/features/debug-cam.js`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud })`.
@@ -58,6 +58,17 @@ moved, synced, is visible in a region, is not flickering); keep thresholds loose
 not tune the look); put the image paths in check details so a failure is diagnosable. Prefer submitting edits through
 `submitEdit` over aiming the mouse. Real-time motion scores depend on the machine, so compare before/after on the
 same machine, never against absolute numbers from elsewhere.
+
+## 3. Render cost: `npm run perf`
+
+About 8 s. Prints draw calls, shadow-pass calls, triangles, geometries and shader programs, for the island as
+entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running game). The counts are exact;
+headless fps is not, so it isn't reported. Run it before and after anything that adds meshes or lights, and compare.
+
+## 4. Clips and videos
+
+Recording video clips and GIFs, and cutting them into trailers: see the `video` skill (`npm run clip`,
+`npm run reel`).
 
 ## Loop for a feature
 Write or extend a scenario that fails without your feature, implement, run it, Read the stills/sheets/heatmaps,

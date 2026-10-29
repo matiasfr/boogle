@@ -1,4 +1,4 @@
-// Visual inspection for agents: `npm run look -- --view stream`. See .claude/skills/look/SKILL.md.
+// Visual inspection for agents: `npm run look -- --view hill`. See .claude/skills/look/SKILL.md.
 // Enters the island headless, puts the camera at a view, warms up, then writes a still, a motion contact sheet
 // and a per-pixel stddev heatmap, and prints a motion score. Scenario checks live in dev/scenarios/.
 import fs from 'node:fs';
@@ -6,7 +6,7 @@ import path from 'node:path';
 import { startStack, launch, Game, VIEWS } from './lib.mjs';
 
 const opt = {
-  view: 'stream',
+  view: 'hill',
   cam: null,
   look: null,
   url: null,

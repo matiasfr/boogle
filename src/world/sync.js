@@ -8,7 +8,8 @@
 //                    { t:'w:need' }                         please send me a snapshot (late join, desync, late edit)
 //   host -> all      { t:'w:edits', ht, list:[{tick,seq,e}] }  stamped edits (tick = host tick + DELAY); ht = host tick now
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
-//                    { t:'w:hash', tick, h, ht }            worldHash right after `tick` was processed, every HASH_EVERY ticks
+//                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
+//                                                           hs = { stateKey: hash } so a client can name what diverged
 //                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht }; only `to` uses it.
 //                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
@@ -39,7 +40,11 @@ export function createSync() {
   const tickFns = [];
   const appliedFns = [];
   const snapFns = [];
+  const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
+  const hashFns = []; // fn(tick) on the host right after it sent a hash
   const stats = { resyncs: 0, snapsSent: 0, snapsLoaded: 0, hashOk: 0, hashBad: 0, lateEdits: 0, saves: 0 };
+  let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
+  let lastBad = null; // { tick, keys } of the latest mismatch
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
   let seq = 0;
   let selfId = 'local';
@@ -144,10 +149,11 @@ export function createSync() {
       if (t % CLOCK_EVERY === 0) send({ t: 'w:c', ht: t });
       if (t >= nextHashTick) {
         nextHashTick = t + HASH_EVERY;
-        send({ t: 'w:hash', tick: t, h: worldHash(), ht: t });
+        send({ t: 'w:hash', tick: t, h: worldHash(), ht: t, hs: stateHashes() });
+        for (const fn of hashFns) fn(t);
       }
     } else if (mode === 'client' && pendingHash.has(t)) {
-      checkHash(t, pendingHash.get(t));
+      checkHash(t, ...pendingHash.get(t));
     }
     for (const k of pendingHash.keys()) if (k <= t) pendingHash.delete(k);
   }
@@ -215,12 +221,23 @@ export function createSync() {
   function worldHash() {
     return combine(world.tick | 0);
   }
+  function stateHashes() {
+    const out = {};
+    for (const [k, s] of states) out[k] = s.hash() >>> 0;
+    return out;
+  }
 
-  function checkHash(tick, h) {
+  function checkHash(tick, h, hs) {
     if (tick !== world.tick) return;
+    const mine = isObj(hs) ? stateHashes() : null;
+    if (mine) subsystems = Object.fromEntries(Object.keys(mine).map((k) => [k, mine[k] === hs[k] ? 'ok' : 'bad']));
     if (worldHash() === h) stats.hashOk++;
     else {
       stats.hashBad++;
+      const keys = mine ? Object.keys(mine).filter((k) => mine[k] !== hs[k]) : ['?'];
+      lastBad = { tick, keys };
+      console.warn(`[world] desync at tick ${tick} in: ${keys.join(', ') || 'tick/order'}`);
+      for (const fn of desyncFns) fn(lastBad); // before the resync replaces the evidence
       requestResync();
     }
   }
@@ -304,8 +321,8 @@ export function createSync() {
     noteHostTick(msg.ht);
     if (!ready) return;
     if (msg.t === 'w:hash' && isInt(msg.tick) && isInt(msg.h)) {
-      if (msg.tick === world.tick) checkHash(msg.tick, msg.h >>> 0);
-      else if (msg.tick > world.tick && pendingHash.size < 8) pendingHash.set(msg.tick, msg.h >>> 0);
+      if (msg.tick === world.tick) checkHash(msg.tick, msg.h >>> 0, msg.hs);
+      else if (msg.tick > world.tick && pendingHash.size < 8) pendingHash.set(msg.tick, [msg.h >>> 0, msg.hs]);
     } else if (msg.t === 'w:edits' && Array.isArray(msg.list)) {
       for (const q of msg.list) {
         if (!isObj(q) || !isInt(q.tick) || !isInt(q.seq) || !isObj(q.e) || !ops.has(q.e.op)) continue;
@@ -445,6 +462,9 @@ export function createSync() {
     onTick: (fn) => tickFns.push(fn),
     onApplied: (fn) => appliedFns.push(fn),
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
+    onDesync: (fn) => desyncFns.push(fn),
+    onHashSent: (fn) => hashFns.push(fn),
+    stateHashes,
     setSelfId: (id) => (selfId = id),
     submitEdit,
     updateWorld,
@@ -453,7 +473,7 @@ export function createSync() {
     worldHash,
     attachWorld,
     detachWorld,
-    worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats }),
+    worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, subsystems, lastBad }),
   };
 }
 
@@ -465,6 +485,9 @@ export const {
   onTick,
   onApplied,
   onSnapshot,
+  onDesync,
+  onHashSent,
+  stateHashes,
   setSelfId,
   submitEdit,
   updateWorld,

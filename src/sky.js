@@ -5,9 +5,9 @@
 // SUN_DIR (constants.js) is the key light's direction, read by the shadow-casting light in player.js and the water's
 // glints. This module points it at the sun by day and at the moon by night.
 import * as THREE from 'three';
-import { SUN_DIR } from './constants.js';
+import { SUN_DIR, FOG_NEAR, FOG_FAR } from './constants.js';
 import { lerp, smoothstep, srgbVec } from './math.js';
-import { scene, camera, sun, sky } from './scene.js';
+import { scene, camera, renderer, sun, sky } from './scene.js';
 import { waterMat } from './water-render.js';
 import { clouds } from './props.js';
 import { world, TICK_MS } from './world/sync.js';
@@ -299,6 +299,11 @@ function placeBillboard(group, dir) {
   group.lookAt(camera.position);
 }
 
+// Set every frame by features that take the camera somewhere the sky can't reach: underground = 0..1 (the caves).
+// The sky's light fades to a dim, warm ambient and the fog closes in, dark.
+export const atmosphere = { underground: 0 };
+const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#6d6155'), ground: new THREE.Color('#2a241e') };
+
 export function updateSky(dt, elapsed) {
   if (!sunGroup) return;
   let s = skyAt(worldMs(dt));
@@ -337,11 +342,23 @@ export function updateSky(dt, elapsed) {
   if (byMoon) sun.color.copy(L.moon);
   else sun.color.copy(L.sunDay).lerp(L.sunSet, warm);
   sun.intensity = byMoon ? moonI : sunI;
+  renderer.shadowMap.autoUpdate = sun.intensity > 0.01; // no key light, no shadow pass
 
   if (hemi) {
     hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day);
     hemi.groundColor.copy(L.hemiGroundNight).lerp(L.hemiGroundDay, day);
     hemi.intensity = lerp(0.7, 1.25, day);
+  }
+  const ug = atmosphere.underground;
+  scene.fog.near = lerp(FOG_NEAR, 2.5, ug);
+  scene.fog.far = lerp(FOG_FAR, 46, ug);
+  if (ug > 0) {
+    scene.fog.color.lerp(CAVE.fog, ug);
+    if (hemi) {
+      hemi.color.lerp(CAVE.sky, ug);
+      hemi.groundColor.lerp(CAVE.ground, ug);
+      hemi.intensity *= lerp(1, 0.32, ug);
+    }
   }
 
   const cm = clouds[0]?.material;
@@ -380,6 +397,8 @@ const tmpColor = new THREE.Color();
 // Console handle (window.boogle.sky): sky.state, sky.preview(0.55) for sunset, sky.preview(0.8, 0.5) for a full moon at
 // night, sky.preview(null) to follow the world clock again. Local only.
 const state = { frac: 0, phase: 0, illum: 0, day: 1, sunDir, moonDir };
+// Read-only view of the current sky for other modules: day (0 night .. 1 day), frac, phase, illum.
+export const skyNow = state;
 export const skyDebug = {
   state,
   preview(frac, phase = null) {

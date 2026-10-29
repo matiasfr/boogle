@@ -31,6 +31,10 @@ jobs:
         env:
           BASE: /boogle/
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
+      # Share pages for patch videos (video-* releases, dev/video/site.mjs). Never blocks a game deploy.
+      - run: node dev/video/site.mjs dist || true
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
