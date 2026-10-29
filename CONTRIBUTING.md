@@ -84,5 +84,5 @@ Playtest continuously: whenever something new lands, jump on the live site, `htt
 ## Working with Claude Code
 
 - `CLAUDE.md` is loaded automatically. Ask Claude to read `DESIGN.md`, `PLAN.md` and `src/net/README.md` before designing a feature.
-- Mention `@claude` in a PR or issue to run the Claude assistant ([.github/workflows/claude.yml](.github/workflows/claude.yml)).
+- Mention `@claude` in a PR or issue to run the Claude assistant ([.github/workflows/claude.yml](.github/workflows/claude.yml)). For code changes it opens a PR from a `claude/` branch, and [automerge.yml](.github/workflows/automerge.yml) squash-merges it into `main` once CI is green (which deploys). Add the `no-automerge` label or ask for a draft if you want to review first.
 - Review AI-written code like any other: run it, read the diff, check it against the rules above (especially determinism and the room interface), and make sure `npm run check` passes. Ask Claude for light tests that follow the Testing section; push back on slow or browser-based tests for things a unit test or a playtest covers.

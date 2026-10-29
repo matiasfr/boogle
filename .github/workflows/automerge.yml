@@ -1,0 +1,47 @@
+name: Auto-merge Claude PRs
+
+# When CI passes on a PR that Claude opened (branch `claude/*` in this repo), squash-merge it into main.
+# Opt out per PR with the `no-automerge` label, or by leaving it as a draft.
+# A merge made with GITHUB_TOKEN doesn't trigger push workflows, so this also starts the Pages deploy.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: automerge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'claude/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Find the PR
+        id: pr
+        run: |
+          pr=$(gh pr list --head "$BRANCH" --state open --json number,isDraft,headRefOid,labels \
+            --jq '[.[] | select(.isDraft | not) | select(.headRefOid == env.SHA) | select([.labels[].name] | index("no-automerge") | not)][0].number // empty')
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+          if [ -z "$pr" ]; then echo "No open, non-draft PR at $SHA for $BRANCH (or labelled no-automerge); skipping."; fi
+      - name: Squash-merge
+        if: steps.pr.outputs.number != ''
+        run: gh pr merge "${{ steps.pr.outputs.number }}" --squash --delete-branch --match-head-commit "$SHA"
+      - name: Deploy
+        if: steps.pr.outputs.number != ''
+        run: gh workflow run deploy.yml --ref main
