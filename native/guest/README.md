@@ -22,6 +22,8 @@ GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
   browser keeps both in IndexedDB.
 - On a local dev server: `VITE_DINO_ENGINE_URL=/native/guest/out/engine.wasm npm run dev` loads it without the
   dialog. Never set this for a deploy.
+- Check it end to end: `GUEST_ROM=/path/to/rom.z64 npm run scenario -- guest-play` gives both files through the
+  dialog's picker, becomes the guest, runs, jumps, switches back and reloads. Without `GUEST_ROM` it is skipped.
 
 ## What is compiled, what comes from the ROM
 
