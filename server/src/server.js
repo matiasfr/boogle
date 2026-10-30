@@ -42,6 +42,9 @@ export function loadConfig(env = process.env, overrides = {}) {
     turnCredential: env.TURN_CREDENTIAL || '',
     turnSecret: env.TURN_SECRET || '',
     turnTtl: Number(env.TURN_TTL ?? 86400),
+    cfTurnKeyId: env.CF_TURN_KEY_ID || '',
+    cfTurnApiToken: env.CF_TURN_API_TOKEN || '',
+    fetch: globalThis.fetch,
     aliveTimeout: Number(env.PEER_ALIVE_TIMEOUT ?? 60000),
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
@@ -116,6 +119,40 @@ function iceServers(cfg) {
   return servers;
 }
 
+// Cloudflare TURN: mint credentials from its API, shared by every caller and re-minted at half their TTL.
+// Port 53 URLs are dropped (browsers block them). On failure /ice serves whatever else is configured.
+function createCloudflareTurn(cfg) {
+  if (!cfg.cfTurnKeyId || !cfg.cfTurnApiToken) return null;
+  const url = `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfg.cfTurnKeyId)}/credentials/generate-ice-servers`;
+  let cached = null; // { servers, freshUntil }
+  let pending = null;
+  async function mint() {
+    const res = await cfg.fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.cfTurnApiToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: cfg.turnTtl }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`Cloudflare TURN ${res.status}`);
+    const servers = [(await res.json()).iceServers]
+      .flat()
+      .filter((s) => s?.username && s?.credential)
+      .map((s) => ({ ...s, urls: [s.urls].flat().filter((u) => !/:53(\?|$)/.test(u)) }))
+      .filter((s) => s.urls.length);
+    if (!servers.length) throw new Error('Cloudflare TURN returned no credentials');
+    cached = { servers, freshUntil: Date.now() + (cfg.turnTtl * 1000) / 2 };
+  }
+  return async function get() {
+    if (!cached || Date.now() > cached.freshUntil) {
+      pending ??= mint()
+        .catch((e) => cfg.log('cloudflare turn:', e.message))
+        .finally(() => (pending = null));
+      await pending;
+    }
+    return cached && Date.now() < cached.freshUntil + (cfg.turnTtl * 1000) / 2 ? cached.servers : [];
+  };
+}
+
 /**
  * Build (but don't start listening) the service.
  * Returns { app, server, listen(port), close(), config }.
@@ -146,9 +183,10 @@ export function createService(cfg) {
 
   // ---- health / ICE ----
   app.get('/healthz', (_req, res) => res.type('text/plain').send('ok'));
-  app.get('/ice', (_req, res) => {
+  const cloudflareTurn = createCloudflareTurn(cfg);
+  app.get('/ice', async (_req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json({ iceServers: iceServers(cfg) });
+    res.json({ iceServers: [...iceServers(cfg), ...(cloudflareTurn ? await cloudflareTurn() : [])] });
   });
 
   // ---- snapshot storage ----

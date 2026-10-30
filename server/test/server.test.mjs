@@ -289,6 +289,51 @@ test('/ice: TURN_SECRET ephemeral credentials', async () => {
   }
 });
 
+test('/ice: Cloudflare TURN minted once, port 53 dropped, STUN-only on failure', async () => {
+  const calls = [];
+  let fail = false;
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, init });
+    if (fail) return new Response('nope', { status: 500 });
+    return Response.json({
+      iceServers: [
+        { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
+        {
+          urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turn:turn.cloudflare.com:53?transport=udp'],
+          username: 'u',
+          credential: 'c',
+        },
+      ],
+    });
+  };
+  const env = { CF_TURN_KEY_ID: 'key1', CF_TURN_API_TOKEN: 'tok', TURN_TTL: '600' };
+  const s = await start(env, { fetch: fakeFetch });
+  try {
+    for (let i = 0; i < 2; i++) {
+      const j = await (await fetch(`${s.base}/ice`)).json();
+      assert.deepEqual(j.iceServers, [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: ['turn:turn.cloudflare.com:3478?transport=udp'], username: 'u', credential: 'c' },
+      ]);
+    }
+    assert.equal(calls.length, 1, 'credentials are cached');
+    assert.equal(calls[0].url, 'https://rtc.live.cloudflare.com/v1/turn/keys/key1/credentials/generate-ice-servers');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer tok');
+    assert.deepEqual(JSON.parse(calls[0].init.body), { ttl: 600 });
+  } finally {
+    await s.stop();
+  }
+  fail = true;
+  const f = await start(env, { fetch: fakeFetch });
+  try {
+    assert.deepEqual((await (await fetch(`${f.base}/ice`)).json()).iceServers, [
+      { urls: 'stun:stun.l.google.com:19302' },
+    ]);
+  } finally {
+    await f.stop();
+  }
+});
+
 test('/ice: TURN_URLS without credentials adds nothing', async () => {
   const s = await start({ TURN_URLS: 'turn:turn.example.com:3478' });
   try {
