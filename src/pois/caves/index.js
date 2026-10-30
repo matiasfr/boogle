@@ -19,9 +19,9 @@ import { atmosphere } from '../../sky.js';
 import { camConstraints, me } from '../../player.js';
 import { ball } from '../../ball.js';
 import { waterField } from '../../water-field.js';
-import { buildCaveMeshSteps, caveSd } from './mesh.js';
+import { buildCaveMeshSteps, buildCollarMesh, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
-import { buildDecor, MOUTH_POSTS } from './decor.js';
+import { buildDecor, mouthFrame } from './decor.js';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
@@ -66,6 +66,7 @@ export function inCave(x, y, z) {
 
 // ---------------------------------------------------------------- build
 let caveMesh = null,
+  collarMesh = null,
   decorRoot = null;
 const PALETTE = {
   [ZONE.TUNNEL]: ['#7b7166', '#6c6255'],
@@ -184,6 +185,31 @@ function brickMaterial() {
   return withCaveAmbient(mat);
 }
 
+// Rock rings round the mouths (mesh.js), hiding where the hillside's holes meet the tunnels. Look only: they sit
+// in the rock and the trench walls, a hand's width proud of the tunnel wall.
+function makeCollars() {
+  const { positions, indices } = buildCollarMesh();
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  const colors = new Float32Array(positions.length);
+  const tmp = new THREE.Color();
+  for (let v = 0; v < positions.length / 3; v++) {
+    const h =
+      Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
+    tmp.set('#968f83').multiplyScalar(0.88 + 0.24 * (h - Math.floor(h)));
+    colors.set([tmp.r, tmp.g, tmp.b], v * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(
+    geo,
+    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
+  );
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
+}
+
 function* build() {
   const steps = buildCaveMeshSteps();
   let r = steps.next();
@@ -201,6 +227,10 @@ function* build() {
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
   body.addShape(new CANNON.Trimesh(Array.from(m.positions), colliderIndices));
   world.addBody(body);
+  yield;
+
+  collarMesh = makeCollars();
+  scene.add(collarMesh);
   yield;
 
   decorRoot = buildDecor({ world, scene });
@@ -245,15 +275,20 @@ function floorBelow(x, y, z) {
 }
 
 // ---------------------------------------------------------------- camera and atmosphere
-// The camera ray stops at rock, at the mouths' frame posts, and (out past a mouth) at the ground. Pulled in at once
-// when something gets in the way, it eases back out while you are inside (no pop as the tunnel opens up).
-const POST_R = 0.45; // post half-width plus room for the near plane
+// The camera ray stops at rock, at the mouths' timber frames (it may only pass through their doorway, clear of the
+// posts, lanterns and beam), and (out past a mouth) at the ground. Pulled in at once when something gets in the way,
+// it eases back out while it is in the tunnel (no pop as the tunnel opens up).
 const CAM_EASE = 4; // 1/s
+const FRAMES = MOUTHS.map((m) => ({ m, ...mouthFrame(m) }));
 const tmpV = new THREE.Vector3();
 const camRay = { len: Infinity, at: 0 };
 function blocked(x, y, z) {
-  for (const p of MOUTH_POSTS)
-    if (Math.abs(x - p.x) < POST_R && Math.abs(z - p.z) < POST_R && y < p.y + 3.2) return true;
+  for (const { m, rx, rz, fx, fz, half } of FRAMES) {
+    const along = (x - fx) * m.ox + (z - fz) * m.oz;
+    if (Math.abs(along) > 0.45) continue;
+    const side = Math.abs((x - fx) * rx + (z - fz) * rz);
+    if (side < half + 0.6 && y < m.y + 3.3 && (side > half - 0.55 || y > m.y + 2.3)) return true;
+  }
   if (outOfMouth(x, z) > 0.5) return y < groundHeight(x, z) + 0.45;
   return caveSd(x, y, z) > -0.35;
 }
@@ -261,7 +296,9 @@ function keepCameraInside(look, pos) {
   const now = performance.now();
   const dt = Math.min(0.1, (now - camRay.at) / 1000);
   camRay.at = now;
-  if (!ready || !me.body || !tracked.get(me.body)?.cave) {
+  // Also when you stand outside a mouth with the camera's spot in the tunnel behind you (walking out): else the usual
+  // ground rule would lift it onto the hill over the mouth.
+  if (!ready || !me.body || !(tracked.get(me.body)?.cave || inCave(pos.x, pos.y, pos.z))) {
     camRay.len = Infinity;
     return false;
   }
@@ -280,7 +317,7 @@ let under = 0;
 function update({ dt }) {
   if (!ready) return;
   const c = camera.position;
-  caveMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
+  caveMesh.visible = collarMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
   let target = 0;
   if (inCave(c.x, c.y, c.z)) target = THREE.MathUtils.smoothstep(-outOfMouth(c.x, c.z), 1, 9); // daylight near mouths
   under += (target - under) * Math.min(1, dt * 3);
