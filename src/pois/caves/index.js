@@ -24,6 +24,11 @@ import { buildDecor } from './decor.js';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
+// Ambient light reaching the rock, by distance from the nearest mouth: daylight at the mouth, AMB_DEEP of it from
+// AMB_FAR metres in. Baked into the mesh, so the inside reads dark from outside too (the sky's light is global).
+const AMB_NEAR = 2,
+  AMB_FAR = 14,
+  AMB_DEEP = 0.6;
 const SURFACE_MASK = ~GROUP.CAVE,
   CAVE_MASK = ~GROUP.SCENERY;
 
@@ -92,6 +97,7 @@ function makeGeometry(m) {
   const nrm = geo.attributes.normal.array;
   const colors = new Float32Array(positions.length);
   const brick = new Float32Array(positions.length / 3);
+  const amb = new Float32Array(positions.length / 3);
   const tmp = new THREE.Color(),
     floorC = new THREE.Color();
   for (let v = 0; v < positions.length / 3; v++) {
@@ -105,25 +111,39 @@ function makeGeometry(m) {
     const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
+    const x = positions[v * 3],
+      z = positions[v * 3 + 2];
+    const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
+    amb[v] = 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.setAttribute('aBrick', new THREE.BufferAttribute(brick, 1));
+  geo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   geo.computeBoundingSphere();
   return { geo, colliderIndices: col };
 }
 
-// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.
+// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces. The sky's ambient
+// (hemisphere) light is scaled by aAmb; lanterns and the sun are not.
+const HEMI_LINE = 'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );';
+const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
+  HEMI_LINE,
+  'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal ) * vAmb;',
+);
+if (!THREE.ShaderChunk.lights_fragment_begin.includes(HEMI_LINE))
+  console.warn('[caves] three.js changed its hemisphere chunk');
 function brickMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float aBrick; varying float vBrick; varying vec3 vCaveW;',
+        '#include <common>\nattribute float aBrick; attribute float aAmb; varying float vBrick; varying float vAmb; varying vec3 vCaveW;',
       )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vCaveW = position;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vAmb = aAmb; vCaveW = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying vec3 vCaveW;')
+      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying float vAmb; varying vec3 vCaveW;')
+      .replace('#include <lights_fragment_begin>', HEMI_SCALED)
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
