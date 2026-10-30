@@ -156,7 +156,7 @@ test('flatten reaches the water sim: its ground matches the terrain, and a joine
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
 });
 
-test('saves from the 129-cell island (before 2026-10-29) load as fresh state', () => {
+test('saves from the 129-cell island (before 2026-10-29) load fresh sand and mushrooms', () => {
   const a = peer(),
     fresh = a.s.stateHashes();
   a.s.loadSnapshot({

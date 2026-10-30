@@ -64,7 +64,8 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       counts in `stats.loadErrors` and reports `onSnapFail({ from: 'state' })`. A state from a newer build is skipped
       and the tab stops persisting. `test/fixtures/snap-pre-version.json` (captured before versions) must keep loading
       to its hashes (`test/world-snapshots.test.mjs`). The 129-cell grid fixture was dropped with the migration itself
-      (owner decision below): those saves now load as fresh state. Every state is still at version 0.
+      (owner decision below): those saves now load fresh sand and mushrooms; their loose items (gifts without `v`)
+      stay at the old cells, now far-corner sea, until they rot. Every state is still at version 0.
 
 ## Wave C: structure and load time
 
