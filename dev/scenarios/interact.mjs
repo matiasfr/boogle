@@ -145,7 +145,8 @@ export default {
       const { cam } = await import('/src/player.js');
       const { giftIndex } = await import('/src/sim/gift-catalog.js');
       const { CELL, HALF, SEA } = await import('/src/constants.js');
-      const b = window.boogle.me.body, items = window.boogle.gifts.items, shell = giftIndex('shell');
+      const b = window.boogle.me.body, shell = giftIndex('shell');
+      const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
       I.select(-1);
@@ -157,11 +158,11 @@ export default {
           const ux = Math.cos((a * Math.PI) / 4), uz = Math.sin((a * Math.PI) / 4);
           const bx = P.x + ux * 2.5, bz = P.z + uz * 2.5;
           if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
-          const had = new Set(items.map((it) => it.id));
+          const had = new Set(items().map((it) => it.id));
           const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
           if (!G.throwItem(shell, from, from.clone().set(0, -0.5, 0))) continue;
           let it = null;
-          for (let n = 0; n < 50 && !it; n++, await nap(100)) it = items.find((x) => !had.has(x.id) && x.kind === shell);
+          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === shell);
           if (!it) continue;
           await nap(600); // its flight comes down
           const sx = it.i * CELL - HALF, sz = HALF - it.j * CELL;
