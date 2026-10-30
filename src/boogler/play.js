@@ -19,6 +19,7 @@ import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
 import { heldId, useOne } from '../player/inventory.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
+import { mario } from '../mario/state.js';
 
 const TALK_RANGE = 3.6; // metres from his centre
 const LEAVE_RANGE = TALK_RANGE + 1;
@@ -224,6 +225,7 @@ function converse(start) {
     name: me.name,
     rng: Math.random,
     start,
+    mario: mario.active,
     gifts: giftList,
     give: (kind) => heldId() === GIFTS[kind].id && !!useOne(),
   });
