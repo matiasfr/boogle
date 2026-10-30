@@ -146,6 +146,11 @@ function getRemote(peer) {
   return r;
 }
 
+function disposeLabel(label) {
+  label.material.map.dispose();
+  label.material.dispose();
+}
+
 function dropRemoteBody(r) {
   if (r.avatar) {
     scene.remove(r.avatar);
@@ -153,8 +158,7 @@ function dropRemoteBody(r) {
     r.avatar = null;
   }
   if (r.label) {
-    r.label.material.map.dispose();
-    r.label.material.dispose();
+    disposeLabel(r.label);
     r.label = null;
     r.labelText = '';
   }
@@ -174,8 +178,7 @@ function upsertPeer(peer) {
   r.visible = pr.v === 1;
   r.name = sanitizeName(pr.n) || DEFAULT_NAME;
   r.colorIdx = Number.isInteger(pr.c) && pr.c >= 0 && pr.c < COLORS.length ? pr.c : peerColor(peer.peer);
-  const hasT = Number.isFinite(pr.t);
-  const fresh = hasT && pr.t !== r.lastT;
+  const fresh = Number.isFinite(pr.t) && pr.t !== r.lastT;
   let time = 0;
   if (fresh) {
     r.lastT = pr.t;
@@ -268,10 +271,11 @@ function scheduleRetry(e) {
 }
 
 export async function connectRoom() {
+  const roomId = getRoomId();
   let room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)
-    room = await createPeerRoom({ roomId: getRoomId(), debug, ...(await serverOptions()) });
+    room = await createPeerRoom({ roomId, debug, ...(await serverOptions()) });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     net.error = String(e?.code || e?.type || 'connect_failed');
@@ -286,7 +290,7 @@ export async function connectRoom() {
   setNet('connecting');
   setSelfId(room.selfId);
   for (const fn of roomHooks.splice(0)) fn(room);
-  attachWorld(room, { roomId: getRoomId(), serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
+  attachWorld(room, { roomId, serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
     net.error = String(e?.code || e?.type || 'unknown');
@@ -333,8 +337,7 @@ export function updateRemotes(now) {
       if (r.labelText !== r.name) {
         if (r.label) {
           r.avatar.remove(r.label);
-          r.label.material.map.dispose();
-          r.label.material.dispose();
+          disposeLabel(r.label);
         }
         r.label = makeLabel(r.name);
         r.labelText = r.name;
@@ -367,8 +370,8 @@ onFrame(
 // while on the island, hosting, or a keepPresenceWhile reason holds.
 onFrame(
   ({ now }) => {
-    const wanted = () => me.entered || presenceReasons.some((fn) => fn()) || net.room.isHost();
-    if (net.room && wanted() && now - net.lastSend >= SEND_MS) sendPresence();
+    if (!net.room || now - net.lastSend < SEND_MS) return;
+    if (me.entered || presenceReasons.some((fn) => fn()) || net.room.isHost()) sendPresence();
   },
   { phase: 'late', order: 3000 },
 );

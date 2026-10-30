@@ -38,7 +38,7 @@ Run `npm run check:full`. Notes:
 ```js
 // src/world/rules/<name>.js
 // Imports allowed: ../grid.js, ../../sim/*, ./<earlier rule>.js (constants only).
-export const name = 'terrain'; // key in the rules handle; equals its state key when it has one
+export const name = 'thing'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
   return api;
@@ -83,7 +83,7 @@ export function invariants(api, rules) {
 }
 ```
 
-- Most generated edits should be ones the host accepts, built from that peer's state (a cell that is sand, an item
+- Most generated edits should be ones the host accepts, built from that peer's state (a free cell, an item
   that exists); about a fifth (`JUNK`) come from the shared `bad(r, op)`: wrong types, missing fields, cells off the
   grid, oversized payloads. Return `null` when there is nothing sensible to do yet.
 - Edits are JSON-safe, with integer `i`/`j` and no `p` (sync adds it).

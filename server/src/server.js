@@ -120,8 +120,7 @@ function iceServers(cfg) {
  * Build (but don't start listening) the service.
  * Returns { app, server, listen(port), close(), config }.
  */
-export function createService(config) {
-  const cfg = config;
+export function createService(cfg) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', cfg.trustProxy);
@@ -156,6 +155,15 @@ export function createService(config) {
   const knownRooms = new Set();
   const locks = new Map(); // roomId -> promise chain
   const fileFor = (id) => path.join(cfg.dataDir, `${id}.json`);
+  // A file's text, or null if it does not exist.
+  async function readIfExists(file) {
+    try {
+      return await fs.readFile(file, 'utf8');
+    } catch (e) {
+      if (e.code === 'ENOENT') return null;
+      throw e;
+    }
+  }
 
   async function init() {
     await fs.mkdir(cfg.dataDir, { recursive: true });
@@ -166,12 +174,8 @@ export function createService(config) {
   }
 
   async function readSnapshot(id) {
-    try {
-      return JSON.parse(await fs.readFile(fileFor(id), 'utf8'));
-    } catch (e) {
-      if (e.code === 'ENOENT') return null;
-      throw e;
-    }
+    const text = await readIfExists(fileFor(id));
+    return text === null ? null : JSON.parse(text);
   }
 
   function withLock(id, fn) {
@@ -250,7 +254,7 @@ export function createService(config) {
   // REPORT_KEEP_DAYS.
   const reportDir = path.join(cfg.dataDir, 'reports');
   const daySizes = new Map(); // day -> bytes written (read from disk on first use)
-  const today = () => new Date().toISOString().slice(0, 10);
+  const reportFile = (day) => path.join(reportDir, `${day}.jsonl`);
 
   async function pruneReports(day) {
     const oldest = new Date(Date.parse(day) - REPORT_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
@@ -265,7 +269,7 @@ export function createService(config) {
       daySizes.clear(); // only today's counter matters
       await pruneReports(day).catch((e) => cfg.log('report prune failed', e.message));
       try {
-        daySizes.set(day, (await fs.stat(path.join(reportDir, `${day}.jsonl`))).size);
+        daySizes.set(day, (await fs.stat(reportFile(day))).size);
       } catch (e) {
         if (e.code !== 'ENOENT') throw e;
         daySizes.set(day, 0);
@@ -292,7 +296,7 @@ export function createService(config) {
           const bytes = Buffer.byteLength(text);
           if (size + bytes > cfg.reportMaxBytesPerDay) return 507;
           await fs.mkdir(reportDir, { recursive: true });
-          await fs.appendFile(path.join(reportDir, `${day}.jsonl`), text);
+          await fs.appendFile(reportFile(day), text);
           daySizes.set(day, size + bytes);
           return 204;
         });
@@ -312,13 +316,10 @@ export function createService(config) {
     if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
       return res.status(401).json({ error: 'unauthorized' });
     }
-    const day = req.query.day ?? today();
+    const day = req.query.day ?? new Date().toISOString().slice(0, 10);
     if (typeof day !== 'string' || !DAY_RE.test(day)) return res.status(400).json({ error: 'day must be YYYY-MM-DD' });
     try {
-      const text = await fs.readFile(path.join(reportDir, `${day}.jsonl`), 'utf8').catch((e) => {
-        if (e.code === 'ENOENT') return '';
-        throw e;
-      });
+      const text = (await readIfExists(reportFile(day))) ?? '';
       res.set('Cache-Control', 'no-store');
       res.type('application/x-ndjson').send(text);
     } catch (e) {

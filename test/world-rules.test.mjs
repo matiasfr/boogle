@@ -89,7 +89,7 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   assert.equal(b.s.worldHash(), a.s.worldHash());
 });
 
-test('saves from the 129-cell island (before 2026-10-29) load fresh sand and mushrooms', () => {
+test('saves from the 129-cell island (before 2026-10-29) load a bare island and no mushrooms', () => {
   const a = peer(),
     fresh = a.s.stateHashes();
   a.s.loadSnapshot({

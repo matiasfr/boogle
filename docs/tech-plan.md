@@ -95,5 +95,5 @@ Reviews and cut lists respect these until the owner changes them.
   (useful; improve it: stop committing per-video reel scripts once published, drive shots through `window.boogle` and
   actions instead of importing game internals).
 - **Remove unused legacy code:** the 129-cell save migration (`src/world/legacy-grid.js` and its call sites), the dead
-  water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31.*
+  water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31; sim/world/net exports swept 2026-10-30.*
 - **Server stack:** pending the owner's call on deploying `server/` to Fly.io with TURN (see `server/README.md`).

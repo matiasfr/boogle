@@ -54,6 +54,7 @@ const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
+const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = Number.isSafeInteger;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -474,7 +475,7 @@ export function createSync({ env: env0 } = {}) {
       return;
     }
     if (mode !== 'client') return;
-    if (!['w:edits', 'w:c', 'w:hash', 'w:snap'].includes(msg.t) || !acceptHost(from)) return;
+    if (!HOST_TYPES.has(msg.t) || !acceptHost(from)) return;
     if (msg.t === 'w:snap') return onSnapChunk(msg);
     noteHostTick(msg.ht);
     if (!ready) return;
@@ -729,7 +730,6 @@ export const {
   updateWorld,
   snapshot,
   loadSnapshot,
-  worldHash,
   attachWorld,
   detachWorld,
   worldStatus,
