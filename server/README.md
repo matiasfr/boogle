@@ -31,7 +31,8 @@ Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp fil
 | `TURN_URLS` | unset | Comma-separated TURN URLs, e.g. `turn:turn.example.com:3478,turns:turn.example.com:5349`. |
 | `TURN_USERNAME`, `TURN_CREDENTIAL` | unset | Static TURN credentials (used with `TURN_URLS`). |
 | `TURN_SECRET` | unset | coturn `static-auth-secret`. Instead of static creds, `/ice` returns ephemeral ones: username `${expiryUnix}:boogle`, credential = base64 HMAC-SHA1(username, secret). Used only if static username/credential are not both set. |
-| `TURN_TTL` | `86400` | Lifetime in seconds of ephemeral TURN credentials. |
+| `CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN` | unset | Cloudflare TURN key. `/ice` mints credentials from Cloudflare's API (cached, re-minted at half of `TURN_TTL`) and adds them; on API failure it serves STUN only. |
+| `TURN_TTL` | `86400` | Lifetime in seconds of ephemeral TURN credentials (TURN_SECRET and Cloudflare). |
 
 ## Run locally
 
@@ -76,7 +77,7 @@ Human checklist, once:
 
 Without TURN, players behind strict NATs or school/corporate networks can't connect. Options:
 
-- **Cloudflare Calls TURN**: create a TURN key in the dashboard; it issues short-lived credentials via API, so mint them there and set the result as `TURN_URLS`/`TURN_USERNAME`/`TURN_CREDENTIAL`, or run a small proxy. Generous free tier.
+- **Cloudflare TURN** (what Boogle uses): in the dashboard, Realtime → TURN Server → Create, then `fly secrets set CF_TURN_KEY_ID=<Turn Token ID> CF_TURN_API_TOKEN=<API Token>`. The server mints short-lived credentials itself. Generous free tier.
 - **Metered** (free tier) or **Twilio Network Traversal**: copy the TURN URLs and a static username/credential into the three `TURN_*` vars.
 - **Self-hosted coturn**: set `use-auth-secret` and `static-auth-secret=<secret>` in `turnserver.conf`, and set `TURN_URLS` and `TURN_SECRET=<secret>` here. Credentials are then ephemeral and never stored.
 
