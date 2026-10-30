@@ -20,10 +20,15 @@ import { ball } from '../../ball.js';
 import { waterField } from '../../water-field.js';
 import { buildCaveMeshSteps, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
-import { buildDecor } from './decor.js';
+import { buildDecor, MOUTH_POSTS } from './decor.js';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
+// Ambient light reaching the rock, by distance from the nearest mouth: daylight at the mouth, AMB_DEEP of it from
+// AMB_FAR metres in. Baked into the mesh, so the inside reads dark from outside too (the sky's light is global).
+const AMB_NEAR = 2,
+  AMB_FAR = 14,
+  AMB_DEEP = 0.6;
 const SURFACE_MASK = ~GROUP.CAVE,
   CAVE_MASK = ~GROUP.SCENERY;
 
@@ -92,6 +97,7 @@ function makeGeometry(m) {
   const nrm = geo.attributes.normal.array;
   const colors = new Float32Array(positions.length);
   const brick = new Float32Array(positions.length / 3);
+  const amb = new Float32Array(positions.length / 3);
   const tmp = new THREE.Color(),
     floorC = new THREE.Color();
   for (let v = 0; v < positions.length / 3; v++) {
@@ -105,25 +111,39 @@ function makeGeometry(m) {
     const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
+    const x = positions[v * 3],
+      z = positions[v * 3 + 2];
+    const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
+    amb[v] = 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.setAttribute('aBrick', new THREE.BufferAttribute(brick, 1));
+  geo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   geo.computeBoundingSphere();
   return { geo, colliderIndices: col };
 }
 
-// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.
+// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces. The sky's ambient
+// (hemisphere) light is scaled by aAmb; lanterns and the sun are not.
+const HEMI_LINE = 'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );';
+const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
+  HEMI_LINE,
+  'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal ) * vAmb;',
+);
+if (!THREE.ShaderChunk.lights_fragment_begin.includes(HEMI_LINE))
+  console.warn('[caves] three.js changed its hemisphere chunk');
 function brickMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float aBrick; varying float vBrick; varying vec3 vCaveW;',
+        '#include <common>\nattribute float aBrick; attribute float aAmb; varying float vBrick; varying float vAmb; varying vec3 vCaveW;',
       )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vCaveW = position;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vAmb = aAmb; vCaveW = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying vec3 vCaveW;')
+      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying float vAmb; varying vec3 vCaveW;')
+      .replace('#include <lights_fragment_begin>', HEMI_SCALED)
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
@@ -204,15 +224,34 @@ function floorBelow(x, y, z) {
 }
 
 // ---------------------------------------------------------------- camera and atmosphere
+// The camera ray stops at rock, at the mouths' frame posts, and (out past a mouth) at the ground. Pulled in at once
+// when something gets in the way, it eases back out while you are inside (no pop as the tunnel opens up).
+const POST_R = 0.45; // post half-width plus room for the near plane
+const CAM_EASE = 4; // 1/s
 const tmpV = new THREE.Vector3();
+const camRay = { len: Infinity, at: 0 };
+function blocked(x, y, z) {
+  for (const p of MOUTH_POSTS)
+    if (Math.abs(x - p.x) < POST_R && Math.abs(z - p.z) < POST_R && y < p.y + 3.2) return true;
+  if (outOfMouth(x, z) > 0.5) return y < groundHeight(x, z) + 0.45;
+  return caveSd(x, y, z) > -0.35;
+}
 function keepCameraInside(look, pos) {
-  if (!ready || !me.body || !tracked.get(me.body)?.cave) return false;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - camRay.at) / 1000);
+  camRay.at = now;
+  if (!ready || !me.body || !tracked.get(me.body)?.cave) {
+    camRay.len = Infinity;
+    return false;
+  }
   const dir = tmpV.subVectors(pos, look);
   const len = dir.length();
   dir.divideScalar(len || 1);
   let t = 0;
-  for (; t < len; t += 0.2) if (caveSd(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t) > -0.35) break;
-  pos.copy(look).addScaledVector(dir, Math.max(0.3, t - 0.25));
+  for (; t < len; t += 0.2) if (blocked(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t)) break;
+  const free = Math.max(0.3, Math.min(len, t - 0.25));
+  camRay.len = free < camRay.len ? free : camRay.len + (free - camRay.len) * Math.min(1, dt * CAM_EASE);
+  pos.copy(look).addScaledVector(dir, Math.min(free, camRay.len));
   return true;
 }
 

@@ -2,8 +2,8 @@
 // the friendship meter, his portrait to pet (pad Y), and a close button (Escape, pad B). While it is open it swallows
 // game keys and clicks, takes the gamepad, and frees the mouse pointer.
 import { reducedMotion } from './constants.js';
-import { input, requestLock } from './input.js';
-import { setPadModal } from './controls.js';
+import { requestLock } from './input.js';
+import { openModal, closeModal } from './modal.js';
 import { MAX_LEVEL } from './boogler-friendship.js';
 import { boogler } from './boogler.js';
 import { GIFTS } from './sim/gift-catalog.js';
@@ -142,12 +142,10 @@ function padPress(slot) {
 export function showDialogue(view, bond, onPick, onClose, onPet) {
   const d = dom();
   const opening = !dialogue.open;
+  if (opening && !openModal({ onKey, onPad: padPress })) return; // the pause view is up
   dialogue.open = true;
   d.root.hidden = false;
   if (opening) {
-    input.keys.clear();
-    setPadModal(padPress);
-    if (document.pointerLockElement) document.exitPointerLock();
     d.close.innerHTML = glyph('close') || CROSS;
     d.pet.innerHTML = glyph('pet') || HAND;
   }
@@ -242,7 +240,7 @@ export function closeDialogue() {
   cur = null;
   react.until = 0;
   el.pop.hidden = true;
-  setPadModal(null);
+  closeModal();
   boogler.me.speaking = false;
   el.root.hidden = true;
   requestLock();
@@ -263,35 +261,29 @@ export function updateDialogue(now) {
   if (n >= cur.text.length) finishTyping();
 }
 
-// Capture phase on window: runs before the game's own key handlers and stops them while the box is open.
-addEventListener(
-  'keydown',
-  (e) => {
-    if (!dialogue.open || !cur) return;
-    e.stopPropagation();
-    if (e.code === 'Escape') {
-      e.preventDefault();
-      cur.onClose?.();
-      return;
-    }
-    // Skipping the typing must never also pick an answer, so these only press a button focused with the arrows or Tab.
-    if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
-      e.preventDefault();
-      if (cur.typing) finishTyping();
-      else if (!e.repeat) focusedBtn()?.click();
-      return;
-    }
-    const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
-    if (digit) {
-      e.preventDefault();
-      if (!e.repeat) choose(Number(digit[1]) - 1);
-      return;
-    }
-    if (e.code === 'ArrowDown' || e.code === 'ArrowUp' || e.code === 'KeyS' || e.code === 'KeyW') {
-      e.preventDefault();
-      moveFocus(e.code === 'ArrowDown' || e.code === 'KeyS' ? 1 : -1);
-    }
-  },
-  { capture: true },
-);
-addEventListener('keyup', (e) => dialogue.open && e.stopPropagation(), { capture: true });
+// Runs before the game's own key handlers (src/modal.js) and keeps them from seeing the key.
+function onKey(e) {
+  if (!cur) return;
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    cur.onClose?.();
+    return;
+  }
+  // Skipping the typing must never also pick an answer, so these only press a button focused with the arrows or Tab.
+  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
+    e.preventDefault();
+    if (cur.typing) finishTyping();
+    else if (!e.repeat) focusedBtn()?.click();
+    return;
+  }
+  const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+  if (digit) {
+    e.preventDefault();
+    if (!e.repeat) choose(Number(digit[1]) - 1);
+    return;
+  }
+  if (e.code === 'ArrowDown' || e.code === 'ArrowUp' || e.code === 'KeyS' || e.code === 'KeyW') {
+    e.preventDefault();
+    moveFocus(e.code === 'ArrowDown' || e.code === 'KeyS' ? 1 : -1);
+  }
+}

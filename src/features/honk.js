@@ -290,10 +290,16 @@ onStart(() => {
     if (e.code !== 'KeyT' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing()) return;
     honkNow();
   });
-  registerAction('honk', { pad: 'y', label: 'Honk', down: honkNow });
-  const row = document.createElement('div');
-  row.innerHTML = '<kbd>T</kbd><span>Honk (three friends at once make a chord)</span>';
-  document.getElementById('help')?.append(row);
+  registerAction('honk', {
+    pad: 'y',
+    label: 'Honk',
+    detail: 'Three friends at once make a chord',
+    keys: ['KeyT'],
+    touch: 'Honk',
+    group: 'friends',
+    order: 0,
+    down: honkNow,
+  });
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'tbtn honk-btn';
