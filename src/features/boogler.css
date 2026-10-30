@@ -182,9 +182,11 @@
   justify-content: center;
   padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(19, 36, 63, 0) 55%, rgba(19, 36, 63, 0.28));
+  pointer-events: none; /* the game keeps playing around the card */
 }
 .bd-wrap {
   position: relative;
+  pointer-events: auto;
   width: min(580px, 100%);
 }
 .bd-card {
@@ -468,6 +470,26 @@ body.gamepad .bd-opt:focus {
 body.touch .bd-opt kbd,
 body.gamepad .bd-opt kbd {
   display: none;
+}
+/* On a phone the left 45% of the screen is the move stick (src/player/input.js): keep the card off it, so you can walk
+   away mid-talk. Landscape: to the right. Portrait: up top, under the hotbar. */
+@media (orientation: landscape) {
+  body.touch .bd {
+    justify-content: flex-end;
+  }
+  body.touch .bd-wrap {
+    width: min(460px, 55vw - 16px);
+  }
+}
+@media (orientation: portrait) {
+  body.touch .bd {
+    align-items: flex-start;
+    padding-top: calc(118px + env(safe-area-inset-top, 0px));
+    background: none;
+  }
+  body.touch .bd-card {
+    max-height: 46vh;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .boogler-say.pop,

@@ -293,10 +293,15 @@ export function wrapAction(id, wrap) {
 
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
 export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to
-// While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
-// runs no action. setPadModal(null) hands the pad back.
+// While a modal (the pause view) takes the pad, src/features/gamepad.js sends it each new press by slot and runs no
+// action. setPadModal(null) hands the pad back.
 let modal = null;
 export const setPadModal = (fn) => (modal = fn);
 export const padModal = () => modal;
+// Lighter: something on screen that the game keeps playing behind (the Boogler's talk box) takes just these slots'
+// new presses, and the stick and every other button keep working. setPadGrab(null) lets go.
+let grab = null;
+export const setPadGrab = (fn, slots = []) => (grab = fn ? { fn, slots } : null);
+export const padGrab = () => grab;
 export const listActions = () => PAD.map((p) => bySlot.get(p)).filter(Boolean);
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));

@@ -10,7 +10,7 @@ import { me, cam } from '../player/player.js';
 import { clamp } from '../math.js';
 import { dom } from '../player/hud.js';
 import { canvas } from '../render/scene.js';
-import { PAD, actionForSlot, padModal } from '../player/controls.js';
+import { PAD, actionForSlot, padModal, padGrab } from '../player/controls.js';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -18,6 +18,7 @@ const LOOK_PITCH = 1.8;
 const PRESS = 0.4; // analog trigger threshold
 
 const pressed = new Array(PAD.length).fill(false);
+const grabbed = new Array(PAD.length).fill(false); // this press went to padGrab(), not to its action
 let active = false;
 let modalOn = false;
 
@@ -45,8 +46,8 @@ function setActive(on) {
 
 function releaseAll() {
   for (let i = 0; i < PAD.length; i++) {
-    if (pressed[i]) actionForSlot(PAD[i])?.up?.();
-    pressed[i] = false;
+    if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
+    pressed[i] = grabbed[i] = false;
   }
 }
 
@@ -70,17 +71,20 @@ function poll(dt) {
   // A modal moves focus between its own buttons, so it skips claimFocus. Held actions get their release on entry.
   const modal = padModal();
   if (modal) {
-    if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i]) actionForSlot(PAD[i])?.up?.();
+    if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
     modalOn = true;
     input.stickX = input.stickY = 0;
     down.forEach((d, i) => {
       if (d && !pressed[i]) modal(PAD[i]);
       pressed[i] = d;
+      grabbed[i] = true; // its release belongs to the modal too
     });
     return;
   }
   modalOn = false;
-  if (down.some((d, i) => d && !pressed[i])) claimFocus();
+  const grab = padGrab();
+  const takes = (i) => !!grab?.slots.includes(PAD[i]);
+  if (down.some((d, i) => d && !pressed[i] && !takes(i))) claimFocus(); // a grab moves focus between its own buttons
 
   // Before the island: A presses "Jump in".
   if (!me.entered) {
@@ -98,9 +102,12 @@ function poll(dt) {
 
   for (let i = 0; i < PAD.length; i++) {
     const action = actionForSlot(PAD[i]);
-    if (down[i] && !pressed[i]) action?.down?.();
-    else if (!down[i] && pressed[i]) action?.up?.();
-    if (down[i]) action?.held?.(dt);
+    if (down[i] && !pressed[i]) {
+      grabbed[i] = takes(i);
+      if (grabbed[i]) grab.fn(PAD[i]);
+      else action?.down?.();
+    } else if (!down[i] && pressed[i] && !grabbed[i]) action?.up?.();
+    if (down[i] && !grabbed[i]) action?.held?.(dt);
     pressed[i] = down[i];
   }
 }

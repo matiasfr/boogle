@@ -7,6 +7,7 @@ import { onFrame } from '../loop.js';
 import { me } from '../player/player.js';
 import { input } from '../player/input.js';
 import { modalOpen } from '../player/modal.js';
+import { dialogue } from '../boogler/dialogue.js';
 import { renderGuide } from '../player/guide.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 
@@ -71,7 +72,7 @@ onFrame(
       if (!seen(k)) show(k);
     }
     if (!card) return;
-    card.hidden = modalOpen();
+    card.hidden = modalOpen() || dialogue.open; // the pause view or a talk
     if (card.hidden) return;
     shown += dt;
     if (walking()) moved += dt;

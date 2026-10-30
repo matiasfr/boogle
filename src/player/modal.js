@@ -1,4 +1,4 @@
-// One modal at a time (the Boogler's talk box, the pause view): it takes this player's keys and gamepad, the game
+// One modal at a time (the pause view): it takes this player's keys and gamepad, the game
 // keeps running behind it. Local input only: no sim or network state.
 //
 //   openModal({ onKey, onPad })   false if another modal is open. Otherwise it takes ownership: held keys are released,

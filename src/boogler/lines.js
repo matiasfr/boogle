@@ -1070,6 +1070,9 @@ export const SORRY_YES = '...Okay. I accept a little bit of the sorry. Keep it u
 export const SORRY_NO = 'You already said sorry. Sorry is not a present.';
 export const SORRY_OPTS = ['Okay.', 'Fair enough.'];
 
+// Picking a chapter back up where you walked off last time; it goes before the line he stopped at.
+export const RESUME = ['Now, where was I? Ah, yes.', 'As I was saying, before you ran off...'];
+
 export const GIFT_ASK = 'I brought you {gift}.';
 export const GIFT_KEPT_OPTS = ['Fair enough.', 'Worth a try.'];
 export const GIFT_FORGAVE = '...Fine. You are forgiven. Mostly.';
