@@ -8,6 +8,7 @@
 ### Project skills
 - `/ship`: commit and ship with `npm run ship` (pushes a `ship/` branch that merges itself once CI is green).
 - `/new-feature <name>`: scaffold a plug-in in `src/features/`.
+- `/feature <name> <request>`: plan with the `planner` agent (writes `docs/plans/<name>.md`), wait for approval, then build with the `implementer` agent. Use it for features that span several files or touch shared state; `/new-feature` is for a single self-contained plug-in.
 - `/look`: see the running game (stills, motion, scenarios). Use it to check any visual, feel, physics or multiplayer change.
 - `/video`: record clips and GIFs of the game and cut them into trailers or patch-notes videos.
 - `/playtest-notes`: log a play session to `docs/playtests.md`.
