@@ -4,6 +4,7 @@
 // terrain is built; its index.js (meshes, colliders, lights, per-frame updates) is loaded later by
 // src/features/pois.js. Add or delete a folder to add or remove a POI; nothing else on the island changes.
 import { createIsland } from './stamps.js';
+import { islandBaseCm } from './ground.js';
 
 const found = import.meta.glob('../pois/*/site.js', { eager: true });
 
@@ -13,4 +14,6 @@ export const sites = Object.keys(found)
   .map((path) => ({ id: path.split('/').at(-2), ...found[path].default }));
 
 export const island = createIsland(sites);
+// Base heights in cm on the world grid (ground.js), the ground the shared sim and the terrain mesh start from.
+export const baseCm = islandBaseCm(island);
 export const site = (id) => sites.find((s) => s.id === id) ?? null;

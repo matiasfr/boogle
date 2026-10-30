@@ -5,15 +5,15 @@
 //   tossBall(charge)                   grab the ball wherever it is and throw it (the real grab and throw, no walk)
 // Read-only for the sim: the tick hook only hashes. Serves "Determinism from day one" (a live desync gets caught).
 import { onStart } from '../loop.js';
-import { world, worldStatus, stateHashes, submitEdit, onTick } from '../world/sync.js';
+import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.js';
 import { terrain } from '../world/terrain-edits.js';
 import { grabBall, throwBall } from '../ball.js';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting
 
 onStart(() => {
-  // Registered at start, after every module's own onTick, so a mark sees the tick's final state (what sync hashes).
-  onTick((t) => {
+  // After every onTick handler and before the host hashes, so a mark sees the tick's final state (what sync hashes).
+  onAfterTick((t) => {
     if (marks.has(t)) marks.set(t, stateHashes());
   });
   if (!window.boogle) return;

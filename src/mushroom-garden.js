@@ -1,34 +1,23 @@
 // Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
-// Shared state lives in src/sim/mushrooms.js and changes only through world/sync edits. Seeds and the watering can are
+// Shared state lives in src/world/rules/mushrooms.js and changes only through world/sync edits. Seeds and the watering can are
 // hotbar items (src/inventory.js); src/hands.js calls plantFront and pour when you use them.
+import { rules } from './world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { CELL, HALF, GRID_RES, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from './constants.js';
+import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { obstacles } from './props.js';
 import { world, groundMat, playerMat, ballMat, GROUP } from './physics.js';
 import { me } from './player.js';
-import { registerOp, registerState, onTick, submitEdit } from './world/sync.js';
-import { isLegacyCell, LEGACY_SHIFT } from './world/legacy-grid.js';
+import { setEnv, onApplied, submitEdit } from './world/sync.js';
 import { waterField } from './water-field.js';
 import { dropPoint } from './flight.js';
 import { splash } from './splash.js';
 import { itemModel } from './item-models.js';
 import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from './inventory.js';
-import {
-  GROW_TICKS,
-  createGarden,
-  canPlant,
-  plant,
-  canWater,
-  water,
-  tickGarden,
-  serializeGarden,
-  loadGarden,
-  hashGarden,
-} from './sim/mushrooms.js';
+import { GROW_TICKS } from './sim/mushrooms.js';
 
 const SEEDS_PER_VISIT = 5;
 const BOUNCE_SPEED = 15;
@@ -42,48 +31,36 @@ const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale ha
 const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
 export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
-export const garden = createGarden();
+// The garden, its ops and growth live in world/rules/mushrooms.js (lockstep); this module adapts it to meshes,
+// colliders, the stall and the hotbar.
+export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
 
 const cellX = (i) => i * CELL - HALF;
 const cellZ = (j) => HALF - j * CELL;
 
-// Host check before a seed goes in: open, dry land with nothing (rock, tree, wall, cap) over the spot.
-export function plantOk(i, j) {
-  if (!canPlant(garden, i, j) || i < 1 || j < 1 || i > GRID_RES - 2 || j > GRID_RES - 2) return false;
+// The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
+function spotOk(i, j) {
   const x = cellX(i),
     z = cellZ(j),
     g = heights[i][j];
   if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
   return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
 }
-// A thrown seed that landed somewhere plantOk accepted (src/gifts.js `gift.toss`).
-export const plantSeed = (i, j) => plant(garden, i, j);
+const env = { canPlantAt: spotOk };
+setEnv(env);
 
-registerOp('mush.plant', {
-  validate: (e) => plantOk(e.i, e.j),
-  apply: (e) => plant(garden, e.i, e.j),
+// Open, dry land with room in the garden: where a seed may go in (the host runs this same check on mush.plant).
+export const plantOk = (i, j) => rules.mushrooms.plantOk(i, j, env);
+// A thrown seed that landed somewhere plantOk accepted (src/gifts.js `gift.toss`).
+export const plantSeed = rules.mushrooms.plant;
+
+onApplied((e, t, r) => {
+  if (e.op !== 'mush.water' || !r) return;
+  const x = cellX(e.i),
+    z = cellZ(e.j);
+  splash(x, z, 0.12, groundHeight(x, z));
 });
-registerOp('mush.water', {
-  validate: (e) => canWater(garden, e.i, e.j),
-  apply: (e) => {
-    if (!water(garden, e.i, e.j)) return;
-    const x = cellX(e.i),
-      z = cellZ(e.j);
-    splash(x, z, 0.12, groundHeight(x, z));
-  },
-});
-// Snapshots from before the island grew are bare arrays on the old 129-cell grid; move those cells.
-const migrate = (json) =>
-  Array.isArray(json)
-    ? json.map((v, k) => (k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v))
-    : json;
-registerState('mushrooms', {
-  serialize: () => serializeGarden(garden),
-  load: (json) => loadGarden(garden, migrate(json)),
-  hash: () => hashGarden(garden),
-});
-onTick(() => tickGarden(garden), 'mushrooms');
 
 // ---------------------------------------------------------------- physics
 const mushroomMat = new CANNON.Material('mushroom');

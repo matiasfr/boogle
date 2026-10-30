@@ -159,8 +159,9 @@ jobs:
                never drop either side).
             2. If CI failed, read the failing logs (`gh run view <run id> --log-failed`), find the root cause and fix
                it in the same commit. Don't skip, disable or weaken a test, and don't revert the branch's feature.
-            3. Run `npm run check` (and `npm run check:full` if the branch touches src/net*, src/world/sync.js or
-               server/), then commit: "Autofix: merge main and <what you fixed>", or "Autofix: <what you fixed>".
+            3. Run `npm run check` (and `npm run check:full` if the branch touches src/net*, src/world/sync.js,
+               src/world/rules/, src/world/game-world.js or server/), then commit: "Autofix: merge main and <what
+               you fixed>", or "Autofix: <what you fixed>".
             4. `git push origin HEAD:${{ env.BRANCH }}`. Never force-push.
             If you can't fix it, push nothing and say why.
       - name: Check that a fix went up

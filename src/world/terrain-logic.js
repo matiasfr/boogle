@@ -14,7 +14,7 @@ export const EDIT_MIN_CM = -120; // base height range (cm) that counts as beach/
 export const EDIT_MAX_CM = 160;
 export const FLATTEN_MIN_H = -300; // accepted target heights for flatten, cm
 export const FLATTEN_MAX_H = 800;
-export const TERRAIN_OPS = new Set(['dig', 'pile', 'flatten']); // every op that changes delta; water-world keys on it
+export const TERRAIN_OPS = new Set(['dig', 'pile', 'flatten']); // every op that changes delta; rules/water.js keys on it
 
 // 5x5 brush in the fixed order cells are processed: centre, then the 3x3 ring, then the outer ring (di-major, dj-minor).
 export const BRUSH = [{ di: 0, dj: 0, ring: 0, cm: CENTER_CM }];
