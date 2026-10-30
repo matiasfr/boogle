@@ -21,9 +21,18 @@ Four files, nothing else edited:
    If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
    feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.js`.
 
-Run `npm run check:full`. A system whose state lives on the ground (flags, castles) stores grid cells and reads
-heights from `rules.terrain.state`; it changes the ground only through the terrain ops (`TERRAIN_OPS`), or the water
-sim keeps stale ground.
+Run `npm run check:full`. Notes:
+
+- A system on the ground (markers, castles) stores grid cells and reads the height of cell `g = i*n + j` as
+  `rules.terrain.state.base[g] + rules.terrain.state.delta[g]` (cm). It changes the ground only through the terrain
+  ops (`TERRAIN_OPS`), or the water sim keeps stale ground.
+- `setEnv` is only for validate facts the rules cannot compute (what the render side sees: trees, props). Anything
+  derivable from `land` and the rules' state is checked in validate directly.
+- An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
+  the state, never a per-peer one.
+- Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
+  `GIFTS` in `src/sim/gift-catalog.js` (append only: ground items store its index), and what using it does is a case
+  in `useDown` in `src/player/hands.js`.
 
 ## Contract
 
