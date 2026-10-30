@@ -1,24 +1,16 @@
-// End-to-end test of src/net/peer-room.js: local PeerServer + headless Chromium pages (see README.md).
+// End-to-end test of src/net/peer-room.js (`npm run test:net`): local PeerServer + headless Chromium pages running
+// page.js. Room interface: src/net/README.md.
 import http from 'node:http';
-import net from 'node:net';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { PeerServer } from 'peer';
 import * as esbuild from 'esbuild';
+import { freePort, sleep } from '../look/lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
-
-const freePort = () =>
-  new Promise((res) => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => {
-      const p = s.address().port;
-      s.close(() => res(p));
-    });
-  });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const results = [];
 function check(name, ok, detail = '') {
