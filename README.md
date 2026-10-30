@@ -14,7 +14,7 @@ npm run dev
 # then open the URL Vite prints (http://localhost:5173)
 ```
 
-Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (push your commits to `main`; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
+Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (ship your commits to `main` through a PR that merges itself; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
 
 ## Code layout
 
@@ -47,11 +47,11 @@ Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's b
 
 ## Controls
 
-WASD move · Space jump/swim · Shift sprint · Click grab, hold to charge, release to throw · R bring the ball back · F shovel on/off · Q dig · Z pile · Shift+click flatten · Click the seed stall for seeds and the watering can · H hide help. The in-game help panel is the full list. Touch devices get a stick and buttons.
+WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact · F shovel. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/controls.js`, so a new control describes itself there.
 
 ## Deploying
 
-Every push to `main` builds and deploys to GitHub Pages (https://matiasfr.github.io/boogle/) via `.github/workflows/deploy.yml`, which runs lint, then `BASE=/boogle/ npm run build`. You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
+Every merge to `main` builds and deploys to GitHub Pages (https://matiasfr.github.io/boogle/) via `.github/workflows/deploy.yml`, which runs lint, then `BASE=/boogle/ npm run build`. You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
 
 To use our own signaling server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
 

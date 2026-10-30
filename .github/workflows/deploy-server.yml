@@ -1,0 +1,87 @@
+name: Deploy server to Fly.io
+
+# Tests server/ and deploys it to Fly.io when it changes on main (or by hand). Without a FLY_API_TOKEN secret the
+# deploy job is skipped, not failed, so forks and friends without Fly stay green. Setup: server/README.md.
+# automerge.yml dispatches this for merged PRs that touch server/ (GITHUB_TOKEN merges don't fire push).
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/deploy-server.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    outputs:
+      deploy: ${{ steps.token.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Check for FLY_API_TOKEN
+        id: token
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -n "$FLY_API_TOKEN" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No FLY_API_TOKEN secret; skipping the server deploy (see server/README.md)."
+          fi
+
+  deploy:
+    needs: test
+    if: needs.test.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@1.6
+      # The app is the FLY_APP repo variable if set, else `app` in fly.toml.
+      - name: Pick the app
+        id: app
+        env:
+          FLY_APP: ${{ vars.FLY_APP }}
+        run: echo "name=${FLY_APP:-$(sed -n 's/^app *= *"\(.*\)".*/\1/p' fly.toml)}" >> "$GITHUB_OUTPUT"
+      # One machine: the volume is per machine and signaling state lives in memory.
+      - run: flyctl deploy --remote-only --ha=false --app "$APP"
+        env:
+          APP: ${{ steps.app.outputs.name }}
+      - name: Wait for /healthz
+        env:
+          APP: ${{ steps.app.outputs.name }}
+        run: |
+          url="https://$APP.fly.dev/healthz"
+          for i in $(seq 1 20); do
+            if curl -fsS --max-time 10 "$url" | grep -qx ok; then
+              echo "Healthy: $url"
+              exit 0
+            fi
+            echo "Attempt $i: not healthy yet"
+            sleep 6
+          done
+          echo "::error::$url did not answer ok within two minutes"
+          exit 1

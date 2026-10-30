@@ -13,6 +13,7 @@ import { addPart, mergeParts } from '../../props.js';
 import { addLightSource } from '../../lights.js';
 import { mulberry32 } from '../../math.js';
 import { caveSd } from './mesh.js';
+import { ambAt, withCaveAmbient } from './index.js';
 import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT } from './network.js';
 
 const rng = mulberry32(4242);
@@ -97,6 +98,16 @@ function board(text, w, h, bg = '#6b4a2c', fg = '#f6e7c8') {
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 }));
 }
 
+// A mouth's timber frame: posts `half` metres either side of (fx, fz) along (rx, rz), 2.8 m tall, beam on top.
+export function mouthFrame(m) {
+  return {
+    rx: -m.oz,
+    rz: m.ox, // right, looking out
+    fx: m.x - m.ox * 0.6,
+    fz: m.z - m.oz * 0.6,
+    half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
+  };
+}
 export function buildDecor({ world, scene }) {
   const root = new THREE.Group();
   const parts = [],
@@ -151,11 +162,7 @@ export function buildDecor({ world, scene }) {
 
   // ---------------------------------------------------------------- mouths: timber frames and name boards
   for (const m of MOUTHS) {
-    const rx = -m.oz,
-      rz = m.ox; // right, looking out
-    const fx = m.x - m.ox * 0.6,
-      fz = m.z - m.oz * 0.6;
-    const half = Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35;
+    const { rx, rz, fx, fz, half } = mouthFrame(m);
     for (const sd of [-1, 1]) put(box, fx + rx * half * sd, m.y + 1.4, fz + rz * half * sd, 0.3, 2.8, 0.3, '#5d4026');
     put(box, fx, m.y + 2.85, fz, 0.32, 0.32, half * 2 + 0.6, '#5d4026', 0, yawOf(rx, rz));
     const b = board(m.label, 2.2, 0.55);
@@ -506,8 +513,16 @@ export function buildDecor({ world, scene }) {
     root.add(sign);
   }
 
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 });
-  const solidMesh = new THREE.Mesh(mergeParts(parts), mat);
+  // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.js).
+  const solidGeo = mergeParts(parts);
+  const sp = solidGeo.attributes.position.array;
+  const amb = new Float32Array(sp.length / 3);
+  for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3], sp[v * 3 + 2]);
+  solidGeo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
+  const mat = withCaveAmbient(
+    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
+  );
+  const solidMesh = new THREE.Mesh(solidGeo, mat);
   solidMesh.receiveShadow = true;
   const glowMesh = new THREE.Mesh(mergeParts(glow), new THREE.MeshBasicMaterial({ vertexColors: true }));
   root.add(solidMesh, glowMesh);

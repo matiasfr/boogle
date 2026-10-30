@@ -19,6 +19,13 @@ export function arcAngle(frac) {
   return f < DAYLIGHT ? (Math.PI * f) / DAYLIGHT : Math.PI + (Math.PI * (f - DAYLIGHT)) / (1 - DAYLIGHT);
 }
 
+// Lit fraction of the moon's face: 0 at new, 1 at full. A smoothstep in the distance from full stands in for
+// (1 - cos(2 PI phase)) / 2 (off by about 0.01 at most) using only + - * /, so this module stays lockstep-safe.
+function litFraction(phase) {
+  const d = Math.abs(2 * phase - 1);
+  return 1 - d * d * (3 - 2 * d);
+}
+
 // frac: time of day in [0, 1) (0 = sunrise). phase: moon phase in [0, 1) (0 = new, 0.5 = full).
 export function skyState(frac, phase) {
   frac = wrap(frac);
@@ -28,7 +35,7 @@ export function skyState(frac, phase) {
     phase,
     sunAngle: arcAngle(frac),
     moonAngle: arcAngle(frac - phase),
-    illum: (1 - Math.cos(phase * Math.PI * 2)) / 2, // lit fraction of the moon's face
+    illum: litFraction(phase),
   };
 }
 

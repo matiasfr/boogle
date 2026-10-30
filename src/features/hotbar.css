@@ -9,19 +9,80 @@
   align-items: center;
   gap: 6px;
 }
-.hotbar-name {
-  padding: 4px 12px;
+.hotbar-tags {
+  display: grid;
+  justify-items: center;
+}
+.hotbar-name,
+.hotbar-note {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 7px 5px 13px;
   border-radius: 999px;
   background: var(--glass);
   border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   opacity: 0;
-  transition: opacity 0.3s;
+  transform: translateY(4px);
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
 }
-.hotbar-name.shown {
+.hotbar-name:not(:has(.hotbar-use)) {
+  padding-right: 13px;
+}
+.hotbar-name.shown,
+.hotbar-note.shown {
   opacity: 1;
+  transform: none;
+}
+.hotbar-tags:has(.hotbar-note.shown) .hotbar-name {
+  transition: none;
+  opacity: 0;
+}
+.hotbar-use {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font: 400 14px/1 var(--font-display);
+  letter-spacing: 0.3px;
+}
+.hotbar-use .g-key,
+.hotbar-use .g-pad {
+  transform: scale(0.88);
+}
+.hotbar-note {
+  padding: 6px 14px;
+  background: #d8432f;
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.hotbar-note.shake {
+  animation: hotbar-shake 0.36s;
+}
+@keyframes hotbar-shake {
+  20%,
+  60% {
+    translate: -5px 0;
+  }
+  40%,
+  80% {
+    translate: 5px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hotbar-note.shake {
+    animation: none;
+  }
 }
 .hotbar-slots {
   display: flex;
@@ -76,23 +137,60 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top and the shovel chip below it. */
+/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top (filled slots only) and the shovel chip
+   below its name tag. Portrait: a column down the right edge, under the net pill and menu button and above the button
+   stack. */
 body.touch .hotbar {
   top: calc(10px + env(safe-area-inset-top, 0px));
   bottom: auto;
   flex-direction: column-reverse;
 }
+/* Eight slots must fit between the brand and the net pill on a small phone. */
 body.touch .hotbar-slot {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  --slot: clamp(34px, calc((100vw - 420px) / 8 - 5px), 44px);
+  width: var(--slot);
+  height: var(--slot);
+  border-radius: 11px;
+}
+body.touch .hotbar-slot[hidden] {
+  display: none;
+}
+body.touch .hotbar-icon {
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
 }
 body.touch .hotbar-key {
   display: none;
 }
 body.touch .shovel-chip {
-  top: calc(62px + env(safe-area-inset-top, 0px));
+  top: calc(100px + env(safe-area-inset-top, 0px));
 }
+@media (orientation: portrait) {
+  body.touch .hotbar {
+    top: calc(64px + env(safe-area-inset-top, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    left: auto;
+    transform: none;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+  }
+  body.touch .hotbar-slots {
+    flex-direction: column;
+  }
+  /* Eight slots must clear the button stack (its top is ~340px above the bottom edge). */
+  body.touch .hotbar-slot {
+    --slot: clamp(30px, calc((100svh - 400px) / 8 - 5px), 44px);
+  }
+  body.touch .hotbar-slot.on {
+    transform: translateX(-4px);
+  }
+  body.touch .hotbar-tags {
+    justify-items: end;
+    padding-top: 8px;
+  }
+}
+/* Toss throws what you hold when the main button would not (src/hud.js sets main-throws); never the shovel. */
 .tbtn.toss {
   display: none;
   right: calc(108px + env(safe-area-inset-right, 0px));
@@ -101,6 +199,6 @@ body.touch .shovel-chip {
   height: 64px;
   font-size: 14px;
 }
-body.holding-thing .tbtn.toss {
+body.holding-throwable:not(.main-throws) .tbtn.toss {
   display: block;
 }

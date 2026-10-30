@@ -9,6 +9,7 @@ import { refreshGround } from '../physics.js';
 import { updateHeightTexels } from '../water-render.js';
 import { scene, camera } from '../scene.js';
 import { me, camForward } from '../player.js';
+import { inputKind } from '../glyphs.js';
 import { ball } from '../ball.js';
 import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
 import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
@@ -89,7 +90,7 @@ onApplied((edit) => {
   animateNext = true;
   const cells = terrain.lastCells();
   for (const fn of cellsFns) fn(edit, cells);
-});
+}, 'terrain adapter');
 let animateNext = false;
 
 function liftIfBuried(body, r) {
@@ -124,7 +125,7 @@ export function flushTerrain() {
   liftIfBuried(me.body, PLAYER_R);
   if (ball.mine) liftIfBuried(ball.body, BALL_R);
 }
-onTick(flushTerrain);
+onTick(flushTerrain, 'terrain flush');
 
 // ---------------------------------------------------------------- shovel tool
 export const shovel = { on: false, hold: null, flat: false, target: null, lastMs: 0, lastCell: null };
@@ -286,7 +287,8 @@ export function updateShovel() {
   const carry = carryAmount();
   const kind = shovel.hold ?? (shovel.flat ? 'flatten' : 'dig');
   if (chip) {
-    const text = shovel.on ? `${LABELS[kind]}  Sand ${carry}/${CARRY_MAX}  (Q dig, Z pile)` : '';
+    const keys = inputKind() === 'kbm' ? '  (Q dig, Z pile)' : '';
+    const text = shovel.on ? `${LABELS[kind]}  Sand ${carry}/${CARRY_MAX}${keys}` : '';
     if (text !== lastChip) {
       lastChip = text;
       chip.textContent = text;

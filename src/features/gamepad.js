@@ -1,7 +1,8 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
 // stick looks, buttons dispatch the actions in src/controls.js. While a pad is in use the touch overlay hides and the
-// reticle shows; the next touch brings the touch controls back. Menu shows the button layout. Local input only: no
-// sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and play.
+// reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.js).
+// Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
+// play.
 import './gamepad.css';
 import { onFrame, onStart } from '../loop.js';
 import { input } from '../input.js';
@@ -9,7 +10,7 @@ import { me, cam } from '../player.js';
 import { clamp } from '../math.js';
 import { dom } from '../hud.js';
 import { canvas } from '../scene.js';
-import { PAD, PAD_LABEL, actionForSlot, listActions, registerAction, padModal } from '../controls.js';
+import { PAD, actionForSlot, padModal } from '../controls.js';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -18,8 +19,6 @@ const PRESS = 0.4; // analog trigger threshold
 
 const pressed = new Array(PAD.length).fill(false);
 let active = false;
-let card = null;
-let introduced = false;
 let modalOn = false;
 
 // iPadOS also drives whatever has focus with the pad (a focused button gets "pressed" by A), so keep focus on the
@@ -38,11 +37,6 @@ function setActive(on) {
   active = on;
   document.body.classList.toggle('gamepad', on);
   if (on) claimFocus();
-  if (on && !introduced) {
-    introduced = true;
-    showCard(true);
-    setTimeout(() => showCard(false), 6000);
-  }
   if (!on) {
     input.stickX = input.stickY = 0;
     releaseAll();
@@ -54,28 +48,6 @@ function releaseAll() {
     if (pressed[i]) actionForSlot(PAD[i])?.up?.();
     pressed[i] = false;
   }
-}
-
-function showCard(on = card?.hidden) {
-  if (!card) return;
-  if (on) {
-    card.replaceChildren(
-      ...[
-        ['Left stick', 'Move'],
-        ['Right stick', 'Look'],
-        ...listActions().map((a) => [PAD_LABEL[a.pad], a.label]),
-      ].map(([k, v]) => {
-        const row = document.createElement('div');
-        const kbd = document.createElement('kbd');
-        kbd.textContent = k;
-        const span = document.createElement('span');
-        span.textContent = v;
-        row.append(kbd, span);
-        return row;
-      }),
-    );
-  }
-  card.hidden = !on;
 }
 
 function poll(dt) {
@@ -133,13 +105,7 @@ function poll(dt) {
   }
 }
 
-registerAction('pad-help', { pad: 'menu', label: 'Show / hide this list', down: () => showCard() });
-
 onStart(() => {
-  card = document.createElement('div');
-  card.className = 'pad-card';
-  card.hidden = true;
-  (document.querySelector('.hud') ?? document.body).append(card);
   addEventListener('gamepadconnected', () => setActive(true));
   addEventListener('gamepaddisconnected', () => poll(0));
   // Touching the screen hands control back to the touch overlay.

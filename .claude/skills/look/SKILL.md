@@ -28,7 +28,11 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes.
+risky shared changes. `--url <game>` runs against a running or deployed build instead of a local stack; there are no
+`/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
+`src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
+`reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it
+after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/net.js` attach/fail.
 
 ```js
 export default {
@@ -51,7 +55,9 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/features/debug-cam.js`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
-- `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud })`.
+- `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
+- `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or
+  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.mjs`.
 
 Rules of thumb: keep scenarios short; wait on state, not time; assert on what the player would notice (it exists,
 moved, synced, is visible in a region, is not flickering); keep thresholds loose (they guard against regressions,
@@ -59,11 +65,15 @@ not tune the look); put the image paths in check details so a failure is diagnos
 `submitEdit` over aiming the mouse. Real-time motion scores depend on the machine, so compare before/after on the
 same machine, never against absolute numbers from elsewhere.
 
-## 3. Render cost: `npm run perf`
+## 3. Render and sim cost: `npm run perf`
 
-About 8 s. Prints draw calls, shadow-pass calls, triangles, geometries and shader programs, for the island as
-entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running game). The counts are exact;
-headless fps is not, so it isn't reported. Run it before and after anything that adds meshes or lights, and compare.
+About a minute, or more on a loaded machine. Prints draw calls, shadow-pass calls, triangles, geometries and shader
+programs, for the island as entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running
+game). The counts are exact; headless fps is not, so it isn't reported. Then ms per lockstep tick (avg, p95, max), per op, `onApplied`/`onTick`
+handler and state hash, on the idle island and with busy water (beach flooded, a channel being dug): name your
+handler with `onTick(fn, 'label')`. Those are wall-clock times on a software-rendering machine: compare before/after
+on the same machine. `-- --render` or `-- --sim` runs one half. Run it before and after anything that adds meshes,
+lights or per-tick sim work, and compare.
 
 ## 4. Clips and videos
 

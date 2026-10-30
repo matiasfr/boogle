@@ -14,7 +14,7 @@ export const EDIT_MIN_CM = -120; // base height range (cm) that counts as beach/
 export const EDIT_MAX_CM = 160;
 export const FLATTEN_MIN_H = -300; // accepted target heights for flatten, cm
 export const FLATTEN_MAX_H = 800;
-const OPS = new Set(['dig', 'pile', 'flatten']);
+export const TERRAIN_OPS = new Set(['dig', 'pile', 'flatten']); // every op that changes delta; water-world keys on it
 
 // 5x5 brush in the fixed order cells are processed: centre, then the 3x3 ring, then the outer ring (di-major, dj-minor).
 export const BRUSH = [{ di: 0, dj: 0, ring: 0, cm: CENTER_CM }];
@@ -117,7 +117,7 @@ export function createTerrainState({ base, n, editable }) {
   // Returns null if the edit is acceptable, else a short reason. Host-side check.
   function check(edit, tick) {
     const { op, i, j, p, h } = edit;
-    if (!OPS.has(op)) return 'op';
+    if (!TERRAIN_OPS.has(op)) return 'op';
     if (!Number.isInteger(i) || !Number.isInteger(j)) return 'int';
     if (op === 'flatten' && !(Number.isInteger(h) && h >= FLATTEN_MIN_H && h <= FLATTEN_MAX_H)) return 'int';
     if (i < 1 || j < 1 || i > n - 2 || j > n - 2) return 'range';

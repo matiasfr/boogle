@@ -10,15 +10,15 @@ function makeNet() {
     queue: [],
     peers,
     add(id, host) {
-      const p = { id, host, msg: new Set(), hostCb: new Set(), alive: true };
+      const p = { id, host, msg: new Set(), hostCb: new Set(), connCb: new Set(), alive: true, up: true };
       p.room = {
         selfId: id,
         isHost: () => p.host,
         send(m) {
-          net.queue.push({ from: p, m: JSON.parse(JSON.stringify(m)) });
+          if (p.up) net.queue.push({ from: p, m: JSON.parse(JSON.stringify(m)) });
         },
         onMessage: (h) => (p.msg.add(h), () => p.msg.delete(h)),
-        onConnection: () => () => {},
+        onConnection: (h) => (p.connCb.add(h), () => p.connCb.delete(h)),
         onHostChange: (h) => (p.hostCb.add(h), () => p.hostCb.delete(h)),
       };
       peers.push(p);
@@ -30,8 +30,13 @@ function makeNet() {
       net.queue = [];
       for (const { from, m } of q) {
         if (!from.alive) continue;
-        for (const p of peers) if (p !== from && p.alive) for (const h of p.msg) h(m, from.id);
+        for (const p of peers) if (p !== from && p.alive && p.up) for (const h of p.msg) h(m, from.id);
       }
+    },
+    // A peer's room drops and later comes back (peer-room's reconnect after a stall): nothing in or out meanwhile.
+    setUp(p, up) {
+      p.up = up;
+      for (const h of p.connCb) h(up);
     },
     killHost() {
       const old = peers.find((p) => p.host && p.alive);
@@ -44,7 +49,8 @@ function makeNet() {
   return net;
 }
 
-function makePeer(net, id, host) {
+// opts go to attachWorld (storage, serverUrl, fetch, ...).
+function makePeer(net, id, host, opts = {}) {
   const s = createSync();
   const grid = new Int32Array(16);
   const log = [];
@@ -60,8 +66,20 @@ function makePeer(net, id, host) {
       log.push(`${e.p}:${e.v}`);
     },
   });
+  const last = new Map(); // like terrain/slosh: one edit per player per 2 ticks, recorded in validate
+  s.registerOp('slow', {
+    validate: (e, ctx) => {
+      if (ctx.tick - (last.get(e.p) ?? -1e9) < 2) return false;
+      last.set(e.p, ctx.tick);
+      return true;
+    },
+    apply: (e) => {
+      grid[e.i * 4 + e.j] += e.v;
+      log.push(`${e.p}:${e.v}`);
+    },
+  });
   const p = net.add(id, host);
-  s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234 });
+  s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234, ...opts });
   return { s, grid, log, p };
 }
 
@@ -72,6 +90,15 @@ async function run(net, peers, frames) {
     net.flush();
   }
 }
+// In-memory localStorage that counts writes, and a fetch that logs each method and finds no snapshot on the server.
+const mem = () => {
+  const m = new Map();
+  const store = { writes: 0, getItem: (k) => m.get(k) ?? null, setItem: (k, v) => (store.writes++, m.set(k, v)) };
+  return store;
+};
+const fetchSpy = (log) => async (url, init) => (log.push(init?.method ?? 'GET'), { ok: false, status: 404 });
+const SERVER = 'http://server.invalid';
+const saved = (store) => JSON.parse(store.getItem('boogle.world.test'));
 const live = (peers) => peers.filter((x) => x.p.alive);
 const same = (peers) => new Set(live(peers).map((x) => x.grid.join())).size === 1;
 
@@ -154,4 +181,292 @@ test('host migration continues', async () => {
   assert.equal(clients[1].grid[1], 7);
   assert.equal(clients[0].grid[1], 7);
   assert.ok(same(all));
+});
+
+test('an edit submitted while the room is reconnecting still reaches the host', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  assert.ok(clients[0].s.submitEdit({ op: 'add', i: 2, j: 1, v: 9 }));
+  await run(net, all, 20);
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[9], 9);
+  assert.ok(same(all));
+});
+
+test('edits held while reconnecting are all accepted by a rate-limited op, in order', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v: v * 10 ** v }));
+  await run(net, all, 10);
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[2], 43210);
+  assert.deepEqual(host.log, ['c0:10', 'c0:200', 'c0:3000', 'c0:40000']);
+  assert.ok(same(all));
+});
+
+test('a fresh edit after a reconnect replaces the held backlog and goes out in the next slot', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v }));
+  await run(net, all, 10);
+  net.setUp(clients[0].p, true);
+  await run(net, all, 1); // the first held edit goes out
+  for (let v = 5; v <= 8; v++) {
+    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held shovel button
+    await run(net, all, 5);
+  }
+  await run(net, all, 60);
+  assert.equal(clients[0].s.worldStatus().heldDropped, 3);
+  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the shovel's own repeat, which can be
+  // too soon after 5 for the host's rate limit: at most that one live edit is lost.
+  assert.deepEqual(host.log.slice(0, 2), ['c0:1', 'c0:5']);
+  assert.deepEqual(host.log.slice(-2), ['c0:7', 'c0:8']);
+  assert.ok(same(all));
+});
+
+test('live input after a reconnect is back to normal latency', async () => {
+  const { net, host, clients, all } = await setup(1);
+  const c = clients[0];
+  let v = 0;
+  const dig = async () => {
+    assert.ok(c.s.submitEdit({ op: 'slow', i: 0, j: 2, v: ++v }));
+    await run(net, all, 5); // the shovel's repeat, rounded up to whole frames like the held-edit pacing
+  };
+  net.setUp(c.p, false);
+  for (let k = 0; k < 16; k++) await dig(); // 4 s down with the button held
+  net.setUp(c.p, true);
+  for (let k = 0; k < 20; k++) await dig(); // 5 s more
+  await run(net, all, 15); // with the 5 frames after the last dig: 1 s
+  assert.equal(host.log.at(-1), `c0:${v}`, 'the last edit lands within 1 s, not seconds behind a backlog');
+  const live = host.log.slice(host.log.indexOf('c0:17')).map((l) => Number(l.slice(3)));
+  assert.ok(live.length >= 19, 'live edits are accepted (at most one lost to the rate limit after the delayed one)');
+  assert.ok(
+    live.every((x, k) => k === 0 || x > live[k - 1]),
+    'in order',
+  );
+  assert.ok(same(all));
+});
+
+test('a reclaimed host stamps held edits, then fresh ones in their place', async () => {
+  const { net, clients, all } = await setup(2);
+  net.setUp(clients[0].p, false);
+  for (let v = 1; v <= 3; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }));
+  net.killHost();
+  net.setUp(clients[0].p, true);
+  await run(net, all, 1); // the first held edit is stamped
+  for (let v = 4; v <= 6; v++) {
+    clients[0].s.submitEdit({ op: 'slow', i: 1, j: 0, v }); // 5 can be too soon after the delayed 4 (rate limit)
+    await run(net, all, 5);
+  }
+  await run(net, all, 120);
+  assert.equal(clients[0].s.worldStatus().mode, 'host');
+  assert.equal(clients[0].s.worldStatus().heldDropped, 2);
+  assert.deepEqual(clients[0].log.slice(0, 2), ['c0:1', 'c0:4']);
+  assert.equal(clients[0].log.at(-1), 'c0:6');
+  assert.ok(same(all)); // c1 has not re-pinned the new host yet: it converges by snapshot
+});
+
+test('an edit held while reconnecting is stamped locally if this tab comes back as host', async () => {
+  const { net, clients, all } = await setup(2);
+  net.setUp(clients[0].p, false);
+  clients[0].s.submitEdit({ op: 'add', i: 3, j: 0, v: 2 });
+  await run(net, all, 5);
+  net.killHost(); // clients[0] claims the host id, then its connection is reported up (peer-room's order)
+  net.setUp(clients[0].p, true);
+  await run(net, all, 120);
+  assert.equal(clients[0].s.worldStatus().mode, 'host');
+  assert.equal(clients[0].grid[12], 2);
+  assert.equal(clients[1].grid[12], 2);
+});
+
+test('a held edit waits for a reclaimed host to finish loading', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const c = makePeer(net, 'c0', false); // never got a snapshot: not ready when it takes over
+  net.setUp(c.p, false);
+  assert.ok(c.s.submitEdit({ op: 'add', i: 1, j: 2, v: 6 }));
+  net.killHost(); // becomeHost awaits loadPersisted
+  net.setUp(c.p, true);
+  assert.equal(c.s.worldStatus().ready, false);
+  await run(net, [host, c], 20);
+  assert.equal(c.s.worldStatus().mode, 'host');
+  assert.equal(c.grid[6], 6);
+});
+
+test('an edit held past the age limit is dropped and counted', async () => {
+  const { net, host, clients, all } = await setup(1);
+  net.setUp(clients[0].p, false);
+  clients[0].s.submitEdit({ op: 'add', i: 2, j: 3, v: 8 });
+  await run(net, all, 120); // 6 s
+  net.setUp(clients[0].p, true);
+  await run(net, all, 60);
+  assert.equal(host.grid[11], 0);
+  assert.equal(clients[0].s.worldStatus().heldDropped, 1);
+  assert.ok(same(all));
+});
+
+test('unloadable snapshots are reported (peer chunk, local copy, server)', async () => {
+  const { net, clients, all } = await setup(1);
+  const seen = [];
+  clients[0].s.onSnapFail(() => {
+    throw new Error('a broken listener does not turn one failure into two');
+  });
+  clients[0].s.onSnapFail((f) => seen.push(f));
+  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 99, n: 1, k: 0, s: '{nope' }, 'h');
+  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 98, n: 1, k: 0, s: '{"snap":1}' }, 'h');
+  await run(net, all, 2);
+  assert.deepEqual(seen, [
+    { from: 'peer', reason: 'parse' },
+    { from: 'peer', reason: 'invalid' },
+  ]);
+
+  const solo = createSync();
+  const fails = [];
+  solo.onSnapFail((f) => fails.push(f));
+  const room = { selfId: 'x', isHost: () => true, send() {}, onMessage: () => () => {}, onConnection: () => () => {} };
+  room.onHostChange = () => () => {};
+  solo.attachWorld(room, {
+    roomId: 'test',
+    serverUrl: 'http://server.invalid',
+    storage: { getItem: () => '{corrupt', setItem() {} },
+    fetch: async () => ({ ok: true, json: async () => ({ data: { tick: -1 } }) }),
+  });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(fails, [
+    { from: 'local', reason: 'parse' },
+    { from: 'server', reason: 'invalid' },
+  ]);
+  assert.ok(solo.worldStatus().ready, 'starts fresh anyway');
+  solo.detachWorld();
+});
+
+test('clients save the world too (but only the host uploads), so the next host starts from it', async () => {
+  const net = makeNet();
+  const hostCalls = [];
+  const clientCalls = [];
+  const host = makePeer(net, 'h', true, { serverUrl: SERVER, fetch: fetchSpy(hostCalls) });
+  const store = mem();
+  const client = makePeer(net, 'c', false, { storage: store, serverUrl: SERVER, fetch: fetchSpy(clientCalls) });
+  await run(net, [host, client], 60);
+  client.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, client], 620); // past the 30 s save interval
+  assert.equal(client.grid[11], 7);
+  assert.ok(store.getItem('boogle.world.test'), 'client saved');
+  assert.deepEqual(clientCalls, [], 'a client never touches the server');
+  assert.equal(client.s.worldStatus().saves, 0);
+  assert.ok(hostCalls.includes('PUT'), 'the host uploads');
+
+  const next = makePeer(makeNet(), 'n', true, { storage: store }); // another day, the client hosts
+  await new Promise((r) => setImmediate(r));
+  assert.equal(next.grid[11], 7);
+});
+
+test('a tab that takes over as host while waiting for its first snapshot still saves', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const c = makePeer(net, 'c', false, { storage: store }); // asked for a snapshot, none came yet
+  net.killHost();
+  await run(net, [host, c], 620); // past the 30 s save interval
+  assert.equal(c.s.worldStatus().mode, 'host');
+  assert.ok(store.writes > 0, 'the new host saved');
+});
+
+test('a promoted client uploads its world even if it already saved that state locally', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const calls = [];
+  const c = makePeer(net, 'c', false, { storage: store, serverUrl: SERVER, fetch: fetchSpy(calls) });
+  await run(net, [host, c], 60);
+  c.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, c], 620);
+  assert.equal(store.writes, 1, 'saved locally as a client');
+  net.killHost(); // the old host is gone; the world does not change after this
+  await run(net, [host, c], 620);
+  assert.deepEqual(calls, ['PUT']);
+  assert.equal(saved(store).data.grid[11], 7);
+});
+
+test('a client saves only hash-verified state, so a desync never reaches the next host', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const client = makePeer(net, 'c', false, { storage: store });
+  await run(net, [host, client], 60);
+  host.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, client], 530); // 29.5 s: the 30 s save falls due before the next hash check
+  client.grid[5] = 999; // a silent desync
+  await run(net, [host, client], 80);
+  assert.ok(client.s.worldStatus().resyncs >= 1);
+  assert.deepEqual(saved(store).data.grid, Array.from(host.grid));
+
+  const next = makePeer(makeNet(), 'n', true, { storage: store });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(next.grid, host.grid);
+});
+
+test('a client waiting for a resync does not save, then saves the repaired world', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const client = makePeer(net, 'c', false, { storage: store });
+  await run(net, [host, client], 60);
+  let dropSnaps = true; // the resync reply gets lost
+  for (const h of [...client.p.msg]) {
+    client.p.msg.delete(h);
+    client.p.msg.add((m, from) => (dropSnaps && m.t === 'w:snap' ? undefined : h(m, from)));
+  }
+  client.grid[5] = 999;
+  await run(net, [host, client], 620); // past the 30 s save interval
+  assert.ok(client.s.worldStatus().resyncs >= 1);
+  assert.equal(store.getItem('boogle.world.test'), null, 'the diverged world was not saved');
+  dropSnaps = false;
+  await run(net, [host, client], 620);
+  assert.equal(client.grid[5], 0);
+  assert.equal(saved(store).data.grid[5], 0);
+});
+
+test('a new host loads the newer of its local and server copies', async () => {
+  const snap = (tick, v) => ({ tick, seed: 1, epochMs: 0, data: { grid: [v, ...Array(15).fill(0)] } });
+  const start = async (local, server) => {
+    const storage = { getItem: () => JSON.stringify(local), setItem() {} };
+    const fetch = async () => ({ ok: true, json: async () => ({ data: server }) });
+    const peer = makePeer(makeNet(), 'n', true, { storage, serverUrl: SERVER, fetch });
+    await new Promise((r) => setImmediate(r));
+    return [peer.s.world.tick, peer.grid[0]];
+  };
+  assert.deepEqual(await start(snap(500, 1), snap(300, 2)), [500, 1]);
+  assert.deepEqual(await start(snap(300, 1), snap(500, 2)), [500, 2]);
+});
+
+test('profileTicks times each handler per tick and changes nothing', () => {
+  const solo = () => {
+    const s = createSync();
+    let total = 0;
+    s.registerState('n', { serialize: () => total, load: (v) => (total = v), hash: () => total });
+    s.registerOp('add', { apply: (e) => (total += e.v) });
+    s.onTick((t) => (total += t), 'grow');
+    s.onApplied(() => {});
+    return s;
+  };
+  const a = solo(),
+    b = solo();
+  let clock = 0;
+  const prof = a.profileTicks(() => clock++); // every timed call reads as 1 ms
+  assert.throws(() => a.profileTicks(), /already profiling/);
+  for (const s of [a, b]) {
+    s.submitEdit({ op: 'add', i: 0, j: 0, v: 5 });
+    for (let k = 0; k < 3; k++) s.updateWorld(0.1);
+  }
+  a.stateHashes();
+  const rows = prof.stop();
+  assert.deepEqual(rows, [{ 'op add': 1, 'applied #0': 1, grow: 1 }, { grow: 1 }, { grow: 1, 'hash n': 1 }]);
+  assert.equal(a.worldHash(), b.worldHash());
+  const before = clock;
+  a.updateWorld(0.1);
+  assert.equal(clock, before); // stop() put the original handlers back
+  a.profileTicks().stop(); // and a new profiler may start
 });

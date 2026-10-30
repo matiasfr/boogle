@@ -3,7 +3,8 @@ import { me, enterIsland, chargeAmount } from './player.js';
 import { net, remotes } from './net.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
-import { handsHint } from './hands.js';
+import { touchTarget, useVerb } from './hands.js';
+import { glyph, inputKind } from './glyphs.js';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -21,9 +22,6 @@ export const dom = {
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
   jumpBtn: $('btn-jump'),
-  shovelBtn: $('btn-shovel'),
-  digBtn: $('btn-dig'),
-  pileBtn: $('btn-pile'),
   touchEl: $('touch'),
   stickEl: $('stick'),
   knobEl: $('knob'),
@@ -33,19 +31,19 @@ let lastHint = null;
 export function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
-  let hint = '';
-  const hands = me.entered ? handsHint() : null;
-  if (me.entered) {
-    if (!isTouch && !inputState.locked && !inputState.lockFailed) hint = 'Click the island to look around';
-    else if (!me.charging) hint = hands?.text ?? '';
-  }
+  const hint = me.entered && inputKind() === 'kbm' && !inputState.locked && !inputState.lockFailed;
   if (hint !== lastHint) {
     lastHint = hint;
-    dom.hintEl.textContent = hint;
+    dom.hintEl.innerHTML = hint ? `${glyph('use')}<span>Look around</span>` : '';
     dom.hintEl.hidden = !hint;
   }
-  const grab = hands?.button ?? 'Grab';
-  if (dom.grabBtn.textContent !== grab) dom.grabBtn.textContent = grab;
+  if (!isTouch || !me.entered) return;
+  const t = me.charging ? null : touchTarget(); // mid wind-up the button only throws
+  const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
+  if (dom.grabBtn.textContent !== label) {
+    dom.grabBtn.textContent = label;
+    document.body.classList.toggle('main-throws', label === 'Throw');
+  }
 }
 
 let peopleKey = '';

@@ -42,7 +42,7 @@ export default {
 ```
 
 - `c.open(opts)`: a player (`Game`, see the look skill) with the clock installed. `hud: false` hides the HUD,
-  `'play'` keeps hints, dialogue and pocket (hides the help card, roster, net pill), `true` keeps all. `init` runs
+  `'play'` keeps hints, dialogue and pocket (hides the first-run card, roster, net pill), `true` keeps all. `init` runs
   before the page's code (seed localStorage: friendship, pocket).
 - `g.record(label, { seconds, each(t, k) })`: `each` runs before every frame. Move the camera (`g.view({ cam, look }, fov)`),
   send input (`g.key`, `g.down/up`), call game modules (`g.eval`), or fast-forward the shared sim for a time-lapse

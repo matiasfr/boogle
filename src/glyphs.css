@@ -1,0 +1,103 @@
+/* Button glyphs in prompts and the guide: paper keycaps, a mouse with the pressed button lit, coloured gamepad
+   buttons. Sizes are in --gu units (1px by default, so prompts are unchanged); the guide sets --gu in em so a bigger
+   guide font scales the glyphs. */
+.g {
+  flex: none;
+  box-sizing: border-box;
+  color: var(--ink);
+}
+.g-key {
+  display: inline-grid;
+  place-items: center;
+  white-space: nowrap;
+  min-width: calc(24 * var(--gu, 1px));
+  height: calc(24 * var(--gu, 1px));
+  padding: 0 calc(6 * var(--gu, 1px));
+  font: 800 calc(13 * var(--gu, 1px)) / 1 var(--font-body);
+  background: var(--paper);
+  border: calc(2 * var(--gu, 1px)) solid var(--ink);
+  border-bottom-width: calc(4 * var(--gu, 1px));
+  border-radius: calc(7 * var(--gu, 1px));
+}
+.g-mouse {
+  width: calc(17 * var(--gu, 1px));
+  height: calc(24 * var(--gu, 1px));
+  overflow: visible;
+}
+.g-plus {
+  flex: none;
+  margin: 0 0.2em;
+  font: 800 0.85em/1 var(--font-body);
+  color: var(--ink-soft, var(--ink));
+}
+.g-cluster {
+  display: inline-flex;
+  gap: calc(2 * var(--gu, 1px));
+}
+.g-pad {
+  display: inline-grid;
+  place-items: center;
+  width: calc(25 * var(--gu, 1px));
+  height: calc(25 * var(--gu, 1px));
+  border-radius: 50%;
+  border: calc(2 * var(--gu, 1px)) solid var(--ink);
+  font: 400 calc(14 * var(--gu, 1px)) / 1 var(--font-display);
+  color: #fff;
+  background: #3a7be0;
+}
+.g-pad[data-b='a'] {
+  background: #3fae4a;
+}
+.g-pad[data-b='b'] {
+  background: #e2453c;
+}
+.g-pad[data-b='y'] {
+  background: #f2b81a;
+}
+/* Shoulder buttons and triggers: rounded tabs. */
+.g-pad[data-b='lt'],
+.g-pad[data-b='rt'],
+.g-pad[data-b='lb'],
+.g-pad[data-b='rb'] {
+  width: calc(32 * var(--gu, 1px));
+  border-radius: calc(9 * var(--gu, 1px)) calc(9 * var(--gu, 1px)) calc(12 * var(--gu, 1px)) calc(12 * var(--gu, 1px));
+  font-size: calc(12 * var(--gu, 1px));
+  background: #4b5d7a;
+}
+.g-pad[data-b='lb'],
+.g-pad[data-b='rb'] {
+  height: calc(19 * var(--gu, 1px));
+  border-radius: calc(7 * var(--gu, 1px));
+  background: #6a7a96;
+}
+/* View and Menu: small pills. */
+.g-pad[data-b='view'],
+.g-pad[data-b='menu'] {
+  width: calc(40 * var(--gu, 1px));
+  height: calc(19 * var(--gu, 1px));
+  border-radius: 999px;
+  font-size: calc(11 * var(--gu, 1px));
+  background: #4b5d7a;
+}
+/* Stick clicks and the sticks themselves: dark circles. */
+.g-pad[data-b='l3'],
+.g-pad[data-b='r3'],
+.g-pad[data-b='ls'],
+.g-pad[data-b='rs'] {
+  background: #2c3446;
+  font-size: calc(12 * var(--gu, 1px));
+}
+.g-pad[data-b='l3'],
+.g-pad[data-b='r3'] {
+  width: calc(30 * var(--gu, 1px));
+  height: calc(30 * var(--gu, 1px));
+}
+/* D-pad: a small square with an arrow. */
+.g-pad[data-b='up'],
+.g-pad[data-b='down'],
+.g-pad[data-b='left'],
+.g-pad[data-b='right'] {
+  border-radius: calc(6 * var(--gu, 1px));
+  background: #4b5d7a;
+  font-size: calc(15 * var(--gu, 1px));
+}

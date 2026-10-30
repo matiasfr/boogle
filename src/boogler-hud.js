@@ -1,17 +1,21 @@
-// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts
-// and his speech bubble), and a pointer pinned to the nearest screen edge (aimed at him, with his distance) while he's
-// off screen, so he's always easy to find.
+// Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts,
+// his speech bubble, and the interact prompt when he is what you would interact with), and a pointer pinned to the
+// nearest screen edge (aimed at him, with his distance) while he's off screen and nearby. Past FIND_NEAR it fades out,
+// gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about the garden anyway.
 import { boogler, booglerScreen } from './boogler.js';
 import { me } from './player.js';
+import { clamp } from './math.js';
 import { MAX_LEVEL } from './boogler-friendship.js';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
 const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
+const FIND_NEAR = 35; // metres: full pointer inside this
+const FIND_FAR = 60; // metres: no pointer past this
 
 const MARKUP = `
   <div class="boogler-tag" hidden>
     <div class="boogler-say" hidden><div class="boogler-say-text"></div></div>
-    <div class="boogler-tag-bob">The Boogler<span class="boogler-tag-bond"></span></div>
+    <div class="boogler-tag-bob">The Boogler<span class="boogler-tag-bond"></span><span class="boogler-tag-prompt" hidden></span></div>
   </div>
   <div class="boogler-find" hidden>
     <div class="boogler-find-arrow"></div>
@@ -42,6 +46,7 @@ function dom() {
   el = {
     tag: q('.boogler-tag'),
     bond: q('.boogler-tag-bond'),
+    prompt: q('.boogler-tag-prompt'),
     say: q('.boogler-say'),
     sayText: q('.boogler-say-text'),
     find: q('.boogler-find'),
@@ -63,6 +68,23 @@ const bondShown = { text: '', wary: false };
 export function setTagBond(level, wary) {
   bondText = wary ? 'avoiding you' : '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
   bondShown.wary = wary;
+}
+
+// The interact prompt in the tag: his target's show() (see talkTargets in src/boogler-play.js), called by
+// src/features/prompt.js with the markup, '' for none. Drawn right away, so it changes on the same frame as the
+// floating prompt whichever of the two hooks runs first.
+let promptShown = '';
+export function setTagPrompt(html) {
+  const d = dom();
+  if (!d || html === promptShown) return;
+  const fresh = !promptShown;
+  d.prompt.innerHTML = promptShown = html;
+  d.prompt.hidden = !html;
+  if (fresh && html) {
+    d.prompt.classList.remove('pop');
+    void d.prompt.offsetWidth; // restart the pop-in animation
+    d.prompt.classList.add('pop');
+  }
 }
 
 let lastDist = '';
@@ -90,9 +112,12 @@ export function updateBooglerHud() {
   }
   if (!talking) bubble.shown = '';
 
-  const showFind = !s.onScreen && me.entered;
+  const dist = me.body ? Math.hypot(boogler.disp.x - me.body.position.x, boogler.disp.z - me.body.position.z) : 0;
+  const fade = Math.round(clamp((FIND_FAR - dist) / (FIND_FAR - FIND_NEAR), 0, 1) * 20) / 20;
+  const showFind = !s.onScreen && me.entered && fade > 0;
   d.find.hidden = !showFind;
   if (!showFind) return;
+  if (d.find.style.opacity !== String(fade)) d.find.style.opacity = String(fade);
 
   // Walk from the screen centre toward him until we hit the inset rectangle.
   const len = Math.hypot(s.dirX, s.dirY);
@@ -106,9 +131,6 @@ export function updateBooglerHud() {
   d.find.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
   d.arrow.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad)`;
 
-  if (me.body) {
-    const p = me.body.position;
-    const text = `${Math.round(Math.hypot(boogler.disp.x - p.x, boogler.disp.z - p.z))} m`;
-    if (text !== lastDist) d.dist.textContent = lastDist = text;
-  }
+  const text = `${Math.round(dist)} m`;
+  if (text !== lastDist) d.dist.textContent = lastDist = text;
 }

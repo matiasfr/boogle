@@ -1,10 +1,11 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: the host decides where he walks and publishes it in its presence as `g: { p:[x,z], r, w }`
-// (r = yaw, w = 1 while walking). Everyone else interpolates those snapshots, like a remote player. He is not part of
-// the deterministic world sim (he never changes terrain, water or crops), so his brain can use floats; it still uses
-// the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that hear nothing from a host for a
-// few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops) is cosmetic and local.
+// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
+// (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
+// remote player. He is not part of the deterministic world sim (he never changes terrain, water or crops), so his brain
+// can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
+// hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
+// is cosmetic and local.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler-play.js): the host stops for
@@ -14,14 +15,15 @@ import * as CANNON from 'cannon-es';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from './constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
-import { scene, camera } from './scene.js';
+import { scene, camera, toScreen } from './scene.js';
 import { world, playerMat, teleport, NOT_SCENERY } from './physics.js';
 import { blockedAt } from './props.js';
 import { island } from './island/index.js';
 import { MAINLAND } from './island/shape.js';
 import { PATCH } from './sim/mushrooms.js';
 import { me } from './player.js';
-import { net, remotes } from './net.js';
+import { net, remotes, addHostField } from './net.js';
+import { createSnaps } from './snaps.js';
 
 // Shape: about three times as wide as he is tall.
 const W_R = 0.8; // half width
@@ -53,7 +55,8 @@ const ATTEND_RANGE = 5;
 export const PUFF_MS = 750;
 
 // What a player is doing with him (published by each player) and what he is doing (published by the host).
-export const ACT = { NONE: 0, TALK: 1, RIDE: 2, PET: 3 };
+// 3 was PET (petting now happens inside TALK): never reuse it, old tabs may still send it and it must read as NONE.
+export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
@@ -62,7 +65,7 @@ const range = (a, b) => a + rng() * (b - a);
 const sim = { x: 0, z: 0, yaw: 0, walking: false, tx: 0, tz: 0, wait: 1, mode: MODE.CALM, fleeCheck: 0 };
 const disp = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
 const target = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
-const snaps = [];
+const snaps = createSnaps();
 let src = null;
 let lastSnapAt = 0;
 let simulating = false;
@@ -72,8 +75,8 @@ let group = null;
 let parts = null;
 let body = null;
 
-// `me` is this player's side of things, written by src/boogler-play.js: act (ACT), wary (he runs from us), and the
-// face to pull while we talk (mood, speaking).
+// `me` is this player's side of things, written by src/boogler-play.js: act (ACT; petting is part of TALK), wary (he
+// runs from us), and the face to pull while we talk (mood, speaking).
 export const boogler = {
   disp,
   labelPos: new THREE.Vector3(),
@@ -226,7 +229,7 @@ function think(dt) {
   for (const v of visitors()) {
     const d = Math.hypot(v.x - sim.x, v.z - sim.z);
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
-    else if (v.act === ACT.TALK || v.act === ACT.PET) {
+    else if (v.act === ACT.TALK) {
       if (d < focusD) [focus, focusD] = [v, d];
     } else if (v.wary && d < threatD) [threat, threatD] = [v, d];
   }
@@ -279,29 +282,23 @@ function think(dt) {
 }
 
 // ---------------------------------------------------------------- network
-export function booglerForPresence() {
-  if (!group || !simulating || !net.room?.isHost()) return null;
-  return { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode };
+function publish() {
+  return simulating ? { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode } : null;
 }
 
-// Called from net.js with every fresh presence that carries `g` (only the host's does).
-export function noteBoogler(peer, g, time) {
+function hear(g, time, peer) {
   if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
   if (Math.abs(g.p[0]) > HALF || Math.abs(g.p[1]) > HALF) return;
   if (peer !== src) {
     src = peer;
-    snaps.length = 0;
+    snaps.clear();
   }
-  snaps.push({ time, x: g.p[0], z: g.p[1], r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
-  if (snaps.length > 40) snaps.shift();
+  snaps.push(time, { x: g.p[0], z: g.p[1], r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
   lastSnapAt = performance.now();
 }
 
 function sampleSnaps(t) {
-  while (snaps.length > 2 && snaps[1].time <= t) snaps.shift();
-  const a = snaps[0],
-    b = snaps[1] || a;
-  const u = b === a || t <= a.time ? 0 : Math.min(1, (t - a.time) / Math.max(1, b.time - a.time));
+  const { a, b, u } = snaps.sample(t);
   target.x = lerp(a.x, b.x, u);
   target.z = lerp(a.z, b.z, u);
   target.yaw = angleLerp(a.r, b.r, u);
@@ -460,6 +457,7 @@ export function createBoogler() {
   parts = buildModel();
   group = parts.root;
   scene.add(group);
+  addHostField('g', publish, hear);
 
   body = new CANNON.Body({
     mass: 0,
@@ -618,6 +616,8 @@ export function updateBoogler(dt, now) {
 
 // Screen-space position for the HUD label and edge pointer (boogler-hud.js).
 const vp = new THREE.Vector3();
+const centerOn = { x: 0, y: 0, behind: false },
+  labelOn = { x: 0, y: 0, behind: false };
 export function booglerScreen(width, height) {
   camera.updateMatrixWorld();
   vp.copy(boogler.center).applyMatrix4(camera.matrixWorldInverse);
@@ -626,14 +626,8 @@ export function booglerScreen(width, height) {
   let dx = vp.x,
     dy = -vp.y;
   if (Math.hypot(dx, dy) < 1e-4) dy = 1;
-  const ndc = boogler.center.clone().project(camera);
-  const onScreen = inFront && Math.abs(ndc.x) < 0.96 && Math.abs(ndc.y) < 0.96;
-  const label = boogler.labelPos.clone().project(camera);
-  return {
-    onScreen,
-    dirX: dx,
-    dirY: dy,
-    labelX: (label.x * 0.5 + 0.5) * width,
-    labelY: (-label.y * 0.5 + 0.5) * height,
-  };
+  const c = toScreen(boogler.center, centerOn, width, height);
+  const onScreen = inFront && Math.abs((c.x / width) * 2 - 1) < 0.96 && Math.abs((c.y / height) * 2 - 1) < 0.96;
+  const label = toScreen(boogler.labelPos, labelOn, width, height);
+  return { onScreen, dirX: dx, dirY: dy, labelX: label.x, labelY: label.y };
 }

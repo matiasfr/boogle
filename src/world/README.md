@@ -32,10 +32,14 @@ registerState(key, {
   load(json) { },            // replace state from a snapshot
   hash() { },                // -> uint32 of the state, for desync detection
 })
-onTick(fn)                   // fn(tick) every sim tick, in registration order, after that tick's edits are applied
-onApplied(fn)                // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
+onApplied(fn, label?)        // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+                             // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
+                                   // Returns true if queued, not applied: the host may reject it, and edits held
+                                   // while reconnecting can be dropped (see sync.js header). Use onApplied for
+                                   // anything irreversible.
 ```
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
@@ -52,4 +56,4 @@ Shared logic must not use `Math.random`, `Date.now`, or float math that differs 
 
 ## Status
 
-Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `worldStatus()` (debug). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.
+Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `onDesync(fn)` (a hash check failed: `{ tick, keys }`), `onSnapFail(fn)` (a snapshot from a peer, localStorage or the server could not be loaded: `{ from, reason }`), `worldStatus()` (debug), `profileTicks()` (`npm run perf -- --sim` only: times every op apply, `onApplied`/`onTick` handler and state hash until `stop()`, which restores them and returns one `{ label: ms }` row per tick). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.

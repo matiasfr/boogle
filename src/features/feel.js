@@ -4,7 +4,7 @@
 //     an upward bounce instead of replacing it (src/physics.js feelTune), so mushroom bounces chain
 //   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
-//   - swimming: the dig button dives; let go and you pop back up, breaching out of the water
+//   - swimming: dig (Q) and pad LT dive; let go and you pop back up, breaching out of the water
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk
@@ -18,7 +18,7 @@ import { groundHeight } from '../terrain.js';
 import { waterField } from '../water-field.js';
 import { me } from '../player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { listActions } from '../controls.js';
+import { wrapAction, describeControl } from '../controls.js';
 import { shovel, setHold } from '../world/terrain-edits.js';
 import { proto } from '../proto-flags.js';
 
@@ -66,6 +66,7 @@ let jumpActive = false; // a player-made jump is rising (only those get the shor
 let diving = 0; // seconds left in a held dive
 let diveAt = -1e9;
 let wasUnder = false;
+let padPile = false; // pad LT is holding a pile that started on land
 physics.addEventListener('preStep', () => {
   const enabled = on();
   feelTune.jumpAdd = enabled;
@@ -110,18 +111,24 @@ function dive() {
 const swimDive = () => on() && me.swimming;
 
 onStart(() => {
-  // the dig buttons dive while swimming (Q, pad dig); elsewhere they dig as before
+  // Q and pad LT (pile) dive while swimming; elsewhere they dig and pile as before
   addEventListener('keydown', (e) => {
     if (e.code === 'KeyQ' && !e.repeat && swimDive()) dive();
   });
   addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
-  const dig = listActions().find((a) => a.id === 'dig');
-  if (dig) {
-    const down = dig.down,
-      up = dig.up;
-    dig.down = () => (swimDive() ? dive() : down?.());
-    dig.up = () => ((diving = 0), up?.());
-  }
+  describeControl('dive', {
+    label: 'Dive',
+    detail: 'While swimming',
+    keys: ['KeyQ'],
+    pad: 'lt',
+    group: 'move',
+    order: 3,
+    context: 'swimming',
+  });
+  wrapAction('pile', {
+    down: (next) => (swimDive() ? dive() : (next(), (padPile = shovel.hold === 'pile'))),
+    up: (next) => ((padPile = false), (diving = 0), next()),
+  });
 });
 
 // ---------------------------------------------------------------- my flops
@@ -136,6 +143,11 @@ addPresenceField('fl', () =>
 );
 onRemotePresence((r, pr) => {
   const f = pr.fl;
+  // Temporary: same stale-repeat guard as kd in impact.js (old-build tabs never clear fl). Remove once every tab
+  // runs b0a3a7b or later.
+  const left = Array.isArray(f) ? f[1] : undefined;
+  if (left !== undefined && left === r.flLast) return;
+  r.flLast = left;
   if (Array.isArray(f) && KINDS[f[0]] && Number.isFinite(f[1]) && f[1] > 0 && f[1] <= 2000)
     r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
 });
@@ -267,8 +279,10 @@ function spring(a, dt, t, flopOf, isMe) {
 onFrame(
   ({ dt, elapsed }) => {
     if (dt <= 0) return;
-    // the dig button is a dive while swimming: never leave a dig hold running underwater
+    // Q and pad LT dive while swimming: never leave a Q dig or an LT pile hold running underwater (Z and the mouse
+    // still pile there)
     if (on() && me.swimming && shovel.hold === 'dig') setHold(null, 'dig');
+    if (on() && me.swimming && padPile && shovel.hold === 'pile') setHold(null, 'pile');
     if (me.avatar) spring(me.avatar, dt, elapsed, () => flop, true);
     for (const r of remotes.values()) if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false);
     let alive = 0;

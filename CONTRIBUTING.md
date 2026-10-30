@@ -8,13 +8,15 @@ Node 22 or newer (`.nvmrc`). `npm install` (also installs the pre-push hook), th
 
 ## How we work
 
-We're in rapid iteration: a few people (mostly through Claude Code) building and playtesting many times a day, straight on `main`.
+We're in rapid iteration: a few people (mostly through Claude Code) building and playtesting many times a day. Everything lands on `main` through a PR, but nobody has to open or review one.
 
-1. **Commit to `main`, then `npm run ship`** instead of `git push`. It rebases onto what friends pushed, runs the checks, pushes, and retries if `main` moved. On a conflict it asks Claude Code to keep both changes, and the checks verify the result. We don't hand-review merges: we accept the small risk of losing a line now and then.
-2. A plain `git push` to `main` is guarded by the pre-push hook: it runs `npm run check` and refuses if `main` has new commits. `git push --no-verify` skips it in an emergency.
-3. `main` auto-deploys in about a minute, so it must always be playable. After shipping, open the live site in two tabs (or with a friend) and check your change.
-4. If CI goes red on `main`, Claude opens a fix PR automatically and it merges when green. If you're around, fixing it beats starting something new; revert if the fix isn't quick.
-5. Use a branch and PR only for risky or large changes (networking protocol, sync, persistence). Ask `@claude` or a friend to review.
+1. **Commit (on `main` or any branch), then `npm run ship`.** It rebases onto what friends shipped, runs the fast checks and pushes your commits to a new `ship/<you>-<sha>` branch, then returns. On a rebase conflict it asks Claude Code to keep both changes. We don't hand-review merges: we accept the small risk of losing a line now and then.
+2. CI runs on that branch (a minute or two). Green: a bot opens the PR, merges it with a merge commit (your commits land as they are, so your next ship rebases cleanly) and deploys. Red, or in conflict with `main`: Claude pushes one fix commit to the branch, twice at most, then @mentions you on the PR. `ship` prints links to the CI run and the PR; `npm run ship -- --wait` waits until it's on `main`.
+3. `main` refuses direct pushes (the pre-push hook here, a ruleset on GitHub). `main` auto-deploys, so it must always be playable. After shipping, open the live site in two tabs (or with a friend) and check your change.
+4. If CI goes red on `main` anyway (two PRs that pass alone but break together), Claude opens a fix PR automatically and it merges when green. If you're around, fixing it beats starting something new; revert if the fix isn't quick.
+5. Want a review first? Push a branch and open a draft PR, or add the `no-automerge` label. Ask `@claude` or a friend to review.
+
+Repo settings this relies on (owner only): Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests", and a ruleset on `main`: require a pull request (0 approvals), require the `client`, `server` and `net` checks, block force pushes. Leave "require branches to be up to date" off; it would restart everyone's CI whenever anyone merges.
 
 ## Design rules
 
@@ -30,5 +32,5 @@ The playtest is the real test. Whenever something new lands, jump on https://mat
 
 - **Claude Code** loads `CLAUDE.md`, which imports `AGENTS.md`. Committed project settings (`.claude/settings.json`) pre-approve routine commands and format/lint every file Claude edits. Skills: `/ship`, `/new-feature <name>`, `/playtest-notes`.
 - **Other agents** (Codex, Cursor, ...) read `AGENTS.md` directly. Change shared rules there, never in `CLAUDE.md`.
-- **On GitHub**, mention `@claude` in an issue or PR ([claude.yml](.github/workflows/claude.yml)). It opens a PR from a `claude/` branch that [automerge.yml](.github/workflows/automerge.yml) squash-merges once CI is green. Add the `no-automerge` label or ask for a draft to review first. [ci-autofix.yml](.github/workflows/ci-autofix.yml) fixes a red `main`.
+- **On GitHub**, mention `@claude` in an issue or PR ([claude.yml](.github/workflows/claude.yml)). It opens a PR from a `claude/` branch that [automerge.yml](.github/workflows/automerge.yml) squash-merges once CI is green. Add the `no-automerge` label or ask for a draft to review first. [ci-autofix.yml](.github/workflows/ci-autofix.yml) fixes a red `main` and red or conflicting `ship/` and `claude/` branches.
 - Treat AI-written code like any other: play it, skim the diff, and push back on slow or browser-based tests for things a unit test or a playtest covers.

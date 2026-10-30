@@ -1,0 +1,318 @@
+/* The pause view: a full-screen transparent dialog holding a dim layer and a paper card (the lobby card look). */
+dialog.pause {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+  --pause-fs: clamp(18px, 2.4vh, 40px);
+}
+dialog.pause[open] {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+}
+dialog.pause::backdrop {
+  background: transparent;
+}
+.pause-dim {
+  position: absolute;
+  inset: 0;
+  background: var(--glass);
+  animation: pause-fade 200ms ease-out;
+}
+.pause-card {
+  position: relative;
+  width: min(440px, 100%);
+  max-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 24px 20px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 0 8px 0 var(--ink);
+  font: 600 16px/1.3 var(--font-body);
+  animation: pause-in 220ms ease-out;
+}
+.pause-card[data-page='controls'] {
+  width: min(1240px, 100%);
+}
+.pause-head {
+  flex: none;
+}
+.pause-title {
+  margin: 0;
+  font: 400 40px/1 var(--font-display);
+  letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
+}
+.pause-sub {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+.pause-body {
+  /* room for the focus rings and shadows, which the scroll area would clip */
+  padding: 8px 8px 12px;
+  margin: -8px -8px -12px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.pause-list,
+.pause-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.pause-btn {
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 10px 18px;
+  font: 400 22px/1.1 var(--font-display);
+  letter-spacing: 0.4px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pause-btn.primary {
+  background: var(--sun);
+}
+.pause-btn.sure {
+  background: #ff8a6b;
+}
+.pause-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.pause-btn:focus-visible,
+.pause-btn[data-focus] {
+  outline: 4px solid var(--sea);
+  outline-offset: 3px;
+}
+.pause-bar {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.pause-bar .pause-back {
+  order: -1;
+  margin: 0;
+  min-width: 0;
+}
+.pause-tabs {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+.pause-card[data-page='controls'] .pause-sub {
+  display: none;
+}
+.pause-card[data-page='controls'] {
+  gap: 10px;
+  padding-block: 18px 16px;
+}
+.pause-tab {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-size: 18px;
+  box-shadow: none;
+}
+.pause-tab[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pause-guide {
+  --pause-gu: calc(var(--pause-fs) / 16);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 2px;
+  font-size: var(--pause-fs);
+}
+/* Text and glyphs scale together: --gu is the glyph unit (src/guide.css), here in absolute length. */
+.pause-guide .guide {
+  --gu: var(--pause-gu);
+  display: block;
+  columns: 3 16em;
+  column-gap: 2.2em;
+  font-size: var(--pause-fs);
+  line-height: 1.25;
+}
+.pause-guide .guide-group {
+  break-inside: avoid;
+  margin-bottom: 1em;
+}
+.pause-guide .guide-row {
+  grid-template-columns: 8.5em 1fr;
+  align-items: start;
+}
+/* Pad glyphs are one or two buttons, not key clusters: a narrow column keeps each label beside its button. */
+.pause-guide .guide-pad .guide-row {
+  grid-template-columns: 5.5em 1fr;
+}
+.pause-h {
+  margin: 0;
+  font: 400 24px/1 var(--font-display);
+  color: var(--ink-soft);
+}
+.pause-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.pause-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.pause-dot {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+}
+.pause-you {
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 15px;
+}
+.pause-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pause-url {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  font: 600 15px/1.2 var(--font-body);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+}
+.pause-back {
+  flex: none;
+  align-self: flex-start;
+  min-width: 140px;
+  margin-top: 4px;
+}
+@keyframes pause-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes pause-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pause-card {
+    animation: pause-fade 200ms ease-out;
+  }
+}
+@media (max-width: 600px) {
+  .pause-card {
+    padding: 18px 16px 16px;
+  }
+  .pause-title {
+    font-size: 32px;
+  }
+  .pause-guide .guide {
+    columns: auto 1;
+  }
+  .pause-bar {
+    flex-wrap: wrap;
+  }
+  .pause-tabs {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .pause-tab {
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 16px;
+  }
+  .pause-guide .guide-row {
+    grid-template-columns: fit-content(48%) 1fr;
+    gap: 0.5em;
+  }
+}
+
+/* The corner menu button, beside the connection pill (.hud-tr). */
+.hud-tr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-btn {
+  position: relative;
+  z-index: 5; /* above the touch overlay */
+  pointer-events: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--on-glass);
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+body.playing .menu-btn {
+  display: inline-flex;
+}
+.menu-icon {
+  width: 22px;
+  height: 22px;
+}
+.menu-glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.menu-glyph:empty {
+  display: none;
+}
+.menu-btn:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+}
