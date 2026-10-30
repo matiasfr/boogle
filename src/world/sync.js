@@ -43,11 +43,14 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = Number.isSafeInteger;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-export function createSync() {
+// opts.env: host-only facts handed to validate as ctx.env (they may differ per machine, so never to apply or ticks).
+export function createSync({ env: env0 } = {}) {
   const world = { tick: 0, seed: 20261028, epochMs: 0 };
+  const env = { ...(env0 ?? {}) };
   const ops = new Map();
   const states = new Map();
   const tickFns = [];
+  const afterFns = []; // fn(tick) after every onTick handler (render work that reads the tick's final state)
   const appliedFns = [];
   const labels = new Map(); // handler fn -> name shown by profileTicks
   const snapFns = [];
@@ -117,12 +120,16 @@ export function createSync() {
   };
 
   // ------------------------------------------------------------ registry
+  // Registration order is wire order (hash combine, snapshot, load), so a key registered twice is a bug: throw.
   function registerOp(op, handlers) {
+    if (ops.has(op)) throw new Error('duplicate op ' + op);
     ops.set(op, handlers);
   }
   function registerState(key, handlers) {
+    if (states.has(key)) throw new Error('duplicate state ' + key);
     states.set(key, handlers);
   }
+  const registry = () => ({ ops: [...ops.keys()], states: [...states.keys()] });
   function addHandler(list, fn, label) {
     list.push(fn);
     if (label) labels.set(fn, label);
@@ -135,7 +142,7 @@ export function createSync() {
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
     const e = { ...edit, p: from }; // never trust a client-supplied p
     try {
-      if (h.validate && !h.validate(e, { from, tick: world.tick })) return false;
+      if (h.validate && !h.validate(e, { from, tick: world.tick, env })) return false;
     } catch (err) {
       console.warn('[world] validate threw', err);
       return false;
@@ -209,13 +216,21 @@ export function createSync() {
     world.tick = t;
     for (const { e } of due) {
       try {
-        ops.get(e.op)?.apply(e, t);
-        for (const fn of appliedFns) fn(e, t);
+        const r = ops.get(e.op)?.apply(e, t); // a throwing apply skips the listeners
+        // Listeners get apply's result; each is guarded, so a failing effect does not stop the next listener.
+        for (const fn of appliedFns) {
+          try {
+            fn(e, t, r);
+          } catch (err) {
+            console.error('[world] onApplied failed', err);
+          }
+        }
       } catch (err) {
         console.error('[world] apply failed', err);
       }
     }
     for (const fn of tickFns) fn(t);
+    for (const fn of afterFns) fn(t);
     if (mode === 'host') {
       if (t % CLOCK_EVERY === 0) send({ t: 'w:c', ht: t });
       if (t >= nextHashTick) {
@@ -410,10 +425,10 @@ export function createSync() {
   }
 
   // ------------------------------------------------------------ profiling (npm run perf only)
-  // Times every op apply, onApplied/onTick handler and state hash until stop(), which returns one { label: ms } row
-  // per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so normal play pays
-  // nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time (a second would
-  // wrap the first one's wrappers, and stopping them out of order would leave timers in place).
+  // Times every op apply, onApplied/onTick/onAfterTick handler and state hash until stop(), which returns one
+  // { label: ms } row per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so
+  // normal play pays nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time
+  // (a second would wrap the first one's wrappers, and stopping them out of order would leave timers in place).
   let profiling = false;
   function profileTicks(now = () => performance.now()) {
     if (profiling) throw new Error('profileTicks: already profiling; stop() the first one');
@@ -446,6 +461,7 @@ export function createSync() {
       });
     swapAll(appliedFns, 'applied');
     swapAll(tickFns, 'tick');
+    swapAll(afterFns, 'after');
     return {
       stop() {
         if (active) profiling = active = false;
@@ -586,8 +602,11 @@ export function createSync() {
     world,
     registerOp,
     registerState,
+    registry,
+    setEnv: (partial) => void Object.assign(env, partial), // host-only facts for validate (ctx.env)
     onTick: (fn, label) => addHandler(tickFns, fn, label), // label: its name in `npm run perf`
-    onApplied: (fn, label) => addHandler(appliedFns, fn, label),
+    onAfterTick: (fn, label) => addHandler(afterFns, fn, label), // fn(tick) after all onTick handlers
+    onApplied: (fn, label) => addHandler(appliedFns, fn, label), // fn(edit, tick, result of apply)
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
@@ -611,7 +630,10 @@ export const world = S.world;
 export const {
   registerOp,
   registerState,
+  registry,
+  setEnv,
   onTick,
+  onAfterTick,
   onApplied,
   onSnapshot,
   onDesync,

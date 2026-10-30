@@ -24,19 +24,24 @@ world.tick                   // integer, current sim tick (same on every client 
 world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/sim/rng.js)
 
 registerOp(op, {
-  validate(edit, ctx) { },   // host only: return true to accept. ctx = { from, tick }. Reject out-of-range, rate abuse.
-  apply(edit, tick) { },     // everyone: mutate registered state. Must be deterministic (integers only).
-})
+  validate(edit, ctx) { },   // host only: return true to accept. ctx = { from, tick, env }. Reject out-of-range, rate abuse.
+  apply(edit, tick) { },     // everyone: mutate registered state. Must be deterministic (integers only). May return a result.
+})                           // registering an op or state key twice throws (order is wire order)
 registerState(key, {
   serialize() { },           // -> JSON-safe value (use arrays of ints / base64 of typed arrays)
   load(json) { },            // replace state from a snapshot
   hash() { },                // -> uint32 of the state, for desync detection
 })
 onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
-onApplied(fn, label?)        // fn(edit, tick) after an edit is applied (render hooks: rebuild mesh, splash, sounds)
+onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
+onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
+                             // result is what apply returned. A throwing listener is logged and the next one still runs.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
+setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
+                             // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
+registry()                   // { ops, states }: registered keys in order
 ```
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
@@ -48,6 +53,7 @@ Integer units: heights and water depths are stored in **centimetres** (`Int16`/`
 ### Ordering inside one tick
 1. Apply that tick's edits (host sequence order).
 2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
+3. Run `onAfterTick` handlers in registration order.
 
 Shared logic must not use `Math.random`, `Date.now`, or float math that differs between browsers (`Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2`, `hypot`); conserved quantities stay integers. See DESIGN.md, "Determinism from day one". Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
 
