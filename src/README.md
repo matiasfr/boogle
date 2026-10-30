@@ -25,4 +25,4 @@ Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), 
 - `decomp/`: shared pieces for characters run by an engine and files the player brings (the files dialog, the
   IndexedDB store); the plan for more is [docs/plans/decomp-characters.md](../docs/plans/decomp-characters.md).
 - `guest/`: playing as the guest (engine glue in `native/guest/`), and the dino who offers it; the eager glue is
-  `features/dino.js`.
+  `features/dino.js`. Working on it: [guest/README.md](guest/README.md).
