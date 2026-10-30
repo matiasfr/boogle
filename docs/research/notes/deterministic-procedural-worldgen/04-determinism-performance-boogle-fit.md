@@ -7,7 +7,7 @@ Integer arithmetic, `Math.imul` hashing and seeded mulberry32 are reproducible e
 
 ### Cited Findings
 - MDN: "Many Math functions have a precision that's implementation-dependent... different browsers can give a different result. Even the same JavaScript engine on a different OS or architecture can give different results!" — [MDN, Math](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math)
-- Boogle already banned native trig in the shared sim because Math.sin/cos/atan2 differ between Firefox and Chrome — local commit 0b0b834 "Ban native trig in the deterministic shared sim" (AGENTS.md rule) — [AGENTS.md](file:///Users/matiasfranco/Developer/boogle/AGENTS.md)
+- Boogle already banned native trig in the shared sim because Math.sin/cos/atan2 differ between Firefox and Chrome — local commit 0b0b834 "Ban native trig in the deterministic shared sim" (AGENTS.md rule) — [AGENTS.md](../../../../AGENTS.md)
 - mapgen4's April 2023 code changes mean maps "won't exactly match previously generated maps" — output depends on code version as well as seed — [Red Blob Games, mapgen4](https://www.redblobgames.com/maps/mapgen4/)
 - mapgen2 reproduces a map from seed plus parameters stored in a share URL — [Red Blob Games, mapgen2](https://www.redblobgames.com/maps/mapgen2/)
 - Priority-Flood is O(n) for integer heights vs O(n log n) for floats — integer grids are also faster for hydrology — [arXiv 1511.04463](https://ar5iv.labs.arxiv.org/html/1511.04463)
@@ -48,7 +48,7 @@ The island is baked at module import from constants, and several systems hard-co
 - `src/world/terrain-edits.js` quantises base to cm at import; editability = beach band `EDIT_MIN_CM..EDIT_MAX_CM` (-120..160 cm) or court, excluding the mushroom garden — local file
 - `src/sim/mushrooms.js` fixes `PATCH = { i0: 78, j0: 52, w: 10, h: 10 }`; `COURT`, `SPAWN`, `BALL_SPAWN`, `ISLAND_R` are constants used by `terrain.js`, `player.js`, `ball.js`, `props.js`, `boogler.js`, `main.js` — local files
 - `src/world/sync.js` holds `world.seed` (default 20261028) and snapshots carry `{tick, seed, epochMs, data}`; terrain state serialises only deltas, assuming every peer has the same base — local file
-- DESIGN.md principles: determinism from day one (integers, seeded RNG, integer hashing for noise), sync edits not state, small and readable, measure before optimising, leave something for the next visitor — [DESIGN.md](file:///Users/matiasfranco/Developer/boogle/DESIGN.md)
+- DESIGN.md principles: determinism from day one (integers, seeded RNG, integer hashing for noise), sync edits not state, small and readable, measure before optimising, leave something for the next visitor — [DESIGN.md](../../../../DESIGN.md)
 
 ### Inferences
 - Because the garden persists (principle 9), a room's island must never change under an existing garden: generate once from the room's seed and pin genVersion in the snapshot.
