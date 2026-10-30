@@ -1,6 +1,7 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
-// the talk, with its icon; you pet him from the talk box; C does nothing. A tossed item gets a floating Pick up prompt,
+// the talk, with its icon; you pet him from the talk box; the game keeps playing while you talk, so walking off ends
+// it, and a chapter left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
 const TP = (x, z) => `
@@ -92,6 +93,56 @@ export default {
     await g.eval(`document.querySelector('.bd-close').click();`);
     await g.wait(0.2);
     t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
+
+    // The game keeps playing while you talk: the move keys walk you, and walking off ends the talk.
+    const BOX = `!document.querySelector('.bd').hidden`;
+    const READY = `${BOX} && !document.querySelector('.bd-opts').hidden`; // his line is typed out, answers shown
+    const SAY = `return document.querySelector('.bd-say').textContent;`;
+    const openTalk = async () => {
+      await g.waitFor(beside(TAG_TALK), { timeout: 20000 });
+      await g.key('KeyE');
+      await g.waitFor(READY, { timeout: 15000 });
+    };
+    const answer = async (n) => {
+      await g.key(`Digit${n}`);
+      await g.wait(0.2);
+      await g.waitFor(READY, { timeout: 15000 });
+    };
+    await openTalk();
+    const from = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
+    await g.key('KeyS', 1600); // facing him, so this walks away
+    const walked = await g.eval(
+      `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]});`,
+    );
+    const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 3000 });
+    t.check(
+      'walking while talking moves you, and walking off ends the talk',
+      walked > 1 && closedMs >= 0,
+      `walked ${walked.toFixed(1)} m; closed after ${closedMs} ms`,
+    );
+
+    // Leave halfway through a story chapter, and next time he picks it back up where you stopped.
+    const ASK = `return [...document.querySelectorAll('.bd-opt')].findIndex((b) => b.textContent.includes('Where are you from?')) + 1;`;
+    await openTalk();
+    await answer(await g.eval(ASK));
+    await answer(1);
+    const stopped = await g.eval(SAY);
+    await g.key('KeyE');
+    await g.wait(0.2);
+    const left = await g.eval(`return document.querySelector('.bd').hidden;`);
+    await openTalk();
+    await answer(await g.eval(ASK));
+    const resumed = await g.eval(SAY);
+    const { RESUME } = await g.eval(`const { RESUME } = await import('/src/boogler/lines.js'); return { RESUME };`);
+    const resumeShot = await g.still('resume');
+    t.check(
+      'leaving mid-chapter (E) closes the talk, and asking again resumes where you stopped',
+      left && resumed.endsWith(stopped) && RESUME.some((r) => resumed.startsWith(r)),
+      `stopped at "${stopped.slice(0, 40)}...", resumed "${resumed.slice(0, 60)}..."; ${resumeShot}`,
+    );
+    await g.key('Escape');
+    await g.wait(0.2);
+    t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
     // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
     await g.eval(
@@ -276,6 +327,10 @@ export default {
     await thumb.wait(0.6);
     const touchTalk = await thumb.still('touch-talk');
     t.check('tapping it opens the talk', tapTalk >= 0, touchTalk);
+    t.check(
+      'while you talk the main button says Leave, so a tap walks away instead of throwing',
+      await thumb.eval(`return document.getElementById('btn-grab').textContent === 'Leave';`),
+    );
     t.check('no page errors on touch', !thumb.errors.length, thumb.errors.join(' | '));
   },
 };

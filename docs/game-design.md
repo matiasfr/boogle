@@ -187,6 +187,7 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 | Use what you hold (`use`) | action | Left click | X | main button when it has no target | Hands | |
 | Hold from your hotbar (`hotbar`) | described | 1-8 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | X | Toss | Hands | holding |
+| Answer The Boogler (`boogler-answer`) | described | 1-8 (E or Esc walks away) | D-pad ↑ ↓, A (B walks away) | Tap an answer | Friends | talking |
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
 | Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
@@ -198,9 +199,13 @@ Notes:
   (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
-- The talk box takes the keys and pad while open ([src/boogler/dialogue.js](../src/boogler/dialogue.js),
-  [src/player/modal.js](../src/player/modal.js)): number keys 1-9 answer, Esc closes; on the pad, D-pad picks, A or X skips the
-  typing then answers, Y pets, B walks away.
+- The talk box is not a modal ([src/boogler/dialogue.js](../src/boogler/dialogue.js)): the game keeps playing, and it
+  takes only the keys and pad buttons it answers with. Number keys 1-9 answer (not the hotbar while it is open), Enter
+  skips the typing, E or Esc walks away (Esc with the pointer locked just ends the lock, which also ends the talk); the
+  move keys, mouse look and Space still work. On the pad (`setPadGrab` in
+  [src/player/controls.js](../src/player/controls.js)), D-pad ↑ ↓ picks, A or X skips the typing then answers, Y pets,
+  B walks away; the sticks and other buttons keep playing. The pause view is still a modal
+  ([src/player/modal.js](../src/player/modal.js)), and opening it ends a talk.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
   ([src/features/gamepad.js](../src/features/gamepad.js)). Analog triggers count as pressed at 0.4.
 
@@ -376,8 +381,18 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
 
 - Open with E / pad B within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second and lists answers; a present answer offers what is in your hand (he turns down key items: the ball). His portrait can be petted.
-- **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye. Greetings and farewells
-  change with your level.
+  On a phone the card keeps off the move stick (the left 45 %): to the right in landscape, at the top in portrait.
+- **Easy in, easy out.** Talks are short and you keep playing: walk more than 4.6 m away, hop on his back, open the
+  pause view, or press E / Esc / pad B / the close button (on a phone, the main button, which says Leave while you
+  talk) and the talk ends at once, with his farewell (by level) as a
+  speech bubble over his head (none while he is cross: a kick-off, wary or quiet talk). A finished chapter, small talk
+  or present also ends the talk, with a "What else?" line as a bubble (or the level-up line); E opens the menu again.
+  The kick-off telling-off ignores distance (you may have flown far), but E / Esc still close it.
+- **Bookmarks.** Leave a story chapter halfway and he remembers where (flag `at.<thread>` = `<chapter>.<node>`); asking
+  about that thread again picks it up there, opened with "Now, where was I? Ah, yes." or "As I was saying, before you
+  ran off..." (`RESUME`).
+- **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye (one press: his farewell
+  is a bubble). Greetings and farewells change with your level.
 - **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
   opened before it arrives waits for it. What he says outside a talk (level-ups, pats, ride complaints, "Nope!") is in
   the small eager [src/boogler/barks.js](../src/boogler/barks.js) ([src/boogler/play.js](../src/boogler/play.js)).

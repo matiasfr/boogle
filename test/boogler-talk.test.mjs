@@ -1,8 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { THREADS, SMALL_TALK } from '../src/boogler/lines.js';
-import { openTalk, talkView, pickTalk, threadState } from '../src/boogler/talk.js';
-import { LEVELS, RULES, createFriend, addPts, levelOf, kickedOff, isWary } from '../src/boogler/friendship.js';
+import { THREADS, SMALL_TALK, AFTER, FAREWELL, RESUME } from '../src/boogler/lines.js';
+import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.js';
+import {
+  LEVELS,
+  RULES,
+  createFriend,
+  addPts,
+  levelOf,
+  kickedOff,
+  isWary,
+  loadFriend,
+  serializeFriend,
+} from '../src/boogler/friendship.js';
 import { mulberry32 } from '../src/sim/rng.js';
 import { giftIndex } from '../src/sim/gift-catalog.js';
 
@@ -73,19 +83,72 @@ test('a stranger cannot ask about his mother yet', () => {
   assert.ok(!v.opts.some((o) => o === THREADS.mom.ask[0]));
 });
 
-test('finishing a chapter teaches it once and returns to the menu', () => {
+test('finishing a chapter teaches it once and ends the talk with a line over his head', () => {
   const f = createFriend();
   const t = openTalk(f, ctx());
   pickTalk(t, optIndex(t, THREADS.home.ask[0]));
-  let steps = 0;
-  while (!f.learned.includes('home0') && steps++ < 10) pickTalk(t, 0);
+  let out = null;
+  for (let steps = 0; talkView(t) && steps < 10; steps++) out = pickTalk(t, 0);
+  assert.equal(talkView(t), null);
   assert.ok(f.learned.includes('home0'));
   assert.ok(f.pts >= RULES.chapterPts);
-  assert.ok(
-    talkView(t).opts.some((o) => o === THREADS.home.ask[1]),
-    'back at the menu, next chapter offered',
-  );
+  assert.ok(AFTER.map((s) => s.replace('{name}', 'Ideen')).includes(out.bubble), out.bubble);
+  const again = openTalk(f, ctx());
+  assert.ok(talkView(again).opts.includes(THREADS.home.ask[1]), 'next time, the next chapter is offered');
   assert.equal(threadState(f, 'home').next.id, 'home1');
+});
+
+test('bye is one press, and his farewell is a bubble', () => {
+  const f = createFriend();
+  const t = openTalk(f, ctx());
+  const out = pickTalk(t, talkView(t).opts.length - 1);
+  assert.equal(talkView(t), null);
+  assert.equal(out.bubble, FAREWELL[0].replace('{name}', 'Ideen'));
+});
+
+test('small talk ends the talk', () => {
+  const t = openTalk(createFriend(), ctx());
+  pickTalk(t, optIndex(t, "How's it going?"));
+  let out = null;
+  for (let steps = 0; talkView(t) && steps < 10; steps++) out = pickTalk(t, 0);
+  assert.equal(talkView(t), null);
+  assert.ok(out.bubble);
+});
+
+test('walking off mid-chapter bookmarks it, and asking again picks it back up', () => {
+  const f = createFriend();
+  const t = openTalk(f, ctx());
+  pickTalk(t, optIndex(t, THREADS.home.ask[0]));
+  pickTalk(t, 0); // home0 a -> b
+  const at = talkView(t).say;
+  assert.equal(leaveTalk(t), FAREWELL[0].replace('{name}', 'Ideen'));
+  assert.equal(f.flags['at.home'], 'home0.b');
+  const back = loadFriend(serializeFriend(f)); // and it survives a reload
+  const t2 = openTalk(back, ctx());
+  pickTalk(t2, optIndex(t2, THREADS.home.ask[0]));
+  const say = talkView(t2).say;
+  assert.ok(say.endsWith(at), say);
+  assert.ok(
+    RESUME.some((r) => say.startsWith(r)),
+    say,
+  );
+  assert.equal(back.flags['at.home'], undefined);
+  // Leaving on the first line, or a bookmark for a chapter already learned, starts afresh.
+  const t3 = openTalk(back, ctx());
+  pickTalk(t3, optIndex(t3, THREADS.home.ask[0]));
+  leaveTalk(t3);
+  assert.equal(back.flags['at.home'], undefined);
+  back.flags['at.home'] = 'home9.zz';
+  const t4 = openTalk(back, ctx());
+  pickTalk(t4, optIndex(t4, THREADS.home.ask[0]));
+  assert.equal(talkView(t4).say, THREADS.home.chapters[0].nodes.a.say);
+});
+
+test('a cross Boogler says no goodbye when you walk off', () => {
+  const f = createFriend();
+  for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
+  assert.equal(leaveTalk(openTalk(f, ctx())), null);
+  assert.equal(leaveTalk(openTalk(f, ctx({ start: 'kick' }))), null);
 });
 
 test('asking ahead of the friendship gets deflected, and pushing makes him go quiet', () => {
