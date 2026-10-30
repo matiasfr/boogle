@@ -14,7 +14,7 @@ const START_PHASE = 0.25; // and the first night has a half moon (waxing)
 const wrap = (x) => x - Math.floor(x);
 
 // Position along the daily arc: 0 = rising in the east, PI/2 = highest, PI = setting, 3PI/2 = lowest (under the island).
-export function arcAngle(frac) {
+function arcAngle(frac) {
   const f = wrap(frac);
   return f < DAYLIGHT ? (Math.PI * f) / DAYLIGHT : Math.PI + (Math.PI * (f - DAYLIGHT)) / (1 - DAYLIGHT);
 }

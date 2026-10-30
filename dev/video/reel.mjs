@@ -1,5 +1,6 @@
-// Cut recorded clips into a video: `npm run reel -- <name | path/to/reel.mjs>` (edit lists in dev/video/reels/). Title cards
-// and captions are HTML (the game's fonts and colours) rendered to PNG in headless Chromium; ffmpeg trims, overlays,
+// Cut recorded clips into a video: `npm run reel -- <name | path/to/reel.mjs>`. Edit lists are working files, never
+// committed (the published release keeps the video): a bare name is .look/reels/<name>.mjs. Title cards and captions
+// are HTML (the game's fonts and colours) rendered to PNG in headless Chromium; ffmpeg trims, overlays,
 // crossfades and adds a small synthesized backing track. Clips come from `npm run clip` (.look/clips/). Output:
 // .look/reels/<name>.mp4. See .claude/skills/video/SKILL.md.
 //
@@ -12,20 +13,18 @@
 // `quiet: true` on a segment drops the drums out while it plays (a breather before a new section).
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { run } from '../look/lib.mjs';
 import { music } from './music.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
-const here = path.dirname(fileURLToPath(import.meta.url));
-const reels = path.join(here, 'reels');
+const reels = path.resolve('.look/reels');
 const arg = process.argv[2] || '';
-// A bare name is a reel in dev/video/reels/; anything with a slash or .mjs is a path.
+// A bare name is .look/reels/<name>.mjs; anything with a slash or .mjs is a path.
 const file = arg.includes('/') || arg.endsWith('.mjs') ? path.resolve(arg) : path.join(reels, arg + '.mjs');
 if (!arg || !fs.existsSync(file)) {
-  const all = fs.readdirSync(reels).filter((f) => f.endsWith('.mjs'));
+  const all = fs.existsSync(reels) ? fs.readdirSync(reels).filter((f) => f.endsWith('.mjs')) : [];
   console.error(`npm run reel -- <name | path/to/reel.mjs>   reels: ${all.map((f) => f.slice(0, -4)).join(', ')}`);
   process.exit(2);
 }

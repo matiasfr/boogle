@@ -10,7 +10,7 @@ import { waterMat } from './water-render.js';
 
 // Look tunables. The sim's thin film flip-flops between two depths every tick (e.g. 3 <-> 6 cm), so the drawn
 // depth and flow ease slowly (about half a second) and only the average shows; streaks are slow and soft.
-export const SURFACE_LOOK = {
+const SURFACE_LOOK = {
   easePerSec: 2.2, // 1/time-constant of the displayed depth and flow
   streakSpeed: 0.35, // streak scroll speed per m/s of current
   streakAmount: 0.4, // streak brightness 0..1

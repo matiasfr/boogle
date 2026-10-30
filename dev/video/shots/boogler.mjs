@@ -7,15 +7,14 @@ const seed = (room) => {
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d, a) => `
-  const { boogler } = await import('/src/boogler.js');
   const { groundHeight } = await import('/src/terrain.js');
-  const b = window.boogle.me.body, p = boogler.disp;
+  const { boogler } = window.boogle, b = window.boogle.me.body, p = boogler.disp;
   const x = p.x + Math.cos(${a}) * ${d}, z = p.z + Math.sin(${a}) * ${d};
   b.position.set(x, ${d} ? groundHeight(x, z) + 1 : boogler.center.y + 1.6, z);
   b.velocity.set(0, 0, 0);`;
 // The camera `d` metres from The Boogler at angle `a`, `h` up, looking at him.
-const AT = `const { boogler } = await import('/src/boogler.js'); const c = boogler.center; return [c.x, c.y, c.z];`;
-const MID = `const { boogler } = await import('/src/boogler.js'); const c = boogler.center, p = window.boogle.me.body.position;
+const AT = `const c = window.boogle.boogler.center; return [c.x, c.y, c.z];`;
+const MID = `const c = window.boogle.boogler.center, p = window.boogle.me.body.position;
   return [(c.x + p.x) / 2, (c.y + p.y) / 2, (c.z + p.z) / 2, Math.hypot(c.x - p.x, c.y - p.y, c.z - p.z)];`;
 const RIDE_A = -1.2; // the side the ride is filmed from (keeps the palms out of the way)
 const orbit =

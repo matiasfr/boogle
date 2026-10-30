@@ -18,7 +18,7 @@ export function parseFlags(search) {
   return { mask };
 }
 
-export const bit = (name) => 1 << FLAGS.indexOf(name);
+const bit = (name) => 1 << FLAGS.indexOf(name);
 
 export function createProtoState(init = { mask: ALL }) {
   const s = { mask: init.mask & ALL };

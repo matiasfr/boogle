@@ -92,7 +92,7 @@ export function onNetState(fn) {
   stateHooks.push(fn);
 }
 
-export function buildPresence() {
+function buildPresence() {
   const pr = {
     v: document.hidden ? 0 : 1,
     t: Math.round(performance.now()),
@@ -217,7 +217,7 @@ function onPeersChange(change) {
   renderPeople();
 }
 
-export function setNet(state) {
+function setNet(state) {
   const prev = net.state;
   net.state = state;
   dom.netEl.dataset.state = state;

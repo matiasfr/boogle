@@ -8,7 +8,7 @@ import { dom } from './hud.js';
 import { shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
 import { useDown, useUp, interactDown, interactUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
 import { cycle } from './inventory.js';
-import { registerAction, describeControl } from './controls.js';
+import { registerAction, describeControl, isTyping } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
@@ -38,9 +38,10 @@ export function initInput() {
   });
   document.addEventListener('pointerlockerror', lockRefused);
 
-  const typing = () => document.activeElement === dom.nameInput;
+  // Held keys (move, sprint, Shift-flatten, Q/Z dig and pile) are tracked here; one-press keys bind through their
+  // action (registerAction's key) or onKey (src/controls.js). Both skip key presses aimed at a text field.
   addEventListener('keydown', (e) => {
-    if (!me.entered || typing()) return;
+    if (!me.entered || isTyping(e)) return;
     input.keys.add(e.code);
     if (e.key === 'Shift') setFlatten(true);
     if (e.code === 'Space') {

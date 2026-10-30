@@ -30,7 +30,7 @@ export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies mov
 // the point is underground.
 export const groundProbe = { under: (x, y, z) => groundHeight(x, z) };
 
-export const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
+const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
 const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
 groundBody.addShape(groundShape);
 groundBody.position.set(-HALF, 0, HALF);

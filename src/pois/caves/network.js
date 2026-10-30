@@ -24,7 +24,7 @@ export const NODES = {
 };
 
 // Tunnels: [from, to, bend] — bend is a sideways offset of the midpoint (metres) so tunnels wander a little.
-export const TUNNELS = [
+const TUNNELS = [
   ['south', 'hub', 2],
   ['hub', 'mine', -3],
   ['mine', 'east', 2],
