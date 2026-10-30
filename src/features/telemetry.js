@@ -4,10 +4,11 @@
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
 //
-// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`, so "how many joins
-// fail without TURN" (PLAN Phase 1) has an answer. Whether a relay candidate was actually gathered or used is not
-// visible from here without reaching into peer-room's RTCPeerConnections, so it is not reported. They also say whether
-// the room was running mixed builds (`mixedBuilds`, src/netplay/builds.js; a yes or no, never the build ids).
+// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`. A good join also says
+// how many of its links went through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is
+// one that would have failed without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
+// slowest link's round trip; a non-owner sees the ball about rtt (owner -> host -> them) + INTERP_MS late. They also
+// say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.js; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
 import { net, getRoomId, onNetState } from '../netplay/net.js';
@@ -101,7 +102,13 @@ if (SERVER) {
         okSent = true;
         const ms = Math.round(performance.now() - since); // ms spent 'connecting'
         const at = { ms, retries: failed, role, hadTurn: net.turn };
-        setTimeout(() => report('connect', { result: 'ok', ...at, mixedBuilds: mixedBuilds() }), SETTLE_MS);
+        setTimeout(async () => {
+          const links = (await net.room?.linkStats?.().catch(() => null)) ?? [];
+          const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
+          const path = { links: links.length, relayed: links.filter((l) => l.relay).length };
+          if (rtts.length) path.rttMs = Math.max(...rtts);
+          report('connect', { result: 'ok', ...at, ...path, mixedBuilds: mixedBuilds() });
+        }, SETTLE_MS);
       }
       wasLive = true;
     } else if (s === 'solo') {

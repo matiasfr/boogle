@@ -87,6 +87,31 @@ function watchPc(conn, onGone, timers) {
   pc.addEventListener('iceconnectionstatechange', check);
 }
 
+// The ICE pair a connection actually uses: whether either end is a TURN relay, and its round-trip time. Chrome and
+// Safari name it on the transport stats, Firefox flags it `selected`; null until ICE has picked one.
+async function pcLink(pc) {
+  if (!pc?.getStats) return null;
+  const stats = await pc.getStats();
+  let pair = null;
+  stats.forEach((s) => {
+    if (s.type === 'transport' && s.selectedCandidatePairId) pair ??= stats.get(s.selectedCandidatePairId);
+  });
+  if (!pair)
+    stats.forEach((s) => {
+      if (s.type === 'candidate-pair' && (s.selected || (s.nominated && s.state === 'succeeded'))) pair ??= s;
+    });
+  if (!pair) return null;
+  const local = stats.get(pair.localCandidateId)?.candidateType ?? '?';
+  const remote = stats.get(pair.remoteCandidateId)?.candidateType ?? '?';
+  const rtt = pair.currentRoundTripTime;
+  return {
+    relay: local === 'relay' || remote === 'relay',
+    local,
+    remote,
+    rttMs: Number.isFinite(rtt) ? Math.round(rtt * 1000) : null,
+  };
+}
+
 // Latest-wins sender: at most one pending packet per key, spaced >= MIN_GAP_MS, held back while buffers are full.
 function makeSender(getConn) {
   const pending = new Map(),
@@ -782,6 +807,25 @@ export async function createPeerRoom(opts = {}) {
       return () => msgHandlers.delete(h);
     },
     isHost: () => isHostNow,
+    // One row per open presence link: a client's link to the host, or the host's link to each client.
+    async linkStats() {
+      const links = isHostNow
+        ? [...clients.values()].filter((c) => c.ready).map((c) => [c.id, c.u])
+        : hostU?.open
+          ? [['host', hostU]]
+          : [];
+      const rows = await Promise.all(
+        links.map(async ([peer, conn]) => {
+          try {
+            const link = await pcLink(conn.peerConnection);
+            return link && { peer, ...link };
+          } catch {
+            return null; // closed while we asked
+          }
+        }),
+      );
+      return rows.filter(Boolean);
+    },
     onHostChange(h) {
       hostHandlers.add(h);
       return () => hostHandlers.delete(h);
