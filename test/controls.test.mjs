@@ -1,6 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PAD, registerAction, actionForSlot, listActions, freeSlots, slotFor } from '../src/controls.js';
+import {
+  PAD,
+  registerAction,
+  actionForSlot,
+  listActions,
+  freeSlots,
+  slotFor,
+  wrapAction,
+  actionById,
+} from '../src/controls.js';
+
+const quiet = (fn) => {
+  const warn = console.warn;
+  const warnings = [];
+  console.warn = (m) => warnings.push(m);
+  try {
+    fn();
+  } finally {
+    console.warn = warn;
+  }
+  return warnings;
+};
 
 test('controls: one action per pad slot, clashes stay unbound', () => {
   const warn = console.warn;
@@ -29,4 +50,39 @@ test('controls: one action per pad slot, clashes stay unbound', () => {
   } finally {
     console.warn = warn;
   }
+});
+
+test('controls: wrapAction keeps the original handler, the last wrap runs first', () => {
+  const log = [];
+  registerAction('dig-test', { pad: 'b', down: () => log.push('down'), up: () => log.push('up') });
+  assert.ok(wrapAction('dig-test', { down: (next) => (log.push('w1'), next()) }));
+  assert.ok(
+    wrapAction('dig-test', { down: (next) => (log.push('w2'), next()), up: (next) => (log.push('w2up'), next()) }),
+  );
+  actionForSlot('b').down(); // the pad reaches the wrapped handler through the slot
+  actionById('dig-test').up();
+  assert.deepEqual(log, ['w2', 'w1', 'down', 'w2up', 'up']);
+
+  // a wrapper may swallow the press; a missing handler is wrapped as a no-op
+  log.length = 0;
+  registerAction('swim-test', { pad: 'lt', up: () => log.push('up') });
+  wrapAction('swim-test', { down: () => log.push('dive') });
+  wrapAction('swim-test', { down: (next) => next() });
+  actionById('swim-test').down();
+  assert.deepEqual(log, ['dive']);
+});
+
+test('controls: a missing id warns and wraps nothing', () => {
+  let r;
+  const warnings = quiet(() => {
+    r = wrapAction('no-such', { down: () => {} });
+    assert.equal(actionById('no-such-either'), null);
+  });
+  assert.equal(r, false);
+  assert.equal(warnings.length, 2);
+  assert.match(warnings[0], /\[controls\] wrapAction: no action "no-such"/);
+  assert.match(warnings[1], /no action "no-such-either"/);
+  // an action that lost its slot clash is not registered either
+  quiet(() => registerAction('clash-test', { pad: 'b' }));
+  assert.equal(quiet(() => assert.equal(actionById('clash-test'), null)).length, 1);
 });
