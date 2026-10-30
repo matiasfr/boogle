@@ -150,12 +150,23 @@ function enterThread(t, id) {
   const { f, ctx } = t;
   const th = THREADS[id];
   const s = threadState(f, id);
-  if (s.done)
-    return node(
-      pick(t, th.retell),
-      RETELL_OPTS.map((say) => opt(say, backToMenu(t))),
-      'joy',
+  if (s.done) {
+    // He tells one of its chapters again (never the one he retold last), so the answers you skipped the first time,
+    // and the ones he kept for better friends, get their turn; then a retell line. It scores like small talk.
+    const key = `retold.${id}`;
+    const ch = pick(
+      t,
+      th.chapters.filter((c) => c.id !== f.flags[key]),
     );
+    f.flags[key] = ch.id;
+    const retell = () =>
+      node(
+        pick(t, th.retell),
+        RETELL_OPTS.map((say) => opt(say, backToMenu(t))),
+        'joy',
+      );
+    return chapterNode(t, ch, 'a', retell, chatScores(f, ctx.now));
+  }
   if (s.next.lvl > levelOf(f.pts)) {
     // Asking before he's ready is a little nosy; pushing is very nosy.
     if (addNosy(f, 1, ctx.now)) return tooNosy();

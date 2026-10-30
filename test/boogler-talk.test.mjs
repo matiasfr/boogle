@@ -189,3 +189,21 @@ test('names are filled in', () => {
     assert.ok(!v.say.includes('{name}'));
   }
 });
+
+test('a finished thread retells one of its chapters, a different one each time, then a retell line', () => {
+  const f = createFriend();
+  addPts(f, LEVELS.at(-1).at);
+  f.learned = THREADS.home.chapters.map((c) => c.id);
+  const firsts = THREADS.home.chapters.map((c) => c.nodes.a.say);
+  let last = null;
+  for (let k = 0; k < 6; k++) {
+    const t = openTalk(f, ctx({ now: 1e6 + k, rng: mulberry32(k) }));
+    pickTalk(t, optIndex(t, THREADS.home.ask[2]));
+    const say = talkView(t).say;
+    assert.ok(firsts.includes(say), say);
+    assert.notEqual(say, last);
+    last = say;
+    for (let step = 0; step < 20 && !THREADS.home.retell.includes(talkView(t).say); step++) pickTalk(t, 0);
+    assert.ok(THREADS.home.retell.includes(talkView(t).say));
+  }
+});

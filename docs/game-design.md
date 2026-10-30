@@ -353,22 +353,23 @@ prompt, and an edge-of-screen pointer with his distance when he is off screen (f
 | 0 | Stranger | 0 |
 | 1 | Familiar face | 20 |
 | 2 | Pal | 60 |
-| 3 | Friend | 130 |
-| 4 | Close friend | 220 |
-| 5 | Best friend | 340 |
+| 3 | Friend | 120 |
+| 4 | Close friend | 190 |
+| 5 | Best friend | 270 |
 
 - **Points.**
 
 | Action | Points | Limits |
 |---|---|---|
-| Pet (inside the talk) | +2 | 2.5 s apart, 8 scoring pets per 10 min |
+| Pet (inside the talk) | +3 | 2.5 s apart, 8 scoring pets per 10 min |
 | Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (doppi +10 extra) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
 | New story chapter | +6, plus answer points | once per chapter |
 | Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
 | Kicked off (launched) | −6 | |
 | Too nosy | −4 | goes quiet for 90 s |
 
-Points never drop below 0. Each new level bursts hearts and plays a level-up line.
+Points never drop below 0. Each new level bursts hearts and plays a level-up line. A typical 15-minute visit (a pet
+every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in about four visits.
 
 #### Talk
 
@@ -603,7 +604,9 @@ you ask about Oyijon.
 | | biz4 | 4 | Doubt: "just a blob who lost some melons" |
 | | biz5 | 5 | The partnership offer |
 
-Finished threads offer a retelling ("Tell me about Samarqand again.").
+Finished threads offer a retelling ("Tell me about Samarqand again."): he tells one of the thread's chapters again
+(never the one he retold last; trust-gated answers now open), scoring like small talk, then a retell line. The last
+retold chapter per thread is the `retold.<thread>` flag.
 
 **Small talk** ("How's it going?"): `ball`, `mushrooms`, `fruit` (level 0), `name` (level 1),
 `visitors` (level 2), `rides` (needs the `kicked` flag).

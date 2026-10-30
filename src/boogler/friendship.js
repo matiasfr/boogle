@@ -6,9 +6,9 @@ export const LEVELS = [
   { at: 0, name: 'Stranger' },
   { at: 20, name: 'Familiar face' },
   { at: 60, name: 'Pal' },
-  { at: 130, name: 'Friend' },
-  { at: 220, name: 'Close friend' },
-  { at: 340, name: 'Best friend' },
+  { at: 120, name: 'Friend' },
+  { at: 190, name: 'Close friend' },
+  { at: 270, name: 'Best friend' },
 ];
 export const MAX_LEVEL = LEVELS.length - 1;
 // The friendship meter as text: a full heart per level reached, an empty one per level to go.
@@ -19,7 +19,7 @@ export const RULES = {
   petGap: 2500, // pets closer together than this score nothing
   petWindow: 10 * MIN,
   petMax: 8, // scoring pets per window
-  petPts: 2,
+  petPts: 3,
   giftWindow: 20 * MIN,
   giftMax: 4, // scoring gifts per window
   kickPts: -6,
