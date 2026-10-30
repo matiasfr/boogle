@@ -21,6 +21,13 @@
 // with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
+//
+// Persistence: every SAVE_MS (30 s) and on pagehide, a peer that is ready and not awaiting a snapshot saves the world to
+// localStorage (`boogle.world.<roomId>`) if its state changed since its last save. The host saves any tick; a client
+// only a tick whose hash just matched the host's, so a diverged copy is never kept. Only the host also PUTs
+// { tick, writerId, data } to the server's /rooms/:id/snapshot (bodies under 250 KB; keepalive on unload only under
+// 60 KB). A tab that becomes host without state loads the newest by tick of its local and server copies (the server gets
+// 3 s); a migrating host keeps its live state, and its first save always uploads.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
