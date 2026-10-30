@@ -137,23 +137,59 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top and the shovel chip below it. */
+/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top (filled slots only) and the shovel chip
+   below its name tag. Portrait: a column down the right edge, under the net pill and above the button stack. */
 body.touch .hotbar {
   top: calc(10px + env(safe-area-inset-top, 0px));
   bottom: auto;
   flex-direction: column-reverse;
 }
+/* Eight slots must fit between the brand and the net pill on a small phone. */
 body.touch .hotbar-slot {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  --slot: clamp(34px, calc((100vw - 420px) / 8 - 5px), 44px);
+  width: var(--slot);
+  height: var(--slot);
+  border-radius: 11px;
+}
+body.touch .hotbar-slot[hidden] {
+  display: none;
+}
+body.touch .hotbar-icon {
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
 }
 body.touch .hotbar-key {
   display: none;
 }
 body.touch .shovel-chip {
-  top: calc(62px + env(safe-area-inset-top, 0px));
+  top: calc(100px + env(safe-area-inset-top, 0px));
 }
+@media (orientation: portrait) {
+  body.touch .hotbar {
+    top: calc(52px + env(safe-area-inset-top, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    left: auto;
+    transform: none;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+  }
+  body.touch .hotbar-slots {
+    flex-direction: column;
+  }
+  /* Eight slots must clear the button stack (its top is ~340px above the bottom edge). */
+  body.touch .hotbar-slot {
+    --slot: clamp(30px, calc((100svh - 400px) / 8 - 5px), 44px);
+  }
+  body.touch .hotbar-slot.on {
+    transform: translateX(-4px);
+  }
+  body.touch .hotbar-tags {
+    justify-items: end;
+    padding-top: 8px;
+  }
+}
+/* Toss throws what you hold when the main button would not (src/hud.js sets main-throws). */
 .tbtn.toss {
   display: none;
   right: calc(108px + env(safe-area-inset-right, 0px));
@@ -162,6 +198,6 @@ body.touch .shovel-chip {
   height: 64px;
   font-size: 14px;
 }
-body.holding-thing .tbtn.toss {
+body.holding-thing:not(.main-throws) .tbtn.toss {
   display: block;
 }

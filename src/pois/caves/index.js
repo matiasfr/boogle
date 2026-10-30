@@ -154,6 +154,7 @@ function* build() {
   const { geo, colliderIndices } = makeGeometry(m);
   caveMesh = new THREE.Mesh(geo, brickMaterial());
   caveMesh.receiveShadow = true;
+  caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
   scene.add(caveMesh);
 
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });

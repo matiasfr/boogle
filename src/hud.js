@@ -22,8 +22,6 @@ export const dom = {
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
   jumpBtn: $('btn-jump'),
-  shovelBtn: $('btn-shovel'),
-  digBtn: $('btn-dig'),
   pileBtn: $('btn-pile'),
   touchEl: $('touch'),
   stickEl: $('stick'),
@@ -43,7 +41,10 @@ export function updateHud() {
   if (!isTouch || !me.entered) return;
   const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
-  if (dom.grabBtn.textContent !== label) dom.grabBtn.textContent = label;
+  if (dom.grabBtn.textContent !== label) {
+    dom.grabBtn.textContent = label;
+    document.body.classList.toggle('main-throws', label === 'Throw');
+  }
 }
 
 let peopleKey = '';

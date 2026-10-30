@@ -18,36 +18,21 @@
 .shovel-chip[data-mode='pile'] {
   border-color: #fff2c4;
 }
-.tbtn.shovel {
-  right: calc(22px + env(safe-area-inset-right, 0px));
-  bottom: calc(198px + env(safe-area-inset-bottom, 0px));
-  width: 64px;
-  height: 64px;
-  font-size: 14px;
-}
-body.shovel .tbtn.shovel {
-  background: rgba(255, 154, 61, 0.85);
-}
-.tbtn.dig,
-.tbtn.pile {
+/* Holding the shovel: the main button digs, Pile and Flatten sit to its left. */
+.tbtn.pile,
+.tbtn.flat {
   display: none;
   bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
-.tbtn.dig {
+.tbtn.pile {
   right: calc(108px + env(safe-area-inset-right, 0px));
 }
-.tbtn.pile {
+.tbtn.flat {
   right: calc(194px + env(safe-area-inset-right, 0px));
 }
-body.shovel .tbtn.dig,
 body.shovel .tbtn.pile,
 body.shovel .tbtn.flat {
   display: block;
-}
-.tbtn.flat {
-  display: none;
-  right: calc(280px + env(safe-area-inset-right, 0px));
-  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 /* Bucket gauge in the chip, rejection reason under the reticle. */
 .shovel-chip {
