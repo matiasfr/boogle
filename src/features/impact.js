@@ -147,7 +147,7 @@ function applySquash() {
   for (let c = 0; c < 3; c++) {
     const o = c * 4;
     const d = ax.x * e[o] + ax.y * e[o + 1] + ax.z * e[o + 2];
-    for (let r = 0; r < 3; r++) e[o + r] = sp * e[o + r] + (sa - sp) * d * [ax.x, ax.y, ax.z][r];
+    for (let r = 0; r < 3; r++) e[o + r] = sp * e[o + r] + (sa - sp) * d * ax.getComponent(r);
   }
   tmpM.setPosition(m.position);
   m.matrix.copy(tmpM);
@@ -195,7 +195,6 @@ function detect(now) {
     dvy = v.y - prevV.y,
     dvz = v.z - prevV.z;
   const m = Math.hypot(dvx, dvy, dvz);
-  const speedBefore = prevSpeed;
   if (m > TUNE.impactMin && now - lastImpact > 90) {
     const gh = groundHeight(p.x, p.z);
     const onGround = p.y - gh < BALL_R + 0.3;
@@ -211,9 +210,10 @@ function detect(now) {
     }
   }
   // Face-plant: judged against the speed the ball had the frame before the collision slowed it down.
-  checkFaceplant(now, Math.max(speedBefore, v.length()));
+  const speed = v.length();
+  checkFaceplant(now, Math.max(prevSpeed, speed));
   prevV.copy(v);
-  prevSpeed = v.length();
+  prevSpeed = speed;
 }
 
 // ---------------------------------------------------------------- face-plant
@@ -244,8 +244,7 @@ addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(downUntil - perfo
 onRemotePresence((r, pr) => {
   const kd = pr.kd;
   // Temporary: tabs on builds before b0a3a7b never clear kd, so they repeat their last value forever. A live kd
-  // counts down between packets, so an exact repeat is stale. Remove once every tab runs b0a3a7b or later
-  // (old tabs reload on a new build once the mixed-build handling lands).
+  // counts down between packets, so an exact repeat is stale. Remove once every tab runs b0a3a7b or later.
   if (kd === r.kdLast) return;
   r.kdLast = kd;
   if (Number.isFinite(kd) && kd > 0 && kd <= 2000) {

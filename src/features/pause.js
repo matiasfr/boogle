@@ -295,11 +295,6 @@ document.addEventListener('pointerlockchange', () => {
   wasLocked = locked;
 });
 
-function setMenuGlyph() {
-  const g = glyph('pause');
-  menuBtn.querySelector('.menu-glyph').innerHTML = g;
-}
-
 onStart(() => {
   menuBtn = el('button', 'menu-btn');
   menuBtn.type = 'button';
@@ -317,7 +312,7 @@ onStart(() => {
       const k = inputKind();
       if (k !== kind) {
         kind = k;
-        setMenuGlyph();
+        menuBtn.querySelector('.menu-glyph').innerHTML = glyph('pause');
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
     },

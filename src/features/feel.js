@@ -2,7 +2,7 @@
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
 //     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
-//   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
+//   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
@@ -10,6 +10,7 @@
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
 import { onFrame } from '../loop.js';
+import { clamp } from '../math.js';
 import { emit } from '../render/particles.js';
 import { world as physics, feelTune } from '../physics/physics.js';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
@@ -163,17 +164,16 @@ function spring(a, dt, t, flopOf, isMe) {
     }
   } else if (prevVy < 2 && s.vy > 4) s.sqv -= SPRING.takeoffK;
   s.sqv += (-SPRING.k * s.sq - SPRING.damp * s.sqv) * dt;
-  s.sq = Math.max(-SPRING.maxSquash, Math.min(SPRING.maxSquash, s.sq + s.sqv * dt));
+  s.sq = clamp(s.sq + s.sqv * dt, -SPRING.maxSquash, SPRING.maxSquash);
   // lean toward acceleration, in the avatar's own frame (it faces -Z at yaw 0)
   const yaw = a.rotation.y;
   const fx = -Math.sin(yaw),
     fz = -Math.cos(yaw);
   const aF = ax * fx + az * fz,
     aS = ax * -fz + az * fx;
-  const clampL = (v) => Math.max(-SPRING.maxLean, Math.min(SPRING.maxLean, v));
   const e = 1 - Math.exp(-dt * SPRING.leanEase);
-  s.lx += (clampL(-aF * SPRING.leanK) - s.lx) * e;
-  s.lz += (clampL(-aS * SPRING.leanK) - s.lz) * e;
+  s.lx += (clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lx) * e;
+  s.lz += (clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lz) * e;
   // flops
   let fy = 1,
     fxz = 1,

@@ -11,6 +11,10 @@ import { registerAction, describeControl, isTyping } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
+const pressJump = () => {
+  me.jumpQueued = 0.15;
+  me.jumpHeld = true;
+};
 let everLocked = false; // a refused lock is only permanent if none ever worked (Chrome refuses one just after Esc)
 const lockRefused = () => {
   if (!everLocked) inputState.lockFailed = true;
@@ -43,8 +47,7 @@ export function initInput() {
     if (!me.entered || isTyping(e)) return;
     input.keys.add(e.code);
     if (e.code === 'Space') {
-      me.jumpQueued = 0.15;
-      me.jumpHeld = true;
+      pressJump();
       e.preventDefault();
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
@@ -160,8 +163,7 @@ export function initInput() {
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    me.jumpQueued = 0.15;
-    me.jumpHeld = true;
+    pressJump();
   });
   for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, () => (me.jumpHeld = false));
   grabBtn.addEventListener('pointerdown', (e) => {
@@ -206,7 +208,7 @@ export function initInput() {
     touch: 'Jump',
     group: 'move',
     order: 1,
-    down: () => ((me.jumpQueued = 0.15), (me.jumpHeld = true)),
+    down: pressJump,
     up: () => (me.jumpHeld = false),
   });
   registerAction('use', {

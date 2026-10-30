@@ -6,7 +6,7 @@
 //                                 never see it) and new pad presses go to onPad(slot).
 //   closeModal()                  hands the keys and the pad back
 //   modalOpen()                   whether one is open
-import { input, releaseInput } from './input.js';
+import { releaseInput } from './input.js';
 import { setPadModal } from './controls.js';
 
 let cur = null;
@@ -16,7 +16,6 @@ export const modalOpen = () => cur !== null;
 export function openModal({ onKey, onPad }) {
   if (cur) return false;
   cur = { onKey };
-  input.keys.clear();
   releaseInput();
   setPadModal(onPad);
   if (document.pointerLockElement) document.exitPointerLock();

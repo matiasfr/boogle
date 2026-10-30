@@ -89,7 +89,8 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   one = new THREE.Vector3(1, 1, 1),
-  mir = new THREE.Vector3(-1, 1, 1),
+  UP = new THREE.Vector3(0, 1, 0),
+  sc = new THREE.Vector3(),
   v3 = new THREE.Vector3(),
   off = new THREE.Vector3();
 let lastBallY = 0;
@@ -174,9 +175,8 @@ onFrame(
       const span = flying ? 1 : 0.45;
       for (const side of [1, -1]) {
         q.setFromEuler(e.set(0, g.yaw, side * beat, 'YXZ'));
-        off.set(0.1 * side, 0.05, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.yaw);
-        const scale = side > 0 ? one : mir;
-        m4.compose(v3.copy(pos).add(off), q, scale).multiply(new THREE.Matrix4().makeScale(span, 1, 1));
+        off.set(0.1 * side, 0.05, 0).applyAxisAngle(UP, g.yaw);
+        m4.compose(v3.copy(pos).add(off), q, sc.set(side * span, 1, 1));
         wings.setMatrixAt(k * 2 + (side > 0 ? 0 : 1), m4);
       }
     }
