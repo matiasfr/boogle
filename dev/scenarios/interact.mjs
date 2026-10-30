@@ -24,13 +24,15 @@ const beside = (check) => `(async () => {
   await new Promise((r) => setTimeout(r, 150));
   return ${check};
 })()`;
-// On his back: keep climbing on until he counts it as a ride, then put the ball in reach beside you.
+// On his back: climb on (again only once you've slid off or landed beside him: a headless tab steps slowly, so the drop
+// onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check) => `(async () => {
   const { boogler, ACT } = await import('/src/boogler/boogler.js');
   const { ball } = await import('/src/physics/ball.js');
   const { teleport } = await import('/src/physics/physics.js');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
-  if (boogler.me.act !== ACT.RIDE) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
+  const dropping = Math.hypot(p.x - c.x, p.z - c.z) < 1 && p.y > c.y + 0.3;
+  if (boogler.me.act !== ACT.RIDE && !dropping) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
   else if (!ball.held) {
     teleport(ball.body, p.x + 0.9, p.y + 0.3, p.z);
     ball.body.velocity.set(0, 0, 0);
