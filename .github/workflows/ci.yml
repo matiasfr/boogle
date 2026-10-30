@@ -72,14 +72,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
 
-  # Browser scenarios (dev/scenarios/), one per leg. Informational legs have known load-sensitive waits: they show red
-  # on the PR but don't fail the run, so automerge.yml and ci-autofix.yml (which key on the run's conclusion) ignore
-  # them. A flaky required leg gets a better wait (on a condition, not a time), never a skip.
+  # The fast browser scenarios (dev/scenarios/), one leg each so the slowest sets the wall time. The rest run nightly
+  # (scenarios-nightly.yml), so a PR's CI stays around two minutes. A flaky leg here gets a better wait (on a
+  # condition, not a time), never a skip; one that can't fit the budget moves to the nightly list.
   scenarios:
-    name: scenario ${{ matrix.scenario }}${{ matrix.informational && ' (informational)' || '' }}
+    name: scenario ${{ matrix.scenario }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    continue-on-error: ${{ matrix.informational == true }}
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       matrix:
@@ -87,19 +86,6 @@ jobs:
           - world-inputs
           - smoke
           - two-player-dig
-          - reconnect-dig
-          - shared-kinds
-          - hotbar
-          - interact
-          - caves
-          - lighthouse
-          - dig-channel
-        include:
-          - { scenario: hotbar, informational: true }
-          - { scenario: interact, informational: true }
-          - { scenario: caves, informational: true }
-          - { scenario: lighthouse, informational: true }
-          - { scenario: dig-channel, informational: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
