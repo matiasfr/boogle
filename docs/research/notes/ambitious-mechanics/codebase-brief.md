@@ -1,3 +1,5 @@
+_Snapshot of the codebase as of 2026-10-29; may be out of date (e.g. pad slots changed in 07daef1)._
+
 # Boogle codebase brief (state as of commit 26942e2, 2026-10-28)
 
 Sources are repo-relative paths in /Users/matiasfranco/Developer/boogle. Total game + server code is ~9.1k lines (wc over src/, server/src).
