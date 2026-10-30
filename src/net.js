@@ -1,15 +1,16 @@
 import * as THREE from 'three';
-import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS } from './constants.js';
+import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from './constants.js';
 import { lerp, angleLerp, finiteArr, r2, sanitizeName } from './math.js';
 import { scene } from './scene.js';
 import { world, teleport } from './physics.js';
-import { makeAvatar, makeLabel, makePlayerBody } from './avatars.js';
+import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from './avatars.js';
 import { me } from './player.js';
 import { renderPeople, dom } from './hud.js';
 import { createPeerRoom } from './net/peer-room.js';
 import { attachWorld, detachWorld, setSelfId } from './world/sync.js';
 import { createSnaps } from './snaps.js';
 import { mergeFields, hostField } from './presence-fields.js';
+import { onFrame } from './loop.js';
 
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
 // state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); turn: our ICE config includes a TURN server
@@ -62,7 +63,13 @@ function peerColor(peer) {
 //   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
 //                                  state === prev: 'solo' -> 'solo' is a retry that failed before reaching a room.
 //                                  Details are on net (error, retries, room). Local only; never sends anything.
+//   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (ball.js: this tab
+//                                  owns the ball). Checked after `me.entered`, in registration order, before hosting.
 const presenceFields = [];
+const presenceReasons = [];
+export function keepPresenceWhile(fn) {
+  presenceReasons.push(fn);
+}
 const remoteHooks = [];
 const roomHooks = [];
 const stateHooks = [];
@@ -336,3 +343,32 @@ export function updateRemotes(now) {
     }
   }
 }
+
+// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
+// update -280, after this player's avatar (player.js, -290), before the camera (-200): remote avatars take their
+// interpolated pose and walk at the speed they moved since last frame.
+const tmpV = new THREE.Vector3();
+onFrame(
+  ({ dt }) => {
+    for (const r of remotes.values()) {
+      if (!r.avatar) continue;
+      r.avatar.position.copy(r.target);
+      r.avatar.rotation.y = r.yaw;
+      const speed = dt > 0 ? tmpV.copy(r.target).sub(r.prevPos).setY(0).length() / dt : 0;
+      r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
+      r.prevPos.copy(r.target);
+      animateAvatar(r.avatar, r.speed, r.state === 1, dt);
+    }
+  },
+  { phase: 'update', order: -280 },
+);
+
+// late 3000, after every other late hook (the caves camera is 2000), just before render: send presence every SEND_MS
+// while on the island, hosting, or a keepPresenceWhile reason holds.
+onFrame(
+  ({ now }) => {
+    const wanted = () => me.entered || presenceReasons.some((fn) => fn()) || net.room.isHost();
+    if (net.room && wanted() && now - net.lastSend >= SEND_MS) sendPresence();
+  },
+  { phase: 'late', order: 3000 },
+);

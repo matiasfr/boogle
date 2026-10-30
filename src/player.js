@@ -5,12 +5,13 @@ import { clamp, angleLerp, sanitizeName } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene, camera, sun, sky } from './scene.js';
 import { world, teleport } from './physics.js';
-import { makeAvatar, makePlayerBody } from './avatars.js';
+import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from './net.js';
 import { dom, renderPeople } from './hud.js';
 import { input } from './input.js';
 import { heldId } from './inventory.js';
 import { stepFlight } from './flight.js';
+import { onFrame } from './loop.js';
 
 export const me = {
   entered: false,
@@ -205,3 +206,33 @@ export function updatePreview() {
   previewGeo.setDrawRange(0, n);
   previewGeo.attributes.position.needsUpdate = true;
 }
+
+// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
+// world -290, after the ball's respawn check (ball.js, -300): falling off the world puts you back at the spawn.
+onFrame(
+  () => {
+    if (me.body && me.body.position.y < -25) {
+      teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
+      me.body.velocity.setZero();
+    }
+  },
+  { phase: 'world', order: -290 },
+);
+
+// update -290, after the ball mesh (ball.js, -300), before remote avatars (net.js, -280): the avatar follows the body.
+onFrame(
+  ({ dt }) => {
+    if (!me.avatar || !me.body) return;
+    const ip = me.body.interpolatedPosition;
+    me.avatar.position.set(ip.x, ip.y, ip.z);
+    me.avatar.rotation.y = me.yaw;
+    animateAvatar(me.avatar, Math.hypot(me.body.velocity.x, me.body.velocity.z), me.coyote <= 0 && !me.swimming, dt);
+  },
+  { phase: 'update', order: -290 },
+);
+
+// update -200, after every visual sync, before the clouds (props.js, -190) and the features.
+onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });
+
+// late -200, first in late, before the HUD (hud.js, -190).
+onFrame(() => updatePreview(), { phase: 'late', order: -200 });

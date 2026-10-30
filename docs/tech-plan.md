@@ -69,13 +69,17 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 ## Wave C: structure and load time
 
-- [ ] **C1. Thin `main.js`.** Ball and player frame logic (respawn, auto-claim, visual sync) move onto `onFrame`
+- [x] **C1. Thin `main.js`.** Ball and player frame logic (respawn, auto-claim, visual sync) move onto `onFrame`
       hooks so `main.js` only wires modules together.
+      *Done:* 130 to 65 lines; the core hooks' orders, which keep the old frame sequence, are listed in `src/loop.js`.
 - [ ] **C2. Folders.** Move-only commit: `src/boogler/`, `src/terrain/`, `src/water/`, `src/items/`, ... (no code
       changes), done in one quiet window and merged fast.
 - [ ] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
       dialogue, debug tools); compare bundle size and `npm run perf` before and after.
-- [ ] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.
+- [x] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.
+      *Decided: no worker.* A5 measured the sim at about 1 ms per tick on average; the render-side water surface scan
+      is the bigger cost, and a worker would not help it. If it is ever needed, spread the surface scan and the hash
+      over several ticks first.
 
 ## Docs that follow the code
 
