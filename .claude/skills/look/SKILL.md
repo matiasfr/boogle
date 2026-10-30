@@ -28,7 +28,10 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. `--url <game>` runs against a running or deployed build instead of a local stack; there are no
+risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-dig` on every PR and the rest nightly
+(`.github/workflows/scenarios-nightly.yml`); a failing leg's images are its `scenario-<name>` artifact. So local runs
+are optional; on a slow sandbox, push and read CI.
+`--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
 `reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it

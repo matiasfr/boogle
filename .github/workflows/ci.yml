@@ -71,3 +71,43 @@ jobs:
       - name: Install Chromium and system deps
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
+
+  # The fast browser scenarios (dev/scenarios/), one leg each so the slowest sets the wall time. The rest run nightly
+  # (scenarios-nightly.yml), so a PR's CI stays around two minutes. A flaky leg here gets a better wait (on a
+  # condition, not a time), never a skip; one that can't fit the budget moves to the nightly list.
+  scenarios:
+    name: scenario ${{ matrix.scenario }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - world-inputs
+          - smoke
+          - two-player-dig
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium and system deps
+        run: npx playwright install --with-deps chromium
+      - run: npm run scenario -- ${{ matrix.scenario }}
+      - if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-${{ matrix.scenario }}
+          path: .look/scenarios/${{ matrix.scenario }}/
+          include-hidden-files: true # .look/ is a dot directory
+          if-no-files-found: ignore
