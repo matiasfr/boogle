@@ -2,8 +2,8 @@
 // with every terrain edit (TERRAIN_OPS), registers it with the world sync (state, per-tick step, slosh edits)
 // and wires it to the cosmetic mesh (water-surface.js) and to physics/splash (water-field.js).
 //
-// Order inside a tick: edits apply (terrain deltas change) -> terrain-edits flushes its mesh -> this module
-// copies changed ground into the sim, wakes those cells and steps the water -> the surface mesh retargets.
+// Order inside a tick: edits apply (terrain deltas change) -> this module copies changed ground into the sim, wakes
+// those cells and steps the water -> the surface mesh retargets -> terrain-edits flushes its mesh (onAfterTick).
 import { GRID_RES, CELL, HALF, SEA } from '../constants.js';
 import { homeBox } from './grid.js';
 import { clamp } from '../math.js';
@@ -13,7 +13,7 @@ import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../sim/water-regi
 import { waterField } from '../water-field.js';
 import { createWaterSurface } from '../water-surface.js';
 import { registerOp, registerState, onTick, onApplied, onSnapshot, submitEdit, world } from './sync.js';
-import { terrain } from './terrain-edits.js'; // import first: its onTick (mesh flush) must run before ours
+import { terrain } from './terrain-edits.js'; // import first: the terrain state must register (and load) before ours
 import { TERRAIN_OPS } from './terrain-logic.js';
 
 // ------------------------------------------------------------------ tunables (all the feel lives here)

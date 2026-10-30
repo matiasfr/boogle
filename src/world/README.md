@@ -7,7 +7,9 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 | File | Owns |
 |---|---|
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots + hashes, late-join and persistence. |
-| `terrain-edits.js` | Phase 3: dig/pile ops, integer sand layer on top of the base heightfield, updating mesh/physics/water height texture. |
+| `rules/` | The lockstep half of each system (ops, state, sim ticks), one module per system, installed in `RULES` order. See `rules/README.md`. |
+| `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.terrain`, ...). Adapters import it first. |
+| `terrain-edits.js` | Phase 3 adapter: the sand layer (`rules/terrain.js`: dig/pile/flatten on the base heightfield) to mesh/physics/water height texture, plus the shovel. |
 | `../sim/water.js` | Phase 4: pure integer column water simulation (no three.js, no DOM). |
 | `../sim/mushrooms.js` | Mushroom patch: buried seeds, watering, growth ticks (ops `mush.plant`, `mush.water`, state `mushrooms`). |
 | `../sim/gifts.js` | Island gifts: fruit on the palms, things washing up on the beach, thrown things and perched ones (ops `fruit.drop`, `gift.take`, `gift.toss`, state `gifts`). |

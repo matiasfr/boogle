@@ -4,8 +4,14 @@ import globals from 'globals';
 const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 
-// Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Add rules modules here.
-export const LOCKSTEP_FILES = ['src/sim/**/*.js', 'src/world/terrain-logic.js', 'src/world/grid.js'];
+// Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
+// (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
+export const LOCKSTEP_FILES = [
+  'src/sim/**/*.js',
+  'src/world/rules/**/*.js',
+  'src/world/terrain-logic.js',
+  'src/world/grid.js',
+];
 const det = (what) => `${what} is not deterministic across browsers; see DESIGN.md "Determinism from day one".`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh']
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])

@@ -1,8 +1,9 @@
-// Phase 3: dig and pile. Wires the pure sand-layer logic (terrain-logic.js) into the world sync contract,
-// then adapts applied edits to the terrain mesh, the physics heightfield and the water height texture.
+// Phase 3: dig and pile. Adapts the terrain rules (rules/terrain.js: the sand layer and its ops) to the terrain mesh,
+// the physics heightfield and the water height texture.
 // Also owns the shovel tool: mode, aiming, the target ring and the hold-to-repeat loop.
+import { rules } from './game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { GRID_RES, CELL, HALF, HOME, COURT, BALL_R, PLAYER_R } from '../constants.js';
+import { GRID_RES, CELL, HALF, BALL_R, PLAYER_R } from '../constants.js';
 import { clamp } from '../math.js';
 import { heights, groundHeight, setCellHeight, refreshRegion, startSettle } from '../terrain.js';
 import { refreshGround } from '../physics.js';
@@ -11,49 +12,19 @@ import { scene, camera } from '../scene.js';
 import { me, camForward } from '../player.js';
 import { inputKind } from '../glyphs.js';
 import { ball } from '../ball.js';
-import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
-import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
-import { PATCH } from '../sim/mushrooms.js';
-import { migrateTerrainDeltas } from './legacy-grid.js';
-import { baseCm as islandBaseCm } from '../island/index.js';
+import { onApplied, onAfterTick, onSnapshot, submitEdit } from './sync.js';
+import { CARRY_MAX } from './terrain-logic.js';
 
 const N = GRID_RES;
 export const REACH = 4.5; // metres from the player to the aimed spot
 const REPEAT_MS = 220; // client-side repeat while a button is held (host limit is 200 ms)
 
 // ---------------------------------------------------------------- state
-// Base heights in cm (src/island/ground.js, already quantized: every machine simulates on the same ground), copied so
-// the sim owns its own. The court is sand too, so it is editable even where it sits above the beach band.
-// Only the home square (constants.js HOME) is editable: that is where the shared water runs.
-const baseCm = islandBaseCm.slice();
-const editable = new Uint8Array(N * N);
-for (let i = 0; i < N; i++)
-  for (let j = 0; j < N; j++) {
-    const idx = i * N + j;
-    const x = i * CELL - HALF,
-      z = HALF - j * CELL;
-    const onCourt = Math.hypot(x - COURT.x, z - COURT.z) <= COURT.r + 3;
-    const home = x > HOME.x0 + 2 && x < HOME.x1 - 2 && z > HOME.z0 + 2 && z < HOME.z1 - 2;
-    const inGarden =
-      i >= PATCH.i0 - 4 && i <= PATCH.i0 + PATCH.w + 1 && j >= PATCH.j0 - 2 && j <= PATCH.j0 + PATCH.h + 1;
-    const sandy = onCourt || (baseCm[idx] >= EDIT_MIN_CM && baseCm[idx] <= EDIT_MAX_CM);
-    editable[idx] = home && !inGarden && sandy ? 1 : 0;
-  }
+// The sand layer and its ops live in rules/terrain.js (lockstep); this module adapts it to the mesh, physics and water
+// texture. Only the home square is editable (the mask): that is where the shared water runs.
+export const terrain = rules.terrain.state;
 updateHeightTexels(0, 0, N - 1, N - 1);
 refreshGround();
-export const terrain = createTerrainState({ base: baseCm, n: N, editable });
-
-registerOp('dig', { validate: terrain.validate, apply: terrain.apply });
-registerOp('pile', { validate: terrain.validate, apply: terrain.apply });
-registerOp('flatten', { validate: terrain.validate, apply: terrain.apply });
-registerState('terrain', {
-  serialize: () => ({ ...terrain.serialize(), n: N }),
-  load(json) {
-    if (json && json.n === undefined && Array.isArray(json.d)) json = { ...json, d: migrateTerrainDeltas(json.d, N) };
-    for (const idx of terrain.load(json)) markDirty(idx);
-  },
-  hash: terrain.hash,
-});
 
 // ---------------------------------------------------------------- render + physics adapter
 let dirty = null; // [i0, j0, i1, j1] bounding box of cells changed since the last flush
@@ -116,7 +87,7 @@ export function flushTerrain() {
     for (let j = j0; j <= j1; j++) {
       const idx = i * N + j;
       if (oldH) oldH[(i - i0) * (j1 - j0 + 1) + (j - j0)] = heights[i][j];
-      setCellHeight(i, j, (baseCm[idx] + terrain.delta[idx]) / 100, terrain.delta[idx] / 100);
+      setCellHeight(i, j, (terrain.base[idx] + terrain.delta[idx]) / 100, terrain.delta[idx] / 100);
     }
   if (oldH) startSettle(i0, j0, i1, j1, oldH); // render-only dip and spring back
   refreshRegion(i0, j0, i1, j1);
@@ -125,7 +96,11 @@ export function flushTerrain() {
   liftIfBuried(me.body, PLAYER_R);
   if (ball.mine) liftIfBuried(ball.body, BALL_R);
 }
-onTick(flushTerrain, 'terrain flush');
+onAfterTick(flushTerrain, 'terrain flush'); // after the sim ticks (none reads heights)
+// A snapshot replaced the sand layer: redraw the cells it changed.
+onSnapshot(() => {
+  for (const idx of rules.terrain.lastLoaded()) markDirty(idx);
+});
 
 // ---------------------------------------------------------------- shovel tool
 export const shovel = { on: false, hold: null, flat: false, target: null, lastMs: 0, lastCell: null };
