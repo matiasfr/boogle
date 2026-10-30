@@ -1,6 +1,12 @@
 # How to grow Boogle: working methods from designers
 
-*Proposal, 29 October 2026. Working habits drawn from the designers in [progression-feel-exploration.md](../research/progression-feel-exploration.md), turned into steps that fit how this repo already works ([AGENTS.md](../../AGENTS.md), `/look`, scenarios, proto flags, playtest notes).*
+*Proposal, 29 October 2026. Working habits drawn from the designers in [progression-feel-exploration.md](../research/progression-feel-exploration.md), turned into steps that fit how this repo already works ([AGENTS.md](../../AGENTS.md), `/look`, scenarios, proto flags, playtest notes). Updated 30 October 2026 for `main` at `8b3517c`.*
+
+## 0. Respect what's decided, fix the plumbing first
+
+- **The owner's decisions in [docs/tech-plan.md](../tech-plan.md) win.** Keep the caves, The Boogler and the video pipeline. The server stack is pending the owner's call. Reviews and cut lists respect these until the owner changes them.
+- **Persistence before progression.** The [communal-progression report](../research/communal-progression.md) found that the snapshot server may not be deployed, and that `world.epochMs` is never read, so nothing grows while nobody hosts. Any "leave something for the next visitor" feature needs the server and a capped, grow-only `world.catchup(n)` op first.
+- **The tech plan's Wave B comes first for new Lockstep systems.** Once B1 (rules modules) and B2 (the replay test) land, a new state such as the book's ledger should follow that pattern, with an edit generator for the replay test.
 
 ## 1. Design the phases, let the lore fall into place
 
@@ -23,7 +29,7 @@ Every feature passes DESIGN.md's toy test first: "would someone fiddle with this
 
 `src/proto-flags.js` already lets the host's URL turn features on for the whole room. Each tech-tree page or direction slice goes in behind a flag (`?proto=stall`). That way:
 
-- it ships to `main` without changing the default game;
+- it ships with `npm run ship` (a self-merging PR once CI is green) without changing the default game;
 - the group plays it on purpose;
 - it is easy to drop if the playtest says no.
 
@@ -50,6 +56,7 @@ Hades weights pre-written events by game state, so "you feel the game is paying 
 - Give The Boogler a pool of lines keyed on island state: a page just opened, the jar is almost full, someone capsized, it's your first visit in a week. Pick from it with weights.
 - Write more of them than any one player will see ("we try to create as many as possible").
 - Keep the choice of line Local (cosmetic randomness is fine). Only the facts it reads come from shared state.
+- On join, show what changed *in the world* and who did it: a plaque, a pulsing lamp. The communal report's test is that a returning player feels grateful to a friend within 60 seconds.
 
 ## 7. Incremental maths, the Boogle way
 
@@ -64,6 +71,9 @@ Hades weights pre-written events by game state, so "you feel the game is paying 
 - Paying, or grinding, to skip play (Bogost: "you can buy out ... so that you don't have to bother to play").
 - Obligation: something that is *lost* if you don't come back. Stardew considered a demolition deadline and dropped it before release.
 - A golden path everyone must follow (Soren Johnson: "there is no longer a golden path").
+- Decay while away. Grow while away, never decay (communal report, from Animal Crossing's history).
+- A goal that asks for a particular shape of sand (communal report: keep sand as a toy).
+- Visible counters. Townscaper: "when you keep score, you play to the score".
 - A full-screen tutorial (Shouldice: "deeply invasive").
 - Following every feature request (Bogost: "listening to them too much and not pushing them hard enough").
 

@@ -2,6 +2,8 @@
 
 *Research report, 29 October 2026. What designers of incremental/idle games, vehicle and traversal games and small social or co-op exploration games have said about their own work, plus numbers read from shipped code (Cookie Clicker, Universal Paperclips, cannon-es). Builds on [_primary-source-notes.md](_primary-source-notes.md), fetched the same day. This round fetched 22 new sources and pulled 69 claims from them. The 25 strongest went through a three-vote adversarial check, where two refutations kill a claim: 23 survived and 2 were refuted (listed at the end). The proposals built on this report are in [docs/proposals/](../proposals/README.md).*
 
+*Related reports on `main` from the same day cover nearby ground with other sources: [communal-progression.md](communal-progression.md) (landmark restoration, catch-up growth, the honk chord, New Leaf, Viva Piñata, Townscaper) and [ambitious-mechanics.md](ambitious-mechanics.md) (the storm tide, From Dust, Timberborn, the two-pusher crate). This report doesn't repeat them; the proposals combine all three.*
+
 **How to read the tags**
 
 - **verified**: fetched this round and confirmed 3-0 by the adversarial check.
