@@ -251,15 +251,7 @@ export default {
     t.check('no page errors', !g.errors.length, g.errors.join(' | '));
 
     // Touch: the action button says Talk, and the prompt has no glyph.
-    const thumb = await t.open({
-      name: 'thumb',
-      hud: true,
-      size: [844, 390],
-      init: () => {
-        const mm = window.matchMedia.bind(window);
-        window.matchMedia = (q) => (q === '(pointer: coarse)' ? { ...mm(q), matches: true, media: q } : mm(q));
-      },
-    });
+    const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
     await thumb.eval(`${INV} I.take('mango');`);
     const tapMs = await thumb.waitFor(
       beside(

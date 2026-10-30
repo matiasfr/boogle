@@ -5,9 +5,10 @@
 // A scenario is dev/scenarios/<name>.mjs:
 //   export default { about: 'one line', async run(t) { ... } };
 // `t` gives you:
-//   t.open({ name, room, size, hud })   a player (Game from dev/look/lib.mjs); same `room` = same island
-//   t.check(label, ok, detail)          records PASS/FAIL (never throws); put images in the detail
-//   t.sleep(ms), t.VIEWS, t.out         helpers and the image directory (.look/scenarios/<name>/)
+//   t.open({ name, room, size, hud, touch })   a player (Game from dev/look/lib.mjs); same `room` = same island;
+//                                              touch: true starts a phone client
+//   t.check(label, ok, detail)                 records PASS/FAIL (never throws); put images in the detail
+//   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png.
 import fs from 'node:fs';
