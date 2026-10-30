@@ -6,7 +6,8 @@
 // - the ground is cut open at the four mouths (setTerrainHoles) once the cave mesh is there;
 // - players and the ball switch between the ground's colliders and the cave's (collision groups) when they cross
 //   into the cave volume; a safety net puts anything that ends up inside solid rock back where it was;
-// - the camera stays inside the tunnels, the sky light dims and the fog closes in (sky.js `atmosphere`).
+// - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.js `atmosphere`);
+//   the darkness with depth is baked per vertex (aAmb, see ambAt/withCaveAmbient), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -111,10 +112,7 @@ function makeGeometry(m) {
     const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
-    const x = positions[v * 3],
-      z = positions[v * 3 + 2];
-    const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
-    amb[v] = 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
+    amb[v] = ambAt(positions[v * 3], positions[v * 3 + 2]);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.setAttribute('aBrick', new THREE.BufferAttribute(brick, 1));
@@ -123,8 +121,15 @@ function makeGeometry(m) {
   return { geo, colliderIndices: col };
 }
 
-// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces. The sky's ambient
-// (hemisphere) light is scaled by aAmb; lanterns and the sun are not.
+// Ambient (sky) light reaching a point at world (x, z): 1 at the mouths, AMB_DEEP deep in. Fill it into an aAmb vertex
+// attribute for any cave mesh drawn with withCaveAmbient, so it darkens with depth like the rock.
+export function ambAt(x, z) {
+  const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
+  return 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
+}
+
+// Scales the sky's ambient (hemisphere) light by the geometry's aAmb attribute; lanterns and the sun are not.
+// Chains onto the material's own onBeforeCompile and keeps its program cache key apart.
 const HEMI_LINE = 'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );';
 const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
   HEMI_LINE,
@@ -132,18 +137,34 @@ const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
 );
 if (!THREE.ShaderChunk.lights_fragment_begin.includes(HEMI_LINE))
   console.warn('[caves] three.js changed its hemisphere chunk');
+export function withCaveAmbient(mat) {
+  const prev = mat.onBeforeCompile;
+  const key = 'caveAmb:' + mat.customProgramCacheKey();
+  mat.onBeforeCompile = (shader, renderer) => {
+    prev.call(mat, shader, renderer);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aAmb; varying float vAmb;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAmb = aAmb;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vAmb;')
+      .replace('#include <lights_fragment_begin>', HEMI_SCALED);
+  };
+  mat.customProgramCacheKey = () => key;
+  return mat;
+}
+
+// Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.
 function brickMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float aBrick; attribute float aAmb; varying float vBrick; varying float vAmb; varying vec3 vCaveW;',
+        '#include <common>\nattribute float aBrick; varying float vBrick; varying vec3 vCaveW;',
       )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vAmb = aAmb; vCaveW = position;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vCaveW = position;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying float vAmb; varying vec3 vCaveW;')
-      .replace('#include <lights_fragment_begin>', HEMI_SCALED)
+      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying vec3 vCaveW;')
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
@@ -160,7 +181,7 @@ function brickMaterial() {
         }`,
       );
   };
-  return mat;
+  return withCaveAmbient(mat);
 }
 
 function* build() {

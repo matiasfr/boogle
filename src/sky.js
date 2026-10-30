@@ -300,7 +300,8 @@ function placeBillboard(group, dir) {
 }
 
 // Set every frame by features that take the camera somewhere the sky can't reach: underground = 0..1 (the caves).
-// The sky's light fades to a dim, warm ambient and the fog closes in, dark.
+// The fog closes in, dark, and the sky's light turns warm and dims a little; the cave meshes bake their own darkening
+// with depth (aAmb in src/pois/caves/), so the global dip stays mild.
 export const atmosphere = { underground: 0 };
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
