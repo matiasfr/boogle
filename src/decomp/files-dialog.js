@@ -31,7 +31,7 @@ function build() {
     <div class="files-dim"></div>
     <div class="files-card">
       <h2 class="files-title"></h2>
-      <p>Drag in, one at a time:</p>
+      <p class="files-lead"></p>
       <ul class="files-needs"></ul>
       <div class="files-drop">Drop a file here</div>
       <form class="files-link" novalidate>
@@ -65,6 +65,7 @@ function build() {
 
 export function filesDialogNeeds(needs) {
   if (!list) return;
+  dlg.querySelector('.files-lead').textContent = needs.length > 1 ? 'Bring these in, one at a time:' : 'Bring this in:';
   list.replaceChildren(
     ...needs.map(({ label, done }) => {
       const li = document.createElement('li');
