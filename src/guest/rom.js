@@ -1,13 +1,12 @@
-// Mario's animations and Mario's and Yoshi's textures come from the player's own Super Mario 64 (USA) ROM; Boogle never
-// ships them. A picked or dropped ROM is checked, those pieces are cut out of it, and they are kept in IndexedDB so
-// later visits need no ROM.
+// The guest's animations and the guest's and the dino's textures come from the player's own ROM (native/guest/README.md
+// says which); Boogle never ships them. A picked or dropped ROM is checked, those pieces are cut out of it, and
+// src/decomp/store.js keeps them so later visits need no ROM.
 import { TEXTURES } from './textures.js';
 
-const US_SHA1 = '9bef1128717f958171a4afac3ed78ee2bb4e86ce';
+export const ROM_SHA1 = '9bef1128717f958171a4afac3ed78ee2bb4e86ce';
+export const ROM_EXT = ['.z64', '.n64', '.v64']; // big-endian, word-swapped, byte-swapped
+const ROM_SIZE = 8 * 1024 * 1024;
 const ANIMS_AT = 0x4ec000;
-const DB = 'boogle-mario';
-const KEY = 'rom-v2';
-const STORE = 'rom';
 
 const be32 = (b, i) => ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
 
@@ -58,11 +57,11 @@ async function sha1(bytes) {
   return [...hash].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// { anims, textures } from a ROM file, or null when it is not the US release. `textures` holds every entry of TEXTURES
+// { anims, textures } from a ROM file, or null when it is not the one release that matches ROM_SHA1. `textures` holds every entry of TEXTURES
 // back to back, in order.
 export async function readRom(file) {
   const rom = toBigEndian(new Uint8Array(await file.arrayBuffer()));
-  if (rom.length !== 8 * 1024 * 1024 || (await sha1(rom)) !== US_SHA1) return null;
+  if (rom.length !== ROM_SIZE || (await sha1(rom)) !== ROM_SHA1) return null;
   const count = be32(rom, ANIMS_AT);
   let end = 0;
   for (let i = 0; i < count; i++)
@@ -76,41 +75,4 @@ export async function readRom(file) {
     n += t.w * t.h * 2;
   }
   return { anims: rom.slice(ANIMS_AT, ANIMS_AT + end), textures };
-}
-
-function openDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function request(mode, fn) {
-  return openDb().then(
-    (db) =>
-      new Promise((resolve, reject) => {
-        const req = fn(db.transaction(STORE, mode).objectStore(STORE));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      }),
-  );
-}
-
-// IndexedDB can be missing or blocked (private windows); then the ROM is asked for again next visit.
-export async function loadSaved() {
-  try {
-    return (await request('readonly', (s) => s.get(KEY))) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export async function save(data) {
-  try {
-    await request('readwrite', (s) => s.put(data, KEY));
-  } catch {
-    // not kept; this visit still has it
-  }
 }

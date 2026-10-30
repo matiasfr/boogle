@@ -40,8 +40,10 @@
 // onStart, once it is registered; never overwrite its handlers by hand:
 //   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
 //                                  none) and decides whether to call it; the last wrap runs first
+//   triggerAction(id, edge)        presses ('down') or releases ('up') an action, wraps included, for an input route
+//                                  the registry does not bind itself (the mouse button in src/player/input.js)
 //   actionById(id)                 the registered action or null; for dev tooling and tests
-// Both log a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
+// Each logs a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
 // wraps.
 
 // Index = button index in the W3C "standard" gamepad mapping.
@@ -290,6 +292,8 @@ export function wrapAction(id, wrap) {
   }
   return true;
 }
+
+export const triggerAction = (id, edge) => actionById(id, 'triggerAction')?.[edge]?.();
 
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
 export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to

@@ -7,7 +7,7 @@ import { sendPresence } from '../netplay/net.js';
 import { dom } from './hud.js';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
 import { cycle } from './inventory.js';
-import { registerAction, describeControl, isTyping, actionById } from './controls.js';
+import { registerAction, describeControl, isTyping, triggerAction } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
@@ -71,7 +71,7 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (e.button === 0) actionById('use')?.down?.();
+    if (e.button === 0) triggerAction('use', 'down');
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -100,7 +100,7 @@ export function initInput() {
       return;
     }
     drag = null;
-    actionById('use')?.up?.();
+    triggerAction('use', 'up');
   });
   canvas.addEventListener(
     'wheel',
