@@ -1,8 +1,8 @@
 import './style.css';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import * as CANNON from 'cannon-es';
 import { FIXED } from './constants.js';
-import { renderer, scene, camera } from './render/scene.js';
+import { scene, camera, rendererReady, renderFrame } from './render/scene.js';
 import { createTerrainMesh } from './adapters/terrain.js';
 import { createWaterMesh } from './render/water-render.js';
 import { world, installStepHooks } from './physics/physics.js';
@@ -43,7 +43,7 @@ function frame(now) {
   runFrame('world', ctx);
   runFrame('update', ctx);
   runFrame('late', ctx);
-  renderer.render(scene, camera);
+  renderFrame();
 }
 
 function start() {
@@ -61,4 +61,4 @@ function start() {
 // Debug handle for poking at the game from the console.
 window.boogle = { THREE, CANNON, scene, world, camera, me, ball, net, remotes };
 
-start();
+rendererReady.then(start);

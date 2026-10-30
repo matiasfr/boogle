@@ -1,6 +1,6 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half).
-// Render: draw calls, triangles, shadow-pass calls, geometries and shader programs for the island as you enter it and
+// Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it and
 // with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
 // Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
@@ -15,16 +15,28 @@ const doRender = !argv.includes('--sim');
 const doSim = !argv.includes('--render');
 const IDLE_TICKS = 100;
 
+// The game renders once per animation frame and three resets renderer.info once per frame too, so the sample is taken
+// right after the game's own renderFrame (calling it again inside one frame draws only the output pass: the scene
+// pass runs once per frame). sky.js sets sun.shadow.autoUpdate every frame, so it is pinned off for the second sample.
 const STATS = `
-  const { renderer, scene, camera, sun } = await import('/src/render/scene.js');
-  renderer.shadowMap.needsUpdate = true;
-  renderer.render(scene, camera);
-  const calls = renderer.info.render.calls, tris = renderer.info.render.triangles;
-  sun.castShadow = false;
-  renderer.render(scene, camera);
-  const shadowCalls = calls - renderer.info.render.calls;
-  sun.castShadow = true;
-  return { calls, shadowCalls, tris, geometries: renderer.info.memory.geometries, programs: renderer.info.programs.length };`;
+  const { renderer, pipeline, sun } = await import('/src/render/scene.js');
+  let last = null;
+  const orig = pipeline.render;
+  pipeline.render = function () { const r = orig.call(this); last = { ...renderer.info.render }; return r; };
+  const frame = () => new Promise((res) => { last = null; const t = setInterval(() => last && (clearInterval(t), res(last)), 20); });
+  await frame();
+  const a = await frame(); // with the shadow pass
+  Object.defineProperty(sun.shadow, 'autoUpdate', { get: () => false, set() {}, configurable: true });
+  sun.shadow.needsUpdate = false;
+  await frame();
+  const b = await frame(); // no shadow pass
+  delete sun.shadow.autoUpdate;
+  pipeline.render = orig;
+  const calls = a.drawCalls ?? a.calls;
+  return {
+    backend: renderer.backend?.isWebGPUBackend ? 'webgpu' : 'webgl2',
+    calls, shadowCalls: calls - (b.drawCalls ?? b.calls), tris: a.triangles,
+    geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs };`;
 
 // Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
 const FULL_GARDEN = `

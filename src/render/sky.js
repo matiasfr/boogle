@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.js';
 import { lerp, smoothstep, srgbVec } from '../math.js';
-import { scene, camera, renderer, sun, sky } from './scene.js';
+import { scene, camera, sun, sky } from './scene.js';
 import { waterMat } from './water-render.js';
 import { clouds } from './props.js';
 import { world, TICK_MS } from '../world/sync.js';
@@ -338,7 +338,7 @@ export function updateSky(dt, elapsed) {
   if (byMoon) sun.color.copy(L.moon);
   else sun.color.copy(L.sunDay).lerp(L.sunSet, warm);
   sun.intensity = byMoon ? moonI : sunI;
-  renderer.shadowMap.autoUpdate = sun.intensity > 0.01; // no key light, no shadow pass
+  sun.shadow.autoUpdate = sun.intensity > 0.01; // no key light, no shadow pass
 
   if (hemi) {
     hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day);
