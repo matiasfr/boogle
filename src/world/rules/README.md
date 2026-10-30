@@ -31,7 +31,7 @@ Run `npm run check:full`. Notes:
 - An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
   the state, never a per-peer one.
 - Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
-  `GIFTS` in `src/sim/gift-catalog.js` (append only: ground items store its index), and what using it does is a case
+  `GIFTS` in `src/sim/gift-catalog.js` (append only: ground items store its index; it also needs The Boogler's `taste` and `line`), and what using it does is a case
   in `useDown` in `src/player/hands.js`.
 
 ## Contract
