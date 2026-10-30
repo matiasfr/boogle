@@ -15,7 +15,8 @@
 //
 //   registerInteractable(fn)   fn() returns an array of targets in reach right now ([] for none). It is asked every
 //                              frame (for the prompt, src/features/prompt.js) and on every press, so keep it cheap and
-//                              do not cache. Register once, from your feature file or module.
+//                              do not cache. Register once, from your feature file in src/features/ (a module this
+//                              file imports, like gifts.js, would make an import cycle).
 //   target                     { id, verb, at, r?, run | blocked, show? }
 //     id       a stable string per thing; the prompt pops in again when it changes
 //     verb     the word on the prompt ('Pick up', 'Talk')
