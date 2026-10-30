@@ -2,10 +2,12 @@
 import './shovel.css';
 import { onFrame, onStart } from '../loop.js';
 import { updateShovel, setHold } from '../world/terrain-edits.js';
+import { ensureShovel } from '../hands.js';
 
 onFrame(() => updateShovel());
 
-// Touch: a Flatten button next to Dig and Pile (created here so index.html stays untouched).
+// Touch: Pile and Flatten beside the main button (it digs while you hold the shovel), created here so index.html
+// stays untouched. Pile also shows when an old save lost the shovel (body.no-shovel), and pulls out a fresh one.
 onStart(() => {
   const help = document.getElementById('help');
   for (const [key, text] of [
@@ -23,14 +25,19 @@ onStart(() => {
   }
   const touch = document.getElementById('touch');
   if (!touch) return;
-  const btn = document.createElement('button');
-  btn.className = 'tbtn flat';
-  btn.type = 'button';
-  btn.textContent = 'Flatten';
-  btn.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    setHold('flatten');
-  });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
-  touch.append(btn);
+  for (const [cls, text, kind] of [
+    ['pile', 'Pile', 'pile'],
+    ['flat', 'Flatten', 'flatten'],
+  ]) {
+    const btn = document.createElement('button');
+    btn.className = `tbtn ${cls}`;
+    btn.type = 'button';
+    btn.textContent = text;
+    btn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (ensureShovel()) setHold(kind);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => setHold(null));
+    touch.append(btn);
+  }
 });

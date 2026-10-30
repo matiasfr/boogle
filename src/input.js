@@ -186,14 +186,6 @@ export function initInput() {
     me.suppressUp = false;
   });
 
-  // Holding the shovel turns the main button into Dig (slot 1 pulls it out); Pile sits beside it.
-  dom.pileBtn.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    if (ensureShovel()) setHold('pile');
-  });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'])
-    dom.pileBtn.addEventListener(ev, () => setHold(null));
-
   // Gamepad layout for the built-in controls (src/controls.js; features register their own).
   // Like Q/Z: holding dig, pile or flatten pulls the shovel out, never mid-throw.
   const hold = (kind) => ({

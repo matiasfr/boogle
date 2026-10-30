@@ -22,7 +22,6 @@ export const dom = {
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
   jumpBtn: $('btn-jump'),
-  pileBtn: $('btn-pile'),
   touchEl: $('touch'),
   stickEl: $('stick'),
   knobEl: $('knob'),
