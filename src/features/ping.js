@@ -4,7 +4,7 @@
 // { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.js). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
-import { scene, camera } from '../scene.js';
+import { scene, camera, toScreen } from '../scene.js';
 import { COLORS, GRID_RES, CELL, HALF, SEA, reducedMotion } from '../constants.js';
 import { groundHeight } from '../terrain.js';
 import { me, camForward } from '../player.js';
@@ -164,7 +164,8 @@ function chime(colorIdx, kind, own) {
 
 const EDGE_X = 100,
   EDGE_Y = 84;
-const ndc = new THREE.Vector3();
+const over = new THREE.Vector3(),
+  onScreen = { x: 0, y: 0, behind: false };
 function updatePings(now) {
   const w = innerWidth,
     h = innerHeight;
@@ -181,16 +182,10 @@ function updatePings(now) {
     p.ring.scale.setScalar(pulse * Math.min(1, 0.3 + age / 200));
     p.ring.material.opacity = 0.9 * fade;
 
-    ndc.set(p.x, p.y + 1.4, p.z).project(camera);
-    const behind = ndc.z > 1;
-    let nx = ndc.x,
-      ny = ndc.y;
-    if (behind) {
-      nx = -nx;
-      ny = -ny;
-    }
-    const sx = (nx * 0.5 + 0.5) * w,
-      sy = (1 - (ny * 0.5 + 0.5)) * h;
+    const { x: px, y: py, behind } = toScreen(over.set(p.x, p.y + 1.4, p.z), onScreen, w, h);
+    // Behind the camera the projection comes out mirrored through the centre; mirror it back to aim the pointer.
+    const sx = behind ? w - px : px,
+      sy = behind ? h - py : py;
     const on = !behind && sx > 40 && sx < w - 40 && sy > 50 && sy < h - 40;
     p.el.classList.toggle('off', !on);
     let x = sx,

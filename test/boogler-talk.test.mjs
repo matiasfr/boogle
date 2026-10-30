@@ -125,6 +125,29 @@ test('he takes what is in your hand and it can forgive a wary Boogler', () => {
   assert.match(talkView(t).say, /forgiven/);
 });
 
+test('each gift answer carries its item for the icon, every other answer -1', () => {
+  // The coconut is catalog index 0, so `o.gift || -1` would hide its icon; `??` must keep it.
+  const kinds = [giftIndex('coconut'), giftIndex('duck')];
+  assert.equal(kinds[0], 0);
+  const check = (t) => {
+    const v = talkView(t);
+    assert.equal(v.gifts.length, v.opts.length);
+    const want = v.opts.map(() => -1);
+    for (const k of kinds) {
+      const i = v.opts.indexOf(`I brought you a gift ${k}.`);
+      assert.ok(i >= 0, `answer for gift ${k}`);
+      want[i] = k;
+    }
+    assert.deepEqual(v.gifts, want);
+  };
+  check(openTalk(createFriend(), ctx({ pocket: [...kinds] })));
+  const wary = createFriend();
+  for (let k = 0; k < RULES.waryAt; k++) kickedOff(wary, 1e6);
+  const t = openTalk(wary, ctx({ pocket: [...kinds] }));
+  assert.equal(talkView(t).mood, 'grump');
+  check(t);
+});
+
 test('he turns down key items and leaves them in your hand', () => {
   for (const id of ['shovel', 'ball']) {
     const kind = giftIndex(id);

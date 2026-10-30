@@ -29,6 +29,17 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+// Where world point v lands on a w x h screen, in pixels (y down): out.x, out.y, and out.behind when it is behind the
+// camera (x and y then come out mirrored through the centre). Uses the camera's matrices as they are. Returns out.
+const ndc = new THREE.Vector3();
+export function toScreen(v, out, w = innerWidth, h = innerHeight) {
+  ndc.copy(v).project(camera);
+  out.x = (ndc.x * 0.5 + 0.5) * w;
+  out.y = (-ndc.y * 0.5 + 0.5) * h;
+  out.behind = ndc.z > 1;
+  return out;
+}
+
 scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.25));
 export const sun = new THREE.DirectionalLight('#fff3da', 2.4);
 sun.castShadow = true;

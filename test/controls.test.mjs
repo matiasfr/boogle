@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PAD, registerAction, actionForSlot, listActions, freeSlots } from '../src/controls.js';
+import { PAD, registerAction, actionForSlot, listActions, freeSlots, slotFor } from '../src/controls.js';
 
 test('controls: one action per pad slot, clashes stay unbound', () => {
   const warn = console.warn;
@@ -20,6 +20,12 @@ test('controls: one action per pad slot, clashes stay unbound', () => {
     );
     assert.equal(freeSlots().length, 14);
     assert.ok(!freeSlots().includes('y'));
+    // Prompt glyphs read an action's slot, so they follow a rebinding; a clash or an unknown id has none.
+    assert.equal(slotFor('honk'), 'y');
+    assert.equal(slotFor('ping'), null);
+    assert.ok(registerAction('jump', { pad: 'b' }));
+    assert.equal(slotFor('jump'), 'b');
+    assert.equal(actionForSlot('a'), null);
   } finally {
     console.warn = warn;
   }

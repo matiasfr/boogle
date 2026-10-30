@@ -68,6 +68,7 @@ export function registerAction(id, { pad, label = id, down = null, up = null, he
 }
 
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
+export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to, for glyphs
 // While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
 // runs no action. setPadModal(null) hands the pad back.
 let modal = null;

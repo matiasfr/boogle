@@ -1,4 +1,4 @@
-// The Boogler as a friend: talk to him (the interact button, see talkTarget), and in the talk pet him and give him what
+// The Boogler as a friend: talk to him (the interact button, see talkTargets), and in the talk pet him and give him what
 // you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
 // Get launched too often and he runs when you come near.
 //
@@ -11,7 +11,7 @@ import { me } from './player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from './net.js';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
 import { booglerHearts, booglerPuff } from './boogler-fx.js';
-import { booglerSay, setTagBond } from './boogler-hud.js';
+import { booglerSay, setTagBond, setTagPrompt } from './boogler-hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './boogler-dialogue.js';
 import { openTalk, talkView, pickTalk } from './boogler-talk.js';
 import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './boogler-lines.js';
@@ -257,11 +257,13 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-// The interact target (see interactTarget in src/hands.js). Range is to his middle; `r` makes the pick measure to his
-// edge, so a ball at his feet does not win over him.
-export function talkTarget() {
-  if (!me.entered || dialogue.open || dist() > TALK_RANGE) return null;
-  return { id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk };
+// His interactable (see registerInteractable in src/hands.js; src/features/boogler.js registers it). Range is to his
+// middle; `r` makes the pick measure to his edge, so a ball at his feet does not win over him. Not while you ride him:
+// on his back he is always nearest, and would hide the ball and everything else behind a Talk that only says "Get off
+// me first!". The prompt shows in his name tag.
+export function talkTargets() {
+  if (!me.entered || dialogue.open || riding() || dist() > TALK_RANGE) return [];
+  return [{ id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk, show: setTagPrompt }];
 }
 
 function petInTalk() {

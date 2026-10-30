@@ -4,7 +4,10 @@
 //   glyph(action)   HTML for one control: 'interact' (E / B), 'use' (click / X), 'alt' (right click / LT),
 //                   'close' (Esc / B), 'pet' (Y on a gamepad only); '' when the input has no glyph for it
 //   inputKind()     'pad' | 'touch' | 'kbm'
+//
+// Pad glyphs for actions read their slot from src/controls.js, so a rebound action shows its new button.
 import './glyphs.css';
+import { slotFor, PAD_LABEL } from './controls.js';
 
 export const inputKind = () =>
   document.body.classList.contains('gamepad') ? 'pad' : document.body.classList.contains('touch') ? 'touch' : 'kbm';
@@ -19,10 +22,19 @@ const key = (k) => `<kbd class="g g-key">${k}</kbd>`;
 const pad = (b, text = b.toUpperCase()) =>
   `<span class="g g-pad" data-b="${b}" role="img" aria-label="${text}">${text}</span>`;
 
-const GLYPHS = {
-  kbm: { interact: key('E'), use: MOUSE('l'), alt: MOUSE('r'), close: key('Esc'), pet: '' },
-  pad: { interact: pad('b'), use: pad('x'), alt: pad('lt', 'LT'), close: pad('b'), pet: pad('y') },
-  touch: {},
-};
+const KBM = { interact: key('E'), use: MOUSE('l'), alt: MOUSE('r'), close: key('Esc'), pet: '' };
+// The action (src/input.js) behind each pad glyph; the glyph is '' while that action has no slot.
+const PAD_ACTION = { interact: 'interact', use: 'use', alt: 'pile' };
+// Not actions: the talk box reads these buttons itself (padPress in src/boogler-dialogue.js); keep them in step.
+const PAD_FIXED = { close: pad('b'), pet: pad('y') };
 
-export const glyph = (action) => GLYPHS[inputKind()][action] ?? '';
+function padGlyph(action) {
+  if (!PAD_ACTION[action]) return PAD_FIXED[action] ?? '';
+  const slot = slotFor(PAD_ACTION[action]);
+  return slot ? pad(slot, PAD_LABEL[slot]) : '';
+}
+
+export function glyph(action) {
+  const kind = inputKind();
+  return kind === 'kbm' ? (KBM[action] ?? '') : kind === 'pad' ? padGlyph(action) : '';
+}

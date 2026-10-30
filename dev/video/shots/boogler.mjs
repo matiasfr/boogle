@@ -1,5 +1,5 @@
-// The Boogler friendship (ea29f9f): pet him to a new level (hearts), talk and give a present, ride him until he
-// launches you.
+// The Boogler friendship (ea29f9f): open the talk and pet his portrait to a new level (hearts), talk and give a
+// present, ride him until he launches you.
 const ROOM = 'clipboog';
 const seed = (room) => {
   localStorage.setItem(`boogle.boogler.${room}`, JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
@@ -30,24 +30,29 @@ const pick = (g, re) =>
   );
 
 export default {
-  about: 'pet The Boogler to a new level, talk and give a present, ride him and get launched',
+  about: 'pet The Boogler in the talk box to a new level, talk and give a present, ride him and get launched',
   async run(c) {
     const g = await c.open({ room: ROOM, hud: 'play', init: `(${seed})('${ROOM}')` });
     await g.wait(3);
     const out = [];
-    // Pet: the player beside him, the camera slowly circling the pair.
+    // Pet: the player beside him opens the talk and pets his portrait, the camera slowly circling the pair.
     let a0 = 0;
     out.push(
       await g.record('boogler-pet', {
         seconds: 5.5,
         each: async (t, k) => {
           if (k % 2 === 0) await g.eval(STAND(1.9, a0));
+          if (k === 6) await g.eval(`(await import('/src/boogler-play.js')).booglerTalk()`);
           // Pet once the caption is up, so the hearts land under it.
-          if (k === 36) await g.eval(`(await import('/src/boogler-play.js')).booglerAction()`);
-          await orbit(g, a0 + 1.7 + t * 0.06, 4.2, 1.6, 0)();
+          if (k === 36) await g.eval(`document.querySelector('.bd-face')?.click()`);
+          // The Boogler high in frame so the talk box (bottom centre) doesn't cover him.
+          await orbit(g, a0 + 1.7 + t * 0.06, 4.2, 1.6, -0.2)();
         },
       }),
     );
+    // Close the box, or the talk clip's booglerTalk() finds it open and does nothing.
+    await g.eval(`document.querySelector('.bd-close')?.click()`);
+    await g.wait(0.3);
     // Talk and give a present (he loves pomegranates).
     await g.eval(STAND(2, a0));
     out.push(

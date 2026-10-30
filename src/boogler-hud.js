@@ -70,10 +70,21 @@ export function setTagBond(level, wary) {
   bondShown.wary = wary;
 }
 
-// The interact prompt's markup (src/features/prompt.js), shown in the tag; '' for none.
-const prompt = { html: '', shown: '' };
+// The interact prompt in the tag: his target's show() (see talkTargets in src/boogler-play.js), called by
+// src/features/prompt.js with the markup, '' for none. Drawn right away, so it changes on the same frame as the
+// floating prompt whichever of the two hooks runs first.
+let promptShown = '';
 export function setTagPrompt(html) {
-  prompt.html = html;
+  const d = dom();
+  if (!d || html === promptShown) return;
+  const fresh = !promptShown;
+  d.prompt.innerHTML = promptShown = html;
+  d.prompt.hidden = !html;
+  if (fresh && html) {
+    d.prompt.classList.remove('pop');
+    void d.prompt.offsetWidth; // restart the pop-in animation
+    d.prompt.classList.add('pop');
+  }
 }
 
 let lastDist = '';
@@ -100,16 +111,6 @@ export function updateBooglerHud() {
     d.say.classList.add('pop');
   }
   if (!talking) bubble.shown = '';
-  if (prompt.html !== prompt.shown) {
-    const fresh = !prompt.shown;
-    d.prompt.innerHTML = prompt.shown = prompt.html;
-    d.prompt.hidden = !prompt.html;
-    if (fresh && prompt.html) {
-      d.prompt.classList.remove('pop');
-      void d.prompt.offsetWidth; // restart the pop-in animation
-      d.prompt.classList.add('pop');
-    }
-  }
 
   const dist = me.body ? Math.hypot(boogler.disp.x - me.body.position.x, boogler.disp.z - me.body.position.z) : 0;
   const fade = Math.round(clamp((FIND_FAR - dist) / (FIND_FAR - FIND_NEAR), 0, 1) * 20) / 20;
