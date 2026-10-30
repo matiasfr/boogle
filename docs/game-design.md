@@ -1,7 +1,8 @@
 # Boogle: game design document (as built)
 
-*Written 2026-10-30 from the code on `main` (merged into `claude/tender-faraday-ttecyw`). It describes what exists
-today, not what is planned. Every number below is read from the code or the docs it links. Where the code does not say,
+*Current as of `main` at `1d37273` (2026-10-30). It describes what exists today, not what is planned. It is kept
+current by the rule in [AGENTS.md](../AGENTS.md): a change that adds, changes or removes something a player can see or
+do updates its section here in the same commit. Every number below is read from the code or the docs it links. Where the code does not say,
 this file says "unclear from code". Plans live in [PLAN.md](../PLAN.md) and [tech-plan.md](tech-plan.md); undecided
 ideas live in [proposals/](proposals/README.md) and are only linked here as "related ideas".*
 
@@ -167,8 +168,11 @@ you enter, it slowly circles the island.
 
 ## 5. Controls
 
-The registry in [src/player/controls.js](../src/player/controls.js) is the source of truth: `registerAction` binds a pad slot and
-handlers, `describeControl` adds display-only rows. The pause view's controls page and the first-run card are generated
+The registry in [src/player/controls.js](../src/player/controls.js) is the source of truth: `registerAction` binds a pad
+slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
+with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
+binds a key with no pad action of its own (hotbar digits, dive). Held keys (move, sprint, Space, Shift-flatten, Q/Z
+dig and pile) and E, R and F are still read by hand in [src/player/input.js](../src/player/input.js). The pause view's controls page and the first-run card are generated
 from it ([src/player/guide.js](../src/player/guide.js)), and [src/features/controls-check.js](../src/features/controls-check.js) warns
 in dev about gaps. Registrations live in [src/player/input.js](../src/player/input.js), [feel.js](../src/features/feel.js),
 [hotbar.js](../src/features/hotbar.js), [bump.js](../src/features/bump.js), [honk.js](../src/features/honk.js),
@@ -199,7 +203,10 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 
 Notes:
 
-- **Free pad slots:** D-pad ↓ and D-pad →. The update toast borrows the first free one (D-pad ↓) while it is up.
+- **Free pad slots** (`grep -rn "pad: '" src`): D-pad ↓ and D-pad →. The update toast borrows the first free one
+  (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
+- Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
+  Pile, Flatten and Toss are built by the shovel and hotbar features.
 - Q, Z and F, and holding pile or flatten on the pad, pull the shovel out (or hand back a new one) but never mid-throw.
 - With `feel` on, pad LT and Q dive instead of piling or digging while you swim.
 - The talk box takes the keys and pad while open ([src/boogler/dialogue.js](../src/boogler/dialogue.js),
@@ -233,12 +240,12 @@ tick of 100 ms (10 per second).
   camera, plus half your velocity and 1.5 m/s up, spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
   25 % of old velocity, capped at 10.4 m/s, 300 ms cooldown. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
-- **Files.** [src/physics/ball.js](../src/physics/ball.js), [src/physics/physics.js](../src/physics/physics.js), [src/main.js](../src/main.js) (respawn
-  and auto-claim), [src/features/bump.js](../src/features/bump.js), [src/features/impact.js](../src/features/impact.js)
+- **Files.** [src/physics/ball.js](../src/physics/ball.js), [src/physics/physics.js](../src/physics/physics.js), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
+  orders −300 and −280 in the `world` phase, listed in [src/loop.js](../src/loop.js)), [src/features/bump.js](../src/features/bump.js), [src/features/impact.js](../src/features/impact.js)
   (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../src/render/splash.js).
 - **Known issues and limits.** Ball latency for non-owners is unmeasured (PLAN Phase 1). The ball is not persisted: it
-  starts at its spawn each session. Keepy-uppy streak was built and cut (PLAN Phase 2). Ball frame logic still sits in
-  `main.js` (tech plan C1, not done).
+  starts at its spawn each session. Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
+  sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.js](../src/netplay/net.js)).
 
 ### 6.2 Sand digging and the shovel
 
@@ -246,7 +253,7 @@ tick of 100 ms (10 per second).
   you dig goes in your bucket (or onto a raised rim), and you pile from the bucket. A target ring shows the footprint
   and bucket fill, and turns red with a reason ("Bucket full: pile some sand", "Bucket empty: dig first", "Can't dig
   here", "Too deep", "Too high", "Already level"). Hold and drag to carve a continuous channel or wall. Sand juice:
-  spray, dust, a crater dip-and-spring, a camera nudge and procedural dry, wet and pat sounds, for remote edits too.
+  a spray of lit sand clumps and dust from the shared particle pool, a crater dip-and-spring, a camera nudge and procedural dry, wet and pat sounds, for remote edits too.
   Edits colour the sand (dark cool dug, pale warm piled, wet near sea level).
 - **Where.** Only inside the HOME square (2 m inset), on cells whose base height is −1.2 to 1.6 m, plus the court;
   never the garden patch (plus a margin).
@@ -262,7 +269,8 @@ tick of 100 ms (10 per second).
   player per 2 ticks (5 per second); client repeat 220 ms. Aim reach 4.5 m. Drag steps at most 2 cells per edit.
 - **Files.** [src/world/rules/terrain.js](../src/world/rules/terrain.js), [src/world/terrain-logic.js](../src/world/terrain-logic.js),
   [src/world/terrain-edits.js](../src/world/terrain-edits.js), [src/features/shovel.js](../src/features/shovel.js),
-  [src/features/sand-fx.js](../src/features/sand-fx.js), [src/adapters/terrain.js](../src/adapters/terrain.js).
+  [src/features/sand-fx.js](../src/features/sand-fx.js), [src/adapters/terrain.js](../src/adapters/terrain.js),
+  [src/render/particles.js](../src/render/particles.js).
 - **Known issues and limits.** No erosion or wet-sand slumping (PLAN "later"). Each player's bucket is in shared state,
   keyed by tab id, so it does not follow you across reloads (the tab id is per page load). Saves from the old 129-cell
   grid load as bare sand (owner decision 2026-10-30).
@@ -286,10 +294,9 @@ tick of 100 ms (10 per second).
   capped at 2.6 m/s, 7 m/s per unit of slope, no push under 6 cm, "water" from 3 cm.
 - **Files.** As above, plus [src/render/water-surface.js](../src/render/water-surface.js), [src/render/water-render.js](../src/render/water-render.js),
   [src/physics/water-field.js](../src/physics/water-field.js).
-- **Known issues and limits.** No tide, weather, rain or springs. The spring was removed, but its API
-  (`setSource`/`clearSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/` are still there, though the owner
-  decided to remove them. The sim runs on the main thread: per tech plan A5 the render-side surface scan is the larger
-  cost, and C4 decided "no worker for now". A 1 cm staircase can persist (by design of the rule). The mainland has no
+- **Known issues and limits.** No tide, weather, rain or springs (the spring, its API and `dev/water-lab/` are gone,
+  #31). The sim runs on the main thread: per tech plan A5 the render-side surface scan is the larger
+  cost, and C4 decided "no worker". A 1 cm staircase can persist (by design of the rule). The mainland has no
   shared water.
 
 ### 6.4 Mushrooms and the stall
@@ -422,6 +429,9 @@ Points never drop below 0. Each new level bursts hearts and plays a level-up lin
   ball). His portrait can be petted.
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye. Greetings and farewells
   change with your level.
+- **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
+  opened before it arrives waits for it. What he says outside a talk (level-ups, pats, ride complaints, "Nope!") is in
+  the small eager [src/boogler/barks.js](../src/boogler/barks.js) ([src/boogler/play.js](../src/boogler/play.js)).
 - **Story threads** ([src/boogler/lines.js](../src/boogler/lines.js), [src/boogler/talk.js](../src/boogler/talk.js)):
   `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows
   from level 1 or once `home` has started.
@@ -498,7 +508,9 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 
 ### 6.12 Caves
 
-- **What.** A separate little world under the heightfield: one seamless mesh, built a little each frame after start,
+- **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
+  ([src/features/pois.js](../src/features/pois.js); its `site.js` ground stays eager): one seamless mesh, built a little
+  each frame once loaded,
   is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`). Bodies switch
   between the surface's collision group and the cave's when they cross a mouth (1 m out counts as in); a safety net
   puts anything stuck in rock back. Inside, the camera stays in the tunnel, the fog closes in and the sky light dims
@@ -541,7 +553,9 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
   with a Reload button and reloads the next time it is hidden. Each player's build rides in presence `bv`.
   Files: [src/features/updates.js](../src/features/updates.js), [src/netplay/builds.js](../src/netplay/builds.js).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
-  mismatch saves both sides' diverging state as JSON ([src/features/syncsafety.js](../src/features/syncsafety.js)).
+  mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.js](../src/features/syncsafety.js)
+  loads [src/debug/netdebug.js](../src/debug/netdebug.js) only with the flag; `?debugcam=1` likewise loads
+  [src/debug/debug-cam.js](../src/debug/debug-cam.js).
 - **Limits.** Whether a TURN relay was actually used is not observed, only whether one was configured.
 
 ### 6.16 Prototype flags
@@ -746,7 +760,7 @@ TURN) and `/healthz`.
   site most likely uses public PeerJS signaling, no TURN, no server snapshots and no telemetry: an empty island
   survives only in players' localStorage.
 - No TURN: players behind strict NATs may not connect; the failure rate is unmeasured.
-- The sim is not in a Web Worker (PLAN Phase 4 item unchecked; tech plan C4: no worker for now). Hidden tabs keep
+- The sim is not in a Web Worker (PLAN Phase 4 item unchecked; tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.js](../src/world/background.js)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
   `impact.js`).
@@ -755,25 +769,38 @@ TURN) and `/healthz`.
 
 ## 9. Tech and tooling
 
-Brief; details in [AGENTS.md](../AGENTS.md) and [README.md](../README.md).
+Brief; the rules for contributors are in [AGENTS.md](../AGENTS.md) (imported by [CLAUDE.md](../CLAUDE.md)) and the
+folder map in [src/README.md](../src/README.md).
 
-- **Stack.** three.js 0.186.1, cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json)).
-  Features plug in as `src/features/<name>.js` (auto-loaded) with `onFrame` / `onStart` from [src/loop.js](../src/loop.js);
-  POIs as `src/pois/<name>/`; lockstep systems as the four-file recipe in [src/world/README.md](../src/world/README.md).
-- **Checks.** `npm run check`: lint (including the determinism lint for lockstep files), unit tests (`node:test`,
-  pure logic only) and build. `npm run check:full` adds server tests and the headless 3-browser network test. Key
-  tests: [test/world-replay.test.mjs](../test/world-replay.test.mjs) (seeded edits for every op, host killed midway,
-  late joiner, identical hashes) and [test/world-snapshots.test.mjs](../test/world-snapshots.test.mjs) (fixture saves
-  keep loading).
-- **Seeing the game.** `npm run look` (stills, motion sheets, heatmaps), `npm run scenario -- <name>` with scenarios
-  in [dev/scenarios/](../dev/scenarios/): caves, controls-guide, dig-channel, dive, flatten-water, hotbar, interact,
-  lighthouse, pause, reconnect-dig, shared-kinds, smoke, two-player-dig, world-inputs. `npm run island-map` renders
-  the composed island. Debug URL flags: `?netdebug=1`, `?debugcam=1`; `window.boogle` handle.
-- **Perf.** `npm run perf` reports draw calls, triangles and ms per lockstep tick per handler.
+- **Stack.** three.js 0.186.1, cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json));
+  the build splits three, cannon-es and peerjs into vendor chunks ([vite.config.js](../vite.config.js)).
+- **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),
+  `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),
+  `physics/`, `player/`, `render/`, `boogler/`, `debug/`.
+- **Plug-ins.** A feature registers `onFrame(fn, { phase, order })` and `onStart(fn)` ([src/loop.js](../src/loop.js),
+  which lists the core hooks' orders; features use −10 and up). `main.js` only wires modules and renders. Heavy or
+  rarely used parts load with a dynamic `import()` ("Lazy parts" in `loop.js`): today the caves, the Boogler's
+  conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared
+  registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit('soft' |
+  'clump', ...)` in [src/render/particles.js](../src/render/particles.js)).
+- **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
+  `registerState`/`onTick` only in `world/rules/`), unit tests (`node:test`, pure logic only) and build.
+  `npm run check:full` adds server tests and the headless network test. Key tests:
+  [test/world-replay.test.mjs](../test/world-replay.test.mjs) (seeded edits for every op, host killed midway, late
+  joiner, identical hashes) and [test/world-snapshots.test.mjs](../test/world-snapshots.test.mjs).
+- **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
+  [dev/scenarios/](../dev/scenarios/): caves, controls-guide, dig-channel, dive, flatten-water, hotbar, interact,
+  lighthouse, particles, pause, reconnect-dig, shared-kinds, smoke, two-player-dig, world-inputs. CI runs
+  `world-inputs`, `smoke` and `two-player-dig` on every PR (they must pass); the rest run nightly in
+  `scenarios-nightly.yml` and never block. `npm run island-map` renders the composed island.
+- **Perf.** `npm run perf`: draw calls, triangles and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../dev/video/)).
-- **Shipping.** Commit, then `npm run ship`: rebase on `main`, `check`, push a `ship/` branch; CI green merges it and
-  deploys to GitHub Pages. `ci-autofix.yml` fixes red branches, `smoke.yml` runs the nightly live two-tab test,
-  `deploy-server.yml` deploys `server/` when a token exists.
+- **Shipping.** Small commits whose body names the DESIGN.md principle served, then `npm run ship`: rebase on `main`,
+  `check`, push `ship/<you>-<sha>`; green CI merges and deploys to GitHub Pages; red or conflicting, `ci-autofix.yml`
+  pushes up to two fixes, then @mentions you. A session that can only push `claude/<topic>` opens a non-draft PR that
+  `automerge.yml` squash-merges when green. `smoke.yml` runs the nightly live two-tab test; `deploy-server.yml`
+  deploys `server/` when a token exists. Claude Code also has skills (`/ship`, `/new-feature`, `/feature`, `/look`,
+  `/video`, `/playtest-notes`) and a hook that runs Prettier and ESLint on each edited file.
 
 ## 10. Status
 
@@ -785,7 +812,7 @@ Brief; details in [AGENTS.md](../AGENTS.md) and [README.md](../README.md).
 | 1 PeerJS networking | Mostly done | Open: deploy `server/` with TURN; measure ball latency and failed joins without TURN. |
 | 2 Water you can play in | Done | Keepy-uppy streak built, then cut. |
 | 3 Shape the ground | Done | Including the sand fun pass. |
-| 4 Living water | Done except the worker | Spring removed. Worker deferred (tech plan C4). |
+| 4 Living water | Done except the worker | Spring removed. No worker (tech plan C4). |
 | 5 The garden | On hold | Only the mushroom stall is built; crops, soil, visitor bonus, harvest-and-launch, timestamp growth are not. |
 | 6 The tide | Not started | |
 | The Boogler | Done | Friendship, talking, riding, island gifts, hotbar. |
@@ -799,14 +826,16 @@ Brief; details in [AGENTS.md](../AGENTS.md) and [README.md](../README.md).
 |---|---|
 | A1 determinism lint, A2 reports, A3 nightly smoke test, A4 deploy job, A5 sim measurement, A6 mixed builds | Done (A4 still needs the human Fly.io steps) |
 | B1 rules split, B2 replay test, B3 snapshot versions | Done |
-| C1 thin `main.js`, C2 folder moves, C3 code splitting | Not done |
-| C4 sim worker | Decided against for now (A5) |
+| C1 thin `main.js` (130 to 65 lines), C2 folders by domain, C3 lazy loading and vendor chunks | Done |
+| C4 sim worker | Decided: no worker (A5 measured about 1 ms per tick; the render-side surface scan is the bigger cost) |
+
+All tech plan items are ticked; what is left is the human server setup (A4) and the owner's server call.
 
 ### Owner decisions (2026-10-30)
 
 - **Keep:** the caves (audit look and walk-in/out first), The Boogler, the video pipeline (improve it).
-- **Remove unused legacy code:** the 129-cell migration (done), the dead water spring API and `dev/water-lab/`
-  (still present), unused exports.
+- **Remove unused legacy code:** the 129-cell migration (#28), the dead water spring API and `dev/water-lab/`
+  (#31): all done.
 - **Server stack:** pending the owner's call on Fly.io with TURN.
 
 ### Related ideas (not built)
@@ -842,6 +871,8 @@ research in [research/](research/README.md).
 
 ## 12. Doc and code mismatches found while writing this
 
+Still true at `1d37273`:
+
 - [src/pois/lighthouse/index.js](../src/pois/lighthouse/index.js) says the tower is "on the east cape"; it moved to the
   central hill at (6, −58) (site file, playtest 2026-10-29).
 - PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.186.1. The peer-room header cites peerjs 1.5.4;
@@ -849,6 +880,9 @@ research in [research/](research/README.md).
 - DESIGN.md's sync table lists Lockstep as "Water, sand, mushrooms" and its authority table names "weather"; gifts and
   proto flags are Lockstep too, and weather does not exist.
 - PLAN Phase 4 says ball splashes "add a little water"; the `slosh` op moves water (conserved), it never adds any.
-- Owner decision to remove the spring API and `dev/water-lab/` is not carried out yet.
+- PLAN Phase 4 still lists the sim Web Worker as an open item; tech plan C4 decided against it.
 - DESIGN principle 9 and `src/world/README.md` mention offline growth through `world.epochMs`; nothing reads it.
 - The hotbar is global while the Boogler friendship is per room; nothing documents whether that is intended.
+- The tech plan's "Decided" list still words the legacy-code removal as a to-do, though #28 and #31 did it.
+
+Fixed since the first draft: the spring API and `dev/water-lab/` are gone (#31), and frame logic left `main.js` (#29).
