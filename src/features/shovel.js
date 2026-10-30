@@ -2,7 +2,7 @@
 import './shovel.css';
 import { onFrame, onStart } from '../loop.js';
 import { updateShovel, setHold } from '../world/terrain-edits.js';
-import { ensureShovel } from '../hands.js';
+import { ensureShovel } from '../player/hands.js';
 
 onFrame(() => updateShovel());
 

@@ -4,14 +4,14 @@
 //   - a hidden tab (nobody is playing in it) reloads right away;
 //   - a visible tab shows a small toast with a Reload button, and reloads the next time it is hidden.
 // The dev server has no version.json and a dev build skips the check, so this is inert in development.
-// Each player's build also rides in presence (src/builds.js), so the net debug overlay and connection reports can
+// Each player's build also rides in presence (src/netplay/builds.js), so the net debug overlay and connection reports can
 // tell a mixed room.
 // Serves DESIGN.md "Designed for drop-in, drop-out" (a tab left open for hours still plays with the friends who just
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import './updates.css';
 import { onStart } from '../loop.js';
-import { registerAction, freeSlots, PAD_LABEL } from '../controls.js';
-import { BUILD } from '../builds.js';
+import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.js';
+import { BUILD } from '../netplay/builds.js';
 
 const CHECK_MS = 5 * 60 * 1000;
 const RELOADED_FOR = 'boogle-update-reloaded-for'; // sessionStorage: the build we last reloaded to reach

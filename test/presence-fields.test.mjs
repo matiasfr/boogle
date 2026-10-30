@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeFields, hostField } from '../src/presence-fields.js';
+import { mergeFields, hostField } from '../src/netplay/presence-fields.js';
 
 // The room's presence(patch) rule (src/net/peer-room.js): merge onto what we sent before, null deletes the key.
 function applyPatch(mine, patch) {

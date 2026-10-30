@@ -1,7 +1,7 @@
-// Problem reports leave no peer ids, URLs or full user agents behind (src/report-format.js, src/features/telemetry.js).
+// Problem reports leave no peer ids, URLs or full user agents behind (src/netplay/report-format.js, src/features/telemetry.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coarseUa, firstFrame, scrub } from '../src/report-format.js';
+import { coarseUa, firstFrame, scrub } from '../src/netplay/report-format.js';
 
 test('scrub hides peer ids and id-like tokens, keeps ordinary words', () => {
   assert.equal(scrub('Could not connect to peer boogle-beach-c3k9x2p1q7'), 'Could not connect to peer boogle-*');

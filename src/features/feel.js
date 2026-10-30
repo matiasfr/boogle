@@ -1,7 +1,7 @@
 // Controller feel pass (prototype flag `feel`). The body setup stays as it is (dynamic cannon body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/physics.js feelTune), so mushroom bounces chain
+//     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
 //   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
 //   - swimming: dig (Q) and pad LT dive; let go and you pop back up, breaching out of the water
@@ -11,16 +11,16 @@
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../scene.js';
-import { world as physics, feelTune } from '../physics.js';
+import { emit } from '../render/particles.js';
+import { world as physics, feelTune } from '../physics/physics.js';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight } from '../terrain.js';
-import { waterField } from '../water-field.js';
-import { me } from '../player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { wrapAction, describeControl } from '../controls.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { waterField } from '../physics/water-field.js';
+import { me } from '../player/player.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { wrapAction, describeControl, onKey } from '../player/controls.js';
 import { shovel, setHold } from '../world/terrain-edits.js';
-import { proto } from '../proto-flags.js';
+import { proto } from '../adapters/proto-flags.js';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const JUMP = {
@@ -112,10 +112,7 @@ const swimDive = () => on() && me.swimming;
 
 onStart(() => {
   // Q and pad LT (pile) dive while swimming; elsewhere they dig and pile as before
-  addEventListener('keydown', (e) => {
-    if (e.code === 'KeyQ' && !e.repeat && swimDive()) dive();
-  });
-  addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
+  onKey('KeyQ', { owner: 'dive', down: () => swimDive() && dive(), up: () => (diving = 0) });
   describeControl('dive', {
     label: 'Dive',
     detail: 'While swimming',
@@ -152,29 +149,24 @@ onRemotePresence((r, pr) => {
     r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
 });
 
-// ---------------------------------------------------------------- dust (skids, splats)
-const DUST = 120;
-const dPos = new Float32Array(DUST * 3),
-  dVel = new Float32Array(DUST * 3),
-  dLife = new Float32Array(DUST);
-const dGeo = new THREE.BufferGeometry();
-dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3).setUsage(THREE.DynamicDrawUsage));
-const dust = new THREE.Points(
-  dGeo,
-  new THREE.PointsMaterial({ color: 0xe8d6a6, size: 0.18, transparent: true, opacity: 0.8, depthWrite: false }),
-);
-dust.frustumCulled = false;
-dust.visible = false;
-scene.add(dust);
-let dNext = 0;
+// ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.js)
+const DUST = new THREE.Color(0xe8d6a6);
 function puff(x, y, z, n, spread) {
   if (reducedMotion) return;
-  for (let k = 0; k < n; k++) {
-    const p = dNext++ % DUST;
-    dPos.set([x, y, z], p * 3);
-    dVel.set([(Math.random() - 0.5) * spread, 0.6 + Math.random() * 1.2, (Math.random() - 0.5) * spread], p * 3);
-    dLife[p] = 0.35 + Math.random() * 0.3;
-  }
+  for (let k = 0; k < n; k++)
+    emit('soft', {
+      x,
+      y,
+      z,
+      vx: (Math.random() - 0.5) * spread,
+      vy: 0.6 + Math.random() * 1.2,
+      vz: (Math.random() - 0.5) * spread,
+      life: 0.35 + Math.random() * 0.3,
+      size: 0.12,
+      alpha: 0.8,
+      color: DUST,
+      gravity: 6,
+    });
 }
 
 // ---------------------------------------------------------------- spring layer (every avatar)
@@ -285,17 +277,6 @@ onFrame(
     if (on() && me.swimming && padPile && shovel.hold === 'pile') setHold(null, 'pile');
     if (me.avatar) spring(me.avatar, dt, elapsed, () => flop, true);
     for (const r of remotes.values()) if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false);
-    let alive = 0;
-    for (let p = 0; p < DUST; p++) {
-      if (dLife[p] <= 0) continue;
-      alive++;
-      dLife[p] -= dt;
-      dVel[p * 3 + 1] -= 6 * dt;
-      for (let q = 0; q < 3; q++) dPos[p * 3 + q] += dVel[p * 3 + q] * dt;
-      if (dLife[p] <= 0) dPos[p * 3 + 1] = -100;
-    }
-    dust.visible = alive > 0;
-    dGeo.attributes.position.needsUpdate = alive > 0;
   },
   { phase: 'update', order: 20 },
 );

@@ -1,19 +1,19 @@
-// The pause view: a local overlay with Resume, Controls (the generated guide, src/guide.js), Room (who is here, an
+// The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.js), Room (who is here, an
 // invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
-// it only takes this player's input through src/modal.js. Opens on Esc (the pointer lock ends), H (on the controls),
+// it only takes this player's input through src/player/modal.js. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.js.
 import './pause.css';
 import { onFrame, onStart } from '../loop.js';
 import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.js';
-import { me } from '../player.js';
-import { remotes, getRoomId } from '../net.js';
-import { requestLock } from '../input.js';
-import { canvas } from '../scene.js';
-import { openModal, closeModal, modalOpen } from '../modal.js';
-import { dialogue } from '../boogler-dialogue.js';
-import { registerAction } from '../controls.js';
-import { renderGuide } from '../guide.js';
-import { glyph, inputKind } from '../glyphs.js';
+import { me } from '../player/player.js';
+import { remotes, getRoomId } from '../netplay/net.js';
+import { requestLock } from '../player/input.js';
+import { canvas } from '../render/scene.js';
+import { openModal, closeModal, modalOpen } from '../player/modal.js';
+import { dialogue } from '../boogler/dialogue.js';
+import { registerAction, isTyping } from '../player/controls.js';
+import { renderGuide } from '../player/guide.js';
+import { glyph, inputKind } from '../player/glyphs.js';
 
 const TABS = [
   ['kbm', 'Keyboard'],
@@ -271,13 +271,13 @@ registerAction('pause', {
   down: () => openPause(),
 });
 
-// Capture phase on window, registered after src/modal.js: H opens the controls, Esc (when the browser sends it, the
+// Capture phase on window, registered after src/player/modal.js: H opens the controls, Esc (when the browser sends it, the
 // pointer is not locked) the menu. The game's own key handlers never see these keys.
 addEventListener(
   'keydown',
   (e) => {
     if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered || dialogue.open) return;
-    if (e.ctrlKey || e.metaKey || e.altKey || e.target?.closest?.('input, textarea')) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     if (openPause(e.code === 'KeyH' ? 'controls' : 'main')) {
       e.preventDefault();
       e.stopImmediatePropagation();

@@ -9,6 +9,20 @@ const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 export default defineConfig({
   base: process.env.BASE || '/',
   define: { 'import.meta.env.VITE_BUILD': JSON.stringify(build) },
+  // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
+  // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.js).
+  build: {
+    chunkSizeWarningLimit: 800, // three.js alone is ~700 kB minified
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
+          const m = id.match(/node_modules\/(three|cannon-es|peerjs)\//);
+          return m ? m[1] : undefined;
+        },
+      },
+    },
+  },
   plugins: [
     {
       name: 'boogle-version',

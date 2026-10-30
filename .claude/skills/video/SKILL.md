@@ -11,12 +11,14 @@ goes to `.look/` (gitignored).
 | What | Command | Source | Output |
 | --- | --- | --- | --- |
 | Record clips | `npm run clip -- <shot>... [--gif]` | `dev/video/shots/<shot>.mjs` | `.look/clips/<label>.mp4` (+ `.gif`) |
-| Cut a video | `npm run reel -- <name>` | `dev/video/reels/<name>.mjs` | `.look/reels/<name>.mp4` |
+| Cut a video | `npm run reel -- <name>` | `.look/reels/<name>.mjs` (never committed) | `.look/reels/<name>.mp4` |
 | What's new since the last video | `npm run video:changes` | git log since the newest `video-*` tag | a flagged list |
 | Publish and get a share link | `npm run video:publish -- <mp4> --title ...` | a finished video | a GitHub release + share page |
 
-Either command also takes a path to a shot or reel kept outside the repo (`npm run clip -- .look/wip/x.mjs`): use that
-for one-off or prototype-branch footage that shouldn't be committed.
+Shots are committed and reused from video to video. Edit lists (reels) are one-off working files in `.look/reels/`:
+once a video is published its release keeps the mp4, so the edit list is never committed. `npm run clip` also takes a
+path to a shot kept outside the repo (`npm run clip -- .look/wip/x.mjs`): use that for one-off or prototype-branch
+footage that shouldn't be committed.
 
 ## 1. Record: `npm run clip`
 
@@ -27,7 +29,11 @@ symlinked; the harness itself still comes from this checkout).
 Clips are smooth whatever the render speed: the page clock is faked and each frame advances it by exactly 1/fps
 before the screenshot. Real GPU on a Mac renders at ~60 fps, so recording runs at about real time.
 
-A shot (`dev/video/shots/island.mjs` is the simplest example):
+A shot (`dev/video/shots/island.mjs` is the simplest example) drives the game the way a player or a scenario does:
+`window.boogle` (me, ball, net, remotes, `sync`), the controls registry (`actionById(id).down()` from
+`/src/player/controls.js`, the same press as a key or pad button), real input (`g.key`) and `submitEdit` for shared edits.
+Reach into a game module only for what nothing public offers (a debug pose, a tuning table), so a refactor of game
+internals doesn't break the shots:
 
 ```js
 export default {
@@ -64,14 +70,27 @@ recheck after re-recording.
 
 ## 3. Cut: `npm run reel`
 
-An edit list (`dev/video/reels/patch-oct29.mjs` is a full example):
+An edit list, `.look/reels/<name>.mjs` (a patch video, shortened):
 
 ```js
-export default { size: [1280, 720], fps: 30, fade: 0.45, bpm: 112, music: true, segments: [
-  { card: { kicker, title, sub, list: [...], foot }, seconds: 3, bg: 'clip-label', bgFrom: 1 }, // over blurred footage
-  { clip: 'clip-label', from: 0, to: 6, speed: 1.2, caption: { title, sub, tag, top } },       // footage + caption
-] };
+export default {
+  size: [1280, 720], fps: 30, fade: 0.45, bpm: 112, // music: true by default
+  segments: [
+    { card: { kicker: 'Patch notes · Oct 29', title: 'Boogle', sub: 'A bigger island and a new friend' },
+      seconds: 3, bg: 'island-reveal' },                                         // title card over blurred footage
+    { clip: 'island-reveal', from: 0, to: 7, speed: 1.15,
+      caption: { title: 'The island grew 12×', sub: 'Home is now a peninsula of a big mainland' } },
+    { clip: 'boogler-talk', from: 0.6, to: 6.4,
+      caption: { title: 'Talk and bring presents', sub: 'He has stories from home', top: true } }, // UI at the bottom
+    { card: { kicker: 'Also in this patch', title: 'Quality of life', list: ['Gamepad sprint is a click toggle'] },
+      seconds: 5.5, bg: 'island-windmills', bgFrom: 1 },
+    { card: { kicker: 'Out now', title: 'Come play', sub: 'matiasfr.github.io/boogle' },
+      seconds: 3.6, bg: 'island-lighthouse', bgFrom: 5 },
+  ],
+};
 ```
+
+Card fields: `kicker`, `title`, `sub`, `list`, `foot`. Caption fields: `title`, `sub`, `tag`, `top`.
 
 `caption.tag` adds a pill in the top right (e.g. "Coming soon"); `caption.top` moves the caption up when the game's
 own UI fills the bottom (dialogue boxes). `quiet: true` on a segment drops the drums while it plays. Cards and
@@ -113,12 +132,13 @@ hand, follow the steps below. It is unattended: never stop to ask.
 2. For each feature, read its commit and code, then write or extend a shot in `dev/video/shots/` (one shot file per
    area, a few clips each). Record with `npm run clip`, read every contact sheet (section 2), and fix framing until
    each payoff is clearly on screen.
-3. Write `dev/video/reels/patch-<mon><day>.mjs` (copy the structure of `patch-oct29.mjs`): an intro card, one
-   captioned clip per feature, a QoL card if there are enough small changes, an outro card. 45-75 s.
-4. `npm run reel`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
+3. Write `.look/reels/patch-<mon><day>.mjs` (the structure of the example in section 3): an intro card, one captioned
+   clip per feature, a QoL card if there are enough small changes, an outro card. 45-75 s. It is not committed.
+4. `npm run reel -- patch-<mon><day>`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
    inside captions, HUD overlap). Apply its fixes, re-render, and check the final contact sheet yourself.
 5. `npm run video:publish` with a title, a one-sentence summary, one `--feature` per feature and `--target` set to
    the newest commit the video covers (`npm run video:changes` starts from that tag next time).
-6. Commit the new shots and reel ("Add the <date> patch video shots"), `npm run ship`.
+6. Commit the new or changed shots in `dev/video/shots/` ("Add the <date> patch video shots"), `npm run ship`; nothing
+   to commit if the existing shots covered every feature. The edit list stays in `.look/`.
 7. Send the share link with a push notification (and say it in the final message).
 

@@ -3,12 +3,12 @@
 // Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../scene.js';
+import { scene } from '../render/scene.js';
 import { CELL, HALF } from '../constants.js';
-import { groundHeight } from '../terrain.js';
-import { skyDebug } from '../sky.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { skyDebug } from '../render/sky.js';
 import { PATCH } from '../sim/mushrooms.js';
-import { proto } from '../proto-flags.js';
+import { proto } from '../adapters/proto-flags.js';
 
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),

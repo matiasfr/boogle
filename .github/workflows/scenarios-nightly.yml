@@ -1,0 +1,85 @@
+name: Scenarios
+
+# Nightly run of the browser scenarios (dev/scenarios/) that are too slow or load-sensitive for every PR; CI runs the
+# fast ones (`scenarios` job in ci.yml). One leg per scenario against a local stack. Never blocks a merge: this isn't
+# the CI workflow, which automerge.yml and ci-autofix.yml key on. On a failure it opens, or comments on, the one open
+# issue labelled 'scenarios', naming the failing legs (their images are the scenario-<name> artifacts of the run).
+
+on:
+  schedule:
+    - cron: '13 10 * * *' # daily, 10:13 UTC, after smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read # the report job lists the failed legs
+
+concurrency:
+  group: scenarios-nightly
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: scenario ${{ matrix.scenario }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - reconnect-dig
+          - shared-kinds
+          - hotbar
+          - interact
+          - caves
+          - lighthouse
+          - dig-channel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium and system deps
+        run: npx playwright install --with-deps chromium
+      - run: npm run scenario -- ${{ matrix.scenario }}
+      - if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-${{ matrix.scenario }}
+          path: .look/scenarios/${{ matrix.scenario }}/
+          include-hidden-files: true # .look/ is a dot directory
+          if-no-files-found: ignore
+
+  report:
+    needs: run
+    if: failure() || cancelled()
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Open or update the scenarios issue
+        run: |
+          gh label create scenarios --color d93f0b --description 'Nightly browser scenarios' 2>/dev/null || true
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          legs=$(gh run view "$GITHUB_RUN_ID" --json jobs \
+            --jq '.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled") | "- " + .name' || true)
+          body=$(printf 'The nightly browser scenarios failed (%s):\n\n%s\n\nImages: the scenario-<name> artifacts of that run. Reproduce with `npm run scenario -- <name>`.' \
+            "$run" "${legs:-see the run}")
+          num=$(gh issue list --label scenarios --state open --limit 1 --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body "$body"
+          else
+            gh issue create --title 'Nightly browser scenarios are failing' --label scenarios --body "$body"
+          fi

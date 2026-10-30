@@ -13,8 +13,12 @@ import {
   describeControl,
   listControls,
   controlProblems,
+  controlById,
+  keyEvent,
+  onKey,
+  isTyping,
   GROUPS,
-} from '../src/controls.js';
+} from '../src/player/controls.js';
 
 const quiet = (fn) => {
   const warn = console.warn;
@@ -102,8 +106,10 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
   for (const f of readdirSync(src, { recursive: true })) {
     if (!f.endsWith('.js')) continue;
     const text = readFileSync(new URL(f, src), 'utf8');
-    // pad: may sit anywhere in the options object (up to its first closing brace)
-    for (const [, id, pad] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{[^}]*?\bpad:\s*'(\w+)'/g)) {
+    // pad: may sit anywhere in the options object, also after a nested { } such as a touch button spec
+    for (const [, id, pad] of text.matchAll(
+      /registerAction\(\s*'([\w-]+)',\s*\{(?:[^{}]|\{[^{}]*\})*?\bpad:\s*'(\w+)'/g,
+    )) {
       n++;
       const who = `${f}:${id}`;
       assert.ok(PAD.includes(pad), `${who} uses unknown pad slot "${pad}"`);
@@ -162,4 +168,77 @@ test('controls: controlProblems finds gaps in the guide', () => {
   const other = { id: 'b', label: 'B', group: 'move', keys: [['KeyA', 'KeyB']], pad: 'rs' };
   assert.match(controlProblems([ok, other])[0], /key KeyA is claimed by both a and b/);
   assert.deepEqual(controlProblems([ok, { ...other, context: 'swimming' }]), []);
+});
+
+// Static check, like the pad slots: no two registerAction / onKey calls in src/ bind the same key code.
+test('controls: no two bindings in src/ claim the same key', () => {
+  const src = new URL('../src/', import.meta.url);
+  const owners = new Map(); // code -> 'file:id'
+  let n = 0;
+  for (const f of readdirSync(src, { recursive: true })) {
+    if (!f.endsWith('.js') || f === 'player/controls.js') continue;
+    const text = readFileSync(new URL(f, src), 'utf8');
+    const found = [
+      ...[
+        ...text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{(?:[^{}]|\{[^{}]*\})*?\bkey:\s*('\w+'|\[[^\]]*\])/g),
+      ].map(([, id, key]) => [id, key]),
+      ...[...text.matchAll(/onKey\(\s*('\w+'|`[^`]*`|\[[^\]]*\])/g)].map(([, key]) => ['onKey', key]),
+    ];
+    for (const [id, key] of found) {
+      for (const [, code] of key.matchAll(/['`]([\w${}+ ]+)['`]/g)) {
+        n++;
+        const who = `${f}:${id}`;
+        assert.ok(!owners.has(code), `key ${code} is bound by both ${owners.get(code)} and ${who}`);
+        owners.set(code, who);
+      }
+    }
+  }
+  assert.ok(n >= 5, `found only ${n} key bindings; did the pattern stop matching?`);
+});
+
+test('controls: a key presses its action through one guard', () => {
+  const log = [];
+  const pad = freeSlots()[0];
+  quiet(() =>
+    registerAction('key-test', {
+      pad,
+      key: 'KeyJ',
+      touch: { label: 'Jay', className: 'jay' },
+      label: 'Key test',
+      group: 'menu',
+      down: () => log.push('down'),
+      up: () => log.push('up'),
+    }),
+  );
+  // the guide row shows the bound key and the touch label
+  assert.deepEqual(controlById('key-test').keys, ['KeyJ']);
+  assert.equal(controlById('key-test').touch, 'Jay');
+  const field = { closest: (sel) => (sel.includes('input') ? {} : null) };
+  assert.ok(keyEvent({ type: 'keydown', code: 'KeyJ' }));
+  assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ', repeat: true }), false);
+  assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ', ctrlKey: true }), false);
+  assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ', target: field }), false);
+  assert.equal(keyEvent({ type: 'keydown', code: 'KeyN' }), false); // unbound
+  keyEvent({ type: 'keyup', code: 'KeyJ' });
+  assert.deepEqual(log, ['down', 'up']);
+  assert.ok(isTyping({ target: field }));
+  assert.ok(!isTyping({ target: null }));
+
+  // keys go through the action, so a wrap reaches them too
+  log.length = 0;
+  wrapAction('key-test', { down: (next) => (log.push('wrap'), next()) });
+  keyEvent({ type: 'keydown', code: 'KeyJ' });
+  assert.deepEqual(log, ['wrap', 'down']);
+
+  // a second owner of the same key warns and stays unbound; re-registering moves the key
+  log.length = 0;
+  const warnings = quiet(() => onKey('KeyJ', { owner: 'other', down: () => log.push('other') }));
+  assert.match(warnings[0], /key KeyJ is already bound by key-test/);
+  quiet(() => registerAction('key-test', { pad, key: ['KeyK', 'KeyL'], label: 'Key test', group: 'menu' }));
+  assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ' }), false);
+  assert.ok(keyEvent({ type: 'keydown', code: 'KeyL' }));
+  assert.deepEqual(controlById('key-test').keys, ['KeyK', 'KeyL']);
+  onKey('KeyJ', { owner: 'other', down: () => log.push('other') });
+  keyEvent({ type: 'keydown', code: 'KeyJ' });
+  assert.deepEqual(log, ['other']);
 });

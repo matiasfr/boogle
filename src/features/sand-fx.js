@@ -1,62 +1,24 @@
-// Cosmetic dig/pile juice: a pooled spray of sand clumps, a tiny camera nudge and procedural WebAudio sounds.
+// Cosmetic dig/pile juice: a spray of sand clumps (the shared pool in src/render/particles.js), a tiny camera nudge and
+// procedural WebAudio sounds.
 // Local only. Never networked, never read by the simulation, so Math.random is fine here.
 import * as THREE from 'three';
-import { scene, camera } from '../scene.js';
+import { camera } from '../render/scene.js';
+import { emit } from '../render/particles.js';
 import { reducedMotion, CELL, HALF } from '../constants.js';
-import { groundHeight, updateSettle } from '../terrain.js';
-import { remotes } from '../net.js';
-import { me } from '../player.js';
+import { updateSettle } from '../adapters/terrain.js';
+import { remotes } from '../netplay/net.js';
+import { me } from '../player/player.js';
 import { onFrame } from '../loop.js';
-import { getAudio } from '../audio.js';
+import { getAudio } from '../render/audio.js';
 import { terrain, onTerrainCells, isMyEdit } from '../world/terrain-edits.js';
 
-// ---------------------------------------------------------------- spray
-const MAX = 220;
-const clumps = new THREE.InstancedMesh(
-  new THREE.IcosahedronGeometry(0.5, 0),
-  new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }),
-  MAX,
-);
-clumps.frustumCulled = false;
-clumps.count = 0;
-clumps.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-clumps.castShadow = false;
-scene.add(clumps);
-clumps.setColorAt(0, new THREE.Color(1, 1, 1)); // allocates instanceColor
-
-// Particle state in parallel arrays; live ones are packed at the front.
-const P = {
-  n: 0,
-  pos: new Float32Array(MAX * 3),
-  vel: new Float32Array(MAX * 3),
-  life: new Float32Array(MAX),
-  maxLife: new Float32Array(MAX),
-  size: new Float32Array(MAX),
-  dust: new Uint8Array(MAX),
-};
+// ---------------------------------------------------------------- spray (the shared pool, src/render/particles.js)
 const C_DRY = new THREE.Color('#e3c286'),
   C_DUG = new THREE.Color('#9a7650'),
   C_WET = new THREE.Color('#5b4a3d'),
   C_DUST = new THREE.Color('#f6e7b8');
 const tmpC = new THREE.Color();
-const m4 = new THREE.Matrix4(),
-  qI = new THREE.Quaternion(),
-  vS = new THREE.Vector3(),
-  vP = new THREE.Vector3();
-
-function emit(x, y, z, vx, vy, vz, size, life, dust, color) {
-  let k = P.n;
-  if (k >= MAX)
-    k = Math.floor(Math.random() * MAX); // pool full: recycle a random slot
-  else P.n++;
-  P.pos.set([x, y, z], k * 3);
-  P.vel.set([vx, vy, vz], k * 3);
-  P.size[k] = size;
-  P.life[k] = P.maxLife[k] = life;
-  P.dust[k] = dust ? 1 : 0;
-  clumps.setColorAt(k, tmpC.copy(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.08));
-  clumps.instanceColor.needsUpdate = true;
-}
+const jitter = (c) => tmpC.copy(c).offsetHSL(0, 0, (Math.random() - 0.5) * 0.08);
 
 // Sand clumps arc out of the hole toward the digger (fx.from = {x, z}) or straight up and out.
 function sprayDig(x, y, z, from, k, wet, deep) {
@@ -75,18 +37,20 @@ function sprayDig(x, y, z, from, k, wet, deep) {
     const a = Math.random() * Math.PI * 2,
       r = Math.random();
     const out = from ? 2.6 + Math.random() * 3.2 : 1 + Math.random() * 2.5;
-    emit(
-      x + Math.cos(a) * 0.5,
-      y + 0.15,
-      z + Math.sin(a) * 0.5,
-      ax * out + Math.cos(a) * r * 1.6,
-      4.2 + Math.random() * 3.6,
-      az * out + Math.sin(a) * r * 1.6,
-      0.1 + Math.random() * 0.14,
-      1.4,
-      false,
-      Math.random() < 0.3 ? C_DUG : col,
-    );
+    emit('clump', {
+      x: x + Math.cos(a) * 0.5,
+      y: y + 0.15,
+      z: z + Math.sin(a) * 0.5,
+      vx: ax * out + Math.cos(a) * r * 1.6,
+      vy: 4.2 + Math.random() * 3.6,
+      vz: az * out + Math.sin(a) * r * 1.6,
+      size: 0.1 + Math.random() * 0.14,
+      life: 1.4,
+      color: jitter(Math.random() < 0.3 ? C_DUG : col),
+      gravity: 16,
+      floor: 'ground',
+      shrink: 0.2,
+    });
   }
 }
 function puff(x, y, z, k) {
@@ -94,64 +58,26 @@ function puff(x, y, z, k) {
   for (let q = 0; q < n; q++) {
     const a = Math.random() * Math.PI * 2,
       sp = 0.8 + Math.random() * 1.6;
-    emit(
-      x + Math.cos(a) * 0.9,
-      y + 0.2,
-      z + Math.sin(a) * 0.9,
-      Math.cos(a) * sp,
-      0.8 + Math.random() * 1.5,
-      Math.sin(a) * sp,
-      0.18 + Math.random() * 0.2,
-      0.7 + Math.random() * 0.4,
-      true,
-      C_DUST,
-    );
+    emit('clump', {
+      x: x + Math.cos(a) * 0.9,
+      y: y + 0.2,
+      z: z + Math.sin(a) * 0.9,
+      vx: Math.cos(a) * sp,
+      vy: 0.8 + Math.random() * 1.5,
+      vz: Math.sin(a) * sp,
+      size: 0.18 + Math.random() * 0.2,
+      life: 0.7 + Math.random() * 0.4,
+      color: jitter(C_DUST),
+      gravity: 0.6,
+      drag: 2.5,
+      grow: [0.5, 1.8],
+      shrink: 0.2,
+    });
   }
 }
 
 let nudge = 0;
-function updateSandFx(dt) {
-  let n = P.n;
-  for (let k = 0; k < n;) {
-    P.life[k] -= dt;
-    const o = k * 3;
-    const dust = P.dust[k];
-    if (dust) {
-      const drag = Math.exp(-dt * 2.5);
-      P.vel[o] *= drag;
-      P.vel[o + 1] = P.vel[o + 1] * drag - dt * 0.6;
-      P.vel[o + 2] *= drag;
-    } else P.vel[o + 1] -= 16 * dt;
-    P.pos[o] += P.vel[o] * dt;
-    P.pos[o + 1] += P.vel[o + 1] * dt;
-    P.pos[o + 2] += P.vel[o + 2] * dt;
-    const landed = !dust && P.vel[o + 1] < 0 && P.pos[o + 1] <= groundHeight(P.pos[o], P.pos[o + 2]) + 0.04;
-    if (P.life[k] <= 0 || landed) {
-      n--; // swap the last live particle into this slot
-      if (k !== n) {
-        for (const a of [P.pos, P.vel]) a.copyWithin(k * 3, n * 3, n * 3 + 3);
-        P.life[k] = P.life[n];
-        P.maxLife[k] = P.maxLife[n];
-        P.size[k] = P.size[n];
-        P.dust[k] = P.dust[n];
-        clumps.getColorAt(n, tmpC);
-        clumps.setColorAt(k, tmpC);
-        clumps.instanceColor.needsUpdate = true;
-      }
-      continue;
-    }
-    k++;
-  }
-  P.n = n;
-  clumps.count = n;
-  for (let k = 0; k < n; k++) {
-    const f = P.life[k] / P.maxLife[k];
-    const s = P.size[k] * (P.dust[k] ? 0.5 + (1 - f) * 1.3 : 1) * Math.min(1, f * 5);
-    m4.compose(vP.set(P.pos[k * 3], P.pos[k * 3 + 1], P.pos[k * 3 + 2]), qI, vS.set(s, s, s));
-    clumps.setMatrixAt(k, m4);
-  }
-  clumps.instanceMatrix.needsUpdate = true;
-
+function updateNudge(dt) {
   // Camera nudge: a short downward kick on your own edits. Applied after the camera is placed each frame.
   if (nudge > 0.001) {
     camera.rotateX(-nudge * 0.014);
@@ -286,5 +212,5 @@ onTerrainCells((edit) => {
 });
 onFrame(({ dt }) => {
   updateSettle(dt);
-  updateSandFx(dt);
+  updateNudge(dt);
 });

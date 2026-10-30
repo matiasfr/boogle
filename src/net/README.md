@@ -1,6 +1,6 @@
 # Networking
 
-`peer-room.js` is the one module the game talks to for multiplayer. `src/net.js` (game-side presence, remotes and
+`peer-room.js` is the one module the game talks to for multiplayer. `src/netplay/net.js` (game-side presence, remotes and
 interpolation) imports `createPeerRoom` from here and uses nothing else. It implements the host-peer design in
 [PLAN.md](../../PLAN.md) ("Key decision"); message types and host migration are documented at the top of the file.
 Changes must keep this interface; run `npm run test:net` after touching it.
@@ -24,3 +24,6 @@ The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) an
 tie-breaks, so `peer` must be the stable `selfId`, not the PeerJS id.
 
 The room id comes from the page URL (`?room=beach`, default `beach`, sanitized to `[a-z0-9-]{1,32}`).
+
+Messages are wire format shared with tabs on older builds: add new `t` types and fields, never change what an existing
+one means (AGENTS.md, "Mixed builds").

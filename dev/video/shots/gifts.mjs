@@ -1,10 +1,9 @@
 // Presents for The Boogler (ea29f9f): shake ripe fruit off a palm and pick it up; things wash up on the home beach.
 // Page code: the ripe palm nearest home, with its position.
 const PALM = `
-  const { trees } = await import('/src/props.js');
-  const { gifts } = await import('/src/gifts.js');
+  const { trees } = await import('/src/render/props.js');
   const { isRipe } = await import('/src/sim/gifts.js');
-  const { world } = await import('/src/world/sync.js');
+  const { gifts, sync: { world } } = window.boogle;
   let best = null;
   gifts.trees.forEach((_, t) => {
     if (!isRipe(gifts, t, world.tick)) return;
@@ -14,11 +13,11 @@ const PALM = `
   });
   return best;`;
 const STAND = (x, z) => `
-  const { groundHeight } = await import('/src/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);
   return groundHeight(${x}, ${z});`;
-const ACT = `return (await import('/src/hands.js')).interactDown()`;
+const ACT = `return (await import('/src/player/hands.js')).interactDown()`;
 
 export default {
   about: 'shake fruit off a palm and pocket it; finds on the beach',
@@ -53,8 +52,8 @@ export default {
     );
     // Things that washed up: fast-forward the shared clock until a few lie on the beach, then glide along them.
     const items = await g.eval(`
-      const { gifts } = await import('/src/gifts.js');
-      const { updateWorld, world } = await import('/src/world/sync.js');
+      const { gifts, sync: { world } } = window.boogle;
+      const { updateWorld } = await import('/src/world/sync.js'); // fast-forward: no handle for that
       const t0 = world.tick;
       while (gifts.items.filter((it) => it.src === 0).length < 5 && world.tick < t0 + 3000) updateWorld(0.1);
       const { CELL, HALF } = await import('/src/constants.js');
@@ -66,7 +65,7 @@ export default {
       await g.eval(STAND(x + 30, z + 30));
       // Look from the land side, out over the find toward the sea: the direction where the ground is highest.
       const [gy, a] = await g.eval(`
-        const { groundHeight } = await import('/src/terrain.js');
+        const { groundHeight } = await import('/src/adapters/terrain.js');
         let a = 0, best = -1e9;
         for (let k = 0; k < 16; k++) {
           const b = (k / 16) * Math.PI * 2, h = groundHeight(${x} + Math.cos(b) * 6, ${z} + Math.sin(b) * 6);

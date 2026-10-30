@@ -28,11 +28,14 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. `--url <game>` runs against a running or deployed build instead of a local stack; there are no
+risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-dig` on every PR and the rest nightly
+(`.github/workflows/scenarios-nightly.yml`); a failing leg's images are its `scenario-<name>` artifact. So local runs
+are optional; on a slow sandbox, push and read CI.
+`--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
 `reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it
-after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/net.js` attach/fail.
+after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/netplay/net.js` attach/fail.
 
 ```js
 export default {
@@ -52,7 +55,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.eval(fn | 'async body with return')` runs in the page; game modules via `await import('/src/...')`; state handles
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
-- `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/features/debug-cam.js`).
+- `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.js`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.

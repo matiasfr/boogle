@@ -4,14 +4,14 @@
 // E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
 const TP = (x, z) => `
-  const { teleport } = await import('/src/physics.js');
-  const { groundHeight } = await import('/src/terrain.js');
+  const { teleport } = await import('/src/physics/physics.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
   b.velocity.set(0, 0, 0);`;
-const INV = `const I = await import('/src/inventory.js'); const H = await import('/src/hands.js');`;
+const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
 const FACE = (x, z) => `
-  const { cam } = await import('/src/player.js');
+  const { cam } = await import('/src/player/player.js');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z)); cam.pitch = -0.25;`;
 const text = (sel) => `(document.querySelector('${sel}')?.textContent ?? '')`;
@@ -26,9 +26,9 @@ const beside = (check) => `(async () => {
 })()`;
 // On his back: keep climbing on until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check) => `(async () => {
-  const { boogler, ACT } = await import('/src/boogler.js');
-  const { ball } = await import('/src/ball.js');
-  const { teleport } = await import('/src/physics.js');
+  const { boogler, ACT } = await import('/src/boogler/boogler.js');
+  const { ball } = await import('/src/physics/ball.js');
+  const { teleport } = await import('/src/physics/physics.js');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
   if (boogler.me.act !== ACT.RIDE) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
   else if (!ball.held) {
@@ -73,7 +73,7 @@ export default {
 
     // Pet him from the talk box: he answers in a bubble over the card and scores a pet.
     const PETS = `(await (async () => {
-      const { getRoomId } = await import('/src/net.js');
+      const { getRoomId } = await import('/src/netplay/net.js');
       return JSON.parse(localStorage.getItem('boogle.boogler.' + getRoomId()) ?? 'null')?.pets?.length ?? 0; })())`;
     const before = await g.eval(`return ${PETS};`);
     await g.eval(`document.querySelector('.bd-face').click();`);
@@ -117,7 +117,7 @@ export default {
 
     // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X then B alike).
     const wind = await g.eval(`${INV}
-      const { STALL } = await import('/src/mushroom-garden.js');
+      const { STALL } = await import('/src/adapters/mushroom-garden.js');
       const { me } = window.boogle;
       I.take('mango');
       ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
@@ -137,12 +137,12 @@ export default {
     // A shell behind you does not hide the ripe palm you face: drop a shell on open ground past a ripe palm, stand
     // between them facing the palm, and the prompt says Shake while the shell is still in reach.
     const palm = await g.eval(`${INV}
-      const G = await import('/src/gifts.js');
-      const { trees } = await import('/src/props.js');
-      const { groundHeight } = await import('/src/terrain.js');
-      const { teleport } = await import('/src/physics.js');
-      const { camera } = await import('/src/scene.js');
-      const { cam } = await import('/src/player.js');
+      const G = await import('/src/adapters/gifts.js');
+      const { trees } = await import('/src/render/props.js');
+      const { groundHeight } = await import('/src/adapters/terrain.js');
+      const { teleport } = await import('/src/physics/physics.js');
+      const { camera } = await import('/src/render/scene.js');
+      const { cam } = await import('/src/player/player.js');
       const { giftIndex } = await import('/src/sim/gift-catalog.js');
       const { CELL, HALF, SEA } = await import('/src/constants.js');
       const b = window.boogle.me.body, shell = giftIndex('shell');
@@ -189,7 +189,7 @@ export default {
 
     // Seeds on ground they cannot go in: the click says why.
     const spot = await g.eval(`${INV}
-      const G = await import('/src/mushroom-garden.js');
+      const G = await import('/src/adapters/mushroom-garden.js');
       const { me } = window.boogle;
       I.take('seeds', 3);
       for (let r = 0; r < 40; r += 2)
@@ -214,7 +214,7 @@ export default {
 
     // Before the pointer is captured, the hint is a mouse glyph and a verb.
     const look = await g.eval(`
-      const { inputState } = await import('/src/input.js');
+      const { inputState } = await import('/src/player/input.js');
       const was = { ...inputState };
       Object.assign(inputState, { locked: false, lockFailed: false });
       await new Promise((r) => setTimeout(r, 400));
