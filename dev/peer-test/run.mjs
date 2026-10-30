@@ -144,6 +144,17 @@ try {
     `n=${lats.length} p50=${p50}ms max=${maxLat}ms`,
   );
 
+  // linkStats(): the host has a link to each client, each client one to the host; all direct (no TURN here)
+  const links = await Promise.all(
+    all.map((p) => ev(p.page, async () => ({ host: window.T.room.isHost(), rows: await window.T.room.linkStats() }))),
+  );
+  check(
+    'linkStats(): one row per link, direct, with an RTT',
+    links.every((l) => l.rows.length === (l.host ? 2 : 1)) &&
+      links.flatMap((l) => l.rows).every((r) => r.relay === false && Number.isFinite(r.rttMs)),
+    JSON.stringify(links.map((l) => l.rows.map((r) => `${r.local}/${r.remote} ${r.rttMs}ms`))),
+  );
+
   // 3. reliable messages: ordered, exactly once, from every sender to both others
   await Promise.all(
     all.map((p) =>
