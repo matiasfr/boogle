@@ -1,7 +1,8 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
 // stick looks, buttons dispatch the actions in src/controls.js. While a pad is in use the touch overlay hides and the
 // reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.js).
-// Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and play.
+// Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
+// play.
 import './gamepad.css';
 import { onFrame, onStart } from '../loop.js';
 import { input } from '../input.js';

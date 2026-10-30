@@ -305,7 +305,9 @@ onStart(() => {
   menuBtn.type = 'button';
   menuBtn.setAttribute('aria-label', 'Menu and controls');
   menuBtn.innerHTML =
-    '<svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg><span class="menu-glyph"></span>';
+    '<svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" ' +
+    'stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>' +
+    '<span class="menu-glyph"></span>';
   menuBtn.addEventListener('click', () => openPause());
   const tr = document.querySelector('.hud-tr') ?? document.body;
   tr.append(menuBtn);

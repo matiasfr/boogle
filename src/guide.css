@@ -1,5 +1,5 @@
 /* The generated controls guide: group titles in the display font, a glyph cell, a label and an optional note.
-   Paper-sticker look by default; the corner help panel and the gamepad card restyle it for their backgrounds. */
+   Paper-sticker look by default; the pause view and the first-run card restyle it for their backgrounds. */
 .guide {
   --gu: 0.0625em; /* glyph unit: 1px at a 16px guide font, so glyphs scale with the guide */
   display: grid;

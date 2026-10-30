@@ -1,7 +1,7 @@
 // Control actions, so every control can live on a Backbone-style gamepad (standard mapping) as well as the
 // keyboard and touch. Each action claims one pad slot; src/features/gamepad.js dispatches pad presses here. The sticks
-// are fixed: left moves, right looks. This registry is also the one description of every control: the keyboard help
-// panel and the gamepad card are generated from it (src/guide.js), so they cannot drift from the code.
+// are fixed: left moves, right looks. This registry is also the one description of every control: the pause view's
+// controls page and the first-run card are generated from it (src/guide.js), so they cannot drift from the code.
 //
 //   registerAction(id, { pad, label, detail, keys, touch, group, order, guide, down, up, held })
 //     pad     a slot from PAD (one action per slot; a clash is logged and the later action stays unbound)
