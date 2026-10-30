@@ -75,7 +75,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 - [x] **C2. Folders.** Move-only commit: `src/boogler/`, `src/terrain/`, `src/water/`, `src/items/`, ... (no code
       changes), done in one quiet window and merged fast.
       *2026-10-30:* `src/boogler/`, `player/`, `render/`, `netplay/`, `physics/`, `adapters/`; map in `src/README.md`.
-- [ ] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
+- [x] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
       dialogue, debug tools); compare bundle size and `npm run perf` before and after.
 - [x] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.
       *Decided: no worker.* A5 measured the sim at about 1 ms per tick on average; the render-side water surface scan

@@ -20,4 +20,5 @@ Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), 
   guide, modal, HUD, item icons and models.
 - `render/`: scene, renderer and camera, lights pool, sky, sea shader and sim-water surface, props, particles,
   splashes, material patching, and the shared (cosmetic) audio context.
+- `debug/`: dev-only tools behind URL flags (`?netdebug=1`, `?debugcam=1`), loaded lazily by their stubs in `features/`.
 - `boogler/`: The Boogler NPC: brain and model (`boogler.js`), play, talk, lines, dialogue box, friendship, HUD, fx.
