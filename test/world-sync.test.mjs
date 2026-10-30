@@ -49,7 +49,7 @@ function makeNet() {
   return net;
 }
 
-function makePeer(net, id, host) {
+function makePeer(net, id, host, storage = null) {
   const s = createSync();
   const grid = new Int32Array(16);
   const log = [];
@@ -78,7 +78,7 @@ function makePeer(net, id, host) {
     },
   });
   const p = net.add(id, host);
-  s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234 });
+  s.attachWorld(p.room, { roomId: 'test', storage, now: () => 1234 });
   return { s, grid, log, p };
 }
 
@@ -330,6 +330,26 @@ test('unloadable snapshots are reported (peer chunk, local copy, server)', async
   ]);
   assert.ok(solo.worldStatus().ready, 'starts fresh anyway');
   solo.detachWorld();
+});
+
+test('clients save the world too, so the next host starts from it', async () => {
+  const mem = () => {
+    const m = new Map();
+    return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) };
+  };
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const client = makePeer(net, 'c', false, store);
+  await run(net, [host, client], 60);
+  client.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, client], 620); // past the 30 s save interval
+  assert.equal(client.grid[11], 7);
+  assert.ok(store.getItem('boogle.world.test'), 'client saved');
+
+  const next = makePeer(makeNet(), 'n', true, store); // another day, the client hosts
+  await new Promise((r) => setImmediate(r));
+  assert.equal(next.grid[11], 7);
 });
 
 test('profileTicks times each handler per tick and changes nothing', () => {

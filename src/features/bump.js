@@ -1,4 +1,4 @@
-// Bump (V): a volleyball dig. Knocks the ball up and a little forward without grabbing it, when it is within reach
+// Bump (V, pad RT): a volleyball dig. Knocks the ball up and a little forward without grabbing it, when it is within reach
 // (a bit more generous than grab reach, and fine while it is airborne). If someone else owns the ball we claim it
 // first (claimBall, the normal epoch path) and apply the impulse in our own sim so it resolves immediately.
 import './bump.css';
@@ -7,6 +7,7 @@ import { ball, claimBall } from '../ball.js';
 import { sendPresence } from '../net.js';
 import { dom } from '../hud.js';
 import { onStart } from '../loop.js';
+import { registerAction } from '../controls.js';
 
 export const TUNE = {
   reach: 3.4, // metres from the chest to the ball centre (grab reach is 2.4)
@@ -56,6 +57,7 @@ onStart(() => {
     if (document.activeElement === dom.nameInput) return;
     bump();
   });
+  registerAction('bump', { pad: 'rt', label: 'Bump the ball up', down: bump });
 
   const row = document.createElement('div');
   row.innerHTML = '<kbd>V</kbd><span>Bump the ball up (volleyball dig)</span>';

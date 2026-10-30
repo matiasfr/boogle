@@ -113,6 +113,16 @@ jobs:
             gh workflow run deploy-server.yml --ref main
           fi
 
+      # Opening a ship PR starts a pull_request CI run, and merging it seconds later deletes the ref that run needs, so
+      # it fails with "workflow file issue" and leaves a red X on a change that merged. The push run already covered
+      # this commit; delete the leftover.
+      - name: Delete the ship PR's leftover CI run
+        if: steps.merge.outputs.merged == 'true' && startsWith(env.BRANCH, 'ship/')
+        run: |
+          sleep 15 # let the run fail first; GitHub won't delete one in progress
+          gh run list --workflow ci.yml --branch "$BRANCH" --event pull_request --json databaseId --jq '.[].databaseId' |
+            while read -r id; do gh run delete "$id" || true; done
+
       # main just moved: close ship PRs it already contains, and hand PRs it now conflicts with to ci-autofix.yml
       # (a PR in conflict gets no pull_request CI, so nothing else would wake it).
       - name: Tidy the other open PRs
