@@ -8,6 +8,6 @@ export const GRID_SIZE = 510;
 export const CELL = GRID_SIZE / (GRID_RES - 1);
 export const HALF = GRID_SIZE / 2;
 export const SEABED = -7.5;
-// The original island's square: beach gifts stay inside it.
+// The original island's square (the ground within HOME_KEEP of the origin never changes).
 export const HOME = { x0: -80, x1: 80, z0: -80, z1: 80 };
 export const COURT = { x: 12, z: 21, r: 8 };

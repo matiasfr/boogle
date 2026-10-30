@@ -1,7 +1,7 @@
 // World inputs: the static facts every peer builds the shared world from, pinned in test/fixtures/world-inputs.json.
 // It checks, in the running game: the state key order (snapshot, load and hash order), the op order (once sync has
 // registry()), the FNV hash of the island's base ground, the hash of the base inside the 134..274 window (sea floor
-// outside: what Node tests rebuild), and the gifts layout (trees, shore, perches).
+// outside: what Node tests rebuild), and the gifts layout (trees, perches).
 // A change in any of them means peers on different builds disagree, so update the fixture only on purpose:
 // `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, and say why in the commit. Serves "Determinism from day one".
 import fs from 'node:fs';
@@ -28,10 +28,10 @@ const READ = `
     ops: typeof sync.registry === 'function' ? sync.registry().ops : null,
     baseHash: fnv(land.base),
     windowHash: fnv(win),
-    layout: { trees: pick(g.trees), shore: pick(g.shore), perches: pick(g.perches) },
+    layout: { trees: pick(g.trees), perches: pick(g.perches) },
   };`;
 
-const counts = (l) => (l ? `${l.trees?.length} trees / ${l.shore?.length} shore / ${l.perches?.length} perches` : '-');
+const counts = (l) => (l ? `${l.trees?.length} trees / ${l.perches?.length} perches` : '-');
 
 export default {
   about: 'the world inputs (state and op order, base, window, gifts layout) match the fixture',

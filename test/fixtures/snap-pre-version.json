@@ -1,5 +1,5 @@
 {
-  "about": "Captured before state versions (B3, no `vers`) from a local world on the home land after 240 seeded edits (the rules modules' generators). It must keep loading to these hashes: test/world-snapshots.test.mjs. Hashes updated 2026-10-30: sand removed, deltas ignored (terrain is the bare constant; water now fills from base ground alone). Updated again 2026-10-30: the water sim is removed, water is a constant.",
+  "about": "Captured before state versions (B3, no `vers`) from a local world on the home land after 240 seeded edits (the rules modules' generators). It must keep loading to these hashes: test/world-snapshots.test.mjs. Hashes updated 2026-10-30: sand removed, deltas ignored (terrain is the bare constant; water now fills from base ground alone). Updated again 2026-10-30: the water sim is removed, water is a constant. And again: nothing washes up, so the gifts hash pins the wash schedule (`at`).",
   "snap": {
     "tick": 240,
     "seed": 20261028,
@@ -178,7 +178,7 @@
   "hashes": {
     "terrain": 2166136261,
     "mushrooms": 3241262416,
-    "gifts": 2903104021,
+    "gifts": 1291455481,
     "proto": 3360987925,
     "water": 2166136261
   }

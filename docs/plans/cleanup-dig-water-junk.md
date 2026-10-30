@@ -530,7 +530,7 @@ mixed builds.
 
 ### Steps
 
-- [ ] **3.1 Sim and rules.**
+- [x] **3.1 Sim and rules.**
   - Edit `src/sim/gifts.js` as above.
   - `src/sim/gift-catalog.js`: change `src`, drop `weight`, and update the header.
   - `src/world/rules/gifts.js`:
@@ -539,13 +539,13 @@ mixed builds.
       sim/gifts.js and use it).
   - `src/world/game-world.js`: `layout: { trees: [], perches: [] }`.
   - `src/world/rules/README.md`: the `land.layout` description loses `shore`.
-- [ ] **3.2 Adapter.** `src/adapters/gifts.js`:
+- [x] **3.2 Adapter.** `src/adapters/gifts.js`:
   - delete the shore-cell scan in `createGifts3d`, along with `SHORE_MIN_CM`, `SHORE_MAX_CM` and the now unused
     imports (`HOME`, `GRID_RES`, `obstacles`, `PATCH` if unused);
   - the twinkle sparkle and the bob keep `SRC.PERCH` only. Saved shore items lie still until they age out;
   - fix the header ("things washed up on the beach").
-- [ ] **3.3 Boogler.** `src/boogler/lines.js`: delete the `washups` small-talk entry.
-- [ ] **3.4 Tests.**
+- [x] **3.3 Boogler.** `src/boogler/lines.js`: delete the `washups` small-talk entry.
+- [x] **3.4 Tests.**
   - `test/gifts.test.mjs`:
     - delete "shore items wash up..." and "the tide takes old shore items back", and the `MAX_SHORE` import;
     - add "nothing washes up, and saved shore items age out": `loadGifts` a json with one `src: 0` item born at tick
@@ -562,7 +562,7 @@ mixed builds.
     equal.
   - `test/boogler-friendship.test.mjs` uses `melon` and `shell` by index; it is unaffected (taste kept).
   - Run `npm run check:full`.
-- [ ] **3.5 Scenarios and docs.**
+- [x] **3.5 Scenarios and docs.**
   - `dev/scenarios/world-inputs.mjs`: drop `shore` from `layout` and from `counts`.
   - `dev/scenarios/interact.mjs`: the "shore item" check uses a `gift.toss` of a mango at the player's feet (or a
     shaken fruit) instead of waiting for a wash-up. Update the header.

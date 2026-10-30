@@ -26,8 +26,7 @@ ideas live in [proposals/](proposals/README.md) and are only linked here as "rel
 
 Boogle is a drop-in browser island for 1 to 6 friends. You pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court with one shared beach ball. Today the loop as actually played is: throw, bump and chase the ball;
-pick up fruit and washed-up junk
-and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
+pick up fruit and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves. There are no scores, timers or
 goals. The tide, weather and crops from the plan are not built.
@@ -75,7 +74,7 @@ file, and section 8 maps every feature to its kind.
 | Region | Where | Notes |
 |---|---|---|
 | **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court, stall and garden are here. |
-| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | The only place with beach wash-ups. |
+| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | Used to be the only place with beach wash-ups (removed). |
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
@@ -93,7 +92,7 @@ built outside the POI system.
 | **Spawn** | (14, 26), random within 3 m | [src/constants.js](../src/constants.js) `SPAWN` | Land here; fall below −25 m and you are put back. |
 | **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../src/island/ground.js), [terrain.js](../src/adapters/terrain.js)). No net or lines. | The ball spawns at (12, 20). |
 | **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/adapters/mushroom-garden.js](../src/adapters/mushroom-garden.js)). | Take 5 seeds per press (stack up to 20) and the watering can. |
-| **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.js](../src/sim/mushrooms.js)). Kept clear of trees and wash-ups. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
+| **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.js](../src/sim/mushrooms.js)). Kept clear of trees. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
 | **Lighthouse** | (6, −58), on a 7.4 m hill with a flat top at 11 m | Striped 18 m tower, spiral stair of 2.5 turns round the outside, gallery deck at about 29.3 m with railings, lamp and two sweeping beams at night ([src/pois/lighthouse/](../src/pois/lighthouse/)). Paths to home, the windmill farm and the upland. | Climb; the **frisbee** waits on the deck at (7.9, 29.3, −56) and refills 60 s after it is taken. |
 | **Windmill farm** | Site centre (82, −46), facing west | Three wooden windmills (7.2 m towers, 7.2 m sails at 0.55 rad/s on the shared clock) on knolls, striped fields (wheat, greens, ploughed earth), cart tracks, hay bales, a fence ([src/pois/windmills/](../src/pois/windmills/)). | The sails are solid: they bonk players and bat the ball. Nothing else to do. |
 | **Caves** | Under the massif; mouths below | Tunnels of radius 2.3 m joining a hub (−50, −88), an abandoned mine (−35, −93: rails, minecart of ore, glowing veins), an underground pond (−64, −90: water at 3.0 m, crystals, glowing mushrooms, stalactites, a rowboat) and a wine cellar (−49, −99: barrel racks, bottle shelves, a cask, a candlelit table). Lanterns, timber mouth frames with name boards, a signpost ([src/pois/caves/](../src/pois/caves/)). | Walk in and explore; throw and float the ball on the pond. Purely a place: no items or ops. |
@@ -267,27 +266,26 @@ is gone.
   while someone is online, so nothing grows while the island is empty (see 8.6). Mushrooms never wilt or get
   harvested. The rest of Phase 5 (soil, crops, visitor bonus) is on hold.
 
-### 6.5 Gifts and wash-ups
+### 6.5 Gifts
 
 - **What and how it plays.** Home palms grow fruit you can shake loose (E within 2.1 m of the trunk) or knock down with
-  a ball moving at 3 m/s or more; fruit falls on the side you shook from. Odds and ends wash up on the home beaches.
-  Washed-up things and the frisbee twinkle so you can spot them. Anything lying around can be picked up (if your hotbar
+  a ball moving at 3 m/s or more; fruit falls on the side you shook from. Nothing washes up on the beach any more (removed 2026-10-30; items saved
+  before that age out). The frisbee twinkles so you can spot it. Anything lying around can be picked up (if your hotbar
   has room) or was thrown there by someone.
 - **Controls.** E / pad B: Pick up, or shake a palm.
 - **Sync kind.** Lockstep. Ops `fruit.drop` (`t` tree, `d` direction 0..7), `gift.take` (`id`), `gift.toss`
-  (`k` kind, `i, j`, `y` resting height or −1 ground / −3 lost, `l` launch, `n` nonce); state `gifts`. Palms, beach
-  cells and the frisbee perch are a static layout filled before tick 1.
+  (`k` kind, `i, j`, `y` resting height or −1 ground / −3 lost, `l` launch, `n` nonce); state `gifts`. Palms and
+  the frisbee perch are a static layout filled before tick 1.
 - **Tuning** ([src/sim/gifts.js](../src/sim/gifts.js)). Regrow 2400 ticks (4 min) after a drop; ripening fruit visibly
-  grows from 25 % to 80 % size. At most 64 trees, 48 items, 12 shore items. A wash-up every 450 ticks (45 s), or every
-  100 ticks (10 s) while fewer than 3 lie on the shore. Lifetimes: shore items 12,000 ticks (20 min), fruit and thrown
-  things 6,000 (10 min); perched items never expire; a perch refills 600 ticks (60 s) after its item is taken. When
-  full, a new throw sweeps away the oldest thrown item. Shore cells: base 12 to 70 cm inside HOME (2 m inset), not
-  near the garden or an obstacle, at least 2 cells from another lying item. Fruit per tree is fixed by a hash over the
-  cycle coconut, mango, coconut, banana, pomegranate, coconut, apricot. Shore kinds by weight (section 7.1).
+  grows from 25 % to 80 % size. At most 64 trees, 48 items. Saved shore items still age out after 12,000 ticks
+  (20 min); the wash-up schedule is pinned to never (`NEVER`). Fruit and thrown things last 6,000 ticks (10 min);
+  perched items never expire; a perch refills 600 ticks (60 s) after its item is taken. When full, a new throw sweeps
+  away the oldest thrown item. Fruit per tree is fixed by a hash over the cycle coconut, mango, coconut, banana,
+  pomegranate, coconut, apricot.
 - **Files.** [src/sim/gifts.js](../src/sim/gifts.js), [src/sim/gift-catalog.js](../src/sim/gift-catalog.js),
   [src/world/rules/gifts.js](../src/world/rules/gifts.js), [src/adapters/gifts.js](../src/adapters/gifts.js), [src/features/gifts.js](../src/features/gifts.js).
 - **Known issues and limits.** Items saved on the old 129-cell grid stay at their old cells (now far-corner sea) until
-  they rot ([tech-plan.md](tech-plan.md) B3). Wash-ups only happen inside HOME.
+  they rot ([tech-plan.md](tech-plan.md) B3).
 
 ### 6.6 Hotbar and items
 
@@ -520,7 +518,7 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
 ### 7.1 Items (gift catalog)
 
 From [src/sim/gift-catalog.js](../src/sim/gift-catalog.js), in catalog order (the index is the wire id: append only).
-Shore weights sum to 82, so "chance" is the share of wash-ups. Points are the friendship value of a first present.
+Source `sea` items used to wash up on the beach (retired 2026-10-30: they no longer appear, but held ones can still be given and thrown). Points are the friendship value of a first present.
 
 | # | Id | Name | Source | Weight (chance) | Boogler taste | Points |
 |---|---|---|---|---|---|---|
@@ -529,23 +527,23 @@ Shore weights sum to 82, so "chance" is the share of wash-ups. Points are the fr
 | 2 | banana | banana | tree | | like | 7 |
 | 3 | pomegranate | pomegranate | tree | | love | 12 |
 | 4 | apricot | apricot | tree | | love | 12 |
-| 5 | shell | seashell | shore | 10 (12 %) | like | 7 |
-| 6 | starfish | starfish | shore | 8 (10 %) | like | 7 |
-| 7 | driftwood | piece of driftwood | shore | 9 (11 %) | meh | 3 |
-| 8 | seaweed | clump of seaweed | shore | 8 (10 %) | dislike | −3 |
-| 9 | flipflop | flip-flop | shore | 7 (9 %) | meh | 3 |
-| 10 | boot | old boot | shore | 6 (7 %) | dislike | −3 |
-| 11 | duck | rubber duck | shore | 5 (6 %) | like | 7 |
-| 12 | sunglasses | pair of sunglasses | shore | 4 (5 %) | like | 7 |
-| 13 | sponge | sea sponge | shore | 5 (6 %) | meh | 3 |
-| 14 | float | glass float | shore | 4 (5 %) | like | 7 |
-| 15 | bottle | message in a bottle | shore | 4 (5 %) | like | 7 |
-| 16 | card | soggy business card | shore | 3 (4 %) | like | 7 |
-| 17 | melon | melon | shore | 2 (2 %) | love | 12 |
-| 18 | teacup | tea bowl (piyola) | shore | 2 (2 %) | love | 12 |
-| 19 | book | waterlogged book ("Business for Beginners") | shore | 2 (2 %) | love | 12 |
-| 20 | abacus | little abacus (cho't) | shore | 2 (2 %) | love | 12 |
-| 21 | doppi | embroidered cap (doppi) | shore | 1 (1 %) | love, bonus 10 | 22 |
+| 5 | shell | seashell | sea (retired: no longer washes up) | | like | 7 |
+| 6 | starfish | starfish | sea (retired: no longer washes up) | | like | 7 |
+| 7 | driftwood | piece of driftwood | sea (retired: no longer washes up) | | meh | 3 |
+| 8 | seaweed | clump of seaweed | sea (retired: no longer washes up) | | dislike | −3 |
+| 9 | flipflop | flip-flop | sea (retired: no longer washes up) | | meh | 3 |
+| 10 | boot | old boot | sea (retired: no longer washes up) | | dislike | −3 |
+| 11 | duck | rubber duck | sea (retired: no longer washes up) | | like | 7 |
+| 12 | sunglasses | pair of sunglasses | sea (retired: no longer washes up) | | like | 7 |
+| 13 | sponge | sea sponge | sea (retired: no longer washes up) | | meh | 3 |
+| 14 | float | glass float | sea (retired: no longer washes up) | | like | 7 |
+| 15 | bottle | message in a bottle | sea (retired: no longer washes up) | | like | 7 |
+| 16 | card | soggy business card | sea (retired: no longer washes up) | | like | 7 |
+| 17 | melon | melon | sea (retired: no longer washes up) | | love | 12 |
+| 18 | teacup | tea bowl (piyola) | sea (retired: no longer washes up) | | love | 12 |
+| 19 | book | waterlogged book ("Business for Beginners") | sea (retired: no longer washes up) | | love | 12 |
+| 20 | abacus | little abacus (cho't) | sea (retired: no longer washes up) | | love | 12 |
+| 21 | doppi | embroidered cap (doppi) | sea (retired: no longer washes up) | | love, bonus 10 | 22 |
 | 22 | seeds | mushroom seed | stall | | like | 7 |
 | 23 | can | watering can | stall | | meh | 3 |
 | 24 | shovel | shovel | tool (retired 2026-10-30: not obtainable, dropped from saved hotbars) | | meh | n/a |
@@ -607,7 +605,7 @@ you ask about Oyijon.
 
 Finished threads offer a retelling ("Tell me about Samarqand again.").
 
-**Small talk** ("How's it going?"): `ball`, `mushrooms`, `washups`, `fruit` (level 0), `holes`, `name` (level 1),
+**Small talk** ("How's it going?"): `ball`, `mushrooms`, `fruit` (level 0), `name` (level 1),
 `visitors` (level 2), `rides` (needs the `kicked` flag).
 
 ### 7.3 POIs
@@ -654,7 +652,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Sand | none | retired 2026-10-30; `terrain` is a stub state |
 | Water | none | retired 2026-10-30; `water` is a stub state |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
-| Fruit, wash-ups, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
+| Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
 | Prototype flags | Lockstep | state `proto` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |

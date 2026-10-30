@@ -48,7 +48,7 @@ export function install(sync, land, rules) {
 | Input | What it is | Where it may be read |
 |---|---|---|
 | `sync` | `{ world, registerOp, registerState, onTick, onApplied, onSnapshot }`. No `submitEdit`: rules react to edits, they never make them. Call `sync.registerOp(...)`, do not destructure it. | install |
-| `land` | `{ n, base, layout }`: grid size, base heights (`Int16Array`, cm, index `i*n+j`) and `layout` (`trees`, `shore`, `perches`). Static, the same on every peer. `layout` is filled before tick 1, so do not read it at install. | anywhere |
+| `land` | `{ n, base, layout }`: grid size, base heights (`Int16Array`, cm, index `i*n+j`) and `layout` (`trees`, `perches`). Static, the same on every peer. `layout` is filled before tick 1, so do not read it at install. | anywhere |
 | `rules` | The APIs of the modules before this one in `RULES`, keyed by `name`. | anywhere |
 | `ctx.env` | Host-only facts handed to `validate(edit, { from, tick, env })`. They may differ per machine, so never use them in apply or ticks. A missing one makes validate throw, and the edit is rejected. | validate only |
 
@@ -126,7 +126,7 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 |---|---|---|---|
 | `terrain.js` | none | `terrain` | `{}`: retired stub, keeps the slot (step 1 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
-| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
+| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
 | `water.js` | none | `water` | `{}`: retired stub, keeps the slot (step 2 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

@@ -920,23 +920,6 @@ export const SMALL_TALK = [
     },
   },
   {
-    id: 'washups',
-    lvl: 0,
-    nodes: {
-      a: {
-        say: 'Things wash up on the beach all the time. Shells, boots, ducks. Once, a whole chair. I sat on it. It was a good day.',
-        opts: [
-          { say: 'A whole chair?', to: 'b' },
-          { say: "I'll keep an eye out for presents.", pts: 1, to: 'b' },
-        ],
-      },
-      b: {
-        say: 'Then the tide took it back. The sea gives, the sea takes. The sea is a bad business partner.',
-        opts: [{ say: 'Ha! True.', pts: 1 }, { say: "Maybe it'll come back." }],
-      },
-    },
-  },
-  {
     id: 'fruit',
     lvl: 0,
     nodes: {

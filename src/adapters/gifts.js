@@ -1,13 +1,13 @@
-// Island gifts in the game: fruit on the palms, things washed up on the beach, things players threw, and the frisbee
+// Island gifts in the game: fruit on the palms, things players threw, and the frisbee
 // on the lighthouse deck. Shared state lives in src/world/rules/gifts.js and changes only through world/sync edits; what
 // you carry is your hotbar (src/player/inventory.js).
 import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, HOME, REACH, PLAYER_R, reducedMotion } from '../constants.js';
-import { heights, groundHeight } from './terrain.js';
+import { CELL, HALF, GRID_RES, REACH, PLAYER_R, reducedMotion } from '../constants.js';
+import { groundHeight } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { world as physics } from '../physics/physics.js';
-import { trees, obstacles } from '../render/props.js';
+import { trees } from '../render/props.js';
 import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
 import { net } from '../netplay/net.js';
@@ -15,7 +15,6 @@ import { world, onApplied, submitEdit } from '../world/sync.js';
 import { SEEDS, LOST } from '../world/rules/gifts.js';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';
-import { PATCH } from '../sim/mushrooms.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.js';
 import { itemModel } from '../player/item-models.js';
@@ -26,12 +25,10 @@ import { splash } from '../render/splash.js';
 
 const SHAKE_R = 2.1; // metres from a palm's base
 const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
-const SHORE_MIN_CM = 12;
-const SHORE_MAX_CM = 70;
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 
 // The gifts, their ops and tick live in world/rules/gifts.js (lockstep); this module adapts them to meshes, flights,
-// the interact prompt and the hotbar. The layout (palms, beach cells, perches) is the land's, filled in createGifts3d.
+// the interact prompt and the hotbar. The layout (palms, perches) is the land's, filled in createGifts3d.
 const { layout } = land;
 const perchSpots = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
@@ -66,20 +63,6 @@ onApplied((e, tick, r) => {
 export function createGifts3d() {
   for (const t of trees.slice(0, MAX_TREES))
     layout.trees.push({ i: Math.round((t.x + HALF) / CELL), j: Math.round((HALF - t.z) / CELL) });
-  // Things wash up on the home beaches only (constants.js HOME), where the players and the Boogler hang out.
-  for (let i = 0; i < GRID_RES; i++)
-    for (let j = 0; j < GRID_RES; j++) {
-      const hx = cellX(i),
-        hz = cellZ(j);
-      if (hx < HOME.x0 + 2 || hx > HOME.x1 - 2 || hz < HOME.z0 + 2 || hz > HOME.z1 - 2) continue;
-      const cm = Math.round(heights[i][j] * 100);
-      if (cm < SHORE_MIN_CM || cm > SHORE_MAX_CM) continue;
-      if (i >= PATCH.i0 - 3 && i < PATCH.i0 + PATCH.w + 3 && j >= PATCH.j0 - 3 && j < PATCH.j0 + PATCH.h + 3) continue;
-      const x = cellX(i),
-        z = cellZ(j);
-      if (obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 0.8)) continue;
-      layout.shore.push([i, j]);
-    }
   // The frisbee's perch: its cell only names it in the shared state; it is drawn at the exact spot on the deck.
   const [pi, pj] = [Math.round((FRISBEE_SPOT.x + HALF) / CELL), Math.round((HALF - FRISBEE_SPOT.z) / CELL)];
   layout.perches.push({ i: pi, j: pj, kind: giftIndex('frisbee') });
@@ -246,7 +229,7 @@ function makeVisual(it) {
   root.add(itemModel(GIFTS[it.kind].id));
   root.rotation.y = ((it.id * 2.399) % (PI * 2)) - PI;
   let sparkle = null;
-  if (it.src === SRC.SHORE || it.src === SRC.PERCH) {
+  if (it.src === SRC.PERCH) {
     sparkle = new THREE.Sprite(sparkleMat);
     sparkle.position.y = 0.6;
     root.add(sparkle);
@@ -284,7 +267,7 @@ function updateItems(dt, now, target) {
         if (!v.vy) v.y = null;
       }
       y = v.y ?? gy;
-    } else if (it.src === SRC.SHORE && !reducedMotion) y += Math.sin(now / 700 + v.phase) * 0.02;
+    }
     v.root.position.set(x, y, z);
     if (v.slide < 1) {
       v.slide = Math.min(1, v.slide + dt / 0.18);

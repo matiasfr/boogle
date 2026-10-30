@@ -135,7 +135,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler/friendship.js`).
 - [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler/lines.js`, `src/boogler/talk.js`).
 - [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler/play.js`).
-- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`.
+- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach (wash-ups removed 2026-10-30). Shared state in `src/sim/gifts.js`.
 - [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
 
 **Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?

@@ -1,5 +1,5 @@
-// Gift rules: the fruit.drop, gift.take and gift.toss ops, the `gifts` state (fruit on the palms, things washed up on
-// the beach, things players threw, the frisbee on its perch; ../../sim/gifts.js) and its tick. Lockstep: everything
+// Gift rules: the fruit.drop, gift.take and gift.toss ops, the `gifts` state (fruit on the palms, things players
+// threw, the frisbee on its perch; ../../sim/gifts.js) and its tick. Lockstep: everything
 // here runs the same on every peer (see ./README.md).
 import { GIFTS, giftIndex } from '../../sim/gift-catalog.js';
 import {
@@ -15,6 +15,7 @@ import {
   loadGifts,
   hashGifts,
   MAX_ITEMS,
+  NEVER,
   ON_GROUND,
 } from '../../sim/gifts.js';
 import { JUNK, bad } from './edit-gen.js';
@@ -64,7 +65,7 @@ export function install(sync, land, rules) {
     load: (json) => loadGifts(gifts, json),
     hash: () => hashGifts(gifts),
   });
-  sync.onTick((t) => tickGifts(gifts, t, sync.world.seed), 'gifts');
+  sync.onTick((t) => tickGifts(gifts, t), 'gifts');
   return { gifts };
 }
 
@@ -105,5 +106,6 @@ export function invariants({ gifts }) {
   if (ids.length > MAX_ITEMS) return `${ids.length} items`;
   if (new Set(ids).size !== ids.length) return 'duplicate item ids';
   if (ids.some((id) => id >= gifts.nextId)) return 'an item id at or past nextId';
+  if (gifts.nextWash !== NEVER) return 'wash schedule unpinned';
   return null;
 }

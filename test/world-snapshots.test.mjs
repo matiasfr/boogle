@@ -92,4 +92,12 @@ test('an old snapshot with sand deltas, water cells and shore items loads cleanl
     b.updateWorld(0.1);
   }
   assert.deepEqual(a.stateHashes(), b.stateHashes());
+  // Past the life of the saved shore items (12,000 ticks): they age out on both, nothing new washes up, hashes agree.
+  for (let k = 0; k < 12100; k++) {
+    a.updateWorld(0.1);
+    b.updateWorld(0.1);
+  }
+  for (const s of [a, b])
+    assert.ok(!s.snapshot().data.gifts.it.some((v, k) => k % 7 === 4 && v === 0), 'shore items left');
+  assert.deepEqual(a.stateHashes(), b.stateHashes());
 });
