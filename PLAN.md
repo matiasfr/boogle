@@ -76,6 +76,8 @@ The sea already makes the ball float and players swim (see the `preStep` buoyanc
 
 ## Phase 3: Shape the ground (dig and pile)
 
+> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
+
 The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 world units) shared by the mesh, the physics body and the water shader's height texture. Editing it is the foundation for everything after.
 
 - [x] Two new verbs on a tool key/button: **dig** (take sand from a cell) and **pile** (drop it on a cell), with a carry limit so sand is conserved. Only sand cells near the beach and garden are editable; rock and grass aren't.
@@ -130,7 +132,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler/lines.js`, `src/boogler/talk.js`).
 - [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler/play.js`).
 - [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`.
-- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the shovel, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held but the shovel can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
+- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
 
 **Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
 

@@ -19,7 +19,6 @@ world.addContactMaterial(new CANNON.ContactMaterial(playerMat, playerMat, { fric
 world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 }));
 world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
 
-// The shape reads `heights` directly, so edits only need to invalidate its caches (see refreshGround).
 // Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
 // need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and
 // anyone underground (the caves switch players and the ball to the CAVE group's colliders instead of the ground).
@@ -36,16 +35,6 @@ groundBody.addShape(groundShape);
 groundBody.position.set(-HALF, 0, HALF);
 groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
 world.addBody(groundBody);
-
-// Call after changing `heights` in place so collisions use the new ground immediately.
-export function refreshGround() {
-  groundShape.update();
-  groundShape.updateMinValue();
-  groundShape.updateMaxValue();
-  groundShape.updateBoundingSphereRadius();
-  groundBody.updateBoundingRadius();
-  groundBody.aabbNeedsUpdate = true;
-}
 
 export function addStaticSpheres(spheres) {
   // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.

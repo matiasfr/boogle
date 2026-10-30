@@ -1,11 +1,9 @@
 // Water rules: the `water` state (the shared water sim from ../../sim/water.js over the home square), its ground copy of
-// the terrain, the sea pin, its tick and the slosh op. Lockstep: everything here runs the same on every peer (see
+// the island's base, the sea pin, its tick and the slosh op. Lockstep: everything here runs the same on every peer (see
 // ./README.md).
 //
-// Order inside a tick: edits apply (terrain deltas change, the `water ground` listener marks their cells) -> the
-// `water` tick copies that ground into the sim, wakes those cells and steps the water, then pins the sea.
+// Order inside a tick: edits apply (slosh) -> the `water` tick steps the water, then pins the sea.
 import { SEA, homeBox } from '../grid.js';
-import { TERRAIN_OPS } from '../terrain-logic.js';
 import { createWater } from '../../sim/water.js';
 import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../../sim/water-region.js';
 import { JUNK, bad } from './edit-gen.js';
@@ -21,9 +19,8 @@ export const WATER_SIM = {
 };
 const CFG = WATER_SIM;
 
-export function install(sync, land, rules) {
+export function install(sync, land) {
   const { n: N } = land;
-  const terrain = rules.terrain.state;
 
   // Only the home square (../grid.js HOME) is simulated: the mainland has no shared water, so the sim costs what it
   // always did however big the island gets.
@@ -40,7 +37,7 @@ export function install(sync, land, rules) {
     for (let a = Math.max(a0, i0); a <= Math.min(a1, i0 + W - 1); a++)
       for (let b = Math.max(b0, j0); b <= Math.min(b1, j0 + H - 1); b++) {
         const g = a * N + b;
-        simTerrain[(a - i0) * H + (b - j0)] = terrain.base[g] + terrain.delta[g];
+        simTerrain[(a - i0) * H + (b - j0)] = land.base[g];
       }
   }
   copyGround(0, 0, N - 1, N - 1);
@@ -57,7 +54,7 @@ export function install(sync, land, rules) {
   for (let c = 0; c < W * H; c++) water.depth[c] = seaFill(c);
 
   // Deep sea cells are pinned to sea level after every step: the ocean is an infinite reservoir, so water reaching the
-  // sea disappears into it instead of heaping up, and holes dug at the shore always find water.
+  // sea disappears into it instead of heaping up.
   const seaCells = [];
   for (let c = 0; c < W * H; c++) if (simTerrain[c] < CFG.seaPinBelowCm) seaCells.push(c);
   function pinSea() {
@@ -81,7 +78,6 @@ export function install(sync, land, rules) {
     load(json) {
       // Cells are region-relative: water saved over a different region (an older island) is dropped, the sea refills.
       if (json.region !== regionKey) json = { ...json, cells: [] };
-      copyGround(0, 0, N - 1, N - 1); // the terrain state loaded just before this one (RULES order)
       const d = new Int32Array(W * H);
       for (let c = 0; c < d.length; c++) d[c] = seaFill(c);
       for (let k = 0; k + 1 < json.cells.length; k += 2) d[json.cells[k]] = json.cells[k + 1];
@@ -91,17 +87,6 @@ export function install(sync, land, rules) {
     },
     hash: water.hash,
   });
-
-  let groundDirty = null; // [a0, b0, a1, b1] in terrain grid cells
-  function dirtyGround(a0, b0, a1, b1) {
-    if (!groundDirty) groundDirty = [a0, b0, a1, b1];
-    else {
-      groundDirty[0] = Math.min(groundDirty[0], a0);
-      groundDirty[1] = Math.min(groundDirty[1], b0);
-      groundDirty[2] = Math.max(groundDirty[2], a1);
-      groundDirty[3] = Math.max(groundDirty[3], b1);
-    }
-  }
 
   const lastSlosh = new Map(); // host-only rate bookkeeping, never serialized
   sync.registerOp('slosh', {
@@ -125,29 +110,11 @@ export function install(sync, land, rules) {
     },
   });
 
-  // Every terrain op (dig, pile and flatten alike) changes ground under the water: re-copy exactly the cells its apply
-  // returned. (Flatten used to be left out: long-running peers kept stale sim ground while a joiner's load copied it
-  // fresh, and their water diverged.)
-  sync.onApplied((edit, tick, cells) => {
-    if (!TERRAIN_OPS.has(edit.op) || !cells) return;
-    for (const idx of cells) {
-      const a = (idx / N) | 0;
-      dirtyGround(a, idx - a * N, a, idx - a * N);
-    }
-  }, 'water ground');
-
   function stepOnce() {
     water.step();
     pinSea();
   }
   sync.onTick(() => {
-    if (groundDirty) {
-      const [a0, b0, a1, b1] = groundDirty;
-      groundDirty = null;
-      copyGround(a0, b0, a1, b1);
-      for (let a = Math.max(a0, i0); a <= Math.min(a1, i0 + W - 1); a++)
-        for (let b = Math.max(b0, j0); b <= Math.min(b1, j0 + H - 1); b++) water.wake(a - i0, b - j0, 1);
-    }
     stepOnce();
   }, 'water'); // its cost per tick: `npm run perf -- --sim` (profileTicks)
   sync.onSnapshot(() => copyGround(0, 0, N - 1, N - 1));
@@ -180,14 +147,11 @@ export const edits = {
 
 // Water is conserved: what lies in the region is the sea that filled the bare island at install, plus what was added
 // (the sea pin), plus what the sea edges let in, minus what evaporated.
-export function invariants({ water, region }, rules) {
-  const { base, n } = rules.terrain.state;
+export function invariants({ water, region, simTerrain }) {
   let start = 0,
     total = 0;
   for (let c = 0; c < region.w * region.h; c++) {
-    const i = region.i0 + ((c / region.h) | 0),
-      j = region.j0 + (c % region.h);
-    start += Math.max(0, water.seaLevel - base[i * n + j]);
+    start += Math.max(0, water.seaLevel - simTerrain[c]);
     total += water.depth[c];
   }
   const { added, seaNet, evaporated } = water.stats();

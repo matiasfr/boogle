@@ -40,7 +40,15 @@ export function install(sync, land, rules) {
   // A seed plants itself where it lands (the host checks the spot as for mush.plant); anything else lands as an item.
   sync.registerOp('gift.toss', {
     validate: (e, ctx) => {
-      if (!launchOk(e.l) || !isInt(e.n) || !isInt(e.k) || !GIFTS[e.k] || GIFTS[e.k].src === 'ball') return false;
+      if (
+        !launchOk(e.l) ||
+        !isInt(e.n) ||
+        !isInt(e.k) ||
+        !GIFTS[e.k] ||
+        GIFTS[e.k].src === 'ball' ||
+        GIFTS[e.k].retired
+      )
+        return false;
       if (e.y === LOST) return true;
       if (e.k === SEEDS) return rules.mushrooms.plantOk(e.i, e.j, ctx.env);
       return canToss(e.k, e.i, e.j, e.y) && e.i < n && e.j < n;
@@ -62,7 +70,7 @@ export function install(sync, land, rules) {
 
 // Replay-test generators (./README.md): shake a palm, pick up a lying item, throw something
 // (seeds plant where they land), or junk.
-const THROWABLE = GIFTS.flatMap((g, k) => (g.src === 'ball' ? [] : [k]));
+const THROWABLE = GIFTS.flatMap((g, k) => (g.src === 'ball' || g.retired ? [] : [k]));
 export const edits = {
   'fruit.drop': (r, view) => {
     if (r.chance(JUNK)) return bad(r, 'fruit.drop');

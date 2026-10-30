@@ -1,5 +1,5 @@
 {
-  "about": "Captured before state versions (B3, no `vers`) from a local world on the home land after 240 seeded edits (the rules modules' generators). It must keep loading to these hashes: test/world-snapshots.test.mjs.",
+  "about": "Captured before state versions (B3, no `vers`) from a local world on the home land after 240 seeded edits (the rules modules' generators). It must keep loading to these hashes: test/world-snapshots.test.mjs. Hashes updated 2026-10-30: sand removed, deltas ignored (terrain is the bare constant; water now fills from base ground alone).",
   "snap": {
     "tick": 240,
     "seed": 20261028,
@@ -176,10 +176,10 @@
     }
   },
   "hashes": {
-    "terrain": 1363146916,
+    "terrain": 2166136261,
     "mushrooms": 3241262416,
     "gifts": 2903104021,
     "proto": 3360987925,
-    "water": 3410979108
+    "water": 374015541
   }
 }

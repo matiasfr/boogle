@@ -193,7 +193,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
       }
     }
   }
-  assert.ok(n >= 5, `found only ${n} key bindings; did the pattern stop matching?`);
+  assert.ok(n >= 3, `found only ${n} key bindings; did the pattern stop matching?`);
 });
 
 test('controls: a key presses its action through one guard', () => {

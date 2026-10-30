@@ -24,8 +24,7 @@ Four files, nothing else edited:
 Run `npm run check:full`. Notes:
 
 - A system on the ground (markers, castles) stores grid cells and reads the height of cell `g = i*n + j` as
-  `rules.terrain.state.base[g] + rules.terrain.state.delta[g]` (cm). It changes the ground only through the terrain
-  ops (`TERRAIN_OPS`), or the water sim keeps stale ground.
+  `land.base[g]` (cm). The ground is fixed: no op changes it (digging was removed 2026-10-30).
 - `setEnv` is only for validate facts the rules cannot compute (what the render side sees: trees, props). Anything
   derivable from `land` and the rules' state is checked in validate directly.
 - An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
@@ -38,7 +37,7 @@ Run `npm run check:full`. Notes:
 
 ```js
 // src/world/rules/<name>.js
-// Imports allowed: ../grid.js, ../terrain-logic.js, ../../sim/*, ./<earlier rule>.js (constants only).
+// Imports allowed: ../grid.js, ../../sim/*, ./<earlier rule>.js (constants only).
 export const name = 'terrain'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -56,7 +55,7 @@ export function install(sync, land, rules) {
 Rules:
 
 - Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder, and its import
-  lint allows only `../grid.js`, `../terrain-logic.js`, `../../sim/*` and sibling rules (no
+  lint allows only `../grid.js`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
@@ -67,7 +66,7 @@ Rules:
 ## Edit generators and invariants
 
 `test/world-replay.test.mjs` runs a host and two clients on the real rules and the home land, feeds them a seeded
-stream of every registered op, kills the host midway, adds a late joiner after a flatten, reloads a JSON snapshot in a
+stream of every registered op, kills the host midway, adds a late joiner after a toss, reloads a JSON snapshot in a
 fresh tab, and requires every peer to hash every state the same at every shared tick, every invariant to hold, and a
 second run with the same seed to give the same result. It fails when a registered op has no generator, or when no
 edit of that op was ever accepted. So a module with ops exports:
@@ -125,9 +124,9 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `terrain.js` | `dig`, `pile`, `flatten` | `terrain` | `{ state, lastLoaded() }`: the sand layer (`../terrain-logic.js`) and the cells the last load changed |
+| `terrain.js` | none | `terrain` | `{}`: retired stub, keeps the slot (step 1 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
-| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |
+| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce() }`: the water sim over the home square, its ground copy (`land.base`) and the sea pin; exports `WATER_SIM` |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

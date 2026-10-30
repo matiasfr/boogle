@@ -955,26 +955,6 @@ export const SMALL_TALK = [
     },
   },
   {
-    id: 'holes',
-    lvl: 1,
-    nodes: {
-      a: {
-        say: 'People here dig holes and build sand walls. Yesterday I walked into a hole. I just... stood in it for a while.',
-        opts: [
-          { say: 'Were you stuck?', to: 'b' },
-          { say: 'Sorry, that was probably me.', to: 'b', pts: 1 },
-        ],
-      },
-      b: {
-        say: 'Not stuck. Thinking. A hole is a good place to think. Nobody can see you. Very private office.',
-        opts: [
-          { say: 'A hole office.', pts: 1 },
-          { say: "I'll dig you a nice one.", pts: 2 },
-        ],
-      },
-    },
-  },
-  {
     id: 'name',
     lvl: 1,
     nodes: {

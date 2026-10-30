@@ -1,7 +1,7 @@
 // World inputs: the static facts every peer builds the shared world from, pinned in test/fixtures/world-inputs.json.
 // It checks, in the running game: the state key order (snapshot, load and hash order), the op order (once sync has
-// registry()), the FNV hash of terrain.base, the hash of the base inside the 134..274 window (sea floor outside: what
-// Node tests rebuild), the hash of the editable mask, the water region, and the gifts layout (trees, shore, perches).
+// registry()), the FNV hash of the island's base ground, the hash of the base inside the 134..274 window (sea floor
+// outside: what Node tests rebuild), the water region, and the gifts layout (trees, shore, perches).
 // A change in any of them means peers on different builds disagree, so update the fixture only on purpose:
 // `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, and say why in the commit. Serves "Determinism from day one".
 import fs from 'node:fs';
@@ -15,20 +15,19 @@ const SEA_CM = -750; // SEABED in cm: the window base outside the window
 // Runs in the page. FNV-1a style over the values in index order (i*n+j), as uint32.
 const READ = `
   const sync = await import('/src/world/sync.js');
-  const { terrain } = await import('/src/world/terrain-edits.js');
+  const { land } = await import('/src/world/game-world.js');
   const fnv = (a) => { let h = 2166136261; for (let k = 0; k < a.length; k++) h = Math.imul(h ^ a[k], 16777619); return h >>> 0; };
-  const W = ${JSON.stringify(WINDOW)}, n = Math.round(Math.sqrt(terrain.base.length));
+  const W = ${JSON.stringify(WINDOW)}, n = Math.round(Math.sqrt(land.base.length));
   const win = new Int16Array(n * n).fill(${SEA_CM});
-  for (let i = W.i0; i <= W.i1; i++) for (let j = W.j0; j <= W.j1; j++) win[i * n + j] = terrain.base[i * n + j];
+  for (let i = W.i0; i <= W.i1; i++) for (let j = W.j0; j <= W.j1; j++) win[i * n + j] = land.base[i * n + j];
   const r = window.__water.region, g = window.boogle.gifts;
   const pick = (o) => JSON.parse(JSON.stringify(o));
   return {
     n,
     states: Object.keys(sync.snapshot().data),
     ops: typeof sync.registry === 'function' ? sync.registry().ops : null,
-    baseHash: fnv(terrain.base),
+    baseHash: fnv(land.base),
     windowHash: fnv(win),
-    maskHash: fnv(terrain.mask),
     region: [r.i0, r.j0, r.w, r.h].join(','),
     layout: { trees: pick(g.trees), shore: pick(g.shore), perches: pick(g.perches) },
   };`;
@@ -36,7 +35,7 @@ const READ = `
 const counts = (l) => (l ? `${l.trees?.length} trees / ${l.shore?.length} shore / ${l.perches?.length} perches` : '-');
 
 export default {
-  about: 'the world inputs (state and op order, base, window, mask, water region, gifts layout) match the fixture',
+  about: 'the world inputs (state and op order, base, window, water region, gifts layout) match the fixture',
   timeout: 180000,
   async run(t) {
     const g = await t.open({ name: 'inputs', size: [192, 120] });
@@ -55,7 +54,6 @@ export default {
         ops: got.ops ?? old?.ops ?? null, // needs sync registry(); kept from the old fixture until then
         baseHash: got.baseHash,
         windowHash: got.windowHash,
-        maskHash: got.maskHash,
         region: got.region,
         layout: got.layout,
       };
@@ -76,7 +74,6 @@ export default {
     else console.log('  SKIP  op order (sync has no registry() yet)');
     same('terrain.base hash', got.baseHash, old.baseHash);
     same('window base hash', got.windowHash, old.windowHash);
-    same('editable mask hash', got.maskHash, old.maskHash);
     same('water region', got.region, old.region);
     same('gifts layout', got.layout, old.layout, counts);
   },

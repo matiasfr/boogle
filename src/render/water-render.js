@@ -26,14 +26,6 @@ const heightTex = (() => {
   return t;
 })();
 
-// Refresh the height texels for cells i0..i1, j0..j1 (inclusive) after terrain edits.
-export function updateHeightTexels(i0, j0, i1, j1) {
-  const data = heightTex.image.data;
-  for (let j = j0; j <= j1; j++)
-    for (let i = i0; i <= i1; i++) encodeHeight(data, (j * GRID_RES + i) * 4, heights[i][j]);
-  heightTex.needsUpdate = true;
-}
-
 export const waterMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: {

@@ -9,7 +9,7 @@ import { GIFTS } from '../sim/gift-catalog.js';
 export const SLOTS = 8;
 export const MAX_SEEDS = 20;
 const STORE = 'boogle.hotbar';
-const known = (id) => GIFTS.some((g) => g.id === id && g.src !== 'ball');
+const known = (id) => GIFTS.some((g) => g.id === id && g.src !== 'ball' && !g.retired);
 
 export const inv = { slots: new Array(SLOTS).fill(null), sel: -1, version: 0 };
 const changeFns = [];
@@ -22,7 +22,7 @@ function load() {
     saved = JSON.parse(localStorage.getItem(STORE) ?? 'null');
     pocket = JSON.parse(localStorage.getItem('boogle.pocket') ?? 'null');
   } catch {
-    // storage unavailable or corrupt: start with just a shovel
+    // storage unavailable or corrupt: start empty-handed
   }
   if (Array.isArray(saved)) {
     saved.slice(0, SLOTS).forEach((s, k) => {
@@ -30,7 +30,6 @@ function load() {
     });
     return;
   }
-  inv.slots[0] = { id: 'shovel', n: 1 };
   // The old pocket held catalog indices; they become hotbar items once.
   if (Array.isArray(pocket))
     for (const kind of pocket)

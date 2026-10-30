@@ -3,7 +3,7 @@
 // src: 'tree' grows on the palms, 'shore' washes up on the beach (weight = relative chance), 'stall' comes from the
 // seed stall, 'perch' waits on a perch (the lighthouse deck), 'tool' and 'ball' are carried, never spawned.
 // taste: how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'). line: what he says when you hand it
-// over. key: he refuses it, and line is why.
+// over. key: he refuses it, and line is why. retired: no longer obtainable; kept for its index. Saved hotbars drop it.
 export const GIFTS = [
   {
     id: 'coconut',
@@ -221,6 +221,7 @@ export const GIFTS = [
     color: '#c9a36b',
     src: 'tool',
     key: true,
+    retired: true,
     taste: 'meh',
     line: 'Your shovel? No, no. Without a shovel you are just a person standing on sand. Keep it.',
   },

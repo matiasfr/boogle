@@ -21,7 +21,6 @@ export function iconFor(id) {
   if (icons.has(id)) return icons.get(id);
   iconTarget ??= new THREE.WebGLRenderTarget(ICON, ICON);
   const model = id === 'ball' ? new THREE.Mesh(ball.mesh.geometry, ball.mesh.material) : itemModel(id);
-  if (id === 'shovel') model.rotation.z = -0.8; // diagonal, so a long thin thing fills the square
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model);
   const size = box.getSize(new THREE.Vector3()).length() || 1;

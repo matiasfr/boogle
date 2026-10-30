@@ -26,7 +26,7 @@ ideas live in [proposals/](proposals/README.md) and are only linked here as "rel
 
 Boogle is a drop-in browser island for 1 to 6 friends. You pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court with one shared beach ball. Today the loop as actually played is: throw, bump and chase the ball;
-dig channels and pile walls in the sand and watch the shared sea water run into them; pick up fruit and washed-up junk
+pick up fruit and washed-up junk
 and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves. There are no scores, timers or
@@ -42,15 +42,15 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 
 | # | Principle | What it means in practice today |
 |---|---|---|
-| 1 | Toys before chores | Sand, ball, throwing and the Boogler have no score. |
+| 1 | Toys before chores | Ball, throwing and the Boogler have no score. |
 | 2 | The ball stays the star | Ball floats, sloshes pools, knocks fruit off palms, bounces on mushrooms. |
 | 3 | Farming is never required | Mushrooms are optional; nothing is gated on them. |
-| 4 | Cooperation is automatic | Shared sand and water; the honk chord needs 3 people but no coordination. |
-| 5 | Only the world is the antagonist | No PvP state damage; sand walls are meant to be rebuilt. |
+| 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
+| 5 | Only the world is the antagonist | No PvP state damage. |
 | 6 | Communal world, personal rewards | Hotbar and Boogler friendship are per player, in localStorage. |
-| 7 | Telegraph everything | Interact prompt, shovel ring, ping markers. (No world events exist yet to telegraph.) |
+| 7 | Telegraph everything | Interact prompt, ping markers. (No world events exist yet to telegraph.) |
 | 8 | Drop-in, drop-out | No lobby; host migration; mixed-build reloads. |
-| 9 | Leave something for the next visitor | Sand, water, mushrooms and items persist in snapshots. |
+| 9 | Leave something for the next visitor | Water, mushrooms and items persist in snapshots. |
 | 10 | Slapstick over precision | Face-plants, flops, sail bonks, Boogler launches. |
 
 Technical principles (sync kinds, determinism, sync edits not state, PeerJS only, small and readable) are in the same
@@ -75,7 +75,7 @@ file, and section 8 maps every feature to its kind.
 | Region | Where | Notes |
 |---|---|---|
 | **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court, stall and garden are here. |
-| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | The only place with shared water, diggable sand and beach wash-ups. |
+| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | The only place with shared water and beach wash-ups. |
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
@@ -91,9 +91,9 @@ built outside the POI system.
 | POI | Where | What is there | What you can do |
 |---|---|---|---|
 | **Spawn** | (14, 26), random within 3 m | [src/constants.js](../src/constants.js) `SPAWN` | Land here; fall below −25 m and you are put back. |
-| **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../src/island/ground.js), [terrain.js](../src/adapters/terrain.js)). No net or lines. | The ball spawns at (12, 20). The court is diggable sand even above the normal sand band. |
+| **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../src/island/ground.js), [terrain.js](../src/adapters/terrain.js)). No net or lines. | The ball spawns at (12, 20). |
 | **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/adapters/mushroom-garden.js](../src/adapters/mushroom-garden.js)). | Take 5 seeds per press (stack up to 20) and the watering can. |
-| **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.js](../src/sim/mushrooms.js)). Kept clear of trees, digging and wash-ups. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
+| **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.js](../src/sim/mushrooms.js)). Kept clear of trees and wash-ups. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
 | **Lighthouse** | (6, −58), on a 7.4 m hill with a flat top at 11 m | Striped 18 m tower, spiral stair of 2.5 turns round the outside, gallery deck at about 29.3 m with railings, lamp and two sweeping beams at night ([src/pois/lighthouse/](../src/pois/lighthouse/)). Paths to home, the windmill farm and the upland. | Climb; the **frisbee** waits on the deck at (7.9, 29.3, −56) and refills 60 s after it is taken. |
 | **Windmill farm** | Site centre (82, −46), facing west | Three wooden windmills (7.2 m towers, 7.2 m sails at 0.55 rad/s on the shared clock) on knolls, striped fields (wheat, greens, ploughed earth), cart tracks, hay bales, a fence ([src/pois/windmills/](../src/pois/windmills/)). | The sails are solid: they bonk players and bat the ball. Nothing else to do. |
 | **Caves** | Under the massif; mouths below | Tunnels of radius 2.3 m joining a hub (−50, −88), an abandoned mine (−35, −93: rails, minecart of ore, glowing veins), an underground pond (−64, −90: water at 3.0 m, crystals, glowing mushrooms, stalactites, a rowboat) and a wine cellar (−49, −99: barrel racks, bottle shelves, a cask, a candlelit table). Lanterns, timber mouth frames with name boards, a signpost ([src/pois/caves/](../src/pois/caves/)). | Walk in and explore; throw and float the ball on the pond. Purely a place: no items or ops. |
@@ -126,12 +126,11 @@ Files: [src/player/player.js](../src/player/player.js), [src/physics/physics.js]
 - A soft wall 18 m inside the map edge turns you back from the open sea.
 - Streams carry waders: 0.6 of the local water current.
 
-### Swim and dive
+### Swim
 
 - You swim when the water surface is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
-- Dive (`feel` flag only): Q or pad LT while swimming sends you down at 5.5 m/s and holds 2.9× gravity for up to
-  1.2 s. Surfacing fast within 3 s of a dive adds 3.2 m/s: you breach out of the water.
+- There is no dive (removed 2026-10-30, [plans/cleanup-dig-water-junk.md](plans/cleanup-dig-water-junk.md)).
 
 ### Flops (cosmetic, `feel`)
 
@@ -170,8 +169,7 @@ you enter, it slowly circles the island.
 The registry in [src/player/controls.js](../src/player/controls.js) is the source of truth: `registerAction` binds a pad
 slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
-binds a key with no pad action of its own (hotbar digits, dive). Held keys (move, sprint, Space, Shift-flatten, Q/Z
-dig and pile) and E, R and F are still read by hand in [src/player/input.js](../src/player/input.js). The pause view's controls page and the first-run card are generated
+binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.js](../src/player/input.js). The pause view's controls page and the first-run card are generated
 from it ([src/player/guide.js](../src/player/guide.js)), and [src/features/controls-check.js](../src/features/controls-check.js) warns
 in dev about gaps. Registrations live in [src/player/input.js](../src/player/input.js), [feel.js](../src/features/feel.js),
 [hotbar.js](../src/features/hotbar.js), [bump.js](../src/features/bump.js), [honk.js](../src/features/honk.js),
@@ -182,7 +180,6 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 | Move (`move`) | described | WASD, arrows | Left stick | Drag on the left | Getting around | |
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
-| Dive (`dive`) | described | Q | LT | none | Getting around | swimming (`feel` flag) |
 | Look around (`look`) | described | Mouse | Right stick | Drag on the right | Camera | |
 | Camera distance (`zoom`) | action | Wheel | R3 (4 / 6.5 / 10 m) | none | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
@@ -191,10 +188,6 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 | Use what you hold (`use`) | action | Left click | X | main button when it has no target | Hands | |
 | Hold from your hotbar (`hotbar`) | described | 1-8 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | X | Toss | Hands | holding |
-| Shovel in hand or away (`shovel`) | described | F | LB / RB (cycle to it) | none | Sand | |
-| Dig (`dig`) | described | Q, or click with the shovel | X with the shovel | Dig (main button) | Sand | |
-| Pile up sand (`pile`) | action | Z, right click with the shovel | LT (hold) | Pile | Sand | |
-| Flatten toward your feet (`flatten`) | action | Shift + click | D-pad ↑ (hold) | Flatten | Sand | |
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
 | Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
@@ -202,12 +195,10 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 
 Notes:
 
-- **Free pad slots** (`grep -rn "pad: '" src`): D-pad ↓ and D-pad →. The update toast borrows the first free one
+- **Free pad slots** (`grep -rn "pad: '" src`): LT, D-pad ↑, ↓ and →. The update toast borrows the first free one
   (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
-  Pile, Flatten and Toss are built by the shovel and hotbar features.
-- Q, Z and F, and holding pile or flatten on the pad, pull the shovel out (or hand back a new one) but never mid-throw.
-- With `feel` on, pad LT and Q dive instead of piling or digging while you swim.
+  Toss is built by the hotbar feature.
 - The talk box takes the keys and pad while open ([src/boogler/dialogue.js](../src/boogler/dialogue.js),
   [src/player/modal.js](../src/player/modal.js)): number keys 1-9 answer, Esc closes; on the pad, D-pad picks, A or X skips the
   typing then answers, Y pets, B walks away.
@@ -248,38 +239,16 @@ tick of 100 ms (10 per second).
 
 ### 6.2 Sand digging and the shovel
 
-- **What and how it plays.** Hold the shovel and dig, pile or flatten sand with a 5 × 5 brush. Sand is conserved: what
-  you dig goes in your bucket (or onto a raised rim), and you pile from the bucket. A target ring shows the footprint
-  and bucket fill, and turns red with a reason ("Bucket full: pile some sand", "Bucket empty: dig first", "Can't dig
-  here", "Too deep", "Too high", "Already level"). Hold and drag to carve a continuous channel or wall. Sand juice:
-  a spray of lit sand clumps and dust from the shared particle pool, a crater dip-and-spring, a camera nudge and procedural dry, wet and pat sounds, for remote edits too.
-  Edits colour the sand (dark cool dug, pale warm piled, wet near sea level).
-- **Where.** Only inside the HOME square (2 m inset), on cells whose base height is −1.2 to 1.6 m, plus the court;
-  never the garden patch (plus a margin).
-- **Controls.** Q dig, Z or right click pile, Shift + click flatten, click digs with the shovel in hand, F shovel
-  toggle; pad X dig, LT pile, D-pad ↑ flatten; touch Dig (main button), Pile, Flatten.
-- **Sync kind.** Lockstep. Ops `dig`, `pile`, `flatten` (`{ i, j, h? }`), state `terrain` (non-zero cell deltas plus
-  each player's bucket and last edit tick). The adapter applies changes to the heightfield, mesh, physics and the water
-  height texture once per tick.
-- **Tuning** ([src/world/terrain-logic.js](../src/world/terrain-logic.js)). Dig 40 cm from the centre cell and 20 cm
-  from each of the 8 neighbours; up to half of what was dug goes 5 cm per cell onto the 16-cell rim. Pile mirrors it.
-  Holes down to −150 cm, piles up to +150 cm over the base. Bucket 1600 cm-units (about 13 digs); full when under 20
-  left. Flatten moves the 3 × 3 toward your feet's height (target −300..800 cm). Host rate limit: one edit per
-  player per 2 ticks (5 per second); client repeat 220 ms. Aim reach 4.5 m. Drag steps at most 2 cells per edit.
-- **Files.** [src/world/rules/terrain.js](../src/world/rules/terrain.js), [src/world/terrain-logic.js](../src/world/terrain-logic.js),
-  [src/world/terrain-edits.js](../src/world/terrain-edits.js), [src/features/shovel.js](../src/features/shovel.js),
-  [src/features/sand-fx.js](../src/features/sand-fx.js), [src/adapters/terrain.js](../src/adapters/terrain.js),
-  [src/render/particles.js](../src/render/particles.js).
-- **Known issues and limits.** No erosion or wet-sand slumping (PLAN "later"). Each player's bucket is in shared state,
-  keyed by tab id, so it does not follow you across reloads (the tab id is per page load). Saves from the old 129-cell
-  grid load as bare sand (owner decision 2026-10-30).
+Removed 2026-10-30 ([plans/cleanup-dig-water-junk.md](plans/cleanup-dig-water-junk.md)). The ground is fixed. The
+`terrain` state key stays in `RULES` as a stub (loads any save, ignores old sand deltas, hashes a constant), and
+`GIFTS[24]` (the shovel) stays in the catalog as `retired` so item indices do not shift.
 
 ### 6.3 Water sim
 
-- **What and how it plays.** A 2.5D column water sim over the home square. Dig a channel from the sea and water runs
-  in; dig a hole near the shore and it fills to sea level; raised pools drain. Sim water draws as its own surface mesh
+- **What and how it plays.** A 2.5D column water sim over the home square. The sea fills the low ground
+  around the island and settles (there is no digging any more, so it only moves when the ball sloshes it). Sim water draws as its own surface mesh
   matched to the sea shader. The ball and players float in it and are carried by its currents; fish live in it.
-- **Controls.** None directly: you shape it with the shovel and slosh it with the ball.
+- **Controls.** None directly: you slosh it with the ball.
 - **Sync kind.** Lockstep. State `water` (only cells that differ from the sea fill), op `slosh` (submitted by the
   ball's owner when the ball lands in a pool). The sea is an infinite reservoir: deep cells are pinned to sea level
   after each step.
@@ -341,9 +310,9 @@ tick of 100 ms (10 per second).
 ### 6.6 Hotbar and items
 
 - **What and how it plays.** Eight slots; whatever is selected is drawn in your hand and everyone sees it. New players
-  start with the shovel in slot 1. Pick-ups go into a free slot (seeds stack to 20); the ball takes a slot while you
-  hold it and leaves when ownership does. Using what you hold: the shovel digs, the can waters, seeds plant, anything
-  else winds up a throw. The shovel can never be thrown. A full hotbar greys the prompt ("Hotbar full").
+  start empty-handed. Pick-ups go into a free slot (seeds stack to 20); the ball takes a slot while you
+  hold it and leaves when ownership does. Using what you hold: the can waters, seeds plant, anything
+  else winds up a throw. A full hotbar greys the prompt ("Hotbar full").
 - **Controls.** 1-8 (same key again for empty hands), pad LB / RB, tap a slot; use (click / X); Toss on touch.
 - **Sync kind.** Local for the contents (localStorage `boogle.hotbar`); Owner for what is in your hand (presence `hd`,
   a catalog index or −1). Items cross into the world only through `gift.take` and `gift.toss`.
@@ -424,8 +393,7 @@ Points never drop below 0. Each new level bursts hearts and plays a level-up lin
 #### Talk
 
 - Open with E / pad B within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
-  second and lists answers; a present answer offers what is in your hand (he turns down key items: the shovel and the
-  ball). His portrait can be petted.
+  second and lists answers; a present answer offers what is in your hand (he turns down key items: the ball). His portrait can be petted.
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye. Greetings and farewells
   change with your level.
 - **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
@@ -466,7 +434,7 @@ must never be reused. Related ideas: [proposals/boogler-tech-tree.md](proposals/
   client plays a chord with 14 sparkles per player involved (cooldown 1.2 s). Your own honks are capped at one per
   300 ms; received honks at 3 per sender per second. Distance fades the volume.
 - **Ping.** G / middle click / pad D-pad ← / touch Ping: a marker where you aim, labelled "Ball!" (the aim passes
-  within 1.6 m of the ball), "Dig!" (editable sand) or "Look!" (anything else), in your colour with your name, for
+  within 1.6 m of the ball), or "Look!" (anything else), in your colour with your name, for
   4 s (0.5 s fade), pinned to the screen edge with an arrow when off screen. Range 90 m, own cooldown 1 s, received
   one per 800 ms per sender.
 - **Sync kind.** Neither is state: reliable room messages `{ t: 'honk' }` and `{ t: 'ping', x, y, z, k }`, validated
@@ -482,7 +450,7 @@ All are Local cosmetics (Math.random allowed), each behind a room-wide prototype
 
 | Critter | Flag | What | Numbers |
 |---|---|---|---|
-| Fish | `fish` | A boids school in water at least 0.4 m deep (sea, flooded beach, dug pools); scatters from swimmers and a splashing ball. | 36 fish, 1.8 m/s cruise, 6 m/s flee, scare within 3.5 m. |
+| Fish | `fish` | A boids school in water at least 0.4 m deep (sea, flooded beach); scatters from swimmers and a splashing ball. | 36 fish, 1.8 m/s cruise, 6 m/s flee, scare within 3.5 m. |
 | Gulls | `gulls` | Idle and peck on the sand, burst up when a player runs at them (3 m/s or more within 4.5 m) or the ball lands within 5 m, circle 6 to 12 s, resettle. | 7 gulls, 7 m/s, circle radius 8 to 14 m, 6 to 10 m up. |
 | Fireflies | `fireflies` | Blinking lights around the garden and over grass at night. | 60, shown when daylight is under 0.35. |
 
@@ -598,7 +566,7 @@ Shore weights sum to 82, so "chance" is the share of wash-ups. Points are the fr
 | 21 | doppi | embroidered cap (doppi) | shore | 1 (1 %) | love, bonus 10 | 22 |
 | 22 | seeds | mushroom seed | stall | | like | 7 |
 | 23 | can | watering can | stall | | meh | 3 |
-| 24 | shovel | shovel | tool (key: refused) | | meh | n/a |
+| 24 | shovel | shovel | tool (retired 2026-10-30: not obtainable, dropped from saved hotbars) | | meh | n/a |
 | 25 | frisbee | frisbee | perch (lighthouse deck) | | like | 7 |
 | 26 | ball | beach ball | ball (key: refused) | | meh | n/a |
 
@@ -664,7 +632,7 @@ Finished threads offer a retelling ("Tell me about Samarqand again.").
 
 | POI | Folder or file | Position | Interactive parts |
 |---|---|---|---|
-| Spawn and court | [constants.js](../src/constants.js), [grid.js](../src/world/grid.js) | (14, 26); court (12, 21) r 8 | Ball spawn, diggable sand |
+| Spawn and court | [constants.js](../src/constants.js), [grid.js](../src/world/grid.js) | (14, 26); court (12, 21) r 8 | Ball spawn |
 | Mushroom stall | [mushroom-garden.js](../src/adapters/mushroom-garden.js) | (15.2, 13.4) | Seeds, watering can |
 | Garden patch | [sim/mushrooms.js](../src/sim/mushrooms.js) | centre (30, 2.5) | Planting |
 | Lighthouse | [pois/lighthouse/](../src/pois/lighthouse/) | (6, −58) | Stair, deck, frisbee perch, night lamp |
@@ -701,7 +669,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Your build id | Owner | presence `bv` |
 | How you treat the Boogler | Owner | presence `bg` |
 | The Boogler's position and mode | Host | `addHostField('g')` |
-| Sand (dig, pile, flatten) | Lockstep | ops `dig`, `pile`, `flatten`; state `terrain` |
+| Sand | none | retired 2026-10-30; `terrain` is a stub state |
 | Water | Lockstep | op `slosh`; state `water` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, wash-ups, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
@@ -710,7 +678,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
 | Hotbar, Boogler friendship, first-run flags | Local | localStorage |
-| Critters, splashes, sand fx, impact juice, blob shadows, pause view, guide | Local | none |
+| Critters, splashes, impact juice, blob shadows, pause view, guide | Local | none |
 
 Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms behind (`INTERP_MS`).
 
@@ -741,7 +709,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | Update reload guard | sessionStorage | `boogle-update-reloaded-for` | per tab session |
 
 A tab that becomes host without state loads the newest, by tick, of its local copy and the server's (it waits up to 3 s
-for the server). Not persisted: the ball, the Boogler's position, sand buckets across reloads (keyed by tab id).
+for the server). Not persisted: the ball, the Boogler's position.
 
 The server ([server/README.md](../server/README.md)) is one Node service: PeerJS signaling at `/peerjs`, snapshots
 (256 KB max, 30 PUTs per minute per IP, 1,000 rooms), `/report` and `/reports`, `/ice` (Google STUN plus optional
@@ -789,9 +757,9 @@ folder map in [src/README.md](../src/README.md).
   [test/world-replay.test.mjs](../test/world-replay.test.mjs) (seeded edits for every op, host killed midway, late
   joiner, identical hashes) and [test/world-snapshots.test.mjs](../test/world-snapshots.test.mjs).
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
-  [dev/scenarios/](../dev/scenarios/): caves, controls-guide, dig-channel, dive, flatten-water, hotbar, interact,
-  lighthouse, particles, pause, reconnect-dig, shared-kinds, smoke, two-player-dig, world-inputs. CI runs
-  `world-inputs`, `smoke` and `two-player-dig` on every PR (they must pass); the rest run nightly in
+  [dev/scenarios/](../dev/scenarios/): caves, controls-guide, hotbar, interact,
+  lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, two-player-edit, world-inputs. CI runs
+  `world-inputs`, `smoke` and `two-player-edit` on every PR (they must pass); the rest run nightly in
   `scenarios-nightly.yml` and never block. `npm run island-map` renders the composed island.
 - **Perf.** `npm run perf`: draw calls, triangles and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../dev/video/)).
@@ -817,12 +785,12 @@ research in [research/](research/README.md).
 |---|---|
 | Adapter | The render and input side of a lockstep system; reacts through `onApplied`, `onAfterTick`, `onSnapshot`. |
 | Cell | One 1.25 m square of the world grid, `(i, j)` at x = i × 1.25 − 255, z = 255 − j × 1.25. |
-| Edit | A small op (`dig`, `slosh`, `gift.toss` ...) a client submits; the host stamps and broadcasts it. |
+| Edit | A small op (`gift.toss`, `slosh`, `gift.toss` ...) a client submits; the host stamps and broadcasts it. |
 | Epoch | The ball ownership counter; the highest claim wins. |
 | Host | The browser holding `boogle-<room>-host`; authority for lockstep stamping, the Boogler and server saves. |
-| HOME | The −80..80 m square where water, sand and wash-ups exist. `HOME_KEEP` (22 m) is the untouched core. |
+| HOME | The −80..80 m square where water and wash-ups exist. `HOME_KEEP` (22 m) is the untouched core. |
 | Host field | Host-kind state published in the host's presence (`addHostField`). |
-| Key item | A catalog item the Boogler refuses (shovel, ball). |
+| Key item | A catalog item the Boogler refuses (ball). |
 | Local / Owner / Host / Lockstep | The four sync kinds (DESIGN.md). |
 | Perch | A spot that always gets its item back (the frisbee on the lighthouse deck). |
 | POI | Point of interest: a folder in `src/pois/` with a site and content. |

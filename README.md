@@ -20,7 +20,7 @@ Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build)
 
 `index.html` holds only the markup; the game lives in `src/`:
 
-- `main.js`: boot and the frame loop. `loop.js`: `onFrame`/`onStart` hooks. `features/`: self-contained features (shovel, splashes, the Boogler, mushrooms, ...), each auto-loaded with its own CSS and DOM.
+- `main.js`: boot and the frame loop. `loop.js`: `onFrame`/`onStart` hooks. `features/`: self-contained features (splashes, the Boogler, mushrooms, ...), each auto-loaded with its own CSS and DOM.
 - `constants.js`, `math.js`: shared tuning values, math and noise helpers. `style.css`: base styles.
 - `render/`: renderer, camera, lights, sky, sea shader, props (palms/rocks/clouds), particles, splashes and the shared audio context.
 - `physics/`: cannon-es world, materials and step hooks; the ball and its ownership rules; thrown-item flights.
@@ -48,7 +48,7 @@ Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's b
 
 ## Controls
 
-WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact · F shovel. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/player/controls.js`, so a new control describes itself there.
+WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/player/controls.js`, so a new control describes itself there.
 
 ## Deploying
 

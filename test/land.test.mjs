@@ -1,12 +1,11 @@
 // The land Node tests build (test/helpers/land.mjs) is the land the game builds: the base inside the window, the
-// editable mask and the water region match test/fixtures/world-inputs.json, which dev/scenarios/world-inputs.mjs pins
+// water region match test/fixtures/world-inputs.json, which dev/scenarios/world-inputs.mjs pins
 // from the browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { homeLand, fixture, fnv } from './helpers/land.mjs';
 import { GRID_RES, SEABED, homeBox } from '../src/world/grid.js';
 import { regionFromBase } from '../src/sim/water-region.js';
-import { editableMask } from '../src/world/rules/terrain.js';
 
 test('the home window base matches the browser', () => {
   const { n, base } = homeLand();
@@ -24,9 +23,4 @@ test('the water region (land box clipped to HOME) matches the browser', () => {
   const w = Math.min(full.i0 + full.w - 1, h.i1) - i0 + 1,
     hh = Math.min(full.j0 + full.h - 1, h.j1) - j0 + 1;
   assert.equal([i0, j0, w, hh].join(','), fixture.region);
-});
-
-test('the editable mask (where players may dig) matches the browser', () => {
-  const { n, base } = homeLand();
-  assert.equal(fnv(editableMask(base, n)), fixture.maskHash);
 });

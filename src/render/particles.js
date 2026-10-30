@@ -1,11 +1,9 @@
 // One cosmetic particle pool for dust, sand and spray. Local only: never networked and never read by the simulation,
-// so floats and Math.random are fine. Two looks share one integrator, one draw each:
-//   'soft'   round soft dots (THREE.Points): splash foam (src/render/splash.js), the ball's sand puff (features/impact.js),
-//            skid and splat dust (features/feel.js)
-//   'clump'  lit faceted sand clumps (an InstancedMesh): the dig spray and pile dust (features/sand-fx.js)
+// so floats and Math.random are fine. One look, 'soft': round soft dots (THREE.Points), used by splash foam
+// (src/render/splash.js), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
 //
-//   emit(style, p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
-//                    alpha (soft only, default 1), gravity (m/s², default 0), drag (1/s, default 0),
+//   emit('soft', p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
+//                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),
 //                    floor: a height it dies falling through (water level) or 'ground' (dies landing on the terrain),
 //                    grow: [start, end] size multipliers over its life (default [1, 1]),
 //                    shrink: the last fraction of its life it shrinks to nothing over (default 0, none),
@@ -83,22 +81,8 @@ softPoints.renderOrder = 5;
 softPoints.visible = false;
 scene.add(softPoints);
 
-// ---------------------------------------------------------------- sand clumps
-const clump = createPool(220);
-const clumps = new THREE.InstancedMesh(
-  new THREE.IcosahedronGeometry(0.5, 0),
-  new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true }),
-  clump.max,
-);
-clumps.frustumCulled = false;
-clumps.count = 0;
-clumps.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-clumps.instanceColor = new THREE.InstancedBufferAttribute(clump.color, 3).setUsage(THREE.DynamicDrawUsage);
-clumps.castShadow = false;
-scene.add(clumps);
-
 // ---------------------------------------------------------------- emit
-const pools = { soft, clump };
+const pools = { soft };
 const rgb = { r: 0, g: 0, b: 0 };
 
 export function emit(style, p) {
@@ -112,9 +96,7 @@ export function emit(style, p) {
   P.vel[k * 3] = p.vx ?? 0;
   P.vel[k * 3 + 1] = p.vy ?? 0;
   P.vel[k * 3 + 2] = p.vz ?? 0;
-  // the soft shader draws sRGB as is; the lit clumps take the working (linear) colour like any material
-  if (style === 'soft') p.color.getRGB(rgb, THREE.SRGBColorSpace);
-  else p.color.getRGB(rgb);
+  p.color.getRGB(rgb, THREE.SRGBColorSpace); // the shader draws sRGB as is
   P.color[k * 3] = rgb.r;
   P.color[k * 3 + 1] = rgb.g;
   P.color[k * 3 + 2] = rgb.b;
@@ -174,10 +156,6 @@ function scaleOf(P, k, f) {
   return P.shrink[k] ? s * Math.min(1, f / P.shrink[k]) : s;
 }
 
-const m4 = new THREE.Matrix4(),
-  qI = new THREE.Quaternion(),
-  vS = new THREE.Vector3(),
-  vP = new THREE.Vector3();
 let softHad = false;
 
 onFrame(
@@ -195,21 +173,9 @@ onFrame(
       softMat.uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
     }
     softHad = ns > 0;
-
-    const nc = step(clump, dt);
-    clumps.count = nc;
-    for (let k = 0; k < nc; k++) {
-      const s = scaleOf(clump, k, clump.life[k] / clump.maxLife[k]);
-      m4.compose(vP.fromArray(clump.pos, k * 3), qI, vS.set(s, s, s));
-      clumps.setMatrixAt(k, m4);
-    }
-    if (nc > 0) {
-      clumps.instanceMatrix.needsUpdate = true;
-      clumps.instanceColor.needsUpdate = true;
-    }
   },
   { phase: 'late', order: -20 },
 );
 
 // Live counts, for scenarios and dev tooling.
-export const particleCounts = () => ({ soft: soft.n, clump: clump.n });
+export const particleCounts = () => ({ soft: soft.n });
