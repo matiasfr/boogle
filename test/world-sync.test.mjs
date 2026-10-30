@@ -49,7 +49,8 @@ function makeNet() {
   return net;
 }
 
-function makePeer(net, id, host, storage = null) {
+// opts go to attachWorld (storage, serverUrl, fetch, ...).
+function makePeer(net, id, host, opts = {}) {
   const s = createSync();
   const grid = new Int32Array(16);
   const log = [];
@@ -78,7 +79,7 @@ function makePeer(net, id, host, storage = null) {
     },
   });
   const p = net.add(id, host);
-  s.attachWorld(p.room, { roomId: 'test', storage, now: () => 1234 });
+  s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234, ...opts });
   return { s, grid, log, p };
 }
 
@@ -89,6 +90,15 @@ async function run(net, peers, frames) {
     net.flush();
   }
 }
+// In-memory localStorage that counts writes, and a fetch that logs each method and finds no snapshot on the server.
+const mem = () => {
+  const m = new Map();
+  const store = { writes: 0, getItem: (k) => m.get(k) ?? null, setItem: (k, v) => (store.writes++, m.set(k, v)) };
+  return store;
+};
+const fetchSpy = (log) => async (url, init) => (log.push(init?.method ?? 'GET'), { ok: false, status: 404 });
+const SERVER = 'http://server.invalid';
+const saved = (store) => JSON.parse(store.getItem('boogle.world.test'));
 const live = (peers) => peers.filter((x) => x.p.alive);
 const same = (peers) => new Set(live(peers).map((x) => x.grid.join())).size === 1;
 
@@ -333,23 +343,64 @@ test('unloadable snapshots are reported (peer chunk, local copy, server)', async
 });
 
 test('clients save the world too, so the next host starts from it', async () => {
-  const mem = () => {
-    const m = new Map();
-    return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) };
-  };
   const net = makeNet();
   const host = makePeer(net, 'h', true);
   const store = mem();
-  const client = makePeer(net, 'c', false, store);
+  const client = makePeer(net, 'c', false, { storage: store });
   await run(net, [host, client], 60);
   client.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
   await run(net, [host, client], 620); // past the 30 s save interval
   assert.equal(client.grid[11], 7);
   assert.ok(store.getItem('boogle.world.test'), 'client saved');
 
-  const next = makePeer(makeNet(), 'n', true, store); // another day, the client hosts
+  const next = makePeer(makeNet(), 'n', true, { storage: store }); // another day, the client hosts
   await new Promise((r) => setImmediate(r));
   assert.equal(next.grid[11], 7);
+});
+
+test('a tab that takes over as host while waiting for its first snapshot still saves', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const c = makePeer(net, 'c', false, { storage: store }); // asked for a snapshot, none came yet
+  net.killHost();
+  await run(net, [host, c], 620); // past the 30 s save interval
+  assert.equal(c.s.worldStatus().mode, 'host');
+  assert.ok(store.writes > 0, 'the new host saved');
+});
+
+test('a promoted client uploads its world even if it already saved that state locally', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const calls = [];
+  const c = makePeer(net, 'c', false, { storage: store, serverUrl: SERVER, fetch: fetchSpy(calls) });
+  await run(net, [host, c], 60);
+  c.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, c], 620);
+  assert.equal(store.writes, 1, 'saved locally as a client');
+  net.killHost(); // the old host is gone; the world does not change after this
+  await run(net, [host, c], 620);
+  assert.deepEqual(calls, ['PUT']);
+  assert.equal(saved(store).data.grid[11], 7);
+});
+
+test('a client saves only hash-verified state, so a desync never reaches the next host', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const client = makePeer(net, 'c', false, { storage: store });
+  await run(net, [host, client], 60);
+  host.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
+  await run(net, [host, client], 530); // 29.5 s: the 30 s save falls due before the next hash check
+  client.grid[5] = 999; // a silent desync
+  await run(net, [host, client], 80);
+  assert.ok(client.s.worldStatus().resyncs >= 1);
+  assert.deepEqual(saved(store).data.grid, Array.from(host.grid));
+
+  const next = makePeer(makeNet(), 'n', true, { storage: store });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(next.grid, host.grid);
 });
 
 test('profileTicks times each handler per tick and changes nothing', () => {
