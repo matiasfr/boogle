@@ -10,18 +10,13 @@ import {
   serializeGarden,
   loadGarden,
   hashGarden,
+  PATCH,
+  SPACING,
+  MAX_PLOTS,
 } from '../../sim/mushrooms.js';
-import { isLegacyCell, LEGACY_SHIFT } from '../legacy-grid.js';
+import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'mushrooms';
-
-// Snapshots from before the island grew are bare arrays on the old 129-cell grid; move those cells. Current saves
-// ({ v: 2, p }) pass through, so it is safe to run twice.
-export function migrateGarden(json) {
-  return Array.isArray(json)
-    ? json.map((v, k) => (k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v))
-    : json;
-}
 
 export function install(sync, land) {
   const { n } = land;
@@ -40,9 +35,38 @@ export function install(sync, land) {
   });
   sync.registerState('mushrooms', {
     serialize: () => serializeGarden(garden),
-    load: (json) => loadGarden(garden, migrateGarden(json)),
+    load: (json) => loadGarden(garden, json),
     hash: () => hashGarden(garden),
   });
   sync.onTick(() => tickGarden(garden), 'mushrooms');
   return { garden, plantOk, plant: (i, j) => plant(garden, i, j) };
+}
+
+// Replay-test generators (./README.md): seeds around the stall's patch, water on a dry plot, or junk.
+export const edits = {
+  'mush.plant': (r) =>
+    r.chance(JUNK)
+      ? bad(r, 'mush.plant')
+      : {
+          op: 'mush.plant',
+          i: r.int(PATCH.i0 - 4, PATCH.i0 + PATCH.w + 4),
+          j: r.int(PATCH.j0 - 4, PATCH.j0 + PATCH.h + 4),
+        },
+  'mush.water': (r, view) => {
+    if (r.chance(JUNK)) return bad(r, 'mush.water');
+    const dry = view.rules.mushrooms.garden.plots.filter((p) => p.g === 0);
+    const p = dry.length ? r.pick(dry) : null;
+    return p && { op: 'mush.water', i: p.i, j: p.j };
+  },
+};
+
+// Plots stay apart and within the cap.
+export function invariants({ garden }) {
+  const { plots } = garden;
+  if (plots.length > MAX_PLOTS) return `${plots.length} plots`;
+  for (let a = 0; a < plots.length; a++)
+    for (let b = a + 1; b < plots.length; b++)
+      if (Math.max(Math.abs(plots[a].i - plots[b].i), Math.abs(plots[a].j - plots[b].j)) < SPACING)
+        return `plots ${a} and ${b} too close`;
+  return null;
 }

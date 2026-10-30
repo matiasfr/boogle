@@ -10,7 +10,7 @@
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
 //                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
 //                                                           hs = { stateKey: hash } so a client can name what diverged
-//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht }; only `to` uses it.
+//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht, noSave }; only `to` uses it.
 //                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
@@ -29,6 +29,13 @@
 // { tick, writerId, data } to the server's /rooms/:id/snapshot (bodies under 250 KB; keepalive on unload only under
 // 60 KB). A tab that becomes host without state loads the newest by tick of its local and server copies (the server gets
 // 3 s); a migrating host keeps its live state, and its first save always uploads.
+//
+// Versions: each state registers a `version` (default 0) and `migrate[v]` steps (json at v-1 -> json at v); snapshots
+// record them in `vers` (missing = 0) and loads run the steps in order. A state that fails to load starts fresh
+// (stats.loadErrors); on a client nothing vouches for that until a host hash matches, so if it takes over as host first
+// it loads the newest saved copy instead of keeping (and uploading) the fallback. A state saved by a newer build is
+// skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
+// noSave, so the clients that load them stop persisting too.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -64,7 +71,7 @@ export function createSync({ env: env0 } = {}) {
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
-  const snapFailFns = []; // fn({ from: 'peer'|'local'|'server', reason }) when a snapshot could not be loaded
+  const snapFailFns = []; // fn({ from: 'peer'|'local'|'server'|'state', reason }): a snapshot (or a state) failed to load
   const stats = {
     resyncs: 0,
     snapsSent: 0,
@@ -74,7 +81,12 @@ export function createSync({ env: env0 } = {}) {
     lateEdits: 0,
     saves: 0,
     heldDropped: 0,
+    loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
   };
+  let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
+  // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
+  // keep (and upload) that state, but load the saved copy instead.
+  let unverifiedFallback = false;
   let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad = null; // { tick, keys } of the latest mismatch
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -134,9 +146,18 @@ export function createSync({ env: env0 } = {}) {
     if (ops.has(op)) throw new Error('duplicate op ' + op);
     ops.set(op, handlers);
   }
+  // handlers: { serialize, load, hash, version = 0, migrate = { [v]: json => json } }. What serialize returns now is the
+  // state's fresh form, loaded when a snapshot's copy fails.
   function registerState(key, handlers) {
     if (states.has(key)) throw new Error('duplicate state ' + key);
-    states.set(key, handlers);
+    const version = handlers.version ?? 0;
+    if (!isInt(version) || version < 0) throw new Error(`state ${key}: bad version ${version}`);
+    states.set(key, {
+      ...handlers,
+      version,
+      migrate: handlers.migrate ?? {},
+      fresh: JSON.stringify(handlers.serialize()),
+    });
   }
   const registry = () => ({ ops: [...ops.keys()], states: [...states.keys()] });
   function addHandler(list, fn, label) {
@@ -293,9 +314,13 @@ export function createSync({ env: env0 } = {}) {
 
   // ------------------------------------------------------------ snapshots + hashes
   function snapshot() {
-    const data = {};
-    for (const [k, s] of states) data[k] = s.serialize();
-    return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data };
+    const data = {},
+      vers = {};
+    for (const [k, s] of states) {
+      data[k] = s.serialize();
+      vers[k] = s.version;
+    }
+    return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data, vers };
   }
   function validSnap(s) {
     return isObj(s) && isInt(s.tick) && s.tick >= 0 && isInt(s.seed) && isInt(s.epochMs) && isObj(s.data);
@@ -306,11 +331,37 @@ export function createSync({ env: env0 } = {}) {
     world.seed = snap.seed;
     world.epochMs = snap.epochMs;
     verifiedTick = -1; // a loaded snapshot is verified only by the next hash check
-    for (const [k, s] of states) if (k in snap.data) s.load(snap.data[k]);
+    const vers = isObj(snap.vers) ? snap.vers : {};
+    unverifiedFallback = false;
+    for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k], vers[k] ?? 0);
     queue = [];
     acc = 0;
     pendingHash.clear();
     return true;
+  }
+  // One state from a snapshot: migrate from its saved version up to ours, then load. Never throws.
+  function loadState(k, s, json, v) {
+    if (isInt(v) && v > s.version) {
+      newerSave = true;
+      console.warn(`[world] ${k} was saved by a newer build (v${v} > v${s.version}): skipped; not saving`);
+      snapFail('state', `${k} newer`);
+      return;
+    }
+    try {
+      if (!isInt(v) || v < 0) throw new Error(`bad version ${v}`);
+      for (let x = v + 1; x <= s.version; x++) if (s.migrate[x]) json = s.migrate[x](json);
+      s.load(json);
+    } catch (err) {
+      stats.loadErrors++;
+      if (mode === 'client') unverifiedFallback = true;
+      console.warn(`[world] ${k} failed to load; starting it fresh`, err);
+      snapFail('state', `${k} load`);
+      try {
+        s.load(JSON.parse(s.fresh));
+      } catch (err2) {
+        console.error(`[world] ${k} fresh load failed`, err2);
+      }
+    }
   }
   function combine(h0) {
     let h = h0;
@@ -333,6 +384,7 @@ export function createSync({ env: env0 } = {}) {
     if (worldHash() === h) {
       stats.hashOk++;
       verifiedTick = tick;
+      unverifiedFallback = false;
       saveSoon();
     } else {
       stats.hashBad++;
@@ -355,7 +407,8 @@ export function createSync({ env: env0 } = {}) {
     if (!ready || wall - (served.get(to) ?? -1e9) < 1500) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick });
+    // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
+    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave });
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
     for (let k = 0; k < n; k++) send({ t: 'w:snap', to, id, n, k, s: json.slice(k * CHUNK, (k + 1) * CHUNK) });
@@ -380,6 +433,7 @@ export function createSync({ env: env0 } = {}) {
   function applyPayload(p) {
     if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
+    if (p.noSave === true) newerSave = true;
     queue = p.pend.filter(
       (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
     );
@@ -491,7 +545,8 @@ export function createSync({ env: env0 } = {}) {
   // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
   // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
   function persist(unloading) {
-    if (mode === 'local' || !ready || awaiting || (mode === 'client' && verifiedTick !== world.tick)) return;
+    if (mode === 'local' || !ready || awaiting || newerSave || (mode === 'client' && verifiedTick !== world.tick))
+      return;
     const hsh = combine(0);
     if (hsh === lastSavedHash) return;
     lastSavedHash = hsh;
@@ -552,13 +607,15 @@ export function createSync({ env: env0 } = {}) {
     awaiting = false;
     asm = null;
     lastSavedHash = null;
-    if (ready) {
+    if (ready && !unverifiedFallback) {
       // Migration: our state is in sync; keep going, stamp conservatively, hash soon so others can resync.
       seq += 1000;
       extraUntil = wall + 2000;
       nextHashTick = world.tick + 4;
       return;
     }
+    // No state yet, or a fallback no hash has vouched for: start from the newest saved copy instead.
+    ready = false;
     const snap = await loadPersisted();
     if (my !== epoch) return;
     if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
@@ -643,7 +700,7 @@ export function createSync({ env: env0 } = {}) {
     worldHash,
     attachWorld,
     detachWorld,
-    worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, subsystems, lastBad }),
+    worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, newerSave, subsystems, lastBad }),
     profileTicks,
   };
 }

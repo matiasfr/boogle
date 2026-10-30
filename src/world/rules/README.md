@@ -12,7 +12,7 @@ rules' API and reacting through `onApplied`, `onAfterTick` and `onSnapshot`.
 
 ```js
 // src/world/rules/<name>.js
-// Imports allowed: ../grid.js, ../terrain-logic.js, ../legacy-grid.js, ../../sim/*, ./<earlier rule>.js (constants only).
+// Imports allowed: ../grid.js, ../terrain-logic.js, ../../sim/*, ./<earlier rule>.js (constants only).
 export const name = 'terrain'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules, opts) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -31,15 +31,43 @@ export function install(sync, land, rules, opts) {
 Rules:
 
 - Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder, and its import
-  lint allows only `../grid.js`, `../terrain-logic.js`, `../legacy-grid.js`, `../../sim/*` and sibling rules (no
+  lint allows only `../grid.js`, `../terrain-logic.js`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
+- Changing what a state's `serialize` writes means a new `version` and a `migrate[v]` step for older saves
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-pre-version.json`
+  is one, checked by `test/world-snapshots.test.mjs`).
 - Append new modules to the end of `RULES` in `index.js`. Its order is the wire order: states snapshot, load and
   hash in it, so reordering it desyncs rooms where peers run different builds.
 
-- Coming in B2: every module that registers ops also exports `edits = { [op]: (r, view) => edit | null }`, a seeded
-  generator of valid (and some invalid) edits for the replay test, which fails on a registered op with no generator.
-  Optional `invariants(api)` returns `null` or a message. See docs/tech-plan.md, B2.
+- Every module that registers ops also exports `edits`, one generator per op (below). The replay test fails on a
+  registered op without one.
+
+## Edit generators and invariants
+
+`test/world-replay.test.mjs` runs a host and two clients on the real rules and the home land, feeds them a seeded
+stream of every registered op, kills the host midway, adds a late joiner after a flatten, reloads a JSON snapshot in a
+fresh tab, and requires every peer to hash every state the same at every shared tick, every invariant to hold, and a
+second run with the same seed to give the same result. It fails when a registered op has no generator, or when no
+edit of that op was ever accepted. So a module with ops exports:
+
+```js
+import { JUNK, bad } from './edit-gen.js';
+// r: the peer's seeded stream { int(lo, hi), pick(a), chance(p), next() }; view: { rules, land, tick } of that peer.
+export const edits = {
+  'thing.poke': (r, view) => (r.chance(JUNK) ? bad(r, 'thing.poke') : { op: 'thing.poke', i: r.int(200, 240), j: 210 }),
+};
+// Optional: null while the state is sane, else a message. api is this module's, rules all of this peer's.
+export function invariants(api, rules) {
+  return api.thing.total() >= 0 ? null : 'negative total';
+}
+```
+
+- Most generated edits should be ones the host accepts, built from that peer's state (a cell that is sand, an item
+  that exists); about a fifth (`JUNK`) come from the shared `bad(r, op)`: wrong types, missing fields, cells off the
+  grid, oversized payloads. Return `null` when there is nothing sensible to do yet.
+- Edits are JSON-safe, with integer `i`/`j` and no `p` (sync adds it).
+- Invariants check what would silently break: conserved quantities, unique ids, caps, spacing.
 
 ## env keys
 
@@ -52,6 +80,7 @@ Rules:
 ```js
 // <What the system is.> Lockstep: runs the same on every peer (see ./README.md).
 import { createThing } from '../../sim/thing.js';
+import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'thing';
 
@@ -62,6 +91,11 @@ export function install(sync, land) {
   sync.onTick((t) => thing.tick(t), 'thing');
   return { thing };
 }
+
+// For the replay test (see "Edit generators and invariants").
+export const edits = {
+  'thing.poke': (r, view) => (r.chance(JUNK) ? bad(r, 'thing.poke') : { op: 'thing.poke', i: r.int(200, 240), j: 210 }),
+};
 ```
 
 Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../game-world.js` in the adapter.
@@ -71,7 +105,8 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | Module | Ops | State | API |
 |---|---|---|---|
 | `terrain.js` | `dig`, `pile`, `flatten` | `terrain` | `{ state, lastLoaded() }`: the sand layer (`../terrain-logic.js`) and the cells the last load changed |
-| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }`; exports `migrateGarden` |
-| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `migrateGifts`, `SEEDS`, `LOST` |
+| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
+| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
 | `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce(), stepMs() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |
+| `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
