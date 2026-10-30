@@ -20,7 +20,7 @@ import { ball } from '../../ball.js';
 import { waterField } from '../../water-field.js';
 import { buildCaveMeshSteps, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
-import { buildDecor } from './decor.js';
+import { buildDecor, MOUTH_POSTS } from './decor.js';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
@@ -224,15 +224,34 @@ function floorBelow(x, y, z) {
 }
 
 // ---------------------------------------------------------------- camera and atmosphere
+// The camera ray stops at rock, at the mouths' frame posts, and (out past a mouth) at the ground. Pulled in at once
+// when something gets in the way, it eases back out while you are inside (no pop as the tunnel opens up).
+const POST_R = 0.45; // post half-width plus room for the near plane
+const CAM_EASE = 4; // 1/s
 const tmpV = new THREE.Vector3();
+const camRay = { len: Infinity, at: 0 };
+function blocked(x, y, z) {
+  for (const p of MOUTH_POSTS)
+    if (Math.abs(x - p.x) < POST_R && Math.abs(z - p.z) < POST_R && y < p.y + 3.2) return true;
+  if (outOfMouth(x, z) > 0.5) return y < groundHeight(x, z) + 0.45;
+  return caveSd(x, y, z) > -0.35;
+}
 function keepCameraInside(look, pos) {
-  if (!ready || !me.body || !tracked.get(me.body)?.cave) return false;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - camRay.at) / 1000);
+  camRay.at = now;
+  if (!ready || !me.body || !tracked.get(me.body)?.cave) {
+    camRay.len = Infinity;
+    return false;
+  }
   const dir = tmpV.subVectors(pos, look);
   const len = dir.length();
   dir.divideScalar(len || 1);
   let t = 0;
-  for (; t < len; t += 0.2) if (caveSd(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t) > -0.35) break;
-  pos.copy(look).addScaledVector(dir, Math.max(0.3, t - 0.25));
+  for (; t < len; t += 0.2) if (blocked(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t)) break;
+  const free = Math.max(0.3, Math.min(len, t - 0.25));
+  camRay.len = free < camRay.len ? free : camRay.len + (free - camRay.len) * Math.min(1, dt * CAM_EASE);
+  pos.copy(look).addScaledVector(dir, Math.min(free, camRay.len));
   return true;
 }
 
