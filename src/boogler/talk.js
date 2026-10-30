@@ -1,13 +1,15 @@
 // Conversations with The Boogler: a menu of topics, story chapters unlocked by friendship level, small talk, gifts,
 // and what he says after kicking you off. Pure: the caller passes the friendship, a context and an rng.
 //
-//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick' }
+//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick', mario? }
 //   talkView(t)                     -> { say, mood, opts: [string], gifts: [catalog index | -1] } or null once the
 //                                      talk is over; gifts[i] is what answer i hands over
 //   pickTalk(t, i)                  answer with option i; returns { levelUp, gave, bubble } for the caller to
 //                                   celebrate; bubble is what he says over his head as the talk ends (or null)
 //   leaveTalk(t)                    you walked off or closed it: bookmarks a story chapter you left halfway (resumed
 //                                   next time you ask) and returns his goodbye for a bubble, or null
+//
+// As Mario (ctx.mario) he is starstruck instead, whatever his mood, and every answer is something Mario says.
 //
 // A talk is short: a finished chapter, small talk or present ends it with a bubble line; E opens the menu again.
 //
@@ -43,6 +45,11 @@ import {
   GIFT_REPEAT,
   GIFT_OPTS,
   RESUME,
+  MARIO_TALK,
+  MARIO_AFTER,
+  MARIO_GIFT,
+  MARIO_GIFT_GASP,
+  MARIO_GIFT_OPTS,
 } from './lines.js';
 import {
   addPts,
@@ -69,7 +76,10 @@ export function openTalk(f, ctx) {
   const t = { f, ctx, node: null, cold: true, out: { levelUp: 0, gave: null, bubble: null } };
   const start = ctx.start ?? 'menu';
   if (start === 'kick') t.node = kickNode(t);
-  else if (isQuiet(f, ctx.now)) t.node = quietNode(t);
+  else if (ctx.mario) {
+    t.cold = false;
+    t.node = marioNode(t);
+  } else if (isQuiet(f, ctx.now)) t.node = quietNode(t);
   else if (isWary(f, ctx.now)) t.node = waryNode(t);
   else {
     t.cold = false;
@@ -82,7 +92,8 @@ export function leaveTalk(t) {
   const at = t.node?.at;
   if (at && at.node !== 'a') t.f.flags[bookmarkKey(at.thread)] = `${at.chapter}.${at.node}`;
   t.node = null;
-  return t.cold ? null : farewell(t);
+  if (t.cold) return null;
+  return t.ctx.mario ? fill(t, pick(t, MARIO_AFTER)) : farewell(t);
 }
 
 export function talkView(t) {
@@ -272,16 +283,23 @@ function giftOpts(t, after) {
     .gifts()
     .slice(0, 2)
     .map((g) =>
-      opt(GIFT_ASK.replace('{gift}', withArticle(g.label)), () => giveNode(t, g.kind, after), { gift: g.kind }),
+      opt(
+        t.ctx.mario ? MARIO_GIFT : GIFT_ASK.replace('{gift}', withArticle(g.label)),
+        () => giveNode(t, g.kind, after),
+        {
+          gift: g.kind,
+        },
+      ),
     );
 }
+const giftReplies = (t, list) => (t.ctx.mario ? MARIO_GIFT_OPTS : list);
 
 function giveNode(t, kind, after) {
   const { f, ctx } = t;
   if (GIFTS[kind].key)
     return node(
       GIFTS[kind].line,
-      GIFT_KEPT_OPTS.map((s) => opt(s, after)),
+      giftReplies(t, GIFT_KEPT_OPTS).map((s) => opt(s, after)),
       'smile',
     );
   if (!ctx.give(kind)) return after();
@@ -292,11 +310,12 @@ function giveNode(t, kind, after) {
   if (r.capped) say = `${say} ${GIFT_CAPPED}`;
   else if (r.repeat) say = `${say} ${GIFT_REPEAT}`;
   if (r.forgave) say = `${GIFT_FORGAVE} ${say}`;
+  if (t.ctx.mario) say = `${MARIO_GIFT_GASP} ${say}`;
   const mood = r.taste === 'love' || r.taste === 'like' ? 'joy' : r.taste === 'dislike' ? 'grump' : 'smile';
-  const next = isWary(f, ctx.now) ? end : after;
+  const next = isWary(f, ctx.now) && !ctx.mario ? end : after;
   return node(
     say,
-    GIFT_OPTS[r.taste].map((s) => opt(s, next)),
+    giftReplies(t, GIFT_OPTS[r.taste]).map((s) => opt(s, next)),
     mood,
   );
 }
@@ -350,4 +369,18 @@ function quietNode(t) {
     QUIET_OPTS.map((s) => opt(s, end)),
     'grump',
   );
+}
+
+// He picks a conversation he didn't have last time; the opening also offers your gifts and a goodbye.
+function marioNode(t) {
+  const { f } = t;
+  const s = pick(
+    t,
+    MARIO_TALK.filter((c) => c.id !== f.flags.marioLast),
+  );
+  f.flags.marioLast = s.id;
+  const starstruck = () => closeWith(t, pick(t, MARIO_AFTER));
+  const n = chapterNode(t, s, 'a', starstruck, false);
+  n.opts.push(...giftOpts(t, starstruck), opt('Bye-bye!', starstruck));
+  return n;
 }
