@@ -6,6 +6,9 @@ import fs from 'node:fs';
 import { createSync } from '../src/world/sync.js';
 import { RULES, installRules } from '../src/world/rules/index.js';
 import { homeLand, fixture } from './helpers/land.mjs';
+import { giftIndex } from '../src/sim/gift-catalog.js';
+import { ON_GROUND, SRC } from '../src/sim/gifts.js';
+import { SEEDS } from '../src/world/rules/gifts.js';
 
 const CANONICAL = ['terrain', 'mushrooms', 'gifts', 'proto', 'water']; // production order (test/fixtures/world-inputs.json)
 
@@ -17,7 +20,8 @@ function peer() {
 }
 const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
 
-// One accepted edit per op, per system, built from that peer's state. A new rules module adds its script here.
+// One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
+// A new rules module adds its script here.
 const SCRIPTS = {
   terrain({ rules }) {
     const { n, mask, base } = rules.terrain.state;
@@ -40,13 +44,23 @@ const SCRIPTS = {
     { op: 'mush.plant', i: 228, j: 200 },
     { op: 'mush.water', i: 228, j: 200 },
   ],
+  gifts: () => [
+    { op: 'fruit.drop', i: 175, j: 200, t: 0, d: 2 },
+    ({ rules }) => {
+      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.FRUIT);
+      return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
+    },
+    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
+    { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
+  ],
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
 function play(x) {
   const edits = [];
   for (const m of RULES)
-    for (const e of SCRIPTS[m.name]?.(x) ?? []) {
+    for (const step of SCRIPTS[m.name]?.(x) ?? []) {
+      const e = typeof step === 'function' ? step(x) : step;
       assert.equal(x.s.submitEdit(e), true, `${m.name}: ${JSON.stringify(e)} was rejected`);
       edits.push(e);
       tick(x, 3);
@@ -113,6 +127,19 @@ test('legacy saves migrate: bare 129-grid garden arrays move to the 409 grid', (
   ]);
   const b = peer();
   b.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: JSON.parse(JSON.stringify(a.s.snapshot().data)) });
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+});
+
+test('legacy saves migrate: gifts without v move from the 129 grid, and saves with v load as is', () => {
+  const it = [3, 1, 80, 60, SRC.TOSS, 2]; // id, kind, i, j, src, born: the old 6-field layout
+  const a = peer();
+  a.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: { gifts: { it, n: 4 } } });
+  const [item] = a.rules.gifts.gifts.items;
+  assert.deepEqual([item.i, item.j], [220, 200]);
+  const saved = JSON.parse(JSON.stringify(a.s.snapshot().data));
+  assert.ok(saved.gifts.v);
+  const b = peer();
+  b.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: saved });
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
 });
 

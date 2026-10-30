@@ -2,8 +2,9 @@
 // hash in it, and ops, ticks and sim listeners register in it. APPEND ONLY: reordering it desyncs mixed-build rooms.
 import * as terrain from './terrain.js';
 import * as mushrooms from './mushrooms.js';
+import * as gifts from './gifts.js';
 
-export const RULES = [terrain, mushrooms];
+export const RULES = [terrain, mushrooms, gifts];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
