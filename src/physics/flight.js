@@ -59,7 +59,8 @@ function cast(a, b) {
 }
 
 const underwater = (p) => waterField.surfaceAt(p.x, p.z) > p.y + 0.05;
-const normal = new THREE.Vector3();
+const normal = new THREE.Vector3(),
+  vBefore = new THREE.Vector3();
 
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
 export function dropPoint(p) {
@@ -75,7 +76,7 @@ export function flyPath(p0, v0, glide) {
   let bounces = 0;
   for (let k = 0; k < MAX_STEPS; k++) {
     next.copy(p);
-    const vBefore = v.clone();
+    vBefore.copy(v);
     stepFlight(next, v, glide);
     const h = cast(p, next);
     if (h) {

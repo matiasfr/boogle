@@ -108,10 +108,10 @@ function tiledParts() {
   };
 }
 
-const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 1, 7);
-const frondGeo = new THREE.ConeGeometry(0.55, 3.3, 4, 1).translate(0, 1.65, 0);
-const rockGeo = new THREE.IcosahedronGeometry(1, 0);
-const leafGeo = new THREE.IcosahedronGeometry(1, 0);
+// Non-indexed already, so addPart only clones them.
+const trunkGeo = new THREE.CylinderGeometry(0.8, 1, 1, 7).toNonIndexed();
+const frondGeo = new THREE.ConeGeometry(0.55, 3.3, 4, 1).translate(0, 1.65, 0).toNonIndexed();
+const blobGeo = new THREE.IcosahedronGeometry(1, 0); // rocks and leafy crowns
 const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   up = new THREE.Vector3(0, 1, 0),
@@ -173,7 +173,7 @@ function addBroadleaf(parts, x, h, z, rng, merge) {
       q,
       sc.set(r, r * 0.85, r),
     );
-    addPart(parts, leafGeo, m, greens[k]);
+    addPart(parts, blobGeo, m, greens[k]);
   }
   merge([
     { x, y: h + 0.4, z, r: 0.3 },
@@ -185,7 +185,7 @@ function addBroadleaf(parts, x, h, z, rng, merge) {
 function addRock(parts, x, h, z, r, rng, merge) {
   q.setFromEuler(new THREE.Euler(rng() * 3, rng() * 3, rng() * 3));
   m.compose(new THREE.Vector3(x, h + r * 0.15, z), q, sc.set(r * 1.1, r * 0.75, r));
-  addPart(parts, rockGeo, m, rng() < 0.5 ? '#a19b90' : '#8a857c');
+  addPart(parts, blobGeo, m, rng() < 0.5 ? '#a19b90' : '#8a857c');
   merge([{ x, y: h + r * 0.1, z, r: r * 0.82 }]);
   obstacles.push({ x, z, r: r * 0.95 });
 }
@@ -196,7 +196,7 @@ const flatEnough = (x, z, h, max) =>
 export function createProps() {
   const tiles = tiledParts();
   // POIs keep their ground clear and are walked around.
-  for (const k of island.keepOut) obstacles.push({ x: k.x, z: k.z, r: k.r, poi: k.site });
+  for (const k of island.keepOut) obstacles.push({ x: k.x, z: k.z, r: k.r });
 
   // Home: the original palms and rocks, from the same seed and in the same order as always.
   const rng = mulberry32(20261028);
@@ -313,7 +313,7 @@ export function createClouds() {
   }
 }
 
-export function updateClouds(dt) {
+function updateClouds(dt) {
   for (const c of clouds) {
     c.position.x += dt * 1.2;
     if (c.position.x > 340) c.position.x = -340;

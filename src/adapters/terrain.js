@@ -15,6 +15,9 @@ for (let i = 0; i < GRID_RES; i++) {
   heights.push(col);
 }
 
+export const cellX = (i) => i * CELL - HALF;
+export const cellZ = (j) => HALF - j * CELL;
+
 export function groundHeight(x, z) {
   const fi = (x + HALF) / CELL,
     fj = (HALF - z) / CELL;
@@ -108,7 +111,7 @@ export function createTerrainMesh() {
         h = Math.min(TILE, n - 1 - tj) + 1;
       let top = -Infinity;
       for (let i = ti; i < ti + w; i++) for (let j = tj; j < tj + h; j++) top = Math.max(top, heights[i][j]);
-      if (top < SEABED + 1.2) continue; // open sea floor: the sea draws over it, never edited
+      if (top < SEABED + 1.2) continue; // open sea floor: the sea draws over it
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
       geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));

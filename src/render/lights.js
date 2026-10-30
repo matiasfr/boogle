@@ -18,16 +18,11 @@ export function addLightSource(src) {
   return src;
 }
 
-function ensurePool() {
-  if (pool.length) return;
-  for (let k = 0; k < POOL; k++) {
-    const l = new THREE.PointLight('#ffffff', 0, 10, 2);
-    l.castShadow = false;
-    pool.push(l);
-    scene.add(l);
-  }
+for (let k = 0; k < POOL; k++) {
+  const l = new THREE.PointLight('#ffffff', 0, 10, 2);
+  pool.push(l);
+  scene.add(l);
 }
-ensurePool();
 
 const picks = [];
 onFrame(

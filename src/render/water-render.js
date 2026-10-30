@@ -5,20 +5,16 @@ import { heights } from '../adapters/terrain.js';
 import { scene } from './scene.js';
 import { onFrame } from '../loop.js';
 
-// Ground height packed into 16 bits (R = high byte, G = low byte) so centimetre edits show up.
-function encodeHeight(data, k, h) {
-  const v = Math.round(clamp((h + 10) / 20, 0, 1) * 65535);
-  data[k] = v >> 8;
-  data[k + 1] = v & 255;
-  data[k + 3] = 255;
-}
-
+// Ground height packed into 16 bits (R = high byte, G = low byte), for a smooth shore depth.
 const heightTex = (() => {
   const data = new Uint8Array(GRID_RES * GRID_RES * 4);
   for (let j = 0; j < GRID_RES; j++)
     for (let i = 0; i < GRID_RES; i++) {
       const k = (j * GRID_RES + i) * 4;
-      encodeHeight(data, k, heights[i][j]);
+      const v = Math.round(clamp((heights[i][j] + 10) / 20, 0, 1) * 65535);
+      data[k] = v >> 8;
+      data[k + 1] = v & 255;
+      data[k + 3] = 255;
     }
   const t = new THREE.DataTexture(data, GRID_RES, GRID_RES, THREE.RGBAFormat);
   t.magFilter = t.minFilter = THREE.LinearFilter;
