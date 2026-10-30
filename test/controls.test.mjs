@@ -98,7 +98,8 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
   for (const f of readdirSync(src, { recursive: true })) {
     if (!f.endsWith('.js')) continue;
     const text = readFileSync(new URL(f, src), 'utf8');
-    for (const [, id, pad] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{\s*pad:\s*'(\w+)'/g)) {
+    // pad: may sit anywhere in the options object (up to its first closing brace)
+    for (const [, id, pad] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{[^}]*?\bpad:\s*'(\w+)'/g)) {
       n++;
       const who = `${f}:${id}`;
       assert.ok(PAD.includes(pad), `${who} uses unknown pad slot "${pad}"`);

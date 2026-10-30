@@ -117,7 +117,7 @@ onStart(() => {
   });
   addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
   wrapAction('pile', {
-    down: (next) => (swimDive() ? dive() : ((padPile = true), next())),
+    down: (next) => (swimDive() ? dive() : (next(), (padPile = shovel.hold === 'pile'))),
     up: (next) => ((padPile = false), (diving = 0), next()),
   });
 });
