@@ -7,3 +7,4 @@ Directions and ideas that aren't decided yet. Unlike [PLAN.md](../../PLAN.md), n
 - [vehicles.md](vehicles.md): feel rules and starting cannon-es numbers for the soapbox buggy, land yacht, melon raft and cart, plus how they sync.
 - [methodology.md](methodology.md): working habits from the designers studied (phases before lore, reveals, feel passes, heatmaps, reactivity, integer incremental maths, anti-patterns).
 - [hub-and-minigames.md](hub-and-minigames.md): the Club Penguin-shaped direction. The island as a hub, feel-first mini-games in place (with elevators only where needed), vehicles and exploration as the way between venues, and personal looks, knacks, a hut and an earned currency. Maps the earlier proposals onto it.
+- [story-and-finale.md](story-and-finale.md): a goofy story across the Boogle 2.0 eras (the mayor's opening days, running gags: Gary, the fourth melon, coconut mail) and three communal finales that work when not every friend is online.
