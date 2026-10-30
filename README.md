@@ -47,7 +47,7 @@ Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's b
 
 ## Controls
 
-WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact · F shovel. The full list is in the game: press H on a keyboard, or Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/controls.js`, so a new control describes itself there.
+WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact · F shovel. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/controls.js`, so a new control describes itself there.
 
 ## Deploying
 

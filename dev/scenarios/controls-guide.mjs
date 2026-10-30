@@ -1,9 +1,10 @@
-// The controls guide is generated from the control registry: no gaps in the registry, and the keyboard panel, the
-// gamepad card and the touch list each show every control that has a binding for that input.
+// The controls guide is generated from the control registry: no gaps in the registry, and the pause view's keyboard and
+// gamepad tabs and the touch list each show every control that has a binding for that input.
 const LIST = `const { listControls, controlProblems } = await import('/src/controls.js');`;
 
 export default {
-  about: 'controlProblems() is empty; the help panel, pad card and touch list show every bound control',
+  about:
+    'controlProblems() is empty; the pause view keyboard and gamepad tabs and the touch list show every bound control',
   async run(t) {
     const g = await t.open({ name: 'guide', hud: true, size: [1280, 720] });
     await g.wait(0.6);
@@ -11,41 +12,38 @@ export default {
     const problems = await g.eval(`${LIST} return controlProblems();`);
     t.check('the control registry has no gaps', problems.length === 0, JSON.stringify(problems));
 
-    const kbm = await g.eval(`${LIST}
-      const shown = [...document.querySelectorAll('#help [data-id]')].map((e) => e.dataset.id);
+    // The guide lives in the pause view (src/features/pause.js): the keyboard tab, then the gamepad tab.
+    const SHOWN = `${LIST}
+      const { openPause } = await import('/src/features/pause.js');
+      const { closePause } = await import('/src/features/pause.js');`;
+    const kbm = await g.eval(`${SHOWN} openPause('controls');
+      const dlg = document.querySelector('dialog.pause');
+      const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
       const want = listControls().filter((c) => c.keys?.length).map((c) => c.id);
-      const box = document.getElementById('help').getBoundingClientRect();
-      const bar = document.querySelector('.hotbar-slots').getBoundingClientRect();
-      return { missing: want.filter((id) => !shown.includes(id)), n: shown.length,
-        visible: box.height > 0, overlap: box.right > bar.left && box.bottom > bar.top && box.top < bar.bottom };`);
-    const kbmShot = await g.still('help');
+      return { missing: want.filter((id) => !shown.includes(id)), n: shown.length, tab: dlg.querySelector('[aria-selected=true]').dataset.tab };`);
+    const kbmShot = await g.still('keyboard');
     t.check(
-      'every control with keys is in the help panel',
-      kbm.visible && kbm.n > 10 && kbm.missing.length === 0,
+      'every control with keys is in the keyboard tab',
+      kbm.tab === 'kbm' && kbm.n > 10 && kbm.missing.length === 0,
       `${JSON.stringify(kbm)}; ${kbmShot}`,
     );
-    t.check('the help panel does not cover the hotbar', !kbm.overlap, JSON.stringify(kbm));
-
-    await g.eval(`document.body.classList.add('gamepad');`);
-    await g.eval(`
-      const { actionById } = await import('/src/controls.js');
-      actionById('pad-help').down();`);
+    await g.eval(`${SHOWN} closePause(); document.body.classList.add('gamepad'); openPause('controls');`);
     await g.wait(0.4);
     const pad = await g.eval(`${LIST}
-      const card = document.querySelector('.pad-card');
-      const shown = [...card.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
+      const dlg = document.querySelector('dialog.pause');
+      const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
       // a context row on the same button as an earlier row of its group (Toss is X, like Use) is left out
       const want = listControls().filter((c) => [c.pad].flat().filter(Boolean).length && c.id !== 'toss').map((c) => c.id);
-      const r = card.getBoundingClientRect();
-      return { missing: want.filter((id) => !shown.includes(id)), n: shown.length, hidden: card.hidden,
+      const r = dlg.querySelector('.pause-card').getBoundingClientRect();
+      return { missing: want.filter((id) => !shown.includes(id)), n: shown.length, tab: dlg.querySelector('[aria-selected=true]').dataset.tab,
         fits: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth };`);
     const padShot = await g.still('pad');
     t.check(
-      'every control with a pad binding is on the gamepad card',
-      !pad.hidden && pad.n > 10 && pad.missing.length === 0 && pad.fits,
+      'every control with a pad binding is in the gamepad tab',
+      pad.tab === 'pad' && pad.n > 10 && pad.missing.length === 0 && pad.fits,
       `${JSON.stringify(pad)}; ${padShot}`,
     );
-    await g.eval(`document.body.classList.remove('gamepad');`);
+    await g.eval(`${SHOWN} closePause(); document.body.classList.remove('gamepad');`);
 
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.6);

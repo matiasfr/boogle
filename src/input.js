@@ -12,28 +12,31 @@ import { registerAction, describeControl } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
+let everLocked = false; // a refused lock is only permanent if none ever worked (Chrome refuses one just after Esc)
+const lockRefused = () => {
+  if (!everLocked) inputState.lockFailed = true;
+};
 
 export function requestLock() {
   if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
   try {
     const p = canvas.requestPointerLock();
-    if (p && p.catch)
-      p.catch(() => {
-        inputState.lockFailed = true;
-      });
+    if (p && p.catch) p.catch(lockRefused);
   } catch {
-    inputState.lockFailed = true;
+    lockRefused();
   }
 }
+// Lets go of every held key, button, stick and dig (a modal takes the input: src/modal.js).
+let releaseInputFn = null;
+export const releaseInput = () => releaseInputFn?.();
 // Wired from main.js after every module has loaded (hud.js and input.js import each other).
 export function initInput() {
   if (isTouch) document.body.classList.add('touch');
   document.addEventListener('pointerlockchange', () => {
     inputState.locked = document.pointerLockElement === canvas;
+    if (inputState.locked) everLocked = true;
   });
-  document.addEventListener('pointerlockerror', () => {
-    inputState.lockFailed = true;
-  });
+  document.addEventListener('pointerlockerror', lockRefused);
 
   const typing = () => document.activeElement === dom.nameInput;
   addEventListener('keydown', (e) => {
@@ -53,7 +56,6 @@ export function initInput() {
     // Q digs, Z piles (hold to repeat); pulls the shovel out if needed, never mid-throw.
     if ((e.code === 'KeyQ' || e.code === 'KeyZ') && !me.charging && ensureShovel())
       setHold(e.code === 'KeyQ' ? 'dig' : 'pile');
-    if (e.code === 'KeyH') document.body.classList.toggle('help-hidden');
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
@@ -326,6 +328,7 @@ export function initInput() {
     setFlatten(false);
     setHold(null);
   }
+  releaseInputFn = releaseAll;
   addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
