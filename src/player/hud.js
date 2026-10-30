@@ -3,7 +3,7 @@ import { me, enterIsland, chargeAmount } from './player.js';
 import { net, remotes } from '../netplay/net.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from '../render/scene.js';
-import { touchTarget, useVerb } from './hands.js';
+import { interactTarget, useVerb } from './hands.js';
 import { glyph, inputKind } from './glyphs.js';
 import { onFrame } from '../loop.js';
 
@@ -39,7 +39,7 @@ export function updateHud() {
     dom.hintEl.hidden = !hint;
   }
   if (!isTouch || !me.entered) return;
-  const t = me.charging ? null : touchTarget(); // mid wind-up the button only throws
+  const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
   if (dom.grabBtn.textContent !== label) {
     dom.grabBtn.textContent = label;

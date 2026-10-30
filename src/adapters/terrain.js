@@ -36,15 +36,19 @@ const tmpC = new THREE.Color(),
   tmpG = new THREE.Color(),
   tmpP = new THREE.Color();
 // POI paint per vertex (index j*GRID_RES+i): sRGB colour and amount, from the site stamps (src/island/stamps.js).
-const poiPaint = new Float32Array(GRID_RES * GRID_RES * 4);
-for (let j = 0; j < GRID_RES; j++)
-  for (let i = 0; i < GRID_RES; i++) {
-    const p = island.paintAt(i * CELL - HALF, HALF - j * CELL);
-    if (p) poiPaint.set(p, (j * GRID_RES + i) * 4);
-  }
+// Only alive while createTerrainMesh paints the ground.
+let poiPaint = null;
+function buildPoiPaint() {
+  const out = new Float32Array(GRID_RES * GRID_RES * 4);
+  for (let j = 0; j < GRID_RES; j++)
+    for (let i = 0; i < GRID_RES; i++) {
+      const p = island.paintAt(i * CELL - HALF, HALF - j * CELL);
+      if (p) out.set(p, (j * GRID_RES + i) * 4);
+    }
+  return out;
+}
 // The mesh is split into TILE x TILE-cell tiles so the camera and the shadow pass only draw the ones in view.
 const TILE = 51;
-const tiles = []; // { i0, j0, w, h, geo } (w, h in vertices); deep-sea tiles are skipped
 const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.
@@ -70,13 +74,13 @@ function paintVertex(out, o, k, x, h, z, ny) {
   out[o * 3 + 2] = c.b;
 }
 
-// Writes position, normal and colour of grid vertex (i, j) into a tile's arrays at local index o.
-function writeVertex(t, o, i, j) {
+// Writes position, normal and colour of grid vertex (i, j) into a tile geometry's arrays at local index o.
+function writeVertex(geo, o, i, j) {
   const n = GRID_RES;
   const k = j * n + i;
-  const pos = t.geo.attributes.position.array,
-    nrm = t.geo.attributes.normal.array,
-    col = t.geo.attributes.color.array;
+  const pos = geo.attributes.position.array,
+    nrm = geo.attributes.normal.array,
+    col = geo.attributes.color.array;
   const h = heights[i][j];
   pos[o * 3] = i * CELL - HALF;
   pos[o * 3 + 1] = h;
@@ -97,6 +101,7 @@ function writeVertex(t, o, i, j) {
 export function createTerrainMesh() {
   const n = GRID_RES;
   const group = new THREE.Group();
+  poiPaint = buildPoiPaint();
   for (let ti = 0; ti < n - 1; ti += TILE)
     for (let tj = 0; tj < n - 1; tj += TILE) {
       const w = Math.min(TILE, n - 1 - ti) + 1,
@@ -118,15 +123,14 @@ export function createTerrainMesh() {
           idx.push(a, b, c, b, d, c);
         }
       geo.setIndex(idx);
-      const t = { i0: ti, j0: tj, w, h, geo };
-      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) writeVertex(t, j * w + i, ti + i, tj + j);
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) writeVertex(geo, j * w + i, ti + i, tj + j);
       geo.computeBoundingSphere();
-      tiles.push(t);
       const mesh = new THREE.Mesh(geo, terrainMat);
       mesh.receiveShadow = true;
       mesh.castShadow = true;
       group.add(mesh);
     }
+  poiPaint = null;
   scene.add(group);
   return group;
 }

@@ -1,14 +1,13 @@
-// Island gifts: fruit growing on the palms, things players threw, and the frisbee waiting on the lighthouse deck. Nothing
-// washes up on the beach any more (removed 2026-10-30); items saved from before still lie there until they age out. Pure and integer-only (see src/world/README.md), so every client agrees on
-// what lies where. Ops: `fruit.drop` (shake a palm or hit it with the ball), `gift.take` (pick something up),
+// Island gifts: fruit growing on the palms, things players threw, and the frisbee waiting on the lighthouse deck. Pure
+// and integer-only (see src/world/README.md), so every client agrees on what lies where. Ops: `fruit.drop` (shake a palm or hit it with the ball), `gift.take` (pick something up),
 // `gift.toss` (something thrown lands). State key: `gifts`.
 import { GIFTS } from './gift-catalog.js';
 
 export const MAX_TREES = 64;
 export const REGROW_TICKS = 2400;
 export const MAX_ITEMS = 48;
-// The wash-up schedule is pinned here for good: a newer build never washes anything up, and older builds that load our
-// `at` never reach it either.
+// Wash-ups are gone; the saved schedule (`at`) stays pinned here so older builds that load our state never wash either.
+// Shore items from older saves age out on LIFE.shore.
 export const NEVER = 0x7fffffff;
 export const LIFE = { shore: 12000, fruit: 6000, toss: 6000 }; // then the tide takes it back, or it rots away
 export const PERCH_REFILL = 600; // a perch gets a new item this long after its last one was taken

@@ -2,8 +2,8 @@
 // src/world/README.md), so it runs the same on every client and in Node tests. Seeds go in anywhere; the game layer
 // (src/adapters/mushroom-garden.js) refuses water, rocks and trees before an edit reaches this state.
 
-// The seed stall's dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H). Kept clear of trees, beach
-// gifts and digging; mushrooms grow there or anywhere else.
+// The seed stall's dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H). Kept clear of trees;
+// mushrooms grow there or anywhere else.
 export const PATCH = { i0: 218, j0: 192, w: 20, h: 20 };
 // Minimum Chebyshev distance in cells between two plots, so grown caps do not overlap much.
 export const SPACING = 3;

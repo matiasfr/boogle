@@ -169,12 +169,12 @@ test('a fresh edit after a reconnect replaces the held backlog and goes out in t
   net.setUp(clients[0].p, true);
   await run(net, all, 1); // the first held edit goes out
   for (let v = 5; v <= 8; v++) {
-    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held shovel button
+    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held button
     await run(net, all, 5);
   }
   await run(net, all, 60);
   assert.equal(clients[0].s.worldStatus().heldDropped, 3);
-  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the shovel's own repeat, which can be
+  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the button's own repeat, which can be
   // too soon after 5 for the host's rate limit: at most that one live edit is lost.
   assert.deepEqual(host.log.slice(0, 2), ['c0:1', 'c0:5']);
   assert.deepEqual(host.log.slice(-2), ['c0:7', 'c0:8']);
@@ -185,15 +185,15 @@ test('live input after a reconnect is back to normal latency', async () => {
   const { net, host, clients, all } = await setup(1);
   const c = clients[0];
   let v = 0;
-  const dig = async () => {
+  const press = async () => {
     assert.ok(c.s.submitEdit({ op: 'slow', i: 0, j: 2, v: ++v }));
-    await run(net, all, 5); // the shovel's repeat, rounded up to whole frames like the held-edit pacing
+    await run(net, all, 5); // the button's repeat, rounded up to whole frames like the held-edit pacing
   };
   net.setUp(c.p, false);
-  for (let k = 0; k < 16; k++) await dig(); // 4 s down with the button held
+  for (let k = 0; k < 16; k++) await press(); // 4 s down with the button held
   net.setUp(c.p, true);
-  for (let k = 0; k < 20; k++) await dig(); // 5 s more
-  await run(net, all, 15); // with the 5 frames after the last dig: 1 s
+  for (let k = 0; k < 20; k++) await press(); // 5 s more
+  await run(net, all, 15); // with the 5 frames after the last press: 1 s
   assert.equal(host.log.at(-1), `c0:${v}`, 'the last edit lands within 1 s, not seconds behind a backlog');
   const live = host.log.slice(host.log.indexOf('c0:17')).map((l) => Number(l.slice(3)));
   assert.ok(live.length >= 19, 'live edits are accepted (at most one lost to the rate limit after the delayed one)');

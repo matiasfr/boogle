@@ -64,13 +64,13 @@ test('controls: one action per pad slot, clashes stay unbound', () => {
 test('controls: wrapAction keeps the original handler, the last wrap runs first', () => {
   const log = [];
   const [padA, padB] = freeSlots(); // other tests in this file hold slots too
-  registerAction('dig-test', { pad: padA, down: () => log.push('down'), up: () => log.push('up') });
-  assert.ok(wrapAction('dig-test', { down: (next) => (log.push('w1'), next()) }));
+  registerAction('hold-test', { pad: padA, down: () => log.push('down'), up: () => log.push('up') });
+  assert.ok(wrapAction('hold-test', { down: (next) => (log.push('w1'), next()) }));
   assert.ok(
-    wrapAction('dig-test', { down: (next) => (log.push('w2'), next()), up: (next) => (log.push('w2up'), next()) }),
+    wrapAction('hold-test', { down: (next) => (log.push('w2'), next()), up: (next) => (log.push('w2up'), next()) }),
   );
   actionForSlot(padA).down(); // the pad reaches the wrapped handler through the slot
-  actionById('dig-test').up();
+  actionById('hold-test').up();
   assert.deepEqual(log, ['w2', 'w1', 'down', 'w2up', 'up']);
 
   // a wrapper may swallow the press; a missing handler is wrapped as a no-op

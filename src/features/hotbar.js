@@ -17,7 +17,7 @@ import { itemModel } from '../player/item-models.js';
 import { iconFor } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
-import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
@@ -219,7 +219,7 @@ addPresenceField('hd', () => {
 });
 onRemotePresence((r, pr) => {
   // A retired item (an old build's shovel) shows as empty hands; itemModel would draw a coconut.
-  r.hd = Number.isInteger(pr.hd) && GIFTS[pr.hd] && !GIFTS[pr.hd].retired ? GIFTS[pr.hd].id : null;
+  r.hd = Number.isInteger(pr.hd) && carryable(GIFTS[pr.hd]) ? GIFTS[pr.hd].id : null;
 });
 
 onFrame(({ now }) => {

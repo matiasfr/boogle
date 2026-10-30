@@ -1,9 +1,12 @@
 // Everything you can give The Boogler. Ground items in the shared world store an index into GIFTS, so only append.
 //
-// src: 'tree' grows on the palms, 'sea' used to wash up on the beach (retired 2026-10-30; kept so held ones can still be
-// given and thrown), 'stall' comes from the seed stall, 'perch' waits on a perch (the lighthouse deck), 'tool' and 'ball' are carried, never spawned.
-// taste: how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'). line: what he says when you hand it
-// over. key: he refuses it, and line is why. retired: no longer obtainable; kept for its index. Saved hotbars drop it.
+//   src      'tree' grows on the palms, 'stall' comes from the seed stall, 'perch' waits on a perch (the lighthouse
+//            deck), 'tool' and 'ball' are carried, never spawned. 'sea' no longer appears (wash-ups are gone), but
+//            ones already held can still be given and thrown.
+//   taste    how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'); line: what he says when you hand
+//            it over
+//   key      he refuses it, and line is why
+//   retired  gone from the game, kept for its index: saved hotbars drop it, nobody can throw it (see carryable)
 export const GIFTS = [
   {
     id: 'coconut',
@@ -228,3 +231,6 @@ export const GIFTS = [
 ];
 
 export const giftIndex = (id) => GIFTS.findIndex((g) => g.id === id);
+// Whether a catalog entry can sit in a hotbar and be thrown: everything but the ball (its own owner rules) and retired
+// entries.
+export const carryable = (g) => !!g && g.src !== 'ball' && !g.retired;

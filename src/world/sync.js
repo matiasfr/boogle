@@ -48,8 +48,8 @@ const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messag
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
-// Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under the shovel's 220 ms repeat
-// so a fresh edit waiting for its slot goes out before the next repeat replaces it.
+// Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under a held button's
+// ~220 ms repeat, so a fresh edit waiting for its slot goes out before the next repeat replaces it.
 const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
@@ -204,7 +204,7 @@ export function createSync({ env: env0 } = {}) {
       return true;
     }
     // The room is back: a fresh edit replaces whatever is still held (the player has moved on; draining the backlog
-    // first would turn a held shovel into seconds of input lag). It waits only for the slot after the last released
+    // first would turn a held button into seconds of input lag). It waits only for the slot after the last released
     // edit, so it does not take that one's per-player rate-limit slot.
     if (held.length) {
       stats.heldDropped += held.length;

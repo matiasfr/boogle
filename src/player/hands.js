@@ -5,11 +5,10 @@
 //                            interact.
 //   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
-//   touchDown                the touch main button: acts on touchTarget() when it can, otherwise uses
+//   touchDown                the touch main button: acts on interactTarget() when it can, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
-//   canThrow()               whether what you hold can be thrown: anything at all (empty hands cannot)
-//   interactTarget()         the one thing in front of you (see below), or null
-//   touchTarget()            what the touch main button acts on: interactTarget()
+//   canThrow()               whether you hold anything (everything held can be thrown)
+//   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
@@ -43,8 +42,7 @@ import { giftIndex } from '../sim/gift-catalog.js';
 import { pickInteract } from '../sim/interact-pick.js';
 
 const USE_VERB = { can: 'Water', seeds: 'Plant' };
-const throwable = (id) => !!id;
-export const canThrow = () => throwable(heldId());
+export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
 // The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
@@ -109,7 +107,7 @@ function windUp() {
 
 function throwHeld(c) {
   const id = heldId();
-  if (!throwable(id) || !me.body) return;
+  if (!id || !me.body) return;
   if (id === 'ball') return throwBall(c);
   const kind = giftIndex(id);
   const from = throwFrom();
@@ -146,9 +144,8 @@ export const interactDown = () => (me.entered && me.body ? interact() : false);
 export const interactUp = () => {
   me.suppressUp = false;
 };
-export const touchTarget = interactTarget;
 export function touchDown() {
-  const t = touchTarget();
+  const t = interactTarget();
   return t?.run ? interact(t) : useDown();
 }
 export const throwDown = windUp;

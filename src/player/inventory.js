@@ -4,12 +4,12 @@
 //   inv.slots[k] = { id, n } | null   id: a catalog id (src/sim/gift-catalog.js) or 'ball'; n: how many (seeds stack)
 //   inv.sel                           the slot in your hand, -1 for empty hands
 //   onHotbarChange(fn)                fn() after any change (selection included)
-import { GIFTS } from '../sim/gift-catalog.js';
+import { GIFTS, carryable } from '../sim/gift-catalog.js';
 
 export const SLOTS = 8;
 export const MAX_SEEDS = 20;
 const STORE = 'boogle.hotbar';
-const known = (id) => GIFTS.some((g) => g.id === id && g.src !== 'ball' && !g.retired);
+const known = (id) => GIFTS.some((g) => g.id === id && carryable(g));
 
 export const inv = { slots: new Array(SLOTS).fill(null), sel: -1, version: 0 };
 const changeFns = [];

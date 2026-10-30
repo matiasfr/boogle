@@ -81,7 +81,7 @@ function itemPos(it, out) {
   return out.set(x, it.y === ON_GROUND || it.src === SRC.PERCH ? groundHeight(x, z) : it.y / 100, z);
 }
 
-// A twinkle over washed-up things and the frisbee on its perch, so they are easy to spot from afar.
+// A twinkle over the frisbee on its perch, so it is easy to spot from afar.
 const sparkleMat = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
