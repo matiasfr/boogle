@@ -25,7 +25,7 @@ const repoName =
     }
   })();
 const [owner, repo] = repoName.split('/');
-const site = `https://${owner.toLowerCase()}.github.io/${repo}/`;
+const site = process.env.SITE_URL || `https://${owner.toLowerCase()}.github.io/${repo}/`;
 try {
   const tags = sh(['release', 'list', '--exclude-drafts', '--limit', '200', '--json', 'tagName', '-q', '.[].tagName'])
     .split('\n')

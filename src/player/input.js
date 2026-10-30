@@ -7,7 +7,7 @@ import { sendPresence } from '../netplay/net.js';
 import { dom } from './hud.js';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
 import { cycle } from './inventory.js';
-import { registerAction, describeControl, isTyping } from './controls.js';
+import { registerAction, describeControl, isTyping, triggerAction } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
@@ -71,7 +71,7 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (e.button === 0) useDown();
+    if (e.button === 0) triggerAction('use', 'down');
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -100,16 +100,13 @@ export function initInput() {
       return;
     }
     drag = null;
-    useUp();
+    triggerAction('use', 'up');
   });
-  canvas.addEventListener(
-    'wheel',
-    (e) => {
-      cam.dist = clamp(cam.dist + e.deltaY * 0.01, 3, 12);
-      e.preventDefault();
-    },
-    { passive: false },
-  );
+  // The wheel (and a trackpad's two-finger scroll or pinch) does nothing yet; swallowing it keeps the page from zooming.
+  canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+  // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it.
+  for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 
   const { touchEl, stickEl, knobEl, jumpBtn, grabBtn } = dom;
   const stick = { id: null, ox: 0, oy: 0 };
@@ -255,7 +252,6 @@ export function initInput() {
     pad: 'r3',
     label: 'Camera distance',
     detail: { pad: 'Close, middle, far' },
-    keys: ['Wheel'],
     group: 'camera',
     order: 1,
     down: zoomStep,

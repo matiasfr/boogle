@@ -1,7 +1,7 @@
 // The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room, see
 // each other, the client tosses an item, the client throws the ball, and both tabs end the same tick with the same per-state
 // hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.js), so it runs
-// on the built site too: `npm run scenario -- smoke --url https://matiasfr.github.io/boogle/`.
+// on the built site too: `npm run scenario -- smoke --url https://boogle.club/`.
 // Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
 // else a fresh smoke-<random> one; never a friend's room.
 import { toss, MET, roles, hashesAtOneTick } from './lib/world.mjs';

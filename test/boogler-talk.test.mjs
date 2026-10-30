@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { THREADS, SMALL_TALK, AFTER, FAREWELL, RESUME } from '../src/boogler/lines.js';
+import {
+  THREADS,
+  SMALL_TALK,
+  AFTER,
+  FAREWELL,
+  RESUME,
+  MARIO_TALK,
+  MARIO_SAYS,
+  MARIO_AFTER,
+} from '../src/boogler/lines.js';
 import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.js';
 import {
   LEVELS,
@@ -16,7 +25,7 @@ import {
 import { mulberry32 } from '../src/sim/rng.js';
 import { giftIndex } from '../src/sim/gift-catalog.js';
 
-const trees = [...Object.values(THREADS).flatMap((th) => th.chapters), ...SMALL_TALK];
+const trees = [...Object.values(THREADS).flatMap((th) => th.chapters), ...SMALL_TALK, ...MARIO_TALK];
 
 function ctx(over = {}) {
   const pocket = over.pocket ?? [];
@@ -268,5 +277,33 @@ test('a finished thread retells one of its chapters, a different one each time, 
     last = say;
     for (let step = 0; step < 20 && !THREADS.home.retell.includes(talkView(t).say); step++) pickTalk(t, 0);
     assert.ok(THREADS.home.retell.includes(talkView(t).say));
+  }
+});
+
+test('as Mario he is starstruck even when wary, and every answer is something Mario says', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const rng = mulberry32(seed);
+    const f = createFriend();
+    for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
+    const pts = f.pts;
+    const t = openTalk(f, ctx({ rng, mario: true, pocket: [giftIndex('duck')] }));
+    for (let step = 0; step < 10 && talkView(t); step++) {
+      const v = talkView(t);
+      for (const o of v.opts) assert.ok(MARIO_SAYS.includes(o), `Mario would not say "${o}"`);
+      const out = pickTalk(t, Math.floor(rng() * v.opts.length));
+      if (!talkView(t)) assert.ok(MARIO_AFTER.includes(out.bubble), out.bubble);
+    }
+    assert.equal(talkView(t), null);
+    if (!f.gifts?.length) assert.equal(f.pts, pts, 'chatting as Mario does not score');
+  }
+});
+
+test('as Mario he does not open with the same conversation twice in a row', () => {
+  const f = createFriend();
+  let last = null;
+  for (let seed = 0; seed < 20; seed++) {
+    const say = talkView(openTalk(f, ctx({ rng: mulberry32(seed), mario: true }))).say;
+    assert.notEqual(say, last);
+    last = say;
   }
 });

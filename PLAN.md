@@ -58,7 +58,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 - [x] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
 - [x] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
 - [x] Self-hostable server in `server/` (PeerJS signaling, `/ice` with TURN support, snapshot storage). Game reads `VITE_BOOGLE_SERVER`.
-- [ ] Deploy `server/` (Fly.io) and add TURN credentials.
+- [x] Deploy `server/` (Fly.io) and add TURN credentials (Cloudflare).
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
 - [x] Host the static client on GitHub Pages / Netlify.
 
