@@ -86,15 +86,24 @@ export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
-  // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps)
+  // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
+  // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
+  // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
+  // layout viewport, and the game only needs the coarse pointer)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
     g.out = path.resolve(opts.out || '.look');
     g.prefix = opts.prefix || '';
     g.size = opts.size || [960, 600];
-    g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] } });
+    g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] }, hasTouch: !!opts.touch });
     if (opts.clock) await g.ctx.clock.install();
+    // src/constants.js reads isTouch once at load, so this must run before the page's code.
+    if (opts.touch)
+      await g.ctx.addInitScript(() => {
+        const mm = window.matchMedia.bind(window);
+        window.matchMedia = (q) => (q === '(pointer: coarse)' ? { ...mm(q), matches: true, media: q } : mm(q));
+      });
     if (opts.init) await g.ctx.addInitScript(opts.init);
     const doc = new URL(stack.base);
     if (opts.isolated)

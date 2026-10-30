@@ -5,9 +5,13 @@
 //                            interact.
 //   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
-//   touchDown                the touch context button: interacts when something is in reach, otherwise uses
-//   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
+//   touchDown                the touch main button: acts on touchTarget() when it can, otherwise uses
+//   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
+//   canThrow()               whether what you hold can be thrown: anything but the shovel, which is a key item on every
+//                            device (no wind-up, no Toss, and a wind-up you switch to it from is dropped)
 //   interactTarget()         the one thing in front of you (see below), or null
+//   touchTarget()            what the touch main button acts on: interactTarget(), but null while you hold the shovel
+//                            (it digs, even on a beach full of things; tap the shovel slot for empty hands)
 //   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
@@ -42,6 +46,9 @@ import { giftIndex } from './sim/gift-catalog.js';
 import { pickInteract } from './sim/interact-pick.js';
 
 const USE_VERB = { shovel: 'Dig', can: 'Water', seeds: 'Plant' };
+// The shovel is always at hand: it never leaves it by a throw, so nobody loses it to the sea or a friend.
+const throwable = (id) => !!id && id !== 'shovel';
+export const canThrow = () => throwable(heldId());
 const ballAt = new THREE.Vector3();
 
 // The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
@@ -52,7 +59,7 @@ function syncBall() {
 }
 onHotbarChange(() => {
   toggleShovel(heldId() === 'shovel');
-  if (me.charging && !heldId()) me.charging = false;
+  if (me.charging && !canThrow()) me.charging = false;
   syncBall();
 });
 
@@ -98,7 +105,7 @@ function deny(text) {
 }
 
 function windUp() {
-  if (!heldId()) return false;
+  if (!canThrow()) return false;
   me.suppressUp = false; // a fresh press winds up: its release throws, even if E grabbed the ball and is still down
   me.charging = true;
   me.chargeStart = performance.now();
@@ -107,7 +114,7 @@ function windUp() {
 
 function throwHeld(c) {
   const id = heldId();
-  if (!id || !me.body) return;
+  if (!throwable(id) || !me.body) return;
   if (id === 'ball') return throwBall(c);
   const kind = giftIndex(id);
   const from = throwFrom();
@@ -146,18 +153,19 @@ export const interactDown = () => (me.entered && me.body ? interact() : false);
 export const interactUp = () => {
   me.suppressUp = false;
 };
+export const touchTarget = () => (heldId() === 'shovel' ? null : interactTarget());
 export function touchDown() {
-  const t = interactTarget();
+  const t = touchTarget();
   return t?.run ? interact(t) : useDown();
 }
 export const throwDown = windUp;
 
-// The shovel is always at hand: Q, Z and F pull it out (a fresh one if you threw yours away).
+// The shovel is always at hand: Q, Z and F pull it out (a fresh one if an old save lost it).
 export function ensureShovel() {
   if (heldId() === 'shovel') return true;
   const k = slotOf('shovel');
   if (k >= 0) select(k);
-  else take('shovel');
+  else if (!take('shovel')) deny('Hotbar full'); // an old save that lost it with every slot full: say why
   return heldId() === 'shovel';
 }
 let beforeShovel = -1;

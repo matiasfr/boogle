@@ -1,4 +1,4 @@
-/* Touch "Bump" button, above the Shovel button on the right edge. */
+/* Touch "Bump" button on the right edge, above the main button. */
 .tbtn.bump {
   right: calc(22px + env(safe-area-inset-right, 0px));
   bottom: calc(274px + env(safe-area-inset-bottom, 0px));

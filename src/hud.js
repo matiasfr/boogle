@@ -3,7 +3,7 @@ import { me, enterIsland, chargeAmount } from './player.js';
 import { net, remotes } from './net.js';
 import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
-import { interactTarget, useVerb } from './hands.js';
+import { touchTarget, useVerb } from './hands.js';
 import { glyph, inputKind } from './glyphs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -22,7 +22,6 @@ export const dom = {
   chargeFill: $('charge-fill'),
   grabBtn: $('btn-grab'),
   jumpBtn: $('btn-jump'),
-  pileBtn: $('btn-pile'),
   touchEl: $('touch'),
   stickEl: $('stick'),
   knobEl: $('knob'),
@@ -39,7 +38,7 @@ export function updateHud() {
     dom.hintEl.hidden = !hint;
   }
   if (!isTouch || !me.entered) return;
-  const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
+  const t = me.charging ? null : touchTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
   if (dom.grabBtn.textContent !== label) {
     dom.grabBtn.textContent = label;

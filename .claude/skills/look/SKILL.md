@@ -55,7 +55,9 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/features/debug-cam.js`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
-- `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud })`.
+- `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
+- `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or
+  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.mjs`.
 
 Rules of thumb: keep scenarios short; wait on state, not time; assert on what the player would notice (it exists,
 moved, synced, is visible in a region, is not flickering); keep thresholds loose (they guard against regressions,

@@ -189,7 +189,7 @@ body.touch .shovel-chip {
     padding-top: 8px;
   }
 }
-/* Toss throws what you hold when the main button would not (src/hud.js sets main-throws). */
+/* Toss throws what you hold when the main button would not (src/hud.js sets main-throws); never the shovel. */
 .tbtn.toss {
   display: none;
   right: calc(108px + env(safe-area-inset-right, 0px));
@@ -198,6 +198,6 @@ body.touch .shovel-chip {
   height: 64px;
   font-size: 14px;
 }
-body.holding-thing:not(.main-throws) .tbtn.toss {
+body.holding-throwable:not(.main-throws) .tbtn.toss {
   display: block;
 }
