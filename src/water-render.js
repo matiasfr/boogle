@@ -3,6 +3,7 @@ import { GRID_RES, HALF, CELL, SUN_DIR, FOG_HEX, FOG_NEAR, FOG_FAR } from './con
 import { clamp, srgbVec } from './math.js';
 import { heights } from './terrain.js';
 import { scene } from './scene.js';
+import { onFrame } from './loop.js';
 
 // Ground height packed into 16 bits (R = high byte, G = low byte) so centimetre edits show up.
 function encodeHeight(data, k, h) {
@@ -98,6 +99,15 @@ export const waterMat = new THREE.ShaderMaterial({
       gl_FragColor = vec4(mix(col, uFog, f), mix(alpha, 1.0, f));
     }`,
 });
+
+// late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock. Everything earlier in
+// the frame (water-surface.js and the fish share this uniform) still sees last frame's value, as before.
+onFrame(
+  ({ elapsed }) => {
+    waterMat.uniforms.uTime.value = elapsed;
+  },
+  { phase: 'late', order: 3010 },
+);
 
 export function createWaterMesh() {
   const geo = new THREE.PlaneGeometry(1300, 1300, 100, 100); // ~13 m quads; the vertex wave is ~30 m long

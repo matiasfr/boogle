@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BALL_R, BALL_MASS, BALL_SPAWN, REACH, INTERP_MS } from './constants.js';
-import { lerp, finiteArr, r2, r3 } from './math.js';
+import { BALL_R, BALL_MASS, BALL_SPAWN, REACH, INTERP_MS, HALF, PLAYER_R, HEAD_OFFSET } from './constants.js';
+import { clamp, lerp, finiteArr, r2, r3 } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { world, ballMat, teleport } from './physics.js';
 import { me, handPosition, carryPosition, throwVelocity } from './player.js';
-import { net, remotes, sendPresence, addPresenceField, onRemotePresence } from './net.js';
+import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from './net.js';
 import { createSnaps } from './snaps.js';
+import { onFrame } from './loop.js';
 
 function beachBallTexture() {
   const c = document.createElement('canvas');
@@ -167,6 +168,9 @@ onRemotePresence((r, pr, time) => {
   }
 });
 
+// The owner keeps publishing the ball even from the title screen.
+keepPresenceWhile(() => ball.mine);
+
 // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner.
 export function resolveBallOwner(now) {
   let best = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
@@ -225,3 +229,52 @@ export function prepareBall() {
     teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
   }
 }
+
+// Frame hooks; the order numbers are listed at the top of src/loop.js.
+// world -300, right after the physics step: an owned ball that left the island respawns, then the display follows it.
+onFrame(
+  () => {
+    if (!ball.mine) return;
+    const bp = ball.body.position;
+    if (!ball.held && (Math.abs(bp.x) > HALF - 3 || Math.abs(bp.z) > HALF - 3 || bp.y < -15)) respawnBall();
+    const ip = ball.held ? bp : ball.body.interpolatedPosition;
+    ball.disp.p.set(ip.x, ip.y, ip.z);
+    const q = ball.body.quaternion;
+    ball.disp.q.set(q.x, q.y, q.z, q.w);
+    const v = ball.body.velocity;
+    ball.disp.v.set(v.x, v.y, v.z);
+  },
+  { phase: 'world', order: -300 },
+);
+
+// world -280, after the player's fall respawn (player.js, -290): walking into a slow ball takes ownership so the push
+// resolves in this tab's simulation.
+onFrame(
+  ({ now }) => {
+    if (!me.body) return;
+    if (!ball.mine && ball.owner && !ball.held && now - me.lostBallAt > 400 && ball.disp.v.length() < 5) {
+      const p = me.body.position;
+      const bpos = ball.disp.p;
+      const dy = clamp(bpos.y - p.y, 0, HEAD_OFFSET);
+      const d = Math.hypot(bpos.x - p.x, bpos.y - (p.y + dy), bpos.z - p.z);
+      if (d < PLAYER_R + BALL_R + 0.08) claimBall(false);
+    }
+  },
+  { phase: 'world', order: -280 },
+);
+
+// update -300, first visual sync, before the camera: the owner shows its body (or the carry spot), others smooth in.
+onFrame(
+  ({ dt }) => {
+    if (ball.mine) {
+      if (ball.held) carryPosition(ball.mesh.position);
+      else ball.mesh.position.copy(ball.disp.p);
+      ball.mesh.quaternion.copy(ball.disp.q);
+    } else {
+      const k = 1 - Math.exp(-dt * 25);
+      ball.mesh.position.lerp(ball.disp.p, k);
+      ball.mesh.quaternion.slerp(ball.disp.q, k);
+    }
+  },
+  { phase: 'update', order: -300 },
+);

@@ -5,6 +5,7 @@ import { inputState, requestLock } from './input.js';
 import { canvas } from './scene.js';
 import { touchTarget, useVerb } from './hands.js';
 import { glyph, inputKind } from './glyphs.js';
+import { onFrame } from './loop.js';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -45,6 +46,8 @@ export function updateHud() {
     document.body.classList.toggle('main-throws', label === 'Throw');
   }
 }
+// late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.js lists the orders).
+onFrame(() => updateHud(), { phase: 'late', order: -190 });
 
 let peopleKey = '';
 export function renderPeople() {

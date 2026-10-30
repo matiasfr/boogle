@@ -7,6 +7,7 @@ import { mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
 import { scene } from './scene.js';
 import { addStaticSpheres } from './physics.js';
+import { onFrame } from './loop.js';
 
 // Concatenate many small vertex-colored geometries into one draw call (POIs use these too).
 export function addPart(parts, geo, matrix, color) {
@@ -318,3 +319,5 @@ export function updateClouds(dt) {
     if (c.position.x > 340) c.position.x = -340;
   }
 }
+// update -190, after the camera (player.js, -200), before the feature update hooks (src/loop.js lists the orders).
+onFrame(({ dt }) => updateClouds(dt), { phase: 'update', order: -190 });
