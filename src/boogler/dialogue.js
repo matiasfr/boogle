@@ -4,7 +4,7 @@
 import { reducedMotion } from '../constants.js';
 import { requestLock } from '../player/input.js';
 import { openModal, closeModal } from '../player/modal.js';
-import { MAX_LEVEL } from './friendship.js';
+import { heartsText } from './friendship.js';
 import { boogler } from './boogler.js';
 import { GIFTS } from '../sim/gift-catalog.js';
 import { iconFor } from '../player/item-icons.js';
@@ -21,7 +21,8 @@ const MOUTHS = {
   worry:
     '<path d="M17.4 23 Q18.6 22.2 19.6 23 Q20.6 23.8 21.6 23 Q22.4 22.4 22.8 23" stroke="#1d1640" stroke-width="1" fill="none" stroke-linecap="round"/>',
 };
-const face = (mood) => `
+// His portrait: in the talk box with the mood's mouth, and smiling on the off-screen pointer (hud.js).
+export const portrait = (mood) => `
   <svg viewBox="0 0 40 40" aria-hidden="true">
     <ellipse cx="11" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
     <ellipse cx="29" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
@@ -77,7 +78,6 @@ function dom() {
   el = {
     root,
     wrap: q('.bd-wrap'),
-    card: q('.bd-card'),
     faceBtn: q('.bd-face'),
     face: q('.bd-face-svg'),
     pet: q('.bd-pet'),
@@ -149,8 +149,7 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
     d.close.innerHTML = glyph('close') || CROSS;
     d.pet.innerHTML = glyph('pet') || HAND;
   }
-  if (performance.now() >= react.until) d.face.innerHTML = face(view.mood);
-  d.card.dataset.mood = view.mood;
+  if (performance.now() >= react.until) d.face.innerHTML = portrait(view.mood);
   setBond(bond);
   cur = {
     text: view.say,
@@ -189,17 +188,20 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
   if (!cur.typing) finishTyping();
 }
 
+// Plays a one-shot CSS animation (class `cls`) again from the start.
+export function replay(node, cls) {
+  node.classList.remove(cls);
+  void node.offsetWidth;
+  node.classList.add(cls);
+}
+
 let bondLevel = -1;
 function setBond(b) {
   const d = dom();
-  d.hearts.textContent = '♥'.repeat(b.level) + '♡'.repeat(MAX_LEVEL - b.level);
+  d.hearts.textContent = heartsText(b.level);
   d.level.textContent = b.name;
   d.bar.style.width = `${Math.round(b.frac * 100)}%`;
-  if (bondLevel >= 0 && b.level > bondLevel) {
-    d.bond.classList.remove('up');
-    void d.bond.offsetWidth; // restart the level-up animation
-    d.bond.classList.add('up');
-  }
+  if (bondLevel >= 0 && b.level > bondLevel) replay(d.bond, 'up');
   bondLevel = b.level;
 }
 
@@ -209,18 +211,15 @@ export function dialogueReact({ line, mood, hearts = false, bond = null }) {
   const d = dom();
   react.until = performance.now() + REACT_MS;
   d.popText.textContent = line;
-  d.face.innerHTML = face(mood);
+  d.face.innerHTML = portrait(mood);
   if (bond) setBond(bond);
   const w = d.wrap.getBoundingClientRect(),
     f = d.faceBtn.getBoundingClientRect();
   const x = f.left + f.width / 2 - w.left;
   d.pop.style.left = `${Math.max(0, x - 30).toFixed(0)}px`;
   d.pop.hidden = false;
-  for (const c of [d.pop, d.faceBtn]) {
-    c.classList.remove('pop');
-    void c.offsetWidth; // restart the pop animation
-    c.classList.add('pop');
-  }
+  replay(d.pop, 'pop');
+  replay(d.faceBtn, 'pop');
   if (!hearts || reducedMotion) return;
   for (let k = 0; k < 4; k++) {
     const h = document.createElement('span');
@@ -250,7 +249,7 @@ export function updateDialogue(now) {
   if (react.until && now >= react.until) {
     react.until = 0;
     el.pop.hidden = true;
-    if (cur) el.face.innerHTML = face(cur.mood);
+    if (cur) el.face.innerHTML = portrait(cur.mood);
   }
   if (!cur?.typing) return;
   const n = Math.min(cur.text.length, Math.floor(((now - cur.at) / 1000) * CHARS_PER_S));

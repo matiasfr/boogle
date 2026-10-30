@@ -131,7 +131,7 @@ function menuNode(t, say) {
     const ask = THREADS[id].ask[s.done ? 2 : s.started ? 1 : 0];
     opts.push(opt(ask, () => enterThread(t, id)));
   }
-  opts.push(...giftOpts(t, () => menuNode(t, pick(t, AFTER))));
+  opts.push(...giftOpts(t, backToMenu(t)));
   opts.push(
     opt(pick(t, BYE), () =>
       node(
@@ -219,7 +219,7 @@ function smallTalk(t) {
   const s = pick(t, fresh.length ? fresh : pool);
   f.flags.recent = [...recent, s.id].slice(-3);
   const scoring = chatScores(f, ctx.now);
-  return chapterNode(t, s, 'a', () => menuNode(t, pick(t, AFTER)), scoring);
+  return chapterNode(t, s, 'a', backToMenu(t), scoring);
 }
 
 // ---------------------------------------------------------------- gifts

@@ -9,7 +9,7 @@ import { FIXED } from '../constants.js';
 import { world as physics } from '../physics/physics.js';
 import { me } from '../player/player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.js';
-import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
+import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.js';
@@ -20,7 +20,6 @@ import { heldId, useOne } from '../player/inventory.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 
 const TALK_RANGE = 3.6; // metres from his centre
-const HALF_WIDTH = 0.8;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
@@ -268,7 +267,7 @@ export function booglerTalk() {
 // me first!". The prompt shows in his name tag.
 export function talkTargets() {
   if (!me.entered || dialogue.open || riding() || dist() > TALK_RANGE) return [];
-  return [{ id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk, show: setTagPrompt }];
+  return [{ id: 'boogler', verb: 'Talk', at: boogler.center, r: W_R, run: booglerTalk, show: setTagPrompt }];
 }
 
 function petInTalk() {

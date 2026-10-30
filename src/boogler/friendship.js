@@ -11,6 +11,8 @@ export const LEVELS = [
   { at: 340, name: 'Best friend' },
 ];
 export const MAX_LEVEL = LEVELS.length - 1;
+// The friendship meter as text: a full heart per level reached, an empty one per level to go.
+export const heartsText = (level) => '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
 
 const MIN = 60000;
 export const RULES = {
