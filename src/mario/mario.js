@@ -1,0 +1,260 @@
+// Playing as Mario. While it is on, the decomp's Mario (src/mario/sim.js) runs at his own 30 Hz inside the physics
+// step and this player's cannon-es body becomes kinematic and follows him, so everything that reads the body (the ball,
+// the camera, interact targets, the hotbar, presence) keeps working. Other players' Marios are drawn from the pose they
+// publish. Loaded on first use by src/features/mario.js.
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.js';
+import { world } from '../physics/physics.js';
+import { waterField } from '../physics/water-field.js';
+import { ball, claimBall } from '../physics/ball.js';
+import { scene } from '../render/scene.js';
+import { emit } from '../render/particles.js';
+import { me, cam } from '../player/player.js';
+import { input } from '../player/input.js';
+import { onFrame } from '../loop.js';
+import { getSim, BUTTON } from './sim.js';
+import { gatherSurfaces, UNITS } from './collision.js';
+import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
+import { mario } from './state.js';
+
+const RECENTRE = 40; // metres from the frame origin before the origin moves to Mario
+const PER_S = 30 / 100; // SM64 units per frame (30 Hz) to metres per second
+const TURN = 32768 / Math.PI;
+const ACT_GROUP_MASK = 0x1c0,
+  ACT_GROUP_AIRBORNE = 0x80,
+  ACT_GROUP_SUBMERGED = 0xc0;
+const PARTICLE_DUST = 1 << 0,
+  PARTICLE_MIST_CIRCLE = 1 << 16;
+const ATTACKING = 0x100000 | 0x200000 | 0x400000; // MARIO_PUNCHING, MARIO_KICKING, MARIO_TRIPPING
+const DUST = new THREE.Color('#e9dcc0');
+
+let sim = null,
+  mesh = null;
+// Mario's collision lives in a frame centred near him (SM64 keeps everything within ±8192 units).
+const origin = { x: 0, z: 0 };
+let phase = 0,
+  last = null,
+  hitAt = 0;
+const target = new CANNON.Vec3(),
+  expected = new CANNON.Vec3();
+
+export async function loadSim(data) {
+  if (sim) return;
+  const s = await getSim();
+  s.setMarioAnims(data.anims);
+  getAtlas(data.textures);
+  sim = s;
+}
+
+const toShort = (rad) => ((((Math.round(rad * TURN) % 65536) + 98304) % 65536) - 32768) | 0;
+
+function moveOrigin(x, z) {
+  origin.x = Math.round(x);
+  origin.z = Math.round(z);
+}
+
+// Loads the triangles around world point (x, z) and the water there.
+function loadSurfaces(x, z) {
+  const n = gatherSurfaces(sim, x, z, origin.x, origin.z, me.body.collisionFilterMask);
+  sim.loadSurfaces(n, waterField.surfaceAt(x, z) * UNITS);
+}
+
+export async function startMario(data) {
+  await loadSim(data);
+  const b = me.body;
+  mesh ??= createModelMesh();
+  moveOrigin(b.position.x, b.position.z);
+  loadSurfaces(b.position.x, b.position.z);
+  sim.spawn(
+    (b.position.x - origin.x) * UNITS,
+    (b.position.y - PLAYER_R) * UNITS,
+    (b.position.z - origin.z) * UNITS,
+    toShort(me.yaw - Math.PI),
+  );
+  last = sim.state();
+  b.type = CANNON.Body.KINEMATIC;
+  b.mass = 0;
+  b.updateMassProperties();
+  b.velocity.setZero();
+  target.copy(b.position);
+  expected.copy(b.position);
+  phase = 0;
+  scene.add(mesh);
+  me.avatar.userData.inner.visible = false;
+  mario.active = true;
+}
+
+export function stopMario() {
+  if (!mario.active) return;
+  mario.active = false;
+  mario.pose = null;
+  const b = me.body;
+  b.type = CANNON.Body.DYNAMIC;
+  b.mass = PLAYER_MASS;
+  b.updateMassProperties();
+  b.velocity.set(last.vx * PER_S, last.vy * PER_S, last.vz * PER_S);
+  scene.remove(mesh);
+  me.avatar.userData.inner.visible = true;
+}
+
+function readStick() {
+  const k = input.keys;
+  let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - input.stickY;
+  let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + input.stickX;
+  const len = Math.hypot(f, s);
+  if (len > 1) {
+    f /= len;
+    s /= len;
+  }
+  return me.entered && !me.down ? [s * 64, f * 64] : [0, 0];
+}
+
+function readButtons() {
+  const k = input.keys;
+  let buttons = 0;
+  if (me.jumpHeld || me.jumpQueued > 0) buttons |= BUTTON.A;
+  if (mario.b || mario.bHeld) buttons |= BUTTON.B;
+  if (mario.zHeld || k.has('ShiftLeft') || k.has('ShiftRight')) buttons |= BUTTON.Z;
+  me.jumpQueued = 0;
+  mario.b = false;
+  return me.entered && !me.down ? buttons : 0;
+}
+
+// A punch, kick or trip that reaches the beach ball knocks it away.
+function hitBall(now) {
+  if (!(last.flags & ATTACKING) || ball.held || now - hitAt < 350) return;
+  const yaw = last.faceYaw / TURN;
+  const fx = Math.sin(yaw),
+    fz = Math.cos(yaw);
+  const hx = target.x + fx * 0.6,
+    hy = target.y + 0.2,
+    hz = target.z + fz * 0.6;
+  const p = ball.disp.p;
+  if (Math.hypot(p.x - hx, p.y - hy, p.z - hz) > 1.1) return;
+  hitAt = now;
+  if (!ball.mine) claimBall(false);
+  const kick = last.flags & 0x200000 ? 14 : 10;
+  ball.body.velocity.set(fx * kick + last.vx * PER_S, 5.5, fz * kick + last.vz * PER_S);
+}
+
+function puffs(st) {
+  if (reducedMotion || !(st.particles & (PARTICLE_DUST | PARTICLE_MIST_CIRCLE))) return;
+  const feetY = st.y / UNITS;
+  const ring = st.particles & PARTICLE_MIST_CIRCLE;
+  for (let k = 0; k < (ring ? 14 : 2); k++) {
+    const a = ring ? (k / 14) * Math.PI * 2 : Math.random() * Math.PI * 2;
+    const sp = ring ? 2.6 : 0.4;
+    emit('soft', {
+      x: target.x + Math.cos(a) * 0.2,
+      y: feetY + 0.1,
+      z: target.z + Math.sin(a) * 0.2,
+      vx: Math.cos(a) * sp,
+      vy: 0.6,
+      vz: Math.sin(a) * sp,
+      color: DUST,
+      life: 0.6,
+      size: 0.35,
+      grow: [1, 2.2],
+      fade: 1,
+      alpha: 0.7,
+      drag: 3,
+    });
+  }
+}
+
+function tick(now) {
+  const wx = origin.x + last.x / UNITS,
+    wz = origin.z + last.z / UNITS;
+  loadSurfaces(wx, wz);
+  const [sx, sy] = readStick();
+  sim.input(sx, sy, readButtons(), toShort(cam.yaw));
+  sim.tick();
+  const st = (last = sim.state());
+  target.set(origin.x + st.x / UNITS, st.y / UNITS + PLAYER_R, origin.z + st.z / UNITS);
+  const group = st.action & ACT_GROUP_MASK;
+  me.yaw = st.faceYaw / TURN + Math.PI;
+  me.coyote = group === ACT_GROUP_AIRBORNE || group === ACT_GROUP_SUBMERGED ? 0 : 0.1;
+  me.swimming = group === ACT_GROUP_SUBMERGED;
+  mario.pose = sim.pose();
+  updateModelMesh(mesh, sim.verts, sim.vertexCount());
+  puffs(st);
+  hitBall(now);
+  if (Math.abs(st.x) > RECENTRE * UNITS || Math.abs(st.z) > RECENTRE * UNITS) {
+    const dx = Math.round(st.x / UNITS),
+      dz = Math.round(st.z / UNITS);
+    origin.x += dx;
+    origin.z += dz;
+    sim.shift(-dx * UNITS, -dz * UNITS);
+    last = sim.state();
+  }
+}
+
+// The body arrives where Mario is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
+// respawn, the caves' safety net), Mario goes there.
+world.addEventListener('preStep', () => {
+  if (!mario.active || !me.body) return;
+  const b = me.body;
+  if (b.position.distanceTo(expected) > 0.75) {
+    moveOrigin(b.position.x, b.position.z);
+    sim.teleport(
+      (b.position.x - origin.x) * UNITS,
+      (b.position.y - PLAYER_R) * UNITS,
+      (b.position.z - origin.z) * UNITS,
+    );
+    last = sim.state();
+    target.copy(b.position);
+  }
+  if (phase === 0) tick(performance.now());
+  const left = (2 - phase) * FIXED;
+  b.velocity.set((target.x - b.position.x) / left, (target.y - b.position.y) / left, (target.z - b.position.z) / left);
+  expected.set(
+    b.position.x + b.velocity.x * FIXED,
+    b.position.y + b.velocity.y * FIXED,
+    b.position.z + b.velocity.z * FIXED,
+  );
+  phase = (phase + 1) % 2;
+});
+
+// Mario's feet are a ball radius under the body's centre.
+onFrame(
+  () => {
+    if (!mario.active || !me.body) return;
+    const ip = me.body.interpolatedPosition;
+    mesh.position.set(ip.x, ip.y - PLAYER_R, ip.z);
+    me.avatar.userData.inner.visible = false;
+  },
+  { phase: 'update', order: -5 },
+);
+
+// ---------------------------------------------------------------- other players' Marios
+
+const remoteMeshes = new Map(); // remote -> { mesh, pose }
+
+// Draws every remote who is Mario (r.mario holds their pose) and lets their usual avatar show again when they stop.
+export function updateRemoteMarios(remotes) {
+  if (!sim) return;
+  for (const [r, entry] of remoteMeshes) {
+    if (remotes.get(r.peer) === r && r.mario && r.avatar) continue;
+    scene.remove(entry.mesh);
+    entry.mesh.geometry.dispose();
+    if (r.avatar) r.avatar.userData.inner.visible = true;
+    remoteMeshes.delete(r);
+  }
+  for (const r of remotes.values()) {
+    if (!r.mario || !r.avatar) continue;
+    let entry = remoteMeshes.get(r);
+    if (!entry) {
+      entry = { mesh: createModelMesh(), pose: null };
+      scene.add(entry.mesh);
+      remoteMeshes.set(r, entry);
+    }
+    if (entry.pose !== r.mario) {
+      entry.pose = r.mario;
+      sim.renderPose(r.mario);
+      updateModelMesh(entry.mesh, sim.verts, sim.vertexCount());
+    }
+    entry.mesh.position.set(r.avatar.position.x, r.avatar.position.y - PLAYER_R, r.avatar.position.z);
+    r.avatar.userData.inner.visible = false;
+  }
+}
