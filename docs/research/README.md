@@ -14,5 +14,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [deterministic-procedural-worldgen.md](deterministic-procedural-worldgen.md): a per-room seeded island built from integer fields, thermal erosion and Priority-Flood drainage, with a timed prototype and blue-noise placement of points of interest.
 - [deterministic-sim-at-scale.md](deterministic-sim-at-scale.md): lessons from shipped lockstep games: per-system desync diagnosis, dirty-region hashing and resync, sleeping regions, a GGPO-style sync test instead of rollback.
 - [stylized-rendering-on-a-budget.md](stylized-rendering-on-a-budget.md): stylized looks inside the existing shaders on tile-based iPad GPUs: outlines, vertex wind, fog and sky palettes, baked AO, water foam, five ranked prototypes.
+- [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md): one registry that describes every control and generates the guide, a pause view as a local overlay over a world that keeps running, paper-card presentation sized for the couch, and a phased plan.
 
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
