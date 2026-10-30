@@ -511,7 +511,8 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
   ([src/features/pois.js](../src/features/pois.js); its `site.js` ground stays eager): one seamless mesh, built a little
   each frame once loaded,
-  is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`). Bodies switch
+  is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`), and a ring
+  of rock round each mouth (look only) hides the seam where the hillside's hole meets the tunnel. Bodies switch
   between the surface's collision group and the cave's when they cross a mouth (1 m out counts as in); a safety net
   puts anything stuck in rock back. Inside, the camera stays in the tunnel, the fog closes in and the sky light dims
   (`atmosphere.underground`); darkness is baked per vertex by distance from the nearest mouth (full daylight within 2 m,
@@ -760,7 +761,7 @@ TURN) and `/healthz`.
   site most likely uses public PeerJS signaling, no TURN, no server snapshots and no telemetry: an empty island
   survives only in players' localStorage.
 - No TURN: players behind strict NATs may not connect; the failure rate is unmeasured.
-- The sim is not in a Web Worker (PLAN Phase 4 item unchecked; tech plan C4 decided: no worker). Hidden tabs keep
+- The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.js](../src/world/background.js)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
   `impact.js`).
@@ -871,18 +872,14 @@ research in [research/](research/README.md).
 
 ## 12. Doc and code mismatches found while writing this
 
-Still true at `1d37273`:
+Still open:
 
-- [src/pois/lighthouse/index.js](../src/pois/lighthouse/index.js) says the tower is "on the east cape"; it moved to the
-  central hill at (6, −58) (site file, playtest 2026-10-29).
 - PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.186.1. The peer-room header cites peerjs 1.5.4;
   the package has 1.5.5.
-- DESIGN.md's sync table lists Lockstep as "Water, sand, mushrooms" and its authority table names "weather"; gifts and
-  proto flags are Lockstep too, and weather does not exist.
-- PLAN Phase 4 says ball splashes "add a little water"; the `slosh` op moves water (conserved), it never adds any.
-- PLAN Phase 4 still lists the sim Web Worker as an open item; tech plan C4 decided against it.
+- DESIGN.md's authority table names "weather", which does not exist yet.
 - DESIGN principle 9 and `src/world/README.md` mention offline growth through `world.epochMs`; nothing reads it.
 - The hotbar is global while the Boogler friendship is per room; nothing documents whether that is intended.
-- The tech plan's "Decided" list still words the legacy-code removal as a to-do, though #28 and #31 did it.
 
-Fixed since the first draft: the spring API and `dev/water-lab/` are gone (#31), and frame logic left `main.js` (#29).
+Fixed since: the spring API and `dev/water-lab/` are gone (#31), frame logic left `main.js` (#29); the lighthouse
+header, DESIGN's Lockstep examples, PLAN Phase 4's slosh and worker items and the tech plan's legacy-code line now match
+the code.
