@@ -16,6 +16,7 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [stylized-rendering-on-a-budget.md](stylized-rendering-on-a-budget.md): stylized looks inside the existing shaders on tile-based iPad GPUs: outlines, vertex wind, fog and sky palettes, baked AO, water foam, five ranked prototypes.
 - [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md): one registry that describes every control and generates the guide, a pause view as a local overlay over a world that keeps running, paper-card presentation sized for the couch, and a phased plan.
 - [progression-feel-exploration.md](progression-feel-exploration.md): incremental/idle design (Pecorella, Lantz, Candy Box, A Dark Room), communal progression (Stardew bundles), vehicle feel (Lonely Mountains, Mario Kart Wii, TotK, cannon-es suspension maths), exploration in social games (Journey, BotW, Outer Wilds, Tunic). Feeds [docs/proposals/](../proposals/README.md).
+- [hub-and-minigames.md](hub-and-minigames.md): Club Penguin, Toontown, Habbo, Splatoon, Animal Crossing, Jackbox and Fall Guys on hub spaces, mini-games, personal economies and drop-in play. Feeds [docs/proposals/hub-and-minigames.md](../proposals/hub-and-minigames.md).
 - [_primary-source-notes.md](_primary-source-notes.md): raw fetched facts and quotes behind the reports, with fetch status. No proposals.
 
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
