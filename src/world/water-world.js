@@ -1,6 +1,6 @@
-// Phase 4: the shared water simulation on the island. Owns the one sim instance, keeps its ground in step with every
-// terrain edit (dig, pile, flatten), registers it with the world sync (state, per-tick step, slosh edits) and wires it
-// to the cosmetic mesh (water-surface.js) and to physics/splash (water-field.js).
+// Phase 4: the shared water simulation on the island. Owns the one sim instance, keeps its ground in step
+// with every terrain edit (TERRAIN_OPS), registers it with the world sync (state, per-tick step, slosh edits)
+// and wires it to the cosmetic mesh (water-surface.js) and to physics/splash (water-field.js).
 //
 // Order inside a tick: edits apply (terrain deltas change) -> terrain-edits flushes its mesh -> this module
 // copies changed ground into the sim, wakes those cells and steps the water -> the surface mesh retargets.
@@ -13,8 +13,8 @@ import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../sim/water-regi
 import { waterField } from '../water-field.js';
 import { createWaterSurface } from '../water-surface.js';
 import { registerOp, registerState, onTick, onApplied, onSnapshot, submitEdit, world } from './sync.js';
-import { TERRAIN_OPS } from './terrain-logic.js';
 import { terrain } from './terrain-edits.js'; // import first: its onTick (mesh flush) must run before ours
+import { TERRAIN_OPS } from './terrain-logic.js';
 
 // ------------------------------------------------------------------ tunables (all the feel lives here)
 export const WATER_CONFIG = {
@@ -148,7 +148,11 @@ registerOp('slosh', {
 // Any terrain op changes ground under the water, so all of them re-copy their 5x5 brush footprint. (Flatten used to be
 // left out: long-running peers kept stale sim ground while a joiner's load copied it fresh, and their water diverged.)
 onApplied((edit) => {
-  if (TERRAIN_OPS.has(edit.op)) dirtyGround(edit.i - 2, edit.j - 2, edit.i + 2, edit.j + 2);
+  if (!TERRAIN_OPS.has(edit.op)) return; // other ops (slosh) leave terrain.lastCells() stale
+  for (const [idx] of terrain.lastCells()) {
+    const a = (idx / N) | 0;
+    dirtyGround(a, idx - a * N, a, idx - a * N);
+  }
 }, 'water ground');
 
 onTick(() => {

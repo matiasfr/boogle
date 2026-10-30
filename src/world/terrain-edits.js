@@ -9,6 +9,7 @@ import { refreshGround } from '../physics.js';
 import { updateHeightTexels } from '../water-render.js';
 import { scene, camera } from '../scene.js';
 import { me, camForward } from '../player.js';
+import { inputKind } from '../glyphs.js';
 import { ball } from '../ball.js';
 import { registerOp, registerState, onApplied, onTick, submitEdit } from './sync.js';
 import { createTerrainState, CARRY_MAX, EDIT_MIN_CM, EDIT_MAX_CM } from './terrain-logic.js';
@@ -286,7 +287,8 @@ export function updateShovel() {
   const carry = carryAmount();
   const kind = shovel.hold ?? (shovel.flat ? 'flatten' : 'dig');
   if (chip) {
-    const text = shovel.on ? `${LABELS[kind]}  Sand ${carry}/${CARRY_MAX}  (Q dig, Z pile)` : '';
+    const keys = inputKind() === 'kbm' ? '  (Q dig, Z pile)' : '';
+    const text = shovel.on ? `${LABELS[kind]}  Sand ${carry}/${CARRY_MAX}${keys}` : '';
     if (text !== lastChip) {
       lastChip = text;
       chip.textContent = text;

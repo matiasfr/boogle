@@ -58,7 +58,7 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 | **Host** | Shared, small (a few dozen numbers), changes over time | The host; it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
 | **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Water, sand, mushrooms |
 
-In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/net.js`](src/net.js)); Lockstep is `registerOp`, `registerState` and `onTick` ([`src/world/sync.js`](src/world/sync.js)). Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/snaps.js). Lockstep ticks at 10 Hz, compares hashes every 2 s and saves to the server every 30 s.
+In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/net.js`](src/net.js)); Lockstep is `submitEdit` + `onApplied`/`onSnapshot` for features, with the rules registered through `registerOp`, `registerState` and `onTick` ([`src/world/sync.js`](src/world/sync.js)). One-off events (a honk, a ping) are not state: send them as messages with `net.room.send` and receive them through `onRoomReady(room => room.onMessage(...))`, reliable and ordered, reaching every other peer (see [`src/net/README.md`](src/net/README.md)); presence fields are for state that has a current value. Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/snaps.js). Lockstep ticks at 10 Hz, compares hashes every 2 s and saves to the server every 30 s.
 
 - **Physics is never lockstep.** cannon-es (and three.js math) isn't bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball rolls on dug sand) and change it only by submitting edits (a splash).
 - **Crossing kinds goes through edits.** A player digging, a ball splashing, an NPC planting, a thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
@@ -85,7 +85,7 @@ For lockstep systems, clients send small **edit events** (dig, pile, plant, harv
 | Water, terrain edits, garden, weather | The host peer |
 | The Boogler (wandering NPC) | The host peer, published in its presence ([`src/boogler.js`](src/boogler.js)) |
 | Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler-play.js`](src/boogler-play.js), [`src/inventory.js`](src/inventory.js)) |
-| Persistence (snapshots) | The host, saved to our server |
+| Persistence (snapshots) | The host, saved to our server and localStorage; every client also keeps a hash-verified copy in localStorage. A migrating host keeps its live state; a host that starts without state loads the newest copy by tick |
 
 ### PeerJS only
 Networking is PeerJS with one browser acting as host (see PLAN.md, "Key decision"). There are no alternate transports and no claude.ai artifact build. Keep the game talking to the small room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS directly.
@@ -95,7 +95,7 @@ This is a friends' project. Prefer plain modules, few dependencies and code some
 
 ## How we work
 
-- **Playtest constantly with 2–4 real people.** We iterate in small steps straight on `main` and play each change on the live site. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
+- **Playtest constantly with 2–4 real people.** We iterate in small steps and play each change on the live site. Every change reaches `main` through a PR that merges itself when CI is green (`npm run ship`), so iteration stays fast and nothing red goes live. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
 - **Light tests, real playtests.** Automated tests guard determinism, sync and conservation, and stay fast enough to run before every push; fun and feel are judged by playing.
 - **Every feature says which principle it serves**, and calls out any principle it bends.
 - **Changing a principle is a commit to this file**, with the reason.

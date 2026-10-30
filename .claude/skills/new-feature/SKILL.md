@@ -12,7 +12,8 @@ Create the feature `$0` (kebab-case file name). Description: $ARGUMENTS
    - a one-line comment saying what it does;
    - `import './$0.css';` only if it needs styles, in `src/features/$0.css`;
    - DOM created in JS (append to `.hud` or `body`), never added to `index.html`;
-   - per-frame work via `onFrame(fn, { phase, order })`, startup via `onStart(fn)`.
-4. Bigger logic goes in its own module (`src/<name>.js`, or `src/sim/<name>.js` if it is pure shared logic with a unit test in `test/`). Shared state goes through `registerOp`/`registerState` in `src/world/sync.js` and must be deterministic.
+   - per-frame work via `onFrame(fn, { phase, order })`, startup via `onStart(fn)`;
+   - something players act on with the interact button (E, pad B, the touch action button) registers a provider with `registerInteractable(fn)` from `src/hands.js`: `fn()` returns the targets in reach now (`[]` for none), each `{ id, verb, at, r?, run | blocked, show? }`. The contract is at the top of `src/hands.js`. Don't add another key for it.
+4. Bigger logic goes in its own module (`src/<name>.js`, or `src/sim/<name>.js` if it is pure shared logic with a unit test in `test/`). Shared state first picks a sync kind from DESIGN.md's table ("Pick how each feature shares state"), then uses its API: Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/net.js`, smoothed with `createSnaps` from `src/snaps.js`), and Lockstep is `registerOp`/`registerState`/`onTick` in `src/world/sync.js` and must be deterministic. Physics is never Lockstep.
 5. Don't edit `src/main.js`, `src/style.css` or `index.html` beyond a line or two. Add or tick a PLAN.md item if the feature is on the roadmap.
 6. Run `npm run check`, then tell the user how to try it (`npm run dev`, two tabs).

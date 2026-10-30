@@ -40,7 +40,7 @@ const CAP_T = 0.35;
 const MIN_BODY = 0.12; // a sprout this small has no collider yet
 const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale has moved this much
 const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
-const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
+export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
 export const garden = createGarden();
 const pourAt = { until: 0 };
@@ -337,36 +337,23 @@ export function createStall() {
 }
 
 // ---------------------------------------------------------------- actions
-function nearestPickup() {
-  if (!me.body) return null;
-  const at = me.body.interpolatedPosition;
-  let best = null,
-    bestD = REACH + 0.6;
-  for (const p of pickups) {
-    if (!p.world) continue;
-    const d = Math.hypot(p.world.x - at.x, p.world.z - at.z);
-    if (d < bestD) {
-      best = p;
-      bestD = d;
-    }
+// What interacting at the stall could do (see interactTarget in src/hands.js): for each pickup in reach
+// { id, verb, at, run }, or { id, verb, at, blocked } when there is no room. The can is left out while you hold one, and
+// the seeds while your stack is full; the other pickup stays on offer.
+export function stallTargets() {
+  if (!me.entered || !me.body) return [];
+  const p = me.body.interpolatedPosition;
+  const out = [];
+  for (const pick of pickups) {
+    if (!pick.world || Math.hypot(pick.world.x - p.x, pick.world.z - p.z) >= REACH + 0.6) continue;
+    if (pick.kind === 'can' && has('can')) continue;
+    if (pick.kind === 'seeds' && inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) continue;
+    const at = pick.world.clone().setY(pick.world.y + 0.35);
+    const t = { id: `stall-${pick.kind}`, verb: 'Take', at };
+    if (roomFor(pick.kind) < 0) out.push({ ...t, blocked: 'Hotbar full' });
+    else out.push({ ...t, run: () => (pick.kind === 'seeds' ? take('seeds', SEEDS_PER_VISIT) : take('can')) });
   }
-  return best;
-}
-
-// What grabbing at the stall would do: { label, button, run }, { text } when there is no room, or null.
-export function stallTarget() {
-  if (!me.entered) return null;
-  const pick = nearestPickup();
-  if (pick?.kind === 'seeds') {
-    if (inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) return null;
-    if (roomFor('seeds') < 0) return { text: 'Hotbar full' };
-    return { label: 'take seeds', button: 'Take', run: () => take('seeds', SEEDS_PER_VISIT) };
-  }
-  if (pick?.kind === 'can' && !has('can')) {
-    if (roomFor('can') < 0) return { text: 'Hotbar full' };
-    return { label: 'take the can', button: 'Take', run: () => take('can') };
-  }
-  return null;
+  return out;
 }
 
 function plantCell() {
@@ -377,12 +364,12 @@ function plantCell() {
 }
 
 let plantedAt = -1e9; // a seed in flight to the host is not in the garden yet: no second one on its heels
-// { i, j } where a seed would go in front of you, or { text } saying why not.
+// { i, j } where a seed would go in front of you, { text } saying why not, or null just after a planting.
 export function plantTarget() {
   if (!me.body) return null;
   const { i, j } = plantCell();
-  if (plantOk(i, j) && performance.now() - plantedAt > 500) return { i, j };
-  return { text: "Can't plant here" };
+  if (!plantOk(i, j)) return { text: "Can't plant here" };
+  return performance.now() - plantedAt > 500 ? { i, j } : null;
 }
 
 export function plantFront() {

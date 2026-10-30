@@ -2,7 +2,7 @@
 
 The single source of truth for any coding agent (Claude Code, Codex, Cursor, ...). `CLAUDE.md` imports this file; put shared rules here, not there.
 
-Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, networked with PeerJS (one browser is the host). `server/` is the signaling/snapshot server. Several friends and their agents push to `main` at the same time, and `main` auto-deploys to https://matiasfr.github.io/boogle/.
+Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, networked with PeerJS (one browser is the host). `server/` is the signaling/snapshot server. Several friends and their agents ship at the same time; `main` only takes PRs, which merge themselves once CI is green, and `main` auto-deploys to https://matiasfr.github.io/boogle/.
 
 ## Read first
 - [DESIGN.md](DESIGN.md): play and technical principles. Follow them; if a request conflicts with one, say which and ask before bending it. Every feature names the principle it serves (commit body or PR).
@@ -11,7 +11,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 
 ## Rules that are easy to miss
 - **Pick a sync kind per piece of state:** Local, Owner, Host or Lockstep (table in DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
-- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it.
+- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it. ESLint enforces this for `LOCKSTEP_FILES` (`eslint.config.js`); a new lockstep module outside `src/sim/` joins that list.
 - **Cosmetic stays separate.** Particles, ripples, sounds may use floats and `Math.random()`, in their own modules, never read by the sim.
 - **Sync edits, not state** (Lockstep). Clients `submitEdit`; the host stamps and broadcasts. Bulk state travels only as host snapshots. Authority table: DESIGN.md, "Clear authority".
 - **Room interface only.** Game code talks to `createPeerRoom` (`src/net/README.md`), never to PeerJS directly. No alternate transports, no claude.ai artifact build.
@@ -22,7 +22,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
 - Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
 - Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
-- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`); `registerOp`, `registerState`, `onTick` in `src/world/sync.js` (Lockstep). Pure logic lives in `src/sim/` (no three.js, no DOM) so it can be unit-tested.
+- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`); `registerOp`, `registerState`, `onTick` in `src/world/sync.js` (Lockstep). Pure **shared** logic lives in `src/sim/` (no three.js, no DOM, lockstep-safe math) so it can be unit-tested; cosmetic helpers needing sin/pow/random stay with their feature.
 - Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`. Keep edits there to a line or two.
 
 ## Commands
@@ -32,7 +32,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - `npm run perf`: draw calls and triangles, then ms per lockstep tick per handler (idle and busy water), in about a
   minute or more on a loaded machine; compare before/after changes that add meshes, lights or sim work (`-- --render` /
   `-- --sim` for one half).
-- `npm run ship`: how you push (below). `cd server && npm test`: server tests alone.
+- `npm run ship`: how you ship (below). `cd server && npm test`: server tests alone.
 
 ## Tests stay light
 - Unit tests (`test/*.test.mjs`, `node:test`) cover pure logic only (`src/sim/*`, `src/world/*` state, validation, serialize/load/hash): no three.js, DOM, browser or network. Each file well under a second; shrink grids and tick counts until it is.
@@ -41,8 +41,11 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - Visual and feel changes: validate in the running game with `npm run look` (stills, motion sheets, heatmaps, motion score) and scenario checks (`npm run scenario -- <name>`, `dev/scenarios/`; see `.claude/skills/look/SKILL.md`): write or extend a scenario, run it, read the images, iterate. Scenarios are not part of `check`. Don't commit ad-hoc Playwright scripts as tests.
 
 ## Shipping
-- Commit small, focused changes with imperative messages ("Add splashes for the ball"), then run **`npm run ship`**, not `git push`. It rebases onto the latest `main`, runs `check` (or `check:full` for networking/sync/server), pushes, and retries if `main` moved.
+- Commit small, focused changes with imperative messages ("Add splashes for the ball"), then run **`npm run ship`**. It rebases onto the latest `main`, runs `check`, and pushes to a new `ship/<you>-<sha>` branch, then returns. `main` itself refuses pushes.
+- CI runs on that branch (including `check:full`'s server and network tests). Green: `automerge.yml` opens the PR, merges it with a merge commit and deploys. Red, or in conflict with `main`: `ci-autofix.yml` has Claude push one fix commit to the branch, twice at most, then @mentions you on the PR. `npm run ship -- --wait` waits until it's on `main`.
+- Shipping again before the last one merged is fine: the new PR carries both, and the older PR is closed once its commits are on `main`.
+- Networking, sync and persistence changes ship the same way; no human review needed.
 - On a rebase conflict, keep **both** sides' changes (they are usually independent features). `ship` asks Claude Code to do this automatically; if it can't, resolve, `git add`, `git rebase --continue`, `npm run ship` again.
-- Never force-push `main` or skip hooks (`--no-verify`) unless a human asks.
-- Networking, sync and persistence changes ship the same way; no human review needed. `ship` runs `check:full` for them.
-- If CI is red on `main`, `ci-autofix.yml` opens a fix PR; if you're around, fixing it beats starting something new.
+- A session that can only push its own `claude/` branch pushes it and opens a non-draft PR; `automerge.yml` squash-merges it when green. Draft or `no-automerge` label: nothing merges it.
+- Never force-push or skip hooks (`--no-verify`) unless a human asks.
+- If CI is red on `main` (two PRs that pass alone but break together), `ci-autofix.yml` opens a fix PR; if you're around, fixing it beats starting something new.

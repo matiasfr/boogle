@@ -275,6 +275,11 @@ function checkFaceplant(now, speed) {
 addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(downUntil - performance.now())) : null));
 onRemotePresence((r, pr) => {
   const kd = pr.kd;
+  // Temporary: tabs on builds before b0a3a7b never clear kd, so they repeat their last value forever. A live kd
+  // counts down between packets, so an exact repeat is stale. Remove once every tab runs b0a3a7b or later
+  // (old tabs reload on a new build once the mixed-build handling lands).
+  if (kd === r.kdLast) return;
+  r.kdLast = kd;
   if (Number.isFinite(kd) && kd > 0 && kd <= 2000) {
     const now = performance.now();
     if (!(r.kdUntil > now)) onRemoteDown(r);

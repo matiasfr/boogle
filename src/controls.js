@@ -7,6 +7,14 @@
 //     down   () on press, up () on release, held (dt) every frame while pressed (all optional)
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
+//
+// To layer behaviour onto another module's action (feel.js turns pile into a dive while swimming), wrap it from
+// onStart, once it is registered; never overwrite its handlers by hand:
+//   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
+//                                  none) and decides whether to call it; the last wrap runs first
+//   actionById(id)                 the registered action or null; for dev tooling and tests
+// Both log a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
+// wraps.
 
 // Index = button index in the W3C "standard" gamepad mapping.
 export const PAD = [
@@ -67,7 +75,26 @@ export function registerAction(id, { pad, label = id, down = null, up = null, he
   return true;
 }
 
+export function actionById(id, who = 'actionById') {
+  const action = actions.get(id);
+  if (!action) console.warn(`[controls] ${who}: no action "${id}"`);
+  return action || null;
+}
+
+export function wrapAction(id, wrap) {
+  const action = actionById(id, 'wrapAction');
+  if (!action) return false;
+  for (const k of ['down', 'up']) {
+    if (!wrap[k]) continue;
+    const next = action[k] || (() => {});
+    const fn = wrap[k];
+    action[k] = () => fn(next);
+  }
+  return true;
+}
+
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
+export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to, for glyphs
 // While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
 // runs no action. setPadModal(null) hands the pad back.
 let modal = null;

@@ -253,7 +253,9 @@ export class Game {
     ]);
     const done = new Promise((res, rej) => ff.on('close', (c) => (c ? rej(new Error('ffmpeg exit ' + c)) : res())));
     if (!this.paused) {
-      await this.page.clock.pauseAt((await this.page.evaluate(() => Date.now())) + 50);
+      // Pause a little ahead of page time: on a loaded machine the round trip can outlast a short margin, and Playwright
+      // refuses to fast-forward to the past.
+      await this.page.clock.pauseAt((await this.page.evaluate(() => Date.now())) + 2000);
       this.paused = true;
     }
     const n = Math.round(seconds * fps);

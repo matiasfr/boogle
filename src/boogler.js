@@ -1,10 +1,11 @@
 // The Boogler: a squished, smiling NPC who waddles around the island.
 //
-// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w }`
-// (r = yaw, w = 1 while walking). Everyone else interpolates those snapshots, like a remote player. He is not part of
-// the deterministic world sim (he never changes terrain, water or crops), so his brain can use floats; it still uses
-// the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that hear nothing from a host for a
-// few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops) is cosmetic and local.
+// Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
+// (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
+// remote player. He is not part of the deterministic world sim (he never changes terrain, water or crops), so his brain
+// can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
+// hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
+// is cosmetic and local.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler-play.js): the host stops for
@@ -14,7 +15,7 @@ import * as CANNON from 'cannon-es';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from './constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from './math.js';
 import { groundHeight } from './terrain.js';
-import { scene, camera } from './scene.js';
+import { scene, camera, toScreen } from './scene.js';
 import { world, playerMat, teleport, NOT_SCENERY } from './physics.js';
 import { blockedAt } from './props.js';
 import { island } from './island/index.js';
@@ -54,7 +55,8 @@ const ATTEND_RANGE = 5;
 export const PUFF_MS = 750;
 
 // What a player is doing with him (published by each player) and what he is doing (published by the host).
-export const ACT = { NONE: 0, TALK: 1, RIDE: 2, PET: 3 };
+// 3 was PET (petting now happens inside TALK): never reuse it, old tabs may still send it and it must read as NONE.
+export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
@@ -73,8 +75,8 @@ let group = null;
 let parts = null;
 let body = null;
 
-// `me` is this player's side of things, written by src/boogler-play.js: act (ACT), wary (he runs from us), and the
-// face to pull while we talk (mood, speaking).
+// `me` is this player's side of things, written by src/boogler-play.js: act (ACT; petting is part of TALK), wary (he
+// runs from us), and the face to pull while we talk (mood, speaking).
 export const boogler = {
   disp,
   labelPos: new THREE.Vector3(),
@@ -227,7 +229,7 @@ function think(dt) {
   for (const v of visitors()) {
     const d = Math.hypot(v.x - sim.x, v.z - sim.z);
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
-    else if (v.act === ACT.TALK || v.act === ACT.PET) {
+    else if (v.act === ACT.TALK) {
       if (d < focusD) [focus, focusD] = [v, d];
     } else if (v.wary && d < threatD) [threat, threatD] = [v, d];
   }
@@ -614,6 +616,8 @@ export function updateBoogler(dt, now) {
 
 // Screen-space position for the HUD label and edge pointer (boogler-hud.js).
 const vp = new THREE.Vector3();
+const centerOn = { x: 0, y: 0, behind: false },
+  labelOn = { x: 0, y: 0, behind: false };
 export function booglerScreen(width, height) {
   camera.updateMatrixWorld();
   vp.copy(boogler.center).applyMatrix4(camera.matrixWorldInverse);
@@ -622,14 +626,8 @@ export function booglerScreen(width, height) {
   let dx = vp.x,
     dy = -vp.y;
   if (Math.hypot(dx, dy) < 1e-4) dy = 1;
-  const ndc = boogler.center.clone().project(camera);
-  const onScreen = inFront && Math.abs(ndc.x) < 0.96 && Math.abs(ndc.y) < 0.96;
-  const label = boogler.labelPos.clone().project(camera);
-  return {
-    onScreen,
-    dirX: dx,
-    dirY: dy,
-    labelX: (label.x * 0.5 + 0.5) * width,
-    labelY: (-label.y * 0.5 + 0.5) * height,
-  };
+  const c = toScreen(boogler.center, centerOn, width, height);
+  const onScreen = inFront && Math.abs((c.x / width) * 2 - 1) < 0.96 && Math.abs((c.y / height) * 2 - 1) < 0.96;
+  const label = toScreen(boogler.labelPos, labelOn, width, height);
+  return { onScreen, dirX: dx, dirY: dy, labelX: label.x, labelY: label.y };
 }

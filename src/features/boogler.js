@@ -1,10 +1,11 @@
 // The Boogler: a wandering NPC (src/boogler.js) with a bouncy name tag and an off-screen pointer (src/boogler-hud.js),
-// who you can pet, talk to, give presents and ride (src/boogler-play.js, src/boogler-dialogue.js, src/boogler-fx.js).
+// who you can talk to, pet, give presents and ride (src/boogler-play.js, src/boogler-dialogue.js, src/boogler-fx.js).
 import './boogler.css';
 import { onFrame, onStart } from '../loop.js';
 import { boogler, createBoogler, updateBoogler } from '../boogler.js';
 import { updateBooglerHud } from '../boogler-hud.js';
-import { setupBooglerPlay, updateBooglerPlay } from '../boogler-play.js';
+import { setupBooglerPlay, updateBooglerPlay, talkTargets } from '../boogler-play.js';
+import { registerInteractable } from '../hands.js';
 import { updateBooglerFx } from '../boogler-fx.js';
 import { updateDialogue } from '../boogler-dialogue.js';
 
@@ -13,20 +14,8 @@ onStart(() => {
   createBoogler();
   setupBooglerPlay();
   if (window.boogle) window.boogle.boogler = boogler; // debug handle
-  const help = document.getElementById('help');
-  for (const [key, text] of [
-    ['C', 'Talk to The Boogler, or give him what you hold'],
-    ['Click', 'Pet him, pick things up, shake a palm'],
-  ]) {
-    const row = document.createElement('div');
-    const kbd = document.createElement('kbd');
-    kbd.textContent = key;
-    const span = document.createElement('span');
-    span.textContent = text;
-    row.append(kbd, span);
-    help?.append(row);
-  }
 });
+registerInteractable(talkTargets); // Talk, in his name tag
 onFrame(({ dt, now }) => updateBoogler(dt, now));
 onFrame(({ dt, now }) => {
   updateBooglerPlay(dt, now);

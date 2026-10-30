@@ -39,6 +39,9 @@ onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied 
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
+                                   // Returns true if queued, not applied: the host may reject it, and edits held
+                                   // while reconnecting can be dropped (see sync.js header). Use onApplied for
+                                   // anything irreversible.
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
 registry()                   // { ops, states }: registered keys in order
@@ -59,4 +62,4 @@ Shared logic must not use `Math.random`, `Date.now`, or float math that differs 
 
 ## Status
 
-Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `onDesync(fn)` (a hash check failed: `{ tick, keys }`), `onSnapFail(fn)` (a snapshot from a peer, localStorage or the server could not be loaded: `{ from, reason }`), `worldStatus()` (debug). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.
+Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `onDesync(fn)` (a hash check failed: `{ tick, keys }`), `onSnapFail(fn)` (a snapshot from a peer, localStorage or the server could not be loaded: `{ from, reason }`), `worldStatus()` (debug), `profileTicks()` (`npm run perf -- --sim` only: times every op apply, `onApplied`/`onTick` handler and state hash until `stop()`, which restores them and returns one `{ label: ms }` row per tick). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.

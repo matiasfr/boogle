@@ -31,6 +31,13 @@ test('moon phases cycle every LUNAR_DAYS days: new rides with the sun, full is o
   assert.ok(f.moonAngle < 0.6, `full moon should be low in the east at sunset, got ${f.moonAngle}`);
 });
 
+test('moon illum tracks (1 - cos 2 PI phase) / 2 within 0.011', () => {
+  for (let i = 0; i <= 100; i++) {
+    const p = i / 100;
+    close(skyState(0, p).illum, (1 - Math.cos(2 * Math.PI * p)) / 2, 0.011);
+  }
+});
+
 test('same world time gives the same sky (pure)', () => {
   assert.deepEqual(skyAt(5_000_000), skyAt(5_000_000));
 });

@@ -379,41 +379,6 @@ function playerAt() {
   return me.entered && me.body ? me.body.interpolatedPosition : null;
 }
 
-function nearestItem() {
-  const p = playerAt();
-  if (!p) return null;
-  let best = null,
-    bestD = REACH;
-  const now = performance.now();
-  for (const it of gifts.items) {
-    if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
-    itemPos(it, at);
-    if (Math.abs(p.y - PLAYER_R - at.y) > PICK_DY) continue;
-    const d = Math.hypot(at.x - p.x, at.z - p.z);
-    if (d < bestD) {
-      best = it;
-      bestD = d;
-    }
-  }
-  return best;
-}
-
-function nearestRipeTree() {
-  const p = playerAt();
-  if (!p) return -1;
-  let best = -1,
-    bestD = SHAKE_R;
-  layout.trees.forEach((_, t) => {
-    if (!canDrop(gifts, t, world.tick)) return;
-    const d = Math.hypot(trees[t].x - p.x, trees[t].z - p.z);
-    if (d < bestD) {
-      best = t;
-      bestD = d;
-    }
-  });
-  return best;
-}
-
 // The fruit lands on the side of the palm that x, z (the shaker, or the ball) is on.
 function dropEdit(t, x, z) {
   const { i, j } = layout.trees[t];
@@ -422,28 +387,40 @@ function dropEdit(t, x, z) {
   return submitEdit({ op: 'fruit.drop', i, j, t, d });
 }
 
-// What grabbing would do here: { label, button, run } to pick something up or shake a palm, { text } when your hotbar
-// has no room for the thing in reach, or null.
-export function giftTarget() {
-  if (!me.entered || !me.body) return null;
-  const it = nearestItem();
-  if (it) {
-    const g = GIFTS[it.kind];
-    if (roomFor(g.id) < 0 || inv.slots.filter((s) => !s).length <= pending.size) return { text: 'Hotbar full' };
-    return {
-      label: 'pick up',
-      button: 'Pick up',
-      run: () => {
-        if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
-      },
-    };
+// What interacting could do here (see interactTarget in src/hands.js): for each item in reach { id, verb, at, item, run }
+// to pick it up, or { id, verb, at, item, blocked } when your hotbar has no room for it, and { id, verb, at, run } to
+// shake each ripe palm in reach. The pick, not distance alone, decides between them, so a shell behind you does not hide
+// the palm you face.
+const reachAt = new THREE.Vector3();
+export function giftTargets() {
+  const p = playerAt();
+  if (!p) return [];
+  const out = [];
+  const now = performance.now();
+  const full = inv.slots.filter((s) => !s).length <= pending.size;
+  for (const it of gifts.items) {
+    // Not one you already asked to take, nor a thrown one still in the air.
+    if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
+    const pos = itemPos(it, reachAt);
+    if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || Math.hypot(pos.x - p.x, pos.z - p.z) >= REACH) continue;
+    const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
+    const t = { id: `item${it.id}`, verb: 'Pick up', at, item: it.id };
+    if (full || roomFor(GIFTS[it.kind].id) < 0) out.push({ ...t, blocked: 'Hotbar full' });
+    else
+      out.push({
+        ...t,
+        run: () => {
+          if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
+        },
+      });
   }
-  const t = nearestRipeTree();
-  if (t >= 0) {
-    const p = me.body.position;
-    return { label: 'shake the palm', button: 'Shake', run: () => dropEdit(t, p.x, p.z) };
-  }
-  return null;
+  layout.trees.forEach((_, t) => {
+    const { x, z } = trees[t];
+    if (!canDrop(gifts, t, world.tick) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
+    const at = new THREE.Vector3(x, groundHeight(x, z) + 1.7, z);
+    out.push({ id: `palm${t}`, verb: 'Shake', at, run: () => dropEdit(t, me.body.position.x, me.body.position.z) });
+  });
+  return out;
 }
 
 // The ball knocks ripe fruit loose when it hits a palm. Only the ball's owner reports it.
@@ -464,10 +441,10 @@ function knockFruit() {
   }
 }
 
-export function updateGifts(dt, now) {
+// `target` is the item id the interact prompt is on (see giftTargets), highlighted; null for none.
+export function updateGifts(dt, now, target = null) {
   if (!fruitMeshes.size) return;
   for (const [id, at] of pending) if (now - at > 4000) pending.delete(id);
-  const target = nearestItem()?.id;
   updateTreeFruit(now);
   updateFlights(now);
   updateItems(dt, now, target);
