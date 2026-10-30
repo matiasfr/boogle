@@ -1,11 +1,15 @@
-// The guest engine: the guest's simulation and the guest and dino models, a wasm the player brings (built by
-// native/guest/build.mjs). Boogle never ships or fetches one: it comes from a file the player picked once (kept by
-// src/decomp/store.js), or on a local dev build from VITE_DINO_ENGINE_URL. Without one the feature stays dormant.
+// The guest engine: the guest's simulation and the guest and dino models, a wasm built by native/guest/build.mjs.
+// Never bundled: it comes from the owner's hosted build (ENGINE_URL, fetched quietly the first time a player talks to
+// the dino), a file the player picked, or on a local dev build VITE_DINO_ENGINE_URL; this browser keeps it
+// (src/decomp/store.js). Without one the feature stays dormant.
 // Distances are engine units (100 to the metre), angles engine shorts (65536 to the turn). One shared instance draws
 // the dino, runs this player's guest and draws everyone else's; the guest needs the ROM's animations first (setAnims).
 import { loadFile, saveFile } from '../decomp/store.js';
 
 const DEV_URL = import.meta.env.VITE_DINO_ENGINE_URL; // a local build only (native/guest/README.md)
+// The owner's build, hosted by the owner (an owner decision: the engine is fetched, the ROM never is).
+const ENGINE_URL =
+  'https://dl.dropboxusercontent.com/scl/fi/w16gjd0or3jm347pqtp6w/engine.wasm?rlkey=lzwkijjp43jktrtw9934ggrod';
 const STORE_KEY = 'guest-engine';
 // The entry points this file calls; a picked file without them is not a guest engine.
 const NEEDS = ['guest_init', 'guest_tick', 'guest_state', 'guest_render_pose', 'guest_render_dino', 'guest_anim_bank'];
@@ -24,16 +28,23 @@ async function compile(bytes) {
   }
 }
 
-// Looks for an engine this browser already has (or the dev build's); true if found.
-export async function findEngine() {
+const get = (url) =>
+  fetch(url).then(
+    (r) => (r.ok ? r.arrayBuffer() : null),
+    () => null,
+  );
+
+// Looks for an engine this browser already has (or the dev build's); with `hosted`, fetches the owner's build if there
+// is none and keeps it. True if found.
+export async function findEngine(hosted = false) {
   if (compiled) return true;
-  const bytes = DEV_URL
-    ? await fetch(DEV_URL).then(
-        (r) => (r.ok ? r.arrayBuffer() : null),
-        () => null,
-      )
-    : await loadFile(STORE_KEY);
+  const bytes = DEV_URL ? await get(DEV_URL) : await loadFile(STORE_KEY);
   compiled ??= bytes && (await compile(bytes));
+  if (!compiled && hosted && !DEV_URL) {
+    const fetched = await get(ENGINE_URL);
+    compiled ??= fetched && (await compile(fetched));
+    if (compiled) saveFile(STORE_KEY, fetched);
+  }
   return !!compiled;
 }
 

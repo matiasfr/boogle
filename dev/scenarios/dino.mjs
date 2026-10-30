@@ -1,6 +1,7 @@
-// The dino by the wine cellar, without the files the guest needs: he has a Talk prompt, talking opens the files dialog
-// with both files unticked, a wrong engine and a wrong ROM are each refused with a reason, Esc closes it, and the game
-// never fetches an engine on its own.
+// The dino by the wine cellar, without the files the guest needs: he has a Talk prompt, nothing is fetched until you talk
+// to him, talking fetches the hosted engine once (stubbed here as gone, so CI never reaches the host) and opens the
+// files dialog with the engine and the ROM unticked, a wrong engine and a wrong ROM are each refused with a reason,
+// and Esc closes it.
 import { TP } from './lib/world.mjs';
 
 const DINO = `(await import('/src/guest/dino.js')).dino`;
@@ -22,23 +23,25 @@ const drop = (name, bytes) => `
   dispatchEvent(new DragEvent('drop', { dataTransfer: dt, cancelable: true }));`;
 
 export default {
-  about: 'the dino talks, asks for the engine and the ROM, refuses wrong files, and fetches nothing by itself',
+  about: 'the dino talks, fetches the hosted engine only when asked, falls back to asking for it, refuses wrong files',
   async run(t) {
     const g = await t.open({ name: 'visitor', hud: 'play' });
     const wasm = [];
-    g.page.on('request', (r) => r.url().endsWith('.wasm') && wasm.push(r.url()));
+    g.page.on('request', (r) => new URL(r.url()).pathname.endsWith('.wasm') && wasm.push(r.url()));
+    await g.page.route('https://dl.dropboxusercontent.com/**', (r) => r.fulfill({ status: 404, body: '' }));
 
     const ms = await g.waitFor(near, { timeout: 20000 });
     await g.wait(0.4);
     t.check('beside the dino, E would talk to him', ms >= 0, `${ms} ms; ${await g.still('near')}`);
 
+    t.check('no engine is fetched before talking to him', wasm.length === 0, wasm.join(', '));
     await g.key('KeyE');
     const opened = await g.waitFor(dlgOpen, { timeout: 5000 });
     const items = await g.eval(
       `return [...document.querySelectorAll('.files-needs li')].map((li) => [li.textContent, li.classList.contains('done')]);`,
     );
     t.check(
-      'talking opens the files dialog with the engine and the ROM unticked',
+      'with the hosted engine gone, talking opens the files dialog with the engine and the ROM unticked',
       opened >= 0 && items.length === 2 && items.every(([, done]) => !done),
       JSON.stringify(items),
     );
@@ -59,7 +62,7 @@ export default {
     const closed = await g.waitFor(`!(${dlgOpen})`, { timeout: 5000 });
     t.check('Esc closes the dialog', closed >= 0);
 
-    t.check('no engine was fetched', wasm.length === 0, wasm.join(', '));
+    t.check('talking fetched the hosted engine once', wasm.length === 1, wasm.join(', '));
     t.check('no page errors', g.errors.length === 0, g.errors.join(' | '));
   },
 };
