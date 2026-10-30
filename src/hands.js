@@ -165,7 +165,7 @@ export function ensureShovel() {
   if (heldId() === 'shovel') return true;
   const k = slotOf('shovel');
   if (k >= 0) select(k);
-  else take('shovel');
+  else if (!take('shovel')) deny('Hotbar full'); // an old save that lost it with every slot full: say why
   return heldId() === 'shovel';
 }
 let beforeShovel = -1;
