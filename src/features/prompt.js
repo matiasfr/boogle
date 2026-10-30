@@ -6,7 +6,7 @@ import './prompt.css';
 import { onFrame } from '../loop.js';
 import { toScreen } from '../scene.js';
 import { me } from '../player.js';
-import { interactTarget } from '../hands.js';
+import { interactTarget, touchTarget } from '../hands.js';
 import { dialogue } from '../boogler-dialogue.js';
 import { glyph, inputKind } from '../glyphs.js';
 
@@ -28,8 +28,9 @@ function build() {
 onFrame(
   () => {
     if (!ui.root) build();
-    const t = me.entered && !me.charging && !dialogue.open ? interactTarget() : null;
     const kind = inputKind();
+    const pick = kind === 'touch' ? touchTarget : interactTarget; // on touch, what the main button would act on
+    const t = me.entered && !me.charging && !dialogue.open ? pick() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');

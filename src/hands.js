@@ -5,9 +5,11 @@
 //                            interact.
 //   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
-//   touchDown                the touch context button: interacts when something is in reach, otherwise uses
+//   touchDown                the touch main button: acts on touchTarget() when it can, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of whatever you hold (release with releaseThrow)
 //   interactTarget()         the one thing in front of you (see below), or null
+//   touchTarget()            what the touch main button acts on: interactTarget(), but null while you hold the shovel
+//                            (it digs, even on a beach full of things; tap the shovel slot for empty hands)
 //   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
@@ -146,8 +148,9 @@ export const interactDown = () => (me.entered && me.body ? interact() : false);
 export const interactUp = () => {
   me.suppressUp = false;
 };
+export const touchTarget = () => (heldId() === 'shovel' ? null : interactTarget());
 export function touchDown() {
-  const t = interactTarget();
+  const t = touchTarget();
   return t?.run ? interact(t) : useDown();
 }
 export const throwDown = windUp;
