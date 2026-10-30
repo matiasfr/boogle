@@ -72,8 +72,9 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 - [x] **C1. Thin `main.js`.** Ball and player frame logic (respawn, auto-claim, visual sync) move onto `onFrame`
       hooks so `main.js` only wires modules together.
       *Done:* 130 to 65 lines; the core hooks' orders, which keep the old frame sequence, are listed in `src/loop.js`.
-- [ ] **C2. Folders.** Move-only commit: `src/boogler/`, `src/terrain/`, `src/water/`, `src/items/`, ... (no code
+- [x] **C2. Folders.** Move-only commit: `src/boogler/`, `src/terrain/`, `src/water/`, `src/items/`, ... (no code
       changes), done in one quiet window and merged fast.
+      *2026-10-30:* `src/boogler/`, `player/`, `render/`, `netplay/`, `physics/`, `adapters/`; map in `src/README.md`.
 - [ ] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
       dialogue, debug tools); compare bundle size and `npm run perf` before and after.
 - [x] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.

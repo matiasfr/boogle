@@ -1,18 +1,18 @@
-// Cosmetic dig/pile juice: a spray of sand clumps (the shared pool in src/particles.js), a tiny camera nudge and
+// Cosmetic dig/pile juice: a spray of sand clumps (the shared pool in src/render/particles.js), a tiny camera nudge and
 // procedural WebAudio sounds.
 // Local only. Never networked, never read by the simulation, so Math.random is fine here.
 import * as THREE from 'three';
-import { camera } from '../scene.js';
-import { emit } from '../particles.js';
+import { camera } from '../render/scene.js';
+import { emit } from '../render/particles.js';
 import { reducedMotion, CELL, HALF } from '../constants.js';
-import { updateSettle } from '../terrain.js';
-import { remotes } from '../net.js';
-import { me } from '../player.js';
+import { updateSettle } from '../adapters/terrain.js';
+import { remotes } from '../netplay/net.js';
+import { me } from '../player/player.js';
 import { onFrame } from '../loop.js';
-import { getAudio } from '../audio.js';
+import { getAudio } from '../render/audio.js';
 import { terrain, onTerrainCells, isMyEdit } from '../world/terrain-edits.js';
 
-// ---------------------------------------------------------------- spray (the shared pool, src/particles.js)
+// ---------------------------------------------------------------- spray (the shared pool, src/render/particles.js)
 const C_DRY = new THREE.Color('#e3c286'),
   C_DUG = new THREE.Color('#9a7650'),
   C_WET = new THREE.Color('#5b4a3d'),

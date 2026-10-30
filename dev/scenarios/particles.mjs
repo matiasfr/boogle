@@ -1,12 +1,12 @@
-// Cosmetic dust and spray from the shared pool (src/particles.js): a dig spray, a pile puff, a ball landing on sand, a
+// Cosmetic dust and spray from the shared pool (src/render/particles.js): a dig spray, a pile puff, a ball landing on sand, a
 // hard-landing splat and a splash, fired together beside the seed stall so their looks can be compared in one still.
 const HEAD = `
-  const { teleport } = await import('/src/physics.js');
-  const { groundHeight } = await import('/src/terrain.js');
+  const { teleport } = await import('/src/physics/physics.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const { submitEdit } = await import('/src/world/sync.js');
-  const { claimBall } = await import('/src/ball.js');
-  const { splash } = await import('/src/splash.js');
-  const { particleCounts } = await import('/src/particles.js');
+  const { claimBall } = await import('/src/physics/ball.js');
+  const { splash } = await import('/src/render/splash.js');
+  const { particleCounts } = await import('/src/render/particles.js');
   const { CELL, HALF } = await import('/src/constants.js');
   const { me, ball } = window.boogle;
   const cell = (x, z) => ({ i: Math.round((x + HALF) / CELL), j: Math.round((HALF - z) / CELL) });`;

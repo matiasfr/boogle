@@ -1,16 +1,16 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
-// stick looks, buttons dispatch the actions in src/controls.js. While a pad is in use the touch overlay hides and the
+// stick looks, buttons dispatch the actions in src/player/controls.js. While a pad is in use the touch overlay hides and the
 // reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.js).
 // Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
 // play.
 import './gamepad.css';
 import { onFrame, onStart } from '../loop.js';
-import { input } from '../input.js';
-import { me, cam } from '../player.js';
+import { input } from '../player/input.js';
+import { me, cam } from '../player/player.js';
 import { clamp } from '../math.js';
-import { dom } from '../hud.js';
-import { canvas } from '../scene.js';
-import { PAD, actionForSlot, padModal } from '../controls.js';
+import { dom } from '../player/hud.js';
+import { canvas } from '../render/scene.js';
+import { PAD, actionForSlot, padModal } from '../player/controls.js';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection

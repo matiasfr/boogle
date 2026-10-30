@@ -4,16 +4,16 @@
 // { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.js). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
-import { scene, camera, toScreen } from '../scene.js';
+import { scene, camera, toScreen } from '../render/scene.js';
 import { COLORS, GRID_RES, CELL, HALF, SEA, reducedMotion } from '../constants.js';
-import { groundHeight } from '../terrain.js';
-import { me, camForward } from '../player.js';
-import { ball } from '../ball.js';
-import { net, remotes, onRoomReady } from '../net.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { me, camForward } from '../player/player.js';
+import { ball } from '../physics/ball.js';
+import { net, remotes, onRoomReady } from '../netplay/net.js';
 import { terrain } from '../world/terrain-edits.js';
-import { getAudio } from '../audio.js';
+import { getAudio } from '../render/audio.js';
 import { onFrame, onStart } from '../loop.js';
-import { registerAction } from '../controls.js';
+import { registerAction } from '../player/controls.js';
 import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
 
 const TUNE = {

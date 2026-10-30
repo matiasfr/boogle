@@ -4,10 +4,10 @@
 import { rules } from './game-world.js'; // first: the lockstep rules register before anything else
 import { CELL, HALF, SEA } from '../constants.js';
 import { clamp } from '../math.js';
-import { groundHeight } from '../terrain.js';
+import { groundHeight } from '../adapters/terrain.js';
 import { SLOSH } from '../sim/water-region.js';
-import { waterField } from '../water-field.js';
-import { createWaterSurface } from '../water-surface.js';
+import { waterField } from '../physics/water-field.js';
+import { createWaterSurface } from '../render/water-surface.js';
 import { onAfterTick, onSnapshot, submitEdit, world } from './sync.js';
 import { WATER_SIM } from './rules/water.js';
 

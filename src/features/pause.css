@@ -151,7 +151,7 @@ dialog.pause::backdrop {
   padding: 4px 2px;
   font-size: var(--pause-fs);
 }
-/* Text and glyphs scale together: --gu is the glyph unit (src/guide.css), here in absolute length. */
+/* Text and glyphs scale together: --gu is the glyph unit (src/player/guide.css), here in absolute length. */
 .pause-guide .guide {
   --gu: var(--pause-gu);
   display: block;

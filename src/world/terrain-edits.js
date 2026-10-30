@@ -5,13 +5,13 @@ import { rules } from './game-world.js'; // first: the lockstep rules register b
 import * as THREE from 'three';
 import { GRID_RES, CELL, HALF, BALL_R, PLAYER_R } from '../constants.js';
 import { clamp } from '../math.js';
-import { heights, groundHeight, setCellHeight, refreshRegion, startSettle } from '../terrain.js';
-import { refreshGround } from '../physics.js';
-import { updateHeightTexels } from '../water-render.js';
-import { scene, camera } from '../scene.js';
-import { me, camForward } from '../player.js';
-import { inputKind } from '../glyphs.js';
-import { ball } from '../ball.js';
+import { heights, groundHeight, setCellHeight, refreshRegion, startSettle } from '../adapters/terrain.js';
+import { refreshGround } from '../physics/physics.js';
+import { updateHeightTexels } from '../render/water-render.js';
+import { scene, camera } from '../render/scene.js';
+import { me, camForward } from '../player/player.js';
+import { inputKind } from '../player/glyphs.js';
+import { ball } from '../physics/ball.js';
 import { onApplied, onAfterTick, onSnapshot, submitEdit } from './sync.js';
 import { CARRY_MAX } from './terrain-logic.js';
 

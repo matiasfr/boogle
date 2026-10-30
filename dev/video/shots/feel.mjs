@@ -2,13 +2,13 @@
 // to breach out of the water.
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 const DIVE = (down) => `
-  const pile = (await import('/src/controls.js')).actionById('pile');
+  const pile = (await import('/src/player/controls.js')).actionById('pile');
   if (!pile) throw new Error('no pile action');
   pile.${down ? 'down' : 'up'}();`;
 // Water 2.5-4 m deep near home, at least 1.2 m deep for 3 m around (the shared water region hugs the coast).
 const DEEP = `
-  const { groundHeight } = await import('/src/terrain.js');
-  const { waterField } = await import('/src/water-field.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { waterField } = await import('/src/physics/water-field.js');
   const d = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
   for (let r = 20; r < 90; r += 2)
     for (let k = 0; k < 32; k++) {

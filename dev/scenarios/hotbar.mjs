@@ -4,14 +4,14 @@
 // phone: only filled slots show, the main button digs with the shovel (even next to the ball), Toss shows only for a
 // throwable thing the main button would not throw, a lost shovel comes back from Pile, and the bar clears the HUD.
 const TP = (x, z, y) => `
-  const { teleport } = await import('/src/physics.js');
-  const { groundHeight } = await import('/src/terrain.js');
+  const { teleport } = await import('/src/physics/physics.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
   b.velocity.set(0, 0, 0);`;
-const INV = `const I = await import('/src/inventory.js'); const H = await import('/src/hands.js');`;
+const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
 const AIM = (yaw, pitch = 0) =>
-  `const { cam } = await import('/src/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
+  `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // Page-side helpers for the touch checks: shown(sel) (laid out, so hidden ancestors count), rect(sel), the main
 // button's label, and whether it throws. when(cond) wraps them into an expression for waitFor.
 const DOM = `
@@ -97,8 +97,8 @@ export default {
 
     // The ball: grab it, put it on your back by switching to the shovel, take it back out.
     const ball = await g.eval(`${INV}
-      const { ball } = await import('/src/ball.js');
-      const { teleport } = await import('/src/physics.js');
+      const { ball } = await import('/src/physics/ball.js');
+      const { teleport } = await import('/src/physics/physics.js');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
@@ -120,8 +120,8 @@ export default {
     await g.wait(0.3);
     // Answers only show once his line has finished typing; wait for them, then for his reply.
     const talk = await g.eval(`${INV}
-      const play = await import('/src/boogler-play.js');
-      const { closeDialogue } = await import('/src/boogler-dialogue.js');
+      const play = await import('/src/boogler/play.js');
+      const { closeDialogue } = await import('/src/boogler/dialogue.js');
       const nap = () => new Promise((r) => setTimeout(r, 100));
       const pick = async (text) => {
         for (let k = 0; k < 100; k++) {
@@ -151,12 +151,12 @@ export default {
       talk.offeredShovel && talk.refused && talk.keptShovel && talk.offeredMango && talk.mangoGone,
       JSON.stringify(talk),
     );
-    await g.eval(`(await import('/src/boogler-dialogue.js')).closeDialogue();`);
+    await g.eval(`(await import('/src/boogler/dialogue.js')).closeDialogue();`);
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
     const spot = await g.eval(`${INV}
       const { CELL, HALF, GRID_RES } = await import('/src/constants.js');
-      const G = await import('/src/mushroom-garden.js');
+      const G = await import('/src/adapters/mushroom-garden.js');
       const { PATCH } = await import('/src/sim/mushrooms.js');
       for (let r = 6; r < 60; r += 2)
         for (let a = 0; a < 24; a++) {
@@ -171,7 +171,7 @@ export default {
     await g.wait(0.4);
     await g.eval(`${INV} H.useDown(); H.useUp();`);
     const hasPlot = await g.waitFor(`(async () => {
-      const { garden } = await import('/src/mushroom-garden.js');
+      const { garden } = await import('/src/adapters/mushroom-garden.js');
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
     t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
     await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
@@ -317,8 +317,8 @@ export default {
       const { shovel } = await import('/src/world/terrain-edits.js');
       return !!shovel.target && document.querySelector('.shovel-reason')?.hidden !== false; })()`);
     const near = await thumb.eval(`${INV}
-      const { ball } = await import('/src/ball.js');
-      const { teleport } = await import('/src/physics.js');
+      const { ball } = await import('/src/physics/ball.js');
+      const { teleport } = await import('/src/physics/physics.js');
       const p = window.boogle.me.body.position;
       if (ball.mine) {
         teleport(ball.body, p.x + 0.8, p.y + 0.3, p.z + 0.4);

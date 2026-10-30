@@ -8,6 +8,7 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - [DESIGN.md](DESIGN.md): play and technical principles. Follow them; if a request conflicts with one, say which and ask before bending it. Every feature names the principle it serves (commit body or PR).
 - [PLAN.md](PLAN.md): the roadmap. Tick its checkboxes in the same commit that finishes an item.
 - [src/net/README.md](src/net/README.md) (room interface) before touching multiplayer; [src/world/README.md](src/world/README.md) (world contract) before touching shared state.
+- [src/README.md](src/README.md): which folder each module lives in.
 
 ## Rules that are easy to miss
 - **Pick a sync kind per piece of state:** Local, Owner, Host or Lockstep (table in DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
@@ -21,8 +22,8 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 ## Features plug in; they don't edit shared files
 - New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
 - Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
-- Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
-- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`). Cosmetic helpers needing sin/pow/random stay with their feature.
+- Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/player/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
+- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/netplay/net.js`, smoothed with `createSnaps` (`src/netplay/snaps.js`). Cosmetic helpers needing sin/pow/random stay with their feature.
 - Lockstep state is four files (`src/world/README.md`, "Adding a lockstep system"): `src/sim/<x>.js` (pure, no three.js or DOM, lockstep-safe math) plus its test; `src/world/rules/<x>.js`, which registers the ops, state and ticks and exports `edits` (a seeded edit generator per op, for `test/world-replay.test.mjs`); one appended line in `src/world/rules/index.js`; and a `src/features/<x>.js` adapter that uses `submitEdit`, `onApplied`, `onAfterTick`, `onSnapshot`. Lint bans `registerOp`/`registerState`/`onTick` everywhere else.
 - Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js` (append only). Keep edits there to a line or two.
 

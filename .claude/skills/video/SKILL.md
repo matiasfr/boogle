@@ -31,7 +31,7 @@ before the screenshot. Real GPU on a Mac renders at ~60 fps, so recording runs a
 
 A shot (`dev/video/shots/island.mjs` is the simplest example) drives the game the way a player or a scenario does:
 `window.boogle` (me, ball, net, remotes, `sync`), the controls registry (`actionById(id).down()` from
-`/src/controls.js`, the same press as a key or pad button), real input (`g.key`) and `submitEdit` for shared edits.
+`/src/player/controls.js`, the same press as a key or pad button), real input (`g.key`) and `submitEdit` for shared edits.
 Reach into a game module only for what nothing public offers (a debug pose, a tuning table), so a refactor of game
 internals doesn't break the shots:
 

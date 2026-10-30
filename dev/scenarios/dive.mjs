@@ -4,18 +4,18 @@
 // makes it slower.
 const POS = `return window.boogle.me.body.position.y;`;
 const HOLD = `return (await import('/src/world/terrain-edits.js')).shovel.hold;`;
-const PILE = (down) => `(await import('/src/controls.js')).actionById('pile').${down ? 'down' : 'up'}();`;
+const PILE = (down) => `(await import('/src/player/controls.js')).actionById('pile').${down ? 'down' : 'up'}();`;
 const FRAMES = (n) => `for (let k = 0; k < ${n}; k++) await new Promise((r) => requestAnimationFrame(r));`;
 const TP = (x, y, z) => `
-  const { teleport } = await import('/src/physics.js');
+  const { teleport } = await import('/src/physics/physics.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y}, ${z});
   b.velocity.set(0, 0, 0);`;
 // Water 2.5-4 m deep at least 20 m from home, 1.2 m deep for 3 m around, and dry land (30 cm above the water)
 // somewhere on the way back toward home.
 const FIND = `
-  const { groundHeight } = await import('/src/terrain.js');
-  const { waterField } = await import('/src/water-field.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { waterField } = await import('/src/physics/water-field.js');
   const d = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
   for (let r = 20; r < 90; r += 2)
     for (let k = 0; k < 32; k++) {

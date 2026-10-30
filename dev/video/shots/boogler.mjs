@@ -7,7 +7,7 @@ const seed = (room) => {
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d, a) => `
-  const { groundHeight } = await import('/src/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const { boogler } = window.boogle, b = window.boogle.me.body, p = boogler.disp;
   const x = p.x + Math.cos(${a}) * ${d}, z = p.z + Math.sin(${a}) * ${d};
   b.position.set(x, ${d} ? groundHeight(x, z) + 1 : boogler.center.y + 1.6, z);
@@ -41,7 +41,7 @@ export default {
         seconds: 5.5,
         each: async (t, k) => {
           if (k % 2 === 0) await g.eval(STAND(1.9, a0));
-          if (k === 6) await g.eval(`(await import('/src/boogler-play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
           // Pet once the caption is up, so the hearts land under it.
           if (k === 36) await g.eval(`document.querySelector('.bd-face')?.click()`);
           // The Boogler high in frame so the talk box (bottom centre) doesn't cover him.
@@ -58,7 +58,7 @@ export default {
       await g.record('boogler-talk', {
         seconds: 7,
         each: async (t, k) => {
-          if (k === 6) await g.eval(`(await import('/src/boogler-play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
           if (k === 50) await pick(g, /brought/);
           if (k === 80) await pick(g, /pomegranate/);
           if (k === 190) await pick(g, /.*/);

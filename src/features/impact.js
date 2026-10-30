@@ -6,16 +6,16 @@
 //    decides and publishes it as the presence field `kd` (ms remaining), so everyone sees the flop.
 // Local cosmetics, so Math.random is fine. Nothing here is read by the shared simulation.
 import * as THREE from 'three';
-import { camera } from '../scene.js';
-import { emit } from '../particles.js';
+import { camera } from '../render/scene.js';
+import { emit } from '../render/particles.js';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.js';
-import { groundHeight } from '../terrain.js';
+import { groundHeight } from '../adapters/terrain.js';
 import { clamp, lerp } from '../math.js';
-import { ball } from '../ball.js';
-import { me } from '../player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../net.js';
+import { ball } from '../physics/ball.js';
+import { me } from '../player/player.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
 import { onFrame } from '../loop.js';
-import { getAudio } from '../audio.js';
+import { getAudio } from '../render/audio.js';
 
 // ---------------------------------------------------------------- tunables
 const TUNE = {
@@ -34,7 +34,7 @@ const tmpV = new THREE.Vector3(),
   freezeQ = new THREE.Quaternion();
 const tmpM = new THREE.Matrix4();
 
-// ---------------------------------------------------------------- sand puff (the shared pool, src/particles.js)
+// ---------------------------------------------------------------- sand puff (the shared pool, src/render/particles.js)
 const PUFF = new THREE.Color('#f1dca8');
 function emitPuff(x, y, z, k) {
   const n = Math.round(6 + 8 * k);

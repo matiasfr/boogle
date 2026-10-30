@@ -2,11 +2,11 @@
 // (a bit more generous than grab reach, and fine while it is airborne). If someone else owns the ball we claim it
 // first (claimBall, the normal epoch path) and apply the impulse in our own sim so it resolves immediately.
 import './bump.css';
-import { me, cam } from '../player.js';
-import { ball, claimBall } from '../ball.js';
-import { sendPresence } from '../net.js';
+import { me, cam } from '../player/player.js';
+import { ball, claimBall } from '../physics/ball.js';
+import { sendPresence } from '../netplay/net.js';
 import { onStart } from '../loop.js';
-import { registerAction } from '../controls.js';
+import { registerAction } from '../player/controls.js';
 
 const TUNE = {
   reach: 3.4, // metres from the chest to the ball centre (grab reach is 2.4)

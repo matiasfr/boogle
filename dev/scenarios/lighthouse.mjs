@@ -1,7 +1,7 @@
 // The lighthouse: walk up the outside spiral stair to the gallery deck (physics stepped in the page), then see the
 // lamp and its beams at night.
 const CLIMB = `
-  const { world } = await import('/src/physics.js');
+  const { world } = await import('/src/physics/physics.js');
   const { DECK_Y } = await import('/src/pois/lighthouse/index.js');
   const site = (await import('/src/pois/lighthouse/site.js')).default;
   const { me } = window.boogle;
