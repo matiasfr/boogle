@@ -26,13 +26,11 @@ function stream(seed) {
 }
 const generators = Object.assign({}, ...RULES.map((m) => m.edits ?? {}));
 
-// One tab. Its env (the host-only canPlantAt) and clock differ per peer: neither may reach shared state.
+// One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state.
 function makePeer(seed, net, id, host) {
   const salt = strHash(id);
   const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0 } });
-  const jitter = mulberry32(salt);
-  let ms = salt % 1000; // like performance.now(), and its own on every peer
-  const rules = installRules(s, homeLand(), { clock: () => (ms += 0.05 + jitter() * 3) });
+  const rules = installRules(s, homeLand());
   const x = { id, s, rules, r: stream(seed ^ salt), applied: new Map(), hashes: new Map() };
   s.onApplied((e) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));
   s.onAfterTick((t) => {

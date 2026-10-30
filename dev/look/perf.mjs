@@ -3,7 +3,7 @@
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader programs for the island as you enter it and
 // with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
-// Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick handler and state hash (see
+// Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
 // profileTicks in src/world/sync.js), on the idle island and with busy water (the home beach flooded while a player
 // digs a channel from the sea at the host's rate limit). The page runs the ticks back to back (updateWorld), so slow
 // headless frames don't starve the sample; the numbers are still wall clock on a machine that is also software
@@ -50,7 +50,7 @@ const PROFILE = (n) => `
   const { water } = window.__water;
   const active = [];
   const prof = profileTicks();
-  let rows;
+  let res;
   try {
     for (let k = 0; k < ${n}; k++) {
       window.__perfEach?.(k);
@@ -60,9 +60,9 @@ const PROFILE = (n) => `
       if (k % 5 === 4) await new Promise((r) => setTimeout(r, 0));
     }
   } finally {
-    rows = prof.stop(); // always put the real handlers back (profileTicks allows one profiler at a time)
+    res = prof.stop(); // always put the real handlers back (profileTicks allows one profiler at a time)
   }
-  return { rows, active, cells: water.depth.length, mode: worldStatus().mode, isolated: crossOriginIsolated };`;
+  return { ...res, active, cells: water.depth.length, mode: worldStatus().mode, isolated: crossOriginIsolated };`;
 
 // Busy water: pour FLOOD_CM over the home beach and lowlands with a snapshot (it drains back to the sea for many
 // seconds), and dig a channel inland from the shore every other tick, piling the sand inland when the bucket is full.
@@ -114,32 +114,35 @@ function stat(vals) {
   const avg = s.reduce((a, b) => a + b, 0) / Math.max(1, s.length);
   return { 'avg ms': fmt(avg), 'p95 ms': fmt(s[Math.floor(0.95 * (s.length - 1))] ?? 0), 'max ms': fmt(s.at(-1) ?? 0) };
 }
-// Handlers that update meshes, physics and textures from the sim: they stay on the main thread whatever runs the sim.
-const RENDER_SIDE = new Set(['water surface', 'terrain flush', 'terrain adapter']);
-function summarize(rows) {
+// Rows are split by the registry each handler sits in (profileTicks' kinds): op applies, onTick handlers and hashes
+// are the sim; onAfterTick handlers update meshes and textures from it; onApplied listeners are both (the rules' own,
+// like 'water ground', and render adapters, like 'terrain adapter').
+function summarize(rows, kinds) {
   const sum = (r, keep) => Object.entries(r).reduce((a, [l, ms]) => a + (keep(l) ? ms : 0), 0);
+  const of = (kind) => stat(rows.map((r) => sum(r, (l) => kinds[l] === kind)));
   const table = {
     'whole tick (sum)': stat(rows.map((r) => sum(r, () => true))),
-    'sim only (could move off-thread)': stat(rows.map((r) => sum(r, (l) => !RENDER_SIDE.has(l)))),
-    'render side (main thread)': stat(rows.map((r) => sum(r, (l) => RENDER_SIDE.has(l)))),
+    'sim: ops, onTick, hashes': of('sim'),
+    'onApplied listeners (sim + render)': of('applied'),
+    'view: onAfterTick (main thread)': of('view'),
   };
   const labels = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const per = labels.map((l) => [l, stat(rows.map((r) => r[l] ?? 0))]);
   per.sort((a, b) => b[1]['avg ms'] - a[1]['avg ms'] || b[1]['max ms'] - a[1]['max ms']);
-  for (const [l, s] of per) table[l] = s;
+  for (const [l, s] of per) table[`${l} (${kinds[l]})`] = s;
   return table;
 }
 
 async function profile(g, label, ticks) {
   const t0 = Date.now();
-  const { rows, active, cells, mode, isolated } = await g.eval(PROFILE(ticks));
+  const { rows, kinds, active, cells, mode, isolated } = await g.eval(PROFILE(ticks));
   const avgActive = Math.round(active.reduce((a, b) => a + b, 0) / Math.max(1, active.length));
   console.log(
     `\n${label}: ${rows.length} ticks (${mode}) in ${((Date.now() - t0) / 1000).toFixed(1)} s, ` +
       `water active cells ~${avgActive} of ${cells}` +
       (isolated ? '' : ' (page not cross-origin isolated: times are in 0.1 ms steps)'),
   );
-  console.table(summarize(rows));
+  console.table(summarize(rows, kinds));
 }
 
 let stack, browser;

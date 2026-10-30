@@ -10,7 +10,7 @@ export const RULES = [terrain, mushrooms, gifts, proto, water];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
-export function installRules(sync, land, opts = {}) {
+export function installRules(sync, land) {
   const view = {
     world: sync.world,
     registerOp: sync.registerOp,
@@ -19,8 +19,7 @@ export function installRules(sync, land, opts = {}) {
     onApplied: sync.onApplied,
     onSnapshot: sync.onSnapshot,
   };
-  const o = { clock: () => 0, ...opts };
   const rules = {};
-  for (const m of RULES) rules[m.name] = m.install(view, land, rules, o);
+  for (const m of RULES) rules[m.name] = m.install(view, land, rules);
   return rules;
 }
