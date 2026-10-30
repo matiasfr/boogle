@@ -1,5 +1,5 @@
 {
-  "style": "Painterly concept art for a goofy low-poly island game about friends building a railway. Gouache textures, chunky readable shapes, toy-like proportions, warm light. Same viewpoint in every image: standing on the beach at the south of a small tropical island, looking north up at a red-and-white striped lighthouse on a grassy hill. A round purple blob character called The Boogler appears somewhere small, often wearing a mayor's sash. Industrial eras are grimy and smoky but still cheerful and silly. 16:9, no text, no logos.",
+  "style": "Painterly concept art for a goofy low-poly island game about friends building a railway. Gouache textures, chunky readable shapes, toy-like proportions, warm light. Same viewpoint in every image: standing on the beach at the south of a small tropical island, looking north up at a red-and-white striped lighthouse on a grassy hill. A round purple blob character called The Boogler appears somewhere in the scene as a small figure, about the size of a person, never a close-up, often wearing a mayor's sash. Industrial eras are grimy and smoky but still cheerful and silly. 16:9, no text, no logos.",
   "items": [
     {
       "id": "era-1",
@@ -7,7 +7,7 @@
     },
     {
       "id": "era-2",
-      "prompt": "Era 2, steam wagons: a dirt road up the hill, a brass-and-timber steam wagon towing crate trailers in clouds of white steam, striped bazaar stalls and bunting, a crate with a top hat on it as the town hall."
+      "prompt": "Era 2, steam wagons: a dirt road up the hill, a brass-and-timber steam traction engine on big spoked road wheels, towing crate trailers along the dirt road (no rails yet) in clouds of white steam, striped bazaar stalls and bunting, a crate with a top hat on it as the town hall."
     },
     {
       "id": "era-3",

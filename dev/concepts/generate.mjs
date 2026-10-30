@@ -70,18 +70,37 @@ async function viaApi(it) {
   });
 }
 
+// Codex's imagegen saves to ~/.codex/generated_images/<session>/ and then copies the file where the prompt asks. It
+// ignores --quality and makes one image per run, and it picks its own size near the one asked, so ask it not to stretch.
+// stdin is closed so `codex exec` doesn't wait for extra input when it isn't a TTY.
 function viaCodex(it) {
-  const file = path.join(out, `${it.id}.png`);
-  const ask = `$imagegen ${full(it)} Size ${size}. Save the image as ${path.basename(file)} in the current directory.`;
-  const r = spawnSync('codex', ['exec', '-C', out, '-s', 'workspace-write', '--skip-git-repo-check', ask], {
-    stdio: 'inherit',
-  });
-  if (r.status !== 0 || !fs.existsSync(file)) throw new Error(`codex exited ${r.status}; no ${path.basename(file)}`);
-  return [file];
+  const files = [];
+  for (let k = 1; k <= n; k++) {
+    const file = path.join(out, n > 1 ? `${it.id}-${k}.png` : `${it.id}.png`);
+    fs.rmSync(file, { force: true });
+    const ask =
+      `$imagegen ${full(it)} Aim for ${size}. Copy the generated PNG to ${path.basename(file)} in the current ` +
+      `directory, unchanged: don't resize, crop or stretch it.`;
+    const r = spawnSync('codex', ['exec', '-C', out, '-s', 'workspace-write', '--skip-git-repo-check', ask], {
+      stdio: ['ignore', 'inherit', 'inherit'],
+    });
+    if (r.status !== 0 || !fs.existsSync(file)) throw new Error(`codex exited ${r.status}; no ${path.basename(file)}`);
+    files.push(file);
+  }
+  return files;
 }
 
-const manifest = { via, model: via === 'api' ? model : 'codex default', size, quality, at: new Date().toISOString() };
-manifest.images = [];
+const manifest = {
+  via,
+  model: via === 'api' ? model : 'codex default',
+  size,
+  quality: via === 'api' ? quality : 'n/a',
+  at: new Date().toISOString(),
+};
+// Keep earlier images of ids this run doesn't redo, so an --only run doesn't drop the rest from the contact sheet.
+const manifestFile = path.join(out, 'manifest.json');
+const prev = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')).images || [] : [];
+manifest.images = prev.filter((m) => !items.some((it) => it.id === m.id) && fs.existsSync(path.join(out, m.file)));
 let failed = 0;
 for (const it of items) {
   process.stdout.write(`${it.id} ... `);
@@ -94,7 +113,9 @@ for (const it of items) {
     console.log('failed: ' + e.message);
   }
 }
-fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));
+const order = (id) => spec.items.findIndex((it) => it.id === id);
+manifest.images.sort((a, b) => order(a.id) - order(b.id) || a.file.localeCompare(b.file));
+fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 fs.writeFileSync(
   path.join(out, 'index.html'),

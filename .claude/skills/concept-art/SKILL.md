@@ -16,7 +16,7 @@ The script picks the first one that is available. Force one with `--via api` or 
    - Defaults: `gpt-image-2`, `1536x864` (16:9), `medium` quality.
    - GPT image models return base64 PNGs.
    - It bills at API rates. `--quality low` is cheap for drafts; use `high` for keepers.
-2. **Codex CLI.** For a machine with Codex installed and logged in with ChatGPT. The script runs `codex exec ... "$imagegen <prompt>"` in the output folder, which uses the subscription, not the API key. These flags come from community write-ups, so check them against your Codex version if it fails.
+2. **Codex CLI.** For a machine with Codex installed and logged in with ChatGPT. The script runs `codex exec ... "$imagegen <prompt>"` in the output folder, which uses the subscription, not the API key. Tested with Codex CLI 0.166.0: imagegen saves to `~/.codex/generated_images/<session>/` and copies the PNG into the output folder. It picks its own size (about 1672x941 for 16:9) and ignores `--quality`; each image takes about a minute.
 
 ## Use
 
