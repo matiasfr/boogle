@@ -93,7 +93,7 @@ export const waterMat = new THREE.ShaderMaterial({
 });
 
 // late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock. Everything earlier in
-// the frame (water-surface.js and the fish share this uniform) still sees last frame's value, as before.
+// the frame (the fish share this uniform) still sees last frame's value, as before.
 onFrame(
   ({ elapsed }) => {
     waterMat.uniforms.uTime.value = elapsed;

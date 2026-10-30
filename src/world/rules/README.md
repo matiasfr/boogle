@@ -128,5 +128,5 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
-| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce() }`: the water sim over the home square, its ground copy (`land.base`) and the sea pin; exports `WATER_SIM` |
+| `water.js` | none | `water` | `{}`: retired stub, keeps the slot (step 2 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

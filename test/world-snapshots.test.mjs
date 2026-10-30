@@ -86,6 +86,7 @@ test('an old snapshot with sand deltas, water cells and shore items loads cleanl
     assert.equal(s.worldStatus().loadErrors, 0);
   }
   assert.deepEqual(a.stateHashes(), b.stateHashes());
+  assert.equal(a.stateHashes().water, 2166136261); // the retired water stub
   for (let k = 0; k < 50; k++) {
     a.updateWorld(0.1);
     b.updateWorld(0.1);

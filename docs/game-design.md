@@ -43,7 +43,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | # | Principle | What it means in practice today |
 |---|---|---|
 | 1 | Toys before chores | Ball, throwing and the Boogler have no score. |
-| 2 | The ball stays the star | Ball floats, sloshes pools, knocks fruit off palms, bounces on mushrooms. |
+| 2 | The ball stays the star | Ball floats, knocks fruit off palms, bounces on mushrooms. |
 | 3 | Farming is never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
 | 5 | Only the world is the antagonist | No PvP state damage. |
@@ -75,7 +75,7 @@ file, and section 8 maps every feature to its kind.
 | Region | Where | Notes |
 |---|---|---|
 | **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court, stall and garden are here. |
-| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | The only place with shared water and beach wash-ups. |
+| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | The only place with beach wash-ups. |
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
@@ -124,11 +124,10 @@ Files: [src/player/player.js](../src/player/player.js), [src/physics/physics.js]
   1.6 m/s) while held. Ground snap pulls you back onto a crest within 0.45 m.
 - Pad sprint is a latch: click L3 once and it stays on until the stick rests.
 - A soft wall 18 m inside the map edge turns you back from the open sea.
-- Streams carry waders: 0.6 of the local water current.
 
 ### Swim
 
-- You swim when the water surface is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
+- You swim when the water surface (the sea or the cave pond) is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
 - There is no dive (removed 2026-10-30, [plans/cleanup-dig-water-junk.md](plans/cleanup-dig-water-junk.md)).
 
@@ -214,8 +213,8 @@ tick of 100 ms (10 per second).
 
 - **What and how it plays.** One shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E or click with empty hands),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw, bump it like a
-  volleyball dig, or steal it from whoever holds it. It floats in the sea and in sim pools, drifts along the shore and
-  washes back in, is carried by streams, sloshes pools when it lands hard, knocks ripe fruit off palms, bounces on
+  volleyball dig, or steal it from whoever holds it. It floats in the sea and the cave pond, drifts along the shore and
+  washes back in, knocks ripe fruit off palms, bounces on
   mushrooms (restitution 0.95) and off the Boogler and windmill sails. Walking into a slow ball takes it over so the
   push resolves locally. It respawns at (12, 20) on R, or by itself when it leaves the map (3 m from the edge) or
   falls below −15 m.
@@ -223,8 +222,7 @@ tick of 100 ms (10 per second).
 - **Sync kind.** Owner. The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
   velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.js](../src/netplay/snaps.js))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An
-  orphaned ball is claimed after 600 ms by the visible peer with the lowest id. Splashing into pools crosses into
-  Lockstep through the `slosh` edit.
+  orphaned ball is claimed after 600 ms by the visible peer with the lowest id.
 - **Tuning.** Linear damping 0.12, angular 0.3; ground friction 0.6, restitution 0.55 (ground), 0.45 (players), 0.95
   (mushrooms). Reach 2.4 m. Throw: full charge in 0.9 s, power 8 + 20 × charge m/s, aimed at a point 30 m along the
   camera, plus half your velocity and 1.5 m/s up, spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
@@ -245,27 +243,11 @@ Removed 2026-10-30 ([plans/cleanup-dig-water-junk.md](plans/cleanup-dig-water-ju
 
 ### 6.3 Water sim
 
-- **What and how it plays.** A 2.5D column water sim over the home square. The sea fills the low ground
-  around the island and settles (there is no digging any more, so it only moves when the ball sloshes it). Sim water draws as its own surface mesh
-  matched to the sea shader. The ball and players float in it and are carried by its currents; fish live in it.
-- **Controls.** None directly: you slosh it with the ball.
-- **Sync kind.** Lockstep. State `water` (only cells that differ from the sea fill), op `slosh` (submitted by the
-  ball's owner when the ball lands in a pool). The sea is an infinite reservoir: deep cells are pinned to sea level
-  after each step.
-- **Tuning** ([src/sim/water.js](../src/sim/water.js), [src/world/rules/water.js](../src/world/rules/water.js),
-  [src/world/water-world.js](../src/world/water-world.js), [src/sim/water-region.js](../src/sim/water-region.js)).
-  Integer cm depths; moves only when the surface differs by 2 cm or more, at most half the difference, flow rate 160/256.
-  Cells sleep after 6 quiet ticks. Thin isolated films of 1 cm evaporate every 20 ticks. Region: the HOME box clipped
-  to cells whose base is above −150 cm, padded 3 cells (about 13,287 cells per [tech-plan.md](tech-plan.md) A5); sea pin
-  below −220 cm. Slosh: needs a landing over 3.6 m/s and 8 cm of water; moves up to 360 cm (40 per centre cell) from the
-  3 × 3 to the ring 2 to 3 cells out; 55 cm per m/s over the minimum; once per 4 ticks per player. Physics: currents
-  capped at 2.6 m/s, 7 m/s per unit of slope, no push under 6 cm, "water" from 3 cm.
-- **Files.** As above, plus [src/render/water-surface.js](../src/render/water-surface.js), [src/render/water-render.js](../src/render/water-render.js),
-  [src/physics/water-field.js](../src/physics/water-field.js).
-- **Known issues and limits.** No tide, weather, rain or springs (the spring, its API and `dev/water-lab/` are gone,
-  #31). The sim runs on the main thread: per tech plan A5 the render-side surface scan is the larger
-  cost, and C4 decided "no worker". A 1 cm staircase can persist (by design of the rule). The mainland has no
-  shared water.
+Removed 2026-10-30 ([plans/cleanup-dig-water-junk.md](plans/cleanup-dig-water-junk.md)). The sea (a shader and the
+`SEA` level) and the cave pond stay: swimming, buoyancy, ball floating, splashes and fish all read the surface through
+[src/physics/water-field.js](../src/physics/water-field.js) (`surfaceAt`, the sea, plus the cave pond at 3.0 m). The
+`water` state key stays in `RULES` as a stub (loads any save, ignores the cells, hashes a constant), and the `slosh` op
+is gone.
 
 ### 6.4 Mushrooms and the stall
 
@@ -670,7 +652,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | How you treat the Boogler | Owner | presence `bg` |
 | The Boogler's position and mode | Host | `addHostField('g')` |
 | Sand | none | retired 2026-10-30; `terrain` is a stub state |
-| Water | Lockstep | op `slosh`; state `water` |
+| Water | none | retired 2026-10-30; `water` is a stub state |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, wash-ups, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
 | Prototype flags | Lockstep | state `proto` |
@@ -785,10 +767,10 @@ research in [research/](research/README.md).
 |---|---|
 | Adapter | The render and input side of a lockstep system; reacts through `onApplied`, `onAfterTick`, `onSnapshot`. |
 | Cell | One 1.25 m square of the world grid, `(i, j)` at x = i × 1.25 − 255, z = 255 − j × 1.25. |
-| Edit | A small op (`gift.toss`, `slosh`, `gift.toss` ...) a client submits; the host stamps and broadcasts it. |
+| Edit | A small op (`mush.plant`, `gift.toss` ...) a client submits; the host stamps and broadcasts it. |
 | Epoch | The ball ownership counter; the highest claim wins. |
 | Host | The browser holding `boogle-<room>-host`; authority for lockstep stamping, the Boogler and server saves. |
-| HOME | The −80..80 m square where water and wash-ups exist. `HOME_KEEP` (22 m) is the untouched core. |
+| HOME | The −80..80 m square where wash-ups exist. `HOME_KEEP` (22 m) is the untouched core. |
 | Host field | Host-kind state published in the host's presence (`addHostField`). |
 | Key item | A catalog item the Boogler refuses (ball). |
 | Local / Owner / Host / Lockstep | The four sync kinds (DESIGN.md). |
@@ -797,7 +779,6 @@ research in [research/](research/README.md).
 | Presence | Each player's small JSON state, sent 20 times a second, latest wins. |
 | Proto flag | A room-wide toggle for an experimental feature. |
 | Rules module | The lockstep half of a system in `src/world/rules/`. |
-| Slosh | The edit a landing ball makes, moving water out of a pool. |
 | Snapshot | The serialized world (every registered state, tick, seed, versions), for joiners and saves. |
 | Stamp | A terrain shape a POI applies to the ground. |
 | Tick | 100 ms of lockstep time. |

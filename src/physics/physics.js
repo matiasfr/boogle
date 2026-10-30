@@ -4,9 +4,6 @@ import { clamp } from '../math.js';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 
-const cur = { x: 0, z: 0 };
-const PLAYER_DRIFT = 0.6; // share of a stream's speed that carries a wading player
-
 export const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.allowSleep = false;
@@ -88,15 +85,8 @@ export function installStepHooks({ me, ball, remotes }) {
       const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
       const braking = me.wish.x * b.velocity.x + me.wish.z * b.velocity.z < 0;
       const accel = me.coyote > 0 ? (braking ? feelTune.brakeAccel : 70) : me.swimming ? 18 : 14;
-      let cx = 0,
-        cz = 0;
-      if (depth > 0.05) {
-        waterField.currentAt(b.position.x, b.position.z, cur); // streams carry waders downstream
-        cx = cur.x * PLAYER_DRIFT;
-        cz = cur.z * PLAYER_DRIFT;
-      }
-      let dx = me.wish.x * speed + cx - b.velocity.x,
-        dz = me.wish.z * speed + cz - b.velocity.z;
+      let dx = me.wish.x * speed - b.velocity.x,
+        dz = me.wish.z * speed - b.velocity.z;
       const dl = Math.hypot(dx, dz),
         maxDv = accel * FIXED;
       if (dl > maxDv) {
@@ -141,17 +131,16 @@ export function installStepHooks({ me, ball, remotes }) {
       const t = world.time;
       const px = bb.position.x,
         pz = bb.position.z;
-      const simSurf = waterField.surfaceAt(px, pz);
-      const inSim = simSurf > SEA + 0.06; // a pool or stream above sea level: no waves, no sea drift
-      const surf = inSim ? simSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
+      const pondSurf = waterField.surfaceAt(px, pz);
+      const still = pondSurf > SEA + 0.06; // a pond above sea level: no waves, no sea drift
+      const surf = still ? pondSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
       const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
       if (sub > 0) {
-        let cx, cz, grip;
-        if (inSim) {
-          // carried downstream: pulled towards the local flow, more firmly the deeper the water
-          waterField.currentAt(px, pz, cur);
-          cx = cur.x;
-          cz = cur.z;
+        let cx = 0,
+          cz = 0,
+          grip;
+        if (still) {
+          // pulled to a stop, more firmly the deeper the water
           grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);
         } else {
           const rr = Math.hypot(px, pz) || 1;

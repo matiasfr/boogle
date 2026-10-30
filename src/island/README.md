@@ -45,7 +45,7 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
   quantized to centimetres once (`ground.js`), so every client builds the same heightfield. Node tests build it with
   the same code (`test/helpers/land.mjs`, `test/land.test.mjs`).
-- **Home is special.** The shared water sim and beach gifts only run inside `HOME` (`src/constants.js`):
+- **Home is special.** Beach gifts only run inside `HOME` (`src/constants.js`):
   the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
   exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME`; the lighthouse
   hill and the west end of the windmill farm do.

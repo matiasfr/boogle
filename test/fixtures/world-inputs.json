@@ -4,10 +4,9 @@
   "window": { "i0": 134, "i1": 274, "j0": 134, "j1": 274 },
   "windowSeaCm": -750,
   "states": ["terrain", "mushrooms", "gifts", "proto", "water"],
-  "ops": ["mush.plant", "mush.water", "fruit.drop", "gift.take", "gift.toss", "slosh"],
+  "ops": ["mush.plant", "mush.water", "fruit.drop", "gift.take", "gift.toss"],
   "baseHash": 1289698516,
   "windowHash": 3089567179,
-  "region": "140,166,129,103",
   "layout": {
     "trees": [
       { "i": 175, "j": 200 },

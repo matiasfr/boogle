@@ -36,18 +36,6 @@ const SCRIPTS = {
     { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
-  water({ rules }) {
-    const { water, region } = rules.water;
-    const { w: W, h: H } = region;
-    let c = -1;
-    for (let k = 0; k < W * H && c < 0; k++) {
-      const wi = (k / H) | 0,
-        wj = k % H;
-      if (wi >= 2 && wj >= 2 && wi <= W - 3 && wj <= H - 3 && water.depth[k] >= 50) c = k;
-    }
-    assert.ok(c >= 0, 'no sea in the water region');
-    return [{ op: 'slosh', i: region.i0 + ((c / H) | 0), j: region.j0 + (c % H), amt: 100 }];
-  },
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.

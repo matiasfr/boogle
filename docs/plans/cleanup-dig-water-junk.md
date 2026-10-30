@@ -419,12 +419,12 @@ mixed builds.
 
 ### Steps
 
-- [ ] **2.1 Stub the rules, delete the sim.**
+- [x] **2.1 Stub the rules, delete the sim.**
   - Rewrite `src/world/rules/water.js` as above.
   - Delete `src/sim/water.js` and `src/sim/water-region.js`.
   - `src/world/grid.js`: delete `homeBox` and its comment; keep `HOME`. Fix the `HOME` comment ("beach gifts stay
     inside it").
-- [ ] **2.2 Delete the game side.**
+- [x] **2.2 Delete the game side.**
   - Delete `src/world/water-world.js` and `src/render/water-surface.js`.
   - `src/main.js`: delete `import './world/water-world.js';` (hotspot, one line).
   - `src/physics/water-field.js`: keep `surfaceAt` only, and fix the comment ("the sea; the caves add their pond").
@@ -432,7 +432,7 @@ mixed builds.
   - `src/render/splash.js`: delete the `onBallImpact` line (76) and fix the comment at 70.
   - `src/render/water-render.js`: fix the comment at 104 (no `water-surface.js`).
   - `src/world/README.md`: the pieces table drops `water-world.js`.
-- [ ] **2.3 Tests.**
+- [x] **2.3 Tests.**
   - Delete `test/water.test.mjs`, `test/water-region.test.mjs` and `test/water-idle.test.mjs`.
   - `test/land.test.mjs`: delete the region test and its imports.
   - `test/world-rules.test.mjs`: delete `SCRIPTS.water`.
@@ -442,7 +442,7 @@ mixed builds.
   - `test/fixtures/snap-pre-version.json`: set `hashes.water` to `2166136261`, and extend `about`.
   - `test/world-snapshots.test.mjs`, the step-1 test: also assert `stateHashes().water === 2166136261`.
   - Run `npm run check:full`.
-- [ ] **2.4 Dev tools.**
+- [x] **2.4 Dev tools.**
   - `dev/look/lib.mjs:133`: wait on `window.__debugCam && window.boogle?.sync`. Every look and scenario waits here,
     so check that `debug-handle` sets `window.boogle.sync` in `onStart` before entering.
   - `dev/scenarios/world-inputs.mjs`:
@@ -455,7 +455,7 @@ mixed builds.
       floats on the pond; `dive` that swimming still works in the sea;
     - `npm run perf` before and after: expect one fewer mesh and lower tick ms;
     - `/look` motion of the ball in the surf and a splash.
-- [ ] **2.5 Docs.**
+- [x] **2.5 Docs.**
   - `docs/game-design.md`:
     - §6.3: replace with "Removed";
     - §6.1: no sim water or `slosh`;

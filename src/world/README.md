@@ -1,6 +1,6 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (terrain edits, water, weather, tide) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
+Everything players can change and everyone must agree on (mushrooms, items, weather, tide) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
 
 ## Pieces
 
@@ -10,10 +10,9 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
 | `grid.js` | Pure, lockstep: grid constants. |
-| `water-world.js` | Adapter: water rendering and the ball's water field. |
 | `background.js`, `clock-worker.js` | Keep the world ticking while the tab is hidden. |
 
-Pure sim logic lives in `../sim/` (water, mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
+Pure sim logic lives in `../sim/` (mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.js`;
 tests install the rules on their own sync instances (`test/helpers/net.mjs`).
 
@@ -59,11 +58,11 @@ Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at th
 
 Grid cells use the heightfield indexing from `src/adapters/terrain.js`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
-Integer units: water depths and base heights are stored in **centimetres** (`Int16`/`Int32`). Base terrain is quantized once with `Math.round(h * 100)`.
+Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 
 ### Ordering inside one tick
 1. Apply that tick's edits (host sequence order).
-2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
+2. Run `onTick` handlers in registration order (a system that reads another's state registers after it).
 3. Run `onAfterTick` handlers in registration order.
 
 Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).

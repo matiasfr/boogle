@@ -26,7 +26,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *2026-10-29:* deploy job done (`.github/workflows/deploy-server.yml`). Connection reports carry `hadTurn` only
       (our ICE config listed a TURN server); whether a relay candidate was gathered or used is not observed yet. The
       human steps in server/README.md remain.
-- [x] **A5. Measure the sim.** `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
+- [x] **A5. Measure the sim.** (historical: the water sim was removed 2026-10-30) `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
       *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
       play). Headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run back to back;
@@ -77,7 +77,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *2026-10-30:* `src/boogler/`, `player/`, `render/`, `netplay/`, `physics/`, `adapters/`; map in `src/README.md`.
 - [x] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
       dialogue, debug tools); compare bundle size and `npm run perf` before and after.
-- [x] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.
+- [x] **C4. Sim worker, only if A5 says so.** (historical: the water sim was removed 2026-10-30) DESIGN.md: measure first, sleep settled regions before workers.
       *Decided: no worker.* A5 measured the sim at about 1 ms per tick on average; the render-side water surface scan
       is the bigger cost, and a worker would not help it. If it is ever needed, spread the surface scan and the hash
       over several ticks first.
