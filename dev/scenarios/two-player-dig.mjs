@@ -1,6 +1,7 @@
 // Two players in one room: a dig by one shows up for the other, and both worlds stay identical.
 export default {
   about: 'player B digs; player A sees the same ground and the world hashes agree',
+  timeout: 240000, // two software-rendered tabs: see the hash wait below
   async run(t) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room });
@@ -27,9 +28,11 @@ export default {
       { timeout: 15000 },
     );
     t.check("B's dig reaches A", seen >= 0, seen + ' ms');
-    // the host broadcasts a world hash every few ticks; the client counts matches
+    // The host broadcasts a world hash every 20 ticks (sync.js HASH_EVERY); the client counts matches. Two
+    // software-rendered tabs can run well under 1 tick/s, so allow a whole hash period in wall time: a 30 s wait passed
+    // or failed on where in the period the dig landed.
     await B.waitFor(`(async () => (await import('/src/world/sync.js')).worldStatus().hashOk > 0)()`, {
-      timeout: 30000,
+      timeout: 90000,
     });
     const stA = await A.eval(`const s = await import('/src/world/sync.js'); return s.worldStatus();`);
     const stB = await B.eval(`const s = await import('/src/world/sync.js'); return s.worldStatus();`);

@@ -11,7 +11,8 @@ without touching anything else on the island.
 | Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.js`. |
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
-`keepOut` and `keptOut(x, z, pad)`. `src/terrain.js` builds the heightfield and the mesh from it; `src/props.js`
+`keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
+(`ground.js`). `src/terrain.js` builds the heightfield and the mesh from it; `src/props.js`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
@@ -42,7 +43,8 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 ## Rules
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
-  quantized to centimetres once (`src/world/terrain-edits.js`), so every client builds the same heightfield.
+  quantized to centimetres once (`ground.js`), so every client builds the same heightfield. Node tests build it with
+  the same code (`test/helpers/land.mjs`, `test/land.test.mjs`).
 - **Home is special.** The shared water sim, sand digging and beach gifts only run inside `HOME` (`src/constants.js`):
   the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
   exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME` on ground above the

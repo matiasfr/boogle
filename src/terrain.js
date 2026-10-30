@@ -3,20 +3,15 @@ import { GRID_RES, CELL, HALF, SEABED, COURT, SEA, reducedMotion } from './const
 import { lerp, smoothstep, valueNoise } from './math.js';
 import { scene } from './scene.js';
 import { PATCH } from './sim/mushrooms.js';
-import { island } from './island/index.js';
+import { island, baseCm } from './island/index.js';
 
-// The island's ground (src/island/: natural shape plus every POI's stamps), with the volleyball court levelled.
-const COURT_H = island.heightAt(COURT.x, COURT.z);
-const courtWeight = (x, z) => 1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
-function islandHeight(x, z) {
-  return lerp(island.heightAt(x, z), COURT_H, courtWeight(x, z));
-}
-
-// heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame).
+// heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the
+// island's base ground (src/island/ground.js: natural shape plus every POI's stamps, court levelled), in whole
+// centimetres like the shared sim, and terrain-edits.js adds player edits on top.
 export const heights = [];
 for (let i = 0; i < GRID_RES; i++) {
   const col = new Array(GRID_RES);
-  for (let j = 0; j < GRID_RES; j++) col[j] = islandHeight(i * CELL - HALF, HALF - j * CELL);
+  for (let j = 0; j < GRID_RES; j++) col[j] = baseCm[i * GRID_RES + j] / 100;
   heights.push(col);
 }
 

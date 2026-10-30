@@ -8,9 +8,9 @@
 //   Kept small on purpose: everything is a short sprint from spawn (about 10-15 s), so friends stay in sight of
 //   each other, and the lighthouse hill in the middle is visible from everywhere.
 //
-// Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; terrain-edits.js quantizes
+// Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; ground.js quantizes
 // them to centimetres once, so the shared sim never sees raw floats.
-import { lerp, smoothstep, fbm } from '../math.js';
+import { lerp, smoothstep, fbm } from '../math-pure.js';
 
 export const SEABED = -7.5;
 const HOME_R = 52;

@@ -44,7 +44,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 ## Wave B: the world rules (sequential)
 
-- [ ] **B1. Split shared rules from rendering.** Each Lockstep system (terrain, water, mushrooms, gifts, proto flags)
+- [x] **B1. Split shared rules from rendering.** Each Lockstep system (terrain, water, mushrooms, gifts, proto flags)
       gets a three.js-free rules module that registers its ops, state and tick functions on a sync instance it is
       given; the existing files become render/input adapters that subscribe through `onApplied`/`onSnapshot`. Pure
       helpers the rules need (island base heights, noise) move out of three.js-importing modules. No behavior change:

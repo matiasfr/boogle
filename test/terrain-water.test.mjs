@@ -1,4 +1,4 @@
-// Terrain edits feeding the water sim's ground copy, the way src/world/water-world.js does it: after every applied
+// Terrain edits feeding the water sim's ground copy, the way src/world/rules/water.js does it: after every applied
 // edit whose op is in TERRAIN_OPS, copy the cells terrain.lastCells() reports into the water's terrain and wake them.
 // A tab that loads a snapshot copies the whole ground instead, so the two must end up on the same ground.
 import { test } from 'node:test';
@@ -55,7 +55,7 @@ function play(follows) {
   return a;
 }
 
-// A late joiner / resyncing tab: loads both snapshots and copies the full ground, as water-world's load() does.
+// A late joiner / resyncing tab: loads both snapshots and copies the full ground, as rules/water.js load() does.
 function joinFrom(a) {
   const b = makePeer();
   b.terrain.load(JSON.parse(JSON.stringify(a.terrain.serialize())));
