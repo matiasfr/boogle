@@ -73,7 +73,7 @@ export function invariants(api, rules) {
 
 | Key | Set by | Used by |
 |---|---|---|
-| `canPlantAt(i, j)` | `src/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 
 ## Template
 

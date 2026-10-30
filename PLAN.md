@@ -45,7 +45,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 
 ## Phase 0: Repo hygiene (small)
 
-- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/terrain.js`, `src/water-render.js`, `src/physics.js`, `src/ball.js`, `src/player.js`, `src/net/`, `src/hud.js`, `src/input.js`, `src/main.js`.
+- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/adapters/terrain.js`, `src/render/water-render.js`, `src/physics/physics.js`, `src/physics/ball.js`, `src/player/player.js`, `src/net/`, `src/player/hud.js`, `src/player/input.js`, `src/main.js`.
 - [x] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
 - [x] Add Prettier + a minimal ESLint config.
 
@@ -126,9 +126,9 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## The Boogler: a friend to make
 
-- [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler-friendship.js`).
-- [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler-lines.js`, `src/boogler-talk.js`).
-- [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler-play.js`).
+- [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler/friendship.js`).
+- [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler/lines.js`, `src/boogler/talk.js`).
+- [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler/play.js`).
 - [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`.
 - [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the shovel, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held but the shovel can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
 
@@ -136,8 +136,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Later / stretch
 
-- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/controls.js`; touch overlay hides while a pad is in use.
-- [x] Controls guide and pause view: every control described once in src/controls.js; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
+- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.js`; touch overlay hides while a pad is in use.
+- [x] Controls guide and pause view: every control described once in src/player/controls.js; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.
