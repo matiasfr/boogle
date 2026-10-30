@@ -49,10 +49,14 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       given; the existing files become render/input adapters that subscribe through `onApplied`/`onSnapshot`. Pure
       helpers the rules need (island base heights, noise) move out of three.js-importing modules. No behavior change:
       scenarios `dig-channel`, `two-player-dig`, `hotbar`, `caves`, `lighthouse` and `npm run check:full` stay green.
-- [ ] **B2. Replay test.** One Node test builds a host and clients from the real rules, feeds a seeded random stream
+- [x] **B2. Replay test.** One Node test builds a host and clients from the real rules, feeds a seeded random stream
       of every op (each rules module exports an edit generator; the test fails if a registered op has none), kills the
       host midway, adds a late joiner, reloads a snapshot, and requires identical per-state hashes everywhere. Under a
       second.
+      *2026-10-30:* `test/world-replay.test.mjs` (two runs of the same seed, about 0.5 s on a loaded box). Modules
+      also export `invariants` (sand and water conserved, gift ids unique, mushroom spacing). Injected bugs it caught:
+      `Math.random` in `mush.plant`'s apply, a counter shared across peers in `gift.take`'s apply, and a slosh gated
+      on the per-peer clock (after the slosh generator moved off the pinned open sea, where the pin erased any effect).
 - [ ] **B3. Snapshot versions.** `registerState(key, { version, migrate })`; snapshots record each state's version;
       loaders run migrations in order. Fixture snapshots in `test/fixtures/` (including the old 129-cell grid) must
       keep loading; malformed input must not throw.

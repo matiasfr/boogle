@@ -7,7 +7,8 @@
 import { SEA, homeBox } from '../grid.js';
 import { TERRAIN_OPS } from '../terrain-logic.js';
 import { createWater } from '../../sim/water.js';
-import { regionFromBase, checkSlosh, applySlosh } from '../../sim/water-region.js';
+import { regionFromBase, checkSlosh, applySlosh, SLOSH } from '../../sim/water-region.js';
+import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'water';
 
@@ -155,4 +156,44 @@ export function install(sync, land, rules, opts) {
   sync.onSnapshot(() => copyGround(0, 0, N - 1, N - 1));
 
   return { water, region, regionKey, simTerrain, stepOnce, stepMs: () => stepMs };
+}
+
+// Replay-test generators (./README.md): a slosh on a wet cell above the pinned sea (where it lasts),
+// or junk.
+export const edits = {
+  slosh(r, view) {
+    if (r.chance(JUNK)) return bad(r, 'slosh');
+    const { water, region, simTerrain } = view.rules.water;
+    const wet = [];
+    for (let wi = 2; wi < region.w - 2; wi++)
+      for (let wj = 2; wj < region.h - 2; wj++) {
+        const c = wi * region.h + wj;
+        if (water.depth[c] >= SLOSH.minDepthCm && simTerrain[c] >= CFG.seaPinBelowCm) wet.push(c);
+      }
+    if (!wet.length) return null;
+    const c = r.pick(wet);
+    return {
+      op: 'slosh',
+      i: region.i0 + ((c / region.h) | 0),
+      j: region.j0 + (c % region.h),
+      amt: r.int(1, SLOSH.maxCm),
+    };
+  },
+};
+
+// Water is conserved: what lies in the region is the sea that filled the bare island at install, plus what was added
+// (the sea pin), plus what the sea edges let in, minus what evaporated.
+export function invariants({ water, region }, rules) {
+  const { base, n } = rules.terrain.state;
+  let start = 0,
+    total = 0;
+  for (let c = 0; c < region.w * region.h; c++) {
+    const i = region.i0 + ((c / region.h) | 0),
+      j = region.j0 + (c % region.h);
+    start += Math.max(0, water.seaLevel - base[i * n + j]);
+    total += water.depth[c];
+  }
+  const { added, seaNet, evaporated } = water.stats();
+  const off = total - (start + added + seaNet - evaporated);
+  return off === 0 ? null : `water mass off by ${off}`;
 }

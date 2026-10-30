@@ -4,6 +4,7 @@ import { CELL, HALF, HOME, COURT } from '../grid.js';
 import { createTerrainState, TERRAIN_OPS, EDIT_MIN_CM, EDIT_MAX_CM } from '../terrain-logic.js';
 import { migrateTerrainDeltas } from '../legacy-grid.js';
 import { PATCH } from '../../sim/mushrooms.js';
+import { JUNK, bad, pickCell } from './edit-gen.js';
 
 export const name = 'terrain';
 
@@ -49,4 +50,35 @@ export function install(sync, land) {
     hash: state.hash,
   });
   return { state, lastLoaded: () => loaded };
+}
+
+// Replay-test generators (./README.md): a sand cell the peer may dig, pile on or flatten, or junk.
+const sandOf = new WeakMap(); // terrain state -> its editable cells
+function sand(state) {
+  let cells = sandOf.get(state);
+  if (!cells) {
+    cells = [];
+    for (let c = 0; c < state.mask.length; c++) if (state.mask[c]) cells.push(c);
+    sandOf.set(state, cells);
+  }
+  return cells;
+}
+const onSand = (op, extra) => (r, view) => {
+  if (r.chance(JUNK)) return bad(r, op);
+  const { state } = view.rules.terrain;
+  const cell = pickCell(r, sand(state), state.n);
+  return cell && { op, i: cell.i, j: cell.j, ...extra(r, state, cell.c) };
+};
+export const edits = {
+  dig: onSand('dig', () => ({})),
+  pile: onSand('pile', () => ({})),
+  flatten: onSand('flatten', (r, state, c) => ({ h: state.base[c] + state.delta[c] + r.int(-60, 60) })),
+};
+
+// Sand is conserved: every cell's delta plus every player's bucket sums to zero.
+export function invariants({ state }) {
+  let sum = 0;
+  for (const d of state.delta) sum += d;
+  for (const [, carry] of state.serialize().players) sum += carry;
+  return sum === 0 ? null : `sand not conserved: off by ${sum}`;
 }

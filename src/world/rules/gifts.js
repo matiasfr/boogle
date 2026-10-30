@@ -14,7 +14,10 @@ import {
   serializeGifts,
   loadGifts,
   hashGifts,
+  MAX_ITEMS,
+  ON_GROUND,
 } from '../../sim/gifts.js';
+import { JUNK, bad } from './edit-gen.js';
 import { isLegacyCell, fromLegacy } from '../legacy-grid.js';
 
 export const name = 'gifts';
@@ -67,4 +70,44 @@ export function install(sync, land, rules) {
   });
   sync.onTick((t) => tickGifts(gifts, t, sync.world.seed), 'gifts');
   return { gifts };
+}
+
+// Replay-test generators (./README.md): shake a palm, pick up a lying item, throw something
+// (seeds plant where they land), or junk.
+const THROWABLE = GIFTS.flatMap((g, k) => (g.src === 'ball' ? [] : [k]));
+export const edits = {
+  'fruit.drop': (r, view) => {
+    if (r.chance(JUNK)) return bad(r, 'fruit.drop');
+    const { trees } = view.land.layout;
+    if (!trees.length) return null;
+    const t = r.int(0, trees.length - 1);
+    return { op: 'fruit.drop', i: trees[t].i, j: trees[t].j, t, d: r.int(0, 7) };
+  },
+  'gift.take': (r, view) => {
+    if (r.chance(JUNK)) return bad(r, 'gift.take');
+    const { items } = view.rules.gifts.gifts;
+    const it = items.length ? r.pick(items) : null;
+    return it && { op: 'gift.take', i: it.i, j: it.j, id: it.id };
+  },
+  'gift.toss': (r) => {
+    if (r.chance(JUNK)) return bad(r, 'gift.toss');
+    return {
+      op: 'gift.toss',
+      i: r.int(210, 245),
+      j: r.int(185, 220),
+      k: r.chance(0.3) ? SEEDS : r.pick(THROWABLE),
+      y: r.pick([ON_GROUND, ON_GROUND, r.int(0, 500), LOST]),
+      n: r.int(0, 999),
+      l: Array.from({ length: 6 }, () => r.int(-500, 500)),
+    };
+  },
+};
+
+// Item ids are unique and already issued, and the island holds no more than its cap.
+export function invariants({ gifts }) {
+  const ids = gifts.items.map((it) => it.id);
+  if (ids.length > MAX_ITEMS) return `${ids.length} items`;
+  if (new Set(ids).size !== ids.length) return 'duplicate item ids';
+  if (ids.some((id) => id >= gifts.nextId)) return 'an item id at or past nextId';
+  return null;
 }

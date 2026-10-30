@@ -22,7 +22,8 @@ Four files, nothing else edited (AGENTS.md, "Features plug in"):
 
 1. `src/sim/<x>.js` plus `test/<x>.test.mjs`: the pure logic (typed arrays, integers, seeded RNG).
 2. `src/world/rules/<x>.js`: `install(sync, land, rules, opts)` registers its ops, state and ticks on the `sync` it is
-   given and returns an API (`rules/README.md` has the contract and a template).
+   given and returns an API (`rules/README.md` has the contract and a template). It also exports `edits`, a seeded
+   generator per op for the replay test (`test/world-replay.test.mjs`), and optionally `invariants`.
 3. One appended line in `RULES` (`rules/index.js`). Append only: its order is the wire order.
 4. `src/features/<x>.js`: the adapter. It reads `rules.<x>` from `game-world.js`, sends `submitEdit`, and reacts
    through `onApplied`, `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv`.
