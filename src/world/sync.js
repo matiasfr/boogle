@@ -10,7 +10,7 @@
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
 //                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
 //                                                           hs = { stateKey: hash } so a client can name what diverged
-//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht }; only `to` uses it.
+//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht, noSave }; only `to` uses it.
 //                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
@@ -32,8 +32,10 @@
 //
 // Versions: each state registers a `version` (default 0) and `migrate[v]` steps (json at v-1 -> json at v); snapshots
 // record them in `vers` (missing = 0) and loads run the steps in order. A state that fails to load starts fresh
-// (stats.loadErrors). A state saved by a newer build is skipped, and this tab stops persisting, so an old tab never
-// overwrites a newer save.
+// (stats.loadErrors); on a client nothing vouches for that until a host hash matches, so if it takes over as host first
+// it loads the newest saved copy instead of keeping (and uploading) the fallback. A state saved by a newer build is
+// skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
+// noSave, so the clients that load them stop persisting too.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -82,6 +84,9 @@ export function createSync({ env: env0 } = {}) {
     loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
   };
   let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
+  // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
+  // keep (and upload) that state, but load the saved copy instead.
+  let unverifiedFallback = false;
   let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad = null; // { tick, keys } of the latest mismatch
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -327,6 +332,7 @@ export function createSync({ env: env0 } = {}) {
     world.epochMs = snap.epochMs;
     verifiedTick = -1; // a loaded snapshot is verified only by the next hash check
     const vers = isObj(snap.vers) ? snap.vers : {};
+    unverifiedFallback = false;
     for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k], vers[k] ?? 0);
     queue = [];
     acc = 0;
@@ -347,6 +353,7 @@ export function createSync({ env: env0 } = {}) {
       s.load(json);
     } catch (err) {
       stats.loadErrors++;
+      if (mode === 'client') unverifiedFallback = true;
       console.warn(`[world] ${k} failed to load; starting it fresh`, err);
       snapFail('state', `${k} load`);
       try {
@@ -377,6 +384,7 @@ export function createSync({ env: env0 } = {}) {
     if (worldHash() === h) {
       stats.hashOk++;
       verifiedTick = tick;
+      unverifiedFallback = false;
       saveSoon();
     } else {
       stats.hashBad++;
@@ -399,7 +407,8 @@ export function createSync({ env: env0 } = {}) {
     if (!ready || wall - (served.get(to) ?? -1e9) < 1500) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick });
+    // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
+    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave });
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
     for (let k = 0; k < n; k++) send({ t: 'w:snap', to, id, n, k, s: json.slice(k * CHUNK, (k + 1) * CHUNK) });
@@ -424,6 +433,7 @@ export function createSync({ env: env0 } = {}) {
   function applyPayload(p) {
     if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
+    if (p.noSave === true) newerSave = true;
     queue = p.pend.filter(
       (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
     );
@@ -597,13 +607,15 @@ export function createSync({ env: env0 } = {}) {
     awaiting = false;
     asm = null;
     lastSavedHash = null;
-    if (ready) {
+    if (ready && !unverifiedFallback) {
       // Migration: our state is in sync; keep going, stamp conservatively, hash soon so others can resync.
       seq += 1000;
       extraUntil = wall + 2000;
       nextHashTick = world.tick + 4;
       return;
     }
+    // No state yet, or a fallback no hash has vouched for: start from the newest saved copy instead.
+    ready = false;
     const snap = await loadPersisted();
     if (my !== epoch) return;
     if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();

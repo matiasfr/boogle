@@ -6,15 +6,19 @@ import * as singleton from '../src/world/sync.js';
 import { createSync } from '../src/world/sync.js';
 import { makeNet, run, live } from './helpers/net.mjs';
 
-// opts: env goes to createSync (the host facts validate reads); the rest to attachWorld (storage, serverUrl, fetch, ...).
+// opts: env goes to createSync (the host facts validate reads); failLoad ({ on }) makes grid loads throw while on (bad data
+// from a peer); the rest goes to attachWorld (storage, serverUrl, fetch, ...).
 function makePeer(net, id, host, opts = {}) {
-  const { env, ...attach } = opts;
+  const { env, failLoad, ...attach } = opts;
   const s = createSync({ env });
   const grid = new Int32Array(16);
   const log = [];
   s.registerState('grid', {
     serialize: () => Array.from(grid),
-    load: (a) => grid.set(a),
+    load: (a) => {
+      if (failLoad?.on) throw new Error('cannot read this grid');
+      grid.set(a);
+    },
     hash: () => grid.reduce((h, v, i) => (Math.imul(h ^ (v + i), 16777619) >>> 0) | 0, 7) >>> 0,
   });
   s.registerOp('add', {
@@ -602,4 +606,48 @@ test('a state saved by a newer build is skipped, and the tab stops saving so it 
   assert.equal(host.grid[0], 1);
   assert.equal(store.writes, writes, 'nothing saved');
   assert.equal(JSON.parse(store.getItem('boogle.world.test')).vers.grid, 1);
+});
+
+// A fetch that finds no server copy and keeps every uploaded body.
+const uploads = (bodies) => async (url, init) => {
+  if (init?.method === 'PUT') bodies.push(JSON.parse(init.body));
+  return { ok: false, status: 404 };
+};
+
+test('a client whose state fell back to fresh, taking over as host, loads the saved copy instead of uploading fresh', async () => {
+  const saved = JSON.stringify(snapOf({ grid: Array(16).fill(5) }));
+  const hostStore = mem();
+  hostStore.setItem('boogle.world.test', saved);
+  const store = mem(); // the client's own earlier (verified) save
+  store.setItem('boogle.world.test', saved);
+  const net = makeNet();
+  const host = makePeer(net, 'h', true, { storage: hostStore });
+  const bodies = [];
+  const bad = { on: true }; // the host's snapshots fail to load here; the client's own save does not
+  const c = makePeer(net, 'c', false, { storage: store, serverUrl: SERVER, fetch: uploads(bodies), failLoad: bad });
+  await run(net, [host, c], 60);
+  assert.equal(host.grid[0], 5);
+  assert.equal(c.grid[0], 0, "the host's grid failed to load here: fresh");
+  assert.ok(c.s.worldStatus().loadErrors > 0);
+  bad.on = false;
+  net.killHost();
+  await run(net, [host, c], 620); // past the 30 s save interval
+  assert.equal(c.s.worldStatus().mode, 'host');
+  assert.equal(c.grid[0], 5, 'the new host recovered the saved copy');
+  assert.ok(bodies.length > 0, 'the new host uploads');
+  for (const b of bodies) assert.deepEqual(b.data.data.grid, Array(16).fill(5), 'never the fresh fallback');
+});
+
+test('a snapshot served by a tab that skipped a newer state is never saved by the clients that load it', async () => {
+  const hostStore = mem();
+  hostStore.setItem('boogle.world.test', JSON.stringify(snapOf({ grid: Array(16).fill(4) }, { grid: 1 })));
+  const store = mem();
+  const net = makeNet();
+  const host = makePeer(net, 'h', true, { storage: hostStore });
+  const c = makePeer(net, 'c', false, { storage: store });
+  await run(net, [host, c], 620); // past the 30 s save interval, with matching hashes
+  assert.equal(host.s.worldStatus().newerSave, true);
+  assert.ok(c.s.worldStatus().hashOk > 0, 'the client is in step');
+  assert.equal(c.s.worldStatus().newerSave, true);
+  assert.equal(store.writes, 0, 'the client saved nothing');
 });
