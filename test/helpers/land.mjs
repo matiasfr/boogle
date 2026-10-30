@@ -25,8 +25,8 @@ export const sites = await Promise.all(
 );
 export const island = createIsland(sites);
 
-// The home land on the full 409 grid: base heights (cm) built only inside the fixture's window (sea floor outside;
-// the water region fits inside it) and the gifts layout as pinned. Built once per process; treat it as read-only.
+// The home land on the full 409 grid: base heights (cm) built only inside the fixture's window (sea floor outside)
+// and the gifts layout as pinned. Built once per process; treat it as read-only.
 let home = null;
 export function homeLand() {
   home ??= { n: fixture.n, base: islandBaseCm(island, fixture.n, fixture.window), layout: fixture.layout };

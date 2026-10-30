@@ -5,8 +5,7 @@ import { me, cam } from './player.js';
 import { respawnBall, releaseBall } from '../physics/ball.js';
 import { sendPresence } from '../netplay/net.js';
 import { dom } from './hud.js';
-import { shovelActive, setHold, setFlatten } from '../world/terrain-edits.js';
-import { useDown, useUp, interactDown, interactUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
+import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
 import { cycle } from './inventory.js';
 import { registerAction, describeControl, isTyping } from './controls.js';
 
@@ -26,7 +25,7 @@ export function requestLock() {
     lockRefused();
   }
 }
-// Lets go of every held key, button, stick and dig (a modal takes the input: src/player/modal.js).
+// Lets go of every held key, button, stick (a modal takes the input: src/player/modal.js).
 let releaseInputFn = null;
 export const releaseInput = () => releaseInputFn?.();
 // Wired from main.js after every module has loaded (hud.js and input.js import each other).
@@ -38,12 +37,11 @@ export function initInput() {
   });
   document.addEventListener('pointerlockerror', lockRefused);
 
-  // Held keys (move, sprint, Shift-flatten, Q/Z dig and pile) are tracked here; one-press keys bind through their
+  // Held keys (move, sprint) are tracked here; one-press keys bind through their
   // action (registerAction's key) or onKey (src/player/controls.js). Both skip key presses aimed at a text field.
   addEventListener('keydown', (e) => {
     if (!me.entered || isTyping(e)) return;
     input.keys.add(e.code);
-    if (e.key === 'Shift') setFlatten(true);
     if (e.code === 'Space') {
       me.jumpQueued = 0.15;
       me.jumpHeld = true;
@@ -53,19 +51,12 @@ export function initInput() {
     if (e.repeat) return;
     if (e.code === 'KeyE') interactDown();
     if (e.code === 'KeyR') respawnBall();
-    if (e.code === 'KeyF') toggleShovelHand();
-    // Q digs, Z piles (hold to repeat); pulls the shovel out if needed, never mid-throw.
-    if ((e.code === 'KeyQ' || e.code === 'KeyZ') && !me.charging && ensureShovel())
-      setHold(e.code === 'KeyQ' ? 'dig' : 'pile');
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
     // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
     if (e.key === 'Meta') input.keys.clear();
-    if (e.key === 'Shift') setFlatten(false);
     if (e.code === 'Space') me.jumpHeld = false;
-    if (e.code === 'KeyQ') setHold(null, 'dig');
-    if (e.code === 'KeyZ') setHold(null, 'pile');
     if (e.code === 'KeyE' && me.entered) interactUp();
   });
   let drag = null;
@@ -77,9 +68,7 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (shovelActive() && (e.button === 0 || e.button === 2))
-      setHold(e.button === 2 ? 'pile' : e.shiftKey ? 'flatten' : 'dig');
-    else if (e.button === 0) useDown();
+    if (e.button === 0) useDown();
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -98,7 +87,6 @@ export function initInput() {
     }
   });
   addEventListener('mouseup', (e) => {
-    if (e.button === 0 || e.button === 2) setHold(null);
     if (!me.entered || e.button !== 0) {
       drag = null;
       return;
@@ -190,13 +178,6 @@ export function initInput() {
   });
 
   // Gamepad layout for the built-in controls (src/player/controls.js; features register their own).
-  // Like Q/Z: holding dig, pile or flatten pulls the shovel out, never mid-throw.
-  const hold = (kind) => ({
-    down: () => {
-      if (!me.charging && ensureShovel()) setHold(kind);
-    },
-    up: () => setHold(null, kind),
-  });
   const ZOOMS = [4, 6.5, 10];
   const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
   describeControl('move', {
@@ -258,48 +239,6 @@ export function initInput() {
   // The hotbar row (src/features/hotbar.js) covers both.
   registerAction('slot-prev', { pad: 'lb', label: 'Previous slot', guide: false, down: () => cycle(-1) });
   registerAction('slot-next', { pad: 'rb', label: 'Next slot', guide: false, down: () => cycle(1) });
-  // Dig is X with the shovel in hand; LT piles (and dives while swimming, src/features/feel.js).
-  registerAction('pile', {
-    pad: 'lt',
-    label: 'Pile up sand',
-    detail: { kbm: 'Right click piles too, with the shovel in hand', pad: 'Hold' },
-    keys: ['KeyZ', 'Mouse2'],
-    touch: 'Pile',
-    group: 'sand',
-    order: 2,
-    ...hold('pile'),
-  });
-  registerAction('flatten', {
-    pad: 'up',
-    label: 'Flatten sand toward your feet',
-    detail: { pad: 'Hold' },
-    keys: ['ShiftLeft+Mouse0'],
-    touch: 'Flatten',
-    group: 'sand',
-    order: 3,
-    ...hold('flatten'),
-  });
-  describeControl('shovel', {
-    label: 'Shovel in hand or put away',
-    detail: { pad: 'Cycle the hotbar to the shovel' },
-    keys: ['KeyF'],
-    pad: ['lb', 'rb'],
-    group: 'sand',
-    order: 0,
-  });
-  describeControl('dig', {
-    label: 'Dig',
-    detail: {
-      kbm: 'Click digs too, with the shovel in hand',
-      pad: 'Hold, with the shovel in hand',
-      touch: 'The main button, with the shovel in hand',
-    },
-    keys: ['KeyQ'],
-    pad: 'x',
-    touch: 'Dig',
-    group: 'sand',
-    order: 1,
-  });
   // Click once to sprint, like most console games: it stays on until the stick is let go (src/player/player.js).
   registerAction('sprint', {
     pad: 'l3',
@@ -326,8 +265,6 @@ export function initInput() {
     input.sprint = false;
     releaseStick();
     look.id = null;
-    setFlatten(false);
-    setHold(null);
   }
   releaseInputFn = releaseAll;
   addEventListener('blur', releaseAll);

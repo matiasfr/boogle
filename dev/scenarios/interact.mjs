@@ -1,6 +1,6 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
-// the talk, with its icon; you pet him from the talk box; C does nothing. A shore item gets a floating Pick up prompt,
+// the talk, with its icon; you pet him from the talk box; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
 const TP = (x, z) => `
@@ -91,17 +91,22 @@ export default {
     await g.wait(0.2);
     t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // A shore item, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0)`, { timeout: 30000 });
+    // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
+    await g.eval(
+      `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] });`, // k 1 = mango
+    );
+    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`, {
+      timeout: 30000,
+    });
     const item = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 0);
+      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
       return { kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
     await g.wait(0.4);
     const itemShot = await g.still('item');
-    t.check('a Pick up prompt floats over the shore item', pickMs >= 0, `${pickMs} ms; ${itemShot}`);
+    t.check('a Pick up prompt floats over the tossed item', pickMs >= 0, `${pickMs} ms; ${itemShot}`);
     await g.key('KeyE');
     const got = await g.waitFor(
       `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.js'); return I.heldId() === GIFTS[${item.kind}].id; })()`,

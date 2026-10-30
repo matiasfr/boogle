@@ -1,7 +1,7 @@
 // Button glyphs for on-screen prompts, drawn for the input in use: keycaps and the mouse on a computer, face buttons
 // and triggers on a gamepad (body.gamepad), nothing on touch (body.touch), where the buttons carry their own labels.
 //
-//   glyph(action)   HTML for one control: 'interact' (E / B), 'use' (click / X), 'alt' (right click / LT),
+//   glyph(action)   HTML for one control: 'interact' (E / B), 'use' (click / X),
 //                   'close' (Esc / B), 'pet' (Y on a gamepad only); '' when the input has no glyph for it
 //   inputKind()     'pad' | 'touch' | 'kbm'
 //
@@ -33,9 +33,9 @@ const key = (k) => `<kbd class="g g-key">${k}</kbd>`;
 const pad = (b, text = b.toUpperCase()) =>
   `<span class="g g-pad" data-b="${b}" role="img" aria-label="${text}">${text}</span>`;
 
-const KBM = { interact: key('E'), use: MOUSE('l'), alt: MOUSE('r'), close: key('Esc'), pet: '' };
+const KBM = { interact: key('E'), use: MOUSE('l'), close: key('Esc'), pet: '' };
 // The action (src/player/input.js) behind each pad glyph; the glyph is '' while that action has no slot.
-const PAD_ACTION = { interact: 'interact', use: 'use', alt: 'pile' };
+const PAD_ACTION = { interact: 'interact', use: 'use' };
 // Not actions: the talk box reads these buttons itself (padPress in src/boogler/dialogue.js); keep them in step.
 const PAD_FIXED = { close: pad('b'), pet: pad('y') };
 

@@ -58,7 +58,7 @@ const ballTrack = makeTracker(-BALL_R);
 const meTrack = makeTracker(-FEET);
 const remoteTracks = new Map();
 
-function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
+function track(t, x, y, z, vyHint, dt, minSpeed, scale) {
   const bottom = y + t.bottomOffset;
   const prev = t.y;
   const moved = Math.abs(x - t.x) + Math.abs(z - t.z) + Math.abs(bottom - prev);
@@ -67,13 +67,12 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
   t.z = z;
   t.cool -= dt;
   if (Number.isNaN(prev) || moved > 4 || dt <= 0) return; // teleport or first sample
-  const level = waterField.surfaceAt(x, z); // the sea, or a pool/stream from the sim where that is higher
+  const level = waterField.surfaceAt(x, z); // the sea, or the cave pond where that is higher
   if (prev > level && bottom <= level && t.cool <= 0 && groundHeight(x, z) < level - 0.1) {
     const vy = vyHint !== null ? vyHint : (bottom - prev) / dt;
     const speed = -vy;
     if (speed >= minSpeed) {
       splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1, level);
-      if (isMyBall && waterField.onBallImpact) waterField.onBallImpact(x, z, speed);
       t.cool = 0.2;
     }
   }
@@ -82,7 +81,7 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
 export function updateSplash(dt, elapsed, ball, me, remotes) {
   elapsedNow = elapsed;
   const bp = ball.mesh.position;
-  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1, ball.mine);
+  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1);
 
   if (me.entered && me.body) {
     const p = me.body.position;

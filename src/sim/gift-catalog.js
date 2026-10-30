@@ -1,9 +1,12 @@
 // Everything you can give The Boogler. Ground items in the shared world store an index into GIFTS, so only append.
 //
-// src: 'tree' grows on the palms, 'shore' washes up on the beach (weight = relative chance), 'stall' comes from the
-// seed stall, 'perch' waits on a perch (the lighthouse deck), 'tool' and 'ball' are carried, never spawned.
-// taste: how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'). line: what he says when you hand it
-// over. key: he refuses it, and line is why.
+//   src      'tree' grows on the palms, 'stall' comes from the seed stall, 'perch' waits on a perch (the lighthouse
+//            deck), 'tool' and 'ball' are carried, never spawned. 'sea' no longer appears (wash-ups are gone), but
+//            ones already held can still be given and thrown.
+//   taste    how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'); line: what he says when you hand
+//            it over
+//   key      he refuses it, and line is why
+//   retired  gone from the game, kept for its index: saved hotbars drop it, nobody can throw it (see carryable)
 export const GIFTS = [
   {
     id: 'coconut',
@@ -49,8 +52,7 @@ export const GIFTS = [
     id: 'shell',
     name: 'seashell',
     color: '#ffc7c2',
-    src: 'shore',
-    weight: 10,
+    src: 'sea',
     taste: 'like',
     line: 'A seashell! If you hold it to your ear you can hear the sea. I can always hear the sea. I live here.',
   },
@@ -58,8 +60,7 @@ export const GIFTS = [
     id: 'starfish',
     name: 'starfish',
     color: '#ff7b4a',
-    src: 'shore',
-    weight: 8,
+    src: 'sea',
     taste: 'like',
     line: 'A starfish! Five arms. Imagine how many hands you could shake at a business meeting.',
   },
@@ -67,8 +68,7 @@ export const GIFTS = [
     id: 'driftwood',
     name: 'piece of driftwood',
     color: '#9c8a74',
-    src: 'shore',
-    weight: 9,
+    src: 'sea',
     taste: 'meh',
     line: 'A stick. Thank you. I will... hold it.',
   },
@@ -76,8 +76,7 @@ export const GIFTS = [
     id: 'seaweed',
     name: 'clump of seaweed',
     color: '#3b7d3a',
-    src: 'shore',
-    weight: 8,
+    src: 'sea',
     taste: 'dislike',
     line: 'Seaweed. Wet, cold seaweed. Do I look like a salad to you?',
   },
@@ -85,8 +84,7 @@ export const GIFTS = [
     id: 'flipflop',
     name: 'flip-flop',
     color: '#3dc7ff',
-    src: 'shore',
-    weight: 7,
+    src: 'sea',
     taste: 'meh',
     line: 'One flip-flop. Somewhere out there, somebody is hopping.',
   },
@@ -94,8 +92,7 @@ export const GIFTS = [
     id: 'boot',
     name: 'old boot',
     color: '#6b4a2e',
-    src: 'shore',
-    weight: 6,
+    src: 'sea',
     taste: 'dislike',
     line: 'An old boot. Full of water. And a crab. Hello, crab. Goodbye, crab.',
   },
@@ -103,8 +100,7 @@ export const GIFTS = [
     id: 'duck',
     name: 'rubber duck',
     color: '#ffd23f',
-    src: 'shore',
-    weight: 5,
+    src: 'sea',
     taste: 'like',
     line: 'A rubber duck! He floats, I float. We have so much in common.',
   },
@@ -112,8 +108,7 @@ export const GIFTS = [
     id: 'sunglasses',
     name: 'pair of sunglasses',
     color: '#1d1d2b',
-    src: 'shore',
-    weight: 4,
+    src: 'sea',
     taste: 'like',
     line: 'Sunglasses! Now I look like a serious investor. Do I look serious? Do not answer that.',
   },
@@ -121,8 +116,7 @@ export const GIFTS = [
     id: 'sponge',
     name: 'sea sponge',
     color: '#ffe14d',
-    src: 'shore',
-    weight: 5,
+    src: 'sea',
     taste: 'meh',
     line: 'A sponge. Soft, squishy, full of holes. I relate to this more than I would like.',
   },
@@ -130,8 +124,7 @@ export const GIFTS = [
     id: 'float',
     name: 'glass float',
     color: '#6ec6ff',
-    src: 'shore',
-    weight: 4,
+    src: 'sea',
     taste: 'like',
     line: 'A glass float! Fishermen tie these to their nets. So shiny. Very professional.',
   },
@@ -139,8 +132,7 @@ export const GIFTS = [
     id: 'bottle',
     name: 'message in a bottle',
     color: '#4fae6d',
-    src: 'shore',
-    weight: 4,
+    src: 'sea',
     taste: 'like',
     line: "A message in a bottle! Maybe it's from Oyijon! ...'Act now for a free cruise.' Hmph. Ocean spam.",
   },
@@ -148,8 +140,7 @@ export const GIFTS = [
     id: 'card',
     name: 'soggy business card',
     color: '#f4f1e8',
-    src: 'shore',
-    weight: 3,
+    src: 'sea',
     taste: 'like',
     line: "A business card! 'Gary. Boats.' Gary! Gary, if you are out there, call me!",
   },
@@ -157,8 +148,7 @@ export const GIFTS = [
     id: 'melon',
     name: 'melon',
     color: '#e8d36a',
-    src: 'shore',
-    weight: 2,
+    src: 'sea',
     taste: 'love',
     line: 'A MELON. From the SEA. Just like me! It is not as sweet as the qovun at home. Nothing is. But it is close.',
   },
@@ -166,8 +156,7 @@ export const GIFTS = [
     id: 'teacup',
     name: 'tea bowl',
     color: '#f7f7f2',
-    src: 'shore',
-    weight: 2,
+    src: 'sea',
     taste: 'love',
     line: 'A piyola! A real tea bowl! Now I only need tea. And a teapot. And a kitchen. And Oyijon.',
   },
@@ -175,8 +164,7 @@ export const GIFTS = [
     id: 'book',
     name: 'waterlogged book',
     color: '#2f8cff',
-    src: 'shore',
-    weight: 2,
+    src: 'sea',
     taste: 'love',
     line: "'Business for Beginners.' The pages are stuck together. I will read it cover to cover. Again.",
   },
@@ -184,8 +172,7 @@ export const GIFTS = [
     id: 'abacus',
     name: 'little abacus',
     color: '#b5763a',
-    src: 'shore',
-    weight: 2,
+    src: 'sea',
     taste: 'love',
     line: "A cho't! An abacus! Oyijon taught me to count on one of these. Click, click, click. Profit.",
   },
@@ -193,8 +180,7 @@ export const GIFTS = [
     id: 'doppi',
     name: 'embroidered cap',
     color: '#1f2a24',
-    src: 'shore',
-    weight: 1,
+    src: 'sea',
     taste: 'love',
     bonus: 10,
     line: 'A doppi! A real Uzbek cap! The pattern looks just like the ones Oyijon stitches. I am wearing this forever.',
@@ -221,6 +207,7 @@ export const GIFTS = [
     color: '#c9a36b',
     src: 'tool',
     key: true,
+    retired: true,
     taste: 'meh',
     line: 'Your shovel? No, no. Without a shovel you are just a person standing on sand. Keep it.',
   },
@@ -244,3 +231,6 @@ export const GIFTS = [
 ];
 
 export const giftIndex = (id) => GIFTS.findIndex((g) => g.id === id);
+// Whether a catalog entry can sit in a hotbar and be thrown: everything but the ball (its own owner rules) and retired
+// entries.
+export const carryable = (g) => !!g && g.src !== 'ball' && !g.retired;

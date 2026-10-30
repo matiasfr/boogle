@@ -1,8 +1,8 @@
-// The hotbar: pick something up and it is in your hand; throw it and it lands for everyone, but never the shovel; the
-// beach ball rides on your back while you hold something else; The Boogler takes what you hold but not your shovel;
-// seeds go in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a
-// phone: only filled slots show, the main button digs with the shovel (even next to the ball), Toss shows only for a
-// throwable thing the main button would not throw, a lost shovel comes back from Pile, and the bar clears the HUD.
+// The hotbar: a new player starts empty-handed; pick something up and it is in your hand; throw it and it lands for
+// everyone; the beach ball rides on your back while you hold something else; The Boogler takes what you hold; seeds go
+// in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
+// filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
+// bar clears the HUD.
 const TP = (x, z, y) => `
   const { teleport } = await import('/src/physics/physics.js');
   const { groundHeight } = await import('/src/adapters/terrain.js');
@@ -28,8 +28,6 @@ const LAYOUT = `${DOM}
     '.' + [...b.classList].join('.'))].filter(shown);
   const hit = others.filter((s) => hits(rect(s)));
   return { bar: [bar.left, bar.top, bar.right, bar.bottom].map(Math.round), checked: others.length, hit };`;
-const press = (sel, type) =>
-  `document.querySelector('${sel}').dispatchEvent(new PointerEvent('${type}', { bubbles: true }));`;
 
 export default {
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
@@ -39,36 +37,22 @@ export default {
     const consoleErrors = [];
     g.page.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && consoleErrors.push(m.text()));
     const start = await g.eval(`${INV} return { slots: I.inv.slots, sel: I.inv.sel };`);
-    t.check('a new player starts with a shovel in slot 1', start.slots[0]?.id === 'shovel', JSON.stringify(start));
-
-    // The shovel is a key item: a wind-up on a mango (click, useDown) that switches to the shovel (key 1) and lets go
-    // throws nothing, and the Toss path refuses it outright.
-    await g.eval(`${INV} ${TP(14, 24)} I.take('mango');`);
-    await g.wait(0.4);
-    const wound = await g.eval(`${INV} H.useDown(); return window.boogle.me.charging;`);
-    await g.key('Digit1');
-    await g.wait(0.2);
-    await g.eval(`${INV} H.useUp();`);
-    await g.wait(1.5);
-    const kept = await g.eval(`${INV}
-      const { giftIndex } = await import('/src/sim/gift-catalog.js');
-      const toss = H.throwDown();
-      const flying = window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === giftIndex('shovel'));
-      const r = { wound: ${wound}, held: I.heldId(), shovel: I.has('shovel'), mango: I.has('mango'), toss, flying,
-        charging: window.boogle.me.charging, canThrow: H.canThrow() };
-      I.drop('mango');
-      return r;`);
     t.check(
-      'trying to throw the shovel leaves it in the hotbar',
-      kept.wound && kept.held === 'shovel' && kept.shovel && kept.mango && !kept.toss && !kept.flying && !kept.charging,
-      JSON.stringify(kept),
+      'a new player starts empty-handed',
+      start.slots.every((s) => !s) && start.sel === -1,
+      JSON.stringify(start),
     );
 
-    // A shore item: walk up, grab it, and it is in your hand.
-    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0)`, { timeout: 30000 });
+    // A tossed item: walk up, grab it, and it is in your hand.
+    await g.eval(
+      `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] });`, // k 1 = mango
+    );
+    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`, {
+      timeout: 30000,
+    });
     const item = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 0);
+      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
       return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
     await g.eval(TP(item.x + 0.6, item.z));
     await g.wait(0.5);
@@ -85,7 +69,7 @@ export default {
     await g.eval(`window.__debugCam.clear(); ${TP(14, 24)} ${AIM(0.49, -0.05)}`);
     await g.wait(0.4);
     await g.eval(`${INV} H.useDown();`);
-    await g.wait(0.7);
+    await g.wait(1.5); // a full charge: a short one can land in the pit by the court
     await g.eval(`${INV} H.useUp();`);
     const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === ${item.kind})`);
     const far = await g.eval(`
@@ -95,7 +79,7 @@ export default {
       return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
     t.check('a thrown thing lands as a shared item, metres away', landed >= 0 && far > 4, `${far.toFixed(1)} m`);
 
-    // The ball: grab it, put it on your back by switching to the shovel, take it back out.
+    // The ball: grab it, put it on your back by switching to a mango, take it back out.
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/physics/ball.js');
       const { teleport } = await import('/src/physics/physics.js');
@@ -104,9 +88,10 @@ export default {
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
-      I.select(I.slotOf('shovel'));
+      I.take('mango');
       const onBack = ball.held && !window.boogle.me.holding && I.has('ball');
       I.select(I.slotOf('ball'));
+      I.drop('mango');
       return { inHand, onBack, back: window.boogle.me.holding };`);
     t.check(
       'the ball takes a slot, rides on your back, and comes back to hand',
@@ -114,7 +99,7 @@ export default {
       JSON.stringify(ball),
     );
 
-    // The Boogler: with the shovel he refuses, with a mango he takes it.
+    // The Boogler takes a mango from your hand.
     const bog = await g.eval(`return { x: window.boogle.boogler.disp.x, z: window.boogle.boogler.disp.z };`);
     await g.eval(TP(bog.x + 1.5, bog.z));
     await g.wait(0.3);
@@ -135,22 +120,12 @@ export default {
         for (let k = 0; k < 100 && !document.querySelector('.bd')?.textContent.includes(text); k++) await nap();
         return document.querySelector('.bd')?.textContent.includes(text);
       };
-      I.select(I.slotOf('shovel'));
-      play.booglerTalk();
-      const offeredShovel = await pick('a shovel');
-      const refused = await says('Keep it');
-      const keptShovel = I.has('shovel');
-      closeDialogue();
       I.take('mango');
       play.booglerTalk();
       const offeredMango = await pick('a mango');
       await says('monopoly');
-      return { offeredShovel, refused, keptShovel, offeredMango, mangoGone: !I.has('mango') };`);
-    t.check(
-      'The Boogler refuses the shovel and takes the mango from your hand',
-      talk.offeredShovel && talk.refused && talk.keptShovel && talk.offeredMango && talk.mangoGone,
-      JSON.stringify(talk),
-    );
+      return { offeredMango, mangoGone: !I.has('mango') };`);
+    t.check('The Boogler takes the mango from your hand', talk.offeredMango && talk.mangoGone, JSON.stringify(talk));
     await g.eval(`(await import('/src/boogler/dialogue.js')).closeDialogue();`);
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
@@ -255,25 +230,13 @@ export default {
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [390, 844] });
     const one = await thumb.waitFor(
       when(
-        `shown('.hotbar') &&
-          [...document.querySelectorAll('.hotbar-slot')].filter((b) => b.getClientRects().length).length === 1`,
+        `!!document.querySelector('.hotbar') &&
+          [...document.querySelectorAll('.hotbar-slot')].filter((b) => b.getClientRects().length).length === 0`,
       ),
     );
-    t.check('on touch a new player sees one slot (the shovel), not eight', one >= 0, `${one} ms`);
+    t.check('on touch a new player sees no slots, not eight', one >= 0, `${one} ms`);
 
-    await thumb.eval(`${INV} ${TP(14, 24)} I.select(I.slotOf('shovel'));`);
-    const dig = await thumb.waitFor(
-      when(`label() === 'Dig' && shown('.tbtn.pile') && shown('.tbtn.flat') && !shown('.tbtn.toss') && !throws()`),
-    );
-    const tossShovel = await thumb.eval(
-      `${INV} return { toss: H.throwDown(), held: I.heldId(), charging: window.boogle.me.charging };`,
-    );
-    t.check(
-      'holding the shovel: Dig, Pile and Flatten, no Toss, and it cannot be thrown',
-      dig >= 0 && !tossShovel.toss && tossShovel.held === 'shovel' && !tossShovel.charging,
-      `${dig} ms; ${JSON.stringify(tossShovel)}`,
-    );
-
+    await thumb.eval(`${INV} ${TP(14, 24)}`);
     await thumb.eval(`${INV} I.take('mango');`);
     const mango = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
     const away = await thumb.eval(`${INV} return H.interactTarget()?.id ?? null;`);
@@ -286,58 +249,6 @@ export default {
       'portrait: the hotbar clears the brand, roster, net pill and buttons',
       portrait.checked >= 4 && !portrait.hit.length,
       `${JSON.stringify(portrait)}; ${portraitShot}`,
-    );
-
-    // An old save that lost the shovel: Pile shows, and a tap hands a new one back.
-    await thumb.eval(`${INV} I.select(I.slotOf('shovel')); I.useOne();`);
-    const lost = await thumb.waitFor(when(`document.body.classList.contains('no-shovel') && shown('.tbtn.pile')`));
-    await thumb.eval(`${press('.tbtn.pile', 'pointerdown')} ${press('.tbtn.pile', 'pointerup')}`);
-    const back = await thumb.waitFor(
-      `(async () => { ${INV} return I.heldId() === 'shovel' && !document.body.classList.contains('no-shovel'); })()`,
-    );
-    t.check('without a shovel, Pile shows and gives it back', lost >= 0 && back >= 0, `${lost} ms, ${back} ms`);
-
-    // Next to the ball with the shovel out, the main button still digs (the ball would be the interact pick). Stand in
-    // the middle of a patch of diggable sand, looking down at your feet.
-    const beach = await thumb.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
-      const { mask, n } = window.boogle.sync.terrain;
-      const sandy = (i, j) => {
-        for (let a = -5; a <= 5; a++) for (let b = -5; b <= 5; b++) if (!mask[(i + a) * n + j + b]) return false;
-        return true;
-      };
-      for (let r = 0; r < 80; r++) for (let di = -r; di <= r; di++) for (const dj of [-r, r]) {
-        const i = 190 + di, j = 186 + dj;
-        if (sandy(i, j)) return { i, j, x: i * CELL - HALF, z: HALF - j * CELL };
-      }
-      return null;`);
-    if (!t.check('found a patch of diggable sand for the phone', !!beach, JSON.stringify(beach))) return;
-    await thumb.eval(`${TP(beach.x, beach.z)} ${AIM(0, -0.9)}`);
-    const aimed = await thumb.waitFor(`(async () => {
-      const { shovel } = await import('/src/world/terrain-edits.js');
-      return !!shovel.target && document.querySelector('.shovel-reason')?.hidden !== false; })()`);
-    const near = await thumb.eval(`${INV}
-      const { ball } = await import('/src/physics/ball.js');
-      const { teleport } = await import('/src/physics/physics.js');
-      const p = window.boogle.me.body.position;
-      if (ball.mine) {
-        teleport(ball.body, p.x + 0.8, p.y + 0.3, p.z + 0.4);
-        ball.disp.p.copy(ball.body.position);
-      }
-      return { mine: ball.mine, pick: H.interactTarget()?.id ?? null, touch: H.touchTarget()?.id ?? null };`);
-    const digLabel = await thumb.waitFor(when(`label() === 'Dig' && !shown('.prompt')`));
-    const sum = `(() => { let t = 0; for (const d of window.boogle.sync.terrain.delta) t += d; return t; })()`;
-    const sandBefore = await thumb.eval(`return ${sum};`);
-    await thumb.eval(press('#btn-grab', 'pointerdown'));
-    await thumb.wait(1);
-    await thumb.eval(press('#btn-grab', 'pointerup'));
-    const lowered = await thumb.waitFor(`${sum} < ${sandBefore}`, { timeout: 5000 });
-    const digShot = await thumb.still('touch-dig-by-ball');
-    const sandAfter = await thumb.eval(`return ${sum};`);
-    t.check(
-      'next to the ball, the shovel button says Dig and digs',
-      near.pick === 'ball' && !near.touch && digLabel >= 0 && lowered >= 0,
-      `${JSON.stringify(near)}; aimed ${aimed} ms, label ${digLabel} ms; sand ${sandBefore}->${sandAfter}; ${digShot}`,
     );
 
     // ------------------------------------------------------------ landscape

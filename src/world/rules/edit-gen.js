@@ -33,10 +33,3 @@ export function bad(r, op) {
       return { op, i, j, p: 'someone-else' }; // a forged player id (the host overwrites it)
   }
 }
-
-// A cell from `cells` (flat i * n + j indices) as { i, j, c }, or null if there are none.
-export function pickCell(r, cells, n) {
-  if (!cells.length) return null;
-  const c = r.pick(cells);
-  return { i: (c / n) | 0, j: c % n, c };
-}

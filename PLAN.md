@@ -76,6 +76,8 @@ The sea already makes the ball float and players swim (see the `preStep` buoyanc
 
 ## Phase 3: Shape the ground (dig and pile)
 
+> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
+
 The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 world units) shared by the mesh, the physics body and the water shader's height texture. Editing it is the foundation for everything after.
 
 - [x] Two new verbs on a tool key/button: **dig** (take sand from a cell) and **pile** (drop it on a cell), with a carry limit so sand is conserved. Only sand cells near the beach and garden are editable; rock and grass aren't.
@@ -92,6 +94,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 **Done when:** players can build a sand wall and the ball bounces off it. **Playtest question:** do people build things for fun with nothing to protect?
 
 ## Phase 4: Living water (the core sim)
+
+> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
 
 - [x] A **2.5D column water sim**, not 3D voxels. The island has no overhangs, so 3D buys almost nothing for a big cost. Each cell has terrain height plus integer water depth (0–255). Water flows to lower neighbors by a fixed integer rule in a fixed scan order, so every machine gets bit-identical results.
 - [x] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
@@ -118,6 +122,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Phase 6: The tide (co-op challenge)
 
+> The water sim is removed (2026-10-30): the second bullet needs a new water model.
+
 - [ ] Every few minutes, a **telegraphed tide** rises over the beach for a minute: a visible wave on the horizon and a warning 30–60 s ahead. The schedule is a pure function of a shared clock (the host's tick, synced to clients) and a seed, so everyone sees the same tide. (Report idea #1)
 - [ ] Rising sea floods low cells into the sim; sand walls hold it back, and the sim erodes weak walls.
 - [ ] Throw the ball at a weak wall to knock it down and release water on purpose.
@@ -129,8 +135,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler/friendship.js`).
 - [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler/lines.js`, `src/boogler/talk.js`).
 - [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler/play.js`).
-- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`.
-- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the shovel, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held but the shovel can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
+- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach (wash-ups removed 2026-10-30). Shared state in `src/sim/gifts.js`.
+- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
 
 **Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
 

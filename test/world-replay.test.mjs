@@ -1,6 +1,6 @@
 // Replay: a host and two clients on the real rules and the home land play a seeded stream of every registered op
 // (each rules module's `edits` generators, about a fifth of it junk). Midway the host dies and a client takes over,
-// then a late joiner loads a snapshot over the wire (after a flatten), and at the end a fresh tab reloads a JSON
+// then a late joiner loads a snapshot over the wire (after a toss), and at the end a fresh tab reloads a JSON
 // snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
 // hold, and a second run with the same seed must give the same results. See src/world/rules/README.md.
 import test from 'node:test';
@@ -82,10 +82,10 @@ async function replay(seed) {
   net.killHost(); // c1 takes over; c2 follows it once the old host has been silent long enough
   await run(net, peers, 64);
   await play(30);
-  await play(8, 'flatten'); // the water's ground copy must follow flatten before the joiner copies it fresh
+  await play(8, 'gift.toss'); // a toss lands before the joiner copies the state fresh
   assert.ok(
-    peers.some((x) => x.p.alive && x.applied.get('flatten')),
-    'no flatten applied before the joiner',
+    peers.some((x) => x.p.alive && x.applied.get('gift.toss')),
+    'no toss applied before the joiner',
   );
   peers.push(makePeer(seed, net, 'late', false));
   await play(30);

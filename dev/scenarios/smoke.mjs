@@ -1,5 +1,5 @@
 // The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room, see
-// each other, the client digs, the client throws the ball, and both tabs end the same tick with the same per-state
+// each other, the client tosses an item, the client throws the ball, and both tabs end the same tick with the same per-state
 // hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.js), so it runs
 // on the built site too: `npm run scenario -- smoke --url https://matiasfr.github.io/boogle/`.
 // Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
@@ -8,7 +8,7 @@ const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6
 const SYNC = 'const s = window.boogle.sync;';
 
 export default {
-  about: 'two tabs join, see each other, dig, throw the ball, and agree on every world hash',
+  about: 'two tabs join, see each other, toss an item, throw the ball, and agree on every world hash',
   timeout: 300000, // generous: two software-rendered tabs on a busy runner can drop to a few frames per second
   async run(t) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
@@ -41,21 +41,14 @@ export default {
     if (hostIdx < 0) return;
     const [host, client] = hostIdx === 0 ? [A, B] : [B, A];
 
-    // The client digs the diggable cell nearest a beach spot west of the court (skipping holes earlier runs in a
-    // reused room dug near the -150 cm floor); the host sees the pit.
-    const cell = await client.eval(`${SYNC} const { mask, delta, n } = s.terrain;
-      for (let r = 0; r < 60; r++) for (let di = -r; di <= r; di++) for (const dj of [-r, r]) {
-        const i = 190 + di, j = 186 + dj;
-        if (mask[i * n + j] && delta[i * n + j] > -100) return { i, j, idx: i * n + j };
-      }
-      return null;`);
-    if (!t.check('found a diggable beach cell', !!cell, JSON.stringify(cell))) return;
-    const depth = `window.boogle.sync.terrain.delta[${cell.idx}]`;
-    const before = await host.eval(`return ${depth};`);
-    const sent = await client.eval(`${SYNC} return s.submitEdit({ op: 'dig', i: ${cell.i}, j: ${cell.j} });`);
-    const dug = await host.waitFor(`${depth} < ${before}`, { timeout: 60000 });
-    const why = `sent ${sent}, host ${before} -> ${await host.eval(`return ${depth};`)}, client ${await client.eval(`return ${depth};`)}`;
-    t.check("the client's dig reaches the host", dug >= 0, `${dug} ms; ${why}`);
+    // The client tosses a coconut at a beach cell west of the court; the host sees the item.
+    const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
+    const item = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
+    const sent = await client.eval(
+      `${SYNC} return s.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 0, y: -1, n: Date.now() % 1000, l: [0, 100, 0, 0, 0, 0] });`, // k 0 = coconut
+    );
+    const landed = await host.waitFor(item, { timeout: 60000 });
+    t.check("the client's toss reaches the host", landed >= 0, `${landed} ms; sent ${sent}`);
 
     // The client throws the ball: it takes ownership and the host watches it fly.
     const ballAt = `(() => { const p = window.boogle.ball.disp.p; return [p.x, p.y, p.z]; })()`;

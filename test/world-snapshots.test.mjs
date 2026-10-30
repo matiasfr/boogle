@@ -77,3 +77,27 @@ test('malformed snapshots and states never throw; bad states start fresh and the
   s.loadSnapshot(copy(fixture.snap)); // a good save afterwards loads as usual
   assert.deepEqual(s.stateHashes(), fixture.hashes);
 });
+
+test('an old snapshot with sand deltas, water cells and shore items loads cleanly and deterministically', () => {
+  const a = peer(),
+    b = peer();
+  for (const s of [a, b]) {
+    assert.equal(s.loadSnapshot(copy(fixture.snap)), true);
+    assert.equal(s.worldStatus().loadErrors, 0);
+  }
+  assert.deepEqual(a.stateHashes(), b.stateHashes());
+  assert.equal(a.stateHashes().water, 2166136261); // the retired water stub
+  for (let k = 0; k < 50; k++) {
+    a.updateWorld(0.1);
+    b.updateWorld(0.1);
+  }
+  assert.deepEqual(a.stateHashes(), b.stateHashes());
+  // Past the life of the saved shore items (12,000 ticks): they age out on both, nothing new washes up, hashes agree.
+  for (let k = 0; k < 12100; k++) {
+    a.updateWorld(0.1);
+    b.updateWorld(0.1);
+  }
+  for (const s of [a, b])
+    assert.ok(!s.snapshot().data.gifts.it.some((v, k) => k % 7 === 4 && v === 0), 'shore items left');
+  assert.deepEqual(a.stateHashes(), b.stateHashes());
+});

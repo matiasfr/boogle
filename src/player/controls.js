@@ -14,7 +14,7 @@
 //     the rest describes the control for the guide, see below; guide: false keeps it off the guide (it is covered by
 //     another row, or has nothing to show)
 //   describeControl(id, { label, detail, keys, pad, touch, group, order, context })
-//     a display-only row for a control with no pad action of its own (move, look, hotbar digits, dig, dive). It never
+//     a display-only row for a control with no pad action of its own (move, look, hotbar digits). It never
 //     claims a slot and never dispatches. pad may be a slot, an array of slots, or a stick: 'ls' / 'rs'. Describing
 //     the same id again replaces it.
 //   listControls()     every action (guide !== false) and described control as plain rows, sorted by GROUPS index,
@@ -34,9 +34,9 @@
 // A control with keys or touch must also have a pad binding (AGENTS.md: every control is playable on a gamepad).
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
-// A key with no pad action of its own (hotbar digits, dive) binds through onKey(codes, { down, up }), same guard.
+// A key with no pad action of its own (hotbar digits) binds through onKey(codes, { down, up }), same guard.
 //
-// To layer behaviour onto another module's action (feel.js turns pile into a dive while swimming), wrap it from
+// To layer behaviour onto another module's action, wrap it from
 // onStart, once it is registered; never overwrite its handlers by hand:
 //   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
 //                                  none) and decides whether to call it; the last wrap runs first
@@ -87,7 +87,6 @@ export const GROUPS = [
   ['camera', 'Camera'],
   ['ball', 'The ball'],
   ['hands', 'Hands'],
-  ['sand', 'Sand'],
   ['friends', 'Friends'],
   ['menu', 'Menu'],
 ];

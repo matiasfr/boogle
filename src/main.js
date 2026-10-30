@@ -11,7 +11,6 @@ import { ball, resolveBallOwner, prepareBall } from './physics/ball.js';
 import { me, updateIntent } from './player/player.js';
 import { net, remotes, connectRoom, updateRemotes } from './netplay/net.js';
 import { renderPeople, initLobby } from './player/hud.js';
-import './world/water-world.js';
 import { initInput } from './player/input.js';
 import { createStall } from './adapters/mushroom-garden.js';
 import { runFrame, runStart } from './loop.js';

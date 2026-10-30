@@ -26,14 +26,6 @@ const heightTex = (() => {
   return t;
 })();
 
-// Refresh the height texels for cells i0..i1, j0..j1 (inclusive) after terrain edits.
-export function updateHeightTexels(i0, j0, i1, j1) {
-  const data = heightTex.image.data;
-  for (let j = j0; j <= j1; j++)
-    for (let i = i0; i <= i1; i++) encodeHeight(data, (j * GRID_RES + i) * 4, heights[i][j]);
-  heightTex.needsUpdate = true;
-}
-
 export const waterMat = new THREE.ShaderMaterial({
   transparent: true,
   uniforms: {
@@ -101,7 +93,7 @@ export const waterMat = new THREE.ShaderMaterial({
 });
 
 // late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock. Everything earlier in
-// the frame (water-surface.js and the fish share this uniform) still sees last frame's value, as before.
+// the frame (the fish share this uniform) still sees last frame's value, as before.
 onFrame(
   ({ elapsed }) => {
     waterMat.uniforms.uTime.value = elapsed;
