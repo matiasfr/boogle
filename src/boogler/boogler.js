@@ -2,7 +2,7 @@
 //
 // Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
 // (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
-// remote player. He is not part of the deterministic world sim (he never changes terrain, water or crops), so his brain
+// remote player. He is not part of the deterministic world sim (he never changes terrain or crops), so his brain
 // can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
 // hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
 // is cosmetic and local.
@@ -26,7 +26,7 @@ import { net, remotes, addHostField } from '../netplay/net.js';
 import { createSnaps } from '../netplay/snaps.js';
 
 // Shape: about three times as wide as he is tall.
-const W_R = 0.8; // half width
+export const W_R = 0.8; // half width
 const H_R = 0.27; // half height
 const BODY_Y = 0.32; // body center above the ground
 const BODY_HEX = '#b99cff';
@@ -117,17 +117,19 @@ function pathClear(x0, z0, x1, z1) {
 // Where he's heading on a trip away from home (a POI or a random far spot), or null while pottering about.
 let trip = null;
 
+// Sets his next walk target if the way there is clear.
+function headFor(x, z) {
+  if (!pathClear(sim.x, sim.z, x, z)) return false;
+  sim.tx = x;
+  sim.tz = z;
+  return true;
+}
+
 function tryStep(a, dmin, dmax) {
   for (let tries = 0; tries < 12; tries++) {
     const aa = a + (rng() - 0.5) * (tries < 6 ? 0.9 : 2.6),
       d = range(dmin, dmax);
-    const x = sim.x + Math.cos(aa) * d,
-      z = sim.z + Math.sin(aa) * d;
-    if (pathClear(sim.x, sim.z, x, z)) {
-      sim.tx = x;
-      sim.tz = z;
-      return true;
-    }
+    if (headFor(sim.x + Math.cos(aa) * d, sim.z + Math.sin(aa) * d)) return true;
   }
   return false;
 }
@@ -186,30 +188,9 @@ function fleeFrom(t) {
   const away = Math.atan2(sim.z - t.z, sim.x - t.x);
   for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
     const d = range(7, 12);
-    const x = sim.x + Math.cos(away + off) * d,
-      z = sim.z + Math.sin(away + off) * d;
-    if (pathClear(sim.x, sim.z, x, z)) {
-      sim.tx = x;
-      sim.tz = z;
-      return true;
-    }
+    if (headFor(sim.x + Math.cos(away + off) * d, sim.z + Math.sin(away + off) * d)) return true;
   }
   return false;
-}
-
-function nearestPlayer() {
-  let best = null,
-    bestD = FACE_RANGE;
-  const consider = (x, z) => {
-    const d = Math.hypot(x - sim.x, z - sim.z);
-    if (d < bestD && d > 0.5) {
-      bestD = d;
-      best = { x, z };
-    }
-  };
-  if (me.entered && me.body) consider(me.body.position.x, me.body.position.z);
-  for (const r of remotes.values()) if (r.entered && r.avatar) consider(r.target.x, r.target.z);
-  return best;
 }
 
 function turnToward(yaw, dt) {
@@ -225,9 +206,12 @@ function think(dt) {
     focusD = ATTEND_RANGE,
     threat = null,
     threatD = FLEE_RANGE,
+    nearest = null, // whoever he turns to look at while idle
+    nearestD = FACE_RANGE,
     ridden = false;
   for (const v of visitors()) {
     const d = Math.hypot(v.x - sim.x, v.z - sim.z);
+    if (d < nearestD && d > 0.5) [nearest, nearestD] = [v, d];
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
     else if (v.act === ACT.TALK) {
       if (d < focusD) [focus, focusD] = [v, d];
@@ -250,8 +234,7 @@ function think(dt) {
   } else if (ridden) sim.wait = Math.min(sim.wait, 0.3);
 
   if (!sim.walking) {
-    const p = nearestPlayer();
-    if (p) turnToward(facing(p), dt);
+    if (nearest) turnToward(facing(nearest), dt);
     sim.wait -= dt;
     if (sim.wait <= 0) {
       if (pickTarget()) sim.walking = true;

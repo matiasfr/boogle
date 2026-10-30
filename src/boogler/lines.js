@@ -1081,6 +1081,3 @@ export const GIFT_OPTS = {
   meh: ["It's the thought that counts.", "Sorry, it's all I had."],
   dislike: ['Oops. Sorry!', "I thought you'd find it funny."],
 };
-
-// The short lines he says outside a talk live in barks.js (loaded up front; this file loads when talk does).
-export { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';

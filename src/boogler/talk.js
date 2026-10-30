@@ -131,7 +131,7 @@ function menuNode(t, say) {
     const ask = THREADS[id].ask[s.done ? 2 : s.started ? 1 : 0];
     opts.push(opt(ask, () => enterThread(t, id)));
   }
-  opts.push(...giftOpts(t, () => menuNode(t, pick(t, AFTER))));
+  opts.push(...giftOpts(t, backToMenu(t)));
   opts.push(
     opt(pick(t, BYE), () =>
       node(
@@ -150,12 +150,23 @@ function enterThread(t, id) {
   const { f, ctx } = t;
   const th = THREADS[id];
   const s = threadState(f, id);
-  if (s.done)
-    return node(
-      pick(t, th.retell),
-      RETELL_OPTS.map((say) => opt(say, backToMenu(t))),
-      'joy',
+  if (s.done) {
+    // He tells one of its chapters again (never the one he retold last), so the answers you skipped the first time,
+    // and the ones he kept for better friends, get their turn; then a retell line. It scores like small talk.
+    const key = `retold.${id}`;
+    const ch = pick(
+      t,
+      th.chapters.filter((c) => c.id !== f.flags[key]),
     );
+    f.flags[key] = ch.id;
+    const retell = () =>
+      node(
+        pick(t, th.retell),
+        RETELL_OPTS.map((say) => opt(say, backToMenu(t))),
+        'joy',
+      );
+    return chapterNode(t, ch, 'a', retell, chatScores(f, ctx.now));
+  }
   if (s.next.lvl > levelOf(f.pts)) {
     // Asking before he's ready is a little nosy; pushing is very nosy.
     if (addNosy(f, 1, ctx.now)) return tooNosy();
@@ -219,7 +230,7 @@ function smallTalk(t) {
   const s = pick(t, fresh.length ? fresh : pool);
   f.flags.recent = [...recent, s.id].slice(-3);
   const scoring = chatScores(f, ctx.now);
-  return chapterNode(t, s, 'a', () => menuNode(t, pick(t, AFTER)), scoring);
+  return chapterNode(t, s, 'a', backToMenu(t), scoring);
 }
 
 // ---------------------------------------------------------------- gifts
