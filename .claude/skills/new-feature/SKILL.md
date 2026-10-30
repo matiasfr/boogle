@@ -20,6 +20,6 @@ AGENTS.md has the rules; this is the order to apply them in.
    `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).
 5. Pure logic worth a test goes in `src/sim/$0.js` with `test/$0.test.mjs`. Don't import another feature; move shared
    code into `src/`. Hotspot files (`src/main.js`, `src/style.css`, `index.html`): a line or two at most. Tick or add
-   a PLAN.md item if it is on the roadmap.
+   a PLAN.md item if it is on the roadmap, and update its section of `docs/game-design.md` (AGENTS.md).
 6. `npm run check` (`check:full` for lockstep or net changes). For anything visible, `/look` it. Tell the user how to
    try it (`npm run dev`, two tabs with the same `?room=`).
