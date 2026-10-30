@@ -13,7 +13,7 @@ on:
     inputs:
       url:
         description: Game URL to test
-        default: https://matiasfr.github.io/boogle/
+        default: https://boogle.club/
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      URL: ${{ inputs.url || 'https://matiasfr.github.io/boogle/' }}
+      URL: ${{ inputs.url || 'https://boogle.club/' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
