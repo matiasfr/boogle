@@ -66,6 +66,7 @@ let jumpActive = false; // a player-made jump is rising (only those get the shor
 let diving = 0; // seconds left in a held dive
 let diveAt = -1e9;
 let wasUnder = false;
+let padPile = false; // pad LT is holding a pile that started on land
 physics.addEventListener('preStep', () => {
   const enabled = on();
   feelTune.jumpAdd = enabled;
@@ -116,8 +117,8 @@ onStart(() => {
   });
   addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
   wrapAction('pile', {
-    down: (next) => (swimDive() ? dive() : next()),
-    up: (next) => ((diving = 0), next()),
+    down: (next) => (swimDive() ? dive() : ((padPile = true), next())),
+    up: (next) => ((padPile = false), (diving = 0), next()),
   });
 });
 
@@ -269,8 +270,10 @@ function spring(a, dt, t, flopOf, isMe) {
 onFrame(
   ({ dt, elapsed }) => {
     if (dt <= 0) return;
-    // the dig button is a dive while swimming: never leave a dig hold running underwater
+    // Q and pad LT dive while swimming: never leave a Q dig or an LT pile hold running underwater (Z and the mouse
+    // still pile there)
     if (on() && me.swimming && shovel.hold === 'dig') setHold(null, 'dig');
+    if (on() && me.swimming && padPile && shovel.hold === 'pile') setHold(null, 'pile');
     if (me.avatar) spring(me.avatar, dt, elapsed, () => flop, true);
     for (const r of remotes.values()) if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false);
     let alive = 0;
