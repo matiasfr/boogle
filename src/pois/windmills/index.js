@@ -2,14 +2,14 @@
 // plus hay bales and a fence along the track. The sails are solid: they bonk players and bat the ball about.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { groundHeight } from '../../terrain.js';
-import { scene } from '../../scene.js';
-import { world, groundMat, GROUP, NOT_SCENERY } from '../../physics.js';
-import { addPart, mergeParts } from '../../props.js';
+import { groundHeight } from '../../adapters/terrain.js';
+import { scene } from '../../render/scene.js';
+import { world, groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.js';
+import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.js';
 import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.js';
-import { sharedSeconds } from '../../shared-time.js';
+import { sharedSeconds } from '../../netplay/shared-time.js';
 import site, { MILLS, TRACK } from './site.js';
 
 const TOWER_H = 7.2;

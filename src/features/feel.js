@@ -1,7 +1,7 @@
 // Controller feel pass (prototype flag `feel`). The body setup stays as it is (dynamic cannon body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/physics.js feelTune), so mushroom bounces chain
+//     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
 //   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
 //   - swimming: dig (Q) and pad LT dive; let go and you pop back up, breaching out of the water
@@ -11,16 +11,16 @@
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { emit } from '../particles.js';
-import { world as physics, feelTune } from '../physics.js';
+import { emit } from '../render/particles.js';
+import { world as physics, feelTune } from '../physics/physics.js';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight } from '../terrain.js';
-import { waterField } from '../water-field.js';
-import { me } from '../player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { wrapAction, describeControl, onKey } from '../controls.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { waterField } from '../physics/water-field.js';
+import { me } from '../player/player.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { wrapAction, describeControl, onKey } from '../player/controls.js';
 import { shovel, setHold } from '../world/terrain-edits.js';
-import { proto } from '../proto-flags.js';
+import { proto } from '../adapters/proto-flags.js';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const JUMP = {
@@ -149,7 +149,7 @@ onRemotePresence((r, pr) => {
     r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
 });
 
-// ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/particles.js)
+// ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.js)
 const DUST = new THREE.Color(0xe8d6a6);
 function puff(x, y, z, n, spread) {
   if (reducedMotion) return;

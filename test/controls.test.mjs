@@ -18,7 +18,7 @@ import {
   onKey,
   isTyping,
   GROUPS,
-} from '../src/controls.js';
+} from '../src/player/controls.js';
 
 const quiet = (fn) => {
   const warn = console.warn;
@@ -176,7 +176,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
   const owners = new Map(); // code -> 'file:id'
   let n = 0;
   for (const f of readdirSync(src, { recursive: true })) {
-    if (!f.endsWith('.js') || f === 'controls.js') continue;
+    if (!f.endsWith('.js') || f === 'player/controls.js') continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     const found = [
       ...[

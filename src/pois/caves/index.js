@@ -11,14 +11,14 @@
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { scene, camera } from '../../scene.js';
-import { world, groundMat, GROUP, groundProbe, teleport } from '../../physics.js';
-import { groundHeight, setTerrainHoles } from '../../terrain.js';
+import { scene, camera } from '../../render/scene.js';
+import { world, groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
+import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.js';
-import { atmosphere } from '../../sky.js';
-import { camConstraints, me } from '../../player.js';
-import { ball } from '../../ball.js';
-import { waterField } from '../../water-field.js';
+import { atmosphere } from '../../render/sky.js';
+import { camConstraints, me } from '../../player/player.js';
+import { ball } from '../../physics/ball.js';
+import { waterField } from '../../physics/water-field.js';
 import { buildCaveMeshSteps, buildCollarMesh, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
 import { buildDecor, mouthFrame } from './decor.js';

@@ -4,7 +4,7 @@ import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.js';
 import windmills, { FARM_Y } from '../../../src/pois/windmills/site.js';
 
 const TP = (x, z) => `
-  const { groundHeight } = await import('/src/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);`;
 const SKY = (frac) => `window.boogle.sky.preview(${frac})`;

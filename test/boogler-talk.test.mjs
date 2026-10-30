@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { THREADS, SMALL_TALK } from '../src/boogler-lines.js';
-import { openTalk, talkView, pickTalk, threadState } from '../src/boogler-talk.js';
-import { LEVELS, RULES, createFriend, addPts, levelOf, kickedOff, isWary } from '../src/boogler-friendship.js';
+import { THREADS, SMALL_TALK } from '../src/boogler/lines.js';
+import { openTalk, talkView, pickTalk, threadState } from '../src/boogler/talk.js';
+import { LEVELS, RULES, createFriend, addPts, levelOf, kickedOff, isWary } from '../src/boogler/friendship.js';
 import { mulberry32 } from '../src/sim/rng.js';
 import { giftIndex } from '../src/sim/gift-catalog.js';
 

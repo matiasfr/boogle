@@ -8,9 +8,9 @@
 // touch them.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { groundMat, GROUP } from '../../physics.js';
-import { addPart, mergeParts } from '../../props.js';
-import { addLightSource } from '../../lights.js';
+import { groundMat, GROUP } from '../../physics/physics.js';
+import { addPart, mergeParts } from '../../render/props.js';
+import { addLightSource } from '../../render/lights.js';
 import { mulberry32 } from '../../math.js';
 import { caveSd } from './mesh.js';
 import { ambAt, withCaveAmbient } from './index.js';

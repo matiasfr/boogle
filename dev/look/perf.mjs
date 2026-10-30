@@ -21,7 +21,7 @@ const FLOOD_BELOW_CM = 400;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const STATS = `
-  const { renderer, scene, camera, sun } = await import('/src/scene.js');
+  const { renderer, scene, camera, sun } = await import('/src/render/scene.js');
   renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   const calls = renderer.info.render.calls, tris = renderer.info.render.triangles;

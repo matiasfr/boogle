@@ -1,25 +1,25 @@
-// The hotbar (src/inventory.js) on screen and in hand: eight slots along the bottom (on touch at the top, or down the
+// The hotbar (src/player/inventory.js) on screen and in hand: eight slots along the bottom (on touch at the top, or down the
 // right edge in portrait), keys 1-8 (pad LB/RB, or tap a slot) to change what you hold, and whatever you hold drawn in
 // your hand. Everyone sees what everyone holds through the presence field `hd` (a catalog index, -1 for empty hands;
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
-// (a tool's verb, or Talk / Pick up near a target). The shovel is never thrown (canThrow in src/hands.js); a save that
+// (a tool's verb, or Talk / Pick up near a target). The shovel is never thrown (canThrow in src/player/hands.js); a save that
 // lost it anyway gets body.no-shovel, which shows the touch Pile button to hand a new one back. Serves DESIGN.md 1
 // (toys before chores: anything you carry is a toy you can throw, and the shovel is always at hand) and 10 (slapstick
 // over precision).
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { me, ITEM_HAND } from '../player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { inv, SLOTS, heldId, select, has } from '../inventory.js';
-import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../hands.js';
+import { me, ITEM_HAND } from '../player/player.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { inv, SLOTS, heldId, select, has } from '../player/inventory.js';
+import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
 import { shovel } from '../world/terrain-edits.js';
-import { pouring } from '../mushroom-garden.js';
-import { itemModel } from '../item-models.js';
-import { iconFor } from '../item-icons.js';
-import { glyph, inputKind } from '../glyphs.js';
-import { describeControl, onKey } from '../controls.js';
+import { pouring } from '../adapters/mushroom-garden.js';
+import { itemModel } from '../player/item-models.js';
+import { iconFor } from '../player/item-icons.js';
+import { glyph, inputKind } from '../player/glyphs.js';
+import { describeControl, onKey } from '../player/controls.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 import { reducedMotion } from '../constants.js';
 

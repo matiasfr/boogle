@@ -7,7 +7,7 @@
 import { onStart } from '../loop.js';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.js';
 import { terrain } from '../world/terrain-edits.js';
-import { grabBall, throwBall } from '../ball.js';
+import { grabBall, throwBall } from '../physics/ball.js';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting
 

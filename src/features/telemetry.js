@@ -7,13 +7,13 @@
 // Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`, so "how many joins
 // fail without TURN" (PLAN Phase 1) has an answer. Whether a relay candidate was actually gathered or used is not
 // visible from here without reaching into peer-room's RTCPeerConnections, so it is not reported. They also say whether
-// the room was running mixed builds (`mixedBuilds`, src/builds.js; a yes or no, never the build ids).
+// the room was running mixed builds (`mixedBuilds`, src/netplay/builds.js; a yes or no, never the build ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
-import { net, getRoomId, onNetState } from '../net.js';
+import { net, getRoomId, onNetState } from '../netplay/net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
-import { mixedBuilds } from '../builds.js';
-import { coarseUa, firstFrame, scrub } from '../report-format.js';
+import { mixedBuilds } from '../netplay/builds.js';
+import { coarseUa, firstFrame, scrub } from '../netplay/report-format.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;

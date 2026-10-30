@@ -1,11 +1,11 @@
 // The caves: walk in at the south mouth, through the hub and the mine, out of the east mouth; balls thrown hard stay
 // inside; the ball floats on the underground pond. Physics is stepped directly in the page (fast and repeatable).
 const STEP_ROUTE = `
-  const { world } = await import('/src/physics.js');
+  const { world } = await import('/src/physics/physics.js');
   const { SEGMENTS } = await import('/src/pois/caves/network.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
-  const { groundHeight } = await import('/src/terrain.js');
-  const { GROUP } = await import('/src/physics.js');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { GROUP } = await import('/src/physics/physics.js');
   const { me } = window.boogle;
   const seg = (a, b) => SEGMENTS.find((s) => s.from === a && s.to === b).pts.map((p) => [p.x, p.z]);
   const route = [[-31.5, -70.6], ...seg('south', 'hub').slice(0, -1), [-49, -89.5], ...seg('hub', 'mine').slice(1, -1),
@@ -33,8 +33,8 @@ const STEP_ROUTE = `
   return { reached: w, of: route.length, stuck, wentIn, outside: !!(b.collisionFilterMask & GROUP.SCENERY), sank: +sank.toFixed(2) };`;
 
 const THROWS = `
-  const { world } = await import('/src/physics.js');
-  const { ball, claimBall } = await import('/src/ball.js');
+  const { world } = await import('/src/physics/physics.js');
+  const { ball, claimBall } = await import('/src/physics/ball.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { NODES, POND } = await import('/src/pois/caves/network.js');
   claimBall(false);

@@ -1,14 +1,14 @@
 // The interact prompt: what E (pad B, the touch action button) would act on, marked where it is with the button and the
 // verb, "[E] Pick up" floating over a shell, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
-// itself; see registerInteractable in src/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
+// itself; see registerInteractable in src/player/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
 import { onFrame } from '../loop.js';
-import { toScreen } from '../scene.js';
-import { me } from '../player.js';
-import { interactTarget, touchTarget } from '../hands.js';
-import { dialogue } from '../boogler-dialogue.js';
-import { glyph, inputKind } from '../glyphs.js';
+import { toScreen } from '../render/scene.js';
+import { me } from '../player/player.js';
+import { interactTarget, touchTarget } from '../player/hands.js';
+import { dialogue } from '../boogler/dialogue.js';
+import { glyph, inputKind } from '../player/glyphs.js';
 
 const onScreen = { x: 0, y: 0, behind: false };
 const ui = { root: null, html: '', id: '', kind: '', show: null, showId: '' };

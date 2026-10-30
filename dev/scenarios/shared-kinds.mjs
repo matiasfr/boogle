@@ -1,5 +1,5 @@
 // Owner and Host state across two tabs: remote players and the ball (Owner, presence fields) and The Boogler (Host,
-// addHostField) reach the other tab through the snapshot buffers in src/snaps.js. Each check compares, inside one tab,
+// addHostField) reach the other tab through the snapshot buffers in src/netplay/snaps.js. Each check compares, inside one tab,
 // the latest value it heard with where it draws the thing, so slow headless frames don't skew it across tabs.
 export default {
   about: 'two players: each draws the other, the ball and the Boogler where the latest presence puts them',
@@ -14,7 +14,7 @@ export default {
     const [host, client] = hostA ? [A, B] : [B, A];
 
     // Distance between what the latest presence from the other tab says and where this tab draws it.
-    const gap = `const { boogler } = await import('/src/boogler.js');
+    const gap = `const { boogler } = await import('/src/boogler/boogler.js');
       const b = window.boogle;
       const other = b.net.room.peers().find((p) => !p.sameTab);
       const pr = other?.presence || {};

@@ -1,6 +1,6 @@
 // Mushroom garden: buried seeds that grow into bouncy mushrooms once watered. Pure and integer-only (see
 // src/world/README.md), so it runs the same on every client and in Node tests. Seeds go in anywhere; the game layer
-// (src/mushroom-garden.js) refuses water, rocks and trees before an edit reaches this state.
+// (src/adapters/mushroom-garden.js) refuses water, rocks and trees before an edit reaches this state.
 
 // The seed stall's dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H). Kept clear of trees, beach
 // gifts and digging; mushrooms grow there or anywhere else.

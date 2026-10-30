@@ -4,13 +4,13 @@
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../scene.js';
-import { groundHeight } from '../terrain.js';
-import { waterField } from '../water-field.js';
-import { ball } from '../ball.js';
-import { me } from '../player.js';
-import { remotes } from '../net.js';
-import { proto } from '../proto-flags.js';
+import { scene } from '../render/scene.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { waterField } from '../physics/water-field.js';
+import { ball } from '../physics/ball.js';
+import { me } from '../player/player.js';
+import { remotes } from '../netplay/net.js';
+import { proto } from '../adapters/proto-flags.js';
 
 const GULLS = {
   count: 7,

@@ -6,15 +6,15 @@
 // than bucketing them on the cell grid.
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../scene.js';
-import { groundHeight } from '../terrain.js';
-import { waterField } from '../water-field.js';
-import { ball } from '../ball.js';
-import { me } from '../player.js';
-import { remotes } from '../net.js';
-import { waterMat } from '../water-render.js';
-import { patchMaterial } from '../material-patch.js';
-import { proto } from '../proto-flags.js';
+import { scene } from '../render/scene.js';
+import { groundHeight } from '../adapters/terrain.js';
+import { waterField } from '../physics/water-field.js';
+import { ball } from '../physics/ball.js';
+import { me } from '../player/player.js';
+import { remotes } from '../netplay/net.js';
+import { waterMat } from '../render/water-render.js';
+import { patchMaterial } from '../render/material-patch.js';
+import { proto } from '../adapters/proto-flags.js';
 
 const FISH = {
   count: 36,
