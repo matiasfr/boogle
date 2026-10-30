@@ -51,10 +51,11 @@ export function serializeGarden(garden) {
   return { v: 2, p: garden.plots.flatMap((p) => [p.i, p.j, p.g]) };
 }
 
-// Accepts the current { v: 2, p } form or a bare flat array (older snapshots; the caller migrates their cells).
+// Reads the { v: 2, p } form; anything else (such as the bare arrays saved on the 129-cell island before 2026-10-29)
+// loads as an empty garden.
 export function loadGarden(garden, json) {
   garden.plots = [];
-  const flat = Array.isArray(json) ? json : json?.v === 2 && Array.isArray(json.p) ? json.p : [];
+  const flat = json?.v === 2 && Array.isArray(json.p) ? json.p : [];
   for (let k = 0; k + 2 < flat.length && garden.plots.length < MAX_PLOTS; k += 3) {
     const [i, j, g] = flat.slice(k, k + 3);
     if (inGrid(i, j) && Number.isInteger(g) && g >= 0 && g <= GROW_TICKS) garden.plots.push({ i, j, g });

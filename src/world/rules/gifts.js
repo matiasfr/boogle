@@ -18,22 +18,10 @@ import {
   ON_GROUND,
 } from '../../sim/gifts.js';
 import { JUNK, bad } from './edit-gen.js';
-import { isLegacyCell, fromLegacy } from '../legacy-grid.js';
 
 export const name = 'gifts';
 export const SEEDS = giftIndex('seeds');
 export const LOST = -3; // `gift.toss` only: the throw ended in water or nowhere a seed can grow, so nothing lands
-
-// Items saved by an older, smaller island sit on its 129-cell grid: move them to the same spot on today's grid.
-// Snapshots with `v` are already on today's grid (and may use any cell), so it is safe to run twice.
-export function migrateGifts(json) {
-  const it = json?.it;
-  if (!Array.isArray(it) || json.v) return json;
-  const out = it.slice();
-  for (let k = 0; k + 5 < out.length; k += 6)
-    if (isLegacyCell(out[k + 2], out[k + 3])) [out[k + 2], out[k + 3]] = fromLegacy(out[k + 2], out[k + 3]);
-  return { ...json, it: out };
-}
 
 const isInt = Number.isSafeInteger;
 const launchOk = (l) => Array.isArray(l) && l.length === 6 && l.every((v) => isInt(v) && Math.abs(v) < 1e5);
@@ -65,7 +53,7 @@ export function install(sync, land, rules) {
   });
   sync.registerState('gifts', {
     serialize: () => serializeGifts(gifts),
-    load: (json) => loadGifts(gifts, migrateGifts(json)),
+    load: (json) => loadGifts(gifts, json),
     hash: () => hashGifts(gifts),
   });
   sync.onTick((t) => tickGifts(gifts, t, sync.world.seed), 'gifts');

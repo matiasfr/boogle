@@ -12,7 +12,7 @@ rules' API and reacting through `onApplied`, `onAfterTick` and `onSnapshot`.
 
 ```js
 // src/world/rules/<name>.js
-// Imports allowed: ../grid.js, ../terrain-logic.js, ../legacy-grid.js, ../../sim/*, ./<earlier rule>.js (constants only).
+// Imports allowed: ../grid.js, ../terrain-logic.js, ../../sim/*, ./<earlier rule>.js (constants only).
 export const name = 'terrain'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules, opts) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -31,7 +31,7 @@ export function install(sync, land, rules, opts) {
 Rules:
 
 - Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder, and its import
-  lint allows only `../grid.js`, `../terrain-logic.js`, `../legacy-grid.js`, `../../sim/*` and sibling rules (no
+  lint allows only `../grid.js`, `../terrain-logic.js`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - Append new modules to the end of `RULES` in `index.js`. Its order is the wire order: states snapshot, load and
@@ -102,8 +102,8 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | Module | Ops | State | API |
 |---|---|---|---|
 | `terrain.js` | `dig`, `pile`, `flatten` | `terrain` | `{ state, lastLoaded() }`: the sand layer (`../terrain-logic.js`) and the cells the last load changed |
-| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }`; exports `migrateGarden` |
-| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `migrateGifts`, `SEEDS`, `LOST` |
+| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
+| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
 | `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce(), stepMs() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

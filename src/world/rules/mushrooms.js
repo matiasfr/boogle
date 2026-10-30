@@ -15,17 +15,8 @@ import {
   MAX_PLOTS,
 } from '../../sim/mushrooms.js';
 import { JUNK, bad } from './edit-gen.js';
-import { isLegacyCell, LEGACY_SHIFT } from '../legacy-grid.js';
 
 export const name = 'mushrooms';
-
-// Snapshots from before the island grew are bare arrays on the old 129-cell grid; move those cells. Current saves
-// ({ v: 2, p }) pass through, so it is safe to run twice.
-export function migrateGarden(json) {
-  return Array.isArray(json)
-    ? json.map((v, k) => (k % 3 < 2 && isLegacyCell(json[k - (k % 3)], json[k - (k % 3) + 1]) ? v + LEGACY_SHIFT : v))
-    : json;
-}
 
 export function install(sync, land) {
   const { n } = land;
@@ -44,7 +35,7 @@ export function install(sync, land) {
   });
   sync.registerState('mushrooms', {
     serialize: () => serializeGarden(garden),
-    load: (json) => loadGarden(garden, migrateGarden(json)),
+    load: (json) => loadGarden(garden, json),
     hash: () => hashGarden(garden),
   });
   sync.onTick(() => tickGarden(garden), 'mushrooms');

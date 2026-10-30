@@ -1,5 +1,5 @@
 // The rules contract (src/world/rules/README.md), checked over every module in RULES on the home land: the order pin,
-// identical edits giving identical hashes on two peers, snapshot round-trips, legacy migrations, and rules purity.
+// identical edits giving identical hashes on two peers, snapshot round-trips, old saves, and rules purity.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -156,44 +156,17 @@ test('flatten reaches the water sim: its ground matches the terrain, and a joine
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
 });
 
-test('legacy saves migrate: 129-grid terrain deltas move to the 409 grid', () => {
-  const snap = (data) => ({ tick: 5, seed: 1, epochMs: 0, data });
-  const a = peer();
-  a.s.loadSnapshot(snap({ terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] } }));
-  const { state } = a.rules.terrain;
-  assert.equal(state.delta[200 * 409 + 210], -40);
-  assert.equal(state.carryOf('p'), 40);
-  const saved = JSON.parse(JSON.stringify(a.s.snapshot().data));
-  assert.deepEqual(saved.terrain.d, [200 * 409 + 210, -40]);
-  assert.equal(saved.terrain.n, 409);
-  const b = peer();
-  b.s.loadSnapshot(snap(saved)); // already migrated: loads as is
-  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
-});
-
-test('legacy saves migrate: bare 129-grid garden arrays move to the 409 grid', () => {
-  const a = peer();
-  a.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: { mushrooms: [80, 60, 0, 300, 300, 4] } });
-  assert.deepEqual(a.rules.mushrooms.garden.plots, [
-    { i: 220, j: 200, g: 0 },
-    { i: 300, j: 300, g: 4 },
-  ]);
-  const b = peer();
-  b.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: JSON.parse(JSON.stringify(a.s.snapshot().data)) });
-  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
-});
-
-test('legacy saves migrate: gifts without v move from the 129 grid, and saves with v load as is', () => {
-  const it = [3, 1, 80, 60, SRC.TOSS, 2]; // id, kind, i, j, src, born: the old 6-field layout
-  const a = peer();
-  a.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: { gifts: { it, n: 4 } } });
-  const [item] = a.rules.gifts.gifts.items;
-  assert.deepEqual([item.i, item.j], [220, 200]);
-  const saved = JSON.parse(JSON.stringify(a.s.snapshot().data));
-  assert.ok(saved.gifts.v);
-  const b = peer();
-  b.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: saved });
-  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+test('saves from the 129-cell island (before 2026-10-29) load as fresh state', () => {
+  const a = peer(),
+    fresh = a.s.stateHashes();
+  a.s.loadSnapshot({
+    tick: 5,
+    seed: 1,
+    epochMs: 0,
+    data: { terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] }, mushrooms: [80, 60, 0] },
+  });
+  assert.equal(a.s.stateHashes().terrain, fresh.terrain);
+  assert.equal(a.s.stateHashes().mushrooms, fresh.mushrooms);
 });
 
 test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
@@ -209,7 +182,7 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
-  const allowed = /\/src\/(world\/rules\/[^/]+|world\/(grid|terrain-logic|legacy-grid)|sim\/[^/]+)\.js$/;
+  const allowed = /\/src\/(world\/rules\/[^/]+|world\/(grid|terrain-logic)|sim\/[^/]+)\.js$/;
   const seen = new Set();
   const visit = (url) => {
     if (seen.has(url.href)) return;

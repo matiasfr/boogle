@@ -4,7 +4,7 @@ import globals from 'globals';
 const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage =
-  'src/world/rules/ is lockstep only: src/sim/, ../grid.js, ../terrain-logic.js and ../legacy-grid.js (see its README).';
+  'src/world/rules/ is lockstep only: src/sim/, ../grid.js and ../terrain-logic.js (see its README).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
 const RULES_GLOBALS = [
   'window',
@@ -67,8 +67,8 @@ export default [
           paths: [peerjsBan, ...['three', 'cannon-es'].map((name) => ({ name, message: rulesMessage }))],
           patterns: [
             {
-              // three/*, and any ../ path except ../grid.js, ../terrain-logic.js, ../legacy-grid.js and ../../sim/<file>
-              regex: '^(three/|\\.\\./(?!(grid|terrain-logic|legacy-grid)\\.js$|\\.\\./sim/[^/.]+\\.js$))',
+              // three/*, and any ../ path except ../grid.js, ../terrain-logic.js and ../../sim/<file>
+              regex: '^(three/|\\.\\./(?!(grid|terrain-logic)\\.js$|\\.\\./sim/[^/.]+\\.js$))',
               message: rulesMessage,
             },
           ],
