@@ -37,7 +37,9 @@ Rules:
 
 ## env keys
 
-None yet.
+| Key | Set by | Used by |
+|---|---|---|
+| `canPlantAt(i, j)` | `src/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds |
 
 ## Template
 
@@ -63,3 +65,4 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | Module | Ops | State | API |
 |---|---|---|---|
 | `terrain.js` | `dig`, `pile`, `flatten` | `terrain` | `{ state, lastLoaded() }`: the sand layer (`../terrain-logic.js`) and the cells the last load changed |
+| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }`; exports `migrateGarden` |

@@ -36,6 +36,10 @@ const SCRIPTS = {
       { op: 'flatten', i, j, h: base[c] - 100 }, // below the ground: the bucket has room, it may be empty
     ];
   },
+  mushrooms: () => [
+    { op: 'mush.plant', i: 228, j: 200 },
+    { op: 'mush.water', i: 228, j: 200 },
+  ],
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
@@ -98,6 +102,30 @@ test('legacy saves migrate: 129-grid terrain deltas move to the 409 grid', () =>
   const b = peer();
   b.s.loadSnapshot(snap(saved)); // already migrated: loads as is
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+});
+
+test('legacy saves migrate: bare 129-grid garden arrays move to the 409 grid', () => {
+  const a = peer();
+  a.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: { mushrooms: [80, 60, 0, 300, 300, 4] } });
+  assert.deepEqual(a.rules.mushrooms.garden.plots, [
+    { i: 220, j: 200, g: 0 },
+    { i: 300, j: 300, g: 4 },
+  ]);
+  const b = peer();
+  b.s.loadSnapshot({ tick: 5, seed: 1, epochMs: 0, data: JSON.parse(JSON.stringify(a.s.snapshot().data)) });
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+});
+
+test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
+  const s = createSync({ env: { canPlantAt: (i) => i !== 228 } });
+  s.setSelfId('a');
+  installRules(s, homeLand());
+  assert.equal(s.submitEdit({ op: 'mush.plant', i: 228, j: 200 }), false);
+  assert.equal(s.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), true);
+  const bare = createSync();
+  bare.setSelfId('a');
+  installRules(bare, homeLand());
+  assert.equal(bare.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), false);
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
