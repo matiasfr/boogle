@@ -52,7 +52,7 @@ WASD move · Space jump · Mouse look · Click use what you hold (hold to charge
 
 ## Deploying
 
-Every merge to `main` builds and deploys to GitHub Pages (https://matiasfr.github.io/boogle/) via `.github/workflows/deploy.yml`, which runs lint, then `BASE=/boogle/ npm run build`. You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
+Every merge to `main` builds and deploys to GitHub Pages at https://boogle.club/ (custom domain, set in the repo's Pages settings) via `.github/workflows/deploy.yml`, which runs lint, then `npm run build` (base `/`; a fork without a custom domain sets `BASE: /<repo>/`). You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
 
 To use our own signaling server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
 

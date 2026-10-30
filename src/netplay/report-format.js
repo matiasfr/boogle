@@ -21,7 +21,7 @@ export function coarseUa(ua) {
   return `${b ? `${b[0]} ${b[1][1]}` : 'other'} ${os ? os[0] : 'other'}`;
 }
 
-// First stack frame, without the origin or query string: "at step (/boogle/assets/index-abc.js:1:2345)".
+// First stack frame, without the origin or query string: "at step (/assets/index-abc.js:1:2345)".
 export function firstFrame(stack) {
   const line = String(stack || '')
     .split('\n')

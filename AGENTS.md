@@ -1,6 +1,6 @@
 # Boogle: agent instructions
 
-Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js + cannon-es, Vite, PeerJS with one browser as host; `server/` does signaling and snapshots. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://matiasfr.github.io/boogle/.
+Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js + cannon-es, Vite, PeerJS with one browser as host; `server/` does signaling and snapshots. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://boogle.club/.
 
 Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, and asks before bending one) and [PLAN.md](PLAN.md) (roadmap; tick an item in the commit that finishes it). [src/README.md](src/README.md) maps the folders. [docs/game-design.md](docs/game-design.md) describes the game as built: a change that adds, changes or removes something a player can see or do (a system, control, item, tuning number, place) updates its section in the same commit; refactors and tooling don't.
 

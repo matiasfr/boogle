@@ -33,7 +33,7 @@ goals. The tide, weather and crops from the plan are not built.
 
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
 gamepad (W3C standard mapping, aimed at iPhone and iPad). One player's browser hosts the room over PeerJS. Live at
-**https://matiasfr.github.io/boogle/** (`?room=<name>` picks an island, default `beach`).
+**https://boogle.club/** (`?room=<name>` picks an island, default `beach`).
 
 ## 2. Pillars
 
