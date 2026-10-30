@@ -29,7 +29,7 @@ const pick = (g, re) =>
   );
 
 export default {
-  about: 'pet The Boogler in the talk box to a new level, talk and give a present, ride him and get launched',
+  about: 'pet The Boogler to a new level, talk and give a present, walk off mid-talk, ride him and get launched',
   async run(c) {
     const g = await c.open({ room: ROOM, hud: 'play', init: `(${seed})('${ROOM}')` });
     await g.wait(3);
@@ -69,6 +69,31 @@ export default {
     );
     await g.key('Escape');
     await g.wait(1);
+    // Walk off mid-story (adc2396): the game keeps playing while you talk, and stepping away ends it with his farewell.
+    await g.eval(STAND(2, a0));
+    await g.eval(`const { cam } = await import('/src/player/player.js');
+      cam.yaw = Math.atan2(Math.cos(${a0}), Math.sin(${a0})); cam.pitch = -0.2;`); // facing him: S walks away
+    out.push(
+      await g.record('boogler-walkoff', {
+        seconds: 7.5,
+        each: async (t, k) => {
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 60) await pick(g, /Where are you from/);
+          if (k === 135) await g.down('KeyS');
+          if (k === 190) await g.up('KeyS');
+          // Wide side-on, so the walk away and his farewell bubble both read.
+          const [x, y, z] = await g.eval(AT);
+          const a = a0 + 1.9 - t * 0.03,
+            d = 6 + Math.min(1, Math.max(0, t - 4.5)) * 2.5;
+          await g.view({
+            cam: [x + Math.cos(a) * d, y + 1.8, z + Math.sin(a) * d],
+            look: [x + Math.cos(a0) * 1.8, y - 0.1, z + Math.sin(a0) * 1.8],
+          });
+        },
+      }),
+    );
+    await g.eval(`document.querySelector('.bd-close')?.click()`);
+    await g.wait(0.5);
     // Ride: stand on his back until he puffs up and launches us. The camera hugs the pair and widens as we fly.
     out.push(
       await g.record('boogler-ride', {
