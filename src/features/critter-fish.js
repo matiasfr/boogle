@@ -1,5 +1,5 @@
-// Fish (prototype flag `fish`), cosmetic tier: a school that lives in water deep enough to swim in (the sea, the
-// flooded beach, a channel or pool players dug: it reads the shared water surface), with simple boids and a
+// Fish (prototype flag `fish`), cosmetic tier: a school that lives in water deep enough to swim in (the sea or the
+// cave pond: it reads the shared water surface), with simple boids and a
 // steer toward deeper water; it scatters when the ball splashes in or a player swims through. One instanced mesh, the
 // tail wiggle is in the vertex shader. Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (the island is alive) and 2 (the ball scares fish). With 36 fish, plain pairwise boids is cheaper
@@ -25,6 +25,12 @@ const FISH = {
   scare: 3.5, // m from a swimmer or a splashing ball
 };
 
+const PROBES = [
+  [1.5, 0],
+  [-1.5, 0],
+  [0, 1.5],
+  [0, -1.5],
+];
 const depthAt = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
 const geo = new THREE.ConeGeometry(0.11, 0.48, 5).rotateX(Math.PI / 2); // points along +z
 const mat = new THREE.MeshStandardMaterial({
@@ -128,12 +134,7 @@ onFrame(
         let best = -1e9,
           bx = 0,
           bz = 0;
-        for (const [px, pz] of [
-          [1.5, 0],
-          [-1.5, 0],
-          [0, 1.5],
-          [0, -1.5],
-        ]) {
+        for (const [px, pz] of PROBES) {
           const d = depthAt(f.x + px, f.z + pz);
           if (d > best) {
             best = d;

@@ -29,7 +29,7 @@ export const dom = {
 };
 
 let lastHint = null;
-export function updateHud() {
+function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
   const hint = me.entered && inputKind() === 'kbm' && !inputState.locked && !inputState.lockFailed;
@@ -47,7 +47,7 @@ export function updateHud() {
   }
 }
 // late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.js lists the orders).
-onFrame(() => updateHud(), { phase: 'late', order: -190 });
+onFrame(updateHud, { phase: 'late', order: -190 });
 
 let peopleKey = '';
 export function renderPeople() {

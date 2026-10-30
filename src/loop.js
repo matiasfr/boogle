@@ -13,7 +13,8 @@
 //           -290 player.js: fall respawn         -280 ball.js: walking into a slow ball claims it
 //   update  -300 ball.js: ball mesh              -290 player.js: own avatar       -280 net.js: remote avatars
 //           -200 player.js: camera               -190 props.js: clouds            (features: -10 and up)
-//   late    -200 player.js: throw preview        -190 hud.js: HUD                 (features: -10 to 2000)
+//   late    -200 player.js: throw preview        -190 hud.js: HUD                 -20 particles.js: particles
+//           (features: -10 to 2000)
 //           3000 net.js: presence send           3010 water-render.js: sea uTime  (then main.js renders)
 //
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and calls

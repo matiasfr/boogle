@@ -22,6 +22,7 @@ export const me = {
   yaw: 0,
   coyote: 0,
   jumpQueued: 0,
+  jumpHeld: false,
   swimming: false,
   sprint: false,
   holding: false,
@@ -130,7 +131,7 @@ export const camConstraints = [];
 const camPos = new THREE.Vector3(),
   camLook = new THREE.Vector3(),
   fwd = new THREE.Vector3();
-export function updateCamera(elapsed) {
+function updateCamera(elapsed) {
   if (!me.entered || !me.body) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
     camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);
@@ -184,7 +185,7 @@ preview.frustumCulled = false;
 preview.visible = false;
 scene.add(preview);
 
-export function updatePreview() {
+function updatePreview() {
   preview.visible = me.charging;
   if (!me.charging) return;
   const id = heldId();
@@ -235,4 +236,4 @@ onFrame(
 onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });
 
 // late -200, first in late, before the HUD (hud.js, -190).
-onFrame(() => updatePreview(), { phase: 'late', order: -200 });
+onFrame(updatePreview, { phase: 'late', order: -200 });

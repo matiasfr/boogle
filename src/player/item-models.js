@@ -1,5 +1,5 @@
-// Models for everything a player can pick up, hold and throw: island gifts, the stall's seeds and watering can, the
-// shovel and the frisbee. itemModel(id) returns a fresh copy (sharing geometry and materials) resting on y = 0.
+// Models for everything a player can pick up, hold and throw: island gifts, the stall's seeds and watering can, and the
+// frisbee. itemModel(id) returns a fresh copy (sharing geometry and materials) resting on y = 0.
 import * as THREE from 'three';
 
 const matCache = new Map();

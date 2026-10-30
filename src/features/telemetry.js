@@ -100,7 +100,7 @@ if (SERVER) {
       if (!okSent) {
         okSent = true;
         const ms = Math.round(performance.now() - since); // ms spent 'connecting'
-        const at = { ms, retries: failed, ...base() };
+        const at = { ms, retries: failed, role, hadTurn: net.turn };
         setTimeout(() => report('connect', { result: 'ok', ...at, mixedBuilds: mixedBuilds() }), SETTLE_MS);
       }
       wasLive = true;

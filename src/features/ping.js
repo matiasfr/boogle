@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { scene, camera, toScreen } from '../render/scene.js';
 import { COLORS, HALF, SEA, reducedMotion } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
+import { clamp } from '../math.js';
 import { me, camForward } from '../player/player.js';
 import { ball } from '../physics/ball.js';
 import { net, remotes, onRoomReady } from '../netplay/net.js';
@@ -61,9 +62,9 @@ function aimPing() {
   // Sky or beyond the island: a far point along the view, kept inside the bounds.
   const d = 40;
   return {
-    x: Math.max(-HALF + 2, Math.min(HALF - 2, o.x + fwd.x * d)),
+    x: clamp(o.x + fwd.x * d, -HALF + 2, HALF - 2),
     y: o.y + fwd.y * d,
-    z: Math.max(-HALF + 2, Math.min(HALF - 2, o.z + fwd.z * d)),
+    z: clamp(o.z + fwd.z * d, -HALF + 2, HALF - 2),
     k: 'look',
   };
 }
