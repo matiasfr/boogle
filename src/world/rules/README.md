@@ -1,7 +1,6 @@
 # World rules: the lockstep half of each system
 
-First draft (B1, docs/tech-plan.md). Systems move in here one at a time; until they all have, the rest still register
-from their adapters.
+First draft (B1, docs/tech-plan.md). Every lockstep system (terrain, mushrooms, gifts, proto, water) lives here now.
 
 A **rules module** holds everything about one system that every peer must compute bit for bit: its ops (validate and
 apply), its state (serialize, load, hash), its sim ticks, and sim-side listeners. Its **adapter** (the old file in
@@ -68,3 +67,4 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }`; exports `migrateGarden` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `migrateGifts`, `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
+| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce(), stepMs() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |

@@ -17,7 +17,7 @@ test('the home window base matches the browser', () => {
 
 test('the water region (land box clipped to HOME) matches the browser', () => {
   const { n, base } = homeLand();
-  const full = regionFromBase(base, n, -150, 3); // water-world.js WATER_CONFIG regionBelowCm, regionPad
+  const full = regionFromBase(base, n, -150, 3); // rules/water.js WATER_SIM regionBelowCm, regionPad
   const h = homeBox();
   const i0 = Math.max(full.i0, h.i0),
     j0 = Math.max(full.j0, h.j0);

@@ -53,6 +53,18 @@ const SCRIPTS = {
     { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
+  water({ rules }) {
+    const { water, region } = rules.water;
+    const { w: W, h: H } = region;
+    let c = -1;
+    for (let k = 0; k < W * H && c < 0; k++) {
+      const wi = (k / H) | 0,
+        wj = k % H;
+      if (wi >= 2 && wj >= 2 && wi <= W - 3 && wj <= H - 3 && water.depth[k] >= 50) c = k;
+    }
+    assert.ok(c >= 0, 'no sea in the water region');
+    return [{ op: 'slosh', i: region.i0 + ((c / H) | 0), j: region.j0 + (c % H), amt: 100 }];
+  },
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
@@ -104,6 +116,44 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   tick(b, 50);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
+});
+
+// The first sand cell (3x3 all sand) inside the water region, as [i, j].
+function sandInWater({ rules }) {
+  const { n, mask } = rules.terrain.state;
+  const { i0, j0, w, h } = rules.water.region;
+  for (let i = i0 + 2; i < i0 + w - 2; i++)
+    for (let j = j0 + 2; j < j0 + h - 2; j++)
+      if ([-1, 0, 1].every((di) => [-1, 0, 1].every((dj) => mask[(i + di) * n + j + dj]))) return [i, j];
+  assert.fail('no sand in the water region');
+}
+
+test('flatten reaches the water sim: its ground matches the terrain, and a joiner stays in step', () => {
+  const a = peer();
+  const [i, j] = sandInWater(a);
+  const { state } = a.rules.terrain;
+  const { simTerrain, region } = a.rules.water;
+  const c = i * state.n + j;
+  for (const e of [
+    { op: 'dig', i, j },
+    { op: 'dig', i, j },
+    { op: 'flatten', i, j, h: state.base[c] + 20 }, // fills the pit back up from the bucket
+  ]) {
+    const before = Int16Array.from(state.delta);
+    assert.equal(a.s.submitEdit(e), true, `${e.op} was rejected`);
+    tick(a, 3);
+    assert.notDeepEqual(state.delta, before, `${e.op} changed nothing`);
+  }
+  for (let a0 = region.i0; a0 < region.i0 + region.w; a0++)
+    for (let b0 = region.j0; b0 < region.j0 + region.h; b0++) {
+      const g = a0 * state.n + b0;
+      assert.equal(simTerrain[(a0 - region.i0) * region.h + (b0 - region.j0)], state.base[g] + state.delta[g]);
+    }
+  const b = peer();
+  b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot())));
+  tick(a, 30);
+  tick(b, 30);
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
 });
 
 test('legacy saves migrate: 129-grid terrain deltas move to the 409 grid', () => {
