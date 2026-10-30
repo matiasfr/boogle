@@ -41,7 +41,7 @@ export function updateHud() {
     dom.hintEl.hidden = !hint;
   }
   if (!isTouch || !me.entered) return;
-  const t = interactTarget();
+  const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
   if (dom.grabBtn.textContent !== label) dom.grabBtn.textContent = label;
 }

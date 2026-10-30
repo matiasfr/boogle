@@ -99,6 +99,7 @@ function deny(text) {
 
 function windUp() {
   if (!heldId()) return false;
+  me.suppressUp = false; // a fresh press winds up: its release throws, even if E grabbed the ball and is still down
   me.charging = true;
   me.chargeStart = performance.now();
   return true;
