@@ -920,23 +920,6 @@ export const SMALL_TALK = [
     },
   },
   {
-    id: 'washups',
-    lvl: 0,
-    nodes: {
-      a: {
-        say: 'Things wash up on the beach all the time. Shells, boots, ducks. Once, a whole chair. I sat on it. It was a good day.',
-        opts: [
-          { say: 'A whole chair?', to: 'b' },
-          { say: "I'll keep an eye out for presents.", pts: 1, to: 'b' },
-        ],
-      },
-      b: {
-        say: 'Then the tide took it back. The sea gives, the sea takes. The sea is a bad business partner.',
-        opts: [{ say: 'Ha! True.', pts: 1 }, { say: "Maybe it'll come back." }],
-      },
-    },
-  },
-  {
     id: 'fruit',
     lvl: 0,
     nodes: {
@@ -951,26 +934,6 @@ export const SMALL_TALK = [
         say: 'If it is magic, it should grow apricots on every tree. And rice. And a qozon. Magic should be more practical.',
         mood: 'grump',
         opts: [{ say: "I'll file a complaint.", pts: 1 }, { say: 'Shake a few trees. You might get lucky.' }],
-      },
-    },
-  },
-  {
-    id: 'holes',
-    lvl: 1,
-    nodes: {
-      a: {
-        say: 'People here dig holes and build sand walls. Yesterday I walked into a hole. I just... stood in it for a while.',
-        opts: [
-          { say: 'Were you stuck?', to: 'b' },
-          { say: 'Sorry, that was probably me.', to: 'b', pts: 1 },
-        ],
-      },
-      b: {
-        say: 'Not stuck. Thinking. A hole is a good place to think. Nobody can see you. Very private office.',
-        opts: [
-          { say: 'A hole office.', pts: 1 },
-          { say: "I'll dig you a nice one.", pts: 2 },
-        ],
       },
     },
   },

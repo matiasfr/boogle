@@ -28,25 +28,25 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-dig` on every PR and the rest nightly
+risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR and the rest nightly
 (`.github/workflows/scenarios-nightly.yml`); a failing leg's images are its `scenario-<name>` artifact. So local runs
 are optional; on a slow sandbox, push and read CI.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
-`reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it
+`reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly run: run it
 after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/netplay/net.js` attach/fail.
 
 ```js
 export default {
-  about: 'a dig by B shows up for A',
+  about: 'a toss by B shows up for A',
   async run(t) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room });          // same room = same island, real net via local server
     const B = await t.open({ name: 'Bob', room });
-    await B.eval(`const { submitEdit } = await import('/src/world/sync.js'); submitEdit({ op: 'dig', i: 70, j: 90 });`);
-    const ms = await A.waitFor(`(async () => (await import('/src/world/terrain-edits.js')).terrain.delta[70*129+90] < 0)()`);
-    t.check("B's dig reaches A", ms >= 0, ms + ' ms');
+    await B.eval(`window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 0, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] })`);
+    const ms = await A.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230)`);
+    t.check("B's toss reaches A", ms >= 0, ms + ' ms');
   },
 };
 ```
@@ -56,7 +56,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.js`).
-- `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
+- `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
 - `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or

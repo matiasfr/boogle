@@ -1,22 +1,19 @@
-// Island gifts: fruit growing on the palms, odds and ends washing up on the beach, things players threw, and the
-// frisbee waiting on the lighthouse deck. Pure and integer-only (see src/world/README.md), so every client agrees on
-// what lies where. Ops: `fruit.drop` (shake a palm or hit it with the ball), `gift.take` (pick something up),
+// Island gifts: fruit growing on the palms, things players threw, and the frisbee waiting on the lighthouse deck. Pure
+// and integer-only (see src/world/README.md), so every client agrees on what lies where. Ops: `fruit.drop` (shake a palm or hit it with the ball), `gift.take` (pick something up),
 // `gift.toss` (something thrown lands). State key: `gifts`.
-import { mulberry32 } from './rng.js';
 import { GIFTS } from './gift-catalog.js';
 
 export const MAX_TREES = 64;
 export const REGROW_TICKS = 2400;
-export const MAX_SHORE = 12;
 export const MAX_ITEMS = 48;
-const WASH_EVERY = 450;
-const WASH_EVERY_SPARSE = 100; // while fewer than SPARSE shore items lie around
-const SPARSE = 3;
+// Wash-ups are gone; the saved schedule (`at`) stays pinned here so older builds that load our state never wash either.
+// Shore items from older saves age out on LIFE.shore.
+export const NEVER = 0x7fffffff;
 export const LIFE = { shore: 12000, fruit: 6000, toss: 6000 }; // then the tide takes it back, or it rots away
 export const PERCH_REFILL = 600; // a perch gets a new item this long after its last one was taken
 const MAX_PERCHES = 4;
 export const SRC = { SHORE: 0, FRUIT: 1, TOSS: 2, PERCH: 3 };
-// Item height: on the terrain (follows digging), on its perch, or a resting height in cm (a deck, a rock, a cap).
+// Item height: on the terrain, on its perch, or a resting height in cm (a deck, a rock, a cap).
 export const ON_GROUND = -1;
 export const ON_PERCH = -2;
 const MAX_Y = 20000;
@@ -24,8 +21,6 @@ const MAX_CELL = 4096;
 const FIELDS = 7; // id, kind, i, j, src, born, y
 const LEGACY_FIELDS = 6; // snapshots without `v`: no y
 
-const SHORE_KINDS = GIFTS.flatMap((g, k) => (g.src === 'shore' ? [k] : []));
-const SHORE_TOTAL = SHORE_KINDS.reduce((s, k) => s + GIFTS[k].weight, 0);
 const FRUIT_CYCLE = ['coconut', 'mango', 'coconut', 'banana', 'pomegranate', 'coconut', 'apricot'].map((id) =>
   GIFTS.findIndex((g) => g.id === id),
 );
@@ -45,26 +40,23 @@ export function treeFruit(t) {
   return FRUIT_CYCLE[(Math.imul(t + 1, 2654435761) >>> 0) % FRUIT_CYCLE.length];
 }
 
-// layout.trees: [{ i, j }] palm cells by tree index; layout.shore: [[i, j]] beach cells things wash up on;
-// layout.perches: [{ i, j, kind }] spots that always get their item back. All are the same on every client and may be
+// layout.trees: [{ i, j }] palm cells by tree index; layout.perches: [{ i, j, kind }] spots that always get their item back. All are the same on every client and may be
 // filled in after creation (props are built later than this state).
 export function createGifts(layout) {
   layout.perches ??= [];
   return {
     trees: layout.trees,
-    shore: layout.shore,
     perches: layout.perches,
     ripeAt: new Array(MAX_TREES).fill(0),
     perchAt: new Array(MAX_PERCHES).fill(0),
     items: [],
     nextId: 1,
-    washed: 0,
-    nextWash: 0,
+    washed: 0, // kept in the saved format (old builds read it); it never changes now
+    nextWash: NEVER,
   };
 }
 
 const isInt = Number.isSafeInteger;
-const shoreCount = (s) => s.items.reduce((n, it) => n + (it.src === SRC.SHORE ? 1 : 0), 0);
 const lifeOf = (it) => (it.src === SRC.SHORE ? LIFE.shore : it.src === SRC.TOSS ? LIFE.toss : LIFE.fruit);
 const perchOf = (s, it) => s.perches.findIndex((p) => p.i === it.i && p.j === it.j);
 
@@ -130,39 +122,14 @@ export function tossItem(s, kind, i, j, y, tick) {
   return it;
 }
 
-function wash(s, tick, seed) {
-  const rng = mulberry32((seed ^ Math.imul(s.washed + 1, 0x9e3779b1)) | 0);
-  s.washed++;
-  let cell = null;
-  for (let tries = 0; tries < 4 && !cell; tries++) {
-    const c = s.shore[Math.floor(rng() * s.shore.length)];
-    if (!s.items.some((it) => Math.abs(it.i - c[0]) < 2 && Math.abs(it.j - c[1]) < 2)) cell = c;
-  }
-  if (!cell) return;
-  let roll = Math.floor(rng() * SHORE_TOTAL),
-    kind = SHORE_KINDS[0];
-  for (const k of SHORE_KINDS) {
-    roll -= GIFTS[k].weight;
-    if (roll < 0) {
-      kind = k;
-      break;
-    }
-  }
-  s.items.push({ id: s.nextId++, kind, i: cell[0], j: cell[1], src: SRC.SHORE, born: tick, y: ON_GROUND });
-}
-
-// Every tick, after edits: old things wash away or rot, empty perches refill, and new things wash up on a schedule.
-export function tickGifts(s, tick, seed) {
+// Every tick, after edits: old things wash away or rot, and empty perches refill.
+export function tickGifts(s, tick) {
   s.items = s.items.filter((it) => it.src === SRC.PERCH || tick - it.born < lifeOf(it));
   s.perches.slice(0, MAX_PERCHES).forEach((p, k) => {
     if (tick < s.perchAt[k] || s.items.length >= MAX_ITEMS) return;
     if (s.items.some((it) => it.src === SRC.PERCH && it.i === p.i && it.j === p.j)) return;
     s.items.push({ id: s.nextId++, kind: p.kind, i: p.i, j: p.j, src: SRC.PERCH, born: tick, y: ON_PERCH });
   });
-  if (tick < s.nextWash) return;
-  const shore = shoreCount(s);
-  if (shore < MAX_SHORE && s.items.length < MAX_ITEMS && s.shore.length) wash(s, tick, seed);
-  s.nextWash = tick + (shoreCount(s) < SPARSE ? WASH_EVERY_SPARSE : WASH_EVERY);
 }
 
 export function serializeGifts(s) {
@@ -185,13 +152,12 @@ export function loadGifts(s, json) {
   s.items = [];
   s.nextId = 1;
   s.washed = 0;
-  s.nextWash = 0;
+  s.nextWash = NEVER; // whatever `at` says: nothing washes up any more
   if (!json || typeof json !== 'object') return;
   if (Array.isArray(json.r)) json.r.slice(0, MAX_TREES).forEach((v, t) => (s.ripeAt[t] = isInt(v) ? v : 0));
   if (Array.isArray(json.pa)) json.pa.slice(0, MAX_PERCHES).forEach((v, k) => (s.perchAt[k] = isInt(v) ? v : 0));
   if (isInt(json.n) && json.n > 0) s.nextId = json.n;
   if (isInt(json.w) && json.w >= 0) s.washed = json.w;
-  if (isInt(json.at) && json.at >= 0) s.nextWash = json.at;
   const flat = Array.isArray(json.it) ? json.it : [];
   const fields = json.v === 2 ? FIELDS : LEGACY_FIELDS;
   for (let k = 0; k + fields <= flat.length && s.items.length < MAX_ITEMS; k += fields) {

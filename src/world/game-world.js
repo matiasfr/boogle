@@ -6,5 +6,5 @@ import { world, registerOp, registerState, onTick, onApplied, onSnapshot } from 
 import { installRules } from './rules/index.js';
 
 // Static and the same on every peer. layout is filled by reference before tick 1 (rules must not read it at install).
-export const land = { n: GRID_RES, base: baseCm, layout: { trees: [], shore: [], perches: [] } };
+export const land = { n: GRID_RES, base: baseCm, layout: { trees: [], perches: [] } };
 export const rules = installRules({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land);

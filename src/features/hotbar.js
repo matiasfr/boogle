@@ -3,30 +3,25 @@
 // your hand. Everyone sees what everyone holds through the presence field `hd` (a catalog index, -1 for empty hands;
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
-// (a tool's verb, or Talk / Pick up near a target). The shovel is never thrown (canThrow in src/player/hands.js); a save that
-// lost it anyway gets body.no-shovel, which shows the touch Pile button to hand a new one back. Serves DESIGN.md 1
-// (toys before chores: anything you carry is a toy you can throw, and the shovel is always at hand) and 10 (slapstick
-// over precision).
+// (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy
+// you can throw) and 10 (slapstick over precision).
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
 import { me, ITEM_HAND } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
-import { inv, SLOTS, heldId, select, has } from '../player/inventory.js';
+import { inv, SLOTS, heldId, select } from '../player/inventory.js';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
-import { shovel } from '../world/terrain-edits.js';
 import { pouring } from '../adapters/mushroom-garden.js';
 import { itemModel } from '../player/item-models.js';
 import { iconFor } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
-import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
-import { reducedMotion } from '../constants.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
 const GRIP = {
-  shovel: { p: [0, -0.6, 0], r: [0.35, 0, -0.2] },
   can: { p: [0, -0.33, 0.05] },
   seeds: { p: [0, -0.3, 0] },
   frisbee: { p: [0, -0.02, 0], r: [0.25, 0, -0.5] },
@@ -57,16 +52,14 @@ function setHeld(avatar, id) {
   return u.held;
 }
 
-function updateInHand(now) {
+function updateInHand() {
   if (me.avatar) {
     const hand = setHeld(me.avatar, heldId());
     if (hand) {
       const [x, y, z] = hand.userData.tilt;
-      const t = now / 1000;
-      const dig = heldId() === 'shovel' && shovel.hold && !reducedMotion ? Math.sin(t * 14) * 0.45 : 0;
       const pour = heldId() === 'can' && pouring() ? -0.9 : 0;
       const wind = me.charging ? -0.6 : 0;
-      hand.rotation.set(x + dig + pour + wind, y, z);
+      hand.rotation.set(x + pour + wind, y, z);
     }
   }
   for (const r of remotes.values()) {
@@ -78,7 +71,6 @@ function updateInHand(now) {
 
 // ---------------------------------------------------------------- HUD
 const NAME_MS = 2400;
-const ALT_VERB = { shovel: 'Pile' };
 const ui = {
   root: null,
   name: null,
@@ -160,8 +152,7 @@ function nameTag(s, kind) {
   const verb = useVerb();
   if (!verb || kind === 'touch') return `<span>${label(s)}</span>`;
   const use = (g, v) => `<span class="hotbar-use">${g}${v}</span>`;
-  const alt = ALT_VERB[s.id];
-  return `<span>${label(s)}</span>${use(glyph('use'), verb)}${alt ? use(glyph('alt'), alt) : ''}`;
+  return `<span>${label(s)}</span>${use(glyph('use'), verb)}`;
 }
 
 function renderHud(now) {
@@ -172,7 +163,6 @@ function renderHud(now) {
     if (ui.version !== inv.version) ui.nameUntil = now + NAME_MS;
     ui.version = inv.version;
     ui.kind = kind;
-    document.body.classList.toggle('no-shovel', !has('shovel'));
     inv.slots.forEach((s, k) => {
       const b = ui.slots[k];
       const img = b.querySelector('img');
@@ -228,11 +218,12 @@ addPresenceField('hd', () => {
   return id && id !== 'ball' ? giftIndex(id) : -1;
 });
 onRemotePresence((r, pr) => {
-  r.hd = Number.isInteger(pr.hd) && GIFTS[pr.hd] ? GIFTS[pr.hd].id : null;
+  // A retired item (an old build's shovel) shows as empty hands; itemModel would draw a coconut.
+  r.hd = Number.isInteger(pr.hd) && carryable(GIFTS[pr.hd]) ? GIFTS[pr.hd].id : null;
 });
 
 onFrame(({ now }) => {
   updateHands();
-  updateInHand(now);
+  updateInHand();
   if (ui.root) renderHud(now);
 });

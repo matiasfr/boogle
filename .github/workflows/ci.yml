@@ -85,7 +85,7 @@ jobs:
         scenario:
           - world-inputs
           - smoke
-          - two-player-dig
+          - two-player-edit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

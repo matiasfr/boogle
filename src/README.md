@@ -15,10 +15,10 @@ Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), 
 - `adapters/`: the game side of lockstep state: terrain mesh and heights, gifts, mushroom garden, prototype flags.
   They submit edits and react to `world/rules/`; they never register lockstep state themselves. A new adapter is a
   feature file, unless other modules must import it.
-- `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge.
+- `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models.
-- `render/`: scene, renderer and camera, lights pool, sky, sea shader and sim-water surface, props, particles,
+- `render/`: scene, renderer and camera, lights pool, sky, sea shader, props, particles,
   splashes, material patching, and the shared (cosmetic) audio context.
 - `debug/`: dev-only tools behind URL flags (`?netdebug=1`, `?debugcam=1`), loaded lazily by their stubs in `features/`.
 - `boogler/`: The Boogler NPC: brain and model (`boogler.js`), play, talk, lines, dialogue box, friendship, HUD, fx.

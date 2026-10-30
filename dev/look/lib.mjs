@@ -130,7 +130,7 @@ export class Game {
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
-    await g.page.waitForFunction(() => window.__debugCam && window.__water, null, { timeout: 20000 });
+    await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the first-run
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.first-run, .hud-tl, .hud-tr, .reticle' : null;
