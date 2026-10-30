@@ -7,7 +7,7 @@ const TP = (x, z) => `
   const { groundHeight } = await import('/src/terrain.js');
   const b = window.boogle.me.body;
   b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);`;
-const SKY = (frac) => `(await import('/src/sky.js')).skyDebug.preview(${frac})`;
+const SKY = (frac) => `window.boogle.sky.preview(${frac})`;
 const ring = (c, a, d, h) => [c[0] + Math.cos(a) * d, c[1] + h, c[2] + Math.sin(a) * d];
 
 export default {

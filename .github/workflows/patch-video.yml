@@ -1,9 +1,10 @@
 name: Patch video
 
 # Every morning (Pacific): if enough player-visible features landed since the last patch video (the newest video-* release), Claude
-# records them, has the cut reviewed, and opens a claude/* PR with the new shots (automerge.yml merges it). Then this
-# workflow publishes the video as a release with a share page (dev/video/publish.mjs) and posts the link in the
-# "Patch videos" issue, mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
+# records them, has the cut reviewed, and opens a claude/* PR with any new shots (automerge.yml merges it). The edit
+# list is a working file in .look/, never committed: the release keeps the video. Then this workflow publishes the
+# video as a release with a share page (dev/video/publish.mjs) and posts the link in the "Patch videos" issue,
+# mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
 # Run it by hand from the Actions tab; `force` skips the cheap commit-count gate (Claude still judges the features).
 
 on:
@@ -78,16 +79,17 @@ jobs:
             - Step 1: `npm run video:changes`. If fewer than 3 new things a player would notice and enjoy, stop:
               write nothing to .look/publish.json and end with "No patch video: <why>".
             - Steps 2-4 as written: shots in dev/video/shots/, record with `npm run clip`, Read every contact sheet,
-              write dev/video/reels/patch-<mon><day>.mjs, `npm run reel`, then spawn a reviewer subagent that reviews
-              the rendered video and makes its own fixes, and check the final contact sheet yourself. Only main's
-              features; never prototypes or other branches.
+              write .look/reels/patch-<mon><day>.mjs (never committed), `npm run reel -- patch-<mon><day>`, then
+              spawn a reviewer subagent that reviews the rendered video and makes its own fixes, and check the final
+              contact sheet yourself. Only main's features; never prototypes or other branches.
             - Instead of publishing yourself, write .look/publish.json:
               {"file": ".look/reels/patch-<mon><day>.mp4", "title": "Patch notes: <Mon> <day>",
                "summary": "<one sentence>", "features": ["<one line per feature>"], "target": "<newest commit covered>"}
               The workflow publishes it after you finish.
-            - Instead of `npm run ship`: run `npm run check`, commit only dev/video/ changes on a new branch
-              claude/patch-video-<yyyy-mm-dd> (imperative message; body names DESIGN.md "How we work"), push it, and
-              open a non-draft PR with `gh pr create` (automerge.yml merges it when CI passes).
+            - Instead of `npm run ship`: if dev/video/shots/ changed, run `npm run check`, commit only those shot
+              changes on a new branch claude/patch-video-<yyyy-mm-dd> (imperative message; body names DESIGN.md "How
+              we work"), push it, and open a non-draft PR with `gh pr create` (automerge.yml merges it when CI
+              passes). No shot changes: no branch, no PR.
             - Run every command in the foreground with a long timeout (recording takes minutes). Never use
               run_in_background or Monitor: this session ends as soon as you end your turn, killing anything still
               running. Bash is limited to the allowed commands, one per call (no `&&`, `;` or redirection): use the
@@ -101,6 +103,7 @@ jobs:
           name: patch-video
           path: |
             .look/reels/*.mp4
+            .look/reels/*.mjs
             .look/**/*sheet*.png
             .look/publish.json
             ${{ runner.temp }}/claude-execution-output.json
