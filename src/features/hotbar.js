@@ -1,7 +1,8 @@
 // The hotbar (src/inventory.js) on screen and in hand: eight slots along the bottom, keys 1-8 (pad LB/RB, or tap a
 // slot) to change what you hold, and whatever you hold drawn in your hand. Everyone sees what everyone holds through
-// the presence field `hd` (a catalog index, -1 for empty hands; the beach ball shows itself). Touch gets a Toss button
-// that throws whatever you hold. Serves DESIGN.md 1 (toys before chores: anything you carry is a toy you can throw)
+// the presence field `hd` (a catalog index, -1 for empty hands; the beach ball shows itself). On touch the bar shows
+// only filled slots (tap the held one again for empty hands) and a Toss button appears whenever the main button
+// would do something other than throw (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy you can throw)
 // and 10 (slapstick over precision).
 import './hotbar.css';
 import * as THREE from 'three';
@@ -171,6 +172,7 @@ function renderHud(now) {
       const b = ui.slots[k];
       const img = b.querySelector('img');
       b.classList.toggle('on', k === inv.sel);
+      b.hidden = !s && kind === 'touch';
       b.title = label(s);
       img.hidden = !s;
       if (s) img.src = iconFor(s.id);
