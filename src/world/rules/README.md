@@ -1,6 +1,7 @@
 # World rules: the lockstep half of each system
 
-First draft (B1, docs/tech-plan.md). Every lockstep system (terrain, mushrooms, gifts, proto, water) lives here now.
+Every lockstep system (terrain, mushrooms, gifts, proto, water) lives here (B1, docs/tech-plan.md). Adding one is the
+four-file recipe in `../README.md`, "Adding a lockstep system".
 
 A **rules module** holds everything about one system that every peer must compute bit for bit: its ops (validate and
 apply), its state (serialize, load, hash), its sim ticks, and sim-side listeners. Its **adapter** (the old file in
@@ -29,10 +30,16 @@ export function install(sync, land, rules, opts) {
 
 Rules:
 
-- Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder.
+- Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder, and its import
+  lint allows only `../grid.js`, `../terrain-logic.js`, `../legacy-grid.js`, `../../sim/*` and sibling rules (no
+  three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - Append new modules to the end of `RULES` in `index.js`. Its order is the wire order: states snapshot, load and
   hash in it, so reordering it desyncs rooms where peers run different builds.
+
+- Coming in B2: every module that registers ops also exports `edits = { [op]: (r, view) => edit | null }`, a seeded
+  generator of valid (and some invalid) edits for the replay test, which fails on a registered op with no generator.
+  Optional `invariants(api)` returns `null` or a message. See docs/tech-plan.md, B2.
 
 ## env keys
 

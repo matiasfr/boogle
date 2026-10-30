@@ -22,13 +22,14 @@ Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, n
 - New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
 - Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
 - Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
-- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`); `registerOp`, `registerState`, `onTick` in `src/world/sync.js` (Lockstep). Pure **shared** logic lives in `src/sim/` (no three.js, no DOM, lockstep-safe math) so it can be unit-tested; cosmetic helpers needing sin/pow/random stay with their feature.
-- Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`. Keep edits there to a line or two.
+- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/net.js`, smoothed with `createSnaps` (`src/snaps.js`). Cosmetic helpers needing sin/pow/random stay with their feature.
+- Lockstep state is four files (`src/world/README.md`, "Adding a lockstep system"): `src/sim/<x>.js` (pure, no three.js or DOM, lockstep-safe math) plus its test; `src/world/rules/<x>.js`, which registers the ops, state and ticks; one appended line in `src/world/rules/index.js`; and a `src/features/<x>.js` adapter that uses `submitEdit`, `onApplied`, `onAfterTick`, `onSnapshot`. Lint bans `registerOp`/`registerState`/`onTick` everywhere else.
+- Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js` (append only). Keep edits there to a line or two.
 
 ## Commands
 - `npm run dev`: local game at http://localhost:5173 (`?room=<name>`, `?netdebug=1`).
 - `npm run check`: lint + unit tests + build, a few seconds. Run before every push.
-- `npm run check:full`: adds server tests and the headless network test (~30 s). Run when you touch `src/net*`, `src/world/sync.js` or `server/`.
+- `npm run check:full`: adds server tests and the headless network test (~30 s). Run when you touch `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`.
 - `npm run perf`: draw calls and triangles, then ms per lockstep tick per handler (idle and busy water), in about a
   minute or more on a loaded machine; compare before/after changes that add meshes, lights or sim work (`-- --render` /
   `-- --sim` for one half).

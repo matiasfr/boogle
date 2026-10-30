@@ -16,10 +16,26 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 
 `src/sim/*` modules are pure functions over typed arrays so they can run in Node tests and, later, a Web Worker. Rendering and input code adapts them to the game.
 
+## Adding a lockstep system
+
+Four files, nothing else edited (AGENTS.md, "Features plug in"):
+
+1. `src/sim/<x>.js` plus `test/<x>.test.mjs`: the pure logic (typed arrays, integers, seeded RNG).
+2. `src/world/rules/<x>.js`: `install(sync, land, rules, opts)` registers its ops, state and ticks on the `sync` it is
+   given and returns an API (`rules/README.md` has the contract and a template).
+3. One appended line in `RULES` (`rules/index.js`). Append only: its order is the wire order.
+4. `src/features/<x>.js`: the adapter. It reads `rules.<x>` from `game-world.js`, sends `submitEdit`, and reacts
+   through `onApplied`, `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv`.
+
+`registerOp`, `registerState` and `onTick` are lint-banned outside `src/world/rules/` and `game-world.js`.
+`game-world.js` is the only place that installs the rules on the real sync; tests install them on their own sync
+instances (`test/helpers/net.mjs`).
+
 ## Contract (`sync.js`)
 
 ```js
-import { TICK_MS, world, submitEdit, registerOp, registerState, onTick, onApplied } from './world/sync.js';
+// Rules modules get registerOp/registerState/onTick through install(sync, ...); adapters import the rest.
+import { TICK_MS, world, submitEdit, onApplied, onAfterTick, onSnapshot, setEnv } from './world/sync.js';
 
 TICK_MS                      // 100: sim runs at 10 ticks/s
 world.tick                   // integer, current sim tick (same on every client once synced)
