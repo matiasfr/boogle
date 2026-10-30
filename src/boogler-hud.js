@@ -1,12 +1,16 @@
 // Screen-space HUD for The Boogler: a bouncy name tag over his head while he's on screen (with your friendship hearts,
 // his speech bubble, and the interact prompt when he is what you would interact with), and a pointer pinned to the
-// nearest screen edge (aimed at him, with his distance) while he's off screen, so he's always easy to find.
+// nearest screen edge (aimed at him, with his distance) while he's off screen and nearby. Past FIND_NEAR it fades out,
+// gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about the garden anyway.
 import { boogler, booglerScreen } from './boogler.js';
 import { me } from './player.js';
+import { clamp } from './math.js';
 import { MAX_LEVEL } from './boogler-friendship.js';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
 const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
+const FIND_NEAR = 35; // metres: full pointer inside this
+const FIND_FAR = 60; // metres: no pointer past this
 
 const MARKUP = `
   <div class="boogler-tag" hidden>
@@ -107,9 +111,12 @@ export function updateBooglerHud() {
     }
   }
 
-  const showFind = !s.onScreen && me.entered;
+  const dist = me.body ? Math.hypot(boogler.disp.x - me.body.position.x, boogler.disp.z - me.body.position.z) : 0;
+  const fade = Math.round(clamp((FIND_FAR - dist) / (FIND_FAR - FIND_NEAR), 0, 1) * 20) / 20;
+  const showFind = !s.onScreen && me.entered && fade > 0;
   d.find.hidden = !showFind;
   if (!showFind) return;
+  if (d.find.style.opacity !== String(fade)) d.find.style.opacity = String(fade);
 
   // Walk from the screen centre toward him until we hit the inset rectangle.
   const len = Math.hypot(s.dirX, s.dirY);
@@ -123,9 +130,6 @@ export function updateBooglerHud() {
   d.find.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
   d.arrow.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad)`;
 
-  if (me.body) {
-    const p = me.body.position;
-    const text = `${Math.round(Math.hypot(boogler.disp.x - p.x, boogler.disp.z - p.z))} m`;
-    if (text !== lastDist) d.dist.textContent = lastDist = text;
-  }
+  const text = `${Math.round(dist)} m`;
+  if (text !== lastDist) d.dist.textContent = lastDist = text;
 }
