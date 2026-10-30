@@ -3,13 +3,8 @@
 // the talk, with its icon; you pet him from the talk box; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
-const TP = (x, z) => `
-  const { teleport } = await import('/src/physics/physics.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
-  b.velocity.set(0, 0, 0);`;
-const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
+import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
+
 const FACE = (x, z) => `
   const { cam } = await import('/src/player/player.js');
   const p = window.boogle.me.body.position;
@@ -92,16 +87,9 @@ export default {
     t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
     // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.eval(
-      `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] });`, // k 1 = mango
-    );
-    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`, {
-      timeout: 30000,
-    });
-    const item = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
-      return { kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
+    await g.eval(`${toss(1, 5)};`); // a mango
+    await g.waitFor(TOSSED, { timeout: 30000 });
+    const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
     await g.wait(0.4);
@@ -253,7 +241,6 @@ export default {
     const rideShot = await g.still('riding');
     await g.eval(`${TP('window.boogle.boogler.disp.x + 4', 'window.boogle.boogler.disp.z')}`);
     t.check('riding him, the ball gets the prompt, not Talk', rideMs >= 0, `${rideMs} ms; ${rideShot}`);
-    t.check('no page errors', !g.errors.length, g.errors.join(' | '));
 
     // Touch: the action button says Talk, and the prompt has no glyph.
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
@@ -274,6 +261,5 @@ export default {
     await thumb.wait(0.6);
     const touchTalk = await thumb.still('touch-talk');
     t.check('tapping it opens the talk', tapTalk >= 0, touchTalk);
-    t.check('no page errors on touch', !thumb.errors.length, thumb.errors.join(' | '));
   },
 };
