@@ -21,6 +21,14 @@
 // with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
+//
+// Persistence: every SAVE_MS (30 s) and on pagehide, a peer that is ready and not awaiting a snapshot saves the world to
+// localStorage (`boogle.world.<roomId>`) if its state changed since its last save. The host saves any tick; a client
+// only a tick whose hash just matched the host's, so a diverged copy is never kept (on pagehide a client is rarely on
+// such a tick, so its copy is usually its last periodic save). Only the host also PUTs
+// { tick, writerId, data } to the server's /rooms/:id/snapshot (bodies under 250 KB; keepalive on unload only under
+// 60 KB). A tab that becomes host without state loads the newest by tick of its local and server copies (the server gets
+// 3 s); a migrating host keeps its live state, and its first save always uploads.
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -96,6 +104,7 @@ export function createSync() {
   let nextHashTick = HASH_EVERY;
   let lastSavedHash = null;
   let nextSave = SAVE_MS;
+  let verifiedTick = -1; // client: the tick whose hash last matched the host's (the only state a client may save)
 
   // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
   const snapFail = (from, reason) => {
@@ -249,8 +258,7 @@ export function createSync() {
         step();
       }
       if (acc >= TICK_MS) acc = TICK_MS * 0.99;
-      saveSoon();
-      return;
+      return; // a client saves from checkHash, at a tick the host just vouched for
     }
     if (!ready) return;
     acc += dt * 1000;
@@ -282,6 +290,7 @@ export function createSync() {
     world.tick = snap.tick;
     world.seed = snap.seed;
     world.epochMs = snap.epochMs;
+    verifiedTick = -1; // a loaded snapshot is verified only by the next hash check
     for (const [k, s] of states) if (k in snap.data) s.load(snap.data[k]);
     queue = [];
     acc = 0;
@@ -306,8 +315,11 @@ export function createSync() {
     if (tick !== world.tick) return;
     const mine = isObj(hs) ? stateHashes() : null;
     if (mine) subsystems = Object.fromEntries(Object.keys(mine).map((k) => [k, mine[k] === hs[k] ? 'ok' : 'bad']));
-    if (worldHash() === h) stats.hashOk++;
-    else {
+    if (worldHash() === h) {
+      stats.hashOk++;
+      verifiedTick = tick;
+      saveSoon();
+    } else {
       stats.hashBad++;
       const keys = mine ? Object.keys(mine).filter((k) => mine[k] !== hs[k]) : ['?'];
       lastBad = { tick, keys };
@@ -461,8 +473,9 @@ export function createSync() {
   // ------------------------------------------------------------ roles + persistence
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
+  // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
   function persist(unloading) {
-    if (mode === 'local' || !ready || awaiting) return;
+    if (mode === 'local' || !ready || awaiting || (mode === 'client' && verifiedTick !== world.tick)) return;
     const hsh = combine(0);
     if (hsh === lastSavedHash) return;
     lastSavedHash = hsh;
@@ -518,6 +531,11 @@ export function createSync() {
     mode = 'host';
     hostId = null;
     out = [];
+    // Client leftovers: a host waits for no snapshot (a stale flag would stop persist), and its first save always
+    // uploads, even if its local copy as a client already recorded this hash.
+    awaiting = false;
+    asm = null;
+    lastSavedHash = null;
     if (ready) {
       // Migration: our state is in sync; keep going, stamp conservatively, hash soon so others can resync.
       seq += 1000;

@@ -85,7 +85,7 @@ For lockstep systems, clients send small **edit events** (dig, pile, plant, harv
 | Water, terrain edits, garden, weather | The host peer |
 | The Boogler (wandering NPC) | The host peer, published in its presence ([`src/boogler.js`](src/boogler.js)) |
 | Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler-play.js`](src/boogler-play.js), [`src/inventory.js`](src/inventory.js)) |
-| Persistence (snapshots) | The host, saved to our server |
+| Persistence (snapshots) | The host, saved to our server and localStorage; every client also keeps a hash-verified copy in localStorage. A migrating host keeps its live state; a host that starts without state loads the newest copy by tick |
 
 ### PeerJS only
 Networking is PeerJS with one browser acting as host (see PLAN.md, "Key decision"). There are no alternate transports and no claude.ai artifact build. Keep the game talking to the small room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS directly.

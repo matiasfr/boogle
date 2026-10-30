@@ -1,9 +1,10 @@
-// The controller feel pass (8768e65): hold dig while swimming to dive, let go and breach out of the water.
-// The dive goes through the dig action (the pad path feel.js wraps): the Q key also reaches the shovel and digs the
-// shore while you dive.
+// The controller feel pass (8768e65): hold pad LT (the pile action, which feel.js wraps) while swimming to dive, let go
+// to breach out of the water.
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
-const DIG = (down) =>
-  `(await import('/src/controls.js')).listActions().find((a) => a.id === 'dig').${down ? 'down' : 'up'}()`;
+const DIVE = (down) => `
+  const pile = (await import('/src/controls.js')).actionById('pile');
+  if (!pile) throw new Error('no pile action');
+  pile.${down ? 'down' : 'up'}();`;
 // Water 2.5-4 m deep near home, at least 1.2 m deep for 3 m around (the shared water region hugs the coast).
 const DEEP = `
   const { groundHeight } = await import('/src/terrain.js');
@@ -36,8 +37,8 @@ export default {
       await g.record('feel-dive', {
         seconds: 5,
         each: async (t, k) => {
-          if (k === 25) await g.eval(DIG(true));
-          if (k === 55) await g.eval(DIG(false));
+          if (k === 25) await g.eval(DIVE(true));
+          if (k === 55) await g.eval(DIVE(false));
           const [x, , z] = await g.eval(POS);
           await g.view({
             cam: [x + Math.cos(a + 0.5) * 6, sy + 1.1, z + Math.sin(a + 0.5) * 6],
