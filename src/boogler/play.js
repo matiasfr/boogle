@@ -13,9 +13,8 @@ import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.js';
-import { openTalk, talkView, pickTalk } from './talk.js';
 import { modalOpen } from '../player/modal.js';
-import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './lines.js';
+import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
 import { heldId, useOne } from '../player/inventory.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
@@ -198,7 +197,12 @@ function updateRide(dt, now) {
 }
 
 // ---------------------------------------------------------------- talking
+// The conversations (talk.js and its ~1,100 lines, lines.js) are their own chunk: fetched right after start
+// (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
 let talk = null;
+let talkMod = null;
+let talkApi = null;
+const loadTalk = () => (talkMod ??= import('./talk.js').then((m) => (talkApi = m)));
 
 // He is offered whatever is in your hand, and takes it from there (one seed off a stack).
 function giftList() {
@@ -208,7 +212,11 @@ function giftList() {
 
 function converse(start) {
   if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/player/modal.js)
-  talk = openTalk(f(), {
+  if (!talkApi) {
+    loadTalk().then(() => converse(start));
+    return true;
+  }
+  talk = talkApi.openTalk(f(), {
     now: Date.now(),
     name: me.name,
     rng: Math.random,
@@ -221,7 +229,7 @@ function converse(start) {
 }
 
 function render() {
-  const v = talk && talkView(talk);
+  const v = talk && talkApi.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
   showDialogue(v, bond(f()), answer, hangUp, petInTalk);
@@ -229,7 +237,7 @@ function render() {
 
 function answer(i) {
   talk.ctx.now = Date.now();
-  const out = pickTalk(talk, i);
+  const out = talkApi.pickTalk(talk, i);
   save();
   if (out.gave) {
     const t = out.gave.taste;
@@ -281,6 +289,7 @@ let waryCheckAt = 0;
 let fleeSayAt = 0;
 
 export function setupBooglerPlay() {
+  loadTalk();
   installRidePhysics();
   addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
   onRemotePresence((r, pr) => {

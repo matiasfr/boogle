@@ -1119,19 +1119,5 @@ export const GIFT_OPTS = {
   dislike: ['Oops. Sorry!', "I thought you'd find it funny."],
 };
 
-export const LEVEL_UP = [
-  '',
-  'Oh! You are a familiar face now!',
-  'We are pals now! Official!',
-  '{name}, you are my friend. I do not say that lightly.',
-  'Close friends! Like rice and carrots in osh!',
-  'Best friends! Best friends forever!',
-];
-export const PET = {
-  happy: ['Hehe!', 'Oh! That tickles.', 'Mmm, right there.', 'Rahmat!', 'Yes. Good pat.'],
-  again: ['Okay, okay, my head is fully patted.', 'I am at maximum pat.', 'Hehe... okay, enough.'],
-  wary: ['Hmph. I am still mad.', 'No pats. I am angry.'],
-};
-export const RIDE = ['Um.', 'Hey. Hey!', 'Okay, that is enough...', 'Hhhhhhh—'];
-export const RIDE_BAIL = 'Hmph. Smart.';
-export const FLEE = ['Nope!', 'No rides!', 'Stay away!'];
+// The short lines he says outside a talk live in barks.js (loaded up front; this file loads when talk does).
+export { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
