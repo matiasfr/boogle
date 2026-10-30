@@ -108,12 +108,6 @@ export function mouthFrame(m) {
     half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
   };
 }
-// The frame posts (x, z, foot y), for the camera to keep out of.
-export const MOUTH_POSTS = MOUTHS.flatMap((m) => {
-  const { rx, rz, fx, fz, half } = mouthFrame(m);
-  return [-1, 1].map((sd) => ({ x: fx + rx * half * sd, z: fz + rz * half * sd, y: m.y }));
-});
-
 export function buildDecor({ world, scene }) {
   const root = new THREE.Group();
   const parts = [],
