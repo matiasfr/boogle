@@ -342,16 +342,21 @@ test('unloadable snapshots are reported (peer chunk, local copy, server)', async
   solo.detachWorld();
 });
 
-test('clients save the world too, so the next host starts from it', async () => {
+test('clients save the world too (but only the host uploads), so the next host starts from it', async () => {
   const net = makeNet();
-  const host = makePeer(net, 'h', true);
+  const hostCalls = [];
+  const clientCalls = [];
+  const host = makePeer(net, 'h', true, { serverUrl: SERVER, fetch: fetchSpy(hostCalls) });
   const store = mem();
-  const client = makePeer(net, 'c', false, { storage: store });
+  const client = makePeer(net, 'c', false, { storage: store, serverUrl: SERVER, fetch: fetchSpy(clientCalls) });
   await run(net, [host, client], 60);
   client.s.submitEdit({ op: 'add', i: 2, j: 3, v: 7 });
   await run(net, [host, client], 620); // past the 30 s save interval
   assert.equal(client.grid[11], 7);
   assert.ok(store.getItem('boogle.world.test'), 'client saved');
+  assert.deepEqual(clientCalls, [], 'a client never touches the server');
+  assert.equal(client.s.worldStatus().saves, 0);
+  assert.ok(hostCalls.includes('PUT'), 'the host uploads');
 
   const next = makePeer(makeNet(), 'n', true, { storage: store }); // another day, the client hosts
   await new Promise((r) => setImmediate(r));
@@ -401,6 +406,40 @@ test('a client saves only hash-verified state, so a desync never reaches the nex
   const next = makePeer(makeNet(), 'n', true, { storage: store });
   await new Promise((r) => setImmediate(r));
   assert.deepEqual(next.grid, host.grid);
+});
+
+test('a client waiting for a resync does not save, then saves the repaired world', async () => {
+  const net = makeNet();
+  const host = makePeer(net, 'h', true);
+  const store = mem();
+  const client = makePeer(net, 'c', false, { storage: store });
+  await run(net, [host, client], 60);
+  let dropSnaps = true; // the resync reply gets lost
+  for (const h of [...client.p.msg]) {
+    client.p.msg.delete(h);
+    client.p.msg.add((m, from) => (dropSnaps && m.t === 'w:snap' ? undefined : h(m, from)));
+  }
+  client.grid[5] = 999;
+  await run(net, [host, client], 620); // past the 30 s save interval
+  assert.ok(client.s.worldStatus().resyncs >= 1);
+  assert.equal(store.getItem('boogle.world.test'), null, 'the diverged world was not saved');
+  dropSnaps = false;
+  await run(net, [host, client], 620);
+  assert.equal(client.grid[5], 0);
+  assert.equal(saved(store).data.grid[5], 0);
+});
+
+test('a new host loads the newer of its local and server copies', async () => {
+  const snap = (tick, v) => ({ tick, seed: 1, epochMs: 0, data: { grid: [v, ...Array(15).fill(0)] } });
+  const start = async (local, server) => {
+    const storage = { getItem: () => JSON.stringify(local), setItem() {} };
+    const fetch = async () => ({ ok: true, json: async () => ({ data: server }) });
+    const peer = makePeer(makeNet(), 'n', true, { storage, serverUrl: SERVER, fetch });
+    await new Promise((r) => setImmediate(r));
+    return [peer.s.world.tick, peer.grid[0]];
+  };
+  assert.deepEqual(await start(snap(500, 1), snap(300, 2)), [500, 1]);
+  assert.deepEqual(await start(snap(300, 1), snap(500, 2)), [500, 2]);
 });
 
 test('profileTicks times each handler per tick and changes nothing', () => {
