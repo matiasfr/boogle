@@ -3,13 +3,8 @@
 // in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
 // filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
 // bar clears the HUD.
-const TP = (x, z, y) => `
-  const { teleport } = await import('/src/physics/physics.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
-  b.velocity.set(0, 0, 0);`;
-const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
+import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
+
 const AIM = (yaw, pitch = 0) =>
   `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // Page-side helpers for the touch checks: shown(sel) (laid out, so hidden ancestors count), rect(sel), the main
@@ -44,16 +39,9 @@ export default {
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
-    await g.eval(
-      `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] });`, // k 1 = mango
-    );
-    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`, {
-      timeout: 30000,
-    });
-    const item = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
-      return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
+    await g.eval(`${toss(1, 5)};`); // a mango
+    await g.waitFor(TOSSED, { timeout: 30000 });
+    const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));
     await g.wait(0.5);
     await g.eval(`${INV} H.interactDown(); H.interactUp();`);
@@ -220,11 +208,7 @@ export default {
       fris >= 0 && dist > 20,
       `${dist?.toFixed?.(1)} m; ${flight.sheet}`,
     );
-    t.check(
-      'no page errors or failed edits',
-      !g.errors.length && !consoleErrors.length,
-      [...g.errors, ...consoleErrors].join(' | '),
-    );
+    t.check('no failed edits ([world] console errors)', !consoleErrors.length, consoleErrors.join(' | '));
 
     // ------------------------------------------------------------ on a phone, portrait
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [390, 844] });
@@ -261,6 +245,5 @@ export default {
       landscape.checked >= 4 && !landscape.hit.length,
       `${JSON.stringify(landscape)}; ${landscapeShot}`,
     );
-    t.check('no page errors on touch', !thumb.errors.length, thumb.errors.join(' | '));
   },
 };

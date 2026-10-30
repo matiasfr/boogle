@@ -1,4 +1,6 @@
 // Presents for The Boogler (ea29f9f): shake ripe fruit off a palm and pick it up.
+import { STAND } from './_stand.mjs';
+
 // Page code: the ripe palm nearest home, with its position.
 const PALM = `
   const { trees } = await import('/src/render/props.js');
@@ -12,12 +14,8 @@ const PALM = `
     if (!best || d < best.d) best = { t, d, x: trees[t].x, z: trees[t].z, top: [top.x, top.y, top.z] };
   });
   return best;`;
-const STAND = (x, z) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);
-  return groundHeight(${x}, ${z});`;
-const ACT = `return (await import('/src/player/hands.js')).interactDown()`;
+// A press of the interact button (E, pad B), through the controls registry.
+const ACT = `const a = (await import('/src/player/controls.js')).actionById('interact'); a.down(); a.up();`;
 
 export default {
   about: 'shake fruit off a palm and pocket it',

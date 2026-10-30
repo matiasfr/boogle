@@ -25,7 +25,7 @@ export const VIEWS = {
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };
 
-const freePort = () =>
+export const freePort = () =>
   new Promise((res) => {
     const s = net.createServer().listen(0, '127.0.0.1', () => {
       const p = s.address().port;

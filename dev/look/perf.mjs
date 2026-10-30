@@ -7,14 +7,13 @@
 // profileTicks in src/world/sync.js), on the idle island. The page runs the ticks back to back (updateWorld), so slow
 // headless frames don't starve the sample; the numbers are still wall clock on a machine that is also software
 // rendering, so compare before/after on your change, not absolute numbers.
-import { startStack, launch, Game } from './lib.mjs';
+import { startStack, launch, Game, sleep } from './lib.mjs';
 
 const argv = process.argv.slice(2);
 const url = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null;
 const doRender = !argv.includes('--sim');
 const doSim = !argv.includes('--render');
 const IDLE_TICKS = 100;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const STATS = `
   const { renderer, scene, camera, sun } = await import('/src/render/scene.js');

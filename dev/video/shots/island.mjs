@@ -2,11 +2,8 @@
 // Places come from the POI site files, so the shot follows them when they move.
 import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.js';
 import windmills, { FARM_Y } from '../../../src/pois/windmills/site.js';
+import { STAND } from './_stand.mjs';
 
-const TP = (x, z) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);`;
 const SKY = (frac) => `window.boogle.sky.preview(${frac})`;
 const ring = (c, a, d, h) => [c[0] + Math.cos(a) * d, c[1] + h, c[2] + Math.sin(a) * d];
 
@@ -28,7 +25,7 @@ export default {
       }),
     );
     const farm = [windmills.x, FARM_Y + 1, windmills.z];
-    await g.eval(TP(farm[0] - 34, farm[2] + 6));
+    await g.eval(STAND(farm[0] - 34, farm[2] + 6));
     await g.wait(1);
     out.push(
       await g.record('island-windmills', {
@@ -37,7 +34,7 @@ export default {
       }),
     );
     const lamp = [lighthouse.x, PAD_Y + 5, lighthouse.z];
-    await g.eval(TP(lamp[0] + 4, lamp[2] + 30));
+    await g.eval(STAND(lamp[0] + 4, lamp[2] + 30));
     await g.eval(SKY(0.5));
     await g.wait(1);
     out.push(
