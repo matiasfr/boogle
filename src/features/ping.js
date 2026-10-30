@@ -236,10 +236,15 @@ onStart(() => {
     pingNow();
   });
 
-  registerAction('ping', { pad: 'left', label: 'Ping where you look', down: pingNow });
-  const row = document.createElement('div');
-  row.innerHTML = '<kbd>G</kbd><span>Ping where you look (or middle click)</span>';
-  document.getElementById('help')?.append(row);
+  registerAction('ping', {
+    pad: 'left',
+    label: 'Ping where you look',
+    keys: ['KeyG', 'Mouse1'],
+    touch: 'Ping',
+    group: 'friends',
+    order: 1,
+    down: pingNow,
+  });
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'tbtn ping-btn';

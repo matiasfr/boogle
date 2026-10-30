@@ -10,6 +10,10 @@ import {
   slotFor,
   wrapAction,
   actionById,
+  describeControl,
+  listControls,
+  controlProblems,
+  GROUPS,
 } from '../src/controls.js';
 
 const quiet = (fn) => {
@@ -108,4 +112,54 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
     }
   }
   assert.ok(n >= 10, `found only ${n} registerAction calls; did the pattern stop matching?`);
+});
+
+test('controls: listControls sorts by group, then order, then registration; describeControl claims no slot', () => {
+  const free = freeSlots().length;
+  quiet(() => {
+    registerAction('lc-late', { pad: freeSlots()[0], label: 'Late', group: 'menu', keys: ['KeyL'] });
+    describeControl('lc-second', { label: 'Second', group: 'move', order: 1, keys: ['KeyJ'], pad: 'ls' });
+    describeControl('lc-first', { label: 'First', group: 'move', order: 0, keys: ['KeyK'], pad: 'rs' });
+    describeControl('lc-tie', { label: 'Tie', group: 'move', order: 0, keys: ['KeyU'], pad: ['lb', 'rb'] });
+  });
+  assert.equal(freeSlots().length, free - 1); // only the action took a slot
+  const ids = listControls()
+    .map((c) => c.id)
+    .filter((id) => id.startsWith('lc-'));
+  assert.deepEqual(ids, ['lc-first', 'lc-tie', 'lc-second', 'lc-late']);
+  const first = listControls().find((c) => c.id === 'lc-first');
+  assert.deepEqual(first, {
+    id: 'lc-first',
+    label: 'First',
+    detail: undefined,
+    keys: ['KeyK'],
+    pad: 'rs',
+    touch: undefined,
+    group: 'move',
+    order: 0,
+    context: undefined,
+  });
+  assert.equal(listControls().find((c) => c.id === 'lc-late').pad, actionById('lc-late').pad);
+  quiet(() => describeControl('lc-first', { label: 'Replaced', group: 'move', keys: ['KeyK'], pad: 'rs' }));
+  assert.equal(listControls().find((c) => c.id === 'lc-first').label, 'Replaced');
+});
+
+test('controls: guide false hides an action', () => {
+  quiet(() => registerAction('hidden-test', { pad: freeSlots()[0], label: 'Hidden', group: 'menu', guide: false }));
+  assert.ok(actionById('hidden-test'));
+  assert.ok(!listControls().some((c) => c.id === 'hidden-test'));
+});
+
+test('controls: controlProblems finds gaps in the guide', () => {
+  assert.ok(GROUPS.length > 0);
+  const ok = { id: 'a', label: 'A', group: 'move', keys: ['KeyA'], pad: 'ls' };
+  assert.deepEqual(controlProblems([ok]), []);
+  assert.match(controlProblems([{ ...ok, label: '' }])[0], /a: no label/);
+  assert.match(controlProblems([{ ...ok, group: 'nope' }])[0], /group "nope"/);
+  assert.match(controlProblems([{ ...ok, keys: 'KeyA' }])[0], /keys must be an array/);
+  assert.match(controlProblems([{ ...ok, pad: undefined }])[0], /no pad binding/);
+  assert.match(controlProblems([{ ...ok, keys: undefined, pad: undefined, touch: 'Go' }])[0], /no pad binding/);
+  const other = { id: 'b', label: 'B', group: 'move', keys: [['KeyA', 'KeyB']], pad: 'rs' };
+  assert.match(controlProblems([ok, other])[0], /key KeyA is claimed by both a and b/);
+  assert.deepEqual(controlProblems([ok, { ...other, context: 'swimming' }]), []);
 });

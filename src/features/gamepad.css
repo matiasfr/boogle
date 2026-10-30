@@ -13,24 +13,28 @@ body.gamepad .help {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  display: grid;
-  gap: 6px;
   padding: 16px 20px;
   border-radius: 14px;
   background: var(--glass);
-  color: var(--paper);
-  font-size: 14px;
+  color: var(--on-glass);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
   pointer-events: none;
 }
 .pad-card[hidden] {
   display: none;
 }
-.pad-card div {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+.pad-card .guide {
+  --gu: 0.075em;
+  grid-template-columns: repeat(2, auto);
+  column-gap: 2em;
+  align-items: start;
+  color: var(--on-glass);
+  font-size: 13px;
 }
-.pad-card kbd {
-  min-width: 70px;
-  text-align: center;
+.pad-card .guide-group h3 {
+  color: rgba(243, 248, 255, 0.6);
+}
+.pad-card .guide-row {
+  grid-template-columns: minmax(5.5em, auto) 1fr;
 }

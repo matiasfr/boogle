@@ -8,7 +8,7 @@ import { dom } from './hud.js';
 import { shovelActive, setHold, setFlatten } from './world/terrain-edits.js';
 import { useDown, useUp, interactDown, interactUp, touchDown, ensureShovel, toggleShovelHand } from './hands.js';
 import { cycle } from './inventory.js';
-import { registerAction } from './controls.js';
+import { registerAction, describeControl } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
@@ -196,32 +196,126 @@ export function initInput() {
   });
   const ZOOMS = [4, 6.5, 10];
   const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
+  describeControl('move', {
+    label: 'Move',
+    keys: [
+      ['KeyW', 'KeyA', 'KeyS', 'KeyD'],
+      ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'],
+    ],
+    pad: 'ls',
+    touch: 'Drag on the left',
+    group: 'move',
+    order: 0,
+  });
+  describeControl('look', {
+    label: 'Look around',
+    keys: ['MouseMove'],
+    pad: 'rs',
+    touch: 'Drag on the right',
+    group: 'camera',
+    order: 0,
+  });
   registerAction('jump', {
     pad: 'a',
-    label: 'Jump',
+    label: 'Jump, or swim up',
+    keys: ['Space'],
+    touch: 'Jump',
+    group: 'move',
+    order: 1,
     down: () => ((me.jumpQueued = 0.15), (me.jumpHeld = true)),
     up: () => (me.jumpHeld = false),
   });
-  registerAction('use', { pad: 'x', label: 'Use what you hold (hold to throw a thing)', down: useDown, up: useUp });
+  registerAction('use', {
+    pad: 'x',
+    label: 'Use what you hold',
+    detail: 'Hold to charge a throw, release to throw. With empty hands it does the same as the interact button.',
+    keys: ['Mouse0'],
+    group: 'hands',
+    order: 1,
+    down: useDown,
+    up: useUp,
+  });
   registerAction('interact', {
     pad: 'b',
     label: 'Talk, pick up, take, shake a palm',
+    keys: ['KeyE'],
+    touch: 'Grab',
+    group: 'hands',
+    order: 0,
     down: interactDown,
     up: interactUp,
   });
-  registerAction('respawn', { pad: 'view', label: 'Bring the ball back', down: respawnBall });
-  registerAction('slot-prev', { pad: 'lb', label: 'Hotbar: previous slot', down: () => cycle(-1) });
-  registerAction('slot-next', { pad: 'rb', label: 'Hotbar: next slot', down: () => cycle(1) });
+  registerAction('respawn', {
+    pad: 'view',
+    label: 'Bring the ball back',
+    keys: ['KeyR'],
+    group: 'ball',
+    down: respawnBall,
+  });
+  // The hotbar row (src/features/hotbar.js) covers both.
+  registerAction('slot-prev', { pad: 'lb', label: 'Previous slot', guide: false, down: () => cycle(-1) });
+  registerAction('slot-next', { pad: 'rb', label: 'Next slot', guide: false, down: () => cycle(1) });
   // Dig is X with the shovel in hand; LT piles (and dives while swimming, src/features/feel.js).
-  registerAction('pile', { pad: 'lt', label: 'Pile sand (hold)', ...hold('pile') });
-  registerAction('flatten', { pad: 'up', label: 'Flatten sand (hold)', ...hold('flatten') });
+  registerAction('pile', {
+    pad: 'lt',
+    label: 'Pile up sand',
+    detail: { kbm: 'Right click piles too, with the shovel in hand', pad: 'Hold' },
+    keys: ['KeyZ', 'Mouse2'],
+    touch: 'Pile',
+    group: 'sand',
+    order: 2,
+    ...hold('pile'),
+  });
+  registerAction('flatten', {
+    pad: 'up',
+    label: 'Flatten sand toward your feet',
+    detail: { pad: 'Hold' },
+    keys: ['ShiftLeft+Mouse0'],
+    touch: 'Flatten',
+    group: 'sand',
+    order: 3,
+    ...hold('flatten'),
+  });
+  describeControl('shovel', {
+    label: 'Shovel in hand or put away',
+    detail: { pad: 'Cycle the hotbar to the shovel' },
+    keys: ['KeyF'],
+    pad: ['lb', 'rb'],
+    group: 'sand',
+    order: 0,
+  });
+  describeControl('dig', {
+    label: 'Dig',
+    detail: {
+      kbm: 'Click digs too, with the shovel in hand',
+      pad: 'Hold, with the shovel in hand',
+      touch: 'The main button, with the shovel in hand',
+    },
+    keys: ['KeyQ'],
+    pad: 'x',
+    touch: 'Dig',
+    group: 'sand',
+    order: 1,
+  });
   // Click once to sprint, like most console games: it stays on until the stick is let go (src/player.js).
   registerAction('sprint', {
     pad: 'l3',
-    label: 'Sprint (click, stays on while moving)',
+    label: 'Sprint',
+    detail: { pad: 'Click once; stays on while you move' },
+    keys: ['ShiftLeft'],
+    group: 'move',
+    order: 2,
     down: () => (input.sprint = true),
   });
-  registerAction('zoom', { pad: 'r3', label: 'Camera: close / middle / far', down: zoomStep });
+  registerAction('zoom', {
+    pad: 'r3',
+    label: 'Camera distance',
+    detail: { pad: 'Close, middle, far' },
+    keys: ['Wheel'],
+    group: 'camera',
+    order: 1,
+    down: zoomStep,
+  });
 
   // Losing focus or hiding the page can swallow the matching keyup/pointerup: treat everything as released.
   function releaseAll() {

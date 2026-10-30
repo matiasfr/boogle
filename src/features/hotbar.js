@@ -19,6 +19,7 @@ import { pouring } from '../mushroom-garden.js';
 import { itemModel } from '../item-models.js';
 import { iconFor } from '../item-icons.js';
 import { glyph, inputKind } from '../glyphs.js';
+import { describeControl } from '../controls.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 import { reducedMotion } from '../constants.js';
 
@@ -204,19 +205,25 @@ onStart(() => {
     const k = /^Digit([1-8])$/.exec(e.code);
     if (k) select(Number(k[1]) - 1);
   });
-  const help = document.getElementById('help');
-  for (const [key, text] of [
-    ['1-8', 'Hold something from your hotbar (again: empty hands)'],
-    ['E', 'Talk, pick up, take, shake a palm'],
-  ]) {
-    const row = document.createElement('div');
-    const kbd = document.createElement('kbd');
-    kbd.textContent = key;
-    const span = document.createElement('span');
-    span.textContent = text;
-    row.append(kbd, span);
-    help?.append(row);
-  }
+  describeControl('hotbar', {
+    label: 'Hold something from your hotbar',
+    detail: { kbm: 'Press the same slot again for empty hands', pad: 'Cycle through the slots' },
+    keys: ['Digit1-8'],
+    pad: ['lb', 'rb'],
+    touch: 'Tap a slot',
+    group: 'hands',
+    order: 2,
+  });
+  // The touch Toss button (built in buildHud) throws what you hold when the main button does something else.
+  describeControl('toss', {
+    label: 'Throw what you hold',
+    detail: { touch: 'Shows up when the main button does something else' },
+    pad: 'x',
+    touch: 'Toss',
+    group: 'hands',
+    order: 3,
+    context: 'holding',
+  });
 });
 
 addPresenceField('hd', () => {

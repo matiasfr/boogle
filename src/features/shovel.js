@@ -9,20 +9,6 @@ onFrame(() => updateShovel());
 // Touch: Pile and Flatten beside the main button (it digs while you hold the shovel), created here so index.html
 // stays untouched. Pile also shows when an old save lost the shovel (body.no-shovel), and pulls out a fresh one.
 onStart(() => {
-  const help = document.getElementById('help');
-  for (const [key, text] of [
-    ['Q', 'Dig (hold to repeat, no shovel mode needed)'],
-    ['Z', 'Pile up sand'],
-    ['Shift+click', 'Flatten toward your feet'],
-  ]) {
-    const row = document.createElement('div');
-    const kbd = document.createElement('kbd');
-    kbd.textContent = key;
-    const span = document.createElement('span');
-    span.textContent = text;
-    row.append(kbd, span);
-    help?.append(row);
-  }
   const touch = document.getElementById('touch');
   if (!touch) return;
   for (const [cls, text, kind] of [

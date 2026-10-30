@@ -1,0 +1,58 @@
+/* The generated controls guide: group titles in the display font, a glyph cell, a label and an optional note.
+   Paper-sticker look by default; the corner help panel and the gamepad card restyle it for their backgrounds. */
+.guide {
+  --gu: 0.0625em; /* glyph unit: 1px at a 16px guide font, so glyphs scale with the guide */
+  display: grid;
+  gap: 0.7em;
+  color: var(--ink);
+  font: 600 0.9rem/1.25 var(--font-body);
+}
+.guide-group {
+  display: grid;
+  gap: 0.35em;
+}
+.guide-group h3 {
+  margin: 0;
+  font: 400 1.05em/1 var(--font-display);
+  letter-spacing: 0.4px;
+  color: var(--ink-soft);
+}
+.guide-row {
+  display: grid;
+  grid-template-columns: minmax(7.5em, auto) 1fr;
+  align-items: center;
+  gap: 0.7em;
+}
+.guide-glyph {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15em;
+}
+.guide-or {
+  margin: 0 0.15em;
+  opacity: 0.6;
+  font-weight: 700;
+}
+.guide-text {
+  display: grid;
+}
+.guide-label {
+  font-weight: 700;
+}
+.guide-detail {
+  font-size: 0.85em;
+  font-weight: 500;
+  opacity: 0.75;
+}
+/* A touch button or gesture, as a pill like the real buttons. */
+.g-touch {
+  display: inline-block;
+  padding: 0.25em 0.8em;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 400 0.9em/1.2 var(--font-display);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}

@@ -57,11 +57,16 @@ onStart(() => {
     if (document.activeElement === dom.nameInput) return;
     bump();
   });
-  registerAction('bump', { pad: 'rt', label: 'Bump the ball up', down: bump });
-
-  const row = document.createElement('div');
-  row.innerHTML = '<kbd>V</kbd><span>Bump the ball up (volleyball dig)</span>';
-  document.getElementById('help')?.append(row);
+  registerAction('bump', {
+    pad: 'rt',
+    label: 'Bump the ball up',
+    detail: 'Like a volleyball dig',
+    keys: ['KeyV'],
+    touch: 'Bump',
+    group: 'ball',
+    order: 1,
+    down: bump,
+  });
 
   {
     const btn = document.createElement('button');

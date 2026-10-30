@@ -9,7 +9,8 @@ import { me, cam } from '../player.js';
 import { clamp } from '../math.js';
 import { dom } from '../hud.js';
 import { canvas } from '../scene.js';
-import { PAD, PAD_LABEL, actionForSlot, listActions, registerAction, padModal } from '../controls.js';
+import { PAD, actionForSlot, registerAction, padModal } from '../controls.js';
+import { renderGuide } from '../guide.js';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -58,23 +59,7 @@ function releaseAll() {
 
 function showCard(on = card?.hidden) {
   if (!card) return;
-  if (on) {
-    card.replaceChildren(
-      ...[
-        ['Left stick', 'Move'],
-        ['Right stick', 'Look'],
-        ...listActions().map((a) => [PAD_LABEL[a.pad], a.label]),
-      ].map(([k, v]) => {
-        const row = document.createElement('div');
-        const kbd = document.createElement('kbd');
-        kbd.textContent = k;
-        const span = document.createElement('span');
-        span.textContent = v;
-        row.append(kbd, span);
-        return row;
-      }),
-    );
-  }
+  if (on) card.replaceChildren(renderGuide('pad'));
   card.hidden = !on;
 }
 
@@ -133,7 +118,13 @@ function poll(dt) {
   }
 }
 
-registerAction('pad-help', { pad: 'menu', label: 'Show / hide this list', down: () => showCard() });
+registerAction('pad-help', {
+  pad: 'menu',
+  label: 'Show or hide the controls',
+  keys: ['KeyH'],
+  group: 'menu',
+  down: () => showCard(),
+});
 
 onStart(() => {
   card = document.createElement('div');
