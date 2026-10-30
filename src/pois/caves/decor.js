@@ -97,6 +97,22 @@ function board(text, w, h, bg = '#6b4a2c', fg = '#f6e7c8') {
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 }));
 }
 
+// A mouth's timber frame: posts `half` metres either side of (fx, fz) along (rx, rz), 2.8 m tall, beam on top.
+export function mouthFrame(m) {
+  return {
+    rx: -m.oz,
+    rz: m.ox, // right, looking out
+    fx: m.x - m.ox * 0.6,
+    fz: m.z - m.oz * 0.6,
+    half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
+  };
+}
+// The frame posts (x, z, foot y), for the camera to keep out of.
+export const MOUTH_POSTS = MOUTHS.flatMap((m) => {
+  const { rx, rz, fx, fz, half } = mouthFrame(m);
+  return [-1, 1].map((sd) => ({ x: fx + rx * half * sd, z: fz + rz * half * sd, y: m.y }));
+});
+
 export function buildDecor({ world, scene }) {
   const root = new THREE.Group();
   const parts = [],
@@ -151,11 +167,7 @@ export function buildDecor({ world, scene }) {
 
   // ---------------------------------------------------------------- mouths: timber frames and name boards
   for (const m of MOUTHS) {
-    const rx = -m.oz,
-      rz = m.ox; // right, looking out
-    const fx = m.x - m.ox * 0.6,
-      fz = m.z - m.oz * 0.6;
-    const half = Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35;
+    const { rx, rz, fx, fz, half } = mouthFrame(m);
     for (const sd of [-1, 1]) put(box, fx + rx * half * sd, m.y + 1.4, fz + rz * half * sd, 0.3, 2.8, 0.3, '#5d4026');
     put(box, fx, m.y + 2.85, fz, 0.32, 0.32, half * 2 + 0.6, '#5d4026', 0, yawOf(rx, rz));
     const b = board(m.label, 2.2, 0.55);
