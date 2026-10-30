@@ -1,5 +1,5 @@
-// Draws Mario: walks his graph nodes the way the decomp's rendering_graph_node.c draws one object, with float
-// matrices, and turns each Fast3D display list straight into a flat triangle list for src/mario/model.js.
+// Draws the guest: walks his graph nodes the way upstream's rendering_graph_node.c draws one object, with float
+// matrices, and turns each Fast3D display list straight into a flat triangle list for src/guest/model.js.
 #include <ultra64.h>
 #include "sm64.h"
 #include "types.h"
@@ -388,7 +388,7 @@ static void process_siblings(struct GraphNode *first) {
     } while (iterate && (node = node->next) != first);
 }
 
-// Draws `obj` relative to `origin`, so the vertices stay small and src/mario/model.js places the mesh.
+// Draws `obj` relative to `origin`, so the vertices stay small and src/guest/model.js places the mesh.
 void shim_render_object(struct GraphNodeObject *obj, Vec3f origin, s32 advanceAnimation) {
     Mat4 m;
     Vec3f pos;
@@ -425,10 +425,10 @@ void shim_render_object(struct GraphNodeObject *obj, Vec3f origin, s32 advanceAn
     sCurrAnimType = ANIM_TYPE_NONE;
 }
 
-EXPORT f32 *sm64_vertex_buffer(void) {
+EXPORT f32 *guest_vertex_buffer(void) {
     return sVerts;
 }
 
-EXPORT s32 sm64_vertex_count(void) {
+EXPORT s32 guest_vertex_count(void) {
     return sVertCount;
 }

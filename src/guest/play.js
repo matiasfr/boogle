@@ -1,7 +1,7 @@
-// Playing as Mario. While it is on, the decomp's Mario (src/mario/sim.js) runs at his own 30 Hz inside the physics
+// Playing as the guest. While it is on, the engine's guest (src/guest/engine.js) runs at his own 30 Hz inside the physics
 // step and this player's cannon-es body becomes kinematic and follows him, so everything that reads the body (the ball,
-// the camera, interact targets, the hotbar, presence) keeps working. Other players' Marios are drawn from the pose they
-// publish. Loaded on first use by src/features/mario.js.
+// the camera, interact targets, the hotbar, presence) keeps working. Other players' guests are drawn from the pose they
+// publish. Loaded on first use by src/features/dino.js.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.js';
@@ -13,25 +13,25 @@ import { emit } from '../render/particles.js';
 import { me, cam } from '../player/player.js';
 import { input } from '../player/input.js';
 import { onFrame } from '../loop.js';
-import { getSim, BUTTON } from './sim.js';
+import { getSim, BUTTON } from './engine.js';
 import { gatherSurfaces, UNITS } from './collision.js';
 import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
-import { mario } from './state.js';
+import { guest } from './state.js';
 
-const RECENTRE = 40; // metres from the frame origin before the origin moves to Mario
-const PER_S = 30 / 100; // SM64 units per frame (30 Hz) to metres per second
+const RECENTRE = 40; // metres from the frame origin before the origin moves to the guest
+const PER_S = 30 / 100; // engine units per frame (30 Hz) to metres per second
 const TURN = 32768 / Math.PI;
 const ACT_GROUP_MASK = 0x1c0,
   ACT_GROUP_AIRBORNE = 0x80,
   ACT_GROUP_SUBMERGED = 0xc0;
 const PARTICLE_DUST = 1 << 0,
   PARTICLE_MIST_CIRCLE = 1 << 16;
-const ATTACKING = 0x100000 | 0x200000 | 0x400000; // MARIO_PUNCHING, MARIO_KICKING, MARIO_TRIPPING
+const ATTACKING = 0x100000 | 0x200000 | 0x400000; // the engine's punching, kicking and tripping flags
 const DUST = new THREE.Color('#e9dcc0');
 
 let sim = null,
   mesh = null;
-// Mario's collision lives in a frame centred near him (SM64 keeps everything within ±8192 units).
+// The guest's collision lives in a frame centred near him (the engine keeps everything within ±8192 units).
 const origin = { x: 0, z: 0 };
 let phase = 0,
   last = null,
@@ -42,7 +42,7 @@ const target = new CANNON.Vec3(),
 export async function loadSim(data) {
   if (sim) return;
   const s = await getSim();
-  s.setMarioAnims(data.anims);
+  s.setAnims(data.anims);
   getAtlas(data.textures);
   sim = s;
 }
@@ -60,7 +60,7 @@ function loadSurfaces(x, z) {
   sim.loadSurfaces(n, waterField.surfaceAt(x, z) * UNITS);
 }
 
-export async function startMario(data) {
+export async function startGuest(data) {
   await loadSim(data);
   const b = me.body;
   mesh ??= createModelMesh();
@@ -82,13 +82,13 @@ export async function startMario(data) {
   phase = 0;
   scene.add(mesh);
   me.avatar.userData.inner.visible = false;
-  mario.active = true;
+  guest.active = true;
 }
 
-export function stopMario() {
-  if (!mario.active) return;
-  mario.active = false;
-  mario.pose = null;
+export function stopGuest() {
+  if (!guest.active) return;
+  guest.active = false;
+  guest.pose = null;
   const b = me.body;
   b.type = CANNON.Body.DYNAMIC;
   b.mass = PLAYER_MASS;
@@ -114,10 +114,10 @@ function readButtons() {
   const k = input.keys;
   let buttons = 0;
   if (me.jumpHeld || me.jumpQueued > 0) buttons |= BUTTON.A;
-  if (mario.b || mario.bHeld) buttons |= BUTTON.B;
-  if (mario.zHeld || k.has('ShiftLeft') || k.has('ShiftRight')) buttons |= BUTTON.Z;
+  if (guest.b || guest.bHeld) buttons |= BUTTON.B;
+  if (guest.zHeld || k.has('ShiftLeft') || k.has('ShiftRight')) buttons |= BUTTON.Z;
   me.jumpQueued = 0;
-  mario.b = false;
+  guest.b = false;
   return me.entered && !me.down ? buttons : 0;
 }
 
@@ -176,7 +176,7 @@ function tick(now) {
   me.yaw = st.faceYaw / TURN + Math.PI;
   me.coyote = group === ACT_GROUP_AIRBORNE || group === ACT_GROUP_SUBMERGED ? 0 : 0.1;
   me.swimming = group === ACT_GROUP_SUBMERGED;
-  mario.pose = sim.pose();
+  guest.pose = sim.pose();
   updateModelMesh(mesh, sim.verts, sim.vertexCount());
   puffs(st);
   hitBall(now);
@@ -190,10 +190,10 @@ function tick(now) {
   }
 }
 
-// The body arrives where Mario is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
-// respawn, the caves' safety net), Mario goes there.
+// The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
+// respawn, the caves' safety net), the guest goes there.
 world.addEventListener('preStep', () => {
-  if (!mario.active || !me.body) return;
+  if (!guest.active || !me.body) return;
   const b = me.body;
   if (b.position.distanceTo(expected) > 0.75) {
     moveOrigin(b.position.x, b.position.z);
@@ -216,10 +216,10 @@ world.addEventListener('preStep', () => {
   phase = (phase + 1) % 2;
 });
 
-// Mario's feet are a ball radius under the body's centre.
+// The guest's feet are a ball radius under the body's centre.
 onFrame(
   () => {
-    if (!mario.active || !me.body) return;
+    if (!guest.active || !me.body) return;
     const ip = me.body.interpolatedPosition;
     mesh.position.set(ip.x, ip.y - PLAYER_R, ip.z);
     me.avatar.userData.inner.visible = false;
@@ -227,31 +227,31 @@ onFrame(
   { phase: 'update', order: -5 },
 );
 
-// ---------------------------------------------------------------- other players' Marios
+// ---------------------------------------------------------------- other players' guests
 
 const remoteMeshes = new Map(); // remote -> { mesh, pose }
 
-// Draws every remote who is Mario (r.mario holds their pose) and lets their usual avatar show again when they stop.
-export function updateRemoteMarios(remotes) {
+// Draws every remote who is the guest (r.guest holds their pose) and lets their usual avatar show again when they stop.
+export function updateRemoteGuests(remotes) {
   if (!sim) return;
   for (const [r, entry] of remoteMeshes) {
-    if (remotes.get(r.peer) === r && r.mario && r.avatar) continue;
+    if (remotes.get(r.peer) === r && r.guest && r.avatar) continue;
     scene.remove(entry.mesh);
     entry.mesh.geometry.dispose();
     if (r.avatar) r.avatar.userData.inner.visible = true;
     remoteMeshes.delete(r);
   }
   for (const r of remotes.values()) {
-    if (!r.mario || !r.avatar) continue;
+    if (!r.guest || !r.avatar) continue;
     let entry = remoteMeshes.get(r);
     if (!entry) {
       entry = { mesh: createModelMesh(), pose: null };
       scene.add(entry.mesh);
       remoteMeshes.set(r, entry);
     }
-    if (entry.pose !== r.mario) {
-      entry.pose = r.mario;
-      sim.renderPose(r.mario);
+    if (entry.pose !== r.guest) {
+      entry.pose = r.guest;
+      sim.renderPose(r.guest);
       updateModelMesh(entry.mesh, sim.verts, sim.vertexCount());
     }
     entry.mesh.position.set(r.avatar.position.x, r.avatar.position.y - PLAYER_R, r.avatar.position.z);

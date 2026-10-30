@@ -1,5 +1,5 @@
-// Runs the decomp's Mario outside the game: the globals, memory and engine entry points his code expects, and the
-// exported API src/mario/sim.js drives. The game systems Boogle has no use for (objects, sound, camera, saving, warps)
+// Runs the upstream character outside the game: the globals, memory and engine entry points his code expects, and the
+// exported API src/guest/engine.js drives. The game systems Boogle has no use for (objects, sound, camera, saving, warps)
 // are inert stubs in stubs.c.
 #include <ultra64.h>
 #include "sm64.h"
@@ -123,7 +123,7 @@ float sqrtf(float x) {
 
 // ---------------------------------------------------------------- animations
 
-// The ROM's Mario animation bank (src/mario/rom.js copies it here): a DmaTable of big-endian offsets and sizes,
+// The ROM's guest animation bank (src/guest/rom.js copies it here): a DmaTable of big-endian offsets and sizes,
 // then each animation's header and s16 data, also big-endian.
 static u8 sAnimBank[0xA0000];
 static u8 sAnimTarget[0x4000];
@@ -166,7 +166,7 @@ s32 load_patchable_table(struct DmaHandlerList *list, s32 index) {
     return TRUE;
 }
 
-// ---------------------------------------------------------------- Mario's object
+// ---------------------------------------------------------------- the guest's object
 
 void copy_mario_state_to_object(void) {
     struct Object *o = gMarioObject;
@@ -207,29 +207,29 @@ static void init_mario_object(void) {
     gCurrentArea = &sArea;
 }
 
-// ---------------------------------------------------------------- API (src/mario/sim.js)
+// ---------------------------------------------------------------- API (src/guest/engine.js)
 
 static struct ShimState sState;
 
-EXPORT u8 *sm64_anim_bank(void) {
+EXPORT u8 *guest_anim_bank(void) {
     return sAnimBank;
 }
 
-EXPORT u32 sm64_anim_bank_size(void) {
+EXPORT u32 guest_anim_bank_size(void) {
     return sizeof(sAnimBank);
 }
 
-EXPORT struct ShimState *sm64_state(void) {
+EXPORT struct ShimState *guest_state(void) {
     return &sState;
 }
 
-EXPORT void sm64_init(void) {
+EXPORT void guest_init(void) {
     init_mario_object();
     gMarioAnimsBuf.dmaTable = (void *) sAnimBank;
     gMarioAnimsBuf.bufTarget = sAnimTarget;
 }
 
-EXPORT void sm64_spawn(f32 x, f32 y, f32 z, s16 yaw) {
+EXPORT void guest_spawn(f32 x, f32 y, f32 z, s16 yaw) {
     vec3s_set(gMarioSpawnInfo->startPos, x, y, z);
     vec3s_set(gMarioSpawnInfo->startAngle, 0, yaw, 0);
     gMarioAnimsBuf.currentAddr = NULL;
@@ -242,8 +242,8 @@ EXPORT void sm64_spawn(f32 x, f32 y, f32 z, s16 yaw) {
     copy_mario_state_to_object();
 }
 
-// Stick in [-64, 64] (x right, y away from the camera), camYaw the SM64 yaw from Mario to the camera.
-EXPORT void sm64_input(f32 stickX, f32 stickY, u32 buttons, s16 camYaw) {
+// Stick in [-64, 64] (x right, y away from the camera), camYaw the engine yaw from the guest to the camera.
+EXPORT void guest_input(f32 stickX, f32 stickY, u32 buttons, s16 camYaw) {
     struct Controller *c = gPlayer1Controller;
     f32 mag = sqrtf(stickX * stickX + stickY * stickY);
     if (mag > 64.0f) {
@@ -259,8 +259,8 @@ EXPORT void sm64_input(f32 stickX, f32 stickY, u32 buttons, s16 camYaw) {
     sCamera.yaw = camYaw;
 }
 
-// Moves Mario by whole units when src/mario/sim.js recentres the local frame his collision lives in.
-EXPORT void sm64_shift(f32 dx, f32 dz) {
+// Moves the guest by whole units when src/guest/engine.js recentres the local frame his collision lives in.
+EXPORT void guest_shift(f32 dx, f32 dz) {
     struct MarioState *m = gMarioState;
     m->pos[0] += dx;
     m->pos[2] += dz;
@@ -269,7 +269,7 @@ EXPORT void sm64_shift(f32 dx, f32 dz) {
     copy_mario_state_to_object();
 }
 
-EXPORT void sm64_teleport(f32 x, f32 y, f32 z) {
+EXPORT void guest_teleport(f32 x, f32 y, f32 z) {
     struct MarioState *m = gMarioState;
     vec3f_set(m->pos, x, y, z);
     vec3f_set(m->vel, 0, 0, 0);
@@ -307,13 +307,13 @@ static u8 sPosedAnim[0x4000];
 static struct DmaHandlerList sPosedAnims;
 static struct ShimPose sPoseIn;
 
-EXPORT struct ShimPose *sm64_pose_buffer(void) {
+EXPORT struct ShimPose *guest_pose_buffer(void) {
     return &sPoseIn;
 }
 
-// Draws the pose in sm64_pose_buffer() (another player's Mario) into the vertex buffer, relative to his position. The
+// Draws the pose in guest_pose_buffer() (another player's guest) into the vertex buffer, relative to his position. The
 // geo callbacks read gBodyStates[0], so this player's body state is set aside while they run.
-EXPORT void sm64_render_pose(void) {
+EXPORT void guest_render_pose(void) {
     struct ShimPose *p = &sPoseIn;
     struct GraphNodeObject *gfx = &sPosed.header.gfx;
     struct MarioBodyState saved = gBodyStates[0];
@@ -355,12 +355,12 @@ EXPORT void sm64_render_pose(void) {
 
 static struct Object sYoshi;
 
-EXPORT s32 sm64_yoshi_anim_length(s32 anim) {
+EXPORT s32 guest_dino_anim_length(s32 anim) {
     return yoshi_seg5_anims_05024100[anim]->loopEnd;
 }
 
-// Draws Yoshi (animation 0 idle, 1 walk, 2 jump) into the vertex buffer, at his feet, facing +z.
-EXPORT void sm64_render_yoshi(s32 anim, s32 frame, s32 blink) {
+// Draws the dino (animation 0 idle, 1 walk, 2 jump) into the vertex buffer, at his feet, facing +z.
+EXPORT void guest_render_dino(s32 anim, s32 frame, s32 blink) {
     struct GraphNodeObject *gfx = &sYoshi.header.gfx;
 
     if (gfx->sharedChild == NULL) {
@@ -377,12 +377,12 @@ EXPORT void sm64_render_yoshi(s32 anim, s32 frame, s32 blink) {
     shim_render_object(gfx, gVec3fZero, FALSE);
 }
 
-EXPORT void sm64_tick(void) {
+EXPORT void guest_tick(void) {
     struct MarioState *m = gMarioState;
     gCurrentObject = gMarioObject;
     gMarioObject->oMarioParticleFlags = execute_mario_action(gMarioObject);
     copy_mario_state_to_object();
-    // Mario never runs out of health or air in Boogle.
+    // The guest never runs out of health or air in Boogle.
     m->health = 0x880;
     m->hurtCounter = 0;
     shim_render_object(&gMarioObject->header.gfx, m->pos, TRUE);

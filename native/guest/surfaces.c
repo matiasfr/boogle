@@ -1,4 +1,4 @@
-// Mario's collision: the triangles src/mario/collision.js gathers around him each tick, loaded into the decomp's
+// The guest's collision: the triangles src/guest/collision.js gathers around him each tick, loaded into upstream's
 // static spatial partition, plus one water level for the whole local frame.
 #include "engine/surface_load.c"
 #include "shim.h"
@@ -16,16 +16,16 @@ static struct SurfaceNode sNodes[MAX_SURFACES * 4];
 static f32 sTris[MAX_SURFACES * 10];
 static TerrainData sWater[] = { 1, 0, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, FLOOR_LOWER_LIMIT };
 
-EXPORT f32 *sm64_surface_buffer(void) {
+EXPORT f32 *guest_surface_buffer(void) {
     return sTris;
 }
 
-EXPORT u32 sm64_surface_capacity(void) {
+EXPORT u32 guest_surface_capacity(void) {
     return MAX_SURFACES;
 }
 
 // Each triangle is x1 y1 z1 x2 y2 z2 x3 y3 z3 type, counter-clockwise seen from the side it faces.
-EXPORT void sm64_load_surfaces(s32 count, f32 waterLevel) {
+EXPORT void guest_load_surfaces(s32 count, f32 waterLevel) {
     sSurfacePool = sSurfaces;
     sSurfaceNodePool = sNodes;
     sSurfacePoolSize = MAX_SURFACES;

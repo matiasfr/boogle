@@ -172,7 +172,7 @@ binds a key with no pad action of its own (hotbar digits). Held keys (move, spri
 from it ([src/player/guide.js](../src/player/guide.js)), and [src/features/controls-check.js](../src/features/controls-check.js) warns
 in dev about gaps. Registrations live in [src/player/input.js](../src/player/input.js), [feel.js](../src/features/feel.js),
 [hotbar.js](../src/features/hotbar.js), [bump.js](../src/features/bump.js), [honk.js](../src/features/honk.js),
-[ping.js](../src/features/ping.js), [pause.js](../src/features/pause.js) and [updates.js](../src/features/updates.js).
+[ping.js](../src/features/ping.js), [pause.js](../src/features/pause.js), [dino.js](../src/features/dino.js) and [updates.js](../src/features/updates.js).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
 |---|---|---|---|---|---|---|
@@ -187,6 +187,8 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 | Use what you hold (`use`) | action | Left click | X | main button when it has no target | Hands | |
 | Hold from your hotbar (`hotbar`) | described | 1-8 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | X | Toss | Hands | holding |
+| Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
+| Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action, wrapped) | X | Grab, when nothing is in reach | Getting around | as the guest |
 | Answer The Boogler (`boogler-answer`) | described | 1-8 (E or Esc walks away) | D-pad ↑ ↓, A (B walks away) | Tap an answer | Friends | talking |
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
@@ -195,7 +197,7 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 
 Notes:
 
-- **Free pad slots** (`grep -rn "pad: '" src`): LT, D-pad ↑, ↓ and →. The update toast borrows the first free one
+- **Free pad slots** (`grep -rn "pad: '" src`): D-pad ↑, ↓ and →. The update toast borrows the first free one
   (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
@@ -530,6 +532,32 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
 `proto` (no ops), adopted by joiners with the snapshot. Files: [src/sim/proto.js](../src/sim/proto.js),
 [src/world/rules/proto.js](../src/world/rules/proto.js), [src/adapters/proto-flags.js](../src/adapters/proto-flags.js).
 
+### 6.17 The dino and the guest
+
+- **What.** A dino stands just outside the wine cellar's cave mouth on the north cliff, facing out along the trench
+  ([src/guest/dino.js](../src/guest/dino.js)). Talk to him (E, pad B) and you become the guest: a character with its
+  own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
+  run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
+  hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
+- **Bring your own files.** The guest needs two files the game never ships, fetches or uploads: the guest engine
+  (`engine.wasm`, built from [native/guest/](../native/guest/README.md)) and the player's own ROM it is built for (8 MB,
+  checked by SHA-1), from which the guest's animations and the textures are cut. The first talk opens a dialog with a
+  checklist; drop or pick each file. This browser keeps both in IndexedDB. A local dev build can name the engine with
+  `VITE_DINO_ENGINE_URL` instead. Without both files the feature stays dormant: the dino is built from primitives,
+  breathes and hops when spoken to, and talking only opens the dialog.
+- **How it plays.** While you are the guest, the engine runs at 30 Hz inside the physics step and your body turns
+  kinematic and follows it, so the camera, interact targets, the ball and presence keep working. The engine collides
+  with the terrain and every static body within 5 m, using the body's collision mask (so the caves work). Jump is
+  Space or pad A; punch, kick and dive are click or pad X with empty hands (near the ball, click punches and E grabs);
+  crouch, ground pound, long jump and backflip use Shift or LT.
+- **Sync kind.** Owner: presence `mr` carries your guest's pose (24 numbers). Other players with both files see your
+  guest; without them they see your usual avatar.
+- **Files.** [src/features/dino.js](../src/features/dino.js) (eager: the dino, the files flow, controls, presence),
+  [src/guest/](../src/guest/) (lazy: `play.js`, `engine.js`, `model.js`, `collision.js`, `rom.js`), the shared
+  [src/decomp/](../src/decomp/) (files dialog, IndexedDB store), [native/guest/](../native/guest/README.md).
+- **Known issues.** Not yet tried with two players, on the lighthouse stair, in the caves, on a gamepad or on touch.
+  The plan for more such characters is [plans/decomp-characters.md](plans/decomp-characters.md).
+
 ## 7. Content inventory
 
 ### 7.1 Items (gift catalog)
@@ -676,6 +704,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
+| The guest's pose | Owner | presence `mr` |
 | Hotbar, Boogler friendship, first-run flags | Local | localStorage |
 | Critters, splashes, impact juice, blob shadows, pause view, guide | Local | none |
 
@@ -705,6 +734,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | Hotbar | localStorage | `boogle.hotbar` (old `boogle.pocket` migrated once) | global, not per room |
 | Boogler friendship | localStorage | `boogle.boogler.<room>` | per room |
 | First-run card seen | localStorage | `boogle.firstRun.<kind>` | global |
+| Guest engine, the pieces cut from the ROM | IndexedDB | `boogle-decomp` / `files`: `guest-engine`, `guest-rom` | per browser, never uploaded |
 | Update reload guard | sessionStorage | `boogle-update-reloaded-for` | per tab session |
 
 A tab that becomes host without state loads the newest, by tick, of its local copy and the server's (it waits up to 3 s

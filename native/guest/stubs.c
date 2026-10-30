@@ -1,6 +1,6 @@
-// The game systems Mario's code calls into that Boogle does not run: music, dialog, saving, warps, the camera, and
+// The game systems the character code calls into that Boogle does not run: music, dialog, saving, warps, the camera, and
 // the object system. Each is inert; spawn_object hands back a scratch object so callers can set its fields. Sounds are
-// queued for src/mario/sim.js instead of played.
+// queued for src/guest/engine.js instead of played.
 #include <ultra64.h>
 #include "sm64.h"
 #include "types.h"
@@ -28,11 +28,11 @@ static struct Object sScratchObject;
 static u32 sSounds[MAX_SOUNDS];
 static s32 sSoundCount;
 
-EXPORT u32 *sm64_sounds(void) {
+EXPORT u32 *guest_sounds(void) {
     return sSounds;
 }
 
-EXPORT s32 sm64_take_sound_count(void) {
+EXPORT s32 guest_take_sound_count(void) {
     s32 n = sSoundCount;
     sSoundCount = 0;
     return n;
@@ -71,7 +71,7 @@ f32 camera_approach_f32_symmetric(f32 current, f32 target, f32 increment) {
     return current;
 }
 
-// Yoshi's blink: his object's oAnimState picks the open or closed eyes.
+// The dino's blink: his object's oAnimState picks the open or closed eyes.
 Gfx *geo_switch_anim_state(s32 callContext, struct GraphNode *node, UNUSED void *context) {
     if (callContext == GEO_CONTEXT_RENDER) {
         struct Object *obj = (struct Object *) gCurGraphNodeObject;
@@ -162,7 +162,7 @@ void stop_cap_music(void) {}
 void stop_shell_music(void) {}
 void stop_sound(UNUSED u32 soundBits, UNUSED f32 *pos) {}
 
-// Objects Mario's code compares against by address; none of them exist on the island.
+// Objects the character code compares against by address; none of them exist on the island.
 #define NO_BEHAVIOR(name) const BehaviorScript name[] = { 0 }
 NO_BEHAVIOR(bhvBowser);
 NO_BEHAVIOR(bhvBowserKeyCourseExit);

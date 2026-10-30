@@ -1,4 +1,4 @@
-// Mario's and Yoshi's geometry, geo layouts and Yoshi's animations, compiled from the decomp's actors/ sources
+// The guest's and the dino's geometry, geo layouts and the dino's animations, compiled from the upstream actors/ sources
 // (textures are index stubs; see build.mjs).
 #include <ultra64.h>
 #include "sm64.h"

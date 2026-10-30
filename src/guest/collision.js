@@ -1,13 +1,13 @@
-// What Mario stands on and bumps into: the island's terrain and every static cannon-es body (the lighthouse, the
-// windmills, rocks, trees, the caves), as triangles around him in SM64 units. Collision groups follow the player body's
+// What the guest stands on and bumps into: the island's terrain and every static cannon-es body (the lighthouse, the
+// windmills, rocks, trees, the caves), as triangles around him in engine units. Collision groups follow the player body's
 // mask, so the caves swap the ground for their own colliders just as they do for the normal player.
 import * as CANNON from 'cannon-es';
 import { CELL, HALF, GRID_RES } from '../constants.js';
 import { heights } from '../adapters/terrain.js';
 import { world, GROUP } from '../physics/physics.js';
 
-export const UNITS = 100; // SM64 units per metre
-const REACH = 5; // metres around Mario, every height
+export const UNITS = 100; // engine units per metre
+const REACH = 5; // metres around the guest, every height
 const BUCKET = 4; // metres per side of the grid big bodies' triangles are filed in
 
 const tmp = new CANNON.Vec3();

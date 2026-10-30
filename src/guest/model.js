@@ -1,20 +1,19 @@
-// Meshes for the decomp's models (Mario, Yoshi): the triangles sm64.wasm draws (posed, in SM64 units around the
+// Meshes for the engine's models (the guest, the dino): the triangles it draws (posed, in engine units around the
 // feet), lit by the island's sun like everything else. The ROM textures sit in one atlas; each vertex says which
 // texture it shows and how it combines with the shade colour the way the N64 combiner did (blend by the texture's
 // alpha, decal, modulate).
 import * as THREE from 'three';
 import { TEXTURES } from './textures.js';
-import { VERT_FLOATS } from './sim.js';
+import { VERT_FLOATS, MAX_VERTS } from './engine.js';
 import { UNITS } from './collision.js';
 
-const MAX_VERTS = 2048 * 3;
 const CELL = 64; // atlas cell, texels; every texture fits one
 const COLS = 4;
 const ATLAS_W = CELL * COLS,
   ATLAS_H = CELL * Math.ceil(TEXTURES.length / COLS);
 
 let atlas = null;
-// The one atlas, from src/mario/rom.js's `textures`: every texture back to back, RGBA5551, big-endian, row 0 on top.
+// The one atlas, from src/guest/rom.js's `textures`: every texture back to back, RGBA5551, big-endian, row 0 on top.
 export const getAtlas = (textures) => (atlas ??= buildAtlas(textures));
 
 function buildAtlas(textures) {
@@ -52,31 +51,31 @@ const RECTS = TEXTURES.map((t, k) => [
 function modelMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 });
   mat.onBeforeCompile = (shader) => {
-    shader.uniforms.marioAtlas = { value: atlas };
+    shader.uniforms.guestAtlas = { value: atlas };
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute vec2 marioUv;\nattribute vec4 marioRect;\nattribute float marioMix;\n' +
-          'varying vec2 vMarioUv;\nvarying vec4 vMarioRect;\nvarying float vMarioMix;',
+        '#include <common>\nattribute vec2 guestUv;\nattribute vec4 guestRect;\nattribute float guestMix;\n' +
+          'varying vec2 vGuestUv;\nvarying vec4 vGuestRect;\nvarying float vGuestMix;',
       )
       .replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\nvMarioUv = marioUv;\nvMarioRect = marioRect;\nvMarioMix = marioMix;',
+        '#include <begin_vertex>\nvGuestUv = guestUv;\nvGuestRect = guestRect;\nvGuestMix = guestMix;',
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform sampler2D marioAtlas;\nvarying vec2 vMarioUv;\nvarying vec4 vMarioRect;\n' +
-          'varying float vMarioMix;',
+        '#include <common>\nuniform sampler2D guestAtlas;\nvarying vec2 vGuestUv;\nvarying vec4 vGuestRect;\n' +
+          'varying float vGuestMix;',
       )
       .replace(
         '#include <color_fragment>',
-        `vec3 marioCol = vColor.rgb;
-        if (vMarioMix > 0.5) {
-          vec4 t = texture2D(marioAtlas, vMarioRect.xy + clamp(vMarioUv, 0.0, 1.0) * vMarioRect.zw);
-          marioCol = vMarioMix < 1.5 ? mix(vColor.rgb, t.rgb, t.a) : vMarioMix < 2.5 ? t.rgb : vColor.rgb * t.rgb;
+        `vec3 guestCol = vColor.rgb;
+        if (vGuestMix > 0.5) {
+          vec4 t = texture2D(guestAtlas, vGuestRect.xy + clamp(vGuestUv, 0.0, 1.0) * vGuestRect.zw);
+          guestCol = vGuestMix < 1.5 ? mix(vColor.rgb, t.rgb, t.a) : vGuestMix < 2.5 ? t.rgb : vColor.rgb * t.rgb;
         }
-        diffuseColor.rgb *= marioCol;`,
+        diffuseColor.rgb *= guestCol;`,
       );
   };
   return mat;
@@ -93,9 +92,9 @@ export function createModelMesh() {
   attr('position', 3);
   attr('normal', 3);
   attr('color', 3);
-  attr('marioUv', 2);
-  attr('marioRect', 4);
-  attr('marioMix', 1);
+  attr('guestUv', 2);
+  attr('guestRect', 4);
+  attr('guestMix', 1);
   geo.setDrawRange(0, 0);
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.8, 0), 2);
   const mesh = new THREE.Mesh(geo, modelMaterial());
@@ -112,9 +111,9 @@ export function updateModelMesh(mesh, verts, count) {
   const pos = g.attributes.position.array,
     nor = g.attributes.normal.array,
     col = g.attributes.color.array,
-    uv = g.attributes.marioUv.array,
-    rect = g.attributes.marioRect.array,
-    mix = g.attributes.marioMix.array;
+    uv = g.attributes.guestUv.array,
+    rect = g.attributes.guestRect.array,
+    mix = g.attributes.guestMix.array;
   const n = Math.min(count, MAX_VERTS);
   for (let i = 0; i < n; i++) {
     const s = i * VERT_FLOATS;

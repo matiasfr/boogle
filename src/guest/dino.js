@@ -1,13 +1,13 @@
-// Yoshi, who waits just outside the wine cellar's cave mouth on the north cliff, beside the timber frame, looking out
-// at whoever walks up the trench. He hops and says a word when you talk to him. Until this browser has a Super Mario
-// 64 ROM he is built from primitives in the island's flat-shaded style; with one he is the game's own Yoshi, idling
-// and blinking (showRealYoshi).
+// The dino, who waits just outside the wine cellar's cave mouth on the north cliff, beside the timber frame, looking
+// out at whoever walks up the trench. He hops and says a word when you talk to him. Until this browser has the guest
+// engine and the ROM he is built from primitives in the island's flat-shaded style; with both he is the engine's model,
+// idling// and blinking (showRealDino).
 import * as THREE from 'three';
 import { addPart, mergeParts } from '../render/props.js';
-import { scene } from '../render/scene.js';
+import { scene, toScreen } from '../render/scene.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { NODES } from '../pois/caves/network.js';
-import { getSim } from './sim.js';
+import { getSim } from './engine.js';
 import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
 
 const MOUTH = NODES.north; // the tunnel into the wine cellar
@@ -15,7 +15,7 @@ const OUT = Math.hypot(...MOUTH.out);
 const [OX, OZ] = [MOUTH.out[0] / OUT, MOUTH.out[1] / OUT];
 const AHEAD = 2.5, // metres out of the mouth, along the trench
   ASIDE = 2.2; // metres to the right (looking out), clear of the doorway
-export const yoshi = {
+export const dino = {
   group: null,
   pos: new THREE.Vector3(MOUTH.x + OX * AHEAD - OZ * ASIDE, MOUTH.y, MOUTH.z + OZ * AHEAD + OX * ASIDE),
   head: new THREE.Vector3(),
@@ -73,74 +73,74 @@ function build() {
   mesh.castShadow = mesh.receiveShadow = true;
   const group = new THREE.Group();
   group.add(mesh);
-  yoshi.pos.y = groundHeight(yoshi.pos.x, yoshi.pos.z);
-  yoshi.head.copy(yoshi.pos).setY(yoshi.pos.y + yoshi.height - 0.15);
-  group.position.copy(yoshi.pos);
+  dino.pos.y = groundHeight(dino.pos.x, dino.pos.z);
+  dino.head.copy(dino.pos).setY(dino.pos.y + dino.height - 0.15);
+  group.position.copy(dino.pos);
   group.rotation.y = Math.atan2(OX, OZ); // facing out of the cave
   scene.add(group);
-  yoshi.group = group;
+  dino.group = group;
 }
 
 function bubble() {
   const el = document.createElement('div');
-  el.className = 'yoshi-bubble';
+  el.className = 'dino-bubble';
   el.hidden = true;
   document.querySelector('.hud')?.append(el);
   return el;
 }
 
 // A word over his head for a moment.
-export function yoshiSays(text, ms = 2600) {
-  yoshi.bubble ??= bubble();
-  yoshi.bubble.textContent = text;
-  yoshi.bubble.hidden = false;
-  yoshi.bubbleUntil = performance.now() + ms;
-  yoshi.hopAt = performance.now();
+export function dinoSays(text, ms = 2600) {
+  dino.bubble ??= bubble();
+  dino.bubble.textContent = text;
+  dino.bubble.hidden = false;
+  dino.bubbleUntil = performance.now() + ms;
+  dino.hopAt = performance.now();
 }
 
-// Swaps in the game's Yoshi, drawn by sm64.wasm with the ROM's textures (src/mario/rom.js data).
-export async function showRealYoshi(rom) {
-  if (yoshi.real) return;
+// Swaps in the engine's dino, drawn with the ROM's textures (src/guest/rom.js data).
+export async function showRealDino(rom) {
+  if (dino.real) return;
   const sim = await getSim();
   getAtlas(rom.textures);
-  if (yoshi.real) return;
-  if (!yoshi.group) build();
+  if (dino.real) return;
+  if (!dino.group) build();
   const mesh = createModelMesh();
-  yoshi.group.children[0].visible = false;
-  yoshi.group.add(mesh);
-  yoshi.real = { mesh, sim, frame: 0, drawnAt: -1e9, blinkAt: 0 };
-  yoshi.height = 2.1;
-  yoshi.head.y = yoshi.pos.y + yoshi.height - 0.2;
+  dino.group.children[0].visible = false;
+  dino.group.add(mesh);
+  dino.real = { mesh, sim, frame: 0, drawnAt: -1e9, blinkAt: 0 };
+  dino.height = 2.1;
+  dino.head.y = dino.pos.y + dino.height - 0.2;
 }
 
 function drawReal(camera, now) {
-  const r = yoshi.real;
-  if (now - r.drawnAt < DRAW_MS || camera.position.distanceTo(yoshi.pos) > DRAW_NEAR) return;
+  const r = dino.real;
+  if (now - r.drawnAt < DRAW_MS || camera.position.distanceTo(dino.pos) > DRAW_NEAR) return;
   r.drawnAt = now;
   r.frame++;
   if (now > r.blinkAt + 150) r.blinkAt = now + 1500 + Math.random() * 3500;
-  r.sim.renderYoshi(0, r.frame, now > r.blinkAt);
+  r.sim.renderDino(0, r.frame, now > r.blinkAt);
   updateModelMesh(r.mesh, r.sim.verts, r.sim.vertexCount());
 }
 
-const ndc = new THREE.Vector3();
-export function updateYoshi(camera, now) {
-  if (!yoshi.group) build();
-  const t = (now - yoshi.hopAt) / 1000;
-  yoshi.group.position.y = yoshi.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
-  if (yoshi.real) drawReal(camera, now);
-  else yoshi.group.children[0].scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
-  const b = yoshi.bubble;
+const over = new THREE.Vector3(),
+  px = { x: 0, y: 0, behind: false };
+export function updateDino(camera, now) {
+  if (!dino.group) build();
+  const t = (now - dino.hopAt) / 1000;
+  dino.group.position.y = dino.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
+  if (dino.real) drawReal(camera, now);
+  else dino.group.children[0].scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
+  const b = dino.bubble;
   if (!b || b.hidden) return;
-  if (now > yoshi.bubbleUntil) {
+  if (now > dino.bubbleUntil) {
     b.hidden = true;
     return;
   }
-  ndc
-    .copy(yoshi.head)
-    .setY(yoshi.group.position.y + yoshi.height + 1.0)
-    .project(camera);
-  const on = ndc.z < 1 && Math.abs(ndc.x) < 1.1 && Math.abs(ndc.y) < 1.1;
+  toScreen(over.copy(dino.head).setY(dino.group.position.y + dino.height + 1.0), px);
+  const mx = innerWidth * 0.05,
+    my = innerHeight * 0.05;
+  const on = !px.behind && px.x > -mx && px.x < innerWidth + mx && px.y > -my && px.y < innerHeight + my;
   b.style.visibility = on ? 'visible' : 'hidden';
-  b.style.transform = `translate(${((ndc.x * 0.5 + 0.5) * innerWidth).toFixed(1)}px, ${((-ndc.y * 0.5 + 0.5) * innerHeight).toFixed(1)}px)`;
+  b.style.transform = `translate(${px.x.toFixed(1)}px, ${px.y.toFixed(1)}px)`;
 }

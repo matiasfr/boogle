@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mio0, toBigEndian } from '../src/mario/rom.js';
+import { mio0, toBigEndian } from '../src/guest/rom.js';
 
 const ascii = (s) => [...s].map((c) => c.charCodeAt(0));
 
