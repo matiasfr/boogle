@@ -418,7 +418,8 @@ test('profileTicks times each handler per tick and changes nothing', () => {
     for (let k = 0; k < 3; k++) s.updateWorld(0.1);
   }
   a.stateHashes();
-  const rows = prof.stop();
+  const { rows, kinds } = prof.stop();
+  assert.deepEqual(kinds, { 'op add': 'sim', 'hash n': 'sim', 'applied #0': 'applied', grow: 'sim', draw: 'view' });
   assert.deepEqual(rows, [
     { 'op add': 1, 'applied #0': 1, grow: 1, draw: 1 },
     { grow: 1, draw: 1 },

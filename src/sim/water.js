@@ -31,7 +31,7 @@
 // API: createWater({width,height,terrain,sea=0,seaEdges=15,flowRate=160,quietTicks=6,
 //        evapInterval=20,evapMax=1}) ->
 //   depth, idx(i,j), addWater, removeWater (returns removed), setSeaLevel,
-//   step, wake(i,j,r=1), serialize, load, hash, stats.
+//   step, wake(i,j,r=1), isActive(c) (c = idx; awake this tick), serialize, load, hash, stats.
 // seaEdges bitmask: 1 = i=0 side, 2 = i=width-1, 4 = j=0, 8 = j=height-1. 0 = no sea.
 
 const MAX_DEPTH = 1 << 20;
@@ -244,6 +244,7 @@ export function createWater(opts) {
     idx,
     step,
     wake,
+    isActive: (c) => act[c] !== 0,
     hash,
     serialize,
     load,

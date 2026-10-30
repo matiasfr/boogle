@@ -98,7 +98,7 @@ surface.mesh.onBeforeRender = () => {
 window.__water = {
   water,
   region,
-  stats: () => ({ ...water.stats(), stepMs: rules.water.stepMs(), W, H }),
+  stats: () => ({ ...water.stats(), W, H }), // step cost: `npm run perf -- --sim`
   hash: water.hash,
   fast(n) {
     // test helper: run n extra sim steps right now (solo only; this desyncs a networked room)
