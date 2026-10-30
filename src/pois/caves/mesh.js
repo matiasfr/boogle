@@ -5,6 +5,7 @@
 // Floors stay flat (no noise near them), noise fades out near the mouths (so they meet the terrain's openings) and the
 // cellar is left smooth (it gets brickwork instead).
 import { edgeTable, triTable } from 'three/examples/jsm/objects/MarchingCubes.js';
+import { smoothstep } from '../../math-pure.js';
 import { networkSd, ZONE, MOUTHS, SEGMENTS, NODES, FLOOR_CUT } from './network.js';
 
 const VOXEL = 0.62;
@@ -36,20 +37,16 @@ function vnoise(x, y, z) {
     1
   );
 }
-const smooth = (a, b, x) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
 
 // Signed distance to open cave (negative inside), with the rock noise. out gets zone and floor (see networkSd).
 const scratch = { zone: 0, floor: 0 };
 export function caveSd(x, y, z, out = scratch) {
   const d = networkSd(x, y, z, out);
   if (d > NOISE * 1.6 || out.zone === ZONE.CELLAR) return d;
-  let w = smooth(out.floor + 0.3, out.floor + 1.4, y);
+  let w = smoothstep(out.floor + 0.3, out.floor + 1.4, y);
   for (const m of MOUTHS) {
     const dm = Math.sqrt((x - m.x) ** 2 + (z - m.z) ** 2);
-    if (dm < 10) w *= smooth(3.5, 10, dm);
+    if (dm < 10) w *= smoothstep(3.5, 10, dm);
   }
   if (w <= 0) return d;
   const n = vnoise(x * 0.33, y * 0.33, z * 0.33) * 0.75 + vnoise(x * 0.9 + 7.1, y * 0.9, z * 0.9 - 3.3) * 0.25;
@@ -178,9 +175,8 @@ function* orient(pos, idx, sd, toward) {
 }
 
 // Generator: yields now and then so the game can spread the work over frames; returns
-// { positions: Float32Array, indices: Uint32Array, zones: Uint8Array (per vertex), grid, ms }.
+// { positions: Float32Array, indices: Uint32Array, zones: Uint8Array (per vertex), grid }.
 export function* buildCaveMeshSteps() {
-  const t0 = performance.now();
   const { lo, hi } = bounds();
   const nx = Math.ceil((hi[0] - lo[0]) / VOXEL) + 1,
     ny = Math.ceil((hi[1] - lo[1]) / VOXEL) + 1,
@@ -225,7 +221,6 @@ export function* buildCaveMeshSteps() {
     indices: new Uint32Array(idx),
     zones: new Uint8Array(zones),
     grid: [nx, ny, nz],
-    ms: performance.now() - t0,
   };
 }
 

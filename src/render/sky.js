@@ -39,6 +39,7 @@ const C = {
   waterNight: new THREE.Vector3(0.3, 0.38, 0.62),
 };
 const L = {
+  sunFaceSet: new THREE.Color('#ffbe8c'),
   sunDay: new THREE.Color('#fff3da'),
   sunSet: new THREE.Color('#ff9a52'),
   moon: new THREE.Color('#a9bfff'),
@@ -275,7 +276,6 @@ const sunDir = new THREE.Vector3(),
   moonDir = new THREE.Vector3(),
   tmpV = new THREE.Vector3(),
   tmpQ = new THREE.Quaternion(),
-  top = new THREE.Vector3(),
   horizon = new THREE.Vector3(),
   starQ = new THREE.Quaternion(),
   starM = new THREE.Matrix4();
@@ -288,10 +288,6 @@ function worldMs(dt) {
   if (clockMs === null || Math.abs(target - clockMs) > 3000) clockMs = target;
   else clockMs += dt * 1000 + (target - clockMs) * Math.min(1, dt * 2);
   return clockMs;
-}
-
-function lerpV(out, a, b, t) {
-  return out.copy(a).lerp(b, t);
 }
 
 function placeBillboard(group, dir) {
@@ -320,14 +316,13 @@ export function updateSky(dt, elapsed) {
   const moonUp = smoothstep(-0.04, 0.12, moonY);
 
   // Sky colours.
-  lerpV(top, C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.55);
-  lerpV(horizon, C.nightHorizon, C.dayHorizon, day).lerp(C.setHorizon, warm * 0.75);
   const u = skyMat.uniforms;
-  u.uTop.value.copy(top);
+  u.uTop.value.lerpVectors(C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.55);
+  horizon.lerpVectors(C.nightHorizon, C.dayHorizon, day).lerp(C.setHorizon, warm * 0.75);
   u.uHorizon.value.copy(horizon);
   u.uSun.value.copy(sunDir);
   u.uMoon.value.copy(moonDir);
-  lerpV(u.uGlow.value, C.glow, C.setGlow, warm).multiplyScalar(smoothstep(-0.2, 0.0, sunY));
+  u.uGlow.value.lerpVectors(C.glow, C.setGlow, warm).multiplyScalar(smoothstep(-0.2, 0.0, sunY));
   u.uMoonGlow.value = 0.35 * s.illum * moonUp * night;
   u.uStars.value = smoothstep(0.35, 0.95, night);
   starQ.setFromAxisAngle(AXIS, -s.sunAngle); // stars turn with the sky
@@ -369,14 +364,14 @@ export function updateSky(dt, elapsed) {
   }
 
   const w = waterMat.uniforms;
-  lerpV(w.uLight.value, C.waterNight, C.waterDay, day).lerp(C.waterSet, warm * 0.6);
+  w.uLight.value.lerpVectors(C.waterNight, C.waterDay, day).lerp(C.waterSet, warm * 0.6);
   w.uFog.value.copy(horizon);
   w.uSpecCol.value.set(sun.color.r, sun.color.g, sun.color.b).multiplyScalar(byMoon ? 0.5 + 0.5 * s.illum : 1);
 
   // Billboards.
   placeBillboard(sunGroup, sunDir);
   sunRays.rotation.z = elapsed * 0.08;
-  sunFace.material.color.set('#ffffff').lerp(tmpColor.set('#ffbe8c'), warm);
+  sunFace.material.color.setRGB(1, 1, 1).lerp(L.sunFaceSet, warm);
   const sunVis = smoothstep(-0.12, 0.02, sunY);
   sunFace.material.opacity = sunRays.material.opacity = sunVis;
   sunGroup.visible = sunVis > 0.001;
@@ -393,7 +388,6 @@ export function updateSky(dt, elapsed) {
   state.illum = s.illum;
   state.day = day;
 }
-const tmpColor = new THREE.Color();
 
 // Console handle (window.boogle.sky): sky.state, sky.preview(0.55) for sunset, sky.preview(0.8, 0.5) for a full moon at
 // night, sky.preview(null) to follow the world clock again. Local only.

@@ -109,7 +109,6 @@ function compile(stamp, frame, groundY) {
   const op = ['set', 'add', 'min', 'max'].find((k) => stamp[k] !== undefined) ?? null;
   const value = op && stamp[op];
   return {
-    box,
     op,
     weight(x, z) {
       if (x < box[0] || z < box[1] || x > box[2] || z > box[3]) return null;
@@ -144,12 +143,11 @@ export function createIsland(sites) {
     }
     for (const k of site.keepOut ?? []) {
       const [x, z] = frame.toWorld(k.x ?? 0, k.z ?? 0);
-      keepOut.push({ x, z, r: k.r, site: site.id });
+      keepOut.push({ x, z, r: k.r });
     }
   }
 
   return {
-    sites,
     keepOut,
     heightAt(x, z) {
       let h = naturalHeight(x, z);
