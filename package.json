@@ -21,6 +21,7 @@
     "look": "node dev/look/look.mjs",
     "perf": "node dev/look/perf.mjs",
     "island-map": "node dev/island/map.mjs",
+    "concepts": "node dev/concepts/generate.mjs",
     "scenario": "node dev/scenarios/run.mjs",
     "scenarios": "node dev/scenarios/run.mjs",
     "ship": "bash scripts/ship.sh",

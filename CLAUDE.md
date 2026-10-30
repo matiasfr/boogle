@@ -10,6 +10,7 @@
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
 - `/feature <name> <request>`: for work spanning several files or shared state. The `planner` agent writes `docs/plans/<name>.md`, you wait for approval, then the `implementer` agent builds it.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
+- `/concept-art`: painted concept images from prompts (`npm run concepts`, OpenAI key or Codex CLI) for design exploration.
 - `/video`: clips, GIFs, trailers and patch-notes videos. `/playtest-notes`: log a play session to `docs/playtests.md`.
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`.
 

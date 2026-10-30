@@ -1,0 +1,37 @@
+{
+  "style": "Painterly concept art for a goofy low-poly island game about friends building a railway. Gouache textures, chunky readable shapes, toy-like proportions, warm light. Same viewpoint in every image: standing on the beach at the south of a small tropical island, looking north up at a red-and-white striped lighthouse on a grassy hill. A round purple blob character called The Boogler appears somewhere small, often wearing a mayor's sash. Industrial eras are grimy and smoky but still cheerful and silly. 16:9, no text, no logos.",
+  "items": [
+    {
+      "id": "era-1",
+      "prompt": "Era 1, castaway camp: driftwood huts, a campfire, palm trees, a beach ball, a crate stall, old windmills creaking back to life on the hill, a water wheel by a stream. No engines yet."
+    },
+    {
+      "id": "era-2",
+      "prompt": "Era 2, steam wagons: a dirt road up the hill, a brass-and-timber steam wagon towing crate trailers in clouds of white steam, striped bazaar stalls and bunting, a crate with a top hat on it as the town hall."
+    },
+    {
+      "id": "era-3",
+      "prompt": "Era 3, iron and coal: narrow-gauge iron rails, a tiny black steam loco, a soot-stained brick foundry with smokestacks and an orange glow, coal carts, a rickety bridge to a rocky mine island. Grimy, smoky, goofy."
+    },
+    {
+      "id": "era-4",
+      "prompt": "Era 4, steel and harbour: a riveted steel pier, a steamship with a red funnel, a steelworks glowing at dusk under heavy smoke, cranes, a standard-gauge steam train hauling coloured crates."
+    },
+    {
+      "id": "era-5",
+      "prompt": "Era 5, diesel and concrete: an orange diesel locomotive on a concrete causeway to a melon island, container cranes, hazard stripes, reclaimed land with warehouses, exhaust haze."
+    },
+    {
+      "id": "era-6",
+      "prompt": "Era 6, electric age: overhead wires, an electric tram throwing a spark, a wind farm replacing the windmills, neon signs over the bazaar, and a little heritage narrow-gauge steam loco still running a loop by the beach."
+    },
+    {
+      "id": "era-7",
+      "prompt": "Era 7, monorail city: glass towers, an elevated white monorail with a coral stripe, a blue-domed station inspired by the Registon in Samarqand with the mayor's office on top, the old lighthouse kept among the towers."
+    },
+    {
+      "id": "era-8",
+      "prompt": "Era 8, maglev: dusk, a glowing cyan maglev guideway leaving the island across open sea toward a mainland port city with harbour lights and cranes, a sleek pearl train, the lighthouse lit."
+    }
+  ]
+}
