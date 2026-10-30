@@ -13,7 +13,8 @@ Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), 
   helpers (snapshot buffer, presence fields, build tags, report scrubbing, smooth shared time).
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...).
 - `adapters/`: the game side of lockstep state: terrain mesh and heights, gifts, mushroom garden, prototype flags.
-  They submit edits and react to `world/rules/`; they never register lockstep state themselves.
+  They submit edits and react to `world/rules/`; they never register lockstep state themselves. A new adapter is a
+  feature file, unless other modules must import it.
 - `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge.
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models.

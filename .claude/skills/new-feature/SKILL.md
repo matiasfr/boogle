@@ -6,15 +6,20 @@ argument-hint: '<name> [what it does]'
 
 Create the feature `$0` (kebab-case file name). Description: $ARGUMENTS
 
-1. Read DESIGN.md and say which principle the feature serves (and any it bends). If shared state is involved, read `src/world/README.md` first.
-2. Look at an existing plug-in for the pattern (`src/features/boogler.js` is a good small one) and the hook docs at the top of `src/loop.js`.
-3. Create `src/features/$0.js`:
-   - a one-line comment saying what it does;
-   - `import './$0.css';` only if it needs styles, in `src/features/$0.css`;
-   - DOM created in JS (append to `.hud` or `body`), never added to `index.html`;
-   - per-frame work via `onFrame(fn, { phase, order })`, startup via `onStart(fn)`;
-   - something players act on with the interact button (E, pad B, the touch action button) registers a provider with `registerInteractable(fn)` from `src/player/hands.js`: `fn()` returns the targets in reach now (`[]` for none), each `{ id, verb, at, r?, run | blocked, show? }`. The contract is at the top of `src/player/hands.js`. Don't add another key for it.
-4. Bigger logic goes in its own module (`src/<name>.js`, or `src/sim/<name>.js` if it is pure shared logic with a unit test in `test/`). Shared state first picks a sync kind from DESIGN.md's table ("Pick how each feature shares state"), then uses its API: Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/netplay/net.js`, smoothed with `createSnaps` from `src/netplay/snaps.js`). Lockstep is step 4b. Physics is never Lockstep.
-   4b. Lockstep state? Read `src/world/rules/README.md` and scaffold the four files: `src/sim/$0.js` (pure, deterministic: integers, `mulberry32`, no `Math.random`/`sin`/`pow`) with `test/$0.test.mjs` (same inputs give the same hash, serialize/load round-trip); `src/world/rules/$0.js` from the README's template (ops, state, ticks; `export const name = '$0'`); one line appended to `RULES` in `src/world/rules/index.js` (never reorder it); and this feature as the adapter: it reads `rules.$0` from `src/world/game-world.js`, sends `submitEdit`, and reacts in `onApplied`/`onAfterTick`/`onSnapshot`. Run `npm run check:full`.
-5. Don't edit `src/main.js`, `src/style.css` or `index.html` beyond a line or two. Add or tick a PLAN.md item if the feature is on the roadmap.
-6. Run `npm run check`, then tell the user how to try it (`npm run dev`, two tabs).
+AGENTS.md has the rules; this is the order to apply them in.
+
+1. Say which DESIGN.md principle the feature serves (and any it bends; ask before bending one).
+2. Pick a sync kind for each piece of state (AGENTS.md, "Pick a sync kind"). Lockstep: follow the four-file recipe in
+   `src/world/rules/README.md` instead of steps 3-4, then come back for 5-6.
+3. Copy the shape of a small plug-in: `src/features/honk.js` (an action + room messages), `src/features/bump.js` (an
+   action on Owner state), `src/features/gifts.js` (interactables + a lockstep adapter). Create `src/features/$0.js`
+   with a header comment saying what it does, which sync kind each piece of state uses and the principle it serves;
+   `import './$0.css'` only if it needs styles; DOM built in JS; `onFrame`/`onStart` from `src/loop.js`.
+4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (pick from
+   `freeSlots()`), `registerInteractable` for things the interact button acts on, `emit` for particles,
+   `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).
+5. Pure logic worth a test goes in `src/sim/$0.js` with `test/$0.test.mjs`. Don't import another feature; move shared
+   code into `src/`. Hotspot files (`src/main.js`, `src/style.css`, `index.html`): a line or two at most. Tick or add
+   a PLAN.md item if it is on the roadmap.
+6. `npm run check` (`check:full` for lockstep or net changes). For anything visible, `/look` it. Tell the user how to
+   try it (`npm run dev`, two tabs with the same `?room=`).
