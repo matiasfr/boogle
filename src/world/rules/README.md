@@ -34,6 +34,9 @@ Rules:
   lint allows only `../grid.js`, `../terrain-logic.js`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
+- Changing what a state's `serialize` writes means a new `version` and a `migrate[v]` step for older saves
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-pre-version.json`
+  is one, checked by `test/world-snapshots.test.mjs`).
 - Append new modules to the end of `RULES` in `index.js`. Its order is the wire order: states snapshot, load and
   hash in it, so reordering it desyncs rooms where peers run different builds.
 

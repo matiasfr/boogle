@@ -51,8 +51,8 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
   sand band (`EDIT_MAX_CM` in `src/world/terrain-logic.js`, 1.6 m), where nobody can dig under it; the lighthouse
   hill and the west end of the windmill farm do.
 - **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid (before
-  2026-10-29) are no longer migrated: they load as a fresh island. A future grid change needs a migration for
-  every state that stores cells.
+  2026-10-29) are no longer migrated: they load as a fresh island. A future grid change needs a new state version and a
+  migration for every state that stores cells (`registerState(key, { version, migrate })`, `src/world/README.md`).
 - Stamps change the base ground, not player edits: sand dug or piled on top keeps its depth.
 
 ## Underground POIs (the caves)

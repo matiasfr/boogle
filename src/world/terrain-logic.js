@@ -190,7 +190,9 @@ export function createTerrainState({ base, n, editable }) {
       carry.clear();
       last.clear();
       pending.clear();
-      for (const [p, c, t] of json?.players ?? []) {
+      for (const row of Array.isArray(json?.players) ? json.players : []) {
+        const [p, c, t] = Array.isArray(row) ? row : [];
+        if (typeof p !== 'string' || !Number.isSafeInteger(c) || !Number.isSafeInteger(t)) continue; // malformed save
         carry.set(p, c);
         if (t >= 0) last.set(p, t);
       }

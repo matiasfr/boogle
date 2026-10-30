@@ -525,3 +525,81 @@ test('the singleton exports setEnv, onAfterTick and registry', () => {
   for (const k of ['setEnv', 'onAfterTick', 'registry']) assert.equal(typeof singleton[k], 'function', k);
   assert.deepEqual(singleton.registry(), { ops: [], states: [] });
 });
+
+// ------------------------------------------------------------ state versions (B3)
+// A local sync with one versioned toy state, `thing` ({ n }); its load throws on anything without a numeric n.
+function versioned(version, migrate) {
+  const s = createSync();
+  let value = { n: 0 };
+  s.registerState('thing', {
+    version,
+    migrate,
+    serialize: () => value,
+    load: (json) => {
+      if (typeof json?.n !== 'number') throw new Error('bad thing');
+      value = json;
+    },
+    hash: () => value.n,
+  });
+  return { s, get: () => value };
+}
+const snapOf = (data, vers) => ({ tick: 3, seed: 1, epochMs: 0, data, ...(vers ? { vers } : {}) });
+
+test('snapshots record each state version, and loads run the migrations from the saved version up, in order', () => {
+  const order = [];
+  const steps = {
+    1: (j) => (order.push(1), { n: j.n + 10 }),
+    2: (j) => (order.push(2), { n: j.n * 2 }),
+  };
+  const a = versioned(2, steps);
+  assert.deepEqual(a.s.snapshot().vers, { thing: 2 });
+  a.s.loadSnapshot(snapOf({ thing: { n: 1 } })); // no vers: version 0
+  assert.deepEqual(order, [1, 2]);
+  assert.equal(a.get().n, 22);
+  order.length = 0;
+  a.s.loadSnapshot(snapOf({ thing: { n: 1 } }, { thing: 1 }));
+  assert.deepEqual(order, [2]);
+  assert.equal(a.get().n, 2);
+  order.length = 0;
+  a.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))); // this build's own save: nothing to migrate
+  assert.deepEqual(order, []);
+  assert.equal(a.get().n, 2);
+  assert.equal(a.s.worldStatus().loadErrors, 0);
+  assert.equal(a.s.worldStatus().newerSave, false);
+  const bad = { version: -1, serialize: () => 0, load() {}, hash: () => 0 };
+  assert.throws(() => createSync().registerState('x', bad), /bad version/);
+});
+
+test('a state that fails to load (or to migrate) starts fresh and is counted; the others still load', () => {
+  const v = versioned(1, { 1: (j) => ({ n: j.n.deep.oops }) });
+  const fails = [];
+  v.s.onSnapFail((f) => fails.push(f));
+  let other = 0;
+  v.s.registerState('other', { serialize: () => other, load: (x) => (other = x), hash: () => other });
+  assert.equal(v.s.loadSnapshot(snapOf({ thing: { n: 5 }, other: 9 })), true); // the migration throws
+  assert.equal(v.get().n, 0, 'thing is fresh');
+  assert.equal(other, 9);
+  v.s.loadSnapshot(snapOf({ thing: { n: 'x' }, other: 4 }, { thing: 1 })); // load throws
+  v.s.loadSnapshot(snapOf({ thing: { n: 5 }, other: 4 }, { thing: 'one' })); // a bad version
+  assert.equal(v.get().n, 0);
+  assert.equal(other, 4);
+  assert.equal(v.s.worldStatus().loadErrors, 3);
+  assert.deepEqual(fails[0], { from: 'state', reason: 'thing load' });
+});
+
+test('a state saved by a newer build is skipped, and the tab stops saving so it never overwrites that save', async () => {
+  const store = mem();
+  store.setItem('boogle.world.test', JSON.stringify(snapOf({ grid: Array(16).fill(4) }, { grid: 1 })));
+  const writes = store.writes;
+  const net = makeNet();
+  const host = makePeer(net, 'h', true, { storage: store });
+  await run(net, [host], 1);
+  assert.equal(host.s.worldStatus().ready, true);
+  assert.equal(host.grid[0], 0, 'grid v1 is unknown to this build: left fresh');
+  assert.equal(host.s.worldStatus().newerSave, true);
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
+  await run(net, [host], 620); // past the 30 s save interval
+  assert.equal(host.grid[0], 1);
+  assert.equal(store.writes, writes, 'nothing saved');
+  assert.equal(JSON.parse(store.getItem('boogle.world.test')).vers.grid, 1);
+});
