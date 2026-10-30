@@ -18,7 +18,7 @@ import { groundHeight } from '../terrain.js';
 import { waterField } from '../water-field.js';
 import { me } from '../player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { wrapAction, describeControl } from '../controls.js';
+import { wrapAction, describeControl, onKey } from '../controls.js';
 import { shovel, setHold } from '../world/terrain-edits.js';
 import { proto } from '../proto-flags.js';
 
@@ -112,10 +112,7 @@ const swimDive = () => on() && me.swimming;
 
 onStart(() => {
   // Q and pad LT (pile) dive while swimming; elsewhere they dig and pile as before
-  addEventListener('keydown', (e) => {
-    if (e.code === 'KeyQ' && !e.repeat && swimDive()) dive();
-  });
-  addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
+  onKey('KeyQ', { owner: 'dive', down: () => swimDive() && dive(), up: () => (diving = 0) });
   describeControl('dive', {
     label: 'Dive',
     detail: 'While swimming',

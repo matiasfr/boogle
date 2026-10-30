@@ -5,7 +5,6 @@ import './bump.css';
 import { me, cam } from '../player.js';
 import { ball, claimBall } from '../ball.js';
 import { sendPresence } from '../net.js';
-import { dom } from '../hud.js';
 import { onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 
@@ -52,31 +51,14 @@ export function bump() {
 }
 
 onStart(() => {
-  addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyV' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (document.activeElement === dom.nameInput) return;
-    bump();
-  });
   registerAction('bump', {
     pad: 'rt',
+    key: 'KeyV',
+    touch: { label: 'Bump', className: 'bump' },
     label: 'Bump the ball up',
     detail: 'Like a volleyball dig',
-    keys: ['KeyV'],
-    touch: 'Bump',
     group: 'ball',
     order: 1,
     down: bump,
   });
-
-  {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'tbtn bump';
-    btn.textContent = 'Bump';
-    btn.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      bump();
-    });
-    document.getElementById('touch')?.append(btn);
-  }
 });
