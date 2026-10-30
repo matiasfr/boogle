@@ -13,6 +13,7 @@ import { addPart, mergeParts } from '../../props.js';
 import { addLightSource } from '../../lights.js';
 import { mulberry32 } from '../../math.js';
 import { caveSd } from './mesh.js';
+import { ambAt, withCaveAmbient } from './index.js';
 import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT } from './network.js';
 
 const rng = mulberry32(4242);
@@ -518,8 +519,16 @@ export function buildDecor({ world, scene }) {
     root.add(sign);
   }
 
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 });
-  const solidMesh = new THREE.Mesh(mergeParts(parts), mat);
+  // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.js).
+  const solidGeo = mergeParts(parts);
+  const sp = solidGeo.attributes.position.array;
+  const amb = new Float32Array(sp.length / 3);
+  for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3], sp[v * 3 + 2]);
+  solidGeo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
+  const mat = withCaveAmbient(
+    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
+  );
+  const solidMesh = new THREE.Mesh(solidGeo, mat);
   solidMesh.receiveShadow = true;
   const glowMesh = new THREE.Mesh(mergeParts(glow), new THREE.MeshBasicMaterial({ vertexColors: true }));
   root.add(solidMesh, glowMesh);
