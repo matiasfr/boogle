@@ -18,7 +18,7 @@ import { groundHeight } from '../terrain.js';
 import { waterField } from '../water-field.js';
 import { me } from '../player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../net.js';
-import { listActions } from '../controls.js';
+import { wrapAction } from '../controls.js';
 import { shovel, setHold } from '../world/terrain-edits.js';
 import { proto } from '../proto-flags.js';
 
@@ -115,13 +115,10 @@ onStart(() => {
     if (e.code === 'KeyQ' && !e.repeat && swimDive()) dive();
   });
   addEventListener('keyup', (e) => e.code === 'KeyQ' && (diving = 0));
-  const pile = listActions().find((a) => a.id === 'pile');
-  if (pile) {
-    const down = pile.down,
-      up = pile.up;
-    pile.down = () => (swimDive() ? dive() : down?.());
-    pile.up = () => ((diving = 0), up?.());
-  }
+  wrapAction('pile', {
+    down: (next) => (swimDive() ? dive() : next()),
+    up: (next) => ((diving = 0), next()),
+  });
 });
 
 // ---------------------------------------------------------------- my flops
