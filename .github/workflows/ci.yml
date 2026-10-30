@@ -71,3 +71,57 @@ jobs:
       - name: Install Chromium and system deps
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
+
+  # Browser scenarios (dev/scenarios/), one per leg. Informational legs have known load-sensitive waits: they show red
+  # on the PR but don't fail the run, so automerge.yml and ci-autofix.yml (which key on the run's conclusion) ignore
+  # them. A flaky required leg gets a better wait (on a condition, not a time), never a skip.
+  scenarios:
+    name: scenario ${{ matrix.scenario }}${{ matrix.informational && ' (informational)' || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: ${{ matrix.informational == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - world-inputs
+          - smoke
+          - two-player-dig
+          - reconnect-dig
+          - shared-kinds
+          - hotbar
+          - interact
+          - caves
+          - lighthouse
+          - dig-channel
+        include:
+          - { scenario: hotbar, informational: true }
+          - { scenario: interact, informational: true }
+          - { scenario: caves, informational: true }
+          - { scenario: lighthouse, informational: true }
+          - { scenario: dig-channel, informational: true }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium and system deps
+        run: npx playwright install --with-deps chromium
+      - run: npm run scenario -- ${{ matrix.scenario }}
+      - if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-${{ matrix.scenario }}
+          path: .look/scenarios/${{ matrix.scenario }}/
+          include-hidden-files: true # .look/ is a dot directory
+          if-no-files-found: ignore
