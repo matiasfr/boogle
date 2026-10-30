@@ -147,8 +147,8 @@ A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, the
 
 ### Camera
 
-Third-person orbit, looking past your right shoulder. Distance 6.5 m by default, 3 to 12 m with the wheel, or pad R3
-cycling 4, 6.5 and 10 m. Pitch −1.25 to 0.9 rad. Mouse 0.0024 rad/px when locked, 0.005 when dragging unlocked; touch
+Third-person orbit, looking past your right shoulder. Distance 6.5 m by default; pad R3 cycles 4, 6.5 and
+10 m. The wheel, trackpad and pinch don't zoom. Pitch −1.25 to 0.9 rad. Mouse 0.0024 rad/px when locked, 0.005 when dragging unlocked; touch
 0.006; pad right stick 2.8 rad/s yaw, 1.8 rad/s pitch, 0.15 deadzone. It stays above the ground (and above the sea
 unless you swim). Features can take it over through `camConstraints` (the caves keep it inside the tunnels). Before
 you enter, it slowly circles the island.
@@ -180,7 +180,7 @@ in dev about gaps. Registrations live in [src/player/input.js](../src/player/inp
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
 | Look around (`look`) | described | Mouse | Right stick | Drag on the right | Camera | |
-| Camera distance (`zoom`) | action | Wheel | R3 (4 / 6.5 / 10 m) | none | Camera | |
+| Camera distance (`zoom`) | action | none | R3 (4 / 6.5 / 10 m) | none | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Bump the ball up (`bump`) | action | V | RT | Bump | The ball | |
 | Talk, pick up, take, shake a palm (`interact`) | action | E | B | Grab (the main button; its label follows the target) | Hands | |
