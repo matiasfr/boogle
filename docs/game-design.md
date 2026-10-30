@@ -1,8 +1,7 @@
 # Boogle: game design document (as built)
 
-*Current as of `main` at `1d37273` (2026-10-30). It describes what exists today, not what is planned. It is kept
-current by the rule in [AGENTS.md](../AGENTS.md): a change that adds, changes or removes something a player can see or
-do updates its section here in the same commit. Every number below is read from the code or the docs it links. Where the code does not say,
+*It describes what exists on `main` today, not what is planned, and is kept current by the rule in
+[AGENTS.md](../AGENTS.md) (player-facing changes update their section here in the same commit). Every number below is read from the code or the docs it links. Where the code does not say,
 this file says "unclear from code". Plans live in [PLAN.md](../PLAN.md) and [tech-plan.md](tech-plan.md); undecided
 ideas live in [proposals/](proposals/README.md) and are only linked here as "related ideas".*
 
@@ -511,7 +510,8 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
   ([src/features/pois.js](../src/features/pois.js); its `site.js` ground stays eager): one seamless mesh, built a little
   each frame once loaded,
-  is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`). Bodies switch
+  is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`), and a ring
+  of rock round each mouth (look only) hides the seam where the hillside's hole meets the tunnel. Bodies switch
   between the surface's collision group and the cave's when they cross a mouth (1 m out counts as in); a safety net
   puts anything stuck in rock back. Inside, the camera stays in the tunnel, the fog closes in and the sky light dims
   (`atmosphere.underground`); darkness is baked per vertex by distance from the nearest mouth (full daylight within 2 m,
@@ -760,7 +760,7 @@ TURN) and `/healthz`.
   site most likely uses public PeerJS signaling, no TURN, no server snapshots and no telemetry: an empty island
   survives only in players' localStorage.
 - No TURN: players behind strict NATs may not connect; the failure rate is unmeasured.
-- The sim is not in a Web Worker (PLAN Phase 4 item unchecked; tech plan C4 decided: no worker). Hidden tabs keep
+- The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.js](../src/world/background.js)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
   `impact.js`).
@@ -795,48 +795,14 @@ folder map in [src/README.md](../src/README.md).
   `scenarios-nightly.yml` and never block. `npm run island-map` renders the composed island.
 - **Perf.** `npm run perf`: draw calls, triangles and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../dev/video/)).
-- **Shipping.** Small commits whose body names the DESIGN.md principle served, then `npm run ship`: rebase on `main`,
-  `check`, push `ship/<you>-<sha>`; green CI merges and deploys to GitHub Pages; red or conflicting, `ci-autofix.yml`
-  pushes up to two fixes, then @mentions you. A session that can only push `claude/<topic>` opens a non-draft PR that
-  `automerge.yml` squash-merges when green. `smoke.yml` runs the nightly live two-tab test; `deploy-server.yml`
-  deploys `server/` when a token exists. Claude Code also has skills (`/ship`, `/new-feature`, `/feature`, `/look`,
-  `/video`, `/playtest-notes`) and a hook that runs Prettier and ESLint on each edited file.
+- **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the
+  nightly live two-tab test; `deploy-server.yml` deploys `server/` when a token exists.
 
 ## 10. Status
 
-### PLAN.md
-
-| Phase | Status | Notes |
-|---|---|---|
-| 0 Repo hygiene | Done | |
-| 1 PeerJS networking | Mostly done | Open: deploy `server/` with TURN; measure ball latency and failed joins without TURN. |
-| 2 Water you can play in | Done | Keepy-uppy streak built, then cut. |
-| 3 Shape the ground | Done | Including the sand fun pass. |
-| 4 Living water | Done except the worker | Spring removed. No worker (tech plan C4). |
-| 5 The garden | On hold | Only the mushroom stall is built; crops, soil, visitor bonus, harvest-and-launch, timestamp growth are not. |
-| 6 The tide | Not started | |
-| The Boogler | Done | Friendship, talking, riding, island gifts, hotbar. |
-| Later: gamepad, controls guide and pause view | Done | |
-| Later: weather, water polo, water wheel, r/place garden, mud and erosion | Not started | |
-| Skip: 3D voxel fluid | Cut | |
-
-### Tech plan
-
-| Item | Status |
-|---|---|
-| A1 determinism lint, A2 reports, A3 nightly smoke test, A4 deploy job, A5 sim measurement, A6 mixed builds | Done (A4 still needs the human Fly.io steps) |
-| B1 rules split, B2 replay test, B3 snapshot versions | Done |
-| C1 thin `main.js` (130 to 65 lines), C2 folders by domain, C3 lazy loading and vendor chunks | Done |
-| C4 sim worker | Decided: no worker (A5 measured about 1 ms per tick; the render-side surface scan is the bigger cost) |
-
-All tech plan items are ticked; what is left is the human server setup (A4) and the owner's server call.
-
-### Owner decisions (2026-10-30)
-
-- **Keep:** the caves (audit look and walk-in/out first), The Boogler, the video pipeline (improve it).
-- **Remove unused legacy code:** the 129-cell migration (#28), the dead water spring API and `dev/water-lab/`
-  (#31): all done.
-- **Server stack:** pending the owner's call on Fly.io with TURN.
+The roadmap and its checkboxes are in [PLAN.md](../PLAN.md); the tech plan's items and the owner's keep/cut and server
+decisions are in [tech-plan.md](tech-plan.md) ("Decided"). This file does not copy them, so they have one place to be
+ticked.
 
 ### Related ideas (not built)
 
@@ -871,18 +837,14 @@ research in [research/](research/README.md).
 
 ## 12. Doc and code mismatches found while writing this
 
-Still true at `1d37273`:
+Still open:
 
-- [src/pois/lighthouse/index.js](../src/pois/lighthouse/index.js) says the tower is "on the east cape"; it moved to the
-  central hill at (6, −58) (site file, playtest 2026-10-29).
 - PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.186.1. The peer-room header cites peerjs 1.5.4;
   the package has 1.5.5.
-- DESIGN.md's sync table lists Lockstep as "Water, sand, mushrooms" and its authority table names "weather"; gifts and
-  proto flags are Lockstep too, and weather does not exist.
-- PLAN Phase 4 says ball splashes "add a little water"; the `slosh` op moves water (conserved), it never adds any.
-- PLAN Phase 4 still lists the sim Web Worker as an open item; tech plan C4 decided against it.
+- DESIGN.md's authority table names "weather", which does not exist yet.
 - DESIGN principle 9 and `src/world/README.md` mention offline growth through `world.epochMs`; nothing reads it.
 - The hotbar is global while the Boogler friendship is per room; nothing documents whether that is intended.
-- The tech plan's "Decided" list still words the legacy-code removal as a to-do, though #28 and #31 did it.
 
-Fixed since the first draft: the spring API and `dev/water-lab/` are gone (#31), and frame logic left `main.js` (#29).
+Fixed since: the spring API and `dev/water-lab/` are gone (#31), frame logic left `main.js` (#29); the lighthouse
+header, DESIGN's Lockstep examples, PLAN Phase 4's slosh and worker items and the tech plan's legacy-code line now match
+the code.

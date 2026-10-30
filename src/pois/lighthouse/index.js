@@ -1,4 +1,5 @@
-// The lighthouse: a striped tower on the east cape with a spiral staircase round the outside up to a gallery deck.
+// The lighthouse: a striped tower on the hill in the middle of the island, with a spiral staircase round the outside up
+// to a gallery deck.
 // At dusk the lamp comes on and two beams sweep the sea (on the shared clock, so everyone sees the same sweep).
 //
 // The stair is a smooth helical ramp for physics (no step bumps) with treads drawn on top; railings on the outer
