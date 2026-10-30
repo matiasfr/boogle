@@ -2,8 +2,9 @@
 
 The guest engine: a wasm with the guest's simulation (every action, collision, animation playback) and the guest and
 dino models, built from a local checkout of the upstream N64 decompilation (https://github.com/n64decomp/sm64) and the
-glue in this folder. Only the glue is in this repo. The engine is never committed, deployed or fetched by the game:
-each player brings their own build, like the ROM (`src/guest/engine.js`).
+glue in this folder. Only the glue is in this repo. The engine is never committed or deployed: the game fetches the
+owner's hosted build when a player first talks to the dino (`ENGINE_URL` in `src/guest/engine.js`), and a player can
+still bring their own. The ROM always comes from the player.
 
 ## Build
 
@@ -18,7 +19,8 @@ GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
 
 ## Use it
 
-- In the game: talk to the dino by the wine cellar, then drop or pick `engine.wasm` and the ROM in the dialog. This
+- In the game: talk to the dino by the wine cellar, then drop, pick or link the ROM in the dialog (and `engine.wasm`,
+  if the hosted one couldn't be fetched). This
   browser keeps both in IndexedDB.
 - On a local dev server: `VITE_DINO_ENGINE_URL=/native/guest/out/engine.wasm npm run dev` loads it without the
   dialog. Never set this for a deploy.

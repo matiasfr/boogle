@@ -539,10 +539,11 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
   own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
   run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
   hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
-- **Bring your own files.** The guest needs two files the game never ships, fetches or uploads: the guest engine
+- **Bring your own ROM.** The guest needs two files the game never ships or uploads: the guest engine
   (`engine.wasm`, built from [native/guest/](../native/guest/README.md)) and the player's own ROM it is built for (8 MB,
-  checked by SHA-1), from which the guest's animations and the textures are cut. The first talk opens a dialog with a
-  checklist; drop or pick each file. This browser keeps both in IndexedDB. A local dev build can name the engine with
+  checked by SHA-1), from which the guest's animations and the textures are cut. The first talk fetches the owner's
+  hosted engine quietly and opens a dialog asking for the ROM (and for the engine too, only if that fetch failed);
+  drop, pick or paste a link to each file. This browser keeps both in IndexedDB. A local dev build can name the engine with
   `VITE_DINO_ENGINE_URL` instead. Without both files the feature stays dormant: the dino is built from primitives,
   breathes and hops when spoken to, and talking only opens the dialog.
 - **How it plays.** While you are the guest, the engine runs at 30 Hz inside the physics step and your body turns

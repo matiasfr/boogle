@@ -1,7 +1,8 @@
 // The dino waits outside the wine cellar's cave. Talk to him and you play as the guest, a character with its own full
 // move set and controller run by the guest engine (src/guest/); talk to him again to be yourself. The player brings
-// both files the guest needs, asked for the first time: the engine (src/guest/engine.js, built from native/guest/)
-// and their own ROM for the guest's animations and textures (src/guest/rom.js). Without both the dino is just a dino.
+// their own ROM for the guest's animations and textures (src/guest/rom.js), asked for the first time; the engine
+// (src/guest/engine.js) is fetched quietly then, and only asked for too if that fails. Without both the dino is just
+// a dino.
 // Serves DESIGN.md 1 (toys before chores): a second way to move around the island, and everything else (hands, hotbar,
 // ball, friends) still works.
 //
@@ -74,8 +75,10 @@ async function becomeGuest() {
   }
 }
 
+// The engine is only listed when the hosted one couldn't be had (offline, link gone): then the player brings it too.
+let askEngine = false;
 const needs = () => [
-  { label: 'The engine (engine.wasm, from native/guest/)', done: hasEngine() },
+  ...(askEngine ? [{ label: 'The engine (engine.wasm, from native/guest/)', done: hasEngine() }] : []),
   { label: `The ROM it is built for (SHA-1 ${ROM_SHA1.slice(0, 8)}…)`, done: !!rom },
 ];
 
@@ -101,13 +104,20 @@ async function useFile(file) {
   if (!guest.active && me.body) becomeGuest();
 }
 
-function talk() {
+async function talk() {
   if (switching) return;
   if (guest.active) {
     module.stopGuest();
     puff();
     dinoSays(WORD);
-  } else if (ready()) {
+    return;
+  }
+  if (!hasEngine()) {
+    switching = true;
+    askEngine = !(await findEngine(true).finally(() => (switching = false)));
+    if (hasEngine() && rom) showRealDino(rom);
+  }
+  if (ready()) {
     becomeGuest();
   } else {
     openFilesDialog({ title: '...rawr?', needs: needs(), ext: [...ENGINE_EXT, ...ROM_EXT], onFile: useFile });
@@ -148,7 +158,7 @@ const releaseB = () => (guest.bHeld = false);
 dom.grabBtn.addEventListener('pointerdown', () => guest.active && !heldId() && !interactTarget() && pressB());
 dom.grabBtn.addEventListener('pointerup', releaseB);
 
-// Files this browser already has: nothing is fetched unless a local dev build names an engine.
+// Files this browser already has; the hosted engine is fetched only once someone talks to the dino.
 onStart(() => {
   Promise.all([findEngine(), loadFile(ROM_KEY)]).then(([, data]) => {
     rom ??= data;
