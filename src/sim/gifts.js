@@ -9,12 +9,12 @@ export const MAX_TREES = 64;
 export const REGROW_TICKS = 2400;
 export const MAX_SHORE = 12;
 export const MAX_ITEMS = 48;
-export const WASH_EVERY = 450;
-export const WASH_EVERY_SPARSE = 100; // while fewer than SPARSE shore items lie around
-export const SPARSE = 3;
+const WASH_EVERY = 450;
+const WASH_EVERY_SPARSE = 100; // while fewer than SPARSE shore items lie around
+const SPARSE = 3;
 export const LIFE = { shore: 12000, fruit: 6000, toss: 6000 }; // then the tide takes it back, or it rots away
 export const PERCH_REFILL = 600; // a perch gets a new item this long after its last one was taken
-export const MAX_PERCHES = 4;
+const MAX_PERCHES = 4;
 export const SRC = { SHORE: 0, FRUIT: 1, TOSS: 2, PERCH: 3 };
 // Item height: on the terrain (follows digging), on its perch, or a resting height in cm (a deck, a rock, a cap).
 export const ON_GROUND = -1;

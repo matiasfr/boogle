@@ -6,7 +6,8 @@
 //    decides and publishes it as the presence field `kd` (ms remaining), so everyone sees the flop.
 // Local cosmetics, so Math.random is fine. Nothing here is read by the shared simulation.
 import * as THREE from 'three';
-import { scene, camera } from '../scene.js';
+import { camera } from '../scene.js';
+import { emit } from '../particles.js';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.js';
 import { groundHeight } from '../terrain.js';
 import { clamp, lerp } from '../math.js';
@@ -17,7 +18,7 @@ import { onFrame } from '../loop.js';
 import { getAudio } from '../audio.js';
 
 // ---------------------------------------------------------------- tunables
-export const TUNE = {
+const TUNE = {
   impactMin: 3.2, // velocity change (m/s) that counts as a hit
   faceplantSpeed: 11, // ball speed (m/s) that flops a head
   downMs: 800,
@@ -33,62 +34,29 @@ const tmpV = new THREE.Vector3(),
   freezeQ = new THREE.Quaternion();
 const tmpM = new THREE.Matrix4();
 
-// ---------------------------------------------------------------- sand puff (own tiny pool)
-const PUFF_N = 40;
-const puffMesh = new THREE.InstancedMesh(
-  new THREE.IcosahedronGeometry(0.5, 1),
-  new THREE.MeshBasicMaterial({ color: '#f1dca8', transparent: true, opacity: 0.85, depthWrite: false }),
-  PUFF_N,
-);
-puffMesh.frustumCulled = false;
-puffMesh.count = 0;
-puffMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-scene.add(puffMesh);
-const puffs = []; // { x,y,z,vx,vy,vz,life,max,size }
+// ---------------------------------------------------------------- sand puff (the shared pool, src/particles.js)
+const PUFF = new THREE.Color('#f1dca8');
 function emitPuff(x, y, z, k) {
   const n = Math.round(6 + 8 * k);
   for (let q = 0; q < n; q++) {
     const a = Math.random() * Math.PI * 2,
       sp = 0.6 + Math.random() * 1.6 * (0.5 + k);
-    const p = {
+    emit('soft', {
       x: x + Math.cos(a) * 0.3,
       y: y + 0.1,
       z: z + Math.sin(a) * 0.3,
       vx: Math.cos(a) * sp,
       vy: 0.5 + Math.random() * 1.3,
       vz: Math.sin(a) * sp,
-      life: 0,
-      max: 0.5 + Math.random() * 0.35,
+      life: 0.5 + Math.random() * 0.35,
       size: 0.14 + Math.random() * 0.16 * (0.6 + k),
-    };
-    if (puffs.length >= PUFF_N) puffs.shift();
-    puffs.push(p);
+      color: PUFF,
+      gravity: 0.8,
+      drag: 3,
+      grow: [0.6, 2],
+      shrink: 1 / 3,
+    });
   }
-}
-function updatePuffs(dt) {
-  for (let k = puffs.length - 1; k >= 0; k--) {
-    const p = puffs[k];
-    p.life += dt;
-    if (p.life >= p.max) {
-      puffs.splice(k, 1);
-      continue;
-    }
-    const drag = Math.exp(-dt * 3);
-    p.vx *= drag;
-    p.vz *= drag;
-    p.vy = p.vy * drag - dt * 0.8;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.z += p.vz * dt;
-  }
-  puffMesh.count = puffs.length;
-  puffs.forEach((p, k) => {
-    const f = p.life / p.max;
-    const s = p.size * (0.6 + f * 1.4) * Math.min(1, (1 - f) * 3);
-    tmpM.makeScale(s, s, s).setPosition(p.x, p.y, p.z);
-    puffMesh.setMatrixAt(k, tmpM);
-  });
-  puffMesh.instanceMatrix.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------- boing
@@ -355,7 +323,6 @@ onFrame(
   ({ now, dt }) => {
     detect(now);
     stepSpring(dt);
-    updatePuffs(dt);
   },
   { phase: 'world' },
 );

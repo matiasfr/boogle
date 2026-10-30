@@ -15,10 +15,10 @@
 //   the same (<= depth). So below-sea holes near the shore fill to sea level, and raised pools
 //   connected to the shore drain into it. Net sea exchange is tracked in stats().seaNet.
 //
-//   Sources add `rate` cm/tick to a cell (before flow). Evaporation (the only other sink): every
+//   Evaporation (the only other sink): every
 //   `evapInterval` ticks, a cell with 0 < depth <= `evapMax` whose neighbours are ALL also
 //   <= evapMax is removed (thin isolated films/trickles die; shorelines of real water are
-//   untouched). Not applied to source cells or to sea-connected cells at/below sea level.
+//   untouched). Not applied to sea-connected cells at/below sea level.
 //
 //   Activity: `act[c]` = quiet-tick countdown. A cell that moves water (or receives it) is reset
 //   to `quietTicks` and wakes its neighbours; cells at 0 are skipped. Sleeping cells are
@@ -30,7 +30,7 @@
 //
 // API: createWater({width,height,terrain,sea=0,seaEdges=15,flowRate=160,quietTicks=6,
 //        evapInterval=20,evapMax=1}) ->
-//   depth, idx(i,j), addWater, removeWater (returns removed), setSource/clearSource, setSeaLevel,
+//   depth, idx(i,j), addWater, removeWater (returns removed), setSeaLevel,
 //   step, wake(i,j,r=1), serialize, load, hash, stats.
 // seaEdges bitmask: 1 = i=0 side, 2 = i=width-1, 4 = j=0, 8 = j=height-1. 0 = no sea.
 
@@ -67,9 +67,6 @@ export function createWater(opts) {
   const OFF_B = [1, -1, height, -height]; // different order on odd ticks
   const BIT_B = [8, 4, 2, 1];
 
-  let srcIdx = [];
-  let srcRate = [];
-  const srcMap = new Map();
   let tick = 0;
   let added = 0;
   let seaNet = 0; // net water gained from sea (negative = drained into sea)
@@ -77,12 +74,6 @@ export function createWater(opts) {
 
   const inb = (i, j) => i >= 0 && j >= 0 && i < width && j < height;
   const idx = (i, j) => i * height + j;
-
-  function rebuildSources() {
-    const keys = [...srcMap.keys()].sort((a, b) => a - b);
-    srcIdx = keys;
-    srcRate = keys.map((k) => srcMap.get(k));
-  }
 
   function wake(i, j, r = 1) {
     for (let a = Math.max(0, i - r); a <= Math.min(width - 1, i + r); a++)
@@ -94,13 +85,6 @@ export function createWater(opts) {
 
   function step() {
     tick++;
-    for (let k = 0; k < srcIdx.length; k++) {
-      const c = srcIdx[k];
-      const r = Math.min(srcRate[k], MAX_DEPTH - depth[c]);
-      depth[c] += r;
-      added += r;
-      act[c] = K;
-    }
     const fwd = (tick & 1) === 0;
     const OFF = fwd ? OFF_A : OFF_B;
     const BIT = fwd ? BIT_A : BIT_B;
@@ -165,7 +149,6 @@ export function createWater(opts) {
     for (let c = 0; c < N; c++) {
       const d = depth[c];
       if (d === 0 || d > evapMax) continue;
-      if (srcMap.has(c)) continue;
       const e = edge[c];
       if (e & seaEdges && terrain[c] + d <= sea) continue;
       let ok = true;
@@ -216,19 +199,14 @@ export function createWater(opts) {
         mix(c);
         mix(depth[c]);
       }
-    for (let k = 0; k < srcIdx.length; k++) {
-      mix(srcIdx[k]);
-      mix(srcRate[k]);
-    }
     return h >>> 0;
   }
 
   function serialize() {
     const cells = [];
     for (let c = 0; c < N; c++) if (depth[c] !== 0) cells.push(c, depth[c]);
-    const src = [];
-    for (let k = 0; k < srcIdx.length; k++) src.push(srcIdx[k], srcRate[k]);
-    return { v: 1, width, height, sea, tick, added, seaNet, evaporated, cells, src };
+    // src (always empty) is read by tabs on older builds, which had water springs; load ignores it.
+    return { v: 1, width, height, sea, tick, added, seaNet, evaporated, cells, src: [] };
   }
 
   function load(json) {
@@ -236,9 +214,6 @@ export function createWater(opts) {
     depth.fill(0);
     act.fill(0);
     for (let k = 0; k + 1 < json.cells.length; k += 2) depth[json.cells[k]] = json.cells[k + 1];
-    srcMap.clear();
-    for (let k = 0; k + 1 < json.src.length; k += 2) srcMap.set(json.src[k], json.src[k + 1]);
-    rebuildSources();
     sea = json.sea | 0;
     tick = json.tick | 0;
     added = json.added | 0;
@@ -275,15 +250,6 @@ export function createWater(opts) {
     stats,
     addWater,
     removeWater,
-    setSource(i, j, cmPerTick) {
-      if (!inb(i, j)) return;
-      srcMap.set(idx(i, j), Math.max(0, cmPerTick | 0));
-      rebuildSources();
-      act[idx(i, j)] = K;
-    },
-    clearSource(i, j) {
-      if (srcMap.delete(idx(i, j))) rebuildSources();
-    },
     setSeaLevel(cm) {
       sea = cm | 0;
       for (let c = 0; c < N; c++) if (edge[c] & seaEdges) act[c] = K;

@@ -3,9 +3,14 @@
 // are fixed: left moves, right looks. This registry is also the one description of every control: the pause view's
 // controls page and the first-run card are generated from it (src/guide.js), so they cannot drift from the code.
 //
-//   registerAction(id, { pad, label, detail, keys, touch, group, order, guide, down, up, held })
+//   registerAction(id, { pad, key, touch, label, detail, keys, group, order, guide, down, up, held })
 //     pad     a slot from PAD (one action per slot; a clash is logged and the later action stays unbound)
 //     down    () on press, up () on release, held (dt) every frame while pressed (all optional)
+//     key     a KeyboardEvent.code or an array of them that also press the action (one shared listener: no repeats,
+//             no Ctrl/Cmd/Alt, nothing while typing in a text field). keys (the guide row) defaults to these codes;
+//             give keys too when the row shows more (ping: ['KeyG', 'Mouse1']). A code bound twice warns.
+//     touch   the touch label (a string), or { label, className } to also build a .tbtn button in #touch that
+//             presses the action
 //     the rest describes the control for the guide, see below; guide: false keeps it off the guide (it is covered by
 //     another row, or has nothing to show)
 //   describeControl(id, { label, detail, keys, pad, touch, group, order, context })
@@ -29,6 +34,7 @@
 // A control with keys or touch must also have a pad binding (AGENTS.md: every control is playable on a gamepad).
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
+// A key with no pad action of its own (hotbar digits, dive) binds through onKey(codes, { down, up }), same guard.
 //
 // To layer behaviour onto another module's action (feel.js turns pile into a dive while swimming), wrap it from
 // onStart, once it is registered; never overwrite its handlers by hand:
@@ -135,9 +141,64 @@ const warnProblems = (c) => {
   if (c.guide !== false) for (const p of problemsOf(c)) console.warn(`[controls] ${p}`);
 };
 
+// ---------------------------------------------------------------- keyboard
+// One guard for every bound key: the name field (or any text field) keeps its letters.
+export const isTyping = (e) => !!e?.target?.closest?.('input, textarea, [contenteditable]');
+const keyBinds = new Map(); // code -> { owner, down, up }
+let listening = false;
+
+// Dispatches a keydown/keyup to its binding; the window listener calls it, tests call it with plain objects.
+export function keyEvent(e) {
+  const b = keyBinds.get(e.code);
+  if (!b) return false;
+  if (e.type === 'keyup') b.up?.();
+  else if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e)) b.down?.();
+  else return false;
+  return true;
+}
+
+const codesOf = (key) => (key === undefined ? [] : [key].flat());
+
+export function onKey(key, { down = null, up = null, owner = 'onKey' } = {}) {
+  const codes = codesOf(key);
+  for (const code of codes) {
+    const was = keyBinds.get(code);
+    if (was && was.owner !== owner) console.warn(`[controls] ${owner}: key ${code} is already bound by ${was.owner}`);
+    else keyBinds.set(code, { owner, down, up });
+  }
+  if (!listening && codes.length && typeof addEventListener === 'function') {
+    listening = true;
+    addEventListener('keydown', keyEvent);
+    addEventListener('keyup', keyEvent);
+  }
+}
+
+const unbindKeys = (owner) => {
+  for (const [code, b] of keyBinds) if (b.owner === owner) keyBinds.delete(code);
+};
+
+// ---------------------------------------------------------------- touch
+const touchLabel = (touch) => (typeof touch === 'object' && touch ? touch.label : touch);
+
+function touchButton(action, { label, className }) {
+  const box = typeof document === 'undefined' ? null : document.getElementById('touch');
+  if (!box) return null;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `tbtn ${className}`;
+  btn.textContent = label;
+  btn.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    action.down?.();
+  });
+  for (const ev of ['pointerup', 'pointercancel']) btn.addEventListener(ev, () => action.up?.());
+  box.append(btn);
+  return btn;
+}
+
 export function registerAction(
   id,
-  { pad, label, detail, keys, touch, group, order, guide = true, down = null, up = null, held = null },
+  { pad, key, label, detail, keys, touch, group, order, guide = true, down = null, up = null, held = null },
 ) {
   if (!PAD.includes(pad)) {
     console.warn(`[controls] ${id}: unknown pad slot "${pad}"`);
@@ -150,13 +211,15 @@ export function registerAction(
   }
   const old = actions.get(id);
   if (old && old.pad !== pad) bySlot.delete(old.pad);
+  old?.button?.remove();
+  unbindKeys(id);
   const action = {
     id,
     pad,
     label: label ?? '',
     detail,
-    keys,
-    touch,
+    keys: keys ?? (key === undefined ? undefined : codesOf(key)),
+    touch: touchLabel(touch),
     group,
     order,
     guide,
@@ -167,6 +230,9 @@ export function registerAction(
   };
   actions.set(id, action);
   bySlot.set(pad, action);
+  // Keys and the touch button go through the action, so wrapAction reaches them too.
+  onKey(key, { owner: id, down: () => action.down?.(), up: () => action.up?.() });
+  if (touch?.className) action.button = touchButton(action, touch);
   warnProblems(action);
   return true;
 }

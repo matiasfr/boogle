@@ -11,7 +11,7 @@ import { requestLock } from '../input.js';
 import { canvas } from '../scene.js';
 import { openModal, closeModal, modalOpen } from '../modal.js';
 import { dialogue } from '../boogler-dialogue.js';
-import { registerAction } from '../controls.js';
+import { registerAction, isTyping } from '../controls.js';
 import { renderGuide } from '../guide.js';
 import { glyph, inputKind } from '../glyphs.js';
 
@@ -277,7 +277,7 @@ addEventListener(
   'keydown',
   (e) => {
     if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered || dialogue.open) return;
-    if (e.ctrlKey || e.metaKey || e.altKey || e.target?.closest?.('input, textarea')) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     if (openPause(e.code === 'KeyH' ? 'controls' : 'main')) {
       e.preventDefault();
       e.stopImmediatePropagation();

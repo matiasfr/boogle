@@ -9,11 +9,10 @@ import { islandBaseCm } from './ground.js';
 const found = import.meta.glob('../pois/*/site.js', { eager: true });
 
 // Folder order (alphabetical), so every client composes the stamps in the same order.
-export const sites = Object.keys(found)
+const sites = Object.keys(found)
   .sort()
   .map((path) => ({ id: path.split('/').at(-2), ...found[path].default }));
 
 export const island = createIsland(sites);
 // Base heights in cm on the world grid (ground.js), the ground the shared sim and the terrain mesh start from.
 export const baseCm = islandBaseCm(island);
-export const site = (id) => sites.find((s) => s.id === id) ?? null;

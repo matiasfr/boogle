@@ -54,7 +54,7 @@ function changed() {
   for (const fn of changeFns) fn();
 }
 
-export const heldSlot = () => inv.slots[inv.sel] ?? null;
+const heldSlot = () => inv.slots[inv.sel] ?? null;
 export const heldId = () => heldSlot()?.id ?? null;
 export const slotOf = (id) => inv.slots.findIndex((s) => s?.id === id);
 export const has = (id) => slotOf(id) >= 0;

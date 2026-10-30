@@ -11,7 +11,7 @@ const courtH = new WeakMap(); // island -> the ground height at the court's cent
 const courtWeight = (x, z) => 1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
 
 // The island's height (metres) at world (x, z), with the court levelled.
-export function levelledHeight(island, x, z) {
+function levelledHeight(island, x, z) {
   let h = courtH.get(island);
   if (h === undefined) courtH.set(island, (h = island.heightAt(COURT.x, COURT.z)));
   return lerp(island.heightAt(x, z), h, courtWeight(x, z));

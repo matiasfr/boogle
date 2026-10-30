@@ -5,11 +5,10 @@ import './bump.css';
 import { me, cam } from '../player.js';
 import { ball, claimBall } from '../ball.js';
 import { sendPresence } from '../net.js';
-import { dom } from '../hud.js';
 import { onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 
-export const TUNE = {
+const TUNE = {
   reach: 3.4, // metres from the chest to the ball centre (grab reach is 2.4)
   up: 9.2, // m/s; about 2.4 m of rise, ~1 s of hang time: time for a teammate to run under it
   forward: 3.4, // m/s toward where the camera looks
@@ -20,7 +19,7 @@ export const TUNE = {
 
 let lastBump = -1e9;
 
-export function bump() {
+function bump() {
   const now = performance.now();
   if (!me.entered || !me.body || me.down || me.holding || me.charging) return false;
   if (now - lastBump < TUNE.cooldownMs) return false;
@@ -52,31 +51,14 @@ export function bump() {
 }
 
 onStart(() => {
-  addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyV' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (document.activeElement === dom.nameInput) return;
-    bump();
-  });
   registerAction('bump', {
     pad: 'rt',
+    key: 'KeyV',
+    touch: { label: 'Bump', className: 'bump' },
     label: 'Bump the ball up',
     detail: 'Like a volleyball dig',
-    keys: ['KeyV'],
-    touch: 'Bump',
     group: 'ball',
     order: 1,
     down: bump,
   });
-
-  {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'tbtn bump';
-    btn.textContent = 'Bump';
-    btn.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      bump();
-    });
-    document.getElementById('touch')?.append(btn);
-  }
 });

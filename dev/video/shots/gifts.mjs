@@ -2,9 +2,8 @@
 // Page code: the ripe palm nearest home, with its position.
 const PALM = `
   const { trees } = await import('/src/props.js');
-  const { gifts } = await import('/src/gifts.js');
   const { isRipe } = await import('/src/sim/gifts.js');
-  const { world } = await import('/src/world/sync.js');
+  const { gifts, sync: { world } } = window.boogle;
   let best = null;
   gifts.trees.forEach((_, t) => {
     if (!isRipe(gifts, t, world.tick)) return;
@@ -53,8 +52,8 @@ export default {
     );
     // Things that washed up: fast-forward the shared clock until a few lie on the beach, then glide along them.
     const items = await g.eval(`
-      const { gifts } = await import('/src/gifts.js');
-      const { updateWorld, world } = await import('/src/world/sync.js');
+      const { gifts, sync: { world } } = window.boogle;
+      const { updateWorld } = await import('/src/world/sync.js'); // fast-forward: no handle for that
       const t0 = world.tick;
       while (gifts.items.filter((it) => it.src === 0).length < 5 && world.tick < t0 + 3000) updateWorld(0.1);
       const { CELL, HALF } = await import('/src/constants.js');

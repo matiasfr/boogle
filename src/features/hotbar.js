@@ -19,7 +19,7 @@ import { pouring } from '../mushroom-garden.js';
 import { itemModel } from '../item-models.js';
 import { iconFor } from '../item-icons.js';
 import { glyph, inputKind } from '../glyphs.js';
-import { describeControl } from '../controls.js';
+import { describeControl, onKey } from '../controls.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
 import { reducedMotion } from '../constants.js';
 
@@ -200,11 +200,7 @@ function renderHud(now) {
 // ---------------------------------------------------------------- keys, presence, frame
 onStart(() => {
   buildHud();
-  addEventListener('keydown', (e) => {
-    if (!me.entered || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target?.tagName === 'INPUT') return;
-    const k = /^Digit([1-8])$/.exec(e.code);
-    if (k) select(Number(k[1]) - 1);
-  });
+  for (let k = 0; k < 8; k++) onKey(`Digit${k + 1}`, { owner: 'hotbar', down: () => me.entered && select(k) });
   describeControl('hotbar', {
     label: 'Hold something from your hotbar',
     detail: { kbm: 'Press the same slot again for empty hands', pad: 'Cycle through the slots' },

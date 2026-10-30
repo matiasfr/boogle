@@ -1,6 +1,6 @@
 // Critters (924924d): run at the gulls and they burst off the sand, drop the ball on the fish school and it scatters,
 // fireflies over the mushroom garden at night.
-const SKY = (frac, phase = null) => `(await import('/src/sky.js')).skyDebug.preview(${frac}, ${phase})`;
+const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 const TP = (x, z) => `
   const { groundHeight } = await import('/src/terrain.js');
   const b = window.boogle.me.body;
@@ -129,7 +129,7 @@ export default {
     await g.wait(6);
     // They're spread thin: read their positions off the point cloud and film the firefly with the most company.
     const [hx, hy, hz] = await g.eval(`
-      const { scene } = await import('/src/scene.js');
+      const { scene } = window.boogle;
       let pts = null;
       scene.traverse((o) => { if (o.isPoints && o.material.blending === 2 && o.geometry.attributes.color) pts = o; });
       const a = pts.geometry.attributes.position.array, n = a.length / 3;

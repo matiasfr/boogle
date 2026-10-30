@@ -11,13 +11,12 @@ import { me, camForward } from '../player.js';
 import { ball } from '../ball.js';
 import { net, remotes, onRoomReady } from '../net.js';
 import { terrain } from '../world/terrain-edits.js';
-import { dom } from '../hud.js';
 import { getAudio } from '../audio.js';
 import { onFrame, onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
 
-export const TUNE = {
+const TUNE = {
   lifeMs: 4000,
   fadeMs: 500,
   ownGapMs: 1000, // our own cooldown
@@ -76,7 +75,7 @@ function aimPing() {
 }
 
 let lastOwn = -1e9;
-export function pingNow() {
+function pingNow() {
   const now = performance.now();
   if (!me.entered || !me.body || now - lastOwn < TUNE.ownGapMs) return;
   lastOwn = now;
@@ -225,11 +224,6 @@ onRoomReady((room) =>
 onStart(() => {
   (document.querySelector('.hud') ?? document.body).append(layer);
 
-  const typing = () => document.activeElement === dom.nameInput;
-  addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyG' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing()) return;
-    pingNow();
-  });
   document.getElementById('view')?.addEventListener('mousedown', (e) => {
     if (e.button !== 1) return;
     e.preventDefault();
@@ -238,22 +232,14 @@ onStart(() => {
 
   registerAction('ping', {
     pad: 'left',
+    key: 'KeyG',
+    touch: { label: 'Ping', className: 'ping-btn' },
     label: 'Ping where you look',
     keys: ['KeyG', 'Mouse1'],
-    touch: 'Ping',
     group: 'friends',
     order: 1,
     down: pingNow,
   });
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'tbtn ping-btn';
-  btn.textContent = 'Ping';
-  btn.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    pingNow();
-  });
-  document.getElementById('touch')?.append(btn);
 });
 
 onFrame(({ now }) => updatePings(now), { phase: 'late' });

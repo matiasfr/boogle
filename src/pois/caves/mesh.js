@@ -106,7 +106,7 @@ const EDGE = [
 
 // Marching cubes over field (dims [nx, ny, nz], voxel size, origin lo; inside = negative), sharing vertices along grid
 // edges. onVertex(x, y, z) runs once per new vertex. Generator (yields per slice); returns { pos, idx } as plain arrays.
-export function* polygonize(field, [nx, ny, nz], lo, voxel, onVertex = null) {
+function* polygonize(field, [nx, ny, nz], lo, voxel, onVertex = null) {
   const at = (i, j, k) => (k * ny + j) * nx + i;
   const pos = [],
     idx = [];
@@ -151,7 +151,7 @@ export function* polygonize(field, [nx, ny, nz], lo, voxel, onVertex = null) {
 }
 
 // Winds every triangle so its front faces down sd's gradient (toward = -1) or up it (toward = 1).
-export function* orient(pos, idx, sd, toward) {
+function* orient(pos, idx, sd, toward) {
   const g = 0.08;
   for (let n = 0; n < idx.length; n += 3) {
     if (n % 3000 === 0) yield;
@@ -174,15 +174,6 @@ export function* orient(pos, idx, sd, toward) {
       gy = sd(mx, my + g, mz) - sd(mx, my - g, mz),
       gz = sd(mx, my, mz + g) - sd(mx, my, mz - g);
     if ((fx * gx + fy * gy + fz * gz) * toward < 0) [idx[n + 1], idx[n + 2]] = [idx[n + 2], idx[n + 1]];
-  }
-}
-
-// Runs buildCaveMeshSteps to the end (Node, tests).
-export function buildCaveMesh() {
-  const it = buildCaveMeshSteps();
-  for (;;) {
-    const r = it.next();
-    if (r.done) return r.value;
   }
 }
 
@@ -242,7 +233,7 @@ export function* buildCaveMeshSteps() {
 // A ring of rock round each mouth, overlapping both the hillside and the tunnel, so the seam where the heightfield's
 // hole meets the cave mesh (the tube's trimmed end, gaps at the floor corners) is behind solid rock. Inside = rock.
 const COLLAR = { inner: 2.16, outer: 3.5, back: -1.6, front: 1.1, below: 0.9, voxel: 0.5, noise: 0.35 };
-export function collarSd(x, y, z, m) {
+function collarSd(x, y, z, m) {
   const ay = m.y + FLOOR_CUT; // tunnel axis height at the mouth
   const along = (x - m.x) * m.ox + (z - m.z) * m.oz;
   const sx = x - m.x - along * m.ox,

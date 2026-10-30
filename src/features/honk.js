@@ -8,13 +8,12 @@ import { scene, camera } from '../scene.js';
 import { COLORS } from '../constants.js';
 import { me } from '../player.js';
 import { net, remotes, onRoomReady } from '../net.js';
-import { dom } from '../hud.js';
 import { getAudio } from '../audio.js';
 import { onFrame, onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 import { createLimiter, createChordDetector, honkFreq } from '../sim/social.js';
 
-export const TUNE = {
+const TUNE = {
   ownGapMs: 300, // our own cap, ~3 per second
   chordWindowMs: 1000,
   chordMin: 3,
@@ -263,7 +262,7 @@ function onHonk(who, now) {
 }
 
 let lastOwn = -1e9;
-export function honkNow() {
+function honkNow() {
   const now = performance.now();
   if (!me.entered || !me.body || me.down || now - lastOwn < TUNE.ownGapMs) return;
   lastOwn = now;
@@ -285,28 +284,14 @@ onRoomReady((room) =>
 );
 
 onStart(() => {
-  const typing = () => document.activeElement === dom.nameInput;
-  addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyT' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing()) return;
-    honkNow();
-  });
   registerAction('honk', {
     pad: 'y',
+    key: 'KeyT',
+    touch: { label: 'Honk', className: 'honk-btn' },
     label: 'Honk',
     detail: 'Three friends at once make a chord',
-    keys: ['KeyT'],
-    touch: 'Honk',
     group: 'friends',
     order: 0,
     down: honkNow,
   });
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'tbtn honk-btn';
-  btn.textContent = 'Honk';
-  btn.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    honkNow();
-  });
-  document.getElementById('touch')?.append(btn);
 });
