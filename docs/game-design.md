@@ -79,7 +79,7 @@ file, and section 8 maps every feature to its kind.
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
-Scenery ([src/props.js](../src/props.js)): up to 36 fruit palms and 22 rocks on home (seed 20261028), plus up to 55
+Scenery ([src/render/props.js](../src/render/props.js)): up to 36 fruit palms and 22 rocks on home (seed 20261028), plus up to 55
 coastal palms, 70 round meadow trees and 55 boulders on the mainland (seed 20261029). Only the home palms bear fruit.
 Trees, rocks and POI keep-out discs go into `obstacles`, which the Boogler walks around.
 
@@ -91,8 +91,8 @@ built outside the POI system.
 | POI | Where | What is there | What you can do |
 |---|---|---|---|
 | **Spawn** | (14, 26), random within 3 m | [src/constants.js](../src/constants.js) `SPAWN` | Land here; fall below −25 m and you are put back. |
-| **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../src/island/ground.js), [terrain.js](../src/terrain.js)). No net or lines. | The ball spawns at (12, 20). The court is diggable sand even above the normal sand band. |
-| **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/mushroom-garden.js](../src/mushroom-garden.js)). | Take 5 seeds per press (stack up to 20) and the watering can. |
+| **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../src/island/ground.js), [terrain.js](../src/adapters/terrain.js)). No net or lines. | The ball spawns at (12, 20). The court is diggable sand even above the normal sand band. |
+| **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/adapters/mushroom-garden.js](../src/adapters/mushroom-garden.js)). | Take 5 seeds per press (stack up to 20) and the watering can. |
 | **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.js](../src/sim/mushrooms.js)). Kept clear of trees, digging and wash-ups. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
 | **Lighthouse** | (6, −58), on a 7.4 m hill with a flat top at 11 m | Striped 18 m tower, spiral stair of 2.5 turns round the outside, gallery deck at about 29.3 m with railings, lamp and two sweeping beams at night ([src/pois/lighthouse/](../src/pois/lighthouse/)). Paths to home, the windmill farm and the upland. | Climb; the **frisbee** waits on the deck at (7.9, 29.3, −56) and refills 60 s after it is taken. |
 | **Windmill farm** | Site centre (82, −46), facing west | Three wooden windmills (7.2 m towers, 7.2 m sails at 0.55 rad/s on the shared clock) on knolls, striped fields (wheat, greens, ploughed earth), cart tracks, hay bales, a fence ([src/pois/windmills/](../src/pois/windmills/)). | The sails are solid: they bonk players and bat the ball. Nothing else to do. |
@@ -109,8 +109,8 @@ Cave mouths ([network.js](../src/pois/caves/network.js)):
 
 ## 4. Player
 
-Files: [src/player.js](../src/player.js), [src/physics.js](../src/physics.js), [src/avatars.js](../src/avatars.js),
-[src/hud.js](../src/hud.js), [src/features/feel.js](../src/features/feel.js).
+Files: [src/player/player.js](../src/player/player.js), [src/physics/physics.js](../src/physics/physics.js), [src/player/avatars.js](../src/player/avatars.js),
+[src/player/hud.js](../src/player/hud.js), [src/features/feel.js](../src/features/feel.js).
 
 ### Movement and jump
 
@@ -157,7 +157,7 @@ you enter, it slowly circles the island.
 
 ### Avatar, colours and names
 
-- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../src/avatars.js)).
+- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../src/player/avatars.js)).
 - Eight colours ([constants.js](../src/constants.js) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your honk note.
 - Name: up to 16 characters, control and format characters stripped, default "Dat Frinco". Name and colour are kept
@@ -167,10 +167,10 @@ you enter, it slowly circles the island.
 
 ## 5. Controls
 
-The registry in [src/controls.js](../src/controls.js) is the source of truth: `registerAction` binds a pad slot and
+The registry in [src/player/controls.js](../src/player/controls.js) is the source of truth: `registerAction` binds a pad slot and
 handlers, `describeControl` adds display-only rows. The pause view's controls page and the first-run card are generated
-from it ([src/guide.js](../src/guide.js)), and [src/features/controls-check.js](../src/features/controls-check.js) warns
-in dev about gaps. Registrations live in [src/input.js](../src/input.js), [feel.js](../src/features/feel.js),
+from it ([src/player/guide.js](../src/player/guide.js)), and [src/features/controls-check.js](../src/features/controls-check.js) warns
+in dev about gaps. Registrations live in [src/player/input.js](../src/player/input.js), [feel.js](../src/features/feel.js),
 [hotbar.js](../src/features/hotbar.js), [bump.js](../src/features/bump.js), [honk.js](../src/features/honk.js),
 [ping.js](../src/features/ping.js), [pause.js](../src/features/pause.js) and [updates.js](../src/features/updates.js).
 
@@ -202,8 +202,8 @@ Notes:
 - **Free pad slots:** D-pad ↓ and D-pad →. The update toast borrows the first free one (D-pad ↓) while it is up.
 - Q, Z and F, and holding pile or flatten on the pad, pull the shovel out (or hand back a new one) but never mid-throw.
 - With `feel` on, pad LT and Q dive instead of piling or digging while you swim.
-- The talk box takes the keys and pad while open ([src/boogler-dialogue.js](../src/boogler-dialogue.js),
-  [src/modal.js](../src/modal.js)): number keys 1-9 answer, Esc closes; on the pad, D-pad picks, A or X skips the
+- The talk box takes the keys and pad while open ([src/boogler/dialogue.js](../src/boogler/dialogue.js),
+  [src/player/modal.js](../src/player/modal.js)): number keys 1-9 answer, Esc closes; on the pad, D-pad picks, A or X skips the
   typing then answers, Y pets, B walks away.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
   ([src/features/gamepad.js](../src/features/gamepad.js)). Analog triggers count as pressed at 0.4.
@@ -224,7 +224,7 @@ tick of 100 ms (10 per second).
   falls below −15 m.
 - **Controls.** E / pad B grab or steal; click / pad X charge and throw; V / pad RT bump; R / View respawn.
 - **Sync kind.** Owner. The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
-  velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/snaps.js](../src/snaps.js))
+  velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.js](../src/netplay/snaps.js))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An
   orphaned ball is claimed after 600 ms by the visible peer with the lowest id. Splashing into pools crosses into
   Lockstep through the `slosh` edit.
@@ -233,9 +233,9 @@ tick of 100 ms (10 per second).
   camera, plus half your velocity and 1.5 m/s up, spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
   25 % of old velocity, capped at 10.4 m/s, 300 ms cooldown. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
-- **Files.** [src/ball.js](../src/ball.js), [src/physics.js](../src/physics.js), [src/main.js](../src/main.js) (respawn
+- **Files.** [src/physics/ball.js](../src/physics/ball.js), [src/physics/physics.js](../src/physics/physics.js), [src/main.js](../src/main.js) (respawn
   and auto-claim), [src/features/bump.js](../src/features/bump.js), [src/features/impact.js](../src/features/impact.js)
-  (squash, hit-stop, sand puff, boing, face-plant), [src/splash.js](../src/splash.js).
+  (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../src/render/splash.js).
 - **Known issues and limits.** Ball latency for non-owners is unmeasured (PLAN Phase 1). The ball is not persisted: it
   starts at its spawn each session. Keepy-uppy streak was built and cut (PLAN Phase 2). Ball frame logic still sits in
   `main.js` (tech plan C1, not done).
@@ -262,7 +262,7 @@ tick of 100 ms (10 per second).
   player per 2 ticks (5 per second); client repeat 220 ms. Aim reach 4.5 m. Drag steps at most 2 cells per edit.
 - **Files.** [src/world/rules/terrain.js](../src/world/rules/terrain.js), [src/world/terrain-logic.js](../src/world/terrain-logic.js),
   [src/world/terrain-edits.js](../src/world/terrain-edits.js), [src/features/shovel.js](../src/features/shovel.js),
-  [src/features/sand-fx.js](../src/features/sand-fx.js), [src/terrain.js](../src/terrain.js).
+  [src/features/sand-fx.js](../src/features/sand-fx.js), [src/adapters/terrain.js](../src/adapters/terrain.js).
 - **Known issues and limits.** No erosion or wet-sand slumping (PLAN "later"). Each player's bucket is in shared state,
   keyed by tab id, so it does not follow you across reloads (the tab id is per page load). Saves from the old 129-cell
   grid load as bare sand (owner decision 2026-10-30).
@@ -284,8 +284,8 @@ tick of 100 ms (10 per second).
   below −220 cm. Slosh: needs a landing over 3.6 m/s and 8 cm of water; moves up to 360 cm (40 per centre cell) from the
   3 × 3 to the ring 2 to 3 cells out; 55 cm per m/s over the minimum; once per 4 ticks per player. Physics: currents
   capped at 2.6 m/s, 7 m/s per unit of slope, no push under 6 cm, "water" from 3 cm.
-- **Files.** As above, plus [src/water-surface.js](../src/water-surface.js), [src/water-render.js](../src/water-render.js),
-  [src/water-field.js](../src/water-field.js).
+- **Files.** As above, plus [src/render/water-surface.js](../src/render/water-surface.js), [src/render/water-render.js](../src/render/water-render.js),
+  [src/physics/water-field.js](../src/physics/water-field.js).
 - **Known issues and limits.** No tide, weather, rain or springs. The spring was removed, but its API
   (`setSource`/`clearSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/` are still there, though the owner
   decided to remove them. The sim runs on the main thread: per tech plan A5 the render-side surface scan is the larger
@@ -305,7 +305,7 @@ tick of 100 ms (10 per second).
   apart (Chebyshev). 5 seeds per take, stack of 20. Cap radius 1.9 m, stem 0.85 m. Player bounce 15 × (0.55 + 0.45 ×
   growth) m/s; growth push at least 5.5 m/s. Pour animation 600 ms. A second seed waits 500 ms for the first to land.
 - **Files.** [src/sim/mushrooms.js](../src/sim/mushrooms.js), [src/world/rules/mushrooms.js](../src/world/rules/mushrooms.js),
-  [src/mushroom-garden.js](../src/mushroom-garden.js), [src/features/mushroom-garden.js](../src/features/mushroom-garden.js).
+  [src/adapters/mushroom-garden.js](../src/adapters/mushroom-garden.js), [src/features/mushroom-garden.js](../src/features/mushroom-garden.js).
 - **Known issues and limits.** Watering is only by can (not sim water or the ball). Growth counts ticks, which only run
   while someone is online, so nothing grows while the island is empty (see 8.6). Mushrooms never wilt or get
   harvested. The rest of Phase 5 (soil, crops, visitor bonus) is on hold.
@@ -328,7 +328,7 @@ tick of 100 ms (10 per second).
   near the garden or an obstacle, at least 2 cells from another lying item. Fruit per tree is fixed by a hash over the
   cycle coconut, mango, coconut, banana, pomegranate, coconut, apricot. Shore kinds by weight (section 7.1).
 - **Files.** [src/sim/gifts.js](../src/sim/gifts.js), [src/sim/gift-catalog.js](../src/sim/gift-catalog.js),
-  [src/world/rules/gifts.js](../src/world/rules/gifts.js), [src/gifts.js](../src/gifts.js), [src/features/gifts.js](../src/features/gifts.js).
+  [src/world/rules/gifts.js](../src/world/rules/gifts.js), [src/adapters/gifts.js](../src/adapters/gifts.js), [src/features/gifts.js](../src/features/gifts.js).
 - **Known issues and limits.** Items saved on the old 129-cell grid stay at their old cells (now far-corner sea) until
   they rot ([tech-plan.md](tech-plan.md) B3). Wash-ups only happen inside HOME.
 
@@ -343,8 +343,8 @@ tick of 100 ms (10 per second).
   a catalog index or −1). Items cross into the world only through `gift.take` and `gift.toss`.
 - **On touch.** Only filled slots show; in portrait they make a column on the right. Toss appears only when the main
   button would do something other than throw.
-- **Files.** [src/inventory.js](../src/inventory.js), [src/hands.js](../src/hands.js), [src/features/hotbar.js](../src/features/hotbar.js),
-  [src/item-models.js](../src/item-models.js), [src/item-icons.js](../src/item-icons.js), [src/features/prompt.js](../src/features/prompt.js),
+- **Files.** [src/player/inventory.js](../src/player/inventory.js), [src/player/hands.js](../src/player/hands.js), [src/features/hotbar.js](../src/features/hotbar.js),
+  [src/player/item-models.js](../src/player/item-models.js), [src/player/item-icons.js](../src/player/item-icons.js), [src/features/prompt.js](../src/features/prompt.js),
   [src/sim/interact-pick.js](../src/sim/interact-pick.js).
 - **The interact pick.** Every provider (ball, gifts and palms, stall, Boogler) lists targets in reach each frame;
   something that would act beats something blocked, then the nearest wins with a nudge toward where you look.
@@ -360,11 +360,11 @@ tick of 100 ms (10 per second).
 - **Controls.** Click or pad X (hold, release); touch Toss.
 - **Sync kind.** Local flight, Lockstep landing. The thrower computes the path and submits `gift.toss` with the launch
   and the landing cell; every client replays the flight from the launch; only the landing is shared state.
-- **Tuning** ([src/flight.js](../src/flight.js), [src/player.js](../src/player.js)). Throws leave from head height.
+- **Tuning** ([src/physics/flight.js](../src/physics/flight.js), [src/player/player.js](../src/player/player.js)). Throws leave from head height.
   Power 8 + 20 × charge (frisbee 9 + 15 × charge) m/s. Drag 0.002/m; frisbee lift 0.05 per (m/s)², max 0.85 g, drag
   0.009, fade 1.6 m/s² below 18 m/s. Bounce keeps 30 % into the surface and 55 % along it (frisbee 12 % and 80 %);
   rests under 2 m/s on a surface flatter than about 53°. Max 8 s of flight.
-- **Files.** [src/flight.js](../src/flight.js), [src/gifts.js](../src/gifts.js), [src/hands.js](../src/hands.js).
+- **Files.** [src/physics/flight.js](../src/physics/flight.js), [src/adapters/gifts.js](../src/adapters/gifts.js), [src/player/hands.js](../src/player/hands.js).
 - **Known issues and limits.** Paths on different machines only need to look alike (raycasts use cannon-es).
 
 ### 6.8 The Boogler
@@ -384,14 +384,14 @@ prompt, and an edge-of-screen pointer with his distance when he is off screen (f
   stop. Walks 1.5 m/s, turns 3.2 rad/s, stays on land between 0.45 and 30 m high, avoids slopes over 0.55 per metre,
   obstacles and the garden patch. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
-- **Files.** [src/boogler.js](../src/boogler.js), [src/boogler-hud.js](../src/boogler-hud.js),
-  [src/boogler-fx.js](../src/boogler-fx.js), [src/features/boogler.js](../src/features/boogler.js).
+- **Files.** [src/boogler/boogler.js](../src/boogler/boogler.js), [src/boogler/hud.js](../src/boogler/hud.js),
+  [src/boogler/fx.js](../src/boogler/fx.js), [src/features/boogler.js](../src/features/boogler.js).
 
 #### Friendship
 
 - **Sync kind.** Local (localStorage `boogle.boogler.<room>`); each player publishes `bg: [act, wary, ev, evN]` so the
   host's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
-- **Levels** ([src/boogler-friendship.js](../src/boogler-friendship.js)):
+- **Levels** ([src/boogler/friendship.js](../src/boogler/friendship.js)):
 
 | Level | Name | Points |
 |---|---|---|
@@ -422,7 +422,7 @@ Points never drop below 0. Each new level bursts hearts and plays a level-up lin
   ball). His portrait can be petted.
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye. Greetings and farewells
   change with your level.
-- **Story threads** ([src/boogler-lines.js](../src/boogler-lines.js), [src/boogler-talk.js](../src/boogler-talk.js)):
+- **Story threads** ([src/boogler/lines.js](../src/boogler/lines.js), [src/boogler/talk.js](../src/boogler/talk.js)):
   `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows
   from level 1 or once `home` has started.
 - **Nosiness.** Asking for a chapter above your level deflects (+1 nosy); pushing ("Oh, come on, tell me!") is +2
@@ -490,9 +490,9 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
   shadows (flag `shadows`) mark where players and the ball are.
 - **Sync kind.** Lockstep without state: a pure function of `world.tick` ([src/sim/sky-clock.js](../src/sim/sky-clock.js)),
   so everyone sees the same sky. Lighting is Local. Windmill sails and the lighthouse beam use
-  [src/shared-time.js](../src/shared-time.js) (ticks filled in with local time).
-- **Files.** [src/sky.js](../src/sky.js), [src/features/day-night.js](../src/features/day-night.js),
-  [src/lights.js](../src/lights.js) (a small pool of point lights handed to the glowing sources nearest the camera),
+  [src/netplay/shared-time.js](../src/netplay/shared-time.js) (ticks filled in with local time).
+- **Files.** [src/render/sky.js](../src/render/sky.js), [src/features/day-night.js](../src/features/day-night.js),
+  [src/render/lights.js](../src/render/lights.js) (a small pool of point lights handed to the glowing sources nearest the camera),
   [src/features/blob-shadows.js](../src/features/blob-shadows.js).
 - **Limits.** The clock only advances while someone hosts, so the time of day stops while the island is empty.
 
@@ -506,7 +506,7 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
   60 % from 14 m in). Cave rock casts shadows so the sun no longer lights the tunnels.
 - **Sync kind.** Local and cosmetic, apart from collisions, which only affect bodies this client simulates.
 - **Files.** [src/pois/caves/](../src/pois/caves/) (`network.js`, `mesh.js`, `decor.js`, `index.js`, `site.js`),
-  [src/physics.js](../src/physics.js) (`GROUP`, `groundProbe`).
+  [src/physics/physics.js](../src/physics/physics.js) (`GROUP`, `groundProbe`).
 - **Known issues.** The phone playtest asked for an audit of the caves' look and the walk in and out; the owner keeps
   the caves but wants that audit before more is added ([tech-plan.md](tech-plan.md), "Decided").
 
@@ -516,9 +516,9 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
   Gamepad and Touch tabs, starting on your input kind), Room (who is here and an invite link; `?room=` is left out for
   the default room) and Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc
   (when the pointer lock ends), H (on the Controls page), pad Menu and the corner menu button.
-- **Sync kind.** Local, through [src/modal.js](../src/modal.js) (one modal at a time; it takes keys and pad).
-- **Files.** [src/features/pause.js](../src/features/pause.js), [src/guide.js](../src/guide.js),
-  [src/glyphs.js](../src/glyphs.js), [src/controls.js](../src/controls.js).
+- **Sync kind.** Local, through [src/player/modal.js](../src/player/modal.js) (one modal at a time; it takes keys and pad).
+- **Files.** [src/features/pause.js](../src/features/pause.js), [src/player/guide.js](../src/player/guide.js),
+  [src/player/glyphs.js](../src/player/glyphs.js), [src/player/controls.js](../src/player/controls.js).
 - **Related research.** [research/controls-guide-and-pause-menu.md](research/controls-guide-and-pause-menu.md).
 
 ### 6.14 First-run card
@@ -539,7 +539,7 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 - **Mixed builds.** Each tab checks `version.json` on start, every 5 min and when it comes back into view. A hidden tab
   reloads onto a newer build at once; a visible one shows "Boogle was updated – reload to stay in sync with friends"
   with a Reload button and reloads the next time it is hidden. Each player's build rides in presence `bv`.
-  Files: [src/features/updates.js](../src/features/updates.js), [src/builds.js](../src/builds.js).
+  Files: [src/features/updates.js](../src/features/updates.js), [src/netplay/builds.js](../src/netplay/builds.js).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
   mismatch saves both sides' diverging state as JSON ([src/features/syncsafety.js](../src/features/syncsafety.js)).
 - **Limits.** Whether a TURN relay was actually used is not observed, only whether one was configured.
@@ -549,7 +549,7 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies`, `shadows`, all on by default.
 `?proto=0` turns all off, `?off=feel,gulls` turns some off. The host's URL wins: the bitmask is the Lockstep state
 `proto` (no ops), adopted by joiners with the snapshot. Files: [src/sim/proto.js](../src/sim/proto.js),
-[src/world/rules/proto.js](../src/world/rules/proto.js), [src/proto-flags.js](../src/proto-flags.js).
+[src/world/rules/proto.js](../src/world/rules/proto.js), [src/adapters/proto-flags.js](../src/adapters/proto-flags.js).
 
 ## 7. Content inventory
 
@@ -603,7 +603,7 @@ Every item has a line he says when you hand it over (or why he refuses it).
 | The Registon | A square with three huge blue-tiled buildings. | `home1` |
 | The bazaar | Where he learned business. | `home1` |
 
-**Lore facts** (from [src/boogler-lines.js](../src/boogler-lines.js)): he started a melon export business without
+**Lore facts** (from [src/boogler/lines.js](../src/boogler/lines.js)): he started a melon export business without
 knowing Uzbekistan is doubly landlocked; four trucks, two trains, one very small boat and seven hundred golden melons,
 then a storm; he floated for three days holding one melon and ate it on the first night. He promised Oyijon to come
 back "a big success" (she said "Come back fed"); there are no boats on the island. Every week he writes her a letter in
@@ -651,7 +651,7 @@ Finished threads offer a retelling ("Tell me about Samarqand again.").
 | POI | Folder or file | Position | Interactive parts |
 |---|---|---|---|
 | Spawn and court | [constants.js](../src/constants.js), [grid.js](../src/world/grid.js) | (14, 26); court (12, 21) r 8 | Ball spawn, diggable sand |
-| Mushroom stall | [mushroom-garden.js](../src/mushroom-garden.js) | (15.2, 13.4) | Seeds, watering can |
+| Mushroom stall | [mushroom-garden.js](../src/adapters/mushroom-garden.js) | (15.2, 13.4) | Seeds, watering can |
 | Garden patch | [sim/mushrooms.js](../src/sim/mushrooms.js) | centre (30, 2.5) | Planting |
 | Lighthouse | [pois/lighthouse/](../src/pois/lighthouse/) | (6, −58) | Stair, deck, frisbee perch, night lamp |
 | Windmill farm | [pois/windmills/](../src/pois/windmills/) | (82, −46) | Solid turning sails |
@@ -666,7 +666,7 @@ A star around a host peer over PeerJS ([src/net/peer-room.js](../src/net/peer-ro
 random id and connect to it with two data channels: `u` (unordered presence) and `r` (reliable, ordered messages,
 heartbeats). The host relays presence and messages. Ids in messages are each tab's stable `selfId`, not PeerJS ids.
 Heartbeats every 500 ms; a peer silent for 3 s is gone. Messages are capped at 16,000 characters. Without
-`VITE_BOOGLE_SERVER`, PeerJS's public signaling server and default STUN are used ([src/net.js](../src/net.js)). A
+`VITE_BOOGLE_SERVER`, PeerJS's public signaling server and default STUN are used ([src/netplay/net.js](../src/netplay/net.js)). A
 failed join drops to "Solo" and retries.
 
 ### 8.2 Host migration

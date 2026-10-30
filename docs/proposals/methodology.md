@@ -13,7 +13,7 @@
 Townsend "knew which phases I wanted to include but not the narrative that would go with them". Each phase should zoom the world out ("Chinese box").
 
 - Write a phase as a one-line change in what a session *feels* like. For example: "the island has a shop", "you can leave the island", "the island talks back".
-- Write The Boogler's lines for it last, once the toy works. Keep them as data in `src/boogler-lines.js` style.
+- Write The Boogler's lines for it last, once the toy works. Keep them as data in `src/boogler/lines.js` style.
 - Don't fix the ending early. The [tech tree's](boogler-tech-tree.md) back cover offers three.
 
 ## 2. Toy test, then reveal
@@ -27,7 +27,7 @@ Every feature passes DESIGN.md's toy test first: "would someone fiddle with this
 
 ## 3. Build behind a proto flag, play it on the live site
 
-`src/proto-flags.js` already lets the host's URL turn features on for the whole room. Each tech-tree page or direction slice goes in behind a flag (`?proto=stall`). That way:
+`src/adapters/proto-flags.js` already lets the host's URL turn features on for the whole room. Each tech-tree page or direction slice goes in behind a flag (`?proto=stall`). That way:
 
 - it ships with `npm run ship` (a self-merging PR once CI is green) without changing the default game;
 - the group plays it on purpose;
