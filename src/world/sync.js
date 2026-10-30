@@ -249,6 +249,7 @@ export function createSync() {
         step();
       }
       if (acc >= TICK_MS) acc = TICK_MS * 0.99;
+      saveSoon();
       return;
     }
     if (!ready) return;
@@ -259,10 +260,12 @@ export function createSync() {
       step();
     }
     if (n >= MAX_STEPS) acc = 0;
-    if (mode === 'host' && wall >= nextSave) {
-      nextSave = wall + SAVE_MS;
-      persist(false);
-    }
+    saveSoon();
+  }
+  function saveSoon() {
+    if (mode === 'local' || wall < nextSave) return;
+    nextSave = wall + SAVE_MS;
+    persist(false);
   }
 
   // ------------------------------------------------------------ snapshots + hashes
@@ -457,19 +460,21 @@ export function createSync() {
 
   // ------------------------------------------------------------ roles + persistence
   const storageKey = () => `boogle.world.${cfg.roomId}`;
+  // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
   function persist(unloading) {
-    if (mode !== 'host' || !ready) return;
+    if (mode === 'local' || !ready || awaiting) return;
     const hsh = combine(0);
     if (hsh === lastSavedHash) return;
     lastSavedHash = hsh;
     const snap = snapshot();
-    const body = JSON.stringify({ tick: snap.tick, writerId: selfId, data: snap });
     try {
       cfg.storage?.setItem(storageKey(), JSON.stringify(snap));
     } catch {
       // quota or private mode: ignore
     }
-    if (cfg.serverUrl && body.length < 250000) {
+    const body =
+      mode === 'host' && cfg.serverUrl ? JSON.stringify({ tick: snap.tick, writerId: selfId, data: snap }) : '';
+    if (body && body.length < 250000) {
       const url = new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl);
       const init = {
         method: 'PUT',

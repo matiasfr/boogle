@@ -210,7 +210,8 @@ export function initInput() {
     },
     up: () => setHold(null, kind),
   });
-  const zoom = (dir) => ({ held: (dt) => (cam.dist = clamp(cam.dist + dir * 6 * dt, 3, 12)) });
+  const ZOOMS = [4, 6.5, 10];
+  const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
   registerAction('jump', {
     pad: 'a',
     label: 'Jump',
@@ -227,17 +228,16 @@ export function initInput() {
   registerAction('respawn', { pad: 'view', label: 'Bring the ball back', down: respawnBall });
   registerAction('slot-prev', { pad: 'lb', label: 'Hotbar: previous slot', down: () => cycle(-1) });
   registerAction('slot-next', { pad: 'rb', label: 'Hotbar: next slot', down: () => cycle(1) });
-  registerAction('dig', { pad: 'rt', label: 'Dig (hold)', ...hold('dig') });
-  registerAction('pile', { pad: 'lt', label: 'Pile (hold)', ...hold('pile') });
-  registerAction('flatten', { pad: 'r3', label: 'Flatten (hold)', ...hold('flatten') });
+  // Dig is X with the shovel in hand; LT piles (and dives while swimming, src/features/feel.js).
+  registerAction('pile', { pad: 'lt', label: 'Pile sand (hold)', ...hold('pile') });
+  registerAction('flatten', { pad: 'up', label: 'Flatten sand (hold)', ...hold('flatten') });
   // Click once to sprint, like most console games: it stays on until the stick is let go (src/player.js).
   registerAction('sprint', {
     pad: 'l3',
     label: 'Sprint (click, stays on while moving)',
     down: () => (input.sprint = true),
   });
-  registerAction('zoom-in', { pad: 'up', label: 'Camera closer', ...zoom(-1) });
-  registerAction('zoom-out', { pad: 'down', label: 'Camera farther', ...zoom(1) });
+  registerAction('zoom', { pad: 'r3', label: 'Camera: close / middle / far', down: zoomStep });
 
   // Losing focus or hiding the page can swallow the matching keyup/pointerup: treat everything as released.
   function releaseAll() {
