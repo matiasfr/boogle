@@ -21,7 +21,7 @@ function peer() {
 const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
 
 // One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
-// A new rules module adds its script here.
+// A new rules module with ops adds its script here.
 const SCRIPTS = {
   terrain({ rules }) {
     const { n, mask, base } = rules.terrain.state;
@@ -87,13 +87,16 @@ test('every op has an accepted edit, and the same edits give the same state on t
   assert.deepEqual([...ops], a.s.registry().ops, 'every registered op needs an edit in SCRIPTS');
   for (const e of play(b)) assert.ok(ops.has(e.op));
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
-  for (const m of RULES) assert.notEqual(a.s.stateHashes()[m.name], fresh[m.name], `${m.name} did not change`);
+  for (const m of RULES)
+    if (SCRIPTS[m.name]) assert.notEqual(a.s.stateHashes()[m.name], fresh[m.name], `${m.name} did not change`);
 });
 
 test('a snapshot round-trips through JSON and stays in step for 50 ticks', () => {
   const a = peer();
   play(a);
+  a.rules.proto.proto.set({ mask: 0b101 }); // proto has no ops: the host's URL sets it
   const b = peer();
+  assert.notEqual(b.s.stateHashes().proto, a.s.stateHashes().proto);
   assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
