@@ -494,9 +494,11 @@ export function createSync({ env: env0 } = {}) {
   }
 
   // ------------------------------------------------------------ profiling (npm run perf only)
-  // Times every op apply, onApplied/onTick/onAfterTick handler and state hash until stop(), which returns one
-  // { label: ms } row per tick. It swaps timed wrappers into the registries and puts the originals back on stop, so
-  // normal play pays nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time
+  // Times every op apply, onApplied/onTick/onAfterTick handler and state hash until stop(), which returns
+  // { rows, kinds }: one { label: ms } row per tick, and each label's registry as { label: kind }: 'sim' (op applies,
+  // onTick handlers, state hashes), 'applied' (onApplied listeners: rules and render adapters alike) or 'view'
+  // (onAfterTick). It swaps timed wrappers into the registries and puts the originals back on stop, so normal play pays
+  // nothing; it only reads the clock, and nothing it measures feeds back into the sim. One at a time
   // (a second would wrap the first one's wrappers, and stopping them out of order would leave timers in place).
   let profiling = false;
   function profileTicks(now = () => performance.now()) {
@@ -504,9 +506,10 @@ export function createSync({ env: env0 } = {}) {
     profiling = true;
     let active = true;
     const rows = new Map(); // tick -> { label: ms }
-    const timed =
-      (label, fn) =>
-      (...args) => {
+    const kinds = {}; // label -> 'sim' | 'applied' | 'view'
+    const timed = (label, fn, kind) => {
+      kinds[label] = kind;
+      return (...args) => {
         const t0 = now();
         try {
           return fn(...args);
@@ -516,26 +519,27 @@ export function createSync({ env: env0 } = {}) {
           row[label] = (row[label] ?? 0) + now() - t0;
         }
       };
+    };
     const undo = [];
     const swap = (map, key, h, field, label) => {
-      map.set(key, { ...h, [field]: timed(label, h[field]) });
+      map.set(key, { ...h, [field]: timed(label, h[field], 'sim') });
       undo.push(() => map.set(key, h));
     };
     for (const [op, h] of ops) swap(ops, op, h, 'apply', `op ${op}`);
     for (const [k, s] of states) swap(states, k, s, 'hash', `hash ${k}`);
-    const swapAll = (list, kind) =>
+    const swapAll = (list, kind, name) =>
       list.forEach((fn, k) => {
-        list[k] = timed(labels.get(fn) || `${kind} #${k}`, fn);
+        list[k] = timed(labels.get(fn) || `${name} #${k}`, fn, kind);
         undo.push(() => (list[k] = fn));
       });
-    swapAll(appliedFns, 'applied');
-    swapAll(tickFns, 'tick');
-    swapAll(afterFns, 'after');
+    swapAll(appliedFns, 'applied', 'applied');
+    swapAll(tickFns, 'sim', 'tick');
+    swapAll(afterFns, 'view', 'after');
     return {
       stop() {
         if (active) profiling = active = false;
         for (const fn of undo.splice(0)) fn();
-        return [...rows.values()];
+        return { rows: [...rows.values()], kinds };
       },
     };
   }

@@ -14,7 +14,7 @@ rules' API and reacting through `onApplied`, `onAfterTick` and `onSnapshot`.
 // src/world/rules/<name>.js
 // Imports allowed: ../grid.js, ../terrain-logic.js, ../../sim/*, ./<earlier rule>.js (constants only).
 export const name = 'terrain'; // key in the rules handle; equals its state key when it has one
-export function install(sync, land, rules, opts) {
+export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
   return api;
 }
@@ -25,7 +25,6 @@ export function install(sync, land, rules, opts) {
 | `sync` | `{ world, registerOp, registerState, onTick, onApplied, onSnapshot }`. No `submitEdit`: rules react to edits, they never make them. Call `sync.registerOp(...)`, do not destructure it. | install |
 | `land` | `{ n, base, layout }`: grid size, base heights (`Int16Array`, cm, index `i*n+j`) and `layout` (`trees`, `shore`, `perches`). Static, the same on every peer. `layout` is filled before tick 1, so do not read it at install. | anywhere |
 | `rules` | The APIs of the modules before this one in `RULES`, keyed by `name`. | anywhere |
-| `opts` | `{ clock: () => ms }`, for stats only. It never feeds state. | stats |
 | `ctx.env` | Host-only facts handed to `validate(edit, { from, tick, env })`. They may differ per machine, so never use them in apply or ticks. A missing one makes validate throw, and the edit is rejected. | validate only |
 
 Rules:
@@ -108,5 +107,5 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, washed-up and thrown items over `land.layout`; exports `SEEDS`, `LOST` |
 | `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
-| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce(), stepMs() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |
+| `water.js` | `slosh` | `water` | `{ water, region, regionKey, simTerrain, stepOnce() }`: the water sim over the home square, its ground copy (every terrain op's changed cells) and the sea pin; exports `WATER_SIM` |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

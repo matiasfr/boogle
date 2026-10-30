@@ -21,7 +21,7 @@ export const WATER_SIM = {
 };
 const CFG = WATER_SIM;
 
-export function install(sync, land, rules, opts) {
+export function install(sync, land, rules) {
   const { n: N } = land;
   const terrain = rules.terrain.state;
 
@@ -136,7 +136,6 @@ export function install(sync, land, rules, opts) {
     }
   }, 'water ground');
 
-  let stepMs = 0;
   function stepOnce() {
     water.step();
     pinSea();
@@ -149,13 +148,11 @@ export function install(sync, land, rules, opts) {
       for (let a = Math.max(a0, i0); a <= Math.min(a1, i0 + W - 1); a++)
         for (let b = Math.max(b0, j0); b <= Math.min(b1, j0 + H - 1); b++) water.wake(a - i0, b - j0, 1);
     }
-    const t0 = opts.clock();
     stepOnce();
-    stepMs = stepMs * 0.9 + (opts.clock() - t0) * 0.1;
-  }, 'water');
+  }, 'water'); // its cost per tick: `npm run perf -- --sim` (profileTicks)
   sync.onSnapshot(() => copyGround(0, 0, N - 1, N - 1));
 
-  return { water, region, regionKey, simTerrain, stepOnce, stepMs: () => stepMs };
+  return { water, region, regionKey, simTerrain, stepOnce };
 }
 
 // Replay-test generators (./README.md): a slosh on a wet cell above the pinned sea (where it lasts),
