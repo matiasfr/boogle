@@ -1,12 +1,38 @@
 # World rules: the lockstep half of each system
 
-Every lockstep system (terrain, mushrooms, gifts, proto, water) lives here (B1, docs/tech-plan.md). Adding one is the
-four-file recipe in `../README.md`, "Adding a lockstep system".
-
 A **rules module** holds everything about one system that every peer must compute bit for bit: its ops (validate and
-apply), its state (serialize, load, hash), its sim ticks, and sim-side listeners. Its **adapter** (the old file in
-`src/world/` or `src/features/`) keeps everything else: meshes, sounds, input, inventory and other effects, reading the
-rules' API and reacting through `onApplied`, `onAfterTick` and `onSnapshot`.
+apply), its state (serialize, load, hash), its sim ticks, and sim-side listeners. Its **adapter** keeps everything
+else (meshes, sounds, input, inventory), reading the rules' API and reacting through `onApplied`, `onAfterTick` and
+`onSnapshot`. The sync contract those use is in `../README.md`.
+
+## Adding a lockstep system
+
+Four files, nothing else edited:
+
+1. `src/sim/<x>.js` plus `test/<x>.test.mjs`: the pure logic (typed arrays, integers, seeded `mulberry32`), with a
+   test that the same inputs give the same hash and that serialize/load round-trips.
+2. `src/world/rules/<x>.js`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
+   and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
+3. One line appended to `RULES` in `index.js`. Append only: states snapshot, load and hash in its order, so
+   reordering it desyncs rooms where peers run different builds.
+4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.js` **first** (so the rules are
+   registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
+   `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
+   If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
+   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.js`.
+
+Run `npm run check:full`. Notes:
+
+- A system on the ground (markers, castles) stores grid cells and reads the height of cell `g = i*n + j` as
+  `rules.terrain.state.base[g] + rules.terrain.state.delta[g]` (cm). It changes the ground only through the terrain
+  ops (`TERRAIN_OPS`), or the water sim keeps stale ground.
+- `setEnv` is only for validate facts the rules cannot compute (what the render side sees: trees, props). Anything
+  derivable from `land` and the rules' state is checked in validate directly.
+- An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
+  the state, never a per-peer one.
+- Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
+  `GIFTS` in `src/sim/gift-catalog.js` (append only: ground items store its index; it also needs The Boogler's `taste` and `line`), and what using it does is a case
+  in `useDown` in `src/player/hands.js`.
 
 ## Contract
 
@@ -33,14 +59,10 @@ Rules:
   lint allows only `../grid.js`, `../terrain-logic.js`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
-- Changing what a state's `serialize` writes means a new `version` and a `migrate[v]` step for older saves
+- A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
+  `migrate[v]` step for older saves
   (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-pre-version.json`
   is one, checked by `test/world-snapshots.test.mjs`).
-- Append new modules to the end of `RULES` in `index.js`. Its order is the wire order: states snapshot, load and
-  hash in it, so reordering it desyncs rooms where peers run different builds.
-
-- Every module that registers ops also exports `edits`, one generator per op (below). The replay test fails on a
-  registered op without one.
 
 ## Edit generators and invariants
 

@@ -6,31 +6,16 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 
 | File | Owns |
 |---|---|
-| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots + hashes, late-join and persistence. |
-| `rules/` | The lockstep half of each system (ops, state, sim ticks), one module per system, installed in `RULES` order. See `rules/README.md`. |
+| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration and persistence (wire messages and save rules at its top). |
+| `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.terrain`, ...). Adapters import it first. |
-| `terrain-edits.js` | Phase 3 adapter: the sand layer (`rules/terrain.js`: dig/pile/flatten on the base heightfield) to mesh/physics/water height texture, plus the shovel. |
-| `../sim/water.js` | Phase 4: pure integer column water simulation (no three.js, no DOM). |
-| `../sim/mushrooms.js` | Mushroom patch: buried seeds, watering, growth ticks (ops `mush.plant`, `mush.water`, state `mushrooms`). |
-| `../sim/gifts.js` | Island gifts: fruit on the palms, things washing up on the beach, thrown things and perched ones (ops `fruit.drop`, `gift.take`, `gift.toss`, state `gifts`). |
+| `terrain-logic.js`, `grid.js` | Pure, lockstep: the sand layer (`TERRAIN_OPS`) and grid constants. |
+| `terrain-edits.js`, `water-world.js` | Adapters: sand mesh, physics and shovel; water rendering and the ball's water field. |
+| `background.js`, `clock-worker.js` | Keep the world ticking while the tab is hidden. |
 
-`src/sim/*` modules are pure functions over typed arrays so they can run in Node tests and, later, a Web Worker. Rendering and input code adapts them to the game.
-
-## Adding a lockstep system
-
-Four files, nothing else edited (AGENTS.md, "Features plug in"):
-
-1. `src/sim/<x>.js` plus `test/<x>.test.mjs`: the pure logic (typed arrays, integers, seeded RNG).
-2. `src/world/rules/<x>.js`: `install(sync, land, rules, opts)` registers its ops, state and ticks on the `sync` it is
-   given and returns an API (`rules/README.md` has the contract and a template). It also exports `edits`, a seeded
-   generator per op for the replay test (`test/world-replay.test.mjs`), and optionally `invariants`.
-3. One appended line in `RULES` (`rules/index.js`). Append only: its order is the wire order.
-4. `src/features/<x>.js`: the adapter. It reads `rules.<x>` from `game-world.js`, sends `submitEdit`, and reacts
-   through `onApplied`, `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv`.
-
-`registerOp`, `registerState` and `onTick` are lint-banned outside `src/world/rules/` and `game-world.js`.
-`game-world.js` is the only place that installs the rules on the real sync; tests install them on their own sync
-instances (`test/helpers/net.mjs`).
+Pure sim logic lives in `../sim/` (water, mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
+and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.js`;
+tests install the rules on their own sync instances (`test/helpers/net.mjs`).
 
 ## Contract (`sync.js`)
 
@@ -44,7 +29,7 @@ world.seed                   // integer room seed (for seeded RNG via mulberry32
 
 registerOp(op, {
   validate(edit, ctx) { },   // host only: return true to accept. ctx = { from, tick, env }. Reject out-of-range, rate abuse.
-  apply(edit, tick) { },     // everyone: mutate registered state. Must be deterministic (integers only). May return a result.
+  apply(edit, tick) { },     // everyone: mutate registered state, deterministically. No effects: return a result instead.
 })                           // registering an op or state key twice throws (order is wire order)
 registerState(key, {
   serialize() { },           // -> JSON-safe value (use arrays of ints / base64 of typed arrays)
@@ -56,7 +41,9 @@ registerState(key, {
 onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
 onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
 onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
-                             // result is what apply returned. A throwing listener is logged and the next one still runs.
+                             // result is what apply returned. Runs on every peer: effects for the submitter only check
+                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.js). Not replayed after
+                             // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
@@ -79,8 +66,19 @@ Integer units: heights and water depths are stored in **centimetres** (`Int16`/`
 2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
 3. Run `onAfterTick` handlers in registration order.
 
-Shared logic must not use `Math.random`, `Date.now`, or float math that differs between browsers (`Math.sin`, `cos`, `pow`, `exp`, `log`, `atan2`, `hypot`); conserved quantities stay integers. See DESIGN.md, "Determinism from day one". Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
+Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
 
-## Status
+## Other exports
 
-Networked. Message types, host migration and persistence are documented at the top of `sync.js`. Extra exports: `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.js`), `onSnapshot(fn)` (state was replaced from a snapshot: rebuild meshes), `onDesync(fn)` (a hash check failed: `{ tick, keys }`), `onSnapFail(fn)` (a snapshot from a peer, localStorage or the server could not be loaded, or one state in it: `{ from, reason }`, `from` = `'state'` with reason `'<key> load'` or `'<key> newer'`), `worldStatus()` (debug; `loadErrors` counts states that failed to load and started fresh, `newerSave` is true once a state saved by a newer build was skipped, here or by the host whose snapshot this tab loaded, after which this tab never persists), `profileTicks()` (`npm run perf -- --sim` only: times every op apply, `onApplied`/`onTick`/`onAfterTick` handler and state hash until `stop()`, which restores them and returns `{ rows, kinds }`: one `{ label: ms }` row per tick, and each label's registry, `'sim'` (op applies, `onTick`, hashes), `'applied'` (`onApplied`) or `'view'` (`onAfterTick`)). Without a room it runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host, and edits apply 3 ticks after the host stamps them.
+Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.js`); without a room it
+runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
+them.
+
+- `onSnapshot(fn)`: state was replaced from a snapshot; rebuild meshes.
+- `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
+- `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
+  `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
+- `worldStatus()`: debug. `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
+  newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
+- `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
+  returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).

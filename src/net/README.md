@@ -24,3 +24,6 @@ The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) an
 tie-breaks, so `peer` must be the stable `selfId`, not the PeerJS id.
 
 The room id comes from the page URL (`?room=beach`, default `beach`, sanitized to `[a-z0-9-]{1,32}`).
+
+Messages are wire format shared with tabs on older builds: add new `t` types and fields, never change what an existing
+one means (AGENTS.md, "Mixed builds").

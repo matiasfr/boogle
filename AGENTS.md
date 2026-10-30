@@ -1,53 +1,56 @@
 # Boogle: agent instructions
 
-The single source of truth for any coding agent (Claude Code, Codex, Cursor, ...). `CLAUDE.md` imports this file; put shared rules here, not there.
+Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js + cannon-es, Vite, PeerJS with one browser as host; `server/` does signaling and snapshots. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://matiasfr.github.io/boogle/.
 
-Boogle is a multiplayer browser game: three.js + cannon-es, bundled with Vite, networked with PeerJS (one browser is the host). `server/` is the signaling/snapshot server. Several friends and their agents ship at the same time; `main` only takes PRs, which merge themselves once CI is green, and `main` auto-deploys to https://matiasfr.github.io/boogle/.
+Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, and asks before bending one) and [PLAN.md](PLAN.md) (roadmap; tick an item in the commit that finishes it). [src/README.md](src/README.md) maps the folders.
 
-## Read first
-- [DESIGN.md](DESIGN.md): play and technical principles. Follow them; if a request conflicts with one, say which and ask before bending it. Every feature names the principle it serves (commit body or PR).
-- [PLAN.md](PLAN.md): the roadmap. Tick its checkboxes in the same commit that finishes an item.
-- [src/net/README.md](src/net/README.md) (room interface) before touching multiplayer; [src/world/README.md](src/world/README.md) (world contract) before touching shared state.
-- [src/README.md](src/README.md): which folder each module lives in.
+## A feature is a plug-in
+`src/features/<name>.js`, auto-loaded by `main.js`. Frame work: `onFrame(fn, { phase, order })`, `onStart(fn)` (`src/loop.js` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Hotspots (`src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js`): a line or two at most. Plain modules; a new dependency needs a reason in the commit.
 
-## Rules that are easy to miss
-- **Pick a sync kind per piece of state:** Local, Owner, Host or Lockstep (table in DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
-- **Deterministic shared sim** (Lockstep: water, terrain edits, mushrooms, weather, tide): integers for conserved quantities, floats only with `+ - * /` and `Math.sqrt`, fixed update order, fixed tick, seeded RNG (`mulberry32` from `src/sim/rng.js`). Never `Math.random()`, `Date.now()`, `Math.sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot` or `**` (browsers round them differently), or three.js/cannon-es math in it. ESLint enforces this for `LOCKSTEP_FILES` (`eslint.config.js`); a new lockstep module outside `src/sim/` joins that list.
-- **Cosmetic stays separate.** Particles, ripples, sounds may use floats and `Math.random()`, in their own modules, never read by the sim.
-- **Sync edits, not state** (Lockstep). Clients `submitEdit`; the host stamps and broadcasts. Bulk state travels only as host snapshots. Authority table: DESIGN.md, "Clear authority".
-- **Room interface only.** Game code talks to `createPeerRoom` (`src/net/README.md`), never to PeerJS directly. No alternate transports, no claude.ai artifact build.
-- **Small and readable.** Plain modules, no new dependencies without a reason in the commit message.
-- **Style.** ESLint + Prettier (single quotes, 120 columns). The repo is Prettier-clean; format the files you touch (`npx prettier --write <files>`), never the whole repo in a feature commit.
+## Pick a sync kind for each piece of state
+Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
+- **Local** (only this tab sees it, or it decorates): no API. Floats, `Math.random()`, GPU, all fine.
+- **Owner** (one player drives it; physics): `addPresenceField(key, getter)` + `onRemotePresence((r, pr, time) => ...)` (`src/netplay/net.js`), smoothed with `createSnaps()` (`src/netplay/snaps.js`, sample at `now - INTERP_MS`). 20 Hz, latest wins: a few numbers under a short untaken key (`grep -rn addPresenceField src`). A peer that leaves just drops out of `remotes`: sweep your per-remote meshes. Example: the ball (`src/physics/ball.js`).
+- **Host** (shared, small, changing; restarts with the next host): `addHostField(key, getter, onValue)`. Example: The Boogler.
+- **Lockstep** (shared grid or many cells, persists): four files, recipe in [src/world/rules/README.md](src/world/rules/README.md): `src/sim/<x>.js` + test, `src/world/rules/<x>.js` (ops, state, ticks; exports `edits` and optionally `invariants` for `test/world-replay.test.mjs`; `version` + `migrate` when a state's shape changes; host-only facts for validate via `setEnv` → `ctx.env`), one appended line in `rules/index.js`, and a `src/features/<x>.js` adapter (`submitEdit`, `onApplied`, `onAfterTick`, `onSnapshot`). Example: mushrooms (`rules/mushrooms.js`, `src/adapters/mushroom-garden.js`). Sync contract: [src/world/README.md](src/world/README.md).
+- **One-off events** (a honk, a ping) are messages, not state: `onRoomReady(room => room.onMessage(...))`, `room.send(msg)` (reliable, ordered, every other peer; validate and rate-limit on receipt). Examples: `honk.js`, `ping.js`. Room interface: [src/net/README.md](src/net/README.md); never PeerJS directly.
 
-## Features plug in; they don't edit shared files
-- New feature = new file `src/features/<name>.js`, auto-loaded by `main.js`. Register work with `onFrame(fn, { phase, order })` and `onStart(fn)` from `src/loop.js` (phases and ordering are documented at the top of that file).
-- Its CSS is `src/features/<name>.css`, imported by the feature. Its DOM is created in JS (append to `.hud` or `body`), not added to `index.html`.
-- Every control is playable on a Backbone-style gamepad: a new key or touch button also calls `registerAction` (`src/player/controls.js`) with a free pad slot. If none is left, rethink the layout instead of adding a key-only control.
-- Shared state uses the API for its sync kind: `addPresenceField` (Owner) or `addHostField` (Host) in `src/netplay/net.js`, smoothed with `createSnaps` (`src/netplay/snaps.js`). Cosmetic helpers needing sin/pow/random stay with their feature.
-- Lockstep state is four files (`src/world/README.md`, "Adding a lockstep system"): `src/sim/<x>.js` (pure, no three.js or DOM, lockstep-safe math) plus its test; `src/world/rules/<x>.js`, which registers the ops, state and ticks and exports `edits` (a seeded edit generator per op, for `test/world-replay.test.mjs`); one appended line in `src/world/rules/index.js`; and a `src/features/<x>.js` adapter that uses `submitEdit`, `onApplied`, `onAfterTick`, `onSnapshot`. Lint bans `registerOp`/`registerState`/`onTick` everywhere else.
-- Hotspots: `src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js` (append only). Keep edits there to a line or two.
+**Lockstep math** (`LOCKSTEP_FILES`: `src/sim/`, `src/world/rules/`, ...): integers for conserved quantities; floats only with `+ - * /` and `Math.sqrt`; seeded `mulberry32` (`src/sim/rng.js`); fixed order and tick. Never `Math.random`, `Date.now`, `sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot`, `**`, or three.js/cannon-es math. Cosmetic code is Local and never read by the sim; a tested cosmetic helper that needs `sin` or `Math.random` goes in a three.js-free module outside `src/sim/` (like `src/math-pure.js`); lint fails it anywhere in `src/sim/`, even beside cosmetic code.
 
-## Commands
-- `npm run dev`: local game at http://localhost:5173 (`?room=<name>`, `?netdebug=1`).
-- `npm run check`: lint + unit tests + build, a few seconds. Run before every push.
-- `npm run check:full`: adds server tests and the headless network test (~30 s). Run when you touch `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`.
-- `npm run perf`: draw calls and triangles, then ms per lockstep tick per handler (idle and busy water), in about a
-  minute or more on a loaded machine; compare before/after changes that add meshes, lights or sim work (`-- --render` /
-  `-- --sim` for one half).
-- `npm run ship`: how you ship (below). `cd server && npm test`: server tests alone.
+## Shared registries
+- **Controls** (`src/player/controls.js`, contract at its top): every key or touch button is a `registerAction(id, { pad, key, touch, label, detail, group, down, up, held })` on a free pad slot; it also generates the guide row (pause view, first-run card). Taken slots: `grep -rn "pad: '" src`; at least one must stay unclaimed in `src/`, since `updates.js` takes `freeSlots()[0]` at runtime. `group` is an id from `GROUPS`. `src/player/input.js` binds Space, E, R, F, Q, Z and the move keys by hand. No slot left: rethink the layout, no key-only controls. A key with no pad action of its own (hotbar digits, dive) is `onKey` plus a `describeControl` row. To change another module's action: `wrapAction(id, { down, up })` from `onStart`.
+- **Interact button** (E, pad B, touch action): `registerInteractable(fn)` (`src/player/hands.js`); `fn()` returns targets in reach `{ id, verb, at, run | blocked }`, `[]` for none. Never a new key.
+- **Particles**: `emit('soft' | 'clump', { x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.js`; don't build your own pool.
 
-## Tests stay light
-- Unit tests (`test/*.test.mjs`, `node:test`) cover pure logic only (`src/sim/*`, `src/world/*` state, validation, serialize/load/hash): no three.js, DOM, browser or network. Each file well under a second; shrink grids and tick counts until it is.
-- Test what would silently break: determinism (same inputs, same hash), conservation, ordering, validation, serialize/load round-trips. Not visuals or tuning numbers.
-- Networking changes: `npm run test:net`; new room-interface behavior gets a check in `dev/peer-test/`.
-- Visual and feel changes: validate in the running game with `npm run look` (stills, motion sheets, heatmaps, motion score) and scenario checks (`npm run scenario -- <name>`, `dev/scenarios/`; see `.claude/skills/look/SKILL.md`): write or extend a scenario, run it, read the images, iterate. Scenarios are not part of `check`; CI runs the fast ones (`world-inputs`, `smoke`, `two-player-dig`) on every PR and must pass; the rest run nightly (`scenarios-nightly.yml`, which opens a `scenarios` issue on failure and never blocks a merge). So a local run is optional: use it to iterate, or read the failing leg's `scenario-<name>` artifact. Don't commit ad-hoc Playwright scripts as tests.
+## Lint boundaries (`eslint.config.js`)
+- Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.
+- `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.js`, which installs them): one place owns wire order and hashing.
+- Rules import only `src/sim/`, `../grid.js`, `../terrain-logic.js` and sibling rules; `src/sim/` imports nothing from `src/`.
+- Features don't import other features: shared code moves to `src/` (an adapter, `src/player/`, ...).
+- No `peerjs` outside `src/net/`.
+
+## Don't (each one broke a room recently)
+- **Effects in `apply`.** Apply changes state and returns a result; splashes, sounds, inventory go in the adapter's `onApplied(e, tick, result)`.
+- **Treat `submitEdit` as done.** It returns true when *queued*: the host may reject it, and edits held while reconnecting can be dropped. Take items, spend inventory, play the effect in `onApplied`.
+- **Change ground outside the terrain ops.** Water copies ground only from ops in `TERRAIN_OPS` (`src/world/terrain-logic.js`) whose apply returns changed cells; anything else leaves the water sim on stale ground and desyncs.
+- **Save or serve unverified state.** A client persists only hash-verified ticks, and a state that failed to load (a fresh fallback) must never be uploaded as the host's save. Keep these guards when you touch `sync.js`.
+- **Leave a presence field set.** The getter returns `null` when the thing stops (deletes the key); receivers treat a missing key as "off".
+- **Patch another module's action by string id** (`actionById(id).down = ...`): use `wrapAction`.
+- **`Math.random`, wall clock or per-peer counters in apply or ticks.** The replay test catches these; don't silence it.
+
+## Mixed builds
+Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab waits until hidden, so rooms mix builds for a while. Wire changes are additive (new ops, states, presence keys, message types; old tabs ignore them). Never change an existing one's shape or meaning without a version: a state's `version` + `migrate`, or a new name.
+
+## Tests
+- Unit tests (`test/*.test.mjs`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
+- `npm run check` (lint, unit tests, build; seconds): before every push.
+- `npm run check:full` (+ server tests, headless network test, ~30 s): when you touch `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
+- Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): CI runs `world-inputs`, `smoke` and `two-player-dig` on every PR (must pass), the rest nightly (never block). Local runs are optional, for iterating on visuals and feel; a failed leg's images are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
+- `npm run perf`: before/after anything adding meshes, lights or per-tick sim work.
 
 ## Shipping
-- Commit small, focused changes with imperative messages ("Add splashes for the ball"), then run **`npm run ship`**. It rebases onto the latest `main`, runs `check`, and pushes to a new `ship/<you>-<sha>` branch, then returns. `main` itself refuses pushes.
-- CI runs on that branch (including `check:full`'s server and network tests, and the fast browser scenarios). Green: `automerge.yml` opens the PR, merges it with a merge commit and deploys. Red, or in conflict with `main`: `ci-autofix.yml` has Claude push one fix commit to the branch, twice at most, then @mentions you on the PR. `npm run ship -- --wait` waits until it's on `main`.
-- Shipping again before the last one merged is fine: the new PR carries both, and the older PR is closed once its commits are on `main`.
-- Networking, sync and persistence changes ship the same way; no human review needed.
-- On a rebase conflict, keep **both** sides' changes (they are usually independent features). `ship` asks Claude Code to do this automatically; if it can't, resolve, `git add`, `git rebase --continue`, `npm run ship` again.
-- A session that can only push its own `claude/` branch pushes it and opens a non-draft PR; `automerge.yml` squash-merges it when green. Draft or `no-automerge` label: nothing merges it.
-- Never force-push or skip hooks (`--no-verify`) unless a human asks.
-- If CI is red on `main` (two PRs that pass alone but break together), `ci-autofix.yml` opens a fix PR; if you're around, fixing it beats starting something new.
+- Style: ESLint + Prettier (single quotes, 120 columns); `npx prettier --write <your files>`, never the whole repo.
+- Small commits, imperative subject; the body names the DESIGN.md principle served. Then `npm run ship`: rebases on `main`, runs `check`, pushes `ship/<you>-<sha>`. Green CI merges and deploys; red or conflicting, `ci-autofix.yml` pushes up to two fixes, then @mentions you. `-- --wait` waits for `main`.
+- A session that can only push its `claude/<topic>` branch pushes it and opens a non-draft PR; `automerge.yml` squash-merges it when green (draft or `no-automerge` label: nothing merges). Networking and persistence changes too; no human review.
+- On a rebase conflict keep **both** sides (usually independent features), `git add`, `git rebase --continue`, ship again.
+- Never force-push, skip hooks (`--no-verify`) or push to `main` unless a human asks. Red `main`: fixing it beats starting something new.
