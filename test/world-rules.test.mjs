@@ -1,0 +1,201 @@
+// The rules contract (src/world/rules/README.md), checked over every module in RULES on the home land: the order pin,
+// identical edits giving identical hashes on two peers, snapshot round-trips, old saves, and rules purity.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { createSync } from '../src/world/sync.js';
+import { RULES, installRules } from '../src/world/rules/index.js';
+import { homeLand, fixture } from './helpers/land.mjs';
+import { giftIndex } from '../src/sim/gift-catalog.js';
+import { ON_GROUND, SRC } from '../src/sim/gifts.js';
+import { SEEDS } from '../src/world/rules/gifts.js';
+
+const CANONICAL = ['terrain', 'mushrooms', 'gifts', 'proto', 'water']; // production order (test/fixtures/world-inputs.json)
+
+function peer() {
+  const s = createSync({ env: { canPlantAt: () => true } });
+  s.setSelfId('a');
+  const rules = installRules(s, homeLand());
+  return { s, rules };
+}
+const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
+
+// One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
+// A new rules module with ops adds its script here.
+const SCRIPTS = {
+  terrain({ rules }) {
+    const { n, mask, base } = rules.terrain.state;
+    let c = -1;
+    for (let k = 0; k < n * n && c < 0; k++) {
+      const i = (k / n) | 0,
+        j = k % n;
+      if ([-1, 0, 1].every((di) => [-1, 0, 1].every((dj) => mask[(i + di) * n + j + dj]))) c = k;
+    }
+    assert.ok(c >= 0, 'no sand on the home land');
+    const i = (c / n) | 0,
+      j = c % n;
+    return [
+      { op: 'dig', i, j },
+      { op: 'pile', i: i + 1, j },
+      { op: 'flatten', i, j, h: base[c] - 100 }, // below the ground: the bucket has room, it may be empty
+    ];
+  },
+  mushrooms: () => [
+    { op: 'mush.plant', i: 228, j: 200 },
+    { op: 'mush.water', i: 228, j: 200 },
+  ],
+  gifts: () => [
+    { op: 'fruit.drop', i: 175, j: 200, t: 0, d: 2 },
+    ({ rules }) => {
+      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.FRUIT);
+      return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
+    },
+    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
+    { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
+  ],
+  water({ rules }) {
+    const { water, region } = rules.water;
+    const { w: W, h: H } = region;
+    let c = -1;
+    for (let k = 0; k < W * H && c < 0; k++) {
+      const wi = (k / H) | 0,
+        wj = k % H;
+      if (wi >= 2 && wj >= 2 && wi <= W - 3 && wj <= H - 3 && water.depth[k] >= 50) c = k;
+    }
+    assert.ok(c >= 0, 'no sea in the water region');
+    return [{ op: 'slosh', i: region.i0 + ((c / H) | 0), j: region.j0 + (c % H), amt: 100 }];
+  },
+};
+
+// Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
+function play(x) {
+  const edits = [];
+  for (const m of RULES)
+    for (const step of SCRIPTS[m.name]?.(x) ?? []) {
+      const e = typeof step === 'function' ? step(x) : step;
+      assert.equal(x.s.submitEdit(e), true, `${m.name}: ${JSON.stringify(e)} was rejected`);
+      edits.push(e);
+      tick(x, 3);
+    }
+  return edits;
+}
+
+test('RULES is the canonical prefix, and states and ops register in its order', () => {
+  const { s } = peer();
+  const { states, ops } = s.registry();
+  assert.deepEqual(
+    states,
+    RULES.map((m) => m.name),
+  );
+  assert.deepEqual(states, CANONICAL.slice(0, RULES.length));
+  assert.deepEqual(ops, fixture.ops.slice(0, ops.length));
+});
+
+test('every op has an accepted edit, and the same edits give the same state on two peers', () => {
+  const a = peer(),
+    b = peer();
+  const fresh = a.s.stateHashes();
+  const ops = new Set(play(a).map((e) => e.op));
+  assert.deepEqual([...ops], a.s.registry().ops, 'every registered op needs an edit in SCRIPTS');
+  for (const e of play(b)) assert.ok(ops.has(e.op));
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+  for (const m of RULES)
+    if (SCRIPTS[m.name]) assert.notEqual(a.s.stateHashes()[m.name], fresh[m.name], `${m.name} did not change`);
+});
+
+test('a snapshot round-trips through JSON and stays in step for 50 ticks', () => {
+  const a = peer();
+  play(a);
+  a.rules.proto.proto.set({ mask: 0b101 }); // proto has no ops: the host's URL sets it
+  const b = peer();
+  assert.notEqual(b.s.stateHashes().proto, a.s.stateHashes().proto);
+  assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+  assert.equal(b.s.worldHash(), a.s.worldHash());
+  tick(a, 50);
+  tick(b, 50);
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+  assert.equal(b.s.worldHash(), a.s.worldHash());
+});
+
+// The first sand cell (3x3 all sand) inside the water region, as [i, j].
+function sandInWater({ rules }) {
+  const { n, mask } = rules.terrain.state;
+  const { i0, j0, w, h } = rules.water.region;
+  for (let i = i0 + 2; i < i0 + w - 2; i++)
+    for (let j = j0 + 2; j < j0 + h - 2; j++)
+      if ([-1, 0, 1].every((di) => [-1, 0, 1].every((dj) => mask[(i + di) * n + j + dj]))) return [i, j];
+  assert.fail('no sand in the water region');
+}
+
+test('flatten reaches the water sim: its ground matches the terrain, and a joiner stays in step', () => {
+  const a = peer();
+  const [i, j] = sandInWater(a);
+  const { state } = a.rules.terrain;
+  const { simTerrain, region } = a.rules.water;
+  const c = i * state.n + j;
+  for (const e of [
+    { op: 'dig', i, j },
+    { op: 'dig', i, j },
+    { op: 'flatten', i, j, h: state.base[c] + 20 }, // fills the pit back up from the bucket
+  ]) {
+    const before = Int16Array.from(state.delta);
+    assert.equal(a.s.submitEdit(e), true, `${e.op} was rejected`);
+    tick(a, 3);
+    assert.notDeepEqual(state.delta, before, `${e.op} changed nothing`);
+  }
+  for (let a0 = region.i0; a0 < region.i0 + region.w; a0++)
+    for (let b0 = region.j0; b0 < region.j0 + region.h; b0++) {
+      const g = a0 * state.n + b0;
+      assert.equal(simTerrain[(a0 - region.i0) * region.h + (b0 - region.j0)], state.base[g] + state.delta[g]);
+    }
+  const b = peer();
+  b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot())));
+  tick(a, 30);
+  tick(b, 30);
+  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
+});
+
+test('saves from the 129-cell island (before 2026-10-29) load fresh sand and mushrooms', () => {
+  const a = peer(),
+    fresh = a.s.stateHashes();
+  a.s.loadSnapshot({
+    tick: 5,
+    seed: 1,
+    epochMs: 0,
+    data: { terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] }, mushrooms: [80, 60, 0] },
+  });
+  assert.equal(a.s.stateHashes().terrain, fresh.terrain);
+  assert.equal(a.s.stateHashes().mushrooms, fresh.mushrooms);
+});
+
+test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
+  const s = createSync({ env: { canPlantAt: (i) => i !== 228 } });
+  s.setSelfId('a');
+  installRules(s, homeLand());
+  assert.equal(s.submitEdit({ op: 'mush.plant', i: 228, j: 200 }), false);
+  assert.equal(s.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), true);
+  const bare = createSync();
+  bare.setSelfId('a');
+  installRules(bare, homeLand());
+  assert.equal(bare.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), false);
+});
+
+test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
+  const allowed = /\/src\/(world\/rules\/[^/]+|world\/(grid|terrain-logic)|sim\/[^/]+)\.js$/;
+  const seen = new Set();
+  const visit = (url) => {
+    if (seen.has(url.href)) return;
+    seen.add(url.href);
+    assert.match(url.pathname, allowed, `rules reach ${url.pathname}`);
+    const src = fs.readFileSync(url, 'utf8');
+    for (const [, a, b] of src.matchAll(
+      /^\s*(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm,
+    )) {
+      const spec = a ?? b;
+      assert.ok(spec.startsWith('.'), `${url.pathname} imports the package ${spec}`);
+      visit(new URL(spec, url));
+    }
+  };
+  visit(new URL('../src/world/rules/index.js', import.meta.url));
+});

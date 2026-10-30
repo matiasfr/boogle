@@ -11,7 +11,8 @@ without touching anything else on the island.
 | Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.js`. |
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
-`keepOut` and `keptOut(x, z, pad)`. `src/terrain.js` builds the heightfield and the mesh from it; `src/props.js`
+`keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
+(`ground.js`). `src/terrain.js` builds the heightfield and the mesh from it; `src/props.js`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
@@ -42,14 +43,18 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 ## Rules
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
-  quantized to centimetres once (`src/world/terrain-edits.js`), so every client builds the same heightfield.
+  quantized to centimetres once (`ground.js`), so every client builds the same heightfield. Node tests build it with
+  the same code (`test/helpers/land.mjs`, `test/land.test.mjs`).
 - **Home is special.** The shared water sim, sand digging and beach gifts only run inside `HOME` (`src/constants.js`):
   the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
   exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME` on ground above the
   sand band (`EDIT_MAX_CM` in `src/world/terrain-logic.js`, 1.6 m), where nobody can dig under it; the lighthouse
   hill and the west end of the windmill farm do.
-- **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid are migrated by
-  `src/world/legacy-grid.js`; a future grid change needs the same treatment.
+- **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid (before
+  2026-10-29) are no longer migrated: their sand and mushrooms load fresh, and their loose items (gifts saved without `v`)
+  stay at their old cells, now open sea in the far corner, until they rot away. A future grid change needs a new state
+  version and a migration for every state that stores cells (`registerState(key, { version, migrate })`,
+  `src/world/README.md`).
 - Stamps change the base ground, not player edits: sand dug or piled on top keeps its depth.
 
 ## Underground POIs (the caves)

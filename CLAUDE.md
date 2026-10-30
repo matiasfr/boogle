@@ -15,6 +15,6 @@
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
-- Run `npm ci && npm run check` before committing; `npm run check:full` if you touched `src/net*`, `src/world/sync.js` or `server/`.
+- Run `npm ci && npm run check` before committing; `npm run check:full` if you touched `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`.
 - Never push to `main`. Commit to a `claude/<topic>` branch and open a PR with `gh pr create`: imperative title; body says what changed and which DESIGN.md principle it serves.
 - `automerge.yml` squash-merges non-draft PRs from this repo once CI passes, then deploys; `ci-autofix.yml` fixes red or conflicting `claude/*` and `ship/*` branches. Open networking, sync and persistence PRs the same way: no draft, no `no-automerge` label.

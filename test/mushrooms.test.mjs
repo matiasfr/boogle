@@ -73,11 +73,9 @@ test('load drops plots off the grid or with bad growth', () => {
   ]);
 });
 
-test('load still reads the older bare-array form', () => {
+test('load ignores the old bare-array form and garbage', () => {
   const g = createGarden();
-  loadGarden(g, [i0, j0, 2]);
-  assert.deepEqual(g.plots, [{ i: i0, j: j0, g: 2 }]);
-  for (const bad of [null, 'x', { v: 3, p: [i0, j0, 0] }]) {
+  for (const bad of [[i0, j0, 2], null, 'x', { v: 3, p: [i0, j0, 0] }]) {
     loadGarden(g, bad);
     assert.equal(g.plots.length, 0);
   }

@@ -1,6 +1,7 @@
 // Island gifts in the game: fruit on the palms, things washed up on the beach, things players threw, and the frisbee
-// on the lighthouse deck. Shared state lives in src/sim/gifts.js and changes only through world/sync edits; what you
-// carry is your hotbar (src/inventory.js).
+// on the lighthouse deck. Shared state lives in src/world/rules/gifts.js and changes only through world/sync edits; what
+// you carry is your hotbar (src/inventory.js).
+import { land, rules } from './world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, GRID_RES, HOME, REACH, PLAYER_R, reducedMotion } from './constants.js';
 import { heights, groundHeight } from './terrain.js';
@@ -10,34 +11,16 @@ import { trees, obstacles } from './props.js';
 import { me, throwFrom } from './player.js';
 import { ball } from './ball.js';
 import { net } from './net.js';
-import { world, registerOp, registerState, onTick, submitEdit } from './world/sync.js';
-import { isLegacyCell, fromLegacy } from './world/legacy-grid.js';
+import { world, onApplied, submitEdit } from './world/sync.js';
+import { SEEDS, LOST } from './world/rules/gifts.js';
+import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from './water-field.js';
 import { PATCH } from './sim/mushrooms.js';
 import { GIFTS, giftIndex } from './sim/gift-catalog.js';
-import {
-  MAX_TREES,
-  REGROW_TICKS,
-  DROP_OFFSETS,
-  ON_GROUND,
-  SRC,
-  createGifts,
-  canDrop,
-  canToss,
-  dropFruit,
-  findItem,
-  takeItem,
-  tossItem,
-  treeFruit,
-  tickGifts,
-  serializeGifts,
-  loadGifts,
-  hashGifts,
-} from './sim/gifts.js';
+import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from './sim/gifts.js';
 import { itemModel } from './item-models.js';
 import { STEP, flyPath, dropPoint } from './flight.js';
 import { inv, take, roomFor } from './inventory.js';
-import { plantOk, plantSeed } from './mushroom-garden.js';
 import { FRISBEE_SPOT } from './pois/lighthouse/index.js';
 import { splash } from './splash.js';
 
@@ -46,23 +29,13 @@ const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
 const SHORE_MIN_CM = 12;
 const SHORE_MAX_CM = 70;
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
-const SEEDS = giftIndex('seeds');
-const LOST = -3; // `gift.toss` only: the throw ended in water or nowhere a seed can grow, so nothing lands
 
-const layout = { trees: [], shore: [], perches: [] };
+// The gifts, their ops and tick live in world/rules/gifts.js (lockstep); this module adapts them to meshes, flights,
+// the interact prompt and the hotbar. The layout (palms, beach cells, perches) is the land's, filled in createGifts3d.
+const { layout } = land;
 const perchSpots = []; // world positions, parallel to layout.perches
-export const gifts = createGifts(layout);
+export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
-// Items saved by an older, smaller island sit on its 129-cell grid: move them to the same spot on today's grid.
-// Snapshots with `v` are already on today's grid (and may use any cell).
-function migrateGiftCells(json) {
-  const it = json?.it;
-  if (!Array.isArray(it) || json.v) return json;
-  const out = it.slice();
-  for (let k = 0; k + 5 < out.length; k += 6)
-    if (isLegacyCell(out[k + 2], out[k + 3])) [out[k + 2], out[k + 3]] = fromLegacy(out[k + 2], out[k + 3]);
-  return { ...json, it: out };
-}
 
 const cellX = (i) => i * CELL - HALF;
 const cellZ = (j) => HALF - j * CELL;
@@ -70,53 +43,24 @@ const cellOf = (x, z) => [
   Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
   Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
 ];
-const isInt = Number.isSafeInteger;
 const fx = { falling: new Map(), wobble: new Map(), leaving: [], arriving: new Map() };
 
-registerOp('fruit.drop', {
-  validate: (e) => canDrop(gifts, e.t, world.tick, e.d),
-  apply: (e, tick) => {
-    const it = dropFruit(gifts, e.t, tick, e.d);
-    if (!it) return;
-    fx.falling.set(it.id, trees[e.t]?.top.y ?? 5);
+// The effects of each gift op, from what its apply returned (r): the item that fell, was taken or landed.
+onApplied((e, tick, r) => {
+  if (e.op === 'fruit.drop') {
+    if (!r) return;
+    fx.falling.set(r.id, trees[e.t]?.top.y ?? 5);
     fx.wobble.set(e.t, performance.now());
-  },
-});
-registerOp('gift.take', {
-  validate: (e) => Number.isSafeInteger(e.id) && !!findItem(gifts, e.id),
-  apply: (e, tick) => {
+  } else if (e.op === 'gift.take') {
     pending.delete(e.id);
-    const it = takeItem(gifts, e.id, tick);
-    if (!it || e.p !== myId()) return;
+    if (!r || e.p !== myId()) return;
     // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
-    if (!take(GIFTS[it.kind].id, 1, !me.charging)) throwItem(it.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
-  },
-});
-const launchOk = (l) => Array.isArray(l) && l.length === 6 && l.every((v) => isInt(v) && Math.abs(v) < 1e5);
-registerOp('gift.toss', {
-  validate: (e) => {
-    if (!launchOk(e.l) || !isInt(e.n) || !isInt(e.k) || !GIFTS[e.k] || GIFTS[e.k].src === 'ball') return false;
-    if (e.y === LOST) return true;
-    if (e.k === SEEDS) return plantOk(e.i, e.j);
-    return canToss(e.k, e.i, e.j, e.y) && e.i < GRID_RES && e.j < GRID_RES;
-  },
-  apply: (e, tick) => {
+    if (!take(GIFTS[r.kind].id, 1, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
+  } else if (e.op === 'gift.toss') {
     const fl = claimFlight(e);
-    if (e.y === LOST) return;
-    if (e.k === SEEDS) {
-      plantSeed(e.i, e.j);
-      return;
-    }
-    const it = tossItem(gifts, e.k, e.i, e.j, e.y, tick);
-    if (it) fx.arriving.set(it.id, fl);
-  },
+    if (e.y !== LOST && e.k !== SEEDS && r) fx.arriving.set(r.id, fl);
+  }
 });
-registerState('gifts', {
-  serialize: () => serializeGifts(gifts),
-  load: (json) => loadGifts(gifts, migrateGiftCells(json)),
-  hash: () => hashGifts(gifts),
-});
-onTick((t) => tickGifts(gifts, t, world.seed), 'gifts');
 
 // Called once props exist and before the first world tick (onStart), so every client builds the same layout.
 export function createGifts3d() {
