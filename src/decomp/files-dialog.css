@@ -102,3 +102,28 @@ dialog.files-dlg::backdrop {
 .files-needs li.done::before {
   content: '✓ ';
 }
+
+.files-link {
+  display: flex;
+  gap: 8px;
+}
+.files-link input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  font: 600 15px/1.2 var(--font-body);
+}
+.files-link button {
+  padding: 8px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  font: 400 18px/1 var(--font-display);
+  cursor: pointer;
+}
