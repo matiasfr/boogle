@@ -60,7 +60,10 @@ function showToast() {
   btn.addEventListener('click', reload);
   // A pad slot only if one is free (AGENTS.md); otherwise the click and the reload-when-hidden cover it.
   const pad = freeSlots()[0];
-  if (pad && registerAction('update-reload', { pad, label: 'Reload for the new version', down: reload })) {
+  if (
+    pad &&
+    registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
+  ) {
     btn.textContent = `Reload (${PAD_LABEL[pad]})`;
   }
   toast.append(text, btn);

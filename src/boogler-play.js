@@ -14,6 +14,7 @@ import { booglerHearts, booglerPuff } from './boogler-fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './boogler-hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './boogler-dialogue.js';
 import { openTalk, talkView, pickTalk } from './boogler-talk.js';
+import { modalOpen } from './modal.js';
 import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './boogler-lines.js';
 import {
   bond,
@@ -193,8 +194,13 @@ function updateRide(dt, now) {
     if (physics.time - ride.lastOn < 0.4) launch(now);
     else booglerSay(RIDE_BAIL, 1500);
   }
-  // Tell them off once they land (or after a moment, if they flew into the sea).
-  if (ride.kickAt && now - ride.kickAt > 400 && (me.coyote > 0 || me.swimming || now - ride.kickAt > 2500)) {
+  // Tell them off once they land (or after a moment, if they flew into the sea), not while the pause view is up.
+  if (
+    ride.kickAt &&
+    !modalOpen() &&
+    now - ride.kickAt > 400 &&
+    (me.coyote > 0 || me.swimming || now - ride.kickAt > 2500)
+  ) {
     ride.kickAt = 0;
     converse('kick');
   }
@@ -210,7 +216,7 @@ function giftList() {
 }
 
 function converse(start) {
-  if (dialogue.open || !me.entered) return false;
+  if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/modal.js)
   talk = openTalk(f(), {
     now: Date.now(),
     name: me.name,

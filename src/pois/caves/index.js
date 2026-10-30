@@ -6,7 +6,8 @@
 // - the ground is cut open at the four mouths (setTerrainHoles) once the cave mesh is there;
 // - players and the ball switch between the ground's colliders and the cave's (collision groups) when they cross
 //   into the cave volume; a safety net puts anything that ends up inside solid rock back where it was;
-// - the camera stays inside the tunnels, the sky light dims and the fog closes in (sky.js `atmosphere`).
+// - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.js `atmosphere`);
+//   the darkness with depth is baked per vertex (aAmb, see ambAt/withCaveAmbient), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -18,12 +19,17 @@ import { atmosphere } from '../../sky.js';
 import { camConstraints, me } from '../../player.js';
 import { ball } from '../../ball.js';
 import { waterField } from '../../water-field.js';
-import { buildCaveMeshSteps, caveSd } from './mesh.js';
+import { buildCaveMeshSteps, buildCollarMesh, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
-import { buildDecor } from './decor.js';
+import { buildDecor, mouthFrame } from './decor.js';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
+// Ambient light reaching the rock, by distance from the nearest mouth: daylight at the mouth, AMB_DEEP of it from
+// AMB_FAR metres in. Baked into the mesh, so the inside reads dark from outside too (the sky's light is global).
+const AMB_NEAR = 2,
+  AMB_FAR = 14,
+  AMB_DEEP = 0.6;
 const SURFACE_MASK = ~GROUP.CAVE,
   CAVE_MASK = ~GROUP.SCENERY;
 
@@ -60,6 +66,7 @@ export function inCave(x, y, z) {
 
 // ---------------------------------------------------------------- build
 let caveMesh = null,
+  collarMesh = null,
   decorRoot = null;
 const PALETTE = {
   [ZONE.TUNNEL]: ['#7b7166', '#6c6255'],
@@ -92,6 +99,7 @@ function makeGeometry(m) {
   const nrm = geo.attributes.normal.array;
   const colors = new Float32Array(positions.length);
   const brick = new Float32Array(positions.length / 3);
+  const amb = new Float32Array(positions.length / 3);
   const tmp = new THREE.Color(),
     floorC = new THREE.Color();
   for (let v = 0; v < positions.length / 3; v++) {
@@ -105,11 +113,45 @@ function makeGeometry(m) {
     const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
+    amb[v] = ambAt(positions[v * 3], positions[v * 3 + 2]);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.setAttribute('aBrick', new THREE.BufferAttribute(brick, 1));
+  geo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   geo.computeBoundingSphere();
   return { geo, colliderIndices: col };
+}
+
+// Ambient (sky) light reaching a point at world (x, z): 1 at the mouths, AMB_DEEP deep in. Fill it into an aAmb vertex
+// attribute for any cave mesh drawn with withCaveAmbient, so it darkens with depth like the rock.
+export function ambAt(x, z) {
+  const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
+  return 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
+}
+
+// Scales the sky's ambient (hemisphere) light by the geometry's aAmb attribute; lanterns and the sun are not.
+// Chains onto the material's own onBeforeCompile and keeps its program cache key apart.
+const HEMI_LINE = 'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );';
+const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
+  HEMI_LINE,
+  'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal ) * vAmb;',
+);
+if (!THREE.ShaderChunk.lights_fragment_begin.includes(HEMI_LINE))
+  console.warn('[caves] three.js changed its hemisphere chunk');
+export function withCaveAmbient(mat) {
+  const prev = mat.onBeforeCompile;
+  const key = 'caveAmb:' + mat.customProgramCacheKey();
+  mat.onBeforeCompile = (shader, renderer) => {
+    prev.call(mat, shader, renderer);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aAmb; varying float vAmb;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAmb = aAmb;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vAmb;')
+      .replace('#include <lights_fragment_begin>', HEMI_SCALED);
+  };
+  mat.customProgramCacheKey = () => key;
+  return mat;
 }
 
 // Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.
@@ -140,7 +182,32 @@ function brickMaterial() {
         }`,
       );
   };
-  return mat;
+  return withCaveAmbient(mat);
+}
+
+// Rock rings round the mouths (mesh.js), hiding where the hillside's holes meet the tunnels. Look only: they sit
+// in the rock and the trench walls, a hand's width proud of the tunnel wall.
+function makeCollars() {
+  const { positions, indices } = buildCollarMesh();
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  const colors = new Float32Array(positions.length);
+  const tmp = new THREE.Color();
+  for (let v = 0; v < positions.length / 3; v++) {
+    const h =
+      Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
+    tmp.set('#968f83').multiplyScalar(0.88 + 0.24 * (h - Math.floor(h)));
+    colors.set([tmp.r, tmp.g, tmp.b], v * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(
+    geo,
+    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
+  );
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
 }
 
 function* build() {
@@ -160,6 +227,10 @@ function* build() {
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
   body.addShape(new CANNON.Trimesh(Array.from(m.positions), colliderIndices));
   world.addBody(body);
+  yield;
+
+  collarMesh = makeCollars();
+  scene.add(collarMesh);
   yield;
 
   decorRoot = buildDecor({ world, scene });
@@ -204,15 +275,41 @@ function floorBelow(x, y, z) {
 }
 
 // ---------------------------------------------------------------- camera and atmosphere
+// The camera ray stops at rock, at the mouths' timber frames (it may only pass through their doorway, clear of the
+// posts, lanterns and beam), and (out past a mouth) at the ground. Pulled in at once when something gets in the way,
+// it eases back out while it is in the tunnel (no pop as the tunnel opens up).
+const CAM_EASE = 4; // 1/s
+const FRAMES = MOUTHS.map((m) => ({ m, ...mouthFrame(m) }));
 const tmpV = new THREE.Vector3();
+const camRay = { len: Infinity, at: 0 };
+function blocked(x, y, z) {
+  for (const { m, rx, rz, fx, fz, half } of FRAMES) {
+    const along = (x - fx) * m.ox + (z - fz) * m.oz;
+    if (Math.abs(along) > 0.45) continue;
+    const side = Math.abs((x - fx) * rx + (z - fz) * rz);
+    if (side < half + 0.6 && y < m.y + 3.3 && (side > half - 0.55 || y > m.y + 2.3)) return true;
+  }
+  if (outOfMouth(x, z) > 0.5) return y < groundHeight(x, z) + 0.45;
+  return caveSd(x, y, z) > -0.35;
+}
 function keepCameraInside(look, pos) {
-  if (!ready || !me.body || !tracked.get(me.body)?.cave) return false;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - camRay.at) / 1000);
+  camRay.at = now;
+  // Also when you stand outside a mouth with the camera's spot in the tunnel behind you (walking out): else the usual
+  // ground rule would lift it onto the hill over the mouth.
+  if (!ready || !me.body || !(tracked.get(me.body)?.cave || inCave(pos.x, pos.y, pos.z))) {
+    camRay.len = Infinity;
+    return false;
+  }
   const dir = tmpV.subVectors(pos, look);
   const len = dir.length();
   dir.divideScalar(len || 1);
   let t = 0;
-  for (; t < len; t += 0.2) if (caveSd(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t) > -0.35) break;
-  pos.copy(look).addScaledVector(dir, Math.max(0.3, t - 0.25));
+  for (; t < len; t += 0.2) if (blocked(look.x + dir.x * t, look.y + dir.y * t, look.z + dir.z * t)) break;
+  const free = Math.max(0.3, Math.min(len, t - 0.25));
+  camRay.len = free < camRay.len ? free : camRay.len + (free - camRay.len) * Math.min(1, dt * CAM_EASE);
+  pos.copy(look).addScaledVector(dir, Math.min(free, camRay.len));
   return true;
 }
 
@@ -220,7 +317,7 @@ let under = 0;
 function update({ dt }) {
   if (!ready) return;
   const c = camera.position;
-  caveMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
+  caveMesh.visible = collarMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
   let target = 0;
   if (inCave(c.x, c.y, c.z)) target = THREE.MathUtils.smoothstep(-outOfMouth(c.x, c.z), 1, 9); // daylight near mouths
   under += (target - under) * Math.min(1, dt * 3);

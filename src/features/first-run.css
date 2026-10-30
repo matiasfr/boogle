@@ -1,0 +1,69 @@
+/* The first-run card: a paper sticker at the lower left (the hotbar is centred, the player is in the middle). */
+.first-run {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left, 0px));
+  bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  max-width: min(340px, calc(100vw - 28px));
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 10px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 6px 0 var(--ink);
+  pointer-events: none;
+  animation: first-run-in 250ms ease-out;
+  transition: opacity 0.4s;
+}
+.first-run.gone {
+  opacity: 0;
+}
+.first-run .guide {
+  font-size: 13px;
+  gap: 0.5em;
+}
+.first-run .guide-detail {
+  display: none;
+}
+.first-run .guide-row {
+  grid-template-columns: minmax(5.5em, auto) 1fr;
+}
+.first-run-more {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 2px solid var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+/* Touch: the stick and buttons own the bottom edge, so the card sits in the middle of the left edge. */
+body.touch .first-run {
+  bottom: auto;
+  top: 30%;
+  max-width: min(300px, 60vw);
+}
+@keyframes first-run-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .first-run {
+    animation: none;
+  }
+}
+
+.first-run-burger {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 16px;
+}

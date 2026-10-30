@@ -300,9 +300,10 @@ function placeBillboard(group, dir) {
 }
 
 // Set every frame by features that take the camera somewhere the sky can't reach: underground = 0..1 (the caves).
-// The sky's light fades to a dim, warm ambient and the fog closes in, dark.
+// The fog closes in, dark, and the sky's light turns warm and dims a little; the cave meshes bake their own darkening
+// with depth (aAmb in src/pois/caves/), so the global dip stays mild.
 export const atmosphere = { underground: 0 };
-const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#6d6155'), ground: new THREE.Color('#2a241e') };
+const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
 export function updateSky(dt, elapsed) {
   if (!sunGroup) return;
@@ -350,14 +351,14 @@ export function updateSky(dt, elapsed) {
     hemi.intensity = lerp(0.7, 1.25, day);
   }
   const ug = atmosphere.underground;
-  scene.fog.near = lerp(FOG_NEAR, 2.5, ug);
-  scene.fog.far = lerp(FOG_FAR, 46, ug);
+  scene.fog.near = lerp(FOG_NEAR, 6, ug);
+  scene.fog.far = lerp(FOG_FAR, 80, ug);
   if (ug > 0) {
     scene.fog.color.lerp(CAVE.fog, ug);
     if (hemi) {
       hemi.color.lerp(CAVE.sky, ug);
       hemi.groundColor.lerp(CAVE.ground, ug);
-      hemi.intensity *= lerp(1, 0.32, ug);
+      hemi.intensity *= lerp(1, 0.8, ug); // the cave rock darkens itself with depth (src/pois/caves/)
     }
   }
 

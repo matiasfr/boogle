@@ -1,3 +1,5 @@
+_Snapshot of the codebase as of 2026-10-29; may be out of date (e.g. pad slots changed in 07daef1)._
+
 # Codebase inventory: what Boogle has now, judged against "fun together + communal progression, no grind, no fine control"
 
 State as of `main` at `dbcdaae` (2026-10-29 10:27). All sources are repo-relative paths in /Users/matiasfranco/Developer/boogle; commit hashes refer to `git log`. Line counts are `wc -l`. "Shared" means registered world state or ops in `src/world/sync.js`; "presence" means per-player fields in the unreliable presence channel; "local" means cosmetic, never synced.

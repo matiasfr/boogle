@@ -1,36 +1,7 @@
-/* Gamepad in use: no touch overlay, aim with the reticle, layout card on Menu. */
+/* Gamepad in use: no touch overlay, aim with the reticle. */
 body.gamepad .touch {
   display: none !important;
 }
 body.gamepad.playing .reticle {
   display: block;
-}
-body.gamepad .help {
-  display: none !important;
-}
-.pad-card {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: grid;
-  gap: 6px;
-  padding: 16px 20px;
-  border-radius: 14px;
-  background: var(--glass);
-  color: var(--paper);
-  font-size: 14px;
-  pointer-events: none;
-}
-.pad-card[hidden] {
-  display: none;
-}
-.pad-card div {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.pad-card kbd {
-  min-width: 70px;
-  text-align: center;
 }
