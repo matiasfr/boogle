@@ -19,7 +19,7 @@ import { atmosphere } from '../../render/sky.js';
 import { camConstraints, me } from '../../player/player.js';
 import { ball } from '../../physics/ball.js';
 import { waterField } from '../../physics/water-field.js';
-import { buildCaveMeshSteps, buildCollarMesh, caveSd } from './mesh.js';
+import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
 import { buildDecor, mouthFrame } from './decor.js';
 
@@ -187,8 +187,7 @@ function brickMaterial() {
 
 // Rock rings round the mouths (mesh.js), hiding where the hillside's holes meet the tunnels. Look only: they sit
 // in the rock and the trench walls, a hand's width proud of the tunnel wall.
-function makeCollars() {
-  const { positions, indices } = buildCollarMesh();
+function makeCollars({ positions, indices }) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setIndex(new THREE.BufferAttribute(indices, 1));
@@ -229,7 +228,7 @@ function* build() {
   world.addBody(body);
   yield;
 
-  collarMesh = makeCollars();
+  collarMesh = makeCollars(yield* buildCollarMeshSteps());
   scene.add(collarMesh);
   yield;
 

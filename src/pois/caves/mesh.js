@@ -251,7 +251,8 @@ function collarSd(x, y, z, m) {
 }
 
 // One mesh for all four collars: { positions: Float32Array, indices: Uint32Array }, fronts facing out of the rock.
-export function buildCollarMesh() {
+// Generator, like buildCaveMeshSteps: yields per slice so the build stays inside the caves' per-frame budget.
+export function* buildCollarMeshSteps() {
   const pos = [],
     idx = [];
   for (const m of MOUTHS) {
@@ -261,15 +262,14 @@ export function buildCollarMesh() {
     const dims = [Math.ceil((2 * pad) / v) + 1, Math.ceil((FLOOR_CUT + pad + COLLAR.below + 0.5) / v) + 1, 0];
     dims[2] = dims[0];
     const field = new Float32Array(dims[0] * dims[1] * dims[2]);
-    for (let k = 0, f = 0; k < dims[2]; k++)
+    for (let k = 0, f = 0; k < dims[2]; k++) {
+      yield;
       for (let j = 0; j < dims[1]; j++)
         for (let i = 0; i < dims[0]; i++) field[f++] = collarSd(lo[0] + i * v, lo[1] + j * v, lo[2] + k * v, m);
+    }
     const sd = (x, y, z) => collarSd(x, y, z, m);
-    const run = (it) => {
-      for (let r = it.next(); ; r = it.next()) if (r.done) return r.value;
-    };
-    const part = run(polygonize(field, dims, lo, v));
-    run(orient(part.pos, part.idx, sd, 1));
+    const part = yield* polygonize(field, dims, lo, v);
+    yield* orient(part.pos, part.idx, sd, 1);
     const base = pos.length / 3;
     pos.push(...part.pos);
     for (const i of part.idx) idx.push(base + i);
