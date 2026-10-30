@@ -52,8 +52,6 @@ setEnv(env);
 
 // Open, dry land with room in the garden: where a seed may go in (the host runs this same check on mush.plant).
 export const plantOk = (i, j) => rules.mushrooms.plantOk(i, j, env);
-// A thrown seed that landed somewhere plantOk accepted (src/gifts.js `gift.toss`).
-export const plantSeed = rules.mushrooms.plant;
 
 onApplied((e, t, r) => {
   if (e.op !== 'mush.water' || !r) return;

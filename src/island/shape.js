@@ -12,9 +12,9 @@
 // them to centimetres once, so the shared sim never sees raw floats.
 import { lerp, smoothstep, fbm } from '../math-pure.js';
 
-export const SEABED = -7.5;
+const SEABED = -7.5;
 const HOME_R = 52;
-export const HOME_KEEP = 22; // metres from the origin where the home ground is untouched
+const HOME_KEEP = 22; // metres from the origin where the home ground is untouched
 
 // Mainland: a noisy ellipse north of home, small enough that everything is a short run from spawn.
 export const MAINLAND = { x: 6, z: -66, rx: 96, rz: 56 };
@@ -27,7 +27,7 @@ const LOBES = [
 export const MASSIF = { x: -54, z: -92, rx: 42, rz: 30, h: 15 };
 
 // Original island, unchanged.
-export function homeHeight(x, z) {
+function homeHeight(x, z) {
   const d = Math.hypot(x, z * 1.12) / HOME_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
   const hill = 6.5 * Math.exp(-((x + 12) ** 2 + (z + 6) ** 2) / (2 * 13 * 13));
   const bumps = fbm(x * 0.08, z * 0.08) * 1.1 * (1 - smoothstep(0.55, 0.85, d));
@@ -47,7 +47,7 @@ function smin(a, b, k) {
 }
 
 // 0 inside the coastline, 1 at the coast, > 1 out at sea (normalised, noisy).
-export function mainlandDistance(x, z) {
+function mainlandDistance(x, z) {
   let d = ellipse(x, z, MAINLAND);
   for (const l of LOBES) d = smin(d, ellipse(x, z, l), 0.35);
   return d + fbm(x * 0.011 + 3.1, z * 0.011 - 5.7) * 0.14 + fbm(x * 0.045 - 2, z * 0.045 + 9) * 0.035;
@@ -56,7 +56,7 @@ export function mainlandDistance(x, z) {
 // 0..1 bump with a flat-ish top: 1 at the centre, 0 at t >= 1.
 const bump = (t) => (t >= 1 ? 0 : (1 - t * t) * (1 - t * t));
 
-export function mainlandHeight(x, z) {
+function mainlandHeight(x, z) {
   const d = mainlandDistance(x, z);
   if (d > 1.25) return SEABED;
   const meadow = 1.9 + 1.5 * (1 - smoothstep(0.3, 0.85, d)) + fbm(x * 0.018 + 7, z * 0.018 + 1) * 2.4;

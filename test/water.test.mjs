@@ -37,13 +37,15 @@ test('water flows downhill and pools at the bottom', () => {
   assert.equal(total(w), 400);
 });
 
-test('spring channel reaches a target basin', () => {
+test('water poured at the head of a channel reaches a target basin', () => {
   const t = mk(40, 40, () => 500);
   for (let i = 5; i <= 30; i++) t[i * 40 + 20] = 400 - i * 4; // channel sloping down
   for (let i = 30; i <= 34; i++) for (let j = 18; j <= 22; j++) t[i * 40 + j] = 200; // basin
   const w = createWater({ width: 40, height: 40, terrain: t, seaEdges: 0 });
-  w.setSource(5, 20, 5);
-  run(w, 400);
+  for (let k = 0; k < 400; k++) {
+    w.addWater(5, 20, 5); // a steady trickle at the head, poured before each step
+    w.step();
+  }
   assert.ok(w.depth[32 * 40 + 20] > 20, 'basin center should hold water');
   assert.equal(w.depth[10 * 40 + 5], 0, 'water stays in channel');
   assert.equal(bal(w), 0);
@@ -52,7 +54,7 @@ test('spring channel reaches a target basin', () => {
 function scenario() {
   const t = mk(24, 24, (i, j) => 300 + ((i * 31 + j * 17) % 23) - Math.abs(i - 12) * 2);
   const w = createWater({ width: 24, height: 24, terrain: t, sea: 0 });
-  w.setSource(12, 12, 7);
+  w.addWater(12, 12, 2100);
   w.addWater(5, 5, 800);
   return w;
 }
@@ -76,6 +78,23 @@ test('serialize/load mid-run then continue equals uninterrupted run', () => {
   b.load(snap);
   assert.equal(b.hash(), JSON.parse(JSON.stringify(snap)) && b.hash());
   run(b, 200);
+  assert.equal(b.hash(), a.hash());
+});
+
+test('load ignores the src field of snapshots from builds with springs', () => {
+  const a = scenario();
+  run(a, 50);
+  const { src, ...snap } = a.serialize();
+  assert.deepEqual(src, []); // still written, so tabs on those builds can load it
+  const fresh = () => createWater({ width: 24, height: 24, terrain: scenario().terrain });
+  const b = fresh();
+  b.load({ ...snap, src: [b.idx(3, 3), 9] });
+  const c = fresh();
+  c.load(snap);
+  assert.equal(b.hash(), a.hash());
+  assert.equal(c.hash(), a.hash());
+  run(a, 50);
+  run(b, 50);
   assert.equal(b.hash(), a.hash());
 });
 

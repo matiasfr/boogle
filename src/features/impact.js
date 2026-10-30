@@ -18,7 +18,7 @@ import { onFrame } from '../loop.js';
 import { getAudio } from '../audio.js';
 
 // ---------------------------------------------------------------- tunables
-export const TUNE = {
+const TUNE = {
   impactMin: 3.2, // velocity change (m/s) that counts as a hit
   faceplantSpeed: 11, // ball speed (m/s) that flops a head
   downMs: 800,

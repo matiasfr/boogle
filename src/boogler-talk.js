@@ -53,7 +53,7 @@ import {
 } from './boogler-friendship.js';
 import { GIFTS } from './sim/gift-catalog.js';
 
-export const THREAD_ORDER = ['home', 'mom', 'biz'];
+const THREAD_ORDER = ['home', 'mom', 'biz'];
 const node = (say, opts, mood = 'smile') => ({ say, mood, opts });
 const opt = (say, go, fx = {}) => ({ say, go, ...fx });
 

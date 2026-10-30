@@ -16,7 +16,7 @@ import { onFrame, onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
 
-export const TUNE = {
+const TUNE = {
   lifeMs: 4000,
   fadeMs: 500,
   ownGapMs: 1000, // our own cooldown
@@ -75,7 +75,7 @@ function aimPing() {
 }
 
 let lastOwn = -1e9;
-export function pingNow() {
+function pingNow() {
   const now = performance.now();
   if (!me.entered || !me.body || now - lastOwn < TUNE.ownGapMs) return;
   lastOwn = now;

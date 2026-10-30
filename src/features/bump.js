@@ -8,7 +8,7 @@ import { sendPresence } from '../net.js';
 import { onStart } from '../loop.js';
 import { registerAction } from '../controls.js';
 
-export const TUNE = {
+const TUNE = {
   reach: 3.4, // metres from the chest to the ball centre (grab reach is 2.4)
   up: 9.2, // m/s; about 2.4 m of rise, ~1 s of hang time: time for a teammate to run under it
   forward: 3.4, // m/s toward where the camera looks
@@ -19,7 +19,7 @@ export const TUNE = {
 
 let lastBump = -1e9;
 
-export function bump() {
+function bump() {
   const now = performance.now();
   if (!me.entered || !me.body || me.down || me.holding || me.charging) return false;
   if (now - lastBump < TUNE.cooldownMs) return false;
