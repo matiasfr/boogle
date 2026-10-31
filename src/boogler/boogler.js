@@ -47,7 +47,14 @@ const HOME_RANGE = 22; // metres around the garden where he just potters about
 const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere far
 const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
-const LABEL_Y = 1.15; // label anchor above the ground
+// His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
+// crown half the brim's radius, and the whole hat about three times his height.
+const BRIM_R = W_R / 3;
+const CROWN_R = BRIM_R / 2;
+const BRIM_H = 0.03;
+const HAT_H = 3 * (BODY_Y + H_R); // brim included
+const HAT_SINK = 0.015; // into the curve of his head, so no gap shows under the brim
+const LABEL_GAP = 0.45; // name tag anchor above the top of the hat (a crushed hat too, so it clears a rider)
 const FLEE_SPEED = 3.4;
 const RIDDEN_SPEED = 2.3;
 const FLEE_RANGE = 9;
@@ -426,10 +433,20 @@ function buildModel() {
     root.add(f);
     return f;
   });
+  // The hat stands on its own pivot (the middle of the brim) so it can lag, wobble and get crushed without stretching.
+  const hat = new THREE.Group();
+  const hatMat = new THREE.MeshStandardMaterial({ color: '#111114', roughness: 0.42 });
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(BRIM_R, BRIM_R, BRIM_H, 28), hatMat);
+  brim.position.y = BRIM_H / 2;
+  const crownH = HAT_H - BRIM_H;
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(CROWN_R * 1.06, CROWN_R, crownH, 20), hatMat);
+  crown.position.y = BRIM_H + crownH / 2;
+  hat.add(brim, crown);
+  root.add(hat);
   root.traverse((o) => {
     if (o.isMesh) o.castShadow = true;
   });
-  return { root, inner, bodyMesh, hands, feet };
+  return { root, inner, bodyMesh, hands, feet, hat };
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -468,6 +485,13 @@ export function createBoogler() {
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };
+// The hat's springs (cosmetic): height above his head, lean (x forward/back, z sideways) and squash (crushed flat like an
+// opera hat while someone rides him, popping back up after).
+const hatSpring = { y: 0, vy: 0, lx: 0, vlx: 0, lz: 0, vlz: 0, s: 1, vs: 0, top: null };
+const spring = (x, v, to, k, d, dt) => {
+  v += ((to - x) * k - v * d) * dt;
+  return [x + v * dt, v];
+};
 const react = { petAt: -1e9, puffAt: -1e9, joyUntil: 0, grumpUntil: 0 };
 
 // Cosmetic reactions, played on every client: 'pet' (squish and a happy face), 'joy', 'grump', 'puff' (inflate for
@@ -552,6 +576,34 @@ function animate(dt, now) {
   });
   const face = faceTexture(expression(now));
   if (parts.bodyMesh.material.map !== face) parts.bodyMesh.material.map = face;
+  animateHat(dt);
+}
+
+function animateHat(dt) {
+  const h = hatSpring;
+  const top = parts.inner.position.y + BODY_Y + H_R * parts.inner.scale.y - HAT_SINK;
+  dt = Math.min(dt, 1 / 30); // keep the springs stable through a slow frame
+  if (reducedMotion) {
+    h.y = top;
+    h.lx = 0;
+    h.lz = parts.inner.rotation.z;
+  } else {
+    if (h.top === null) h.y = top;
+    // The head moving up or down kicks the hat's lean a little, so hops make it wobble.
+    const rise = h.top === null ? 0 : (top - h.top) / dt;
+    h.vlx += rise * 0.9 * dt;
+    [h.y, h.vy] = spring(h.y, h.vy, top, 260, 16, dt);
+    h.y = Math.max(h.y, top - 0.02); // never sinks into him
+    [h.lx, h.vlx] = spring(h.lx, h.vlx, 0.07 * anim.walk, 70, 5, dt); // leans back a touch when he walks
+    [h.lz, h.vlz] = spring(h.lz, h.vlz, parts.inner.rotation.z * 2.2, 70, 5, dt); // and sways more than he does
+  }
+  h.top = top;
+  const crushed = disp.mode === MODE.RIDDEN;
+  [h.s, h.vs] = spring(h.s, h.vs, crushed ? 0.06 : 1, crushed ? 900 : 180, crushed ? 40 : 7, dt);
+  h.s = Math.max(0.04, h.s);
+  parts.hat.position.set(0, h.y, 0);
+  parts.hat.rotation.set(h.lx, 0, h.lz);
+  parts.hat.scale.set(1 + (1 - h.s) * 0.25, h.s, 1 + (1 - h.s) * 0.25);
 }
 
 export function updateBoogler(dt, now) {
@@ -594,7 +646,7 @@ export function updateBoogler(dt, now) {
   group.rotation.y = disp.yaw;
   animate(dt, now);
   boogler.center.set(disp.x, gy + BODY_Y + parts.inner.position.y, disp.z);
-  boogler.labelPos.set(disp.x, gy + LABEL_Y + parts.inner.position.y, disp.z);
+  boogler.labelPos.set(disp.x, gy + hatSpring.y + HAT_H + LABEL_GAP, disp.z);
 }
 
 // Screen-space position for the HUD label and edge pointer (hud.js).

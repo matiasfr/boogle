@@ -333,7 +333,9 @@ is gone.
 ### 6.8 The Boogler
 
 A lavender blob (`#b99cff`, about three times as wide as tall) with a face and feet, who speaks with Uzbek words and
-dreams of a restaurant. His HUD shows a bouncy name tag with your friendship hearts, his speech bubbles and the interact
+dreams of a restaurant. He wears a comically tall black top hat (cosmetic, no collider): brim radius a third of his,
+crown half the brim's, about 1.8 m tall (three times his height). It lags and wobbles on springs when he hops and
+walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD shows a bouncy name tag with your friendship hearts, his speech bubbles and the interact
 prompt, and an edge-of-screen pointer with his distance when he is off screen (full within 35 m, gone by 60 m).
 
 #### Wander
