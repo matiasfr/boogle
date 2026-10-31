@@ -1,12 +1,12 @@
 // Desync visibility (dev only, `?netdebug=1`). sync.js already compares one hash per registered state; this shows it:
 //   - an overlay with the role, hash checks, the status of every subsystem (water, terrain, mushrooms, ...) and
-//     whether everyone in the room runs this tab's build (src/netplay/builds.js)
+//     whether everyone in the room runs this tab's build (src/netplay/builds.ts)
 //   - on a mismatch, both sides save the diverging subsystems' serialized state at that tick as JSON, to diff:
 //     the client right away (before the resync replaces it), the host from a small cache of its states at hash ticks
 // Serves the determinism principle (a desync is found and named, not silently repaired). Local only.
 import { onStart } from '../loop.js';
-import { onRoomReady } from '../netplay/net.js';
-import { BUILD, otherBuilds } from '../netplay/builds.js';
+import { onRoomReady } from '../netplay/net.ts';
+import { BUILD, otherBuilds } from '../netplay/builds.ts';
 import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.ts';
 
 const CACHE = 6; // host: states kept for the last few hash ticks

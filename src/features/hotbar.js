@@ -9,7 +9,7 @@ import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
 import { me, ITEM_HAND } from '../player/player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { inv, SLOTS, heldId, select } from '../player/inventory.js';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
 import { pouring } from '../adapters/mushroom-garden.js';

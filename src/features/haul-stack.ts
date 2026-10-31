@@ -11,7 +11,7 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.js';
-import { remotes, onRemotePresence } from '../netplay/net.js';
+import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { submitEdit } from '../world/sync.ts';
 import { okPid } from '../sim/roster.ts';
 import { cellOf } from '../adapters/terrain.js';

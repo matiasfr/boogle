@@ -49,7 +49,7 @@
 
 ## Risks
 
-- **Hotspots touched:** `src/netplay/net.js` (room picking, lead helper: about 15 lines), `src/world/sync.ts` (four
+- **Hotspots touched:** `src/netplay/net.ts` (room picking, lead helper: about 15 lines), `src/world/sync.ts` (four
   additive changes, each tested), `src/net/peer-room.js` (imports ids, adds three members), `DESIGN.md`, `PLAN.md`
   (one line), `AGENTS.md` (one line), `package.json` (`test:net`), `.github/workflows/ci.yml` and
   `deploy-server.yml`. `src/world/rules/` is not edited (except its README).
@@ -505,7 +505,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `npm --prefix server ci` before `npm run test:net` (add `server/package-lock.json` to the npm cache paths).
   - Verify: `npm run check:full`.
 
-- [ ] **9. The room picker, used by the game** (`src/net/room.js`, `src/netplay/net.js`, `src/boogler/boogler.js`,
+- [ ] **9. The room picker, used by the game** (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
   `src/features/telemetry.js`, `src/debug/netdebug.js`).
   - `room.js` as in Design, with every transition of the table.
   - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =

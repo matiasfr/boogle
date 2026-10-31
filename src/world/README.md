@@ -75,7 +75,7 @@ Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-cloc
 
 ## Other exports
 
-Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.js`); without a room it
+Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.ts`); without a room it
 runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
 them.
 

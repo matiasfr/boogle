@@ -22,8 +22,8 @@ import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
 import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.js';
-import { net, remotes, addHostField } from '../netplay/net.js';
-import { createSnaps } from '../netplay/snaps.js';
+import { net, remotes, addHostField } from '../netplay/net.ts';
+import { createSnaps } from '../netplay/snaps.ts';
 
 // Shape: about three times as wide as he is tall.
 export const W_R = 0.8; // half width

@@ -213,7 +213,7 @@ Each season can be "finished", and the island stays a toy box afterwards. Later 
 
 ## Sync summary
 
-Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/netplay/net.js`, smoothed with `createSnaps`), and Lockstep is `registerOp`/`registerState`/`onTick` with `submitEdit` from features. One-off events (a bell ring, a page fluttering) are room messages, not state.
+Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/netplay/net.ts`, smoothed with `createSnaps`), and Lockstep is `registerOp`/`registerState`/`onTick` with `submitEdit` from features. One-off events (a bell ring, a page fluttering) are room messages, not state.
 
 | State | Kind | Where it would live |
 | --- | --- | --- |

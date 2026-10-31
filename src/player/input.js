@@ -3,7 +3,7 @@ import { clamp } from '../math.js';
 import { canvas } from '../render/scene.js';
 import { me, cam } from './player.js';
 import { respawnBall, releaseBall } from '../physics/ball.js';
-import { sendPresence } from '../netplay/net.js';
+import { sendPresence } from '../netplay/net.ts';
 import { dom } from './hud.js';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
 import { cycle } from './inventory.js';

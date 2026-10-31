@@ -13,7 +13,7 @@ import { groundHeight } from '../adapters/terrain.js';
 import { clamp, lerp } from '../math.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { onFrame } from '../loop.js';
 import { getAudio } from '../render/audio.js';
 

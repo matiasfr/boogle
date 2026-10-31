@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { scene } from '../render/scene.js';
 import { onApplied, submitEdit } from '../world/sync.ts';
-import { sharedSeconds } from '../netplay/shared-time.js';
+import { sharedSeconds } from '../netplay/shared-time.ts';
 import { registerInteractable } from '../player/hands.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { me } from '../player/player.js';

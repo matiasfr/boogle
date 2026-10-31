@@ -7,7 +7,8 @@
 //                                       field that stops is not repeated forever. Returns pr.
 //   hostField(getter, onValue, isHost)  -> { get, hear } for a Host field: get() publishes getter() only while
 //                                       isHost(), else null; hear(value, time, peer) passes on real values only.
-export function mergeFields(pr, fields) {
+export type Presence = Record<string, unknown>;
+export function mergeFields(pr: Presence, fields: [string, () => unknown][]) {
   for (const [key, get] of fields) {
     let v = null;
     try {
@@ -20,10 +21,14 @@ export function mergeFields(pr, fields) {
   return pr;
 }
 
-export function hostField(getter, onValue, isHost) {
+export function hostField(
+  getter: () => unknown,
+  onValue: (v: unknown, time: number, peer: string) => void,
+  isHost: () => boolean,
+) {
   return {
     get: () => (isHost() ? getter() : null),
-    hear: (v, time, peer) => {
+    hear: (v: unknown, time: number, peer: string) => {
       if (v !== null && v !== undefined) onValue(v, time, peer);
     },
   };

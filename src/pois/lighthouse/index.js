@@ -13,7 +13,7 @@ import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.js';
 import { skyNow } from '../../render/sky.js';
-import { sharedSeconds } from '../../netplay/shared-time.js';
+import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { addLightSource } from '../../render/lights.js';
 import { reducedMotion } from '../../constants.js';
 import site, { PAD_Y } from './site.js';

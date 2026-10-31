@@ -3,7 +3,7 @@
 // in presence as `bv` (Owner state: your own build); every remote record gets r.build (null = a peer from before
 // builds were published, so an older one). src/features/updates.js reloads old tabs; the net debug overlay and
 // connection reports use mixedBuilds().
-import { addPresenceField, onRemotePresence, remotes } from './net.js';
+import { addPresenceField, onRemotePresence, remotes } from './net.ts';
 
 export const BUILD = String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12);
 
@@ -14,7 +14,7 @@ onRemotePresence((r, pr) => {
 
 // Other builds among the peers we have heard from, as Map(build -> count); null is a peer older than `bv`.
 export function otherBuilds() {
-  const n = new Map();
+  const n = new Map<string | null, number>();
   for (const r of remotes.values())
     if (r.build !== undefined && r.build !== BUILD) n.set(r.build, (n.get(r.build) || 0) + 1);
   return n;

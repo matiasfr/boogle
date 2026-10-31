@@ -17,7 +17,7 @@ import { dom } from '../player/hud.js';
 import { registerInteractable, interactTarget } from '../player/hands.js';
 import { heldId } from '../player/inventory.js';
 import { registerAction, describeControl, wrapAction } from '../player/controls.js';
-import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.js';
+import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.ts';
 import { dino, dinoSays, updateDino, showRealDino } from '../guest/dino.js';
 import { guest } from '../guest/state.js';
 import { isPose, quantisePose, hasEngine, findEngine, takeEngineFile, ENGINE_EXT } from '../guest/engine.js';

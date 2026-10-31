@@ -9,7 +9,7 @@ import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.js';
 import { ball, resolveBallOwner, prepareBall } from './physics/ball.js';
 import { me, updateIntent } from './player/player.js';
-import { net, remotes, connectRoom, updateRemotes } from './netplay/net.js';
+import { net, remotes, connectRoom, updateRemotes } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.js';
 import { initInput } from './player/input.js';
 import { createStall } from './adapters/mushroom-garden.js';

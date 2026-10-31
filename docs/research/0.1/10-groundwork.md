@@ -142,7 +142,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 ### M1. Clean break: new world namespace, retire what conflicts (M)
 
 - **How.** Add `worldRoomId() = 'w2-' + getRoomId()` and use it for the room and for `attachWorld`
-  (`src/netplay/net.js:284`, `:304`). That one change moves:
+  (`src/netplay/net.ts:284`, `:304`). That one change moves:
   - the PeerJS host id (`peer-room.js:184`),
   - the localStorage key (`sync.js:549`),
   - the server snapshot key.
@@ -259,7 +259,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
   - `runAt(script, t0, tick)` returns `{phase, progress /*0..1000 int*/, done}`.
   - The script is integer keyframes.
   - Lockstep-safe (`+ - * /` only), like `src/sim/sky-clock.ts`.
-- **Visuals** read `src/netplay/shared-time.js:17` for a smooth fractional tick.
+- **Visuals** read `src/netplay/shared-time.ts:17` for a smooth fractional tick.
 - **The machine run:**
   - Op `site.run {s}` (anyone, when stocked) stores `t0` in the site state.
   - An `onTick` in `sites` completes the section at `t0 + script.len`: it lays the track, fires R1 and awards 5 points

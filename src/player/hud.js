@@ -1,6 +1,6 @@
 import { COLORS, isTouch } from '../constants.js';
 import { me, enterIsland, chargeAmount } from './player.js';
-import { net, remotes } from '../netplay/net.js';
+import { net, remotes } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.js';
 import { canvas } from '../render/scene.js';
 import { interactTarget, useVerb } from './hands.js';

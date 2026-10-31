@@ -42,7 +42,7 @@ export default {
     await g.eval(`${PAUSE} openPause();`);
     await g.wait(0.5);
     const focus = await g.eval(`return document.activeElement?.dataset.act ?? document.activeElement?.tagName;`);
-    await g.eval(`const { net } = await import('/src/netplay/net.js'); window.__sent = [];
+    await g.eval(`const { net } = await import('/src/netplay/net.ts'); window.__sent = [];
       if (net.room) { const o = net.room.send.bind(net.room); net.room.send = (m, ...a) => (window.__sent.push(m), o(m, ...a)); }`);
     const p0 = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
     await g.down('KeyW');

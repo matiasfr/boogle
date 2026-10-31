@@ -9,7 +9,7 @@ import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.js';
 import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.js';
-import { sharedSeconds } from '../../netplay/shared-time.js';
+import { sharedSeconds } from '../../netplay/shared-time.ts';
 import site, { MILLS, TRACK } from './site.js';
 import { freezeStatic } from '../../render/instances.ts';
 

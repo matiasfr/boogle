@@ -9,7 +9,7 @@ import { onFrame } from '../loop.js';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.js';
 import { sanitizeName } from '../math.js';
-import { addPresenceField } from '../netplay/net.js';
+import { addPresenceField } from '../netplay/net.ts';
 import { setPid, submitEdit, worldStatus } from '../world/sync.ts';
 
 const WHO_EVERY_MS = 3000; // at most one who.set this often (the host also refuses one that changes nothing)

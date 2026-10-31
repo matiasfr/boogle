@@ -10,7 +10,7 @@ import { onPostStep, forEachContact } from '../physics/engine.ts';
 import { trees } from '../render/props.js';
 import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
-import { net } from '../netplay/net.js';
+import { net } from '../netplay/net.ts';
 import { world, onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds

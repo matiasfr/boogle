@@ -5,7 +5,7 @@ import { scanSources, checkRegistry, compareRegistries, shapeOf, calls } from '.
 
 const file = (path, text) => ({ path, text });
 const NET = file(
-  'src/netplay/net.js',
+  'src/netplay/net.ts',
   'function buildPresence() {\n  const pr = {\n    v: 1,\n    p: null,\n  };\n}\n',
 );
 const CONTROLS = file('src/player/controls.js', "export const PAD = [\n  'a',\n  'b',\n  'x',\n];\n");
