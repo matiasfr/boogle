@@ -1,5 +1,4 @@
-// Rapier backend of the physics facade (./engine.ts documents the API), chosen with ?physics=rapier (docs/plans/rapier.md,
-// step 2). Rapier's WASM loads with ready(); bodies made before that are kept as mirrors and built in Rapier once it is
+// Rapier backend of the physics facade (./engine.ts documents the API; docs/plans/rapier.md). Rapier's WASM loads with ready(); bodies made before that are kept as mirrors and built in Rapier once it is
 // in. Each body is a mirror: game code writes position, velocity, force, quaternion on it in preStep hooks; every fixed
 // step pushes those into Rapier, steps, and pulls the result back. A position or rotation that differs from what Rapier
 // last reported was set by the game (a teleport, a ride) and is written through.
@@ -142,7 +141,7 @@ function build(b: MBody) {
     .setRotation(b.quaternion)
     .setLinearDamping(b.linearDamping)
     .setAngularDamping(b.angularDamping);
-  if (b.kind !== 'static') d.setCanSleep(false); // like cannon's allowSleep = false: a woken body skips a step
+  if (b.kind !== 'static') d.setCanSleep(false); // a woken body would skip a step
   if (b.kind === 'dynamic') d.setCcdEnabled(true);
   if (b.fixedRotation) d.lockRotations();
   b.rb = world.createRigidBody(d);
@@ -239,9 +238,8 @@ export function teleport(body: Body, x: number, y: number, z: number) {
 }
 
 // Rapier has no pair table: each collider carries its material's own friction and restitution, and a contact uses
-// their product (CoefficientCombineRule.Multiply). The pair table only serves cannon.
+// their product (CoefficientCombineRule.Multiply).
 export const material = (name: string, props: MaterialProps): Material => ({ name, ...props }) as Mat;
-export function contactMaterial() {}
 
 export const onPreStep = (fn: () => void) => void pre.push(fn);
 export const onPostStep = (fn: () => void) => void post.push(fn);
@@ -300,7 +298,7 @@ export function stepPhysics(dt: number) {
     acc -= FIXED;
     n++;
   }
-  if (acc >= FIXED) acc %= FIXED; // too far behind: drop the rest, like cannon's maxSubSteps
+  if (acc >= FIXED) acc %= FIXED; // too far behind: drop the rest
   interpolate(acc / FIXED);
 }
 export function stepFixed() {
@@ -312,8 +310,8 @@ export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) =>
   for (const b of bodies) if (b.kind === 'static' && b.group & mask) fn(b as unknown as Body, b.shapes);
 }
 
-// Rapier also keeps speculative contacts a little before shapes meet; cannon reports only touching ones, and game code
-// (the mushroom bounce, ground checks) expects that.
+// Rapier also keeps speculative contacts a little before shapes meet; game code (the mushroom bounce, ground checks)
+// wants only touching ones.
 function touching(manifold: RAPIER.TempContactManifold) {
   for (let i = 0; i < manifold.numContacts(); i++) if (manifold.contactDist(i) <= 0.005) return true;
   return false;

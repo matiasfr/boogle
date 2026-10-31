@@ -3,8 +3,7 @@
 // force, quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z
 // (w) and set(): no backend's own vector methods.
 //
-// Backends: cannon-es (./backend-cannon.ts, the default) and Rapier (./backend-rapier.ts, `?physics=rapier`, step 2 of
-// the plan). `physicsReady` resolves once the backend can step (Rapier loads its WASM first); main.js waits for it.
+// The engine is Rapier (./backend-rapier.ts, WASM). `physicsReady` resolves once its WASM is in; main.js waits for it.
 //
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
@@ -12,8 +11,7 @@
 //   setMotion(body, 'dynamic' | 'kinematic', response, mass)   switch how it moves; kinematic stops it (response:
 //                                  pushes; mass: set it too)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
-//   material(name, { friction, restitution }), contactMaterial(a, b, { friction, restitution })   cannon uses the pair
-//                                  table; Rapier multiplies the two materials' own values
+//   material(name, { friction, restitution })   a contact uses the product of its two materials' values
 //   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
 //   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.js only
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
@@ -22,7 +20,6 @@
 //   physicsTime()                  seconds of simulated time
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
 //                                  built from (src/guest/collision.js triangulates them; heightfields included)
-import * as cannon from './backend-cannon.ts';
 import * as rapier from './backend-rapier.ts';
 
 export type V3 = { x: number; y: number; z: number };
@@ -66,8 +63,7 @@ export type BodyOptions = {
 };
 export type RayHit = { hasHit: boolean; distance: number; hitPointWorld: V3; hitNormalWorld: V3 };
 
-const backend = new URLSearchParams(globalThis.location?.search ?? '').get('physics') === 'rapier' ? rapier : cannon;
-export const physicsBackend = backend === rapier ? 'rapier' : 'cannon';
+const backend = rapier;
 export const physicsReady: Promise<void> = backend.ready();
 
 export const createBody: (o?: BodyOptions) => Body = backend.createBody;
@@ -80,7 +76,6 @@ export const addBody: (body: Body) => void = backend.addBody;
 export const removeBody: (body: Body) => void = backend.removeBody;
 export const teleport: (body: Body, x: number, y: number, z: number) => void = backend.teleport;
 export const material: (name: string, props: MaterialProps) => Material = backend.material;
-export const contactMaterial: (a: Material, b: Material, o: MaterialProps) => void = backend.contactMaterial;
 export const onPreStep: (fn: () => void) => void = backend.onPreStep;
 export const onPostStep: (fn: () => void) => void = backend.onPostStep;
 export const stepPhysics: (dt: number) => void = backend.stepPhysics;

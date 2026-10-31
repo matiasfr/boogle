@@ -1,6 +1,6 @@
 # Plan: physics on Rapier
 
-> **Status: approved direction (2026-10-31), not started.** Part of [architecture.md](architecture.md), phase 2.
+> **Status: done (2026-10-31): Rapier is the only physics engine; cannon-es is removed.** Part of [architecture.md](architecture.md), phase 2.
 > Why: cannon-es allocates about 60 KB of JS garbage per frame inside `world.step` (measured with
 > `npm run hitches -- --allocs`, [game-loop.md](game-loop.md) step 2), has no continuous collision (the fall-speed cap
 > and fall-through net in `src/physics/physics.js` exist for that), and is pure JS on the main thread. Rapier
@@ -87,7 +87,7 @@ Side by side: jump arc, ground snapping, ball bounce and roll, mushroom bounce, 
 pushes, cave floors. Motion sheets from `/look` for each, compared frame by frame against cannon-es. Feel numbers move
 into the facade's backend file, with their cannon-es values noted.
 
-### 4. Switch the default, then remove cannon-es
+### 4. Switch the default, then remove cannon-es (done 2026-10-31, without the playtest week, at the user's call)
 
 Rapier becomes the default; `?physics=cannon` stays for a week of playtests (docs/playtests.md), then cannon-es and its
 backend are removed along with the fall-speed cap. Done when `hitches --allocs` shows nothing from physics and the

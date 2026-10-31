@@ -2,7 +2,7 @@
 
 One island, one beach ball, and everyone who has the page open.
 
-Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [cannon-es](https://github.com/pmndrs/cannon-es). It is bundled with [Vite](https://vite.dev).
+Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [Rapier](https://rapier.rs) (physics, WASM). It is bundled with [Vite](https://vite.dev).
 
 **Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments) and [PLAN.md](PLAN.md) (what we're building next).
 
@@ -23,7 +23,7 @@ Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build)
 - `main.js`: boot and the frame loop. `loop.js`: `onFrame`/`onStart` hooks. `features/`: self-contained features (splashes, the Boogler, mushrooms, ...), each auto-loaded with its own CSS and DOM.
 - `constants.js`, `math.js`: shared tuning values, math and noise helpers. `style.css`: base styles.
 - `render/`: renderer, camera, lights, sky, sea shader, props (palms/rocks/clouds), particles, splashes and the shared audio context.
-- `physics/`: cannon-es world, materials and step hooks; the ball and its ownership rules; thrown-item flights.
+- `physics/`: the physics facade over Rapier (`engine.ts`), materials and step hooks; the ball and its ownership rules; thrown-item flights.
 - `player/`: the local player and camera, avatar meshes, hands and hotbar, input and the control registry, HUD.
 - `netplay/`: `net.js` (presence, remote players and interpolation) and its pure helpers. `net/peer-room.js` is the PeerJS transport (see [src/net/README.md](src/net/README.md)).
 - `adapters/`: game-side halves of the lockstep rules (terrain mesh, gifts, mushroom garden). `boogler/`: The Boogler NPC, his talk and friendship.
