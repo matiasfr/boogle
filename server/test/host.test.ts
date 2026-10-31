@@ -10,7 +10,7 @@ import { loadHomeLand } from '../src/host/land.ts';
 import { PATCH } from '../../src/sim/mushrooms.ts';
 
 type Msg = Record<string, any>;
-const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {}, unrefTimers: true };
+const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
 
 async function start(env: Record<string, string> = {}, dataDir?: string) {
   dataDir ??= await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-host-'));

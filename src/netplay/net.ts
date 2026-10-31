@@ -288,8 +288,8 @@ function setNet(state: string) {
   }
 }
 
-// Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
-// unless the browser can't do WebRTC at all. A full room is retried every few seconds, so a spot that opens is taken.
+// Keep trying while solo (the server unreachable or restarting, a flaky network), unless the browser can't open a
+// WebSocket at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer: ReturnType<typeof setTimeout> | 0 = 0;
 const FULL_RETRY_MS = 4000;
 type NetError = { code?: string; type?: string; max?: number } | null | undefined;
@@ -308,12 +308,14 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// World copies tabs kept before the server hosted every room (under the plain name before the 0.1 clean break, then the
-// world room id): nothing loads them any more, so each tab clears its own.
-function dropOldSave(room: string) {
+// World copies tabs kept before the server hosted every room (boogle.world.<room>): nothing loads them any more, so
+// the first connect of a page load clears them all.
+let swept = false;
+function dropOldSaves() {
+  if (swept) return;
+  swept = true;
   try {
-    localStorage.removeItem(`boogle.world.${room}`);
-    localStorage.removeItem(`boogle.world.${worldRoomId(room)}`);
+    for (const k of Object.keys(localStorage)) if (k.startsWith('boogle.world.')) localStorage.removeItem(k);
   } catch {
     // storage unavailable: nothing to drop
   }
@@ -321,7 +323,7 @@ function dropOldSave(room: string) {
 
 export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
-  dropOldSave(getRoomId());
+  dropOldSaves();
   const roomId = worldRoomId(getRoomId());
   setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
   let room: Room;
@@ -371,7 +373,7 @@ export async function connectRoom() {
     if (net.state !== 'solo') setNet(connected ? 'live' : 'connecting');
   }, fail);
   room.onPeers(onPeersChange, fail);
-  // Host fields follow the lead at once (on a peer room, the host): a demoted lead (even one still on the title
+  // Host fields follow the lead at once: a demoted lead (even one still on the title
   // screen, which sends no presence otherwise) clears them before it rejoins, and a new lead publishes them without
   // waiting for its next send.
   room.onLeadChange(() => sendPresence());

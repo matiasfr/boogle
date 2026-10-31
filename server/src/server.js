@@ -40,7 +40,7 @@ export function loadConfig(env = process.env, overrides = {}) {
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
-    serverRooms: list(env.SERVER_ROOMS), // rooms this server hosts (docs/plans/server-host.md): '*' for all
+    serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied

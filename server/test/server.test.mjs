@@ -8,7 +8,7 @@ import { createService, loadConfig } from '../src/server.js';
 
 async function start(env = {}, overrides = {}) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-test-'));
-  const cfg = loadConfig({ DATA_DIR: dataDir, ...env }, { log: () => {}, unrefTimers: true, ...overrides });
+  const cfg = loadConfig({ DATA_DIR: dataDir, ...env }, { log: () => {}, ...overrides });
   const svc = createService(cfg);
   const port = await svc.listen(0);
   const base = `http://127.0.0.1:${port}`;
@@ -178,7 +178,7 @@ test('CORS: default *, and allow-list', async () => {
   }
 });
 
-// Upgrades go through one router (src/host/upgrade.ts): PeerJS signaling at /peerjs/peerjs, anything unknown 404.
+// Upgrades go through one router (src/host/upgrade.ts): room sockets at /room/:id, anything else 404.
 
 test('snapshot: GET serves a room the server saved, 404 for none, 400 for a bad id; no uploads', async () => {
   const s = await start();

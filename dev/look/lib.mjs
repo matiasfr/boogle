@@ -41,9 +41,7 @@ export const freePort = () =>
 export async function startStack({ url = null, root: dir = root } = {}) {
   if (url) return { base: url, close: async () => {} };
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
-  const server = createService(
-    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {}, unrefTimers: true }),
-  );
+  const server = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {} }));
   const sigPort = await server.listen(0);
   const port = await freePort();
   const vite = spawn(

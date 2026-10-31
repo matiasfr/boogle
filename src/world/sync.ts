@@ -267,8 +267,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const canRelease = () => connected && (mode === 'client' || ready);
   // updateWorld delivers what was held once the room is back.
   function onConnected(c: boolean) {
-    // A client whose room just came back re-pins to whoever hosts now at once, instead of ignoring a new host for
-    // HOST_STALE_MS (the old one may be gone, or be the server after a fallback).
+    // A client whose room just came back re-pins at once, instead of waiting HOST_STALE_MS (the server restarted: its
+    // clock and hashes start over).
     if (c && !connected && mode === 'client') {
       hostId = null;
       hostTick = 0;
@@ -633,15 +633,16 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (mode !== 'host' || !ready || newerSave) return false;
     const hsh = combine(0);
     if (hsh === lastSavedHash && !force) return false;
-    lastSavedHash = hsh;
     const text = JSON.stringify(snapshot());
     stats.snapBytes = text.length;
     try {
       cfg.storage?.setItem(storageKey(), text);
-      stats.saves++;
     } catch (err) {
       console.warn('[world] save failed', err);
+      return false; // lastSavedHash unchanged: the next save tries again
     }
+    lastSavedHash = hsh;
+    stats.saves++;
     return true;
   }
   function loadPersisted(): Snapshot | null {
