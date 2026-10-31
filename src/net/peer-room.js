@@ -1,8 +1,11 @@
 // peer-room.js - a "room" for Boogle on top of PeerJS (WebRTC data channels).
 //
 // Topology: star. The host's PeerJS id is `boogle-<room>-host`. Whoever registers it is the host; everyone else
-// registers a random id and connects only to the host. If the host disappears, every client waits a random
-// 200-1200 ms and tries to claim the host id; the winner becomes host and the rest reconnect to it.
+// registers a random id and connects only to the host. If the host disappears, every client waits a random delay
+// (shorter the better its host score, claimDelay) and tries to claim the host id; the winner becomes host and the rest
+// reconnect to it. Host choice: each client reports its host score (opts.hostScore, default defaultHostScore: hidden 0,
+// touch 2, desktop 3); a host that a client has outscored long enough names it in a 'handover' and lets go of the id.
+// The named tab claims at once and keeps claiming for CLAIM_WINDOW_MS; the others give it HEAD_START_MS first.
 //
 // Each client opens TWO DataConnections to the host (JSON serialization, metadata { selfId }):
 //   'u' (reliable:false)  presence, latest-state-wins.  NOTE: in peerjs 1.5.4 `reliable:false` only means
@@ -14,17 +17,24 @@
 //   client -> host   u: { t:'p', s, d }            my full presence `d`, sequence `s`
 //                    r: { t:'m', d }               send() payload, host relays it with the origin id
 //                    r: { t:'hb' } | { t:'bye' }   heartbeat (0.5 s) / leaving
+//                    r: { t:'sc', v }              my host score, when it changes (checked with each heartbeat)
 //   host -> client   r: { t:'list', peers:[{id,s,d}], last }   everyone currently known (chunked), sent on connect
 //                    u: { t:'p', id, s, d }        a peer's presence (relayed; includes the host's own)
 //                    r: { t:'left', id, s }        a peer is gone (s = last seq seen, so late 'p' can't resurrect it)
 //                    r: { t:'m', from, d }         relayed send() payload
 //                    r: { t:'hb' }                 heartbeat (0.5 s); a client that hears nothing for 3 s assumes the host died
+//                    r: { t:'full', max }          the room has `max` players already; the host then closes both channels
+//                    r: { t:'handover', to }       the host is letting go of the id for `to` (old builds ignore it and race)
 // Ids in messages are the tab's stable selfId, never PeerJS ids, so identities survive host migration.
 // Host drops a client after 3 s of silence (and announces `left` at once). Either side also treats the WebRTC
 // connection itself going 'failed'/'closed' (or 'disconnected' for > 1.5 s) as the peer being gone; a hard-killed
 // renderer sends nothing and its channels can linger for tens of seconds, so the heartbeat is the reliable signal.
 // A side whose own timers stalled (frozen tab, sleep) forgives the silence it could not have measured. After a migration, peers that haven't come back within GRACE_MS are
 // reported as `left` (instead of flapping everyone at the moment the host dies).
+// Room cap: the host turns away a newcomer once `maxPeers` (default MAX_PEERS, host included) are in the room; peers
+// it has seen before (back after a blip, or from before a migration) always get in, so the room can briefly hold one
+// more. Peers from before a migration keep their place for GRACE_MS. The newcomer's createPeerRoom fails with code
+// 'room_full' (`max`: the cap, when the host said). Old builds ignore 'full' and retry until their connect timeout.
 
 import { Peer } from 'peerjs';
 
@@ -38,6 +48,28 @@ const OPEN_TIMEOUT_MS = 10000; // WebRTC connection to the host (both channels +
 const MIN_GAP_MS = 20; // per-key minimum spacing of presence packets (coalescing beyond this)
 const HIGH_WATER = 64 * 1024; // dataChannel.bufferedAmount above which we hold presence back
 const OUTBOX_MAX = 200; // send() calls kept while disconnected
+export const MAX_PEERS = 8; // players per room, host included
+const HIDDEN_HANDOVER_MS = 5000; // a host hidden this long, with a better tab in the room, hands over
+const WEAK_HANDOVER_MS = 20000; // a visible but weaker host (touch) waits longer...
+const HANDOVER_COOLDOWN_MS = 60000; // ...and never in its first minute as host, so a room doesn't flap between hosts
+const HIDDEN_COOLDOWN_MS = 15000; // a hidden host never hands over in its first 15 s as host (alt-tab ping-pong)
+const HANDOVER_TTL_MS = 5000; // a handover notice older than this no longer steers the election
+const CLAIM_WINDOW_MS = 3000; // the named successor retries the host id this long (the old host may not have let go)
+const HEAD_START_MS = 700; // after a handover, the others wait this long before racing, then by score
+const MAX_SCORE = 3;
+
+// How good this tab is as a host: a hidden tab's timers are throttled (coalesced relays wait up to a second, and after
+// minutes in the background heartbeats stop, so clients see a dying host); touch devices are usually phones on weaker
+// links. 0 hidden, 2 touch, 3 desktop. net.js also scores 0 until the tab holds the verified world.
+const coarse = globalThis.matchMedia?.('(pointer: coarse)');
+export function defaultHostScore() {
+  if (typeof document === 'undefined') return 1;
+  if (document.visibilityState === 'hidden') return 0;
+  return coarse?.matches ? 2 : 3;
+}
+// Random wait before racing for the host id after the host is gone: better hosts claim it first.
+const claimDelay = (score) =>
+  score >= 3 ? 100 + Math.random() * 400 : score >= 2 ? 450 + Math.random() * 450 : 950 + Math.random() * 800;
 const FATAL = new Set(['browser-incompatible', 'invalid-id', 'invalid-key', 'ssl-unavailable']);
 
 const rand = (n) => {
@@ -154,6 +186,7 @@ export async function createPeerRoom(opts = {}) {
   for (const k of ['host', 'port', 'path', 'secure', 'key'])
     if (opts.signal?.[k] !== undefined) peerOpts[k] = opts.signal[k];
   if (opts.iceServers) peerOpts.config = { iceServers: opts.iceServers };
+  const maxPeers = opts.maxPeers ?? MAX_PEERS;
 
   // ---- peer table (me + everyone known) and change notification ----
   const table = new Map(); // id -> { presence, at, entry }
@@ -256,6 +289,16 @@ export async function createPeerRoom(opts = {}) {
     connected = false,
     isHostNow = false,
     fatalError = null;
+  // Host choice: the successor a handover named, and until when this tab, if named, keeps trying to claim the id.
+  let handover = null, // { to, at }
+    claimUntil = 0;
+  const hostScore = () => {
+    try {
+      return opts.hostScore ? Number(opts.hostScore()) || 0 : defaultHostScore();
+    } catch {
+      return 0;
+    }
+  };
   let role = null,
     wake = null;
   let clients = new Map(); // host side: id -> client record
@@ -343,6 +386,13 @@ export async function createPeerRoom(opts = {}) {
       if (tell === 'now') announce();
       else if (tell) timers.push(setTimeout(announce, 400));
     }
+    // Everyone holding a place: the table (me, ready clients, peers from before a migration still in their grace
+    // period) plus ready clients not in it yet.
+    const inRoom = () => {
+      let n = table.size;
+      for (const c of hostClients.values()) if (c.ready && !table.has(c.id)) n++;
+      return n;
+    };
     function sendList(c) {
       let batch = [],
         size = 0;
@@ -376,6 +426,8 @@ export async function createPeerRoom(opts = {}) {
         if (!isObj(d.d) || tooBig(d.d)) return;
         broadcastR({ t: 'm', from: c.id, d: d.d }, c.id);
         deliver(d.d, c.id);
+      } else if (d.t === 'sc') {
+        if (Number.isFinite(d.v)) c.score = Math.max(0, Math.min(MAX_SCORE, d.v)); // a lying client gets no edge
       } else if (d.t === 'bye') dropClient(c.id, 'now');
       // 'hb' (and anything unknown) only refreshes `seen`
     }
@@ -393,7 +445,7 @@ export async function createPeerRoom(opts = {}) {
         c = null;
       } // the same tab came back on a fresh session
       if (!c) {
-        c = { id, u: null, r: null, ready: false, seen: Date.now(), lastSeq: -1 };
+        c = { id, u: null, r: null, ready: false, seen: Date.now(), lastSeq: -1, score: -1 }; // -1: never reported
         c.sender = makeSender(() => c.u);
         hostClients.set(id, c);
         const pair = c;
@@ -407,6 +459,12 @@ export async function createPeerRoom(opts = {}) {
       rec[label] = conn;
       conn.on('open', () => {
         if (!rec.ready && rec.u?.open && rec.r?.open && hostClients.get(id) === rec) {
+          // seqs keeps every id this room has seen, and ids are per page load: a known id is a tab coming back.
+          if (!table.has(id) && !seqs.has(id) && inRoom() >= maxPeers) {
+            safeSend(rec.r, { t: 'full', max: maxPeers });
+            timers.push(setTimeout(() => hostClients.get(id) === rec && dropClient(id, 0), 500)); // let 'full' arrive
+            return;
+          }
           rec.ready = true;
           rec.seen = Date.now();
           sendList(rec);
@@ -454,6 +512,36 @@ export async function createPeerRoom(opts = {}) {
           else if (c.ready) safeSend(c.r, { t: 'hb' });
         }
       }, HEARTBEAT_MS),
+    );
+    // Handover: when a ready client has scored better than this tab for long enough, name it and let go of the id,
+    // so it takes over with a short, planned migration instead of this tab hosting badly.
+    // betterSince: when the current situation (this tab hidden or not, a better client present) began.
+    const hostSince = Date.now();
+    let betterSince = 0,
+      wasHidden = false,
+      handingOver = false;
+    timers.push(
+      setInterval(() => {
+        if (r.done || handingOver) return;
+        const mine = hostScore();
+        const hidden = mine <= 0;
+        let best = null;
+        for (const c of hostClients.values()) if (c.ready && c.score > (best?.score ?? mine)) best = c;
+        if (!best || hidden !== wasHidden) betterSince = 0;
+        wasHidden = hidden;
+        if (!best) return;
+        const now = Date.now();
+        betterSince ||= now;
+        if (now - betterSince < (hidden ? HIDDEN_HANDOVER_MS : WEAK_HANDOVER_MS)) return;
+        if (now - hostSince < (hidden ? HIDDEN_COOLDOWN_MS : HANDOVER_COOLDOWN_MS)) return;
+        dbg('handover to', best.id, `(${best.score} > ${mine})`);
+        handingOver = true;
+        handover = { to: best.id, at: now };
+        // On both channels: closing either ends the client's role, so the notice must not wait behind the other.
+        for (const c of hostClients.values())
+          if (c.ready) for (const k of ['r', 'u']) safeSend(c[k], { t: 'handover', to: best.id });
+        timers.push(setTimeout(() => r.end(), 150)); // let the notice go out before the channels close
+      }, 1000),
     );
     timers.push(
       setTimeout(() => {
@@ -531,9 +619,17 @@ export async function createPeerRoom(opts = {}) {
         }
       } else if (d.t === 'm') {
         if (okId(d.from) && d.from !== SELF_ID && isObj(d.d)) deliver(d.d, d.from);
+      } else if (d.t === 'handover') {
+        if (okId(d.to)) handover = { to: d.to, at: Date.now() };
+      } else if (d.t === 'full') {
+        full = { max: Number.isSafeInteger(d.max) && d.max > 0 ? d.max : undefined };
+        resolveFull(false);
       }
     }
+    let full = null,
+      resolveFull;
     const failed = new Promise((res) => {
+      resolveFull = res;
       peer.on('error', (e) => {
         if (e.type === 'peer-unavailable') res(false);
       });
@@ -558,6 +654,7 @@ export async function createPeerRoom(opts = {}) {
     ]);
     if (!ok || r.done) {
       r.teardown();
+      if (full) throw Object.assign(err('room_full', 'the room is full'), { fatal: true, max: full.max });
       return null;
     }
 
@@ -570,7 +667,8 @@ export async function createPeerRoom(opts = {}) {
         },
         timers,
       );
-    let lastTick = Date.now();
+    let lastTick = Date.now(),
+      sentScore = null;
     timers.push(
       setInterval(() => {
         const now = Date.now();
@@ -582,6 +680,8 @@ export async function createPeerRoom(opts = {}) {
           return;
         }
         safeSend(rel, { t: 'hb' });
+        const score = hostScore(); // how good a host this tab would be, for the host's handover check
+        if (score !== sentScore) safeSend(rel, { t: 'sc', v: (sentScore = score) });
       }, HEARTBEAT_MS),
     );
     timers.push(
@@ -623,6 +723,7 @@ export async function createPeerRoom(opts = {}) {
         dbg('claim failed', e.type);
         return null;
       }
+      if (Date.now() < claimUntil) return null; // named successor: the old host is still letting go; claim again
       try {
         p = await openPeer(`boogle-${safeRoom(roomId)}-c${rand(10)}`);
       } catch (e2) {
@@ -633,6 +734,18 @@ export async function createPeerRoom(opts = {}) {
       return startClient(p);
     }
     return startHost(p);
+  }
+
+  // Migration: how long to wait before racing for the host id. A fresh handover names the winner, who claims at once
+  // (and keeps claiming for CLAIM_WINDOW_MS); everyone else gives it HEAD_START_MS, then races by host score.
+  function electionDelay() {
+    const named = handover && Date.now() - handover.at < HANDOVER_TTL_MS ? handover.to : null;
+    handover = null;
+    if (named === SELF_ID) {
+      claimUntil = Date.now() + CLAIM_WINDOW_MS;
+      return 0;
+    }
+    return (named ? HEAD_START_MS : 0) + claimDelay(hostScore());
   }
 
   let looping = false;
@@ -674,11 +787,16 @@ export async function createPeerRoom(opts = {}) {
         r?.teardown();
         continue;
       }
+      if (!r && Date.now() < claimUntil) {
+        delay = 150;
+        continue;
+      }
       if (!r) {
         fails++;
         delay = Math.min(300 * 2 ** fails, 3000) + Math.random() * 300;
         continue;
       }
+      claimUntil = 0;
       fails = 0;
       role = r;
       setHost(r.isHost);
@@ -690,7 +808,7 @@ export async function createPeerRoom(opts = {}) {
       if (role === r) role = null;
       setConnected(false);
       setHost(false);
-      delay = 200 + Math.random() * 1000; // migration: random wait before racing for the host id
+      delay = electionDelay();
     }
     looping = false;
   }

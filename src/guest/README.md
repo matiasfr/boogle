@@ -1,7 +1,7 @@
 # src/guest: working on the guest and the dino
 
 For agents changing this feature or adding another character like it. The player-facing description is
-[docs/game-design.md](../../docs/game-design.md) section 6.17. The plan for a second character is
+[docs/game-design/dino-and-guest.md](../../docs/game-design/dino-and-guest.md). The plan for a second character is
 [docs/plans/decomp-characters.md](../../docs/plans/decomp-characters.md).
 
 ## Rules that are not negotiable

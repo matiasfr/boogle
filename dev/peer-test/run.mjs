@@ -1,93 +1,14 @@
 // End-to-end test of src/net/peer-room.js (`npm run test:net`): local PeerServer + headless Chromium pages running
 // page.js. Room interface: src/net/README.md.
-import http from 'node:http';
-import path from 'node:path';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
-import { PeerServer } from 'peer';
-import * as esbuild from 'esbuild';
-import { freePort, sleep } from '../look/lib.mjs';
-
-const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
-const here = path.dirname(fileURLToPath(import.meta.url));
+import { startHarness, waitFor, ev, snap, seesAll, sleep } from './harness.mjs';
 
 const results = [];
 function check(name, ok, detail = '') {
   results.push({ name, ok });
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
 }
-// Polls fn until truthy; returns elapsed ms, or -1 on timeout.
-async function waitFor(fn, timeout = 8000, step = 50) {
-  const t0 = Date.now();
-  for (;;) {
-    try {
-      if (await fn()) return Date.now() - t0;
-    } catch {
-      /* page may be mid-navigation */
-    }
-    if (Date.now() - t0 > timeout) return -1;
-    await sleep(step);
-  }
-}
-const ev = (page, fn, arg) => page.evaluate(fn, arg);
 
-const signalPort = await freePort(),
-  webPort = await freePort();
-const server = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/peerjs' });
-const built = await esbuild.build({
-  entryPoints: [path.join(here, 'page.js')],
-  bundle: true,
-  format: 'iife',
-  write: false,
-  platform: 'browser',
-  logLevel: 'warning',
-});
-const js = built.outputFiles[0].text;
-const web = http
-  .createServer((req, res) => {
-    if (req.url.startsWith('/bundle.js')) {
-      res.writeHead(200, { 'content-type': 'text/javascript' });
-      res.end(js);
-    } else {
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end('<!doctype html><script src="/bundle.js"></script>');
-    }
-  })
-  .listen(webPort, '127.0.0.1');
-
-const browser = await chromium.launch();
-const room = 'test' + Math.random().toString(36).slice(2, 8);
-async function open(name) {
-  const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  page.on('pageerror', (e) => console.log(`  [${name}] pageerror: ${e.message}`));
-  if (process.env.VERBOSE) page.on('console', (m) => console.log(`  [${name}] ${m.text()}`));
-  await page.goto(
-    `http://127.0.0.1:${webPort}/?room=${room}&port=${signalPort}${process.env.STUN ? '&stun=1' : ''}${process.env.VERBOSE ? '&debug=' + process.env.VERBOSE : ''}`,
-  );
-  const selfId = await ev(page, () => window.T.start());
-  return { name, page, ctx, selfId };
-}
-const snap = (p) => ev(p.page, () => window.T.snap());
-// True when every page in `group` lists exactly the other members (plus itself, first, sameTab).
-async function seesAll(group) {
-  for (const p of group) {
-    const s = await snap(p);
-    const want = group
-      .filter((o) => o !== p)
-      .map((o) => o.selfId)
-      .sort();
-    const got = s.peers
-      .filter((x) => !x.sameTab)
-      .map((x) => x.peer)
-      .sort();
-    if (JSON.stringify(want) !== JSON.stringify(got)) return false;
-    if (s.peers.filter((x) => x.sameTab).length !== 1 || s.peers[0].peer !== p.selfId || !s.peers[0].sameTab)
-      return false;
-  }
-  return true;
-}
+const { room, open, close } = await startHarness();
 
 let exitCode;
 try {
@@ -346,6 +267,58 @@ try {
     hardMs >= 0 && Date.now() - tHard < 5000,
     `${Date.now() - tHard} ms`,
   );
+
+  // Room cap (maxPeers, host included): a newcomer past the cap is turned away with room_full, and gets in once
+  // someone leaves.
+  const capRoom = room + 'cap';
+  const capOpts = { in: capRoom, query: '&max=3' };
+  const X = await open('X', capOpts),
+    Y = await open('Y', capOpts),
+    Z = await open('Z', capOpts);
+  check('cap: three join a room capped at 3', (await waitFor(() => seesAll([X, Y, Z]), 5000)) >= 0);
+  const W = await open('W', capOpts);
+  check(
+    'cap: a fourth is turned away with room_full',
+    W.selfId?.error === 'room_full' && W.selfId.max === 3,
+    JSON.stringify(W.selfId),
+  );
+  await sleep(800);
+  check('cap: the room never lists the fourth', (await snap(X)).peers.length === 3);
+  await ev(Z.page, () => window.T.room.close());
+  await waitFor(() => seesAll([X, Y]), 5000);
+  W.selfId = await ev(W.page, () => window.T.start());
+  check(
+    'cap: once one leaves, the fourth gets in',
+    typeof W.selfId === 'string' && (await waitFor(() => seesAll([X, Y, W]), 5000)) >= 0,
+    JSON.stringify(W.selfId),
+  );
+  // Y leaves, V takes the spot, Y's tab connects again (same selfId, as after a blip): the host admits it over the
+  // cap. (A fresh createPeerRoom restarts its presence seq, which the host's tombstone ignores, so this only checks
+  // admission; a real blip reconnects the same room and keeps its seq.)
+  await ev(Y.page, () => window.T.room.close());
+  await waitFor(() => seesAll([X, W]), 5000);
+  const V = await open('V', capOpts);
+  await waitFor(() => seesAll([X, W, V]), 5000);
+  const back = await ev(Y.page, () => window.T.start());
+  check('cap: a tab the room has seen before is not turned away', back === Y.selfId, JSON.stringify(back));
+  await Promise.all([X, Y, Z, W, V].map((p) => p.ctx.close()));
+
+  // Host choice: a host whose score drops (a hidden tab) hands over to the best-scored client, and stays in the room.
+  const hoRoom = room + 'ho';
+  const H = await open('H', { in: hoRoom, query: '&score=3' }),
+    K = await open('K', { in: hoRoom, query: '&score=2' }),
+    L = await open('L', { in: hoRoom, query: '&score=3' });
+  await waitFor(() => seesAll([H, K, L]), 5000);
+  check('handover: the first page hosts', (await snap(H)).host);
+  await ev(H.page, () => (window.T.score = 0));
+  const tHo = Date.now();
+  const handedMs = await waitFor(async () => (await snap(L)).host, 20000); // a new host keeps the role 15 s
+  check('handover: a hidden host hands over to the best-scored client', handedMs >= 0, `${Date.now() - tHo} ms`);
+  const hosts3 = (await Promise.all([H, K, L].map(snap))).filter((s) => s.host).length;
+  check('handover: exactly one host after it', hosts3 === 1, `hosts=${hosts3}`);
+  check('handover: the old host is back in as a client', (await waitFor(() => seesAll([H, K, L]), 10000)) >= 0);
+  await Promise.all([H, K, L].map((p) => p.ctx.close()));
+
   const BD = [hostPage];
   const errs = await Promise.all(BD.map((p) => ev(p.page, () => window.T.errors)));
   check(
@@ -362,8 +335,6 @@ try {
     `\n${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length}/${results.length} checks passed`,
   );
   exitCode = failed.length ? 1 : 0;
-  await browser.close().catch(() => {});
-  web.close();
-  server.close?.();
+  await close();
   process.exit(exitCode);
 }
