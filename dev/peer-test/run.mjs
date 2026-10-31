@@ -1,24 +1,16 @@
-// End-to-end test of src/net/peer-room.js: local PeerServer + headless Chromium pages (see README.md).
+// End-to-end test of src/net/peer-room.js (`npm run test:net`): local PeerServer + headless Chromium pages running
+// page.js. Room interface: src/net/README.md.
 import http from 'node:http';
-import net from 'node:net';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { PeerServer } from 'peer';
 import * as esbuild from 'esbuild';
+import { freePort, sleep } from '../look/lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const here = path.dirname(fileURLToPath(import.meta.url));
-
-const freePort = () =>
-  new Promise((res) => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => {
-      const p = s.address().port;
-      s.close(() => res(p));
-    });
-  });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const results = [];
 function check(name, ok, detail = '') {
@@ -150,6 +142,17 @@ try {
     'presence latency < 500 ms',
     lats.length > 200 && maxLat < 500,
     `n=${lats.length} p50=${p50}ms max=${maxLat}ms`,
+  );
+
+  // linkStats(): the host has a link to each client, each client one to the host; all direct (no TURN here)
+  const links = await Promise.all(
+    all.map((p) => ev(p.page, async () => ({ host: window.T.room.isHost(), rows: await window.T.room.linkStats() }))),
+  );
+  check(
+    'linkStats(): one row per link, direct, with an RTT',
+    links.every((l) => l.rows.length === (l.host ? 2 : 1)) &&
+      links.flatMap((l) => l.rows).every((r) => r.relay === false && Number.isFinite(r.rttMs)),
+    JSON.stringify(links.map((l) => l.rows.map((r) => `${r.local}/${r.remote} ${r.rttMs}ms`))),
   );
 
   // 3. reliable messages: ordered, exactly once, from every sender to both others

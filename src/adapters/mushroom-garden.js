@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.js';
-import { heights, groundHeight } from './terrain.js';
+import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
 import { world, groundMat, playerMat, ballMat, GROUP } from '../physics/physics.js';
@@ -35,9 +35,6 @@ export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 // colliders, the stall and the hotbar.
 export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
-
-const cellX = (i) => i * CELL - HALF;
-const cellZ = (j) => HALF - j * CELL;
 
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
 function spotOk(i, j) {
@@ -197,20 +194,11 @@ function makeVisual(p) {
 // Overshoots then settles, so the mushroom pops up.
 const easeOutBack = (t) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
 
-function updateMushrooms(dt, now) {
+export function updateGarden(dt, now) {
   for (const p of garden.plots) {
     const key = `${p.i},${p.j}`;
     let v = visuals.get(key);
     if (!v) visuals.set(key, (v = makeVisual(p)));
-    // Mushrooms grow anywhere now, sand included, so they follow the ground when someone digs beside them.
-    const gy = heights[p.i][p.j];
-    if (v.root.position.y !== gy) {
-      v.root.position.y = gy;
-      if (v.body) {
-        v.body.position.y = gy;
-        v.body.aabbNeedsUpdate = true;
-      }
-    }
     const target = p.g / GROW_TICKS;
     v.shown = reducedMotion ? target : Math.min(target, v.shown + (dt * 10) / GROW_TICKS);
     v.mound.material = p.g > 0 ? wetMat : moundMat;
@@ -380,7 +368,3 @@ export function pour() {
   return true;
 }
 export const pouring = () => performance.now() < pourAt.until;
-
-export function updateGarden(dt, now) {
-  updateMushrooms(dt, now);
-}

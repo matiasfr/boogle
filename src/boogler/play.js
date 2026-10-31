@@ -6,10 +6,11 @@
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.js) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
 import { FIXED } from '../constants.js';
+import { clamp } from '../math.js';
 import { world as physics } from '../physics/physics.js';
 import { me } from '../player/player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.js';
-import { boogler, booglerReact, ACT, MODE, PUFF_MS } from './boogler.js';
+import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.js';
@@ -18,9 +19,10 @@ import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
 import { heldId, useOne } from '../player/inventory.js';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
+import { guest } from '../guest/state.js';
 
 const TALK_RANGE = 3.6; // metres from his centre
-const HALF_WIDTH = 0.8;
+const LEAVE_RANGE = TALK_RANGE + 1;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
@@ -197,6 +199,8 @@ function updateRide(dt, now) {
 }
 
 // ---------------------------------------------------------------- talking
+// Talks are short and the game keeps playing around them: walk more than LEAVE_RANGE away, hop on him, or open the
+// pause view and the talk ends (a kick-off telling-off waits for your answer, however far you flew).
 // The conversations (talk.js and its ~1,100 lines, lines.js) are their own chunk: fetched right after start
 // (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
 let talk = null;
@@ -221,6 +225,7 @@ function converse(start) {
     name: me.name,
     rng: Math.random,
     start,
+    mario: guest.active,
     gifts: giftList,
     give: (kind) => heldId() === GIFTS[kind].id && !!useOne(),
   });
@@ -232,8 +237,11 @@ function render() {
   const v = talk && talkApi.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
-  showDialogue(v, bond(f()), answer, hangUp, petInTalk);
+  showDialogue(v, bond(f()), answer, leave, petInTalk);
 }
+
+// A line over his head, up long enough to read.
+const sayFor = (line) => booglerSay(line, clamp(900 + line.length * 45, 1600, 4200));
 
 function answer(i) {
   talk.ctx.now = Date.now();
@@ -244,7 +252,18 @@ function answer(i) {
     emit(t === 'love' || t === 'like' ? EV.LOVE : t === 'dislike' ? EV.YUCK : EV.PAT);
   }
   render();
-  if (out.levelUp) celebrate(out.levelUp);
+  if (out.levelUp)
+    celebrate(out.levelUp); // in the box, or as his bubble when this answer ended the talk
+  else if (out.bubble) sayFor(out.bubble);
+}
+
+// Walked off, or closed it (Escape, E, pad B, the close button): he bookmarks a story you left halfway and says bye.
+function leave() {
+  if (!talk) return hangUp();
+  const line = talkApi.leaveTalk(talk);
+  save();
+  hangUp();
+  if (line) sayFor(line);
 }
 
 function hangUp() {
@@ -265,10 +284,13 @@ export function booglerTalk() {
 // His interactable (see registerInteractable in src/player/hands.js; src/features/boogler.js registers it). Range is to his
 // middle; `r` makes the pick measure to his edge, so a ball at his feet does not win over him. Not while you ride him:
 // on his back he is always nearest, and would hide the ball and everything else behind a Talk that only says "Get off
-// me first!". The prompt shows in his name tag.
+// me first!". The prompt shows in his name tag. While you talk it is Leave, so the touch main button walks away too
+// (E and pad B already do, through the talk box) rather than throwing what you hold.
 export function talkTargets() {
-  if (!me.entered || dialogue.open || riding() || dist() > TALK_RANGE) return [];
-  return [{ id: 'boogler', verb: 'Talk', at: boogler.center, r: HALF_WIDTH, run: booglerTalk, show: setTagPrompt }];
+  if (!me.entered || riding()) return [];
+  const target = { id: 'boogler', at: boogler.center, r: W_R, show: setTagPrompt };
+  if (dialogue.open) return [{ ...target, verb: 'Leave', run: leave }];
+  return dist() > TALK_RANGE ? [] : [{ ...target, verb: 'Talk', run: booglerTalk }];
 }
 
 function petInTalk() {
@@ -307,6 +329,7 @@ export function updateBooglerPlay(dt, now) {
   playRemoteEvents();
 
   const d = dist();
+  if (dialogue.open && (modalOpen() || riding() || (d > LEAVE_RANGE && talk?.ctx.start !== 'kick'))) leave();
   if (boogler.me.wary && boogler.disp.mode === MODE.FLEE && d < 8 && now > fleeSayAt) {
     fleeSayAt = now + 4000;
     booglerSay(pick(FLEE), 1200);

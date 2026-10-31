@@ -151,8 +151,7 @@ function nameTag(s, kind) {
   if (!s) return '';
   const verb = useVerb();
   if (!verb || kind === 'touch') return `<span>${label(s)}</span>`;
-  const use = (g, v) => `<span class="hotbar-use">${g}${v}</span>`;
-  return `<span>${label(s)}</span>${use(glyph('use'), verb)}`;
+  return `<span>${label(s)}</span><span class="hotbar-use">${glyph('use')}${verb}</span>`;
 }
 
 function renderHud(now) {
@@ -190,7 +189,7 @@ function renderHud(now) {
 // ---------------------------------------------------------------- keys, presence, frame
 onStart(() => {
   buildHud();
-  for (let k = 0; k < 8; k++) onKey(`Digit${k + 1}`, { owner: 'hotbar', down: () => me.entered && select(k) });
+  for (let k = 0; k < SLOTS; k++) onKey(`Digit${k + 1}`, { owner: 'hotbar', down: () => me.entered && select(k) });
   describeControl('hotbar', {
     label: 'Hold something from your hotbar',
     detail: { kbm: 'Press the same slot again for empty hands', pad: 'Cycle through the slots' },

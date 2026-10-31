@@ -1,10 +1,17 @@
 // Conversations with The Boogler: a menu of topics, story chapters unlocked by friendship level, small talk, gifts,
 // and what he says after kicking you off. Pure: the caller passes the friendship, a context and an rng.
 //
-//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick' }
+//   const t = openTalk(f, ctx)      ctx = { now, name, rng, gifts(), give(kind), start?: 'menu' | 'kick', mario? }
 //   talkView(t)                     -> { say, mood, opts: [string], gifts: [catalog index | -1] } or null once the
 //                                      talk is over; gifts[i] is what answer i hands over
-//   pickTalk(t, i)                  answer with option i; returns { levelUp, gave } for the caller to celebrate
+//   pickTalk(t, i)                  answer with option i; returns { levelUp, gave, bubble } for the caller to
+//                                   celebrate; bubble is what he says over his head as the talk ends (or null)
+//   leaveTalk(t)                    you walked off or closed it: bookmarks a story chapter you left halfway (resumed
+//                                   next time you ask) and returns his goodbye for a bubble, or null
+//
+// As Mario (ctx.mario) he is starstruck instead, whatever his mood, and every answer is something Mario says.
+//
+// A talk is short: a finished chapter, small talk or present ends it with a bubble line; E opens the menu again.
 //
 // gifts() lists what the player can hand over: [{ kind, label }] (what is in their hand). give(kind) takes it from them
 // (false if it's gone). He turns down key items (catalog `key`) without calling give.
@@ -14,7 +21,6 @@ import {
   GREETINGS,
   AFTER,
   BYE,
-  BYE_OPTS,
   FAREWELL,
   DEFLECT_OPTS,
   PUSHED,
@@ -38,6 +44,12 @@ import {
   GIFT_CAPPED,
   GIFT_REPEAT,
   GIFT_OPTS,
+  RESUME,
+  MARIO_TALK,
+  MARIO_AFTER,
+  MARIO_GIFT,
+  MARIO_GIFT_GASP,
+  MARIO_GIFT_OPTS,
 } from './lines.js';
 import {
   addPts,
@@ -56,16 +68,32 @@ import { GIFTS } from '../sim/gift-catalog.js';
 const THREAD_ORDER = ['home', 'mom', 'biz'];
 const node = (say, opts, mood = 'smile') => ({ say, mood, opts });
 const opt = (say, go, fx = {}) => ({ say, go, ...fx });
+const bookmarkKey = (id) => `at.${id}`; // flag: '<chapter>.<node>' where you left that thread's chapter
 
 export function openTalk(f, ctx) {
   settle(f, ctx.now);
-  const t = { f, ctx, node: null, out: { levelUp: 0, gave: null } };
+  // cold: he is cross (a kick-off, wary, quiet), so walking off gets no goodbye.
+  const t = { f, ctx, node: null, cold: true, out: { levelUp: 0, gave: null, bubble: null } };
   const start = ctx.start ?? 'menu';
   if (start === 'kick') t.node = kickNode(t);
-  else if (isQuiet(f, ctx.now)) t.node = quietNode(t);
+  else if (ctx.mario) {
+    t.cold = false;
+    t.node = marioNode(t);
+  } else if (isQuiet(f, ctx.now)) t.node = quietNode(t);
   else if (isWary(f, ctx.now)) t.node = waryNode(t);
-  else t.node = menuNode(t, pick(t, GREETINGS[levelOf(f.pts)]));
+  else {
+    t.cold = false;
+    t.node = menuNode(t, pick(t, GREETINGS[levelOf(f.pts)]));
+  }
   return t;
+}
+
+export function leaveTalk(t) {
+  const at = t.node?.at;
+  if (at && at.node !== 'a') t.f.flags[bookmarkKey(at.thread)] = `${at.chapter}.${at.node}`;
+  t.node = null;
+  if (t.cold) return null;
+  return t.ctx.mario ? fill(t, pick(t, MARIO_AFTER)) : farewell(t);
 }
 
 export function talkView(t) {
@@ -75,14 +103,14 @@ export function talkView(t) {
 }
 
 export function pickTalk(t, i) {
-  t.out = { levelUp: 0, gave: null };
+  t.out = { levelUp: 0, gave: null, bubble: null };
   const o = t.node?.opts[i];
   if (!o) return t.out;
   const { f, ctx } = t;
   if (o.pts) gain(t, o.pts);
   if (o.set) Object.assign(f.flags, o.set);
   if (o.nosy && addNosy(f, o.nosy, ctx.now)) {
-    t.node = tooNosy();
+    t.node = tooNosy(t);
     return t.out;
   }
   t.node = o.go ? o.go() : null;
@@ -96,12 +124,21 @@ function gain(t, n) {
 
 const pick = (t, list) => list[Math.floor(t.ctx.rng() * list.length) % list.length];
 const end = () => null;
-const tooNosy = () =>
-  node(
+const tooNosy = (t) => {
+  t.cold = true;
+  return node(
     TOO_NOSY,
     QUIET_OPTS.map((s) => opt(s, end)),
     'grump',
   );
+};
+const farewell = (t) => fill(t, FAREWELL[levelOf(t.f.pts)]);
+// Ends the talk with a line over his head.
+const closeWith = (t, say) => {
+  t.out.bubble = fill(t, say);
+  return null;
+};
+const wrapUp = (t) => () => closeWith(t, pick(t, AFTER));
 
 function fill(t, s) {
   return s
@@ -131,16 +168,8 @@ function menuNode(t, say) {
     const ask = THREADS[id].ask[s.done ? 2 : s.started ? 1 : 0];
     opts.push(opt(ask, () => enterThread(t, id)));
   }
-  opts.push(...giftOpts(t, () => menuNode(t, pick(t, AFTER))));
-  opts.push(
-    opt(pick(t, BYE), () =>
-      node(
-        FAREWELL[levelOf(f.pts)],
-        BYE_OPTS.map((s) => opt(s, end)),
-        'joy',
-      ),
-    ),
-  );
+  opts.push(...giftOpts(t, wrapUp(t)));
+  opts.push(opt(pick(t, BYE), () => closeWith(t, FAREWELL[levelOf(f.pts)])));
   return node(say, opts);
 }
 
@@ -150,15 +179,26 @@ function enterThread(t, id) {
   const { f, ctx } = t;
   const th = THREADS[id];
   const s = threadState(f, id);
-  if (s.done)
-    return node(
-      pick(t, th.retell),
-      RETELL_OPTS.map((say) => opt(say, backToMenu(t))),
-      'joy',
+  if (s.done) {
+    // He tells one of its chapters again (never the one he retold last), so the answers you skipped the first time,
+    // and the ones he kept for better friends, get their turn; then a retell line. It scores like small talk.
+    const key = `retold.${id}`;
+    const ch = pick(
+      t,
+      th.chapters.filter((c) => c.id !== f.flags[key]),
     );
+    f.flags[key] = ch.id;
+    const retell = () =>
+      node(
+        pick(t, th.retell),
+        RETELL_OPTS.map((say) => opt(say, wrapUp(t))),
+        'joy',
+      );
+    return chapterNode(t, ch, 'a', retell, chatScores(f, ctx.now));
+  }
   if (s.next.lvl > levelOf(f.pts)) {
     // Asking before he's ready is a little nosy; pushing is very nosy.
-    if (addNosy(f, 1, ctx.now)) return tooNosy();
+    if (addNosy(f, 1, ctx.now)) return tooNosy(t);
     return node(
       pick(t, th.deflect),
       [
@@ -180,17 +220,31 @@ function enterThread(t, id) {
       'worry',
     );
   }
-  return chapterNode(t, s.next, 'a', () => {
-    if (!f.learned.includes(s.next.id)) {
-      f.learned.push(s.next.id);
-      gain(t, RULES.chapterPts);
-    }
-    return menuNode(t, pick(t, AFTER));
-  });
+  // Left halfway last time: carry on from there.
+  const key = bookmarkKey(id);
+  const [chId, at] = String(f.flags[key] ?? '').split('.');
+  delete f.flags[key];
+  const resume = chId === s.next.id && at in s.next.nodes;
+  const n = chapterNode(
+    t,
+    s.next,
+    resume ? at : 'a',
+    () => {
+      if (!f.learned.includes(s.next.id)) {
+        f.learned.push(s.next.id);
+        gain(t, RULES.chapterPts);
+      }
+      return closeWith(t, pick(t, AFTER));
+    },
+    true,
+    id,
+  );
+  return resume ? { ...n, say: `${pick(t, RESUME)} ${n.say}` } : n;
 }
 
-// Walks one chapter or small-talk tree; `done` builds whatever comes after its last answer.
-function chapterNode(t, ch, id, done, scoring = true) {
+// Walks one chapter or small-talk tree; `done` builds whatever comes after its last answer. A story chapter being
+// learned passes its thread, so leaving the talk can bookmark where you were.
+function chapterNode(t, ch, id, done, scoring = true, thread = null) {
   const n = ch.nodes[id];
   const opts = n.opts.map((o) =>
     opt(
@@ -199,15 +253,15 @@ function chapterNode(t, ch, id, done, scoring = true) {
         let to = o.to;
         if (o.trust !== undefined && levelOf(t.f.pts) < o.trust) {
           to = o.else;
-          if (addNosy(t.f, 1, t.ctx.now)) return tooNosy();
+          if (addNosy(t.f, 1, t.ctx.now)) return tooNosy(t);
         }
-        return to ? chapterNode(t, ch, to, done, scoring) : done();
+        return to ? chapterNode(t, ch, to, done, scoring, thread) : done();
       },
       // Unscored small talk can still cost points for rude answers.
       { set: o.set, nosy: o.nosy, pts: scoring ? o.pts : Math.min(0, o.pts ?? 0) },
     ),
   );
-  return node(n.say, opts, n.mood);
+  return { ...node(n.say, opts, n.mood), at: thread && { thread, chapter: ch.id, node: id } };
 }
 
 function smallTalk(t) {
@@ -219,7 +273,7 @@ function smallTalk(t) {
   const s = pick(t, fresh.length ? fresh : pool);
   f.flags.recent = [...recent, s.id].slice(-3);
   const scoring = chatScores(f, ctx.now);
-  return chapterNode(t, s, 'a', () => menuNode(t, pick(t, AFTER)), scoring);
+  return chapterNode(t, s, 'a', wrapUp(t), scoring);
 }
 
 // ---------------------------------------------------------------- gifts
@@ -229,16 +283,23 @@ function giftOpts(t, after) {
     .gifts()
     .slice(0, 2)
     .map((g) =>
-      opt(GIFT_ASK.replace('{gift}', withArticle(g.label)), () => giveNode(t, g.kind, after), { gift: g.kind }),
+      opt(
+        t.ctx.mario ? MARIO_GIFT : GIFT_ASK.replace('{gift}', withArticle(g.label)),
+        () => giveNode(t, g.kind, after),
+        {
+          gift: g.kind,
+        },
+      ),
     );
 }
+const giftReplies = (t, list) => (t.ctx.mario ? MARIO_GIFT_OPTS : list);
 
 function giveNode(t, kind, after) {
   const { f, ctx } = t;
   if (GIFTS[kind].key)
     return node(
       GIFTS[kind].line,
-      GIFT_KEPT_OPTS.map((s) => opt(s, after)),
+      giftReplies(t, GIFT_KEPT_OPTS).map((s) => opt(s, after)),
       'smile',
     );
   if (!ctx.give(kind)) return after();
@@ -249,11 +310,12 @@ function giveNode(t, kind, after) {
   if (r.capped) say = `${say} ${GIFT_CAPPED}`;
   else if (r.repeat) say = `${say} ${GIFT_REPEAT}`;
   if (r.forgave) say = `${GIFT_FORGAVE} ${say}`;
+  if (t.ctx.mario) say = `${MARIO_GIFT_GASP} ${say}`;
   const mood = r.taste === 'love' || r.taste === 'like' ? 'joy' : r.taste === 'dislike' ? 'grump' : 'smile';
-  const next = isWary(f, ctx.now) ? end : after;
+  const next = isWary(f, ctx.now) && !ctx.mario ? end : after;
   return node(
     say,
-    GIFT_OPTS[r.taste].map((s) => opt(s, next)),
+    giftReplies(t, GIFT_OPTS[r.taste]).map((s) => opt(s, next)),
     mood,
   );
 }
@@ -287,7 +349,8 @@ function waryNode(t) {
   const opts = [
     opt(SORRY, () => {
       const ok = apologize(f, ctx.now);
-      const after = !isWary(f, ctx.now) ? backToMenu(t) : end;
+      t.cold = isWary(f, ctx.now);
+      const after = t.cold ? end : backToMenu(t);
       return node(
         ok ? SORRY_YES : SORRY_NO,
         SORRY_OPTS.map((s) => opt(s, after)),
@@ -295,7 +358,7 @@ function waryNode(t) {
       );
     }),
   ];
-  opts.push(...giftOpts(t, backToMenu(t)));
+  opts.push(...giftOpts(t, wrapUp(t)));
   opts.push(opt(pick(t, BYE), end));
   return node(pick(t, WARY), opts, 'grump');
 }
@@ -306,4 +369,18 @@ function quietNode(t) {
     QUIET_OPTS.map((s) => opt(s, end)),
     'grump',
   );
+}
+
+// He picks a conversation he didn't have last time; the opening also offers your gifts and a goodbye.
+function marioNode(t) {
+  const { f } = t;
+  const s = pick(
+    t,
+    MARIO_TALK.filter((c) => c.id !== f.flags.marioLast),
+  );
+  f.flags.marioLast = s.id;
+  const starstruck = () => closeWith(t, pick(t, MARIO_AFTER));
+  const n = chapterNode(t, s, 'a', starstruck, false);
+  n.opts.push(...giftOpts(t, starstruck), opt('Bye-bye!', starstruck));
+  return n;
 }

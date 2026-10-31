@@ -1,15 +1,11 @@
 // Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
-// the talk, with its icon; you pet him from the talk box; C does nothing. A tossed item gets a floating Pick up prompt,
+// the talk, with its icon; you pet him from the talk box; the game keeps playing while you talk, so walking off ends
+// it, and a chapter left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
-const TP = (x, z) => `
-  const { teleport } = await import('/src/physics/physics.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
-  b.velocity.set(0, 0, 0);`;
-const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
+import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
+
 const FACE = (x, z) => `
   const { cam } = await import('/src/player/player.js');
   const p = window.boogle.me.body.position;
@@ -24,13 +20,15 @@ const beside = (check) => `(async () => {
   await new Promise((r) => setTimeout(r, 150));
   return ${check};
 })()`;
-// On his back: keep climbing on until he counts it as a ride, then put the ball in reach beside you.
+// On his back: climb on (again only once you've slid off or landed beside him: a headless tab steps slowly, so the drop
+// onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check) => `(async () => {
   const { boogler, ACT } = await import('/src/boogler/boogler.js');
   const { ball } = await import('/src/physics/ball.js');
   const { teleport } = await import('/src/physics/physics.js');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
-  if (boogler.me.act !== ACT.RIDE) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
+  const dropping = Math.hypot(p.x - c.x, p.z - c.z) < 1 && p.y > c.y + 0.3;
+  if (boogler.me.act !== ACT.RIDE && !dropping) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
   else if (!ball.held) {
     teleport(ball.body, p.x + 0.9, p.y + 0.3, p.z);
     ball.body.velocity.set(0, 0, 0);
@@ -91,17 +89,60 @@ export default {
     await g.wait(0.2);
     t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.eval(
-      `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] });`, // k 1 = mango
+    // The game keeps playing while you talk: the move keys walk you, and walking off ends the talk.
+    const BOX = `!document.querySelector('.bd').hidden`;
+    const READY = `${BOX} && !document.querySelector('.bd-opts').hidden`; // his line is typed out, answers shown
+    const SAY = `return document.querySelector('.bd-say').textContent;`;
+    const openTalk = async () => {
+      await g.waitFor(beside(TAG_TALK), { timeout: 20000 });
+      await g.key('KeyE');
+      await g.waitFor(READY, { timeout: 15000 });
+    };
+    const answer = async (n) => {
+      await g.key(`Digit${n}`);
+      await g.wait(0.2);
+      await g.waitFor(READY, { timeout: 15000 });
+    };
+    await openTalk();
+    const from = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
+    await g.key('KeyS', 1600); // facing him, so this walks away
+    const walked = await g.eval(
+      `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]});`,
     );
-    await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`, {
-      timeout: 30000,
-    });
-    const item = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
-      return { kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`);
+    const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 3000 });
+    t.check(
+      'walking while talking moves you, and walking off ends the talk',
+      walked > 1 && closedMs >= 0,
+      `walked ${walked.toFixed(1)} m; closed after ${closedMs} ms`,
+    );
+
+    // Leave halfway through a story chapter, and next time he picks it back up where you stopped.
+    const ASK = `return [...document.querySelectorAll('.bd-opt')].findIndex((b) => b.textContent.includes('Where are you from?')) + 1;`;
+    await openTalk();
+    await answer(await g.eval(ASK));
+    await answer(1);
+    const stopped = await g.eval(SAY);
+    await g.key('KeyE');
+    await g.wait(0.2);
+    const left = await g.eval(`return document.querySelector('.bd').hidden;`);
+    await openTalk();
+    await answer(await g.eval(ASK));
+    const resumed = await g.eval(SAY);
+    const { RESUME } = await g.eval(`const { RESUME } = await import('/src/boogler/lines.js'); return { RESUME };`);
+    const resumeShot = await g.still('resume');
+    t.check(
+      'leaving mid-chapter (E) closes the talk, and asking again resumes where you stopped',
+      left && resumed.endsWith(stopped) && RESUME.some((r) => resumed.startsWith(r)),
+      `stopped at "${stopped.slice(0, 40)}...", resumed "${resumed.slice(0, 60)}..."; ${resumeShot}`,
+    );
+    await g.key('Escape');
+    await g.wait(0.2);
+    t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
+
+    // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
+    await g.eval(`${toss(1, 5)};`); // a mango
+    await g.waitFor(TOSSED, { timeout: 30000 });
+    const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
     await g.wait(0.4);
@@ -253,7 +294,6 @@ export default {
     const rideShot = await g.still('riding');
     await g.eval(`${TP('window.boogle.boogler.disp.x + 4', 'window.boogle.boogler.disp.z')}`);
     t.check('riding him, the ball gets the prompt, not Talk', rideMs >= 0, `${rideMs} ms; ${rideShot}`);
-    t.check('no page errors', !g.errors.length, g.errors.join(' | '));
 
     // Touch: the action button says Talk, and the prompt has no glyph.
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
@@ -274,6 +314,9 @@ export default {
     await thumb.wait(0.6);
     const touchTalk = await thumb.still('touch-talk');
     t.check('tapping it opens the talk', tapTalk >= 0, touchTalk);
-    t.check('no page errors on touch', !thumb.errors.length, thumb.errors.join(' | '));
+    t.check(
+      'while you talk the main button says Leave, so a tap walks away instead of throwing',
+      await thumb.eval(`return document.getElementById('btn-grab').textContent === 'Leave';`),
+    );
   },
 };

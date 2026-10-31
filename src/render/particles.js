@@ -4,19 +4,17 @@
 //
 //   emit('soft', p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
 //                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),
-//                    floor: a height it dies falling through (water level) or 'ground' (dies landing on the terrain),
+//                    floor: a height it dies falling through (water level),
 //                    grow: [start, end] size multipliers over its life (default [1, 1]),
 //                    shrink: the last fraction of its life it shrinks to nothing over (default 0, none),
 //                    fade: the last fraction of its life its alpha fades out over (default 0, none) }
 // A full pool recycles a random live slot. Updated once a frame, after the features that emit.
 import * as THREE from 'three';
 import { scene, camera, renderer } from './scene.js';
-import { groundHeight } from '../adapters/terrain.js';
 import { onFrame } from '../loop.js';
 
 const FLOOR_NONE = 0,
-  FLOOR_LEVEL = 1,
-  FLOOR_GROUND = 2;
+  FLOOR_LEVEL = 1;
 
 function createPool(max) {
   return {
@@ -109,7 +107,7 @@ export function emit(style, p) {
   P.alpha[k] = p.alpha ?? 1;
   P.gravity[k] = p.gravity ?? 0;
   P.drag[k] = p.drag ?? 0;
-  P.floor[k] = p.floor === undefined ? FLOOR_NONE : p.floor === 'ground' ? FLOOR_GROUND : FLOOR_LEVEL;
+  P.floor[k] = typeof p.floor === 'number' ? FLOOR_LEVEL : FLOOR_NONE;
   P.floorY[k] = typeof p.floor === 'number' ? p.floor : 0;
 }
 
@@ -131,11 +129,7 @@ function step(P, dt) {
     P.pos[o] += P.vel[o] * dt;
     P.pos[o + 1] += P.vel[o + 1] * dt;
     P.pos[o + 2] += P.vel[o + 2] * dt;
-    const falling = P.vel[o + 1] < 0;
-    const f = P.floor[k];
-    const down =
-      (f === FLOOR_LEVEL && falling && P.pos[o + 1] < P.floorY[k]) ||
-      (f === FLOOR_GROUND && falling && P.pos[o + 1] <= groundHeight(P.pos[o], P.pos[o + 2]) + 0.04);
+    const down = P.floor[k] === FLOOR_LEVEL && P.vel[o + 1] < 0 && P.pos[o + 1] < P.floorY[k];
     if (P.life[k] <= 0 || down) {
       n--;
       if (k !== n) {

@@ -135,9 +135,7 @@ export function useDown() {
   return windUp();
 }
 
-export function useUp() {
-  releaseThrow();
-}
+export const useUp = releaseThrow;
 
 export const interactDown = () => (me.entered && me.body ? interact() : false);
 // E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.

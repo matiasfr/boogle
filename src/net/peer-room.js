@@ -53,13 +53,20 @@ const tooBig = (v) => JSON.stringify(v).length > MAX_MSG;
 const err = (code, msg) => Object.assign(new Error(msg || code), { code });
 const safeRoom = (s) => s.replace(/[^A-Za-z0-9]/g, (c) => '_' + c.charCodeAt(0).toString(16));
 
-function safeSend(conn, msg) {
+// Sends, closes and destroys on a connection or peer that may already be closing: errors are expected, ignore them.
+function quietly(fn) {
   try {
-    conn.send(msg);
+    fn();
   } catch {
-    /* connection closing */
+    /* already closing */
   }
 }
+const safeSend = (conn, msg) => quietly(() => conn.send(msg));
+const clearTimers = (timers) =>
+  timers.forEach((t) => {
+    clearInterval(t);
+    clearTimeout(t);
+  });
 
 // Calls onGone (once) when the underlying RTCPeerConnection of a DataConnection fails, closes, or stays disconnected.
 // Needed because a data channel can stay 'open' for a long time after the other end died.
@@ -78,6 +85,31 @@ function watchPc(conn, onGone, timers) {
   };
   pc.addEventListener('connectionstatechange', check);
   pc.addEventListener('iceconnectionstatechange', check);
+}
+
+// The ICE pair a connection actually uses: whether either end is a TURN relay, and its round-trip time. Chrome and
+// Safari name it on the transport stats, Firefox flags it `selected`; null until ICE has picked one.
+async function pcLink(pc) {
+  if (!pc?.getStats) return null;
+  const stats = await pc.getStats();
+  let pair = null;
+  stats.forEach((s) => {
+    if (s.type === 'transport' && s.selectedCandidatePairId) pair ??= stats.get(s.selectedCandidatePairId);
+  });
+  if (!pair)
+    stats.forEach((s) => {
+      if (s.type === 'candidate-pair' && (s.selected || (s.nominated && s.state === 'succeeded'))) pair ??= s;
+    });
+  if (!pair) return null;
+  const local = stats.get(pair.localCandidateId)?.candidateType ?? '?';
+  const remote = stats.get(pair.remoteCandidateId)?.candidateType ?? '?';
+  const rtt = pair.currentRoundTripTime;
+  return {
+    relay: local === 'relay' || remote === 'relay',
+    local,
+    remote,
+    rttMs: Number.isFinite(rtt) ? Math.round(rtt * 1000) : null,
+  };
 }
 
 // Latest-wins sender: at most one pending packet per key, spaced >= MIN_GAP_MS, held back while buffers are full.
@@ -178,12 +210,13 @@ export async function createPeerRoom(opts = {}) {
     if (change.joined.length || change.left.length || change.updated.length) call(peersHandlers, change);
   }
   function list() {
-    if (!cache) for (const id of pj) shown.add(id);
-    if (!cache)
+    if (!cache) {
+      for (const id of pj) shown.add(id);
       cache = Object.freeze([
         table.get(SELF_ID).entry,
         ...[...table].filter(([id]) => id !== SELF_ID).map(([, r]) => r.entry),
       ]);
+    }
     return cache;
   }
   function call(set, ...args) {
@@ -287,12 +320,7 @@ export async function createPeerRoom(opts = {}) {
     clients = new Map();
     const hostClients = clients;
     const closeClient = (c) => {
-      for (const k of ['u', 'r'])
-        try {
-          c[k]?.close();
-        } catch {
-          /* ignore */
-        }
+      for (const k of ['u', 'r']) quietly(() => c[k]?.close());
       c.sender.clear();
     };
     const broadcastR = (msg, exceptId) => {
@@ -375,8 +403,8 @@ export async function createPeerRoom(opts = {}) {
           }, OPEN_TIMEOUT_MS),
         );
       }
-      c[label] = conn;
-      const rec = c;
+      const rec = c; // this connection's pair, fixed for its handlers
+      rec[label] = conn;
       conn.on('open', () => {
         if (!rec.ready && rec.u?.open && rec.r?.open && hostClients.get(id) === rec) {
           rec.ready = true;
@@ -409,11 +437,7 @@ export async function createPeerRoom(opts = {}) {
           clearInterval(t);
           return;
         }
-        try {
-          peer.reconnect();
-        } catch {
-          /* retry */
-        }
+        quietly(() => peer.reconnect()); // fails until the server is back: try again next round
       }, 2000);
       timers.push(t);
     });
@@ -444,17 +468,10 @@ export async function createPeerRoom(opts = {}) {
     r.teardown = () => {
       if (r.done) return;
       r.done = true;
-      timers.forEach((t) => {
-        clearInterval(t);
-        clearTimeout(t);
-      });
+      clearTimers(timers);
       for (const c of hostClients.values()) closeClient(c);
       hostClients.clear();
-      try {
-        peer.destroy();
-      } catch {
-        /* ignore */
-      }
+      quietly(() => peer.destroy());
     };
     return r;
   }
@@ -476,25 +493,13 @@ export async function createPeerRoom(opts = {}) {
     r.teardown = () => {
       if (r.done) return;
       r.done = true;
-      timers.forEach((t) => {
-        clearInterval(t);
-        clearTimeout(t);
-      });
+      clearTimers(timers);
       if (hostU === u) {
         hostU = hostR = null;
         clientSender.clear();
       }
-      for (const c of [u, rel])
-        try {
-          c?.close();
-        } catch {
-          /* ignore */
-        }
-      try {
-        peer.destroy();
-      } catch {
-        /* ignore */
-      }
+      for (const c of [u, rel]) quietly(() => c?.close());
+      quietly(() => peer.destroy());
     };
     if (!u || !rel) {
       r.teardown();
@@ -602,20 +607,12 @@ export async function createPeerRoom(opts = {}) {
       });
       p.once('error', (e) => {
         clearTimeout(t);
-        try {
-          p.destroy();
-        } catch {
-          /* ignore */
-        }
+        quietly(() => p.destroy());
         reject(e);
       });
     });
   }
-  const fatal = (e) => {
-    const x = err(e.type || e.code || 'unknown', e.message);
-    x.code = e.type || e.code || 'unknown';
-    return Object.assign(x, { fatal: true });
-  };
+  const fatal = (e) => Object.assign(err(e.type || e.code || 'unknown', e.message), { fatal: true });
   async function attempt() {
     let p;
     try {
@@ -648,7 +645,7 @@ export async function createPeerRoom(opts = {}) {
     fatalError = e;
     firstFail(e);
     call(errHandlers, e);
-    closeRoom(true);
+    closeRoom();
   };
   async function loop() {
     if (looping) return;
@@ -661,10 +658,8 @@ export async function createPeerRoom(opts = {}) {
           wake = r;
         });
       if (delay) await sleep(delay);
-      if (closed || suspended) {
-        if (closed) break;
-        continue;
-      }
+      if (closed) break;
+      if (suspended) continue;
       let r = null;
       try {
         r = await attempt();
@@ -701,12 +696,15 @@ export async function createPeerRoom(opts = {}) {
   }
 
   // ---- leaving ----
-  function onHide() {
-    if (closed) return;
-    suspended = true;
+  function leaveRole() {
     if (role && !role.isHost && hostR?.open) safeSend(hostR, { t: 'bye' });
     role?.teardown();
     role?.end();
+  }
+  function onHide() {
+    if (closed) return;
+    suspended = true;
+    leaveRole();
   }
   function onShow(e) {
     if (e.persisted && !closed) {
@@ -724,9 +722,7 @@ export async function createPeerRoom(opts = {}) {
     closed = true;
     removeEventListener('pagehide', onHide);
     removeEventListener('pageshow', onShow);
-    if (role && !role.isHost && hostR?.open) safeSend(hostR, { t: 'bye' });
-    role?.teardown();
-    role?.end();
+    leaveRole();
     wake?.();
     clearTimeout(flushTimer);
     clientSender.clear();
@@ -811,6 +807,25 @@ export async function createPeerRoom(opts = {}) {
       return () => msgHandlers.delete(h);
     },
     isHost: () => isHostNow,
+    // One row per open presence link: a client's link to the host, or the host's link to each client.
+    async linkStats() {
+      const links = isHostNow
+        ? [...clients.values()].filter((c) => c.ready).map((c) => [c.id, c.u])
+        : hostU?.open
+          ? [['host', hostU]]
+          : [];
+      const rows = await Promise.all(
+        links.map(async ([peer, conn]) => {
+          try {
+            const link = await pcLink(conn.peerConnection);
+            return link && { peer, ...link };
+          } catch {
+            return null; // closed while we asked
+          }
+        }),
+      );
+      return rows.filter(Boolean);
+    },
     onHostChange(h) {
       hostHandlers.add(h);
       return () => hostHandlers.delete(h);

@@ -7,10 +7,14 @@ import { sendPresence } from '../netplay/net.js';
 import { dom } from './hud.js';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
 import { cycle } from './inventory.js';
-import { registerAction, describeControl, isTyping } from './controls.js';
+import { registerAction, describeControl, isTyping, triggerAction } from './controls.js';
 
 export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
+const pressJump = () => {
+  me.jumpQueued = 0.15;
+  me.jumpHeld = true;
+};
 let everLocked = false; // a refused lock is only permanent if none ever worked (Chrome refuses one just after Esc)
 const lockRefused = () => {
   if (!everLocked) inputState.lockFailed = true;
@@ -43,8 +47,7 @@ export function initInput() {
     if (!me.entered || isTyping(e)) return;
     input.keys.add(e.code);
     if (e.code === 'Space') {
-      me.jumpQueued = 0.15;
-      me.jumpHeld = true;
+      pressJump();
       e.preventDefault();
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
@@ -68,7 +71,7 @@ export function initInput() {
       requestLock();
       drag = { x: e.clientX, y: e.clientY, moved: false };
     }
-    if (e.button === 0) useDown();
+    if (e.button === 0) triggerAction('use', 'down');
   });
   addEventListener('mousemove', (e) => {
     if (!me.entered) return;
@@ -97,16 +100,13 @@ export function initInput() {
       return;
     }
     drag = null;
-    useUp();
+    triggerAction('use', 'up');
   });
-  canvas.addEventListener(
-    'wheel',
-    (e) => {
-      cam.dist = clamp(cam.dist + e.deltaY * 0.01, 3, 12);
-      e.preventDefault();
-    },
-    { passive: false },
-  );
+  // The wheel (and a trackpad's two-finger scroll or pinch) does nothing yet; swallowing it keeps the page from zooming.
+  canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+  // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it.
+  for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 
   const { touchEl, stickEl, knobEl, jumpBtn, grabBtn } = dom;
   const stick = { id: null, ox: 0, oy: 0 };
@@ -160,8 +160,7 @@ export function initInput() {
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    me.jumpQueued = 0.15;
-    me.jumpHeld = true;
+    pressJump();
   });
   for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, () => (me.jumpHeld = false));
   grabBtn.addEventListener('pointerdown', (e) => {
@@ -206,7 +205,7 @@ export function initInput() {
     touch: 'Jump',
     group: 'move',
     order: 1,
-    down: () => ((me.jumpQueued = 0.15), (me.jumpHeld = true)),
+    down: pressJump,
     up: () => (me.jumpHeld = false),
   });
   registerAction('use', {
@@ -253,7 +252,6 @@ export function initInput() {
     pad: 'r3',
     label: 'Camera distance',
     detail: { pad: 'Close, middle, far' },
-    keys: ['Wheel'],
     group: 'camera',
     order: 1,
     down: zoomStep,

@@ -1,8 +1,6 @@
 // Two players in one room: a shared edit by one (a tossed mango) shows up for the other, and both worlds stay identical.
 // Window handles only (window.boogle.sync, window.boogle.gifts), so `--url` works too.
-const TOSS = (n) =>
-  `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 0, y: -1, n: ${n}, l: [0, 100, 0, 0, 0, 0] })`; // k 0 = coconut (the catalog index is pinned: append-only)
-const ITEM = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`;
+import { toss, TOSSED, MET } from './lib/world.mjs';
 
 export default {
   about: 'player B tosses a coconut; player A sees the same item and the world hashes agree',
@@ -11,11 +9,11 @@ export default {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room });
     const B = await t.open({ name: 'Bob', room });
-    const connected = await B.waitFor(`window.boogle.net.room && window.boogle.remotes.size >= 1`, { timeout: 30000 });
+    const connected = await B.waitFor(MET, { timeout: 30000 });
     t.check('the players see each other', connected >= 0);
-    const sent = await B.eval(`return ${TOSS('Date.now() % 1000')};`);
+    const sent = await B.eval(`return ${toss(0, 'Date.now() % 1000')};`);
     t.check('the toss was accepted', sent === true, String(sent));
-    const seen = await A.waitFor(ITEM, { timeout: 15000 });
+    const seen = await A.waitFor(TOSSED, { timeout: 15000 });
     t.check("B's toss reaches A", seen >= 0, seen + ' ms');
     // The host broadcasts a world hash every 20 ticks (sync.js HASH_EVERY); the client counts matches. Two
     // software-rendered tabs can run well under 1 tick/s, so allow a whole hash period in wall time.

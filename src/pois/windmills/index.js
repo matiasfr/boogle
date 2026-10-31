@@ -21,7 +21,7 @@ const SAIL_LEN = 7.2;
 const SPIN = 0.55; // rad/s
 
 const frame = siteFrame(site);
-const mills = []; // { group, rotor, body, axis, phase }
+const mills = []; // { rotor, body, base, axis, phase }
 
 const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),

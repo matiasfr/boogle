@@ -1,0 +1,18 @@
+/* The dino's word bubble, over his head: the same paper sticker as the interact prompt. */
+.dino-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 260px;
+  padding: 6px 14px;
+  translate: -50% -100%;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 3px 0 var(--ink);
+  font: 400 18px/1.15 var(--font-display);
+  text-align: center;
+  pointer-events: none;
+  will-change: transform;
+}

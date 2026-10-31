@@ -1,7 +1,7 @@
 // Island gifts: fruit growing on the palms, things players threw, and the frisbee waiting on the lighthouse deck. Pure
 // and integer-only (see src/world/README.md), so every client agrees on what lies where. Ops: `fruit.drop` (shake a palm or hit it with the ball), `gift.take` (pick something up),
 // `gift.toss` (something thrown lands). State key: `gifts`.
-import { GIFTS } from './gift-catalog.js';
+import { GIFTS, giftIndex } from './gift-catalog.js';
 
 export const MAX_TREES = 64;
 export const REGROW_TICKS = 2400;
@@ -21,9 +21,7 @@ const MAX_CELL = 4096;
 const FIELDS = 7; // id, kind, i, j, src, born, y
 const LEGACY_FIELDS = 6; // snapshots without `v`: no y
 
-const FRUIT_CYCLE = ['coconut', 'mango', 'coconut', 'banana', 'pomegranate', 'coconut', 'apricot'].map((id) =>
-  GIFTS.findIndex((g) => g.id === id),
-);
+const FRUIT_CYCLE = ['coconut', 'mango', 'coconut', 'banana', 'pomegranate', 'coconut', 'apricot'].map(giftIndex);
 // Where fruit lands around its palm, by direction 0..7: k * 45 degrees from world +x toward +z (grid j grows toward -z).
 export const DROP_OFFSETS = [
   [1, 0],
@@ -125,11 +123,12 @@ export function tossItem(s, kind, i, j, y, tick) {
 // Every tick, after edits: old things wash away or rot, and empty perches refill.
 export function tickGifts(s, tick) {
   s.items = s.items.filter((it) => it.src === SRC.PERCH || tick - it.born < lifeOf(it));
-  s.perches.slice(0, MAX_PERCHES).forEach((p, k) => {
-    if (tick < s.perchAt[k] || s.items.length >= MAX_ITEMS) return;
-    if (s.items.some((it) => it.src === SRC.PERCH && it.i === p.i && it.j === p.j)) return;
+  for (let k = 0; k < s.perches.length && k < MAX_PERCHES; k++) {
+    const p = s.perches[k];
+    if (tick < s.perchAt[k] || s.items.length >= MAX_ITEMS) continue;
+    if (s.items.some((it) => it.src === SRC.PERCH && it.i === p.i && it.j === p.j)) continue;
     s.items.push({ id: s.nextId++, kind: p.kind, i: p.i, j: p.j, src: SRC.PERCH, born: tick, y: ON_PERCH });
-  });
+  }
 }
 
 export function serializeGifts(s) {

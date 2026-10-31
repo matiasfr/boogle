@@ -76,6 +76,13 @@ const PALETTE = {
   [ZONE.CELLAR]: ['#9b5541', '#7d7265'],
 };
 
+// A steady 0..1 hash of vertex v's position, to vary the rock colour vertex by vertex.
+function vertexNoise(positions, v) {
+  const h =
+    Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
+  return h - Math.floor(h);
+}
+
 function makeGeometry(m) {
   const { positions, indices, zones } = m;
   // Look: everything behind the mouths. Collider: up to a little way out of them.
@@ -107,9 +114,7 @@ function makeGeometry(m) {
     tmp.set(wall);
     floorC.set(floor);
     tmp.lerp(floorC, THREE.MathUtils.smoothstep(nrm[v * 3 + 1], 0.45, 0.85)); // floors
-    const h =
-      Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
-    const vary = 0.9 + 0.2 * (h - Math.floor(h));
+    const vary = 0.9 + 0.2 * vertexNoise(positions, v);
     const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
@@ -125,7 +130,8 @@ function makeGeometry(m) {
 // Ambient (sky) light reaching a point at world (x, z): 1 at the mouths, AMB_DEEP deep in. Fill it into an aAmb vertex
 // attribute for any cave mesh drawn with withCaveAmbient, so it darkens with depth like the rock.
 export function ambAt(x, z) {
-  const mouthD = Math.min(...MOUTHS.map((mo) => Math.hypot(x - mo.x, z - mo.z)));
+  let mouthD = Infinity;
+  for (const mo of MOUTHS) mouthD = Math.min(mouthD, Math.hypot(x - mo.x, z - mo.z));
   return 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
 }
 
@@ -194,9 +200,7 @@ function makeCollars({ positions, indices }) {
   const colors = new Float32Array(positions.length);
   const tmp = new THREE.Color();
   for (let v = 0; v < positions.length / 3; v++) {
-    const h =
-      Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
-    tmp.set('#968f83').multiplyScalar(0.88 + 0.24 * (h - Math.floor(h)));
+    tmp.set('#968f83').multiplyScalar(0.88 + 0.24 * vertexNoise(positions, v));
     colors.set([tmp.r, tmp.g, tmp.b], v * 3);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -224,7 +228,7 @@ function* build() {
   scene.add(caveMesh);
 
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
-  body.addShape(new CANNON.Trimesh(Array.from(m.positions), colliderIndices));
+  body.addShape(new CANNON.Trimesh(m.positions, colliderIndices));
   world.addBody(body);
   yield;
 

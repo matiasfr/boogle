@@ -2,7 +2,7 @@
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
 //     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
-//   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
+//   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
 //   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
@@ -10,10 +10,11 @@
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
 import { onFrame } from '../loop.js';
+import { clamp } from '../math.js';
 import { emit } from '../render/particles.js';
-import { world as physics, feelTune } from '../physics/physics.js';
+import * as CANNON from 'cannon-es';
+import { world as physics, feelTune, GROUP } from '../physics/physics.js';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
@@ -53,6 +54,15 @@ const KINDS = ['splat', 'stomp', 'bonk'];
 const on = () => proto.on('feel');
 
 // ---------------------------------------------------------------- physics: jump shape, snap
+const ray = { from: new CANNON.Vec3(), to: new CANNON.Vec3(), hit: new CANNON.RaycastResult() };
+const floorGap = (b) => {
+  ray.from.copy(b.position);
+  ray.to.set(b.position.x, b.position.y - PLAYER_R - MOVE.snapMaxGap, b.position.z);
+  ray.hit.reset();
+  const mask = b.collisionFilterMask & (GROUP.SCENERY | GROUP.CAVE); // static floors only, never your own body
+  physics.raycastClosest(ray.from, ray.to, { collisionFilterMask: mask, skipBackfaces: true }, ray.hit);
+  return ray.hit.hasHit ? ray.hit.distance - PLAYER_R : Infinity;
+};
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
 physics.addEventListener('preStep', () => {
   const enabled = on();
@@ -71,9 +81,12 @@ physics.addEventListener('preStep', () => {
     else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
     else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
-    // ground snap: just left the ground over a crest without jumping, ground right below: stay on it
-    const gap = b.position.y - PLAYER_R - groundHeight(b.position.x, b.position.z);
-    if (!jumpActive && me.coyote > 0 && vy > 0.4 && gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
+    // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
+    // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
+    if (!jumpActive && me.coyote > 0 && vy > 0.4) {
+      const gap = floorGap(b);
+      if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
+    }
   }
 });
 
@@ -163,17 +176,16 @@ function spring(a, dt, t, flopOf, isMe) {
     }
   } else if (prevVy < 2 && s.vy > 4) s.sqv -= SPRING.takeoffK;
   s.sqv += (-SPRING.k * s.sq - SPRING.damp * s.sqv) * dt;
-  s.sq = Math.max(-SPRING.maxSquash, Math.min(SPRING.maxSquash, s.sq + s.sqv * dt));
+  s.sq = clamp(s.sq + s.sqv * dt, -SPRING.maxSquash, SPRING.maxSquash);
   // lean toward acceleration, in the avatar's own frame (it faces -Z at yaw 0)
   const yaw = a.rotation.y;
   const fx = -Math.sin(yaw),
     fz = -Math.cos(yaw);
   const aF = ax * fx + az * fz,
     aS = ax * -fz + az * fx;
-  const clampL = (v) => Math.max(-SPRING.maxLean, Math.min(SPRING.maxLean, v));
   const e = 1 - Math.exp(-dt * SPRING.leanEase);
-  s.lx += (clampL(-aF * SPRING.leanK) - s.lx) * e;
-  s.lz += (clampL(-aS * SPRING.leanK) - s.lz) * e;
+  s.lx += (clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lx) * e;
+  s.lz += (clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lz) * e;
   // flops
   let fy = 1,
     fxz = 1,

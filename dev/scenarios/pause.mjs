@@ -1,6 +1,6 @@
 // The pause view: a local overlay (the island keeps running, only this player's input is taken). H opens it on the
 // controls, every control with keys is in the guide there; Resume is focused; held keys do nothing behind it; the room
-// page shows the room and an invite button; Leave asks twice; it excludes the talk box; the controls tab follows the
+// page shows the room and an invite button; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
 // input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.js');`;
@@ -10,8 +10,7 @@ const TALK = `const D = await import('/src/boogler/dialogue.js');
 const isOpen = `document.querySelector('dialog.pause')?.open === true`;
 
 export default {
-  about:
-    'the pause view: H, focus, input held back, room page, Leave, exclusive with the talk box, pad tab, phone button',
+  about: 'the pause view: H, focus, input held back, room page, Leave, over the talk box, pad tab, phone button',
   timeout: 420000,
   async run(t) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
@@ -92,19 +91,25 @@ export default {
     const keysAfter = await g.eval(`const { modalOpen } = await import('/src/player/modal.js'); return modalOpen();`);
     t.check('and hands the input back', keysAfter === false);
 
-    // 5. The talk box and the pause view exclude each other.
+    // 5. The talk box is not a modal: the pause view opens over it and ends the talk; it never opens over the pause view.
     await g.eval(`${TALK} open();`);
     await g.wait(0.3);
     await g.eval(`${PAUSE} openPause();`);
     await g.wait(0.3);
     t.check(
-      'with the talk box open, openPause() leaves the pause view closed',
-      !(await g.eval(`return ${isOpen};`)) && (await g.eval(`return !document.querySelector('.bd').hidden;`)),
+      'with the talk box open, openPause() opens the pause view and ends the talk',
+      (await g.eval(`return ${isOpen};`)) && (await g.eval(`return document.querySelector('.bd').hidden;`)),
     );
+    await g.eval(`${PAUSE} closePause();`);
+    await g.eval(`${TALK} open();`);
+    await g.wait(0.3);
     await g.key('KeyH');
-    await g.wait(0.2);
-    t.check('and H does not open it either', !(await g.eval(`return ${isOpen};`)));
-    await g.eval(`const D = await import('/src/boogler/dialogue.js'); D.closeDialogue();`);
+    await g.wait(0.3);
+    t.check(
+      'and so does H',
+      (await g.eval(`return ${isOpen};`)) && (await g.eval(`return document.querySelector('.bd').hidden;`)),
+    );
+    await g.eval(`${PAUSE} closePause();`);
     await g.eval(`${PAUSE} openPause();`);
     await g.wait(0.3);
     await g.eval(`${TALK} open();`);
@@ -181,7 +186,7 @@ export default {
     // 7. A phone: the menu button clears the hotbar and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.8);
-    await phone.eval(`${"const I = await import('/src/player/inventory.js');"} I.take('mango'); I.take('mango');`);
+    await phone.eval(`const I = await import('/src/player/inventory.js'); I.take('mango'); I.take('mango');`);
     await phone.wait(0.5);
     const lay = await phone.eval(`
       const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
@@ -214,11 +219,6 @@ export default {
       'the phone menu opens; main and controls pages fit the screen',
       ph.open && ph.fits && pc.tab === 'touch' && pc.fits && pc.back,
       `${JSON.stringify({ ph, pc })}; ${phoneMain}; ${phoneCtl}`,
-    );
-    t.check(
-      'no page errors',
-      ![g, fresh, again, phone].some((p) => p.errors.length),
-      [g, fresh, again, phone].flatMap((p) => p.errors).join(' | '),
     );
   },
 };

@@ -8,10 +8,10 @@ import { toScreen } from '../render/scene.js';
 import { me } from '../player/player.js';
 import { interactTarget } from '../player/hands.js';
 import { dialogue } from '../boogler/dialogue.js';
-import { glyph, inputKind } from '../player/glyphs.js';
+import { glyph } from '../player/glyphs.js';
 
 const onScreen = { x: 0, y: 0, behind: false };
-const ui = { root: null, html: '', id: '', kind: '', show: null, showId: '' };
+const ui = { root: null, html: '', id: '', show: null, showId: '' };
 
 const chip = (t) =>
   `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph('interact')}<span>${t.verb}</span></span>` +
@@ -28,7 +28,6 @@ function build() {
 onFrame(
   () => {
     if (!ui.root) build();
-    const kind = inputKind();
     const t = me.entered && !me.charging && !dialogue.open ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
@@ -43,9 +42,8 @@ onFrame(
       return;
     }
     const inner = ui.root.firstChild;
-    if (html !== ui.html || kind !== ui.kind) {
+    if (html !== ui.html) {
       ui.html = html;
-      ui.kind = kind;
       inner.innerHTML = html;
     }
     if (id !== ui.id) {

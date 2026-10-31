@@ -15,6 +15,7 @@ room.onConnection(handler, onError) // handler(connected: boolean). returns unsu
 room.send(msg)         // reliable, ordered JSON message to every OTHER peer (relayed through host)
 room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
 room.isHost()          // boolean
+room.linkStats()       // Promise<[{ peer, relay, local, remote, rttMs }]>: the ICE pair each open link uses (a client's link to the host, or the host's to each client); relay = goes through TURN
 room.onHostChange(handler) // handler(isHost: boolean). returns unsubscribe
 room.close()
 // peer entry: Object.freeze({ peer: string /*stable selfId of that tab*/, sameTab: boolean /*true for me*/, presence: object, updatedAt: number })

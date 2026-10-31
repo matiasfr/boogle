@@ -276,7 +276,8 @@ registerAction('pause', {
 addEventListener(
   'keydown',
   (e) => {
-    if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered || dialogue.open) return;
+    if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered) return;
+    if (e.code === 'Escape' && dialogue.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
     if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     if (openPause(e.code === 'KeyH' ? 'controls' : 'main')) {
       e.preventDefault();
@@ -286,19 +287,14 @@ addEventListener(
   { capture: true },
 );
 
-// Esc ends the pointer lock: that is the way in on a desktop. The talk box and this view release the lock after they
-// mark themselves open (openModal), so they do not trigger it.
+// Esc ends the pointer lock: that is the way in on a desktop. This view releases the lock after it marks itself open
+// (openModal), so it does not trigger it; during a talk, losing the lock ends the talk instead (src/boogler/dialogue.js).
 let wasLocked = false;
 document.addEventListener('pointerlockchange', () => {
   const locked = !!document.pointerLockElement;
   if (wasLocked && !locked && me.entered && !modalOpen() && !dialogue.open && !isTouch) openPause();
   wasLocked = locked;
 });
-
-function setMenuGlyph() {
-  const g = glyph('pause');
-  menuBtn.querySelector('.menu-glyph').innerHTML = g;
-}
 
 onStart(() => {
   menuBtn = el('button', 'menu-btn');
@@ -317,7 +313,7 @@ onStart(() => {
       const k = inputKind();
       if (k !== kind) {
         kind = k;
-        setMenuGlyph();
+        menuBtn.querySelector('.menu-glyph').innerHTML = glyph('pause');
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
     },

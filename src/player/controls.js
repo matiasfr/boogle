@@ -40,8 +40,10 @@
 // onStart, once it is registered; never overwrite its handlers by hand:
 //   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
 //                                  none) and decides whether to call it; the last wrap runs first
+//   triggerAction(id, edge)        presses ('down') or releases ('up') an action, wraps included, for an input route
+//                                  the registry does not bind itself (the mouse button in src/player/input.js)
 //   actionById(id)                 the registered action or null; for dev tooling and tests
-// Both log a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
+// Each logs a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
 // wraps.
 
 // Index = button index in the W3C "standard" gamepad mapping.
@@ -291,12 +293,19 @@ export function wrapAction(id, wrap) {
   return true;
 }
 
+export const triggerAction = (id, edge) => actionById(id, 'triggerAction')?.[edge]?.();
+
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
-export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to, for glyphs
-// While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
-// runs no action. setPadModal(null) hands the pad back.
+export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to
+// While a modal (the pause view) takes the pad, src/features/gamepad.js sends it each new press by slot and runs no
+// action. setPadModal(null) hands the pad back.
 let modal = null;
 export const setPadModal = (fn) => (modal = fn);
 export const padModal = () => modal;
+// Lighter: something on screen that the game keeps playing behind (the Boogler's talk box) takes just these slots'
+// new presses, and the stick and every other button keep working. setPadGrab(null) lets go.
+let grab = null;
+export const setPadGrab = (fn, slots = []) => (grab = fn ? { fn, slots } : null);
+export const padGrab = () => grab;
 export const listActions = () => PAD.map((p) => bySlot.get(p)).filter(Boolean);
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));

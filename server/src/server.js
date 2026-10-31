@@ -42,6 +42,9 @@ export function loadConfig(env = process.env, overrides = {}) {
     turnCredential: env.TURN_CREDENTIAL || '',
     turnSecret: env.TURN_SECRET || '',
     turnTtl: Number(env.TURN_TTL ?? 86400),
+    cfTurnKeyId: env.CF_TURN_KEY_ID || '',
+    cfTurnApiToken: env.CF_TURN_API_TOKEN || '',
+    fetch: globalThis.fetch,
     aliveTimeout: Number(env.PEER_ALIVE_TIMEOUT ?? 60000),
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
@@ -116,12 +119,45 @@ function iceServers(cfg) {
   return servers;
 }
 
+// Cloudflare TURN: mint credentials from its API, shared by every caller and re-minted at half their TTL.
+// Port 53 URLs are dropped (browsers block them). On failure /ice serves whatever else is configured.
+function createCloudflareTurn(cfg) {
+  if (!cfg.cfTurnKeyId || !cfg.cfTurnApiToken) return null;
+  const url = `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfg.cfTurnKeyId)}/credentials/generate-ice-servers`;
+  let cached = null; // { servers, freshUntil }
+  let pending = null;
+  async function mint() {
+    const res = await cfg.fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.cfTurnApiToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ttl: cfg.turnTtl }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`Cloudflare TURN ${res.status}`);
+    const servers = [(await res.json()).iceServers]
+      .flat()
+      .filter((s) => s?.username && s?.credential)
+      .map((s) => ({ ...s, urls: [s.urls].flat().filter((u) => !/:53(\?|$)/.test(u)) }))
+      .filter((s) => s.urls.length);
+    if (!servers.length) throw new Error('Cloudflare TURN returned no credentials');
+    cached = { servers, freshUntil: Date.now() + (cfg.turnTtl * 1000) / 2 };
+  }
+  return async function get() {
+    if (!cached || Date.now() > cached.freshUntil) {
+      pending ??= mint()
+        .catch((e) => cfg.log('cloudflare turn:', e.message))
+        .finally(() => (pending = null));
+      await pending;
+    }
+    return cached && Date.now() < cached.freshUntil + (cfg.turnTtl * 1000) / 2 ? cached.servers : [];
+  };
+}
+
 /**
  * Build (but don't start listening) the service.
  * Returns { app, server, listen(port), close(), config }.
  */
-export function createService(config) {
-  const cfg = config;
+export function createService(cfg) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', cfg.trustProxy);
@@ -147,15 +183,25 @@ export function createService(config) {
 
   // ---- health / ICE ----
   app.get('/healthz', (_req, res) => res.type('text/plain').send('ok'));
-  app.get('/ice', (_req, res) => {
+  const cloudflareTurn = createCloudflareTurn(cfg);
+  app.get('/ice', async (_req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json({ iceServers: iceServers(cfg) });
+    res.json({ iceServers: [...iceServers(cfg), ...(cloudflareTurn ? await cloudflareTurn() : [])] });
   });
 
   // ---- snapshot storage ----
   const knownRooms = new Set();
   const locks = new Map(); // roomId -> promise chain
   const fileFor = (id) => path.join(cfg.dataDir, `${id}.json`);
+  // A file's text, or null if it does not exist.
+  async function readIfExists(file) {
+    try {
+      return await fs.readFile(file, 'utf8');
+    } catch (e) {
+      if (e.code === 'ENOENT') return null;
+      throw e;
+    }
+  }
 
   async function init() {
     await fs.mkdir(cfg.dataDir, { recursive: true });
@@ -166,12 +212,8 @@ export function createService(config) {
   }
 
   async function readSnapshot(id) {
-    try {
-      return JSON.parse(await fs.readFile(fileFor(id), 'utf8'));
-    } catch (e) {
-      if (e.code === 'ENOENT') return null;
-      throw e;
-    }
+    const text = await readIfExists(fileFor(id));
+    return text === null ? null : JSON.parse(text);
   }
 
   function withLock(id, fn) {
@@ -250,7 +292,7 @@ export function createService(config) {
   // REPORT_KEEP_DAYS.
   const reportDir = path.join(cfg.dataDir, 'reports');
   const daySizes = new Map(); // day -> bytes written (read from disk on first use)
-  const today = () => new Date().toISOString().slice(0, 10);
+  const reportFile = (day) => path.join(reportDir, `${day}.jsonl`);
 
   async function pruneReports(day) {
     const oldest = new Date(Date.parse(day) - REPORT_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
@@ -265,7 +307,7 @@ export function createService(config) {
       daySizes.clear(); // only today's counter matters
       await pruneReports(day).catch((e) => cfg.log('report prune failed', e.message));
       try {
-        daySizes.set(day, (await fs.stat(path.join(reportDir, `${day}.jsonl`))).size);
+        daySizes.set(day, (await fs.stat(reportFile(day))).size);
       } catch (e) {
         if (e.code !== 'ENOENT') throw e;
         daySizes.set(day, 0);
@@ -292,7 +334,7 @@ export function createService(config) {
           const bytes = Buffer.byteLength(text);
           if (size + bytes > cfg.reportMaxBytesPerDay) return 507;
           await fs.mkdir(reportDir, { recursive: true });
-          await fs.appendFile(path.join(reportDir, `${day}.jsonl`), text);
+          await fs.appendFile(reportFile(day), text);
           daySizes.set(day, size + bytes);
           return 204;
         });
@@ -312,13 +354,10 @@ export function createService(config) {
     if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
       return res.status(401).json({ error: 'unauthorized' });
     }
-    const day = req.query.day ?? today();
+    const day = req.query.day ?? new Date().toISOString().slice(0, 10);
     if (typeof day !== 'string' || !DAY_RE.test(day)) return res.status(400).json({ error: 'day must be YYYY-MM-DD' });
     try {
-      const text = await fs.readFile(path.join(reportDir, `${day}.jsonl`), 'utf8').catch((e) => {
-        if (e.code === 'ENOENT') return '';
-        throw e;
-      });
+      const text = (await readIfExists(reportFile(day))) ?? '';
       res.set('Cache-Control', 'no-store');
       res.type('application/x-ndjson').send(text);
     } catch (e) {

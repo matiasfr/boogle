@@ -25,9 +25,6 @@ export function createLimiter(max, windowMs) {
       seen.set(id, list);
       return ok;
     },
-    forget(id) {
-      seen.delete(id);
-    },
   };
 }
 

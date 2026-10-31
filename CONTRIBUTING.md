@@ -26,7 +26,7 @@ Repo settings this relies on (owner only): Settings > Actions > General > "Allow
 
 ## Playtesting
 
-The playtest is the real test. Whenever something new lands, jump on https://matiasfr.github.io/boogle/?room=<name> with whoever is around. Each PLAN.md phase ends with a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
+The playtest is the real test. Whenever something new lands, jump on https://boogle.club/?room=<name> with whoever is around. Each PLAN.md phase ends with a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
 
 ## Working with AI agents
 

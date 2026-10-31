@@ -1,28 +1,27 @@
 // Cosmetic splashes: foam droplets (the shared pool, src/render/particles.js) plus a ripple ring in the sea shader.
 // Detected locally on every client from displayed positions, never networked, so floats and Math.random are fine here.
 import * as THREE from 'three';
-import { SEA, BALL_R, GRAVITY, reducedMotion } from '../constants.js';
+import { BALL_R, GRAVITY, reducedMotion } from '../constants.js';
 import { waterMat } from './water-render.js';
 import { emit } from './particles.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 
-const MAX_RIPPLES = 8;
 const FEET = 0.35; // waterline offset used by the swim code in physics.js
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
 
-// ripples: x, z, start time, strength (0 = unused)
+// ripples: x, z, start time, strength (0 = unused); the sea shader's uRip sets how many
 const ripples = waterMat.uniforms.uRip.value;
 let rippleCursor = 0;
 function addRipple(x, z, strength) {
   ripples[rippleCursor].set(x, z, elapsedNow, strength);
-  rippleCursor = (rippleCursor + 1) % MAX_RIPPLES;
+  rippleCursor = (rippleCursor + 1) % ripples.length;
 }
 
-// strength 0..1
-export function splash(x, z, strength, level = SEA) {
+// strength 0..1, level: the water surface there
+export function splash(x, z, strength, level) {
   strength = Math.min(Math.max(strength, 0), 1);
   addRipple(x, z, 0.35 + strength * 0.65);
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));

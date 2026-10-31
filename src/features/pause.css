@@ -49,6 +49,8 @@ dialog.pause::backdrop {
 }
 .pause-card[data-page='controls'] {
   width: min(1240px, 100%);
+  gap: 10px;
+  padding-block: 18px 16px;
 }
 .pause-head {
   flex: none;
@@ -128,10 +130,6 @@ dialog.pause::backdrop {
 }
 .pause-card[data-page='controls'] .pause-sub {
   display: none;
-}
-.pause-card[data-page='controls'] {
-  gap: 10px;
-  padding-block: 18px 16px;
 }
 .pause-tab {
   flex: 1 1 0;
