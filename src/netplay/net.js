@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.js';
 import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.js';
 import { scene } from '../render/scene.js';
-import { world, teleport } from '../physics/physics.js';
+import { teleport } from '../physics/physics.js';
+import { addBody, removeBody } from '../physics/engine.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
@@ -167,7 +168,7 @@ function dropRemoteBody(r) {
     r.labelText = '';
   }
   if (r.body) {
-    world.removeBody(r.body);
+    removeBody(r.body);
     r.body = null;
   }
 }
@@ -357,7 +358,7 @@ export function updateRemotes(now) {
         scene.add(r.avatar);
         r.body = makePlayerBody(true);
         teleport(r.body, r.target.x, r.target.y, r.target.z);
-        world.addBody(r.body);
+        addBody(r.body);
       }
       r.avatar.userData.mat.color.set(COLORS[r.colorIdx]);
       if (r.labelText !== r.name) {

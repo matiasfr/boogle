@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.js';
 import { clamp, lerp } from '../math.js';
 import { playerMat, NOT_SCENERY } from '../physics/physics.js';
+import { createBody, BODY } from '../physics/engine.ts';
 import { warmUp } from '../render/precompile.js';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
@@ -68,17 +68,17 @@ export function makeLabel(text) {
 }
 
 export function makePlayerBody(kinematic) {
-  const b = new CANNON.Body({
+  return createBody({
     mass: kinematic ? 0 : PLAYER_MASS,
-    type: kinematic ? CANNON.Body.KINEMATIC : CANNON.Body.DYNAMIC,
+    type: kinematic ? BODY.KINEMATIC : BODY.DYNAMIC,
     material: playerMat,
     fixedRotation: true,
-    collisionFilterMask: kinematic ? NOT_SCENERY : -1, // remote players are moved by the network, not by the ground
+    mask: kinematic ? NOT_SCENERY : -1, // remote players are moved by the network, not by the ground
+    shapes: [
+      { kind: 'sphere', r: PLAYER_R },
+      { kind: 'sphere', r: PLAYER_R, offset: { x: 0, y: HEAD_OFFSET, z: 0 } },
+    ],
   });
-  b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, 0, 0));
-  b.addShape(new CANNON.Sphere(PLAYER_R), new CANNON.Vec3(0, HEAD_OFFSET, 0));
-  b.updateMassProperties();
-  return b;
 }
 
 // A player (and a name label) appears the moment someone joins: build their pipelines behind the lobby instead.
