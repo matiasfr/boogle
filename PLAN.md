@@ -151,6 +151,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - Mud and erosion: wet sand slows players; plants anchor soil (From Dust).
 - **Skip:** full 3D voxel fluid. It's a lot of cost for little gameplay on a beach island.
 - **Shelved:** the Fly server as the main room's host ([docs/plans/server-host.md](docs/plans/server-host.md)), until public playtests, offline world progress, rooms past 8, or telemetry showing join and migration pain.
+- **Future: a bigger, open world.** Dedicated server, asset packing (glb + meshopt, KTX2), then chunk streaming and LOD, in that order ([docs/plans/open-world.md](docs/plans/open-world.md)).
 
 - [x] **WebGPU renderer.** `WebGPURenderer` + TSL with a WebGL 2 fallback, linear HDR, adaptive resolution ([src/render/README.md](src/render/README.md)).
 - [ ] **Graphics quality tiers.** A Local pause-view setting (auto, low, medium, high; auto picks by backend, touch and frame time). Low is today's floor; medium adds compute particles behind `emit()`, TRAA, bloom, clustered night lights and cascaded shadows; high adds GTAO, SSGI, SSR and god rays. Measure each rung with `npm run perf` and on device ([src/render/README.md](src/render/README.md)).
