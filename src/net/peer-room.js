@@ -12,12 +12,19 @@
 //                         `ordered:false` (the SCTP channel still retransmits, there is no maxRetransmits), so we
 //                         coalesce in the app (LatestSender) and tag each update with a sequence number to drop stale ones.
 //   'r' (reliable:true)   ordered messages, list/left notices, heartbeats.
+// The fast lane (addFastLane): once both channels are open, each side adds a negotiated RTCDataChannel 'ux' (stream
+// UX_ID, ordered:false, maxRetransmits:0) on the 'u' connection's RTCPeerConnection and says hello on it. A side sends
+// presence there only after hearing the other on it, which proves the lane works and that the peer has it (old builds
+// never answer, so they keep getting presence on 'u'). A lost packet is never resent and never holds back a newer one.
+// Two guards keep 'unreliable' from meaning 'lost': the newest packet of each key goes again on 'u' after SETTLE_MS
+// without a newer one (one-shot updates, the last pose before stopping), and packets over LANE_MAX go on 'u'.
 //
 // Wire messages (all plain objects with a `t` field; anything else is ignored):
 //   client -> host   u: { t:'p', s, d }            my full presence `d`, sequence `s`
 //                    r: { t:'m', d }               send() payload, host relays it with the origin id
 //                    r: { t:'hb' } | { t:'bye' }   heartbeat (0.5 s) / leaving
 //                    r: { t:'sc', v }              my host score, when it changes (checked with each heartbeat)
+//   either way      ux: { t:'ux', ack }            fast-lane hello (ack: the answer to one); ux: 'p' as on 'u'
 //   host -> client   r: { t:'list', peers:[{id,s,d}], last }   everyone currently known (chunked), sent on connect
 //                    u: { t:'p', id, s, d }        a peer's presence (relayed; includes the host's own)
 //                    r: { t:'left', id, s }        a peer is gone (s = last seq seen, so late 'p' can't resurrect it)
@@ -144,6 +151,82 @@ async function pcLink(pc) {
   };
 }
 
+// The fast lane for presence (see the header). `lane.pick(fallback)` is what makeSender sends through: the lane while
+// it is proven, else `fallback` (the 'u' DataConnection). close() stops its timer and channel.
+const UX_ID = 2; // negotiated stream id; PeerJS's one channel on this connection takes 0 or 1
+const LANE_MAX = 1100; // bytes: bigger presence goes on 'u', since one lost fragment would lose all of it
+const SETTLE_MS = 250; // the newest lane packet of a key goes again on 'u' after this long without a newer one
+const HELLO_MS = 500;
+const strings = new WeakMap(); // msg -> JSON: a relayed message is serialized once for all its recipients
+const json = (m) => {
+  let str = strings.get(m);
+  if (str === undefined) strings.set(m, (str = JSON.stringify(m)));
+  return str;
+};
+function addFastLane(conn, onPresence) {
+  const lane = { ch: null, peerHas: false, pick: (fallback) => fallback, close() {} };
+  quietly(() => {
+    lane.ch = conn.peerConnection.createDataChannel('ux', {
+      negotiated: true,
+      id: UX_ID,
+      ordered: false,
+      maxRetransmits: 0,
+    });
+  });
+  const ch = lane.ch;
+  if (!ch) return lane;
+  const hello = (ack) => ch.readyState === 'open' && quietly(() => ch.send(ack ? '{"t":"ux","ack":1}' : '{"t":"ux"}'));
+  ch.onopen = () => hello(false);
+  ch.onmessage = (e) => {
+    let d;
+    try {
+      d = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    if (!isObj(d)) return;
+    lane.peerHas = true;
+    if (d.t === 'ux' && !d.ack) hello(true);
+    else if (d.t === 'p') onPresence(d);
+  };
+  const latest = new Map(), // key -> newest message that went only over the lane
+    sentAt = new Map();
+  const proxy = {
+    get open() {
+      return lane.peerHas && ch.readyState === 'open';
+    },
+    dataChannel: ch,
+    bufferSize: 0,
+    send(msg) {
+      const str = json(msg);
+      if (str.length > LANE_MAX) return conn.send(msg);
+      ch.send(str);
+      const key = msg.id ?? '';
+      latest.set(key, msg);
+      sentAt.set(key, performance.now());
+    },
+  };
+  let helloAt = 0;
+  const timer = setInterval(() => {
+    const now = performance.now();
+    if (!lane.peerHas && now - helloAt > HELLO_MS) {
+      helloAt = now;
+      hello(false); // until the other side answers (old builds never do)
+    }
+    for (const [key, msg] of latest)
+      if (now - sentAt.get(key) > SETTLE_MS) {
+        latest.delete(key);
+        if (conn.open) safeSend(conn, msg);
+      }
+  }, 100);
+  lane.pick = (fallback) => (proxy.open ? proxy : fallback);
+  lane.close = () => {
+    clearInterval(timer);
+    quietly(() => ch.close());
+  };
+  return lane;
+}
+
 // Latest-wins sender: at most one pending packet per key, spaced >= MIN_GAP_MS, held back while buffers are full.
 function makeSender(getConn) {
   const pending = new Map(),
@@ -183,6 +266,7 @@ export async function createPeerRoom(opts = {}) {
   const roomId = String(opts.roomId ?? 'default');
   const hostId = `boogle-${safeRoom(roomId)}-host`;
   const peerOpts = { debug: opts.debug ?? 0 };
+  const fastLane = opts.fastLane !== false; // false: presence only on 'u', as builds before the lane (tests, a kill switch)
   for (const k of ['host', 'port', 'path', 'secure', 'key'])
     if (opts.signal?.[k] !== undefined) peerOpts[k] = opts.signal[k];
   if (opts.iceServers) peerOpts.config = { iceServers: opts.iceServers };
@@ -303,9 +387,10 @@ export async function createPeerRoom(opts = {}) {
     wake = null;
   let clients = new Map(); // host side: id -> client record
   let hostU = null,
-    hostR = null; // client side
+    hostR = null, // client side
+    hostLane = null; // client side: the fast lane on hostU, once open
   const view = new Set(); // client side: ids the current host has told us about
-  const clientSender = makeSender(() => hostU);
+  const clientSender = makeSender(() => hostLane?.pick(hostU) ?? hostU);
   const outbox = [];
   const dbg = (...a) => {
     if (opts.debug) console.log('[peer-room]', Date.now() % 100000, ...a);
@@ -363,6 +448,7 @@ export async function createPeerRoom(opts = {}) {
     clients = new Map();
     const hostClients = clients;
     const closeClient = (c) => {
+      c.lane?.close();
       for (const k of ['u', 'r']) quietly(() => c[k]?.close());
       c.sender.clear();
     };
@@ -445,8 +531,8 @@ export async function createPeerRoom(opts = {}) {
         c = null;
       } // the same tab came back on a fresh session
       if (!c) {
-        c = { id, u: null, r: null, ready: false, seen: Date.now(), lastSeq: -1, score: -1 }; // -1: never reported
-        c.sender = makeSender(() => c.u);
+        c = { id, u: null, r: null, lane: null, ready: false, seen: Date.now(), lastSeq: -1, score: -1 }; // -1: never reported
+        c.sender = makeSender(() => c.lane?.pick(c.u) ?? c.u);
         hostClients.set(id, c);
         const pair = c;
         timers.push(
@@ -468,6 +554,7 @@ export async function createPeerRoom(opts = {}) {
           rec.ready = true;
           rec.seen = Date.now();
           sendList(rec);
+          if (fastLane) rec.lane = addFastLane(rec.u, (d) => onData(rec, d));
         }
       });
       conn.on('data', (d) => onData(rec, d));
@@ -578,14 +665,16 @@ export async function createPeerRoom(opts = {}) {
       peer.connect(hostId, { label, reliable, serialization: 'json', metadata: { selfId: SELF_ID } });
     const u = mk('u', false),
       rel = mk('r', true);
+    let lane = null; // the fast lane on u, once both channels are open
     r.teardown = () => {
       if (r.done) return;
       r.done = true;
       clearTimers(timers);
       if (hostU === u) {
-        hostU = hostR = null;
+        hostU = hostR = hostLane = null;
         clientSender.clear();
       }
+      lane?.close();
       for (const c of [u, rel]) quietly(() => c?.close());
       quietly(() => peer.destroy());
     };
@@ -667,6 +756,8 @@ export async function createPeerRoom(opts = {}) {
         },
         timers,
       );
+    if (fastLane) lane = addFastLane(u, onData);
+    if (hostU === u) hostLane = lane;
     let lastTick = Date.now(),
       sentScore = null;
     timers.push(
@@ -925,18 +1016,19 @@ export async function createPeerRoom(opts = {}) {
       return () => msgHandlers.delete(h);
     },
     isHost: () => isHostNow,
-    // One row per open presence link: a client's link to the host, or the host's link to each client.
+    // One row per open presence link: a client's link to the host, or the host's link to each client. `fast`: presence
+    // to that peer rides the fast lane (both sides have it and it is open).
     async linkStats() {
       const links = isHostNow
-        ? [...clients.values()].filter((c) => c.ready).map((c) => [c.id, c.u])
+        ? [...clients.values()].filter((c) => c.ready).map((c) => [c.id, c.u, c.lane])
         : hostU?.open
-          ? [['host', hostU]]
+          ? [['host', hostU, hostLane]]
           : [];
       const rows = await Promise.all(
-        links.map(async ([peer, conn]) => {
+        links.map(async ([peer, conn, lane]) => {
           try {
             const link = await pcLink(conn.peerConnection);
-            return link && { peer, ...link };
+            return link && { peer, fast: lane?.pick(null) != null, ...link };
           } catch {
             return null; // closed while we asked
           }

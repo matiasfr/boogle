@@ -40,6 +40,17 @@ try {
     return true;
   }, 3000);
   check('presence values propagate', presOk >= 0, presOk + ' ms');
+  // Presence rides the fast lane (unreliable, no retransmits) on every link once both ends have it.
+  const lanes = (pages, want) =>
+    waitFor(async () => {
+      for (const p of pages) {
+        const rows = await ev(p.page, () => window.T.room.linkStats());
+        if (!rows.length || !rows.every((r) => want(r))) return false;
+      }
+      return true;
+    }, 5000);
+  const fastOk = await lanes(all, (r) => r.fast);
+  check('presence rides the fast lane on every link', fastOk >= 0, fastOk + ' ms');
   await ev(A.page, () => window.T.room.presence({ x: null }));
   check(
     'presence null deletes key',
@@ -188,6 +199,8 @@ try {
     'messages flow after migration',
     post[0].msgs[C.selfId]?.length === 20 && post[1].msgs[B.selfId]?.length === 20,
   );
+  const fastAfter = await lanes(BC, (r) => r.fast);
+  check('the fast lane comes back after migration', fastAfter >= 0, fastAfter + ' ms');
 
   // 5. a newcomer joins the migrated room; then a client crashes, then one closes gracefully
   const D = await open('D');
@@ -267,6 +280,32 @@ try {
     hardMs >= 0 && Date.now() - tHard < 5000,
     `${Date.now() - tHard} ms`,
   );
+
+  // Mixed builds: a tab without the fast lane (fastLane: false, like builds from before it) gets and sends presence
+  // on 'u'; the host keeps its lane to the tabs that have one.
+  const laneRoom = room + 'lane';
+  const L1 = await open('L1', { in: laneRoom }),
+    L2 = await open('L2', { in: laneRoom }),
+    L3 = await open('L3', { in: laneRoom, query: '&nolane=1' });
+  const mixed = [L1, L2, L3];
+  await Promise.all(mixed.map((p, i) => ev(p.page, (i) => window.T.room.presence({ name: 'l' + i }), i)));
+  const mixedOk = await waitFor(async () => {
+    for (const p of mixed) {
+      const s = await snap(p);
+      for (const o of mixed)
+        if (o !== p && s.peers.find((x) => x.peer === o.selfId)?.presence.name !== 'l' + mixed.indexOf(o)) return false;
+    }
+    return true;
+  }, 5000);
+  check('mixed builds: presence flows between lane and no-lane tabs', mixedOk >= 0, mixedOk + ' ms');
+  const hostRows = await ev(L1.page, () => window.T.room.linkStats());
+  check(
+    'mixed builds: the host uses the lane only with the tab that has it',
+    hostRows.find((r) => r.peer === L2.selfId)?.fast === true &&
+      hostRows.find((r) => r.peer === L3.selfId)?.fast === false,
+    JSON.stringify(hostRows.map((r) => [r.peer === L2.selfId ? 'L2' : 'L3', r.fast])),
+  );
+  for (const p of mixed) await p.page.close();
 
   // Room cap (maxPeers, host included): a newcomer past the cap is turned away with room_full, and gets in once
   // someone leaves.

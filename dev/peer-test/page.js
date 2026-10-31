@@ -36,6 +36,7 @@ const T = (window.T = {
         debug: Number(q.get('debug') || 0),
         ...(q.get('max') ? { maxPeers: Number(q.get('max')) } : {}),
         ...(q.get('score') ? { hostScore: () => T.score } : {}),
+        ...(q.get('nolane') ? { fastLane: false } : {}),
       });
     } catch (e) {
       return { error: String(e.code), max: e.max };

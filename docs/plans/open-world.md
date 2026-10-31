@@ -29,10 +29,9 @@ too big for every peer to simulate are now the expected ones.
   local player. Not before: while each player owns their physics, prediction adds nothing.
 - Bends DESIGN.md ("PeerJS only", "Clear authority"): change the principle on purpose in the step that starts this.
 
-**Until then, one cheap fix in the peer model:** PeerJS's `reliable:false` still retransmits (note at the top of
-`peer-room.js`). Opening the presence channel as a native `RTCDataChannel` with `maxRetransmits: 0` gives true
-unreliable delivery. Stays inside `src/net/`, additive for mixed builds, needs `check:full`, a `dev/peer-test/` check
-and a before/after `npm run load`.
+**Done in the peer model (2026-10-31):** presence rides a negotiated `RTCDataChannel` with `maxRetransmits: 0` (the
+fast lane in `src/net/peer-room.js`), since PeerJS's `reliable:false` still retransmits. Old builds keep getting
+presence on PeerJS's channel; the last update of each key is resent there after a quiet moment.
 
 ## 2. Asset pipeline (when assets arrive)
 
