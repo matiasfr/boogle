@@ -28,15 +28,23 @@ const lobbyNote = (text) => {
   const sub = document.getElementById('lobby-sub');
   if (sub) sub.textContent = text;
 };
-// The backend three is drawing with, once rendererReady has resolved.
-export const gfx = () => (renderer.backend.isWebGPUBackend ? 'webgpu' : 'webgl2');
+// The backend three is drawing with: null until rendererReady resolves, because init() swaps a WebGPU backend that
+// can't start for the WebGL 2 one (before that, renderer.backend says WebGPU even where it will fall back).
+let started = false;
+export const gfx = () => (!started ? null : renderer.backend.isWebGPUBackend ? 'webgpu' : 'webgl2');
 
-export const rendererReady = renderer.init().catch((e) => {
-  lobbyNote("This browser can't start WebGPU or WebGL 2, which Boogle needs to draw the island.");
-  const enter = document.getElementById('enter');
-  if (enter) enter.textContent = "Can't draw the island";
-  throw e;
-});
+export const rendererReady = renderer.init().then(
+  (r) => {
+    started = true;
+    return r;
+  },
+  (e) => {
+    lobbyNote("This browser can't start WebGPU or WebGL 2, which Boogle needs to draw the island.");
+    const enter = document.getElementById('enter');
+    if (enter) enter.textContent = "Can't draw the island";
+    throw e;
+  },
+);
 
 // A lost device is not recovered by three: reload once the tab is visible, at most once a minute.
 renderer.onDeviceLost = (info) => {
