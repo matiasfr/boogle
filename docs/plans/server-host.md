@@ -529,9 +529,9 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     13. while hosting, a page on plain `createPeerRoom` for the same room never reports `isHost()` within 10 s (no
         split brain).
     14. a join with the server's port closed and no fallback server: `createRoom` rejects within `connectTimeoutMs`.
-  - Scenarios: `smoke`, `two-player-edit` and `shared-kinds` use the harness's bare PeerServer, so the picker lands on
+  - Scenarios: `smoke` and `shared-kinds` use the harness's bare PeerServer, so the picker lands on
     `peer` (T4, 404 rule); run them.
-  - Verify: `npm run check:full`, `npm run scenario -- two-player-edit`, `npm run scenario -- shared-kinds`, and a
+  - Verify: `npm run check:full`, `npm run check:gpu`, `npm run scenario -- shared-kinds`, and a
     `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
     (server answers `peer`).
 

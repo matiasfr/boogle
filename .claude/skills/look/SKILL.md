@@ -24,7 +24,7 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
 
 **Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
-Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only `world-inputs` and `two-player-edit`; `smoke` runs
+Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only single-player scenarios, `world-inputs`; `smoke` runs
 here, `npm run check:gpu`, inside `npm run ship`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
 run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
 material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
@@ -36,7 +36,7 @@ material "not compatible" with the node renderer) is a bug to fix. Ready-made ev
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR and the rest nightly
+risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` runs `smoke` on a Mac's GPU in `npm run ship`, and the rest run nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
 Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
 console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
