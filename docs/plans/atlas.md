@@ -372,7 +372,7 @@ glance".
   Verify: `npm run atlas` prints the summary; `.look/atlas/facts.json` contains `mush.plant` under
   `src/world/rules/mushrooms.js` and frames for `src/physics/ball.js` at world −300 and −280.
 
-- [ ] **4. Pure atlas core, narrative content, citation report.**
+- [x] **4. Pure atlas core, narrative content, citation report.**
   - Create `atlas/layout.js`, `atlas/model.js`, `atlas/narrative.js`, `atlas/check.js` and `atlas/changes.js` as
     specified above. `parseChanges(md)` returns `[{ date, body }]`. `renderChanges(entries, known)` returns escaped
     HTML (`##` sections, paragraphs, `- ` lists, `` `code` ``, `[t](#…)` links only, all other text escaped with the
