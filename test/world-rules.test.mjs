@@ -119,7 +119,7 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
-  const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.js$/;
+  const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
   const seen = new Set();
   const visit = (url) => {
     if (seen.has(url.href)) return;

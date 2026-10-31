@@ -50,8 +50,8 @@ async function rulesOf(root) {
     delete s.serialize;
   }
   // The world namespace (absent in trees from before 0.1): a different one is a clean break (scan.mjs).
-  const nsFile = path.join(root, 'src/world/namespace.js');
-  const ns = fs.existsSync(nsFile) ? (await import(url('src/world/namespace.js'))).WORLD_NS : undefined;
+  const nsFile = path.join(root, 'src/world/namespace.ts');
+  const ns = fs.existsSync(nsFile) ? (await import(url('src/world/namespace.ts'))).WORLD_NS : undefined;
   return { rules: RULES.map((m) => m.name), ops, states, ns };
 }
 

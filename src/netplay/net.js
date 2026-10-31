@@ -8,8 +8,8 @@ import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
 import { createPeerRoom, defaultHostScore } from '../net/peer-room.js';
 import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.js';
-import { worldRoomId } from '../world/namespace.js';
-import { identity } from '../player/identity.js';
+import { worldRoomId } from '../world/namespace.ts';
+import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.js';
 import { mergeFields, hostField } from './presence-fields.js';
 import { onFrame } from '../loop.js';
@@ -19,7 +19,8 @@ import { onFrame } from '../loop.js';
 // (for connection reports); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
 // attempt while solo (0: none scheduled); full: the last join was turned away ('room_full'): the cap, or true.
 export const net = {
-  room: null,
+  /** @type {any} */
+  room: null, // the room interface (src/net/README.md) once joined
   myPeer: null,
   readyAt: 0,
   lastSend: 0,
@@ -282,7 +283,7 @@ function scheduleRetry(e) {
 // last save if it took over, so it scores 0 and is never handed the room.
 const hostScore = () => (worldStatus().ready ? defaultHostScore() : 0);
 
-// Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.js).
+// Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.ts).
 function dropOldSave(room) {
   try {
     localStorage.removeItem(`boogle.world.${room}`);

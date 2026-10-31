@@ -8,7 +8,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 |---|---|
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration and persistence (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
-| `namespace.js` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
+| `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
 | `grid.js` | Pure, lockstep: grid constants. |
 | `background.js`, `clock-worker.js` | Keep the world ticking while the tab is hidden. |
@@ -53,7 +53,7 @@ submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells.
                                    // Returns true if queued, not applied: the host may reject it, and edits held
                                    // while reconnecting can be dropped (see sync.js header). Use onApplied for
                                    // anything irreversible.
-setPid(pid)                  // this tab's player id (src/player/identity.js; the selfId stands in until set)
+setPid(pid)                  // this tab's player id (src/player/identity.ts; the selfId stands in until set)
 pidOf(selfId)                // a session's pid, or null
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
@@ -84,7 +84,7 @@ them.
 - `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
 - `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
-  at its caps, `test/world-size.test.mjs`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
+  at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
   newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).

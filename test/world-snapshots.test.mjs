@@ -1,6 +1,6 @@
 // Saved worlds on the real rules: a save without state versions loads at version 0, and malformed snapshots or states
 // never throw: a bad state starts fresh and the world keeps ticking. A 0.1 save captured at M4 keeps loading. (The
-// pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.js: no 0.1 tab loads an older save.)
+// pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.ts: no 0.1 tab loads an older save.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.js';

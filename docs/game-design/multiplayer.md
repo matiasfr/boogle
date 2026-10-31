@@ -4,7 +4,7 @@
 
 A star around a host peer over PeerJS ([src/net/peer-room.js](../../src/net/peer-room.js),
 [src/net/README.md](../../src/net/README.md)). The host registers the PeerJS id `boogle-<world room>-host`, where the world room is `v01-<room>` (the world
-namespace, [src/world/namespace.js](../../src/world/namespace.js); the `?room=` URL and the pause title show the plain
+namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=` URL and the pause title show the plain
 name); others register a
 random id and connect to it with two data channels: `u` (unordered presence) and `r` (reliable, ordered messages,
 heartbeats). The host relays presence and messages. Ids in messages are each tab's stable `selfId`, not PeerJS ids.
@@ -76,7 +76,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
   state that fails to load starts fresh; a state from a newer build is skipped and that tab stops persisting.
 - The world seed is the constant 20261028 for every room.
 - Budget: a world with every state at its caps (256 players, 128 piles, full plaques) saves under 60 KB (about 27 KB
-  today, `test/world-size.test.mjs`), so the pagehide upload keeps `keepalive`. `worldStatus().snapBytes` reports the
+  today, `test/world-size.test.ts`), so the pagehide upload keeps `keepalive`. `worldStatus().snapBytes` reports the
   last size; telemetry doesn't send it yet.
 
 ## 8.5 What persists and where
@@ -104,7 +104,7 @@ Cloudflare TURN credentials) and `/healthz`. It runs on Fly (`boogle-server`); t
 
 ## 8.6 Who you are (player id)
 
-[src/player/identity.js](../../src/player/identity.js), [src/features/identity.js](../../src/features/identity.js).
+[src/player/identity.ts](../../src/player/identity.ts), [src/features/identity.ts](../../src/features/identity.ts).
 No sign-up. Each browser gets a random player id (pid) on its first visit, kept in `boogle.pid`, plus the name and
 colour you pick at Jump in. A reload, a new room or a new day is the same player; clearing site data, another browser
 or another device is a new one (old plaque lines stay under the old name). The tab says its pid to the room (`w:id`)

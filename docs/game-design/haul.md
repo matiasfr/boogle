@@ -12,8 +12,8 @@ Walk over a pile to pick it up (1.3 m from its centre). A drop joins a pile of t
 a pile holds 64, then a new pile starts beside it. A room holds 128 piles; when it is full, more of a kind goes onto
 the nearest pile of that kind, so nothing is lost. Piles never age or vanish.
 
-Code: [src/sim/piles.js](../../src/sim/piles.js), [src/world/rules/piles.js](../../src/world/rules/piles.js),
-[src/adapters/piles.js](../../src/adapters/piles.js). Lockstep state `piles`; ops `pile.drop`, `pile.take`.
+Code: [src/sim/piles.ts](../../src/sim/piles.ts), [src/world/rules/piles.ts](../../src/world/rules/piles.ts),
+[src/adapters/piles.ts](../../src/adapters/piles.ts). Lockstep state `piles`; ops `pile.drop`, `pile.take`.
 
 ## The haul stack
 
@@ -25,8 +25,8 @@ once, and the count follows when the host confirms (about half a second). Your s
 you after a reload, and other players see it on your avatar. No new control: pickup is walking, pouring is walking
 into a site's ring.
 
-Code: [src/sim/stacks.js](../../src/sim/stacks.js), [src/world/rules/stacks.js](../../src/world/rules/stacks.js),
-[src/features/haul-stack.js](../../src/features/haul-stack.js). Lockstep state `stacks` (by roster index), changed by
+Code: [src/sim/stacks.ts](../../src/sim/stacks.ts), [src/world/rules/stacks.ts](../../src/world/rules/stacks.ts),
+[src/features/haul-stack.ts](../../src/features/haul-stack.ts). Lockstep state `stacks` (by roster index), changed by
 other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `u`.
 
 ## Sources: palms give logs
@@ -38,14 +38,14 @@ material on your back, or a full stack) drops as a pile beside the palm. The bal
 logs: the ball is never income. Every palm refills when a section is laid, and every 20 s one empty palm, picked from
 the room seed and the tick, refills on its own.
 
-Code: [src/sim/sources.js](../../src/sim/sources.js), [src/world/rules/sources.js](../../src/world/rules/sources.js),
-[src/features/log-sources.js](../../src/features/log-sources.js), the Shake in
+Code: [src/sim/sources.ts](../../src/sim/sources.ts), [src/world/rules/sources.ts](../../src/world/rules/sources.ts),
+[src/features/log-sources.ts](../../src/features/log-sources.ts), the Shake in
 [src/adapters/gifts.js](../../src/adapters/gifts.js). Lockstep state `sources` (the current age's charges only); op
 `src.take {id}`.
 
 ## Work sites, plaques and tiers
 
-The railway is preset ([src/sim/route.js](../../src/sim/route.js)). The 0.1 testbed has three wood sections from the
+The railway is preset ([src/sim/route.ts](../../src/sim/route.ts)). The 0.1 testbed has three wood sections from the
 court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a sign with the section's plaque
 and two rings on the ground, Track (left, gold) and Helper hut (right, green). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
@@ -74,12 +74,12 @@ long nobody hosted (wall clock against the save's tick), and the huts' freight f
 27 s) lands in the open Track ring, capped at one section. The machine still waits for a player to start it. Absences
 under a minute bank nothing.
 
-Code: [src/sim/scripted-run.js](../../src/sim/scripted-run.js) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
-`sites` tick; the bank: [src/sim/bank.js](../../src/sim/bank.js), [src/world/rules/bank.js](../../src/world/rules/bank.js),
-[src/features/helper-bank.js](../../src/features/helper-bank.js), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
+Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
+`sites` tick; the bank: [src/sim/bank.ts](../../src/sim/bank.ts), [src/world/rules/bank.ts](../../src/world/rules/bank.ts),
+[src/features/helper-bank.ts](../../src/features/helper-bank.ts), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
 
-Code: [src/sim/sites.js](../../src/sim/sites.js), [src/sim/tiers.js](../../src/sim/tiers.js),
-[src/world/rules/sites.js](../../src/world/rules/sites.js), [src/features/work-sites.js](../../src/features/work-sites.js).
+Code: [src/sim/sites.ts](../../src/sim/sites.ts), [src/sim/tiers.ts](../../src/sim/tiers.ts),
+[src/world/rules/sites.ts](../../src/world/rules/sites.ts), [src/features/work-sites.ts](../../src/features/work-sites.ts).
 Lockstep state `sites`; op `site.stock {s, ring, n}` (validated against your own stack, the age's material and the open
 site). Ring reach is not checked by the host, like every reach today.
 

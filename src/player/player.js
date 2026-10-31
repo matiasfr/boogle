@@ -18,7 +18,9 @@ export const me = {
   entered: false,
   name: '',
   colorIdx: 0,
+  /** @type {import('cannon-es').Body | null} */
   body: null,
+  /** @type {import('three').Group | null} */
   avatar: null,
   yaw: 0,
   coyote: 0,

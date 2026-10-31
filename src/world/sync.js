@@ -7,7 +7,7 @@
 //   client -> host   { t:'w:edit', e }                      an edit request (host overwrites e.p with the real sender id
 //                                                           and e.u with that sender's pid)
 //                    { t:'w:need' }                         please send me a snapshot (late join, desync, late edit)
-//   any -> all       { t:'w:id', u }                        this tab's player id (pid, src/player/identity.js). Sent before
+//   any -> all       { t:'w:id', u }                        this tab's player id (pid, src/player/identity.ts). Sent before
 //                                                           w:need, by a new host, after a reconnect and when a client
 //                                                           re-pins the host; every tab keeps selfId -> pid, so a
 //                                                           promoted client already knows the room's pids
@@ -45,7 +45,7 @@
 // skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
 // noSave, so the clients that load them stop persisting too.
 
-import { okPid } from '../sim/roster.js';
+import { okPid } from '../sim/roster.ts';
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -96,7 +96,7 @@ export function createSync({ env: env0 } = {}) {
     saves: 0,
     heldDropped: 0,
     loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
-    snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.mjs)
+    snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
   };
   let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
   // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
@@ -749,7 +749,7 @@ export function createSync({ env: env0 } = {}) {
     onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
-    // This tab's player id (src/player/identity.js); announced at once if a room is attached.
+    // This tab's player id (src/player/identity.ts); announced at once if a room is attached.
     setPid(u) {
       if (!okPid(u) || u === pid) return;
       pid = u;

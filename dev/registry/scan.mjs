@@ -14,7 +14,7 @@
 //   padSlots: [slot]                 PAD in src/player/controls.js
 //   frames:   [{ path, phase, order }]  onFrame hooks with a literal order
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
-//   ns                               WORLD_NS from src/world/namespace.js (absent before 0.1); a change skips the rules diff
+//   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
 // }
 
 const CORE_PRESENCE_FILE = 'src/netplay/net';
@@ -201,7 +201,7 @@ export function shapeOf(v) {
 export function compareRegistries(base, head) {
   const errors = [];
   const notes = [];
-  // A new world namespace (src/world/namespace.js) is a clean break: old tabs never meet this world, so main's rules,
+  // A new world namespace (src/world/namespace.ts) is a clean break: old tabs never meet this world, so main's rules,
   // ops and states bind nothing here.
   const fresh = (base.ns ?? null) !== (head.ns ?? null);
   if (fresh) notes.push(`world namespace ${base.ns ?? '(none)'} -> ${head.ns}: a clean break, rules not compared`);

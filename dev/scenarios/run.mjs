@@ -2,7 +2,7 @@
 // `--url <game>` (or LOOK_URL) plays an already running or deployed game instead of starting a local stack; only
 // scenarios that stay off /src/ imports work on a built site (e.g. `smoke`, through window.boogle.sync).
 //
-// A scenario is dev/scenarios/<name>.mjs:
+// A scenario is dev/scenarios/<name>.ts (older ones .mjs):
 //   export default { about: 'one line', async run(t) { ... } };
 // `t` gives you:
 //   t.open({ name, room, size, hud, touch })   a player (Game from dev/look/lib.mjs); same `room` = same island;
@@ -21,11 +21,14 @@ import { fileURLToPath } from 'node:url';
 import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors } from '../look/lib.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const all = fs
-  .readdirSync(here)
-  .filter((f) => f.endsWith('.mjs') && f !== 'run.mjs')
-  .map((f) => f.slice(0, -4))
-  .sort();
+// <name>.mjs or (new ones, AGENTS.md "TypeScript everywhere") <name>.ts
+const files = new Map(
+  fs
+    .readdirSync(here)
+    .filter((f) => /\.(mjs|ts)$/.test(f) && f !== 'run.mjs')
+    .map((f) => [f.replace(/\.(mjs|ts)$/, ''), f]),
+);
+const all = [...files.keys()].sort();
 const args = process.argv.slice(2);
 const trace = !args.includes('--no-trace');
 if (!trace) args.splice(args.indexOf('--no-trace'), 1);
@@ -53,7 +56,7 @@ try {
   stack = await startStack({ url });
   browser = await launch();
   for (const name of names) {
-    const mod = (await import(path.join(here, name + '.mjs'))).default;
+    const mod = (await import(path.join(here, files.get(name)))).default;
     const out = path.resolve('.look/scenarios', name);
     fs.rmSync(out, { recursive: true, force: true });
     fs.mkdirSync(out, { recursive: true });

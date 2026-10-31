@@ -1,4 +1,4 @@
-/* "second tab: playing as a guest" (src/features/identity.js), a quiet line under the top edge. */
+/* "second tab: playing as a guest" (src/features/identity.ts), a quiet line under the top edge. */
 .guest-note {
   position: fixed;
   top: calc(8px + env(safe-area-inset-top, 0px));

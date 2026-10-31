@@ -336,7 +336,7 @@ export function giftTargets() {
         },
       });
   }
-  // One shake, two drops: ripe fruit (the toy) and, while the palm holds any, logs (src/world/rules/sources.js, which
+  // One shake, two drops: ripe fruit (the toy) and, while the palm holds any, logs (src/world/rules/sources.ts, which
   // go straight onto your stack). The ball knocks fruit only: it never produces material (SETTLED).
   layout.trees.forEach((_, t) => {
     const { x, z } = trees[t];

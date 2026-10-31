@@ -1,4 +1,4 @@
-/* Your haul count (src/features/haul-stack.js): a small chip above the hotbar, only while you carry something. */
+/* Your haul count (src/features/haul-stack.ts): a small chip above the hotbar, only while you carry something. */
 .haul-chip {
   position: fixed;
   left: 50%;
