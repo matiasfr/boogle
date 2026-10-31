@@ -106,14 +106,13 @@ export default {
     };
     await openTalk();
     const from = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
-    // Facing him, so S walks away. Hold it until you have walked 2 m (or 20 s): a fixed hold covers too few frames on a
-    // slow software-rendered runner.
+    // Facing him, so S walks away. Hold it until the talk closes (or 20 s), then check how far you went: a fixed hold
+    // covers too few frames on a slow software-rendered runner, and a fixed distance may stop inside his talk range.
     const dist = `(() => { const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]}); })()`;
     await g.down('KeyS');
-    await g.waitFor(`${dist} > 2`, { timeout: 20000 });
+    const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 20000 });
     await g.up('KeyS');
     const walked = await g.eval(`return ${dist};`);
-    const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 3000 });
     t.check(
       'walking while talking moves you, and walking off ends the talk',
       walked > 1 && closedMs >= 0,
