@@ -2,11 +2,14 @@
 //   (default)  extract the facts, write .look/atlas/facts.json and print a one-line summary
 //   --json     print the facts to stdout instead
 //   --check    the citation report: what in docs/atlas/ no longer matches the code or atlas/layout.js
+//   --changes [--since <ref>]  for the daily upkeep: the report, the commits since <ref> (default: the last commit that
+//              touched docs/atlas/), what the code gained and lost since then, and folders with no note
 // Every mode exits 0 unless the CLI itself crashes: the atlas never blocks anything.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { extractFacts } from './extract.mjs';
+import { execFileSync } from 'node:child_process';
+import { diffFacts, extractFacts, factsAt } from './extract.mjs';
 import { parseNarrative } from '../../atlas/narrative.js';
 import { checkAtlas, foldersToDo } from '../../atlas/check.js';
 
@@ -59,7 +62,7 @@ export function report(facts) {
   return { problems, todo: foldersToDo(facts, N) };
 }
 
-function printReport(facts) {
+function printReport(facts, { showTodo = true } = {}) {
   const { problems, todo } = report(facts);
   const groups = new Map();
   for (const p of problems) {
@@ -71,14 +74,71 @@ function printReport(facts) {
     console.log(`\n${file}`);
     for (const p of list) console.log(`  - ${p}`);
   }
-  if (todo.length) {
-    console.log(`\nFolders with no note in docs/atlas/concepts.json "folders" (to do, not errors):`);
-    for (const d of todo) console.log(`  - ${d}`);
-  }
+  if (showTodo) printTodo(todo);
   console.log(`\n${problems.length} problem${problems.length === 1 ? '' : 's'}`);
+  return todo;
 }
 
-if (args.includes('--check')) {
+function printTodo(todo) {
+  if (!todo.length) return;
+  console.log(`\nFolders with no note in docs/atlas/concepts.json "folders" (to do, not errors):`);
+  for (const d of todo) console.log(`  - ${d}`);
+}
+
+const git = (...a) =>
+  execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+
+// The upkeep report: the --check report, commits since <ref>, the code's diff since then, folders to do. Exits 0.
+function printChanges() {
+  const at = args.indexOf('--since');
+  let ref = at >= 0 ? args[at + 1] : '';
+  if (!ref) {
+    try {
+      ref = git('log', '-1', '--format=%H', '--', 'docs/atlas/');
+    } catch {
+      ref = '';
+    }
+  }
+  if (!ref) {
+    try {
+      ref = git('rev-parse', 'HEAD~20');
+    } catch {
+      ref = git('rev-list', '--max-parents=0', 'HEAD').split('\n').pop();
+    }
+  }
+  const now = extractFacts({ root: ROOT, git: false });
+  console.log(`# 1. Citation report`);
+  const todo = printReport(now, { showTodo: false });
+  console.log(`\n# 2. Commits since ${ref.slice(0, 7)}`);
+  try {
+    console.log(git('log', '--no-merges', '--format=%h %s', `${ref}..HEAD`) || '(none)');
+  } catch (err) {
+    console.log(`(could not read the log: ${err.message})`);
+  }
+  console.log(`\n# 3. What the code gained and lost`);
+  try {
+    const d = diffFacts(factsAt(ROOT, ref), now);
+    const list = (label, items) => items.length && console.log(`${label}: ${items.join(', ')}`);
+    list('Files added', d.filesAdded);
+    list('Files removed', d.filesRemoved);
+    list('Folders added', d.foldersAdded);
+    list('Folders removed', d.foldersRemoved);
+    for (const [kind, { added, removed }] of Object.entries(d.keys)) {
+      list(`${kind} added`, added);
+      list(`${kind} removed`, removed);
+    }
+    if (!d.filesAdded.length && !d.filesRemoved.length && !Object.keys(d.keys).length)
+      console.log('(no files or keys added or removed)');
+  } catch (err) {
+    console.log(`(could not read ${ref}: ${err.message})`);
+  }
+  console.log(`\n# 4. Folders with no note`);
+  console.log(todo.length ? todo.map((d) => `  - ${d}`).join('\n') : '(none)');
+}
+
+if (args.includes('--changes')) {
+  printChanges();
+} else if (args.includes('--check')) {
   printReport(extractFacts({ root: ROOT, git: false }));
 } else if (args.includes('--json')) {
   process.stdout.write(JSON.stringify(extractFacts({ root: ROOT, git: true }), null, 2) + '\n');

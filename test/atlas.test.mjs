@@ -1,7 +1,7 @@
 // Atlas logic on in-memory fixtures only: never reads docs/atlas/ or src/, so a rename elsewhere cannot fail it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractFile, extractFacts } from '../dev/atlas/extract.mjs';
+import { extractFile, extractFacts, diffFacts } from '../dev/atlas/extract.mjs';
 import { BOX, KINDS, CHANNEL_IDS } from '../atlas/layout.js';
 import { buildModel, kindOf, resolveCite } from '../atlas/model.js';
 import { parseNarrative } from '../atlas/narrative.js';
@@ -268,4 +268,28 @@ test('changes parse and render, escaping everything', () => {
   assert.match(html, /<code>a&lt;b<\/code>/);
   assert.match(html, /<a href="#story\/mush"[^>]*>go<\/a>/);
   assert.doesNotMatch(html, /story\/no"/);
+});
+
+test('diffFacts reports files, folders and keys gained and lost', () => {
+  const mk = (sources) => extractFacts({ git: false, sources });
+  const before = mk([
+    { path: 'src/features/old.js', text: "sync.registerOp('a.x', {});\naddPresenceField('k', f);\n" },
+    { path: 'src/features/keep.js', text: "registerAction('keep', { pad: 'y' });\n" },
+  ]);
+  const after = mk([
+    { path: 'src/features/keep.js', text: "registerAction('keep', { pad: 'y' });\nroom.send({ t: 'yo' });\n" },
+    { path: 'src/guest/new.js', text: "addHostField('hf', f, g);\n" },
+  ]);
+  assert.deepEqual(diffFacts(before, after), {
+    filesAdded: ['src/guest/new.js'],
+    filesRemoved: ['src/features/old.js'],
+    foldersAdded: ['guest'],
+    foldersRemoved: [],
+    keys: {
+      ops: { added: [], removed: ['a.x'] },
+      owner: { added: [], removed: ['k'] },
+      host: { added: ['hf'], removed: [] },
+      msgs: { added: ['yo'], removed: [] },
+    },
+  });
 });

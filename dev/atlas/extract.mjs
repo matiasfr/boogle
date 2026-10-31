@@ -341,3 +341,60 @@ export function extractFacts({ root = process.cwd(), git: withGit = true, source
   const g = withGit ? gitFacts(root) : null;
   return { schema: 1, git: g?.git ?? null, growth: g?.growth ?? [], files };
 }
+
+// The facts as they were at a git ref (src/ and server/src/ read with `git show`), for `npm run atlas -- --changes`.
+export function factsAt(root, ref) {
+  const names = git(root, 'ls-tree', '-r', '--name-only', ref, '--', 'src', 'server/src')
+    .split('\n')
+    .filter((p) => p.endsWith('.js'));
+  const sources = [];
+  for (const p of names) {
+    try {
+      sources.push({ path: p, text: git(root, 'show', `${ref}:${p}`) });
+    } catch {
+      // A path that vanished between ls-tree and show: skip it.
+    }
+  }
+  return extractFacts({ root, git: false, sources });
+}
+
+const KEY_LISTS = {
+  ops: (f) => f.ops,
+  states: (f) => f.states,
+  owner: (f) => f.owner,
+  host: (f) => f.host,
+  msgs: (f) => f.msgs,
+  actions: (f) => f.actions.map((a) => a.id),
+  routes: (f) => f.routes,
+};
+
+const folderOf = (p) => {
+  const parts = p.replace(/^(server\/)?src\//, '').split('/');
+  return p.startsWith('server/')
+    ? 'server'
+    : parts.length === 1
+      ? '(core)'
+      : parts.slice(0, parts[0] === 'world' && parts[1] === 'rules' ? 2 : 1).join('/');
+};
+
+// What changed between two facts objects: files and folders added or removed, and keys added or removed per kind.
+export function diffFacts(before, after) {
+  const paths = (facts) => new Set(facts.files.map((f) => f.f));
+  const [pb, pa] = [paths(before), paths(after)];
+  const only = (a, b) => [...a].filter((x) => !b.has(x)).sort();
+  const folders = (set) => new Set([...set].map(folderOf));
+  const keys = {};
+  for (const [kind, pick] of Object.entries(KEY_LISTS)) {
+    const [kb, ka] = [new Set(before.files.flatMap(pick)), new Set(after.files.flatMap(pick))];
+    const added = only(ka, kb);
+    const removed = only(kb, ka);
+    if (added.length || removed.length) keys[kind] = { added, removed };
+  }
+  return {
+    filesAdded: only(pa, pb),
+    filesRemoved: only(pb, pa),
+    foldersAdded: only(folders(pa), folders(pb)),
+    foldersRemoved: only(folders(pb), folders(pa)),
+    keys,
+  };
+}
