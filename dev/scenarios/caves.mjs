@@ -1,7 +1,8 @@
 // The caves: walk in at the south mouth, through the hub and the mine, out of the east mouth; balls thrown hard stay
 // inside; the ball floats on the underground pond. Physics is stepped directly in the page (fast and repeatable).
 const STEP_ROUTE = `
-  const { world, GROUP } = await import('/src/physics/physics.js');
+  const { GROUP } = await import('/src/physics/physics.js');
+  const { stepFixed } = await import('/src/physics/engine.ts');
   const { SEGMENTS } = await import('/src/pois/caves/network.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { groundHeight } = await import('/src/adapters/terrain.js');
@@ -22,7 +23,7 @@ const STEP_ROUTE = `
     if (d < best - 0.3) { best = d; bestAt = k; }
     if (k - bestAt > 240) { stuck++; w++; best = Infinity; bestAt = k; continue; }
     me.wish.set(dx / d, 0, dz / d);
-    world.step(1 / 60);
+    stepFixed();
     if (!(b.collisionFilterMask & GROUP.SCENERY)) {
       wentIn = true;
       sank = Math.max(sank, 0.45 + caveSd(b.position.x, b.position.y, b.position.z)); // > 0: centre below its rest height
@@ -32,7 +33,7 @@ const STEP_ROUTE = `
   return { reached: w, of: route.length, stuck, wentIn, outside: !!(b.collisionFilterMask & GROUP.SCENERY), sank: +sank.toFixed(2) };`;
 
 const THROWS = `
-  const { world } = await import('/src/physics/physics.js');
+  const { stepFixed } = await import('/src/physics/engine.ts');
   const { ball, claimBall } = await import('/src/physics/ball.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { NODES, POND } = await import('/src/pois/caves/network.js');
@@ -45,7 +46,7 @@ const THROWS = `
     bb.velocity.set(Math.cos(a) * 28, up * 28, Math.sin(a) * 28);
     for (let k = 0; k < 180; k++) {
       if (k % 30 === 0) await new Promise((r) => setTimeout(r, 0));
-      world.step(1 / 60);
+      stepFixed();
     }
     ends.push(+caveSd(bb.position.x, bb.position.y, bb.position.z).toFixed(2));
   }
@@ -54,7 +55,7 @@ const THROWS = `
   bb.velocity.set(0, 0, 0);
   for (let k = 0; k < 300; k++) {
     if (k % 30 === 0) await new Promise((r) => setTimeout(r, 0));
-    world.step(1 / 60);
+    stepFixed();
   }
   return { ends, pondY: +bb.position.y.toFixed(2), level: POND.level };`;
 

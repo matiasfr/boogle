@@ -56,16 +56,16 @@ CCD on Rapier), 600 steps at 60 Hz, JS allocation from V8's sampling heap profil
   (`npm run` script to add in step 2) and check JS allocation per step stays near zero.
 - The compat package inlines the WASM as base64 (+40% size, no streaming compile): not used.
 
-### 1. A physics facade, still on cannon-es
+### 1. A physics facade, still on cannon-es (done)
 
 `src/physics/engine.ts` (TypeScript, per AGENTS.md): the only module that imports a physics library. It covers bodies
 and shapes, positions and velocities, kinematic moves, groups, `onPreStep` / `onPostStep`, contact queries, one
 raycast and the interpolated pose. Port every module above onto it, one folder per PR, with no behavior change
 (scenarios, `/look` motion sheets and `npm run perf` before and after). ESLint bans `cannon-es` outside the facade.
 
-Progress: every module but `src/guest/` builds and steps its bodies through the facade (`src/physics/engine.ts`).
-`src/guest/` still reads cannon's world directly (its collision mesh walks the static bodies' shapes); it moves to
-`forEachStatic` next, then the legacy `world` export goes and ESLint bans `cannon-es` outside the facade.
+Done (2026-10-31): every module builds, moves and queries bodies through the facade; ESLint bans `cannon-es`
+elsewhere; scenarios drive physics with `stepFixed()` and list bodies with `forEachStatic`. Body fields are used only
+through x, y, z (w) and `set()`.
 
 ### 2. A Rapier backend behind `?physics=rapier`
 

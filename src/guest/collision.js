@@ -1,17 +1,17 @@
-// What the guest stands on and bumps into: the island's terrain and every static cannon-es body (the lighthouse, the
-// windmills, rocks, trees, the caves), as triangles around him in engine units. Collision groups follow the player body's
+// What the guest stands on and bumps into: the island's terrain and every static physics body (the lighthouse, the
+// windmills, rocks, trees, the caves), as triangles around him in engine units, built from the shape descriptions the
+// physics facade keeps (src/physics/engine.ts, forEachStatic), so it works on any physics backend. Collision groups follow the player body's
 // mask, so the caves swap the ground for their own colliders just as they do for the normal player.
-import * as CANNON from 'cannon-es';
 import { CELL, HALF, GRID_RES } from '../constants.js';
 import { heights } from '../adapters/terrain.js';
-import { world, GROUP } from '../physics/physics.js';
+import { GROUP } from '../physics/physics.js';
+import { forEachStatic } from '../physics/engine.ts';
 
 export const UNITS = 100; // engine units per metre
 const REACH = 5; // metres around the guest, every height
 const BUCKET = 4; // metres per side of the grid big bodies' triangles are filed in
 
-const tmp = new CANNON.Vec3();
-const cache = new WeakMap(); // body -> { tris: Float32Array (9 per triangle, world metres), buckets: Map | null }
+const cache = new WeakMap(); // body -> { shapes, tris: Float32Array (9 per triangle, world metres), buckets, bounds }
 
 function sphereMesh(r) {
   const t = (1 + Math.sqrt(5)) / 2;
@@ -30,7 +30,7 @@ function sphereMesh(r) {
     [-t, 0, 1],
   ].map(([x, y, z]) => {
     const l = Math.hypot(x, y, z);
-    return new CANNON.Vec3((x / l) * r, (y / l) * r, (z / l) * r);
+    return [(x / l) * r, (y / l) * r, (z / l) * r];
   });
   const f = [
     [0, 11, 5],
@@ -56,57 +56,106 @@ function sphereMesh(r) {
   ];
   return { vertices: v, faces: f };
 }
+function boxMesh(hx, hy, hz) {
+  const vertices = [];
+  for (const x of [-hx, hx]) for (const y of [-hy, hy]) for (const z of [-hz, hz]) vertices.push([x, y, z]);
+  // vertex index = 4*xi + 2*yi + zi
+  const faces = [
+    [0, 1, 3, 2],
+    [4, 6, 7, 5],
+    [0, 4, 5, 1],
+    [2, 3, 7, 6],
+    [0, 2, 6, 4],
+    [1, 5, 7, 3],
+  ];
+  return { vertices, faces };
+}
+// Along y, like the physics cylinders: n sides, a top and a bottom.
+function cylinderMesh(rTop, rBottom, h, n) {
+  const vertices = [];
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2;
+    vertices.push(
+      [Math.cos(a) * rBottom, -h / 2, Math.sin(a) * rBottom],
+      [Math.cos(a) * rTop, h / 2, Math.sin(a) * rTop],
+    );
+  }
+  const faces = [];
+  for (let k = 0; k < n; k++) faces.push([2 * k, 2 * ((k + 1) % n), 2 * ((k + 1) % n) + 1, 2 * k + 1]);
+  faces.push(Array.from({ length: n }, (_, k) => 2 * k + 1));
+  faces.push(Array.from({ length: n }, (_, k) => 2 * (n - 1 - k)));
+  return { vertices, faces };
+}
+
+// Rotates [x, y, z] by quaternion q ({ x, y, z, w }), in place.
+function rotate(q, p) {
+  const [x, y, z] = p;
+  const tx = 2 * (q.y * z - q.z * y),
+    ty = 2 * (q.z * x - q.x * z),
+    tz = 2 * (q.x * y - q.y * x);
+  p[0] = x + q.w * tx + (q.y * tz - q.z * ty);
+  p[1] = y + q.w * ty + (q.z * tx - q.x * tz);
+  p[2] = z + q.w * tz + (q.x * ty - q.y * tx);
+  return p;
+}
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 // Convex shapes are fanned and wound to face outwards; trimeshes keep their own winding.
 function shapeTriangles(shape, out, place) {
-  if (shape instanceof CANNON.Trimesh) {
+  if (shape.kind === 'trimesh') {
     const v = shape.vertices,
       idx = shape.indices;
-    for (let i = 0; i < idx.length; i += 3) {
-      for (const k of [idx[i], idx[i + 1], idx[i + 2]])
-        out.push(...place(tmp.set(v[k * 3], v[k * 3 + 1], v[k * 3 + 2])));
-    }
+    for (let i = 0; i < idx.length; i++) out.push(...place([v[idx[i] * 3], v[idx[i] * 3 + 1], v[idx[i] * 3 + 2]]));
     return;
   }
   const poly =
-    shape instanceof CANNON.Sphere
-      ? sphereMesh(shape.radius)
-      : shape instanceof CANNON.Box
-        ? shape.convexPolyhedronRepresentation
-        : shape instanceof CANNON.ConvexPolyhedron
-          ? shape
+    shape.kind === 'sphere'
+      ? sphereMesh(shape.r)
+      : shape.kind === 'box'
+        ? boxMesh(shape.hx, shape.hy, shape.hz)
+        : shape.kind === 'cylinder'
+          ? cylinderMesh(shape.rTop, shape.rBottom, shape.h, shape.segments)
           : null;
   if (!poly) return;
-  const c = new CANNON.Vec3();
-  for (const p of poly.vertices) c.vadd(p, c);
-  c.scale(1 / poly.vertices.length, c);
+  const c = [0, 0, 0];
+  for (const p of poly.vertices) for (let k = 0; k < 3; k++) c[k] += p[k] / poly.vertices.length;
   for (const face of poly.faces) {
     const a = poly.vertices[face[0]];
     for (let k = 1; k + 1 < face.length; k++) {
       let b = poly.vertices[face[k]],
         d = poly.vertices[face[k + 1]];
-      const n = b.vsub(a).cross(d.vsub(b));
-      if (n.dot(a.vsub(c)) < 0) [b, d] = [d, b];
-      for (const p of [a, b, d]) out.push(...place(p));
+      if (dot(cross(sub(b, a), sub(d, b)), sub(a, c)) < 0) [b, d] = [d, b];
+      for (const p of [a, b, d]) out.push(...place([...p]));
     }
   }
 }
 
-function bodyTriangles(body) {
+function bodyTriangles(body, shapes) {
   let entry = cache.get(body);
-  if (entry) return entry;
+  if (entry && entry.shapes === shapes) return entry; // a growing mushroom gets new shapes: rebuild
   const out = [];
-  body.shapes.forEach((shape, i) => {
-    const off = body.shapeOffsets[i],
-      rot = body.shapeOrientations[i];
+  for (const shape of shapes) {
+    const off = shape.offset ?? { x: 0, y: 0, z: 0 };
     const place = (p) => {
-      const local = rot.vmult(p).vadd(off);
-      const w = body.quaternion.vmult(local).vadd(body.position);
-      return [w.x, w.y, w.z];
+      if (shape.rotation) rotate(shape.rotation, p);
+      p[0] += off.x;
+      p[1] += off.y;
+      p[2] += off.z;
+      rotate(body.quaternion, p);
+      return [p[0] + body.position.x, p[1] + body.position.y, p[2] + body.position.z];
     };
     shapeTriangles(shape, out, place);
-  });
+  }
   const tris = new Float32Array(out);
+  const bounds = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+  for (let t = 0; t < tris.length; t += 3) {
+    bounds.x0 = Math.min(bounds.x0, tris[t]);
+    bounds.x1 = Math.max(bounds.x1, tris[t]);
+    bounds.z0 = Math.min(bounds.z0, tris[t + 2]);
+    bounds.z1 = Math.max(bounds.z1, tris[t + 2]);
+  }
   let buckets = null;
   if (tris.length > 9 * 64) {
     buckets = new Map();
@@ -121,7 +170,7 @@ function bodyTriangles(body) {
         }
     }
   }
-  entry = { tris, buckets };
+  entry = { shapes, tris, buckets, bounds };
   cache.set(body, entry);
   return entry;
 }
@@ -173,13 +222,10 @@ export function gatherSurfaces(sim, x, z, ox, oz, mask) {
     }
   }
 
-  for (const body of world.bodies) {
-    if (body.type !== CANNON.Body.STATIC || !(body.collisionFilterGroup & mask)) continue;
-    if (body.shapes.some((s) => s instanceof CANNON.Heightfield)) continue;
-    if (body.aabbNeedsUpdate) body.updateAABB();
-    const bb = body.aabb;
-    if (bb.upperBound.x < x0 || bb.lowerBound.x > x1 || bb.upperBound.z < z0 || bb.lowerBound.z > z1) continue;
-    const { tris, buckets } = bodyTriangles(body);
+  forEachStatic(mask, (body, shapes) => {
+    if (shapes.some((sh) => sh.kind === 'heightfield')) return; // the terrain, done above from the height grid
+    const { tris, buckets, bounds: bb } = bodyTriangles(body, shapes);
+    if (bb.x1 < x0 || bb.x0 > x1 || bb.z1 < z0 || bb.z0 > z1) return;
     const take = (t) => {
       const ax = tris[t],
         bx = tris[t + 3],
@@ -193,7 +239,7 @@ export function gatherSurfaces(sim, x, z, ox, oz, mask) {
     };
     if (!buckets) {
       for (let t = 0; t < tris.length; t += 9) take(t);
-      continue;
+      return;
     }
     const seen = new Set();
     for (let bx = Math.floor(x0 / BUCKET); bx <= Math.floor(x1 / BUCKET); bx++)
@@ -203,6 +249,6 @@ export function gatherSurfaces(sim, x, z, ox, oz, mask) {
           seen.add(t);
           take(t);
         }
-  }
+  });
   return n;
 }

@@ -16,7 +16,7 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 - `adapters/`: the game side of lockstep state: gifts, mushroom garden. They submit edits and react
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
   modules must import it. `terrain.js` is left here but is static render now: the fixed ground's heights and mesh.
-- `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
+- `physics/`: the physics facade (`engine.ts`, the only module that imports cannon-es), step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models.
 - `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,

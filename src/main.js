@@ -1,11 +1,10 @@
 import './style.css';
 import * as THREE from 'three/webgpu';
-import * as CANNON from 'cannon-es';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.js';
 import { precompile } from './render/precompile.js';
 import { createTerrainMesh } from './adapters/terrain.js';
 import { createWaterMesh } from './render/water-render.js';
-import { world, installStepHooks } from './physics/physics.js';
+import { installStepHooks } from './physics/physics.js';
 import { stepPhysics } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.js';
 import { ball, resolveBallOwner, prepareBall } from './physics/ball.js';
@@ -77,7 +76,7 @@ async function play() {
 }
 
 // Debug handle for poking at the game from the console (before start(): features' onStart hooks add to it).
-window.boogle = { THREE, CANNON, scene, world, camera, me, ball, net, remotes };
+window.boogle = { THREE, scene, camera, me, ball, net, remotes };
 
 start();
 splashStage(0.3, 0.45, 'Waking up the graphics');
