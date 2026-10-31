@@ -88,3 +88,11 @@ them.
   newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).
+
+## The land as data
+
+`home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm and perch cells) and
+`plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
+and Node tests read it (`test/helpers/land.mjs`); `dev/scenarios/world-inputs.mjs` checks it against the running game
+and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI
+moves on purpose.
