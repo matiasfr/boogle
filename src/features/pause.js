@@ -2,6 +2,8 @@
 // invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
 // it only takes this player's input through src/player/modal.js. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.js.
+// Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
+// fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
 import { onFrame, onStart } from '../loop.js';
 import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.js';
@@ -65,6 +67,35 @@ function personRow(p) {
   return li;
 }
 
+// Fullscreen API, with the webkit names Safari on iPad still needs. The whole page goes fullscreen, so the HUD and this view stay.
+const doc = document;
+const fsElement = () => doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+const installed = () =>
+  !fsElement() &&
+  (navigator.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
+const canFullscreen = () => !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled) && !installed();
+const fsLabel = () => (fsElement() ? 'Exit fullscreen' : 'Fullscreen');
+
+async function toggleFullscreen(b) {
+  try {
+    if (fsElement()) await (doc.exitFullscreen ?? doc.webkitExitFullscreen).call(doc);
+    else {
+      const root = doc.documentElement;
+      await (root.requestFullscreen ?? root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
+    }
+  } catch {
+    // Refused: a gamepad press is not a user gesture to the browser, so it needs a click, a tap or Enter.
+    b.textContent = 'Click or tap for fullscreen';
+    setTimeout(() => b.isConnected && (b.textContent = fsLabel()), 2500);
+  }
+}
+const syncFsButton = () => {
+  const b = card?.querySelector('[data-act="fullscreen"]');
+  if (b) b.textContent = fsLabel();
+};
+doc.addEventListener('fullscreenchange', syncFsButton);
+doc.addEventListener('webkitfullscreenchange', syncFsButton);
+
 function renderMain() {
   const leave = button('Leave', () => {
     if (leaveTimer) location.reload();
@@ -84,7 +115,13 @@ function renderMain() {
   const room = button('Room', () => show('room'));
   room.dataset.act = 'room';
   const list = el('div', 'pause-list');
-  list.append(resume, controls, room, leave);
+  list.append(resume, controls, room);
+  if (canFullscreen()) {
+    const fs = button(fsLabel(), () => toggleFullscreen(fs));
+    fs.dataset.act = 'fullscreen';
+    list.append(fs);
+  }
+  list.append(leave);
   return list;
 }
 
