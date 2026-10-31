@@ -1,0 +1,51 @@
+{
+  "id": "honk",
+  "title": "You honk",
+  "kind": "msg",
+  "order": 20,
+  "steps": [
+    {
+      "go": [["you.input", "you.registries"]],
+      "text": "You press T. The controls registry finds the action called honk.",
+      "code": "registerAction('honk', { key: 'KeyT', … })",
+      "cite": [
+        {
+          "action": "honk"
+        },
+        {
+          "file": "src/player/controls.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.registries", "you.features"]],
+      "text": "The honk feature plays your horn right away, on your screen.",
+      "code": "src/features/honk.js",
+      "cite": [
+        {
+          "file": "src/features/honk.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.features", "lane:msg", "fr.features"]],
+      "text": "It sends one message to every other tab. Messages are reliable and ordered, and nothing is kept.",
+      "code": "room.send({ t: 'honk' })",
+      "cite": [
+        {
+          "message": "honk"
+        }
+      ]
+    },
+    {
+      "go": [["fr.features", "fr.screen"]],
+      "text": "Their honk feature checks the rate limit, then plays the horn over your avatar.",
+      "code": "room.onMessage((msg, from) => …)",
+      "cite": [
+        {
+          "file": "src/features/honk.js"
+        }
+      ]
+    }
+  ]
+}

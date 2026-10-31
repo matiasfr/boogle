@@ -1,0 +1,48 @@
+{
+  "id": "join",
+  "title": "You join a room",
+  "kind": "lock",
+  "order": 60,
+  "steps": [
+    {
+      "go": [["you.netplay", "server"]],
+      "text": "Your tab asks the server to introduce it to the room.",
+      "code": "/peerjs signaling",
+      "cite": [
+        {
+          "route": "USE /peerjs"
+        }
+      ]
+    },
+    {
+      "go": [["server", "fr.netplay"]],
+      "text": "The server connects you to the other tabs, then steps aside. From here on tabs talk directly.",
+      "code": "src/net/peer-room.ts (PeerJS, WebRTC)",
+      "cite": [
+        {
+          "file": "src/net/peer-room.ts"
+        }
+      ]
+    },
+    {
+      "go": [["fr.world", "lane:lock", "you.world"]],
+      "text": "The host sends you a snapshot of the shared world. You apply edits from that tick on.",
+      "code": "{ t: 'w:snap' } chunks",
+      "cite": [
+        {
+          "message": "w:snap"
+        }
+      ]
+    },
+    {
+      "go": [["fr.world", "server"]],
+      "text": "The host also saves the world to the server every 30 s or so, so the island survives when everyone leaves.",
+      "code": "PUT /rooms/:roomId/snapshot",
+      "cite": [
+        {
+          "route": "PUT /rooms/:roomId/snapshot"
+        }
+      ]
+    }
+  ]
+}

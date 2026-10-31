@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Boogle Atlas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+    />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <div class="app">
+      <div class="top">
+        <div class="brand"><i></i>Boogle Atlas <small id="rev"></small></div>
+        <div class="views" role="tablist" aria-label="View">
+          <button role="tab" id="v-how" data-view="how">How it works</button>
+          <button role="tab" id="v-map" data-view="map">Map</button>
+          <button role="tab" id="v-focus" data-view="focus">Focus</button>
+          <button role="tab" id="v-flow" data-view="flow">Network flow</button>
+          <button role="tab" id="v-frame" data-view="frame">Frame</button>
+        </div>
+        <button class="textbtn" data-changes>What changed</button>
+        <div class="search">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.8">
+            <circle cx="7" cy="7" r="5" />
+            <path d="M11 11l3.5 3.5" />
+          </svg>
+          <input id="q" placeholder="Jump to a file, folder or key" autocomplete="off" aria-label="Search" />
+          <kbd>/</kbd>
+          <div class="results" id="results" hidden></div>
+        </div>
+        <button class="textbtn" id="theme" aria-label="Theme"></button>
+      </div>
+      <div id="banner" class="banner" hidden></div>
+      <div class="bar2">
+        <div class="crumbs" id="crumbs"></div>
+        <div class="seg" id="seg"></div>
+      </div>
+      <div class="main">
+        <div class="canvas" id="canvas"></div>
+        <aside class="inspector" id="insp"></aside>
+      </div>
+      <div class="ref" id="ref"></div>
+    </div>
+  </body>
+</html>

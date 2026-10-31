@@ -170,6 +170,11 @@ jobs:
           if gh pr diff "$PR" --name-only | grep -q '^server/'; then
             gh workflow run deploy-server.yml --ref main
           fi
+          # The atlas upkeep's gate (atlas.yml) decides whether a merge matters; this only wakes it. A GITHUB_TOKEN
+          # merge never fires its push trigger. Atlas PRs themselves don't wake it.
+          if [[ "$BRANCH" != claude/atlas-* ]]; then
+            gh workflow run atlas.yml --ref main
+          fi
 
       # Opening a ship PR starts a pull_request CI run, and merging it seconds later deletes the ref that run needs, so
       # it fails with "workflow file issue" and leaves a red X on a change that merged. The push run already covered

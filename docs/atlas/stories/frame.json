@@ -1,0 +1,70 @@
+{
+  "id": "frame",
+  "title": "One frame",
+  "kind": null,
+  "order": 10,
+  "steps": [
+    {
+      "go": [["you.input", "you.loop"]],
+      "text": "Your keys, pad and touch are read into named actions.",
+      "code": "src/player/input.js · registerAction",
+      "cite": [
+        {
+          "file": "src/player/input.js"
+        },
+        {
+          "file": "src/player/controls.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.loop", "you.systems"]],
+      "text": "Physics steps forward: players, the ball, thrown items.",
+      "code": "main → stepPhysics (Rapier)",
+      "cite": [
+        {
+          "file": "src/main.js",
+          "symbol": "frame"
+        },
+        {
+          "file": "src/physics/physics.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.loop", "you.features"]],
+      "text": "Then each phase runs its hooks in order: world, update, late. Features sign up for a phase and an order.",
+      "code": "onFrame(fn, { phase, order })",
+      "cite": [
+        {
+          "file": "src/loop.js",
+          "symbol": "onFrame"
+        },
+        {
+          "dir": "src/features"
+        }
+      ]
+    },
+    {
+      "go": [["you.loop", "you.netplay"]],
+      "text": "Near the end of the late phase, your presence goes out to the room.",
+      "code": "late · order 3000 · presence send",
+      "cite": [
+        {
+          "file": "src/netplay/net.ts"
+        }
+      ]
+    },
+    {
+      "go": [["you.systems", "you.screen"]],
+      "text": "Finally three.js draws the frame. Then it all happens again.",
+      "code": "renderFrame() · src/render/scene.js",
+      "cite": [
+        {
+          "file": "src/render/scene.js",
+          "symbol": "renderFrame"
+        }
+      ]
+    }
+  ]
+}

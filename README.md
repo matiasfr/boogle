@@ -28,6 +28,7 @@ Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build)
 - `netplay/`: `net.js` (presence, remote players and interpolation) and its pure helpers. `net/peer-room.js` is the PeerJS transport (see [src/net/README.md](src/net/README.md)).
 - `adapters/`: game-side halves of the lockstep rules (terrain mesh, gifts, mushroom garden). `boogler/`: The Boogler NPC, his talk and friendship.
 - `world/`: shared deterministic state, edit sync and snapshots (see [src/world/README.md](src/world/README.md)). `sim/`: pure simulation logic (mushrooms, gifts, RNG) with unit tests in `test/`.
+- `atlas/`: the internal architecture explainer at /atlas (facts from `dev/atlas/`, narrative in `docs/atlas/`).
 - [src/README.md](src/README.md) maps every folder.
 
 ## Multiplayer

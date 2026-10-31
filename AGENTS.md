@@ -59,6 +59,7 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 - `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
 - Every harness run is WebGPU (SwiftShader over Vulkan on Linux and CI, Metal on a Mac; `?dpr=fixed`). A `gfx errors` line with entries is a bug.
 - `smoke` is the backbone, but two tabs on CI's software WebGPU are too slow for it, so it runs where there is a GPU: `npm run check:gpu` (smoke on the Mac's GPU, a minute or so) runs in `npm run ship` on a Mac, and `smoke.yml` runs it against the live site after every deploy and nightly (a failure opens a `smoke` issue). Off a Mac, `SHIP_NO_GPU=1 npm run ship` skips the local run on purpose; the live run still catches it after the deploy.
+- **Atlas** (internal, boogle.club/atlas; docs/atlas/README.md): shipping a new sync system or a big feature, add or update a story in docs/atlas/stories/. `npm run atlas -- --check` lists citations your change broke; fixing them is welcome but never blocks (the daily agent fixes what's left).
 
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too). Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.

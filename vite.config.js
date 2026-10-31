@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite';
 import wasm from 'vite-plugin-wasm';
+import { fileURLToPath } from 'node:url';
+import { atlasFacts } from './dev/atlas/vite-plugin.ts';
+
+const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
 // VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
@@ -16,6 +20,8 @@ export default defineConfig({
     target: 'es2022', // top-level await: Rapier's WASM module (src/physics/backend-rapier.ts); every WebGPU browser has it
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
     rollupOptions: {
+      // The atlas (/atlas/) is a second page; d3 is imported only from atlas/, so it stays out of the game's chunks.
+      input: { main: resolve('index.html'), atlas: resolve('atlas/index.html') },
       output: {
         manualChunks(id) {
           if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
@@ -37,6 +43,7 @@ export default defineConfig({
         return { code: code.replace(/\bonFrame\(/g, `onFrame.in(${JSON.stringify(m[1])})(`), map: null };
       },
     },
+    atlasFacts(),
     {
       name: 'boogle-version',
       apply: 'build',
