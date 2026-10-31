@@ -400,7 +400,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
       client version 1; after the snapshot and 60 frames: `newerSave` true on the client, `resyncs <= 1`.
   - Verify: `npm run check:full`.
 
-- [ ] **4. Sync: what a server host needs** (`src/world/sync.ts`, all additive).
+- [x] **4. Sync: what a server host needs** (`src/world/sync.ts`, all additive).
   - `attachWorld(r, { ..., saveMs })`: `cfg.saveMs = opts.saveMs ?? SAVE_MS`; `nextSave = wall + cfg.saveMs` on
     attach; `saveSoon` uses `cfg.saveMs`.
   - `saveNow()`: `persist(false)` now; returns true when it wrote. Export it from `createSync` and the singleton.
