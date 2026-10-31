@@ -25,7 +25,8 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *Needs a human:* create the Fly app and volume, set the secrets and the `VITE_BOOGLE_SERVER` repo variable.
       *2026-10-29:* deploy job done (`.github/workflows/deploy-server.yml`). Connection reports carry `hadTurn` only
       (our ICE config listed a TURN server); whether a relay candidate was gathered or used is not observed yet. The
-      human steps in server/README.md remain.
+      human steps in server/README.md remain. *Since #57:* a good join also reports `links`, `relayed` (through TURN)
+      and `rttMs`; the server runs on Fly with Cloudflare TURN (#55, #56).
 - [x] **A5. Measure the sim.** (historical: the water sim was removed 2026-10-30) `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
       *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
@@ -96,4 +97,7 @@ Reviews and cut lists respect these until the owner changes them.
   actions instead of importing game internals).
 - **Remove unused legacy code:** the 129-cell save migration (`src/world/legacy-grid.js` and its call sites), the dead
   water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31; sim/world/net exports swept 2026-10-30.*
-- **Server stack:** pending the owner's call on deploying `server/` to Fly.io with TURN (see `server/README.md`).
+- **Server stack:** Deployed on Fly with Cloudflare TURN (#55–#57).
+- **ROMs only** (e0f9410): names of characters, games and companies are fine in copy, docs, code and commits. The
+  hard line is ROM data: never commit, bundle, deploy or fetch anything from a ROM
+  ([src/guest/README.md](../src/guest/README.md)).

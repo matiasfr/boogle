@@ -238,7 +238,8 @@ tick of 100 ms (10 per second).
 - **Files.** [src/physics/ball.js](../src/physics/ball.js), [src/physics/physics.js](../src/physics/physics.js), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
   orders −300 and −280 in the `world` phase, listed in [src/loop.js](../src/loop.js)), [src/features/bump.js](../src/features/bump.js), [src/features/impact.js](../src/features/impact.js)
   (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../src/render/splash.js).
-- **Known issues and limits.** Ball latency for non-owners is unmeasured (PLAN Phase 1). The ball is not persisted: it
+- **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host, them) plus 120 ms late;
+  join reports carry the slowest link's round trip as `rttMs` (6.15). The ball is not persisted: it
   starts at its spawn each session. Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
   sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.js](../src/netplay/net.js)).
 
@@ -454,7 +455,7 @@ All are Local cosmetics (Math.random allowed), each behind a room-wide prototype
 
 | Critter | Flag | What | Numbers |
 |---|---|---|---|
-| Fish | `fish` | A boids school in water at least 0.4 m deep (sea, flooded beach); scatters from swimmers and a splashing ball. | 36 fish, 1.8 m/s cruise, 6 m/s flee, scare within 3.5 m. |
+| Fish | `fish` | A boids school in water at least 0.4 m deep (the sea or the cave pond); scatters from swimmers and a splashing ball. | 36 fish, 1.8 m/s cruise, 6 m/s flee, scare within 3.5 m. |
 | Gulls | `gulls` | Idle and peck on the sand, burst up when a player runs at them (3 m/s or more within 4.5 m) or the ball lands within 5 m, circle 6 to 12 s, resettle. | 7 gulls, 7 m/s, circle radius 8 to 14 m, 6 to 10 m up. |
 | Fireflies | `fireflies` | Blinking lights around the garden and over grass at night. | 60, shown when daylight is under 0.35. |
 
@@ -516,7 +517,8 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 ### 6.15 Telemetry and updates
 
 - **Telemetry.** Sends JS errors, desyncs (which states, which tick), snapshot load failures and connection outcomes
-  (with `hadTurn`, `role`, `mixedBuilds`) to `POST /report`, only when `VITE_BOOGLE_SERVER` is set. Nothing personal.
+  (with `hadTurn`, `role`, `mixedBuilds`; a good join also sends `links`, how many of them go through the TURN relay
+  as `relayed`, and the slowest link's round trip as `rttMs`) to `POST /report`, only when `VITE_BOOGLE_SERVER` is set. Nothing personal.
   At most 20 reports per page load, each duplicate at most twice, batched every 10 s and on pagehide with
   `sendBeacon`. A join still "connecting" after 30 s reports as stuck. Local.
   File: [src/features/telemetry.js](../src/features/telemetry.js).
@@ -528,7 +530,6 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
   mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.js](../src/features/syncsafety.js)
   loads [src/debug/netdebug.js](../src/debug/netdebug.js) only with the flag; `?debugcam=1` likewise loads
   [src/debug/debug-cam.js](../src/debug/debug-cam.js).
-- **Limits.** Whether a TURN relay was actually used is not observed, only whether one was configured.
 
 ### 6.16 Prototype flags
 
@@ -763,22 +764,17 @@ A tab that becomes host without state loads the newest, by tick, of its local co
 for the server). Not persisted: the ball, the Boogler's position.
 
 The server ([server/README.md](../server/README.md)) is one Node service: PeerJS signaling at `/peerjs`, snapshots
-(256 KB max, 30 PUTs per minute per IP, 1,000 rooms), `/report` and `/reports`, `/ice` (Google STUN plus optional
-TURN) and `/healthz`.
+(256 KB max, 30 PUTs per minute per IP, 1,000 rooms), `/report` and `/reports`, `/ice` (Google STUN plus
+Cloudflare TURN credentials) and `/healthz`. It runs on Fly (`boogle-server`); the game is served from boogle.club.
 
 ### 8.6 Known gaps
 
 - **`world.epochMs` is never read.** It is set when a host starts fresh, saved and loaded with snapshots, and checked
-  as an integer, but no game logic reads it. Nothing grows from elapsed wall-clock time: growth, regrowth, wash-ups and
-  the day all count ticks, which only run while someone hosts. DESIGN principle 9 ("growth is computed from elapsed
+  as an integer, but no game logic reads it. Nothing grows from elapsed wall-clock time: growth, regrowth and the day
+  all count ticks, which only run while someone hosts. DESIGN principle 9 ("growth is computed from elapsed
   time") is not met yet.
-- **The server is not deployed, as far as the repo shows.** PLAN Phase 1 "Deploy `server/` (Fly.io) and add TURN
-  credentials" is unchecked, every human step in the server README checklist is unchecked, `fly.toml` still has the
-  placeholder app name, and the owner's call on deploying is pending ([tech-plan.md](tech-plan.md)). The deploy
-  workflow skips without a `FLY_API_TOKEN` secret. (The repo variables could not be read from here.) So today the live
-  site most likely uses public PeerJS signaling, no TURN, no server snapshots and no telemetry: an empty island
-  survives only in players' localStorage.
-- No TURN: players behind strict NATs may not connect; the failure rate is unmeasured.
+- How many joins need the TURN relay, and the ball's lag for non-owners, are reported (`relayed`, `links`, `rttMs`;
+  6.15); PLAN Phase 1's "Measure" item stays open until someone reads the numbers.
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.js](../src/world/background.js)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
@@ -859,7 +855,7 @@ research in [research/](research/README.md).
 
 Still open:
 
-- PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.186.1. The peer-room header cites peerjs 1.5.4;
+- PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.187. The peer-room header cites peerjs 1.5.4;
   the package has 1.5.5.
 - DESIGN.md's authority table names "weather", which does not exist yet.
 - DESIGN principle 9 and `src/world/README.md` mention offline growth through `world.epochMs`; nothing reads it.

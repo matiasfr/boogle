@@ -1,8 +1,8 @@
 # Boogle iteration plan
 
-Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends shape water together to grow a shared garden, while the beach ball stays the main toy.
+Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them, while the beach ball stays the main toy.
 
-The design direction comes from the [research report](docs/research/water-farming-multiplayer.md). Its short version: **water is the glue between the ball and the farm.** Players dig channels and pile sand to steer water. Crops grow where the soil is wet. The tide is the shared threat. The garden persists, so the next visitor finds what the last one left.
+Today that island has the ball, fruit and gifts you pick up and throw, mushrooms you plant from the stall and bounce on, The Boogler to befriend, the lighthouse and its frisbee, and the caves. The shared world persists, so the next visitor finds what the last one left. Digging and the water sim, built from the [research report](docs/research/water-farming-multiplayer.md) ("water is the glue between the ball and the farm"), were removed on 2026-10-30 to clear room around the ball; the garden and the tide below are still open and need a new design without them.
 
 Engineering groundwork (lint, replay test, snapshot versions, telemetry) is tracked in [docs/tech-plan.md](docs/tech-plan.md).
 
@@ -14,14 +14,14 @@ The design and technical principles live in [DESIGN.md](DESIGN.md). Read it befo
 
 Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
 
-**Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the water and garden sim a single authority, the way a server would.
+**Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the shared world a single authority, the way a server would.
 
 **Finding the island (no lobby needed).** Every room has a well-known host ID, e.g. `boogle-<room>-host`.
 1. On join, try to register as `boogle-<room>-host`.
 2. If PeerJS says the ID is taken (`unavailable-id`), someone is already hosting. Register with a random ID and connect to the host.
 3. If the host leaves, every client sees the connection close, waits a small random delay, and tries to claim the host ID. The first one to succeed becomes the new host; the rest reconnect to it.
 
-**Two channels per connection.** One **unreliable/unordered** data channel for presence and the ball (latest state wins, like UDP), and one **reliable/ordered** channel for edits (dig, plant, harvest) that must never be dropped.
+**Two channels per connection.** One **unreliable/unordered** data channel for presence and the ball (latest state wins, like UDP), and one **reliable/ordered** channel for edits (plant a seed, shake a palm, pick up a gift) that must never be dropped.
 
 **Persistence without a game server.** Every client keeps the latest garden snapshot the host sent (in memory and in `localStorage`). A new host loads the newest snapshot it has. To make the garden survive when *nobody* is online, the host also saves snapshots to a tiny storage endpoint we host (`PUT/GET /rooms/:id/snapshot`), which can live in the same process as our PeerServer.
 
@@ -36,7 +36,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 **Authority split:**
 - Player movement: client-authoritative (as today).
 - Ball: owner-authoritative with the epoch rule (as today), now carried over the unreliable channel.
-- Water + garden: **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
+- Shared world (gifts, mushrooms): **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
 - Trust: the host validates edits (reach, rate limits). We're playing with friends, so a cheating host isn't a concern.
 
 **PeerJS is the only transport.** We're dropping the claude.ai artifact `room` and the same-browser `BroadcastChannel` fallback, and the repo no longer targets claude.ai. Local testing works with PeerJS too: two tabs on one machine connect to each other like any two peers.
@@ -156,7 +156,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Open questions for the group
 
-- Where to host the PeerServer + snapshot storage (Fly, Railway, Render), and which TURN provider?
+- ~~Where to host the PeerServer + snapshot storage, and which TURN provider?~~ Fly, with Cloudflare TURN (#55–#57).
 - Is it OK that whoever is host carries more CPU and upload load? (Fine for a handful of friends; revisit if lobbies grow past ~8.)
 - One shared island, or rooms per friend group (`?room=`)?
 - How hard is the tide? Pure toy, or can you actually lose the garden?
