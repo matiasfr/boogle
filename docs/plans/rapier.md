@@ -38,13 +38,23 @@ determinism doesn't change that rule.
 
 ## Steps
 
-### 0. Spike and measure (no merge needed)
+### 0. Spike and measure (done 2026-10-31)
 
-A branch that loads Rapier and steps a copy of the island's colliders: bundle cost (`rapier3d-compat` inlines its
-WASM; compare gzip size against three's 310 KB), init time on the Mac and on a phone, step time and allocations against
-cannon-es for the same scene. **Stop and ask** if the bundle grows by more than ~400 KB gzipped or init takes more than
-a second on a phone. The alternative is the non-compat package with a separate `.wasm` file, loaded behind the
-splash screen.
+Node benchmark, same scene on both engines (a 64×64 heightfield, 200 static spheres, 10 bouncing dynamic spheres with
+CCD on Rapier), 600 steps at 60 Hz, JS allocation from V8's sampling heap profiler with collected objects included:
+
+| | step | JS garbage per step | download (gzip) | WASM init |
+|---|---|---|---|---|
+| cannon-es 0.20.0 | 310-340 µs | ~62 KB | 75 KB | - |
+| Rapier 0.21.0 | 98 µs | ~70 KB | ~1.17 MB (`.wasm`), 1.65 MB (compat) | 37 ms |
+| **Rapier 0.19.3** | **52 µs** | **~2 KB** | **584 KB (`.wasm`) + 34 KB JS** | 25 ms |
+
+- **Use `@dimforge/rapier3d` 0.19.3, pinned**, the package with a separate `.wasm` file (Vite serves it as an asset),
+  fetched in parallel with the shader warm-up behind the splash (decided 2026-10-31: the download is accepted).
+- 0.20 and 0.21 scan every collider from JS on each step (`mapNewColliders` / `mapNewSoftBodies`, a WASM-to-JS call per
+  collider), which brings back the garbage this move is for. Before upgrading past 0.19, rerun the benchmark
+  (`npm run` script to add in step 2) and check JS allocation per step stays near zero.
+- The compat package inlines the WASM as base64 (+40% size, no streaming compile): not used.
 
 ### 1. A physics facade, still on cannon-es
 
