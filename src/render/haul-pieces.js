@@ -19,6 +19,12 @@ export function pieceMesh(max) {
   scene.add(mesh);
   return mesh;
 }
+// Pieces flying to your stack (a pickup, a shake): anyone can ask, the haul stack (src/features/haul-stack.js) draws
+// them. fly(from: Vector3, n).
+const flyFns = [];
+export const onFly = (fn) => flyFns.push(fn);
+export const fly = (from, n) => flyFns.forEach((fn) => fn(from, n));
+
 const colors = TINT.map((h) => new THREE.Color(h));
 export const pieceColor = (k) => colors[k] ?? colors[0];
 

@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 import { onApplied, onSnapshot, submitEdit } from '../world/sync.js';
 import { cellX, cellZ, groundHeight } from './terrain.js';
 import { me } from '../player/player.js';
-import { pieceMesh, pieceColor, heapMatrix } from '../render/haul-pieces.js';
+import { pieceMesh, pieceColor, heapMatrix, fly } from '../render/haul-pieces.js';
 import { PLAYER_R } from '../constants.js';
 
 export const piles = rules.piles.piles;
@@ -45,11 +45,9 @@ function redraw() {
 }
 
 // Walk-over pickup: one pile.take per pile you touch, retried after a while if the host never applied it. `want(p)`
-// says how many to ask for (0: leave it), so you never ask for a kind you can't carry. onPick(fn) hears each take as
-// it is sent, fn(pile, n, position): the haul stack flies the pieces to your back at once, before the host answers.
+// says how many to ask for (0: leave it), so you never ask for a kind you can't carry. The pieces fly to your back as
+// the take is sent, before the host answers.
 const pending = new Map(); // pile id -> ms submitted
-const pickFns = [];
-export const onPick = (fn) => pickFns.push(fn);
 onApplied((e) => e.op === 'pile.take' && pending.delete(e.id) && (dirty = true));
 export function updatePiles(now, want = (p) => p.n) {
   if (dirty) redraw();
@@ -63,7 +61,7 @@ export function updatePiles(now, want = (p) => p.n) {
     if (n > 0 && submitEdit({ op: 'pile.take', i: p.i, j: p.j, id: p.id, n })) {
       pending.set(p.id, now);
       dirty = true;
-      for (const fn of pickFns) fn(p, Math.min(n, p.n), at);
+      fly(at, Math.min(n, p.n));
     }
   }
   for (const [id, t] of pending) if (now - t > 1500 && pending.delete(id)) dirty = true; // refused: show it again

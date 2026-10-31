@@ -1,7 +1,7 @@
 {
   "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
   "n": 409,
-  "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites"],
+  "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources"],
   "ops": [
     "mush.plant",
     "mush.water",
@@ -11,7 +11,8 @@
     "who.set",
     "pile.drop",
     "pile.take",
-    "site.stock"
+    "site.stock",
+    "src.take"
   ],
   "layout": {
     "trees": [

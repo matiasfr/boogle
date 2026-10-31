@@ -29,6 +29,20 @@ Code: [src/sim/stacks.js](../../src/sim/stacks.js), [src/world/rules/stacks.js](
 [src/features/haul-stack.js](../../src/features/haul-stack.js). Lockstep state `stacks` (by roster index), changed by
 other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `u`.
 
+## Sources: palms give logs
+
+In the wood age the 36 home palms are the log sources. Each holds 2 charges, shown as a small bundle of logs at its
+foot. The palm's Shake (E, in reach) now does both: drops ripe fruit (the toy, unchanged) and, while the palm holds
+logs, spends a charge and puts 4 logs straight onto your stack (they fly to your back). What doesn't fit (another
+material on your back, or a full stack) drops as a pile beside the palm. The ball still knocks fruit loose but never
+logs: the ball is never income. Every palm refills when a section is laid, and every 20 s one empty palm, picked from
+the room seed and the tick, refills on its own.
+
+Code: [src/sim/sources.js](../../src/sim/sources.js), [src/world/rules/sources.js](../../src/world/rules/sources.js),
+[src/features/log-sources.js](../../src/features/log-sources.js), the Shake in
+[src/adapters/gifts.js](../../src/adapters/gifts.js). Lockstep state `sources` (the current age's charges only); op
+`src.take {id}`.
+
 ## Work sites, plaques and tiers
 
 The railway is preset ([src/sim/route.js](../../src/sim/route.js)). The 0.1 testbed has three wood sections from the

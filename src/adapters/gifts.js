@@ -340,11 +340,20 @@ export function giftTargets() {
         },
       });
   }
+  // One shake, two drops: ripe fruit (the toy) and, while the palm holds any, logs (src/world/rules/sources.js, which
+  // go straight onto your stack). The ball knocks fruit only: it never produces material (SETTLED).
   layout.trees.forEach((_, t) => {
     const { x, z } = trees[t];
-    if (!canDrop(gifts, t, world.tick) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
+    const ripe = canDrop(gifts, t, world.tick),
+      logs = rules.sources.charges(t) > 0;
+    if ((!ripe && !logs) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
     const at = new THREE.Vector3(x, groundHeight(x, z) + 1.7, z);
-    out.push({ id: `palm${t}`, verb: 'Shake', at, run: () => dropEdit(t, me.body.position.x, me.body.position.z) });
+    const run = () => {
+      if (ripe) dropEdit(t, me.body.position.x, me.body.position.z);
+      if (logs) submitEdit({ op: 'src.take', i: layout.trees[t].i, j: layout.trees[t].j, id: t });
+      fx.wobble.set(t, performance.now()); // the palm shakes at once, whatever falls out
+    };
+    out.push({ id: `palm${t}`, verb: 'Shake', at, run });
   });
   return out;
 }

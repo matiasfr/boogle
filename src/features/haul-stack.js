@@ -13,8 +13,7 @@ import { identity } from '../player/identity.js';
 import { me } from '../player/player.js';
 import { remotes, onRemotePresence } from '../netplay/net.js';
 import { okPid, submitEdit } from '../world/sync.js';
-import { onPick } from '../adapters/piles.js';
-import { pieceMesh, pieceColor, PIECE } from '../render/haul-pieces.js';
+import { pieceMesh, pieceColor, PIECE, onFly } from '../render/haul-pieces.js';
 import { SOFT_CAP, spillOf } from '../sim/stacks.js';
 import { MATERIALS } from '../sim/materials.js';
 import { TIERS, tierOf } from '../sim/tiers.js';
@@ -53,7 +52,7 @@ function pieceAt(a, m, n, t, seed, out) {
 
 // Pieces flying from a pile to your back: { from, n, t0 }.
 const flights = [];
-onPick((p, n, at) => flights.push({ from: at.clone(), n: Math.min(n, 6), t0: performance.now() }));
+onFly((from, n) => flights.push({ from: from.clone(), n: Math.min(n, 6), t0: performance.now() }));
 
 const chip = document.createElement('div');
 chip.className = 'haul-chip';
