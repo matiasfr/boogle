@@ -15,6 +15,7 @@ We're in rapid iteration: a few people (mostly through Claude Code) building and
 3. `main` refuses direct pushes (the pre-push hook here, a ruleset on GitHub). `main` auto-deploys, so it must always be playable. After shipping, open the live site in two tabs (or with a friend) and check your change.
 4. If CI goes red on `main` anyway (two PRs that pass alone but break together), Claude opens a fix PR automatically and it merges when green. If you're around, fixing it beats starting something new; revert if the fix isn't quick.
 5. Want a review first? Push a branch and open a draft PR, or add the `no-automerge` label. Ask `@claude` or a friend to review.
+6. Changes to networking, world sync and saves, the server, CI or dependencies (`src/net/`, `src/netplay/`, `src/world/`, `src/sim/`, `server/`, `scripts/`, `.github/`, `eslint.config.js`, `package*.json`) wait for the owner's approval unless the owner made them: the PR gets a `needs-owner` label and a comment listing the files, and merges as soon as the owner approves its latest commit with CI green. Everything else still merges itself.
 
 Repo settings this relies on (owner only): Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests", and a ruleset on `main`: require a pull request (0 approvals), require the `client`, `server` and `net` checks, block force pushes. Leave "require branches to be up to date" off; it would restart everyone's CI whenever anyone merges.
 
