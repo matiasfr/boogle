@@ -108,8 +108,9 @@ Cloudflare TURN credentials) and `/healthz`. It runs on Fly (`boogle-server`); t
 No sign-up. Each browser gets a random player id (pid) on its first visit, kept in `boogle.pid`, plus the name and
 colour you pick at Jump in. A reload, a new room or a new day is the same player; clearing site data, another browser
 or another device is a new one (old plaque lines stay under the old name). The tab says its pid to the room (`w:id`)
-before anything else, and the host stamps that pid on each of the tab's edits, ignoring any pid an edit claims; the
-session id `p` is unchanged. The roster (`who.set`, sent on Jump in and after a rename) remembers each pid's name and
+before anything else, and the host stamps that pid on each of the tab's edits, ignoring any pid an edit claims, and
+refusing a pid that someone in the room already plays as (a reload's old session times out first); a client repeats
+`w:id` every 5 s. The session id `p` is unchanged. The roster (`who.set`, sent on Jump in and after a rename) remembers each pid's name and
 colour, so credit can name players who have gone home; it holds 256 players per room. A second tab of the same
 browser can't take the `boogle.pid` Web Lock: it plays as a guest with its own pid and shows "second tab: playing as a
 guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-groundwork.md, "Identity: now and later").

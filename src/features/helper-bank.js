@@ -9,7 +9,8 @@ import { offlineGap, MIN_GAP_MS } from '../sim/bank.js';
 // A host's onSnapshot fires once it holds the world (a save, or fresh with epochMs = now: no gap); a live migration
 // keeps its state and fires nothing, so a hand-over never banks.
 onSnapshot(() => {
-  if (worldStatus().mode !== 'host') return;
+  // A state that failed to load started fresh: its bank would count time already banked, so skip this wake.
+  if (worldStatus().mode !== 'host' || worldStatus().loadErrors) return;
   const ms = offlineGap(Date.now(), world.epochMs, world.tick, rules.bank.ms());
   if (ms >= MIN_GAP_MS) submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
 });

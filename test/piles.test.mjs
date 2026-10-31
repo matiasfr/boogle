@@ -46,7 +46,8 @@ test('a full room merges into the nearest same-kind pile; another kind has no ro
   assert.equal(r.placed, 7);
   assert.equal(s.list.length, MAX_PILES);
   assert.equal(totalOf(s, 0), MAX_PILES + 7);
-  assert.equal(room(s, 1, 5), 0);
+  assert.equal(room(s, 200, 200, 1, 5), 0);
+  assert.equal(room(s, 200, 200, 0, 5), 5);
   assert.equal(dropPile(s, 200, 200, 1, 5).placed, 0);
 });
 
@@ -72,4 +73,36 @@ test('serialize/load round-trips with the same hash; bad data throws', () => {
   assert.throws(() => loadPiles(t, { id: 2, p: [1, 5, 5, 0, 0] }), /bad pile/);
   assert.throws(() => loadPiles(t, { id: 2, p: [3, 5, 5, 0, 1] }), /bad pile/);
   assert.throws(() => loadPiles(t, { id: 1, p: [1, 5] }), /bad snapshot/);
+});
+
+test('room() is exact: a drop where every spot is taken and no same-kind pile exists places nothing', () => {
+  const s = createPiles();
+  for (const [di, dj] of [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [1, 1],
+    [-1, 1],
+    [-1, -1],
+    [1, -1],
+  ])
+    dropPile(s, 50 + di * 3, 50 + dj * 3, 1, 1); // ore piles far enough apart not to merge
+  const t = createPiles();
+  for (const [di, dj] of [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [-1, 0],
+    [0, -1],
+    [1, 1],
+    [-1, 1],
+    [-1, -1],
+    [1, -1],
+  ])
+    t.list.push({ id: t.nextId++, i: 50 + di, j: 50 + dj, k: 1, n: 1 });
+  assert.equal(room(t, 50, 50, 0, 4), 0);
+  assert.equal(dropPile(t, 50, 50, 0, 4).placed, 0);
+  assert.equal(room(s, 50, 50, 0, 4), 4);
 });

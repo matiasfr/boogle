@@ -25,7 +25,7 @@ export default {
     });
     t.check('shaking palms fills the stack', full >= 0, `pid ${got}, ${full} ms`);
     await B.eval(`${TP(13, 10)} window.boogle.me.yaw = Math.PI;`);
-    await A.view({ cam: [7, 3.5, 15], look: [13, 1.2, 10] });
+    await A.view({ cam: [19, 4, 12], look: [13, 2, 10] });
     const seen = await A.waitFor(
       `(async () => { ${R} const r = [...window.boogle.remotes.values()][0]; return !!r?.pid && rules.stacks.count(r.pid) >= 60; })()`,
       { timeout: 20000 },
@@ -47,7 +47,7 @@ export default {
       timeout: 15000,
     });
     t.check("Bob's start reaches Alice", running >= 0);
-    await A.view({ cam: [16, 7, 2], look: [10, 0, -6] });
+    await A.view({ cam: [17, 5, 9], look: [10.5, 1, 1] });
     // The run lasts 500 ticks; two software-rendered tabs tick far slower than 10/s, so this checks it is laying
     // track (the end of a run is covered by test/sites.test.mjs).
     const laying = await A.waitFor(
@@ -56,6 +56,8 @@ export default {
     );
     t.check('the machine is laying track for Alice too', laying >= 0, laying + ' ms');
     await A.still('A-sees-machine');
+    const errs = [...A.errors, ...B.errors];
+    t.check('no page errors in either tab', !errs.length, errs.slice(0, 3).join(' | '));
     const h = await hashesAtOneTick(r.host, r.client);
     t.check('both tabs hash every state the same', h.same, h.detail);
   },

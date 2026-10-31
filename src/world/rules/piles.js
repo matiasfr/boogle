@@ -28,12 +28,13 @@ export function install(sync, land, rules) {
     validate: (e) => {
       const k = stacks.kind(e.u);
       if (!onLand(e.i, e.j) || !isInt(e.n) || e.n < 1 || e.n > PILE_CAP || e.n > stacks.count(e.u)) return false;
-      return room(piles, k, e.n) === e.n;
+      return room(piles, e.i, e.j, k, e.n) === e.n;
     },
     apply: (e) => {
       const k = stacks.kind(e.u);
-      const n = stacks.take(e.u, e.n);
-      return { k, ...dropPile(piles, e.i, e.j, k, n) };
+      const r = dropPile(piles, e.i, e.j, k, Math.min(e.n, stacks.count(e.u)));
+      stacks.take(e.u, r.placed); // only what landed leaves the stack
+      return { k, ...r };
     },
   });
   // Take up to n onto your stack: refused when you carry another material or are full (state checks bound it).
@@ -55,7 +56,7 @@ export function install(sync, land, rules) {
     load: (json) => loadPiles(piles, json),
     hash: () => hashPiles(piles),
   });
-  return { piles, drop: (i, j, k, n) => dropPile(piles, i, j, k, n), room: (k, n) => room(piles, k, n) };
+  return { piles, drop: (i, j, k, n) => dropPile(piles, i, j, k, n), room: (i, j, k, n) => room(piles, i, j, k, n) };
 }
 
 // Replay-test generators (./README.md): put some of your stack down near the court (often onto an existing pile), take

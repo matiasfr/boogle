@@ -51,6 +51,7 @@ export function install(sync, land, rules) {
   sync.registerOp('site.run', {
     validate: (e) => canRun(sites, e.s),
     apply: (e, tick) => {
+      if (!canRun(sites, e.s)) return null; // a second start stamped before the first applied
       startRun(sites, e.s, roster.ensure(e.u), tick);
       return { s: e.s, t0: tick };
     },

@@ -23,6 +23,7 @@ import { reducedMotion } from '../constants.js';
 
 const SHOWN = 40; // pieces drawn per stack
 const FLY_MS = 380;
+const SPILL_BACK = 2.8; // metres: walk-over reach (1.3) plus a cell's rounding and a step
 const mesh = pieceMesh(9 * SHOWN + 48);
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
@@ -71,8 +72,9 @@ function watchJump(mine) {
     const spill = spillOf(mine.n);
     if (spill) {
       const p = me.body.position;
-      const bx = p.x + Math.sin(me.yaw) * 0.9,
-        bz = p.z + Math.cos(me.yaw) * 0.9; // behind you (you face -z at yaw 0)
+      // behind you (you face -z at yaw 0), past walk-over reach, so you don't scoop it straight back on landing
+      const bx = p.x + Math.sin(me.yaw) * SPILL_BACK,
+        bz = p.z + Math.cos(me.yaw) * SPILL_BACK;
       const [i, j] = cellOf(bx, bz);
       submitEdit({ op: 'pile.drop', i, j, n: spill });
     }

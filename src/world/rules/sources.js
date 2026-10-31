@@ -31,15 +31,18 @@ export function install(sync, land, rules) {
       if (charges(e.id) <= 0) return false;
       const k = materialOf(sites.age());
       const over = YIELD - Math.min(YIELD, stacks.room(e.u, k));
-      return over === 0 || piles.room(k, over) === over;
+      const p = list()[e.id];
+      return over === 0 || piles.room(p.i + 1, p.j, k, over) === over;
     },
     apply: (e) => {
       const n = take(sources, sites.age(), list().length, e.id);
       if (!n) return null;
       const k = materialOf(sites.age());
-      const got = stacks.add(e.u, k, n);
       const p = list()[e.id];
-      const over = n - got ? piles.drop(p.i + 1, p.j, k, n - got).placed : 0; // beside the source
+      // what fits beside the source; validate checked it all fits, so the stack takes the rest
+      const over = Math.min(n - Math.min(n, stacks.room(e.u, k)), piles.room(p.i + 1, p.j, k, n));
+      if (over) piles.drop(p.i + 1, p.j, k, over);
+      const got = stacks.add(e.u, k, n - over);
       return { id: e.id, k, n: got, over };
     },
   });

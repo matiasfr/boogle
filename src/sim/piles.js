@@ -33,13 +33,14 @@ const d2 = (p, i, j) => (p.i - i) * (p.i - i) + (p.j - j) * (p.j - j);
 const nearest = (s, i, j, k) =>
   s.list.filter((p) => p.k === k).sort((a, b) => d2(a, i, j) - d2(b, i, j) || a.id - b.id);
 
-// How many of n units of kind k a drop at (i, j) would place: all of them unless the room is full of other kinds (or
-// every same-kind pile is at MAX_N).
-export function room(s, k, n) {
-  if (s.list.length < MAX_PILES) return n;
-  let free = 0;
-  for (const p of s.list) if (p.k === k) free += MAX_N - p.n;
-  return Math.min(n, free);
+// How many of n units of kind k a drop at (i, j) would place (dropPile's own capacity): every same-kind pile can grow
+// to MAX_N, and each free spot on or beside (i, j) can take a new pile while the room has fewer than MAX_PILES.
+export function room(s, i, j, k, n) {
+  let cap = 0;
+  for (const p of s.list) if (p.k === k) cap += MAX_N - p.n;
+  const free = SPOTS.filter(([di, dj]) => !s.list.some((p) => p.i === i + di && p.j === j + dj)).length;
+  cap += Math.min(free, MAX_PILES - s.list.length) * MAX_N;
+  return Math.max(0, Math.min(n, cap));
 }
 
 // Puts n units of kind k on the ground at (i, j): first into same-kind piles within MERGE_CELLS (nearest first) up to

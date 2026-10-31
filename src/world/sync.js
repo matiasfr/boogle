@@ -47,7 +47,6 @@
 
 import { okPid } from '../sim/roster.js';
 
-export { okPid };
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
 const CLOCK_EVERY = 2;
@@ -68,6 +67,7 @@ const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
 const MAX_PIDS = 256; // selfId -> pid records kept (sessions seen this page load)
+const ID_EVERY_MS = 5000; // a client repeats its w:id this often, so a host that missed or dropped it learns it again
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = Number.isSafeInteger;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -189,7 +189,7 @@ export function createSync({ env: env0 } = {}) {
     const h = ops.get(edit?.op);
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
     const u = from === selfId ? myPid() : pids.get(from);
-    if (!u) return false; // no w:id from that tab yet: it re-sends one before its next edit
+    if (!u) return false; // no w:id from that tab yet (it repeats one every ID_EVERY_MS)
     if (h.hostOnly && from !== selfId) return false; // an op only the host itself submits (a broadcast can't be replayed)
     const e = { ...edit, p: from, u }; // never trust a client-supplied p or u
     try {
@@ -247,16 +247,26 @@ export function createSync({ env: env0 } = {}) {
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c) {
     connected = c;
-    if (c) sendId(); // the host may have changed while we were away
   }
+  let nextIdAt = 0;
   function sendId() {
+    nextIdAt = wall + ID_EVERY_MS;
     send({ t: 'w:id', u: myPid() });
   }
+  // Whether a session is in the room now (unknown without room.peers: assume it is).
+  const live = (sid) => !room?.peers || room.peers().some((p) => p.peer === sid);
+  // A pid belongs to one live session: a claim on a pid that this tab or another live session holds is ignored, so
+  // a tab can't play as someone who is here (their pid is public in presence). The claimant keeps repeating its w:id
+  // and gets the pid once the holder has left (a reload's old session times out in a few seconds).
   function notePid(from, u) {
-    if (!okPid(u) || typeof from !== 'string' || from === selfId) return;
+    if (!okPid(u) || typeof from !== 'string' || from === selfId || pids.get(from) === u) return;
+    if (u === myPid()) return;
+    for (const [sid, v] of pids) if (v === u && sid !== from && live(sid)) return;
     pids.delete(from); // re-inserted last, so the oldest record goes first when full
     pids.set(from, u);
-    if (pids.size > MAX_PIDS) pids.delete(pids.keys().next().value);
+    if (pids.size <= MAX_PIDS) return;
+    const gone = [...pids.keys()].find((sid) => !live(sid)) ?? pids.keys().next().value;
+    pids.delete(gone);
   }
   // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick and trip rate limits.
   function releaseHeld() {
@@ -311,6 +321,7 @@ export function createSync({ env: env0 } = {}) {
     wall += dt * 1000;
     releaseHeld();
     if (mode === 'client') {
+      if (connected && wall >= nextIdAt) sendId();
       if (awaiting && wall - needAt > 2000) {
         needAt = wall;
         send({ t: 'w:need' });

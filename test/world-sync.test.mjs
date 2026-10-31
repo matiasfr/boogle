@@ -134,6 +134,20 @@ test('pids survive host migration, even to a late joiner that never heard the ot
   assert.deepEqual(all[1].log.sort(), late.log);
 });
 
+test('a pid already held by a session in the room cannot be claimed by another', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  const thief = net.add('thief', false); // a raw room claiming c0's pid, then the host's
+  thief.room.send({ t: 'w:id', u: 'pid0' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  thief.room.send({ t: 'w:id', u: 'pidh' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, ['c0=pid0'], 'only the real holder plays as pid0');
+});
+
 test('host rejects invalid edits', async () => {
   const { net, host, clients, all } = await setup(1);
   clients[0].s.submitEdit({ op: 'add', i: 9, j: 0, v: 1 });

@@ -95,3 +95,18 @@ test('a run lays its section, credits the starter, refills sources and opens the
   assert.equal(st.list[2].plaque.find((r) => r[0] === 0)[1], 20 + RUN_BONUS);
   assert.equal(rules.sources.charges(0), 0, 'no iron sources yet');
 });
+
+test('two starts stamped for the same run: the first one counts', () => {
+  const s = createSync({ env: { canPlantAt: () => true } });
+  s.setSelfId('a');
+  const rules = installRules(s, homeLand());
+  rules.sites.addFreight(60);
+  s.setPid('ana');
+  assert.equal(s.submitEdit({ op: 'site.run', i: 0, j: 0, s: 0 }), true);
+  s.setPid('bo');
+  assert.equal(s.submitEdit({ op: 'site.run', i: 0, j: 0, s: 0 }), true, 'both pass validate before either applies');
+  s.updateWorld(0.1);
+  const site = rules.sites.sites.list[0];
+  assert.equal(site.starter, rules.roster.indexOf('ana'));
+  assert.equal(site.t0, 1);
+});
