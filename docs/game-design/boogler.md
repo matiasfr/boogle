@@ -24,8 +24,8 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 
 ## Friendship
 
-- **Sync kind.** Local (localStorage `boogle.boogler.<room>`); each player publishes `bg: [act, wary, ev, evN]` so the
-  lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
+- **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
+  so the lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
 - **Levels** ([src/boogler/friendship.js](../../src/boogler/friendship.js)):
 
 | Level | Name | Points |
@@ -41,15 +41,16 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 
 | Action | Points | Limits |
 |---|---|---|
-| Pet (inside the talk) | +3 | 2.5 s apart, 8 scoring pets per 10 min |
+| Pet (inside the talk) | +4 | 2.5 s apart, 8 scoring pets per 10 min |
 | Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is loved or disliked) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
-| New story chapter | +6, plus answer points | once per chapter |
+| New story chapter | +8, plus answer points | once per chapter |
 | Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
 | Kicked off (launched) | −6 | |
 | Too nosy | −4 | goes quiet for 90 s |
 
-Points never drop below 0. Each new level bursts hearts and plays a level-up line. A typical 15-minute visit (a pet
-every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in about four visits.
+Points never drop below 0. Each new level bursts hearts and plays a level-up line. A 15-minute visit (a pet
+every 2.5 min, a talk every 5) reaches Best friend in about five visits with no presents; presents (a seed, the
+frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
 
 ## Talk
 
@@ -98,7 +99,7 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
 
 ## Known issues and limits
 
-His position restarts with whoever leads next. Friendship is per room and per browser. The `ACT` value 3 (old PET)
+His position restarts with whoever leads next. Friendship is per browser, shared by every room. The `ACT` value 3 (old PET)
 must never be reused. Related ideas: [proposals/boogler-tech-tree.md](../proposals/boogler-tech-tree.md).
 
 ---

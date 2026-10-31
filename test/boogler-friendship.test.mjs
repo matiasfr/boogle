@@ -61,6 +61,18 @@ test('gifts score by taste, halve on repeats and stop at the window cap', () => 
   assert.equal(giveGift(f, 9999, t), null);
 });
 
+test('a stored gift in the old index format is dropped on load', () => {
+  const old = JSON.stringify({
+    pts: 10,
+    gifts: [
+      { kind: 3, at: 5 },
+      { id: 'nonsense', at: 5 },
+      { id: 'can', at: 7 },
+    ],
+  });
+  assert.deepEqual(loadFriend(old).gifts, [{ id: 'can', at: 7 }]);
+});
+
 test('enough kick-offs make him wary; time and gifts forgive', () => {
   const f = createFriend();
   addPts(f, LEVELS[3].at);
@@ -117,6 +129,7 @@ test('friendship round-trips through storage and ignores junk', () => {
   giveGift(f, giftIndex('seeds'), 5);
   const g = loadFriend(serializeFriend(f));
   assert.deepEqual(g, f);
+  assert.deepEqual(g.gifts, [{ id: 'seeds', at: 5 }], 'the window stores catalog ids');
   for (const junk of ['', '{', 'null', '[1]', '{"pts":"lots","learned":[1,"x"],"gifts":[{"kind":-1,"at":0}]}']) {
     const h = loadFriend(junk);
     assert.ok(Number.isFinite(h.pts) && h.pts >= 0);

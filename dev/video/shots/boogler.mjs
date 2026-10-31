@@ -1,8 +1,8 @@
 // The Boogler friendship (ea29f9f): open the talk and pet his portrait to a new level (hearts), talk and give a
 // present, ride him until he launches you.
 const ROOM = 'clipboog';
-const seed = (room) => {
-  localStorage.setItem(`boogle.boogler.${room}`, JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
+const seed = () => {
+  localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
   localStorage.setItem('boogle.hotbar', JSON.stringify([{ id: 'seeds', n: 3 }, { id: 'frisbee', n: 1 }]));
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.

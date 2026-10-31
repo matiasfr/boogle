@@ -444,7 +444,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - a `/look` still of the home palms (no fruit, bundles still there) for the commit body;
     - `npm run registry` prints the "world namespace v01 -> v02: a clean break" note.
 
-- [ ] **4. Boogler: one global friendship; presents optional.** Serves 1 ("toys before chores"), 6 and 3 (nothing is
+- [x] **4. Boogler: one global friendship; presents optional.** Serves 1 ("toys before chores"), 6 and 3 (nothing is
   gated on gifts). After step 3 (they share Boogler tests and `boogler.md`). It never touches `hud.js` or
   `dialogue.js`, and its only copy change is the pace sentence in the docs.
   - `src/boogler/play.js`: `storeKey` is the constant `'boogle.boogler'`. Drop `getRoomId` from the import if nothing

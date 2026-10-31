@@ -71,9 +71,7 @@ export default {
     );
 
     // Pet him from the talk box: he answers in a bubble over the card and scores a pet.
-    const PETS = `(await (async () => {
-      const { getRoomId } = await import('/src/netplay/net.ts');
-      return JSON.parse(localStorage.getItem('boogle.boogler.' + getRoomId()) ?? 'null')?.pets?.length ?? 0; })())`;
+    const PETS = `(JSON.parse(localStorage.getItem('boogle.boogler') ?? 'null')?.pets?.length ?? 0)`;
     const before = await g.eval(`return ${PETS};`);
     await g.eval(`document.querySelector('.bd-face').click();`);
     await g.wait(0.25);
