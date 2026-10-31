@@ -12,8 +12,8 @@ new work on the guest keeps to the boundaries below so the split stays cheap.
 
 ## Rules every such character keeps
 
-- **No trademarks** in anything public: UI text, docs, comments we write, CSS classes, file and folder names. Neutral
-  names ("the guest", "the dino"). Upstream identifiers the glue must call by name are the exception.
+- **Names are fine.** Copy, docs and code may name the character, its games and Nintendo; don't reword anything to
+  remove a reference. The hard line is ROM data (next rule).
 - **Bring your own engine and ROM.** No engine build and no ROM data in the repo, the build or the deploy, and neither
   ever goes over the network. The player drops or picks them once (`src/decomp/files-dialog.js`) and this browser keeps
   them (`src/decomp/store.js`); a local dev build may name the engine with a `VITE_..._ENGINE_URL`. Without both files

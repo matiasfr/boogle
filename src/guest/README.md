@@ -6,19 +6,18 @@ For agents changing this feature or adding another character like it. The player
 
 ## Rules that are not negotiable
 
-- **No trademarks in anything public.** That covers UI text, docs, comments you write, CSS classes, file and folder
-  names, commit messages, PR titles and bodies, and branch names. Say "the guest", "the dino", "the engine", "the
-  upstream decompilation". The exceptions are upstream source paths in `native/guest/build.mjs`, the upstream URL in
-  `native/guest/README.md`, and upstream identifiers the C glue must call. Before you push, grep your diff and
-  `dist/` for the old names.
+- **Naming the character is fine.** Copy, docs, comments, commits and PRs may name the character, the games and
+  Nintendo (an owner decision, after #63 wrongly scrubbed The Boogler's lines). The code uses neutral names ("the
+  guest", "the dino") only because that is what it is called today; don't rename or reword anything to remove a
+  reference. The one hard line is ROMs, below.
 - **Bring your own ROM; the engine is the owner's hosted build.** Never commit, bundle, deploy or fetch anything from
   a ROM: it comes from the player through the files dialog. The engine is never committed or bundled either, but the
   game fetches the owner's hosted build (`ENGINE_URL` in `src/guest/engine.js`, an owner decision) the first time a
   player talks to the dino, and asks for it in the dialog only if that fails. This browser keeps both in IndexedDB.
   Before that first talk the feature requests nothing. The `dino` scenario checks this.
 - **Only our glue in `native/guest/`.** Upstream code is compiled from a local checkout the build points at.
-- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.js`, `talk.js`) are left as
-  written, even though they name the character. Don't reword them unless the owner asks.
+- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.js`, `talk.js`) name Mario on
+  purpose. Don't reword them unless the owner asks.
 
 ## Map
 
