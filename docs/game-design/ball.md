@@ -3,7 +3,7 @@
 - **What and how it plays.** One shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E or click with empty hands),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw, bump it like a
   volleyball dig, or steal it from whoever holds it. It floats in the sea and the cave pond, drifts along the shore and
-  washes back in, knocks ripe fruit off palms, bounces on
+  washes back in, bounces on
   mushrooms (restitution 0.95) and off the Boogler and windmill sails. Walking into a slow ball takes it over so the
   push resolves locally. It respawns at (12, 20) on R, or by itself when it leaves the map (3 m from the edge) or
   falls below −15 m.

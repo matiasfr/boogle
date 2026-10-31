@@ -1,6 +1,6 @@
-// Models for everything a player can pick up, hold and throw: palm fruit, the stall's seeds and watering can, and the
-// frisbee. itemModel(id) returns a fresh copy (sharing geometry and materials) resting on y = 0; a retired or unknown
-// id (a seashore find an older build threw) gets an empty group.
+// Models for everything a player can pick up, hold and throw: the stall's seeds and watering can, and the frisbee.
+// itemModel(id) returns a fresh copy (sharing geometry and materials) resting on y = 0; an unknown id gets an empty
+// group.
 import * as THREE from 'three';
 
 const matCache = new Map();
@@ -25,24 +25,6 @@ const PI = Math.PI;
 
 // Each builder fills a group resting on y = 0.
 const BUILD = {
-  coconut: (g) => add(g, sphere(0.2), '#6b4423', { p: [0, 0.18, 0], s: [1, 0.92, 1] }),
-  mango: (g) => {
-    add(g, sphere(0.15), '#ffb02e', { p: [0, 0.13, 0], s: [1, 0.85, 1.35] });
-    add(g, new THREE.ConeGeometry(0.04, 0.12, 4), '#4e9a3d', { p: [0, 0.26, 0.12], r: [0.6, 0, 0] });
-  },
-  banana: (g) => {
-    for (const [k, y] of [
-      [-0.06, 0.05],
-      [0, 0.09],
-      [0.06, 0.05],
-    ])
-      add(g, new THREE.TorusGeometry(0.2, 0.05, 6, 10, PI * 0.7), '#ffe066', { p: [k, y, -0.1], r: [PI / 2, 0, 0.6] });
-  },
-  pomegranate: (g) => {
-    add(g, sphere(0.16), '#c8243a', { p: [0, 0.15, 0] });
-    add(g, cyl(0.035, 0.05, 0.07, 6), '#8a1a28', { p: [0, 0.32, 0] });
-  },
-  apricot: (g) => add(g, sphere(0.11, 9, 7), '#ff9a4a', { p: [0, 0.1, 0] }),
   can: (g) => {
     const m = mat('#4fa3d9', { roughness: 0.35, metalness: 0.3, flatShading: false });
     add(g, cyl(0.17, 0.2, 0.34, 14), '', { p: [0, 0.17, 0], m });

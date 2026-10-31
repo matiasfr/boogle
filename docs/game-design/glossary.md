@@ -7,7 +7,6 @@
 | Edit | A small op (`mush.plant`, `gift.toss`, `pile.take` ...) a client submits; the host stamps and broadcasts it. |
 | Epoch | The ball ownership counter; the highest claim wins. |
 | Host | The lockstep authority that stamps edits: our server for a room it hosts, otherwise the browser holding `boogle-<room>-host`, which also saves to the server. |
-| HOME | The −80..80 m square (`HOME` in `grid.ts`) where wash-ups used to be. `HOME_KEEP` (22 m) is the untouched core. |
 | Host field | Host-kind state published in the lead's presence (`addHostField`). |
 | Lead | The tab that runs Host-kind fields (the Boogler): the host on a peer room, the tab the server picks on a server-hosted one. |
 | Key item | A catalog item the Boogler refuses (ball). |

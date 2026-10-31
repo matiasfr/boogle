@@ -23,7 +23,7 @@ Assalomu alaykum, do'stim (my friend), Xayr (goodbye), Ko'rishguncha, anor, o'ri
 (`biz3`): "The Boogler's Osh and Coconut Emporium". His offer (`biz5`): when the Emporium makes enough money, buy a boat
 to Samarqand, with you as his business partner.
 
-**Idea and slogan flags.** `idea` (`biz2`): "fruit smoothies" or "ball insurance" (default "fruit smoothies").
+**Idea and slogan flags.** `idea` (`biz2`): set only to "ball insurance".
 `slogan` (`biz3`): "Come hungry, leave round." (default), "Rice to meet you." or "No free rides.". `mom` is set when
 you ask about Oyijon.
 
@@ -53,7 +53,7 @@ Finished threads offer a retelling ("Tell me about Samarqand again."): he tells 
 (never the one he retold last; trust-gated answers now open), scoring like small talk, then a retell line. The last
 retold chapter per thread is the `retold.<thread>` flag.
 
-**Small talk** ("How's it going?"): `ball`, `mushrooms`, `fruit` (level 0), `name` (level 1),
+**Small talk** ("How's it going?"): `ball`, `mushrooms` (level 0), `name` (level 1),
 `visitors` (level 2), `rides` (needs the `kicked` flag).
 
 ---

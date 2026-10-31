@@ -1,0 +1,60 @@
+{
+  "about": "A v02 save captured from the rules at the refocus clean break (docs/plans/refocus-cleanup.md). It must keep loading to the same hashes: a state whose saved form changes needs a version and a migrate step.",
+  "snap": {
+    "tick": 15,
+    "seed": 20261028,
+    "epochMs": 0,
+    "data": {
+      "mushrooms": {
+        "v": 2,
+        "p": [228, 200, 0]
+      },
+      "gifts": {
+        "pa": [0, 0, 0, 0],
+        "it": [1, 1, 230, 205, 0, 1, -1, 2, 2, 210, 249, 1, 1, -2],
+        "n": 3
+      },
+      "roster": [["a", "Ana", 2]],
+      "stacks": [[0, 0, 4]],
+      "piles": {
+        "id": 1,
+        "p": []
+      },
+      "sites": {
+        "o": 0,
+        "s": [
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []]
+        ]
+      },
+      "sources": {
+        "a": 0,
+        "s": [0, 1]
+      },
+      "bank": {
+        "ms": 0
+      }
+    },
+    "vers": {
+      "mushrooms": 0,
+      "gifts": 0,
+      "roster": 0,
+      "stacks": 0,
+      "piles": 0,
+      "sites": 0,
+      "sources": 0,
+      "bank": 0
+    }
+  },
+  "hashes": {
+    "mushrooms": 2904432691,
+    "gifts": 1147772262,
+    "roster": 2816548791,
+    "stacks": 1186001259,
+    "piles": 67918732,
+    "sites": 1249462927,
+    "sources": 1236334116,
+    "bank": 292984781
+  }
+}

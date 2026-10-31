@@ -28,12 +28,11 @@ const SCRIPTS = {
     { op: 'mush.water', i: 228, j: 200 },
   ],
   gifts: () => [
-    { op: 'fruit.drop', i: 175, j: 200, t: 0, d: 2 },
+    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('can'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     ({ rules }) => {
-      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.FRUIT);
+      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS);
       return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
     },
-    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],

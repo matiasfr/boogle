@@ -39,7 +39,7 @@ export default {
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
-    await g.eval(`${toss(1, 5)};`); // a mango
+    await g.eval(`${toss(2, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: 30000 });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));
@@ -59,15 +59,15 @@ export default {
     await g.eval(`${INV} H.useDown();`);
     await g.wait(1.5); // a full charge: a short one can land in the pit by the court
     await g.eval(`${INV} H.useUp();`);
-    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === ${item.kind})`);
+    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`);
     const far = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.kind === ${item.kind});
+      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === ${item.kind});
       const p = window.boogle.me.body.position;
       return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
     t.check('a thrown thing lands as a shared item, metres away', landed >= 0 && far > 4, `${far.toFixed(1)} m`);
 
-    // The ball: grab it, put it on your back by switching to a mango, take it back out.
+    // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/physics/ball.js');
       const { teleport } = await import('/src/physics/physics.js');
@@ -84,10 +84,10 @@ export default {
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
-      I.take('mango');
+      I.take('frisbee');
       const onBack = ball.held && !window.boogle.me.holding && I.has('ball');
       I.select(I.slotOf('ball'));
-      I.drop('mango');
+      I.drop('frisbee');
       return { inHand, onBack, back: window.boogle.me.holding };`);
     t.check(
       'the ball takes a slot, rides on your back, and comes back to hand',
@@ -95,7 +95,7 @@ export default {
       JSON.stringify(ball),
     );
 
-    // The Boogler takes a mango from your hand.
+    // The Boogler takes a frisbee from your hand.
     const bog = await g.eval(`return { x: window.boogle.boogler.disp.x, z: window.boogle.boogler.disp.z };`);
     await g.eval(TP(bog.x + 1.5, bog.z));
     await g.wait(0.3);
@@ -116,12 +116,12 @@ export default {
         for (let k = 0; k < 100 && !document.querySelector('.bd')?.textContent.includes(text); k++) await nap();
         return document.querySelector('.bd')?.textContent.includes(text);
       };
-      I.take('mango');
+      I.take('frisbee');
       play.booglerTalk();
-      const offeredMango = await pick('a mango');
+      const offeredFrisbee = await pick('a frisbee');
       await says('monopoly');
-      return { offeredMango, mangoGone: !I.has('mango') };`);
-    t.check('The Boogler takes the mango from your hand', talk.offeredMango && talk.mangoGone, JSON.stringify(talk));
+      return { offeredFrisbee, frisbeeGone: !I.has('frisbee') };`);
+    t.check('The Boogler takes the frisbee from your hand', talk.offeredFrisbee && talk.frisbeeGone, JSON.stringify(talk));
     await g.eval(`(await import('/src/boogler/dialogue.js')).closeDialogue();`);
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
@@ -183,7 +183,7 @@ export default {
     await g.eval(`window.__debugCam.clear();`);
     await g.eval(TP(FRISBEE.x, FRISBEE.z, FRISBEE.y + 0.8));
     await g.wait(0.6);
-    const perched = await g.eval(`return window.boogle.gifts.items.some((it) => it.src === 3);`);
+    const perched = await g.eval(`return window.boogle.gifts.items.some((it) => it.src === 1);`);
     await g.view({
       cam: [FRISBEE.x + 4, FRISBEE.y + 2.5, FRISBEE.z + 4],
       look: [FRISBEE.x, FRISBEE.y + 0.5, FRISBEE.z],
@@ -207,13 +207,13 @@ export default {
     const flight = await g.motion('frisbee', { frames: 8, seconds: 3 });
     const fris = await g.waitFor(
       `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-        return window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === giftIndex('frisbee')); })()`,
+        return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('frisbee')); })()`,
       { timeout: 20000 },
     );
     const dist = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.js');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.kind === giftIndex('frisbee'));
+      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('frisbee'));
       return it ? Math.hypot(it.i * CELL - HALF - 6, HALF - it.j * CELL + 58) : -1;`);
     t.check(
       'the frisbee glides far from the lighthouse',
@@ -233,10 +233,10 @@ export default {
     t.check('on touch a new player sees no slots, not five', one >= 0, `${one} ms`);
 
     await thumb.eval(`${INV} ${TP(14, 24)}`);
-    await thumb.eval(`${INV} I.take('mango');`);
-    const mango = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
+    await thumb.eval(`${INV} I.take('frisbee');`);
+    const frisbee = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
     const away = await thumb.eval(`${INV} return H.interactTarget()?.id ?? null;`);
-    t.check('holding a mango: the main button throws and Toss hides', mango >= 0, `${mango} ms; in reach: ${away}`);
+    t.check('holding a frisbee: the main button throws and Toss hides', frisbee >= 0, `${frisbee} ms; in reach: ${away}`);
 
     await thumb.wait(0.4);
     const portrait = await thumb.eval(LAYOUT);

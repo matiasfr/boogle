@@ -3,9 +3,11 @@
 // shaking. Placeholder visuals (0.1).
 // Serves DESIGN.md 1 (toys before chores: logs lie there to take) and 9 (sources refill as the railway grows, so there
 // is always more for the next visitor). Lockstep charges, Local view.
-import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.js';
+import { onFrame, onStart } from '../loop.js';
+import { trees } from '../render/props.js';
+import { CELL, HALF } from '../constants.js';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { registerInteractable } from '../player/hands.js';
 import { me } from '../player/player.js';
@@ -14,6 +16,16 @@ import { cellX, cellZ, groundHeight } from '../adapters/terrain.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
 import { FULL, type Cell } from '../sim/sources.ts';
 import { materialOf } from '../sim/materials.ts';
+
+// The home palm cells: where the wood age's log bundles lie (src/world/rules/sources.ts reads them). Filled before the
+// first world tick, so every client builds the same list.
+onStart(() => {
+  const cells = land.layout.trees as Cell[]; // the land's own type says never[]
+  for (const t of trees.slice(0, 64))
+    cells.push({ i: Math.round((t.x + HALF) / CELL), j: Math.round((HALF - t.z) / CELL) });
+  const handle = (window as unknown as { boogle?: Record<string, unknown> }).boogle;
+  if (handle) handle.land = land; // debug handle
+});
 
 const PER_CHARGE = 2; // pieces drawn per charge left
 const mesh = pieceMesh(64 * FULL * PER_CHARGE);

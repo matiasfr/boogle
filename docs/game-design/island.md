@@ -17,12 +17,11 @@
 | Region | Where | Notes |
 |---|---|---|
 | **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court, stall and garden are here. |
-| **HOME square** | x and z in −80..80 m (`HOME` in grid.js). | Used to be the only place with beach wash-ups (removed). |
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
-Scenery ([src/render/props.js](../../src/render/props.js)): up to 36 fruit palms and 22 rocks on home (seed 20261028), plus up to 55
-coastal palms, 70 round meadow trees and 55 boulders on the mainland (seed 20261029). Only the home palms bear fruit.
+Scenery ([src/render/props.js](../../src/render/props.js)): up to 36 palms, each with a log bundle at its foot (6.19), and 22 rocks on home (seed 20261028), plus up to 55
+coastal palms, 70 round meadow trees and 55 boulders on the mainland (seed 20261029).
 Trees, rocks and POI keep-out discs go into `obstacles`, which the Boogler walks around.
 
 ## Points of interest

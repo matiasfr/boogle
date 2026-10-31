@@ -283,7 +283,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - optionally `npm run scenario -- haul-loop`, which must still pass, since it submits `src.take` directly;
     - a `/look` still of the "Take logs" prompt over a bundle for the commit body.
 
-- [ ] **3. Clean break: remove fruit and the palm Shake, shore leftovers and retired catalog stubs; `WORLD_NS` becomes
+- [x] **3. Clean break: remove fruit and the palm Shake, shore leftovers and retired catalog stubs; `WORLD_NS` becomes
   `v02`.** Serves "Small and readable" and 1. This is the only step that changes the wire. Do it as one commit and run
   `npm run check:full`.
   - **Namespace.** `src/world/namespace.ts`: set `WORLD_NS = 'v02'` and add a history line to the header ("v02

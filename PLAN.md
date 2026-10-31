@@ -2,7 +2,7 @@
 
 Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them, while the beach ball stays the main toy.
 
-Today that island has the ball, fruit and gifts you pick up and throw, mushrooms you plant from the stall and bounce on, The Boogler to befriend, the lighthouse and its frisbee, and the caves. The shared world persists, so the next visitor finds what the last one left. Digging and the water sim, built from the [research report](docs/research/water-farming-multiplayer.md) ("water is the glue between the ball and the farm"), were removed on 2026-10-30 to clear room around the ball; the garden and the tide below are still open and need a new design without them.
+Today that island has the ball, things you pick up and throw, mushrooms you plant from the stall and bounce on, The Boogler to befriend, the lighthouse and its frisbee, and the caves. The shared world persists, so the next visitor finds what the last one left. Digging and the water sim, built from the [research report](docs/research/water-farming-multiplayer.md) ("water is the glue between the ball and the farm"), were removed on 2026-10-30 to clear room around the ball; the garden and the tide below are still open and need a new design without them.
 
 Engineering groundwork (lint, replay test, snapshot versions, telemetry) is tracked in [docs/tech-plan.md](docs/tech-plan.md).
 

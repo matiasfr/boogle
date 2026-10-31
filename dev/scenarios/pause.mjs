@@ -207,7 +207,7 @@ export default {
     // 7. A phone: the menu button clears the hotbar and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.8);
-    await phone.eval(`const I = await import('/src/player/inventory.js'); I.take('mango'); I.take('mango');`);
+    await phone.eval(`const I = await import('/src/player/inventory.js'); I.take('frisbee'); I.take('frisbee');`);
     await phone.wait(0.5);
     const lay = await phone.eval(`
       const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };

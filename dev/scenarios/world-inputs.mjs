@@ -16,7 +16,6 @@ const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta
 const READ = `
   const sync = await import('/src/world/sync.ts');
   const { land } = await import('/src/world/game-world.ts');
-  const g = window.boogle.gifts;
   const { canPlantAt, garden } = await import('/src/adapters/mushroom-garden.js');
   const pick = (o) => JSON.parse(JSON.stringify(o));
   // Plant mask over cell g = i * n + j: run lengths, alternating, starting with unplantable. Caps count as cover, so it
@@ -36,7 +35,7 @@ const READ = `
     n: land.n,
     states: Object.keys(sync.snapshot().data),
     ops: typeof sync.registry === 'function' ? sync.registry().ops : null,
-    layout: { trees: pick(g.trees), perches: pick(g.perches) },
+    layout: { trees: pick(land.layout.trees), perches: pick(land.layout.perches) },
   };`;
 
 const counts = (l) => (l ? `${l.trees?.length} trees / ${l.perches?.length} perches` : '-');
@@ -46,7 +45,7 @@ export default {
   timeout: 180000,
   async run(t) {
     const g = await t.open({ name: 'inputs', size: [192, 120] });
-    const ready = await g.waitFor(`window.boogle?.gifts?.trees?.length > 0`, { timeout: 90000 });
+    const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
     if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
     const got = await g.eval(READ);
     const old = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) : null;

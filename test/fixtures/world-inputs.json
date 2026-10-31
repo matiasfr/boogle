@@ -4,7 +4,6 @@
   "ops": [
     "mush.plant",
     "mush.water",
-    "fruit.drop",
     "gift.take",
     "gift.toss",
     "who.set",

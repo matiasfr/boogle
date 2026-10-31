@@ -9,7 +9,7 @@ import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
-import { worldRoomId } from '../world/namespace.ts';
+import { worldRoomId, WORLD_NS } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
 import { mergeFields, hostField } from './presence-fields.ts';
@@ -310,10 +310,15 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.ts).
-function dropOldSave(room: string) {
+// Saves from before a clean break (any `boogle.world.` key outside the current namespace, or under the plain room name):
+// nothing loads them any more (src/world/namespace.ts).
+function dropOldSave() {
   try {
-    localStorage.removeItem(`boogle.world.${room}`);
+    const keep = `boogle.world.${WORLD_NS}-`;
+    for (let k = localStorage.length - 1; k >= 0; k--) {
+      const key = localStorage.key(k);
+      if (key?.startsWith('boogle.world.') && !key.startsWith(keep)) localStorage.removeItem(key);
+    }
   } catch {
     // storage unavailable: nothing to drop
   }
@@ -321,7 +326,7 @@ function dropOldSave(room: string) {
 
 export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
-  dropOldSave(getRoomId());
+  dropOldSave();
   const roomId = worldRoomId(getRoomId());
   setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
   let room: Room;

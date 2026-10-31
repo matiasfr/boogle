@@ -42,7 +42,7 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 | Action | Points | Limits |
 |---|---|---|
 | Pet (inside the talk) | +3 | 2.5 s apart, 8 scoring pets per 10 min |
-| Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is disliked since the seashore finds were retired) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
+| Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is loved or disliked) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
 | New story chapter | +6, plus answer points | once per chapter |
 | Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
 | Kicked off (launched) | −6 | |

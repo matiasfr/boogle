@@ -4,7 +4,7 @@
 
 Our server hosts every room ([src/net/ws-room.ts](../../src/net/ws-room.ts), [src/net/README.md](../../src/net/README.md),
 [server/README.md](../../server/README.md)). Each tab opens one WebSocket to it at `/room/<world room>`, where the
-world room is `v01-<room>` (the world namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=`
+world room is `v02-<room>` (the world namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=`
 URL and the pause title show the plain name). The server runs the room's lockstep world itself, relays presence (latest
 wins per player, 20 ms apart) and messages, and saves the world to its own disk. Ids in messages are each tab's stable
 `selfId`. Heartbeats every second; a tab silent for 5 s is closed, and announced as left 1.5 s later unless it is back.
@@ -43,10 +43,10 @@ are held (up to 64, 5 s) and released one per 210 ms.
 | Ground piles | Lockstep | ops `pile.drop`, `pile.take`; state `piles` |
 | Haul stacks (what each player carries) | Lockstep, by roster index | state `stacks`; the spill is your call (Owner), applied as `pile.drop` |
 | Work sites, plaques (tier derived), machine runs | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites` |
-| Log sources (palm charges) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
+| Log sources (the bundles at the home palms) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
 | Offline helper bank | Lockstep, from a host-only measurement | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
-| Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
+| Thrown things, frisbee | Lockstep | ops `gift.take`, `gift.toss`; state `gifts` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
@@ -78,8 +78,8 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 
 | What | Where | Key or route | Scope |
 |---|---|---|---|
-| World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v01-<room>.json` (`GET /rooms/v01-<room>/snapshot`) | per room |
-| World snapshot (unused copy) | localStorage on every tab, hash-verified ticks only; goes away with the peer model's removal | `boogle.world.v01-<room>` | per room, per browser |
+| World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v02-<room>.json` (`GET /rooms/v02-<room>/snapshot`) | per room |
+| World snapshot (unused copy) | localStorage on every tab, hash-verified ticks only; goes away with the peer model's removal | `boogle.world.v02-<room>` | per room, per browser |
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
 | Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
 | Guest pid (a second tab) | sessionStorage | `boogle.guestPid` | per tab |
@@ -113,8 +113,8 @@ guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-ground
 
 - **Only helper huts work while a room is unloaded.** A loaded room ticks with nobody in it; one unloaded (10 minutes
   after its last player left) doesn't. `world.epochMs` (the wall time of tick 0) is read by the helper bank alone: the
-  server submits `bank.wake` when it loads a save, for the time it was unloaded (6.19). Mushroom growth, fruit regrowth
-  and the day count ticks.
+  server submits `bank.wake` when it loads a save, for the time it was unloaded (6.19). Mushroom growth and the day
+  count ticks.
 - How many joins need the TURN relay, and the ball's lag for non-owners, are reported (`relayed`, `links`, `rttMs`;
   6.15); PLAN Phase 1's "Measure" item stays open until someone reads the numbers.
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep

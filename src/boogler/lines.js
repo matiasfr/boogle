@@ -265,7 +265,6 @@ export const THREADS = {
             opts: [
               { say: "It'll be there when you get back.", pts: 3 },
               { say: "You'll go back someday.", pts: 2 },
-              { say: 'Some trees here grow apricots, you know.', pts: 2 },
             ],
           },
         },
@@ -686,17 +685,8 @@ export const THREADS = {
           b: {
             say: "'Know your customer.' So I am studying you. What do you like? What do you need? What makes you open your wallet? You do not have a wallet. Hmm.",
             opts: [
-              { say: 'I like fruit.', to: 'c' },
               { say: 'I like the beach ball.', to: 'd' },
               { say: 'I like hanging out with you.', to: 'e', pts: 2 },
-            ],
-          },
-          c: {
-            say: 'Fruit! The palms here grow all kinds of fruit, for free. Again with the free! This island has no idea how money works.',
-            mood: 'grump',
-            opts: [
-              { say: 'You could sell fruit smoothies.', to: 'f', pts: 2, set: { idea: 'fruit smoothies' } },
-              { say: 'Free fruit is a good thing.', to: 'f' },
             ],
           },
           d: {
@@ -891,14 +881,7 @@ export const SMALL_TALK = [
     nodes: {
       a: {
         say: 'That beach ball hit me in the head again today. I do not mind. Okay, I mind a little.',
-        opts: [
-          { say: 'Sorry, that might have been me.', to: 'b' },
-          { say: "It's a very good ball.", to: 'b', pts: 1 },
-        ],
-      },
-      b: {
-        say: 'Here is a tip. Throw it at the palm trees instead. Fruit falls out! Free fruit. Again with the free.',
-        opts: [{ say: 'Good tip!', pts: 1 }, { say: "I'll aim better." }],
+        opts: [{ say: 'Sorry, that might have been me.' }, { say: "It's a very good ball.", pts: 1 }],
       },
     },
   },
@@ -916,24 +899,6 @@ export const SMALL_TALK = [
       b: {
         say: 'Free! Again! If I ran that stall, every bounce would cost a coin. Okay, half a coin. Okay, a smile. ...Fine. Free.',
         opts: [{ say: "You're a softie.", pts: 2 }, { say: 'Free is good, Boogler.' }],
-      },
-    },
-  },
-  {
-    id: 'fruit',
-    lvl: 0,
-    nodes: {
-      a: {
-        say: 'Why does every tree here grow something different? Mangoes, bananas, pomegranates. On palm trees! Nothing on this island makes sense.',
-        opts: [
-          { say: "It's a magic island.", to: 'b' },
-          { say: 'Does it matter?', to: 'b' },
-        ],
-      },
-      b: {
-        say: 'If it is magic, it should grow apricots on every tree. And rice. And a qozon. Magic should be more practical.',
-        mood: 'grump',
-        opts: [{ say: "I'll file a complaint.", pts: 1 }, { say: 'Shake a few trees. You might get lucky.' }],
       },
     },
   },
