@@ -572,7 +572,7 @@ glance".
     `npm run check`. After merge, run the workflow by hand with `force: true` and confirm it opens a
     `claude/atlas-<date>` PR that CI checks and automerge merges.
 
-- [ ] **12. Tell agents.** `AGENTS.md`, one bullet at the end of "Tests": `- **Atlas** (internal, boogle.club/atlas;
+- [x] **12. Tell agents.** `AGENTS.md`, one bullet at the end of "Tests": `- **Atlas** (internal, boogle.club/atlas;
   docs/atlas/README.md): shipping a new sync system or a big feature, add or update a story in docs/atlas/stories/.
   \`npm run atlas -- --check\` lists citations your change broke; fixing them is welcome but never blocks (the daily
   agent fixes what's left).` Root `README.md`, "Code layout": one line, `atlas/: the internal architecture explainer at
