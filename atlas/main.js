@@ -4,8 +4,8 @@ import './atlas.css';
 import facts from 'virtual:atlas-facts';
 import conceptsText from '../docs/atlas/concepts.json?raw';
 import changesMd from '../docs/atlas/changes.md?raw';
-import { KINDS, LAYERS, REFS, VIEWS } from './layout.js';
-import { buildModel, esc, layerOf, searchIndex } from './model.js';
+import { KINDS, REFS, VIEWS } from './layout.js';
+import { buildModel, esc, layerById, layerOf, searchIndex } from './model.js';
 import { parseNarrative } from './narrative.js';
 import { howView, stopHow } from './views/how.js';
 import { inspector } from './views/inspector.js';
@@ -16,11 +16,10 @@ import { mapLayers, mapPack, mapTree, resetPackZoom } from './views/map.js';
 
 const storyTexts = import.meta.glob('../docs/atlas/stories/*.json', { eager: true, query: '?raw', import: 'default' });
 
-const { N } = parseNarrative({ conceptsText, storyTexts });
+const N = parseNarrative({ conceptsText, storyTexts });
 const M = buildModel(facts);
 const INDEX = searchIndex(M, N);
 const $ = (s) => document.querySelector(s);
-const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const kc = (k) => `var(${KINDS[k]?.c ?? '--accent'})`;
 
 // One shared selection: { t: 'root' | 'concept' | 'layer' | 'dir' | 'file' | 'channel' | 'hook', id }.
@@ -34,14 +33,14 @@ const S = {
   stepI: 0,
   focusBack: [],
 };
-const ctx = { S, M, N, changesMd, select, render, css, kc, esc };
+const ctx = { S, M, N, changesMd, select, render, kc, esc };
 
 function crumbs() {
   const sel = S.sel;
   const c = [`<button data-root>boogle</button>`];
   const file = sel.t === 'file' ? M.byPath.get(sel.id) : null;
   const dir = sel.t === 'dir' ? sel.id : file ? file.dir : null;
-  if (sel.t === 'layer') c.push('/', `<b>${(LAYERS.find((L) => L.id === sel.id) ?? LAYERS[1]).short}</b>`);
+  if (sel.t === 'layer') c.push('/', `<b>${layerById(sel.id).short}</b>`);
   if (dir) {
     const L = layerOf(dir);
     c.push(
@@ -71,33 +70,32 @@ function crumbs() {
         : '';
 }
 
+// Each view draws into the canvas and returns its `update(ctx)` for selection changes, or null when it redraws instead.
+// The first three are cheap or animated, so they are rebuilt on every render.
+const VIEW_FNS = {
+  how: howView,
+  layers: mapLayers,
+  pack: mapPack,
+  treemap: mapTree,
+  focus: focusView,
+  flow: flowView,
+  frame: frameView,
+};
+const ALWAYS_REBUILD = new Set(['how', 'layers', 'frame']);
 let built = null;
+let update = null;
 function render(rebuild = true) {
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === S.view));
-  const el = $('#canvas');
-  const key = S.view + S.mapStyle + (S.view === 'focus' ? S.focusFile : '');
-  if (
-    rebuild ||
-    built !== key ||
-    S.view === 'how' ||
-    S.view === 'frame' ||
-    (S.view === 'map' && S.mapStyle === 'layers')
-  ) {
+  const name = S.view === 'map' ? S.mapStyle : S.view;
+  const key = name + (S.view === 'focus' ? S.focusFile : '');
+  if (rebuild || built !== key || ALWAYS_REBUILD.has(name)) {
     built = key;
     stopHow();
-    if (S.view === 'how') howView(ctx, el);
-    else if (S.view === 'map')
-      (S.mapStyle === 'layers' ? mapLayers : S.mapStyle === 'pack' ? mapPack : mapTree)(ctx, el);
-    else if (S.view === 'focus') focusView(ctx, el);
-    else if (S.view === 'flow') flowView(ctx, el);
-    else frameView(ctx, el);
-  } else if (S.view === 'map') {
-    if (S.mapStyle === 'pack') mapPack.update(ctx);
-    if (S.mapStyle === 'treemap') mapTree.update(ctx);
-  } else if (S.view === 'flow') flowView.update(ctx);
+    update = VIEW_FNS[name](ctx, $('#canvas'));
+  } else update?.(ctx);
   inspector(ctx);
   crumbs();
-  $('#ref').innerHTML = REFS[S.view === 'map' ? S.mapStyle : S.view] ?? '';
+  $('#ref').innerHTML = REFS[name] ?? '';
 }
 
 function select(s, rebuild = true) {
@@ -285,11 +283,6 @@ $('#theme').addEventListener('click', () => {
     // Not remembered, still applied.
   }
   applyTheme(theme);
-});
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => render());
-new MutationObserver(() => render()).observe(document.documentElement, {
-  attributes: true,
-  attributeFilter: ['data-theme'],
 });
 
 /* ---------- Hash links: #story/<id>, #concept/<id>, #view/<id>, #file/<path> ---------- */

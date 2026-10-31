@@ -23,4 +23,5 @@ export function frameView(ctx, el) {
         )
         .join('')}</div></div>`;
     }).join('')}</div></div>`;
+  return null;
 }

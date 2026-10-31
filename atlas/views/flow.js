@@ -1,20 +1,20 @@
 // Network flow: a Sankey from the files that put keys on the wire to the four channels. Band width is the number of
 // keys. ctx = { S, M, N, ... }.
-import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
+import { sankey } from 'd3-sankey';
+import { linkHorizontal } from 'd3-shape';
 import { select as d3select } from 'd3-selection';
 import { CHANNEL_IDS, KINDS } from '../layout.js';
 import { wireOf } from '../model.js';
 
 export function flowView(ctx, el) {
-  const { S, M, N, css, select } = ctx;
+  const { S, M, N, select } = ctx;
   const W = 1000;
   const H = 600;
   const src = M.files.filter((f) => wireOf(f).length);
   if (!src.length) {
     el.innerHTML =
       '<div class="frame"><p class="note">No files put keys on the wire (or the code facts could not be read).</p></div>';
-    flowView.update = () => {};
-    return;
+    return null;
   }
   const chName = (id) => N.channels[id]?.name ?? KINDS[id]?.name ?? id;
   const nodes = [
@@ -47,8 +47,13 @@ export function flowView(ctx, el) {
     .selectAll('path')
     .data(SL)
     .join('path')
-    .attr('d', sankeyLinkHorizontal())
-    .attr('stroke', (d) => css(KINDS[d.kind].c))
+    .attr(
+      'd',
+      linkHorizontal()
+        .source((d) => [d.source.x1, d.y0])
+        .target((d) => [d.target.x0, d.y1]),
+    )
+    .attr('stroke', (d) => `var(${KINDS[d.kind].c})`)
     .attr('stroke-width', (d) => Math.max(2, d.width))
     .attr('stroke-opacity', 0.45)
     .style('cursor', 'pointer')
@@ -61,10 +66,10 @@ export function flowView(ctx, el) {
     .join('text')
     .attr('x', (d) => d.source.x1 + 8)
     .attr('y', (d) => d.y0 + 4)
-    .style('font', `11px ${css('--mono')}`)
-    .style('fill', css('--fg'))
+    .style('font', '11px var(--mono)')
+    .style('fill', 'var(--fg)')
     .style('paint-order', 'stroke')
-    .style('stroke', css('--panel'))
+    .style('stroke', 'var(--panel)')
     .style('stroke-width', 3)
     .style('pointer-events', 'none')
     .text((d) => (d.keys.join(' ').length > 22 ? d.keys.slice(0, 2).join(' ') + ' …' : d.keys.join(' ')));
@@ -82,24 +87,24 @@ export function flowView(ctx, el) {
     .attr('width', (d) => d.x1 - d.x0)
     .attr('height', (d) => Math.max(2, d.y1 - d.y0))
     .attr('rx', 2)
-    .attr('fill', (d) => (d.ch ? css(KINDS[d.ch].c) : css('--fg')));
+    .attr('fill', (d) => (d.ch ? `var(${KINDS[d.ch].c})` : 'var(--fg)'));
   node
     .append('text')
     .attr('x', (d) => (d.ch ? d.x1 + 10 : d.x0 - 8))
     .attr('y', (d) => (d.y0 + d.y1) / 2 + 4)
     .attr('text-anchor', (d) => (d.ch ? 'start' : 'end'))
-    .style('font', (d) => (d.ch ? `600 14px ${css('--sans')}` : `12px ${css('--mono')}`))
-    .style('fill', css('--fg'))
+    .style('font', (d) => (d.ch ? '600 14px var(--sans)' : '12px var(--mono)'))
+    .style('fill', 'var(--fg)')
     .text((d) => d.label);
   node
     .filter((d) => d.ch)
     .append('text')
     .attr('x', (d) => d.x1 + 10)
     .attr('y', (d) => (d.y0 + d.y1) / 2 + 22)
-    .style('font', `12px ${css('--sans')}`)
-    .style('fill', css('--mute'))
+    .style('font', '12px var(--sans)')
+    .style('fill', 'var(--mute)')
     .text((d) => N.channels[d.ch]?.tag ?? '');
-  flowView.update = (c) => {
+  const update = (c) => {
     const sel = c.S.sel;
     link.attr('stroke-opacity', (d) =>
       sel.t === 'file'
@@ -113,5 +118,6 @@ export function flowView(ctx, el) {
           : 0.45,
     );
   };
-  flowView.update({ S });
+  update({ S });
+  return update;
 }

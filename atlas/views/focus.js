@@ -8,7 +8,7 @@ export function focusView(ctx, el) {
   if (!f) {
     el.innerHTML =
       '<div class="frame"><p class="note">That file is not in the code any more. Pick another from the Map or the search box.</p></div>';
-    return;
+    return null;
   }
   const group = (paths) => {
     const g = {};
@@ -19,7 +19,7 @@ export function focusView(ctx, el) {
     return Object.entries(g).sort((a, b) => b[1].length - a[1].length);
   };
   const left = group(f.users);
-  const right = group([...new Set([...f.imports, ...f.lazy])]);
+  const right = group([...f.uses]);
   const regs = registrations(f);
   const W = 1000;
   const RH = 24;
@@ -65,4 +65,5 @@ export function focusView(ctx, el) {
   if (!regs.length)
     card += `<text x="${x0 + 16}" y="${cardY + 92}" style="font:12px var(--sans);fill:var(--faint)">Registers nothing: a plain module.</text>`;
   el.innerHTML = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;min-width:760px">${edges}${s}${card}</svg></div>`;
+  return null;
 }
