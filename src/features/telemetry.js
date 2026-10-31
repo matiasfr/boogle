@@ -15,6 +15,7 @@ import { net, getRoomId, onNetState } from '../netplay/net.js';
 import { world, onDesync, onSnapFail } from '../world/sync.js';
 import { mixedBuilds } from '../netplay/builds.js';
 import { coarseUa, firstFrame, scrub } from '../netplay/report-format.js';
+import { gfx } from '../render/scene.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
@@ -81,7 +82,7 @@ if (SERVER) {
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
-  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds(), gfx: window.boogle?.gfx });
+  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds(), gfx: gfx() });
   const armStuck = () => {
     clearTimeout(stuckTimer);
     stuckTimer = setTimeout(() => {
@@ -101,13 +102,13 @@ if (SERVER) {
       if (!okSent) {
         okSent = true;
         const ms = Math.round(performance.now() - since); // ms spent 'connecting'
-        const at = { ms, retries: failed, role, hadTurn: net.turn };
+        const at = { ms, retries: failed };
         setTimeout(async () => {
           const links = (await net.room?.linkStats?.().catch(() => null)) ?? [];
           const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
           const path = { links: links.length, relayed: links.filter((l) => l.relay).length };
           if (rtts.length) path.rttMs = Math.max(...rtts);
-          report('connect', { result: 'ok', ...at, ...path, mixedBuilds: mixedBuilds(), gfx: window.boogle?.gfx });
+          report('connect', { result: 'ok', ...at, ...path, ...base() });
         }, SETTLE_MS);
       }
       wasLive = true;

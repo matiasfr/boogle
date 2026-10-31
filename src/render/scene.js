@@ -7,7 +7,8 @@ export const canvas = document.getElementById('view');
 // WebGPU where the browser has it, three's own WebGL 2 backend everywhere else. render() throws until init() resolves,
 // so main.js starts the game from rendererReady.
 export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
+renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Neutral, not AgX: AgX greyed the toy palette (sea, sky and grass lost their saturation).
@@ -19,6 +20,9 @@ const lobbyNote = (text) => {
   const sub = document.getElementById('lobby-sub');
   if (sub) sub.textContent = text;
 };
+// The backend three is drawing with, once rendererReady has resolved.
+export const gfx = () => (renderer.backend.isWebGPUBackend ? 'webgpu' : 'webgl2');
+
 export const rendererReady = renderer.init().catch((e) => {
   lobbyNote("This browser can't start WebGPU or WebGL 2, which Boogle needs to draw the island.");
   const enter = document.getElementById('enter');

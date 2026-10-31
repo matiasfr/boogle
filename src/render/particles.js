@@ -11,7 +11,7 @@
 // A full pool recycles a random live slot. Updated once a frame, after the features that emit.
 import * as THREE from 'three/webgpu';
 import { Fn, Discard, length, uv, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
-import { scene } from './scene.js';
+import { dynAttr, instancedSprite } from './sprites.js';
 import { onFrame } from '../loop.js';
 
 const FLOOR_NONE = 0,
@@ -47,13 +47,12 @@ const SCALAR = ['life', 'maxLife', 'size', 'grow0', 'grow1', 'shrink', 'fade', '
 const soft = createPool(720);
 const softSize = new Float32Array(soft.max);
 const softAlpha = new Float32Array(soft.max);
-const dyn = (array, n) => new THREE.InstancedBufferAttribute(array, n).setUsage(THREE.DynamicDrawUsage);
-const posAttr = dyn(soft.pos, 3),
-  colAttr = dyn(soft.color, 3),
-  sizeAttr = dyn(softSize, 1),
-  alphaAttr = dyn(softAlpha, 1);
+const posAttr = dynAttr(soft.pos, 3),
+  colAttr = dynAttr(soft.color, 3),
+  sizeAttr = dynAttr(softSize, 1),
+  alphaAttr = dynAttr(softAlpha, 1);
+const softAttrs = [posAttr, colAttr, sizeAttr, alphaAttr];
 const softMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, fog: false });
-softMat.positionNode = instancedDynamicBufferAttribute(posAttr);
 softMat.scaleNode = instancedDynamicBufferAttribute(sizeAttr);
 softMat.colorNode = Fn(() => {
   const d = length(uv().sub(0.5)).mul(2);
@@ -63,12 +62,8 @@ softMat.colorNode = Fn(() => {
     instancedDynamicBufferAttribute(alphaAttr).mul(d.mul(d).oneMinus()),
   );
 })();
-const softPoints = new THREE.Sprite(softMat);
-softPoints.count = 0;
-softPoints.frustumCulled = false;
+const softPoints = instancedSprite(softMat, posAttr);
 softPoints.renderOrder = 5;
-softPoints.visible = false;
-scene.add(softPoints);
 
 // ---------------------------------------------------------------- emit
 const pools = { soft };
@@ -154,7 +149,11 @@ onFrame(
     softPoints.visible = ns > 0;
     if (ns > 0 || softHad) {
       softPoints.count = ns;
-      for (const a of [posAttr, colAttr, sizeAttr, alphaAttr]) a.needsUpdate = true;
+      for (const a of softAttrs) {
+        a.clearUpdateRanges(); // upload only the live particles, not the whole pool
+        a.addUpdateRange(0, ns * a.itemSize);
+        a.needsUpdate = true;
+      }
     }
     softHad = ns > 0;
   },

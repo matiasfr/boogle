@@ -1,10 +1,10 @@
 import * as THREE from 'three/webgpu';
-import { instancedDynamicBufferAttribute } from 'three/tsl';
 import * as CANNON from 'cannon-es';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
 import { clamp, angleLerp, sanitizeName } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
+import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { world, teleport } from '../physics/physics.js';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.js';
@@ -169,9 +169,7 @@ const dotTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 const PREVIEW_N = 48;
-const previewAttr = new THREE.InstancedBufferAttribute(new Float32Array(PREVIEW_N * 3), 3).setUsage(
-  THREE.DynamicDrawUsage,
-);
+const previewAttr = dynAttr(new Float32Array(PREVIEW_N * 3), 3);
 const previewMat = new THREE.PointsNodeMaterial({
   map: dotTex,
   size: 0.2,
@@ -179,14 +177,8 @@ const previewMat = new THREE.PointsNodeMaterial({
   opacity: 0.9,
   alphaTest: 0.3,
   depthWrite: false,
-  alphaToCoverage: false,
 });
-previewMat.positionNode = instancedDynamicBufferAttribute(previewAttr);
-const preview = new THREE.Sprite(previewMat);
-preview.count = 0;
-preview.frustumCulled = false;
-preview.visible = false;
-scene.add(preview);
+const preview = instancedSprite(previewMat, previewAttr);
 
 function updatePreview() {
   preview.visible = me.charging;

@@ -3,7 +3,8 @@
 // Serves DESIGN.md 10 (slapstick needs readable jumps and catches). Cosmetic, local.
 import * as THREE from 'three';
 import { onFrame } from '../loop.js';
-import { scene, sun } from '../render/scene.js';
+import { scene } from '../render/scene.js';
+import { skyNow } from '../render/sky.js';
 import { BALL_R, PLAYER_R } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { ball } from '../physics/ball.js';
@@ -26,7 +27,7 @@ const m4 = new THREE.Matrix4();
 
 onFrame(
   () => {
-    const night = proto.on('shadows') && !sun.shadow.autoUpdate; // no key light: no shadow pass
+    const night = proto.on('shadows') && !skyNow.keyLight; // no key light: no shadow pass
     blobs.visible = night;
     if (!night) return;
     let n = 0;

@@ -3,10 +3,10 @@
 // At most one change every 2 s and none in the first 5 s; a hidden tab does not count. Automated browsers (headless
 // stills and scenarios) keep the full ratio so their images stay comparable. Serves DESIGN.md 9 (a steady frame rate
 // on a phone beats a few extra pixels). Sync kind: Local (this tab's GPU only).
-import { renderer } from '../render/scene.js';
+import { renderer, MAX_DPR } from '../render/scene.js';
 import { onFrame } from '../loop.js';
 
-const MAX = Math.min(devicePixelRatio, 2);
+const MAX = MAX_DPR;
 const MIN = MAX * 0.6;
 const SLOW_MS = 18.5,
   FAST_MS = 14;
@@ -24,8 +24,7 @@ let ratio = MAX,
 
 function apply(r) {
   ratio = Math.min(MAX, Math.max(MIN, r));
-  renderer.setPixelRatio(ratio);
-  renderer.setSize(innerWidth, innerHeight, false); // setPixelRatio resizes with the CSS style; keep the canvas CSS-sized
+  renderer.setPixelRatio(ratio); // resizes the drawing buffer and leaves the canvas's CSS size alone
   slow = fast = 0;
   sinceChange = 0;
 }

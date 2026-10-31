@@ -17,20 +17,21 @@ import {
   cross,
   dFdx,
   dFdy,
-  dot,
   fract,
   floor,
   mix,
   mod,
   positionGeometry,
   select,
-  sin,
   step,
   vec2,
   vec3,
   vec4,
   normalize,
   clamp,
+  float,
+  If,
+  rand,
 } from 'three/tsl';
 import { patchNode } from '../../render/material-patch.js';
 import * as CANNON from 'cannon-es';
@@ -171,17 +172,19 @@ function brickMaterial() {
   const aBrick = attribute('aBrick', 'float');
   mat.colorNode = Fn(() => {
     const w = positionGeometry;
-    // Derivatives first, before any branch.
-    const an = abs(normalize(cross(dFdx(w), dFdy(w))));
-    const flat = an.y.greaterThan(0.7);
-    const wall = select(an.x.greaterThan(an.z), w.zy, w.xy).mul(vec2(2, 4));
-    const p = select(flat, w.xz.mul(1.3), wall).toVar();
-    p.x.addAssign(mod(floor(p.y), 2).mul(0.5));
-    const f = fract(p);
-    const mortar = step(f.x, 0.06).add(step(f.y, 0.1));
-    const tint = fract(sin(dot(floor(p), vec2(12.99, 78.23))).mul(43758.5));
-    const k = mix(tint.mul(0.24).add(0.86), 0.55, clamp(mortar, 0, 1));
-    return vec4(vec3(select(aBrick.greaterThan(0.5), k, 1)), 1);
+    // Derivatives first (toVar emits them here), before the branch: WGSL wants them in uniform control flow.
+    const an = abs(normalize(cross(dFdx(w), dFdy(w)))).toVar();
+    const k = float(1).toVar();
+    If(aBrick.greaterThan(0.5), () => {
+      const flat = an.y.greaterThan(0.7);
+      const wall = select(an.x.greaterThan(an.z), w.zy, w.xy).mul(vec2(2, 4));
+      const p = select(flat, w.xz.mul(1.3), wall).toVar();
+      p.x.addAssign(mod(floor(p.y), 2).mul(0.5));
+      const f = fract(p);
+      const mortar = step(f.x, 0.06).add(step(f.y, 0.1));
+      k.assign(mix(rand(floor(p)).mul(0.24).add(0.86), 0.55, clamp(mortar, 0, 1)));
+    });
+    return vec4(vec3(k), 1);
   })();
   return withCaveAmbient(mat);
 }

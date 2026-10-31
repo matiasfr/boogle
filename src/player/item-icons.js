@@ -2,7 +2,7 @@
 //
 //   setIcon(img, id)   fills an <img> with the icon for a catalog id (src/sim/gift-catalog.js) or 'ball' (async)
 import * as THREE from 'three/webgpu';
-import { renderer } from '../render/scene.js';
+import { renderer, gfx } from '../render/scene.js';
 import { ball } from '../physics/ball.js';
 import { itemModel } from './item-models.js';
 
@@ -19,32 +19,25 @@ const toSrgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.0
 
 // Renders run one at a time (they share one render target and read back asynchronously).
 let queue = Promise.resolve();
-const pending = new Map();
 
-// Fills `img` with the icon for `id`: now when it is cached, otherwise when the render finishes (unless the image has
-// been given another id by then).
+// Fills `img` with the icon for `id` once its render finishes (unless the image has been given another id by then).
+// icons caches each id's promise; a failed render is dropped so the next call tries again.
 export function setIcon(img, id) {
   img.dataset.icon = id;
-  const done = icons.get(id);
-  if (done) {
-    img.src = done;
-    return;
-  }
-  if (!pending.has(id)) pending.set(id, (queue = queue.then(() => render(id))));
-  pending.get(id).then((url) => {
+  if (!icons.has(id))
+    icons.set(
+      id,
+      (queue = queue
+        .then(() => draw(id))
+        .catch((e) => {
+          console.warn('[icons]', id, e);
+          icons.delete(id);
+          return null;
+        })),
+    );
+  icons.get(id).then((url) => {
     if (img.dataset.icon === id && url) img.src = url;
   });
-}
-
-async function render(id) {
-  try {
-    return await draw(id);
-  } catch (e) {
-    console.warn('[icons]', id, e);
-    return null;
-  } finally {
-    pending.delete(id);
-  }
 }
 
 async function draw(id) {
@@ -67,10 +60,10 @@ async function draw(id) {
   renderer.setClearColor(prev.color, prevAlpha);
   iconScene.remove(model);
   const px = await renderer.readRenderTargetPixelsAsync(iconTarget, 0, 0, ICON, ICON);
-  // Render targets hold linear colour. WebGPU rows are padded to 256 bytes and run top-down; WebGL 2 rows are tight and
-  // run bottom-up. Convert to sRGB and flip into a canvas.
-  const stride = (px.length - ICON * 4) / (ICON - 1);
-  const flip = !renderer.backend?.isWebGPUBackend;
+  // Render targets hold linear colour, and three returns tight rows (it strips WebGPU's row padding). WebGPU rows run
+  // top-down, WebGL 2 rows bottom-up. Convert to sRGB and flip into a canvas.
+  const stride = ICON * 4;
+  const flip = gfx() === 'webgl2';
   const c = document.createElement('canvas');
   c.width = c.height = ICON;
   const g = c.getContext('2d');
@@ -84,7 +77,5 @@ async function draw(id) {
       img.data[to + 3] = px[from + 3];
     }
   g.putImageData(img, 0, 0);
-  const url = c.toDataURL();
-  icons.set(id, url);
-  return url;
+  return c.toDataURL();
 }

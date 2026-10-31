@@ -22,6 +22,7 @@ import {
   dot,
   length,
   positionLocal,
+  If,
   positionWorld,
   cameraPosition,
 } from 'three/tsl';
@@ -48,8 +49,8 @@ const heightTex = (() => {
   return t;
 })();
 
-// Uniform handles (TSL nodes): the sea's clock is shared with the fish (src/features/critter-fish.js), the ripple slots
-// are written by src/render/splash.js, and src/render/sky.js tints the sea through uLight, uSky and uSpecCol.
+// Uniform handles (TSL nodes): the sea's clock is the frame's `elapsed` (splash.js stamps ripple starts with it), the
+// ripple slots are written by src/render/splash.js, and src/render/sky.js tints the sea through uLight, uSky and uSpecCol.
 export const seaRipples = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); // x, z, start time, strength
 export const seaU = {
   uTime: uniform(0),
@@ -105,18 +106,20 @@ const color = Fn(() => {
   const foam = band.mul(smoothstep(0.45, 0.85, ripple.mul(0.7).add(band.mul(0.5)))).toVar();
   const ring = float(0).toVar();
   for (let i = 0; i < seaRipples.length; i++) {
-    // an unused slot has strength 0, which zeroes its term
     const rp = uRip.element(i);
-    const age = t.sub(rp.z);
-    const rad = age.mul(rp.w.mul(1.2).add(1.6));
-    const rw = age.mul(0.12).add(0.12);
-    const x = length(p.sub(rp.xy)).sub(rad).div(rw);
-    ring.addAssign(
-      exp(x.mul(x).negate())
-        .mul(rp.w)
-        .mul(exp(age.mul(-1.1)))
-        .mul(step(0, age)),
-    );
+    // Unused slots (strength 0) skip the maths; the branch is on a uniform, so every pixel takes the same path.
+    If(rp.w.greaterThan(0), () => {
+      const age = t.sub(rp.z);
+      const rad = age.mul(rp.w.mul(1.2).add(1.6));
+      const rw = age.mul(0.12).add(0.12);
+      const x = length(p.sub(rp.xy)).sub(rad).div(rw);
+      ring.addAssign(
+        exp(x.mul(x).negate())
+          .mul(rp.w)
+          .mul(exp(age.mul(-1.1)))
+          .mul(step(0, age)),
+      );
+    });
   }
   col.addAssign(vec3(0.25, 0.3, 0.3).mul(ring));
   foam.assign(max(foam, tslClamp(ring, 0, 1)));
@@ -128,7 +131,7 @@ const color = Fn(() => {
 });
 
 // The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.js).
-export const waterMat = new MeshBasicNodeMaterial({ transparent: true });
+const waterMat = new MeshBasicNodeMaterial({ transparent: true });
 waterMat.positionNode = Fn(() => {
   const p = positionLocal;
   const wave = sin(p.x.mul(0.21).add(seaU.uTime.mul(1.3)))
@@ -138,8 +141,7 @@ waterMat.positionNode = Fn(() => {
 })();
 waterMat.colorNode = color();
 
-// late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock. Everything earlier in
-// the frame (the fish share this uniform) still sees last frame's value, as before.
+// late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock.
 onFrame(
   ({ elapsed }) => {
     seaU.uTime.value = elapsed;
