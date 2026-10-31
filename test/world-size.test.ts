@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.js';
-import { installRules } from '../src/world/rules/index.js';
+import { installRules } from '../src/world/rules/index.ts';
 import { homeLand } from './helpers/land.mjs';
 import { setWho, MAX_PLAYERS } from '../src/sim/roster.ts';
 import { addTo, HARD_CAP } from '../src/sim/stacks.ts';

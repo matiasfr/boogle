@@ -162,7 +162,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Lean: gifts keeps its version-0 format.** Its legacy fields (`washed`, `nextWash`, `SRC.SHORE`; `src/sim/gifts.ts:9-16`)
   could go in a v1 format, but it isn't worth the churn in M1.
 - **Result:** `RULES = [mushrooms, gifts]` and the doors open for appending.
-- **Files:** `net.js`, `rules/index.js`, the retired files, test fixtures, `multiplayer.md` 8.3–8.5, the `rules/README.md`
+- **Files:** `net.js`, `rules/index.ts`, the retired files, test fixtures, `multiplayer.md` 8.3–8.5, the `rules/README.md`
   modules table.
 - **Tests:** `check:full`. Update `world-snapshots.test.mjs` and `world-replay.test.mjs` (fewer modules).
 - **Risks:**

@@ -30,8 +30,8 @@ export type SyncView = {
 export type Land = { n: number; layout: { trees: Cell[]; perches: (Cell & { kind: number })[] } };
 /** Every module's API, keyed by its name: what installRules returns (./index.js). */
 export type Rules = {
-  mushrooms: ReturnType<typeof import('./mushrooms.js').install>;
-  gifts: ReturnType<typeof import('./gifts.js').install>;
+  mushrooms: ReturnType<typeof import('./mushrooms.ts').install>;
+  gifts: ReturnType<typeof import('./gifts.ts').install>;
   roster: import('./roster.ts').RosterApi;
   stacks: import('./stacks.ts').StacksApi;
   piles: import('./piles.ts').PilesApi;

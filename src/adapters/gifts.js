@@ -1,5 +1,5 @@
 // Island gifts in the game: fruit on the palms, things players threw, and the frisbee
-// on the lighthouse deck. Shared state lives in src/world/rules/gifts.js and changes only through world/sync edits; what
+// on the lighthouse deck. Shared state lives in src/world/rules/gifts.ts and changes only through world/sync edits; what
 // you carry is your hotbar (src/player/inventory.js).
 import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
@@ -12,7 +12,7 @@ import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
 import { net } from '../netplay/net.js';
 import { world, onApplied, submitEdit } from '../world/sync.js';
-import { SEEDS, LOST } from '../world/rules/gifts.js';
+import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
@@ -28,7 +28,7 @@ const SHAKE_R = 2.1; // metres from a palm's base
 const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 
-// The gifts, their ops and tick live in world/rules/gifts.js (lockstep); this module adapts them to meshes, flights,
+// The gifts, their ops and tick live in world/rules/gifts.ts (lockstep); this module adapts them to meshes, flights,
 // the interact prompt and the hotbar. The layout (palms, perches) is the land's, filled in createGifts3d.
 const { layout } = land;
 const perchSpots = []; // world positions, parallel to layout.perches

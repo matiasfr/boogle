@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { offlineGap, offlineFreight, MS_PER_TICK, MIN_GAP_MS } from '../src/sim/bank.ts';
 import { TICK_MS, createSync } from '../src/world/sync.js';
-import { installRules } from '../src/world/rules/index.js';
+import { installRules } from '../src/world/rules/index.ts';
 import { HELPER_EVERY } from '../src/sim/sites.ts';
 import { homeLand } from './helpers/land.mjs';
 import { makeNet, run } from './helpers/net.mjs';

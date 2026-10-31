@@ -1,5 +1,5 @@
 // Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
-// Shared state lives in src/world/rules/mushrooms.js and changes only through world/sync edits. Seeds and the watering can are
+// Shared state lives in src/world/rules/mushrooms.ts and changes only through world/sync edits. Seeds and the watering can are
 // hotbar items (src/player/inventory.js); src/player/hands.js calls plantFront and pour when you use them.
 import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
@@ -31,7 +31,7 @@ const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale ha
 const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
 export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
-// The garden, its ops and growth live in world/rules/mushrooms.js (lockstep); this module adapts it to meshes,
+// The garden, its ops and growth live in world/rules/mushrooms.ts (lockstep); this module adapts it to meshes,
 // colliders, the stall and the hotbar.
 export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
