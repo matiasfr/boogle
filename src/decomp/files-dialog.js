@@ -16,6 +16,9 @@ let dlg = null,
   list = null,
   handle = null;
 
+const IOS =
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 const picker = document.createElement('input');
 picker.type = 'file';
 picker.addEventListener('change', () => picker.files[0] && handle?.(picker.files[0]));
@@ -80,7 +83,8 @@ export function openFilesDialog({ title, needs, ext, onFile }) {
   if (!dlg) build();
   if (dlg.open || !openModal({ onKey, onPad })) return;
   handle = onFile;
-  picker.accept = ext.join(',');
+  // iOS greys out any file whose extension it has no type for (.z64, .wasm), so it gets no filter; onFile checks contents.
+  picker.accept = IOS ? '' : ext.join(',');
   dlg.querySelector('.files-title').textContent = title;
   filesDialogNeeds(needs);
   note.hidden = true;
