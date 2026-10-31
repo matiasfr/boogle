@@ -45,6 +45,10 @@ interact targets 2 KB, gulls and fireflies under 1 KB each).
   allocations to the game code that called them. The profiler, the frame context and the fish hook allocate nothing.
 - Next, ours: module-scope scratch objects and index loops in the remaining hooks above, and interact targets
   (`registerInteractable`) that reuse their objects.
+- Open lead (2026-10-31): the fish hook still allocates ~6 KB/frame with no object, array or iterator left in it, and
+  starting its fields as doubles changed nothing. That pattern is V8 boxing numbers in a function it never optimizes;
+  check with `--js-flags=--trace-opt --trace-deopt` (Chrome's stderr) before rewriting it. Minor GCs cause no hitch on
+  the Mac today, so this waits for a device baseline that shows they matter.
 - The physics engine is the real cost: cannon-es can't be made allocation-free from outside. Decided 2026-10-31:
   move to Rapier ([rapier.md](rapier.md)), which also fits the physics worker of step 7.
 
