@@ -1,12 +1,12 @@
 import './style.css';
 import * as THREE from 'three/webgpu';
 import * as CANNON from 'cannon-es';
-import { FIXED } from './constants.js';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.js';
 import { precompile } from './render/precompile.js';
 import { createTerrainMesh } from './adapters/terrain.js';
 import { createWaterMesh } from './render/water-render.js';
 import { world, installStepHooks } from './physics/physics.js';
+import { stepPhysics } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.js';
 import { ball, resolveBallOwner, prepareBall } from './physics/ball.js';
 import { me, updateIntent } from './player/player.js';
@@ -42,7 +42,7 @@ function frame(now = performance.now()) {
   updateIntent(dt);
   prepareBall();
   mark('main: pre-step');
-  world.step(FIXED, dt, 4);
+  stepPhysics(dt);
   mark('main: physics');
   ctx.now = now;
   ctx.dt = dt;
