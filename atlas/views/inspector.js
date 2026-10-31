@@ -144,7 +144,7 @@ export function inspector(ctx) {
     el.innerHTML = `<div><h2>${M.files.length} files · ${sum(M.files).toLocaleString()} lines</h2>${commits ? `<div class="path">${commits} commits${since ? ` since ${since}` : ''}</div>` : ''}</div>
       <p>Five layers, top to bottom: from what a player touches to the wire. Click anything to see it here; press <b>/</b> to search.</p>
       <div><h3>Colour is the sync kind</h3>${legend(ctx)}</div>
-      <div><h3>Layers</h3><div class="list">${LAYERS.map((L) => `<button data-layer="${L.id}" style="--c:var(${L.c})"><i style="outline:1px solid var(--line)"></i>${L.name}<span>${layerDirs(M, L).length}</span></button>`).join('')}</div></div>
+      <div><h3>Layers</h3><div class="list">${LAYERS.map((L) => `<button data-layer="${L.id}" style="--c:var(${L.c})"><i style="outline:1px solid var(--faint)"></i>${L.name}<span>${layerDirs(M, L).length}</span></button>`).join('')}</div></div>
       ${problemsNote(ctx)}`;
   }
 }
