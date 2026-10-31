@@ -15,7 +15,7 @@ import { onFrame } from '../loop.js';
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
 // state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); turn: our ICE config includes a TURN server
 // (for connection reports); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
-// attempt while solo (0: none scheduled).
+// attempt while solo (0: none scheduled); full: the last join was turned away ('room_full'): the cap, or true.
 export const net = {
   room: null,
   myPeer: null,
@@ -23,6 +23,7 @@ export const net = {
   lastSend: 0,
   state: 'connecting',
   error: null,
+  full: 0,
   turn: false,
   retries: 0,
   retryAt: 0,
@@ -257,12 +258,17 @@ async function serverOptions() {
 }
 
 // Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
-// unless the browser can't do WebRTC at all.
+// unless the browser can't do WebRTC at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer = 0;
+const FULL_RETRY_MS = 4000;
+function noteError(e, fallback) {
+  net.error = String(e?.code || e?.type || fallback);
+  net.full = e?.code === 'room_full' ? e.max || true : 0;
+}
 function scheduleRetry(e) {
   if (e?.code === 'browser-incompatible' || retryTimer) return;
   net.retries += 1;
-  const wait = Math.min(5000 * net.retries, 30000);
+  const wait = net.full ? FULL_RETRY_MS : Math.min(5000 * net.retries, 30000);
   net.retryAt = Date.now() + wait;
   retryTimer = setTimeout(() => {
     retryTimer = 0;
@@ -278,7 +284,7 @@ export async function connectRoom() {
     room = await createPeerRoom({ roomId, debug, ...(await serverOptions()) });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
-    net.error = String(e?.code || e?.type || 'connect_failed');
+    noteError(e, 'connect_failed');
     scheduleRetry(e);
     setNet('solo');
     return;
@@ -286,6 +292,7 @@ export async function connectRoom() {
   net.retries = 0;
   net.retryAt = 0;
   net.error = null;
+  net.full = 0;
   net.room = room;
   setNet('connecting');
   setSelfId(room.selfId);
@@ -293,7 +300,7 @@ export async function connectRoom() {
   attachWorld(room, { roomId, serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
   const fail = (e) => {
     if (net.state === 'solo') return;
-    net.error = String(e?.code || e?.type || 'unknown');
+    noteError(e, 'unknown');
     console.warn('[boogle] room unavailable:', e);
     detachWorld();
     try {

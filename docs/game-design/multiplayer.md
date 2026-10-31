@@ -10,6 +10,12 @@ Heartbeats every 500 ms; a peer silent for 3 s is gone. Messages are capped at 1
 `VITE_BOOGLE_SERVER`, PeerJS's public signaling server and default STUN are used ([src/netplay/net.js](../../src/netplay/net.js)). A
 failed join drops to "Solo" and retries.
 
+A room holds at most 8 players, host included (`MAX_PEERS`). A ninth is turned away (`room_full`): they play solo,
+the HUD says "island full · waiting for a spot", and the retry gets them in once someone leaves. Players the host
+already knows (back after a blip, or from before a host migration) always get back in. Measured with
+`npm run load` (8 pages on one machine, 20 Hz presence): the host uploads about 1.7 Mbit/s, each client about
+60 kbit/s.
+
 ## 8.2 Host migration
 
 When the host goes, every client waits a random 200 to 1200 ms and tries to claim the host id; the winner hosts and the

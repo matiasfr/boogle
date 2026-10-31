@@ -12,7 +12,7 @@ different systems don't touch the same file. A new system adds its file and one 
 
 ## 1. Overview
 
-Boogle is a drop-in browser island for 1 to 6 friends. You pick a name and a colour, press "Jump in", and land next to a
+Boogle is a drop-in browser island for up to 8 friends. You pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court with one shared beach ball. Today the loop as actually played is: throw, bump and chase the ball;
 pick up fruit and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;

@@ -6,7 +6,8 @@ interpolation) imports `createPeerRoom` from here and uses nothing else. It impl
 Changes must keep this interface; run `npm run test:net` after touching it.
 
 ```js
-const room = await createPeerRoom({ roomId, signal /* optional {host,port,path,secure} */, iceServers /* optional */ });
+const room = await createPeerRoom({ roomId, signal /* optional {host,port,path,secure} */, iceServers /* optional */, maxPeers /* optional, default MAX_PEERS = 8, host included */ });
+// rejects with code 'room_full' (and `max`) when the host turned this tab away: the room has maxPeers already
 room.selfId            // string, stable per tab for the life of the page (NOT the PeerJS id)
 room.presence(patch)   // Promise<void>; shallow-merges patch into my presence (value null deletes key) and broadcasts
 room.peers()           // frozen array of entries
