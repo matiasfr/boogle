@@ -20,7 +20,7 @@ in dev about gaps. Registrations live in [src/player/input.js](../../src/player/
 | Bump the ball up (`bump`) | action | V | RT | Bump | The ball | |
 | Talk, pick up, take, shake a palm (`interact`) | action | E | B | Grab (the main button; its label follows the target) | Hands | |
 | Use what you hold (`use`) | action | Left click | X | main button when it has no target | Hands | |
-| Hold from your hotbar (`hotbar`) | described | 1-8 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
+| Hold from your hotbar (`hotbar`) | described | 1-5 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | X | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
 | Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action, wrapped) | X | Grab, when nothing is in reach | Getting around | as the guest |

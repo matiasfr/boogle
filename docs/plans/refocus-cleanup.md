@@ -237,7 +237,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   Also add `docs/plans/refocus-cleanup.md`. Verify: `npm run check`. CLAUDE.md imports AGENTS.md, so it needs no
   edit.
 
-- [ ] **2. Hotbar: 5 slots.** Serves 1 and "Small and readable". Files:
+- [x] **2. Hotbar: 5 slots.** Serves 1 and "Small and readable". Files:
   - `src/player/inventory.js`: `SLOTS = 5`. In `load()`, keep the first five filled known items:
     `saved.filter((s) => s && known(s.id)).slice(0, SLOTS).forEach((s, k) => ...)`. This compacts 8-slot saves for
     free. Delete the `boogle.pocket` branch, its `localStorage.getItem('boogle.pocket')` and the

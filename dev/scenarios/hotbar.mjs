@@ -230,7 +230,7 @@ export default {
           [...document.querySelectorAll('.hotbar-slot')].filter((b) => b.getClientRects().length).length === 0`,
       ),
     );
-    t.check('on touch a new player sees no slots, not eight', one >= 0, `${one} ms`);
+    t.check('on touch a new player sees no slots, not five', one >= 0, `${one} ms`);
 
     await thumb.eval(`${INV} ${TP(14, 24)}`);
     await thumb.eval(`${INV} I.take('mango');`);

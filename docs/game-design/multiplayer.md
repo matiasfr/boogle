@@ -83,7 +83,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
 | Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
 | Guest pid (a second tab) | sessionStorage | `boogle.guestPid` | per tab |
-| Hotbar | localStorage | `boogle.hotbar` (old `boogle.pocket` migrated once) | global, not per room |
+| Hotbar | localStorage | `boogle.hotbar` | global, not per room |
 | Boogler friendship | localStorage | `boogle.boogler.<room>` | per room |
 | First-run card seen | localStorage | `boogle.firstRun.<kind>` | global |
 | Guest engine, the pieces cut from the ROM | IndexedDB | `boogle-decomp` / `files`: `guest-engine`, `guest-rom` | per browser, never uploaded |
