@@ -225,7 +225,7 @@ function converse(start) {
     name: me.name,
     rng: Math.random,
     start,
-    guest: guest.active,
+    mario: guest.active,
     gifts: giftList,
     give: (kind) => heldId() === GIFTS[kind].id && !!useOne(),
   });
