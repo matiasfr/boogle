@@ -26,7 +26,7 @@ The open questions in the two plans have working answers so work can start; chan
 
 ## Phase 1: a loop that measures itself (no player-visible change)
 
-- [ ] Per-hook profiling and `?prof=1`; `perf` prints the top hooks, `hitches` names the slowest hook per hitch
+- [x] Per-hook profiling and `?prof=1`; `perf` prints the top hooks, `hitches` names the slowest hook per hitch
       (game-loop.md, step 1).
 - [ ] `tsconfig.json` with `checkJs` + `strict` on the core; `tsc` in `npm run check`; JSDoc for wire messages,
       presence, ops and states (step 8a).

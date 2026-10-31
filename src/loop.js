@@ -31,18 +31,78 @@ const hooks = { world: [], update: [], late: [] };
 const starts = [];
 let started = false;
 
-export function onFrame(fn, { phase = 'update', order = 0 } = {}) {
+// Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.js's own
+// sections (pre-step, physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
+// (vite.config.js passes it in through onFrame.in), or `name` in its options, else its phase and order.
+//   prof.table(n)   the n most expensive sections: { name, avg, p95, max } in ms over the window, plus 'frame' (total)
+//   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
+// main.js marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
+const WINDOW = 240;
+const sections = new Map(); // name -> Float32Array(WINDOW)
+let slot = 0;
+let cursor = 0;
+let frameStart = 0;
+const last = { ms: 0, top: '', topMs: 0 };
+const lastTimes = new Map(); // name -> ms this frame
+function record(name, ms) {
+  let ring = sections.get(name);
+  if (!ring) sections.set(name, (ring = new Float32Array(WINDOW)));
+  ring[slot] += ms;
+  lastTimes.set(name, (lastTimes.get(name) ?? 0) + ms);
+}
+export function beginFrame() {
+  slot = (slot + 1) % WINDOW;
+  for (const ring of sections.values()) ring[slot] = 0;
+  for (const n of lastTimes.keys()) lastTimes.set(n, 0);
+  cursor = frameStart = performance.now();
+}
+export function mark(name) {
+  const t = performance.now();
+  record(name, t - cursor);
+  cursor = t;
+}
+export function endFrame(name) {
+  mark(name);
+  record('frame', cursor - frameStart);
+  last.ms = cursor - frameStart;
+  last.topMs = 0;
+  for (const [n, ms] of lastTimes)
+    if (n !== 'frame' && ms > last.topMs) {
+      last.topMs = ms;
+      last.top = n;
+    }
+}
+export const prof = {
+  last,
+  table(n = 12) {
+    const rows = [];
+    for (const [name, ring] of sections) {
+      const sorted = Float32Array.from(ring).sort();
+      const avg = sorted.reduce((a, b) => a + b, 0) / WINDOW;
+      const r = (x) => Math.round(x * 1000) / 1000;
+      rows.push({ name, avg: r(avg), p95: r(sorted[Math.floor(WINDOW * 0.95)]), max: r(sorted[WINDOW - 1]) });
+    }
+    return rows.sort((a, b) => b.avg - a.avg).slice(0, n + 1);
+  },
+};
+
+export function onFrame(fn, { phase = 'update', order = 0, name } = {}) {
   const list = hooks[phase];
   if (!list) throw new Error(`onFrame: unknown phase ${phase}`);
-  list.push({ fn, order });
+  list.push({ fn, order, name: name ?? `${phase} ${order}` });
   list.sort((a, b) => a.order - b.order);
 }
+// vite.config.js rewrites `onFrame(` in each module under src/ to `onFrame.in('<path>')(`, so hooks carry their file.
+onFrame.in = (file) => (fn, opts) => onFrame(fn, { name: file, ...opts });
 export function onStart(fn) {
   if (started) fn();
   else starts.push(fn);
 }
 export function runFrame(phase, ctx) {
-  for (const h of hooks[phase]) h.fn(ctx);
+  for (const h of hooks[phase]) {
+    h.fn(ctx);
+    mark(h.name);
+  }
 }
 export function runStart() {
   started = true;

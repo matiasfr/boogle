@@ -31,6 +31,8 @@ const INSTALL = `
       at: Math.round(now), dt: +(now - prev).toFixed(1), step: window.__step ?? '', sky: +(skyNow.frac ?? 0).toFixed(3),
       dp: (mm.programs ?? 0) - p, dg: (mm.geometries ?? 0) - g, dt2: (mm.textures ?? 0) - t,
       shadow: sun.shadow.autoUpdate,
+      cpu: +(window.boogle.prof?.last.ms ?? 0).toFixed(1), top: window.boogle.prof?.last.top ?? '',
+      topMs: +(window.boogle.prof?.last.topMs ?? 0).toFixed(1),
     });
     prev = now; p = mm.programs ?? 0; g = mm.geometries ?? 0; t = mm.textures ?? 0;
   };
@@ -162,7 +164,9 @@ try {
   }
   console.log('\nper tour step');
   console.table(Object.fromEntries([...by].map(([k, v]) => [k, { ...v, worst: Math.round(v.worst) }])));
-  console.log('hitches (ms, step, sky time, new programs / geometries / textures that frame)');
+  console.log(
+    'hitches (ms, step, sky time, new programs / geometries / textures, main-thread CPU and its slowest section that frame)',
+  );
   console.table(
     hitches.slice(0, 60).map((f) => ({
       ms: Math.round(f.dt),
@@ -171,6 +175,8 @@ try {
       programs: f.dp,
       geometries: f.dg,
       textures: f.dt2,
+      'cpu ms': f.cpu,
+      'slowest section': f.top ? `${f.top} (${f.topMs} ms)` : '',
     })),
   );
   if (hitches.length > 60) console.log(`... and ${hitches.length - 60} more (--json file for all)`);

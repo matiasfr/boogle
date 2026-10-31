@@ -14,7 +14,7 @@ import { net, remotes, connectRoom, updateRemotes } from './netplay/net.js';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.js';
 import { initInput } from './player/input.js';
 import { createStall } from './adapters/mushroom-garden.js';
-import { runFrame, runStart } from './loop.js';
+import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.js';
 import { splashStage, splashProgress, splashDone } from './boot/splash.js';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.js).
@@ -35,16 +35,20 @@ function frame(now = performance.now()) {
   const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); // a first rAF stamp can predate `last` (play())
   last = now;
   elapsed += dt;
+  beginFrame(); // per-section CPU times for ?prof=1 (src/loop.js)
   updateRemotes(now);
   resolveBallOwner(now);
   updateIntent(dt);
   prepareBall();
+  mark('main: pre-step');
   world.step(FIXED, dt, 4);
+  mark('main: physics');
   const ctx = { now, dt, elapsed };
   runFrame('world', ctx);
   runFrame('update', ctx);
   runFrame('late', ctx);
   renderFrame();
+  endFrame('main: render (CPU)');
 }
 
 // The network and the lobby do not wait for the GPU. Only the first frame does (renderer.render throws until init), and
