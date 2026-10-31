@@ -12,8 +12,8 @@ import * as THREE from 'three';
 import { onFrame } from '../loop.js';
 import { clamp } from '../math.js';
 import { emit } from '../render/particles.js';
-import * as CANNON from 'cannon-es';
-import { world as physics, GROUP } from '../physics/physics.js';
+import { GROUP } from '../physics/physics.js';
+import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
@@ -50,17 +50,18 @@ const FLOP = {
 const KINDS = ['splat', 'stomp', 'bonk'];
 
 // ---------------------------------------------------------------- physics: jump shape, snap
-const ray = { from: new CANNON.Vec3(), to: new CANNON.Vec3(), hit: new CANNON.RaycastResult() };
+const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
 const floorGap = (b) => {
-  ray.from.copy(b.position);
-  ray.to.set(b.position.x, b.position.y - PLAYER_R - MOVE.snapMaxGap, b.position.z);
-  ray.hit.reset();
-  const mask = b.collisionFilterMask & (GROUP.SCENERY | GROUP.CAVE); // static floors only, never your own body
-  physics.raycastClosest(ray.from, ray.to, { collisionFilterMask: mask, skipBackfaces: true }, ray.hit);
-  return ray.hit.hasHit ? ray.hit.distance - PLAYER_R : Infinity;
+  ray.to.x = b.position.x;
+  ray.to.y = b.position.y - PLAYER_R - MOVE.snapMaxGap;
+  ray.to.z = b.position.z;
+  const mask = getMask(b) & (GROUP.SCENERY | GROUP.CAVE); // static floors only, never your own body
+  return raycastClosest(b.position, ray.to, { mask, skipBackfaces: true }, ray.hit)
+    ? ray.hit.distance - PLAYER_R
+    : Infinity;
 };
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
-physics.addEventListener('preStep', () => {
+onPreStep(() => {
   const b = me.body;
   if (!b) return;
   const vy = b.velocity.y;

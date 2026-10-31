@@ -6,6 +6,7 @@
 //
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
+//   getMask(body), setMask(body, mask)   which collision groups it collides with (the caves swap them)
 //   setMotion(body, 'dynamic' | 'kinematic', response)   switch how it moves; kinematic stops it (response: pushes)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
 //   material(name), contactMaterial(a, b, { friction, restitution })
@@ -14,6 +15,8 @@
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.hitPointWorld, hit.hitNormalWorld
 //   physicsTime()                  seconds of simulated time
+//   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
+//                                  built from (src/guest/collision.js triangulates them; heightfields included)
 import * as CANNON from 'cannon-es';
 import { FIXED, GRAVITY } from '../constants.js';
 
@@ -37,6 +40,7 @@ const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.allowSleep = false;
 
+const shapesOf = new WeakMap<Body, Shape[]>(); // the descriptions each body was built from
 const vec = (v?: V3) => (v ? new CANNON.Vec3(v.x, v.y, v.z) : undefined);
 const quat = (q?: Quat) => (q ? new CANNON.Quaternion(q.x, q.y, q.z, q.w) : undefined);
 function addShape(body: Body, s: Shape) {
@@ -82,11 +86,13 @@ export function createBody(o: BodyOptions = {}): Body {
   if (o.position) body.position.set(o.position.x, o.position.y, o.position.z);
   if (o.rotation) body.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
   for (const s of o.shapes ?? []) addShape(body, s);
+  shapesOf.set(body, o.shapes ?? []);
   return body;
 }
 export function setShapes(body: Body, shapes: Shape[]) {
   while (body.shapes.length) body.removeShape(body.shapes[0]);
   for (const s of shapes) addShape(body, s);
+  shapesOf.set(body, shapes);
   body.updateMassProperties();
   body.aabbNeedsUpdate = true;
 }
@@ -97,6 +103,10 @@ export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response 
     body.velocity.set(0, 0, 0);
     body.angularVelocity.set(0, 0, 0);
   }
+}
+export const getMask = (body: Body) => body.collisionFilterMask;
+export function setMask(body: Body, mask: number) {
+  body.collisionFilterMask = mask;
 }
 export const addBody = (body: Body) => world.addBody(body);
 export const removeBody = (body: Body) => world.removeBody(body);
@@ -115,6 +125,10 @@ export const onPreStep = (fn: () => void) => world.addEventListener('preStep', f
 export const onPostStep = (fn: () => void) => world.addEventListener('postStep', fn);
 export const stepPhysics = (dt: number) => world.step(FIXED, dt, 4);
 export const physicsTime = () => world.time;
+export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) => void) {
+  for (const body of world.bodies)
+    if (body.type === CANNON.Body.STATIC && body.collisionFilterGroup & mask) fn(body, shapesOf.get(body) ?? []);
+}
 
 // cannon's contact normal points from bi to bj; flip it so it points into `body`.
 export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void) {

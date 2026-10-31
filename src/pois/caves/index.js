@@ -34,10 +34,10 @@ import {
   rand,
 } from 'three/tsl';
 import { patchNode } from '../../render/material-patch.js';
-import * as CANNON from 'cannon-es';
 import { scene, camera } from '../../render/scene.js';
 import { precompile } from '../../render/precompile.js';
-import { world, groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
+import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
+import { createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.js';
 import { atmosphere } from '../../render/sky.js';
@@ -227,9 +227,13 @@ function* build() {
   scene.add(caveMesh);
   precompile(caveMesh); // their pipelines build now, not when the first player walks in
 
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
-  body.addShape(new CANNON.Trimesh(m.positions, colliderIndices));
-  world.addBody(body);
+  addBody(
+    createBody({
+      material: groundMat,
+      group: GROUP.CAVE,
+      shapes: [{ kind: 'trimesh', vertices: m.positions, indices: colliderIndices }],
+    }),
+  );
   yield;
 
   collarMesh = makeCollars(yield* buildCollarMeshSteps());
@@ -237,7 +241,7 @@ function* build() {
   precompile(collarMesh);
   yield;
 
-  decorRoot = buildDecor({ world, scene });
+  decorRoot = buildDecor({ scene });
   precompile(decorRoot);
   setTerrainHoles(
     MOUTHS.map((mo) => ({
@@ -252,25 +256,28 @@ function* build() {
 }
 
 // ---------------------------------------------------------------- bodies: ground or cave colliders
-const tracked = new WeakMap(); // body -> { cave, safe: Vec3 }
+const tracked = new WeakMap(); // body -> { cave, safe: { x, y, z } }
 function track(body, yOff) {
   let st = tracked.get(body);
-  if (!st) tracked.set(body, (st = { cave: false, safe: body.position.clone() }));
+  if (!st)
+    tracked.set(body, (st = { cave: false, safe: { x: body.position.x, y: body.position.y, z: body.position.z } }));
   const p = body.position;
   const y = p.y + yOff;
   const cave = inCave(p.x, y, p.z);
-  if (cave !== st.cave || body.collisionFilterMask === -1) {
+  if (cave !== st.cave || getMask(body) === -1) {
     st.cave = cave;
-    body.collisionFilterMask = cave ? CAVE_MASK : SURFACE_MASK;
+    setMask(body, cave ? CAVE_MASK : SURFACE_MASK);
   }
   if (!ready || !nearCaves(p.x, p.z)) return;
   // Safety net: inside solid rock (fast throws can go through a thin wall) -> back to the last good spot.
   const d = caveSd(p.x, y, p.z);
-  if (cave && d < -0.35) st.safe.copy(p);
+  const keep = () => ((st.safe.x = p.x), (st.safe.y = p.y), (st.safe.z = p.z));
+  if (cave && d < -0.35) keep();
   else if (!cave && p.y < groundHeight(p.x, p.z) - 1.2 && d > 0.3 && outOfMouth(p.x, p.z) < ENTER) {
     teleport(body, st.safe.x, st.safe.y, st.safe.z);
-    body.velocity.scale(-0.3, body.velocity);
-  } else if (!cave) st.safe.copy(p);
+    const v = body.velocity;
+    v.set(v.x * -0.3, v.y * -0.3, v.z * -0.3);
+  } else if (!cave) keep();
 }
 
 // The floor under a point that is in the caves (for ball friction and the like).
@@ -341,7 +348,7 @@ onStart(() => {
   const netted0 = groundProbe.netted;
   groundProbe.netted = (x, z) => !nearCaves(x, z) && netted0(x, z); // track() is the net here
   camConstraints.push(keepCameraInside);
-  world.addEventListener('preStep', () => {
+  onPreStep(() => {
     if (me.body) track(me.body, 0.4);
     if (ball.mine && !ball.held) track(ball.body, 0);
   });

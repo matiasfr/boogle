@@ -7,7 +7,7 @@
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
 import { FIXED } from '../constants.js';
 import { clamp } from '../math.js';
-import { world as physics } from '../physics/physics.js';
+import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.js';
 import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.js';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
@@ -103,25 +103,22 @@ function dist() {
 
 // ---------------------------------------------------------------- riding
 const ride = { lastOn: -1, t: 0, warned: 0, puffAt: 0, immuneUntil: 0, kickAt: 0, fly: null };
-const riding = () => physics.time - ride.lastOn < 0.15 && performance.now() > ride.immuneUntil;
+const riding = () => physicsTime() - ride.lastOn < 0.15 && performance.now() > ride.immuneUntil;
 
 function installRidePhysics() {
-  physics.addEventListener('postStep', () => {
+  onPostStep(() => {
     const b = me.body,
       gb = boogler.body;
     if (!b || !gb) return;
-    for (const c of physics.contacts) {
-      if (!((c.bi === b && c.bj === gb) || (c.bj === b && c.bi === gb))) continue;
-      const ny = c.bi === b ? -c.ni.y : c.ni.y;
-      if (ny > 0.5) {
-        ride.lastOn = physics.time;
-        return;
-      }
-    }
+    forEachContact(b, (nx, ny, nz, other) => {
+      if (other !== gb || ny <= 0.5) return false;
+      ride.lastOn = physicsTime();
+      return true;
+    });
   });
   // Runs after the player's and The Boogler's own preSteps: move the rider with him, and keep a launch from being
   // steered to a stop by air control.
-  physics.addEventListener('preStep', () => {
+  onPreStep(() => {
     const b = me.body,
       gb = boogler.body;
     if (!b || !gb) return;
@@ -131,7 +128,7 @@ function installRidePhysics() {
     }
     const fly = ride.fly;
     if (!fly) return;
-    if (physics.time > fly.until || (physics.time > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
+    if (physicsTime() > fly.until || (physicsTime() > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
     else {
       b.velocity.x = fly.vx;
       b.velocity.z = fly.vz;
@@ -155,7 +152,7 @@ function launch(now) {
   b.velocity.set(vx, LAUNCH_UP, vz);
   me.coyote = 0;
   me.jumpQueued = 0;
-  ride.fly = { vx, vz, from: physics.time, until: physics.time + 1.1 };
+  ride.fly = { vx, vz, from: physicsTime(), until: physicsTime() + 1.1 };
   ride.immuneUntil = now + 1200;
   ride.lastOn = -1;
   kickedOff(f(), Date.now());
@@ -183,7 +180,7 @@ function updateRide(dt, now) {
     ride.puffAt = 0;
     ride.t = 0;
     ride.warned = 0;
-    if (physics.time - ride.lastOn < 0.4) launch(now);
+    if (physicsTime() - ride.lastOn < 0.4) launch(now);
     else booglerSay(RIDE_BAIL, 1500);
   }
   // Tell them off once they land (or after a moment, if they flew into the sea), not while the pause view is up.

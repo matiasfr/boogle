@@ -11,12 +11,12 @@
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.js): the host stops for
 // players who talk to or pet him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, toScreen } from '../render/scene.js';
-import { world, playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';
+import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';
+import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.js';
 import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
@@ -459,17 +459,18 @@ export function createBoogler() {
   scene.add(group);
   addHostField('g', publish, hear);
 
-  body = new CANNON.Body({
-    mass: 0,
-    type: CANNON.Body.KINEMATIC,
+  body = createBody({
+    type: BODY.KINEMATIC,
     material: playerMat,
-    collisionFilterMask: NOT_SCENERY,
+    mask: NOT_SCENERY,
+    shapes: [
+      { kind: 'cylinder', rTop: W_R, rBottom: W_R, h: H_R * 2, segments: 14, offset: { x: 0, y: BODY_Y, z: 0 } },
+    ],
   });
-  body.addShape(new CANNON.Cylinder(W_R, W_R, H_R * 2, 14), new CANNON.Vec3(0, BODY_Y, 0));
   teleport(body, s.x, groundHeight(s.x, s.z), s.z);
-  world.addBody(body);
+  addBody(body);
   boogler.body = body;
-  world.addEventListener('preStep', () => {
+  onPreStep(() => {
     const p = body.position;
     const tx = disp.x,
       tz = disp.z,
@@ -479,7 +480,7 @@ export function createBoogler() {
       dz = tz - p.z;
     if (dx * dx + dy * dy + dz * dz > 36) {
       teleport(body, tx, ty, tz);
-      body.velocity.setZero();
+      body.velocity.set(0, 0, 0);
     } else body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
   });
 }
