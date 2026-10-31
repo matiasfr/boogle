@@ -56,7 +56,7 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
       const ms = offlineGap(now, s.world.epochMs, s.world.tick, rules.bank.ms());
       if (ms >= MIN_GAP_MS) s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
     });
-    s.attachWorld((p as unknown as { room: WorldRoom }).room, { roomId: 'bank', storage, now: () => now });
+    s.attachWorld((p as unknown as { room: WorldRoom }).room, { roomId: 'bank', host, storage, now: () => now });
     return { s, rules, p };
   };
   const host = mk('h', true);

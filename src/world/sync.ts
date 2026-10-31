@@ -1,16 +1,15 @@
 // World sync: tick clock + edit pipeline + state registry + snapshots/hashes + persistence. See README.md for the contract.
 //
 // Roles: 'local' (no room: edits apply next tick), 'host' (authoritative clock, stamps edits), 'client' (follows host).
-// The host is whoever room.isHost() says. All wire messages are `room.send` JSON with a `w:` type. NOTE room.send reaches every
+// The host is our server (server/src/host/world-host.ts attaches with host: true); every tab is a client. All wire messages are `room.send` JSON with a `w:` type. NOTE room.send reaches every
 // OTHER peer; a client's message also reaches the other clients (relayed, `from` = origin), so each side ignores types it does not own.
 //
 //   client -> host   { t:'w:edit', e }                      an edit request (host overwrites e.p with the real sender id
 //                                                           and e.u with that sender's pid)
 //                    { t:'w:need' }                         please send me a snapshot (late join, desync, late edit)
 //   any -> all       { t:'w:id', u }                        this tab's player id (pid, src/player/identity.ts). Sent before
-//                                                           w:need, by a new host, after a reconnect and when a client
-//                                                           re-pins the host; every tab keeps selfId -> pid, so a
-//                                                           promoted client already knows the room's pids
+//                                                           w:need, by the host, after a reconnect and when a client
+//                                                           re-pins the host; the host keeps selfId -> pid
 //   host -> all      { t:'w:edits', ht, list:[{tick,seq,e}] }  stamped edits (tick = host tick + DELAY); ht = host tick now
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
 //                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
@@ -20,32 +19,23 @@
 //                                                           joiner misses none); ids = the host's [selfId, pid] pairs
 // Player ids: `p` on an edit is the session (selfId), `u` the player (pid) that outlives a reload. The host sets both
 // from its own records and never from the edit; an edit from a peer whose pid it doesn't know is rejected.
-// Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
-// Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
-// Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
-// reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
-// came back as the host) one per HELD_EVERY_MS, so a burst never lands on one host tick. Held edits older than HELD_MAX_MS
-// are dropped (stats.heldDropped): the player has moved on. So is the rest of the backlog once a fresh edit is submitted
-// with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
+// Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, or at
+// once after the room reconnects). Edits submitted while the room is down (a client reconnecting) are held; once it is
+// back they go to the host one per HELD_EVERY_MS, so a burst never lands on one host tick. Held edits older than
+// HELD_MAX_MS are dropped (stats.heldDropped): the player has moved on. So is the rest of the backlog once a fresh edit
+// is submitted with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never
+// stuck behind it.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
 //
-// Persistence: every saveMs (attachWorld option, default SAVE_MS = 30 s; saveNow() saves at once) and on pagehide, a peer that is ready and not awaiting a snapshot saves the world to
-// localStorage (`boogle.world.<roomId>`) if its state changed since its last save. The host saves any tick; a client
-// only a tick whose hash just matched the host's, so a diverged copy is never kept (on pagehide a client is rarely on
-// such a tick, so its copy is usually its last periodic save). Only the host also PUTs
-// { tick, writerId, data } to the server's /rooms/:id/snapshot (bodies under 250 KB; keepalive on unload only under
-// 60 KB). A tab that becomes host without state loads the newest by tick of its local and server copies (the server gets
-// 3 s); a migrating host keeps its live state, and its first save always uploads.
+// Persistence: the host saves the world to its storage (the server's store) every saveMs (attachWorld option, default
+// SAVE_MS = 30 s; the server uses 2 s) if its states changed, and saveNow(force) at once; it starts from that save, or a
+// fresh world. Tabs keep no copy.
 //
 // Versions: each state registers a `version` (default 0) and `migrate[v]` steps (json at v-1 -> json at v); snapshots
 // record them in `vers` (missing = 0) and loads run the steps in order. A state that fails to load starts fresh
-// (stats.loadErrors); on a client nothing vouches for that until a host hash matches, so if it takes over as host first
-// it loads the newest saved copy instead of keeping (and uploading) the fallback. A state saved by a newer build is
-// skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
-// noSave, so the clients that load them stop persisting too.
-// A host that is demoted POSTs its world to the server's /rooms/:id/handoff (bodies under 1 MB) before it becomes a client,
-// and a host can adopt a handed-over world with adoptSnapshot(snap).
+// (stats.loadErrors). A state saved by a newer build is skipped, and the host stops saving (so an old server never
+// overwrites a newer save); the snapshots it serves carry noSave.
 
 import { okPid } from '../sim/roster.ts';
 import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
@@ -64,27 +54,22 @@ export type WorldRoom = {
   peers?: () => readonly { peer: string }[];
   onMessage(h: (m: unknown, from: string) => void): () => void;
   onConnection(h: (connected: boolean) => void): () => void;
-  onHostChange(h: (isHost: boolean) => void): () => void;
-  isHost(): boolean;
 };
 export type AttachOptions = {
   roomId?: string;
-  serverUrl?: string;
-  storage?: SaveStore | null;
-  fetch?: typeof fetch;
+  host?: boolean; // the server's world: stamps, ticks for everyone, saves (default: a client of the host)
+  storage?: SaveStore | null; // the host's save (synchronous, like localStorage)
   now?: () => number;
-  saveMs?: number; // how often a host (or verified client) saves; default SAVE_MS (30 s), the server uses 2 s
+  saveMs?: number; // how often the host saves a changed world; default SAVE_MS (30 s), the server uses 2 s
 };
 type Cfg = {
   roomId: string;
-  serverUrl: string;
   storage: SaveStore | null;
-  fetch: typeof fetch;
   now: () => number;
   saveMs: number;
 };
 type Desync = { tick: number; keys: string[] };
-/** Where a peer keeps its copy of the world: localStorage, or a stand-in in tests. */
+/** Where the host keeps the world: the server's store (world-host.ts), or a stand-in in tests. */
 type SaveStore = Pick<Storage, 'getItem' | 'setItem'>;
 type SnapFail = { from: string; reason: string };
 
@@ -95,7 +80,7 @@ const HASH_EVERY = 20; // 2 s
 const LAG = 1.5; // clients aim to run this many ticks behind the host
 const LEAD = 2; // never run past last known host tick + LEAD (< DELAY, so stamped edits always arrive in time)
 const MAX_STEPS = 5; // ticks per frame
-const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messages at 16 KB, escaping can double)
+const CHUNK = 7000; // chars of snapshot JSON per message (rooms cap messages at 16 KB, escaping can double)
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
@@ -141,9 +126,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   };
   let newerSave = false;
   const skipped = new Set<string>(); // states a snapshot held from a newer build: left out of hash checks // a loaded snapshot held a state from a newer build: never persist over it
-  // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
-  // keep (and upload) that state, but load the saved copy instead.
-  let unverifiedFallback = false;
   let subsystems: Record<string, 'ok' | 'bad'> = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad: Desync | null = null; // { tick, keys } of the latest mismatch
   let queue: Queued[] = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -161,7 +143,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   let cleanup: (() => void)[] = [];
   let connected = true;
   let ready = true; // false until we hold authoritative state
-  let epoch = 0; // bumps on every role change (cancels stale async loads)
   let hostId: string | null = null;
   let hostSeenAt = 0;
   let hostTick = 0;
@@ -175,11 +156,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   let out: Queued[] = []; // stamped edits waiting to be broadcast
   let held: { e: Obj; at: number; fresh?: boolean }[] = []; // [{ e, at, fresh }] edits submitted while the room was down (or one waiting for its slot); releaseHeld
   let heldAt = 0; // wall time the next held edit may go
-  let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
   let lastSavedHash: number | null = null;
   let nextSave = SAVE_MS;
-  let verifiedTick = -1; // client: the tick whose hash last matched the host's (the only state a client may save)
 
   // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
   const snapFail = (from: string, reason: string) => {
@@ -240,7 +219,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       console.warn('[world] validate threw', err);
       return false;
     }
-    const delay = mode === 'local' ? 1 : DELAY + (wall < extraUntil ? 3 : 0);
+    const delay = mode === 'local' ? 1 : DELAY;
     const entry = { tick: world.tick + delay, seq: ++seq, e };
     queue.push(entry);
     if (mode === 'host') {
@@ -286,7 +265,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     return true;
   }
   const canRelease = () => connected && (mode === 'client' || ready);
-  // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
+  // updateWorld delivers what was held once the room is back.
   function onConnected(c: boolean) {
     // A client whose room just came back re-pins to whoever hosts now at once, instead of ignoring a new host for
     // HOST_STALE_MS (the old one may be gone, or be the server after a fallback).
@@ -388,7 +367,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
         step();
       }
       if (acc >= TICK_MS) acc = TICK_MS * 0.99;
-      return; // a client saves from checkHash, at a tick the host just vouched for
+      return;
     }
     if (!ready) return;
     acc += dt * 1000;
@@ -403,7 +382,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function saveSoon() {
     if (mode === 'local' || wall < nextSave) return;
     nextSave = wall + cfg.saveMs;
-    persist(false);
+    persist();
   }
 
   // ------------------------------------------------------------ snapshots + hashes
@@ -424,9 +403,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     world.tick = snap.tick;
     world.seed = snap.seed;
     world.epochMs = snap.epochMs;
-    verifiedTick = -1; // a loaded snapshot is verified only by the next hash check
     const vers: Obj = isObj(snap.vers) ? snap.vers : {};
-    unverifiedFallback = false;
     for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k], vers[k] ?? 0);
     queue = [];
     acc = 0;
@@ -448,7 +425,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       s.load(json);
     } catch (err) {
       stats.loadErrors++;
-      if (mode === 'client') unverifiedFallback = true;
       console.warn(`[world] ${k} failed to load; starting it fresh`, err);
       snapFail('state', `${k} load`);
       try {
@@ -484,9 +460,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     const agree = mine ? Object.keys(mine).every((k) => mine[k] === hs[k]) : worldHash() === h;
     if (agree) {
       stats.hashOk++;
-      verifiedTick = tick;
-      unverifiedFallback = false;
-      saveSoon();
     } else {
       stats.hashBad++;
       const keys = mine ? Object.keys(mine).filter((k) => mine[k] !== hs[k]) : ['?'];
@@ -653,109 +626,49 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   // ------------------------------------------------------------ roles + persistence
   const storageKey = () => `boogle.world.${cfg.roomId}`;
-  // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
-  // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
-  // handoff: a demoted host's last word, sent to the server's handoff endpoint whether or not the world changed.
-  // force: write even if no state changed (the tick still moved on: the server's shutdown save). Returns true when it wrote.
-  function persist(unloading: boolean, handoff = false, force = handoff) {
-    if (mode === 'local' || !ready || awaiting || newerSave || (mode === 'client' && verifiedTick !== world.tick))
-      return false;
+  // The host (our server: server/src/host/world-host.ts) keeps the world in its storage; tabs keep nothing.
+  // force: write even if no state changed (the tick still moved on: the server's 30 s and shutdown saves).
+  // Returns true when it wrote.
+  function persist(force = false) {
+    if (mode !== 'host' || !ready || newerSave) return false;
     const hsh = combine(0);
     if (hsh === lastSavedHash && !force) return false;
     lastSavedHash = hsh;
-    const snap = snapshot();
-    const text = JSON.stringify(snap);
+    const text = JSON.stringify(snapshot());
     stats.snapBytes = text.length;
     try {
       cfg.storage?.setItem(storageKey(), text);
-    } catch {
-      // quota or private mode: ignore
-    }
-    const body =
-      mode === 'host' && cfg.serverUrl ? JSON.stringify({ tick: snap.tick, writerId: selfId, data: snap }) : '';
-    if (body && body.length < (handoff ? 1000000 : 250000)) {
-      const url = new URL(`/rooms/${cfg.roomId}/${handoff ? 'handoff' : 'snapshot'}`, cfg.serverUrl);
-      const init: RequestInit = {
-        method: handoff ? 'POST' : 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body,
-        keepalive: unloading && body.length < 60000,
-      };
-      cfg.fetch(url, init).catch(() => {});
       stats.saves++;
+    } catch (err) {
+      console.warn('[world] save failed', err);
     }
     return true;
   }
-  // Host only: replace the world with a snapshot handed over (by the peer host the server takes over from). Clients
-  // follow through the next hash check and resync. False, with nothing changed, when not host or the snapshot is bad.
-  function adoptSnapshot(snap: unknown) {
-    if (mode !== 'host' || !validSnap(snap)) return false;
-    loadSnapshot(snap);
-    seq += 1000;
-    extraUntil = wall + 2000;
-    nextHashTick = world.tick + 1;
-    served.clear();
-    lastSavedHash = null;
-    for (const fn of snapFns) fn(world.tick);
-    return true;
-  }
-  async function loadPersisted() {
-    let best: Snapshot | null = null as Snapshot | null;
-    const consider = (s: unknown, from: string) => {
-      if (s === null || s === undefined) return;
-      if (!validSnap(s)) return snapFail(from, 'invalid');
-      if (!best || s.tick > best.tick) best = s;
-    };
+  function loadPersisted(): Snapshot | null {
     try {
-      consider(JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null'), 'local');
+      const s = JSON.parse(cfg.storage?.getItem(storageKey()) ?? 'null');
+      if (s === null) return null;
+      if (validSnap(s)) return s;
+      snapFail('local', 'invalid');
     } catch {
-      snapFail('local', 'parse'); // corrupt local copy
+      snapFail('local', 'parse'); // a corrupt save
     }
-    if (cfg.serverUrl) {
-      try {
-        const res = await cfg.fetch(new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl), {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) consider((await res.json()).data, 'server');
-        else if (res.status !== 404) snapFail('server', `http ${res.status}`);
-      } catch (err) {
-        // unreachable or garbled: go on with the local copy or a fresh world
-        const reason =
-          err instanceof SyntaxError ? 'parse' : (err as Error)?.name === 'TimeoutError' ? 'timeout' : 'unreachable';
-        snapFail('server', reason);
-      }
-    }
-    return best;
+    return null;
   }
-  async function becomeHost() {
-    const my = ++epoch;
+  // The host starts from its saved world (or a fresh one) and then stamps, ticks, hashes and serves snapshots.
+  function becomeHost() {
     mode = 'host';
     hostId = null;
     out = [];
-    // Client leftovers: a host waits for no snapshot (a stale flag would stop persist), and its first save always
-    // uploads, even if its local copy as a client already recorded this hash.
-    awaiting = false;
-    asm = null;
     lastSavedHash = null;
     sendId();
-    if (ready && !unverifiedFallback) {
-      // Migration: our state is in sync; keep going, stamp conservatively, hash soon so others can resync.
-      seq += 1000;
-      extraUntil = wall + 2000;
-      nextHashTick = world.tick + 4;
-      return;
-    }
-    // No state yet, or a fallback no hash has vouched for: start from the newest saved copy instead.
-    ready = false;
-    const snap = await loadPersisted();
-    if (my !== epoch) return;
+    const snap = loadPersisted();
     if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
     ready = true;
     nextHashTick = world.tick + HASH_EVERY;
     for (const fn of snapFns) fn(world.tick);
   }
   function becomeClient() {
-    epoch++;
     mode = 'client';
     ready = false;
     hostId = null;
@@ -767,16 +680,14 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     send({ t: 'w:need' });
   }
 
-  // Join a room. Returns detach(). opts: { roomId, serverUrl?, storage?, fetch?, now? }
+  // Join a room. Returns detach(). A tab is a client of the host (the server); the server attaches with host: true.
   function attachWorld(r: WorldRoom, opts: AttachOptions = {}) {
     detachWorld();
     room = r;
     selfId = r.selfId;
     cfg = {
       roomId: String(opts.roomId ?? 'beach'),
-      serverUrl: opts.serverUrl || '',
-      storage: opts.storage ?? (typeof localStorage === 'undefined' ? null : localStorage),
-      fetch: opts.fetch ?? globalThis.fetch?.bind(globalThis),
+      storage: opts.storage ?? null,
       now: opts.now ?? Date.now,
       saveMs: opts.saveMs ?? SAVE_MS,
     };
@@ -785,23 +696,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     queue = [];
     held = [];
     connected = true;
-    cleanup = [
-      r.onMessage(onMessage),
-      r.onConnection(onConnected),
-      r.onHostChange((isHost) => {
-        if (isHost) becomeHost();
-        else if (mode !== 'client') {
-          if (mode === 'host') persist(false, true); // hand the world to the server before letting go
-          becomeClient();
-        }
-      }),
-    ];
-    if (typeof addEventListener === 'function') {
-      const onHide = () => persist(true);
-      addEventListener('pagehide', onHide);
-      cleanup.push(() => removeEventListener('pagehide', onHide));
-    }
-    if (r.isHost()) becomeHost();
+    cleanup = [r.onMessage(onMessage), r.onConnection(onConnected)];
+    if (opts.host) becomeHost();
     else becomeClient();
     return detachWorld;
   }
@@ -812,7 +708,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     mode = 'local';
     ready = true;
     held = [];
-    epoch++;
   }
 
   return {
@@ -844,8 +739,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     updateWorld,
     snapshot,
     loadSnapshot,
-    saveNow: (force = false) => persist(false, false, force), // force: even if no state changed since the last save
-    adoptSnapshot,
+    saveNow: (force = false) => persist(force), // force: even if no state changed since the last save
     worldHash,
     attachWorld,
     detachWorld,
@@ -877,7 +771,6 @@ export const {
   snapshot,
   loadSnapshot,
   saveNow,
-  adoptSnapshot,
   attachWorld,
   detachWorld,
   worldStatus,

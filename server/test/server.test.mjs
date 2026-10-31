@@ -24,104 +24,12 @@ async function start(env = {}, overrides = {}) {
   };
 }
 
-const put = (base, room, body, raw) =>
-  fetch(`${base}/rooms/${room}/snapshot`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: raw ?? JSON.stringify(body),
-  });
-
 test('healthz', async () => {
   const s = await start();
   try {
     const r = await fetch(`${s.base}/healthz`);
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'ok');
-  } finally {
-    await s.stop();
-  }
-});
-
-test('snapshot: 404 -> PUT -> GET, stale tick 409, equal/newer ok', async () => {
-  const s = await start();
-  try {
-    let r = await fetch(`${s.base}/rooms/garden-1/snapshot`);
-    assert.equal(r.status, 404);
-
-    r = await put(s.base, 'garden-1', { tick: 10, writerId: 'a', data: { plants: [1, 2] } });
-    assert.equal(r.status, 200);
-
-    r = await fetch(`${s.base}/rooms/garden-1/snapshot`);
-    assert.equal(r.status, 200);
-    const j = await r.json();
-    assert.equal(j.tick, 10);
-    assert.equal(j.writerId, 'a');
-    assert.deepEqual(j.data, { plants: [1, 2] });
-
-    r = await put(s.base, 'garden-1', { tick: 9, writerId: 'b', data: 'old' });
-    assert.equal(r.status, 409);
-    assert.equal((await r.json()).tick, 10);
-
-    r = await put(s.base, 'garden-1', { tick: 10, writerId: 'b', data: 'same' });
-    assert.equal(r.status, 200);
-    r = await put(s.base, 'garden-1', { tick: 11, writerId: 'b', data: 'new' });
-    assert.equal(r.status, 200);
-    assert.equal((await (await fetch(`${s.base}/rooms/garden-1/snapshot`)).json()).data, 'new');
-
-    // atomic write leaves no temp files
-    const files = await fs.readdir(s.dataDir);
-    assert.deepEqual(files, ['garden-1.json']);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('snapshot: invalid roomId 400, invalid body 400, bad JSON 400', async () => {
-  const s = await start();
-  try {
-    for (const bad of ['UPPER', 'has_underscore', 'a'.repeat(33), 'dot.dot']) {
-      assert.equal((await fetch(`${s.base}/rooms/${bad}/snapshot`)).status, 400, bad);
-      assert.equal((await put(s.base, bad, { tick: 1, writerId: 'a', data: 1 })).status, 400, bad);
-    }
-    assert.equal((await put(s.base, 'ok', { tick: 'x', writerId: 'a', data: 1 })).status, 400);
-    assert.equal((await put(s.base, 'ok', { tick: 1, data: 1 })).status, 400);
-    assert.equal((await put(s.base, 'ok', null, '{nope')).status, 400);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('snapshot: oversize body 413', async () => {
-  const s = await start();
-  try {
-    const r = await put(s.base, 'big', { tick: 1, writerId: 'a', data: 'x'.repeat(300 * 1024) });
-    assert.equal(r.status, 413);
-    const ok = await put(s.base, 'big', { tick: 1, writerId: 'a', data: 'x'.repeat(200 * 1024) });
-    assert.equal(ok.status, 200);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('snapshot: per-IP PUT rate limit', async () => {
-  const s = await start({ PUT_RATE_PER_MIN: '3' });
-  try {
-    const codes = [];
-    for (let i = 0; i < 5; i++) codes.push((await put(s.base, 'rl', { tick: i, writerId: 'a', data: i })).status);
-    assert.deepEqual(codes, [200, 200, 200, 429, 429]);
-    assert.equal((await fetch(`${s.base}/rooms/rl/snapshot`)).status, 200); // GET not limited
-  } finally {
-    await s.stop();
-  }
-});
-
-test('snapshot: MAX_ROOMS enforced, existing rooms still updatable', async () => {
-  const s = await start({ MAX_ROOMS: '2' });
-  try {
-    assert.equal((await put(s.base, 'r1', { tick: 1, writerId: 'a', data: 1 })).status, 200);
-    assert.equal((await put(s.base, 'r2', { tick: 1, writerId: 'a', data: 1 })).status, 200);
-    assert.equal((await put(s.base, 'r3', { tick: 1, writerId: 'a', data: 1 })).status, 507);
-    assert.equal((await put(s.base, 'r1', { tick: 2, writerId: 'a', data: 2 })).status, 200);
   } finally {
     await s.stop();
   }
@@ -242,118 +150,16 @@ test('reports: GET needs REPORT_TOKEN and the bearer token', async () => {
   }
 });
 
-test('/ice: STUN only by default', async () => {
-  const s = await start();
-  try {
-    const j = await (await fetch(`${s.base}/ice`)).json();
-    assert.deepEqual(j, { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-  } finally {
-    await s.stop();
-  }
-});
-
-test('/ice: static TURN credentials', async () => {
-  const s = await start({
-    TURN_URLS: 'turn:turn.example.com:3478, turns:turn.example.com:5349',
-    TURN_USERNAME: 'user',
-    TURN_CREDENTIAL: 'pass',
-  });
-  try {
-    const j = await (await fetch(`${s.base}/ice`)).json();
-    assert.equal(j.iceServers.length, 2);
-    assert.deepEqual(j.iceServers[1], {
-      urls: ['turn:turn.example.com:3478', 'turns:turn.example.com:5349'],
-      username: 'user',
-      credential: 'pass',
-    });
-  } finally {
-    await s.stop();
-  }
-});
-
-test('/ice: TURN_SECRET ephemeral credentials', async () => {
-  const s = await start({ TURN_URLS: 'turn:turn.example.com:3478', TURN_SECRET: 's3cret', TURN_TTL: '600' });
-  try {
-    const before = Math.floor(Date.now() / 1000);
-    const j = await (await fetch(`${s.base}/ice`)).json();
-    const t = j.iceServers[1];
-    const m = /^(\d+):boogle$/.exec(t.username);
-    assert.ok(m, 'username format');
-    const expiry = Number(m[1]);
-    assert.ok(expiry >= before + 600 && expiry <= before + 602);
-    const expected = crypto.createHmac('sha1', 's3cret').update(t.username).digest('base64');
-    assert.equal(t.credential, expected);
-    assert.deepEqual(t.urls, ['turn:turn.example.com:3478']);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('/ice: Cloudflare TURN minted once, port 53 dropped, STUN-only on failure', async () => {
-  const calls = [];
-  let fail = false;
-  const fakeFetch = async (url, init) => {
-    calls.push({ url, init });
-    if (fail) return new Response('nope', { status: 500 });
-    return Response.json({
-      iceServers: [
-        { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
-        {
-          urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turn:turn.cloudflare.com:53?transport=udp'],
-          username: 'u',
-          credential: 'c',
-        },
-      ],
-    });
-  };
-  const env = { CF_TURN_KEY_ID: 'key1', CF_TURN_API_TOKEN: 'tok', TURN_TTL: '600' };
-  const s = await start(env, { fetch: fakeFetch });
-  try {
-    for (let i = 0; i < 2; i++) {
-      const j = await (await fetch(`${s.base}/ice`)).json();
-      assert.deepEqual(j.iceServers, [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: ['turn:turn.cloudflare.com:3478?transport=udp'], username: 'u', credential: 'c' },
-      ]);
-    }
-    assert.equal(calls.length, 1, 'credentials are cached');
-    assert.equal(calls[0].url, 'https://rtc.live.cloudflare.com/v1/turn/keys/key1/credentials/generate-ice-servers');
-    assert.equal(calls[0].init.headers.Authorization, 'Bearer tok');
-    assert.deepEqual(JSON.parse(calls[0].init.body), { ttl: 600 });
-  } finally {
-    await s.stop();
-  }
-  fail = true;
-  const f = await start(env, { fetch: fakeFetch });
-  try {
-    assert.deepEqual((await (await fetch(`${f.base}/ice`)).json()).iceServers, [
-      { urls: 'stun:stun.l.google.com:19302' },
-    ]);
-  } finally {
-    await f.stop();
-  }
-});
-
-test('/ice: TURN_URLS without credentials adds nothing', async () => {
-  const s = await start({ TURN_URLS: 'turn:turn.example.com:3478' });
-  try {
-    assert.equal((await (await fetch(`${s.base}/ice`)).json()).iceServers.length, 1);
-  } finally {
-    await s.stop();
-  }
-});
-
 test('CORS: default *, and allow-list', async () => {
   let s = await start();
   try {
     const r = await fetch(`${s.base}/healthz`, { headers: { origin: 'https://x.example' } });
     assert.equal(r.headers.get('access-control-allow-origin'), '*');
-    const pre = await fetch(`${s.base}/rooms/a/snapshot`, {
+    const pre = await fetch(`${s.base}/report`, {
       method: 'OPTIONS',
-      headers: { origin: 'https://x.example', 'access-control-request-method': 'PUT' },
+      headers: { origin: 'https://x.example', 'access-control-request-method': 'POST' },
     });
     assert.equal(pre.status, 204);
-    assert.match(pre.headers.get('access-control-allow-methods'), /PUT/);
     assert.match(pre.headers.get('access-control-allow-methods'), /POST/);
   } finally {
     await s.stop();
@@ -361,7 +167,7 @@ test('CORS: default *, and allow-list', async () => {
 
   s = await start({ ALLOWED_ORIGINS: 'https://good.example,https://also.example' });
   try {
-    for (const p of ['/healthz', '/ice', '/rooms/a/snapshot', '/report', '/peerjs/peerjs/id']) {
+    for (const p of ['/healthz', '/rooms/a/snapshot', '/report']) {
       const good = await fetch(`${s.base}${p}`, { headers: { origin: 'https://good.example' } });
       assert.equal(good.headers.get('access-control-allow-origin'), 'https://good.example', p);
       const bad = await fetch(`${s.base}${p}`, { headers: { origin: 'https://evil.example' } });
@@ -372,66 +178,34 @@ test('CORS: default *, and allow-list', async () => {
   }
 });
 
-test('/peerjs: signaling endpoints respond', async () => {
-  const s = await start();
-  try {
-    const root = await fetch(`${s.base}/peerjs`);
-    assert.equal(root.status, 200);
-    assert.match((await root.json()).name, /PeerJS/);
-
-    const r = await fetch(`${s.base}/peerjs/peerjs/id`);
-    assert.equal(r.status, 200);
-    assert.ok((await r.text()).length > 0, 'generated id');
-
-    // discovery disabled
-    assert.equal((await fetch(`${s.base}/peerjs/peerjs/peers`)).status, 401);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('/peerjs: websocket handshake yields OPEN', { skip: typeof WebSocket === 'undefined' }, async () => {
-  const s = await start();
-  try {
-    const url = `ws://127.0.0.1:${s.port}/peerjs/peerjs?key=peerjs&id=test-peer-1&token=abc`;
-    const msg = await new Promise((resolve, reject) => {
-      const ws = new WebSocket(url);
-      const t = setTimeout(() => reject(new Error('ws timeout')), 3000);
-      ws.onmessage = (e) => {
-        clearTimeout(t);
-        ws.close();
-        resolve(JSON.parse(e.data));
-      };
-      ws.onerror = () => {
-        clearTimeout(t);
-        reject(new Error('ws error'));
-      };
-    });
-    assert.equal(msg.type, 'OPEN');
-  } finally {
-    await s.stop();
-  }
-});
-
 // Upgrades go through one router (src/host/upgrade.ts): PeerJS signaling at /peerjs/peerjs, anything unknown 404.
-test('PeerJS signaling works through the upgrade router; an unknown upgrade path is refused', async () => {
-  const { WebSocket } = await import('ws');
-  const { svc, base } = await start({}, { unrefTimers: true });
+
+test('snapshot: GET serves a room the server saved, 404 for none, 400 for a bad id; no uploads', async () => {
+  const s = await start();
   try {
-    const ws = base.replace('http', 'ws');
-    const first = await new Promise((resolve, reject) => {
-      const s = new WebSocket(`${ws}/peerjs/peerjs?key=peerjs&id=router-test&token=t1`);
-      s.on('message', (m) => (resolve(JSON.parse(String(m))), s.close()));
-      s.on('error', reject);
-    });
-    assert.equal(first.type, 'OPEN');
+    const doc = { tick: 10, writerId: 'server', data: { tick: 10 }, updatedAt: 'x' };
+    await fs.writeFile(path.join(s.dataDir, 'garden-1.json'), JSON.stringify(doc));
+    assert.deepEqual(await (await fetch(`${s.base}/rooms/garden-1/snapshot`)).json(), doc);
+    assert.equal((await fetch(`${s.base}/rooms/garden-2/snapshot`)).status, 404);
+    assert.equal((await fetch(`${s.base}/rooms/Bad!/snapshot`)).status, 400);
+    const put = await fetch(`${s.base}/rooms/garden-1/snapshot`, { method: 'PUT', body: '{}' });
+    assert.equal(put.status, 404, 'tabs no longer upload worlds');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('an upgrade outside /room/ is refused', async () => {
+  const { WebSocket } = await import('ws');
+  const s = await start();
+  try {
     const refused = await new Promise((resolve) => {
-      const s = new WebSocket(`${ws}/nope`);
-      s.on('unexpected-response', (_req, res) => resolve(res.statusCode));
-      s.on('error', () => resolve('error'));
+      const ws = new WebSocket(`${s.base.replace('http', 'ws')}/peerjs/peerjs?key=peerjs&id=x&token=t`);
+      ws.on('unexpected-response', (_req, res) => resolve(res.statusCode));
+      ws.on('error', () => resolve('error'));
     });
     assert.equal(refused, 404);
   } finally {
-    await svc.close();
+    await s.stop();
   }
 });

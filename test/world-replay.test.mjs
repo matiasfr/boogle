@@ -1,7 +1,6 @@
-// Replay: a host and two clients on the real rules and the home land play a seeded stream of every registered op
-// (each rules module's `edits` generators, about a fifth of it junk). Midway the host dies and a client takes over,
-// then a late joiner loads a snapshot over the wire (after a toss), and at the end a fresh tab reloads a JSON
-// snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
+// Replay: a host (the server's role) and two clients on the real rules and the home land play a seeded stream of every
+// registered op (each rules module's `edits` generators, about a fifth of it junk). Midway a late joiner loads a
+// snapshot over the wire (after a toss), and at the end a fresh tab reloads a JSON snapshot. Every live peer must hash every state the same at every tick they share, every module's invariants must
 // hold, and a second run with the same seed must give the same results. See src/world/rules/README.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,7 +37,7 @@ function makePeer(seed, net, id, host) {
   });
   if (net) {
     x.p = net.add(id, host);
-    s.attachWorld(x.p.room, { roomId: 'replay', storage: null, now: () => 1000 });
+    s.attachWorld(x.p.room, { roomId: 'replay', host, storage: null, now: () => 1000 });
   } else {
     s.setSelfId(id);
     x.p = { alive: true };
@@ -90,8 +89,6 @@ async function replay(seed) {
 
   await run(net, peers, 6); // the host is up and both clients hold its snapshot
   await play(40);
-  net.killHost(); // c1 takes over; c2 follows it once the old host has been silent long enough
-  await run(net, peers, 64);
   await play(30);
   await play(8, 'gift.toss'); // a toss lands before the joiner copies the state fresh
   assert.ok(
@@ -135,7 +132,7 @@ async function replay(seed) {
   };
 }
 
-test('a seeded stream of every op stays in step across host loss, a late joiner and a snapshot reload', async () => {
+test('a seeded stream of every op stays in step across a late joiner and a snapshot reload', async () => {
   const a = await replay(SEED);
   const b = await replay(SEED);
   assert.deepEqual(b, a, 'the same seed gave different results');

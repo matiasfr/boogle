@@ -6,7 +6,6 @@
 //   room.join(ws, selfId)        an upgraded socket (rooms.ts has checked the room, id, origin and rate)
 //   room.status()                { boot, tick, players, max, lead, noSave }
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
-//   await room.adopt(snap)       replace the world with a handed-over one, re-serve every client, save
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
@@ -265,12 +264,6 @@ export function createHostedRoom({
       noSave: world.status().newerSave, // a state saved by a newer build: deploy the server
     }),
     idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
-    async adopt(snap: unknown) {
-      if (!world.adopt(snap)) return false;
-      for (const id of clients.keys()) world.deliver({ t: 'w:need' }, id);
-      await world.save();
-      return true;
-    },
     async close({ save = true } = {}) {
       closing = true;
       clearInterval(housekeep);

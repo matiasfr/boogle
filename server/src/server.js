@@ -3,14 +3,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
-import { ExpressPeerServer } from 'peer';
-import { WebSocketServer } from 'ws';
 import { createStore } from './store.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
-const STUN = 'stun:stun.l.google.com:19302';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect']);
 const REPORT_BATCH = 10; // reports per POST
@@ -39,24 +36,13 @@ export function loadConfig(env = process.env, overrides = {}) {
     dataDir: env.DATA_DIR || './data',
     allowedOrigins: origins.length ? origins : ['*'],
     maxRooms: Number(env.MAX_ROOMS ?? 1000),
-    putRatePerMin: Number(env.PUT_RATE_PER_MIN ?? 30),
     trustProxy: parseTrustProxy(env.TRUST_PROXY),
-    turnUrls: list(env.TURN_URLS),
-    turnUsername: env.TURN_USERNAME || '',
-    turnCredential: env.TURN_CREDENTIAL || '',
-    turnSecret: env.TURN_SECRET || '',
-    turnTtl: Number(env.TURN_TTL ?? 86400),
-    cfTurnKeyId: env.CF_TURN_KEY_ID || '',
-    cfTurnApiToken: env.CF_TURN_API_TOKEN || '',
-    fetch: globalThis.fetch,
-    aliveTimeout: Number(env.PEER_ALIVE_TIMEOUT ?? 60000),
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
-    serverRooms: list(env.SERVER_ROOMS), // rooms this server hosts (docs/plans/server-host.md); empty: PeerJS only
+    serverRooms: list(env.SERVER_ROOMS), // rooms this server hosts (docs/plans/server-host.md): '*' for all
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
-    adoptWindowMs: Number(env.ADOPT_WINDOW_MS ?? 600000), // how long after start a hosted room adopts a handoff
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
     log: (...a) => console.log(new Date().toISOString(), ...a),
@@ -114,55 +100,6 @@ function cleanReport(r) {
   return out;
 }
 
-function iceServers(cfg) {
-  const servers = [{ urls: STUN }];
-  if (cfg.turnUrls.length) {
-    if (cfg.turnUsername && cfg.turnCredential) {
-      servers.push({ urls: cfg.turnUrls, username: cfg.turnUsername, credential: cfg.turnCredential });
-    } else if (cfg.turnSecret) {
-      const expiry = Math.floor(Date.now() / 1000) + cfg.turnTtl;
-      const username = `${expiry}:boogle`;
-      const credential = crypto.createHmac('sha1', cfg.turnSecret).update(username).digest('base64');
-      servers.push({ urls: cfg.turnUrls, username, credential });
-    }
-  }
-  return servers;
-}
-
-// Cloudflare TURN: mint credentials from its API, shared by every caller and re-minted at half their TTL.
-// Port 53 URLs are dropped (browsers block them). On failure /ice serves whatever else is configured.
-function createCloudflareTurn(cfg) {
-  if (!cfg.cfTurnKeyId || !cfg.cfTurnApiToken) return null;
-  const url = `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfg.cfTurnKeyId)}/credentials/generate-ice-servers`;
-  let cached = null; // { servers, freshUntil }
-  let pending = null;
-  async function mint() {
-    const res = await cfg.fetch(url, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${cfg.cfTurnApiToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ttl: cfg.turnTtl }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) throw new Error(`Cloudflare TURN ${res.status}`);
-    const servers = [(await res.json()).iceServers]
-      .flat()
-      .filter((s) => s?.username && s?.credential)
-      .map((s) => ({ ...s, urls: [s.urls].flat().filter((u) => !/:53(\?|$)/.test(u)) }))
-      .filter((s) => s.urls.length);
-    if (!servers.length) throw new Error('Cloudflare TURN returned no credentials');
-    cached = { servers, freshUntil: Date.now() + (cfg.turnTtl * 1000) / 2 };
-  }
-  return async function get() {
-    if (!cached || Date.now() > cached.freshUntil) {
-      pending ??= mint()
-        .catch((e) => cfg.log('cloudflare turn:', e.message))
-        .finally(() => (pending = null));
-      await pending;
-    }
-    return cached && Date.now() < cached.freshUntil + (cfg.turnTtl * 1000) / 2 ? cached.servers : [];
-  };
-}
-
 /**
  * Build (but don't start listening) the service.
  * Returns { app, server, listen(port), close({ save }), config, roomHost() }.
@@ -183,7 +120,7 @@ export function createService(cfg) {
       res.append('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
+      res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.set('Access-Control-Allow-Headers', req.get('access-control-request-headers') || 'Content-Type');
       res.set('Access-Control-Max-Age', '600');
       return res.status(204).end();
@@ -191,13 +128,8 @@ export function createService(cfg) {
     next();
   });
 
-  // ---- health / ICE ----
+  // ---- health ----
   app.get('/healthz', (_req, res) => res.type('text/plain').send('ok'));
-  const cloudflareTurn = createCloudflareTurn(cfg);
-  app.get('/ice', async (_req, res) => {
-    res.set('Cache-Control', 'no-store');
-    res.json({ iceServers: [...iceServers(cfg), ...(cloudflareTurn ? await cloudflareTurn() : [])] });
-  });
 
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);
@@ -220,57 +152,11 @@ export function createService(cfg) {
     }
   });
 
-  // A snapshot document from a request body, or null: { tick: number, writerId: string, data: any }.
-  const snapshotDoc = (b) =>
-    b &&
-    typeof b === 'object' &&
-    !Array.isArray(b) &&
-    typeof b.tick === 'number' &&
-    Number.isFinite(b.tick) &&
-    typeof b.writerId === 'string' &&
-    b.writerId.length >= 1 &&
-    b.writerId.length <= 128 &&
-    'data' in b
-      ? { tick: b.tick, writerId: b.writerId, data: b.data, updatedAt: new Date().toISOString() }
-      : null;
-  const BAD_DOC = { error: 'body must be { tick: number, writerId: string, data: any }' };
-  const saveLimit = createRateLimiter({ perMinute: cfg.putRatePerMin }); // PUT and handoff share it
-
-  // A room the server hosts keeps its own save: a peer host's PUT gets 409 and writes nothing.
-  app.put('/rooms/:roomId/snapshot', validRoom, saveLimit, express.json({ limit: '256kb' }), async (req, res, next) => {
-    const doc = snapshotDoc(req.body);
-    if (!doc) return res.status(400).json(BAD_DOC);
-    if (roomHost?.hosts(req.params.roomId))
-      return res.status(409).json({ error: 'server-hosted', tick: roomHost.status(req.params.roomId).tick });
-    try {
-      const result = await store.write(req.params.roomId, doc, { ifNewer: true });
-      res.status(result.status).json(result.body);
-    } catch (e) {
-      next(e);
-    }
-  });
-
-  // A demoted peer host's last save (src/world/sync.ts, persist with handoff): a hosted room adopts it if newer
-  // (src/host/rooms.ts); any other room stores it like a PUT.
-  app.post('/rooms/:roomId/handoff', validRoom, saveLimit, express.json({ limit: '1mb' }), async (req, res, next) => {
-    const doc = snapshotDoc(req.body);
-    if (!doc) return res.status(400).json(BAD_DOC);
-    try {
-      let result = await roomHost?.handoff(req.params.roomId, doc);
-      // Stored like a PUT, so PUT's size cap applies.
-      if (!result && Number(req.get('content-length') ?? 0) > 256 * 1024)
-        return res.status(413).json({ error: 'payload too large' });
-      result ??= await store.write(req.params.roomId, doc, { ifNewer: true });
-      res.status(result.status).json(result.body);
-    } catch (e) {
-      next(e);
-    }
-  });
-
-  // Who hosts a room (the client's room picker asks before choosing a transport).
+  // A hosted room's state: { mode: 'server', tick, players, max, ... } (404 for a room this server doesn't host).
   app.get('/rooms/:roomId/host', validRoom, (req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json(roomHost?.status(req.params.roomId) ?? { mode: 'peer' });
+    if (!roomHost?.hosts(req.params.roomId)) return res.status(404).json({ error: 'not hosted' });
+    res.json(roomHost.status(req.params.roomId));
   });
 
   // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
@@ -352,35 +238,9 @@ export function createService(cfg) {
     }
   });
 
-  // ---- PeerJS signaling ----
+  // ---- room sockets (./host/upgrade.ts) ----
   const server = http.createServer(app);
-  let connected = 0;
-  let peerWss = null; // made by peer when the app mounts; upgrades reach it through routeUpgrades
-  const peerApp = ExpressPeerServer(server, {
-    path: '/',
-    createWebSocketServer: (o) => (peerWss = new WebSocketServer({ noServer: true, path: o.path })),
-    allow_discovery: false,
-    alive_timeout: cfg.aliveTimeout,
-    proxied: cfg.trustProxy,
-    corsOptions: { origin: anyOrigin ? true : cfg.allowedOrigins },
-  });
-  peerApp.on('connection', () => {
-    connected++;
-    cfg.log(`[peer] connect, active=${connected}`);
-  });
-  peerApp.on('disconnect', () => {
-    connected = Math.max(0, connected - 1);
-    cfg.log(`[peer] disconnect, active=${connected}`);
-  });
-  // peer re-arms recursive housekeeping setTimeouts and has no stop API, which keeps the
-  // event loop alive after close(). Tests opt in to unref'd timers; production exits explicitly.
-  if (cfg.unrefTimers && !globalThis.__boogleUnref) {
-    globalThis.__boogleUnref = true;
-    const realSetTimeout = globalThis.setTimeout;
-    globalThis.setTimeout = (...a) => realSetTimeout(...a).unref();
-  }
-  app.use('/peerjs', peerApp);
-  routeUpgrades(server, { peerWss: () => peerWss, roomHost: () => roomHost });
+  routeUpgrades(server, { roomHost: () => roomHost });
 
   // ---- errors ----
   app.use((req, res) => res.status(404).json({ error: 'not found' }));

@@ -2,8 +2,7 @@
 
 Still open:
 
-- PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.187. The peer-room header cites peerjs 1.5.4;
-  the package has 1.5.5.
+- PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.187.
 - DESIGN.md's authority table names "weather", which does not exist yet.
 - DESIGN principle 9 says growth is computed from elapsed time; only the helper bank reads `world.epochMs` (as
   `src/world/README.md` now says), and mushrooms, fruit and the day count ticks.

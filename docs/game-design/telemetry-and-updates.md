@@ -1,9 +1,8 @@
 # 6.15 Telemetry and updates
 
 - **Telemetry.** Sends JS errors, desyncs (which states, which tick), snapshot load failures and connection outcomes
-  (with `hadTurn`, `role` (host, client, or server when the server hosts the room), `transport` (8.1), `mixedBuilds`
-  and `gfx`; a good join also sends `links`, how many of them go through the TURN relay
-  as `relayed`, and the slowest link's round trip as `rttMs`) to `POST /report`, only when `VITE_BOOGLE_SERVER` is set. Nothing personal.
+  (with `role` (lead or client), `transport` (8.1), `mixedBuilds` and `gfx`; a good join also sends the round trip to
+  the server as `rttMs`) to `POST /report`, only when `VITE_BOOGLE_SERVER` is set. Nothing personal.
   At most 20 reports per page load, each duplicate at most twice, batched every 10 s and on pagehide with
   `sendBeacon`. A join still "connecting" after 30 s reports as stuck. Local.
   File: [src/features/telemetry.js](../../src/features/telemetry.js).

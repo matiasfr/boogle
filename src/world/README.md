@@ -6,7 +6,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 
 | File | Owns |
 |---|---|
-| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration (the browser-host model, until docs/plans/server-host.md step 11) and persistence; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
+| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |

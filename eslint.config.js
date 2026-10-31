@@ -2,7 +2,6 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const rapierBan = {
   name: '@dimforge/rapier3d',
   message: 'Physics goes through src/physics/engine.ts (docs/plans/rapier.md).',
@@ -53,15 +52,15 @@ export default [
   },
   // TypeScript everywhere (AGENTS.md): typescript-eslint's recommended rules on .ts files; tsc does the type checking.
   ...tseslint.configs.recommended.map((c) => ({ ...c, files: ['**/*.ts'] })),
-  // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the peerjs and sync bans.
+  // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync ban.
   {
     files: ['src/**/*.{js,ts}'],
     ignores: ['src/net/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, rapierBan], patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: [rapierBan], patterns: [syncBan] }] },
   },
   {
     files: ['src/world/game-world.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, rapierBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: [rapierBan] }] },
   },
   {
     files: ['src/world/rules/**/*.{js,ts}'],
@@ -69,7 +68,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [peerjsBan, ...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: rulesMessage }))],
+          paths: [...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: rulesMessage }))],
           patterns: [
             {
               // three/*, and any ../ path except ../grid and ../../sim/<file> (.js or .ts)
@@ -88,7 +87,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [peerjsBan, rapierBan],
+          paths: [rapierBan],
           patterns: [
             {
               group: ['./*', '!./*.css'],
@@ -106,7 +105,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [peerjsBan, ...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: simMessage }))],
+          paths: [...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: simMessage }))],
           patterns: [{ group: ['../*', 'three/*'], message: simMessage }, syncBan],
         },
       ],
@@ -130,7 +129,7 @@ export default [
   // The physics backend is the only module that imports a physics library (docs/plans/rapier.md).
   {
     files: ['src/physics/backend-*.ts'],
-    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan], patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [syncBan] }] },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).
