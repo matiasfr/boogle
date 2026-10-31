@@ -34,19 +34,7 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
 // WebGPURenderer (docs/plans/webgpu-migration.md) never calls onBeforeCompile, can't draw ShaderMaterial and draws
 // THREE.Points as 1 px dots. UNPORTED shrinks to [] as the migration lands.
 const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (docs/plans/webgpu-migration.md).';
-const UNPORTED = [
-  'src/render/water-render.js',
-  'src/render/sky.js',
-  'src/render/particles.js',
-  'src/render/material-patch.js',
-  'src/adapters/terrain.js',
-  'src/pois/lighthouse/index.js',
-  'src/pois/caves/index.js',
-  'src/features/critter-fish.js',
-  'src/features/critter-fireflies.js',
-  'src/player/player.js',
-  'src/guest/model.js',
-];
+const UNPORTED = [];
 
 export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/'] },

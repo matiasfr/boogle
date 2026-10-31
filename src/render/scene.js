@@ -10,7 +10,9 @@ export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powe
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
-renderer.toneMapping = THREE.AgXToneMapping;
+// Neutral, not AgX: AgX greyed the toy palette (sea, sky and grass lost their saturation).
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 0.9;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const lobbyNote = (text) => {
@@ -53,7 +55,7 @@ export const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(FOG_HEX, FOG_NEAR, FOG_FAR);
 export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 
-// Scene -> linear HDR target (MSAA from the renderer) -> one output pass (AgX tone map + sRGB). Post effects (bloom,
+// Scene -> linear HDR target (MSAA from the renderer) -> one output pass (tone map + sRGB). Post effects (bloom,
 // TRAA, GTAO...) extend this chain: set pipeline.outputNode from scenePass and pipeline.needsUpdate = true.
 export const scenePass = pass(scene, camera);
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);

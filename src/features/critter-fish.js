@@ -4,7 +4,17 @@
 // tail wiggle is in the vertex shader. Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (the island is alive) and 2 (the ball scares fish). With 36 fish, plain pairwise boids is cheaper
 // than bucketing them on the cell grid.
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  positionLocal,
+  positionGeometry,
+  instancedDynamicBufferAttribute,
+  instanceIndex,
+  float,
+  sin,
+  max,
+  time,
+} from 'three/tsl';
 import { onFrame, onStart } from '../loop.js';
 import { scene } from '../render/scene.js';
 import { groundHeight } from '../adapters/terrain.js';
@@ -12,8 +22,7 @@ import { waterField } from '../physics/water-field.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
-import { waterMat } from '../render/water-render.js';
-import { patchMaterial } from '../render/material-patch.js';
+import { patchNode } from '../render/material-patch.js';
 import { proto } from '../adapters/proto-flags.js';
 
 const FISH = {
@@ -33,21 +42,23 @@ const PROBES = [
 ];
 const depthAt = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
 const geo = new THREE.ConeGeometry(0.11, 0.48, 5).rotateX(Math.PI / 2); // points along +z
-const mat = new THREE.MeshStandardMaterial({
+const mat = new THREE.MeshStandardNodeMaterial({
   color: '#ff6a1a',
   emissive: '#7a2a00',
   roughness: 0.6,
   flatShading: true,
 });
-patchMaterial(mat, 'fishwiggle', (sh) => {
-  sh.uniforms.uT = waterMat.uniforms.uTime;
-  sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nuniform float uT;')
-    .replace(
-      '#include <begin_vertex>',
-      '#include <begin_vertex>\ntransformed.x += sin(uT * 13.0 + float(gl_InstanceID) * 1.7) * max(0.0, -position.z) * 0.35;',
-    );
-});
+// positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space.
+const side = new THREE.InstancedBufferAttribute(new Float32Array(FISH.count * 3), 3).setUsage(THREE.DynamicDrawUsage);
+patchNode(mat, 'positionNode', (prev) =>
+  (prev ?? positionLocal).add(
+    instancedDynamicBufferAttribute(side).mul(
+      sin(time.mul(13).add(float(instanceIndex).mul(1.7)))
+        .mul(max(0, positionGeometry.z.negate()))
+        .mul(0.35),
+    ),
+  ),
+);
 const fish = new THREE.InstancedMesh(geo, mat, FISH.count);
 fish.frustumCulled = false;
 fish.visible = false;
@@ -81,6 +92,7 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   one = new THREE.Vector3(1, 1, 1),
+  tmp = new THREE.Vector3(),
   pos = new THREE.Vector3();
 let lastBallY = 0;
 
@@ -165,8 +177,11 @@ onFrame(
       const f = P[k];
       q.setFromEuler(e.set(0, Math.atan2(f.vx, f.vz), 0));
       fish.setMatrixAt(k, m4.compose(pos.set(f.x, f.y, f.z), q, one));
+      tmp.set(1, 0, 0).applyQuaternion(q);
+      side.setXYZ(k, tmp.x, tmp.y, tmp.z);
     }
     fish.instanceMatrix.needsUpdate = true;
+    side.needsUpdate = true;
   },
   { phase: 'update' },
 );

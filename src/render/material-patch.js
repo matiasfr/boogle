@@ -8,11 +8,3 @@ export function patchNode(mat, slot, fn) {
   mat.needsUpdate = true;
   return mat;
 }
-
-// Temporary: GLSL-style callers (fish, caves) are still being ported to patchNode. Wave 2 deletes this.
-let warned = false;
-export function patchMaterial(mat) {
-  if (!warned) console.warn('patchMaterial is a no-op on WebGPURenderer: port the caller to patchNode.');
-  warned = true;
-  return mat;
-}
