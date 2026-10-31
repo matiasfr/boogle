@@ -31,7 +31,7 @@ installStepHooks({ me, ball, remotes });
 let last = performance.now();
 let elapsed = 0;
 function frame(now = performance.now()) {
-  const dt = Math.min((now - last) / 1000, 0.05);
+  const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); // a first rAF stamp can predate `last` (play())
   last = now;
   elapsed += dt;
   updateRemotes(now);
