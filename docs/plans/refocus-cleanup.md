@@ -517,7 +517,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - a `/look` motion of a full-charge ball throw with the preview visible: the ball should land at the end of the
       dots. If it doesn't, check Rapier's damping formula in `src/physics/backend-rapier.ts` before tuning anything.
 
-- [ ] **6. Save the ball's resting spot per room (Lockstep `ball`).** Serves 9 (leave something for the next
+- [x] **6. Save the ball's resting spot per room (Lockstep `ball`).** Serves 9 (leave something for the next
   visitor) and "you global, world per room". Lane B, after step 5.
   - New: `src/sim/ball-rest.ts`, `test/ball-rest.test.ts`, `src/world/rules/ball.ts`, `src/features/ball-rest.ts`
     (Design, "Lockstep piece").

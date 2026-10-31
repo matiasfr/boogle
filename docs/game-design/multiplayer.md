@@ -44,6 +44,7 @@ are held (up to 64, 5 s) and released one per 210 ms.
 | Haul stacks (what each player carries) | Lockstep, by roster index | state `stacks`; the spill is your call (Owner), applied as `pile.drop` |
 | Work sites, plaques (tier derived), machine runs | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites` |
 | Log sources (the bundles at the home palms) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
+| Ball resting spot | Lockstep (the ball's physics stays Owner) | op `ball.rest` (integer cm; one per 2 s); state `ball`; restored once when a tab loads the world |
 | Offline helper bank | Lockstep, from a host-only measurement | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Thrown things, frisbee | Lockstep | ops `gift.take`, `gift.toss`; state `gifts` |

@@ -132,6 +132,20 @@ export function throwBall(p, vel) {
   sendPresence();
 }
 
+// Puts the ball down at a saved spot (src/features/ball-rest.ts). A live ball elsewhere, or one in someone's hands,
+// wins: then nothing moves and this returns false.
+export function placeBall(x, y, z) {
+  if (ball.owner?.remote || ball.held) return false;
+  ball.disp.p.set(x, y, z);
+  ball.disp.v.set(0, 0, 0);
+  teleport(ball.body, x, y, z);
+  ball.body.velocity.set(0, 0, 0);
+  ball.body.angularVelocity.set(0, 0, 0);
+  ball.mesh.position.copy(ball.disp.p);
+  if (ball.mine) sendPresence();
+  return true;
+}
+
 export function respawnBall() {
   if (!ball.mine) claimBall(false);
   me.holding = false;

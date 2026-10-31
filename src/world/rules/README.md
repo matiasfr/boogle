@@ -141,6 +141,7 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `sites.ts` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), isDone(s), points(pid), room(s, ring), canRun(s), run(s, tick), helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.ts`, `../../sim/route.ts`), plaques, machine runs (`../../sim/scripted-run.ts`), helper freight and the age change (derived from `open`); later rules subscribe to `onSectionDone` at install |
 | `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the log bundles at the palm cells in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
 | `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
+| `ball.ts` | `ball.rest` | `ball` | `{ ball, rest() }`: the beach ball's last resting spot in cm (`../../sim/ball-rest.ts`); no tick; the adapter `src/features/ball-rest.ts` saves it and puts the ball back |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 
 The land (`{ n, layout }`) comes from `../home-land.json` outside the game (server, tests); see `../README.md`.
