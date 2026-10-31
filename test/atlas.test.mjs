@@ -2,6 +2,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractFile, extractFacts } from '../dev/atlas/extract.mjs';
+import { BOX, KINDS, CHANNEL_IDS } from '../atlas/layout.js';
+import { buildModel, kindOf, resolveCite } from '../atlas/model.js';
+import { parseNarrative } from '../atlas/narrative.js';
+import { checkAtlas } from '../atlas/check.js';
+import { parseChanges, renderChanges } from '../atlas/changes.js';
 
 const SAMPLE = `// Sample feature.
 // Second line.
@@ -97,4 +102,170 @@ test('extractFacts is deterministic', () => {
   assert.deepEqual(one.files[1].imports, ['src/a.js']);
   assert.deepEqual(one.files[2].imports, ['src/b.js']);
   assert.equal(one.git, null);
+});
+
+// ---- narrative: fixtures only ----
+
+const MAIN = 'updateRemotes(); resolveBallOwner(); updateIntent(); prepareBall(); world.step();';
+
+function good() {
+  const facts = extractFacts({
+    git: false,
+    sources: [
+      {
+        path: 'src/world/rules/mushrooms.js',
+        text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
+      },
+      {
+        path: 'src/features/honk.js',
+        text: "registerAction('honk', { pad: 'y', key: 'KeyT' });\nnet.room.send({ t: 'honk' });\nexport function honkNow() {}\n",
+      },
+    ],
+  });
+  const ids = [...new Set(Object.values(BOX).map((b) => b.c))];
+  const concepts = {
+    intro: { title: 't', ways: [{ kind: 'local', says: 's', eg: 'e' }] },
+    kinds: Object.fromEntries(Object.keys(KINDS).map((k) => [k, 'text'])),
+    channels: Object.fromEntries(CHANNEL_IDS.map((k) => [k, { name: k, d: 'd', tag: 't' }])),
+    folders: { features: 'plug-ins', 'world/rules': 'rules' },
+    boxes: { 'you.features': '{features} plug-ins' },
+    concepts: ids.map((id) => ({
+      id,
+      title: id,
+      one: 'one',
+      like: 'like',
+      rules: ['rule'],
+      code: [{ dir: 'src/features' }],
+    })),
+  };
+  const stories = [
+    {
+      id: 'mush',
+      title: 'Plant',
+      kind: 'lock',
+      order: 40,
+      _file: 'docs/atlas/stories/mush.json',
+      steps: [
+        {
+          go: [['you.features', 'lane:lock', 'you.world']],
+          text: 'It submits the edit.',
+          cite: [{ file: 'src/world/rules/mushrooms.js', symbol: 'apply' }, { op: 'mush.plant' }, { message: 'honk' }],
+        },
+        { hl: ['you.world'], text: 'Applied.', cite: [{ state: 'mushrooms' }, { action: 'honk' }] },
+      ],
+    },
+  ];
+  const changes =
+    '# What changed\n\n## 2026-10-30\n\n- New. [see](#story/mush) and [frame](#view/frame)\n\n## 2026-10-29\n\n- Older.\n';
+  return { facts, concepts, stories, changes, mainSource: MAIN };
+}
+const report = (fix) => checkAtlas(fix);
+const only = (problems, re) => {
+  const hits = problems.filter((p) => re.test(p));
+  assert.equal(hits.length, 1, `expected one match for ${re}, got ${hits.length} in:\n${problems.join('\n')}`);
+  assert.equal(problems.length, 1, `extra problems:\n${problems.join('\n')}`);
+};
+
+test('checkAtlas passes a good narrative', () => {
+  assert.deepEqual(report(good()), []);
+});
+
+test('checkAtlas names each problem once', () => {
+  const run = (edit, re) => {
+    const g = good();
+    edit(g);
+    only(report(g), re);
+  };
+  const cite = (g, c) => (g.stories[0].steps[0].cite = [c]);
+  run((g) => cite(g, { file: 'src/nope.js' }), /mush\.json step 1: .*src\/nope\.js does not exist/);
+  run((g) => cite(g, { file: 'src/features/honk.js', symbol: 'zzz' }), /has no symbol zzz/);
+  run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
+  run((g) => cite(g, { op: 'mush.plant', state: 'mushrooms' }), /exactly one of/);
+  run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box "nowhere" in go/);
+  run((g) => (g.stories[0].steps[0].go = [['you.features', 'lane:zzz']]), /unknown lane lane:zzz/);
+  run((g) => (g.stories[0].steps[1].hl = ['nope.box']), /unknown box "nope\.box" in hl/);
+  run(
+    (g) => (g.concepts.concepts = g.concepts.concepts.filter((c) => c.id !== 'server')),
+    /BOX server: unknown concept "server"/,
+  );
+  run((g) => (g.stories[0]._file = 'docs/atlas/stories/other.json'), /must equal the file name "other"/);
+  run(
+    (g) => (g.changes = '# What changed\n\n## 2026-10-01\n\n- a\n\n## 2026-10-02\n\n- b\n'),
+    /## 2026-10-02 comes after ## 2026-10-01/,
+  );
+  run((g) => (g.changes += '\n- [gone](#story/nope)\n'), /#story\/nope points at nothing/);
+  run((g) => (g.mainSource = MAIN.replace('prepareBall(); ', '')), /PRE_STEP lists prepareBall/);
+});
+
+test('parseNarrative never throws', () => {
+  const { N, loadProblems } = parseNarrative({
+    conceptsText: '{ not json',
+    storyTexts: {
+      'x/docs/atlas/stories/a.json': '{"id":"a"}',
+      'x/docs/atlas/stories/b.json': '{"id":"b","order":2,"steps":[]}',
+    },
+  });
+  assert.equal(loadProblems.length, 2);
+  assert.deepEqual(N.concepts, []);
+  assert.deepEqual(N.boxes, {});
+  assert.deepEqual(
+    N.stories.map((s) => s.id),
+    ['b'],
+  );
+  assert.doesNotThrow(() => parseNarrative());
+});
+
+test('resolveCite never throws', () => {
+  const model = buildModel(good().facts);
+  for (const c of [
+    null,
+    undefined,
+    {},
+    { file: 1 },
+    [],
+    'x',
+    { file: 'a', dir: 'b' },
+    { symbol: 'x' },
+    { dir: 'src/features', symbol: 's' },
+  ]) {
+    const r = resolveCite(c, model);
+    assert.equal(typeof r.error, 'string', JSON.stringify(c));
+    assert.deepEqual(r.files, []);
+  }
+  assert.deepEqual(resolveCite({ dir: 'src/features' }, model), { files: ['src/features/honk.js'], error: null });
+});
+
+test('kindOf classifies', () => {
+  const rec = (f, extra = {}) => ({
+    f,
+    ops: [],
+    states: [],
+    ticks: [],
+    host: [],
+    owner: [],
+    msgs: [],
+    onMessage: false,
+    submits: false,
+    ...extra,
+  });
+  assert.equal(kindOf(rec('src/features/x.js', { ops: ['a'] })), 'lock');
+  assert.equal(kindOf(rec('src/world/sync.js', { msgs: ['w:edits'], onMessage: true })), 'lock');
+  assert.equal(kindOf(rec('src/boogler/b.js', { host: ['g'] })), 'host');
+  assert.equal(kindOf(rec('src/netplay/net.js')), 'owner');
+  assert.equal(kindOf(rec('src/features/ping.js', { onMessage: true })), 'msg');
+  assert.equal(kindOf(rec('src/features/g.js', { submits: true })), 'adapter');
+  assert.equal(kindOf(rec('src/features/plain.js')), 'local');
+});
+
+test('changes parse and render, escaping everything', () => {
+  const entries = parseChanges(
+    '# What changed\n\n## 2026-10-30\n\nHello <b>x</b> `a<b`\n\n- [go](#story/mush) [dead](#story/no)\n',
+  );
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].date, '2026-10-30');
+  const html = renderChanges(entries, { stories: new Set(['mush']), concepts: new Set() });
+  assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
+  assert.match(html, /<code>a&lt;b<\/code>/);
+  assert.match(html, /<a href="#story\/mush"[^>]*>go<\/a>/);
+  assert.doesNotMatch(html, /story\/no"/);
 });
