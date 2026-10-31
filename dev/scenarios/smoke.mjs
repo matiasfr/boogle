@@ -10,7 +10,7 @@ const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6
 
 export default {
   about: 'two tabs join, see each other, toss an item, throw the ball, and agree on every world hash',
-  timeout: 300000, // generous: two software-rendered tabs on a busy runner can drop to a few frames per second
+  timeout: 420000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
   async run(t) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
@@ -61,8 +61,10 @@ export default {
     t.check('both tabs hash every state the same at one tick', hashes.same, hashes.detail);
 
     // And sync's own check (the host broadcasts per-state hashes every 2 s) ran on the client, without a mismatch.
+    // A long wait: on a CI runner's software WebGPU (the live-site run in smoke.yml) two tabs draw a few frames a
+    // second and the client can take minutes to reach a hashed tick. It returns as soon as the check runs.
     const ok0 = (await client.eval(`return window.boogle.sync.worldStatus().hashOk;`)) || 0;
-    await client.waitFor(`window.boogle.sync.worldStatus().hashOk > ${ok0}`, { timeout: 60000 });
+    await client.waitFor(`window.boogle.sync.worldStatus().hashOk > ${ok0}`, { timeout: 150000 });
     const st = await client.eval(`return window.boogle.sync.worldStatus();`);
     const subs = Object.values(st.subsystems || {});
     t.check(
