@@ -1,20 +1,30 @@
 # Plan: the server hosts the main room
 
-> **Status: active (2026-10-31), approved by the user; the open questions below take their recommended answers
-> (question 7's prototype flags are gone since #88, so it no longer applies).** Was: shelved (2026-10-30). For rapid iteration peer hosting is enough: `npm run load` shows an 8-player room
-> costs the host about 1.7 Mbit/s up and 2% of a main thread, and a server would make every rules change a coupled
-> server + client deploy. Pick this plan up when one of these holds:
-> - public playtests with strangers (cheating, trust in saves, a host on someone else's phone);
-> - world progress while nobody is online (PLAN.md Phase 5, "growth from timestamps");
-> - rooms past the 8-player cap;
-> - telemetry (`connect` reports) shows failed joins, TURN-only links or host migrations regularly hurting sessions.
->
-> Until then, choosing the host on purpose (prefer a visible desktop tab, hand over before hiding) covers most of what
-> this plan fixes. Steps 2 (land as JSON) and 3 (sync re-pin and shared-state hashes) help either way and can ship on
-> their own. Re-check the code references below before starting: they were read on 2026-10-30.
->
-> Steps 1-10 below are separate PRs, each leaving `main` green. Production behavior only changes at step 10 (one Fly
-> env var); until then the server answers "this room is peer-hosted" and every tab plays exactly as today.
+> **Status: active (2026-10-31), approved by the user. Revised the same day to a full switchover** (below): the
+> server hosts every room, with no PeerJS fallback, so steps 9-11 replace the old steps 9-10. The open questions take
+> their recommended answers, except 2, 4 and 8, which the revision settles. Steps 1-8 are done as written. The
+> direction after this plan (co-op open world: Server sync kind, Rapier on the server, player ids, SQLite, interest
+> management) is [net-roadmap.md](net-roadmap.md).
+
+## Revision: full switchover (2026-10-31, replaces parts of the design below)
+
+The user chose a clean switch over keeping two networking models. Where the design below disagrees, this wins:
+
+- **The server hosts every room.** `SERVER_ROOMS` accepts `*` (any valid room id, created on first join, unloaded
+  after `ROOM_IDLE_MS` with no clients once saved, at most `MAX_ROOMS` loaded at once). Production, local dev and the
+  test harnesses all run it that way. `beach` is no longer special to the server.
+- **No fallback, no switching room.** `createRoom` is `createWsRoom`; `room.js`, the `peer` and `fallback`
+  transports, `fallbackSignal`, `reachable()`/`hostStatus()` probing, `?p2p` and transitions T2-T4, T7-T12 and
+  T14-T17 are dropped. When the server is unreachable, `ws-room` keeps reconnecting with its backoff, the label says
+  "connecting", and the tab plays alone; held edits follow the existing 5 s rule (open question 2: no fallback).
+- **Deleted after the switch** (step 11): `src/net/peer-room.ts`, the `peer` dependency, PeerJS signaling and the
+  upgrade guard, `/ice` and the TURN secrets, the browser-host paths in `src/world/sync.ts` (migration, the browser's
+  30 s snapshot PUTs, loading a host from `localStorage`), `PUT /rooms/:id/snapshot`, `POST /rooms/:id/handoff`,
+  `GET /rooms/:id/host`'s `peer` mode, and `dev/peer-test/run.mjs`. The sync's host role stays: the server uses it.
+- **No wait for old tabs** (open question 4): steps 9 and 10 ship as one switch. Old tabs fail to join and reload
+  onto the new build (`updates.js`); nothing bridges them.
+- **The lead stays for now.** The Boogler still runs on the lead tab until [net-roadmap.md](net-roadmap.md) phase 3
+  moves him to the server and deletes the lead and `addHostField`.
 
 ## Open questions for the user (answer before the step named)
 
@@ -268,6 +278,8 @@ the sockets with 1012.
 
 ### Transitions (every one)
 
+> Revision: only T1, T5, T6 and T13 remain. With the server down past `wsGraceMs`, tabs keep reconnecting (no T7).
+
 `ws`, `peer` and `fallback` are the switching room's transports. "Move" means: if this tab is the host of the
 transport it leaves, emit `onHostChange(false)` (its sync saves through the handoff route, below), wait `handoffMs`,
 then close the old transport and open the new one; a non-host waits `handoffMs` + 0-1000 ms first. `onConnection` is
@@ -292,6 +304,8 @@ false while moving.
 | T15 | Old and new tabs in `beach` before step 10 | Every tab ends on `peer` (T2), the same PeerJS room as today. Mixed rooms work as now. |
 | T16 | Server returns while some tabs are still reconnecting ws and others are in `fallback` | The first group lands on the server (T6); the fallback group follows within `probeMs` (T9). |
 | T17 | One tab cannot reach the server while others can | It ends alone in `fallback` (T3). Its handoffs fail, so it never overwrites anything; it rejoins when it can reach the server. |
+
+> Revision: handoffs come only from peer hosts, which no longer exist; this route is deleted in step 11.
 
 **Adopting a handoff (`rooms.js` `handoff(id, doc)`, the newest-by-tick rule).** For a hosted room: validate the body
 like PUT (`{ tick, writerId, data }`, up to 1 MB); load `data` into a scratch `createSync()` with the same rules and
@@ -514,53 +528,50 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `npm --prefix server ci` before `npm run test:net` (add `server/package-lock.json` to the npm cache paths).
   - Verify: `npm run check:full`.
 
-- [ ] **9. The room picker, used by the game** (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
-  `src/features/telemetry.js`, `src/debug/netdebug.js`).
-  - `room.js` as in Design, with every transition of the table.
-  - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =
-    import.meta.env.VITE_BOOGLE_SERVER; const p2p = new URLSearchParams(location.search).has('p2p');` and
-    `createRoom({ roomId, debug, server: base && !(p2p && roomId !== DEFAULT_ROOM) ? base : null, peerOptions:
-    serverOptions, build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12) })` (warn in the console when `p2p`
-    is ignored, open question 8). Add `export const isLead = () => !!net.room && (net.room.isLead ? net.room.isLead()
-    : net.room.isHost());`, use it in `addHostField` and in the late frame hook's `net.room.isHost()`; next to
-    `room.onHostChange(() => sendPresence())` add `room.onLeadChange?.(() => sendPresence())`.
-  - `boogler.js` (`updateBoogler`): `const isHost = isLead();` (import it from `net.js`).
-  - `telemetry.js`: the connect report's `role` becomes `server` when `net.room.transport === 'server'`, and gains
-    `transport`. `netdebug.js`: show `transport` and the lead.
-  - `ws-run.mjs` part 2 (a second local `PeerServer` plays the public cloud, passed as `fallbackSignal`; pages get
-    `timing: { wsGraceMs: 3000, probeMs: 1000, handoffMs: 300, firstWsMs: 1500 }`):
-    10. server down for 5 s: every page moves to `transport === 'fallback'`, exactly one `isHost()`, presence flows,
-        and a plot planted there reaches every page.
-    11. server back (it loads its older save): within 6 s every page is on `server`, `/rooms/<id>/host` reports a tick
-        at least the fallback host's last one, and a new page F sees the fallback-era plot.
-    12. restart with `SERVER_ROOMS` empty: pages move to `peer` on our signaling and keep the world (the plot is
-        there, ticks did not reset).
-    13. while hosting, a page on plain `createPeerRoom` for the same room never reports `isHost()` within 10 s (no
-        split brain).
-    14. a join with the server's port closed and no fallback server: `createRoom` rejects within `connectTimeoutMs`.
-  - Scenarios: `smoke` and `shared-kinds` use the harness's bare PeerServer, so the picker lands on
-    `peer` (T4, 404 rule); run them.
-  - Verify: `npm run check:full`, `npm run check:gpu`, `npm run scenario -- shared-kinds`, and a
-    `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
-    (server answers `peer`).
+- [ ] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
+  `src/features/telemetry.js`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
+  `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated.
+  - Server: `SERVER_ROOMS=*` (any valid id; rooms created on first join, unloaded when idle and saved, `MAX_ROOMS`
+    default 20, refusal `{ t:'full' }` with a room-count reason past it). A test in `server/test/` covers create,
+    unload with save, reload from disk and the room cap.
+  - `net.ts`: `connectRoom` calls `createWsRoom({ roomId, server: VITE_BOOGLE_SERVER, build, debug })` directly; no
+    PeerJS options. A `NOT_HOSTED` refusal (a server not yet on this deploy) retries like an unreachable server.
+    `isLead()` helper as in Design (`net.room.isLead()`), used in `addHostField` and the late frame hook; `room.onLeadChange(() => sendPresence())`.
+  - `boogler.js`: `const isHost = isLead();`.
+  - Local dev: a dev-only Vite plugin starts `createService` in-process (`SERVER_ROOMS=*`, `DATA_DIR` under
+    `.boogle-data/`, gitignored) and sets `VITE_BOOGLE_SERVER` to it, so `npm run dev` needs nothing else.
+  - Harness: `dev/look/lib.mjs` starts `createService` instead of the bare `PeerServer`, so `smoke`,
+    `shared-kinds`, `world-inputs` and `npm run load` all run on the server. `ws-run.mjs` uses the real `net.ts`
+    path where it can.
+  - `telemetry.js`: the connect report's `role` is `server`; `netdebug.js` shows the lead and the RTT.
+  - `fly.toml`: the step 10 settings of the old plan (`SERVER_ROOMS = "*"`, 512 MB, `NODE_OPTIONS`, `SIGTERM`,
+    `kill_timeout = 10`, the `primary_region` TODO and move checklist).
+  - Docs: `docs/game-design/multiplayer.md` (8.1 topology: the server hosts every room; 8.2: no host migration; 8.5:
+    the server's saves; 8.6: ticks run while rooms are empty), `server/README.md`, `src/net/README.md`
+    (`createWsRoom` is the entry point), `src/world/README.md`, `AGENTS.md` first paragraph ("PeerJS with one
+    browser as host; `server/` does signaling and snapshots" -> "the server hosts every room over WebSocket"),
+    `PLAN.md` (tick the server-host line).
+  - Verify: `npm run check:full`, `npm run check:gpu`, `npm run scenario -- shared-kinds`, a `/look` session on two
+    tabs. After the deploy: `/rooms/beach/host` reports a rising tick, two browsers on boogle.club both live, `fly
+    logs` clean, the next day's `/reports` free of new `connect` failures.
 
-- [ ] **10. Turn it on** (`server/fly.toml`, docs). Ship at least 24 h after step 9 is live (open question 4).
-  - `fly.toml`: `SERVER_ROOMS = "beach"` and `NODE_OPTIONS = "--max-old-space-size=320"` in `[env]`, `memory =
-    "512mb"`, `kill_signal = "SIGTERM"`, `kill_timeout = 10`, and the `primary_region` TODO comment with the move
-    checklist: `fly volumes create boogle_data --size 1 --region <new>`; `fly ssh sftp get /data/beach.json`; switch
-    `primary_region`; deploy; `fly ssh sftp shell` to put the file back; delete the old volume.
-  - Docs: `docs/game-design/multiplayer.md` (8.1 topology: the server host and the fallback; 8.2: migration applies
-    to peer rooms only; 8.5: the server's disk saves; 8.6: ticks now run while the main room is empty), `server/README.md`
-    (hosting section, the operator checks below), `src/net/README.md` (`createRoom` is the entry point),
-    `src/world/README.md`, `AGENTS.md` first paragraph ("`server/` does signaling and snapshots" -> "`server/` hosts the
-    main room over WebSocket, plus signaling and snapshots"), `PLAN.md` (tick the step 1 line).
-  - Optional, nightly only: `dev/scenarios/server-host.mjs` with a harness option in `dev/look/lib.mjs` to start
-    `createService` (with `SERVER_ROOMS`) instead of the bare PeerServer: two tabs, a plant, both see it, transport
-    `server`.
-  - Operator checks after deploy: `curl https://<app>.fly.dev/rooms/beach/host` says `mode: "server"` with a rising
-    `tick`; two browsers on boogle.club both live and `transport: server` in `?netdebug=1`; `fly logs` shows no
-    restarts; the next day's `/reports` have no new `connect` failures. Rollback: `fly secrets`/env `SERVER_ROOMS=""`
-    and redeploy (T8 moves everyone to peers with the world).
+- [ ] **10. (merged into 9.)** The old "turn it on" step ships with the switch.
+
+- [ ] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
+  Owner-gated. Ships once step 9 has been live a day with clean `/reports`.
+  - Delete `src/net/peer-room.ts`, the `peer` dependency (root and `server/`), PeerJS signaling, `upgrade.ts`'s
+    PeerJS route and ID-TAKEN guard, `/ice` and the TURN secrets (`fly secrets unset`), `PUT /rooms/:id/snapshot`,
+    `POST /rooms/:id/handoff` and the handoff adopt path, `dev/peer-test/run.mjs` and `page.js`.
+  - `sync.ts`: delete browser hosting (host migration, `becomeHost` from a tab, the 30 s PUTs, loading a host world
+    from `localStorage` or `GET /snapshot`); the host role the server runs stays. Tabs stop persisting snapshots
+    locally. Keep the AGENTS.md guards that still apply (the server never saves an unverified or fallback state).
+  - Room interface: drop members only PeerJS needed (`isHost()` on clients is always false: remove it from the
+    interface and from callers above `src/net/`).
+  - Docs: DESIGN.md "Server host" section and "Clear authority" rows (no peer host), PLAN.md "Key decision" section
+    rewritten to the server model, `src/net/README.md`, AGENTS.md ("never PeerJS directly" -> the room interface
+    only), `docs/game-design/multiplayer.md`.
+  - Verify: `npm run check:full`, `npm run check:gpu`, `npm run registry`, `npm run load` (compare with the
+    numbers in step 8).
 
 ## Not in this plan
 
