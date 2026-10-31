@@ -133,7 +133,7 @@ export function inspector(ctx) {
     const h = hooks(M).find((x) => x.id === sel.id);
     const f = h && M.byPath.get(h.file);
     el.innerHTML = h
-      ? `<div><h2>${esc(h.name)}</h2><div class="path">${h.phase} · order ${h.order}</div></div><p>${h.core ? 'A core hook: its order is reserved in the comment at the top of src/loop.js.' : 'A feature hook. It runs after every lower order in the same phase.'}</p>${f ? `<div><h3>Owner</h3>${fileList(ctx, [f])}</div>` : ''}`
+      ? `<div><h2>${esc(h.name)}</h2><div class="path">${h.phase === 'pre' || h.phase === 'render' ? `step ${h.order + 1} in ${h.file}` : `${h.phase} · order ${h.order}`}</div></div><p>${h.core ? 'A core hook: its order is reserved in the comment at the top of src/loop.js.' : 'A feature hook. It runs after every lower order in the same phase.'}</p>${f ? `<div><h3>Owner</h3>${fileList(ctx, [f])}</div>` : ''}`
       : '<p>That hook is not in the code any more.</p>';
   } else {
     const since = M.facts?.git?.first

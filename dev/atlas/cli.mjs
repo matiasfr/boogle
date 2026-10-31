@@ -72,7 +72,6 @@ async function run() {
       concepts: N,
       stories: N.stories,
       changes: read('docs/atlas/changes.md'),
-      mainSource: read('src/main.js'),
       loadProblems: N.loadProblems,
     });
     return { problems, todo: foldersToDo(facts, N) };
