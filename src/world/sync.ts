@@ -30,7 +30,7 @@
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
 // replaces its state.
 //
-// Persistence: every SAVE_MS (30 s) and on pagehide, a peer that is ready and not awaiting a snapshot saves the world to
+// Persistence: every saveMs (attachWorld option, default SAVE_MS = 30 s; saveNow() saves at once) and on pagehide, a peer that is ready and not awaiting a snapshot saves the world to
 // localStorage (`boogle.world.<roomId>`) if its state changed since its last save. The host saves any tick; a client
 // only a tick whose hash just matched the host's, so a diverged copy is never kept (on pagehide a client is rarely on
 // such a tick, so its copy is usually its last periodic save). Only the host also PUTs
@@ -44,6 +44,8 @@
 // it loads the newest saved copy instead of keeping (and uploading) the fallback. A state saved by a newer build is
 // skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
 // noSave, so the clients that load them stop persisting too.
+// A host that is demoted POSTs its world to the server's /rooms/:id/handoff (bodies under 1 MB) before it becomes a client,
+// and a host can adopt a handed-over world with adoptSnapshot(snap).
 
 import { okPid } from '../sim/roster.ts';
 import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
@@ -71,8 +73,16 @@ export type AttachOptions = {
   storage?: SaveStore | null;
   fetch?: typeof fetch;
   now?: () => number;
+  saveMs?: number; // how often a host (or verified client) saves; default SAVE_MS (30 s), the server uses 2 s
 };
-type Cfg = { roomId: string; serverUrl: string; storage: SaveStore | null; fetch: typeof fetch; now: () => number };
+type Cfg = {
+  roomId: string;
+  serverUrl: string;
+  storage: SaveStore | null;
+  fetch: typeof fetch;
+  now: () => number;
+  saveMs: number;
+};
 type Desync = { tick: number; keys: string[] };
 /** Where a peer keeps its copy of the world: localStorage, or a stand-in in tests. */
 type SaveStore = Pick<Storage, 'getItem' | 'setItem'>;
@@ -392,7 +402,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function saveSoon() {
     if (mode === 'local' || wall < nextSave) return;
-    nextSave = wall + SAVE_MS;
+    nextSave = wall + cfg.saveMs;
     persist(false);
   }
 
@@ -645,11 +655,13 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
   // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
-  function persist(unloading: boolean) {
+  // handoff: a demoted host's last word, sent to the server's handoff endpoint whether or not the world changed.
+  // Returns true when it wrote.
+  function persist(unloading: boolean, handoff = false) {
     if (mode === 'local' || !ready || awaiting || newerSave || (mode === 'client' && verifiedTick !== world.tick))
-      return;
+      return false;
     const hsh = combine(0);
-    if (hsh === lastSavedHash) return;
+    if (hsh === lastSavedHash && !handoff) return false;
     lastSavedHash = hsh;
     const snap = snapshot();
     const text = JSON.stringify(snap);
@@ -661,10 +673,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     }
     const body =
       mode === 'host' && cfg.serverUrl ? JSON.stringify({ tick: snap.tick, writerId: selfId, data: snap }) : '';
-    if (body && body.length < 250000) {
-      const url = new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl);
+    if (body && body.length < (handoff ? 1000000 : 250000)) {
+      const url = new URL(`/rooms/${cfg.roomId}/${handoff ? 'handoff' : 'snapshot'}`, cfg.serverUrl);
       const init: RequestInit = {
-        method: 'PUT',
+        method: handoff ? 'POST' : 'PUT',
         headers: { 'content-type': 'application/json' },
         body,
         keepalive: unloading && body.length < 60000,
@@ -672,6 +684,20 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       cfg.fetch(url, init).catch(() => {});
       stats.saves++;
     }
+    return true;
+  }
+  // Host only: replace the world with a snapshot handed over (by the peer host the server takes over from). Clients
+  // follow through the next hash check and resync. False, with nothing changed, when not host or the snapshot is bad.
+  function adoptSnapshot(snap: unknown) {
+    if (mode !== 'host' || !validSnap(snap)) return false;
+    loadSnapshot(snap);
+    seq += 1000;
+    extraUntil = wall + 2000;
+    nextHashTick = world.tick + 1;
+    served.clear();
+    lastSavedHash = null;
+    for (const fn of snapFns) fn(world.tick);
+    return true;
   }
   async function loadPersisted() {
     let best: Snapshot | null = null as Snapshot | null;
@@ -752,7 +778,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       storage: opts.storage ?? (typeof localStorage === 'undefined' ? null : localStorage),
       fetch: opts.fetch ?? globalThis.fetch?.bind(globalThis),
       now: opts.now ?? Date.now,
+      saveMs: opts.saveMs ?? SAVE_MS,
     };
+    nextSave = wall + cfg.saveMs;
     ready = false;
     queue = [];
     held = [];
@@ -762,7 +790,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       r.onConnection(onConnected),
       r.onHostChange((isHost) => {
         if (isHost) becomeHost();
-        else if (mode !== 'client') becomeClient();
+        else if (mode !== 'client') {
+          if (mode === 'host') persist(false, true); // hand the world to the server before letting go
+          becomeClient();
+        }
       }),
     ];
     if (typeof addEventListener === 'function') {
@@ -813,6 +844,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     updateWorld,
     snapshot,
     loadSnapshot,
+    saveNow: () => persist(false),
+    adoptSnapshot,
     worldHash,
     attachWorld,
     detachWorld,
@@ -843,6 +876,8 @@ export const {
   updateWorld,
   snapshot,
   loadSnapshot,
+  saveNow,
+  adoptSnapshot,
   attachWorld,
   detachWorld,
   worldStatus,

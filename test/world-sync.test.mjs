@@ -763,3 +763,62 @@ test('a state skipped as newer is left out of the hash check', async () => {
   assert.equal(st.newerSave, true);
   assert.ok(st.resyncs <= 1, `resyncs ${st.resyncs}`);
 });
+
+test('saveMs sets how often a host saves', async () => {
+  const net = makeNet();
+  const storage = mem();
+  const host = makePeer(net, 'h', true, { storage, saveMs: 1000 });
+  await run(net, [host], 4);
+  const w0 = storage.writes;
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
+  await run(net, [host], 25); // 1.25 s
+  assert.equal(storage.writes - w0, 1);
+});
+
+test('saveNow writes at once and skips an unchanged world', async () => {
+  const net = makeNet();
+  const storage = mem();
+  const host = makePeer(net, 'h', true, { storage });
+  await run(net, [host], 4);
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 2 });
+  await run(net, [host], 4);
+  const w0 = storage.writes;
+  assert.equal(host.s.saveNow(), true);
+  assert.equal(storage.writes, w0 + 1);
+  assert.equal(host.s.saveNow(), false, 'nothing changed since');
+  assert.equal(storage.writes, w0 + 1);
+});
+
+test("adoptSnapshot replaces the host's world and its clients follow", async () => {
+  const { net, host, clients, all } = await setup(1);
+  const c = clients[0];
+  const other = createSync();
+  const grid = new Int32Array(16);
+  grid[5] = 42;
+  other.registerState('grid', { serialize: () => Array.from(grid), load: (a) => grid.set(a), hash: () => 0 });
+  const snap = other.snapshot();
+  snap.tick = host.s.world.tick + 100;
+  assert.equal(c.s.adoptSnapshot(snap), false, 'a client cannot adopt');
+  assert.equal(host.s.adoptSnapshot(snap), true);
+  assert.equal(host.grid[5], 42);
+  await run(net, all, 100); // 100 ticks to catch up at ~2.5 a frame, then a hash check and a resync
+  assert.equal(c.grid[5], 42, 'the client resynced to the adopted world');
+  assert.ok(c.s.world.tick >= snap.tick);
+});
+
+test('a demoted host hands its world to the server', async () => {
+  const net = makeNet();
+  const calls = [];
+  const fetch = async (url, init) => (
+    calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body }),
+    { ok: false, status: 404 }
+  );
+  const host = makePeer(net, 'h', true, { roomId: 'replay', serverUrl: SERVER, fetch });
+  await run(net, [host], 10);
+  calls.length = 0;
+  net.demote(host.p);
+  const handoff = calls.filter((x) => x.url.endsWith('/rooms/replay/handoff'));
+  assert.equal(handoff.length, 1);
+  assert.equal(handoff[0].method, 'POST');
+  assert.equal(JSON.parse(handoff[0].body).tick, host.s.world.tick);
+});
