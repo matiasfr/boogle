@@ -568,7 +568,9 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
 
 - **What.** The island draws with WebGPU where the browser has it (Chrome and Edge, Safari 26 on iPhone, iPad and
   Mac, Firefox on Windows and Apple Silicon) and with WebGL 2 everywhere else; both look the same. The lobby's
-  "Loading island" waits for the graphics device. Light is linear HDR through Neutral tone mapping (exposure 0.9),
+  "Loading island" waits for the graphics device and for every shader to be built, so Jump in is the moment nothing
+  is left to stall a frame; the room connects meanwhile. `?gfx=webgl2` forces the WebGL 2 backend and `?dpr=fixed`
+  keeps the render resolution at full (both are for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
   with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
   in 10 % steps to 0.6x after 2 s of slow frames (over 18.5 ms) and climbs back after 5 s of fast ones (under 14 ms).
   If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most

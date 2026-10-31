@@ -75,8 +75,8 @@ export async function startStack({ url = null, root: dir = root } = {}) {
 
 // Software GL by default (same pictures on every machine). `gpu` uses the real GPU where there is one (Metal on a
 // Mac): about 60 fps instead of 7, for clips.
-// `webgpu` (or BOOGLE_GFX=webgpu) turns WebGPU on in the browser; Game.open hides navigator.gpu otherwise, so three
-// takes its WebGL 2 backend (what CI and older browsers run).
+// `webgpu` (or BOOGLE_GFX=webgpu) turns WebGPU on in the browser; Game.open asks the game for `?gfx=webgl2` otherwise,
+// so three takes its WebGL 2 backend (what CI and older browsers run).
 export const wantWebgpu = () => process.env.BOOGLE_GFX === 'webgpu';
 export const launch = ({ gpu = false, webgpu = wantWebgpu() } = {}) => {
   const real = gpu && process.platform === 'darwin';
@@ -110,8 +110,9 @@ export class Game {
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
   // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
-  // webgpu (default: BOOGLE_GFX=webgpu; the browser must be launched with launch({ webgpu })): keep navigator.gpu,
-  // otherwise it is hidden and three falls back to WebGL 2,
+  // webgpu (default: BOOGLE_GFX=webgpu; the browser must be launched with launch({ webgpu })): let the game use
+  // WebGPU, otherwise the page gets `?gfx=webgl2` and three uses its WebGL 2 backend. Every page also gets
+  // `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
   // layout viewport, and the game only needs the coarse pointer)
@@ -129,10 +130,6 @@ export class Game {
         const mm = window.matchMedia.bind(window);
         window.matchMedia = (q) => (q === '(pointer: coarse)' ? { ...mm(q), matches: true, media: q } : mm(q));
       });
-    if (!(opts.webgpu ?? wantWebgpu()))
-      await g.ctx.addInitScript(() =>
-        Object.defineProperty(Navigator.prototype, 'gpu', { get: () => undefined, configurable: true }),
-      );
     if (opts.init) await g.ctx.addInitScript(opts.init);
     const doc = new URL(stack.base);
     if (opts.isolated)
@@ -156,11 +153,16 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
-      timeout: 90000,
-    });
-    // A deployed site (`--url`) over a slow link can take a while to load.
-    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
+    const gfx = (opts.webgpu ?? wantWebgpu()) ? '' : 'gfx=webgl2&';
+    await g.page.goto(
+      `${stack.base}${sep}${gfx}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`,
+      {
+        timeout: 90000,
+      },
+    );
+    // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
+    // every shader before the lobby opens.
+    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
     await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });

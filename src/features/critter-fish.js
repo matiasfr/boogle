@@ -23,7 +23,6 @@ import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
 import { patchNode } from '../render/material-patch.js';
-import { dynAttr } from '../render/sprites.js';
 import { proto } from '../adapters/proto-flags.js';
 
 const FISH = {
@@ -49,18 +48,19 @@ const mat = new THREE.MeshStandardNodeMaterial({
   roughness: 0.6,
   flatShading: true,
 });
-// positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space.
-const side = dynAttr(new Float32Array(FISH.count * 3), 3);
+const fish = new THREE.InstancedMesh(geo, mat, FISH.count);
+// positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space: column
+// 0 of its instance matrix, read through a view on the same GPU buffer (how three reads the matrix itself).
+const side = instancedDynamicBufferAttribute(new THREE.InterleavedBufferAttribute(fish.instanceMatrix, 3, 0));
 patchNode(mat, 'positionNode', (prev) =>
   (prev ?? positionLocal).add(
-    instancedDynamicBufferAttribute(side).mul(
+    side.mul(
       sin(time.mul(13).add(float(instanceIndex).mul(1.7)))
         .mul(max(0, positionGeometry.z.negate()))
         .mul(0.35),
     ),
   ),
 );
-const fish = new THREE.InstancedMesh(geo, mat, FISH.count);
 fish.frustumCulled = false;
 fish.visible = false;
 scene.add(fish);
@@ -93,7 +93,6 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   one = new THREE.Vector3(1, 1, 1),
-  tmp = new THREE.Vector3(),
   pos = new THREE.Vector3();
 let lastBallY = 0;
 
@@ -178,11 +177,8 @@ onFrame(
       const f = P[k];
       q.setFromEuler(e.set(0, Math.atan2(f.vx, f.vz), 0));
       fish.setMatrixAt(k, m4.compose(pos.set(f.x, f.y, f.z), q, one));
-      tmp.set(1, 0, 0).applyQuaternion(q);
-      side.setXYZ(k, tmp.x, tmp.y, tmp.z);
     }
     fish.instanceMatrix.needsUpdate = true;
-    side.needsUpdate = true;
   },
   { phase: 'update' },
 );

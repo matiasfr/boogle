@@ -36,6 +36,7 @@ import {
 import { patchNode } from '../../render/material-patch.js';
 import * as CANNON from 'cannon-es';
 import { scene, camera } from '../../render/scene.js';
+import { precompile } from '../../render/precompile.js';
 import { world, groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.js';
@@ -224,6 +225,7 @@ function* build() {
   caveMesh.receiveShadow = true;
   caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
   scene.add(caveMesh);
+  precompile(caveMesh); // their pipelines build now, not when the first player walks in
 
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
   body.addShape(new CANNON.Trimesh(m.positions, colliderIndices));
@@ -232,9 +234,11 @@ function* build() {
 
   collarMesh = makeCollars(yield* buildCollarMeshSteps());
   scene.add(collarMesh);
+  precompile(collarMesh);
   yield;
 
   decorRoot = buildDecor({ world, scene });
+  precompile(decorRoot);
   setTerrainHoles(
     MOUTHS.map((mo) => ({
       a: [mo.x + mo.ox * 1.5, mo.y + FLOOR_CUT, mo.z + mo.oz * 1.5],

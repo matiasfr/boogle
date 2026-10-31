@@ -10,11 +10,17 @@ on purpose, and then check `renderer.backend.isWebGPUBackend` and keep a fallbac
 ## The frame
 
 - [`scene.js`](scene.js) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
-  modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: `main.js` starts the
-  game from `rendererReady`, and the lobby's "Loading island" button is the loading screen. A lost GPU device
+  modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
+  `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
+  screen). Behind it, [`precompile.js`](precompile.js) builds every pipeline (hidden and off-screen objects too, plus
+  `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
+  `precompile(object)` as it builds its meshes. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
+  resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
+  last frame's counts until the next one starts. A lost GPU device
   reloads the page once it is visible, at most once a minute.
 - Every frame goes through one `RenderPipeline`: `scenePass` (`pass(scene, camera)`, a linear HDR target with MSAA)
-  then one output pass that tone maps (`NeutralToneMapping`, exposure 0.9) and encodes sRGB. Draw with
+  then one output pass that tone maps (`NeutralToneMapping`; exposure is one base value in `scene.js`, which `sky.js` raises a little at night, like eyes
+  adapting) and encodes sRGB. Draw with
   `renderFrame()`. It renders the scene once per animation frame; a second call in the same frame only redraws the
   output quad, so don't call it twice to measure anything.
 - **Post effects** (bloom, TRAA, GTAO, SSGI, god rays, DoF: `three/addons/tsl/display/`) extend that chain: build a
@@ -49,8 +55,8 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
   particles, call `emit()` from `particles.js`; don't build a pool.
 - **Lint bans the WebGL-only APIs** in `src/`: `ShaderMaterial`, `RawShaderMaterial`, `ShaderChunk`, `ShaderLib`,
   `UniformsLib`, `UniformsUtils`, `WebGLRenderer`, `THREE.Points`, `onBeforeCompile`, `customProgramCacheKey` and
-  `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; see `player/item-icons.js` for row padding and the
-  per-backend flip).
+  `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; `player/item-icons.js` shows a readback that goes
+  through the game's tone mapping and probes the row order once).
 
 ## TSL pitfalls (each cost us time)
 
@@ -67,10 +73,15 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 - `npm run perf -- --render` prints draw calls, shadow calls, triangles, geometries and shader stages (vertex and
   fragment counted apart, so the number is not comparable with the old "programs"). Run it before and after
   anything that adds meshes, lights, passes or per-frame GPU work.
-- `npm run look` and the scenarios run on the WebGL 2 backend by default: the harness hides `navigator.gpu`, the
-  same path Firefox Android players take. Pass `--webgpu --gpu` (on a Mac) to see the real WebGPU backend. Every run
+- `npm run look` and the scenarios run on the WebGL 2 backend by default: the harness loads the game with
+  `?gfx=webgl2` (`forceWebGL` on the renderer), the same path Firefox Android players take. It also passes
+  `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable; both work in
+  any browser tab by hand. Pass `--webgpu --gpu` (on a Mac) to see the real WebGPU backend. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
+- `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
+  lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
+  materials or anything lazily built.
 - `window.boogle.gfx` is `'webgpu'` or `'webgl2'`; telemetry reports it with each connection.
 - Headless frame rates mean nothing. Judge frame time on a real iPhone, iPad and a mid-range Android.
 

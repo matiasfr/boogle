@@ -6,14 +6,22 @@ export const canvas = document.getElementById('view');
 
 // WebGPU where the browser has it, three's own WebGL 2 backend everywhere else. render() throws until init() resolves,
 // so main.js starts the game from rendererReady.
-export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// ?gfx=webgl2 forces three's WebGL 2 backend even where WebGPU exists (the harness default: same pictures everywhere).
+const params = new URLSearchParams(location.search);
+export const renderer = new THREE.WebGPURenderer({
+  canvas,
+  antialias: true,
+  powerPreference: 'high-performance',
+  forceWebGL: params.get('gfx') === 'webgl2',
+});
 export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
+export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
 renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Neutral, not AgX: AgX greyed the toy palette (sea, sky and grass lost their saturation).
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 0.9;
+renderer.toneMappingExposure = 1.0; // the one base exposure; sky.js eases it up at night (eyes adapting), lights stay physical
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const lobbyNote = (text) => {
@@ -84,8 +92,8 @@ export function toScreen(v, out, w = innerWidth, h = innerHeight) {
   return out;
 }
 
-scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.25));
-export const sun = new THREE.DirectionalLight('#fff3da', 2.4);
+scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.2));
+export const sun = new THREE.DirectionalLight('#fff0d0', 2.5);
 sun.castShadow = true;
 sun.shadow.mapSize.setScalar(isTouch ? 1024 : 2048); // phones: a quarter of the shadow fill cost
 Object.assign(sun.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, near: 1, far: 180 });

@@ -34,7 +34,7 @@ import {
 } from 'three/tsl';
 import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.js';
 import { lerp, smoothstep } from '../math.js';
-import { scene, camera, sun, sky } from './scene.js';
+import { renderer, scene, camera, sun, sky } from './scene.js';
 import { seaU } from './water-render.js';
 import { clouds } from './props.js';
 import { world, TICK_MS } from '../world/sync.js';
@@ -68,15 +68,27 @@ const C = {
 const L = {
   sunFaceSet: new THREE.Color('#ffbe8c'),
   sunDay: new THREE.Color('#fff3da'),
-  sunSet: new THREE.Color('#ff9a52'),
-  moon: new THREE.Color('#a9bfff'),
+  sunSet: new THREE.Color('#ff8030'),
+  moon: new THREE.Color('#86a6ff'),
   hemiSkyDay: new THREE.Color('#d4f0ff'),
-  hemiSkyNight: new THREE.Color('#7088d8'),
-  hemiGroundDay: new THREE.Color('#e6d3a0'),
-  hemiGroundNight: new THREE.Color('#4a5488'),
+  hemiSkySet: new THREE.Color('#ffc09c'),
+  hemiSkyNight: new THREE.Color('#5075f0'),
+  hemiGroundDay: new THREE.Color('#f0d9a0'),
+  hemiGroundSet: new THREE.Color('#f0a060'),
+  hemiGroundNight: new THREE.Color('#5c4f96'),
   cloudGlowDay: new THREE.Color('#d8ecff'),
-  cloudGlowSet: new THREE.Color('#ffc09a'),
+  cloudGlowSet: new THREE.Color('#ffa070'),
 };
+// Lights are physical values; the one global exposure is scene.js's. At night it eases up like an eye adapting, so the
+// night lights below need no compensation of their own.
+const BASE_EXPOSURE = renderer.toneMappingExposure;
+const NIGHT_EXPOSURE = 1.12;
+const SUN_I = 2.5,
+  SUN_SET_BOOST = 0.4, // the low sun is golden and a little stronger
+  MOON_I = 1.5,
+  HEMI_DAY = 1.2,
+  HEMI_SET = 1.1,
+  HEMI_NIGHT = 0.5;
 
 // ---------------------------------------------------------------- textures
 function faceCanvas(size, draw) {
@@ -340,13 +352,13 @@ export function updateSky(dt, elapsed) {
   const sunY = sunDir.y,
     moonY = moonDir.y;
   const day = smoothstep(-0.3, 0.12, sunY); // 0 at night, 1 in daylight, twilight between
-  const warm = smoothstep(-0.3, -0.02, sunY) * (1 - smoothstep(0.08, 0.38, sunY)); // sunrise / sunset glow
+  const warm = smoothstep(-0.3, -0.02, sunY) * (1 - smoothstep(0.16, 0.5, sunY)); // sunrise / sunset glow
   const night = 1 - day;
   const moonUp = smoothstep(-0.04, 0.12, moonY);
 
   // Sky colours.
-  skyU.uTop.value.lerpColors(C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.55);
-  horizon.lerpColors(C.nightHorizon, C.dayHorizon, day).lerp(C.setHorizon, warm * 0.75);
+  skyU.uTop.value.lerpColors(C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.65);
+  horizon.lerpColors(C.nightHorizon, C.dayHorizon, day).lerp(C.setHorizon, warm * 0.9);
   skyU.uHorizon.value.copy(horizon);
   skyU.uSun.value.copy(sunDir);
   skyU.uMoon.value.copy(moonDir);
@@ -358,8 +370,8 @@ export function updateSky(dt, elapsed) {
   scene.fog.color.copy(horizon);
 
   // Key light: the sun by day, the moon by night (brighter the fuller it is). It also casts the shadows.
-  const sunI = 2.4 * smoothstep(-0.02, 0.16, sunY);
-  const moonI = 1.0 * (0.25 + 0.75 * s.illum) * moonUp * night;
+  const sunI = SUN_I * (1 + SUN_SET_BOOST * warm) * smoothstep(-0.02, 0.16, sunY);
+  const moonI = MOON_I * (0.25 + 0.75 * s.illum) * moonUp * night;
   const byMoon = sunY < -0.03;
   SUN_DIR.copy(byMoon ? moonDir : sunDir);
   if (byMoon) sun.color.copy(L.moon);
@@ -369,10 +381,11 @@ export function updateSky(dt, elapsed) {
   sun.shadow.autoUpdate = state.keyLight && !debug.noShadowPass; // no key light, no shadow pass
 
   if (hemi) {
-    hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day);
-    hemi.groundColor.copy(L.hemiGroundNight).lerp(L.hemiGroundDay, day);
-    hemi.intensity = lerp(1.1, 1.25, day);
+    hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day).lerp(L.hemiSkySet, warm);
+    hemi.groundColor.copy(L.hemiGroundNight).lerp(L.hemiGroundDay, day).lerp(L.hemiGroundSet, warm);
+    hemi.intensity = lerp(HEMI_NIGHT, HEMI_DAY, day) + (HEMI_SET - HEMI_DAY) * warm;
   }
+  renderer.toneMappingExposure = BASE_EXPOSURE * lerp(NIGHT_EXPOSURE, 1, day);
   const ug = atmosphere.underground;
   scene.fog.near = lerp(FOG_NEAR, 6, ug);
   scene.fog.far = lerp(FOG_FAR, 80, ug);
