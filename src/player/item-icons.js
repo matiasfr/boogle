@@ -4,6 +4,8 @@
 // this: the WebGPU canvas is opaque.
 //
 //   setIcon(img, id)   fills an <img> with the icon for a catalog id (src/sim/gift-catalog.ts) or 'ball' (async)
+//   warmIcons(ids)     draws those icons now (behind the loading screen): the icon scene's lights, targets and
+//                      tone-mapping quad build pipelines of their own, and the first icon drawn mid-game hitched
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv, vec4 } from 'three/tsl';
 import { renderer } from '../render/scene.js';
@@ -58,10 +60,9 @@ async function readRows() {
 // Renders run one at a time (they share the render targets and read back asynchronously).
 let queue = Promise.resolve();
 
-// Fills `img` with the icon for `id` once its render finishes (unless the image has been given another id by then).
-// icons caches each id's promise; a failed render is dropped so the next call tries again.
-export function setIcon(img, id) {
-  img.dataset.icon = id;
+// The icon for `id`: a promise of its data URL (null if the render failed). icons caches each id's promise; a failed
+// render is dropped so the next call tries again.
+function iconUrl(id) {
   if (!icons.has(id))
     icons.set(
       id,
@@ -73,10 +74,18 @@ export function setIcon(img, id) {
           return null;
         })),
     );
-  icons.get(id).then((url) => {
+  return icons.get(id);
+}
+
+// Fills `img` with the icon for `id` once its render finishes (unless the image has been given another id by then).
+export function setIcon(img, id) {
+  img.dataset.icon = id;
+  iconUrl(id).then((url) => {
     if (img.dataset.icon === id && url) img.src = url;
   });
 }
+
+export const warmIcons = (ids) => Promise.all(ids.map(iconUrl));
 
 async function draw(id) {
   if (!hdr) setup();

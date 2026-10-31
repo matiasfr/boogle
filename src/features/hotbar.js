@@ -15,7 +15,7 @@ import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } fr
 import { pouring } from '../adapters/mushroom-garden.js';
 import { itemModel } from '../player/item-models.js';
 import { warmUp } from '../render/precompile.js';
-import { setIcon } from '../player/item-icons.js';
+import { setIcon, warmIcons } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
@@ -193,6 +193,8 @@ warmUp(() => {
   for (const it of GIFTS) if (carryable(it)) g.add(itemModel(it.id));
   return g;
 });
+// And every hotbar icon, drawn behind the lobby too: the first one drawn in play built its pipelines mid-frame.
+warmUp(() => warmIcons(['ball', ...GIFTS.filter(carryable).map((it) => it.id)]));
 
 // ---------------------------------------------------------------- keys, presence, frame
 onStart(() => {
