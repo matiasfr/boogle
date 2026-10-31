@@ -498,7 +498,7 @@ glance".
   and `growth.length` > 1. In a `git clone --depth 1` scratch copy, `growth` is `[]` and the page still renders. Ship
   steps 0–10 with `npm run ship` from the worktree, then check https://boogle.club/atlas/ after deploy.
 
-- [ ] **11. Agent upkeep.**
+- [x] **11. Agent upkeep.**
   - CLI `--changes [--since <ref>]`: `<ref>` defaults to `git log -1 --format=%H -- docs/atlas/`. It prints, in
     order: (1) the `--check` report; (2) the commits since `<ref>` (`git log --no-merges --format='%h %s'`); (3)
     `diffFacts(factsAt(root, ref), extractFacts({ root, git: false }))`, meaning files added and removed, folders
@@ -546,12 +546,13 @@ glance".
     - Steps: (1) debounce `sleep 600` when `github.event_name != 'schedule'` and not `inputs.force`; (2)
       `actions/checkout@v4` with `ref: main`, `fetch-depth: 0`, so it checks out main's tip *after* the sleep; (3) gate
       (`GH_TOKEN: ${{ github.token }}`): `last=$(git log -1 --format=%H -- docs/atlas/)` (empty: `HEAD~20`). Skip if
-      an open PR's head starts with `claude/atlas-`
-      (`gh pr list --state open --json headRefName --jq '[.[]|select(.headRefName|startswith("claude/atlas-"))]|length'`).
-      Skip if `git rev-list --count "$last"..HEAD -- src server` is 0; citations only break through such commits, so
-      this never skips a needed fix for long. For non-schedule events, also skip unless
+      `git rev-list --count "$last"..HEAD -- src server` is 0; citations only break through such commits, so this
+      never skips a needed fix for long. For non-schedule events, also skip unless
       `git diff --name-only "$last"..HEAD -- src/world/rules src/net src/netplay server` or
-      `git diff --name-only --diff-filter=AD "$last"..HEAD -- src/features` is non-empty. `force` skips the gate.
+      `git diff --name-only --diff-filter=AD "$last"..HEAD -- src/features` is non-empty. Then check the open atlas
+      PRs (`gh pr list --state open --json number,headRefName,createdAt`, head starting with `claude/atlas-`): skip
+      when one is **less than a day old**; an older one is stuck (CI red or conflicting), so close it with
+      `gh pr close <n> --delete-branch --comment "..."` saying the upkeep run is replacing it, and carry on. `force` skips the gate.
       Outputs: `go`, `last`, `date=$(date -u +%F)`. (4) setup-node + `npm ci` (with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`)
       if `go`; (5) Claude if `go`, with prompt "You are the atlas upkeep loop for Boogle, running unattended. Today is
       ${{ steps.gate.outputs.date }}; the last atlas update is ${{ steps.gate.outputs.last }}. Read
@@ -590,7 +591,7 @@ glance".
 - **Prototype in `/private/tmp`** can vanish. Step 0 copies it to `.look/atlas/prototype/`; do this before anything
   else.
 - **Citations rot between agent runs.** Nothing blocks a PR that renames a cited symbol, so the live page can show
-  stale chips for up to a day (longer if an atlas PR is stuck open). That is the accepted trade-off for never turning
+  stale chips for up to a day (an atlas PR stuck open for over a day is closed and replaced by the next run). That is the accepted trade-off for never turning
   someone's build red. The fallbacks in "Never fail the build, never crash the page" keep the page usable meanwhile.
   The scenario's stills (nightly) show the stale chips.
 - **The build must never fail because of the atlas.** The extractor catches parse errors per file, the Vite plugin
@@ -603,7 +604,8 @@ glance".
   that the game chunk is byte-identical apart from the build hash. No meshes, lights or tick work are added, so
   `npm run perf` is not needed.
 - **Mixed builds:** no wire changes (no ops, states, presence keys or messages). An old game tab never loads the atlas.
-- **Agent loop safety:** the gate skips while an atlas PR is open; atlas PRs never dispatch; `cancel-in-progress:
+- **Agent loop safety:** the gate skips while an atlas PR under a day old is open (an older one is closed with a comment and replaced);
+  atlas PRs never dispatch; `cancel-in-progress:
   false` never kills a run mid-push. The Claude step must push with the action's app token (as `patch-video.yml`
   does), because a branch pushed with `GITHUB_TOKEN` would not start CI, and automerge would never see it.
 - **Cost:** one Opus run per day at most from the schedule, plus debounced merge-triggered runs on busy days. Every
@@ -612,13 +614,6 @@ glance".
 - **Heuristic kinds:** `kindOf` is a reading aid, not a contract. A misclassified file looks the wrong colour but breaks
   nothing; the rules are listed in `atlas/model.js`'s header.
 - **Stale prototype copy** (terrain and water, "28 plug-ins", `:id` in the save route) must not be ported as is (step 4).
-
-## Open questions
-
-1. **Gate when only citations are broken.** The daily gate needs a `src/` or `server/` commit since the last atlas
-   commit. If an atlas PR fails CI and sits open, the gate keeps skipping, and stale chips stay up until someone looks
-   at it. Should the workflow skip only when the open atlas PR is younger than a day, so a stuck PR gets replaced?
-   (The plan currently skips whenever one is open.)
 
 ## Follow-ups (not in this plan)
 
