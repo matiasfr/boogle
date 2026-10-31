@@ -24,7 +24,7 @@
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
 // Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
 // reconnecting after a stall) are held; once it is back they go to the host (or are stamped here, once ready, if this tab
-// came back as the host) one per HELD_EVERY_MS, so per-player rate limits accept each. Held edits older than HELD_MAX_MS
+// came back as the host) one per HELD_EVERY_MS, so a burst never lands on one host tick. Held edits older than HELD_MAX_MS
 // are dropped (stats.heldDropped): the player has moved on. So is the rest of the backlog once a fresh edit is submitted
 // with the room back: the fresh one waits only for the next HELD_EVERY_MS slot, so live input is never stuck behind it.
 // A client that receives an edit for a tick it already passed, or a hash mismatch, asks for a snapshot (w:need) and
@@ -268,7 +268,7 @@ export function createSync({ env: env0 } = {}) {
     const gone = [...pids.keys()].find((sid) => !live(sid)) ?? pids.keys().next().value;
     pids.delete(gone);
   }
-  // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick and trip rate limits.
+  // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick.
   function releaseHeld() {
     while (held.length && wall - held[0].at > HELD_MAX_MS) {
       held.shift();
