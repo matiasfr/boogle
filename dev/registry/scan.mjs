@@ -14,6 +14,7 @@
 //   padSlots: [slot]                 PAD in src/player/controls.js
 //   frames:   [{ path, phase, order }]  onFrame hooks with a literal order
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
+//   ns                               WORLD_NS from src/world/namespace.js (absent before 0.1); a change skips the rules diff
 // }
 
 const CORE_PRESENCE_FILE = 'src/netplay/net';
@@ -200,7 +201,11 @@ export function shapeOf(v) {
 export function compareRegistries(base, head) {
   const errors = [];
   const notes = [];
-  const baseRules = base.rules ?? [];
+  // A new world namespace (src/world/namespace.js) is a clean break: old tabs never meet this world, so main's rules,
+  // ops and states bind nothing here.
+  const fresh = (base.ns ?? null) !== (head.ns ?? null);
+  if (fresh) notes.push(`world namespace ${base.ns ?? '(none)'} -> ${head.ns}: a clean break, rules not compared`);
+  const baseRules = fresh ? [] : (base.rules ?? []);
   const headRules = head.rules ?? [];
   if (baseRules.some((r, i) => headRules[i] !== r)) {
     errors.push(
@@ -208,7 +213,7 @@ export function compareRegistries(base, head) {
         "(append only; reordering desyncs mixed-build rooms). After a rebase conflict, keep main's order and append.",
     );
   }
-  for (const [key, s] of Object.entries(base.states ?? {})) {
+  for (const [key, s] of Object.entries(fresh ? {} : (base.states ?? {}))) {
     const h = head.states?.[key];
     if (!h) {
       errors.push(`state '${key}' was removed: saves and older tabs still carry it. Keep it registered (empty is ok).`);
@@ -221,7 +226,7 @@ export function compareRegistries(base, head) {
       );
     }
   }
-  for (const op of Object.keys(base.ops ?? {})) {
+  for (const op of Object.keys(fresh ? {} : (base.ops ?? {}))) {
     if (!head.ops?.[op])
       errors.push(`op '${op}' was removed: older tabs still submit it. Keep it (validate can reject).`);
   }
@@ -238,7 +243,7 @@ export function compareRegistries(base, head) {
     }
   }
   for (const k of headRules.slice(baseRules.length)) notes.push(`new rules module '${k}' (appended)`);
-  for (const k of Object.keys(head.states ?? {})) if (!base.states?.[k]) notes.push(`new state '${k}'`);
-  for (const k of Object.keys(head.ops ?? {})) if (!base.ops?.[k]) notes.push(`new op '${k}'`);
+  for (const k of Object.keys(head.states ?? {})) if (fresh || !base.states?.[k]) notes.push(`new state '${k}'`);
+  for (const k of Object.keys(head.ops ?? {})) if (fresh || !base.ops?.[k]) notes.push(`new op '${k}'`);
   return { errors, notes };
 }

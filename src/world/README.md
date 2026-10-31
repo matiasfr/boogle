@@ -8,6 +8,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 |---|---|
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration and persistence (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
+| `namespace.js` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
 | `grid.js` | Pure, lockstep: grid constants. |
 | `background.js`, `clock-worker.js` | Keep the world ticking while the tab is hidden. |

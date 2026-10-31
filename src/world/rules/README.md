@@ -61,8 +61,7 @@ Rules:
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
   `migrate[v]` step for older saves
-  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-pre-version.json`
-  is one, checked by `test/world-snapshots.test.mjs`).
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/world-snapshots.test.mjs`).
 
 ## Edit generators and invariants
 
@@ -125,9 +124,6 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `terrain.js` | none | `terrain` | `{}`: retired stub, keeps the slot (step 1 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
-| `proto.js` | none | `proto` | `{}`: retired stub (prototype flags removed 2026-10-31), keeps the slot; echoes any saved bitmask and hashes it as older builds do |
-| `water.js` | none | `water` | `{}`: retired stub, keeps the slot (step 2 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

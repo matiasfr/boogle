@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.js';
 import { ON_GROUND, SRC } from '../src/sim/gifts.js';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
-const CANONICAL = ['terrain', 'mushrooms', 'gifts', 'proto', 'water']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -78,6 +78,7 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   const a = peer();
   play(a);
   const b = peer();
+  assert.notDeepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
@@ -85,19 +86,6 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   tick(b, 50);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
-});
-
-test('saves from the 129-cell island (before 2026-10-29) load a bare island and no mushrooms', () => {
-  const a = peer(),
-    fresh = a.s.stateHashes();
-  a.s.loadSnapshot({
-    tick: 5,
-    seed: 1,
-    epochMs: 0,
-    data: { terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] }, mushrooms: [80, 60, 0] },
-  });
-  assert.equal(a.s.stateHashes().terrain, fresh.terrain);
-  assert.equal(a.s.stateHashes().mushrooms, fresh.mushrooms);
 });
 
 test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {

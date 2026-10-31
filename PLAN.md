@@ -140,6 +140,16 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 **Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
 
+## 0.1 groundwork: identity, haul stack, work sites
+
+[docs/plans/0.1-groundwork.md](docs/plans/0.1-groundwork.md), from [docs/research/0.1/](docs/research/0.1/10-groundwork.md).
+
+- [x] M1 Clean break: the `v01` world namespace; proto, terrain and water retired.
+- [ ] M2 A stable player id (pid) and the roster. · [ ] M3 Ground piles. · [ ] M4 The haul stack.
+- [ ] M5 Work sites and plaques. · [ ] M6 Palms as log sources. · [ ] M7 Machine runs. · [ ] M8 Offline helper bank. · [ ] M9 Snapshot budget.
+
+**Playtest question:** does anyone pour without being told, and does the stack's spill make people laugh or groan?
+
 ## Later / stretch
 
 - [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.js`; touch overlay hides while a pad is in use.

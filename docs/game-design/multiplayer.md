@@ -3,7 +3,9 @@
 ## 8.1 Topology
 
 A star around a host peer over PeerJS ([src/net/peer-room.js](../../src/net/peer-room.js),
-[src/net/README.md](../../src/net/README.md)). The host registers the PeerJS id `boogle-<room>-host`; others register a
+[src/net/README.md](../../src/net/README.md)). The host registers the PeerJS id `boogle-<world room>-host`, where the world room is `v01-<room>` (the world
+namespace, [src/world/namespace.js](../../src/world/namespace.js); the `?room=` URL and the pause title show the plain
+name); others register a
 random id and connect to it with two data channels: `u` (unordered presence) and `r` (reliable, ordered messages,
 heartbeats). The host relays presence and messages. Ids in messages are each tab's stable `selfId`, not PeerJS ids.
 Heartbeats every 500 ms; a peer silent for 3 s is gone. Messages are capped at 16,000 characters. Without
@@ -41,11 +43,8 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Your build id | Owner | presence `bv` |
 | How you treat the Boogler | Owner | presence `bg` |
 | The Boogler's position and mode | Host | `addHostField('g')` |
-| Sand | none | retired 2026-10-30; `terrain` is a stub state |
-| Water | none | retired 2026-10-30; `water` is a stub state |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
-| Prototype flags | none | retired 2026-10-31; `proto` is a stub state |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
@@ -61,8 +60,9 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 [src/world/rules/README.md](../../src/world/rules/README.md).
 
 - 10 ticks per second. Clients send `w:edit`; the host validates, stamps each edit 3 ticks ahead and broadcasts
-  `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order: terrain, mushrooms,
-  gifts, proto, water (append only: it is the wire order). Clients run about 2 to 3 ticks behind the host.
+  `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order: mushrooms, gifts
+  (append only: it is the wire order; the list restarted with the 0.1 namespace, when the terrain, water and proto
+  stubs were retired). Clients run about 2 to 3 ticks behind the host.
 - Every 20 ticks (2 s) the host sends per-state hashes; a client that disagrees (or gets an edit for a past tick) asks
   for a snapshot (`w:need`) and replaces its state. Snapshots travel in 7,000-character chunks.
 - States have versions and migrations (`registerState(key, { version, migrate })`); all are at version 0 today. A
@@ -73,8 +73,8 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 
 | What | Where | Key or route | Scope |
 |---|---|---|---|
-| World snapshot (terrain, water, mushrooms, gifts, proto, tick) | localStorage on every ready peer, every 30 s and on pagehide if changed (clients only save hash-verified ticks) | `boogle.world.<room>` | per room, per browser |
-| World snapshot | Server, host only, bodies under 250 KB | `PUT /rooms/:id/snapshot` | per room, only with `VITE_BOOGLE_SERVER` |
+| World snapshot (every state in `RULES`, tick) | localStorage on every ready peer, every 30 s and on pagehide if changed (clients only save hash-verified ticks) | `boogle.world.v01-<room>` | per room, per browser |
+| World snapshot | Server, host only, bodies under 250 KB | `PUT /rooms/v01-<room>/snapshot` | per room, only with `VITE_BOOGLE_SERVER` |
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
 | Hotbar | localStorage | `boogle.hotbar` (old `boogle.pocket` migrated once) | global, not per room |
 | Boogler friendship | localStorage | `boogle.boogler.<room>` | per room |
@@ -82,7 +82,8 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | Guest engine, the pieces cut from the ROM | IndexedDB | `boogle-decomp` / `files`: `guest-engine`, `guest-rom` | per browser, never uploaded |
 | Update reload guard | sessionStorage | `boogle-update-reloaded-for` | per tab session |
 
-A tab that becomes host without state loads the newest, by tick, of its local copy and the server's (it waits up to 3 s
+Saves from before 0.1 (`boogle.world.<room>`, the server's `<room>`) are never loaded: the namespace bump of
+2026-10-31 started every room's world fresh, and each tab deletes its old local key on connect. A tab that becomes host without state loads the newest, by tick, of its local copy and the server's (it waits up to 3 s
 for the server). Not persisted: the ball, the Boogler's position.
 
 The server ([server/README.md](../../server/README.md)) is one Node service: PeerJS signaling at `/peerjs`, snapshots

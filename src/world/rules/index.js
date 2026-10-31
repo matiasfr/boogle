@@ -1,12 +1,10 @@
 // The lockstep rules, one module per system (see ./README.md). RULES is the canonical order: states snapshot, load and
 // hash in it, and ops, ticks and sim listeners register in it. APPEND ONLY: reordering it desyncs mixed-build rooms.
-import * as terrain from './terrain.js';
+// The list restarted with the 0.1 namespace (../namespace.js): terrain, proto and water were retired then.
 import * as mushrooms from './mushrooms.js';
 import * as gifts from './gifts.js';
-import * as proto from './proto.js';
-import * as water from './water.js';
 
-export const RULES = [terrain, mushrooms, gifts, proto, water];
+export const RULES = [mushrooms, gifts];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
