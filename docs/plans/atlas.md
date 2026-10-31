@@ -469,7 +469,7 @@ glance".
   fallback. Verify in `/atlas/`: Layers, Circles and Treemap match `v3-layers.png`, `v3-pack.png` and `v3-tree.png`;
   selecting a file lights its uses (blue) and used-by (orange). `npm run check`.
 
-- [ ] **7. Focus, Network flow, Frame.** Create `atlas/views/focus.js` (port `focusView` and `registrations`, with
+- [x] **7. Focus, Network flow, Frame.** Create `atlas/views/focus.js` (port `focusView` and `registrations`, with
   actions shown as `a.id`), `atlas/views/flow.js` (port `flowView` with `sankey` and `sankeyLinkHorizontal` from
   `d3-sankey`, channel names and tags from `N.channels` falling back to the `KINDS` name, and `wireOf` from model.js)
   and `atlas/views/frame.js` (port `frameView` over `hooks(M)`, removing `CORE`; slices are grey when `core`,

@@ -8,6 +8,9 @@ import { buildModel, esc, layerOf, searchIndex } from './model.js';
 import { parseNarrative } from './narrative.js';
 import { howView, stopHow } from './views/how.js';
 import { inspector } from './views/inspector.js';
+import { focusView } from './views/focus.js';
+import { flowView } from './views/flow.js';
+import { frameView } from './views/frame.js';
 import { mapLayers, mapPack, mapTree, resetPackZoom } from './views/map.js';
 
 const storyTexts = import.meta.glob('../docs/atlas/stories/*.json', { eager: true, query: '?raw', import: 'default' });
@@ -67,27 +70,30 @@ function crumbs() {
         : '';
 }
 
-// Until the other views land, their tabs say so.
-function soon(el) {
-  el.innerHTML = '<div class="frame"><p class="note">Coming in the next commit.</p></div>';
-}
-
 let built = null;
 function render(rebuild = true) {
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === S.view));
   const el = $('#canvas');
   const key = S.view + S.mapStyle + (S.view === 'focus' ? S.focusFile : '');
-  if (rebuild || built !== key || S.view === 'how' || (S.view === 'map' && S.mapStyle === 'layers')) {
+  if (
+    rebuild ||
+    built !== key ||
+    S.view === 'how' ||
+    S.view === 'frame' ||
+    (S.view === 'map' && S.mapStyle === 'layers')
+  ) {
     built = key;
     stopHow();
     if (S.view === 'how') howView(ctx, el);
     else if (S.view === 'map')
       (S.mapStyle === 'layers' ? mapLayers : S.mapStyle === 'pack' ? mapPack : mapTree)(ctx, el);
-    else soon(el);
+    else if (S.view === 'focus') focusView(ctx, el);
+    else if (S.view === 'flow') flowView(ctx, el);
+    else frameView(ctx, el);
   } else if (S.view === 'map') {
     if (S.mapStyle === 'pack') mapPack.update(ctx);
     if (S.mapStyle === 'treemap') mapTree.update(ctx);
-  }
+  } else if (S.view === 'flow') flowView.update(ctx);
   inspector(ctx);
   crumbs();
   $('#ref').innerHTML = REFS[S.view === 'map' ? S.mapStyle : S.view] ?? '';
