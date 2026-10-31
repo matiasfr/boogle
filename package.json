@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:net": "node dev/peer-test/run.mjs",
+    "test:net": "node dev/peer-test/run.mjs && node dev/peer-test/ws-run.ts",
     "load": "node dev/peer-test/load.mjs",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p .",

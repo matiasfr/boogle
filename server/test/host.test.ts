@@ -92,6 +92,7 @@ test('refusals: unhosted room, bad ids, a full room (a known id still gets in)',
       ['beach', 'server'],
       ['beach', 'Bad!'],
       ['Bad!', 'aaa'],
+      ['%E0%A4%A', 'aaa'], // a malformed escape: refused, not a crash of the upgrade listener
     ]) {
       const x = connect(base, room, self);
       assert.deepEqual(await x.next(is('bad')), { t: 'bad' });

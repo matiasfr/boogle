@@ -79,7 +79,8 @@ Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/n
 runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
 them.
 
-- `saveNow()`: save now (localStorage, and the server's snapshot for a host); `attachWorld(room, { saveMs })` sets how
+- `saveNow(force?)`: save now (localStorage, and the server's snapshot for a host), with `force` even if no state changed
+  since the last save (the tick moved on); `attachWorld(room, { saveMs })` sets how
   often saves happen (default 30 s; the server host uses 2 s).
 - `adoptSnapshot(snap)`: host only; replace the world with a handed-over snapshot (clients follow by resync). A host
   that is demoted POSTs its world to the server's `/rooms/:id/handoff` first.

@@ -140,6 +140,7 @@ export function createHostedRoom({
   }
 
   function onMessage(c: Client, data: unknown) {
+    if (clients.get(c.id) !== c) return; // a replaced socket's frames still in flight
     const text = String(data);
     const now = performance.now();
     c.seen = now;

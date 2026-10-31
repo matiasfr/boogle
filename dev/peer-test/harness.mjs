@@ -48,12 +48,12 @@ export async function seesAll(group) {
   return true;
 }
 
-export async function startHarness() {
-  const signalPort = await freePort(),
-    webPort = await freePort();
-  const server = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/peerjs' });
+// page.js-style bundle `entry` served on a free port, plus headless Chromium. open(name, query) loads a page and runs
+// its T.start(); selfId is the page's id, or { error } when the room turned it away.
+export async function startWeb(entry) {
+  const webPort = await freePort();
   const built = await esbuild.build({
-    entryPoints: [path.join(here, 'page.js')],
+    entryPoints: [path.join(here, entry)],
     bundle: true,
     format: 'iife',
     write: false,
@@ -72,17 +72,14 @@ export async function startHarness() {
       }
     })
     .listen(webPort, '127.0.0.1');
-
   const browser = await chromium.launch();
-  const room = 'test' + Math.random().toString(36).slice(2, 8);
-  // selfId is the page's id, or { error } when the room turned it away. `in` picks another room; `query` adds params.
-  async function open(name, { in: roomId = room, query = '' } = {}) {
+  async function open(name, query) {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     page.on('pageerror', (e) => console.log(`  [${name}] pageerror: ${e.message}`));
     if (process.env.VERBOSE) page.on('console', (m) => console.log(`  [${name}] ${m.text()}`));
     await page.goto(
-      `http://127.0.0.1:${webPort}/?room=${roomId}&port=${signalPort}${query}${process.env.STUN ? '&stun=1' : ''}${process.env.VERBOSE ? '&debug=' + process.env.VERBOSE : ''}`,
+      `http://127.0.0.1:${webPort}/?${query}${process.env.VERBOSE ? '&debug=' + process.env.VERBOSE : ''}`,
     );
     const selfId = await ev(page, () => window.T.start());
     return { name, page, ctx, selfId };
@@ -90,6 +87,20 @@ export async function startHarness() {
   async function close() {
     await browser.close().catch(() => {});
     web.close();
+  }
+  return { open, close };
+}
+
+export async function startHarness() {
+  const signalPort = await freePort();
+  const server = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/peerjs' });
+  const web = await startWeb('page.js');
+  const room = 'test' + Math.random().toString(36).slice(2, 8);
+  // `in` picks another room; `query` adds params.
+  const open = (name, { in: roomId = room, query = '' } = {}) =>
+    web.open(name, `room=${roomId}&port=${signalPort}${query}${process.env.STUN ? '&stun=1' : ''}`);
+  async function close() {
+    await web.close();
     server.close?.();
   }
   return { room, open, close };

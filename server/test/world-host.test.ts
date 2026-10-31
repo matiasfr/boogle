@@ -114,8 +114,15 @@ test('the world saves as the server and a restart resumes from it', async () => 
   assert.ok(tick > 0 && (doc.data as Msg).tick === tick);
   assert.equal(wh.rules.mushrooms.garden.plots.length, 1);
 
+  // Nothing changes from here, but the tick moves on: a close still saves it (the helper bank reads it).
+  ({ store, wh } = await makeHost(dir));
+  for (let f = 0; f < 30; f++) (wh.step(0.1), await settle());
+  const later = wh.sync.world.tick;
+  await wh.close({ save: true });
+  assert.equal(store.readSync('beach')!.tick, later);
+
   ({ wh } = await makeHost(dir));
-  assert.ok(wh.sync.world.tick >= tick, `resumed at ${wh.sync.world.tick}, saved ${tick}`);
+  assert.ok(wh.sync.world.tick >= later && later > tick, `resumed at ${wh.sync.world.tick}, saved ${later}`);
   assert.equal(wh.rules.mushrooms.garden.plots.length, 1);
   await wh.close({ save: false });
 });

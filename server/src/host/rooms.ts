@@ -25,6 +25,7 @@ export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
   adoptWindowMs: number;
   allowedOrigins: string[];
+  trustProxy: unknown;
   log: (...a: unknown[]) => void;
 };
 
@@ -69,10 +70,12 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const room = rooms.get(id);
       if (!room) return null;
       const tick = room.status().tick;
-      if (!room.world.validate(doc.data)) return { status: 400, body: { error: 'bad snapshot' } };
-      const newer = (doc.data as { tick: number }).tick > tick;
-      if (!newer || performance.now() - startedAt > cfg.adoptWindowMs)
+      const at = (doc.data as { tick?: unknown } | null)?.tick;
+      if (typeof at !== 'number') return { status: 400, body: { error: 'bad snapshot' } };
+      // The cheap checks first: validating loads a whole scratch world on the thread every room ticks on.
+      if (at <= tick || performance.now() - startedAt > cfg.adoptWindowMs)
         return { status: 409, body: { adopted: false, tick } };
+      if (!room.world.validate(doc.data)) return { status: 400, body: { error: 'bad snapshot' } };
       const adopted = await room.adopt(doc.data);
       return adopted
         ? { status: 200, body: { adopted: true, tick: room.status().tick } }
@@ -82,14 +85,20 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const origin = req.headers.origin;
       if (!cfg.allowedOrigins.includes('*') && !(origin && cfg.allowedOrigins.includes(origin)))
         return refuse(socket, '403 Forbidden');
-      const ip = String(req.headers['fly-client-ip'] ?? req.socket.remoteAddress ?? '?');
+      // Fly's proxy sets fly-client-ip; without a trusted proxy in front a client could set it to dodge the limit.
+      const ip = String((cfg.trustProxy && req.headers['fly-client-ip']) || req.socket.remoteAddress || '?');
       const now = Date.now();
       const u = upgrades.get(ip) ?? { n: 0, at: now };
       upgrades.set(ip, u);
       if (++u.n > UPGRADES_PER_MIN) return refuse(socket, '429 Too Many Requests');
 
       const url = new URL(req.url ?? '/', 'http://localhost');
-      const id = decodeURIComponent(url.pathname.slice('/room/'.length));
+      let id = '';
+      try {
+        id = decodeURIComponent(url.pathname.slice('/room/'.length));
+      } catch {
+        // a malformed escape: refused as a bad id below (this runs in the upgrade listener, so a throw would crash)
+      }
       const self = url.searchParams.get('self');
       wss.handleUpgrade(req, socket, head, (ws) => {
         if (ws.protocol !== WS_PROTOCOL || !ROOM_ID_RE.test(id) || !okId(self) || self === SERVER_ID)
