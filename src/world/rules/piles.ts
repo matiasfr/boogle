@@ -14,7 +14,7 @@ import {
   PILE_CAP,
 } from '../../sim/piles.ts';
 import { MATERIALS } from '../../sim/materials.ts';
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream } from './types.ts';
 import type { StacksApi } from './stacks.ts';

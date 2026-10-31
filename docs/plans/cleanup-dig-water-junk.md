@@ -14,7 +14,7 @@ the frisbee, seeds, the can, mushrooms and tossing. Readers of the water surface
 `src/physics/water-field.js`.
 
 **Key decisions.**
-- **Stubs keep the state keys.** `terrain` and `water` stay in `RULES` (`src/world/rules/index.js` was not edited, so
+- **Stubs keep the state keys.** `terrain` and `water` stay in `RULES` (`src/world/rules/index.ts` was not edited, so
   state order never changes) as stubs at `version` 0: they load any save and ignore it, serialize a fixed document and
   hash a constant, and register no ops or ticks. The terrain stub writes the bare island in the old format and hashes
   the old empty-state hash (2166136261), so old tabs agree with it; no stub can match an old water hash (it mixed a

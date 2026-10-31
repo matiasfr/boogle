@@ -3,11 +3,13 @@
 // { int(lo, hi) inclusive, pick(array), chance(p), next() in [0, 1) }.
 
 // About a fifth of generated edits are junk, to prove validation holds and nothing throws or desyncs.
+import type { Stream } from './types.ts';
+
 export const JUNK = 0.2;
 
 // A malformed or out-of-range edit for `op`: wrong types, missing or absurd fields, cells off the grid, oversized
 // payloads. JSON-safe (no NaN or Infinity), so it travels like any client's edit.
-export function bad(r, op) {
+export function bad(r: Stream, op: string) {
   const i = r.int(-5, 5000),
     j = r.int(-5, 5000);
   switch (r.int(0, 6)) {

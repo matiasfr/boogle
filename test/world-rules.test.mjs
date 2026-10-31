@@ -4,11 +4,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createSync } from '../src/world/sync.js';
-import { RULES, installRules } from '../src/world/rules/index.js';
+import { RULES, installRules } from '../src/world/rules/index.ts';
 import { homeLand, fixture } from './helpers/land.mjs';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
-import { SEEDS } from '../src/world/rules/gifts.js';
+import { SEEDS } from '../src/world/rules/gifts.ts';
 
 const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank']; // production order (test/fixtures/world-inputs.json)
 
@@ -134,5 +134,5 @@ test('rules import only pure modules (no three.js, DOM or constants.js)', () => 
       visit(new URL(spec, url));
     }
   };
-  visit(new URL('../src/world/rules/index.js', import.meta.url));
+  visit(new URL('../src/world/rules/index.ts', import.meta.url));
 });

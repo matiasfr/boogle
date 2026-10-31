@@ -13,7 +13,7 @@ import {
   MAX_PLAYERS,
   N_COLORS,
 } from '../../sim/roster.ts';
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 import type { SyncView, Stream } from './types.ts';
 
 export const name = 'roster';

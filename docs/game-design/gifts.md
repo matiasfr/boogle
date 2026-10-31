@@ -17,7 +17,7 @@
   away the oldest thrown item. Fruit per tree is fixed by a hash over the cycle coconut, mango, coconut, banana,
   pomegranate, coconut, apricot.
 - **Files.** [src/sim/gifts.ts](../../src/sim/gifts.ts), [src/sim/gift-catalog.ts](../../src/sim/gift-catalog.ts),
-  [src/world/rules/gifts.js](../../src/world/rules/gifts.js), [src/adapters/gifts.js](../../src/adapters/gifts.js), [src/features/gifts.js](../../src/features/gifts.js).
+  [src/world/rules/gifts.ts](../../src/world/rules/gifts.ts), [src/adapters/gifts.js](../../src/adapters/gifts.js), [src/features/gifts.js](../../src/features/gifts.js).
 - **Known issues and limits.** Items saved on the old 129-cell grid stay at their old cells (now far-corner sea) until
   they rot ([tech-plan.md](../tech-plan.md) B3).
 

@@ -26,7 +26,11 @@ function sources(root) {
 // Installs the rules on a recording stand-in for sync: module order, ops, and each state's version and saved shape.
 async function rulesOf(root) {
   const url = (p) => pathToFileURL(path.join(root, p)).href;
-  const { RULES } = await import(url('src/world/rules/index.js'));
+  // .ts since the rules moved to TypeScript; main's tree may still have the .js.
+  const rulesIndex = ['ts', 'js']
+    .map((x) => `src/world/rules/index.${x}`)
+    .find((f) => fs.existsSync(path.join(root, f)));
+  const { RULES } = await import(url(rulesIndex));
   const { homeLand } = await import(url('test/helpers/land.mjs'));
   const ops = {};
   const states = {};

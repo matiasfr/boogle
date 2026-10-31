@@ -73,7 +73,7 @@ second run with the same seed to give the same result. It fails when a registere
 edit of that op was ever accepted. So a module with ops exports:
 
 ```js
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 // r: the peer's seeded stream { int(lo, hi), pick(a), chance(p), next() }; view: { rules, land, tick } of that peer.
 export const edits = {
   'thing.poke': (r, view) => (r.chance(JUNK) ? bad(r, 'thing.poke') : { op: 'thing.poke', i: r.int(200, 240), j: 210 }),
@@ -106,7 +106,7 @@ op names.
 ```js
 // <What the system is.> Lockstep: runs the same on every peer (see ./README.md).
 import { createThing } from '../../sim/thing.js';
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 
 export const name = 'thing';
 

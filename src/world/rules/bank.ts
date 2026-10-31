@@ -8,7 +8,7 @@ import { offlineFreight } from '../../sim/bank.ts';
 import { FNV_SEED, fold } from '../../sim/hash.ts';
 import { HELPER_EVERY } from '../../sim/sites.ts';
 import { costOf, TRACK, ROUTE } from '../../sim/route.ts';
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream } from './types.ts';
 import type { SitesApi } from './sites.ts';

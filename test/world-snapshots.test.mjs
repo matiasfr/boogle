@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.js';
-import { installRules } from '../src/world/rules/index.js';
+import { installRules } from '../src/world/rules/index.ts';
 import fs from 'node:fs';
 import { homeLand } from './helpers/land.mjs';
 

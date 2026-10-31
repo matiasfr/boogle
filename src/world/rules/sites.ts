@@ -23,7 +23,7 @@ import {
 import { ROUTE, TRACK, HELPER, costOf } from '../../sim/route.ts';
 import { materialOf } from '../../sim/materials.ts';
 import { HARD_CAP } from '../../sim/stacks.ts';
-import { JUNK, bad } from './edit-gen.js';
+import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream } from './types.ts';
 import type { RosterApi } from './roster.ts';
