@@ -108,13 +108,15 @@ const T = (window.T = {
       return { error: String((e as { code?: string }).code), ms: performance.now() - t0 };
     }
   },
-  // A plain peer room on our signaling for this room (a tab from before the picker): its isHost() after `ms`.
+  // A plain peer room on our signaling for this room (a tab from before the picker): its isHost() after `ms`, or
+  // 'never joined' (the expected end while the server holds the host id) or 'error'.
   async plainPeer(port: number, ms: number) {
     let r;
     try {
       r = await createPeerRoom({ roomId: q.get('room')!, signal: sig(port), iceServers: [], connectTimeoutMs: ms });
-    } catch {
-      return false;
+    } catch (e) {
+      // ID-TAKEN makes it a client of a host that never answers: a timeout is the expected end
+      return (e as { code?: string }).code === 'timeout' ? 'never joined' : 'error';
     }
     await new Promise((res) => setTimeout(res, ms));
     const host = r.isHost();

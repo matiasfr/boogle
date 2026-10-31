@@ -253,9 +253,11 @@ try {
   svc = await serve();
   check('hosting on: every page moves back to the server', (await waitFor(on('server'), 10000)) >= 0);
   const G = await web.open('G', `room=${room2}&idle=1`);
+  const plain = await ev(G.page, (p: number) => window.T.plainPeer(p, 10000), port);
   check(
     'a plain peer tab never hosts a server-hosted room',
-    !(await ev(G.page, (p: number) => window.T.plainPeer(p, 10000), port)),
+    plain === false || plain === 'never joined',
+    String(plain),
   );
 
   // 14. nothing reachable: the join fails within the connect timeout

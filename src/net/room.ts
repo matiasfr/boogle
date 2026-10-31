@@ -49,7 +49,6 @@ const GRACE_MS = 9000;
 const OUTBOX_MAX = 200;
 const jitter = (ms: number) => ms * (0.7 + Math.random() * 0.6);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const err = (code: string, msg?: string): RoomError => Object.assign(new Error(msg || code), { code });
 
 export async function createRoom(opts: CreateRoomOptions): Promise<Room> {
   const peerRoom = async (): Promise<Room> =>
@@ -184,46 +183,65 @@ export async function createRoom(opts: CreateRoomOptions): Promise<Room> {
     ];
     if (k === 'ws') unsubs.push((r as unknown as WsRoom).onRedirect(() => move('peer'))); // T8
     r.presence(mine).catch(() => {});
-    for (const m of outbox.splice(0)) r.send(m);
+    for (const m of outbox.splice(0))
+      try {
+        r.send(m);
+      } catch (e) {
+        console.warn('[room] dropped a held message', e); // too big for this transport
+      }
     setHost(r.isHost());
     setLead(r.isLead());
     schedule();
   }
-  // A transport that fails for good: the server's room tries the fallback, a peer room the server's (T12).
-  function fail(r: Room, e: RoomError) {
+  // A transport that fails for good. Refusals (full, bad) go to the game, which shows them and retries; otherwise the
+  // server's room tries the fallback, and a peer room the server's if it hosts the room now (T12).
+  async function fail(r: Room, e: RoomError) {
     if (inner !== r || closed) return;
     log('transport failed', kind, e?.code);
-    if (kind === 'ws' && e?.code === 'room_full') return call(errHandlers, e);
-    void move(kind === 'ws' ? 'fallback' : 'ws');
+    if (e?.code === 'room_full' || e?.code === 'bad') return call(errHandlers, e);
+    if (kind === 'ws') return void move('fallback');
+    if ((await hostStatus()) === 'server') return void move('ws');
+    call(errHandlers, e);
   }
+  const fatal = (e: unknown) => call(errHandlers, Object.assign(e as RoomError, { fatal: true }));
 
+  // A move to the server's room opens it first and stays put if it can't (a probe saw it hosting, but this browser may
+  // not reach its socket); the other moves leave a transport that is already failing. The host of the transport being
+  // left says so first (its sync hands the world over: POST /rooms/:id/handoff) and goes first; the rest wait a bit.
   async function move(to: Kind) {
     if (moving || closed || to === kind) return;
     moving = true;
     log('move', kind, '->', to);
-    const old = inner!;
-    setConnected(false);
-    if (host) setHost(false); // the sync hands the world over (POST /rooms/:id/handoff) before letting go
-    await sleep(host ? t.handoffMs : t.handoffMs + Math.random() * 1000);
-    for (const u of unsubs.splice(0)) u();
-    old.close();
-    inner = null;
     let next: Room | null = null;
-    for (const k of to === 'ws' ? (['ws', 'fallback'] as Kind[]) : [to]) {
+    if (to === 'ws') {
       try {
-        next = await open(k);
-        to = k;
-        break;
+        next = await openWs();
       } catch (e) {
-        log('could not open', k, (e as RoomError).code);
+        log('server room unavailable', (e as RoomError).code);
+        moving = false;
+        return schedule();
       }
     }
+    const old = inner!;
+    const wasHost = host;
+    setConnected(false);
+    setLead(false);
+    setHost(false);
+    await sleep(wasHost ? t.handoffMs : t.handoffMs + Math.random() * 1000);
+    for (const u of unsubs.splice(0)) u();
+    if (!closed) old.close(); // close() already closed it otherwise
+    inner = null;
+    if (!closed && !next)
+      try {
+        next = await open(to);
+      } catch (e) {
+        moving = false;
+        return fatal(e);
+      }
     moving = false;
     if (closed) return void next?.close();
-    if (!next)
-      return call(errHandlers, Object.assign(err('unreachable', 'no transport could be opened'), { fatal: true }));
     table.expectBack(GRACE_MS);
-    attach(to, next);
+    attach(to, next!);
   }
 
   // Watching for a better transport (T7, T9-T11).
@@ -278,11 +296,17 @@ export async function createRoom(opts: CreateRoomOptions): Promise<Room> {
     onPeers(h: (c: PeersChange) => void, onError?: (e: RoomError) => void) {
       const unsub = table.onChange(h);
       if (onError) errHandlers.add(onError);
+      let live = true;
       setTimeout(() => {
+        if (!live) return;
         const peers = table.list();
         h({ peers, joined: peers, left: [], updated: [] });
       }, 0);
-      return () => (unsub(), onError && errHandlers.delete(onError));
+      return () => {
+        live = false;
+        unsub();
+        if (onError) errHandlers.delete(onError);
+      };
     },
     onConnection(h: (c: boolean) => void, onError?: (e: RoomError) => void) {
       const unsub = sub(connHandlers, h, onError);
