@@ -477,7 +477,7 @@ glance".
   against `v3-focus.png`, `v3-flow.png` and `v3-frame.png`: the Frame view now shows multi-line hooks the prototype
   missed (for example `src/features/impact.js`, `src/render/particles.js`). `npm run check`.
 
-- [ ] **8. What changed + hash links.** In `atlas/main.js`: `[data-changes]` sets `S.sel = { t: 'changes' }`, and the
+- [x] **8. What changed + hash links.** In `atlas/main.js`: `[data-changes]` sets `S.sel = { t: 'changes' }`, and the
   inspector renders `renderChanges(parseChanges(changesMd).slice(0, 8), known)`. Hash routes are read on load and on
   `hashchange`: `#story/<id>` (view how, that story, step 0), `#concept/<id>`, `#view/<id>`, `#file/<path>`. An unknown
   id is ignored. Clicking a story or a view tab writes the hash with `history.replaceState`. Verify:

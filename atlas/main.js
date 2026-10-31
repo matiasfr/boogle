@@ -3,7 +3,8 @@
 import './atlas.css';
 import facts from 'virtual:atlas-facts';
 import conceptsText from '../docs/atlas/concepts.json?raw';
-import { KINDS, LAYERS, REFS } from './layout.js';
+import changesMd from '../docs/atlas/changes.md?raw';
+import { KINDS, LAYERS, REFS, VIEWS } from './layout.js';
 import { buildModel, esc, layerOf, searchIndex } from './model.js';
 import { parseNarrative } from './narrative.js';
 import { howView, stopHow } from './views/how.js';
@@ -33,7 +34,7 @@ const S = {
   stepI: 0,
   focusBack: [],
 };
-const ctx = { S, M, N, select, render, css, kc, esc };
+const ctx = { S, M, N, changesMd, select, render, css, kc, esc };
 
 function crumbs() {
   const sel = S.sel;
@@ -115,15 +116,19 @@ const storyOf = () => N.stories.find((x) => x.id === S.story);
 
 document.addEventListener('click', (e) => {
   const t = e.target.closest(
-    '[data-view],[data-style],[data-dir],[data-file],[data-layer],[data-root],[data-focus],[data-back],[data-hook],[data-res],[data-concept],[data-story],[data-step],[data-nav],[data-lane]',
+    '[data-changes],[data-view],[data-style],[data-dir],[data-file],[data-layer],[data-root],[data-focus],[data-back],[data-hook],[data-res],[data-concept],[data-story],[data-step],[data-nav],[data-lane]',
   );
   if (!t) {
     if (!e.target.closest('.search')) $('#results').hidden = true;
     return;
   }
   const d = t.dataset;
-  if (d.view) {
+  if (d.changes !== undefined) {
+    S.sel = { t: 'changes' };
+    render();
+  } else if (d.view) {
     S.view = d.view;
+    writeHash(`view/${S.view}`);
     if (S.view === 'focus' && S.sel.t === 'file') S.focusFile = S.sel.id;
     render();
   } else if (d.style) {
@@ -160,6 +165,7 @@ document.addEventListener('click', (e) => {
   } else if (d.story) {
     S.story = S.story === d.story ? null : d.story;
     S.stepI = 0;
+    writeHash(S.story ? `story/${S.story}` : 'view/how');
     render();
   } else if (d.step) {
     S.stepI = +d.step;
@@ -286,6 +292,41 @@ new MutationObserver(() => render()).observe(document.documentElement, {
   attributeFilter: ['data-theme'],
 });
 
+/* ---------- Hash links: #story/<id>, #concept/<id>, #view/<id>, #file/<path> ---------- */
+function writeHash(h) {
+  try {
+    history.replaceState(null, '', `#${h}`);
+  } catch {
+    // Some sandboxes block it; the page works without a shareable link.
+  }
+}
+// Reads location.hash; an unknown id is ignored. Returns true when it changed the page.
+function applyHash() {
+  const m = /^#(story|concept|view|file)\/(.+)$/.exec(decodeURIComponent(location.hash));
+  if (!m) return false;
+  const [, kind, id] = m;
+  if (kind === 'story') {
+    if (!N.stories.some((x) => x.id === id)) return false;
+    Object.assign(S, { view: 'how', story: id, stepI: 0, sel: { t: 'root' } });
+  } else if (kind === 'concept') {
+    if (!N.concepts.some((x) => x.id === id)) return false;
+    Object.assign(S, { view: 'how', story: null, stepI: 0, sel: { t: 'concept', id } });
+  } else if (kind === 'view') {
+    if (!VIEWS.includes(id)) return false;
+    S.view = id;
+  } else {
+    if (!M.byPath.has(id)) return false;
+    if (S.view === 'how') S.view = 'map';
+    S.sel = { t: 'file', id };
+    S.openDir = M.byPath.get(id).dir;
+    if (S.view === 'focus') S.focusFile = id;
+  }
+  return true;
+}
+window.addEventListener('hashchange', () => {
+  if (applyHash()) render();
+});
+
 /* ---------- Start ---------- */
 $('#rev').textContent = facts.git?.head ?? '';
 if (facts.error) {
@@ -293,4 +334,5 @@ if (facts.error) {
   b.hidden = false;
   b.textContent = `The code facts could not be read (${facts.error}). Showing the explanations only.`;
 }
+applyHash();
 render();

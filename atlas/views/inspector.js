@@ -1,6 +1,7 @@
 // The right-hand inspector: a card for whatever is selected. ctx = { S, M, N, select, render, css, kc, esc }.
-import { KINDS, LAYERS } from '../layout.js';
+import { KINDS, LAYERS, VIEWS } from '../layout.js';
 import { hooks, layerDirs, layerOf, registrations, resolveCite, wireOf } from '../model.js';
+import { parseChanges, renderChanges } from '../changes.js';
 import { conceptCard, howIntro } from './how.js';
 
 const sentences = (t) => {
@@ -61,6 +62,16 @@ export function inspector(ctx) {
   const { S, M, N, kc, esc } = ctx;
   const el = document.querySelector('#insp');
   const sel = S.sel;
+  if (sel.t === 'changes') {
+    const known = {
+      stories: new Set(N.stories.map((x) => x.id)),
+      concepts: new Set(N.concepts.map((x) => x.id)),
+      views: new Set(VIEWS),
+    };
+    const entries = parseChanges(ctx.changesMd).slice(0, 8);
+    el.innerHTML = `<div><h2>What changed</h2></div>${entries.length ? renderChanges(entries, known) : '<p>Nothing recorded yet.</p>'}`;
+    return;
+  }
   if (sel.t === 'concept') {
     el.innerHTML = conceptCard(ctx, sel.id);
     return;
