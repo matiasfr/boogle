@@ -3,13 +3,22 @@
 // hotbar items (src/player/inventory.js); src/player/hands.js calls plantFront and pour when you use them.
 import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.js';
 import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
-import { world, groundMat, playerMat, ballMat, GROUP } from '../physics/physics.js';
+import { groundMat, playerMat, ballMat, GROUP } from '../physics/physics.js';
+import {
+  material,
+  contactMaterial,
+  createBody,
+  setShapes,
+  addBody,
+  onPreStep,
+  onPostStep,
+  forEachContact,
+} from '../physics/engine.ts';
 import { me } from '../player/player.js';
 import { setEnv, onApplied, submitEdit } from '../world/sync.js';
 import { waterField } from '../physics/water-field.js';
@@ -58,51 +67,55 @@ onApplied((e, t, r) => {
 });
 
 // ---------------------------------------------------------------- physics
-const mushroomMat = new CANNON.Material('mushroom');
-world.addContactMaterial(new CANNON.ContactMaterial(mushroomMat, playerMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(mushroomMat, ballMat, { friction: 0.3, restitution: 0.95 }));
+const mushroomMat = material('mushroom');
+contactMaterial(mushroomMat, playerMat, { friction: 0, restitution: 0 });
+contactMaterial(mushroomMat, ballMat, { friction: 0.3, restitution: 0.95 });
 
 const capBodies = new Map(); // body -> visual
 
-// Cannon shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
+// Physics shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
 function shapeBody(v, s) {
   if (!v.body) {
-    v.body = new CANNON.Body({ mass: 0, material: mushroomMat, collisionFilterGroup: GROUP.SCENERY });
-    v.body.position.copy(v.root.position);
-    world.addBody(v.body);
+    v.body = createBody({ material: mushroomMat, group: GROUP.SCENERY, position: v.root.position });
+    addBody(v.body);
     capBodies.set(v.body, v);
   }
-  const b = v.body;
-  while (b.shapes.length) b.removeShape(b.shapes[0]);
-  b.addShape(
-    new CANNON.Cylinder(STEM_TOP_R * s, STEM_BASE_R * s, STEM_H * s, 10),
-    new CANNON.Vec3(0, (STEM_H * s) / 2, 0),
-  );
-  b.addShape(
-    new CANNON.Cylinder(CAP_R * s, CAP_R * 0.85 * s, CAP_T * s, 16),
-    new CANNON.Vec3(0, (STEM_H + CAP_T / 2) * s, 0),
-  );
-  b.aabbNeedsUpdate = true;
+  setShapes(v.body, [
+    {
+      kind: 'cylinder',
+      rTop: STEM_TOP_R * s,
+      rBottom: STEM_BASE_R * s,
+      h: STEM_H * s,
+      segments: 10,
+      offset: { x: 0, y: (STEM_H * s) / 2, z: 0 },
+    },
+    {
+      kind: 'cylinder',
+      rTop: CAP_R * s,
+      rBottom: CAP_R * 0.85 * s,
+      h: CAP_T * s,
+      segments: 16,
+      offset: { x: 0, y: (STEM_H + CAP_T / 2) * s, z: 0 },
+    },
+  ]);
   v.bodyS = s;
 }
 
-world.addEventListener('postStep', () => {
+onPostStep(() => {
   const b = me.body;
   if (!b) return;
-  for (const c of world.contacts) {
-    const other = c.bi === b ? c.bj : c.bj === b ? c.bi : null;
-    const vis = other && capBodies.get(other);
-    if (!vis) continue;
-    if (b.position.y < other.position.y + STEM_H * vis.bodyS) continue;
+  forEachContact(b, (nx, ny, nz, other) => {
+    const vis = capBodies.get(other);
+    if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
     b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
     me.coyote = 0;
     vis.squishAt = performance.now();
-    break;
-  }
+    return true;
+  });
 });
 
 // A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top).
-world.addEventListener('preStep', () => {
+onPreStep(() => {
   const b = me.body;
   if (!b) return;
   for (const v of visuals.values()) {
@@ -291,11 +304,15 @@ export function createStall() {
   stall.updateMatrixWorld(true);
   for (const p of pickups) p.world = stall.localToWorld(p.local.clone());
 
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-  body.addShape(new CANNON.Box(new CANNON.Vec3(1.4, 0.5, 0.45)), new CANNON.Vec3(0, 0.5, 0));
-  body.position.set(STALL.x, y, STALL.z);
-  body.quaternion.setFromEuler(0, STALL.yaw, 0);
-  world.addBody(body);
+  addBody(
+    createBody({
+      material: groundMat,
+      group: GROUP.SCENERY,
+      position: { x: STALL.x, y, z: STALL.z },
+      rotation: { x: 0, y: Math.sin(STALL.yaw / 2), z: 0, w: Math.cos(STALL.yaw / 2) },
+      shapes: [{ kind: 'box', hx: 1.4, hy: 0.5, hz: 0.45, offset: { x: 0, y: 0.5, z: 0 } }],
+    }),
+  );
   obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
 }
 

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
 import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
-import { world as physics } from '../physics/physics.js';
+import { onPostStep, forEachContact } from '../physics/engine.ts';
 import { trees } from '../render/props.js';
 import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
@@ -62,7 +62,7 @@ export function createGifts3d() {
   layout.perches.push({ i: pi, j: pj, kind: giftIndex('frisbee') });
   perchSpots.push(new THREE.Vector3(FRISBEE_SPOT.x, FRISBEE_SPOT.y, FRISBEE_SPOT.z));
   buildTreeFruit();
-  physics.addEventListener('postStep', knockFruit);
+  onPostStep(knockFruit);
 }
 
 function itemPos(it, out) {
@@ -359,17 +359,17 @@ const treeOfBody = new Map();
 function knockFruit() {
   if (!ball.mine || ball.held) return;
   if (!treeOfBody.size) trees.forEach((t, k) => k < layout.trees.length && treeOfBody.set(t.body, k));
-  for (const c of physics.contacts) {
-    const other = c.bi === ball.body ? c.bj : c.bj === ball.body ? c.bi : null;
-    const t = other ? treeOfBody.get(other) : undefined;
-    if (t === undefined || !canDrop(gifts, t, world.tick)) continue;
+  forEachContact(ball.body, (nx, ny, nz, other) => {
+    const t = treeOfBody.get(other);
+    if (t === undefined || !canDrop(gifts, t, world.tick)) return;
     const now = performance.now();
-    if (now - (knockedAt.get(t) ?? -1e9) < 1500) continue;
+    if (now - (knockedAt.get(t) ?? -1e9) < 1500) return;
     // Contacts are read after the bounce; disp.v still has the previous frame's (pre-bounce) velocity.
-    if (ball.body.velocity.length() < KNOCK_SPEED && ball.disp.v.length() < KNOCK_SPEED) continue;
+    const v = ball.body.velocity;
+    if (Math.hypot(v.x, v.y, v.z) < KNOCK_SPEED && ball.disp.v.length() < KNOCK_SPEED) return;
     knockedAt.set(t, now);
     dropEdit(t, ball.body.position.x, ball.body.position.z);
-  }
+  });
 }
 
 // `target` is the item id the interact prompt is on (see giftTargets), highlighted; null for none.
