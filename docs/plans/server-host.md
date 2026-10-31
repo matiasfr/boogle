@@ -433,7 +433,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `npm --prefix server test` and `npm run test:net` (PeerJS through the new router) pass unchanged;
     `npm run check:full`.
 
-- [ ] **6. Shared net modules** (`src/net/ids.js`, `src/net/ws-wire.js`, `src/net/peer-room.ts`).
+- [x] **6. Shared net modules** (`src/net/ids.js`, `src/net/ws-wire.js`, `src/net/peer-room.ts`).
   - Create `ids.js` and `ws-wire.js` as in Design. `peer-room.js` imports `SELF_ID`, `okId`, `safeRoom`,
     `peerHostId` from `ids.js` (delete its copies) and adds `transport: 'peer'`, `isLead: () => isHostNow`,
     `onLeadChange(h)` (registered with the host handlers).
