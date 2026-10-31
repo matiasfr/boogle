@@ -51,10 +51,10 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 - Unit tests (`test/*.test.mjs`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
 - `npm run check` (lint, unit tests, build; seconds): before every push.
 - `npm run check:full` (+ server tests, headless network test, ~30 s): when you touch `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
-- Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR (must pass), the rest nightly (never block). Local runs are optional, for iterating on visuals and feel; a failed leg's images are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
+- Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR (must pass), the rest nightly (never block). Local runs are optional, for iterating on visuals and feel; a failed leg's images and Playwright traces (`npx playwright show-trace <zip>`) are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
 - `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
 - `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
-- Headless runs use the WebGL 2 backend (the harness loads the game with `?gfx=webgl2&dpr=fixed`); `npm run look -- --webgpu --gpu` shows the WebGPU one on a Mac. A `gfx errors` line with entries is a bug.
+- Headless runs use the WebGL 2 backend (the harness loads the game with `?gfx=webgl2&dpr=fixed`; nightly CI also runs `smoke` on WebGPU); `npm run look -- --webgpu --gpu` shows the WebGPU one on a Mac. A `gfx errors` line with entries is a bug.
 
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too). Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.

@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   run:
-    name: scenario ${{ matrix.scenario }}
+    name: scenario ${{ matrix.scenario }}${{ matrix.gfx && format(' ({0})', matrix.gfx) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -34,6 +34,13 @@ jobs:
           - interact
           - caves
           - lighthouse
+        # Production players get WebGPU, but every other leg runs three's WebGL 2 backend. This one runs smoke on
+        # WebGPU (SwiftShader over Vulkan, dev/look/lib.mjs `launch`) and fails if the page fell back to WebGL 2.
+        include:
+          - scenario: smoke
+            gfx: webgpu
+    env:
+      BOOGLE_GFX: ${{ matrix.gfx }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,7 +62,7 @@ jobs:
       - if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: scenario-${{ matrix.scenario }}
+          name: scenario-${{ matrix.scenario }}${{ matrix.gfx && format('-{0}', matrix.gfx) || '' }}
           path: .look/scenarios/${{ matrix.scenario }}/
           include-hidden-files: true # .look/ is a dot directory
           if-no-files-found: ignore

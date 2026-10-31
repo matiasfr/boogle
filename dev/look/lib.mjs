@@ -115,7 +115,8 @@ export class Game {
   // `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
-  // layout viewport, and the game only needs the coarse pointer)
+  // layout viewport, and the game only needs the coarse pointer),
+  // trace (record a Playwright trace: actions, console, network, DOM snapshots; `close({ trace: file })` keeps it)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -124,6 +125,8 @@ export class Game {
     g.size = opts.size || [960, 600];
     g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] }, hasTouch: !!opts.touch });
     if (opts.clock) await g.ctx.clock.install();
+    g.tracing = !!opts.trace;
+    if (g.tracing) await g.ctx.tracing.start({ screenshots: true, snapshots: true, title: g.name });
     // src/constants.js reads isTouch once at load, so this must run before the page's code.
     if (opts.touch)
       await g.ctx.addInitScript(() => {
@@ -328,7 +331,9 @@ export class Game {
     else await sleep(seconds * 1000);
   }
 
-  async close() {
+  // trace: a .zip path to save the trace to (`npx playwright show-trace <zip>`); without it the trace is dropped.
+  async close({ trace } = {}) {
+    if (this.tracing) await this.ctx.tracing.stop(trace ? { path: trace } : {}).catch(() => {});
     await this.ctx.close();
   }
 }

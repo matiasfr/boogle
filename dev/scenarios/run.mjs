@@ -10,11 +10,13 @@
 //   t.check(label, ok, detail)                 records PASS/FAIL (never throws); put images in the detail
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
-// failure every player's last frame is saved as <name>-final-still.png.
+// failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
+// (`npx playwright show-trace <zip>`: every action, console line, request and DOM snapshot; `--no-trace` skips it).
+// With BOOGLE_GFX=webgpu a player that came up on WebGL 2 instead fails the scenario.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors } from '../look/lib.mjs';
+import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors, wantWebgpu } from '../look/lib.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const all = fs
@@ -23,6 +25,8 @@ const all = fs
   .map((f) => f.slice(0, -4))
   .sort();
 const args = process.argv.slice(2);
+const trace = !args.includes('--no-trace');
+if (!trace) args.splice(args.indexOf('--no-trace'), 1);
 const at = args.findIndex((a) => a === '--url' || a.startsWith('--url='));
 let url = process.env.LOOK_URL || null;
 if (at >= 0) {
@@ -59,7 +63,12 @@ try {
       VIEWS,
       sleep,
       async open(opts = {}) {
-        const g = await Game.open(browser, stack, { out, ...opts, name: opts.name || 'p' + (games.length + 1) });
+        const g = await Game.open(browser, stack, {
+          out,
+          trace,
+          ...opts,
+          name: opts.name || 'p' + (games.length + 1),
+        });
         games.push(g);
         return g;
       },
@@ -88,10 +97,16 @@ try {
         console.log(`  FAIL  page errors in ${g.name}: ${g.errors.slice(0, 2).join(' | ')}`);
       }
     }
+    if (wantWebgpu())
+      for (const g of games)
+        if (g.gfx !== 'webgpu') {
+          bads++;
+          console.log(`  FAIL  ${g.name} asked for WebGPU but runs ${g.gfx ?? 'an unknown backend'}`);
+        }
     if (games.length) reportGfxErrors(games);
     for (const g of games) {
       if (bads) await g.still(`${g.name}-final`).catch(() => {});
-      await g.close().catch(() => {});
+      await g.close(bads ? { trace: path.join(out, `${g.name}-trace.zip`) } : {}).catch(() => {});
     }
     console.log(`  ${bads ? 'FAILED' : 'ok'} in ${((Date.now() - t0) / 1000).toFixed(1)} s; images: ${out}`);
     if (bads) failed++;
