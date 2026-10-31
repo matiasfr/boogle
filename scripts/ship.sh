@@ -69,6 +69,12 @@ EOF
   n=$(git rev-list --count origin/main..HEAD)
   git push -q origin "HEAD:refs/heads/$branch"
 
+  # Your `npm run wip` markers whose commits this ship carries are done (dev/inflight.mjs).
+  git fetch -q origin "+refs/heads/wip/${who:-someone}/*:refs/remotes/origin/wip/${who:-someone}/*" 2>/dev/null || true
+  for ref in $(git for-each-ref --format='%(refname:short)' "refs/remotes/origin/wip/${who:-someone}/"); do
+    git cherry HEAD "$ref" | grep -q '^+' || git push -q origin --delete "${ref#origin/}" || true
+  done
+
   repo=$(git remote get-url origin | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')
   cat <<EOF
 ship: pushed $n commit(s) to $branch.

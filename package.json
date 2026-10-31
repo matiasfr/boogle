@@ -20,6 +20,8 @@
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "look": "node dev/look/look.mjs",
     "registry": "node dev/registry/check.mjs",
+    "inflight": "node dev/inflight.mjs",
+    "wip": "node dev/inflight.mjs wip",
     "perf": "node dev/look/perf.mjs",
     "hitches": "node dev/look/hitches.mjs",
     "island-map": "node dev/island/map.mjs",
