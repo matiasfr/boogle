@@ -20,7 +20,7 @@
     {
       "go": [["you.loop", "you.systems"]],
       "text": "Physics steps forward: players, the ball, thrown items.",
-      "code": "main.js → world.step (cannon-es)",
+      "code": "main → stepPhysics (Rapier)",
       "cite": [
         {
           "file": "src/main.js",
@@ -51,7 +51,7 @@
       "code": "late · order 3000 · presence send",
       "cite": [
         {
-          "file": "src/netplay/net.js"
+          "file": "src/netplay/net.ts"
         }
       ]
     },

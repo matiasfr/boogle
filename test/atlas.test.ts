@@ -1,12 +1,14 @@
 // Atlas logic on in-memory fixtures only: never reads docs/atlas/ or src/, so a rename elsewhere cannot fail it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractFile, extractFacts, diffFacts } from '../dev/atlas/extract.mjs';
-import { BOX, KINDS, CHANNEL_IDS } from '../atlas/layout.js';
-import { buildModel, kindOf, resolveCite } from '../atlas/model.js';
-import { parseNarrative } from '../atlas/narrative.js';
-import { checkAtlas } from '../atlas/check.js';
-import { parseChanges, renderChanges } from '../atlas/changes.js';
+import { extractFile, extractFacts, diffFacts } from '../dev/atlas/extract.ts';
+import { BOX, KINDS, CHANNEL_IDS } from '../atlas/layout.ts';
+import { buildModel, kindOf, resolveCite } from '../atlas/model.ts';
+import { parseNarrative } from '../atlas/narrative.ts';
+import { checkAtlas } from '../atlas/check.ts';
+import type { AtlasInput } from '../atlas/check.ts';
+import type { Cite, FileFacts, Narrative, Story } from '../atlas/types.ts';
+import { parseChanges, renderChanges } from '../atlas/changes.ts';
 
 const SAMPLE = `// Sample feature.
 // Second line.
@@ -81,6 +83,57 @@ test('extractFile reads names', () => {
   assert.deepEqual(r.names, ['o', 'go', 'K']);
 });
 
+// The reader (dev/scan/read.ts) parses TypeScript with the compiler API, and a module that moves from .js to .ts keeps
+// its facts: same registrations, same names, imports resolved to the real file.
+const TS_SAMPLE = `// Typed sample.
+import type { Room } from '../net/room.ts';
+import { a } from '../x/y.ts';
+import { b } from './z.js';
+export type { Thing } from './types.ts';
+interface Local { n: number }
+export const PAD = ['y', 'x'] as const;
+function buildPresence() {
+  const pr: Record<string, unknown> = { v: 1, hp: 2 };
+  return pr;
+}
+addPresenceField('zz' as const, (): number | null => null);
+sync.registerOp<string>('x.poke', {} satisfies object);
+onFrame(
+  () => update(dt!),
+  { phase: 'world', order: -280 } as const,
+);
+export function honkNow(r: Room): void {}
+export default class Sample {}
+`;
+
+test('extractFile reads TypeScript', () => {
+  const r = extractFile('src/features/sample.ts', TS_SAMPLE);
+  assert.equal(r.parseError, undefined);
+  assert.deepEqual(r.imports, ['src/x/y.ts', 'src/features/z.js']); // not the type-only imports
+  assert.deepEqual(r.exports, ['PAD', 'honkNow', 'default']);
+  assert.deepEqual(r.owner, ['v', 'hp', 'zz']);
+  assert.deepEqual(r.ops, ['x.poke']);
+  assert.deepEqual(r.frames, [{ phase: 'world', order: -280, name: 'update', core: false }]);
+  assert.deepEqual(r.names, ['PAD', 'buildPresence', 'pr', 'honkNow', 'Sample']);
+});
+
+test('a module keeps its facts when it moves from .js to .ts', () => {
+  const body = "addPresenceField('zz', () => null);\nexport function honkNow() {}\n";
+  const js = { ...extractFile('src/features/sample.js', body), f: '' };
+  const ts = { ...extractFile('src/features/sample.ts', body), f: '' };
+  assert.deepEqual(js, ts);
+  const files = (path: string) => extractFacts({ git: false, sources: [{ path, text: body }] });
+  const d = diffFacts(files('src/features/sample.js'), files('src/features/sample.ts'));
+  assert.deepEqual([d.filesAdded, d.filesRemoved, d.keys], [[], [], {}]);
+});
+
+test('lockstep globs accept {js,ts} choices', () => {
+  const sources = [{ path: 'src/sim/a.ts', text: 'export const a = 1;\n' }];
+  const globs = ['src/sim/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
+  assert.equal(extractFacts({ git: false, sources, lockstep: globs }).files[0].lockstep, true);
+  assert.equal(extractFacts({ git: false, sources, lockstep: ['src/world/grid.{js,ts}'] }).files[0].lockstep, false);
+});
+
 test('extractFacts is deterministic', () => {
   const sources = [
     { path: 'src/b.js', text: `import { a } from './a.js';\nexport const b = 1;\n` },
@@ -102,7 +155,7 @@ test('extractFacts is deterministic', () => {
 // ---- narrative: fixtures only ----
 
 const MAIN =
-  'function frame() {\n  updateRemotes();\n  world.step(1);\n  runFrame();\n  renderFrame();\n}\nrenderer.setAnimationLoop(frame);\n';
+  'function frame() {\n  beginFrame();\n  updateRemotes();\n  world.step(1);\n  mark("x");\n  runFrame("world");\n  runFrame("late");\n  renderFrame();\n  endFrame();\n}\nrenderer.setAnimationLoop(frame);\n';
 
 function good() {
   const facts = extractFacts({
@@ -120,7 +173,9 @@ function good() {
     ],
   });
   const ids = [...new Set(Object.values(BOX).map((b) => b.c))];
-  const concepts = {
+  const concepts: Narrative = {
+    stories: [],
+    loadProblems: [],
     intro: { title: 't', ways: [{ kind: 'local', says: 's', eg: 'e' }] },
     kinds: Object.fromEntries(Object.keys(KINDS).map((k) => [k, 'text'])),
     channels: Object.fromEntries(CHANNEL_IDS.map((k) => [k, { name: k, d: 'd', tag: 't' }])),
@@ -135,7 +190,7 @@ function good() {
       code: [{ dir: 'src/features' }],
     })),
   };
-  const stories = [
+  const stories: Story[] = [
     {
       id: 'mush',
       title: 'Plant',
@@ -156,8 +211,9 @@ function good() {
     '# What changed\n\n## 2026-10-30\n\n- New. [see](#story/mush) and [frame](#view/frame)\n\n## 2026-10-29\n\n- Older.\n';
   return { facts, concepts, stories, changes };
 }
-const report = (fix) => checkAtlas(fix);
-const only = (problems, re) => {
+type Good = ReturnType<typeof good>;
+const report = (fix: AtlasInput) => checkAtlas(fix);
+const only = (problems: string[], re: RegExp) => {
   const hits = problems.filter((p) => re.test(p));
   assert.equal(hits.length, 1, `expected one match for ${re}, got ${hits.length} in:\n${problems.join('\n')}`);
   assert.equal(problems.length, 1, `extra problems:\n${problems.join('\n')}`);
@@ -168,12 +224,12 @@ test('checkAtlas passes a good narrative', () => {
 });
 
 test('checkAtlas names each problem once', () => {
-  const run = (edit, re) => {
+  const run = (edit: (g: Good) => unknown, re: RegExp) => {
     const g = good();
     edit(g);
     only(report(g), re);
   };
-  const cite = (g, c) => (g.stories[0].steps[0].cite = [c]);
+  const cite = (g: Good, c: Cite) => (g.stories[0].steps[0].cite = [c]);
   run((g) => cite(g, { file: 'src/nope.js' }), /mush\.json step 1: .*src\/nope\.js does not exist/);
   run((g) => cite(g, { file: 'src/features/honk.js', symbol: 'zzz' }), /has no symbol zzz/);
   run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
@@ -233,7 +289,7 @@ test('resolveCite never throws', () => {
 });
 
 test('kindOf classifies', () => {
-  const rec = (f, extra = {}) => ({
+  const rec = (f: string, extra: Partial<FileFacts> = {}): Partial<FileFacts> => ({
     f,
     ops: [],
     states: [],
@@ -270,7 +326,7 @@ test('changes parse and render, escaping everything', () => {
 });
 
 test('diffFacts reports files, folders and keys gained and lost', () => {
-  const mk = (sources) => extractFacts({ git: false, sources });
+  const mk = (sources: { path: string; text: string }[]) => extractFacts({ git: false, sources });
   const before = mk([
     { path: 'src/features/old.js', text: "sync.registerOp('a.x', {});\naddPresenceField('k', f);\n" },
     { path: 'src/features/keep.js', text: "registerAction('keep', { pad: 'y' });\n" },

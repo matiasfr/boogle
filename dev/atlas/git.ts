@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 
 // Runs git in `root` and returns its trimmed output. Throws when git fails.
-export function git(root, ...args) {
+export function git(root: string, ...args: string[]): string {
   return execFileSync('git', args, {
     cwd: root,
     encoding: 'utf8',
@@ -13,7 +13,7 @@ export function git(root, ...args) {
 }
 
 // The ref the upkeep reads from: the last commit that touched docs/atlas/, else HEAD~20, else the first commit.
-export function sinceRef(root) {
+export function sinceRef(root: string): string {
   let ref = '';
   try {
     ref = git(root, 'log', '-1', '--format=%H', '--', 'docs/atlas/');
@@ -24,7 +24,7 @@ export function sinceRef(root) {
   try {
     return git(root, 'rev-parse', 'HEAD~20');
   } catch {
-    return git(root, 'rev-list', '--max-parents=0', 'HEAD').split('\n').pop();
+    return git(root, 'rev-list', '--max-parents=0', 'HEAD').split('\n').pop()!;
   }
 }
 
@@ -34,8 +34,8 @@ const SYNC_PATHS = ['src/world/rules', 'src/net', 'src/netplay', 'server'];
 // -> { last, go, why }. go is false when no src/ or server/ commit landed since `last` (citations only break through
 // those), and, for any event but the daily `schedule`, unless a sync path changed or a src/features file was added
 // or removed. Plain `git diff`, so it needs no install.
-export function gate(root, last, event) {
-  const lines = (...a) =>
+export function gate(root: string, last: string, event: string): { last: string; go: boolean; why: string } {
+  const lines = (...a: string[]) =>
     git(root, ...a)
       .split('\n')
       .filter(Boolean);

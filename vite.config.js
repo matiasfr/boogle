@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath } from 'node:url';
-import { atlasFacts } from './dev/atlas/vite-plugin.mjs';
+import { atlasFacts } from './dev/atlas/vite-plugin.ts';
 
 const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 

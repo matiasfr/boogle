@@ -1,15 +1,17 @@
-// Atlas layout constants: SVG geometry, tiers, colours. PURE (no DOM, no d3), so tests and dev/atlas/cli.mjs can read
+import type { Layer } from './types.ts';
+
+// Atlas layout constants: SVG geometry, tiers, colours. PURE (no DOM, no d3), so tests and dev/atlas/cli.ts can read
 // it. What a box says (title, subtitle) is narrative and lives in docs/atlas/concepts.json; only geometry is here.
 // An agent should not move coordinates: the citation report checks every reference to these ids.
 
-export const LAYERS = [
+export const LAYERS: Layer[] = [
   {
     id: 'L0',
     name: 'What players see and do',
     short: 'Features',
     c: '--l0',
     dirs: ['features'],
-    note: 'Plug-ins, auto-loaded by main.js. None imports another.',
+    note: 'Plug-ins, auto-loaded by main. None imports another.',
   },
   {
     id: 'L1',
@@ -39,7 +41,7 @@ export const LAYERS = [
 ];
 
 // Sync kinds: display name and CSS variable. Descriptions live in concepts.json "kinds".
-export const KINDS = {
+export const KINDS: Record<string, { name: string; c: string }> = {
   lock: { name: 'Lockstep', c: '--k-lock' },
   adapter: { name: 'Lockstep adapter', c: '--k-adapter' },
   host: { name: 'Host', c: '--k-host' },
@@ -50,7 +52,7 @@ export const KINDS = {
 
 // The "How it works" diagram. `c` is the concept id (title and card), `lock` draws the lockstep stripe. Titles and
 // subtitles come from concepts.json ("concepts[c].title", "boxes[<box id>]").
-export const BOX = {
+export const BOX: Record<string, { x: number; y: number; w: number; h: number; c: string; lock?: number }> = {
   'you.features': { x: 40, y: 66, w: 520, h: 62, c: 'features' },
   'you.registries': { x: 40, y: 144, w: 160, h: 116, c: 'registries' },
   'you.loop': { x: 215, y: 144, w: 345, h: 52, c: 'loop' },
@@ -68,19 +70,25 @@ export const BOX = {
 };
 
 // Wire lanes down the middle of the diagram (x is 645 for all of them).
-export const LANES = { msg: { y: 97 }, owner: { y: 222 }, host: { y: 262 }, lock: { y: 362 } };
+export const LANES: Record<string, { y: number }> = {
+  msg: { y: 97 },
+  owner: { y: 222 },
+  host: { y: 262 },
+  lock: { y: 362 },
+};
 
 // Routes between these two ids bend through a waypoint: the lockstep lane runs under Netplay.
 export const ROUTE_VIA = [{ a: 'you.world', b: 'lane:lock', via: [378, 362] }];
 
 // Is this id a route end the How diagram can draw: a BOX id, or `lane:<channel>`?
-export const validRef = (id) => (typeof id === 'string' && id.startsWith('lane:') ? id.slice(5) in LANES : id in BOX);
+export const validRef = (id: unknown): boolean =>
+  typeof id === 'string' && (id.startsWith('lane:') ? id.slice(5) in LANES : id in BOX);
 
 export const CHANNEL_IDS = ['owner', 'host', 'lock', 'msg'];
 export const VIEWS = ['how', 'map', 'focus', 'flow', 'frame'];
 
 // Where each view's idea comes from. They describe the atlas, not Boogle, so they stay in code.
-export const REFS = {
+export const REFS: Record<string, string> = {
   how: '<b>How it works</b> borrows from the C4 model’s dynamic diagrams and from explorable explanations (Nicky Case, Bartosz Ciechanowski): one picture, then step through a real action.',
   layers: '<b>Layers</b> borrows from the C4 model (Structurizr): boxes in labelled tiers, opened in place.',
   pack: '<b>Circles</b> borrows from GitHub Next’s repo visualization and Observable’s zoomable circle packing. Click to zoom, background to zoom out.',

@@ -30,7 +30,7 @@
       "code": "20 Hz · latest wins",
       "cite": [
         {
-          "file": "src/netplay/net.js"
+          "file": "src/netplay/net.ts"
         }
       ]
     },
@@ -44,7 +44,7 @@
           "symbol": "INTERP_MS"
         },
         {
-          "file": "src/netplay/snaps.js"
+          "file": "src/netplay/snaps.ts"
         }
       ]
     }

@@ -18,7 +18,7 @@ blocks anything: a stale explanation is your chore, never a red build.
    state, presence key, host field or message type that belongs to a new system) or major feature (a new
    `src/features/` file a player sees that has its own sync, or a new folder). Add a folder note for any folder the
    output lists. When a story needs a box that does not exist, say so in the PR body instead of editing
-   `atlas/layout.js`.
+   `atlas/layout.ts`.
 6. **Always** add a `## <today>` entry at the top of `docs/atlas/changes.md`: 2 to 6 bullets in plain language for a
    visual learner. Say what you would notice or what it means, offer an analogy where it helps, link stories
    (`[text](#story/<id>)`), and keep file paths to a minimum. When only small fixes landed, write one line saying so

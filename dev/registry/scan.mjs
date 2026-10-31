@@ -1,6 +1,6 @@
 // Registry scan: every name in src/ that two agents could pick at once, found statically, and the rules that keep
 // mixed-build rooms working when one PR adds to them (AGENTS.md, "Shared registries" and "Mixed builds").
-// Pure: takes file texts, returns data (read by dev/scan/read.mjs, which the atlas uses too). dev/registry/check.mjs feeds it the tree and main's tree; test/registry.test.mjs
+// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.mjs feeds it the tree and main's tree; test/registry.test.mjs
 // feeds it snippets.
 //
 //   scanSources(files)        files: [{ path, text }] -> registry (shape below)
@@ -18,7 +18,7 @@
 //   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
 // }
 
-import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.mjs';
+import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.ts';
 
 const CORE_PRESENCE_FILE = 'src/netplay/net';
 // Paths compare without their extension, so a module keeps its registry identity when it moves from .js to .ts.
@@ -26,7 +26,7 @@ const bare = (p) => p.replace(/\.[jt]s$/, '');
 
 const add = (map, key, who) => (map[key] ??= []).push(who);
 
-// The registry as one projection of dev/scan/read.mjs, the reader the atlas uses too: a message type belongs to the
+// The registry as one projection of dev/scan/read.ts, the reader the atlas uses too: a message type belongs to the
 // files that *send* it (`.send(` plus `t: '...'`), never to a receiver; the room layer's own protocol (src/net/) is
 // not a name two agents can pick; presence includes the core keys of buildPresence; a hook is core by order
 // (isCoreHook). A file the reader cannot parse is an error, not a silent skip.

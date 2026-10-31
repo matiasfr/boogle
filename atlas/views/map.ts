@@ -1,14 +1,19 @@
 // Map: the same code three ways (layers, circle pack, treemap). Area is lines of code. ctx = { S, M, N, ... }.
 import { hierarchy, pack, treemap, treemapSquarify } from 'd3-hierarchy';
+import type { HierarchyCircularNode, HierarchyNode } from 'd3-hierarchy';
 import { select as d3select } from 'd3-selection';
 import { interpolateZoom } from 'd3-interpolate';
 import 'd3-transition';
-import { KINDS, LAYERS } from '../layout.js';
-import { layerDirs, sumLoc } from '../model.js';
-import { stackBar } from './inspector.js';
+import { KINDS, LAYERS } from '../layout.ts';
+import { layerDirs, sumLoc } from '../model.ts';
+import { stackBar } from './inspector.ts';
+import type { Ctx, Layer, ModelFile, Selection, Update } from '../types.ts';
 
 // With a file selected, what it uses (blue) and what uses it (orange) light up and the rest dims.
-function neighbours({ S, M }) {
+type Neighbours = { uses: Set<string>; usedby: Set<string> } | null;
+type Role = 'sel' | 'uses' | 'usedby' | null;
+
+function neighbours({ S, M }: Pick<Ctx, 'S' | 'M'>): Neighbours {
   if (S.sel.t !== 'file') return null;
   const f = M.byPath.get(S.sel.id);
   if (!f) return null;
@@ -16,13 +21,13 @@ function neighbours({ S, M }) {
 }
 
 // How a file relates to the selection: 'sel' | 'uses' | 'usedby' | null.
-function role(nb, sel, path) {
-  if (!nb) return null;
+function role(nb: Neighbours, sel: Selection, path: string | undefined): Role {
+  if (!nb || !path || !('id' in sel)) return null;
   return path === sel.id ? 'sel' : nb.uses.has(path) ? 'uses' : nb.usedby.has(path) ? 'usedby' : null;
 }
-const ROLE_STROKE = { sel: 'var(--fg)', uses: 'var(--uses)', usedby: 'var(--usedby)' };
+const ROLE_STROKE: Record<string, string> = { sel: 'var(--fg)', uses: 'var(--uses)', usedby: 'var(--usedby)' };
 
-export function mapLayers(ctx, el) {
+export function mapLayers(ctx: Ctx, el: HTMLElement): Update {
   const { S, M, N, kc, esc } = ctx;
   const nb = neighbours(ctx);
   const sel = S.sel;
@@ -36,7 +41,7 @@ export function mapLayers(ctx, el) {
           return `<div class="box open lit${sel.t === 'dir' && sel.id === d ? ' sel' : ''}" style="--g:1"><b>${esc(d)}/</b><small>${esc(N.folders[d] ?? '')}</small><div class="cells">${list
             .map((f) => {
               const r = role(nb, sel, f.f);
-              return `<button class="cell ${r ? r + ' lit' : ''}" data-file="${esc(f.f)}" style="--g:${Math.sqrt(f.loc)};--c:${kc(f.kind)}" title="${esc(f.f)} · ${f.loc} lines">${esc(f.name.replace(/\.js$/, ''))}</button>`;
+              return `<button class="cell ${r ? r + ' lit' : ''}" data-file="${esc(f.f)}" style="--g:${Math.sqrt(f.loc)};--c:${kc(f.kind)}" title="${esc(f.f)} · ${f.loc} lines">${esc(f.name.replace(/\.[jt]s$/, ''))}</button>`;
             })
             .join('')}</div></div>`;
         }
@@ -48,9 +53,18 @@ export function mapLayers(ctx, el) {
 }
 
 // The hierarchy d3 lays out: boogle > layer > folder > file (value = lines).
-function hier(ctx) {
+interface TreeNode {
+  name: string;
+  value?: number;
+  layer?: Layer;
+  dir?: string;
+  file?: ModelFile;
+  children?: TreeNode[];
+}
+
+function hier(ctx: Ctx): HierarchyNode<TreeNode> {
   const { M } = ctx;
-  return hierarchy({
+  const tree: TreeNode = {
     name: 'boogle',
     children: LAYERS.map((L) => ({
       name: L.short,
@@ -58,15 +72,16 @@ function hier(ctx) {
       children: layerDirs(M, L).map((d) => ({
         name: d,
         dir: d,
-        children: M.dirs[d].map((f) => ({ name: f.name.replace(/\.js$/, ''), file: f, value: f.loc })),
+        children: M.dirs[d].map((f) => ({ name: f.name.replace(/\.[jt]s$/, ''), file: f, value: f.loc })),
       })),
     })),
-  })
+  };
+  return hierarchy(tree)
     .sum((d) => d.value || 0)
-    .sort((a, b) => b.value - a.value);
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 }
 
-const nodeSel = (d) =>
+const nodeSel = (d: HierarchyNode<TreeNode>): Selection =>
   d.data.file
     ? { t: 'file', id: d.data.file.f }
     : d.data.dir
@@ -75,25 +90,25 @@ const nodeSel = (d) =>
         ? { t: 'layer', id: d.data.layer.id }
         : { t: 'root' };
 
-function fillFor(d) {
+function fillFor(d: HierarchyNode<TreeNode>): string {
   if (d.data.file) return `var(${KINDS[d.data.file.kind].c})`;
   if (d.data.layer) return `var(${d.data.layer.c})`;
   return d.data.dir ? 'var(--panel)' : 'var(--sunk)';
 }
 
-function litFor({ S }, d, nb) {
+function litFor({ S }: Pick<Ctx, 'S'>, d: HierarchyNode<TreeNode>, nb: Neighbours): boolean {
   return !nb || d.leaves().some((l) => role(nb, S.sel, l.data.file?.f));
 }
 
 /* ---------- Circle pack ---------- */
-let packZoom = null;
+let packZoom: string | null = null;
 export const resetPackZoom = () => (packZoom = null);
 
-export function mapPack(ctx, el) {
+export function mapPack(ctx: Ctx, el: HTMLElement): Update {
   const { select } = ctx;
   const W = 900;
   const H = 900;
-  const root = pack()
+  const root = pack<TreeNode>()
     .size([W, H])
     .padding((d) => (d.depth === 0 ? 14 : d.depth === 1 ? 10 : 3))(hier(ctx));
   el.innerHTML = '';
@@ -127,12 +142,12 @@ export function mapPack(ctx, el) {
   node
     .append('title')
     .text((d) =>
-      d.data.file ? `${d.data.file.f} · ${d.value} lines` : `${d.data.name} · ${d.value.toLocaleString()} lines`,
+      d.data.file ? `${d.data.file.f} · ${d.value} lines` : `${d.data.name} · ${(d.value ?? 0).toLocaleString()} lines`,
     );
   const label = svg
     .append('g')
     .style('pointer-events', 'none')
-    .selectAll('text')
+    .selectAll<SVGTextElement, HierarchyCircularNode<TreeNode>>('text')
     .data(root.descendants())
     .join('text')
     .attr('text-anchor', 'middle')
@@ -144,9 +159,9 @@ export function mapPack(ctx, el) {
     .style('stroke-width', 3)
     .text((d) => d.data.name);
   let focus = packZoom ? root.descendants().find((d) => d.data.name === packZoom) || root : root;
-  let cur;
+  let cur: [number, number, number] = [focus.x, focus.y, focus.r * 2];
   label.style('display', (d) => (d.parent === focus ? 'inline' : 'none'));
-  const place = (v) => {
+  const place = (v: [number, number, number]) => {
     const k = W / v[2];
     cur = v;
     node.attr('transform', (d) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`).attr('r', (d) => d.r * k);
@@ -156,7 +171,7 @@ export function mapPack(ctx, el) {
     );
   };
   place([focus.x, focus.y, focus.r * 2]);
-  function zoom(d) {
+  function zoom(d: HierarchyCircularNode<TreeNode>) {
     focus = d;
     packZoom = d === root ? null : d.data.name;
     const t = svg
@@ -164,13 +179,13 @@ export function mapPack(ctx, el) {
       .duration(650)
       .tween('zoom', () => {
         const i = interpolateZoom(cur, [d.x, d.y, d.r * 2]);
-        return (u) => place(i(u));
+        return (u: number) => place(i(u) as [number, number, number]);
       });
     label
       .filter(function (n) {
         return n.parent === focus || this.style.display === 'inline';
       })
-      .transition(t)
+      .transition(t as never) // d3's typings do not let one transition drive another selection
       .style('fill-opacity', (n) => (n.parent === focus ? 1 : 0))
       .on('start', function (n) {
         if (n.parent === focus) this.style.display = 'inline';
@@ -180,12 +195,12 @@ export function mapPack(ctx, el) {
       });
     if (d === root) select({ t: 'root' }, false);
   }
-  const update = (c) => {
+  const update = (c: Ctx) => {
     const nb = neighbours(c);
-    const roleOf = (d) => role(nb, c.S.sel, d.data.file?.f);
+    const roleOf = (d: HierarchyNode<TreeNode>) => role(nb, c.S.sel, d.data.file?.f);
     node
       .attr('opacity', (d) => (litFor(c, d, nb) ? 1 : 0.25))
-      .attr('stroke', (d) => ROLE_STROKE[roleOf(d)] ?? (d.data.file ? 'none' : 'var(--line)'))
+      .attr('stroke', (d) => ROLE_STROKE[roleOf(d) ?? ''] ?? (d.data.file ? 'none' : 'var(--line)'))
       .attr('stroke-width', (d) => (roleOf(d) ? 3 : 1));
   };
   update(ctx);
@@ -197,11 +212,11 @@ export function mapPack(ctx, el) {
 }
 
 /* ---------- Treemap ---------- */
-export function mapTree(ctx, el) {
+export function mapTree(ctx: Ctx, el: HTMLElement): Update {
   const { select } = ctx;
   const W = 1000;
   const H = 640;
-  const root = treemap()
+  const root = treemap<TreeNode>()
     .size([W, H])
     .tile(treemapSquarify.ratio(1.2))
     .paddingOuter(4)
@@ -232,7 +247,7 @@ export function mapTree(ctx, el) {
   rect
     .append('title')
     .text((d) =>
-      d.data.file ? `${d.data.file.f} · ${d.value} lines` : `${d.data.name} · ${d.value.toLocaleString()} lines`,
+      d.data.file ? `${d.data.file.f} · ${d.value} lines` : `${d.data.name} · ${(d.value ?? 0).toLocaleString()} lines`,
     );
   g.filter((d) => d.depth < 3 || (d.x1 - d.x0 > 46 && d.y1 - d.y0 > 16))
     .append('text')
@@ -245,17 +260,18 @@ export function mapTree(ctx, el) {
     .style('letter-spacing', (d) => (d.depth === 1 ? '.07em' : 0))
     .text((d) => {
       const w = d.x1 - d.x0;
-      const n = d.depth === 1 ? d.data.layer.name : d.data.name;
+      const n = d.depth === 1 ? (d.data.layer?.name ?? '') : d.data.name;
       const max = Math.floor((w - 10) / 6.8);
       return n.length > max ? n.slice(0, Math.max(1, max - 1)) + '…' : n;
     });
-  const update = (c) => {
+  const update = (c: Ctx) => {
     const nb = neighbours(c);
     const { sel } = c.S;
-    const roleOf = (d) => (sel.t === 'dir' && d.data.dir === sel.id ? 'sel' : role(nb, sel, d.data.file?.f));
+    const roleOf = (d: HierarchyNode<TreeNode>): Role =>
+      sel.t === 'dir' && d.data.dir === sel.id ? 'sel' : role(nb, sel, d.data.file?.f);
     rect
       .attr('opacity', (d) => (d.depth < 2 || litFor(c, d, nb) ? 1 : 0.25))
-      .attr('stroke', (d) => ROLE_STROKE[roleOf(d)] ?? 'var(--line)')
+      .attr('stroke', (d) => ROLE_STROKE[roleOf(d) ?? ''] ?? 'var(--line)')
       .attr('stroke-width', (d) => (roleOf(d) ? 2.5 : 1));
   };
   update(ctx);

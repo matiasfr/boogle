@@ -4,36 +4,42 @@ import './atlas.css';
 import facts from 'virtual:atlas-facts';
 import conceptsText from '../docs/atlas/concepts.json?raw';
 import changesMd from '../docs/atlas/changes.md?raw';
-import { KINDS, REFS, VIEWS } from './layout.js';
-import { buildModel, esc, layerById, layerOf, searchIndex } from './model.js';
-import { parseNarrative } from './narrative.js';
-import { howView, stopHow } from './views/how.js';
-import { inspector } from './views/inspector.js';
-import { focusView } from './views/focus.js';
-import { flowView } from './views/flow.js';
-import { frameView } from './views/frame.js';
-import { mapLayers, mapPack, mapTree, resetPackZoom } from './views/map.js';
+import { KINDS, REFS, VIEWS } from './layout.ts';
+import { buildModel, esc, fileAt, layerById, layerOf, searchIndex } from './model.ts';
+import type { SearchEntry } from './model.ts';
+import type { Ctx, Selection, State, Update } from './types.ts';
+import { parseNarrative } from './narrative.ts';
+import { howView, stopHow } from './views/how.ts';
+import { inspector } from './views/inspector.ts';
+import { focusView } from './views/focus.ts';
+import { flowView } from './views/flow.ts';
+import { frameView } from './views/frame.ts';
+import { mapLayers, mapPack, mapTree, resetPackZoom } from './views/map.ts';
 
-const storyTexts = import.meta.glob('../docs/atlas/stories/*.json', { eager: true, query: '?raw', import: 'default' });
+const storyTexts = import.meta.glob<string>('../docs/atlas/stories/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
 
 const N = parseNarrative({ conceptsText, storyTexts });
 const M = buildModel(facts);
 const INDEX = searchIndex(M, N);
-const $ = (s) => document.querySelector(s);
-const kc = (k) => `var(${KINDS[k]?.c ?? '--accent'})`;
+const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
+const kc = (k: string) => `var(${KINDS[k]?.c ?? '--accent'})`;
 
 // One shared selection: { t: 'root' | 'concept' | 'layer' | 'dir' | 'file' | 'channel' | 'hook', id }.
-const S = {
+const S: State = {
   view: 'how',
   mapStyle: 'layers',
   sel: { t: 'root' },
   openDir: 'features',
-  focusFile: M.byPath.has('src/netplay/net.js') ? 'src/netplay/net.js' : (M.files[0]?.f ?? null),
+  focusFile: (fileAt(M, 'src/netplay/net') ?? M.files[0])?.f ?? null,
   story: null,
   stepI: 0,
   focusBack: [],
 };
-const ctx = { S, M, N, changesMd, select, render, kc, esc };
+const ctx: Ctx = { S, M, N, changesMd, select, render, kc, esc };
 
 function crumbs() {
   const sel = S.sel;
@@ -72,7 +78,7 @@ function crumbs() {
 
 // Each view draws into the canvas and returns its `update(ctx)` for selection changes, or null when it redraws instead.
 // The first three are cheap or animated, so they are rebuilt on every render.
-const VIEW_FNS = {
+const VIEW_FNS: Record<string, (ctx: Ctx, el: HTMLElement) => Update> = {
   how: howView,
   layers: mapLayers,
   pack: mapPack,
@@ -82,10 +88,12 @@ const VIEW_FNS = {
   frame: frameView,
 };
 const ALWAYS_REBUILD = new Set(['how', 'layers', 'frame']);
-let built = null;
-let update = null;
+let built: string | null = null;
+let update: Update = null;
 function render(rebuild = true) {
-  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === S.view));
+  document
+    .querySelectorAll<HTMLElement>('[data-view]')
+    .forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === S.view)));
   const name = S.view === 'map' ? S.mapStyle : S.view;
   const key = name + (S.view === 'focus' ? S.focusFile : '');
   if (rebuild || built !== key || ALWAYS_REBUILD.has(name)) {
@@ -98,10 +106,10 @@ function render(rebuild = true) {
   $('#ref').innerHTML = REFS[name] ?? '';
 }
 
-function select(s, rebuild = true) {
+function select(s: Selection, rebuild = true) {
   S.sel = s;
   if (s.t === 'dir' && S.view === 'map') S.openDir = s.id;
-  if (s.t === 'file' && S.view === 'map') S.openDir = M.byPath.get(s.id)?.dir;
+  if (s.t === 'file' && S.view === 'map') S.openDir = M.byPath.get(s.id)?.dir ?? null;
   if (s.t === 'file' && S.view === 'focus' && s.id !== S.focusFile) {
     S.focusBack.push(S.focusFile);
     S.focusFile = s.id;
@@ -113,11 +121,12 @@ function select(s, rebuild = true) {
 const storyOf = () => N.stories.find((x) => x.id === S.story);
 
 document.addEventListener('click', (e) => {
-  const t = e.target.closest(
+  const target = e.target as Element;
+  const t = target.closest<HTMLElement>(
     '[data-changes],[data-view],[data-style],[data-dir],[data-file],[data-layer],[data-root],[data-focus],[data-back],[data-hook],[data-res],[data-concept],[data-story],[data-step],[data-nav],[data-lane]',
   );
   if (!t) {
-    if (!e.target.closest('.search')) $('#results').hidden = true;
+    if (!target.closest('.search')) $('#results').hidden = true;
     return;
   }
   const d = t.dataset;
@@ -140,8 +149,8 @@ document.addEventListener('click', (e) => {
     render();
   } else if (d.back !== undefined) {
     if (S.focusBack.length) {
-      S.focusFile = S.focusBack.pop();
-      S.sel = { t: 'file', id: S.focusFile };
+      S.focusFile = S.focusBack.pop() ?? null;
+      S.sel = { t: 'file', id: S.focusFile ?? '' };
       render();
     }
   } else if (d.file) select({ t: 'file', id: d.file }, false);
@@ -185,11 +194,11 @@ document.addEventListener('click', (e) => {
 
 /* ---------- Search ---------- */
 let act = 0;
-let hits = [];
-function pick(key) {
+let hits: SearchEntry[] = [];
+function pick(key: string) {
   const t = key.slice(0, 1);
   const id = key.slice(2);
-  $('#q').value = '';
+  $<HTMLInputElement>('#q').value = '';
   $('#results').hidden = true;
   $('#q').blur();
   if (t === 'd') {
@@ -206,8 +215,8 @@ function pick(key) {
     render();
   } else select({ t: 'file', id }, S.view === 'focus');
 }
-$('#q').addEventListener('input', (e) => {
-  const q = e.target.value.trim().toLowerCase();
+$<HTMLInputElement>('#q').addEventListener('input', (e) => {
+  const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
   const r = $('#results');
   if (!q) {
     r.hidden = true;
@@ -227,7 +236,7 @@ $('#q').addEventListener('input', (e) => {
     : '<p style="margin:6px 8px;color:var(--faint)">No matches</p>';
   r.hidden = false;
 });
-$('#q').addEventListener('keydown', (e) => {
+$<HTMLInputElement>('#q').addEventListener('keydown', (e) => {
   const b = [...$('#results').querySelectorAll('button')];
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
@@ -237,7 +246,7 @@ $('#q').addEventListener('keydown', (e) => {
   } else if (e.key === 'Enter' && hits[act]) pick(hits[act].key);
   else if (e.key === 'Escape') {
     $('#results').hidden = true;
-    e.target.blur();
+    (e.target as HTMLElement).blur();
   }
 });
 document.addEventListener('keydown', (e) => {
@@ -250,11 +259,15 @@ document.addEventListener('keydown', (e) => {
     if (!st) return;
     S.stepI = Math.max(0, Math.min(st.steps.length - 1, S.stepI + (e.key === 'ArrowRight' ? 1 : -1)));
     render();
-  } else if (S.view === 'how' && (e.key === 'Enter' || e.key === ' ') && document.activeElement?.dataset?.concept) {
+  } else if (
+    S.view === 'how' &&
+    (e.key === 'Enter' || e.key === ' ') &&
+    (document.activeElement as HTMLElement | null)?.dataset?.concept
+  ) {
     e.preventDefault();
-    document.activeElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    document.activeElement?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   } else if (e.key === 'Escape' && !inSearch) {
-    if (S.sel.t === 'file') select({ t: 'dir', id: M.byPath.get(S.sel.id)?.dir }, false);
+    if (S.sel.t === 'file') select({ t: 'dir', id: M.byPath.get(S.sel.id)?.dir ?? '' }, false);
     else if (S.sel.t !== 'root') select({ t: 'root' }, false);
   }
 });
@@ -262,7 +275,7 @@ document.addEventListener('keydown', (e) => {
 /* ---------- Theme: auto, light, dark ---------- */
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_KEY = 'boogle.atlas.theme';
-function applyTheme(mode) {
+function applyTheme(mode: string) {
   if (mode === 'auto') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = mode;
   $('#theme').textContent = `Theme: ${mode}`;
@@ -270,7 +283,7 @@ function applyTheme(mode) {
 let theme = 'auto';
 try {
   const saved = localStorage.getItem(THEME_KEY);
-  if (THEMES.includes(saved)) theme = saved;
+  if (saved && THEMES.includes(saved)) theme = saved;
 } catch {
   // Storage can be blocked; the page works without remembering the theme.
 }
@@ -286,7 +299,7 @@ $('#theme').addEventListener('click', () => {
 });
 
 /* ---------- Hash links: #story/<id>, #concept/<id>, #view/<id>, #file/<path> ---------- */
-function writeHash(h) {
+function writeHash(h: string) {
   try {
     history.replaceState(null, '', `#${h}`);
   } catch {
@@ -308,11 +321,12 @@ function applyHash() {
     if (!VIEWS.includes(id)) return false;
     S.view = id;
   } else {
-    if (!M.byPath.has(id)) return false;
+    const f = fileAt(M, id); // a link to src/x.js still finds src/x.ts
+    if (!f) return false;
     if (S.view === 'how') S.view = 'map';
-    S.sel = { t: 'file', id };
-    S.openDir = M.byPath.get(id).dir;
-    if (S.view === 'focus') S.focusFile = id;
+    S.sel = { t: 'file', id: f.f };
+    S.openDir = f.dir;
+    if (S.view === 'focus') S.focusFile = f.f;
   }
   return true;
 }

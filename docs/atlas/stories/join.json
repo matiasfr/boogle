@@ -17,10 +17,10 @@
     {
       "go": [["server", "fr.netplay"]],
       "text": "The server connects you to the other tabs, then steps aside. From here on tabs talk directly.",
-      "code": "src/net/peer-room.js (PeerJS, WebRTC)",
+      "code": "src/net/peer-room.ts (PeerJS, WebRTC)",
       "cite": [
         {
-          "file": "src/net/peer-room.js"
+          "file": "src/net/peer-room.ts"
         }
       ]
     },

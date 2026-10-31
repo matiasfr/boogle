@@ -20,7 +20,7 @@
       "code": "submitEdit({ op: 'mush.plant', i, j })",
       "cite": [
         {
-          "file": "src/world/sync.js",
+          "file": "src/world/sync.ts",
           "symbol": "submitEdit"
         },
         {
@@ -34,10 +34,10 @@
       "code": "validate(edit, ctx) · host only",
       "cite": [
         {
-          "file": "src/world/rules/mushrooms.js"
+          "file": "src/world/rules/mushrooms.ts"
         },
         {
-          "file": "src/world/sync.js"
+          "file": "src/world/sync.ts"
         }
       ]
     },
@@ -54,10 +54,10 @@
     {
       "hl": ["you.world", "fr.world"],
       "text": "Every tab applies it at the same tick with the same code, so every island stays identical.",
-      "code": "world/rules/mushrooms.js · apply(edit, tick)",
+      "code": "world/rules/mushrooms.ts · apply(edit, tick)",
       "cite": [
         {
-          "file": "src/world/rules/mushrooms.js"
+          "file": "src/world/rules/mushrooms.ts"
         },
         {
           "state": "mushrooms"

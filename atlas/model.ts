@@ -7,12 +7,17 @@
 //   msg      room messages (send/onMessage)
 //   adapter  submitEdit
 //   local    everything else
-import { LAYERS } from './layout.js';
+import { LAYERS } from './layout.ts';
+import type { Cite, FileFacts, Facts, Hook, Kind, Layer, Model, ModelFile, Narrative } from './types.ts';
 
-export const esc = (s) =>
-  String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+export const esc = (s: unknown): string => String(s).replace(/[&<>"]/g, (c) => ESCAPES[c]);
 
-export function dirOf(path) {
+// A path without its extension: a module keeps its place in the atlas when it moves from .js to .ts, so cites and
+// links compare this way.
+export const bare = (p: string): string => p.replace(/\.[jt]s$/, '');
+
+export function dirOf(path: string): string {
   if (path.startsWith('server/')) return 'server';
   const p = path.replace(/^src\//, '').split('/');
   if (p.length === 1) return '(core)';
@@ -21,9 +26,9 @@ export function dirOf(path) {
 }
 
 // The lockstep wire messages (w:edit, w:hash, ...) belong to the lock channel; every other message type is a one-off.
-const isLockMsg = (m) => m.startsWith('w:');
+const isLockMsg = (m: string) => m.startsWith('w:');
 
-export function kindOf(file) {
+export function kindOf(file: Partial<FileFacts>): Kind {
   if (file.lockstep || file.ops?.length || file.states?.length || file.ticks?.length || file.msgs?.some(isLockMsg))
     return 'lock';
   if (file.host?.length) return 'host';
@@ -34,38 +39,43 @@ export function kindOf(file) {
 }
 
 // An unknown folder falls back to "Game systems", so a new src/<folder>/ never crashes the page.
-export function layerOf(dir) {
+export function layerOf(dir: string): Layer {
   return LAYERS.find((L) => L.dirs.includes(dir)) ?? LAYERS[1];
 }
 
-export const layerById = (id) => LAYERS.find((L) => L.id === id) ?? LAYERS[1];
+export const layerById = (id: string): Layer => LAYERS.find((L) => L.id === id) ?? LAYERS[1];
 
-export const sumLoc = (list) => list.reduce((n, f) => n + f.loc, 0);
+export const sumLoc = (list: { loc: number }[]): number => list.reduce((n, f) => n + f.loc, 0);
 
-export function buildModel(facts) {
+export function buildModel(facts: Facts): Model {
   const list = Array.isArray(facts?.files) ? facts.files : [];
-  const files = list.map((x) => ({
+  const files: ModelFile[] = list.map((x) => ({
     ...x,
     dir: dirOf(x.f),
     kind: kindOf(x),
-    name: x.f.split('/').pop(),
+    name: x.f.split('/').pop()!,
     uses: new Set([...x.imports, ...x.lazy]),
     users: [],
   }));
   const byPath = new Map(files.map((x) => [x.f, x]));
+  const byBare = new Map(files.map((x) => [bare(x.f), x]));
   for (const x of files) for (const i of x.uses) byPath.get(i)?.users.push(x.f);
-  const dirs = {};
+  const dirs: Record<string, ModelFile[]> = {};
   for (const x of files) (dirs[x.dir] ||= []).push(x);
   for (const d in dirs) dirs[d].sort((a, b) => b.loc - a.loc || a.f.localeCompare(b.f));
-  const featureCount = files.filter((x) => /^src\/features\/[^/]+\.js$/.test(x.f)).length;
-  return { facts, files, byPath, dirs, featureCount };
+  const featureCount = files.filter((x) => /^src\/features\/[^/]+\.[jt]s$/.test(x.f)).length;
+  return { facts, files, byPath, byBare, dirs, featureCount };
 }
+
+// A file by its path, or by the path with the other extension: an old link or cite to src/x.js finds src/x.ts.
+export const fileAt = (model: Model, path: string | null | undefined): ModelFile | undefined =>
+  path ? (model.byPath.get(path) ?? model.byBare.get(bare(path))) : undefined;
 
 // The wire channels a file puts keys on: [[channel, keys]]. Room plumbing and debug tools are skipped. The lockstep
 // wire messages (w:*) belong to the lock channel.
-export function wireOf(file) {
+export function wireOf(file: FileFacts): [string, string[]][] {
   if (/^src\/(net|debug)\//.test(file.f)) return [];
-  const out = [];
+  const out: [string, string[]][] = [];
   if (file.owner.length) out.push(['owner', file.owner]);
   if (file.host.length) out.push(['host', file.host]);
   const lock = [...file.ops, ...file.states, ...file.msgs.filter(isLockMsg)];
@@ -75,21 +85,22 @@ export function wireOf(file) {
   return out;
 }
 
-// Every frame hook: the extracted onFrame calls, plus the steps main.js runs before the physics step and its final
+// Every frame hook: the extracted onFrame calls, plus the steps src/main runs before the physics step and its final
 // draw (facts.loop; without it the Frame view has no pre-step or render row). `core` comes from the extractor (a
 // reserved order outside src/features/). Hook id: `${file}#${n}`, the nth onFrame in that file.
-export function hooks(model) {
+export function hooks(model: Model): Hook[] {
   const loop = model.facts?.loop;
-  const step = (id, phase, order, name) => ({
+  const main = model.files.find((f) => bare(f.f) === 'src/main');
+  const step = (id: string, phase: string, order: number, name: string | null): Hook => ({
     id,
     phase,
     order,
-    name,
-    file: 'src/main.js',
-    base: 'main.js',
+    name: name ?? '',
+    file: main?.f ?? 'src/main.ts',
+    base: main?.name ?? 'main.ts',
     core: true,
   });
-  const out = (loop?.pre ?? []).map((name, i) => step(`pre#${i}`, 'pre', i, name));
+  const out: Hook[] = (loop?.pre ?? []).map((name, i) => step(`pre#${i}`, 'pre', i, name));
   for (const f of model.files) {
     f.frames.forEach((fr, n) => {
       out.push({
@@ -112,7 +123,7 @@ const CITE_KEYS = ['file', 'dir', 'op', 'state', 'presence', 'hostField', 'messa
 
 // A cite names one thing in the code: { file, symbol? } | { dir } | { op } | { state } | { presence } | { hostField }
 // | { message } | { action } | { route: 'PUT /rooms/:roomId/snapshot' }. Never throws: a bad cite gets an error.
-export function resolveCite(cite, model) {
+export function resolveCite(cite: unknown, model: Model): { files: string[]; error: string | null } {
   try {
     if (!cite || typeof cite !== 'object' || Array.isArray(cite)) return { files: [], error: 'cite must be an object' };
     const keys = Object.keys(cite).filter((k) => k !== 'symbol');
@@ -123,22 +134,23 @@ export function resolveCite(cite, model) {
       };
     }
     const key = keys[0];
-    const v = cite[key];
+    const v = (cite as Record<string, unknown>)[key];
     if (typeof v !== 'string' || !v) return { files: [], error: `cite ${key} must be a non-empty string` };
-    if (cite.symbol !== undefined && key !== 'file') return { files: [], error: 'symbol only goes with file' };
-    const none = (what) => ({ files: [], error: `no file ${what} (renamed? update the cite)` });
-    const match = (pred, what) => {
+    const symbol = (cite as Cite).symbol;
+    if (symbol !== undefined && key !== 'file') return { files: [], error: 'symbol only goes with file' };
+    const none = (what: string) => ({ files: [], error: `no file ${what} (renamed? update the cite)` });
+    const match = (pred: (f: ModelFile) => boolean, what: string) => {
       const files = model.files.filter(pred).map((f) => f.f);
       return files.length ? { files, error: null } : none(what);
     };
     switch (key) {
       case 'file': {
-        const f = model.byPath.get(v);
+        const f = fileAt(model, v);
         if (!f) return { files: [], error: `${v} does not exist (renamed? update the cite)` };
-        if (cite.symbol !== undefined && !f.exports.includes(cite.symbol) && !f.names.includes(cite.symbol)) {
-          return { files: [], error: `${v} has no symbol ${cite.symbol} (renamed? update the cite)` };
+        if (symbol !== undefined && !f.exports.includes(symbol) && !f.names.includes(symbol)) {
+          return { files: [], error: `${v} has no symbol ${symbol} (renamed? update the cite)` };
         }
-        return { files: [v], error: null };
+        return { files: [f.f], error: null };
       }
       case 'dir': {
         const d = v.replace(/\/+$/, '');
@@ -160,13 +172,21 @@ export function resolveCite(cite, model) {
         return match((f) => f.routes.includes(v), `serves route ${v}`);
     }
   } catch (err) {
-    return { files: [], error: `cite could not be read: ${err?.message ?? err}` };
+    return { files: [], error: `cite could not be read: ${err instanceof Error ? err.message : err}` };
   }
 }
 
 // What the search box can jump to: files, folders, registered keys, concepts (c:) and stories (s:).
-export function searchIndex(model, narrative) {
-  const idx = [
+export interface SearchEntry {
+  key: string;
+  label: string;
+  hint: string;
+  kind: string | null;
+  text: string;
+}
+
+export function searchIndex(model: Model, narrative?: Narrative): SearchEntry[] {
+  const idx: SearchEntry[] = [
     ...model.files.map((f) => ({ key: 'f:' + f.f, label: f.name, hint: f.dir + '/', kind: f.kind, text: f.f })),
     ...Object.keys(model.dirs).map((d) => ({
       key: 'd:' + d,
@@ -205,9 +225,9 @@ export function searchIndex(model, narrative) {
 }
 
 // What a file registers, as [label, text] rows for the inspector and Focus.
-export function registrations(f) {
-  const r = [];
-  const add = (k, v) => v.length && r.push([k, v.join(', ')]);
+export function registrations(f: FileFacts): [string, string][] {
+  const r: [string, string][] = [];
+  const add = (k: string, v: string[]) => v.length && r.push([k, v.join(', ')]);
   add('presence', f.owner);
   add('host field', f.host);
   add('ops', f.ops);
@@ -221,13 +241,13 @@ export function registrations(f) {
   if (f.interact) r.push(['interact', `${f.interact} target source${f.interact > 1 ? 's' : ''}`]);
   add(
     'lazy loads',
-    f.lazy.map((p) => p.split('/').pop()),
+    f.lazy.map((p) => p.split('/').pop()!),
   );
   return r;
 }
 
 // The folders of a layer that exist in the code. A folder no layer lists joins "Game systems", so it is still drawn.
-export function layerDirs(model, L) {
+export function layerDirs(model: Model, L: Layer): string[] {
   const known = new Set(LAYERS.flatMap((x) => x.dirs));
   const extra =
     L === LAYERS[1]

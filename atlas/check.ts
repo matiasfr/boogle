@@ -1,14 +1,15 @@
 // The citation report: everything in docs/atlas/ that no longer matches the code or the layout. PURE.
 // `npm run atlas -- --check` prints it and always exits 0; nothing ever fails a build because of it.
-import { BOX, CHANNEL_IDS, KINDS, LANES, VIEWS, validRef } from './layout.js';
-import { buildModel, resolveCite } from './model.js';
-import { linksOf, parseChanges } from './changes.js';
+import { BOX, CHANNEL_IDS, KINDS, LANES, VIEWS, validRef } from './layout.ts';
+import { buildModel, resolveCite } from './model.ts';
+import { linksOf, parseChanges } from './changes.ts';
+import type { Facts, Model, Narrative, Story } from './types.ts';
 
-const isStr = (x) => typeof x === 'string' && x.trim() !== '';
+const isStr = (x: unknown): x is string => typeof x === 'string' && x.trim() !== '';
 const CONCEPTS = 'docs/atlas/concepts.json';
 const CHANGES = 'docs/atlas/changes.md';
 
-function validDate(s) {
+function validDate(s: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (!m) return false;
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
@@ -16,21 +17,29 @@ function validDate(s) {
 }
 
 // Folders that exist in the facts but have no note in concepts.json "folders": a to-do list, not errors.
-export function foldersToDo(facts, concepts) {
+export function foldersToDo(facts: Facts, concepts?: Narrative): string[] {
   const model = buildModel(facts);
   return Object.keys(model.dirs).filter((d) => !isStr(concepts?.folders?.[d]));
 }
 
 // -> string[] of problems, each naming the file and the fix.
-export function checkAtlas({ facts, concepts, stories = [], changes, loadProblems = [] }) {
-  const out = [];
+export interface AtlasInput {
+  facts: Facts;
+  concepts?: Narrative;
+  stories?: Story[];
+  changes?: string;
+  loadProblems?: string[];
+}
+
+export function checkAtlas({ facts, concepts, stories = [], changes, loadProblems = [] }: AtlasInput): string[] {
+  const out: string[] = [];
   const model = buildModel(facts);
   out.push(...loadProblems);
   for (const f of model.files)
-    if (f.parseError) out.push(`${f.f}: acorn could not parse it (${f.parseError}); the atlas skips its facts`);
+    if (f.parseError) out.push(`${f.f}: could not parse it (${f.parseError}); the atlas skips its facts`);
   if (facts?.error) out.push(`extractor failed: ${facts.error}`);
 
-  const cite = (where, c) => {
+  const cite: CiteFn = (where, c) => {
     const r = resolveCite(c, model);
     if (r.error) out.push(`${where}: cite ${JSON.stringify(c)}: ${r.error}`);
   };
@@ -42,13 +51,13 @@ export function checkAtlas({ facts, concepts, stories = [], changes, loadProblem
     const file = s._file ?? `docs/atlas/stories/${s.id}.json`;
     const base = file
       .split('/')
-      .pop()
+      .pop()!
       .replace(/\.json$/, '');
     if (s.id !== base) out.push(`${file}: id "${s.id}" must equal the file name "${base}" (rename one)`);
     if (seen.has(s.id)) out.push(`${file}: duplicate story id "${s.id}"`);
     seen.add(s.id);
     if (!isStr(s.title)) out.push(`${file}: title must be a non-empty string`);
-    if (s.kind !== null && !(s.kind in KINDS))
+    if (s.kind !== null && !(String(s.kind) in KINDS))
       out.push(`${file}: kind ${JSON.stringify(s.kind)} must be null or one of ${Object.keys(KINDS).join(', ')}`);
     if (typeof s.order !== 'number') out.push(`${file}: order must be a number`);
     const steps = Array.isArray(s.steps) ? s.steps : [];
@@ -94,12 +103,14 @@ export function checkAtlas({ facts, concepts, stories = [], changes, loadProblem
 
   if (!facts?.error && !facts?.loop)
     out.push(
-      'src/main.js: the extractor could not find the frame function (the one given to setAnimationLoop, with world.step in it); the Frame view shows no pre-step row',
+      'src/main: the extractor could not find the frame function (the one given to setAnimationLoop, which calls runFrame); the Frame view shows no pre-step row',
     );
   return out;
 }
 
-function checkConcepts(out, model, concepts, cite) {
+type CiteFn = (where: string, c: unknown) => void;
+
+function checkConcepts(out: string[], model: Model, concepts: Narrative | undefined, cite: CiteFn) {
   const list = concepts?.concepts ?? [];
   const ids = new Set();
   list.forEach((c, i) => {
@@ -108,7 +119,8 @@ function checkConcepts(out, model, concepts, cite) {
       out.push(`${CONCEPTS} concept #${i + 1}: id ${JSON.stringify(c.id)} must match ^[a-z][a-z0-9-]*$`);
     if (ids.has(c.id)) out.push(`${where}: duplicate id`);
     ids.add(c.id);
-    for (const k of ['title', 'one', 'like']) if (!isStr(c[k])) out.push(`${where}: ${k} must be a non-empty string`);
+    for (const k of ['title', 'one', 'like'] as const)
+      if (!isStr(c[k])) out.push(`${where}: ${k} must be a non-empty string`);
     if (!Array.isArray(c.rules) || !c.rules.length || !c.rules.every(isStr))
       out.push(`${where}: rules must be a non-empty list of strings`);
     if (!Array.isArray(c.code) || !c.code.length) out.push(`${where}: code must be a non-empty list of cites`);
@@ -117,25 +129,26 @@ function checkConcepts(out, model, concepts, cite) {
       out.push(`${where}: view ${JSON.stringify(c.view)} must be one of ${VIEWS.join(', ')}`);
   });
   for (const [id, b] of Object.entries(BOX)) {
-    if (!ids.has(b.c)) out.push(`atlas/layout.js BOX ${id}: unknown concept "${b.c}" (add it to ${CONCEPTS} concepts)`);
+    if (!ids.has(b.c)) out.push(`atlas/layout.ts BOX ${id}: unknown concept "${b.c}" (add it to ${CONCEPTS} concepts)`);
   }
   for (const k of Object.keys(concepts?.boxes ?? {}))
-    if (!(k in BOX)) out.push(`${CONCEPTS} boxes: "${k}" is not a BOX id in atlas/layout.js`);
+    if (!(k in BOX)) out.push(`${CONCEPTS} boxes: "${k}" is not a BOX id in atlas/layout.ts`);
   same(out, 'kinds', Object.keys(concepts?.kinds ?? {}), Object.keys(KINDS));
   same(out, 'channels', Object.keys(concepts?.channels ?? {}), CHANNEL_IDS);
   for (const w of concepts?.intro?.ways ?? [])
-    if (!(w?.kind in KINDS)) out.push(`${CONCEPTS} intro.ways: kind ${JSON.stringify(w?.kind)} is not a KINDS key`);
+    if (!(String(w?.kind) in KINDS))
+      out.push(`${CONCEPTS} intro.ways: kind ${JSON.stringify(w?.kind)} is not a KINDS key`);
   for (const d of Object.keys(concepts?.folders ?? {}))
     if (!model.dirs[d])
       out.push(`${CONCEPTS} folders: "${d}" is not a folder in the code any more (remove or rename the note)`);
 }
 
-function same(out, name, have, want) {
+function same(out: string[], name: string, have: string[], want: string[]) {
   for (const k of want) if (!have.includes(k)) out.push(`${CONCEPTS} ${name}: missing "${k}"`);
   for (const k of have) if (!want.includes(k)) out.push(`${CONCEPTS} ${name}: "${k}" is not one of ${want.join(', ')}`);
 }
 
-function checkChanges(out, text, stories, concepts) {
+function checkChanges(out: string[], text: string | undefined, stories: Set<string>, concepts: Set<string>) {
   if (typeof text !== 'string' || !text.trim()) {
     out.push(`${CHANGES}: missing or empty (start it with "# What changed")`);
     return;

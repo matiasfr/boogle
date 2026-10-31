@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Full history, without the file contents: the atlas page shows the commit count (dev/atlas/extract.mjs);
+      # Full history, without the file contents: the atlas page shows the commit count (dev/atlas/extract.ts);
       # without history it hides.
       - uses: actions/checkout@v4
         with:

@@ -2,16 +2,20 @@
 // Every reference to the narrative or the code tolerates being out of date (see docs/plans/atlas.md, "Never fail the
 // build, never crash the page").
 import { line, curveCatmullRom } from 'd3-shape';
-import { BOX, KINDS, LANES, ROUTE_VIA, validRef } from '../layout.js';
-import { citeChip } from './inspector.js';
+import { BOX, KINDS, LANES, ROUTE_VIA, validRef } from '../layout.ts';
+import { citeChip } from './inspector.ts';
+import type { Ctx, Update } from '../types.ts';
+
+type Box = (typeof BOX)[string];
+type Pt = [number, number];
 
 let raf = 0;
 export const stopHow = () => cancelAnimationFrame(raf);
 
-const boxC = (b) => [b.x + b.w / 2, b.y + b.h / 2];
-const laneP = (k) => [645, LANES[k].y];
+const boxC = (b: Box): Pt => [b.x + b.w / 2, b.y + b.h / 2];
+const laneP = (k: string): Pt => [645, LANES[k].y];
 
-function edgeToward(b, [tx, ty]) {
+function edgeToward(b: Box, [tx, ty]: Pt): Pt {
   const [cx, cy] = boxC(b);
   const dx = tx - cx;
   const dy = ty - cy;
@@ -23,12 +27,13 @@ function edgeToward(b, [tx, ty]) {
 }
 
 // Box and lane ids -> points. A route between ROUTE_VIA's two ends bends through its waypoint (both directions).
-export function routePts(ids) {
-  const items = [];
+export function routePts(ids: string[]): Pt[] {
+  const items: { pt?: Pt; id: string }[] = [];
   ids.forEach((id, i) => {
     if (i)
       for (const v of ROUTE_VIA)
-        if ((v.a === ids[i - 1] && v.b === id) || (v.a === id && v.b === ids[i - 1])) items.push({ pt: v.via });
+        if ((v.a === ids[i - 1] && v.b === id) || (v.a === id && v.b === ids[i - 1]))
+          items.push({ pt: v.via as Pt, id: '' });
     items.push({ id });
   });
   const raw = items.map((it) => (it.pt ? it.pt : it.id.startsWith('lane:') ? laneP(it.id.slice(5)) : boxC(BOX[it.id])));
@@ -40,10 +45,10 @@ export function routePts(ids) {
   });
 }
 
-const subtitle = (ctx, id) => (ctx.N.boxes[id] ?? '').replace('{features}', String(ctx.M.featureCount));
-const titleOf = (ctx, b) => ctx.N.concepts.find((c) => c.id === b.c)?.title ?? b.c;
+const subtitle = (ctx: Ctx, id: string) => (ctx.N.boxes[id] ?? '').replace('{features}', String(ctx.M.featureCount));
+const titleOf = (ctx: Ctx, b: Box) => ctx.N.concepts.find((c) => c.id === b.c)?.title ?? b.c;
 
-export function howView(ctx, el) {
+export function howView(ctx: Ctx, el: HTMLElement): Update {
   const { S, N, kc, esc } = ctx;
   stopHow();
   const st = S.story ? N.stories.find((s) => s.id === S.story) : null;
@@ -55,12 +60,12 @@ export function howView(ctx, el) {
     !!step && (drawable.length < goRoutes.length || hlIds.length < (Array.isArray(step.hl) ? step.hl.length : 0));
   const active = new Set([...hlIds, ...drawable.flat()]);
   const conceptSel = S.sel.t === 'concept' ? S.sel.id : null;
-  const on = (id) => !step || active.has(id);
+  const on = (id: string) => !step || active.has(id);
   const frame = (
-    x,
-    w,
-    title,
-    host,
+    x: number,
+    w: number,
+    title: string,
+    host?: boolean,
   ) => `<g><rect x="${x}" y="20" width="${w}" height="420" rx="14" fill="var(--sunk)" stroke="var(--line)"/>
     <circle cx="${x + 16}" cy="38" r="4" fill="var(--line)"/><circle cx="${x + 29}" cy="38" r="4" fill="var(--line)"/><circle cx="${x + 42}" cy="38" r="4" fill="var(--line)"/>
     <text x="${x + 56}" y="42" style="font:600 13px var(--sans)">${title}</text>${host ? `<rect x="${x + w - 62}" y="29" width="48" height="18" rx="9" fill="${kc('host')}"/><text x="${x + w - 38}" y="42" text-anchor="middle" style="font:600 10px var(--sans);fill:#fff;letter-spacing:.06em">HOST</text>` : ''}</g>`;
@@ -95,7 +100,7 @@ export function howView(ctx, el) {
       }</g>`;
   }
   s += `<line x1="200" x2="215" y1="170" y2="170" stroke="var(--line)"/>`;
-  const color = `var(${KINDS[st?.kind]?.c ?? '--accent'})`;
+  const color = `var(${KINDS[st?.kind ?? '']?.c ?? '--accent'})`;
   const curve = line().curve(curveCatmullRom.alpha(0.5));
   const routes = drawable.map((r) => curve(routePts(r)));
   s += routes
@@ -120,7 +125,7 @@ export function howView(ctx, el) {
     <div class="stories"><span>Follow a story</span>${N.stories
       .map(
         (x) =>
-          `<button data-story="${esc(x.id)}" aria-pressed="${S.story === x.id}">${KINDS[x.kind] ? `<i style="background:${kc(x.kind)}"></i>` : ''}${esc(x.title ?? x.id)}</button>`,
+          `<button data-story="${esc(x.id)}" aria-pressed="${S.story === x.id}">${x.kind && KINDS[x.kind] ? `<i style="background:${kc(x.kind)}"></i>` : ''}${esc(x.title ?? x.id)}</button>`,
       )
       .join('')}</div>
     <div class="diagram"><svg viewBox="0 0 1000 545" role="img" aria-label="How Boogle fits together"><defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="${color}"/></marker></defs>${s}</svg></div>
@@ -133,43 +138,43 @@ export function howView(ctx, el) {
       ${outdated ? '<span class="oldnote">Part of this picture is out of date.</span>' : ''}`
         : `<p>Each player runs the whole game in their own browser tab, and tabs talk to each other directly. Pick a story above to watch one action travel through the system, or click any box to learn what it is.</p>`
     }</div></div>`;
-  const at = (i, p, L) => {
+  const at = (i: number, p: SVGPathElement, L: number) => {
     const q = p.getPointAtLength(L);
-    const dot = el.querySelector('#dot' + i);
-    dot.setAttribute('cx', q.x);
-    dot.setAttribute('cy', q.y);
+    const dot = el.querySelector('#dot' + i)!;
+    dot.setAttribute('cx', String(q.x));
+    dot.setAttribute('cy', String(q.y));
     return dot;
   };
   if (!routes.length) return null;
-  const paths = routes.map((_, i) => el.querySelector('#rt' + i));
+  const paths = routes.map((_, i) => el.querySelector<SVGPathElement>('#rt' + i)!);
   const lengths = paths.map((p) => p.getTotalLength());
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     paths.forEach((p, i) => at(i, p, lengths[i]));
     return null;
   }
   const t0 = performance.now();
-  const tick = (now) => {
+  const tick = (now: number) => {
     const u = ((now - t0) % 1600) / 1600;
-    paths.forEach((p, i) => at(i, p, lengths[i] * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? 0 : 1));
+    paths.forEach((p, i) => at(i, p, lengths[i] * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? '0' : '1'));
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
   return null;
 }
 
-export function conceptCard(ctx, id) {
+export function conceptCard(ctx: Ctx, id: string): string {
   const { N, esc } = ctx;
   const c = N.concepts.find((x) => x.id === id);
   if (!c) return `<div><h2>${esc(id)}</h2></div><p>No description yet.</p>`;
   const code = (Array.isArray(c.code) ? c.code : []).map((x) => citeChip(ctx, x)).join('');
   const rules = Array.isArray(c.rules) ? c.rules : [];
-  const views = { frame: 'Frame', flow: 'Network flow', map: 'Map', focus: 'Focus' };
+  const views: Record<string, string> = { frame: 'Frame', flow: 'Network flow', map: 'Map', focus: 'Focus' };
   return `<div><h2>${esc(c.title ?? id)}</h2></div><p style="color:var(--fg);font-size:14px">${esc(c.one ?? '')}</p>${c.like ? `<p class="like">${esc(c.like)}</p>` : ''}
     ${rules.length ? `<div><h3>Rules of thumb</h3><ul class="rules">${rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>` : ''}
-    ${code ? `<div><h3>In the code</h3><div class="chips">${code}</div></div>` : ''}${views[c.view] ? `<button class="cta" data-view="${c.view}">Open the ${views[c.view]} view</button>` : ''}`;
+    ${code ? `<div><h3>In the code</h3><div class="chips">${code}</div></div>` : ''}${c.view && views[c.view] ? `<button class="cta" data-view="${c.view}">Open the ${views[c.view!]} view</button>` : ''}`;
 }
 
-export function howIntro(ctx) {
+export function howIntro(ctx: Ctx): string {
   const { N, kc, esc } = ctx;
   const i = N.intro;
   if (!i)

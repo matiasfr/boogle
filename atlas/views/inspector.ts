@@ -1,23 +1,24 @@
 // The right-hand inspector: a card for whatever is selected. ctx = { S, M, N, select, render, kc, esc }.
-import { KINDS, LAYERS, VIEWS } from '../layout.js';
-import { hooks, layerById, layerDirs, layerOf, registrations, resolveCite, sumLoc, wireOf } from '../model.js';
-import { parseChanges, renderChanges } from '../changes.js';
-import { conceptCard, howIntro } from './how.js';
+import { KINDS, LAYERS, VIEWS } from '../layout.ts';
+import { fileAt, hooks, layerById, layerDirs, layerOf, registrations, resolveCite, sumLoc, wireOf } from '../model.ts';
+import { parseChanges, renderChanges } from '../changes.ts';
+import { conceptCard, howIntro } from './how.ts';
+import type { Cite, Ctx, ModelFile } from '../types.ts';
 
-const sentences = (t) => {
+const sentences = (t: string): string => {
   if (!t) return '';
   const i = t.lastIndexOf('. ');
   return i > 60 ? t.slice(0, i + 1) : t.length >= 255 ? t + '…' : t;
 };
 
-export function legend({ kc }) {
+export function legend({ kc }: Pick<Ctx, 'kc'>): string {
   return `<div class="legend">${Object.entries(KINDS)
     .map(([k, v]) => `<span class="pill" style="--c:${kc(k)}"><i></i>${v.name}</span>`)
     .join('')}</div>`;
 }
 
-export function stackBar({ kc }, list) {
-  const n = {};
+export function stackBar({ kc }: Pick<Ctx, 'kc'>, list: ModelFile[]): string {
+  const n: Record<string, number> = {};
   for (const f of list) n[f.kind] = (n[f.kind] || 0) + f.loc;
   return `<span class="stack">${Object.keys(KINDS)
     .filter((k) => n[k])
@@ -25,7 +26,7 @@ export function stackBar({ kc }, list) {
     .join('')}</span>`;
 }
 
-export function fileList({ kc, esc }, list, max = 8) {
+export function fileList({ kc, esc }: Pick<Ctx, 'kc' | 'esc'>, list: ModelFile[], max = 8): string {
   return `<div class="list">${list
     .slice(0, max)
     .map(
@@ -36,30 +37,30 @@ export function fileList({ kc, esc }, list, max = 8) {
 }
 
 // A cite as a chip under a story step or a concept card. A cite that no longer resolves is a grey, unclickable chip.
-export function citeChip({ M, esc }, cite) {
+export function citeChip({ M, esc }: Pick<Ctx, 'M' | 'esc'>, cite: Cite): string {
   const r = resolveCite(cite, M);
   const key = cite && typeof cite === 'object' ? Object.keys(cite).find((k) => k !== 'symbol') : null;
-  const v = key ? String(cite[key]) : '?';
+  const v = key ? String((cite as Record<string, unknown>)[key]) : '?';
   const base =
     key === 'file'
-      ? v.split('/').pop() + (cite.symbol ? ` · ${cite.symbol}` : '')
+      ? v.split('/').pop()! + (cite.symbol ? ` · ${cite.symbol}` : '')
       : key === 'dir'
         ? v + '/'
         : `${key ?? 'cite'} ${v}`;
   if (r.error) return `<span class="chip stale" title="${esc(r.error)}">${esc(base)} <small>stale</small></span>`;
-  const attr = key === 'dir' ? `data-dir="${esc(M.byPath.get(r.files[0]).dir)}"` : `data-file="${esc(r.files[0])}"`;
+  const attr = key === 'dir' ? `data-dir="${esc(M.byPath.get(r.files[0])?.dir)}"` : `data-file="${esc(r.files[0])}"`;
   return `<button class="chip" ${attr} title="${esc(r.files.join(', '))}">${esc(base)}</button>`;
 }
 
-function problemsNote({ N, M, esc }) {
+function problemsNote({ N, M, esc }: Pick<Ctx, 'N' | 'M' | 'esc'>): string {
   const list = [...N.loadProblems, ...(M.facts?.error ? [`Code facts: ${M.facts.error}`] : [])];
   if (!list.length) return '';
   return `<div class="problems"><h3>Atlas problems</h3><p>These do not break the page. The daily agent fixes them, or run <code>npm run atlas -- --check</code>.</p><ul>${list.map((p) => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
 }
 
-export function inspector(ctx) {
+export function inspector(ctx: Ctx): void {
   const { S, M, N, kc, esc } = ctx;
-  const el = document.querySelector('#insp');
+  const el = document.querySelector('#insp')!;
   const sel = S.sel;
   if (sel.t === 'changes') {
     const known = {
@@ -80,24 +81,24 @@ export function inspector(ctx) {
     return;
   }
   if (sel.t === 'file') {
-    const f = M.byPath.get(sel.id);
+    const f = fileAt(M, sel.id);
     if (!f) {
       el.innerHTML = '<p>That file is not in the code any more.</p>';
       return;
     }
     const regs = registrations(f);
-    const uses = [...f.uses].map((p) => M.byPath.get(p)).filter(Boolean);
-    const by = f.users.map((p) => M.byPath.get(p));
+    const uses = [...f.uses].map((p) => M.byPath.get(p)).filter((x): x is ModelFile => !!x);
+    const by = f.users.map((p) => M.byPath.get(p)).filter((x): x is ModelFile => !!x);
     el.innerHTML = `<div><h2>${esc(f.name)}</h2><div class="path">${esc(f.f)}</div></div>
       <div class="pills"><span class="pill" style="--c:${kc(f.kind)}"><i></i>${KINDS[f.kind].name}</span><span class="pill">${f.loc} lines</span></div>
       <p>${esc(sentences(f.head) || N.kinds[f.kind] || '')}</p>
       ${regs.length ? `<div><h3>Registers</h3><dl class="kv">${regs.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl></div>` : ''}
-      <div><h3 style="color:var(--usedby)">Used by · ${by.length}</h3>${by.length ? fileList(ctx, by, 6) : '<p>Nothing imports it.' + (f.dir === 'features' ? ' Features are auto-loaded by main.js.' : '') + '</p>'}</div>
+      <div><h3 style="color:var(--usedby)">Used by · ${by.length}</h3>${by.length ? fileList(ctx, by, 6) : '<p>Nothing imports it.' + (f.dir === 'features' ? ' Features are auto-loaded by main.' : '') + '</p>'}</div>
       <div><h3 style="color:var(--uses)">Uses · ${uses.length}</h3>${fileList(ctx, uses, 6)}</div>
       ${S.view !== 'focus' ? `<button class="cta" data-focus="${esc(f.f)}">Open in Focus</button>` : ''}`;
   } else if (sel.t === 'dir') {
     const list = M.dirs[sel.id] ?? [];
-    const n = {};
+    const n: Record<string, number> = {};
     for (const f of list) n[f.kind] = (n[f.kind] || 0) + 1;
     el.innerHTML = `<div><h2>${esc(sel.id)}/</h2><div class="path">${esc(layerOf(sel.id).name)}</div></div><p>${esc(N.folders[sel.id] ?? '')}</p>
       <div><h3>Sync kinds</h3>${stackBar(ctx, list)}<div class="pills" style="margin-top:8px">${Object.keys(KINDS)
@@ -121,9 +122,9 @@ export function inspector(ctx) {
       <div><h3>Keys on this channel</h3><dl class="kv">${src
         .map(
           (f) =>
-            `<dt>${esc(f.name.replace(/\.js$/, ''))}</dt><dd>${esc(
+            `<dt>${esc(f.name.replace(/\.[jt]s$/, ''))}</dt><dd>${esc(
               wireOf(f)
-                .find(([k]) => k === sel.id)[1]
+                .find(([k]) => k === sel.id)?.[1]
                 .join(', '),
             )}</dd>`,
         )
@@ -131,9 +132,9 @@ export function inspector(ctx) {
       <p>Old tabs stay in rooms for a while after a deploy, so these names never change meaning. Add new ones instead.</p>`;
   } else if (sel.t === 'hook') {
     const h = hooks(M).find((x) => x.id === sel.id);
-    const f = h && M.byPath.get(h.file);
+    const f = h && fileAt(M, h.file);
     el.innerHTML = h
-      ? `<div><h2>${esc(h.name)}</h2><div class="path">${h.phase === 'pre' || h.phase === 'render' ? `step ${h.order + 1} in ${h.file}` : `${h.phase} · order ${h.order}`}</div></div><p>${h.core ? 'A core hook: its order is reserved in the comment at the top of src/loop.js.' : 'A feature hook. It runs after every lower order in the same phase.'}</p>${f ? `<div><h3>Owner</h3>${fileList(ctx, [f])}</div>` : ''}`
+      ? `<div><h2>${esc(h.name)}</h2><div class="path">${h.phase === 'pre' || h.phase === 'render' ? `step ${(h.order ?? 0) + 1} in ${h.file}` : `${h.phase} · order ${h.order}`}</div></div><p>${h.core ? 'A core hook: its order is reserved in the comment at the top of src/loop.' : 'A feature hook. It runs after every lower order in the same phase.'}</p>${f ? `<div><h3>Owner</h3>${fileList(ctx, [f])}</div>` : ''}`
       : '<p>That hook is not in the code any more.</p>';
   } else {
     const since = M.facts?.git?.first

@@ -1,13 +1,32 @@
 // Network flow: a Sankey from the files that put keys on the wire to the four channels. Band width is the number of
 // keys. ctx = { S, M, N, ... }.
 import { sankey } from 'd3-sankey';
+import type { SankeyLink, SankeyNode } from 'd3-sankey';
 import { linkHorizontal } from 'd3-shape';
 import { select as d3select } from 'd3-selection';
-import { CHANNEL_IDS, KINDS } from '../layout.js';
-import { wireOf } from '../model.js';
+import { CHANNEL_IDS, KINDS } from '../layout.ts';
+import { wireOf } from '../model.ts';
+import type { Ctx, ModelFile, Update } from '../types.ts';
 
-export function flowView(ctx, el) {
-  const { S, M, N, select } = ctx;
+interface FlowNode {
+  id: string;
+  label: string;
+  f?: ModelFile;
+  ch?: string;
+}
+interface FlowLink {
+  source: string;
+  target: string;
+  value: number;
+  keys: string[];
+  kind: string;
+}
+// What the layout gives back: every node and link has its coordinates.
+type SNode = SankeyNode<FlowNode, FlowLink> & { x0: number; x1: number; y0: number; y1: number };
+type SLink = SankeyLink<FlowNode, FlowLink> & { source: SNode; target: SNode; y0: number; y1: number; width: number };
+
+export function flowView(ctx: Ctx, el: HTMLElement): Update {
+  const { M, N, select } = ctx;
   const W = 1000;
   const H = 600;
   const src = M.files.filter((f) => wireOf(f).length);
@@ -16,23 +35,27 @@ export function flowView(ctx, el) {
       '<div class="frame"><p class="note">No files put keys on the wire (or the code facts could not be read).</p></div>';
     return null;
   }
-  const chName = (id) => N.channels[id]?.name ?? KINDS[id]?.name ?? id;
-  const nodes = [
-    ...src.map((f) => ({ id: f.f, label: f.name.replace(/\.js$/, ''), f })),
+  const chName = (id: string) => N.channels[id]?.name ?? KINDS[id]?.name ?? id;
+  const nodes: FlowNode[] = [
+    ...src.map((f) => ({ id: f.f, label: f.name.replace(/\.[jt]s$/, ''), f })),
     ...CHANNEL_IDS.map((id) => ({ id: 'ch:' + id, label: chName(id), ch: id })),
   ];
-  const links = src.flatMap((f) =>
+  const links: FlowLink[] = src.flatMap((f) =>
     wireOf(f).map(([c, keys]) => ({ source: f.f, target: 'ch:' + c, value: keys.length, keys, kind: c })),
   );
-  const { nodes: SN, links: SL } = sankey()
+  const layout = sankey<FlowNode, FlowLink>()
     .nodeId((d) => d.id)
     .nodeWidth(12)
     .nodePadding(10)
-    .nodeSort((a, b) => (a.ch || b.ch ? 0 : a.f.dir.localeCompare(b.f.dir)))
+    .nodeSort((a, b) => (a.ch || b.ch ? 0 : (a.f?.dir ?? '').localeCompare(b.f?.dir ?? '')))
     .extent([
       [200, 20],
       [W - 260, H - 20],
-    ])({ nodes: nodes.map((d) => ({ ...d })), links: links.map((d) => ({ ...d })) });
+    ]);
+  const { nodes: SN, links: SL } = layout({
+    nodes: nodes.map((d) => ({ ...d })),
+    links: links.map((d) => ({ ...d })),
+  }) as unknown as { nodes: SNode[]; links: SLink[] };
   el.innerHTML = '';
   const svg = d3select(el)
     .append('svg')
@@ -49,7 +72,7 @@ export function flowView(ctx, el) {
     .join('path')
     .attr(
       'd',
-      linkHorizontal()
+      linkHorizontal<SLink, [number, number]>()
         .source((d) => [d.source.x1, d.y0])
         .target((d) => [d.target.x0, d.y1]),
     )
@@ -97,14 +120,14 @@ export function flowView(ctx, el) {
     .style('fill', 'var(--fg)')
     .text((d) => d.label);
   node
-    .filter((d) => d.ch)
+    .filter((d) => !!d.ch)
     .append('text')
     .attr('x', (d) => d.x1 + 10)
     .attr('y', (d) => (d.y0 + d.y1) / 2 + 22)
     .style('font', '12px var(--sans)')
     .style('fill', 'var(--mute)')
-    .text((d) => N.channels[d.ch]?.tag ?? '');
-  const update = (c) => {
+    .text((d) => N.channels[d.ch ?? '']?.tag ?? '');
+  const update = (c: Ctx) => {
     const sel = c.S.sel;
     link.attr('stroke-opacity', (d) =>
       sel.t === 'file'
@@ -118,6 +141,6 @@ export function flowView(ctx, el) {
           : 0.45,
     );
   };
-  update({ S });
+  update(ctx);
   return update;
 }

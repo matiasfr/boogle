@@ -3,7 +3,7 @@
 The atlas (boogle.club/atlas, code in `atlas/`) shows how Boogle fits together. Two kinds of content meet there:
 
 - **Facts** (files, imports, presence keys, ops, messages, actions, frame hooks, routes) are read from the code on every
-  build by `dev/atlas/extract.mjs`. Nothing here is committed; `npm run atlas` writes them to `.look/atlas/facts.json`.
+  build by `dev/atlas/extract.ts`. Nothing here is committed; `npm run atlas` writes them to `.look/atlas/facts.json`.
 - **Narrative** is this folder: the explanations people read. A daily agent (`dev/atlas/agent-prompt.md`) keeps it
   current, and people and agents may edit it any time. A stale explanation is a chore, never a red build.
 
@@ -13,7 +13,7 @@ The atlas (boogle.club/atlas, code in `atlas/`) shows how Boogle fits together. 
 | `stories/<id>.json` | One story: an action followed step by step through the diagram |
 | `changes.md` | "What changed", newest first, in plain language |
 
-Where boxes, lanes, colours and geometry live: `atlas/layout.js` (code, not narrative; do not move coordinates).
+Where boxes, lanes, colours and geometry live: `atlas/layout.ts` (code, not narrative; do not move coordinates).
 
 ## concepts.json
 
@@ -26,13 +26,13 @@ Where boxes, lanes, colours and geometry live: `atlas/layout.js` (code, not narr
   "boxes": { "you.features": "{features} plug-ins: …" },
   "concepts": [
     { "id": "world", "title": "Shared world", "one": "…", "like": "An analogy", "rules": ["…"],
-      "code": [{ "dir": "src/world" }, { "file": "src/world/sync.js", "symbol": "submitEdit" }], "view": "flow" }
+      "code": [{ "dir": "src/world" }, { "file": "src/world/sync.ts", "symbol": "submitEdit" }], "view": "flow" }
   ]
 }
 ```
 
-- `kinds` has exactly the keys of `KINDS` in `atlas/layout.js`; `channels` exactly `owner host lock msg`.
-- `boxes` keys are the box ids of `BOX` in `atlas/layout.js`. `{features}` becomes the number of `src/features/*.js`
+- `kinds` has exactly the keys of `KINDS` in `atlas/layout.ts`; `channels` exactly `owner host lock msg`.
+- `boxes` keys are the box ids of `BOX` in `atlas/layout.ts`. `{features}` becomes the number of `src/features/*.{js,ts}`
   files, so the count never goes stale.
 - Each concept needs `title`, `one`, `like`, non-empty `rules` and `code`. `view` (optional) is one of
   `how map focus flow frame`. Every box in `BOX` points at a concept id.
@@ -44,8 +44,8 @@ Where boxes, lanes, colours and geometry live: `atlas/layout.js` (code, not narr
   "steps": [
     { "go": [["you.features", "you.world"]], "text": "It submits the edit. …",
       "code": "submitEdit({ op: 'mush.plant', i, j })",
-      "cite": [{ "file": "src/world/sync.js", "symbol": "submitEdit" }, { "op": "mush.plant" }] },
-    { "hl": ["you.world", "fr.world"], "text": "…", "cite": [{ "file": "src/world/rules/mushrooms.js" }] }
+      "cite": [{ "file": "src/world/sync.ts", "symbol": "submitEdit" }, { "op": "mush.plant" }] },
+    { "hl": ["you.world", "fr.world"], "text": "…", "cite": [{ "file": "src/world/rules/mushrooms.ts" }] }
   ] }
 ```
 
@@ -65,8 +65,8 @@ Where boxes, lanes, colours and geometry live: `atlas/layout.js` (code, not narr
 ## Editing rules
 
 - Keep ids stable. Make minimal edits: fix what is wrong, do not reword working copy.
-- Every story step cites something. Use only boxes and lanes that exist in `atlas/layout.js`. A new box means editing
-  `atlas/layout.js` plus adding a concept.
+- Every story step cites something. Use only boxes and lanes that exist in `atlas/layout.ts`. A new box means editing
+  `atlas/layout.ts` plus adding a concept.
 - Facts are looked up by name, so get them right: `npm run atlas -- --json` lists every key, op, message, action and
   route that exists.
 - Preview with `npm run dev`, then open `/atlas/`.

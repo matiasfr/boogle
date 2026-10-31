@@ -1,10 +1,11 @@
 // docs/atlas/changes.md: "# What changed", then one "## YYYY-MM-DD" section per update, newest first. PURE.
-import { esc } from './model.js';
+import { esc } from './model.ts';
+import type { ChangeEntry } from './types.ts';
 
 // -> [{ date, body }] in file order. Text before the first "## " heading is ignored.
-export function parseChanges(md) {
-  const out = [];
-  let cur = null;
+export function parseChanges(md: unknown): ChangeEntry[] {
+  const out: ChangeEntry[] = [];
+  let cur: ChangeEntry | null = null;
   for (const line of String(md ?? '').split('\n')) {
     const m = /^##\s+(\S+)\s*$/.exec(line);
     if (m) {
@@ -16,21 +17,28 @@ export function parseChanges(md) {
   return out;
 }
 
+// The ids a changes link may point at; a link to anything else renders as plain text.
+interface Known {
+  stories?: Set<string>;
+  concepts?: Set<string>;
+  views?: Set<string>;
+}
+
 // The [text](#story|concept|view/id) links in a body, as [{ kind, id }]; the id is whatever sits between the slash and
 // the closing bracket, so a broken one can be reported.
-export const linksOf = (body) =>
+export const linksOf = (body: string): { kind: string; id: string }[] =>
   [...body.matchAll(/\]\(#(story|concept|view)\/([^)]*)\)/g)].map(([, kind, id]) => ({ kind, id }));
 
 const INLINE = /`([^`]+)`|\[([^\]]+)\]\(#(story|concept|view)\/([a-z0-9-]+)\)/g;
 
 // Escaped inline HTML: `code`, and [text](#story/id | #concept/id | #view/id) links. A link whose target is not in
 // `known` renders as plain text. Everything else is escaped.
-function inline(text, known) {
+function inline(text: string, known: Known): string {
   let out = '';
   let last = 0;
   for (const m of text.matchAll(INLINE)) {
     out += esc(text.slice(last, m.index));
-    last = m.index + m[0].length;
+    last = m.index! + m[0].length;
     if (m[1] !== undefined) out += `<code>${esc(m[1])}</code>`;
     else {
       const [, , label, kind, id] = m;
@@ -43,12 +51,12 @@ function inline(text, known) {
 }
 
 // entries -> escaped HTML. known = { stories: Set, concepts: Set, views?: Set }.
-export function renderChanges(entries, known = {}) {
+export function renderChanges(entries: ChangeEntry[], known: Known = {}): string {
   return entries
     .map((e) => {
-      const blocks = [];
-      let para = [];
-      let list = null;
+      const blocks: string[] = [];
+      let para: string[] = [];
+      let list: string[] | null = null;
       const flush = () => {
         if (para.length) blocks.push(`<p>${inline(para.join(' '), known)}</p>`);
         para = [];

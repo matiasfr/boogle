@@ -1,15 +1,23 @@
 // The atlas (/atlas/, atlas/ and docs/atlas/): stills of every view in light and dark, every story to its last step,
 // and no page errors. Stale chips are reported, not failed: the daily atlas agent fixes those.
 import path from 'node:path';
+import type { Page } from 'playwright';
+
+// The part of the harness (dev/scenarios/run.mjs) this scenario uses.
+type Run = {
+  page: (pathname: string, o?: { colorScheme?: 'light' | 'dark' }) => Promise<Page>;
+  check: (label: string, ok: boolean, detail?: string) => void;
+  out: string;
+};
 
 export default {
   about: 'the atlas page: every view and every story, light and dark, no page errors',
-  async run(t) {
-    for (const scheme of ['light', 'dark']) {
+  async run(t: Run) {
+    for (const scheme of ['light', 'dark'] as const) {
       const page = await t.page('atlas/', { colorScheme: scheme });
       await page.waitForSelector('.diagram svg', { timeout: 15000 });
-      const shot = (name) => page.screenshot({ path: path.join(t.out, `${scheme}-${name}.png`) });
-      const click = (sel) => page.locator(sel).first().click();
+      const shot = (name: string) => page.screenshot({ path: path.join(t.out, `${scheme}-${name}.png`) });
+      const click = (sel: string) => page.locator(sel).first().click();
 
       await shot('how');
 
@@ -22,7 +30,9 @@ export default {
       );
       await shot('how-mush-step3');
 
-      const stories = await page.locator('[data-story]').evaluateAll((els) => els.map((e) => e.dataset.story));
+      const stories = await page
+        .locator('[data-story]')
+        .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.story));
       t.check(`${scheme}: stories load`, stories.length >= 6, stories.join(', '));
       for (const id of stories) {
         await click(`[data-story="${id}"]`);

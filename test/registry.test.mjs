@@ -21,6 +21,26 @@ test('the scan ignores calls in strings and comments, and definitions', () => {
   assert.deepEqual(reg.presence.z, ['src/features/a.js:3']);
 });
 
+test('TypeScript reads like JavaScript: typed locals, `as const`, generics, a moved file', () => {
+  const reg = scanSources([
+    file(
+      'src/netplay/net.ts',
+      'function buildPresence(): Presence {\n  const pr: Presence = {\n    v: 1,\n    p: null,\n  };\n  return pr;\n}\n',
+    ),
+    file('src/player/controls.ts', "export const PAD = ['a', 'b'] as const;\n"),
+    file(
+      'src/features/a.ts',
+      "addPresenceField<number>('z' as const, (): number | null => null);\nregisterAction('go', { pad: 'a' });\nroom.send({ t: 'beep' } satisfies Msg);",
+    ),
+  ]);
+  assert.deepEqual(Object.keys(reg.presence).sort(), ['p', 'v', 'z']);
+  assert.deepEqual(reg.presence.v, ['src/netplay/net.ts (core)']);
+  assert.deepEqual(reg.padSlots, ['a', 'b']);
+  assert.deepEqual(reg.pads, { a: ['src/features/a.ts:go'] });
+  assert.deepEqual(Object.keys(reg.messages), ['beep']);
+  assert.deepEqual(checkRegistry(reg), []);
+});
+
 test('a file the registry cannot parse is an error, not a silent skip', () => {
   const reg = scanSources([file('src/features/bad.js', 'addPresenceField(')]);
   assert.match(checkRegistry(reg).join('\n'), /bad\.js: .*cannot read this file/);

@@ -1,8 +1,9 @@
 // Focus: one file in the middle, what uses it on the left, what it uses on the right. Click a neighbour to move.
-import { KINDS } from '../layout.js';
-import { registrations } from '../model.js';
+import { KINDS } from '../layout.ts';
+import { registrations } from '../model.ts';
+import type { Ctx, ModelFile, Update } from '../types.ts';
 
-export function focusView(ctx, el) {
+export function focusView(ctx: Ctx, el: HTMLElement): Update {
   const { S, M, kc, esc } = ctx;
   const f = S.focusFile && M.byPath.get(S.focusFile);
   if (!f) {
@@ -10,8 +11,8 @@ export function focusView(ctx, el) {
       '<div class="frame"><p class="note">That file is not in the code any more. Pick another from the Map or the search box.</p></div>';
     return null;
   }
-  const group = (paths) => {
-    const g = {};
+  const group = (paths: Iterable<string>) => {
+    const g: Record<string, ModelFile[]> = {};
     for (const p of paths) {
       const x = M.byPath.get(p);
       if (x) (g[x.dir] ||= []).push(x);
@@ -27,13 +28,13 @@ export function focusView(ctx, el) {
   const colW = 250;
   const cx = W / 2;
   const cardW = 300;
-  const colH = (gs) => gs.reduce((a, [, l]) => a + GH + l.length * RH, 0);
+  const colH = (gs: [string, ModelFile[]][]) => gs.reduce((a, [, l]) => a + GH + l.length * RH, 0);
   const cardH = 92 + regs.length * 22;
   const H = Math.max(colH(left), colH(right), cardH) + 60;
   const cardY = (H - cardH) / 2;
   let s = '';
   let edges = '';
-  const col = (gs, x, side) => {
+  const col = (gs: [string, ModelFile[]][], x: number, side: 'L' | 'R') => {
     let y = (H - colH(gs)) / 2;
     for (const [d, list] of gs) {
       s += `<text x="${x}" y="${y + 18}" style="font:600 11px var(--sans);fill:var(--faint);letter-spacing:.07em;text-transform:uppercase">${esc(d)}/</text>`;

@@ -45,7 +45,7 @@
   "folders": {
     "features": "Self-contained plug-ins. Each hooks the frame loop and the shared registries.",
     "player": "The local player, camera, input and the controls registry.",
-    "physics": "cannon-es world, the beach ball, thrown items, water.",
+    "physics": "Rapier physics world, the beach ball, thrown items, water.",
     "render": "Scene, sky, sea, particles, the audio context.",
     "boot": "The loading screen and key art, shown before the game downloads.",
     "boogler": "The Boogler NPC: brain, talk, friendship.",
@@ -142,7 +142,7 @@
       "one": "The machinery features build on: the player and camera, physics, rendering, characters and places.",
       "like": "The instruments in the studio. Features play them.",
       "rules": [
-        "Physics (cannon-es) and rendering (three.js) are local to each tab.",
+        "Physics (Rapier) and rendering (three.js) are local to each tab.",
         "Anything other players must see goes through netplay or the shared world."
       ],
       "code": [

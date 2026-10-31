@@ -11,9 +11,9 @@ citations. Nothing about the atlas ever fails a build or CI.
 Principle: a new technical principle, **Understandable at a glance**, added to DESIGN.md in step 1 (its own commit,
 with the reason, per "How we work").
 
-The atlas bends **Small and readable**'s "few dependencies": it adds six d3 modules and pins acorn. That is acceptable
+The atlas bends **Small and readable**'s "few dependencies": it adds six d3 modules (and their type packages). That is acceptable
 for three reasons. The atlas is an internal page; d3 is imported only from `atlas/` and never reaches the game bundle
-(step 5 checks this); acorn is already installed through eslint. The new principle states this exception in one
+(step 5 checks this); the reader uses `typescript`, already a devDependency. The new principle states this exception in one
 sentence.
 
 Approved prototype (the look and UX to port): `v4-template.html`, `extract.mjs` and `data.json` in
@@ -66,10 +66,10 @@ would conflict on nearly every rebase while friends ship in parallel. The deploy
 `.git` folder is about 9 MB). Without history (CI's shallow clones) the extractor returns `git: null` and
 only the head, and the UI hides the commit count.
 
-**Parser:** acorn 8.19.0 is already in `node_modules` through `eslint → espree`. Add it as an explicit devDependency at
-the same version, so the lockfile gains no new package. That way the extractor does not break if eslint ever stops
-depending on it. A ~15-line recursive walker replaces `acorn-walk`. A trial parse took 90 ms for all 126 files (18.6k
-lines), with no failures.
+**Parser:** the TypeScript compiler API (`typescript`, already a devDependency), which reads `.js` and `.ts` alike. The
+first version used acorn; it cannot parse TypeScript, so once `main` converted `src/` the reader moved to `ts.createSourceFile`
+and a small `forEachChild` walker. Everything below that says "acorn" now means this reader. A parse of all 159 files
+takes well under a second, with no failures.
 
 **Box/lane layout stays in code** (`atlas/layout.js`). It is SVG geometry tied to the renderer, and an agent should not
 move coordinates. The citation report checks every reference to it. What a box *says* (its subtitle) is narrative and
@@ -627,6 +627,25 @@ glance".
 - **Heuristic kinds:** `kindOf` is a reading aid, not a contract. A misclassified file looks the wrong colour but breaks
   nothing; the rules are listed in `atlas/model.js`'s header.
 - **Stale prototype copy** (terrain and water, "28 plug-ins", `:id` in the save route) must not be ported as is (step 4).
+
+## Rework onto the TypeScript codebase
+
+`main` converted `src/sim`, `src/world`, `src/netplay` and more to `.ts` (and Rapier replaced cannon-es) after this plan was
+written. The atlas was reworked to match, with these decisions:
+
+- **One reader for `.js` and `.ts`:** `dev/scan/read.ts` parses with the TypeScript compiler API. Type-only imports and
+  exports are skipped (they are erased, so they are not dependencies); `as`, `satisfies` and `!` are looked through.
+  The registry (`dev/registry/scan.mjs`) projects the same reader, and `npm run registry -- --json` is byte-identical to
+  what `main`'s regex scanner produced.
+- **Paths survive a move from `.js` to `.ts`:** facts carry real paths (imports name their file as it is), but cites,
+  hash links and the frame loop look a file up without its extension (`fileAt`/`bare` in `atlas/model.ts`), as the
+  registry does. `diffFacts` treats an extension change as the same file.
+- **The frame loop** is now read as "the calls before the first `runFrame`" and "the call after the last one", skipping
+  the profiling marks, because `world.step` became `stepPhysics`.
+- **Lockstep globs** from `eslint.config.js` use `{js,ts}` choices, which the extractor's glob matcher expands.
+- **New files are `.ts`:** the atlas page (`atlas/*.ts`, typed in `atlas/types.ts`), the extractor, CLI, Vite plugin,
+  scenario and test. `@types/d3-*` are devDependencies. `npm run atlas` and the upkeep gate run `.ts` with Node itself,
+  so the gate job sets up Node first.
 
 ## Follow-ups (not in this plan)
 

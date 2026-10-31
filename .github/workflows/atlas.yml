@@ -6,7 +6,7 @@ name: Atlas upkeep
 # anything. Procedure: dev/atlas/agent-prompt.md.
 # Runs daily, after any merge (automerge.yml dispatches it), after a direct push to main that touches the sync code,
 # and by hand from the Actions tab (`force` skips the gate). `npm run atlas -- --gate` decides whether a run is worth
-# it (dev/atlas/git.mjs); it needs no install.
+# it (dev/atlas/git.ts); it needs Node (a TypeScript file) but no `npm ci`.
 
 on:
   schedule:
@@ -47,6 +47,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # The gate is a TypeScript file run by Node itself, so Node comes first (no npm ci needed).
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
       # Plain git, so it runs before npm ci. `force` makes it go.
       - name: Gate
         id: gate
@@ -54,7 +60,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           FORCE: ${{ inputs.force }}
         run: |
-          out=$(node dev/atlas/cli.mjs --gate --event "$EVENT")
+          out=$(node dev/atlas/cli.ts --gate --event "$EVENT")
           if [ "$FORCE" = "true" ]; then out=$(sed 's/^go=.*/go=1/' <<<"$out"); fi
           echo "$out" >> "$GITHUB_OUTPUT"
           echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
@@ -90,11 +96,6 @@ jobs:
           sleep 600
           git pull --ff-only
 
-      - uses: actions/setup-node@v4
-        if: steps.prs.outputs.go == '1'
-        with:
-          node-version-file: .nvmrc
-          cache: npm
       - name: Install dependencies
         if: steps.prs.outputs.go == '1'
         run: npm ci
