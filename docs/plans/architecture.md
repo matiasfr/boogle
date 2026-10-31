@@ -43,7 +43,8 @@ The open questions in the two plans have working answers so work can start; chan
 
 ## Phase 2: batching and the GPU
 
-- [ ] Physics on Rapier ([rapier.md](rapier.md)): spike and measure, a physics facade on cannon-es, a Rapier backend
+- [ ] Physics on Rapier ([rapier.md](rapier.md)): spike and measure (done: Rapier 0.19.3, 6× faster steps, ~2 KB
+      vs ~62 KB garbage per step, 584 KB WASM), a physics facade on cannon-es, a Rapier backend
       behind `?physics=rapier`, feel tuning, then the switch and removing cannon-es.
 - [ ] Instance pools (`src/render/instances.js`); move critters, gifts and blob shadows onto them; freeze static
       decor matrices (step 3).
