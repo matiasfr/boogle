@@ -33,8 +33,8 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 
 ## Lint boundaries (`eslint.config.js`)
 - Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.
-- `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.js`, which installs them): one place owns wire order and hashing.
-- Rules import only `src/sim/`, `../grid.js` and sibling rules; `src/sim/` imports nothing from `src/`.
+- `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.ts`, which installs them): one place owns wire order and hashing.
+- Rules import only `src/sim/`, `../grid.ts` and sibling rules; `src/sim/` imports nothing from `src/`.
 - Features don't import other features: shared code moves to `src/` (an adapter, `src/player/`, ...).
 - No `peerjs` outside `src/net/`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
@@ -42,7 +42,7 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 ## Don't (each one broke a room recently)
 - **Effects in `apply`.** Apply changes state and returns a result; splashes, sounds, inventory go in the adapter's `onApplied(e, tick, result)`.
 - **Treat `submitEdit` as done.** It returns true when *queued*: the host may reject it, and edits held while reconnecting can be dropped. Take items, spend inventory, play the effect in `onApplied`.
-- **Save or serve unverified state.** A client persists only hash-verified ticks, and a state that failed to load (a fresh fallback) must never be uploaded as the host's save. Keep these guards when you touch `sync.js`.
+- **Save or serve unverified state.** A client persists only hash-verified ticks, and a state that failed to load (a fresh fallback) must never be uploaded as the host's save. Keep these guards when you touch `sync.ts`.
 - **Leave a presence field set.** The getter returns `null` when the thing stops (deletes the key); receivers treat a missing key as "off".
 - **Patch another module's action by string id** (`actionById(id).down = ...`): use `wrapAction`.
 - **`Math.random`, wall clock or per-peer counters in apply or ticks.** The replay test catches these; don't silence it.
@@ -52,7 +52,7 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 
 ## Tests
 - Unit tests (`test/*.test.ts`, older ones `.test.mjs`; `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
-- `npm run check` (lint, unit tests, build; seconds): before every push.
+- `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.
 - `npm run check:full` (+ server tests, headless network test, ~30 s): when you touch `src/net*`, `src/world/sync.ts`, `src/world/rules/`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
 - Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): PR CI runs single-player scenarios only (`world-inputs`; must pass): it can't run two rendering tabs reliably, and `SCENARIO_GATE=pr` makes the runner refuse a second one. Multiplayer scenarios run on a device (`check:gpu`, below) or nightly (never block). Other local runs are optional, for iterating on visuals and feel; a failed leg's images and Playwright traces (`npx playwright show-trace <zip>`) are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
 - `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
