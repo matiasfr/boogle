@@ -48,11 +48,11 @@ const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere fa
 const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
 // His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
-// crown half the brim's radius, and the whole hat about three times his height.
+// crown half the brim's radius, and the whole hat about one and a half times his height.
 const BRIM_R = W_R / 3;
 const CROWN_R = BRIM_R / 2;
 const BRIM_H = 0.03;
-const HAT_H = 3 * (BODY_Y + H_R); // brim included
+const HAT_H = 1.5 * (BODY_Y + H_R); // brim included
 const HAT_SINK = 0.015; // into the curve of his head, so no gap shows under the brim
 const LABEL_GAP = 0.45; // name tag anchor above the top of the hat (a crushed hat too, so it clears a rider)
 const FLEE_SPEED = 3.4;
