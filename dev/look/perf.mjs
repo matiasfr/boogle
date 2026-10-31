@@ -15,16 +15,17 @@ const doRender = !argv.includes('--sim');
 const doSim = !argv.includes('--render');
 const IDLE_TICKS = 100;
 
-// The game renders once per animation frame and three resets renderer.info once per frame too, so the sample is taken
-// right after the game's own renderFrame (calling it again inside one frame draws only the output pass: the scene
-// pass runs once per frame). The second sample turns the shadow pass off through the sky's debug handle.
+// The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
+// renders, so right after a frame renderer.info.render holds that frame's counts (the scene pass runs once per frame,
+// calling pipeline.render again would count only the output pass). `frame` waits for the next frame to finish and
+// copies them. The second sample turns the shadow pass off through the sky's debug handle.
 const STATS = `
-  const { renderer, pipeline, sun } = await import('/src/render/scene.js');
+  const { renderer, sun } = await import('/src/render/scene.js');
   const { skyDebug } = await import('/src/render/sky.js');
-  let last = null;
-  const orig = pipeline.render;
-  pipeline.render = function () { const r = orig.call(this); last = { ...renderer.info.render }; return r; };
-  const frame = () => new Promise((res) => { last = null; const t = setInterval(() => last && (clearInterval(t), res(last)), 20); });
+  const frame = () => new Promise((res) => {
+    const at = renderer.info.frame;
+    const t = setInterval(() => renderer.info.frame > at && (clearInterval(t), res({ ...renderer.info.render })), 20);
+  });
   await frame();
   const a = await frame(); // with the shadow pass
   skyDebug.shadowPass(false);
@@ -32,7 +33,6 @@ const STATS = `
   await frame();
   const b = await frame(); // no shadow pass
   skyDebug.shadowPass(true);
-  pipeline.render = orig;
   return {
     backend: window.boogle.gfx,
     calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,

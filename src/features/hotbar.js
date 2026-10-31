@@ -14,6 +14,7 @@ import { inv, SLOTS, heldId, select } from '../player/inventory.js';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
 import { pouring } from '../adapters/mushroom-garden.js';
 import { itemModel } from '../player/item-models.js';
+import { warmUp } from '../render/precompile.js';
 import { setIcon } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
@@ -185,6 +186,13 @@ function renderHud(now) {
   ui.note.classList.toggle('shown', noting);
   ui.name.classList.toggle('shown', !noting && !!ui.name.innerHTML && now < ui.nameUntil);
 }
+
+// Every catalog model, built once behind the lobby so the first time one is held or thrown draws without a compile.
+warmUp(() => {
+  const g = new THREE.Group();
+  for (const it of GIFTS) if (carryable(it)) g.add(itemModel(it.id));
+  return g;
+});
 
 // ---------------------------------------------------------------- keys, presence, frame
 onStart(() => {

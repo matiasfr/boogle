@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.js';
 import { clamp, lerp } from '../math.js';
 import { playerMat, NOT_SCENERY } from '../physics/physics.js';
+import { warmUp } from '../render/precompile.js';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
 const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);
@@ -79,3 +80,10 @@ export function makePlayerBody(kinematic) {
   b.updateMassProperties();
   return b;
 }
+
+// A player (and a name label) appears the moment someone joins: build their pipelines behind the lobby instead.
+warmUp(() => {
+  const g = new THREE.Group();
+  g.add(makeAvatar(0), makeLabel('Boogle'));
+  return g;
+});

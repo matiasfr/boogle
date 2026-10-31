@@ -118,6 +118,12 @@ function renderSwatches() {
   });
 }
 
+// The island can be drawn: Jump in becomes available (the lobby itself, and the network, do not wait for this).
+export function lobbyReady() {
+  dom.enterBtn.disabled = false;
+  dom.enterBtn.textContent = 'Jump in';
+}
+
 export function initLobby() {
   let storedName = '',
     storedColor = NaN;
@@ -133,10 +139,9 @@ export function initLobby() {
       ? storedColor
       : Math.floor(Math.random() * COLORS.length);
   renderSwatches();
-  dom.enterBtn.disabled = false;
-  dom.enterBtn.textContent = 'Jump in';
   dom.joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (dom.enterBtn.disabled) return; // the graphics are still starting
     enterIsland();
     canvas.focus();
     requestLock();
