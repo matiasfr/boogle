@@ -71,8 +71,16 @@ export default {
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/physics/ball.js');
       const { teleport } = await import('/src/physics/physics.js');
+      const { boogler } = await import('/src/boogler/boogler.js');
+      const { groundHeight } = await import('/src/adapters/terrain.js');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
+      // The Boogler wanders: if he is close, E would pick Talk over the ball. Step 8 m away from him first.
+      const c = boogler.center, dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz);
+      if (d < 6) {
+        const x = c.x + (dx / (d || 1)) * 8, z = c.z + (dz / (d || 1)) * 8;
+        teleport(window.boogle.me.body, x, groundHeight(x, z) + 0.6, z);
+      }
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;

@@ -114,22 +114,35 @@ onPostStep(() => {
   });
 });
 
-// A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top).
+// A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top). The shove
+// works from the size it is drawn at (v.drawS), and its collider doesn't grow while you are under it (updateGarden), so
+// the mushroom pushes you out sideways instead of a new collider appearing around you, which each physics engine
+// resolves its own way (Rapier would pop you up onto the cap).
+function underCap(b, v, s) {
+  const base = v.root.position;
+  const feet = b.position.y - PLAYER_R;
+  if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return 0;
+  const d = Math.hypot(b.position.x - base.x, b.position.z - base.z);
+  return d < CAP_R * s + PLAYER_R ? Math.max(d, 1e-6) : 0;
+}
+// Whether the player's body would intersect this mushroom's collider at scale s (its full height, with a margin).
+function overlaps(b, v, s) {
+  const base = v.root.position;
+  if (b.position.y - PLAYER_R > base.y + (STEM_H + CAP_T) * s + 0.05) return false;
+  if (b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return false;
+  return Math.hypot(b.position.x - base.x, b.position.z - base.z) < CAP_R * s + PLAYER_R + 0.05;
+}
 onPreStep(() => {
   const b = me.body;
   if (!b) return;
   for (const v of visuals.values()) {
-    if (!v.body || v.shown >= 1) continue;
-    const base = v.root.position,
-      s = v.bodyS;
-    const feet = b.position.y - PLAYER_R;
-    if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) continue;
-    const dx = b.position.x - base.x,
-      dz = b.position.z - base.z;
-    const d = Math.hypot(dx, dz);
-    if (d >= CAP_R * s + PLAYER_R) continue;
-    const nx = d > 0.01 ? dx / d : 1,
-      nz = d > 0.01 ? dz / d : 0;
+    const s = v.drawS ?? 0;
+    if (s < MIN_BODY || v.shown >= 1) continue;
+    const d = underCap(b, v, s);
+    if (!d) continue;
+    const base = v.root.position;
+    const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
+      nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
     const out = b.velocity.x * nx + b.velocity.z * nz;
     if (out >= PUSH) continue;
     b.velocity.x += nx * (PUSH - out);
@@ -220,7 +233,9 @@ export function updateGarden(dt, now) {
     const sinceSquish = (now - v.squishAt) / 1000;
     const squish = !reducedMotion && sinceSquish < 0.5 ? Math.sin(sinceSquish * 25) * 0.18 * (1 - sinceSquish * 2) : 0;
     v.shroom.scale.set(s * (1 + squish * 0.5), s * (1 - squish), s * (1 + squish * 0.5));
-    if (s >= MIN_BODY && (Math.abs(s - v.bodyS) >= RESHAPE || (v.shown >= 1 && v.bodyS !== s))) shapeBody(v, s);
+    v.drawS = s;
+    const grow = Math.abs(s - v.bodyS) >= RESHAPE || (v.shown >= 1 && v.bodyS !== s);
+    if (s >= MIN_BODY && grow && !(me.body && overlaps(me.body, v, s))) shapeBody(v, s); // never around you: the shove first
   }
 }
 

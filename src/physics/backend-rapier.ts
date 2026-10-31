@@ -92,7 +92,14 @@ function colliderDesc(s: Shape): RAPIER.ColliderDesc | null {
     }
     return r.ColliderDesc.convexHull(pts);
   }
-  if (s.kind === 'trimesh') return r.ColliderDesc.trimesh(Float32Array.from(s.vertices), Uint32Array.from(s.indices));
+  if (s.kind === 'trimesh')
+    // Merged vertices let Rapier fix contacts on internal edges, where a ball sliding along a wall would otherwise slip
+    // through between two triangles.
+    return r.ColliderDesc.trimesh(
+      Float32Array.from(s.vertices),
+      Uint32Array.from(s.indices),
+      r.TriMeshFlags.FIX_INTERNAL_EDGES | r.TriMeshFlags.MERGE_DUPLICATE_VERTICES,
+    );
   // Rapier's heightfield is centred on its collider, rows along +z, columns along +x, column-major.
   const nx = s.heights.length - 1,
     nz = s.heights[0].length - 1;
@@ -305,6 +312,12 @@ export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) =>
   for (const b of bodies) if (b.kind === 'static' && b.group & mask) fn(b as unknown as Body, b.shapes);
 }
 
+// Rapier also keeps speculative contacts a little before shapes meet; cannon reports only touching ones, and game code
+// (the mushroom bounce, ground checks) expects that.
+function touching(manifold: RAPIER.TempContactManifold) {
+  for (let i = 0; i < manifold.numContacts(); i++) if (manifold.contactDist(i) <= 0.005) return true;
+  return false;
+}
 // A manifold's normal points from its first collider to its second; flip it so it points into `body`.
 export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void) {
   const b = m(body);
@@ -316,7 +329,7 @@ export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: numb
       const other = byCollider.get(col2.handle);
       if (!other) return;
       world!.contactPair(col, col2, (manifold, flipped) => {
-        if (done || manifold.numContacts() === 0) return;
+        if (done || !touching(manifold)) return;
         const n = manifold.normal(),
           s = flipped ? 1 : -1;
         if (fn(n.x * s, n.y * s, n.z * s, other as unknown as Body) === true) done = true;
