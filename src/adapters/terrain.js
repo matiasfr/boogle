@@ -154,8 +154,9 @@ export function setTerrainHoles(list) {
 }
 const uHoleA = uniformArray(holeA, 'vec4'),
   uHoleB = uniformArray(holeB, 'vec4');
-// maskNode is the fragment keep test (false discards); the shadow pass ignores it, as the old patch was ignored by the
-// depth material. Mesh positions are world coordinates.
+// maskNode is the fragment keep test (false discards). Mesh positions are world coordinates. three's shadow pass
+// applies maskNode too unless maskShadowNode is set: keep every shadow fragment, so the ground still shades the cave
+// mouths as before the move to node materials, and the sun's depth pass skips the per-hole loop.
 terrainMat.maskNode = Fn(() => {
   const keep = bool(true).toVar();
   const g = positionGeometry;
@@ -176,3 +177,4 @@ terrainMat.maskNode = Fn(() => {
   });
   return keep;
 })();
+terrainMat.maskShadowNode = bool(true);

@@ -82,7 +82,8 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.
-- `window.boogle.gfx` is `'webgpu'` or `'webgl2'`; telemetry reports it with each connection.
+- `window.boogle.gfx` (`gfx()` in `scene.js`) is `'webgpu'` or `'webgl2'`, null until `rendererReady` (`init()` may fall
+  back from WebGPU); telemetry reports it with each connection.
 - Headless frame rates mean nothing. Judge frame time on a real iPhone, iPad and a mid-range Android.
 
 ## Where this is going

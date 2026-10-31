@@ -488,9 +488,10 @@ const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };
 // The hat's springs (cosmetic): height above his head, lean (x forward/back, z sideways) and squash (crushed flat like an
 // opera hat while someone rides him, popping back up after).
 const hatSpring = { y: 0, vy: 0, lx: 0, vlx: 0, lz: 0, vlz: 0, s: 1, vs: 0, top: null };
-const spring = (x, v, to, k, d, dt) => {
-  v += ((to - x) * k - v * d) * dt;
-  return [x + v * dt, v];
+// Steps the damped spring h[x] (velocity h[v]) toward `to` in place: no allocation per frame.
+const spring = (h, x, v, to, k, d, dt) => {
+  h[v] += ((to - h[x]) * k - h[v] * d) * dt;
+  h[x] += h[v] * dt;
 };
 const react = { petAt: -1e9, puffAt: -1e9, joyUntil: 0, grumpUntil: 0 };
 
@@ -592,14 +593,14 @@ function animateHat(dt) {
     // The head moving up or down kicks the hat's lean a little, so hops make it wobble.
     const rise = h.top === null ? 0 : (top - h.top) / dt;
     h.vlx += rise * 0.9 * dt;
-    [h.y, h.vy] = spring(h.y, h.vy, top, 260, 16, dt);
+    spring(h, 'y', 'vy', top, 260, 16, dt);
     h.y = Math.max(h.y, top - 0.02); // never sinks into him
-    [h.lx, h.vlx] = spring(h.lx, h.vlx, 0.07 * anim.walk, 70, 5, dt); // leans back a touch when he walks
-    [h.lz, h.vlz] = spring(h.lz, h.vlz, parts.inner.rotation.z * 2.2, 70, 5, dt); // and sways more than he does
+    spring(h, 'lx', 'vlx', 0.07 * anim.walk, 70, 5, dt); // leans back a touch when he walks
+    spring(h, 'lz', 'vlz', parts.inner.rotation.z * 2.2, 70, 5, dt); // and sways more than he does
   }
   h.top = top;
   const crushed = disp.mode === MODE.RIDDEN;
-  [h.s, h.vs] = spring(h.s, h.vs, crushed ? 0.06 : 1, crushed ? 900 : 180, crushed ? 40 : 7, dt);
+  spring(h, 's', 'vs', crushed ? 0.06 : 1, crushed ? 900 : 180, crushed ? 40 : 7, dt);
   h.s = Math.max(0.04, h.s);
   parts.hat.position.set(0, h.y, 0);
   parts.hat.rotation.set(h.lx, 0, h.lz);
