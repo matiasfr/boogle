@@ -79,15 +79,6 @@ export const validRef = (id) => (typeof id === 'string' && id.startsWith('lane:'
 export const CHANNEL_IDS = ['owner', 'host', 'lock', 'msg'];
 export const VIEWS = ['how', 'map', 'focus', 'flow', 'frame'];
 
-// What src/main.js runs before the physics step, in order (all phase 'pre' in the Frame view).
-export const PRE_STEP = [
-  ['updateRemotes', -500],
-  ['resolveBallOwner', -400],
-  ['updateIntent', -300],
-  ['prepareBall', -200],
-  ['world.step', -100],
-];
-
 // Where each view's idea comes from. They describe the atlas, not Boogle, so they stay in code.
 export const REFS = {
   how: '<b>How it works</b> borrows from the C4 model’s dynamic diagrams and from explorable explanations (Nicky Case, Bartosz Ciechanowski): one picture, then step through a real action.',

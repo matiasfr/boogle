@@ -1,6 +1,6 @@
 // The citation report: everything in docs/atlas/ that no longer matches the code or the layout. PURE.
 // `npm run atlas -- --check` prints it and always exits 0; nothing ever fails a build because of it.
-import { BOX, CHANNEL_IDS, KINDS, LANES, PRE_STEP, VIEWS, validRef } from './layout.js';
+import { BOX, CHANNEL_IDS, KINDS, LANES, VIEWS, validRef } from './layout.js';
 import { buildModel, resolveCite } from './model.js';
 import { linksOf, parseChanges } from './changes.js';
 
@@ -22,7 +22,7 @@ export function foldersToDo(facts, concepts) {
 }
 
 // -> string[] of problems, each naming the file and the fix.
-export function checkAtlas({ facts, concepts, stories = [], changes, mainSource, loadProblems = [] }) {
+export function checkAtlas({ facts, concepts, stories = [], changes, loadProblems = [] }) {
   const out = [];
   const model = buildModel(facts);
   out.push(...loadProblems);
@@ -92,15 +92,10 @@ export function checkAtlas({ facts, concepts, stories = [], changes, mainSource,
 
   checkChanges(out, changes, new Set(stories.map((s) => s.id)), new Set((concepts?.concepts ?? []).map((c) => c.id)));
 
-  if (typeof mainSource === 'string') {
-    for (const [name] of PRE_STEP) {
-      const word = name.replace(/^world\./, '');
-      if (!mainSource.includes(word))
-        out.push(
-          `atlas/layout.js PRE_STEP lists ${name}, but src/main.js no longer mentions ${word} (update PRE_STEP)`,
-        );
-    }
-  }
+  if (!facts?.error && !facts?.loop)
+    out.push(
+      'src/main.js: the extractor could not find the frame function (the one given to setAnimationLoop, with world.step in it); the Frame view shows no pre-step row',
+    );
   return out;
 }
 

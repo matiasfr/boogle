@@ -1,13 +1,13 @@
 // Atlas model: turns the extracted facts into what the views draw. PURE (no DOM, no d3).
 //
-// kindOf is a reading aid, not a contract. First match wins:
-//   lock     ops, states or ticks registered, or a file under src/sim/ or src/world/
+// kindOf is a reading aid, not a contract. It goes by what a file registers, never by folder. First match wins:
+//   lock     ops, states or ticks registered, a `w:` wire message, or the file is in eslint's LOCKSTEP_FILES
 //   host     addHostField
-//   owner    addPresenceField, or a file under src/netplay/
-//   msg      room messages (send/onMessage), or a file under src/net/
+//   owner    addPresenceField (or the core keys of buildPresence)
+//   msg      room messages (send/onMessage)
 //   adapter  submitEdit
 //   local    everything else
-import { LAYERS, PRE_STEP } from './layout.js';
+import { LAYERS } from './layout.js';
 
 export const esc = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -20,12 +20,15 @@ export function dirOf(path) {
   return p[0];
 }
 
+// The lockstep wire messages (w:edit, w:hash, ...) belong to the lock channel; every other message type is a one-off.
+const isLockMsg = (m) => m.startsWith('w:');
+
 export function kindOf(file) {
-  const f = file.f;
-  if (file.ops?.length || file.states?.length || file.ticks?.length || /^src\/(sim|world)\//.test(f)) return 'lock';
+  if (file.lockstep || file.ops?.length || file.states?.length || file.ticks?.length || file.msgs?.some(isLockMsg))
+    return 'lock';
   if (file.host?.length) return 'host';
-  if (file.owner?.length || f.startsWith('src/netplay/')) return 'owner';
-  if (file.msgs?.length || file.onMessage || f.startsWith('src/net/')) return 'msg';
+  if (file.owner?.length) return 'owner';
+  if (file.msgs?.length || file.onMessage) return 'msg';
   if (file.submits) return 'adapter';
   return 'local';
 }
@@ -63,27 +66,30 @@ export function buildModel(facts) {
 export function wireOf(file) {
   if (/^src\/(net|debug)\//.test(file.f)) return [];
   const out = [];
-  const inWorld = file.f.startsWith('src/world/');
   if (file.owner.length) out.push(['owner', file.owner]);
   if (file.host.length) out.push(['host', file.host]);
-  const lock = [...file.ops, ...file.states, ...(inWorld ? file.msgs : [])];
+  const lock = [...file.ops, ...file.states, ...file.msgs.filter(isLockMsg)];
   if (lock.length) out.push(['lock', lock]);
-  if (file.msgs.length && !inWorld) out.push(['msg', file.msgs]);
+  const msgs = file.msgs.filter((m) => !isLockMsg(m));
+  if (msgs.length) out.push(['msg', msgs]);
   return out;
 }
 
-// Every frame hook: extracted onFrame calls, the steps main.js runs before the physics step, and the final draw.
-// `core` is true for anything outside src/features/. Hook id: `${file}#${n}`, the nth onFrame in that file.
+// Every frame hook: the extracted onFrame calls, plus the steps main.js runs before the physics step and its final
+// draw (facts.loop; without it the Frame view has no pre-step or render row). `core` comes from the extractor (a
+// reserved order outside src/features/). Hook id: `${file}#${n}`, the nth onFrame in that file.
 export function hooks(model) {
-  const out = PRE_STEP.map(([name, order], i) => ({
-    id: `pre#${i}`,
-    phase: 'pre',
+  const loop = model.facts?.loop;
+  const step = (id, phase, order, name) => ({
+    id,
+    phase,
     order,
     name,
     file: 'src/main.js',
     base: 'main.js',
     core: true,
-  }));
+  });
+  const out = (loop?.pre ?? []).map((name, i) => step(`pre#${i}`, 'pre', i, name));
   for (const f of model.files) {
     f.frames.forEach((fr, n) => {
       out.push({
@@ -93,20 +99,12 @@ export function hooks(model) {
         name: fr.name,
         file: f.f,
         base: f.name,
-        core: !f.f.startsWith('src/features/'),
+        core: fr.core,
         kind: f.kind,
       });
     });
   }
-  out.push({
-    id: 'render#0',
-    phase: 'render',
-    order: 0,
-    name: 'renderFrame',
-    file: 'src/main.js',
-    base: 'main.js',
-    core: true,
-  });
+  if (loop?.render) out.push(step('render#0', 'render', 0, loop.render));
   return out;
 }
 

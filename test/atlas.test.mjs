@@ -47,8 +47,8 @@ test('extractFile reads every registration kind', () => {
     exports: ['b', 'honkNow'],
     names: ['honkNow'],
     frames: [
-      { phase: 'world', order: -280, name: 'update' },
-      { phase: 'update', order: 0, name: 'tick' },
+      { phase: 'world', order: -280, name: 'update', core: false },
+      { phase: 'update', order: 0, name: 'tick', core: false },
     ],
     owner: ['zz'],
     host: ['hh'],
@@ -61,6 +61,7 @@ test('extractFile reads every registration kind', () => {
     actions: ['act'],
     interact: 1,
     routes: [],
+    lockstep: false,
   });
 });
 
@@ -100,12 +101,14 @@ test('extractFacts is deterministic', () => {
 
 // ---- narrative: fixtures only ----
 
-const MAIN = 'updateRemotes(); resolveBallOwner(); updateIntent(); prepareBall(); world.step();';
+const MAIN =
+  'function frame() {\n  updateRemotes();\n  world.step(1);\n  runFrame();\n  renderFrame();\n}\nrenderer.setAnimationLoop(frame);\n';
 
 function good() {
   const facts = extractFacts({
     git: false,
     sources: [
+      { path: 'src/main.js', text: MAIN },
       {
         path: 'src/world/rules/mushrooms.js',
         text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
@@ -151,7 +154,7 @@ function good() {
   ];
   const changes =
     '# What changed\n\n## 2026-10-30\n\n- New. [see](#story/mush) and [frame](#view/frame)\n\n## 2026-10-29\n\n- Older.\n';
-  return { facts, concepts, stories, changes, mainSource: MAIN };
+  return { facts, concepts, stories, changes };
 }
 const report = (fix) => checkAtlas(fix);
 const only = (problems, re) => {
@@ -188,7 +191,7 @@ test('checkAtlas names each problem once', () => {
     /## 2026-10-02 comes after ## 2026-10-01/,
   );
   run((g) => (g.changes += '\n- [gone](#story/nope)\n'), /#story\/nope points at nothing/);
-  run((g) => (g.mainSource = MAIN.replace('prepareBall(); ', '')), /PRE_STEP lists prepareBall/);
+  run((g) => (g.facts.loop = null), /could not find the frame function/);
 });
 
 test('parseNarrative never throws', () => {
@@ -245,7 +248,9 @@ test('kindOf classifies', () => {
   assert.equal(kindOf(rec('src/features/x.js', { ops: ['a'] })), 'lock');
   assert.equal(kindOf(rec('src/world/sync.js', { msgs: ['w:edits'], onMessage: true })), 'lock');
   assert.equal(kindOf(rec('src/boogler/b.js', { host: ['g'] })), 'host');
-  assert.equal(kindOf(rec('src/netplay/net.js')), 'owner');
+  assert.equal(kindOf(rec('src/netplay/net.js', { owner: ['v', 'p'] })), 'owner');
+  assert.equal(kindOf(rec('src/world/grid.js', { lockstep: true })), 'lock');
+  assert.equal(kindOf(rec('src/netplay/snaps.js')), 'local');
   assert.equal(kindOf(rec('src/features/ping.js', { onMessage: true })), 'msg');
   assert.equal(kindOf(rec('src/features/g.js', { submits: true })), 'adapter');
   assert.equal(kindOf(rec('src/features/plain.js')), 'local');
@@ -286,4 +291,36 @@ test('diffFacts reports files, folders and keys gained and lost', () => {
       msgs: { added: ['yo'], removed: [] },
     },
   });
+});
+
+test('the reader tells senders from receivers, and keeps core presence keys and the frame loop', () => {
+  const send = extractFile('src/features/a.js', "room.send({ t: 'a' });\nexport const ok = (m) => m.t === 'b';");
+  assert.deepEqual(send.msgs, ['a', 'b']);
+  const listen = extractFile('src/features/b.js', "const x = { t: 'c' };\nroom.onMessage((m) => m.t === 'd');");
+  assert.deepEqual(listen.msgs, ['d']);
+  const net = extractFile('src/netplay/net.js', 'function buildPresence() {\n  const pr = { v: 1, p: null };\n}\n');
+  assert.deepEqual(net.owner, ['v', 'p']);
+  const main = extractFacts({
+    git: false,
+    sources: [{ path: 'src/main.js', text: MAIN }],
+  });
+  assert.deepEqual(main.loop, { pre: ['updateRemotes', 'world.step'], render: 'renderFrame' });
+  assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.js', text: 'const a = 1;' }] }).loop, null);
+});
+
+test('hooks are core by reserved order, and lockstep comes from the lint globs', () => {
+  const globs = ['src/sim/**/*.js', 'src/world/grid.js'];
+  assert.equal(extractFile('src/sim/a/b.js', '', globs).lockstep, true);
+  assert.equal(extractFile('src/world/grid.js', '', globs).lockstep, true);
+  assert.equal(extractFile('src/world/other.js', '', globs).lockstep, false);
+  const frames = extractFile(
+    'src/guest/play.js',
+    "onFrame(a, { order: -5 });\nonFrame(b, { order: -200 });\nonFrame(c, { phase: 'late', order: 3000 });",
+  ).frames;
+  assert.deepEqual(
+    frames.map((f) => f.core),
+    [false, true, true],
+  );
+  const feat = extractFile('src/features/x.js', 'onFrame(a, { order: -200 });').frames;
+  assert.equal(feat[0].core, false);
 });

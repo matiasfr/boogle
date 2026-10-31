@@ -1,6 +1,6 @@
 // Registry scan: every name in src/ that two agents could pick at once, found statically, and the rules that keep
 // mixed-build rooms working when one PR adds to them (AGENTS.md, "Shared registries" and "Mixed builds").
-// Pure: takes file texts, returns data. dev/registry/check.mjs feeds it the tree and main's tree; test/registry.test.mjs
+// Pure: takes file texts, returns data (read by dev/scan/read.mjs, which the atlas uses too). dev/registry/check.mjs feeds it the tree and main's tree; test/registry.test.mjs
 // feeds it snippets.
 //
 //   scanSources(files)        files: [{ path, text }] -> registry (shape below)
@@ -9,154 +9,48 @@
 //
 // registry = {
 //   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
-//   messages: { type: [path] }       `t: '...'` in files that call send(): who sends each room message type
+//   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
 //   padSlots: [slot]                 PAD in src/player/controls.js
-//   frames:   [{ path, phase, order }]  onFrame hooks with a literal order
+//   frames:   [{ path, phase, order }]  onFrame hooks with a literal order (path is file:line)
+//   parseErrors: [string]            only when a file could not be parsed
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
 //   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
 // }
+
+import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.mjs';
 
 const CORE_PRESENCE_FILE = 'src/netplay/net';
 // Paths compare without their extension, so a module keeps its registry identity when it moves from .js to .ts.
 const bare = (p) => p.replace(/\.[jt]s$/, '');
 
-// Strips comments and replaces string/template contents with spaces (same length), so offsets still line up and
-// brackets inside strings don't count. Literal values are read back from the original text at the same offsets.
-export function blank(text) {
-  let out = '';
-  for (let i = 0; i < text.length;) {
-    const c = text[i];
-    const n = text[i + 1];
-    if (c === '/' && n === '/') {
-      const end = text.indexOf('\n', i);
-      const stop = end === -1 ? text.length : end;
-      out += ' '.repeat(stop - i);
-      i = stop;
-    } else if (c === '/' && n === '*') {
-      const end = text.indexOf('*/', i + 2);
-      const stop = end === -1 ? text.length : end + 2;
-      out += text.slice(i, stop).replace(/[^\n]/g, ' ');
-      i = stop;
-    } else if (c === "'" || c === '"' || c === '`') {
-      let j = i + 1;
-      while (j < text.length && text[j] !== c) j += text[j] === '\\' ? 2 : 1;
-      out += c + text.slice(i + 1, j).replace(/[^\n]/g, ' ') + c;
-      i = j + 1;
-    } else {
-      out += c;
-      i++;
-    }
-  }
-  return out;
-}
-
-// Every call `name(...)` in text: { at, args: [string] } with args split at top-level commas (original text).
-export function calls(text, name) {
-  const b = blank(text);
-  const out = [];
-  const re = new RegExp(`(?<![\\w.$])${name}\\s*\\(`, 'g');
-  for (let m; (m = re.exec(b));) {
-    if (/function\s+$/.test(b.slice(Math.max(0, m.index - 12), m.index))) continue; // the definition itself
-    let depth = 0;
-    let start = m.index + m[0].length;
-    const args = [];
-    for (let i = start; i < b.length; i++) {
-      const c = b[i];
-      if ('([{'.includes(c)) depth++;
-      else if (')]}'.includes(c)) {
-        if (depth === 0) {
-          args.push(text.slice(start, i).trim());
-          break;
-        }
-        depth--;
-      } else if (c === ',' && depth === 0) {
-        args.push(text.slice(start, i).trim());
-        start = i + 1;
-      }
-    }
-    out.push({ at: lineOf(text, m.index), args: args.filter((a) => a !== '') });
-  }
-  return out;
-}
-
-const lineOf = (text, at) => text.slice(0, at).split('\n').length;
-const literal = (s) => s?.match(/^(['"])([^'"]*)\1$/)?.[2];
-// A top-level property of an object literal's text, e.g. prop("{ pad: 'x', down() {} }", 'pad') -> "'x'".
-function prop(obj, key) {
-  if (!obj?.startsWith('{')) return undefined;
-  const inner = obj.slice(1, -1);
-  const b = blank(inner);
-  let depth = 0;
-  for (let i = 0; i < b.length; i++) {
-    const c = b[i];
-    if ('([{'.includes(c)) depth++;
-    else if (')]}'.includes(c)) depth--;
-    else if (depth === 0 && b.startsWith(key, i) && !/[\w$]/.test(b[i - 1] ?? ' ')) {
-      const rest = b.slice(i + key.length);
-      const colon = rest.match(/^\s*:\s*/);
-      if (!colon) continue;
-      const from = i + key.length + colon[0].length;
-      let d = 0;
-      let j = from;
-      for (; j < b.length; j++) {
-        if ('([{'.includes(b[j])) d++;
-        else if (')]}'.includes(b[j])) d--;
-        else if (b[j] === ',' && d === 0) break;
-      }
-      return inner.slice(from, j).trim();
-    }
-  }
-  return undefined;
-}
-
 const add = (map, key, who) => (map[key] ??= []).push(who);
 
+// The registry as one projection of dev/scan/read.mjs, the reader the atlas uses too: a message type belongs to the
+// files that *send* it (`.send(` plus `t: '...'`), never to a receiver; the room layer's own protocol (src/net/) is
+// not a name two agents can pick; presence includes the core keys of buildPresence; a hook is core by order
+// (isCoreHook). A file the reader cannot parse is an error, not a silent skip.
 export function scanSources(files) {
   const reg = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
   for (const { path, text } of files) {
-    if (bare(path) === CORE_PRESENCE_FILE) {
-      const body = text.match(/function buildPresence\(\)[^{]*\{\s*const pr(?::\s*\w+)? = (\{[^}]*\})/)?.[1];
-      for (const m of body?.matchAll(/^\s*([a-z]\w*)\s*:/gm) ?? []) add(reg.presence, m[1], `${path} (core)`);
-    }
-    for (const fn of ['addPresenceField', 'addHostField']) {
-      for (const c of calls(text, fn)) {
-        const key = literal(c.args[0]);
-        if (key !== undefined) add(reg.presence, key, `${path}:${c.at}`);
-      }
-    }
-    if (!path.startsWith('src/net/') && /\.send\(/.test(blank(text))) {
-      const b = blank(text);
-      for (const m of b.matchAll(/(?<![\w$])t\s*:\s*'/g)) {
-        const type = literal(text.slice(m.index + m[0].length - 1).match(/^'[^']*'/)?.[0]);
-        if (type !== undefined && !(reg.messages[type] ?? []).includes(path)) add(reg.messages, type, path);
-      }
-    }
-    for (const c of calls(text, 'registerAction')) {
-      const slot = literal(prop(c.args[1], 'pad'));
-      if (slot !== undefined) add(reg.pads, slot, `${path}:${literal(c.args[0]) ?? '?'}`);
-    }
-    if (bare(path) === 'src/player/controls') {
-      const list = text.match(/export const PAD = \[([^\]]*)\]/)?.[1] ?? '';
-      reg.padSlots = [...list.matchAll(/'([^']+)'/g)].map((m) => m[1]);
-    }
-    for (const c of calls(text, 'onFrame')) {
-      const opts = c.args[1];
-      const order = prop(opts, 'order');
-      if (order === undefined || !/^-?\d+$/.test(order)) continue;
-      const phase = literal(prop(opts, 'phase')) ?? 'update';
-      reg.frames.push({ path: `${path}:${c.at}`, phase, order: Number(order) });
+    const r = readFile(path, text);
+    if (r.parseError) (reg.parseErrors ??= []).push(`${path}: ${r.parseError}`);
+    if (bare(path) === CORE_PRESENCE_FILE) for (const key of r.corePresence) add(reg.presence, key, `${path} (core)`);
+    for (const { key, line } of [...r.owner, ...r.host]) add(reg.presence, key, `${path}:${line}`);
+    if (!path.startsWith('src/net/')) for (const type of r.sends) add(reg.messages, type, path);
+    for (const a of r.actions) if (a.pad !== null) add(reg.pads, a.pad, `${path}:${a.id ?? '?'}`);
+    if (bare(path) === 'src/player/controls') reg.padSlots = r.padSlots;
+    for (const f of r.frames) {
+      if (f.explicit) reg.frames.push({ path: `${path}:${f.line}`, phase: f.phase ?? 'update', order: f.order });
     }
   }
   return reg;
 }
 
 const isFeature = (p) => p.startsWith('src/features/');
-const MIN_FEATURE_ORDER = -10;
-const CORE_LATE = 3000;
 
 export function checkRegistry(reg) {
-  const errors = [];
+  const errors = [...(reg.parseErrors ?? []).map((e) => `${e} (the registry cannot read this file)`)];
   for (const [key, who] of Object.entries(reg.presence)) {
     if (who.length > 1) errors.push(`presence key '${key}' is used twice: ${who.join(', ')}. Pick an untaken key.`);
   }
@@ -173,7 +67,7 @@ export function checkRegistry(reg) {
   }
   // Core hooks (src/loop.js's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
   // src/features/ use the feature range and may tie (ties run in registration order).
-  const core = reg.frames.filter((f) => !isFeature(f.path) && (f.order < MIN_FEATURE_ORDER || f.order >= CORE_LATE));
+  const core = reg.frames.filter((f) => isCoreHook(f.path, f.order));
   for (const f of reg.frames.filter((x) => isFeature(x.path))) {
     if (f.order < MIN_FEATURE_ORDER) errors.push(`${f.path}: features use onFrame order ${MIN_FEATURE_ORDER} and up`);
     const clash = core.find((c) => c.phase === f.phase && c.order === f.order);

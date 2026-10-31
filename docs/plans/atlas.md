@@ -26,13 +26,13 @@ because `/private/tmp` does not survive a reboot.
 The plan was written before the WebGPU renderer migration landed. Re-read against `AGENTS.md`, `src/README.md`,
 `src/loop.js` and `src/main.js` on that commit:
 - The render pass is `renderFrame()` (from `src/render/scene.js`), not `renderer.render`; the Frame view's last slice
-  is named `renderFrame`. The `PRE_STEP` names and orders still match `src/main.js`.
-- The Frame view's core hooks come from the extractor (every `onFrame` outside `src/features/`), not from the list in
-  `src/loop.js`, so its edit does not matter here. Cross-check the extracted core orders against that header comment.
+  is named `renderFrame`. The pre-step list is no longer a constant: the extractor reads it from `src/main.js` (`facts.loop`).
+- The Frame view's core hooks come from the extractor (`isCoreHook` in `dev/scan/read.mjs`: outside `src/features/`, with
+  an order below −10 or from 3000 up, the ranges `src/loop.js` reserves), the same predicate the registry check uses.
 - New folders (`src/boot/`, `src/decomp/`, `src/guest/`, `src/island/`, `src/pois/`) must have a `LAYERS` home in
   `atlas/layout.js` (the unknown-folder fallback to "Game systems" stays as a safety net, not the plan).
-- `npm run registry` (in `check`) and `dev/registry/scan.mjs` already scan presence keys, messages and pads with a
-  regex scanner. The atlas extractor is a separate, acorn-based reader for the diagram; it does not replace it, and
+- `npm run registry` (in `check`) and `dev/registry/scan.mjs` scan presence keys, messages and pads. They used a regex
+  scanner; both now project one acorn reader, `dev/scan/read.mjs` (see "One reader" below), and
   `npm run registry -- --json` is a handy cross-check for step 3. Presence keys now "name the feature"; existing short
   keys (`b`, `g`) stay, so story cites are checked against the extractor's output, never memory.
 - `docs/game-design.md` is now `docs/game-design/` (a file per system). Nothing changes for the atlas (no player-visible
@@ -119,10 +119,11 @@ Stale narrative is a chore for the daily agent, never a red build.
 atlas/                       the page (browser code; nothing under src/ imports it)
   index.html                 shell markup (prototype lines 144-167) + noindex meta + Geist font link + <script type="module" src="./main.js">
   atlas.css                  prototype CSS (lines 7-141) + theme button, changes panel, stale chip, banner styles
-  layout.js                  PURE: LAYERS, KINDS, BOX, LANES, CHANNEL_IDS, VIEWS, PRE_STEP, REFS, ROUTE_VIA
+  layout.js                  PURE: LAYERS, KINDS, BOX, LANES, CHANNEL_IDS, VIEWS, REFS, ROUTE_VIA
+  ../dev/scan/read.mjs       the shared acorn reader (readFile, isCoreHook); also behind `npm run registry`
   model.js                   PURE: dirOf, kindOf, layerOf, buildModel, wireOf, registrations, hooks, resolveCite, searchIndex
   narrative.js               PURE: parseNarrative({ conceptsText, storyTexts }) -> { N, loadProblems } (never throws)
-  check.js                   PURE: checkAtlas({ facts, concepts, stories, changes, mainSource }) -> string[] of problems
+  check.js                   PURE: checkAtlas({ facts, concepts, stories, changes }) -> string[] of problems
   changes.js                 PURE: parseChanges(md) -> [{ date, body }]; renderChanges(entries, known)
   main.js                    state, render(), event delegation, search, keyboard, theme, hash links
   views/how.js               concept diagram + stories (prototype howView, routePts, edgeToward, conceptCard, howIntro)
@@ -156,6 +157,7 @@ these files in Node.
 {
   schema: 1,
   git: { head: 'b969888', commits: 198, first: '2026-10-28T…' } | null,   // commits and first are null if shallow
+  loop: { pre: ['updateRemotes', …, 'world.step'], render: 'renderFrame' } | null, // main.js's frame function
   files: [{                                                 // sorted by path; arrays in source order, deduped
     f: 'src/features/honk.js', loc: 300,
     head: 'leading // comment block, joined, ≤260 chars',
@@ -163,10 +165,11 @@ these files in Node.
     lazy: ['src/…'],             // import('./x.js') with a string literal
     exports: ['honkNow'],        // exported names ('default' for export default)
     names: ['honkNow', 'update'],// every function/class/variable declarator id and function-valued object key, any depth
-    frames: [{ phase: 'late', order: 0, name: 'update' }],
-    owner: ['b'], host: ['g'],   // addPresenceField / addHostField first arg (string literal)
+    frames: [{ phase: 'late', order: 0, name: 'update', core: false }], // core: a reserved order outside src/features/
+    owner: ['b'], host: ['g'],   // addPresenceField / addHostField first arg (string literal); owner also has buildPresence's core keys
     ops: [], states: [], ticks: [], // *.registerOp / *.registerState first arg; *.onTick second arg
-    msgs: ['honk'], onMessage: true, submits: false,
+    msgs: ['honk'], onMessage: true, submits: false, // msgs: `t: '...'` sent from a file that calls .send(, plus types compared with .t
+    lockstep: false,             // the path matches eslint's LOCKSTEP_FILES
     actions: ['honk'],           // registerAction first arg (string literal)
     interact: 0,                 // registerInteractable call count
     routes: [],                  // server only: app.get|put|post|delete|use('<path>') -> 'PUT /rooms/:roomId/snapshot'
@@ -199,25 +202,39 @@ Extraction rules, so the implementer does not have to guess:
   `git ls-tree` per commit.) `factsAt(root, ref)` unpacks a ref with one `git archive` into a temp dir.
 - No timestamps, no `Date.now()`: the same tree and history give the same JSON.
 
+### One reader (`dev/scan/read.mjs`)
+
+`readFile(path, text)` is the single acorn pass over a file. It returns a raw record (names with line numbers, `sends`
+apart from `reads`, `explicit` on frames with a literal order). `dev/atlas/extract.mjs` projects it into the facts
+above, and `dev/registry/scan.mjs` into the registry. Where the two scanners differed, one definition now rules:
+- **Messages:** a type belongs to the files that send it (`.send(` plus `t: '...'`); receivers' `.t ===` comparisons
+  are `reads`, shown by the atlas but never counted as a second sender. The registry skips `src/net/` (the room's own
+  protocol).
+- **Presence:** includes the core keys of `buildPresence()` in `src/netplay/net.js`, in both.
+- **Core hook:** `isCoreHook(file, order)`: outside `src/features/` and an order below −10 or from 3000 up.
+- **Parse errors:** the registry reports a file it cannot parse; it no longer skips it.
+`npm run atlas -- --gate` imports none of this, so it runs before `npm ci`.
+
 ### Derived model (`atlas/model.js`)
 
 - `dirOf(path)`: `server/…` gives `'server'`; `src/x.js` gives `'(core)'`; `src/world/rules/…` gives `'world/rules'`;
   everything else gives the first segment after `src/`. This matches the prototype.
 - `kindOf(file)` (the prototype's heuristic, corrected so `src/world/sync.js` stops showing as "Message" and
   `src/netplay/net.js` stops showing as "Local"):
-  1. `ops`, `states` or `ticks` non-empty, or the path is under `src/sim/` or `src/world/`: `'lock'`
+  1. `ops`, `states` or `ticks` non-empty, a `w:` message, or the file's `lockstep` flag (it matches eslint's
+     `LOCKSTEP_FILES`, read from `eslint.config.js` as text): `'lock'`
   2. `host` non-empty: `'host'`
-  3. `owner` non-empty, or the path is under `src/netplay/`: `'owner'`
-  4. `msgs` non-empty, `onMessage`, or the path is under `src/net/`: `'msg'`
+  3. `owner` non-empty (this includes the core keys of `buildPresence` in `src/netplay/net.js`): `'owner'`
+  4. `msgs` non-empty or `onMessage`: `'msg'`
   5. `submits`: `'adapter'`
   6. otherwise `'local'`
 - `layerOf(dir)`: the `LAYERS` entry listing `dir`. An unknown folder falls back to `L1` ("Game systems"), so a new
   `src/<folder>/` never crashes the page (the prototype would throw).
-- `wireOf(file)`: as in the prototype (skip `src/net/` and `src/debug/`), except that `msgs` from files under
-  `src/world/` go to the `lock` channel (the `w:*` messages are the lockstep wire).
-- `hooks(model)`: every extracted frame, plus `PRE_STEP` (from layout.js) as phase `'pre'` and
-  `{ phase: 'render', name: 'renderFrame', file: 'src/main.js' }` (main.js calls `renderFrame()` from `src/render/scene.js` since the WebGPU migration). `core` is true when the file is not under
-  `src/features/`. Hook id: `` `${file}#${n}` `` (the nth `onFrame` in that file), because `src/features/boogler.js`
+- `wireOf(file)`: as in the prototype (skip `src/net/` and `src/debug/`), except that `w:`-prefixed `msgs` go to the
+  `lock` channel (the lockstep wire).
+- `hooks(model)`: every extracted frame, plus `facts.loop.pre` as phase `'pre'` (in call order) and `facts.loop.render`
+  as phase `'render'`; without `facts.loop` there is no pre or render row. `core` comes from the extractor
+  (`frames[].core`). Hook id: `` `${file}#${n}` `` (the nth `onFrame` in that file), because `src/features/boogler.js`
   has two hooks with the same phase and order.
 - `resolveCite(cite, model) -> { files: string[], error: string | null }`. It never throws, including on a malformed
   cite. A cite has exactly one of these keys: `file` (with optional `symbol`, which must be in that file's `exports`
@@ -243,8 +260,6 @@ Copy from the prototype, with these changes:
   `concepts.json` `kinds`.
 - `CHANNEL_IDS = ['owner', 'host', 'lock', 'msg']`; `VIEWS = ['how', 'map', 'focus', 'flow', 'frame']`.
 - `LAYERS`: as in the prototype (`id, name, short, c, dirs, note`).
-- `PRE_STEP`: `[['updateRemotes', -500], ['resolveBallOwner', -400], ['updateIntent', -300], ['prepareBall', -200],
-  ['world.step', -100]]`, all in `src/main.js`.
 - `REFS`: the prototype's design-reference strings. They describe the atlas, not Boogle, so they stay in code.
 
 ### Narrative schemas
@@ -285,7 +300,7 @@ paragraphs and `- ` bullets, `` `code` ``, and links of the form `[text](#story/
 
 ### Citation report (`atlas/check.js`)
 
-`checkAtlas({ facts, concepts, stories, changes, mainSource })` is pure and returns a list of problems. Each message
+`checkAtlas({ facts, concepts, stories, changes })` is pure and returns a list of problems. Each message
 names the file and the fix, e.g. `docs/atlas/stories/mush.json step 3: cite {"op":"mush.plant"}: no file registers op
 mush.plant (renamed? update the cite)`. `npm run atlas -- --check` prints them (or "0 problems") and exits 0; the
 unit test runs it only on fixtures. It reports:
@@ -303,8 +318,8 @@ unit test runs it only on fixtures. It reports:
   (unknown box, unknown lane). `hl` holds BOX ids.
 - **changes.md:** first line `# What changed`; `## YYYY-MM-DD` dates are valid and non-increasing; no section is empty;
   every `#story/<id>`, `#concept/<id>` and `#view/<id>` link resolves.
-- **Pre-step hooks:** every `PRE_STEP` name minus `world.` (`updateRemotes`, …, `step`) appears in `mainSource` (the
-  text of `src/main.js`).
+- **Frame loop:** the extractor found it (`facts.loop`); if not, one problem says so (exit 0 as ever) and the Frame view
+  shows no pre-step row.
 
 ## Steps
 
@@ -406,7 +421,7 @@ glance".
     - One test per problem, each asserting that exactly one message matches a regex: unknown file, unknown symbol,
       unknown op, malformed cite (two keys), unknown box in `go`, unknown lane, unknown `hl` box, BOX concept missing
       from concepts, story id that doesn't match its filename, changes.md dates out of order, a dead `#story/` link,
-      and a missing `PRE_STEP` name.
+      and a missing frame loop.
     - `'parseNarrative never throws'`: invalid JSON concepts text and a story without `steps` give fallbacks plus two
       `loadProblems`.
     - `'resolveCite never throws'`: `null`, `{}`, `{ file: 1 }` all return an `error`.
