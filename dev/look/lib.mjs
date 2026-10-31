@@ -116,7 +116,8 @@ export class Game {
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
   // layout viewport, and the game only needs the coarse pointer),
-  // trace (record a Playwright trace: actions, console, network, DOM snapshots; `close({ trace: file })` keeps it)
+  // trace (record a Playwright trace: actions, console, network, DOM snapshots; no screencast, which slows software GL
+  // and the stills already show the canvas; `close({ trace: file })` keeps it)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -126,7 +127,7 @@ export class Game {
     g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] }, hasTouch: !!opts.touch });
     if (opts.clock) await g.ctx.clock.install();
     g.tracing = !!opts.trace;
-    if (g.tracing) await g.ctx.tracing.start({ screenshots: true, snapshots: true, title: g.name });
+    if (g.tracing) await g.ctx.tracing.start({ snapshots: true, title: g.name });
     // src/constants.js reads isTouch once at load, so this must run before the page's code.
     if (opts.touch)
       await g.ctx.addInitScript(() => {
