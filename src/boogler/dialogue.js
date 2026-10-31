@@ -22,7 +22,7 @@ const MOUTHS = {
   worry:
     '<path d="M17.4 23 Q18.6 22.2 19.6 23 Q20.6 23.8 21.6 23 Q22.4 22.4 22.8 23" stroke="#1d1640" stroke-width="1" fill="none" stroke-linecap="round"/>',
 };
-// His portrait: in the talk box with the mood's mouth, and smiling on the off-screen pointer (hud.js).
+// His portrait, in the talk box with the mood's mouth.
 export const portrait = (mood) => `
   <svg viewBox="0 0 40 40" aria-hidden="true">
     <ellipse cx="11" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
