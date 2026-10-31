@@ -321,7 +321,7 @@ glance".
   `mkdir -p .look/atlas/prototype && cp <scratchpad>/atlas/{v4-template.html,extract.mjs,data.json,v4-*.png,v3-*.png} .look/atlas/prototype/`
   (`.look/` is gitignored). Verify: `git status` in the worktree is clean.
 
-- [ ] **1. Add the principle.** In the **worktree's** `DESIGN.md` (which has none of the user's uncommitted edits),
+- [x] **1. Add the principle.** In the **worktree's** `DESIGN.md` (which has none of the user's uncommitted edits),
   insert a new section under "Technical principles", **between "### PeerJS only" and "### Small and readable"**. That
   spot is a few lines away from the user's uncommitted insertion *after* "Small and readable", so the two merge
   cleanly later. Text:
