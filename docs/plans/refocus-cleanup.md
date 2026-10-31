@@ -547,7 +547,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - `npm run scenario -- world-inputs`;
     - by hand on `npm run dev`: throw the ball, wait 3 s, reload, and the ball is where it stopped.
 
-- [ ] **7. Docs: the ball is one toy among several; note honk variation.** Lane B, after step 6. Docs only.
+- [x] **7. Docs: the ball is one toy among several; note honk variation.** Lane B, after step 6. Docs only.
   - `docs/game-design.md`:
     - Overview: name the toys side by side (the ball, the frisbee, thrown things, mushrooms, the Boogler) instead of
       "one shared beach ball" as the frame;

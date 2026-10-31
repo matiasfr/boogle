@@ -1,6 +1,6 @@
 # 6.1 Beach ball
 
-- **What and how it plays.** One shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E or click with empty hands),
+- **What and how it plays.** One of the island's physics toys: one shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E or click with empty hands),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw, bump it like a
   volleyball dig, or steal it from whoever holds it. It floats in the sea and the cave pond, drifts along the shore and
   washes back in, bounces on

@@ -1,6 +1,6 @@
 # Boogle iteration plan
 
-Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them, while the beach ball stays the main toy.
+Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them.
 
 Today that island has the ball, things you pick up and throw, mushrooms you plant from the stall and bounce on, The Boogler to befriend, the lighthouse and its frisbee, and the caves. The shared world persists, so the next visitor finds what the last one left. Digging and the water sim, built from the [research report](docs/research/water-farming-multiplayer.md) ("water is the glue between the ball and the farm"), were removed on 2026-10-30 to clear room around the ball; the garden and the tide below are still open and need a new design without them.
 
@@ -154,6 +154,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Later / stretch
 
+- **Honk variation:** more honk voices and patterns (per player, per mood, chords beyond three), building on `honk.js`; no new verbs needed.
 - [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.js`; touch overlay hides while a pad is in use.
 - [x] Controls guide and pause view: every control described once in src/player/controls.js; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
