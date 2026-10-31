@@ -801,8 +801,8 @@ folder map in [src/README.md](../src/README.md).
   which lists the core hooks' orders; features use −10 and up). `main.js` only wires modules and renders. Heavy or
   rarely used parts load with a dynamic `import()` ("Lazy parts" in `loop.js`): today the caves, the Boogler's
   conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared
-  registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit('soft' |
-  'clump', ...)` in [src/render/particles.js](../src/render/particles.js)).
+  registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit(...)` in
+  [src/render/particles.js](../src/render/particles.js)).
 - **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
   `registerState`/`onTick` only in `world/rules/`), unit tests (`node:test`, pure logic only) and build.
   `npm run check:full` adds server tests and the headless network test. Key tests:

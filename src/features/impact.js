@@ -41,7 +41,7 @@ function emitPuff(x, y, z, k) {
   for (let q = 0; q < n; q++) {
     const a = Math.random() * Math.PI * 2,
       sp = 0.6 + Math.random() * 1.6 * (0.5 + k);
-    emit('soft', {
+    emit({
       x: x + Math.cos(a) * 0.3,
       y: y + 0.1,
       z: z + Math.sin(a) * 0.3,

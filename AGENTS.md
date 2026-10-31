@@ -25,7 +25,7 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 ## Shared registries
 - **Controls** (`src/player/controls.js`, contract at its top): every key or touch button is a `registerAction(id, { pad, key, touch, label, detail, group, down, up, held })` on a free pad slot; it also generates the guide row (pause view, first-run card). Taken slots: `grep -rn "pad: '" src`; at least one must stay unclaimed in `src/`, since `updates.js` takes `freeSlots()[0]` at runtime. `group` is an id from `GROUPS`. `src/player/input.js` binds Space, E, R and the move keys by hand. No slot left: rethink the layout, no key-only controls. A key with no pad action of its own (hotbar digits) is `onKey` plus a `describeControl` row. To change another module's action: `wrapAction(id, { down, up })` from `onStart`.
 - **Interact button** (E, pad B, touch action): `registerInteractable(fn)` (`src/player/hands.js`); `fn()` returns targets in reach `{ id, verb, at, run | blocked }`, `[]` for none. Never a new key.
-- **Particles**: `emit('soft' | 'clump', { x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.js`; don't build your own pool.
+- **Particles**: `emit({ x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.js`; don't build your own pool.
 
 ## Lint boundaries (`eslint.config.js`)
 - Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.

@@ -145,7 +145,7 @@ function puffs(st) {
   for (let k = 0; k < (ring ? 14 : 2); k++) {
     const a = ring ? (k / 14) * Math.PI * 2 : Math.random() * Math.PI * 2;
     const sp = ring ? 2.6 : 0.4;
-    emit('soft', {
+    emit({
       x: target.x + Math.cos(a) * 0.2,
       y: feetY + 0.1,
       z: target.z + Math.sin(a) * 0.2,

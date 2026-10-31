@@ -85,7 +85,7 @@ const TOUR = `
   const burst = (x, y, z) => {
     for (let k = 0; k < 120; k++) {
       const a = k * 2.399;
-      emit('soft', { x, y, z, vx: Math.cos(a) * 3, vy: 2 + (k % 5), vz: Math.sin(a) * 3, life: 1.5, size: 0.4,
+      emit({ x, y, z, vx: Math.cos(a) * 3, vy: 2 + (k % 5), vz: Math.sin(a) * 3, life: 1.5, size: 0.4,
         color: new THREE.Color('#e8d9a8'), gravity: -6 });
     }
   };
