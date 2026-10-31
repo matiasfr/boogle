@@ -1,8 +1,8 @@
 // Adaptive resolution: the render pixel ratio follows the frame time. A frame-time moving average above ~18.5 ms for 2 s
 // steps the ratio down 10 %; under 14 ms for 5 s steps it back up, between 0.6x and 1x of min(devicePixelRatio, 2).
 // At most one change every 2 s and none in the first 5 s; a hidden tab does not count. `?dpr=fixed` (the look/scenario harness)
-// keeps the full ratio so images stay comparable. Serves DESIGN.md 9 (a steady frame rate
-// on a phone beats a few extra pixels). Sync kind: Local (this tab's GPU only).
+// keeps the full ratio so images stay comparable. Serves DESIGN.md 10 (slapstick needs a steady
+// frame rate: on a phone it beats a few extra pixels). Sync kind: Local (this tab's GPU only).
 import { renderer, MAX_DPR, FIXED_DPR } from '../render/scene.js';
 import { onFrame } from '../loop.js';
 
