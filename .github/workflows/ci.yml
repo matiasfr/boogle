@@ -51,6 +51,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Build the image (from the repo root, as the deploy does)
+        working-directory: .
+        run: docker build -f server/Dockerfile .
 
   net:
     runs-on: ubuntu-latest

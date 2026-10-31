@@ -1,0 +1,13 @@
+# The server image (server/Dockerfile) is built from the repo root; it needs server/, src/ and package.json only.
+**/node_modules
+.git
+.github
+.claude
+dist
+native
+docs
+public
+dev
+test
+server/data
+server/test

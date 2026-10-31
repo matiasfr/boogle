@@ -3,6 +3,7 @@
 app = "boogle-server"
 primary_region = "iad"
 
+# Built from the repo root: flyctl deploy . --config server/fly.toml --dockerfile server/Dockerfile (server/Dockerfile).
 [build]
   dockerfile = "Dockerfile"
 
