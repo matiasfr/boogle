@@ -90,6 +90,9 @@ For lockstep systems, clients send small **edit events** (plant, water, toss, ha
 ### PeerJS only
 Networking is PeerJS with one browser acting as host (see PLAN.md, "Key decision"). There are no alternate transports and no claude.ai artifact build. Keep the game talking to the small room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS directly.
 
+### Understandable at a glance
+Boogle is built by a handful of friends and their agents shipping at once, so how it fits together has to be something you can see, not only read. The atlas ([boogle.club/atlas](https://boogle.club/atlas)) is our internal map: one picture of the pieces, stories that follow a single action through them, and code views underneath. It's a tool for the people and agents building Boogle, never part of the game. Facts in it come from the code on every build; the explanations live in `docs/atlas/` and a daily agent keeps them current, so a stale explanation is that agent's chore, never a red build. A new way of sharing state, or a big feature, comes with a story. Internal tools like this may use a library the game doesn't (the atlas draws with d3), as long as it never reaches the game bundle.
+
 ### Small and readable
 This is a friends' project. Prefer plain modules, few dependencies and code someone can read in one sitting. Measure before optimizing; when you do optimize the sim, sleep settled regions (active-cell lists) before reaching for workers or the GPU.
 
