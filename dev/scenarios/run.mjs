@@ -13,6 +13,8 @@
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
 // (`npx playwright show-trace <zip>`: the action timeline, console, network and errors; `--no-trace` skips it).
 // A player whose renderer didn't come up on WebGPU fails the scenario.
+// SCENARIO_GATE=pr (PR CI, software WebGPU) allows one player: two tabs drawing in software run at a few frames a
+// second and time out at random, so a multi-player scenario runs on a device (`npm run check:gpu`) or nightly.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,6 +65,11 @@ try {
       VIEWS,
       sleep,
       async open(opts = {}) {
+        if (games.length && process.env.SCENARIO_GATE === 'pr')
+          throw new Error(
+            'a second player on PR CI: two software-rendered tabs are too slow to pass reliably there. ' +
+              'Run this scenario on a device (npm run check:gpu) or nightly (scenarios-nightly.yml).',
+          );
         const g = await Game.open(browser, stack, {
           out,
           trace,

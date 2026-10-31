@@ -2,7 +2,7 @@
 // This folder is not a scenario: run.mjs only lists the .mjs files directly in dev/scenarios/.
 
 // ---- Window handles only (window.boogle, window.boogle.sync): safe for scenarios that also run on a built site
-// (`--url`: smoke, two-player-edit, reconnect-edit). Never add a /src/ import to this section.
+// (`--url`: smoke, reconnect-edit). Never add a /src/ import to this section.
 
 // A tossed gift at a beach cell west of the court. k is the catalog index (0 coconut, 1 mango; append-only); n is the
 // toss's seed, a number or a page expression.
