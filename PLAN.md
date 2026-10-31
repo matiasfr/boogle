@@ -152,7 +152,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - **Skip:** full 3D voxel fluid. It's a lot of cost for little gameplay on a beach island.
 
 - [x] **WebGPU renderer.** `WebGPURenderer` + TSL with a WebGL 2 fallback, linear HDR, adaptive resolution ([src/render/README.md](src/render/README.md)).
-- [ ] **Graphics quality tiers.** A pause-view setting; compute particles, TRAA, bloom, clustered night lights, cascaded shadows, then GTAO/SSGI/SSR (docs/plans/webgpu-migration.md, phase 3).
+- [ ] **Graphics quality tiers.** A Local pause-view setting (auto, low, medium, high; auto picks by backend, touch and frame time). Low is today's floor; medium adds compute particles behind `emit()`, TRAA, bloom, clustered night lights and cascaded shadows; high adds GTAO, SSGI, SSR and god rays. Measure each rung with `npm run perf` and on device ([src/render/README.md](src/render/README.md)).
 
 ## Open questions for the group
 

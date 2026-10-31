@@ -4,7 +4,7 @@ Boogle draws with three.js's `WebGPURenderer` (`three/webgpu`) and writes every 
 The renderer uses WebGPU where the browser has it (Chrome and Edge, Safari 26 on iOS, iPadOS and macOS, Firefox on
 Windows and Apple Silicon) and falls back to its own WebGL 2 backend everywhere else (Firefox on Android and Linux,
 older iOS, headless CI). One codebase serves both: never write backend-specific code unless a feature is WebGPU-only
-on purpose, and then check `renderer.backend.isWebGPUBackend` and keep a fallback. The migration and its reasoning:
+on purpose, and then check `renderer.backend.isWebGPUBackend` and keep a fallback. How the migration went and why:
 [docs/plans/webgpu-migration.md](../../docs/plans/webgpu-migration.md).
 
 ## The frame
@@ -88,8 +88,8 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 
 ## Where this is going
 
-Phase 3 of the migration plan: a quality setting in the pause view (auto, low, medium, high), with compute
-particles behind `emit()`, TRAA, bloom, clustered lights for night lanterns (in place of the two-light pool in
-`lights.js`), cascaded shadows, and GTAO, SSGI, SSR and god rays on the high tier. The look-inside-the-materials
+The "Graphics quality tiers" item in [PLAN.md](../../PLAN.md): a quality setting in the pause view (auto, low,
+medium, high), with compute particles behind `emit()`, TRAA, bloom, clustered lights for night lanterns (in place of
+the two-light pool in `lights.js`), cascaded shadows, and GTAO, SSGI, SSR and god rays on the high tier. The look-inside-the-materials
 ideas in [docs/research/stylized-rendering-on-a-budget.md](../../docs/research/stylized-rendering-on-a-budget.md)
 remain the floor every device gets.
