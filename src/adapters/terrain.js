@@ -5,6 +5,7 @@ import { lerp, smoothstep, valueNoise } from '../math.js';
 import { scene } from '../render/scene.js';
 import { PATCH } from '../sim/mushrooms.js';
 import { island, baseCm } from '../island/index.js';
+import { freezeStatic } from '../render/instances.ts';
 
 // heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the
 // island's base ground (src/island/ground.js: natural shape plus every POI's stamps, court levelled), in whole
@@ -141,6 +142,7 @@ export function createTerrainMesh() {
     }
   poiPaint = null;
   scene.add(group);
+  freezeStatic(group); // never moves: no per-frame matrix work
   return group;
 }
 

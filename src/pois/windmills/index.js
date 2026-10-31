@@ -11,6 +11,7 @@ import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.js';
 import { sharedSeconds } from '../../netplay/shared-time.js';
 import site, { MILLS, TRACK } from './site.js';
+import { freezeStatic } from '../../render/instances.ts';
 
 const TOWER_H = 7.2;
 const R_BOTTOM = 2.5,
@@ -233,6 +234,7 @@ function build() {
   const statics = new THREE.Mesh(mergeParts(staticParts), mat);
   statics.castShadow = statics.receiveShadow = true;
   scene.add(statics);
+  freezeStatic(statics); // never moves: no per-frame matrix work
 
   onPreStep(spinBodies);
 }

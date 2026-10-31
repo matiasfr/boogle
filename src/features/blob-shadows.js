@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { onFrame } from '../loop.js';
 import { scene } from '../render/scene.js';
+import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.js';
 import { BALL_R, PLAYER_R } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
@@ -13,34 +14,31 @@ import { remotes } from '../netplay/net.js';
 
 const OPACITY = 0.4;
 const MAX = 16;
-const blobs = new THREE.InstancedMesh(
+const pool = createPool(
   new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
   new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: OPACITY, depthWrite: false }),
   MAX,
 );
-blobs.frustumCulled = false;
+const blobs = pool.mesh;
 blobs.renderOrder = 1;
 blobs.visible = false;
 scene.add(blobs);
-const m4 = new THREE.Matrix4();
 
 onFrame(
   () => {
     const night = !skyNow.keyLight; // no key light: no shadow pass
     blobs.visible = night;
     if (!night) return;
-    let n = 0;
+    pool.begin();
     const put = (p, r) => {
-      if (n >= MAX) return;
       const g = groundHeight(p.x, p.z);
       const s = r * Math.max(0.3, 1 - (p.y - g) * 0.15);
-      blobs.setMatrixAt(n++, m4.makeScale(s, 1, s).setPosition(p.x, g + 0.04, p.z));
+      pool.push(p.x, g + 0.04, p.z, 0, 0, 0, 1, s, 1, s);
     };
     if (me.avatar) put(me.avatar.position, PLAYER_R * 1.4);
     for (const r of remotes.values()) if (r.avatar) put(r.avatar.position, PLAYER_R * 1.4);
     put(ball.mesh.position, BALL_R * 1.3);
-    blobs.count = n;
-    blobs.instanceMatrix.needsUpdate = true;
+    pool.end();
   },
   { phase: 'late' },
 );

@@ -72,6 +72,10 @@ one instanced batch.
 
 **Done when** draw calls stay flat as decor counts grow, and adding a hundred of something is one pool.
 
+Done (2026-10-31): `src/render/instances.ts` (`createPool`, `push`/`pushMatrix`, kept bounds, `freezeStatic`). Fish,
+gulls, tree fruit and blob shadows use it with frustum culling on; terrain, props, caves and the windmill and lighthouse
+statics are frozen. Today's decor was already merged into few meshes, so draw calls moved only 148 -> 146.
+
 ### 4. Bulk per-frame work on the GPU
 
 WebGPU only now, so no second path.

@@ -23,6 +23,7 @@ import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
 import { patchNode } from '../render/material-patch.js';
+import { createPool } from '../render/instances.ts';
 
 const FISH = {
   count: 36,
@@ -47,7 +48,8 @@ const mat = new THREE.MeshStandardNodeMaterial({
   roughness: 0.6,
   flatShading: true,
 });
-const fish = new THREE.InstancedMesh(geo, mat, FISH.count);
+const pool = createPool(geo, mat, FISH.count);
+const fish = pool.mesh;
 // positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space: column
 // 0 of its instance matrix, read through a view on the same GPU buffer (how three reads the matrix itself).
 const side = instancedDynamicBufferAttribute(new THREE.InterleavedBufferAttribute(fish.instanceMatrix, 3, 0));
@@ -60,7 +62,6 @@ patchNode(mat, 'positionNode', (prev) =>
     ),
   ),
 );
-fish.frustumCulled = false;
 fish.visible = false;
 scene.add(fish);
 
@@ -88,11 +89,6 @@ onStart(() => {
   for (const f of P) respawn(f);
 });
 
-const m4 = new THREE.Matrix4(),
-  q = new THREE.Quaternion(),
-  e = new THREE.Euler(),
-  one = new THREE.Vector3(1, 1, 1),
-  pos = new THREE.Vector3();
 let lastBallY = 0;
 const scares = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
@@ -178,12 +174,13 @@ onFrame(
       if (surf - g < 0.12 || Math.hypot(f.x - home.x, f.z - home.z) > 80) respawn(f); // stranded or lost
       f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
     }
+    pool.begin();
     for (let k = 0; k < FISH.count; k++) {
-      const f = P[k];
-      q.setFromEuler(e.set(0, Math.atan2(f.vx, f.vz), 0));
-      fish.setMatrixAt(k, m4.compose(pos.set(f.x, f.y, f.z), q, one));
+      const f = P[k],
+        h = Math.atan2(f.vx, f.vz) / 2;
+      pool.push(f.x, f.y, f.z, 0, Math.sin(h), 0, Math.cos(h), 1, 1, 1);
     }
-    fish.instanceMatrix.needsUpdate = true;
+    pool.end();
   },
   { phase: 'update' },
 );
