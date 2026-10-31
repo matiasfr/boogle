@@ -1,6 +1,5 @@
 import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
 import {
-  legacyWorld,
   material,
   contactMaterial,
   createBody,
@@ -15,9 +14,7 @@ import { clamp } from '../math.js';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 
-// The physics world lives in ./engine.ts. `world` is its cannon-es world, for modules not yet on the facade
-// (docs/plans/rapier.md, step 1).
-export const world = legacyWorld;
+// The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
 
 export const groundMat = material('ground');
@@ -39,7 +36,7 @@ export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies mov
 // own safety net), so the fall-through net in installStepHooks leaves bodies there alone.
 export const groundProbe = { under: (x, y, z) => groundHeight(x, z), netted: () => true };
 
-// cannon-es has no continuous collision: a sphere that moves more than its radius in one step can end up with its
+// The physics engine has no continuous collision: a sphere that moves more than its radius in one step can end up with its
 // centre under the heightfield, and the contact then pushes it out the bottom. Falls are capped below that speed
 // (0.33 m a step against a 0.45 m radius), and anything that still gets through is put back on top.
 const MAX_FALL = 20; // m/s

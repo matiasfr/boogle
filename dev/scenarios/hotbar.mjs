@@ -158,9 +158,10 @@ export default {
       `${before.toFixed(2)} -> ${after.d.toFixed(2)} m; ${grow.sheet}`,
     );
     const solid = await g.eval(`
-      const { world } = window.boogle;
-      const near = world.bodies.filter((b) => b.mass === 0 && Math.hypot(b.position.x - ${spot.x}, b.position.z - ${spot.z}) < 0.1);
-      return near.map((b) => b.shapes.length);`);
+      const { forEachStatic } = await import('/src/physics/engine.ts');
+      const near = [];
+      forEachStatic(-1, (b, shapes) => Math.hypot(b.position.x - ${spot.x}, b.position.z - ${spot.z}) < 0.1 && near.push(shapes.length));
+      return near;`);
     t.check(
       'the growing mushroom has a collider',
       solid.some((n) => n === 2),

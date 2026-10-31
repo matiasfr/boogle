@@ -7,11 +7,13 @@
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
 //   getMask(body), setMask(body, mask)   which collision groups it collides with (the caves swap them)
-//   setMotion(body, 'dynamic' | 'kinematic', response)   switch how it moves; kinematic stops it (response: pushes)
+//   setMotion(body, 'dynamic' | 'kinematic', response, mass)   switch how it moves; kinematic stops it (response:
+//                                  pushes; mass: set it too)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
 //   material(name), contactMaterial(a, b, { friction, restitution })
 //   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
 //   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.js only
+//   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.hitPointWorld, hit.hitNormalWorld
 //   physicsTime()                  seconds of simulated time
@@ -96,9 +98,13 @@ export function setShapes(body: Body, shapes: Shape[]) {
   body.updateMassProperties();
   body.aabbNeedsUpdate = true;
 }
-export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response = motion === 'dynamic') {
+export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response = motion === 'dynamic', mass?: number) {
   body.type = motion === 'dynamic' ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC;
   body.collisionResponse = response;
+  if (mass !== undefined) {
+    body.mass = mass;
+    body.updateMassProperties();
+  }
   if (motion === 'kinematic') {
     body.velocity.set(0, 0, 0);
     body.angularVelocity.set(0, 0, 0);
@@ -124,6 +130,7 @@ export function contactMaterial(a: Material, b: Material, o: { friction: number;
 export const onPreStep = (fn: () => void) => world.addEventListener('preStep', fn);
 export const onPostStep = (fn: () => void) => world.addEventListener('postStep', fn);
 export const stepPhysics = (dt: number) => world.step(FIXED, dt, 4);
+export const stepFixed = () => world.step(FIXED);
 export const physicsTime = () => world.time;
 export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) => void) {
   for (const body of world.bodies)
@@ -150,6 +157,3 @@ export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfac
     hit,
   );
 }
-
-// Until every module is on the facade (docs/plans/rapier.md, step 1): the cannon world itself. Remove with the last port.
-export const legacyWorld = world;

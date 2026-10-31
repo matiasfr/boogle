@@ -18,7 +18,7 @@ export const me = {
   entered: false,
   name: '',
   colorIdx: 0,
-  /** @type {import('cannon-es').Body | null} */
+  /** @type {import('../physics/engine.ts').Body | null} */
   body: null,
   /** @type {import('three').Group | null} */
   avatar: null,

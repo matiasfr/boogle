@@ -1,11 +1,10 @@
 // Playing as the guest. While it is on, the engine's guest (src/guest/engine.js) runs at his own 30 Hz inside the physics
-// step and this player's cannon-es body becomes kinematic and follows him, so everything that reads the body (the ball,
+// step and this player's physics body becomes kinematic and follows him, so everything that reads the body (the ball,
 // the camera, interact targets, the hotbar, presence) keeps working. Other players' guests are drawn from the pose they
 // publish. Loaded on first use by src/features/dino.js.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.js';
-import { world } from '../physics/physics.js';
+import { onPreStep, setMotion } from '../physics/engine.ts';
 import { waterField } from '../physics/water-field.js';
 import { ball, claimBall } from '../physics/ball.js';
 import { scene } from '../render/scene.js';
@@ -36,8 +35,9 @@ const origin = { x: 0, z: 0 };
 let phase = 0,
   last = null,
   hitAt = 0;
-const target = new CANNON.Vec3(),
-  expected = new CANNON.Vec3();
+const target = { x: 0, y: 0, z: 0 },
+  expected = { x: 0, y: 0, z: 0 };
+const put = (v, p) => ((v.x = p.x), (v.y = p.y), (v.z = p.z));
 
 export async function loadSim(data) {
   if (sim) return;
@@ -73,12 +73,9 @@ export async function startGuest(data) {
     toShort(me.yaw - Math.PI),
   );
   last = sim.state();
-  b.type = CANNON.Body.KINEMATIC;
-  b.mass = 0;
-  b.updateMassProperties();
-  b.velocity.setZero();
-  target.copy(b.position);
-  expected.copy(b.position);
+  setMotion(b, 'kinematic', true, 0);
+  put(target, b.position);
+  put(expected, b.position);
   phase = 0;
   scene.add(mesh);
   me.avatar.userData.inner.visible = false;
@@ -90,9 +87,7 @@ export function stopGuest() {
   guest.active = false;
   guest.pose = null;
   const b = me.body;
-  b.type = CANNON.Body.DYNAMIC;
-  b.mass = PLAYER_MASS;
-  b.updateMassProperties();
+  setMotion(b, 'dynamic', true, PLAYER_MASS);
   b.velocity.set(last.vx * PER_S, last.vy * PER_S, last.vz * PER_S);
   scene.remove(mesh);
   me.avatar.userData.inner.visible = true;
@@ -171,7 +166,9 @@ function tick(now) {
   sim.input(sx, sy, readButtons(), toShort(cam.yaw));
   sim.tick();
   const st = (last = sim.state());
-  target.set(origin.x + st.x / UNITS, st.y / UNITS + PLAYER_R, origin.z + st.z / UNITS);
+  target.x = origin.x + st.x / UNITS;
+  target.y = st.y / UNITS + PLAYER_R;
+  target.z = origin.z + st.z / UNITS;
   const group = st.action & ACT_GROUP_MASK;
   me.yaw = st.faceYaw / TURN + Math.PI;
   me.coyote = group === ACT_GROUP_AIRBORNE || group === ACT_GROUP_SUBMERGED ? 0 : 0.1;
@@ -192,10 +189,11 @@ function tick(now) {
 
 // The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
 // respawn, the caves' safety net), the guest goes there.
-world.addEventListener('preStep', () => {
+onPreStep(() => {
   if (!guest.active || !me.body) return;
   const b = me.body;
-  if (b.position.distanceTo(expected) > 0.75) {
+  const p = b.position;
+  if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
     moveOrigin(b.position.x, b.position.z);
     sim.teleport(
       (b.position.x - origin.x) * UNITS,
@@ -203,16 +201,14 @@ world.addEventListener('preStep', () => {
       (b.position.z - origin.z) * UNITS,
     );
     last = sim.state();
-    target.copy(b.position);
+    put(target, b.position);
   }
   if (phase === 0) tick(performance.now());
   const left = (2 - phase) * FIXED;
   b.velocity.set((target.x - b.position.x) / left, (target.y - b.position.y) / left, (target.z - b.position.z) / left);
-  expected.set(
-    b.position.x + b.velocity.x * FIXED,
-    b.position.y + b.velocity.y * FIXED,
-    b.position.z + b.velocity.z * FIXED,
-  );
+  expected.x = b.position.x + b.velocity.x * FIXED;
+  expected.y = b.position.y + b.velocity.y * FIXED;
+  expected.z = b.position.z + b.velocity.z * FIXED;
   phase = (phase + 1) % 2;
 });
 
