@@ -242,3 +242,18 @@ test('controls: a key presses its action through one guard', () => {
   keyEvent({ type: 'keydown', code: 'KeyJ' });
   assert.deepEqual(log, ['other']);
 });
+
+test('controls: an action with a context keeps it, so it may share a key (guest-crouch on Shift beside sprint)', () => {
+  const [pad] = freeSlots();
+  registerAction('ctx-sprint-test', { pad, keys: ['KeyQ'], label: 'Sprint test', group: 'move' });
+  const [pad2] = freeSlots();
+  registerAction('ctx-crouch-test', {
+    pad: pad2,
+    keys: ['KeyQ'],
+    label: 'Crouch test',
+    group: 'move',
+    context: 'as x',
+  });
+  assert.equal(actionById('ctx-crouch-test').context, 'as x');
+  assert.ok(!controlProblems().some((p) => p.includes('ctx-')), JSON.stringify(controlProblems()));
+});

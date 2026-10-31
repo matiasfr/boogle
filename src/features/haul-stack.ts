@@ -1,5 +1,5 @@
 // The haul stack: what you carry, drawn as a tower of pieces on your back (and on everyone else's, from the lockstep
-// stacks matched to avatars through presence `u`). Past the soft cap (20) it sways harder, and a jump knocks the top
+// stacks matched to avatars through presence `pid`). Past the soft cap (20) it sways harder, and a jump knocks the top
 // pieces off into a pile behind you. A small chip shows your count and your own contribution tier (from the plaques). Pickups fly to your back the moment you walk into
 // a pile (Local), while the host confirms (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own:
 // pickup is walking into a pile, pouring is walking into a site's ring (work-sites.ts).
@@ -32,7 +32,7 @@ const m4 = new THREE.Matrix4(),
   one = new THREE.Vector3(1, 1, 1),
   top = new THREE.Vector3();
 
-onRemotePresence((r: { pid?: string | null }, pr: { u?: unknown }) => (r.pid = okPid(pr.u) ? pr.u : null));
+onRemotePresence((r: { pid?: string | null }, pr: { pid?: unknown }) => (r.pid = okPid(pr.pid) ? pr.pid : null));
 
 type Stack = { n: number; k: number };
 const stackOf = (pid: string | null | undefined): Stack => {
