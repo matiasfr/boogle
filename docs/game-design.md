@@ -336,8 +336,9 @@ is gone.
 A lavender blob (`#b99cff`, about three times as wide as tall) with a face and feet, who speaks with Uzbek words and
 dreams of a restaurant. He wears a comically tall black top hat (cosmetic, no collider): brim radius a third of his,
 crown half the brim's, about 0.9 m tall (one and a half times his height). It lags and wobbles on springs when he hops and
-walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD shows a bouncy name tag with your friendship hearts, his speech bubbles and the interact
-prompt, and an edge-of-screen pointer with his distance when he is off screen (full within 35 m, gone by 60 m).
+walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD stays quiet, like Fortnite's NPC markers: a small talk-bubble mark over his head at range, and within
+10 m his name plate with your friendship hearts and the interact prompt (hidden again past 12 m). His speech bubbles
+show at any range. Off screen, the same mark sits on the screen edge with his distance (full within 35 m, gone by 60 m).
 
 #### Wander
 
@@ -509,8 +510,10 @@ Files: [critter-fish.js](../src/features/critter-fish.js), [critter-gulls.js](..
 ### 6.14 First-run card
 
 - **What.** The first time you play with each input kind (keyboard, pad, touch) a small paper card lists the basics
-  (groups move, camera, ball, hands, from the registry) and points at the menu. It never takes input and leaves after
-  3 s of walking or 15 s.
+  (groups move, camera, ball, hands, from the registry) and points at the menu. Only its close button takes clicks; it
+  leaves after 3 s of walking, 15 s, a click on the close button, or when the menu opens. It sits at the lower left (above
+  the hotbar on screens under 1180 px wide; mid-left on touch). On short screens (under 520 px tall) and upright phones
+  it drops the hands group and sits higher, clear of the held-item buttons.
 - **Sync kind.** Local (localStorage `boogle.firstRun.<kind>`).
 - **Files.** [src/features/first-run.js](../src/features/first-run.js).
 
@@ -568,9 +571,10 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
 ### 6.18 Graphics and devices
 
 - **What.** The island draws with WebGPU where the browser has it (Chrome and Edge, Safari 26 on iPhone, iPad and
-  Mac, Firefox on Windows and Apple Silicon) and with WebGL 2 everywhere else; both look the same. The lobby's
-  "Loading island" waits for the graphics device and for every shader to be built, so Jump in is the moment nothing
-  is left to stall a frame; the room connects meanwhile. `?gfx=webgl2` forces the WebGL 2 backend and `?dpr=fixed`
+  Mac, Firefox on Windows and Apple Silicon) and with WebGL 2 everywhere else; both look the same. A loading screen
+  (key art, the title and a progress bar: download, graphics device, shaders) paints before the game's code arrives and
+  covers the lobby until the graphics device is up and every shader is built (8 s at most), so Jump in is the moment
+  nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../src/boot/)). `?gfx=webgl2` forces the WebGL 2 backend and `?dpr=fixed`
   keeps the render resolution at full (both are for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
   with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
   in 10 % steps to 0.6x after 2 s of slow frames (over 18.5 ms) and climbs back after 5 s of fast ones (under 14 ms).

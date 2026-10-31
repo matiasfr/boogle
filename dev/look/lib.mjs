@@ -170,6 +170,7 @@ export class Game {
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.first-run, .hud-tl, .hud-tr, .reticle' : null;
     if (hide) await g.page.addStyleTag({ content: `${hide}, .touch, .lobby { display: none !important }` });
+    await g.page.addStyleTag({ content: '.splash { display: none !important }' }); // still fading out
     g.gfx = await g.page.evaluate(() => window.boogle?.gfx).catch(() => undefined);
     console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);
     await sleep(300);
