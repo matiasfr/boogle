@@ -73,7 +73,9 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 - `npm run perf -- --render` prints draw calls, shadow calls, triangles, geometries and shader stages (vertex and
   fragment counted apart, so the number is not comparable with the old "programs"). Run it before and after
   anything that adds meshes, lights, passes or per-frame GPU work.
-- `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI, Metal on a Mac. The harness
+- `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI (a few fps with two tabs, so
+  PR CI runs only the single-tab or light scenarios), Metal on a Mac. `npm run check:gpu` (smoke on the GPU) runs in
+  `npm run ship` on a Mac, and `smoke.yml` runs smoke against the live site after every deploy. The harness
   passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable, and a
   scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means

@@ -2,7 +2,9 @@
 # npm run ship: rebase your commits onto the latest main, run the checks, push them to a ship/<you>-<sha> branch.
 # CI runs on that branch. Green: automerge.yml opens a PR, merges it into main and deploys. Red: ci-autofix.yml has
 # Claude push a fix to the branch. main itself only takes PRs.
-# Runs the fast checks (check) here; CI runs the heavy ones (server tests, headless network test) on the branch.
+# Runs the fast checks (check) and, on a Mac, the WebGPU checks (check:gpu: smoke on the real GPU) here; CI runs the
+# heavy ones (server tests, headless network test, the scenarios that fit software WebGPU) on the branch.
+# Off a Mac there is no real-GPU WebGPU to run them on: SHIP_NO_GPU=1 skips them, on purpose and visibly.
 # `npm run ship -- --wait` waits until your commits are on main.
 set -euo pipefail
 
@@ -58,6 +60,15 @@ EOF
   fi
 
   npm run --silent check
+  if [ -n "${SHIP_NO_GPU:-}" ]; then
+    echo "ship: SHIP_NO_GPU set: skipping the WebGPU checks (smoke runs on the live site after the deploy)."
+  elif [ "$(uname)" = Darwin ]; then
+    npm run --silent check:gpu
+  else
+    echo "ship: the WebGPU checks (npm run check:gpu) need a Mac's GPU. Ship from a Mac, or set SHIP_NO_GPU=1 to" >&2
+    echo "  skip them (smoke still runs against the live site after the deploy)." >&2
+    exit 1
+  fi
 
   # A new branch per ship. Shipping again before the last one merged opens a second PR that also carries the
   # first's commits; both merge cleanly (merge commits keep your commits as they are), and automerge.yml closes a PR
