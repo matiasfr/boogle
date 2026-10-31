@@ -19,12 +19,17 @@
 //                    r: { t:'left', id, s }        a peer is gone (s = last seq seen, so late 'p' can't resurrect it)
 //                    r: { t:'m', from, d }         relayed send() payload
 //                    r: { t:'hb' }                 heartbeat (0.5 s); a client that hears nothing for 3 s assumes the host died
+//                    r: { t:'full', max }          the room has `max` players already; the host then closes both channels
 // Ids in messages are the tab's stable selfId, never PeerJS ids, so identities survive host migration.
 // Host drops a client after 3 s of silence (and announces `left` at once). Either side also treats the WebRTC
 // connection itself going 'failed'/'closed' (or 'disconnected' for > 1.5 s) as the peer being gone; a hard-killed
 // renderer sends nothing and its channels can linger for tens of seconds, so the heartbeat is the reliable signal.
 // A side whose own timers stalled (frozen tab, sleep) forgives the silence it could not have measured. After a migration, peers that haven't come back within GRACE_MS are
 // reported as `left` (instead of flapping everyone at the moment the host dies).
+// Room cap: the host turns away a newcomer once `maxPeers` (default MAX_PEERS, host included) are in the room; peers
+// it has seen before (back after a blip, or from before a migration) always get in, so the room can briefly hold one
+// more. Peers from before a migration keep their place for GRACE_MS. The newcomer's createPeerRoom fails with code
+// 'room_full' (`max`: the cap, when the host said). Old builds ignore 'full' and retry until their connect timeout.
 
 import { Peer } from 'peerjs';
 
@@ -38,6 +43,7 @@ const OPEN_TIMEOUT_MS = 10000; // WebRTC connection to the host (both channels +
 const MIN_GAP_MS = 20; // per-key minimum spacing of presence packets (coalescing beyond this)
 const HIGH_WATER = 64 * 1024; // dataChannel.bufferedAmount above which we hold presence back
 const OUTBOX_MAX = 200; // send() calls kept while disconnected
+export const MAX_PEERS = 8; // players per room, host included
 const FATAL = new Set(['browser-incompatible', 'invalid-id', 'invalid-key', 'ssl-unavailable']);
 
 const rand = (n) => {
@@ -154,6 +160,7 @@ export async function createPeerRoom(opts = {}) {
   for (const k of ['host', 'port', 'path', 'secure', 'key'])
     if (opts.signal?.[k] !== undefined) peerOpts[k] = opts.signal[k];
   if (opts.iceServers) peerOpts.config = { iceServers: opts.iceServers };
+  const maxPeers = opts.maxPeers ?? MAX_PEERS;
 
   // ---- peer table (me + everyone known) and change notification ----
   const table = new Map(); // id -> { presence, at, entry }
@@ -343,6 +350,13 @@ export async function createPeerRoom(opts = {}) {
       if (tell === 'now') announce();
       else if (tell) timers.push(setTimeout(announce, 400));
     }
+    // Everyone holding a place: the table (me, ready clients, peers from before a migration still in their grace
+    // period) plus ready clients not in it yet.
+    const inRoom = () => {
+      let n = table.size;
+      for (const c of hostClients.values()) if (c.ready && !table.has(c.id)) n++;
+      return n;
+    };
     function sendList(c) {
       let batch = [],
         size = 0;
@@ -407,6 +421,12 @@ export async function createPeerRoom(opts = {}) {
       rec[label] = conn;
       conn.on('open', () => {
         if (!rec.ready && rec.u?.open && rec.r?.open && hostClients.get(id) === rec) {
+          // seqs keeps every id this room has seen, and ids are per page load: a known id is a tab coming back.
+          if (!table.has(id) && !seqs.has(id) && inRoom() >= maxPeers) {
+            safeSend(rec.r, { t: 'full', max: maxPeers });
+            timers.push(setTimeout(() => hostClients.get(id) === rec && dropClient(id, 0), 500)); // let 'full' arrive
+            return;
+          }
           rec.ready = true;
           rec.seen = Date.now();
           sendList(rec);
@@ -531,9 +551,15 @@ export async function createPeerRoom(opts = {}) {
         }
       } else if (d.t === 'm') {
         if (okId(d.from) && d.from !== SELF_ID && isObj(d.d)) deliver(d.d, d.from);
+      } else if (d.t === 'full') {
+        full = { max: Number.isSafeInteger(d.max) && d.max > 0 ? d.max : undefined };
+        resolveFull(false);
       }
     }
+    let full = null,
+      resolveFull;
     const failed = new Promise((res) => {
+      resolveFull = res;
       peer.on('error', (e) => {
         if (e.type === 'peer-unavailable') res(false);
       });
@@ -558,6 +584,7 @@ export async function createPeerRoom(opts = {}) {
     ]);
     if (!ok || r.done) {
       r.teardown();
+      if (full) throw Object.assign(err('room_full', 'the room is full'), { fatal: true, max: full.max });
       return null;
     }
 

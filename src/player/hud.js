@@ -81,13 +81,18 @@ export function renderPeople() {
   for (const r of on) addRow(r.name, r.colorIdx, false);
 
   const count = on.length + (me.entered ? 1 : 0);
+  const cap = typeof net.full === 'number' ? ` (${net.full} players)` : '';
   if (net.state === 'solo')
-    dom.netLabel.textContent = `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
+    dom.netLabel.textContent = net.full
+      ? `Solo · island full${net.retryAt ? ' · waiting for a spot' : ''}`
+      : `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 
   if (net.state === 'solo') {
-    dom.hereEl.textContent = "Couldn't reach the island's room, so it's yours alone. Reload the page to try again.";
+    dom.hereEl.textContent = net.full
+      ? `The island is full${cap}. You'll join when someone leaves.`
+      : "Couldn't reach the island's room, so it's yours alone. Reload the page to try again.";
   } else if (!on.length) dom.hereEl.textContent = 'Nobody else is on the island yet. Share this page to bring friends.';
   else {
     const names = on.map((r) => r.name);

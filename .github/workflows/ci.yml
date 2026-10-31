@@ -33,6 +33,8 @@ jobs:
       # but a red main for whitespace isn't worth it yet.
       - run: npm run build
       - run: npm run test:unit
+      # Shared names (presence keys, message types, pad slots, frame orders) and mixed-build rules against main.
+      - run: git fetch -q --depth=1 origin main:refs/remotes/origin/main && npm run registry
 
   server:
     runs-on: ubuntu-latest

@@ -11,7 +11,7 @@ You plan features for Boogle; you do not implement them. The only file you write
 1. Read AGENTS.md, DESIGN.md and PLAN.md. Lockstep state: also `src/world/rules/README.md` and `src/world/README.md`.
    Messages or room behavior: `src/net/README.md`.
 2. Read the code the feature will touch and one similar existing feature for the pattern (AGENTS.md names examples
-   per sync kind).
+   per sync kind). Run `npm run inflight`: a branch already touching those files goes under open questions.
 3. Write `docs/plans/<kebab-name>.md` with:
    - **Goal**: one or two sentences, and the DESIGN.md principle it serves (any it bends go under open questions).
    - **Design**: the sync kind of each piece of state and the API it uses (AGENTS.md, "Pick a sync kind"); who has
