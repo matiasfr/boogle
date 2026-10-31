@@ -4,7 +4,7 @@
 // quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z (w)
 // and set(): cannon's vector methods (setZero, scale, vadd, ...) don't exist on the Rapier backend.
 //
-//   createBody({ mass, type, material, group, mask, response, position, shapes })   a body, not yet in the world
+//   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
 //   setMotion(body, 'dynamic' | 'kinematic', response)   switch how it moves; kinematic stops it (response: pushes)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
@@ -61,6 +61,7 @@ export type BodyOptions = {
   mask?: number;
   response?: boolean; // false: reports contacts, pushes nothing (a sensor)
   position?: V3;
+  rotation?: Quat;
   shapes?: Shape[];
   fixedRotation?: boolean;
   linearDamping?: number;
@@ -79,6 +80,7 @@ export function createBody(o: BodyOptions = {}): Body {
   if (o.type !== undefined) body.type = o.type;
   if (o.response === false) body.collisionResponse = false;
   if (o.position) body.position.set(o.position.x, o.position.y, o.position.z);
+  if (o.rotation) body.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
   for (const s of o.shapes ?? []) addShape(body, s);
   return body;
 }
