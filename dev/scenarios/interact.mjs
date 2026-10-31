@@ -2,7 +2,7 @@
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you pet him from the talk box; the game keeps playing while you talk, so walking off ends
 // it, and a chapter left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, a shell behind you does not hide the palm you face, riding him puts the
+// E does nothing while you wind up a throw, a can behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
@@ -180,8 +180,8 @@ export default {
       JSON.stringify(wind),
     );
 
-    // A shell behind you does not hide the ripe palm you face: drop a shell on open ground past a ripe palm, stand
-    // between them facing the palm, and the prompt says Shake while the shell is still in reach.
+    // A watering can behind you does not hide the ripe palm you face: drop a can on open ground past a ripe palm, stand
+    // between them facing the palm, and the prompt says Shake while the can is still in reach.
     const palm = await g.eval(`${INV}
       const G = await import('/src/adapters/gifts.js');
       const { trees } = await import('/src/render/props.js');
@@ -191,7 +191,7 @@ export default {
       const { cam } = await import('/src/player/player.js');
       const { giftIndex } = await import('/src/sim/gift-catalog.js');
       const { CELL, HALF, SEA } = await import('/src/constants.js');
-      const b = window.boogle.me.body, shell = giftIndex('shell');
+      const b = window.boogle.me.body, can = giftIndex('can');
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
@@ -206,9 +206,9 @@ export default {
           if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
           const had = new Set(items().map((it) => it.id));
           const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
-          if (!G.throwItem(shell, from, from.clone().set(0, -0.5, 0))) continue;
+          if (!G.throwItem(can, from, from.clone().set(0, -0.5, 0))) continue;
           let it = null;
-          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === shell);
+          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === can);
           if (!it) continue;
           await nap(600); // its flight comes down
           const sx = it.i * CELL - HALF, sz = HALF - it.j * CELL;
@@ -228,7 +228,7 @@ export default {
       : -1;
     const shakeShot = await g.still('shake');
     t.check(
-      'a shell behind you does not hide the ripe palm ahead: the prompt says Shake',
+      'a can behind you does not hide the ripe palm ahead: the prompt says Shake',
       shakeMs >= 0 && palm.ids.includes(palm.item) && palm.ids.includes(palm.palm),
       `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
     );

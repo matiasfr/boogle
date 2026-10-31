@@ -21,7 +21,7 @@ import {
   loadGifts,
   hashGifts,
 } from '../src/sim/gifts.js';
-import { GIFTS, giftIndex } from '../src/sim/gift-catalog.js';
+import { GIFTS, giftIndex, carryable } from '../src/sim/gift-catalog.js';
 
 const layout = () => ({
   trees: [
@@ -100,12 +100,12 @@ test('a perch holds its item and refills PERCH_REFILL ticks after it is taken', 
 
 test('thrown things land where they were thrown and rot like fruit', () => {
   const s = createGifts({ trees: [] });
-  const duck = giftIndex('duck');
-  const it = tossItem(s, duck, 7, 9, 2950, 100);
-  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [duck, 7, 9, 2950, SRC.TOSS]);
-  assert.equal(tossItem(s, duck, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
+  const mango = giftIndex('mango');
+  const it = tossItem(s, mango, 7, 9, 2950, 100);
+  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [mango, 7, 9, 2950, SRC.TOSS]);
+  assert.equal(tossItem(s, mango, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
   assert.equal(tossItem(s, giftIndex('ball'), 7, 9, ON_GROUND, 100), null, 'the beach ball is never a ground item');
-  assert.equal(tossItem(s, duck, -1, 9, ON_GROUND, 100), null);
+  assert.equal(tossItem(s, mango, -1, 9, ON_GROUND, 100), null);
   run(s, 101, 100 + LIFE.toss - 1);
   assert.equal(s.items.length, 1);
   run(s, 100 + LIFE.toss, 100 + LIFE.toss);
@@ -114,9 +114,9 @@ test('thrown things land where they were thrown and rot like fruit', () => {
 
 test('a full island sweeps away the oldest thrown thing to make room', () => {
   const s = createGifts({ trees: [] });
-  const shell = giftIndex('shell');
-  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, shell, k, 0, ON_GROUND, k);
-  const it = tossItem(s, shell, 99, 0, ON_GROUND, 500);
+  const can = giftIndex('can');
+  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, can, k, 0, ON_GROUND, k);
+  const it = tossItem(s, can, 99, 0, ON_GROUND, 500);
   assert.equal(s.items.length, MAX_ITEMS);
   assert.equal(s.items[0].i, 1);
   assert.equal(s.items.at(-1).id, it.id);
@@ -194,4 +194,11 @@ test('fruit lands on the requested side, and bad directions are refused', () => 
   assert.equal(canDrop(s, 1, 1, 8), false);
   assert.equal(canDrop(s, 1, 1, -1), false);
   assert.equal(canDrop(s, 1, 1, 1.5), false);
+});
+
+test('retired catalog entries keep their index but cannot be carried or thrown', () => {
+  assert.equal(giftIndex('shell'), 5, 'indices are append only');
+  assert.equal(giftIndex('doppi'), 21);
+  for (const g of GIFTS) if (g.src === 'sea' || g.id === 'shovel') assert.equal(carryable(g), false, g.id);
+  assert.ok(GIFTS.filter(carryable).every((g) => g.name && g.taste && g.line));
 });

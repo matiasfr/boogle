@@ -15,7 +15,7 @@ import { world, onApplied, submitEdit } from '../world/sync.js';
 import { SEEDS, LOST } from '../world/rules/gifts.js';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';
-import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
 import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.js';
 import { itemModel } from '../player/item-models.js';
 import { STEP, flyPath, dropPoint } from '../physics/flight.js';
@@ -314,7 +314,7 @@ function dropEdit(t, x, z) {
 
 // What interacting could do here (see interactTarget in src/player/hands.js): for each item in reach { id, verb, at, item, run }
 // to pick it up, or { id, verb, at, item, blocked } when your hotbar has no room for it, and { id, verb, at, run } to
-// shake each ripe palm in reach. The pick, not distance alone, decides between them, so a shell behind you does not hide
+// shake each ripe palm in reach. The pick, not distance alone, decides between them, so a coconut behind you does not hide
 // the palm you face.
 const reachAt = new THREE.Vector3();
 export function giftTargets() {
@@ -326,6 +326,7 @@ export function giftTargets() {
   for (const it of gifts.items) {
     // Not one you already asked to take, nor a thrown one still in the air.
     if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
+    if (!carryable(GIFTS[it.kind])) continue; // a retired find an older build threw: not drawn, not picked up
     const pos = itemPos(it, reachAt);
     if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || Math.hypot(pos.x - p.x, pos.z - p.z) >= REACH) continue;
     const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
