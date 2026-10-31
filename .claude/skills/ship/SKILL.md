@@ -2,7 +2,6 @@
 name: ship
 description: Commit the current work and ship it with npm run ship (rebase, checks, push a ship/ branch that merges itself into main once CI is green).
 argument-hint: '[commit message]'
-disable-model-invocation: true
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git add *) Bash(git commit *) Bash(npm run ship) Bash(npm run ship -- --wait) Bash(git rebase --continue)
 ---
 
