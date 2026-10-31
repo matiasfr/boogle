@@ -83,6 +83,7 @@ export function createSync({ env: env0 } = {}) {
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
+  const hostStartFns = []; // fn({ loaded }) when this tab starts hosting from a save or fresh (not a live migration)
   const snapFailFns = []; // fn({ from: 'peer'|'local'|'server'|'state', reason }): a snapshot (or a state) failed to load
   const stats = {
     resyncs: 0,
@@ -655,10 +656,19 @@ export function createSync({ env: env0 } = {}) {
     ready = false;
     const snap = await loadPersisted();
     if (my !== epoch) return;
-    if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
+    const loaded = !!snap && loadSnapshot(snap);
+    if (!loaded) world.epochMs = cfg.now();
     ready = true;
     nextHashTick = world.tick + HASH_EVERY;
     for (const fn of snapFns) fn(world.tick);
+    // The world was idle until now (nobody hosted): listeners may submit host-only edits about that gap.
+    for (const fn of hostStartFns) {
+      try {
+        fn({ loaded });
+      } catch (err) {
+        console.error('[world] onHostStart failed', err);
+      }
+    }
   }
   function becomeClient() {
     epoch++;
@@ -728,6 +738,7 @@ export function createSync({ env: env0 } = {}) {
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
+    onHostStart: (fn) => hostStartFns.push(fn), // fn({ loaded }): hosting began from a save (loaded) or fresh
     onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
@@ -763,6 +774,7 @@ export const {
   onSnapshot,
   onDesync,
   onHashSent,
+  onHostStart,
   onSnapFail,
   stateHashes,
   setSelfId,

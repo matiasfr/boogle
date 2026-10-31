@@ -49,6 +49,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Haul stacks (what each player carries) | Lockstep, by roster index | state `stacks`; the spill is your call (Owner), applied as `pile.drop` |
 | Work sites, plaques (tier derived), machine runs | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites` |
 | Log sources (palm charges) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
+| Offline helper bank | Lockstep, from a host-only measurement | op `bank.wake` (host's own, with the gap it measured: env `hostSelf`, `gapMs`); state `bank` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
@@ -112,10 +113,10 @@ guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-ground
 
 ## 8.7 Known gaps
 
-- **`world.epochMs` is never read.** It is set when a host starts fresh, saved and loaded with snapshots, and checked
-  as an integer, but no game logic reads it. Nothing grows from elapsed wall-clock time: growth, regrowth and the day
-  all count ticks, which only run while someone hosts. DESIGN principle 9 ("growth is computed from elapsed
-  time") is not met yet.
+- **Only helper huts work offline.** `world.epochMs` (the wall time of tick 0) is read by the helper bank alone: a
+  tab that starts hosting a save submits `bank.wake` for the time nobody hosted (6.19). Mushroom growth, fruit regrowth
+  and the day still count ticks, which only run while someone hosts. A hidden host's capped catch-up counts as
+  offline time too.
 - How many joins need the TURN relay, and the ball's lag for non-owners, are reported (`relayed`, `links`, `rttMs`;
   6.15); PLAN Phase 1's "Measure" item stays open until someone reads the numbers.
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep

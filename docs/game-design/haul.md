@@ -69,8 +69,14 @@ full or running). When an age's last section is laid the age moves on; whatever 
 anyone's back pours itself into that last site and is credited to them. In the testbed the third section ends the
 wood age, and no iron sources exist yet.
 
+**While nobody plays.** Helper huts keep working offline. When a tab starts hosting a saved world, it measures how
+long nobody hosted (wall clock against the save's tick), and the huts' freight for that time (one piece per hut per
+27 s) lands in the open Track ring, capped at one section. The machine still waits for a player to start it. Absences
+under a minute bank nothing.
+
 Code: [src/sim/scripted-run.js](../../src/sim/scripted-run.js) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
-`sites` tick. Scenario: `npm run scenario -- haul-loop`.
+`sites` tick; the bank: [src/sim/bank.js](../../src/sim/bank.js), [src/world/rules/bank.js](../../src/world/rules/bank.js),
+[src/features/helper-bank.js](../../src/features/helper-bank.js), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
 
 Code: [src/sim/sites.js](../../src/sim/sites.js), [src/sim/tiers.js](../../src/sim/tiers.js),
 [src/world/rules/sites.js](../../src/world/rules/sites.js), [src/features/work-sites.js](../../src/features/work-sites.js).

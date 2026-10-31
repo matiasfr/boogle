@@ -70,7 +70,7 @@ Integer units: base heights are stored in **centimetres** (`Int16`). Base terrai
 2. Run `onTick` handlers in registration order (a system that reads another's state registers after it).
 3. Run `onAfterTick` handlers in registration order.
 
-Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
+Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs`, the wall time of tick 0, which a new host compares with its clock to submit `bank.wake` for offline time; `onHostStart(fn)` tells it hosting began from a save or fresh, never on a live migration).
 
 ## Other exports
 

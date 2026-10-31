@@ -94,6 +94,7 @@ export function invariants(api, rules) {
 
 | Key | Set by | Used by |
 |---|---|---|
+| `hostSelf`, `gapMs` | `src/features/helper-bank.js`, only around its one `bank.wake` submit | `bank.wake` validate (`ctx.from === hostSelf && e.ms === gapMs`) |
 | `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 
 ## Template
@@ -132,4 +133,5 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `stacks.js` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.js`), by roster index; later rules call `add`/`take` in their apply |
 | `sites.js` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), points(pid), pointsAt(k), room(s, ring), canRun(s), run(s, tick), runLength, helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.js`, `../../sim/route.js`), plaques, machine runs (`../../sim/scripted-run.js`), helper freight and the age change; later rules subscribe to `onSectionDone` at install |
 | `sources.js` | `src.take` | `sources` | `{ sources, charges(id) }`: the current age's material sources (`../../sim/sources.js`; wood: the palms in `land.layout.trees`); refills on `sites.onSectionDone` and a seeded trickle tick |
+| `bank.js` | `bank.wake` | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.js`); only the host's own wake with the gap it measured passes (env `hostSelf`, `gapMs`) |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

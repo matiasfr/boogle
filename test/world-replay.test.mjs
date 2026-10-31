@@ -29,7 +29,9 @@ const generators = Object.assign({}, ...RULES.map((m) => m.edits ?? {}));
 // One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state.
 function makePeer(seed, net, id, host) {
   const salt = strHash(id);
-  const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0 } });
+  // hostSelf and gapMs: every tab says it measured one hour offline, so only the host's own bank.wake passes.
+  const env = { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0, hostSelf: id, gapMs: 3600000 };
+  const s = createSync({ env });
   const rules = installRules(s, homeLand());
   const x = { id, s, rules, r: stream(seed ^ salt), applied: new Map(), hashes: new Map() };
   s.onApplied((e) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));
