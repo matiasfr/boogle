@@ -25,6 +25,16 @@ export default defineConfig({
   },
   plugins: [
     {
+      // Names each onFrame hook after its module, for the profiler (src/loop.js): `onFrame(` becomes
+      // `onFrame.in('features/foo.js')(`, in dev and build alike.
+      name: 'boogle-hook-names',
+      transform(code, id) {
+        const m = id.match(/\/src\/(.+\.js)$/);
+        if (!m || m[1] === 'loop.js' || !code.includes('onFrame(')) return null;
+        return { code: code.replace(/\bonFrame\(/g, `onFrame.in(${JSON.stringify(m[1])})(`), map: null };
+      },
+    },
+    {
       name: 'boogle-version',
       apply: 'build',
       generateBundle() {

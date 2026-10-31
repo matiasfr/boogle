@@ -113,6 +113,11 @@ try {
     rows[`island, ${n} grown mushrooms`] = await g.eval(STATS);
     console.log('render');
     console.table(rows);
+    // CPU per frame section (src/loop.js), averaged over the last 240 frames. Headless: compare before/after only.
+    console.log(
+      '\nmain-thread CPU per frame section (ms over the last 240 frames; headless, so compare, do not trust)',
+    );
+    console.table(await g.eval('return window.boogle.prof.table(10);'));
   }
   if (doSim) {
     await sleep(1000);

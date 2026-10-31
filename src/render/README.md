@@ -80,6 +80,9 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
   scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
+- `?prof=1` (any build, live site included) overlays the frame's main-thread CPU per section: each `onFrame` hook by
+  module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows.
+  `npm run perf` prints them, and `npm run hitches` names the slowest section of each hitch frame.
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.
