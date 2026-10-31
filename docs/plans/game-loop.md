@@ -45,11 +45,10 @@ interact targets 2 KB, gulls and fireflies under 1 KB each).
   allocations to the game code that called them. The profiler, the frame context and the fish hook allocate nothing.
 - Next, ours: module-scope scratch objects and index loops in the remaining hooks above, and interact targets
   (`registerInteractable`) that reuse their objects.
-- The physics engine is the real cost: cannon-es can't be made allocation-free from outside. **Decision needed:**
-  keep cannon-es (and accept ~60 KB/frame), or move physics to a WASM engine such as Rapier (no JS garbage, faster,
-  and it fits the physics worker of step 7). That is its own plan, since every collider and the controller change.
+- The physics engine is the real cost: cannon-es can't be made allocation-free from outside. Decided 2026-10-31:
+  move to Rapier ([rapier.md](rapier.md)), which also fits the physics worker of step 7.
 
-**Done when** our own hooks allocate under 1 KB per frame and the physics decision is made.
+**Done when** our own hooks allocate under 1 KB per frame (physics: rapier.md).
 
 ### 3. Instance pools: the `emit()` of meshes
 
