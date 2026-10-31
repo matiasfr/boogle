@@ -5,6 +5,7 @@
 // check that a pour comes from the pourer's own stack.
 import { ROUTE, AGES, TRACK, HELPER, costOf } from './route.js';
 import { runAt, MACHINE_RUN } from './scripted-run.js';
+import { FNV_SEED, fold, foldAll } from './hash.js';
 
 export const RUN_BONUS = 5; // points to whoever starts a machine run
 export const HELPER_EVERY = 270; // ticks per piece of freight each helper hut adds (brief 7: ~0.15x a hand rate)
@@ -21,20 +22,22 @@ function freshSite() {
     helpers: 0,
     t0: -1,
     starter: -1,
-    done: 0,
     bonus: 0,
     plaque: [],
   };
 }
+// open: the first section not laid yet (sections are laid in order, so s < open means laid). rev counts every change,
+// for views to redraw on; it is neither saved nor hashed.
 export function createSites() {
-  return { age: 0, open: 0, list: ROUTE.map(freshSite) };
+  return { open: 0, list: ROUTE.map(freshSite), rev: 0 };
 }
+export const isDone = (st, s) => s < st.open;
 
 export const siteOpen = (st, s) => isInt(s) && s === st.open && s < st.list.length;
 // How many more units ring can take at site s right now.
 export function ringRoom(st, s, ring) {
   const site = st.list[s];
-  if (!site || site.done) return 0;
+  if (!site || isDone(st, s)) return 0;
   if (ring === TRACK) return site.t0 >= 0 ? 0 : costOf(s, TRACK) - site.stock[TRACK];
   if (ring === HELPER) return site.helpers ? 0 : costOf(s, HELPER) - site.stock[HELPER];
   return 0;
@@ -45,7 +48,7 @@ function row(site, idx) {
   if (!r) site.plaque.push((r = [idx, 0, 0]));
   return r;
 }
-// Credits idx with `units` poured at site s (or, with pts, a flat bonus). Returns the whole points added.
+// Credits idx with `units` poured at site s. Returns the whole points added.
 export function credit(st, s, idx, units) {
   const r = row(st.list[s], idx);
   const cost = AGES[ROUTE[s].age].cost;
@@ -64,6 +67,7 @@ export function bonus(st, s, idx, pts) {
 // Returns { pts, built }.
 export function stock(st, s, ring, idx, n) {
   const site = st.list[s];
+  st.rev++;
   site.stock[ring] += n;
   site.poured += n;
   const pts = idx >= 0 ? credit(st, s, idx, n) : 0;
@@ -78,9 +82,9 @@ export function stock(st, s, ring, idx, n) {
 }
 
 // A run can start at the open site once its Track ring holds a whole section and nothing is running there.
-export const canRun = (st, s) =>
-  siteOpen(st, s) && st.list[s].t0 < 0 && !st.list[s].done && st.list[s].stock[TRACK] >= costOf(s, TRACK);
+export const canRun = (st, s) => siteOpen(st, s) && st.list[s].t0 < 0 && st.list[s].stock[TRACK] >= costOf(s, TRACK);
 export function startRun(st, s, idx, tick) {
+  st.rev++;
   st.list[s].t0 = tick;
   st.list[s].starter = idx;
 }
@@ -91,11 +95,11 @@ export const runOf = (st, s, tick) => runAt(MACHINE_RUN, st.list[s]?.t0 ?? -1, t
 export function finishRun(st, tick) {
   const s = st.open;
   const site = st.list[s];
-  if (!site || site.t0 < 0 || site.done || !runOf(st, s, tick).done) return -1;
+  if (!site || site.t0 < 0 || !runOf(st, s, tick).done) return -1;
   const cost = costOf(s, TRACK);
+  st.rev++;
   site.stock[TRACK] -= cost;
   site.used += cost;
-  site.done = 1;
   if (site.starter >= 0) bonus(st, s, site.starter, RUN_BONUS);
   st.open = s + 1;
   return s;
@@ -106,23 +110,17 @@ export const ageAt = (st) => (st.open < ROUTE.length ? ROUTE[st.open].age : ROUT
 
 // Helper huts send freight: every HELPER_EVERY ticks, one piece per built hut into the open site's Track ring (as far
 // as it has room; a full or running ring just waits). Returns the pieces added.
-export function helperFreight(st, tick) {
-  if (tick % HELPER_EVERY !== 0) return 0;
-  return addFreight(
-    st,
-    st.list.reduce((t, x) => t + x.helpers, 0),
-  );
-}
+export const helpersOf = (st) => st.list.reduce((t, x) => t + x.helpers, 0);
+export const helperFreight = (st, tick) => (tick % HELPER_EVERY === 0 ? addFreight(st, helpersOf(st)) : 0);
 export function addFreight(st, n) {
   const s = st.open;
   const add = Math.min(n, ringRoom(st, s, TRACK));
   if (add <= 0) return 0;
+  st.rev++;
   st.list[s].stock[TRACK] += add;
   st.list[s].freight += add;
   return add;
 }
-export const helpersOf = (st) => st.list.reduce((t, x) => t + x.helpers, 0);
-
 // Points per roster index over every site's plaque.
 export function pointsOf(st, idx) {
   let t = 0;
@@ -130,36 +128,33 @@ export function pointsOf(st, idx) {
   return t;
 }
 
-const FIELDS = ['used', 'poured', 'freight', 'helpers', 't0', 'starter', 'done', 'bonus'];
-// { a: age, o: open, s: [[track, helper, used, poured, freight, helpers, t0, starter, done, bonus, [idx, pts, rem, ...]]] }
+const FIELDS = ['used', 'poured', 'freight', 'helpers', 't0', 'starter', 'bonus'];
+// { o: open, s: [[track, helper, used, poured, freight, helpers, t0, starter, bonus, [idx, pts, rem, ...]], ...] }
 export function serializeSites(st) {
-  return {
-    a: st.age,
-    o: st.open,
-    s: st.list.map((x) => [...x.stock, ...FIELDS.map((f) => x[f]), x.plaque.flat()]),
-  };
+  return { o: st.open, s: st.list.map((x) => [...x.stock, ...FIELDS.map((f) => x[f]), x.plaque.flat()]) };
 }
 export function loadSites(st, json) {
-  if (!isInt(json?.a) || !isInt(json?.o) || !Array.isArray(json?.s) || json.s.length > ROUTE.length)
+  if (!isInt(json?.o) || json.o < 0 || !Array.isArray(json?.s) || json.s.length > ROUTE.length)
     throw new Error('sites: bad snapshot');
   const list = ROUTE.map(freshSite);
+  const n = 2 + FIELDS.length;
   json.s.forEach((row, s) => {
-    if (!Array.isArray(row) || row.length !== 11 || !row.slice(0, 10).every(isInt) || !Array.isArray(row[10]))
+    if (!Array.isArray(row) || row.length !== n + 1 || !row.slice(0, n).every(isInt) || !Array.isArray(row[n]))
       throw new Error('sites: bad site');
-    const flat = row[10];
+    const flat = row[n];
     if (flat.length % 3 || !flat.every(isInt)) throw new Error('sites: bad plaque');
     const site = list[s];
     site.stock = [row[0], row[1]];
     FIELDS.forEach((f, k) => (site[f] = row[2 + k]));
     for (let k = 0; k < flat.length; k += 3) site.plaque.push(flat.slice(k, k + 3));
   });
-  Object.assign(st, { age: json.a, open: Math.min(json.o, ROUTE.length), list });
+  Object.assign(st, { open: Math.min(json.o, ROUTE.length), list, rev: st.rev + 1 });
 }
 export function hashSites(st) {
-  let h = Math.imul(2166136261 ^ st.age, 16777619) ^ st.open;
+  let h = fold(FNV_SEED, st.open);
   for (const x of st.list) {
-    for (const v of [...x.stock, ...FIELDS.map((f) => x[f])]) h = Math.imul(h ^ v, 16777619);
-    for (const r of x.plaque) for (const v of r) h = Math.imul(h ^ v, 16777619);
+    h = foldAll(h, [...x.stock, ...FIELDS.map((f) => x[f])]);
+    for (const r of x.plaque) h = foldAll(h, r);
   }
-  return h >>> 0;
+  return h;
 }

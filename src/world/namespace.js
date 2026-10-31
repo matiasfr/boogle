@@ -1,7 +1,8 @@
 // The world namespace: bumped on a clean break (a new world that old tabs must never meet). It prefixes the room id
 // the world syncs under, which moves the PeerJS host id, the localStorage save and the server snapshot together, while
 // the URL (?room=) and everything shown to players keep the plain room name. PeerJS ids allow no dots, hence 'v01'.
-// dev/registry skips its mixed-build comparison with main when this differs from main's (no old tab can join).
+// dev/registry skips its mixed-build comparison with main when this differs from main's (no old tab can join). A
+// bump wipes every room's world: it is a deliberate clean break, never a way to quiet that check.
 // Pure: read by src/netplay/net.js, the registry check and tests.
 export const WORLD_NS = 'v01';
 

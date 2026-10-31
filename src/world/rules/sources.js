@@ -4,7 +4,7 @@
 // trickle. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
   createSources,
-  sync as matchAge,
+  matchAge,
   sourcesOf,
   chargesOf,
   take,
@@ -24,30 +24,22 @@ export const name = 'sources';
 export function install(sync, land, rules) {
   const sources = createSources();
   const { stacks, piles, sites } = rules;
-  const fresh = () => matchAge(sources, sites.age(), land.layout); // apply and ticks only: the layout fills before tick 1
-  // What a source holds as fresh() would see it, without changing state (validate and the adapter read this).
-  const peek = (id) => {
-    const n = sourcesOf(sites.age(), land.layout).length;
-    if (!Number.isSafeInteger(id) || id < 0 || id >= n) return 0;
-    return sources.a === sites.age() && id < sources.c.length ? chargesOf(sources, id) : FULL;
-  };
-  // Where a source's overflow lands: the cell beside it (the pile helper merges or spreads from there).
-  const spot = (id) => sourcesOf(sources.a, land.layout)[id];
+  const list = () => sourcesOf(sites.age(), land.layout); // the layout is filled before tick 1
+  const charges = (id) => chargesOf(sources, sites.age(), list().length, id);
   sync.registerOp('src.take', {
     validate: (e) => {
-      if (peek(e.id) <= 0) return false;
+      if (charges(e.id) <= 0) return false;
       const k = materialOf(sites.age());
       const over = YIELD - Math.min(YIELD, stacks.room(e.u, k));
       return over === 0 || piles.room(k, over) === over;
     },
     apply: (e) => {
-      fresh();
-      const n = take(sources, e.id);
+      const n = take(sources, sites.age(), list().length, e.id);
       if (!n) return null;
-      const k = materialOf(sources.a);
+      const k = materialOf(sites.age());
       const got = stacks.add(e.u, k, n);
-      const p = spot(e.id);
-      const over = n - got ? piles.drop(p.i + 1, p.j, k, n - got).placed : 0;
+      const p = list()[e.id];
+      const over = n - got ? piles.drop(p.i + 1, p.j, k, n - got).placed : 0; // beside the source
       return { id: e.id, k, n: got, over };
     },
   });
@@ -56,15 +48,12 @@ export function install(sync, land, rules) {
     load: (json) => loadSources(sources, json),
     hash: () => hashSources(sources),
   });
-  sites.onSectionDone(() => {
-    fresh();
-    refillAll(sources); // R1: the island breathes out
-  });
+  sites.onSectionDone(() => refillAll(sources)); // R1: the island breathes out
   sync.onTick((t) => {
-    fresh();
+    matchAge(sources, sites.age());
     trickle(sources, t, sync.world.seed); // R2
   }, 'sources');
-  return { sources, charges: peek };
+  return { sources, charges, list };
 }
 
 // Replay-test generators (./README.md): shake a palm (charged or not), or junk.
@@ -78,6 +67,6 @@ export const edits = {
 };
 
 export function invariants({ sources }) {
-  if (sources.c.some((v) => v < 0 || v > FULL)) return 'charges out of range';
+  for (const [id, n] of sources.spent) if (n < 1 || n > FULL || id < 0) return `source ${id} spent ${n}`;
   return null;
 }

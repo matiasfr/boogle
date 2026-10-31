@@ -90,11 +90,15 @@ export function invariants(api, rules) {
 - Edits are JSON-safe, with integer `i`/`j` and no `p` (sync adds it).
 - Invariants check what would silently break: conserved quantities, unique ids, caps, spacing.
 
+**Redrawing views.** A sim state that views draw can keep a `rev` counter, bumped on every change (in its own
+functions and on load) and never saved or hashed (`piles`, `sites`, `sources`). A view redraws when `rev` differs
+from the one it last drew: that covers edits, ticks (freight, trickles, runs ending) and snapshots, without matching
+op names.
+
 ## env keys
 
 | Key | Set by | Used by |
 |---|---|---|
-| `hostSelf`, `gapMs` | `src/features/helper-bank.js`, only around its one `bank.wake` submit | `bank.wake` validate (`ctx.from === hostSelf && e.ms === gapMs`) |
 | `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 
 ## Template
@@ -131,7 +135,7 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `roster.js` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.js` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.js`); `drop` returns `{ placed, ids }` |
 | `stacks.js` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.js`), by roster index; later rules call `add`/`take` in their apply |
-| `sites.js` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), points(pid), pointsAt(k), room(s, ring), canRun(s), run(s, tick), runLength, helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.js`, `../../sim/route.js`), plaques, machine runs (`../../sim/scripted-run.js`), helper freight and the age change; later rules subscribe to `onSectionDone` at install |
-| `sources.js` | `src.take` | `sources` | `{ sources, charges(id) }`: the current age's material sources (`../../sim/sources.js`; wood: the palms in `land.layout.trees`); refills on `sites.onSectionDone` and a seeded trickle tick |
-| `bank.js` | `bank.wake` | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.js`); only the host's own wake with the gap it measured passes (env `hostSelf`, `gapMs`) |
+| `sites.js` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), isDone(s), points(pid), room(s, ring), canRun(s), run(s, tick), helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.js`, `../../sim/route.js`), plaques, machine runs (`../../sim/scripted-run.js`), helper freight and the age change (derived from `open`); later rules subscribe to `onSectionDone` at install |
+| `sources.js` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.js`; wood: the palms in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
+| `bank.js` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.js`); only the host's own wake is stamped |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

@@ -45,6 +45,9 @@
 // skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
 // noSave, so the clients that load them stop persisting too.
 
+import { okPid } from '../sim/roster.js';
+
+export { okPid };
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
 const CLOCK_EVERY = 2;
@@ -65,7 +68,6 @@ const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
 const MAX_PIDS = 256; // selfId -> pid records kept (sessions seen this page load)
-export const okPid = (u) => typeof u === 'string' && /^[a-z0-9]{1,32}$/.test(u);
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = Number.isSafeInteger;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -83,7 +85,6 @@ export function createSync({ env: env0 } = {}) {
   const snapFns = [];
   const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
   const hashFns = []; // fn(tick) on the host right after it sent a hash
-  const hostStartFns = []; // fn({ loaded }) when this tab starts hosting from a save or fresh (not a live migration)
   const snapFailFns = []; // fn({ from: 'peer'|'local'|'server'|'state', reason }): a snapshot (or a state) failed to load
   const stats = {
     resyncs: 0,
@@ -189,6 +190,7 @@ export function createSync({ env: env0 } = {}) {
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
     const u = from === selfId ? myPid() : pids.get(from);
     if (!u) return false; // no w:id from that tab yet: it re-sends one before its next edit
+    if (h.hostOnly && from !== selfId) return false; // an op only the host itself submits (a broadcast can't be replayed)
     const e = { ...edit, p: from, u }; // never trust a client-supplied p or u
     try {
       if (h.validate && !h.validate(e, { from, tick: world.tick, env })) return false;
@@ -660,19 +662,10 @@ export function createSync({ env: env0 } = {}) {
     ready = false;
     const snap = await loadPersisted();
     if (my !== epoch) return;
-    const loaded = !!snap && loadSnapshot(snap);
-    if (!loaded) world.epochMs = cfg.now();
+    if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
     ready = true;
     nextHashTick = world.tick + HASH_EVERY;
     for (const fn of snapFns) fn(world.tick);
-    // The world was idle until now (nobody hosted): listeners may submit host-only edits about that gap.
-    for (const fn of hostStartFns) {
-      try {
-        fn({ loaded });
-      } catch (err) {
-        console.error('[world] onHostStart failed', err);
-      }
-    }
   }
   function becomeClient() {
     epoch++;
@@ -742,7 +735,6 @@ export function createSync({ env: env0 } = {}) {
     onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn) => desyncFns.push(fn),
     onHashSent: (fn) => hashFns.push(fn),
-    onHostStart: (fn) => hostStartFns.push(fn), // fn({ loaded }): hosting began from a save (loaded) or fresh
     onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
@@ -778,7 +770,6 @@ export const {
   onSnapshot,
   onDesync,
   onHashSent,
-  onHostStart,
   onSnapFail,
   stateHashes,
   setSelfId,

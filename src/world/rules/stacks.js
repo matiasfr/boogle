@@ -46,6 +46,7 @@ export function install(sync, land, rules) {
     },
     // Apply only. Takes up to n off pid's stack; returns how many came off.
     take: (pid, n) => (idxOf(pid) < 0 ? 0 : takeFrom(stacks, idxOf(pid), n)),
+    takeAt: (idx, n) => takeFrom(stacks, idx, n), // apply only, by roster index
   };
 }
 

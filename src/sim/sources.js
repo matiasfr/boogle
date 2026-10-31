@@ -1,9 +1,11 @@
 // Material sources (brief 8 section 1): things on the island that give the current age's material. Age 0 (wood): the
-// home palms (`layout.trees`), shaken with the same gesture as their fruit. Each source holds a few charges; a take
+// home palms (`layout.trees`), shaken with the same gesture as their fruit. Each source holds FULL charges; a take
 // spends one and yields a fixed handful. Refill is deterministic: every source fills when a section is laid (R1), and
-// a seeded trickle refills one empty source every TRICKLE_EVERY ticks (R2). Only the current age's charges are kept.
+// a seeded trickle refills one empty source every TRICKLE_EVERY ticks (R2). State is only what has been spent, in the
+// current age, so a source nobody touched needs no entry and the layout (filled before tick 1) is read, never copied.
 // Pure and deterministic (lockstep).
 import { mulberry32 } from './rng.js';
+import { FNV_SEED, fold, foldAll } from './hash.js';
 
 export const FULL = 2; // charges a source holds
 export const YIELD = 4; // pieces a take gives
@@ -13,52 +15,64 @@ const isInt = Number.isSafeInteger;
 // The sources of an age, from the static land layout: [{ i, j }] by source id.
 export const sourcesOf = (age, layout) => (age === 0 ? layout.trees : []);
 
+// a: the age the spent counts belong to; spent: source id -> charges spent (absent: full). rev counts every change, for
+// views to redraw on (neither saved nor hashed).
 export function createSources() {
-  return { a: 0, c: [] }; // a: the age these charges belong to; c: charges by source id
+  return { a: 0, spent: new Map(), rev: 0 };
 }
 
-// Matches the charges to the current age's sources: a new age starts every source full; a layout that grew (filled
-// before tick 1) gets full charges for the new ones.
-export function sync(s, age, layout) {
-  const n = sourcesOf(age, layout).length;
-  if (s.a !== age) {
-    s.a = age;
-    s.c = [];
-  }
-  while (s.c.length < n) s.c.push(FULL);
-  if (s.c.length > n) s.c.length = n;
+// Charges left at source id of `age` (count: how many sources that age has). Reading never changes state: counts from
+// an older age read as full.
+export function chargesOf(s, age, count, id) {
+  if (!isInt(id) || id < 0 || id >= count) return 0;
+  return FULL - (s.a === age ? (s.spent.get(id) ?? 0) : 0);
 }
-
-export const chargesOf = (s, id) => (isInt(id) ? (s.c[id] ?? 0) : 0);
-export function take(s, id) {
-  if (chargesOf(s, id) <= 0) return 0;
-  s.c[id]--;
+// Ticks and apply only: forget the spent counts of an age that is over.
+export function matchAge(s, age) {
+  if (s.a === age) return;
+  s.a = age;
+  s.spent.clear();
+  s.rev++;
+}
+export function take(s, age, count, id) {
+  if (chargesOf(s, age, count, id) <= 0) return 0;
+  matchAge(s, age);
+  s.spent.set(id, (s.spent.get(id) ?? 0) + 1);
+  s.rev++;
   return YIELD;
 }
 export function refillAll(s) {
-  s.c.fill(FULL);
+  s.spent.clear();
+  s.rev++;
 }
 // R2: on every TRICKLE_EVERY-th tick, one empty source (picked from the room seed and the tick) fills. Returns its id
 // or -1.
 export function trickle(s, tick, seed) {
   if (tick % TRICKLE_EVERY !== 0) return -1;
-  const empty = [];
-  for (let id = 0; id < s.c.length; id++) if (s.c[id] === 0) empty.push(id);
+  const empty = [...s.spent]
+    .filter(([, n]) => n >= FULL)
+    .map(([id]) => id)
+    .sort((a, b) => a - b);
   if (!empty.length) return -1;
   const id = empty[Math.floor(mulberry32((seed ^ tick) | 0)() * empty.length)];
-  s.c[id] = FULL;
+  s.spent.delete(id);
+  s.rev++;
   return id;
 }
 
-export const serializeSources = (s) => ({ a: s.a, c: s.c.slice() });
+// { a, s: [id, spent, ...] } in id order
+export function serializeSources(s) {
+  return { a: s.a, s: [...s.spent].sort((x, y) => x[0] - y[0]).flat() };
+}
 export function loadSources(s, json) {
-  const ok = isInt(json?.a) && json.a >= 0 && Array.isArray(json.c) && json.c.length <= 4096;
-  if (!ok || !json.c.every((v) => isInt(v) && v >= 0 && v <= FULL)) throw new Error('sources: bad snapshot');
-  s.a = json.a;
-  s.c = json.c.slice();
+  const flat = json?.s;
+  const ok = isInt(json?.a) && json.a >= 0 && Array.isArray(flat) && flat.length % 2 === 0 && flat.length <= 8192;
+  if (!ok || !flat.every((v, k) => isInt(v) && v >= 0 && (k % 2 === 0 || (v >= 1 && v <= FULL))))
+    throw new Error('sources: bad snapshot');
+  const spent = new Map();
+  for (let k = 0; k < flat.length; k += 2) spent.set(flat[k], flat[k + 1]);
+  Object.assign(s, { a: json.a, spent, rev: s.rev + 1 });
 }
 export function hashSources(s) {
-  let h = Math.imul(2166136261 ^ s.a, 16777619);
-  for (const v of s.c) h = Math.imul(h ^ v, 16777619);
-  return h >>> 0;
+  return foldAll(fold(FNV_SEED, s.a), serializeSources(s).s);
 }

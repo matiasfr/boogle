@@ -45,10 +45,10 @@ test('serialize/load round-trips with the same hash; bad data throws', () => {
   const t = createSites();
   loadSites(t, JSON.parse(JSON.stringify(serializeSites(st))));
   assert.equal(hashSites(t), hashSites(st));
-  assert.deepEqual(t, st);
+  assert.deepEqual(serializeSites(t), serializeSites(st));
   assert.notEqual(hashSites(createSites()), hashSites(st));
   assert.throws(() => loadSites(t, { a: 0, o: 0, s: [[1, 2, 3]] }), /bad site/);
-  assert.throws(() => loadSites(t, { a: 0, o: 0, s: [[0, 0, 0, 0, 0, 0, -1, -1, 0, 0, [1, 2]]] }), /bad plaque/);
+  assert.throws(() => loadSites(t, { a: 0, o: 0, s: [[0, 0, 0, 0, 0, 0, -1, -1, 0, [1, 2]]] }), /bad plaque/);
 });
 
 // The whole loop on the real rules in local mode: shake, pour, run, lay, refill, and the age change at the end.
@@ -57,6 +57,7 @@ import { installRules } from '../src/world/rules/index.js';
 import { homeLand } from './helpers/land.mjs';
 import { FULL } from '../src/sim/sources.js';
 import { RUN_BONUS } from '../src/sim/sites.js';
+import { lengthOf, MACHINE_RUN } from '../src/sim/scripted-run.js';
 
 test('a run lays its section, credits the starter, refills sources and opens the next site; the age then moves on', () => {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -75,9 +76,9 @@ test('a run lays its section, credits the starter, refills sources and opens the
   assert.equal(rules.sites.canRun(0), true);
   step({ op: 'site.run', i: 0, j: 0, s: 0 });
   assert.equal(s.submitEdit({ op: 'site.run', i: 0, j: 0, s: 0 }), false, 'already running');
-  step(null, rules.sites.runLength);
+  step(null, lengthOf(MACHINE_RUN));
   const st = rules.sites.sites;
-  assert.equal(st.list[0].done, 1);
+  assert.equal(rules.sites.isDone(0), true);
   assert.equal(st.open, 1);
   assert.equal(rules.sites.points('ana'), 100 + RUN_BONUS);
   assert.equal(rules.sources.charges(0), FULL, 'R1 refilled every palm');
@@ -85,7 +86,7 @@ test('a run lays its section, credits the starter, refills sources and opens the
   for (let t = 15; t < 18; t++) step({ op: 'src.take', i: 0, j: 0, id: t }); // 12 logs
   for (const site of [1, 2]) {
     rules.sites.addFreight(60);
-    step({ op: 'site.run', i: 0, j: 0, s: site }, rules.sites.runLength + 3);
+    step({ op: 'site.run', i: 0, j: 0, s: site }, lengthOf(MACHINE_RUN) + 3);
   }
   assert.equal(st.open, 3);
   assert.equal(rules.sites.age(), 1, 'the wood age is over');

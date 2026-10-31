@@ -2,7 +2,7 @@
 // section, and only the host's own wake with the gap it measured passes; a client replaying it is refused.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { offlineGap, offlineFreight, MS_PER_TICK } from '../src/sim/bank.js';
+import { offlineGap, offlineFreight, MS_PER_TICK, MIN_GAP_MS } from '../src/sim/bank.js';
 import { TICK_MS, createSync } from '../src/world/sync.js';
 import { installRules } from '../src/world/rules/index.js';
 import { HELPER_EVERY } from '../src/sim/sites.js';
@@ -40,7 +40,7 @@ function savedWorld() {
   return snap;
 }
 
-test('a host that loads an hour-old save banks the gap once; a client replaying the wake is refused', async () => {
+test("a host that loads an hour-old save banks the gap once; a client's wake is refused (hostOnly)", async () => {
   const snap = savedWorld();
   const now = snap.epochMs + snap.tick * TICK_MS + 3_600_000;
   const storage = { getItem: () => JSON.stringify(snap), setItem() {} };
@@ -50,12 +50,10 @@ test('a host that loads an hour-old save banks the gap once; a client replaying 
     const rules = installRules(s, homeLand());
     const p = net.add(id, host);
     // the feature's logic (src/features/helper-bank.js), on this tab's clock
-    s.onHostStart(({ loaded }) => {
-      if (!loaded) return;
-      const gapMs = now - (s.world.epochMs + s.world.tick * TICK_MS) - rules.bank.ms();
-      s.setEnv({ gapMs, hostSelf: id });
-      s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms: gapMs });
-      s.setEnv({ gapMs: null, hostSelf: null });
+    s.onSnapshot(() => {
+      if (s.worldStatus().mode !== 'host') return;
+      const ms = offlineGap(now, s.world.epochMs, s.world.tick, rules.bank.ms());
+      if (ms >= MIN_GAP_MS) s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
     });
     s.attachWorld(p.room, { roomId: 'bank', storage, now: () => now });
     return { s, rules, p };

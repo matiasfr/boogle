@@ -11,10 +11,11 @@
 // plays as a guest with its own pid in sessionStorage (it survives that tab's reloads) and says so: two tabs on one pid
 // would share one stack and one plaque line. Without Web Locks (an insecure context) every tab uses the stored pid.
 // Nothing here is personal data: a random id next to the nickname you typed.
+import { okPid } from '../sim/roster.js';
+
 const KEY = 'boogle.pid';
 const GUEST_KEY = 'boogle.guestPid';
 const LEN = 10;
-const PID_RE = /^[a-z0-9]{1,32}$/; // the same rule as src/world/sync.js okPid
 
 function newPid() {
   const bytes = crypto.getRandomValues(new Uint8Array(LEN));
@@ -24,7 +25,7 @@ function newPid() {
 function stored(storage, key) {
   try {
     const v = storage.getItem(key);
-    if (PID_RE.test(v ?? '')) return v;
+    if (okPid(v)) return v;
     const fresh = newPid();
     storage.setItem(key, fresh);
     return fresh;
@@ -54,7 +55,7 @@ identity.ready = takeLock().then((primary) => {
 });
 
 export function adoptPid(pid) {
-  if (!PID_RE.test(pid ?? '')) return false;
+  if (!okPid(pid)) return false;
   try {
     localStorage.setItem(KEY, pid);
     return true;

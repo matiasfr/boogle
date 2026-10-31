@@ -20,15 +20,28 @@
       },
       "roster": [["fixtureana", "Ana", 2]],
       "stacks": [[0, 0, 22]],
-      "piles": { "id": 3, "p": [1, 212, 188, 0, 5, 2, 216, 190, 0, 3] }
+      "piles": { "id": 3, "p": [1, 212, 188, 0, 5, 2, 216, 190, 0, 3] },
+      "sites": {
+        "o": 0,
+        "s": [
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []]
+        ]
+      },
+      "sources": { "a": 0, "s": [] },
+      "bank": { "ms": 0 }
     },
-    "vers": { "mushrooms": 0, "gifts": 0, "roster": 0, "stacks": 0, "piles": 0 }
+    "vers": { "mushrooms": 0, "gifts": 0, "roster": 0, "stacks": 0, "piles": 0, "sites": 0, "sources": 0, "bank": 0 }
   },
   "hashes": {
     "mushrooms": 2904432691,
     "gifts": 230338034,
     "roster": 2660392293,
     "stacks": 1487998401,
-    "piles": 1173740639
+    "piles": 1173740639,
+    "sites": 1249462927,
+    "sources": 84696351,
+    "bank": 292984781
   }
 }

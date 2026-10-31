@@ -18,6 +18,11 @@ for (let i = 0; i < GRID_RES; i++) {
 
 export const cellX = (i) => i * CELL - HALF;
 export const cellZ = (j) => HALF - j * CELL;
+// The cell [i, j] nearest world x, z, kept off the grid's edge (where edits are refused).
+export const cellOf = (x, z) => [
+  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
+  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
+];
 
 export function groundHeight(x, z) {
   const fi = (x + HALF) / CELL,

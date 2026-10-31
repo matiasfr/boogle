@@ -2,13 +2,15 @@
 // A player's index here is how every other lockstep table stores them (stacks, plaques), so hashes stay integer folds
 // and a plaque can still print "Ana" after Ana has gone home. Pure and deterministic (lockstep).
 
+import { FNV_SEED, fold, foldStr } from './hash.js';
+
 export const MAX_PLAYERS = 256;
 export const NAME_MAX = 16;
 export const N_COLORS = 8; // src/constants.js COLORS
-const PID_RE = /^[a-z0-9]{1,32}$/;
 const isInt = Number.isSafeInteger;
 
-export const okPid = (u) => typeof u === 'string' && PID_RE.test(u);
+// A player id (pid, src/player/identity.js): the one rule, shared by sync, the roster and the pid source.
+export const okPid = (u) => typeof u === 'string' && /^[a-z0-9]{1,32}$/.test(u);
 
 // The lobby's own name rule (src/math.js sanitizeName): no control or format characters, one space at a time, 16 chars.
 export function cleanName(s) {
@@ -70,13 +72,8 @@ export function loadRoster(r, json) {
   Object.assign(r, next);
 }
 
-const fold = (h, v) => Math.imul(h ^ v, 16777619) >>> 0;
-function foldStr(h, s) {
-  for (let k = 0; k < s.length; k++) h = fold(h, s.charCodeAt(k));
-  return fold(h, 0x1f);
-}
 export function hashRoster(r) {
-  let h = fold(2166136261, r.pids.length);
+  let h = fold(FNV_SEED, r.pids.length);
   for (let k = 0; k < r.pids.length; k++) h = fold(foldStr(foldStr(h, r.pids[k]), r.names[k]), r.colors[k]);
   return h;
 }

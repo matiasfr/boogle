@@ -8,7 +8,7 @@ import { rules } from '../world/game-world.js'; // first: the lockstep rules reg
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { scene } from '../render/scene.js';
-import { onApplied, onSnapshot, submitEdit } from '../world/sync.js';
+import { onApplied, submitEdit } from '../world/sync.js';
 import { sharedSeconds } from '../netplay/shared-time.js';
 import { registerInteractable } from '../player/hands.js';
 import { groundHeight } from '../adapters/terrain.js';
@@ -16,7 +16,7 @@ import { me } from '../player/player.js';
 import { identity } from '../player/identity.js';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt, costOf } from '../sim/route.js';
 import { materialOf, MATERIALS } from '../sim/materials.js';
-import { pieceMesh, pieceColor } from '../render/haul-pieces.js';
+import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.js';
 import { MACHINE_RUN } from '../sim/scripted-run.js';
 
 const POUR_EVERY_MS = 300; // one site.stock this often while you stand in a ring
@@ -57,7 +57,8 @@ function paint(l, lines, bg = 'rgba(40, 26, 12, 0.72)') {
   g.clearRect(0, 0, c.width, c.height);
   g.fillStyle = bg;
   g.beginPath();
-  g.roundRect?.(4, 4, c.width - 8, c.height - 8, 18);
+  if (g.roundRect) g.roundRect(4, 4, c.width - 8, c.height - 8, 18);
+  else g.rect(4, 4, c.width - 8, c.height - 8);
   g.fill();
   g.fillStyle = '#fff7e8';
   g.textAlign = 'center';
@@ -100,16 +101,24 @@ const views = ROUTE.map((sec, s) => {
   return v;
 });
 
-let dirty = true;
-onApplied((e) => (e.op.startsWith('site.') || e.op === 'who.set') && (dirty = true)); // pours, runs, names
-onSnapshot(() => (dirty = true));
+let names = 0; // bumped by who.set: the plaques print roster names
+onApplied((e) => e.op === 'who.set' && names++);
 
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   one = new THREE.Vector3(1, 1, 1),
+  up = new THREE.Vector3(0, 1, 0),
+  sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4),
   at = new THREE.Vector3();
+
+// A ring's second label line.
+function ringLine(x, s, ring, k) {
+  if (rules.sites.isDone(s)) return 'laid';
+  if (ring === TRACK && x.t0 >= 0) return 'laying track…';
+  if (ring === HELPER && x.helpers) return 'built';
+  return `${x.stock[ring]} / ${costOf(s, ring)} ${MATERIALS[k]}${s === sites.open ? '' : ' · later'}`;
+}
 function redraw() {
-  dirty = false;
   let c = 0;
   sites.list.forEach((x, s) => {
     const v = views[s];
@@ -117,24 +126,15 @@ function redraw() {
     const k = materialOf(ROUTE[s].age);
     for (const ring of [TRACK, HELPER]) {
       v.rings[ring].material = open ? ringMat[ring] : doneMat;
-      const what = ring === TRACK ? 'Track' : 'Helper hut';
-      const full = ring === HELPER && x.helpers;
-      const line = x.done
-        ? 'laid'
-        : x.t0 >= 0 && ring === TRACK
-          ? 'laying track…'
-          : full
-            ? 'built'
-            : `${x.stock[ring]} / ${costOf(s, ring)} ${MATERIALS[k]}${open ? '' : ' · later'}`;
-      paint(v.ringLabels[ring], [what, line]);
+      paint(v.ringLabels[ring], [ring === TRACK ? 'Track' : 'Helper hut', ringLine(x, s, ring, k)]);
     }
     v.hut.visible = x.helpers > 0;
     // sleepers stacked in the Track ring as it fills
     const p = ringAt(s, TRACK);
-    const shown = x.done ? 0 : Math.round((SLEEPERS * x.stock[TRACK]) / costOf(s, TRACK));
+    const shown = rules.sites.isDone(s) ? 0 : Math.round((SLEEPERS * x.stock[TRACK]) / costOf(s, TRACK));
     for (let m = 0; m < shown; m++) {
       at.set(p.x + ((m % 3) - 1) * 0.5, groundHeight(p.x, p.z) + 0.12 + Math.floor(m / 3) * 0.2, p.z);
-      q.setFromAxisAngle(at.clone().set(0, 1, 0), Math.PI / 2 + (Math.floor(m / 3) % 2) * 0.1);
+      q.setFromAxisAngle(up, Math.PI / 2 + (Math.floor(m / 3) % 2) * 0.1);
       sleepers.setMatrixAt(c, m4.compose(at, q, one));
       sleepers.setColorAt(c++, pieceColor(k));
     }
@@ -146,9 +146,7 @@ function redraw() {
       .map((r) => `${rules.roster.nameOf(r[0]) || '?'}  ${r[1]}`);
     paint(v.plaque, [`Section ${s + 1}`, ...(rows.length ? rows : ['—'])]);
   });
-  sleepers.count = c;
-  sleepers.instanceMatrix.needsUpdate = true;
-  if (sleepers.instanceColor) sleepers.instanceColor.needsUpdate = true;
+  commitPieces(sleepers, c);
 }
 
 // The railway: two rails and sleepers along each laid section, and along the running one up to the machine.
@@ -173,6 +171,11 @@ machine.add(funnel);
 machine.visible = false;
 scene.add(machine);
 
+// Each section's length and heading, fixed.
+const LINES = ROUTE.map((sec) => ({
+  len: Math.hypot(sec.to[0] - sec.x, sec.to[1] - sec.z),
+  yaw: Math.atan2(sec.to[0] - sec.x, sec.to[1] - sec.z),
+}));
 const lerp2 = (s, u) => {
   const a = ROUTE[s],
     [bx, bz] = a.to;
@@ -185,7 +188,7 @@ const WARM = MACHINE_RUN[0].len,
 // How far along section s the track is laid, 0..1, at shared time `tick` (fractional).
 function laid(s, tick) {
   const x = sites.list[s];
-  if (x.done) return 1;
+  if (rules.sites.isDone(s)) return 1;
   if (x.t0 < 0) return 0;
   const r = rules.sites.run(s, Math.floor(tick));
   if (r.name === 'warm' || r.phase < 0) return 0;
@@ -194,10 +197,10 @@ function laid(s, tick) {
 }
 function drawRailway(tick) {
   let c = 0;
+  machine.visible = false;
   ROUTE.forEach((sec, s) => {
     const u = laid(s, tick);
-    const len = Math.hypot(sec.to[0] - sec.x, sec.to[1] - sec.z);
-    const yaw = Math.atan2(sec.to[0] - sec.x, sec.to[1] - sec.z);
+    const { len, yaw } = LINES[s];
     for (let d = 0; d < len * u && c < rails.instanceMatrix.count; d += RAIL_STEP) {
       lerp2(s, d / len);
       at.y += 0.06;
@@ -220,12 +223,8 @@ function drawRailway(tick) {
       machine.rotation.y = yaw;
     }
   });
-  rails.count = c;
-  rails.instanceMatrix.needsUpdate = true;
-  if (rails.instanceColor) rails.instanceColor.needsUpdate = true;
+  commitPieces(rails, c);
 }
-const up = new THREE.Vector3(0, 1, 0);
-const sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4);
 
 // Start the machine: an Interact target at the open site's sign once its Track ring holds a whole section.
 registerInteractable(() => {
@@ -257,11 +256,16 @@ function pour(now) {
   }
 }
 
+let drawn = '';
 onFrame(
   ({ now }) => {
-    if (dirty) redraw();
-    machine.visible = false;
-    drawRailway(sharedSeconds() * 10); // shared time in ticks (TICK_MS = 100), smooth between them
+    // Redraw on any change to the sites (pours, freight, runs, loads) or a rename; the railway every frame only while
+    // a machine runs.
+    const key = `${sites.rev}/${names}`;
+    const running = sites.list[sites.open]?.t0 >= 0;
+    if (key !== drawn || running) drawRailway(sharedSeconds() * 10); // shared time in ticks (TICK_MS = 100)
+    if (key !== drawn) redraw();
+    drawn = key;
     pour(now);
   },
   { phase: 'update', order: 34 },

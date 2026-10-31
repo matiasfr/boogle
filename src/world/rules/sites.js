@@ -10,6 +10,7 @@ import {
   startRun,
   finishRun,
   ageAt,
+  isDone,
   helperFreight,
   addFreight,
   helpersOf,
@@ -21,7 +22,6 @@ import {
 } from '../../sim/sites.js';
 import { ROUTE, TRACK, HELPER, costOf } from '../../sim/route.js';
 import { materialOf } from '../../sim/materials.js';
-import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.js';
 import { HARD_CAP } from '../../sim/stacks.js';
 import { JUNK, bad } from './edit-gen.js';
 
@@ -63,16 +63,10 @@ export function install(sync, land, rules) {
     const s = finishRun(sites, t);
     if (s < 0) return;
     for (const fn of doneFns) fn(s, t);
-    const age = ageAt(sites);
-    if (age !== sites.age) {
-      const old = materialOf(sites.age);
-      sites.age = age;
-      for (let idx = 0; idx < roster.size(); idx++) {
-        if (stacks.kindAt(idx) !== old) continue;
-        const n = stacks.take(roster.roster.pids[idx], stacks.countAt(idx));
-        stock(sites, s, TRACK, idx, n);
-      }
-    }
+    if (ageAt(sites) === ROUTE[s].age) return;
+    const old = materialOf(ROUTE[s].age);
+    for (let idx = 0; idx < roster.size(); idx++)
+      if (stacks.kindAt(idx) === old) stock(sites, s, TRACK, idx, stacks.takeAt(idx, stacks.countAt(idx)));
   }, 'sites');
   sync.registerState('sites', {
     serialize: () => serializeSites(sites),
@@ -82,13 +76,12 @@ export function install(sync, land, rules) {
   return {
     sites,
     onSectionDone: (fn) => doneFns.push(fn),
-    age: () => sites.age,
+    age: () => ageAt(sites),
+    isDone: (s) => isDone(sites, s),
     points: (pid) => (roster.indexOf(pid) < 0 ? 0 : pointsOf(sites, roster.indexOf(pid))),
-    pointsAt: (idx) => pointsOf(sites, idx),
     room: (s, ring) => ringRoom(sites, s, ring),
     canRun: (s) => canRun(sites, s),
     run: (s, tick) => runOf(sites, s, tick), // { phase, name, progress, total, done } of site s's run at tick
-    runLength: lengthOf(MACHINE_RUN),
     helpers: () => helpersOf(sites),
     addFreight: (n) => addFreight(sites, n), // apply only: helper output into the open Track ring; returns what fit
   };
@@ -118,7 +111,7 @@ export function invariants({ sites }) {
   for (let s = 0; s < sites.list.length; s++) {
     const x = sites.list[s];
     if (x.poured + x.freight !== x.stock[TRACK] + x.stock[HELPER] + x.used) return `site ${s} lost units`;
-    if (x.stock[TRACK] > costOf(s, TRACK) && !x.done) return `site ${s} track over cost`;
+    if (x.stock[TRACK] > costOf(s, TRACK) && !isDone(sites, s)) return `site ${s} track over cost`;
     if (x.stock[HELPER] > costOf(s, HELPER)) return `site ${s} helper over cost`;
     const cost = costOf(s, TRACK);
     const credited = x.plaque.reduce((t, r) => t + r[1] * cost + r[2], 0);

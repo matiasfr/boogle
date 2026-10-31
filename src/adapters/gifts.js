@@ -3,8 +3,8 @@
 // you carry is your hotbar (src/player/inventory.js).
 import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, REACH, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight, cellX, cellZ } from './terrain.js';
+import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
+import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { world as physics } from '../physics/physics.js';
 import { trees } from '../render/props.js';
@@ -34,10 +34,6 @@ const perchSpots = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
 
-const cellOf = (x, z) => [
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
-];
 const fx = { falling: new Map(), wobble: new Map(), leaving: [], arriving: new Map() };
 
 // The effects of each gift op, from what its apply returned (r): the item that fell, was taken or landed.

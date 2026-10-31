@@ -15,12 +15,9 @@ export function runAt(script, t0, tick) {
   let e = tick - t0;
   if (e >= len) return { phase: script.length - 1, name: script.at(-1).name, progress: 1000, total: 1000, done: true };
   const total = Math.floor((e * 1000) / len);
-  for (let k = 0; k < script.length; k++) {
-    if (e < script[k].len)
-      return { phase: k, name: script[k].name, progress: Math.floor((e * 1000) / script[k].len), total, done: false };
-    e -= script[k].len;
-  }
-  return { phase: script.length - 1, name: script.at(-1).name, progress: 1000, total: 1000, done: true }; // unreachable
+  let k = 0;
+  while (e >= script[k].len) e -= script[k++].len; // e < len, so this stops inside the script
+  return { phase: k, name: script[k].name, progress: Math.floor((e * 1000) / script[k].len), total, done: false };
 }
 
 // The wood-age track layer: it warms up, crawls the section laying track, and whistles. 50 s.

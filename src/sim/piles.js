@@ -2,6 +2,7 @@
 // when near, never ageing (SETTLED: nothing decays). Separate from gifts and its 48-item cap. Pure and deterministic
 // (lockstep): the rules (src/world/rules/piles.js) run it, the adapter draws each pile as Local pieces.
 import { okKind } from './materials.js';
+import { FNV_SEED, fold, foldAll } from './hash.js';
 
 export const MAX_PILES = 128; // per room
 export const PILE_CAP = 64; // per pile, unless the room is full (then the nearest same-kind pile takes the rest)
@@ -21,8 +22,9 @@ const SPOTS = [
   [1, -1],
 ];
 
+// list: { id, i, j, k, n }, in id order. rev counts every change, for views to redraw on (neither saved nor hashed).
 export function createPiles() {
-  return { list: [], nextId: 1 }; // list: { id, i, j, k, n }, in id order
+  return { list: [], nextId: 1, rev: 0 };
 }
 
 export const findPile = (s, id) => s.list.find((p) => p.id === id) ?? null;
@@ -46,6 +48,7 @@ export function room(s, k, n) {
 export function dropPile(s, i, j, k, n) {
   const ids = [];
   let left = n;
+  s.rev++;
   const put = (p, cap) => {
     const add = Math.min(left, cap - p.n);
     if (add <= 0) return;
@@ -73,6 +76,7 @@ export function takePile(s, id, n) {
   const p = findPile(s, id);
   if (!p) return null;
   const got = Math.min(n, p.n);
+  s.rev++;
   p.n -= got;
   if (p.n === 0) s.list.splice(s.list.indexOf(p), 1);
   return { id, k: p.k, n: got };
@@ -97,9 +101,10 @@ export function loadPiles(s, json) {
   }
   s.list = list.sort((a, b) => a.id - b.id);
   s.nextId = json.id;
+  s.rev++;
 }
 export function hashPiles(s) {
-  let h = Math.imul(2166136261 ^ s.nextId, 16777619);
-  for (const p of s.list) for (const v of [p.id, p.i, p.j, p.k, p.n]) h = Math.imul(h ^ v, 16777619);
-  return h >>> 0;
+  let h = fold(FNV_SEED, s.nextId);
+  for (const p of s.list) h = foldAll(h, [p.id, p.i, p.j, p.k, p.n]);
+  return h;
 }

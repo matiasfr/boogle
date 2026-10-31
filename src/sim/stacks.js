@@ -4,6 +4,7 @@
 // (a visual and spill rule, never a reject); HARD_CAP is where pickups stop and the rest stays on the ground.
 // Pure and deterministic (lockstep).
 import { okKind } from './materials.js';
+import { FNV_SEED, foldAll } from './hash.js';
 
 export const SOFT_CAP = 20;
 export const HARD_CAP = 60;
@@ -47,8 +48,6 @@ export function takeFrom(s, idx, n) {
   return got;
 }
 
-export const totalOf = (s, k) => s.n.reduce((t, n, idx) => t + (s.k[idx] === k ? n : 0), 0);
-
 // [[idx, k, n], ...] for every player carrying something.
 export function serializeStacks(s) {
   const out = [];
@@ -70,8 +69,7 @@ export function loadStacks(s, json, maxIdx) {
   Object.assign(s, next);
 }
 export function hashStacks(s) {
-  let h = 2166136261;
-  for (let idx = 0; idx < s.n.length; idx++)
-    if (s.n[idx] > 0) for (const v of [idx, s.k[idx], s.n[idx]]) h = Math.imul(h ^ v, 16777619);
-  return h >>> 0;
+  let h = FNV_SEED;
+  for (let idx = 0; idx < s.n.length; idx++) if (s.n[idx] > 0) h = foldAll(h, [idx, s.k[idx], s.n[idx]]);
+  return h;
 }

@@ -26,7 +26,7 @@ let lastWho = -1e9;
 onFrame(
   ({ now }) => {
     if (!me.entered || !identity.pid || now - lastWho < WHO_EVERY_MS || !worldStatus().ready) return;
-    const name = sanitizeName(me.name); // the roster's own rule (src/sim/roster.js cleanName)
+    const name = sanitizeName(me.name); // the roster's own rule
     const k = rules.roster.indexOf(identity.pid);
     if (!name || (k >= 0 && rules.roster.nameOf(k) === name && rules.roster.colorOf(k) === me.colorIdx)) return;
     lastWho = now;

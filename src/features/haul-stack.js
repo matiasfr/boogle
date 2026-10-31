@@ -12,12 +12,14 @@ import { onFrame } from '../loop.js';
 import { identity } from '../player/identity.js';
 import { me } from '../player/player.js';
 import { remotes, onRemotePresence } from '../netplay/net.js';
-import { okPid, submitEdit } from '../world/sync.js';
-import { pieceMesh, pieceColor, PIECE, onFly } from '../render/haul-pieces.js';
+import { submitEdit } from '../world/sync.js';
+import { okPid } from '../sim/roster.js';
+import { cellOf } from '../adapters/terrain.js';
+import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.js';
 import { SOFT_CAP, spillOf } from '../sim/stacks.js';
 import { MATERIALS } from '../sim/materials.js';
 import { TIERS, tierOf } from '../sim/tiers.js';
-import { CELL, HALF, reducedMotion } from '../constants.js';
+import { reducedMotion } from '../constants.js';
 
 const SHOWN = 40; // pieces drawn per stack
 const FLY_MS = 380;
@@ -26,7 +28,8 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   v = new THREE.Vector3(),
-  one = new THREE.Vector3(1, 1, 1);
+  one = new THREE.Vector3(1, 1, 1),
+  top = new THREE.Vector3();
 
 onRemotePresence((r, pr) => (r.pid = okPid(pr.u) ? pr.u : null));
 
@@ -61,17 +64,16 @@ let chipText = '';
 
 // The jump spill: you decide it (Owner), the host applies it as a pile.drop from your own stack.
 let wasGrounded = true;
-function watchJump() {
+function watchJump(mine) {
   if (!me.entered || !me.body) return;
   const grounded = me.coyote > 0;
   if (wasGrounded && !grounded && me.body.velocity.y > 3) {
-    const spill = spillOf(myStack().n);
+    const spill = spillOf(mine.n);
     if (spill) {
       const p = me.body.position;
       const bx = p.x + Math.sin(me.yaw) * 0.9,
         bz = p.z + Math.cos(me.yaw) * 0.9; // behind you (you face -z at yaw 0)
-      const i = Math.round((bx + HALF) / CELL),
-        j = Math.round((HALF - bz) / CELL);
+      const [i, j] = cellOf(bx, bz);
       submitEdit({ op: 'pile.drop', i, j, n: spill });
     }
   }
@@ -80,7 +82,8 @@ function watchJump() {
 
 onFrame(
   ({ now }) => {
-    watchJump();
+    const mine = myStack();
+    watchJump(mine);
     const t = now / 1000;
     let c = 0;
     const draw = (a, pid, seed) => {
@@ -104,30 +107,35 @@ onFrame(
         continue;
       }
       me.avatar.updateMatrixWorld();
-      const to = me.avatar.localToWorld(new THREE.Vector3(0, 0.4 + myStack().n * PIECE.r * 1.85, 0.42));
+      const to = me.avatar.localToWorld(top.set(0, 0.4 + mine.n * PIECE.r * 1.85, 0.42));
       for (let m = 0; m < fl.n && c < mesh.instanceMatrix.count; m++) {
         const w = Math.min(1, Math.max(0, u * 1.4 - m * 0.08));
         v.lerpVectors(fl.from, to, w);
         v.y += Math.sin(w * Math.PI) * 1.2 + m * 0.05;
         e.set(w * 6, w * 3 + m, 0);
         mesh.setMatrixAt(c, m4.compose(v, q.setFromEuler(e), one));
-        mesh.setColorAt(c++, pieceColor(myStack().k < 0 ? 0 : myStack().k));
+        mesh.setColorAt(c++, pieceColor(Math.max(0, mine.k)));
       }
     }
-    mesh.count = c;
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-
-    // your own tier only (brief 8: no readout on anyone else), derived from the plaques
-    const mine = myStack();
-    const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name;
-    const text = [mine.n ? `${MATERIALS[mine.k]} ${mine.n}` : '', tier ?? ''].filter(Boolean).join(' · ');
-    if (text !== chipText) {
-      chipText = text;
-      chip.textContent = text;
-      chip.classList.toggle('on', !!text);
-      chip.classList.toggle('wobbly', mine.n > SOFT_CAP);
-    }
+    if (c || mesh.count) commitPieces(mesh, c);
+    updateChip(mine);
   },
   { phase: 'update', order: 32 },
 );
+
+// The chip: your material and count, and your own tier only (brief 8: no readout on anyone else), derived from the
+// plaques; rebuilt only when your stack or the sites change.
+let chipKey = '';
+function updateChip(mine) {
+  const key = `${mine.n}/${mine.k}/${rules.sites.sites.rev}`;
+  if (key === chipKey) return;
+  chipKey = key;
+  const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name;
+  const text = [mine.n ? `${MATERIALS[mine.k]} ${mine.n}` : '', tier ?? ''].filter(Boolean).join(' · ');
+  if (text !== chipText) {
+    chipText = text;
+    chip.textContent = text;
+    chip.classList.toggle('on', !!text);
+    chip.classList.toggle('wobbly', mine.n > SOFT_CAP);
+  }
+}
