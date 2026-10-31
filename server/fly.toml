@@ -18,7 +18,7 @@ primary_region = "iad"
   # The server hosts every room and runs its world (docs/plans/server-host.md); idle rooms unload after ROOM_IDLE_MS.
   SERVER_ROOMS = "*"
   NODE_OPTIONS = "--max-old-space-size=384"
-  # ALLOWED_ORIGINS (default *), TURN_* and REPORT_TOKEN are secrets: fly secrets set ... (server/README.md)
+  # ALLOWED_ORIGINS (default *) and REPORT_TOKEN are secrets: fly secrets set ... (server/README.md)
 
 # Must match DATA_DIR above.
 [[mounts]]

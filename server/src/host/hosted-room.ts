@@ -28,7 +28,7 @@ const MIN_GAP_MS = 20; // per-source spacing of presence packets to one client
 const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
-const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
+const CLIENT_ONLY = new Set(['w:edit', 'w:need', 'w:id']); // for the server's sync alone
 const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // only the host sends these
 
 type Bucket = { tokens: number; at: number };

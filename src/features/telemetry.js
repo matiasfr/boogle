@@ -74,14 +74,13 @@ if (SERVER) {
 
   // ---- connection: net.js reports every change of net.state ('connecting' | 'live' | 'solo') ----
   let since = performance.now(); // when the current attempt started connecting (page load for the first one)
-  let role = '?'; // known once we were in a room
   let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
   let failed = 0; // failed attempts before the first good join
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
   const base = () => ({
-    role,
+    role: net.room ? (net.room.isLead() ? 'lead' : 'client') : '?', // the lead can move without a state change
     transport: net.room?.transport ?? null,
     mixedBuilds: mixedBuilds(),
     gfx: gfx(),
@@ -96,7 +95,6 @@ if (SERVER) {
   };
   if (net.state === 'connecting') armStuck();
   onNetState((s, prev) => {
-    if (net.room) role = net.room.isLead() ? 'lead' : 'client';
     if (s !== 'connecting') clearTimeout(stuckTimer);
     if (s === 'connecting' && prev !== 'connecting') {
       since = performance.now();

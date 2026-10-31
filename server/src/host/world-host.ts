@@ -56,7 +56,10 @@ export function createWorldHost({
     setItem(_key: string, json: string) {
       const data = JSON.parse(json);
       const doc = { tick: data.tick, writerId: SERVER_ID, data, updatedAt: new Date().toISOString() };
-      writing = store.write(roomId, doc).catch((e: Error) => log(`world ${roomId}: save failed`, e.message));
+      writing = store
+        .write(roomId, doc)
+        .then((r) => r.status !== 200 && log(`world ${roomId}: save refused (${r.status})`, JSON.stringify(r.body)))
+        .catch((e: Error) => log(`world ${roomId}: save failed`, e.message));
     },
   };
   sync.onSnapshot(() => {
