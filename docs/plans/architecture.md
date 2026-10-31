@@ -14,6 +14,7 @@ The open questions in the two plans have working answers so work can start; chan
 - **Hosting:** stay on GitHub Pages until shared memory (`SharedArrayBuffer`) is needed, then move the static site to
   Cloudflare Pages (COOP/COEP headers). Nothing before phase 4 needs it.
 - **ECS:** instance pools, no ECS library.
+- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](rapier.md)).
 - **Server transport:** WebSocket first (as [server-host.md](server-host.md) chose); unreliable datagrams only on
   evidence.
 
@@ -31,8 +32,9 @@ The open questions in the two plans have working answers so work can start; chan
 - [x] TypeScript everywhere: the policy, strict `tsconfig.json`, `npm run typecheck` in `check`, `.ts`-aware lint,
       registry and loaders, Node 24 (step 8a).
 - [ ] Allocation-free hot path (step 2). Heap tracking and `hitches --allocs` are in; our hooks still allocate ~15
-      KB/frame, cannon-es ~60 KB/frame (decision needed: keep it or move to Rapier).
-- [ ] Baseline on the target devices: `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
+      KB/frame, cannon-es ~60 KB/frame (decided 2026-10-31: move to Rapier, [rapier.md](rapier.md)). Remaining: our own hooks
+      under 1 KB/frame.
+- [ ] Baseline on the target devices (skipped for now, 2026-10-31: needs the devices in hand): `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
 - [ ] Unreliable presence channel (native `RTCDataChannel`, `maxRetransmits: 0`), before/after `npm run load`
       (open-world.md, section 1, "Until then").
@@ -41,6 +43,8 @@ The open questions in the two plans have working answers so work can start; chan
 
 ## Phase 2: batching and the GPU
 
+- [ ] Physics on Rapier ([rapier.md](rapier.md)): spike and measure, a physics facade on cannon-es, a Rapier backend
+      behind `?physics=rapier`, feel tuning, then the switch and removing cannon-es.
 - [ ] Instance pools (`src/render/instances.js`); move critters, gifts and blob shadows onto them; freeze static
       decor matrices (step 3).
 - [ ] Shadow pass trimmed (tighter shadow camera, fewer casters): the 52 shadow draw calls are the cheapest GPU win.
