@@ -11,7 +11,8 @@
 - **Files.** [src/render/sky.js](../../src/render/sky.js), [src/features/day-night.js](../../src/features/day-night.js),
   [src/render/lights.js](../../src/render/lights.js) (a small pool of point lights handed to the glowing sources nearest the camera),
   [src/features/blob-shadows.js](../../src/features/blob-shadows.js).
-- **Limits.** The clock only advances while someone hosts, so the time of day stops while the island is empty.
+- **Limits.** The clock only advances while someone hosts, so on a peer-hosted room the time of day stops while the
+  island is empty (a room the server hosts keeps ticking, 8.1).
 
 ---
 

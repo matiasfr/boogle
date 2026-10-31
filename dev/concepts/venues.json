@@ -1,0 +1,57 @@
+{
+  "style": "Painterly concept art for a goofy low-poly island game about friends building a railway. Gouache textures, chunky readable shapes, toy-like proportions, warm light. A close-up of one play area, at eye level, with three or four round, colourful, simple player characters mid-action. A round purple blob called The Boogler appears somewhere, about the size of a person, often wearing a mayor's sash. Industrial eras are grimy and smoky but still cheerful and silly. 16:9, no text, no logos.",
+  "items": [
+    {
+      "id": "venue-court-ball",
+      "prompt": "Era 1, court ball: a sand volleyball court by palm trees, a striped beach ball mid-bounce with a big squash, sand puffs, scores shown as little sand mounds, driftwood huts behind."
+    },
+    {
+      "id": "venue-coconut-shy",
+      "prompt": "Era 1, coconut shy: players throwing the beach ball at palm trees, fruit raining down, an indignant crab scuttling off with a mango."
+    },
+    {
+      "id": "venue-soapbox-run",
+      "prompt": "Era 2, soapbox run: coconut-wheeled wooden carts racing down a dirt path from the lighthouse, drift sparks and dust, one cart taking a muddy shortcut, a steam wagon puffing in the background."
+    },
+    {
+      "id": "venue-boogler-rodeo",
+      "prompt": "Era 2, Boogler rodeo: a player riding The Boogler like a bucking bronco while he puffs up, others cheering by bazaar stalls with bunting."
+    },
+    {
+      "id": "venue-haggle",
+      "prompt": "Era 2, haggle: The Boogler at his market stall pointing at a price chalkboard, a player walking away theatrically, coins and fruit on the counter."
+    },
+    {
+      "id": "venue-mine-cart-run",
+      "prompt": "Era 3, mine-cart run: players leaning in a mine cart on a narrow track through a coal-lit tunnel, sparks off the wheels, coal lumps flying, sooty faces."
+    },
+    {
+      "id": "venue-cave-dig",
+      "prompt": "Era 3, cave dig: players with picks in a glinting cave, a comic cave-in puff of dust, everyone popping out grey."
+    },
+    {
+      "id": "venue-melon-regatta",
+      "prompt": "Era 4, melon regatta: rafts made of melons paddling round buoys by a riveted steel pier, one raft capsizing, a steamship with a red funnel behind."
+    },
+    {
+      "id": "venue-crane-stacking",
+      "prompt": "Era 4, crane stacking: a wobbly harbour crane stacking crates into a precarious tower at dusk, a steelworks glowing behind under smoke."
+    },
+    {
+      "id": "venue-sandcastle-tide",
+      "prompt": "Era 5, sandcastle versus the tide: players piling sand walls on a beach as a big telegraphed wave rolls in, a concrete causeway and container cranes in the distance."
+    },
+    {
+      "id": "venue-tram-dash",
+      "prompt": "Era 6, tram dash: players running alongside an electric tram ringing its bell, sparks off the overhead wire, neon signs over market stalls, a wind farm on the hill."
+    },
+    {
+      "id": "venue-rooftop-bounce",
+      "prompt": "Era 7, rooftop bounce course: players bouncing on giant mushrooms across glass-tower rooftops, a white monorail gliding past, a blue-domed station."
+    },
+    {
+      "id": "venue-maglev-trial",
+      "prompt": "Era 8, maglev time trial: a sleek pearl maglev on a glowing cyan guideway over open sea at dusk, light-trail gates, a distant port city."
+    }
+  ]
+}

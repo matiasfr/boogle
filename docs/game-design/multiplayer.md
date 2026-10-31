@@ -62,9 +62,9 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 [src/world/rules/README.md](../../src/world/rules/README.md).
 
 - 10 ticks per second. Tabs send `w:edit`; the server (the host) validates, stamps each edit 3 ticks ahead and
-  broadcasts `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order: mushrooms, gifts
-  (append only: it is the wire order; the list restarted with the 0.1 namespace, when the terrain, water and proto
-  stubs were retired). Tabs run about 2 to 3 ticks behind the server.
+  broadcasts `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order: mushrooms,
+  gifts, roster, stacks, piles, sites, sources, bank (append only: it is the wire order; the list restarted with the
+  0.1 namespace, when the terrain, water and proto stubs were retired). Tabs run about 2 to 3 ticks behind the server.
 - Every 20 ticks (2 s) the server sends per-state hashes; a tab that disagrees (or gets an edit for a past tick) asks
   for a snapshot (`w:need`) and replaces its state. Snapshots travel in 7,000-character chunks.
 - States have versions and migrations (`registerState(key, { version, migrate })`); all are at version 0 today. A

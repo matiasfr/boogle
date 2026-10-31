@@ -69,7 +69,8 @@ full or running). When an age's last section is laid the age moves on; whatever 
 anyone's back pours itself into that last site and is credited to them. In the testbed the third section ends the
 wood age, and no iron sources exist yet.
 
-**While nobody plays.** Helper huts keep working offline. When a tab starts hosting a saved world, it measures how
+**While nobody plays.** Helper huts keep working offline. When a tab starts hosting a saved world (or the server
+restarts a room it hosts), it measures how
 long nobody hosted (wall clock against the save's tick), and the huts' freight for that time (one piece per hut per
 27 s) lands in the open Track ring, capped at one section. The machine still waits for a player to start it. Absences
 under a minute bank nothing.
