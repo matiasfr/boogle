@@ -38,8 +38,8 @@ the real game, captures images, and asserts on state. Prints PASS/FAIL per check
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
 risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR and the rest nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
-Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: every action, console
-line, request and DOM snapshot) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
+Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
+console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
 are optional; on a slow sandbox, push and read CI.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
