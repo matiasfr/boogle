@@ -7,7 +7,7 @@ import { addBody, removeBody } from '../physics/engine.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
-import { createPeerRoom, defaultHostScore } from '../net/peer-room.js';
+import { createPeerRoom, defaultHostScore } from '../net/peer-room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
@@ -259,7 +259,11 @@ function removePeer(peer: string) {
   remotes.delete(peer);
 }
 
-function onPeersChange(change: { joined: PeerEntry[]; updated: PeerEntry[]; left: PeerEntry[] }) {
+function onPeersChange(change: {
+  joined: readonly PeerEntry[];
+  updated: readonly PeerEntry[];
+  left: readonly PeerEntry[];
+}) {
   if (!net.readyAt) net.readyAt = performance.now();
   for (const p of change.joined) upsertPeer(p);
   for (const p of change.updated) upsertPeer(p);
@@ -325,7 +329,7 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// Host choice (src/net/peer-room.js): a tab that doesn't hold the verified world yet would restart the room from the
+// Host choice (src/net/peer-room.ts): a tab that doesn't hold the verified world yet would restart the room from the
 // last save if it took over, so it scores 0 and is never handed the room.
 const hostScore = () => (worldStatus().ready ? defaultHostScore() : 0);
 

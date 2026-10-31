@@ -1,4 +1,4 @@
-// End-to-end test of src/net/peer-room.js (`npm run test:net`): local PeerServer + headless Chromium pages running
+// End-to-end test of src/net/peer-room.ts (`npm run test:net`): local PeerServer + headless Chromium pages running
 // page.js. Room interface: src/net/README.md.
 import { startHarness, waitFor, ev, snap, seesAll, sleep } from './harness.mjs';
 

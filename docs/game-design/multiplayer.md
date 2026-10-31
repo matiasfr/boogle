@@ -2,7 +2,7 @@
 
 ## 8.1 Topology
 
-A star around a host peer over PeerJS ([src/net/peer-room.js](../../src/net/peer-room.js),
+A star around a host peer over PeerJS ([src/net/peer-room.ts](../../src/net/peer-room.ts),
 [src/net/README.md](../../src/net/README.md)). The host registers the PeerJS id `boogle-<world room>-host`, where the world room is `v01-<room>` (the world
 namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=` URL and the pause title show the plain
 name); others register a

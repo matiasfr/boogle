@@ -9,7 +9,7 @@
 
 - **WebGPU + TSL.** `WebGPURenderer` WebGPU only (no fallback since 2026-10-31), every shader in TSL
   ([webgpu-migration.md](webgpu-migration.md), [src/render/README.md](../../src/render/README.md)).
-- **WebRTC transport.** PeerJS data channels, one browser as host ([src/net/peer-room.js](../../src/net/peer-room.js)).
+- **WebRTC transport.** PeerJS data channels, one browser as host ([src/net/peer-room.ts](../../src/net/peer-room.ts)).
 - **No prediction needed for your own movement.** Each player owns their own physics, so input never waits on the host.
   Remote players and the ball are interpolated (`createSnaps()`, `INTERP_MS`).
 
@@ -30,7 +30,7 @@ too big for every peer to simulate are now the expected ones.
 - Bends DESIGN.md ("PeerJS only", "Clear authority"): change the principle on purpose in the step that starts this.
 
 **Done in the peer model (2026-10-31):** presence rides a negotiated `RTCDataChannel` with `maxRetransmits: 0` (the
-fast lane in `src/net/peer-room.js`), since PeerJS's `reliable:false` still retransmits. Old builds keep getting
+fast lane in `src/net/peer-room.ts`), since PeerJS's `reliable:false` still retransmits. Old builds keep getting
 presence on PeerJS's channel; the last update of each key is resent there after a quiet moment.
 
 ## 2. Asset pipeline (when assets arrive)

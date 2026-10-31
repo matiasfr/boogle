@@ -59,7 +59,7 @@ export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj;
 export type WorldRoom = {
   selfId: string;
   send(m: unknown): void;
-  peers?: () => { peer: string }[];
+  peers?: () => readonly { peer: string }[];
   onMessage(h: (m: unknown, from: string) => void): () => void;
   onConnection(h: (connected: boolean) => void): () => void;
   onHostChange(h: (isHost: boolean) => void): () => void;

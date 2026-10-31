@@ -43,7 +43,24 @@
 // more. Peers from before a migration keep their place for GRACE_MS. The newcomer's createPeerRoom fails with code
 // 'room_full' (`max`: the cap, when the host said). Old builds ignore 'full' and retry until their connect timeout.
 
-import { Peer } from 'peerjs';
+import { Peer, type DataConnection } from 'peerjs';
+
+type Timer = ReturnType<typeof setTimeout>;
+/** A wire message: a plain object with a `t` field, read field by field (see the list above). */
+type Msg = Record<string, unknown>;
+/** What makeSender sends through: a DataConnection, or the fast lane standing in for one. */
+type SendConn = {
+  open: boolean;
+  send(msg: unknown): unknown;
+  dataChannel?: RTCDataChannel | null;
+  bufferSize?: number;
+};
+type Lane = {
+  ch: RTCDataChannel | null;
+  peerHas: boolean;
+  pick: (fallback: SendConn | null) => SendConn | null;
+  close(): void;
+};
 
 const MAX_MSG = 16000; // max JSON size of one presence / message (peerjs JSON channel refuses >= 16300 bytes)
 const HEARTBEAT_MS = 500; // background tabs clamp timers to 1 s, still well inside DEAD_MS
@@ -75,33 +92,33 @@ export function defaultHostScore() {
   return coarse?.matches ? 2 : 3;
 }
 // Random wait before racing for the host id after the host is gone: better hosts claim it first.
-const claimDelay = (score) =>
+const claimDelay = (score: number) =>
   score >= 3 ? 100 + Math.random() * 400 : score >= 2 ? 450 + Math.random() * 450 : 950 + Math.random() * 800;
 const FATAL = new Set(['browser-incompatible', 'invalid-id', 'invalid-key', 'ssl-unavailable']);
 
-const rand = (n) => {
+const rand = (n: number) => {
   const b = crypto.getRandomValues(new Uint8Array(n));
   return Array.from(b, (x) => (x % 36).toString(36)).join('');
 };
 const SELF_ID = rand(10); // per page load; deliberately not the PeerJS id
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-const okId = (s) => typeof s === 'string' && /^[a-z0-9]{1,32}$/.test(s);
-const okSeq = (n) => Number.isSafeInteger(n) && n >= 0;
-const tooBig = (v) => JSON.stringify(v).length > MAX_MSG;
-const err = (code, msg) => Object.assign(new Error(msg || code), { code });
-const safeRoom = (s) => s.replace(/[^A-Za-z0-9]/g, (c) => '_' + c.charCodeAt(0).toString(16));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const isObj = (v: unknown): v is Msg => v !== null && typeof v === 'object' && !Array.isArray(v);
+const okId = (s: unknown): s is string => typeof s === 'string' && /^[a-z0-9]{1,32}$/.test(s);
+const okSeq = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) >= 0;
+const tooBig = (v: unknown) => JSON.stringify(v).length > MAX_MSG;
+const err = (code: string, msg?: string) => Object.assign(new Error(msg || code), { code });
+const safeRoom = (s: string) => s.replace(/[^A-Za-z0-9]/g, (c) => '_' + c.charCodeAt(0).toString(16));
 
 // Sends, closes and destroys on a connection or peer that may already be closing: errors are expected, ignore them.
-function quietly(fn) {
+function quietly(fn: () => unknown) {
   try {
     fn();
   } catch {
     /* already closing */
   }
 }
-const safeSend = (conn, msg) => quietly(() => conn.send(msg));
-const clearTimers = (timers) =>
+const safeSend = (conn: SendConn, msg: unknown) => quietly(() => conn.send(msg));
+const clearTimers = (timers: Timer[]) =>
   timers.forEach((t) => {
     clearInterval(t);
     clearTimeout(t);
@@ -109,10 +126,10 @@ const clearTimers = (timers) =>
 
 // Calls onGone (once) when the underlying RTCPeerConnection of a DataConnection fails, closes, or stays disconnected.
 // Needed because a data channel can stay 'open' for a long time after the other end died.
-function watchPc(conn, onGone, timers) {
+function watchPc(conn: DataConnection, onGone: () => void, timers: Timer[]) {
   const pc = conn.peerConnection;
   if (!pc || !pc.addEventListener) return;
-  let t = 0;
+  let t: Timer | undefined;
   const check = () => {
     clearTimeout(t);
     const st = pc.connectionState || pc.iceConnectionState;
@@ -128,10 +145,10 @@ function watchPc(conn, onGone, timers) {
 
 // The ICE pair a connection actually uses: whether either end is a TURN relay, and its round-trip time. Chrome and
 // Safari name it on the transport stats, Firefox flags it `selected`; null until ICE has picked one.
-async function pcLink(pc) {
+async function pcLink(pc: RTCPeerConnection | undefined) {
   if (!pc?.getStats) return null;
   const stats = await pc.getStats();
-  let pair = null;
+  let pair: RTCIceCandidatePairStats | null = null as RTCIceCandidatePairStats | null;
   stats.forEach((s) => {
     if (s.type === 'transport' && s.selectedCandidatePairId) pair ??= stats.get(s.selectedCandidatePairId);
   });
@@ -147,7 +164,7 @@ async function pcLink(pc) {
     relay: local === 'relay' || remote === 'relay',
     local,
     remote,
-    rttMs: Number.isFinite(rtt) ? Math.round(rtt * 1000) : null,
+    rttMs: rtt !== undefined && Number.isFinite(rtt) ? Math.round(rtt * 1000) : null,
   };
 }
 
@@ -157,14 +174,14 @@ const UX_ID = 2; // negotiated stream id; PeerJS's one channel on this connectio
 const LANE_MAX = 1100; // bytes: bigger presence goes on 'u', since one lost fragment would lose all of it
 const SETTLE_MS = 250; // the newest lane packet of a key goes again on 'u' after this long without a newer one
 const HELLO_MS = 500;
-const strings = new WeakMap(); // msg -> JSON: a relayed message is serialized once for all its recipients
-const json = (m) => {
+const strings = new WeakMap<object, string>(); // msg -> JSON: a relayed message is serialized once for all its recipients
+const json = (m: object) => {
   let str = strings.get(m);
   if (str === undefined) strings.set(m, (str = JSON.stringify(m)));
   return str;
 };
-function addFastLane(conn, onPresence) {
-  const lane = { ch: null, peerHas: false, pick: (fallback) => fallback, close() {} };
+function addFastLane(conn: DataConnection, onPresence: (d: Msg) => void): Lane {
+  const lane: Lane = { ch: null, peerHas: false, pick: (fallback) => fallback, close() {} };
   quietly(() => {
     lane.ch = conn.peerConnection.createDataChannel('ux', {
       negotiated: true,
@@ -173,12 +190,13 @@ function addFastLane(conn, onPresence) {
       maxRetransmits: 0,
     });
   });
-  const ch = lane.ch;
+  const ch = lane.ch as RTCDataChannel | null;
   if (!ch) return lane;
-  const hello = (ack) => ch.readyState === 'open' && quietly(() => ch.send(ack ? '{"t":"ux","ack":1}' : '{"t":"ux"}'));
+  const hello = (ack: boolean) =>
+    ch.readyState === 'open' && quietly(() => ch.send(ack ? '{"t":"ux","ack":1}' : '{"t":"ux"}'));
   ch.onopen = () => hello(false);
   ch.onmessage = (e) => {
-    let d;
+    let d: unknown;
     try {
       d = JSON.parse(e.data);
     } catch {
@@ -189,15 +207,16 @@ function addFastLane(conn, onPresence) {
     if (d.t === 'ux' && !d.ack) hello(true);
     else if (d.t === 'p') onPresence(d);
   };
-  const latest = new Map(), // key -> newest message that went only over the lane
-    sentAt = new Map();
-  const proxy = {
+  const latest = new Map<unknown, Msg>(), // key -> newest message that went only over the lane
+    sentAt = new Map<unknown, number>();
+  const proxy: SendConn = {
     get open() {
       return lane.peerHas && ch.readyState === 'open';
     },
     dataChannel: ch,
     bufferSize: 0,
-    send(msg) {
+    send(m: unknown) {
+      const msg = m as Msg;
       const str = json(msg);
       if (str.length > LANE_MAX) return conn.send(msg);
       ch.send(str);
@@ -214,9 +233,9 @@ function addFastLane(conn, onPresence) {
       hello(false); // until the other side answers (old builds never do)
     }
     for (const [key, msg] of latest)
-      if (now - sentAt.get(key) > SETTLE_MS) {
+      if (now - (sentAt.get(key) ?? 0) > SETTLE_MS) {
         latest.delete(key);
-        if (conn.open) safeSend(conn, msg);
+        if (conn.open) safeSend(conn as unknown as SendConn, msg);
       }
   }, 100);
   lane.pick = (fallback) => (proxy.open ? proxy : fallback);
@@ -228,11 +247,11 @@ function addFastLane(conn, onPresence) {
 }
 
 // Latest-wins sender: at most one pending packet per key, spaced >= MIN_GAP_MS, held back while buffers are full.
-function makeSender(getConn) {
-  const pending = new Map(),
-    last = new Map();
-  let timer = 0;
-  const trySend = (key, msg) => {
+function makeSender(getConn: () => SendConn | null) {
+  const pending = new Map<string, Msg>(),
+    last = new Map<string, number>();
+  let timer: Timer | 0 = 0;
+  const trySend = (key: string, msg: Msg) => {
     const c = getConn();
     if (!c || !c.open) return true; // nowhere to send: drop
     if ((c.dataChannel?.bufferedAmount || 0) > HIGH_WATER || (c.bufferSize || 0) > 0) return false;
@@ -248,7 +267,7 @@ function makeSender(getConn) {
     if (pending.size) timer = setTimeout(drain, MIN_GAP_MS);
   };
   return {
-    put(key, msg) {
+    put(key: string, msg: Msg) {
       if (!pending.size && trySend(key, msg)) return;
       pending.set(key, msg);
       if (!timer) timer = setTimeout(drain, MIN_GAP_MS);
@@ -261,43 +280,85 @@ function makeSender(getConn) {
   };
 }
 
-export async function createPeerRoom(opts = {}) {
+/** createPeerRoom's options (src/net/README.md). */
+export type RoomOptions = {
+  roomId?: string;
+  debug?: number;
+  fastLane?: boolean; // false: presence only on 'u', as builds before the lane (tests, a kill switch)
+  signal?: { host?: string; port?: number; path?: string; secure?: boolean; key?: string };
+  iceServers?: RTCIceServer[];
+  maxPeers?: number;
+  hostScore?: () => number;
+  connectTimeoutMs?: number; // default 20 s
+};
+/** One peer as onPeers and peers() hand it out. */
+export type PeerEntry = Readonly<{ peer: string; sameTab: boolean; presence: Readonly<Msg>; updatedAt: number }>;
+export type PeersChange = {
+  peers: readonly PeerEntry[];
+  joined: readonly PeerEntry[];
+  left: readonly PeerEntry[];
+  updated: readonly PeerEntry[];
+};
+/** A room failure: code is 'room_full' (max: the cap), 'timeout', or a PeerJS error type. */
+export type RoomError = Error & { code?: string; fatal?: boolean; max?: number };
+type Rec = { presence: Readonly<Msg>; at: number; entry: PeerEntry };
+type Role = {
+  ended: Promise<unknown>;
+  end: (v?: unknown) => void;
+  done: boolean;
+  teardown(): void;
+  isHost: boolean;
+};
+/** The host's record of one client: its two connections, fast lane, liveness, presence sequence and host score. */
+type Client = {
+  id: string;
+  u: DataConnection | null;
+  r: DataConnection | null;
+  lane: Lane | null;
+  ready: boolean;
+  seen: number;
+  lastSeq: number;
+  score: number;
+  sender: ReturnType<typeof makeSender>;
+};
+
+export async function createPeerRoom(opts: RoomOptions = {}) {
   if (typeof RTCPeerConnection === 'undefined') throw err('browser-incompatible', 'WebRTC is not available');
   const roomId = String(opts.roomId ?? 'default');
   const hostId = `boogle-${safeRoom(roomId)}-host`;
-  const peerOpts = { debug: opts.debug ?? 0 };
+  const peerOpts: Record<string, unknown> = { debug: opts.debug ?? 0 };
   const fastLane = opts.fastLane !== false; // false: presence only on 'u', as builds before the lane (tests, a kill switch)
-  for (const k of ['host', 'port', 'path', 'secure', 'key'])
+  for (const k of ['host', 'port', 'path', 'secure', 'key'] as const)
     if (opts.signal?.[k] !== undefined) peerOpts[k] = opts.signal[k];
   if (opts.iceServers) peerOpts.config = { iceServers: opts.iceServers };
   const maxPeers = opts.maxPeers ?? MAX_PEERS;
 
   // ---- peer table (me + everyone known) and change notification ----
-  const table = new Map(); // id -> { presence, at, entry }
-  const seqs = new Map(); // id -> highest presence seq seen (kept after leaving, as a tombstone)
-  let mine = {},
+  const table = new Map<string, Rec>(); // id -> { presence, at, entry }
+  const seqs = new Map<string, number>(); // id -> highest presence seq seen (kept after leaving, as a tombstone)
+  let mine: Msg = {},
     mySeq = 0,
-    cache = null;
-  const mkEntry = (id, rec) =>
+    cache: readonly PeerEntry[] | null = null;
+  const mkEntry = (id: string, rec: { presence: Readonly<Msg>; at: number }): PeerEntry =>
     Object.freeze({ peer: id, sameTab: id === SELF_ID, presence: rec.presence, updatedAt: rec.at });
-  function setRec(id, presence) {
-    const rec = { presence: Object.freeze({ ...presence }), at: Date.now() };
-    rec.entry = mkEntry(id, rec);
+  function setRec(id: string, presence: Msg) {
+    const base = { presence: Object.freeze({ ...presence }), at: Date.now() };
+    const rec: Rec = { ...base, entry: mkEntry(id, base) };
     table.set(id, rec);
     cache = null;
     return rec;
   }
-  const peersHandlers = new Set(),
-    connHandlers = new Set(),
-    msgHandlers = new Set(),
-    hostHandlers = new Set(),
-    errHandlers = new Set();
-  let pj = new Set(),
-    pu = new Set(),
-    pl = new Map(),
-    flushTimer = 0;
-  let shown = new Set(); // ids in pj that peers() has already handed out (so their departure must still be announced)
-  function note(kind, id, entry) {
+  const peersHandlers = new Set<(c: PeersChange) => void>(),
+    connHandlers = new Set<(connected: boolean) => void>(),
+    msgHandlers = new Set<(msg: unknown, from: string) => void>(),
+    hostHandlers = new Set<(isHost: boolean) => void>(),
+    errHandlers = new Set<(e: RoomError) => void>();
+  let pj = new Set<string>(),
+    pu = new Set<string>(),
+    pl = new Map<string, PeerEntry>(),
+    flushTimer: Timer | 0 = 0;
+  let shown = new Set<string>(); // ids in pj that peers() has already handed out (so their departure must still be announced)
+  function note(kind: 'j' | 'u' | 'l', id: string, entry: PeerEntry) {
     if (kind === 'j') {
       if (pl.delete(id)) pu.add(id);
       else pj.add(id);
@@ -313,12 +374,12 @@ export async function createPeerRoom(opts = {}) {
   }
   function flush() {
     flushTimer = 0;
-    const get = (id) => table.get(id)?.entry;
-    const change = {
+    const get = (id: string) => table.get(id)?.entry;
+    const change: PeersChange = {
       peers: list(),
-      joined: [...pj].map(get).filter(Boolean),
+      joined: [...pj].map(get).filter((e): e is PeerEntry => !!e),
       left: [...pl.values()],
-      updated: [...pu].map(get).filter(Boolean),
+      updated: [...pu].map(get).filter((e): e is PeerEntry => !!e),
     };
     pj = new Set();
     pu = new Set();
@@ -330,13 +391,13 @@ export async function createPeerRoom(opts = {}) {
     if (!cache) {
       for (const id of pj) shown.add(id);
       cache = Object.freeze([
-        table.get(SELF_ID).entry,
+        table.get(SELF_ID)!.entry,
         ...[...table].filter(([id]) => id !== SELF_ID).map(([, r]) => r.entry),
       ]);
     }
     return cache;
   }
-  function call(set, ...args) {
+  function call<A extends unknown[]>(set: Set<(...args: A) => void>, ...args: A) {
     for (const h of [...set]) {
       try {
         h(...args);
@@ -346,7 +407,7 @@ export async function createPeerRoom(opts = {}) {
     }
   }
 
-  function upsert(id, presence, seq) {
+  function upsert(id: string, presence: Msg, seq: number) {
     // remote presence; false if stale
     if (id === SELF_ID || seq <= (seqs.get(id) ?? -1)) return false;
     seqs.set(id, seq);
@@ -354,7 +415,7 @@ export async function createPeerRoom(opts = {}) {
     note(had ? 'u' : 'j', id, setRec(id, presence).entry);
     return true;
   }
-  function drop(id, seq) {
+  function drop(id: string, seq?: number | null) {
     // remove a remote peer; true if it was present
     if (id === SELF_ID) return false;
     if (seq != null) seqs.set(id, Math.max(seqs.get(id) ?? -1, seq));
@@ -372,9 +433,9 @@ export async function createPeerRoom(opts = {}) {
     suspended = false,
     connected = false,
     isHostNow = false,
-    fatalError = null;
+    fatalError: RoomError | null = null;
   // Host choice: the successor a handover named, and until when this tab, if named, keeps trying to claim the id.
-  let handover = null, // { to, at }
+  let handover: { to: string; at: number } | null = null,
     claimUntil = 0;
   const hostScore = () => {
     try {
@@ -383,32 +444,32 @@ export async function createPeerRoom(opts = {}) {
       return 0;
     }
   };
-  let role = null,
-    wake = null;
-  let clients = new Map(); // host side: id -> client record
-  let hostU = null,
-    hostR = null, // client side
-    hostLane = null; // client side: the fast lane on hostU, once open
-  const view = new Set(); // client side: ids the current host has told us about
-  const clientSender = makeSender(() => hostLane?.pick(hostU) ?? hostU);
-  const outbox = [];
-  const dbg = (...a) => {
+  let role: Role | null = null,
+    wake: (() => void) | null = null;
+  let clients = new Map<string, Client>(); // host side: id -> client record
+  let hostU: DataConnection | null = null,
+    hostR: DataConnection | null = null, // client side
+    hostLane: Lane | null = null; // client side: the fast lane on hostU, once open
+  const view = new Set<string>(); // client side: ids the current host has told us about
+  const clientSender = makeSender(() => hostLane?.pick(hostU as SendConn | null) ?? (hostU as SendConn | null));
+  const outbox: unknown[] = [];
+  const dbg = (...a: unknown[]) => {
     if (opts.debug) console.log('[peer-room]', Date.now() % 100000, ...a);
   };
 
-  function setConnected(v) {
+  function setConnected(v: boolean) {
     if (v !== connected) {
       connected = v;
       call(connHandlers, v);
     }
   }
-  function setHost(v) {
+  function setHost(v: boolean) {
     if (v !== isHostNow) {
       isHostNow = v;
       call(hostHandlers, v);
     }
   }
-  function deliver(msg, from) {
+  function deliver(msg: unknown, from: string) {
     call(msgHandlers, msg, from);
   }
 
@@ -420,11 +481,11 @@ export async function createPeerRoom(opts = {}) {
       for (const c of clients.values()) if (c.ready) c.sender.put(SELF_ID, m);
     } else clientSender.put('me', { t: 'p', s: mySeq, d: mine });
   }
-  function sendReliable(msg) {
+  function sendReliable(msg: unknown) {
     if (isHostNow) {
       const m = { t: 'm', from: SELF_ID, d: msg };
-      for (const c of clients.values()) if (c.ready) safeSend(c.r, m);
-    } else if (hostR?.open) safeSend(hostR, { t: 'm', d: msg });
+      for (const c of clients.values()) if (c.ready) safeSend(c.r as SendConn, m);
+    } else if (hostR?.open) safeSend(hostR as SendConn, { t: 'm', d: msg });
   }
   function onEstablished() {
     mySeq++; // new seq so a tombstone left by a previous host can't suppress us
@@ -433,32 +494,32 @@ export async function createPeerRoom(opts = {}) {
   }
 
   // ---- host role ----
-  function makeRole() {
-    let end;
+  function makeRole(): Role {
+    let end: (v?: unknown) => void = () => {};
     const ended = new Promise((r) => {
       end = r;
     });
     return { ended, end, done: false, teardown() {}, isHost: false };
   }
 
-  function startHost(peer) {
+  function startHost(peer: Peer) {
     const r = makeRole();
     r.isHost = true;
-    const timers = [];
+    const timers: Timer[] = [];
     clients = new Map();
     const hostClients = clients;
-    const closeClient = (c) => {
+    const closeClient = (c: Client) => {
       c.lane?.close();
-      for (const k of ['u', 'r']) quietly(() => c[k]?.close());
+      for (const k of ['u', 'r'] as const) quietly(() => c[k]?.close());
       c.sender.clear();
     };
-    const broadcastR = (msg, exceptId) => {
-      for (const c of hostClients.values()) if (c.ready && c.id !== exceptId) safeSend(c.r, msg);
+    const broadcastR = (msg: Msg, exceptId?: string) => {
+      for (const c of hostClients.values()) if (c.ready && c.id !== exceptId) safeSend(c.r as SendConn, msg);
     };
     // tell: 0 = silent, 'now' = announce immediately (explicit bye), 'soon' = announce unless the client is back within
     // 400 ms. The delay matters when the *host* is the one dying: it can see its clients' connections close a few ms
     // before it vanishes, and must not announce "everyone left" on its way out.
-    function dropClient(id, tell = 'soon') {
+    function dropClient(id: string, tell: 0 | 'now' | 'soon' = 'soon') {
       const c = hostClients.get(id);
       if (!c) return;
       hostClients.delete(id);
@@ -479,11 +540,11 @@ export async function createPeerRoom(opts = {}) {
       for (const c of hostClients.values()) if (c.ready && !table.has(c.id)) n++;
       return n;
     };
-    function sendList(c) {
-      let batch = [],
+    function sendList(c: Client) {
+      let batch: Msg[] = [],
         size = 0;
-      const out = (last) => {
-        safeSend(c.r, { t: 'list', peers: batch, last });
+      const out = (last: boolean) => {
+        safeSend(c.r as SendConn, { t: 'list', peers: batch, last });
         batch = [];
         size = 0;
       };
@@ -497,7 +558,7 @@ export async function createPeerRoom(opts = {}) {
       }
       out(true);
     }
-    function onData(c, d) {
+    function onData(c: Client, d: unknown) {
       if (!isObj(d) || hostClients.get(c.id) !== c || !c.ready) return;
       c.seen = Date.now();
       if (d.t === 'p') {
@@ -513,26 +574,36 @@ export async function createPeerRoom(opts = {}) {
         broadcastR({ t: 'm', from: c.id, d: d.d }, c.id);
         deliver(d.d, c.id);
       } else if (d.t === 'sc') {
-        if (Number.isFinite(d.v)) c.score = Math.max(0, Math.min(MAX_SCORE, d.v)); // a lying client gets no edge
+        if (typeof d.v === 'number' && Number.isFinite(d.v)) c.score = Math.max(0, Math.min(MAX_SCORE, d.v)); // a lying client gets no edge
       } else if (d.t === 'bye') dropClient(c.id, 'now');
       // 'hb' (and anything unknown) only refreshes `seen`
     }
-    peer.on('connection', (conn) => {
-      const id = conn.metadata?.selfId,
+    peer.on('connection', (conn: DataConnection) => {
+      const id: unknown = conn.metadata?.selfId,
         label = conn.label;
       if (!okId(id) || id === SELF_ID || (label !== 'u' && label !== 'r')) {
         conn.close();
         return;
       }
-      let c = hostClients.get(id);
+      let c = hostClients.get(id) ?? null;
       if (c && c[label]) {
         hostClients.delete(id);
         closeClient(c);
         c = null;
       } // the same tab came back on a fresh session
       if (!c) {
-        c = { id, u: null, r: null, lane: null, ready: false, seen: Date.now(), lastSeq: -1, score: -1 }; // -1: never reported
-        c.sender = makeSender(() => c.lane?.pick(c.u) ?? c.u);
+        const fresh: Client = {
+          id,
+          u: null,
+          r: null,
+          lane: null,
+          ready: false,
+          seen: Date.now(),
+          lastSeq: -1,
+          score: -1, // -1: never reported
+          sender: makeSender(() => fresh.lane?.pick(fresh.u as SendConn | null) ?? (fresh.u as SendConn | null)),
+        };
+        c = fresh;
         hostClients.set(id, c);
         const pair = c;
         timers.push(
@@ -547,17 +618,17 @@ export async function createPeerRoom(opts = {}) {
         if (!rec.ready && rec.u?.open && rec.r?.open && hostClients.get(id) === rec) {
           // seqs keeps every id this room has seen, and ids are per page load: a known id is a tab coming back.
           if (!table.has(id) && !seqs.has(id) && inRoom() >= maxPeers) {
-            safeSend(rec.r, { t: 'full', max: maxPeers });
+            safeSend(rec.r as SendConn, { t: 'full', max: maxPeers });
             timers.push(setTimeout(() => hostClients.get(id) === rec && dropClient(id, 0), 500)); // let 'full' arrive
             return;
           }
           rec.ready = true;
           rec.seen = Date.now();
           sendList(rec);
-          if (fastLane) rec.lane = addFastLane(rec.u, (d) => onData(rec, d));
+          if (fastLane && rec.u) rec.lane = addFastLane(rec.u, (d) => onData(rec, d));
         }
       });
-      conn.on('data', (d) => onData(rec, d));
+      conn.on('data', (d: unknown) => onData(rec, d));
       const gone = () => {
         if (hostClients.get(id) === rec && rec[label] === conn) dropClient(id, rec.ready ? 'soon' : 0);
       };
@@ -574,7 +645,7 @@ export async function createPeerRoom(opts = {}) {
       );
     });
     peer.on('close', () => r.end());
-    peer.on('error', (e) => dbg('host peer error', e.type));
+    peer.on('error', (e: { type?: string }) => dbg('host peer error', e.type));
     peer.on('disconnected', () => {
       // lost the signaling server: keep the id and keep trying
       const t = setInterval(() => {
@@ -596,7 +667,7 @@ export async function createPeerRoom(opts = {}) {
           if (stalled) c.seen = now;
           // a silent client is not the host dying (we are running), so announce straight away
           if (now - c.seen > DEAD_MS) dropClient(id, c.ready ? 'now' : 0);
-          else if (c.ready) safeSend(c.r, { t: 'hb' });
+          else if (c.ready) safeSend(c.r as SendConn, { t: 'hb' });
         }
       }, HEARTBEAT_MS),
     );
@@ -612,7 +683,7 @@ export async function createPeerRoom(opts = {}) {
         if (r.done || handingOver) return;
         const mine = hostScore();
         const hidden = mine <= 0;
-        let best = null;
+        let best: Client | null = null as Client | null;
         for (const c of hostClients.values()) if (c.ready && c.score > (best?.score ?? mine)) best = c;
         if (!best || hidden !== wasHidden) betterSince = 0;
         wasHidden = hidden;
@@ -626,7 +697,7 @@ export async function createPeerRoom(opts = {}) {
         handover = { to: best.id, at: now };
         // On both channels: closing either ends the client's role, so the notice must not wait behind the other.
         for (const c of hostClients.values())
-          if (c.ready) for (const k of ['r', 'u']) safeSend(c[k], { t: 'handover', to: best.id });
+          if (c.ready) for (const k of ['r', 'u'] as const) safeSend(c[k] as SendConn, { t: 'handover', to: best!.id });
         timers.push(setTimeout(() => r.end(), 150)); // let the notice go out before the channels close
       }, 1000),
     );
@@ -652,20 +723,20 @@ export async function createPeerRoom(opts = {}) {
   }
 
   // ---- client role ----
-  async function startClient(peer) {
+  async function startClient(peer: Peer) {
     const r = makeRole();
-    const timers = [];
+    const timers: Timer[] = [];
     let lastData = Date.now(),
-      resolveList;
+      resolveList: (v?: unknown) => void = () => {};
     const gotList = new Promise((res) => {
       resolveList = res;
     });
     view.clear();
-    const mk = (label, reliable) =>
+    const mk = (label: string, reliable: boolean) =>
       peer.connect(hostId, { label, reliable, serialization: 'json', metadata: { selfId: SELF_ID } });
     const u = mk('u', false),
       rel = mk('r', true);
-    let lane = null; // the fast lane on u, once both channels are open
+    let lane: Lane | null = null; // the fast lane on u, once both channels are open
     r.teardown = () => {
       if (r.done) return;
       r.done = true;
@@ -685,7 +756,7 @@ export async function createPeerRoom(opts = {}) {
     hostU = u;
     hostR = rel;
 
-    function onData(d) {
+    function onData(d: unknown) {
       lastData = Date.now();
       if (!isObj(d)) return;
       if (d.t === 'list') {
@@ -711,15 +782,15 @@ export async function createPeerRoom(opts = {}) {
       } else if (d.t === 'handover') {
         if (okId(d.to)) handover = { to: d.to, at: Date.now() };
       } else if (d.t === 'full') {
-        full = { max: Number.isSafeInteger(d.max) && d.max > 0 ? d.max : undefined };
+        full = { max: okSeq(d.max) && d.max > 0 ? d.max : undefined };
         resolveFull(false);
       }
     }
-    let full = null,
-      resolveFull;
-    const failed = new Promise((res) => {
+    let full: { max?: number } | null = null as { max?: number } | null,
+      resolveFull: (v: boolean) => void = () => {};
+    const failed = new Promise<boolean>((res) => {
       resolveFull = res;
-      peer.on('error', (e) => {
+      peer.on('error', (e: { type?: string }) => {
         if (e.type === 'peer-unavailable') res(false);
       });
       for (const c of [u, rel]) {
@@ -734,7 +805,9 @@ export async function createPeerRoom(opts = {}) {
         });
       }
     });
-    const opened = Promise.all([u, rel].map((c) => new Promise((res) => (c.open ? res() : c.on('open', res)))));
+    const opened = Promise.all(
+      [u, rel].map((c) => new Promise<void>((res) => (c.open ? res() : c.on('open', () => res())))),
+    );
     const timeout = new Promise((res) => timers.push(setTimeout(() => res(false), OPEN_TIMEOUT_MS)));
     const ok = await Promise.race([
       opened.then(() => Promise.race([gotList.then(() => true), timeout])),
@@ -759,7 +832,7 @@ export async function createPeerRoom(opts = {}) {
     if (fastLane) lane = addFastLane(u, onData);
     if (hostU === u) hostLane = lane;
     let lastTick = Date.now(),
-      sentScore = null;
+      sentScore: number | null = null;
     timers.push(
       setInterval(() => {
         const now = Date.now();
@@ -770,9 +843,9 @@ export async function createPeerRoom(opts = {}) {
           r.end();
           return;
         }
-        safeSend(rel, { t: 'hb' });
+        safeSend(rel as SendConn, { t: 'hb' });
         const score = hostScore(); // how good a host this tab would be, for the host's handover check
-        if (score !== sentScore) safeSend(rel, { t: 'sc', v: (sentScore = score) });
+        if (score !== sentScore) safeSend(rel as SendConn, { t: 'sc', v: (sentScore = score) });
       }, HEARTBEAT_MS),
     );
     timers.push(
@@ -785,8 +858,8 @@ export async function createPeerRoom(opts = {}) {
   }
 
   // ---- connect loop: claim host id, else join the host; on loss, retry (migration) ----
-  function openPeer(id) {
-    return new Promise((resolve, reject) => {
+  function openPeer(id: string) {
+    return new Promise<Peer>((resolve, reject) => {
       const p = new Peer(id, peerOpts);
       const t = setTimeout(() => {
         p.destroy();
@@ -796,20 +869,22 @@ export async function createPeerRoom(opts = {}) {
         clearTimeout(t);
         resolve(p);
       });
-      p.once('error', (e) => {
+      p.once('error', (e: unknown) => {
         clearTimeout(t);
         quietly(() => p.destroy());
         reject(e);
       });
     });
   }
-  const fatal = (e) => Object.assign(err(e.type || e.code || 'unknown', e.message), { fatal: true });
+  type PeerError = { type?: string; code?: string; message?: string; fatal?: boolean };
+  const fatal = (e: PeerError) => Object.assign(err(e.type || e.code || 'unknown', e.message), { fatal: true });
   async function attempt() {
-    let p;
+    let p: Peer;
     try {
       p = await openPeer(hostId);
-    } catch (e) {
-      if (FATAL.has(e.type)) throw fatal(e);
+    } catch (caught) {
+      const e = caught as PeerError;
+      if (FATAL.has(e.type ?? '')) throw fatal(e);
       if (e.type !== 'unavailable-id') {
         dbg('claim failed', e.type);
         return null;
@@ -817,8 +892,9 @@ export async function createPeerRoom(opts = {}) {
       if (Date.now() < claimUntil) return null; // named successor: the old host is still letting go; claim again
       try {
         p = await openPeer(`boogle-${safeRoom(roomId)}-c${rand(10)}`);
-      } catch (e2) {
-        if (FATAL.has(e2.type)) throw fatal(e2);
+      } catch (caught2) {
+        const e2 = caught2 as PeerError;
+        if (FATAL.has(e2.type ?? '')) throw fatal(e2);
         dbg('client peer failed', e2.type);
         return null;
       }
@@ -840,12 +916,13 @@ export async function createPeerRoom(opts = {}) {
   }
 
   let looping = false;
-  let first, firstFail;
-  const firstP = new Promise((res, rej) => {
+  let first: () => void = () => {},
+    firstFail: (e: unknown) => void = () => {};
+  const firstP = new Promise<void>((res, rej) => {
     first = res;
     firstFail = rej;
   });
-  const failAll = (e) => {
+  const failAll = (e: RoomError) => {
     fatalError = e;
     firstFail(e);
     call(errHandlers, e);
@@ -858,18 +935,18 @@ export async function createPeerRoom(opts = {}) {
       fails = 0;
     while (!closed) {
       while (suspended && !closed)
-        await new Promise((r) => {
+        await new Promise<void>((r) => {
           wake = r;
         });
       if (delay) await sleep(delay);
       if (closed) break;
       if (suspended) continue;
-      let r = null;
+      let r: Role | null = null;
       try {
         r = await attempt();
       } catch (e) {
-        if (e.fatal) {
-          failAll(e);
+        if ((e as PeerError).fatal) {
+          failAll(e as Error);
           break;
         }
       }
@@ -906,7 +983,7 @@ export async function createPeerRoom(opts = {}) {
 
   // ---- leaving ----
   function leaveRole() {
-    if (role && !role.isHost && hostR?.open) safeSend(hostR, { t: 'bye' });
+    if (role && !role.isHost && hostR?.open) safeSend(hostR as SendConn, { t: 'bye' });
     role?.teardown();
     role?.end();
   }
@@ -915,7 +992,7 @@ export async function createPeerRoom(opts = {}) {
     suspended = true;
     leaveRole();
   }
-  function onShow(e) {
+  function onShow(e: PageTransitionEvent) {
     if (e.persisted && !closed) {
       suspended = false;
       wake?.();
@@ -949,10 +1026,10 @@ export async function createPeerRoom(opts = {}) {
     clearTimeout(timer);
   }
 
-  const sub = (set, h, onError) => {
+  const sub = <H>(set: Set<H>, h: H, onError?: (e: RoomError) => void) => {
     set.add(h);
     if (onError) errHandlers.add(onError);
-    if (fatalError && onError) setTimeout(() => onError(fatalError), 0);
+    if (fatalError && onError) setTimeout(() => onError(fatalError!), 0);
     return () => {
       set.delete(h);
       if (onError) errHandlers.delete(onError);
@@ -960,9 +1037,9 @@ export async function createPeerRoom(opts = {}) {
   };
   return {
     selfId: SELF_ID,
-    presence(patch) {
+    presence(patch: unknown) {
       if (!isObj(patch)) return Promise.reject(new TypeError('presence patch must be an object'));
-      const next = { ...mine };
+      const next: Msg = { ...mine };
       for (const [k, v] of Object.entries(patch)) {
         if (v === null) delete next[k];
         else next[k] = v;
@@ -975,7 +1052,7 @@ export async function createPeerRoom(opts = {}) {
       return Promise.resolve();
     },
     peers: list,
-    onPeers(h, onError) {
+    onPeers(h: (c: PeersChange) => void, onError?: (e: RoomError) => void) {
       const unsub = sub(peersHandlers, h, onError);
       setTimeout(() => {
         if (peersHandlers.has(h)) {
@@ -989,7 +1066,7 @@ export async function createPeerRoom(opts = {}) {
       }, 0);
       return unsub;
     },
-    onConnection(h, onError) {
+    onConnection(h: (connected: boolean) => void, onError?: (e: RoomError) => void) {
       const unsub = sub(connHandlers, h, onError);
       setTimeout(() => {
         if (connHandlers.has(h))
@@ -1001,7 +1078,7 @@ export async function createPeerRoom(opts = {}) {
       }, 0);
       return unsub;
     },
-    send(msg) {
+    send(msg: unknown) {
       if (!isObj(msg)) throw new TypeError('send() takes a JSON object');
       if (tooBig(msg)) throw err('too_big', 'message too large');
       if (closed) return;
@@ -1011,7 +1088,7 @@ export async function createPeerRoom(opts = {}) {
       }
       sendReliable(msg);
     },
-    onMessage(h) {
+    onMessage(h: (msg: unknown, from: string) => void) {
       msgHandlers.add(h);
       return () => msgHandlers.delete(h);
     },
@@ -1019,7 +1096,7 @@ export async function createPeerRoom(opts = {}) {
     // One row per open presence link: a client's link to the host, or the host's link to each client. `fast`: presence
     // to that peer rides the fast lane (both sides have it and it is open).
     async linkStats() {
-      const links = isHostNow
+      const links: [string, DataConnection | null, Lane | null][] = isHostNow
         ? [...clients.values()].filter((c) => c.ready).map((c) => [c.id, c.u, c.lane])
         : hostU?.open
           ? [['host', hostU, hostLane]]
@@ -1027,7 +1104,7 @@ export async function createPeerRoom(opts = {}) {
       const rows = await Promise.all(
         links.map(async ([peer, conn, lane]) => {
           try {
-            const link = await pcLink(conn.peerConnection);
+            const link = await pcLink(conn?.peerConnection);
             return link && { peer, fast: lane?.pick(null) != null, ...link };
           } catch {
             return null; // closed while we asked
@@ -1036,7 +1113,7 @@ export async function createPeerRoom(opts = {}) {
       );
       return rows.filter(Boolean);
     },
-    onHostChange(h) {
+    onHostChange(h: (isHost: boolean) => void) {
       hostHandlers.add(h);
       return () => hostHandlers.delete(h);
     },

@@ -1,5 +1,5 @@
 // Test page: wraps createPeerRoom and records everything the assertions in run.mjs need.
-import { createPeerRoom } from '../../src/net/peer-room.js';
+import { createPeerRoom } from '../../src/net/peer-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 
