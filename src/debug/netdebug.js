@@ -53,7 +53,12 @@ onStart(() => {
     'position:fixed;right:8px;bottom:8px;margin:0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.6);' +
     'color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;pointer-events:none;z-index:50;white-space:pre';
   document.body.append(el);
+  let rtt = null;
   setInterval(() => {
+    net.room
+      ?.linkStats()
+      .then((rows) => (rtt = rows[0]?.rttMs ?? null))
+      .catch(() => {});
     const s = worldStatus();
     const other = builds();
     const subs = Object.entries(s.subsystems ?? {})
@@ -65,7 +70,7 @@ onStart(() => {
       `  held drop ${s.heldDropped}\n` +
       (s.mode === 'host' ? 'authoritative: per-state hashes sent every 2 s' : subs || 'no hash check yet') +
       (s.lastBad ? `\nlast desync: tick ${s.lastBad.tick} in ${s.lastBad.keys.join(', ')}` : '') +
-      `\nroom ${net.room?.transport ?? 'none'}${net.room?.isLead() ? '  (lead)' : ''}` +
+      `\nroom ${net.room?.transport ?? 'none'}${net.room?.isLead() ? '  (lead)' : ''}${rtt != null ? `  rtt ${rtt} ms` : ''}` +
       `\nbuild ${BUILD}  ${other ? `✗ mixed: ${other}` : '✓ same as everyone heard'}`;
   }, 500);
 });

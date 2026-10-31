@@ -10,14 +10,17 @@ export const toss = (k = 0, n = 7) =>
   `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: ${k}, y: -1, n: ${n}, l: [0, 100, 0, 0, 0, 0] })`;
 export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
-const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode; })()`;
+const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode + (w.hostId === 'server' ? '@server' : ''); })()`;
+const LEAD = `window.boogle.net.room.isLead()`;
 
-// Waits until both tabs hold the world; `ok` when there is exactly one host and one client.
+// Waits until both tabs hold the world; `ok` when both follow the server's world (src/net/ws-room.ts: the server hosts
+// every room). `host` is the lead tab (it runs the Boogler, addHostField), `client` the other; tests that only need two
+// tabs use them as "this one" and "that one".
 export async function roles(A, B) {
   for (const g of [A, B]) await g.waitFor(ROLE, { timeout: 60000 });
   const modes = [await A.eval(`return ${ROLE};`), await B.eval(`return ${ROLE};`)];
-  const ok = [...modes].sort().join() === 'client,host';
-  const [host, client] = modes[0] === 'host' ? [A, B] : [B, A];
+  const ok = modes.every((m) => m === 'client@server');
+  const [host, client] = (await A.eval(`return ${LEAD};`)) ? [A, B] : [B, A];
   return { modes, ok, host, client };
 }
 

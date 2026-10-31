@@ -1,5 +1,7 @@
-// The server-hosted rooms (cfg.serverRooms; docs/plans/server-host.md, "The server host"). Each one's world starts
-// with the process and ticks with or without players; while a room is hosted here its PeerJS host id is held
+// The server-hosted rooms (cfg.serverRooms; docs/plans/server-host.md, "The server host" and "Revision: full
+// switchover"). `*` hosts every valid room id: a room loads (from its save) on its first join, ticks with or without
+// players, and is saved and unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at
+// once. A listed room loads with the process and stays. While a room is hosted here its PeerJS host id is held
 // (upgrade.ts answers ID-TAKEN), so no browser can host it too.
 //
 //   const roomHost = createRoomHost(cfg, store)
@@ -23,6 +25,8 @@ const UPGRADES_PER_MIN = 20; // per IP
 
 export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
+  roomIdleMs: number;
+  maxHostedRooms: number;
   adoptWindowMs: number;
   allowedOrigins: string[];
   trustProxy: unknown;
@@ -33,9 +37,27 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const boot = crypto.randomBytes(4).toString('hex');
   const startedAt = performance.now();
   const rooms = new Map<string, HostedRoom>();
-  for (const id of cfg.serverRooms)
-    if (ROOM_ID_RE.test(id)) rooms.set(id, createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log }));
-  const held = new Set([...rooms.keys()].map(peerHostId));
+  const all = cfg.serverRooms.includes('*');
+  const listed = new Set(cfg.serverRooms.filter((id) => ROOM_ID_RE.test(id)));
+  const hosts = (id: string) => ROOM_ID_RE.test(id) && (all || listed.has(id));
+  const load = (id: string) => {
+    const room = createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log });
+    rooms.set(id, room);
+    return room;
+  };
+  for (const id of listed) load(id);
+  const unloading = new Set<Promise<unknown>>();
+  // Rooms nobody is in, loaded only because someone was: saved and dropped after roomIdleMs.
+  const idle = setInterval(() => {
+    for (const [id, room] of rooms)
+      if (!listed.has(id) && room.idleMs() > cfg.roomIdleMs) {
+        rooms.delete(id);
+        const p = room.close({ save: true }).finally(() => unloading.delete(p));
+        unloading.add(p);
+      }
+  }, 1000);
+  idle.unref();
+  const peerHostRe = /^boogle-(.+)-host$/;
   const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 64 * 1024,
@@ -44,7 +66,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const upgrades = new Map<string, { n: number; at: number }>(); // ip -> upgrades this minute
   const sweep = setInterval(() => upgrades.clear(), 60000);
   sweep.unref();
-  if (rooms.size) cfg.log(`hosting rooms: ${[...rooms.keys()].join(', ')} (boot ${boot})`);
+  if (all || listed.size) cfg.log(`hosting rooms: ${all ? 'all' : [...listed].join(', ')} (boot ${boot})`);
 
   const refuse = (socket: Duplex, status: string) => {
     socket.write(`HTTP/1.1 ${status}\r\nConnection: close\r\n\r\n`);
@@ -57,18 +79,27 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
 
   return {
     room: (id: string) => rooms.get(id),
-    holdsPeerId: (id: string) => held.has(id),
+    hosts,
+    rooms: () => rooms.size,
+    holdsPeerId(peerId: string) {
+      const m = peerHostRe.exec(peerId);
+      if (!m) return false;
+      if (all) return true; // every room is ours (safeRoom escapes; a valid room id maps to itself)
+      return [...listed].some((id) => peerHostId(id) === peerId);
+    },
     status(id: string) {
+      if (!hosts(id)) return { mode: 'peer' };
       const room = rooms.get(id);
-      if (!room) return { mode: 'peer' };
+      if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
       const { boot: b, tick, players, max, noSave } = room.status();
       return { mode: 'server', boot: b, tick, players, max, noSave };
     },
     // The newest-by-tick rule (docs/plans/server-host.md, "Adopting a handoff"): a world that loads cleanly, is newer
     // than the hosted one, and arrives while this process is young (a peer host the server just took over from).
     async handoff(id: string, doc: { tick: number; data: unknown }) {
-      const room = rooms.get(id);
-      if (!room) return null;
+      if (!hosts(id)) return null;
+      const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
+      if (!room) return { status: 503, body: { error: 'too many rooms loaded' } };
       const tick = room.status().tick;
       const at = (doc.data as { tick?: unknown } | null)?.tick;
       if (typeof at !== 'number') return { status: 400, body: { error: 'bad snapshot' } };
@@ -103,14 +134,17 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       wss.handleUpgrade(req, socket, head, (ws) => {
         if (ws.protocol !== WS_PROTOCOL || !ROOM_ID_RE.test(id) || !okId(self) || self === SERVER_ID)
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
-        const room = rooms.get(id);
-        if (!room) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
+        if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
+        const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
+        if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
         room.join(ws, self);
       });
     },
     async close({ save = true } = {}) {
       clearInterval(sweep);
+      clearInterval(idle);
       await Promise.all([...rooms.values()].map((r) => r.close({ save })));
+      await Promise.all(unloading);
       wss.close();
     },
   };

@@ -1,9 +1,6 @@
-// Test page for the server room (ws-run.ts): createWsRoom (or, with ?picker, the switching room of src/net/room.ts)
-// plus the real world sync and rules on the home land, and records of everything the checks need.
-// Query: ?room=&server=, and with ?picker: &fb=<fallback PeerServer port>.
-import { createWsRoom } from '../../src/net/ws-room.ts';
-import { createRoom, type Room } from '../../src/net/room.ts';
-import { createPeerRoom } from '../../src/net/peer-room.ts';
+// Test page for the server room (ws-run.ts): createWsRoom plus the real world sync and rules on the home land, and
+// records of everything the checks need. Query: ?room=&server=.
+import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import home from '../../src/world/home-land.json';
@@ -28,17 +25,14 @@ const T = (window.T = {
   hashes: {} as Record<number, string>,
   got: 0,
   async start() {
-    if (q.has('idle')) return 'idle'; // a page that only runs tryJoin / plainPeer
     let room: Room;
     try {
-      room = T.room = q.has('picker')
-        ? await createRoom(pickerOptions(q.get('server')!, Number(q.get('fb'))))
-        : await createWsRoom({
-            roomId: q.get('room') ?? 'test',
-            server: q.get('server')!,
-            build: 'test',
-            debug: Number(q.get('debug') || 0),
-          });
+      room = T.room = await createWsRoom({
+        roomId: q.get('room') ?? 'test',
+        server: q.get('server')!,
+        build: 'test',
+        debug: Number(q.get('debug') || 0),
+      });
     } catch (e) {
       const x = e as { code?: string; max?: number };
       return { error: String(x.code), max: x.max };
@@ -98,50 +92,9 @@ const T = (window.T = {
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };
   },
-  // Joins with the picker against these ports; resolves to how it went and how long it took.
-  async tryJoin(serverPort: number, fbPort: number) {
-    const t0 = performance.now();
-    try {
-      (await createRoom(pickerOptions(`http://127.0.0.1:${serverPort}`, fbPort))).close();
-      return { ok: true, ms: performance.now() - t0 };
-    } catch (e) {
-      return { error: String((e as { code?: string }).code), ms: performance.now() - t0 };
-    }
-  },
-  // A plain peer room on our signaling for this room (a tab from before the picker): its isHost() after `ms`, or
-  // 'never joined' (the expected end while the server holds the host id) or 'error'.
-  async plainPeer(port: number, ms: number) {
-    let r;
-    try {
-      r = await createPeerRoom({ roomId: q.get('room')!, signal: sig(port), iceServers: [], connectTimeoutMs: ms });
-    } catch (e) {
-      // ID-TAKEN makes it a client of a host that never answers: a timeout is the expected end
-      return (e as { code?: string }).code === 'timeout' ? 'never joined' : 'error';
-    }
-    await new Promise((res) => setTimeout(res, ms));
-    const host = r.isHost();
-    r.close();
-    return host;
-  },
   plant: null as unknown as (i: number, j: number) => boolean, // set by startWorld
   world: (): unknown => null,
 });
-
-function sig(port: number) {
-  return { host: '127.0.0.1', port, path: '/peerjs', secure: false };
-}
-function pickerOptions(server: string, fbPort: number) {
-  return {
-    roomId: q.get('room') ?? 'test',
-    server,
-    peerOptions: async () => ({ signal: sig(Number(new URL(server).port)), iceServers: [] }),
-    fallbackSignal: sig(fbPort),
-    build: 'test',
-    debug: Number(q.get('debug') || 0),
-    connectTimeoutMs: 3000,
-    timing: { wsGraceMs: 3000, probeMs: 1000, peerProbeMs: 1000, handoffMs: 300, firstWsMs: 1500 },
-  };
-}
 
 function startWorld(room: Room) {
   const w = createSync({ env: { canPlantAt: () => true } });

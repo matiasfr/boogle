@@ -1,12 +1,14 @@
-// ws-room: a room hosted by our server over one WebSocket (docs/plans/server-host.md, "Client"). The same interface as
-// peer-room.ts (src/net/README.md), plus transport 'server', a lead the server picks, and two members for the room
-// picker: onRedirect (the server stopped hosting this room) and downMs. Wire shapes: ./ws-wire.ts.
+// ws-room: the room every tab joins (src/net/README.md; docs/plans/server-host.md). Our server hosts every room and runs
+// its world; this is the room interface over one WebSocket to it, plus the lead the server picks (the tab that
+// publishes Host fields: addHostField in src/netplay/net.ts). Wire shapes: ./ws-wire.ts.
 //
 // Never the lockstep host: isHost() is always false and the server's sync is the host (messages from SERVER_ID). The
-// first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted,
-// unreachable or browser-incompatible. After that the room reconnects by itself (backoff 250 ms to 3 s, +-30%; 500-1500 ms
-// after a graceful `bye`), reports onConnection(false/true), re-sends its presence with a new seq, flushes what send()
-// held meanwhile, and drops the peers the server has not listed again within GRACE_MS.
+// first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
+// server that doesn't host this room), unreachable or browser-incompatible. After that the room reconnects by itself
+// (backoff 250 ms to 3 s, +-30%; 500-1500 ms after a graceful `bye`; through a deploy that briefly doesn't host the
+// room too), reports onConnection(false/true), re-sends its presence with a new seq, flushes what send() held
+// meanwhile, and drops the peers the server has not listed again within GRACE_MS. A reconnect turned away as full or
+// bad stops and reports a fatal error.
 import { SELF_ID, SERVER_ID } from './ids.ts';
 import { WS_PROTOCOL, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
@@ -43,19 +45,18 @@ export async function createWsRoom(opts: WsRoomOptions) {
   const connHandlers = new Set<(c: boolean) => void>(),
     msgHandlers = new Set<(m: unknown, from: string) => void>(),
     leadHandlers = new Set<(lead: boolean) => void>(),
-    redirectHandlers = new Set<(to: 'peer') => void>(),
     errHandlers = new Set<(e: RoomError) => void>();
   let ws: WebSocket | null = null;
   let connected = false,
     closed = false,
-    stopped = false, // refused or moved to PeerJS: no reconnecting
+    stopped = false, // refused (full, bad): no reconnecting
+    pausedUntil = 0, // pause(): no reconnect before this
     openedAt = 0,
     lead: string | null = null,
     mine: Msg = {},
     mySeq = 0,
     presenceHeld = false,
     heard = 0,
-    downSince = 0,
     attempt = 0,
     hbAt = 0,
     rttMs: number | null = null,
@@ -112,7 +113,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
           if (m.last && !listed) {
             listed = true;
             attempt = 0;
-            downSince = 0;
             const back = !first;
             connected = true;
             mySeq++; // a new seq, so the server (maybe a new process) takes it
@@ -144,16 +144,13 @@ export async function createWsRoom(opts: WsRoomOptions) {
         case 'full':
           return refused(err('room_full', 'the room is full', { max: Number(m.max) || undefined }));
         case 'peer':
-          if (!first) {
-            stopped = true; // no point reconnecting: the room moved to PeerJS
-            return void call(redirectHandlers, 'peer');
-          }
+          if (!first) return; // a server between deploys: the close that follows reconnects
           return refused(err('peer_hosted', 'this room is not hosted by the server'));
         case 'bad':
           return refused(err('bad', 'the server refused this room or id'));
       }
     };
-    // The first connect rejects; a reconnect turned away stops and tells onError (fatal), as peer-room does.
+    // The first connect rejects; a reconnect turned away stops and tells onError (fatal).
     function refused(e: RoomError) {
       stopped = true;
       if (first) first.reject(e);
@@ -171,11 +168,11 @@ export async function createWsRoom(opts: WsRoomOptions) {
       }
       if (connected) {
         connected = false;
-        downSince = performance.now();
         call(connHandlers, false);
       }
       if (closed || stopped) return;
-      const delay = graceful ? 500 + Math.random() * 1000 : jitter(BACKOFF[Math.min(attempt++, BACKOFF.length - 1)]);
+      const backoff = graceful ? 500 + Math.random() * 1000 : jitter(BACKOFF[Math.min(attempt++, BACKOFF.length - 1)]);
+      const delay = Math.max(backoff, pausedUntil - performance.now());
       log('reconnecting in', Math.round(delay), 'ms');
       reconnectTimer = setTimeout(() => open(), delay);
     };
@@ -223,7 +220,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
 
   return {
     selfId: SELF_ID,
-    transport: 'server' as 'peer' | 'server' | 'fallback',
+    transport: 'server' as const,
     presence(patch: unknown) {
       if (!isObj(patch)) return Promise.reject(new TypeError('presence patch must be an object'));
       const next: Msg = { ...mine };
@@ -279,14 +276,14 @@ export async function createWsRoom(opts: WsRoomOptions) {
       leadHandlers.add(h);
       return () => leadHandlers.delete(h);
     },
+    // Tests (dev/scenarios/reconnect-edit.mjs): drop the socket as a network loss would, and hold reconnects for `ms`.
+    pause(ms: number) {
+      pausedUntil = performance.now() + ms;
+      ws?.close();
+    },
     async linkStats() {
       return connected ? [{ peer: SERVER_ID, fast: false, relay: false, local: 'ws', remote: 'ws', rttMs }] : [];
     },
-    onRedirect(h: (to: 'peer') => void) {
-      redirectHandlers.add(h);
-      return () => redirectHandlers.delete(h);
-    },
-    downMs: () => (downSince ? performance.now() - downSince : 0),
     close() {
       removeEventListener('pagehide', onHide);
       close();
@@ -294,3 +291,5 @@ export async function createWsRoom(opts: WsRoomOptions) {
   };
 }
 export type WsRoom = Awaited<ReturnType<typeof createWsRoom>>;
+/** The room the game joins. */
+export type Room = WsRoom;

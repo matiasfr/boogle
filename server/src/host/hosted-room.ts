@@ -5,6 +5,7 @@
 //   const room = createHostedRoom({ roomId, store, cfg, log })
 //   room.join(ws, selfId)        an upgraded socket (rooms.ts has checked the room, id, origin and rate)
 //   room.status()                { boot, tick, players, max, lead, noSave }
+//   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   await room.adopt(snap)       replace the world with a handed-over one, re-serve every client, save
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
 import type { WebSocket } from 'ws';
@@ -78,6 +79,7 @@ export function createHostedRoom({
   const gone = new Map<string, { s: number; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   let lead: string | null = null;
   let closing = false;
+  let emptySince = performance.now(); // when the last client was gone for good (rooms.ts unloads idle rooms)
 
   const write = (c: Client, text: string) => {
     if (c.ws.readyState === c.ws.OPEN) c.ws.send(text);
@@ -176,6 +178,7 @@ export function createHostedRoom({
     if (closing) return;
     const timer = setTimeout(() => {
       gone.delete(c.id);
+      if (!clients.size && !gone.size) emptySince = performance.now();
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
       checkLead();
     }, graceMs);
@@ -261,6 +264,7 @@ export function createHostedRoom({
       lead,
       noSave: world.status().newerSave, // a state saved by a newer build: deploy the server
     }),
+    idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
     async adopt(snap: unknown) {
       if (!world.adopt(snap)) return false;
       for (const id of clients.keys()) world.deliver({ t: 'w:need' }, id);

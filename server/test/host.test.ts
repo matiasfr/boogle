@@ -264,3 +264,37 @@ test('routes: past ADOPT_WINDOW_MS a hosted room keeps its world', async () => {
     await svc.close({ save: false });
   }
 });
+
+test('SERVER_ROOMS=*: a room loads on its first join, unloads with a save when idle, reloads, and loaded rooms are capped', async () => {
+  const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*', ROOM_IDLE_MS: '300', MAX_HOSTED_ROOMS: '2' });
+  const http = base.replace('ws', 'http');
+  try {
+    const host = svc.roomHost()!;
+    assert.equal(host.rooms(), 0);
+    assert.equal((await (await fetch(`${http}/rooms/any-room/host`)).json()).mode, 'server');
+    const a = connect(base, 'one', 'aaa');
+    await a.next(is('welcome'));
+    const b = connect(base, 'two', 'bbb');
+    await b.next(is('welcome'));
+    assert.equal(host.rooms(), 2);
+    const c = connect(base, 'three', 'ccc');
+    assert.deepEqual(await c.next(is('full')), { t: 'full', max: 8, rooms: true });
+    assert.equal(await c.closed, 4008);
+
+    const tick = host.room('one')!.world.sync.world.tick;
+    a.ws.close();
+    // grace (200 ms) + idle (300 ms) + the 1 s sweep
+    for (let k = 0; k < 40 && host.room('one'); k++) await sleep(100);
+    assert.equal(host.room('one'), undefined, 'the idle room unloaded');
+    const saved = JSON.parse(await fs.readFile(path.join(dataDir, 'one.json'), 'utf8'));
+    assert.ok(saved.tick >= tick && saved.writerId === 'server');
+
+    const a2 = connect(base, 'one', 'aaa');
+    await a2.next(is('welcome'));
+    assert.ok(host.room('one')!.world.sync.world.tick >= saved.tick, 'reloaded from its save');
+    a2.ws.close();
+    b.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
