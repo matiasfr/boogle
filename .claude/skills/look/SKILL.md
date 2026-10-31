@@ -5,7 +5,7 @@ description: Validate a feature in the running game - see stills and motion, and
 
 # Look and validate
 
-Unit tests cover pure logic. For "does it actually work in the running game" (things that happen over time, flicker, objects that move or vanish, two players seeing the same thing) use the headless harness in `dev/look/` and `dev/scenarios/`. It starts Vite and a local signaling server, drives Chromium (Playwright), and cleans up after itself. Output goes to `.look/` (gitignored). **Always open the PNGs with Read and look at them**; numbers alone miss things.
+Unit tests cover pure logic. For "does it actually work in the running game" (things that happen over time, flicker, objects that move or vanish, two players seeing the same thing) use the headless harness in `dev/look/` and `dev/scenarios/`. It starts Vite and a local signaling server, drives Chromium (Playwright), and cleans up after itself. Output goes to `.look/` (gitignored). **Always open the PNGs with Read and look at them**; numbers alone miss things. A visible change puts a still on its PR: `scripts/pr-shot.sh <png>...` uploads it and prints the Markdown (AGENTS.md, "Shipping").
 
 ## 1. Inspect: `npm run look`
 
