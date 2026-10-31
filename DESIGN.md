@@ -55,7 +55,7 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 |---|---|---|---|---|
 | **Local** | Nobody else needs to see it, or it only decorates | Each tab | Anything, including `Math.random()` and the GPU | Particles, ripples, sounds, camera shake |
 | **Owner** | One player drives it, or physics moves it | The owner's tab; others smooth its broadcast pose. Ownership changes hands by epoch | Anything (Rapier physics, three.js math) | Your avatar, the beach ball |
-| **Host** | Shared, small (a few dozen numbers), changes over time | The host; it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
+| **Host** | Shared, small (a few dozen numbers), changes over time | The host (the lead tab when the server hosts); it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
 | **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Mushrooms, gifts |
 
 In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/netplay/net.ts`](src/netplay/net.ts)); Lockstep is `submitEdit` + `onApplied`/`onSnapshot` for features, with the rules registered through `registerOp`, `registerState` and `onTick` ([`src/world/sync.ts`](src/world/sync.ts)). One-off events (a honk, a ping) are not state: send them as messages with `net.room.send` and receive them through `onRoomReady(room => room.onMessage(...))`, reliable and ordered, reaching every other peer (see [`src/net/README.md`](src/net/README.md)); presence fields are for state that has a current value. Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/netplay/snaps.ts). Lockstep ticks at 10 Hz, compares hashes every 2 s and saves to the server every 30 s.
@@ -82,13 +82,13 @@ For lockstep systems, clients send small **edit events** (plant, water, toss, ha
 |---|---|
 | Your player's movement | You (client) |
 | The beach ball | Its current owner (epoch rule in [`src/physics/ball.js`](src/physics/ball.js)) |
-| Garden, gifts, weather | The host peer |
-| The Boogler (wandering NPC) | The host peer, published in its presence ([`src/boogler/boogler.js`](src/boogler/boogler.js)) |
+| Garden, gifts, weather | The server (main room) or the host peer |
+| The Boogler (wandering NPC) | The lead tab (the server picks it; on a peer room, the host), published in its presence ([`src/boogler/boogler.js`](src/boogler/boogler.js)) |
 | Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler/play.js`](src/boogler/play.js), [`src/player/inventory.js`](src/player/inventory.js)) |
-| Persistence (snapshots) | The host, saved to our server and localStorage; every client also keeps a hash-verified copy in localStorage. A migrating host keeps its live state; a host that starts without state loads the newest copy by tick |
+| Persistence (snapshots) | The server writes the main room to its disk every 2 s; the host, saved to our server and localStorage; every client also keeps a hash-verified copy in localStorage. A migrating host keeps its live state; a host that starts without state loads the newest copy by tick |
 
-### PeerJS only
-Networking is PeerJS with one browser acting as host (see PLAN.md, "Key decision"). There are no alternate transports and no claude.ai artifact build. Keep the game talking to the small room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS directly.
+### Server host, PeerJS fallback
+The main room is hosted by our server over WebSocket: it runs the lockstep world headless, relays presence and messages, and saves to its own disk, so the island never waits for a host and ticks while nobody is online. Every other room, local dev and the fallback when the server is unreachable use PeerJS with one browser as host. The game talks only to the room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS or WebSocket directly. Plan: [docs/plans/server-host.md](docs/plans/server-host.md). (Changed on purpose 2026-10-31, from "PeerJS only": a host that never leaves, and the start of sending each player only the world near them; [docs/research/shared-state-at-scale.md](docs/research/shared-state-at-scale.md).)
 
 ### Small and readable
 This is a friends' project. Prefer plain modules, few dependencies and code someone can read in one sitting. Everything is TypeScript (`strict`): types are how many people and agents change shared code at once without breaking each other's wire messages and state shapes, and Vite and Node run it as written, with no build step of ours. Measure before optimizing; when you do optimize the sim, sleep settled regions (active-cell lists) before reaching for workers or the GPU.

@@ -355,7 +355,7 @@ reads the new file.
 Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/net*`, `src/world/sync.ts` or
 `server/`: run `npm run check:full`. Use `/simplify` and `/code-review` before shipping those.
 
-- [ ] **1. Principle and roadmap (docs only).**
+- [x] **1. Principle and roadmap (docs only).**
   - `DESIGN.md`, section "PeerJS only": rename to "Server host, PeerJS fallback" and replace its text with: "The main
     room is hosted by our server over WebSocket: it runs the lockstep world headless, relays presence and messages,
     and saves to its own disk, so the island never waits for a host and ticks while nobody is online. Every other room,
