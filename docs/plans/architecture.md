@@ -17,11 +17,11 @@ The open questions in the two plans have working answers so work can start; chan
 - **Server transport:** WebSocket first (as [server-host.md](server-host.md) chose); unreliable datagrams only on
   evidence.
 
-## Phase 0: WebGPU only (in flight)
+## Phase 0: WebGPU only (done)
 
-- [ ] Drop the WebGL 2 fallback; every harness and CI run on WebGPU; live `smoke` after every deploy
-      (`ship/matias-franco-5d23156`).
-- [ ] Fix the nightly `hotbar` and `interact` scenarios (failing since at least 2026-10-29), so nightly is a signal
+- [x] Drop the WebGL 2 fallback; every harness and CI run on WebGPU; live `smoke` after every deploy (#86); `smoke`
+      before every ship on the Mac's GPU (#89).
+- [x] Fix the nightly `hotbar` and `interact` scenarios (failing since at least 2026-10-29), so nightly is a signal
       again.
 
 ## Phase 1: a loop that measures itself (no player-visible change)
