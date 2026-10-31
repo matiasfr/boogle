@@ -560,7 +560,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       mood, chords beyond three), building on `honk.js`; no new verbs needed."
   - Verify: `npm run check` (docs only).
 
-- [ ] **8. DESIGN.md: principle 2 becomes "Physics toys first".** Lane B, after step 7. One small commit; its body
+- [x] **8. DESIGN.md: principle 2 becomes "Physics toys first".** Lane B, after step 7. One small commit; its body
   gives the reason: "the ball is one physics toy among several; the refocus cleanup made every throw share one
   module". Files: `DESIGN.md` and the pillar table in `docs/game-design.md`. The final wording:
   - **The intro sentence** (line 3), from "one beach ball, toys to throw, and a shared garden..." to:

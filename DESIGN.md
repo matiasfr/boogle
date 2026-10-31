@@ -1,6 +1,6 @@
 # Boogle design principles
 
-Boogle is a drop-in island for a handful of friends: one beach ball, toys to throw, and a shared garden that keeps growing while nobody is online.
+Boogle is a drop-in island for a handful of friends: toys to throw, bounce and knock over, and a shared garden that keeps growing while nobody is online.
 
 These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [PLAN.md](PLAN.md) says *what* we're building next; this file says *how we decide*. The evidence behind these principles (precedents from Townscaper, Animal Crossing, Timberborn, From Dust, Noita, Factorio and others, plus a ranked idea list) is in [docs/research/water-farming-multiplayer.md](docs/research/water-farming-multiplayer.md).
 
@@ -15,13 +15,13 @@ Every system must be fun to mess with before it has goals. Splash and throw shou
 - *Test:* would someone fiddle with this for a minute with no score, no crops and no tide?
 - *Avoid:* scores, timers or quotas as the reason to do something.
 
-### 2. The ball stays the star
-The beach ball is the first toy everyone understands. New systems should give it more to do (float, splash, water plants, break walls, launch harvests), never compete with it or put it away.
-- *Test:* does this feature make the ball more interesting, or at least leave it alone?
+### 2. Physics toys first
+Things you can throw, bounce and knock over are at the heart of the island: the beach ball, the frisbee, whatever you pick up, the mushrooms you bounce on. New systems should usually add to them or play with them rather than replace them.
+- *Test:* does this give the toys something new to do, or at least leave them alone?
 
 ### 3. Farming is never required
-Someone who only wants to throw the ball around should have a great time. Farming, building and tide defense are invitations, never gates.
-- *Avoid:* locking movement, areas or ball features behind farming progress.
+Someone who only wants to throw things around should have a great time. Farming, building and tide defense are invitations, never gates.
+- *Avoid:* locking movement, areas or toys behind farming progress.
 
 ### 4. Cooperation is automatic, not negotiated
 Helping should happen just by playing near each other: watering anyone's plant helps it, and more different visitors make the garden grow faster. Nobody should need to coordinate in chat to contribute.
