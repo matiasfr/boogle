@@ -39,7 +39,7 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 - No `peerjs` outside `src/net/`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
 
-## Don't (each one broke a room recently)
+## Don't (each of these has broken a room)
 - **Effects in `apply`.** Apply changes state and returns a result; splashes, sounds, inventory go in the adapter's `onApplied(e, tick, result)`.
 - **Treat `submitEdit` as done.** It returns true when *queued*: the host may reject it, and edits held while reconnecting can be dropped. Take items, spend inventory, play the effect in `onApplied`.
 - **Save or serve unverified state.** A client persists only hash-verified ticks, and a state that failed to load (a fresh fallback) must never be uploaded as the host's save. Keep these guards when you touch `sync.ts`.
