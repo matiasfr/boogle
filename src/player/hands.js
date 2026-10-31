@@ -1,6 +1,6 @@
 // What your hands do with the hotbar (src/player/inventory.js), and the one interact button.
 //
-//   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and
+//   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, frisbee, ...) winds up a throw and
 //                            flies on release; the can pours, seeds go in at your feet. Empty hands
 //                            interact.
 //   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
@@ -33,7 +33,8 @@
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.js; the ball keeps its own physics.
 import * as THREE from 'three';
-import { me, cam, chargeAmount, throwFrom, throwVelocity } from './player.js';
+import { me, cam } from './player.js';
+import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.js';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.js';
 import { throwItem } from '../adapters/gifts.js';
@@ -100,20 +101,16 @@ function deny(text) {
 function windUp() {
   if (!canThrow()) return false;
   me.suppressUp = false; // a fresh press winds up: its release throws, even if E grabbed the ball and is still down
-  me.charging = true;
-  me.chargeStart = performance.now();
-  return true;
+  return startCharge();
 }
 
 function throwHeld(c) {
   const id = heldId();
   if (!id || !me.body) return;
-  if (id === 'ball') return throwBall(c);
-  const kind = giftIndex(id);
-  const from = throwFrom();
-  const v = throwVelocity(c, from, id === 'frisbee');
+  const { p, v } = launch(id, c);
+  if (id === 'ball') return throwBall(p, v);
   useOne();
-  if (!throwItem(kind, from, v)) take(id);
+  if (!throwItem(giftIndex(id), p, v)) take(id);
 }
 
 export function releaseThrow() {
@@ -122,7 +119,7 @@ export function releaseThrow() {
     return;
   }
   if (!me.charging) return;
-  me.charging = false;
+  cancelCharge();
   throwHeld(chargeAmount());
 }
 

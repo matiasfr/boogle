@@ -48,8 +48,8 @@ export function mergeParts(parts) {
 // Footprints of trees, rocks and POIs ({ x, z, r } on the ground plane), for things that walk around them.
 // Push freely; blockedAt() re-indexes when the list grows.
 export const obstacles = [];
-// Fruit palms around home in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles],
-// body }. The gifts (src/adapters/gifts.js) grow on these. Mainland trees are scenery and obstacles only.
+// Home palms in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles], body }. Their
+// cells are the wood age's log spots (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
 export const trees = [];
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
@@ -152,6 +152,7 @@ function addPalm(parts, t, rng, merge = null) {
     addPart(parts, frondGeo, mm, k % 2 ? '#3f9b3a' : '#57b845');
   }
   t.top = top;
+  // `hang` is unused now, but its three draws stay: they feed the seeded layout, and later props would move without them.
   t.hang = [rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2];
   if (merge) merge(colliders);
   else t.body = addStaticSpheres(colliders);

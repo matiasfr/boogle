@@ -101,7 +101,7 @@ const TOUR = `
   await step('caves', 2500, view(CAVE));
   await step('lighthouse', 2000, view(LIGHT));
   await step('particles', 2500, () => { dbg.set(VIEWS.court.cam, VIEWS.court.look, null); burst(12, 1, 21); });
-  await step('throw preview', 1500, async () => { I.take('mango'); I.select(I.slotOf('mango')); H.useDown(); });
+  await step('throw preview', 1500, async () => { I.take('frisbee'); I.select(I.slotOf('frisbee')); H.useDown(); });
   await step('throw release', 1000, () => H.useUp());
   await step('hotbar', 2500, async () => {
     for (const id of ['frisbee', 'driftwood', 'seeds', 'can']) { try { I.take(id); } catch {} }

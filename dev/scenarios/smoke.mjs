@@ -31,10 +31,10 @@ export default {
     const { modes, ok, host, client } = await roles(A, B);
     if (!t.check("both tabs hold the server's world", ok, modes.join())) return;
 
-    // One tab tosses a coconut at a beach cell west of the court; the other sees the item.
+    // One tab tosses a watering can at a beach cell west of the court; the other sees the item.
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
-    const item = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
-    const sent = await client.eval(`return ${toss(0, 'Date.now() % 1000')};`);
+    const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
+    const sent = await client.eval(`return ${toss(1, 'Date.now() % 1000')};`);
     const landed = await host.waitFor(item, { timeout: 60000 });
     t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 

@@ -45,35 +45,33 @@ export default {
   async run(t) {
     const g = await t.open({ name: 'talker', hud: 'play' });
 
-    // Holding a mango next to The Boogler: the prompt in his tag says Talk.
-    await g.eval(`${INV} I.take('mango');`);
+    // Holding a frisbee next to The Boogler: the prompt in his tag says Talk.
+    await g.eval(`${INV} I.take('frisbee');`);
     const talkMs = await g.waitFor(beside(TAG_TALK), { timeout: 20000 });
     await g.wait(0.4);
     const near = await g.still('near');
-    t.check('holding a mango by The Boogler, his tag says E Talk', talkMs >= 0, `${talkMs} ms; ${near}`);
+    t.check('holding a frisbee by The Boogler, his tag says E Talk', talkMs >= 0, `${talkMs} ms; ${near}`);
 
     await g.key('KeyC');
     await g.wait(0.3);
     t.check('C no longer opens anything', await g.eval(`return document.querySelector('.bd')?.hidden ?? true;`));
 
-    // E talks; the mango is an answer with its icon.
+    // E talks; the frisbee is an answer with its icon.
     await g.key('KeyE');
     await g.waitFor(`!document.querySelector('.bd-opts')?.hidden`, { timeout: 15000 });
     await g.wait(0.4);
     const gift = await g.eval(`
-      const b = [...document.querySelectorAll('.bd-opt')].find((b) => b.textContent.includes('a mango'));
+      const b = [...document.querySelectorAll('.bd-opt')].find((b) => b.textContent.includes('a frisbee'));
       return { has: !!b, icon: !!b?.querySelector('img.bd-gift')?.src };`);
     const talk = await g.still('talk');
     t.check(
-      'E opens the talk; the mango is an answer with its icon',
+      'E opens the talk; the frisbee is an answer with its icon',
       gift.has && gift.icon,
       `${JSON.stringify(gift)}; ${talk}`,
     );
 
     // Pet him from the talk box: he answers in a bubble over the card and scores a pet.
-    const PETS = `(await (async () => {
-      const { getRoomId } = await import('/src/netplay/net.ts');
-      return JSON.parse(localStorage.getItem('boogle.boogler.' + getRoomId()) ?? 'null')?.pets?.length ?? 0; })())`;
+    const PETS = `(JSON.parse(localStorage.getItem('boogle.boogler') ?? 'null')?.pets?.length ?? 0)`;
     const before = await g.eval(`return ${PETS};`);
     await g.eval(`document.querySelector('.bd-face').click();`);
     await g.wait(0.25);
@@ -142,8 +140,8 @@ export default {
     await g.wait(0.2);
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // A tossed mango, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.eval(`${toss(1, 5)};`); // a mango
+    // A tossed frisbee, empty hands: a floating Pick up prompt over it, and E picks it up.
+    await g.eval(`${toss(2, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: 30000 });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
@@ -168,7 +166,7 @@ export default {
     const wind = await g.eval(`${INV}
       const { STALL } = await import('/src/adapters/mushroom-garden.js');
       const { me } = window.boogle;
-      I.take('mango');
+      I.take('frisbee');
       ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
       await new Promise((r) => setTimeout(r, 300));
       const at = H.interactTarget()?.id ?? '';
@@ -179,16 +177,16 @@ export default {
       return out;`);
     t.check(
       'mid-throw at the stall, E neither takes nor throws',
-      wind.at.startsWith('stall-') && wind.charging && wind.held === 'mango' && !wind.can,
+      wind.at.startsWith('stall-') && wind.charging && wind.held === 'frisbee' && !wind.can,
       JSON.stringify(wind),
     );
 
-    // A watering can behind you does not hide the ripe palm you face: drop a can on open ground past a ripe palm, stand
-    // between them facing the palm, and the prompt says Shake while the can is still in reach.
+    // A watering can behind you does not hide the log bundle you face: drop a can on open ground past a bundle, stand
+    // between them facing the bundle, and the prompt says Take logs while the can is still in reach.
     const palm = await g.eval(`${INV}
       const G = await import('/src/adapters/gifts.js');
-      const { trees } = await import('/src/render/props.js');
-      const { groundHeight } = await import('/src/adapters/terrain.js');
+      const { rules } = await import('/src/world/game-world.ts');
+      const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.js');
       const { teleport } = await import('/src/physics/physics.js');
       const { camera } = await import('/src/render/scene.js');
       const { cam } = await import('/src/player/player.js');
@@ -199,10 +197,12 @@ export default {
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
       I.select(-1);
-      for (let k = 0; k < trees.length; k++) {
-        const P = trees[k];
+      const bundles = rules.sources.list().map((p) => ({ x: cellX(p.i) + 0.9, z: cellZ(p.j) + 0.4 }));
+      for (let k = 0; k < bundles.length; k++) {
+        const P = bundles[k];
         teleport(b, P.x + 1.2, groundHeight(P.x + 1.2, P.z) + 0.6, P.z);
-        if (!G.giftTargets().some((t) => t.id === 'palm' + k)) continue;
+        await nap(150);
+        if (H.interactTarget()?.id !== 'logs' + k) continue;
         for (let a = 0; a < 8; a++) {
           const ux = Math.cos((a * Math.PI) / 4), uz = Math.sin((a * Math.PI) / 4);
           const bx = P.x + ux * 2.5, bz = P.z + uz * 2.5;
@@ -222,17 +222,17 @@ export default {
           cam.yaw = Math.atan2(-wx, -wz);
           cam.pitch = -0.2;
           await nap(300);
-          return { palm: 'palm' + k, item: 'item' + it.id, behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id) };
+          return { palm: 'logs' + k, item: 'item' + it.id, behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id), pick: H.interactTarget()?.id };
         }
       }
       return null;`);
     const shakeMs = palm
-      ? await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Shake')`, { timeout: 10000 })
+      ? await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Take logs')`, { timeout: 10000 })
       : -1;
     const shakeShot = await g.still('shake');
     t.check(
-      'a can behind you does not hide the ripe palm ahead: the prompt says Shake',
-      shakeMs >= 0 && palm.ids.includes(palm.item) && palm.ids.includes(palm.palm),
+      'a can behind you does not hide the log bundle ahead: the prompt says Take logs',
+      shakeMs >= 0 && palm.ids.includes(palm.item) && palm.pick === palm.palm,
       `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
     );
 
@@ -300,7 +300,7 @@ export default {
 
     // Touch: the action button says Talk, and the prompt has no glyph.
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
-    await thumb.eval(`${INV} I.take('mango');`);
+    await thumb.eval(`${INV} I.take('frisbee');`);
     const tapMs = await thumb.waitFor(
       beside(
         `${TAG_TALK} && document.getElementById('btn-grab').textContent === 'Talk' && !document.querySelector('.boogler-tag-prompt .g')`,

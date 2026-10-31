@@ -220,7 +220,7 @@ export function initInput() {
   });
   registerAction('interact', {
     pad: 'b',
-    label: 'Talk, pick up, take, shake a palm',
+    label: 'Talk, pick up, take',
     keys: ['KeyE'],
     touch: 'Grab',
     group: 'hands',

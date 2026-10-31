@@ -1,5 +1,5 @@
 // Material sources (brief 8 section 1): things on the island that give the current age's material. Age 0 (wood): the
-// home palms (`layout.trees`), shaken with the same gesture as their fruit. Each source holds FULL charges; a take
+// home palm cells (`layout.trees`), where the wood age's log bundles lie; taken from the bundle. Each source holds FULL charges; a take
 // spends one and yields a fixed handful. Refill is deterministic: every source fills when a section is laid (R1), and
 // a seeded trickle refills one empty source every TRICKLE_EVERY ticks (R2). State is only what has been spent, in the
 // current age, so a source nobody touched needs no entry and the layout (filled before tick 1) is read, never copied.

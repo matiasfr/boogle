@@ -63,8 +63,8 @@ export default {
         seconds: 6,
         each: async (t, k) => {
           if (k < 20 && k % 4 === 0) await g.eval(TP(px, pz, yaw));
-          if (k === 30) await g.eval(ACT); // shake: fruit and the first 4 logs
-          // the palm's second charge (a second E here would pick up the fruit instead)
+          if (k === 30) await g.eval(ACT); // E on the bundle: the first 4 logs
+          // the bundle's second charge
           if (k === 95) await g.eval(`window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id: ${palm.t} });`);
           const d = 5 - t * 0.15,
             back = 1.6 - t * 0.1;

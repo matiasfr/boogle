@@ -2,14 +2,14 @@
 // you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
 // Get launched too often and he runs when you come near.
 //
-// Friendship is personal (src/boogler/friendship.js), saved in localStorage per room. Each player publishes
+// Friendship is personal (src/boogler/friendship.js), saved in localStorage once per browser, shared by every room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.js) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
 import { FIXED } from '../constants.js';
 import { clamp } from '../math.js';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.js';
-import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.ts';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
@@ -29,10 +29,9 @@ const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he co
 const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
 
 let friend = null;
-let storeKey = '';
+const storeKey = 'boogle.boogler'; // global: you are yours in every room (the old per-room keys are ignored)
 function f() {
   if (friend) return friend;
-  storeKey = `boogle.boogler.${getRoomId()}`;
   let saved = null;
   try {
     saved = localStorage.getItem(storeKey);

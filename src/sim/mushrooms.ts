@@ -63,8 +63,7 @@ export function serializeGarden(garden: Garden): GardenJSON {
   return { v: 2, p: garden.plots.flatMap((p) => [p.i, p.j, p.g]) };
 }
 
-// Reads the { v: 2, p } form; anything else (such as the bare arrays saved on the 129-cell island before 2026-10-29)
-// loads as an empty garden.
+// Reads the { v: 2, p } form; anything else loads as an empty garden.
 export function loadGarden(garden: Garden, json: unknown) {
   garden.plots = [];
   const j2 = json as Partial<GardenJSON> | null | undefined;

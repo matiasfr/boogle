@@ -1,5 +1,5 @@
 // The interact prompt: what E (pad B, the touch action button) would act on, marked where it is with the button and the
-// verb, "[E] Pick up" floating over a mango, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
+// verb, "[E] Pick up" floating over the can, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
 // itself; see registerInteractable in src/player/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';

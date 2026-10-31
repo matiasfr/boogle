@@ -29,18 +29,16 @@ Code: [src/sim/stacks.ts](../../src/sim/stacks.ts), [src/world/rules/stacks.ts](
 [src/features/haul-stack.ts](../../src/features/haul-stack.ts). Lockstep state `stacks` (by roster index), changed by
 other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `pid`.
 
-## Sources: palms give logs
+## Sources: log bundles
 
-In the wood age the 36 home palms are the log sources. Each holds 2 charges, shown as a small bundle of logs at its
-foot. The palm's Shake (E, in reach) now does both: drops ripe fruit (the toy, unchanged) and, while the palm holds
-logs, spends a charge and puts 4 logs straight onto your stack (they fly to your back). What doesn't fit (another
-material on your back, or a full stack) drops as a pile beside the palm. The ball still knocks fruit loose but never
-logs: the ball is never income. Every palm refills when a section is laid, and every 20 s one empty palm, picked from
-the room seed and the tick, refills on its own.
+In the wood age a log bundle lies at the foot of each of the 36 home palms. Each holds 2 charges. E (pad B, the touch
+action) on a bundle with charges says Take logs, spends a charge and puts 4 logs straight onto your stack (they fly to
+your back). What doesn't fit (another material on your back, or a full stack) drops as a pile beside the bundle. The
+ball never gives logs: the ball is never income. Every bundle refills when a section is laid, and every 20 s one empty
+bundle, picked from the room seed and the tick, refills on its own.
 
 Code: [src/sim/sources.ts](../../src/sim/sources.ts), [src/world/rules/sources.ts](../../src/world/rules/sources.ts),
-[src/features/log-sources.ts](../../src/features/log-sources.ts), the Shake in
-[src/adapters/gifts.js](../../src/adapters/gifts.js). Lockstep state `sources` (the current age's charges only); op
+[src/features/log-sources.ts](../../src/features/log-sources.ts) (the bundles and Take logs). Lockstep state `sources` (the current age's charges only); op
 `src.take {id}`.
 
 ## Work sites, plaques and tiers

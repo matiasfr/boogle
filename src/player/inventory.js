@@ -6,7 +6,7 @@
 //   onHotbarChange(fn)                fn() after any change (selection included)
 import { GIFTS, carryable } from '../sim/gift-catalog.ts';
 
-export const SLOTS = 8;
+export const SLOTS = 5;
 export const MAX_SEEDS = 20;
 const STORE = 'boogle.hotbar';
 const known = (id) => GIFTS.some((g) => g.id === id && carryable(g));
@@ -16,32 +16,26 @@ const changeFns = [];
 export const onHotbarChange = (fn) => changeFns.push(fn);
 
 function load() {
-  let saved = null,
-    pocket = null;
+  let saved = null;
   try {
     saved = JSON.parse(localStorage.getItem(STORE) ?? 'null');
-    pocket = JSON.parse(localStorage.getItem('boogle.pocket') ?? 'null');
   } catch {
     // storage unavailable or corrupt: start empty-handed
   }
-  if (Array.isArray(saved)) {
-    saved.slice(0, SLOTS).forEach((s, k) => {
-      if (s && known(s.id)) inv.slots[k] = { id: s.id, n: s.id === 'seeds' ? clampSeeds(s.n) : 1 };
+  if (!Array.isArray(saved)) return;
+  // The first five filled known items, so an older, longer save compacts itself.
+  saved
+    .filter((s) => s && known(s.id))
+    .slice(0, SLOTS)
+    .forEach((s, k) => {
+      inv.slots[k] = { id: s.id, n: s.id === 'seeds' ? clampSeeds(s.n) : 1 };
     });
-    return;
-  }
-  // The old pocket held catalog indices; they become hotbar items once.
-  if (Array.isArray(pocket))
-    for (const kind of pocket)
-      if (Number.isInteger(kind) && GIFTS[kind] && known(GIFTS[kind].id)) put(GIFTS[kind].id, 1);
-  save();
 }
 const clampSeeds = (n) => (Number.isInteger(n) ? Math.min(MAX_SEEDS, Math.max(1, n)) : 1);
 
 function save() {
   try {
     localStorage.setItem(STORE, JSON.stringify(inv.slots.map((s) => (s && s.id !== 'ball' ? s : null))));
-    localStorage.removeItem('boogle.pocket');
   } catch {
     // storage unavailable; the hotbar lasts until reload
   }

@@ -4,11 +4,11 @@
 // ---- Window handles only (window.boogle, window.boogle.sync): safe for scenarios that also run on a built site
 // (`--url`: smoke, reconnect-edit). Never add a /src/ import to this section.
 
-// A tossed gift at a beach cell west of the court. k is the catalog index (0 coconut, 1 mango; append-only); n is the
+// A tossed gift at a beach cell west of the court. k is the catalog index (0 seeds, which plant, 1 can, 2 frisbee; renumbered at each WORLD_NS bump); n is the
 // toss's seed, a number or a page expression.
-export const toss = (k = 0, n = 7) =>
+export const toss = (k = 1, n = 7) =>
   `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: ${k}, y: -1, n: ${n}, l: [0, 100, 0, 0, 0, 0] })`;
-export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`;
+export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
 const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode + (w.hostId === 'server' ? '@server' : ''); })()`;
 const LEAD = `window.boogle.net.room.isLead()`;
@@ -57,5 +57,5 @@ export const INV = `const I = await import('/src/player/inventory.js'); const H 
 // The item `toss()` made: its id, kind and world position.
 export const TOSSED_ITEM = `
   const { CELL, HALF } = await import('/src/constants.js');
-  const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
+  const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
   return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;

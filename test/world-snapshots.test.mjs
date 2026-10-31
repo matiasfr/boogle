@@ -1,6 +1,6 @@
 // Saved worlds on the real rules: a save without state versions loads at version 0, and malformed snapshots or states
-// never throw: a bad state starts fresh and the world keeps ticking. A 0.1 save captured at M4 keeps loading. (The
-// pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.ts: no 0.1 tab loads an older save.)
+// never throw: a bad state starts fresh and the world keeps ticking. A v02 save captured at the refocus clean break keeps
+// loading. (Older fixtures were retired with the namespace bump, src/world/namespace.ts: nothing loads an older save.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
@@ -8,7 +8,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import fs from 'node:fs';
 import { homeLand } from './helpers/land.mjs';
 
-const v01 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v01.json', import.meta.url), 'utf8'));
+const v02 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v02.json', import.meta.url), 'utf8'));
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -18,11 +18,11 @@ function peer() {
 }
 const copy = (v) => JSON.parse(JSON.stringify(v));
 
-// A world with something in it: a planted mushroom and a mango on the ground.
+// A world with something in it: a planted mushroom and a watering can on the ground.
 function played() {
   const s = peer();
   s.submitEdit({ op: 'mush.plant', i: 228, j: 200 });
-  s.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 3, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
+  s.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
   for (let k = 0; k < 5; k++) s.updateWorld(0.1);
   return { snap: copy(s.snapshot()), hashes: s.stateHashes() };
 }
@@ -38,11 +38,11 @@ test('a save without vers loads every state at version 0, and re-saves with vers
   assert.deepEqual(Object.keys(saved.vers), Object.keys(hashes));
 });
 
-test('a 0.1 save (test/fixtures/snap-v01.json) still loads to the same hashes', () => {
+test('a v02 save (test/fixtures/snap-v02.json) still loads to the same hashes', () => {
   const s = peer();
-  assert.equal(s.loadSnapshot(copy(v01.snap)), true);
+  assert.equal(s.loadSnapshot(copy(v02.snap)), true);
   const now = s.stateHashes();
-  for (const [k, h] of Object.entries(v01.hashes)) assert.equal(now[k], h, `${k} loads differently`);
+  for (const [k, h] of Object.entries(v02.hashes)) assert.equal(now[k], h, `${k} loads differently`);
   assert.equal(s.worldStatus().loadErrors, 0);
   assert.equal(s.worldStatus().newerSave, false);
 });

@@ -1,5 +1,5 @@
-// The hotbar (src/player/inventory.js) on screen and in hand: eight slots along the bottom (on touch at the top, or down the
-// right edge in portrait), keys 1-8 (pad LB/RB, or tap a slot) to change what you hold, and whatever you hold drawn in
+// The hotbar (src/player/inventory.js) on screen and in hand: five slots along the bottom (on touch at the top, or down the
+// right edge in portrait), keys 1-5 (pad LB/RB, or tap a slot) to change what you hold, and whatever you hold drawn in
 // your hand. Everyone sees what everyone holds through the presence field `hd` (a catalog index, -1 for empty hands;
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
@@ -26,7 +26,6 @@ const GRIP = {
   can: { p: [0, -0.33, 0.05] },
   seeds: { p: [0, -0.3, 0] },
   frisbee: { p: [0, -0.02, 0], r: [0.25, 0, -0.5] },
-  driftwood: { p: [0, -0.07, 0], r: [0, 1.2, 0] },
 };
 const DEFAULT_GRIP = { p: [0, -0.12, 0] };
 
@@ -203,7 +202,7 @@ onStart(() => {
   describeControl('hotbar', {
     label: 'Hold something from your hotbar',
     detail: { kbm: 'Press the same slot again for empty hands', pad: 'Cycle through the slots' },
-    keys: ['Digit1-8'],
+    keys: ['Digit1-5'],
     pad: ['lb', 'rb'],
     touch: 'Tap a slot',
     group: 'hands',
@@ -227,7 +226,7 @@ addPresenceField('hd', () => {
   return id && id !== 'ball' ? giftIndex(id) : -1;
 });
 onRemotePresence((r, pr) => {
-  // A retired item (an old build's shovel or seashell) shows as empty hands.
+  // An unknown or uncarryable index shows as empty hands.
   r.hd = Number.isInteger(pr.hd) && carryable(GIFTS[pr.hd]) ? GIFTS[pr.hd].id : null;
 });
 

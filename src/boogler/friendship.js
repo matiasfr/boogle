@@ -19,7 +19,7 @@ export const RULES = {
   petGap: 2500, // pets closer together than this score nothing
   petWindow: 10 * MIN,
   petMax: 8, // scoring pets per window
-  petPts: 3,
+  petPts: 4,
   giftWindow: 20 * MIN,
   giftMax: 4, // scoring gifts per window
   kickPts: -6,
@@ -32,7 +32,7 @@ export const RULES = {
   nosyPts: -4,
   quietMs: 90000,
   chatGap: 3 * MIN, // small talk scores at most this often
-  chapterPts: 6,
+  chapterPts: 8,
   rideBase: 3.5, // seconds he puts up with a rider
   ridePerLevel: 1.2,
   rideWary: 1.5,
@@ -112,17 +112,18 @@ export function pet(f, now) {
 }
 
 // kind: index into GIFTS. Repeats of the same thing within the window are worth half each time; past giftMax in the
-// window he still takes it (and still forgives) but it scores nothing.
+// window he still takes it (and still forgives) but it scores nothing. The window stores catalog ids, not indices, so
+// a renumbered catalog can never misread a saved window.
 export function giveGift(f, kind, now) {
   const g = GIFTS[kind];
   if (!g) return null;
   const wasWary = isWary(f, now);
   const capped = f.gifts.length >= RULES.giftMax;
-  const repeats = f.gifts.filter((x) => x.kind === kind).length;
+  const repeats = f.gifts.filter((x) => x.id === g.id).length;
   let pts = (TASTE_PTS[g.taste] ?? 0) + (g.bonus ?? 0);
   if (pts > 0) pts = Math.round(pts / 2 ** repeats);
   if (capped) pts = 0;
-  f.gifts.push({ kind, at: now });
+  f.gifts.push({ id: g.id, at: now });
   f.kicks = Math.max(0, f.kicks - RULES.giftForgives);
   const levelUp = addPts(f, pts);
   return { taste: g.taste, pts, capped, repeat: repeats > 0, forgave: wasWary && !isWary(f, now), levelUp };
@@ -189,9 +190,9 @@ export function loadFriend(text) {
   if (Array.isArray(j.pets)) f.pets = j.pets.filter(Number.isFinite).slice(-RULES.petMax);
   if (Array.isArray(j.gifts))
     f.gifts = j.gifts
-      .filter((g) => g && Number.isInteger(g.kind) && GIFTS[g.kind] && Number.isFinite(g.at))
+      .filter((g) => g && typeof g.id === 'string' && GIFTS.some((x) => x.id === g.id) && Number.isFinite(g.at))
       .slice(-20)
-      .map((g) => ({ kind: g.kind, at: g.at }));
+      .map((g) => ({ id: g.id, at: g.at }));
   if (j.flags && typeof j.flags === 'object' && !Array.isArray(j.flags))
     for (const [k, v] of Object.entries(j.flags))
       if (typeof v === 'string' || Number.isFinite(v)) f.flags[k] = typeof v === 'string' ? v.slice(0, 60) : v;

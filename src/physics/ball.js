@@ -1,11 +1,22 @@
 import * as THREE from 'three';
-import { BALL_R, BALL_MASS, BALL_SPAWN, REACH, INTERP_MS, HALF, PLAYER_R, HEAD_OFFSET } from '../constants.js';
+import {
+  BALL_R,
+  BALL_MASS,
+  BALL_DAMPING,
+  BALL_SPAWN,
+  REACH,
+  INTERP_MS,
+  HALF,
+  PLAYER_R,
+  HEAD_OFFSET,
+} from '../constants.js';
 import { clamp, lerp, finiteArr, r2, r3 } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from '../render/scene.js';
 import { ballMat, teleport } from './physics.js';
 import { createBody, addBody, setMotion } from './engine.ts';
-import { me, handPosition, carryPosition, throwVelocity } from '../player/player.js';
+import { me, handPosition, carryPosition } from '../player/player.js';
+import { cancelCharge } from '../player/throw.ts';
 import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
 import { onFrame } from '../loop.js';
@@ -32,7 +43,7 @@ export const ball = {
   body: createBody({
     mass: BALL_MASS,
     material: ballMat,
-    linearDamping: 0.12,
+    linearDamping: BALL_DAMPING,
     angularDamping: 0.3,
     shapes: [{ kind: 'sphere', r: BALL_R }],
   }),
@@ -91,7 +102,7 @@ export function releaseBall() {
   ball.mine = false;
   ball.held = false;
   me.holding = false;
-  me.charging = false;
+  cancelCharge();
   me.lostBallAt = performance.now();
   setBallMode('ghost');
   sendPresence();
@@ -108,24 +119,37 @@ export function grabBall() {
   sendPresence();
 }
 
-export function throwBall(c) {
+// Throws the held ball from p with velocity vel (src/player/throw.ts launch('ball', charge) gives both).
+export function throwBall(p, vel) {
   if (!ball.mine || !me.holding) return;
-  const hand = handPosition();
-  const vel = throwVelocity(c, hand);
   me.holding = false;
   ball.held = false;
   setBallMode('sim');
-  teleport(ball.body, hand.x, hand.y, hand.z);
+  teleport(ball.body, p.x, p.y, p.z);
   ball.body.velocity.set(vel.x, vel.y, vel.z);
   const len = Math.hypot(vel.x, vel.z) || 1;
   ball.body.angularVelocity.set((vel.z / len) * 8, 0, (-vel.x / len) * 8);
   sendPresence();
 }
 
+// Puts the ball down at a saved spot (src/features/ball-rest.ts). A live ball elsewhere, or one in someone's hands,
+// wins: then nothing moves and this returns false.
+export function placeBall(x, y, z) {
+  if (ball.owner?.remote || ball.held) return false;
+  ball.disp.p.set(x, y, z);
+  ball.disp.v.set(0, 0, 0);
+  teleport(ball.body, x, y, z);
+  ball.body.velocity.set(0, 0, 0);
+  ball.body.angularVelocity.set(0, 0, 0);
+  ball.mesh.position.copy(ball.disp.p);
+  if (ball.mine) sendPresence();
+  return true;
+}
+
 export function respawnBall() {
   if (!ball.mine) claimBall(false);
   me.holding = false;
-  me.charging = false;
+  cancelCharge();
   ball.held = false;
   setBallMode('sim');
   teleport(ball.body, BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + 3, BALL_SPAWN.z);

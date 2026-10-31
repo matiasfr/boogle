@@ -1,4 +1,4 @@
-// The hotbar and the one interact button (89ce0dd, b22fa8b): walk up to a mango, its Pick up prompt, into the hand and
+// The hotbar and the one interact button (89ce0dd, b22fa8b): walk up to a can, its Pick up prompt, into the hand and
 // the hotbar, thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
 const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
 const TP = (x, z, y) => `
@@ -9,22 +9,22 @@ const TP = (x, z, y) => `
   b.velocity.set(0, 0, 0);`;
 const AIM = (yaw, pitch) =>
   `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
-// A mango tossed onto the beach west of the court (the same cell the scenarios use).
+// A can tossed onto the beach west of the court (the same cell the scenarios use).
 const TOSS = `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] })`;
-const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205)`;
+const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;
 const ITEM = `const { CELL, HALF } = await import('/src/constants.js');
-  const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.i === 230 && it.j === 205);
+  const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
   return { x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;
 const press = (g, fn) => g.eval(`${INV} H.${fn}();`);
 
 export default {
-  about: 'pick up a mango (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
+  about: 'pick up a can (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
   async run(c) {
     const g = await c.open({ room: 'cliptoys', hud: 'play' });
     await g.wait(3);
     const out = [];
 
-    // The mango: stand a few steps off, facing it; walk up (the prompt appears), E, then throw it inland.
+    // The can: stand a few steps off, facing it; walk up (the prompt appears), E, then throw it inland.
     await g.eval(TOSS);
     await g.waitFor(TOSSED, { timeout: 30000 });
     await g.wait(1.5);
@@ -35,7 +35,7 @@ export default {
     await g.eval(`window.__debugCam?.clear(); ${TP(sx, sz)} ${AIM(yaw, -0.3)}`);
     await g.wait(1);
     out.push(
-      await g.record('toys-mango', {
+      await g.record('toys-can', {
         seconds: 7,
         each: async (t, k) => {
           if (k === 6) await g.down('KeyW');

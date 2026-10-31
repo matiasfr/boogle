@@ -38,6 +38,7 @@ export type Rules = {
   sites: import('./sites.ts').SitesApi;
   sources: import('./sources.ts').SourcesApi;
   bank: import('./bank.ts').BankApi;
+  ball: import('./ball.ts').BallApi;
 };
 /** The replay test's seeded stream (./edit-gen.js). */
 export type Stream = {

@@ -1,17 +1,14 @@
 import * as THREE from 'three/webgpu';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
-import { clamp, angleLerp, sanitizeName } from '../math.js';
+import { angleLerp, sanitizeName } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
-import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { teleport } from '../physics/physics.js';
 import { addBody } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.js';
 import { input } from './input.js';
-import { heldId } from './inventory.js';
-import { stepFlight } from '../physics/flight.js';
 import { onFrame } from '../loop.js';
 
 export const me = {
@@ -61,22 +58,6 @@ export const carryPosition = (out = new THREE.Vector3()) =>
 export const ITEM_HAND = { x: 0.5, y: 0.42, z: -0.42 };
 // Where they leave from when thrown: an overhand throw from head height, which clears a waist-high railing.
 export const throwFrom = (out = new THREE.Vector3()) => fromBody(out, 0.45, 1.0, -0.5);
-function aimDirection(from, flat) {
-  const fwd = camForward();
-  const target = camera.position.clone().addScaledVector(fwd, 30);
-  const dir = target.sub(from).normalize();
-  dir.y += flat ? 0.03 : 0.12;
-  return dir.normalize();
-}
-export const chargeAmount = () => clamp((performance.now() - me.chargeStart) / 900, 0, 1);
-// flat: a frisbee throw, aimed level and a little softer (it glides the rest of the way).
-export function throwVelocity(c, from, flat = false) {
-  const dir = aimDirection(from, flat);
-  const power = flat ? 9 + c * 15 : 8 + c * 20;
-  const v = me.body ? me.body.velocity : { x: 0, z: 0 };
-  return new THREE.Vector3(dir.x * power + v.x * 0.5, dir.y * power + (flat ? 0.5 : 1.5), dir.z * power + v.z * 0.5);
-}
-
 export function enterIsland() {
   if (me.entered) return;
   me.name = sanitizeName(dom.nameInput.value) || DEFAULT_NAME;
@@ -159,52 +140,6 @@ function updateCamera(elapsed) {
   sun.position.set(focus.x + SUN_DIR.x * 80, focus.y + SUN_DIR.y * 80, focus.z + SUN_DIR.z * 80);
 }
 
-// ---------------------------------------------------------------- throw preview
-const dotTex = (() => {
-  const c = document.createElement('canvas');
-  c.width = c.height = 32;
-  const g = c.getContext('2d');
-  g.fillStyle = '#ffffff';
-  g.beginPath();
-  g.arc(16, 16, 13, 0, Math.PI * 2);
-  g.fill();
-  return new THREE.CanvasTexture(c);
-})();
-const PREVIEW_N = 48;
-const previewAttr = dynAttr(new Float32Array(PREVIEW_N * 3), 3);
-const previewMat = new THREE.PointsNodeMaterial({
-  map: dotTex,
-  size: 0.2,
-  transparent: true,
-  opacity: 0.9,
-  alphaTest: 0.3,
-  depthWrite: false,
-});
-const preview = instancedSprite(previewMat, previewAttr);
-
-function updatePreview() {
-  preview.visible = me.charging;
-  if (!me.charging) return;
-  const id = heldId();
-  const glide = id === 'frisbee';
-  const p = id === 'ball' ? handPosition() : throwFrom();
-  const v = throwVelocity(chargeAmount(), p, glide);
-  const arr = previewAttr.array;
-  let n = 0;
-  for (; n < PREVIEW_N; n++) {
-    arr[n * 3] = p.x;
-    arr[n * 3 + 1] = p.y;
-    arr[n * 3 + 2] = p.z;
-    for (let k = 0; k < (glide ? 5 : 3); k++) stepFlight(p, v, glide, 1 / 60);
-    if (p.y < groundHeight(p.x, p.z) || p.y < SEA - 0.3) {
-      n++;
-      break;
-    }
-  }
-  preview.count = n;
-  previewAttr.needsUpdate = true;
-}
-
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
 // world -290, after the ball's respawn check (ball.js, -300): falling off the world puts you back at the spawn.
 onFrame(
@@ -231,6 +166,3 @@ onFrame(
 
 // update -200, after every visual sync, before the clouds (props.js, -190) and the features.
 onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });
-
-// late -200, first in late, before the HUD (hud.js, -190).
-onFrame(updatePreview, { phase: 'late', order: -200 });
