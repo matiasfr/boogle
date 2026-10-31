@@ -28,8 +28,8 @@ The open questions in the two plans have working answers so work can start; chan
 
 - [x] Per-hook profiling and `?prof=1`; `perf` prints the top hooks, `hitches` names the slowest hook per hitch
       (game-loop.md, step 1).
-- [ ] `tsconfig.json` with `checkJs` + `strict` on the core; `tsc` in `npm run check`; JSDoc for wire messages,
-      presence, ops and states (step 8a).
+- [x] TypeScript everywhere: the policy, strict `tsconfig.json`, `npm run typecheck` in `check`, `.ts`-aware lint,
+      registry and loaders, Node 24 (step 8a).
 - [ ] Allocation-free hot path, heap tracking in `hitches` (step 2).
 - [ ] Baseline on the target devices: `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
@@ -44,14 +44,15 @@ The open questions in the two plans have working answers so work can start; chan
       decor matrices (step 3).
 - [ ] Shadow pass trimmed (tighter shadow camera, fewer casters): the 52 shadow draw calls are the cheapest GPU win.
 - [ ] Compute particles behind `emit()`; compute-driven pools (step 4).
-- [ ] TypeScript tooling PR, then `src/sim/` and `src/world/rules/` to `.ts` (step 8b, first folders).
+- [ ] Convert `src/sim/`, `src/world/rules/`, `src/world/`, `src/netplay/` and `src/net/` to `.ts`, with exported
+      types for wire messages, presence, ops and states (step 8b).
 
 **Done when** draw calls stay flat as content grows and particles and critters cost no main-thread time.
 
 ## Phase 3: the sim off the main thread, then the server
 
 - [ ] The lockstep sim in a worker (step 5), shaped so the same module runs in Node.
-- [ ] Remaining core folders to `.ts` (`src/world/`, `src/netplay/`, `src/net/`, `src/loop.js`).
+- [ ] Convert the rest of `src/` to `.ts` (step 8b order).
 - [ ] Dedicated server: pick up [server-host.md](server-host.md), with the server running the sim worker module and
       sending each client only nearby state. Bends DESIGN.md "PeerJS only" on purpose, in its first PR.
 - [ ] Client-side prediction and reconciliation for your own player, once the server checks movement.
@@ -60,6 +61,7 @@ The open questions in the two plans have working answers so work can start; chan
 
 ## Phase 4: a world bigger than the camera
 
+- [ ] Convert `test/`, `dev/`, `server/` and the config files to `.ts`; turn `allowJs` off (step 8b).
 - [ ] Asset pipeline: `npm run assets` (glTF + meshopt, KTX2), hashed outputs, a size budget in CI (open-world.md,
       section 2). Start with the first authored model.
 - [ ] Chunk grid (`src/world/chunks.js`), chunk-aware hooks and pools (step 6).

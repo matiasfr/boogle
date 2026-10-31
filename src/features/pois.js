@@ -6,5 +6,5 @@
 // chunk (faster first load; src/loop.js, "Lazy parts"). Their site.js (the ground) stays eager, in src/island/.
 import { onStart } from '../loop.js';
 
-import.meta.glob(['../pois/*/index.js', '!../pois/caves/index.js'], { eager: true });
+import.meta.glob(['../pois/*/index.{js,ts}', '!../pois/caves/index.{js,ts}'], { eager: true });
 onStart(() => import('../pois/caves/index.js'));

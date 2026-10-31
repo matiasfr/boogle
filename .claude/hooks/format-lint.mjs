@@ -12,7 +12,7 @@ try {
   process.exit(0);
 }
 if (!file || !existsSync(file)) process.exit(0);
-if (!['.js', '.mjs', '.css', '.json', '.html', '.yml', '.yaml'].includes(extname(file))) process.exit(0);
+if (!['.js', '.mjs', '.ts', '.css', '.json', '.html', '.yml', '.yaml'].includes(extname(file))) process.exit(0);
 
 // The checkout (main repo or a worktree) that owns the file, and the nearest installed tools.
 const up = (from, hit) => {
@@ -29,7 +29,7 @@ const run = (tool, args) =>
 
 run('prettier', ['--write', '--log-level', 'silent', '--ignore-unknown', file]);
 
-if (/\.m?js$/.test(file) && existsSync(join(bin, 'node_modules/.bin/eslint'))) {
+if (/\.(m?js|ts)$/.test(file) && existsSync(join(bin, 'node_modules/.bin/eslint'))) {
   const r = run('eslint', ['--quiet', '--no-warn-ignored', file]);
   if (r.status === 1) {
     process.stderr.write(`ESLint errors (fix them before you finish; fine to ignore mid-edit):\n${r.stdout}`);

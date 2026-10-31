@@ -4,7 +4,7 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 `math.js` and `math-pure.js` (the pure half, also used in Node).
 
 - `boot/`: the page's entry and the loading screen (key art, progress bar), shown before the game downloads.
-- `features/`: self-contained plug-ins, auto-loaded by `main.js` (`import.meta.glob('./features/*.js')`). Add new
+- `features/`: self-contained plug-ins, auto-loaded by `main.js` (`import.meta.glob('./features/*.{js,ts}')`). Add new
   features here, not in the folders below.
 - `world/`: shared state, edit sync and snapshots (see [world/README.md](world/README.md)); `world/rules/` holds the
   lockstep rules modules.

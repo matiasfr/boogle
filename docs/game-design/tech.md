@@ -4,7 +4,7 @@ Brief; the rules for contributors are in [AGENTS.md](../../AGENTS.md) (imported 
 folder map in [src/README.md](../../src/README.md).
 
 - **Stack.** three.js 0.187 (`WebGPURenderer`, WebGPU only; shaders in TSL, see
-  [src/render/README.md](../../src/render/README.md)), cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../../package.json));
+  [src/render/README.md](../../src/render/README.md)), cannon-es 0.20.0, PeerJS 1.5.5, TypeScript (strict, converting from JavaScript), bundled with Vite ([package.json](../../package.json));
   the build splits three, cannon-es and peerjs into vendor chunks ([vite.config.js](../../vite.config.js)).
 - **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),
   `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),

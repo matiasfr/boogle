@@ -16,7 +16,9 @@
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
 // }
 
-const CORE_PRESENCE_FILE = 'src/netplay/net.js';
+const CORE_PRESENCE_FILE = 'src/netplay/net';
+// Paths compare without their extension, so a module keeps its registry identity when it moves from .js to .ts.
+const bare = (p) => p.replace(/\.[jt]s$/, '');
 
 // Strips comments and replaces string/template contents with spaces (same length), so offsets still line up and
 // brackets inside strings don't count. Literal values are read back from the original text at the same offsets.
@@ -112,7 +114,7 @@ const add = (map, key, who) => (map[key] ??= []).push(who);
 export function scanSources(files) {
   const reg = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
   for (const { path, text } of files) {
-    if (path === CORE_PRESENCE_FILE) {
+    if (bare(path) === CORE_PRESENCE_FILE) {
       const body = text.match(/function buildPresence\(\)\s*\{\s*const pr = (\{[^}]*\})/)?.[1];
       for (const m of body?.matchAll(/^\s*([a-z]\w*)\s*:/gm) ?? []) add(reg.presence, m[1], `${path} (core)`);
     }
@@ -133,7 +135,7 @@ export function scanSources(files) {
       const slot = literal(prop(c.args[1], 'pad'));
       if (slot !== undefined) add(reg.pads, slot, `${path}:${literal(c.args[0]) ?? '?'}`);
     }
-    if (path === 'src/player/controls.js') {
+    if (bare(path) === 'src/player/controls') {
       const list = text.match(/export const PAD = \[([^\]]*)\]/)?.[1] ?? '';
       reg.padSlots = [...list.matchAll(/'([^']+)'/g)].map((m) => m[1]);
     }

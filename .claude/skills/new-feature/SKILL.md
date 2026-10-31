@@ -12,13 +12,13 @@ AGENTS.md has the rules; this is the order to apply them in.
 2. Pick a sync kind for each piece of state (AGENTS.md, "Pick a sync kind"). Lockstep: follow the four-file recipe in
    `src/world/rules/README.md` instead of steps 3-4, then come back for 5-6.
 3. Copy the shape of a small plug-in: `src/features/honk.js` (an action + room messages), `src/features/bump.js` (an
-   action on Owner state), `src/features/gifts.js` (interactables + a lockstep adapter). Create `src/features/$0.js`
+   action on Owner state), `src/features/gifts.js` (interactables + a lockstep adapter). Create `src/features/$0.ts` (TypeScript, strict; AGENTS.md)
    with a header comment saying what it does, which sync kind each piece of state uses and the principle it serves;
    `import './$0.css'` only if it needs styles; DOM built in JS; `onFrame`/`onStart` from `src/loop.js`.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (pick from
    `freeSlots()`), `registerInteractable` for things the interact button acts on, `emit` for particles,
    `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).
-5. Pure logic worth a test goes in `src/sim/$0.js` with `test/$0.test.mjs`. Don't import another feature; move shared
+5. Pure logic worth a test goes in `src/sim/$0.ts` with `test/$0.test.ts`. Don't import another feature; move shared
    code into `src/`. Hotspot files (`src/main.js`, `src/style.css`, `index.html`): a line or two at most. Tick or add
    a PLAN.md item if it is on the roadmap, and update or add its file in `docs/game-design/` (AGENTS.md).
 6. `npm run check` (`check:full` for lockstep or net changes). For anything visible, `/look` it. Tell the user how to

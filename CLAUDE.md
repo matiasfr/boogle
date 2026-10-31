@@ -3,7 +3,7 @@
 ## Claude Code only
 
 ### Setup
-- `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.mjs`) that runs Prettier on each file you edit (plus ESLint for JS). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
+- `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.mjs`) that runs Prettier on each file you edit (plus ESLint for JS and TS). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
 
 ### Project skills
 - `/ship`: commit and ship with `npm run ship`.

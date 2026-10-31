@@ -6,7 +6,7 @@
 import { createIsland } from './stamps.js';
 import { islandBaseCm } from './ground.js';
 
-const found = import.meta.glob('../pois/*/site.js', { eager: true });
+const found = import.meta.glob('../pois/*/site.{js,ts}', { eager: true });
 
 // Folder order (alphabetical), so every client composes the stamps in the same order.
 const sites = Object.keys(found)

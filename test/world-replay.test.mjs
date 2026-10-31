@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.js';
 import { RULES, installRules } from '../src/world/rules/index.js';
-import { mulberry32 } from '../src/sim/rng.js';
+import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.mjs';
 import { makeNet, run, live } from './helpers/net.mjs';
 

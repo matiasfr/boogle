@@ -8,7 +8,7 @@ export function angleLerp(a, b, t) {
   return a + d * t;
 }
 
-export { mulberry32 } from './sim/rng.js';
+export { mulberry32 } from './sim/rng.ts';
 
 export function sanitizeName(s) {
   return String(s ?? '')
