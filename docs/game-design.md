@@ -16,11 +16,13 @@ Boogle is a drop-in browser island for up to 8 friends. You pick a name and a co
 sand volleyball court with one shared beach ball. Today the loop as actually played is: throw, bump and chase the ball;
 pick up fruit and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
-honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves. There are no scores, timers or
-goals. The tide, weather and crops from the plan are not built.
+honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; shake logs from the palms and
+carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals). There are no
+scores, timers or goals. The tide, weather and crops from the plan are not built.
 
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
-gamepad (W3C standard mapping, aimed at iPhone and iPad). One player's browser hosts the room over PeerJS. Live at
+gamepad (W3C standard mapping, aimed at iPhone and iPad). One player's browser hosts the room over PeerJS, or, for
+rooms our server is set to host, the server does over WebSocket (section 8). Live at
 **https://boogle.club/** (`?room=<name>` picks an island, default `beach`).
 
 ## 2. Pillars
@@ -37,11 +39,11 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 6 | Communal world, personal rewards | Hotbar and Boogler friendship are per player, in localStorage. |
 | 7 | Telegraph everything | Interact prompt, ping markers. (No world events exist yet to telegraph.) |
 | 8 | Drop-in, drop-out | No lobby; host migration; mixed-build reloads. |
-| 9 | Leave something for the next visitor | Water, mushrooms and items persist in snapshots. |
+| 9 | Leave something for the next visitor | Mushrooms, items, piles, haul stacks and work sites persist in snapshots. |
 | 10 | Slapstick over precision | Face-plants, flops, sail bonks, Boogler launches. |
 
-Technical principles (sync kinds, determinism, sync edits not state, PeerJS only, small and readable) are in the same
-file, and section 8 maps every feature to its kind.
+Technical principles (sync kinds, determinism, sync edits not state, clear authority, server hosts every room,
+understandable at a glance, small and readable) are in the same file, and section 8 maps every feature to its kind.
 
 ## 3. [The island](game-design/island.md)
 

@@ -5,15 +5,17 @@
   grows into a big flat-topped mushroom that bounces players and the ball, and shoves you out from under it as it grows.
   A thrown seed plants itself where it lands. The Boogler likes seeds as a present.
 - **Controls.** E / pad B "Take" at the stall; click / pad X with seeds (Plant) or can (Water).
-- **Sync kind.** Lockstep. Ops `mush.plant`, `mush.water`; state `mushrooms` (`[i, j, g]` per plot). The host's
-  render-side spot check (no water, rock, tree or cap) is passed in through `setEnv` as `env.canPlantAt`.
+- **Sync kind.** Lockstep. Ops `mush.plant`, `mush.water`; state `mushrooms` (`[i, j, g]` per plot). A browser
+  host's render-side spot check (no water, rock, tree or cap) is passed in through `setEnv` as `env.canPlantAt`; the
+  server, which has no renderer, uses the plant mask baked from it into
+  [src/world/home-land.json](../../src/world/home-land.json) by the `world-inputs` scenario.
 - **Tuning.** Growth 120 ticks (12 s) after watering; a dry seed waits forever. At most 60 plots, at least 3 cells
   apart (Chebyshev). 5 seeds per take, stack of 20. Cap radius 1.9 m, stem 0.85 m. Player bounce 15 × (0.55 + 0.45 ×
   growth) m/s; growth push at least 5.5 m/s. Pour animation 600 ms. A second seed waits 500 ms for the first to land.
 - **Files.** [src/sim/mushrooms.ts](../../src/sim/mushrooms.ts), [src/world/rules/mushrooms.ts](../../src/world/rules/mushrooms.ts),
   [src/adapters/mushroom-garden.js](../../src/adapters/mushroom-garden.js), [src/features/mushroom-garden.js](../../src/features/mushroom-garden.js).
-- **Known issues and limits.** Watering is only by can (not sim water or the ball). Growth counts ticks, which only run
-  while someone is online, so nothing grows while the island is empty (see 8.7). Mushrooms never wilt or get
+- **Known issues and limits.** Watering is only by can (not sim water or the ball). Growth counts ticks, which on a
+  peer-hosted room only run while someone is online, so nothing grows while the island is empty (see 8.7). Mushrooms never wilt or get
   harvested. The rest of Phase 5 (soil, crops, visitor bonus) is on hold.
 
 ---
