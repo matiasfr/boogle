@@ -14,10 +14,11 @@ new work on the guest keeps to the boundaries below so the split stays cheap.
 
 - **Names are fine.** Copy, docs and code may name the character, its games and Nintendo; don't reword anything to
   remove a reference. The hard line is ROM data (next rule).
-- **Bring your own engine and ROM.** No engine build and no ROM data in the repo, the build or the deploy, and neither
-  ever goes over the network. The player drops or picks them once (`src/decomp/files-dialog.js`) and this browser keeps
-  them (`src/decomp/store.js`); a local dev build may name the engine with a `VITE_..._ENGINE_URL`. Without both files
-  the feature is dormant and fetches nothing.
+- **No ROM in the public repo.** No ROM data, or anything cut from it, in the repo or the build made from it. Fetching
+  one from elsewhere may be allowed later (the owner's call).
+- **Bring your own engine and ROM, for now.** No engine build in the repo or the build. The player drops or picks
+  them once (`src/decomp/files-dialog.js`) and this browser keeps them (`src/decomp/store.js`); a local dev build may
+  name the engine with a `VITE_..._ENGINE_URL`. Without both files the feature is dormant and fetches nothing.
 - **Only our glue in `native/`.** Upstream source is compiled from a local checkout the build script points at.
 - Heavy parts load lazily; controls through `registerAction` with at least one pad slot left free.
 
