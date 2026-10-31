@@ -23,9 +23,9 @@ folder map in [src/README.md](../../src/README.md).
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
   [dev/scenarios/](../../dev/scenarios/): caves, controls-guide, hotbar, interact,
   lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, two-player-edit, world-inputs. CI runs
-  `world-inputs`, `smoke` and `two-player-edit` on every PR (they must pass); the rest run nightly in
-  `scenarios-nightly.yml` and never block; `smoke` also runs against the live site after every deploy and nightly
-  (`smoke.yml`). Every run is WebGPU (SwiftShader on Linux and CI, Metal on a Mac). `npm run island-map` renders the composed island.
+  `world-inputs` and `two-player-edit` on every PR (they must pass); the rest run nightly in
+  `scenarios-nightly.yml` and never block. `smoke` needs a GPU: `npm run check:gpu` runs it in `npm run ship` on a
+  Mac, and `smoke.yml` runs it against the live site after every deploy and nightly. Every run is WebGPU (SwiftShader on Linux and CI, Metal on a Mac). `npm run island-map` renders the composed island.
 - **Perf.** `npm run perf`: draw calls, shadow calls, triangles, shader stages and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../../dev/video/)).
 - **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the

@@ -74,9 +74,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
 
-  # The fast browser scenarios (dev/scenarios/), one leg each so the slowest sets the wall time. The rest run nightly
-  # (scenarios-nightly.yml), so a PR's CI stays around two minutes. A flaky leg here gets a better wait (on a
-  # condition, not a time), never a skip; one that can't fit the budget moves to the nightly list.
+  # The browser scenarios that stay reliable on the runner's software WebGPU (SwiftShader), one leg each so the slowest
+  # sets the wall time. `smoke` is too slow here with two tabs drawing in software (a toss takes ~50 s): it runs on a
+  # Mac's GPU before every `npm run ship` (`npm run check:gpu`, scripts/ship.sh) and against the live site after every
+  # deploy (smoke.yml). The rest run nightly (scenarios-nightly.yml). A flaky leg here gets a better wait (on a
+  # condition, not a time), never a skip; one that can't fit the budget moves to the Mac gate or the nightly list.
   scenarios:
     name: scenario ${{ matrix.scenario }}
     runs-on: ubuntu-latest
@@ -86,7 +88,6 @@ jobs:
       matrix:
         scenario:
           - world-inputs
-          - smoke
           - two-player-edit
     steps:
       - uses: actions/checkout@v4

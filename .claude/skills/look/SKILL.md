@@ -24,7 +24,8 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
 
 **Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
-Vulkan on Linux and CI. `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
+Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only `world-inputs` and `two-player-edit`; `smoke` runs
+here, `npm run check:gpu`, inside `npm run ship`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
 run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
 material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
 `night.js`, `particles.js`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:

@@ -16,5 +16,5 @@
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`. The `threejs-*` skills cover WebGL and WebGPU; Boogle is WebGPU + TSL only, so use their WebGPU/TSL parts and [src/render/README.md](src/render/README.md).
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
-- `npm ci && npm run check` before committing (`check:full` per AGENTS.md, "Tests").
+- `npm ci && npm run check` before committing (`check:full` per AGENTS.md, "Tests"). The runner has no GPU, so `check:gpu` (smoke) can't run there; for networking or rendering changes say so in the PR, and the live smoke after the deploy (`smoke.yml`) is the check.
 - Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENTS.md, "Shipping"): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.
