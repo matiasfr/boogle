@@ -12,7 +12,7 @@ The design and technical principles live in [DESIGN.md](DESIGN.md). Read it befo
 
 ## Key decision: PeerJS (WebRTC), with one browser as host
 
-- [ ] The server hosts the main room, PeerJS stays as fallback ([docs/plans/server-host.md](docs/plans/server-host.md)).
+- [ ] The server hosts every room, no PeerJS fallback ([docs/plans/server-host.md](docs/plans/server-host.md)); then the co-op net roadmap ([docs/plans/net-roadmap.md](docs/plans/net-roadmap.md)).
 
 Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
 
@@ -162,7 +162,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - One-seed-per-few-minutes "r/place garden" mode for a slow collective flower mosaic.
 - Mud and erosion: wet sand slows players; plants anchor soil (From Dust).
 - **Skip:** full 3D voxel fluid. It's a lot of cost for little gameplay on a beach island.
-- **Shelved:** the Fly server as the main room's host ([docs/plans/server-host.md](docs/plans/server-host.md)), until public playtests, offline world progress, rooms past 8, or telemetry showing join and migration pain.
+- **Active:** the Fly server hosts every room ([docs/plans/server-host.md](docs/plans/server-host.md)), then [docs/plans/net-roadmap.md](docs/plans/net-roadmap.md).
 - **Active: the architecture overhaul** ([docs/plans/architecture.md](docs/plans/architecture.md)): the ordered checklist for the items below.
 - **Future: a bigger, open world.** Dedicated server, asset packing (glb + meshopt, KTX2), then chunk streaming and LOD, in that order ([docs/plans/open-world.md](docs/plans/open-world.md)).
 

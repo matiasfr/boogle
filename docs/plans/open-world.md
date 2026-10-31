@@ -15,7 +15,7 @@
 
 ## 1. Dedicated server (first, and the blocker for everything else)
 
-Picks up the shelved [server-host.md](server-host.md). That plan's triggers still apply; "rooms past 8" and a world
+Active: [server-host.md](server-host.md) (full switchover, every room on the server), then [net-roadmap.md](net-roadmap.md), which orders what follows. Originally: "rooms past 8" and a world
 too big for every peer to simulate are now the expected ones.
 
 - The server runs the shared sim: `src/sim/` and `src/world/rules/` are already three.js-free and deterministic, so they
