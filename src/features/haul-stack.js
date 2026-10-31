@@ -1,6 +1,6 @@
 // The haul stack: what you carry, drawn as a tower of pieces on your back (and on everyone else's, from the lockstep
 // stacks matched to avatars through presence `u`). Past the soft cap (20) it sways harder, and a jump knocks the top
-// pieces off into a pile behind you. A small chip shows your count. Pickups fly to your back the moment you walk into
+// pieces off into a pile behind you. A small chip shows your count and your own contribution tier (from the plaques). Pickups fly to your back the moment you walk into
 // a pile (Local), while the host confirms (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own:
 // pickup is walking into a pile, pouring is walking into a site's ring (work-sites.js).
 // Serves DESIGN.md 1 (toys before chores: a wobbly tower is fun to carry with nothing to do) and 10 (slapstick: the
@@ -17,6 +17,7 @@ import { onPick } from '../adapters/piles.js';
 import { pieceMesh, pieceColor, PIECE } from '../render/haul-pieces.js';
 import { SOFT_CAP, spillOf } from '../sim/stacks.js';
 import { MATERIALS } from '../sim/materials.js';
+import { TIERS, tierOf } from '../sim/tiers.js';
 import { CELL, HALF, reducedMotion } from '../constants.js';
 
 const SHOWN = 40; // pieces drawn per stack
@@ -118,8 +119,10 @@ onFrame(
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 
+    // your own tier only (brief 8: no readout on anyone else), derived from the plaques
     const mine = myStack();
-    const text = mine.n ? `${MATERIALS[mine.k]} ${mine.n}` : '';
+    const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name;
+    const text = [mine.n ? `${MATERIALS[mine.k]} ${mine.n}` : '', tier ?? ''].filter(Boolean).join(' · ');
     if (text !== chipText) {
       chipText = text;
       chip.textContent = text;

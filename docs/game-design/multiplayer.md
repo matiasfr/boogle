@@ -47,6 +47,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | The Boogler's position and mode | Host | `addHostField('g')` |
 | Ground piles | Lockstep | ops `pile.drop`, `pile.take`; state `piles` |
 | Haul stacks (what each player carries) | Lockstep, by roster index | state `stacks`; the spill is your call (Owner), applied as `pile.drop` |
+| Work sites, plaques (tier derived) | Lockstep | op `site.stock`; state `sites` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |

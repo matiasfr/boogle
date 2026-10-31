@@ -130,4 +130,5 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `roster.js` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.js` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.js`); `drop` returns `{ placed, ids }` |
 | `stacks.js` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.js`), by roster index; later rules call `add`/`take` in their apply |
+| `sites.js` | `site.stock` | `sites` | `{ sites, onSectionDone(fn), age(), points(pid), pointsAt(k), room(s, ring) }`: work sites on the preset route (`../../sim/sites.js`, `../../sim/route.js`) and their plaques; later rules subscribe to `onSectionDone` at install |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

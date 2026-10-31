@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.js';
 import { ON_GROUND, SRC } from '../src/sim/gifts.js';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -43,6 +43,10 @@ const SCRIPTS = {
       return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 6 };
     },
     { op: 'pile.drop', i: 214, j: 188, n: 2 },
+  ],
+  sites: () => [
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
   ],
 };
 
