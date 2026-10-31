@@ -4,8 +4,10 @@
 // player so integer rounding never loses credit. Pure and deterministic (lockstep); the rules (src/world/rules/sites.js)
 // check that a pour comes from the pourer's own stack.
 import { ROUTE, AGES, TRACK, HELPER, costOf } from './route.js';
+import { runAt, MACHINE_RUN } from './scripted-run.js';
 
 export const RUN_BONUS = 5; // points to whoever starts a machine run
+export const HELPER_EVERY = 270; // ticks per piece of freight each helper hut adds (brief 7: ~0.15x a hand rate)
 const isInt = Number.isSafeInteger;
 
 function freshSite() {
@@ -74,6 +76,52 @@ export function stock(st, s, ring, idx, n) {
   }
   return { pts, built };
 }
+
+// A run can start at the open site once its Track ring holds a whole section and nothing is running there.
+export const canRun = (st, s) =>
+  siteOpen(st, s) && st.list[s].t0 < 0 && !st.list[s].done && st.list[s].stock[TRACK] >= costOf(s, TRACK);
+export function startRun(st, s, idx, tick) {
+  st.list[s].t0 = tick;
+  st.list[s].starter = idx;
+}
+export const runOf = (st, s, tick) => runAt(MACHINE_RUN, st.list[s]?.t0 ?? -1, tick);
+
+// Ends the open site's run once its script is done: the section is laid, the starter gets RUN_BONUS, the next site
+// opens. Returns the laid section's index, or -1.
+export function finishRun(st, tick) {
+  const s = st.open;
+  const site = st.list[s];
+  if (!site || site.t0 < 0 || site.done || !runOf(st, s, tick).done) return -1;
+  const cost = costOf(s, TRACK);
+  site.stock[TRACK] -= cost;
+  site.used += cost;
+  site.done = 1;
+  if (site.starter >= 0) bonus(st, s, site.starter, RUN_BONUS);
+  st.open = s + 1;
+  return s;
+}
+
+// The age the route has reached: the age of the open section, or one past the last once the route is laid.
+export const ageAt = (st) => (st.open < ROUTE.length ? ROUTE[st.open].age : ROUTE.at(-1).age + 1);
+
+// Helper huts send freight: every HELPER_EVERY ticks, one piece per built hut into the open site's Track ring (as far
+// as it has room; a full or running ring just waits). Returns the pieces added.
+export function helperFreight(st, tick) {
+  if (tick % HELPER_EVERY !== 0) return 0;
+  return addFreight(
+    st,
+    st.list.reduce((t, x) => t + x.helpers, 0),
+  );
+}
+export function addFreight(st, n) {
+  const s = st.open;
+  const add = Math.min(n, ringRoom(st, s, TRACK));
+  if (add <= 0) return 0;
+  st.list[s].stock[TRACK] += add;
+  st.list[s].freight += add;
+  return add;
+}
+export const helpersOf = (st) => st.list.reduce((t, x) => t + x.helpers, 0);
 
 // Points per roster index over every site's plaque.
 export function pointsOf(st, idx) {

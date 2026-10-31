@@ -56,15 +56,17 @@ function checkInvariants(x) {
 async function replay(seed) {
   const net = makeNet();
   const peers = [makePeer(seed, net, 'h', true), makePeer(seed, net, 'c1', false), makePeer(seed, net, 'c2', false)];
-  // Material to start from, the same on every peer before tick 1 (clients replace it with the host's snapshot anyway):
-  // the stack-bound ops need a pile to take from before any source exists.
-  for (const x of peers)
+  // A head start, the same on every peer before tick 1 (clients replace it with the host's snapshot anyway): piles of
+  // logs and ore to take, and the first site's Track ring full so a run can start (pours go to the Helper ring).
+  for (const x of peers) {
     for (const [i, k] of [
       [212, 0],
       [230, 0],
       [250, 1],
     ])
       x.rules.piles.drop(i, 188, k, 64);
+    x.rules.sites.addFreight(60);
+  }
   const master = stream(seed);
   const ops = peers[0].s.registry().ops;
   for (const op of ops)

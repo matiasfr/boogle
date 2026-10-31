@@ -9,12 +9,15 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { scene } from '../render/scene.js';
 import { onApplied, onSnapshot, submitEdit } from '../world/sync.js';
+import { sharedSeconds } from '../netplay/shared-time.js';
+import { registerInteractable } from '../player/hands.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { me } from '../player/player.js';
 import { identity } from '../player/identity.js';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt, costOf } from '../sim/route.js';
 import { materialOf, MATERIALS } from '../sim/materials.js';
 import { pieceMesh, pieceColor } from '../render/haul-pieces.js';
+import { MACHINE_RUN } from '../sim/scripted-run.js';
 
 const POUR_EVERY_MS = 300; // one site.stock this often while you stand in a ring
 const POUR_N = 2; // pieces per pour
@@ -118,9 +121,11 @@ function redraw() {
       const full = ring === HELPER && x.helpers;
       const line = x.done
         ? 'laid'
-        : full
-          ? 'built'
-          : `${x.stock[ring]} / ${costOf(s, ring)} ${MATERIALS[k]}${open ? '' : ' · later'}`;
+        : x.t0 >= 0 && ring === TRACK
+          ? 'laying track…'
+          : full
+            ? 'built'
+            : `${x.stock[ring]} / ${costOf(s, ring)} ${MATERIALS[k]}${open ? '' : ' · later'}`;
       paint(v.ringLabels[ring], [what, line]);
     }
     v.hut.visible = x.helpers > 0;
@@ -146,6 +151,95 @@ function redraw() {
   if (sleepers.instanceColor) sleepers.instanceColor.needsUpdate = true;
 }
 
+// The railway: two rails and sleepers along each laid section, and along the running one up to the machine.
+const RAIL_STEP = 1.1; // metres between sleepers
+const rails = pieceMesh(ROUTE.length * 40);
+const railMat = new THREE.MeshStandardNodeMaterial({ color: '#5c5f66', roughness: 0.5, metalness: 0.6 });
+const railGeo = new THREE.BoxGeometry(0.08, 0.08, 1);
+const railMeshes = ROUTE.map(() =>
+  [-0.45, 0.45].map((off) => {
+    const m = new THREE.Mesh(railGeo, railMat);
+    m.visible = false;
+    scene.add(m);
+    return { m, off };
+  }),
+);
+// The machine: a placeholder track layer (a box with a funnel) that crawls the section during its run.
+const machine = new THREE.Group();
+machine.add(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2), hutMat));
+const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.7, 10), postMat);
+funnel.position.set(0, 0.75, -0.6);
+machine.add(funnel);
+machine.visible = false;
+scene.add(machine);
+
+const lerp2 = (s, u) => {
+  const a = ROUTE[s],
+    [bx, bz] = a.to;
+  const x = a.x + (bx - a.x) * u,
+    z = a.z + (bz - a.z) * u;
+  return at.set(x, groundHeight(x, z), z);
+};
+const WARM = MACHINE_RUN[0].len,
+  LAY = MACHINE_RUN.find((p) => p.name === 'lay').len;
+// How far along section s the track is laid, 0..1, at shared time `tick` (fractional).
+function laid(s, tick) {
+  const x = sites.list[s];
+  if (x.done) return 1;
+  if (x.t0 < 0) return 0;
+  const r = rules.sites.run(s, Math.floor(tick));
+  if (r.name === 'warm' || r.phase < 0) return 0;
+  if (r.name !== 'lay') return 1;
+  return Math.min(1, (tick - x.t0 - WARM) / LAY); // smoothed between ticks
+}
+function drawRailway(tick) {
+  let c = 0;
+  ROUTE.forEach((sec, s) => {
+    const u = laid(s, tick);
+    const len = Math.hypot(sec.to[0] - sec.x, sec.to[1] - sec.z);
+    const yaw = Math.atan2(sec.to[0] - sec.x, sec.to[1] - sec.z);
+    for (let d = 0; d < len * u && c < rails.instanceMatrix.count; d += RAIL_STEP) {
+      lerp2(s, d / len);
+      at.y += 0.06;
+      q.setFromAxisAngle(up, yaw);
+      rails.setMatrixAt(c, m4.compose(at, q, sleeperScale));
+      rails.setColorAt(c++, pieceColor(0));
+    }
+    for (const { m, off } of railMeshes[s]) {
+      m.visible = u > 0;
+      if (!m.visible) continue;
+      const mid = lerp2(s, u / 2);
+      m.position.set(mid.x + Math.cos(yaw) * off, mid.y + 0.16, mid.z - Math.sin(yaw) * off);
+      m.rotation.set(0, yaw, 0);
+      m.scale.set(1, 1, Math.max(0.01, len * u));
+    }
+    if (s === sites.open && sites.list[s]?.t0 >= 0) {
+      machine.visible = true;
+      lerp2(s, u);
+      machine.position.set(at.x, at.y + 0.5, at.z);
+      machine.rotation.y = yaw;
+    }
+  });
+  rails.count = c;
+  rails.instanceMatrix.needsUpdate = true;
+  if (rails.instanceColor) rails.instanceColor.needsUpdate = true;
+}
+const up = new THREE.Vector3(0, 1, 0);
+const sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4);
+
+// Start the machine: an Interact target at the open site's sign once its Track ring holds a whole section.
+registerInteractable(() => {
+  const s = sites.open;
+  if (!me.entered || !me.body || s >= ROUTE.length || !rules.sites.canRun(s)) return [];
+  const p = ringAt(s, TRACK);
+  const pos = me.body.position;
+  if (Math.hypot(pos.x - p.x, pos.z - p.z) > RING_R + 1.2) return [];
+  const where = new THREE.Vector3(p.x, groundHeight(p.x, p.z) + 1.2, p.z);
+  return [
+    { id: `run${s}`, verb: 'Start the machine', at: where, run: () => submitEdit({ op: 'site.run', i: 0, j: 0, s }) },
+  ];
+});
+
 // Pouring: standing in a ring of the open site with the right material pours a little every POUR_EVERY_MS.
 let lastPour = -1e9;
 function pour(now) {
@@ -166,6 +260,8 @@ function pour(now) {
 onFrame(
   ({ now }) => {
     if (dirty) redraw();
+    machine.visible = false;
+    drawRailway(sharedSeconds() * 10); // shared time in ticks (TICK_MS = 100), smooth between them
     pour(now);
   },
   { phase: 'update', order: 34 },

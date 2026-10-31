@@ -48,6 +48,10 @@ const SCRIPTS = {
   sites: () => [
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
+    ({ rules }) => {
+      rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
+      return { op: 'site.run', i: 0, j: 0, s: 0 };
+    },
   ],
 };
 

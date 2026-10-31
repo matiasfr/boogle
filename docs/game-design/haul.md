@@ -58,6 +58,20 @@ the roster; nobody is listed for not pouring. Your contribution tier is derived 
 25, Porter 100, Navvy 300, Ganger 600, Foreman 1,000, Engineer 1,600, Stationmaster 2,500; brief 8) and shows only to
 you, on the haul chip. Tiers give nothing yet.
 
+## Machine runs, helpers and the age change
+
+Once the open site's Track ring holds a whole section, anyone standing by it gets "Start the machine" (E, the
+Interact button). The run is scripted and the same for everyone, including a late joiner: 3 s warming up, 45 s
+crawling the section laying sleepers and rails behind it, 2 s whistle (500 ticks; drawn at smooth shared time). Then
+the section is laid, whoever started it gets 5 points on that plaque, every palm refills, and the next site opens.
+A built helper hut adds one piece of freight to the open site's Track ring every 27 s (it waits while that ring is
+full or running). When an age's last section is laid the age moves on; whatever is left of the old material on
+anyone's back pours itself into that last site and is credited to them. In the testbed the third section ends the
+wood age, and no iron sources exist yet.
+
+Code: [src/sim/scripted-run.js](../../src/sim/scripted-run.js) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
+`sites` tick. Scenario: `npm run scenario -- haul-loop`.
+
 Code: [src/sim/sites.js](../../src/sim/sites.js), [src/sim/tiers.js](../../src/sim/tiers.js),
 [src/world/rules/sites.js](../../src/world/rules/sites.js), [src/features/work-sites.js](../../src/features/work-sites.js).
 Lockstep state `sites`; op `site.stock {s, ring, n}` (validated against your own stack, the age's material and the open

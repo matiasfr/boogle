@@ -12,6 +12,7 @@
     "pile.drop",
     "pile.take",
     "site.stock",
+    "site.run",
     "src.take"
   ],
   "layout": {
