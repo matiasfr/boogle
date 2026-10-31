@@ -118,7 +118,7 @@ function buildTreeFruit() {
     const src = itemModel(GIFTS[kind].id).children[0];
     const pool = createPool(src.geometry, src.material, slots.length);
     const mesh = pool.mesh;
-    mesh.castShadow = true;
+    // No shadow: fruit hangs in the palm's own shadow, and each kind would be one more shadow-pass draw call.
     mesh.userData.base = { r: src.rotation.clone(), s: src.scale.clone() };
     scene.add(mesh);
     fruitMeshes.set(kind, { mesh, pool, slots });

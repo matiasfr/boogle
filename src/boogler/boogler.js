@@ -444,7 +444,10 @@ function buildModel() {
   hat.add(brim, crown);
   root.add(hat);
   root.traverse((o) => {
-    if (o.isMesh) o.castShadow = true;
+    if (!o.isMesh) return;
+    // Only parts big enough to show in the shadow map: eyes, buttons and hat trims would each cost a shadow draw call.
+    o.geometry.computeBoundingSphere();
+    o.castShadow = o.geometry.boundingSphere.radius >= 0.3;
   });
   return { root, inner, bodyMesh, hands, feet, hat };
 }
