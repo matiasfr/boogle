@@ -38,22 +38,27 @@ let started = false;
 //   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
 // main.js marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
 const WINDOW = 240;
-const sections = new Map(); // name -> Float32Array(WINDOW)
+const sections = new Map(); // name -> { name, ring: Float32Array(WINDOW), last: ms this frame }
+const list = []; // the same sections, for allocation-free loops
 let slot = 0;
 let cursor = 0;
 let frameStart = 0;
 const last = { ms: 0, top: '', topMs: 0 };
-const lastTimes = new Map(); // name -> ms this frame
 function record(name, ms) {
-  let ring = sections.get(name);
-  if (!ring) sections.set(name, (ring = new Float32Array(WINDOW)));
-  ring[slot] += ms;
-  lastTimes.set(name, (lastTimes.get(name) ?? 0) + ms);
+  let s = sections.get(name);
+  if (!s) {
+    sections.set(name, (s = { name, ring: new Float32Array(WINDOW), last: 0 }));
+    list.push(s);
+  }
+  s.ring[slot] += ms;
+  s.last += ms;
 }
 export function beginFrame() {
   slot = (slot + 1) % WINDOW;
-  for (const ring of sections.values()) ring[slot] = 0;
-  for (const n of lastTimes.keys()) lastTimes.set(n, 0);
+  for (let k = 0; k < list.length; k++) {
+    list[k].ring[slot] = 0;
+    list[k].last = 0;
+  }
   cursor = frameStart = performance.now();
 }
 export function mark(name) {
@@ -63,20 +68,22 @@ export function mark(name) {
 }
 export function endFrame(name) {
   mark(name);
-  record('frame', cursor - frameStart);
   last.ms = cursor - frameStart;
+  record('frame', last.ms);
   last.topMs = 0;
-  for (const [n, ms] of lastTimes)
-    if (n !== 'frame' && ms > last.topMs) {
-      last.topMs = ms;
-      last.top = n;
+  for (let k = 0; k < list.length; k++) {
+    const s = list[k];
+    if (s.name !== 'frame' && s.last > last.topMs) {
+      last.topMs = s.last;
+      last.top = s.name;
     }
+  }
 }
 export const prof = {
   last,
   table(n = 12) {
     const rows = [];
-    for (const [name, ring] of sections) {
+    for (const { name, ring } of list) {
       const sorted = Float32Array.from(ring).sort();
       const avg = sorted.reduce((a, b) => a + b, 0) / WINDOW;
       const r = (x) => Math.round(x * 1000) / 1000;
@@ -99,9 +106,10 @@ export function onStart(fn) {
   else starts.push(fn);
 }
 export function runFrame(phase, ctx) {
-  for (const h of hooks[phase]) {
-    h.fn(ctx);
-    mark(h.name);
+  const list = hooks[phase];
+  for (let k = 0; k < list.length; k++) {
+    list[k].fn(ctx);
+    mark(list[k].name);
   }
 }
 export function runStart() {

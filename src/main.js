@@ -31,6 +31,7 @@ installStepHooks({ me, ball, remotes });
 // it (gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks; src/loop.js lists their order.
 let last = performance.now();
 let elapsed = 0;
+const ctx = { now: 0, dt: 0, elapsed: 0 }; // one object for every frame's hooks (no per-frame garbage)
 function frame(now = performance.now()) {
   const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); // a first rAF stamp can predate `last` (play())
   last = now;
@@ -43,7 +44,9 @@ function frame(now = performance.now()) {
   mark('main: pre-step');
   world.step(FIXED, dt, 4);
   mark('main: physics');
-  const ctx = { now, dt, elapsed };
+  ctx.now = now;
+  ctx.dt = dt;
+  ctx.elapsed = elapsed;
   runFrame('world', ctx);
   runFrame('update', ctx);
   runFrame('late', ctx);
