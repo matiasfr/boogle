@@ -4,6 +4,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
 import { ExpressPeerServer } from 'peer';
+import { WebSocketServer } from 'ws';
+import { createStore } from './store.ts';
+import { routeUpgrades } from './host/upgrade.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const STUN = 'stun:stun.l.google.com:19302';
@@ -189,43 +192,9 @@ export function createService(cfg) {
     res.json({ iceServers: [...iceServers(cfg), ...(cloudflareTurn ? await cloudflareTurn() : [])] });
   });
 
-  // ---- snapshot storage ----
-  const knownRooms = new Set();
-  const locks = new Map(); // roomId -> promise chain
-  const fileFor = (id) => path.join(cfg.dataDir, `${id}.json`);
-  // A file's text, or null if it does not exist.
-  async function readIfExists(file) {
-    try {
-      return await fs.readFile(file, 'utf8');
-    } catch (e) {
-      if (e.code === 'ENOENT') return null;
-      throw e;
-    }
-  }
-
-  async function init() {
-    await fs.mkdir(cfg.dataDir, { recursive: true });
-    for (const f of await fs.readdir(cfg.dataDir)) {
-      const m = /^([a-z0-9-]{1,32})\.json$/.exec(f);
-      if (m) knownRooms.add(m[1]);
-    }
-  }
-
-  async function readSnapshot(id) {
-    const text = await readIfExists(fileFor(id));
-    return text === null ? null : JSON.parse(text);
-  }
-
-  function withLock(id, fn) {
-    const prev = locks.get(id) || Promise.resolve();
-    const next = prev.then(fn, fn);
-    const tail = next.catch(() => {});
-    locks.set(id, tail);
-    tail.then(() => {
-      if (locks.get(id) === tail) locks.delete(id);
-    });
-    return next;
-  }
+  // ---- snapshot storage (./store.ts) ----
+  const store = createStore(cfg);
+  const { readIfExists, withLock } = store;
 
   const validRoom = (req, res, next) => {
     if (!ROOM_ID_RE.test(req.params.roomId)) return res.status(400).json({ error: 'invalid roomId' });
@@ -234,7 +203,7 @@ export function createService(cfg) {
 
   app.get('/rooms/:roomId/snapshot', validRoom, async (req, res, next) => {
     try {
-      const snap = await readSnapshot(req.params.roomId);
+      const snap = await store.read(req.params.roomId);
       if (!snap) return res.status(404).json({ error: 'not found' });
       res.set('Cache-Control', 'no-store');
       res.json(snap);
@@ -265,20 +234,8 @@ export function createService(cfg) {
         return res.status(400).json({ error: 'body must be { tick: number, writerId: string, data: any }' });
       }
       try {
-        const result = await withLock(id, async () => {
-          const current = await readSnapshot(id);
-          if (current && current.tick > b.tick)
-            return { status: 409, body: { error: 'stale tick', tick: current.tick } };
-          if (!current && !knownRooms.has(id) && knownRooms.size >= cfg.maxRooms) {
-            return { status: 507, body: { error: 'room limit reached' } };
-          }
-          const doc = { tick: b.tick, writerId: b.writerId, data: b.data, updatedAt: new Date().toISOString() };
-          const tmp = `${fileFor(id)}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-          await fs.writeFile(tmp, JSON.stringify(doc));
-          await fs.rename(tmp, fileFor(id));
-          knownRooms.add(id);
-          return { status: 200, body: { ok: true, tick: doc.tick } };
-        });
+        const doc = { tick: b.tick, writerId: b.writerId, data: b.data, updatedAt: new Date().toISOString() };
+        const result = await store.write(id, doc, { ifNewer: true });
         res.status(result.status).json(result.body);
       } catch (e) {
         next(e);
@@ -368,8 +325,10 @@ export function createService(cfg) {
   // ---- PeerJS signaling ----
   const server = http.createServer(app);
   let connected = 0;
+  let peerWss = null; // made by peer when the app mounts; upgrades reach it through routeUpgrades
   const peerApp = ExpressPeerServer(server, {
     path: '/',
+    createWebSocketServer: (o) => (peerWss = new WebSocketServer({ noServer: true, path: o.path })),
     allow_discovery: false,
     alive_timeout: cfg.aliveTimeout,
     proxied: cfg.trustProxy,
@@ -391,6 +350,7 @@ export function createService(cfg) {
     globalThis.setTimeout = (...a) => realSetTimeout(...a).unref();
   }
   app.use('/peerjs', peerApp);
+  routeUpgrades(server, { peerWss: () => peerWss, roomHost: null });
 
   // ---- errors ----
   app.use((req, res) => res.status(404).json({ error: 'not found' }));
@@ -409,7 +369,7 @@ export function createService(cfg) {
     server,
     config: cfg,
     async listen(port = cfg.port) {
-      await init();
+      await store.init();
       await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(port, () => resolve());

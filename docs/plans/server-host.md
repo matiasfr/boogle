@@ -422,7 +422,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
       to `/rooms/replay/handoff` with method POST and the host's tick.
   - Verify: `npm run check:full`.
 
-- [ ] **5. Server groundwork, no behavior change** (`server/`).
+- [x] **5. Server groundwork, no behavior change** (`server/`).
   - `server/package.json`: add `"ws": "8.22.0"` (already installed through `peer`; we now use it directly for
     `noServer` upgrade routing and the room sockets; say so in the commit).
   - `server/src/store.js`: move `knownRooms`, `fileFor`, `readIfExists`, `readSnapshot`, `withLock`, the atomic write
