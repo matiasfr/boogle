@@ -1,7 +1,7 @@
 // Item icons for the HUD: each item's own model (src/player/item-models.js), rendered once to a small image and cached.
 // The scene renders linear HDR into a render target; a full-screen pass then applies the game's tone mapping and sRGB
 // (the same renderOutput the main view ends with) into an 8-bit target, which is read back. A CanvasTarget can't do
-// this: the WebGL 2 backend has one GL context on the main canvas, and the WebGPU canvas is opaque.
+// this: the WebGPU canvas is opaque.
 //
 //   setIcon(img, id)   fills an <img> with the icon for a catalog id (src/sim/gift-catalog.js) or 'ball' (async)
 import * as THREE from 'three/webgpu';

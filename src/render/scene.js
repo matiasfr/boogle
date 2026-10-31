@@ -4,16 +4,12 @@ import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.js';
 
 export const canvas = document.getElementById('view');
 
-// WebGPU where the browser has it, three's own WebGL 2 backend everywhere else. render() throws until init() resolves,
-// so main.js starts the game from rendererReady.
-// ?gfx=webgl2 forces three's WebGL 2 backend even where WebGPU exists (the harness default: same pictures everywhere).
+// WebGPU only: no WebGL 2 fallback, so every feature may use compute, storage buffers and the rest of WebGPU without a
+// second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
+// render() throws until init() resolves, so main.js starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
-export const renderer = new THREE.WebGPURenderer({
-  canvas,
-  antialias: true,
-  powerPreference: 'high-performance',
-  forceWebGL: params.get('gfx') === 'webgl2',
-});
+export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
 export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
 export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
 renderer.setPixelRatio(MAX_DPR);
@@ -28,10 +24,9 @@ const lobbyNote = (text) => {
   const sub = document.getElementById('lobby-sub');
   if (sub) sub.textContent = text;
 };
-// The backend three is drawing with: null until rendererReady resolves, because init() swaps a WebGPU backend that
-// can't start for the WebGL 2 one (before that, renderer.backend says WebGPU even where it will fall back).
+// The backend three is drawing with: 'webgpu' once rendererReady resolves, null before (telemetry, the harness).
 let started = false;
-export const gfx = () => (!started ? null : renderer.backend.isWebGPUBackend ? 'webgpu' : 'webgl2');
+export const gfx = () => (started ? 'webgpu' : null);
 
 export const rendererReady = renderer.init().then(
   (r) => {
@@ -39,7 +34,11 @@ export const rendererReady = renderer.init().then(
     return r;
   },
   (e) => {
-    lobbyNote("This browser can't start WebGPU or WebGL 2, which Boogle needs to draw the island.");
+    lobbyNote(
+      navigator.gpu
+        ? "This device's graphics can't start WebGPU, which Boogle needs to draw the island."
+        : 'Boogle needs WebGPU: open it in Chrome, Edge or Safari 26 (iPhone, iPad and Mac), or Firefox on Windows or a Mac.',
+    );
     const enter = document.getElementById('enter');
     if (enter) enter.textContent = "Can't draw the island";
     throw e;

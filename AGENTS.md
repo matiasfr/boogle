@@ -8,9 +8,9 @@ Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, 
 `src/features/<name>.js`, auto-loaded by `main.js`. Frame work: `onFrame(fn, { phase, order })`, `onStart(fn)` (`src/loop.js` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Heavy or rarely used parts (far-off decor, dialogue, debug tools) load with a dynamic `import()` from the small eager feature file ("Lazy parts" in `src/loop.js`); never lazy: sync ops or state, `src/world/rules/`, or anything visible in the first seconds. Hotspots (`src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js`): a line or two at most. Plain modules; a new dependency needs a reason in the commit.
 
 ## Rendering
-`WebGPURenderer` with three's WebGL 2 fallback, one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](src/render/README.md).
+`WebGPURenderer`, WebGPU only (no WebGL 2 fallback), one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](src/render/README.md).
 - Custom looks go in node slots (`colorNode`, `positionNode`, `maskNode`, ...) of a `*NodeMaterial` from `three/webgpu`; extend someone else's material with `patchNode` (`src/render/material-patch.js`). No GLSL, `ShaderMaterial`, `onBeforeCompile` or `THREE.Points` (lint fails them).
-- Colours are linear; draw through `renderFrame()`; post effects extend `pipeline.outputNode`. A Local feature may use WebGPU-only features (compute, storage buffers) behind `renderer.backend.isWebGPUBackend`, with a fallback.
+- Colours are linear; draw through `renderFrame()`; post effects extend `pipeline.outputNode`. Compute shaders, storage buffers and the rest of WebGPU are fair game, with no fallback path.
 
 ## Pick a sync kind for each piece of state
 Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
@@ -54,7 +54,7 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 - Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR (must pass), the rest nightly (never block). Local runs are optional, for iterating on visuals and feel; a failed leg's images and Playwright traces (`npx playwright show-trace <zip>`) are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
 - `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
 - `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
-- Headless runs use the WebGL 2 backend (the harness loads the game with `?gfx=webgl2&dpr=fixed`; nightly CI also runs `smoke` on WebGPU); `npm run look -- --webgpu --gpu` shows the WebGPU one on a Mac. A `gfx errors` line with entries is a bug.
+- Every harness run is WebGPU (SwiftShader over Vulkan on Linux and CI, Metal on a Mac; `?dpr=fixed`). `smoke` is the backbone: it blocks every PR and runs against the live site after every deploy (`smoke.yml`). A `gfx errors` line with entries is a bug.
 
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too). Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.

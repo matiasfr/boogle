@@ -1,11 +1,11 @@
 # Rendering
 
 Boogle draws with three.js's `WebGPURenderer` (`three/webgpu`) and writes every custom shader in TSL (`three/tsl`).
-The renderer uses WebGPU where the browser has it (Chrome and Edge, Safari 26 on iOS, iPadOS and macOS, Firefox on
-Windows and Apple Silicon) and falls back to its own WebGL 2 backend everywhere else (Firefox on Android and Linux,
-older iOS, headless CI). One codebase serves both: never write backend-specific code unless a feature is WebGPU-only
-on purpose, and then check `renderer.backend.isWebGPUBackend` and keep a fallback. How the migration went and why:
-[docs/plans/webgpu-migration.md](../../docs/plans/webgpu-migration.md).
+**WebGPU only** (since 2026-10-31): Chrome and Edge, Safari 26 on iOS, iPadOS and macOS, Firefox on Windows and Apple
+Silicon. There is no WebGL 2 fallback (`scene.js` turns three's off), so a browser without WebGPU gets a note in the
+lobby instead of the island. In return any feature may use compute shaders, storage buffers, storage textures and
+indirect draws directly, with no second path and no `isWebGPUBackend` check. CI runs WebGPU too (SwiftShader over
+Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/plans/webgpu-migration.md).
 
 ## The frame
 
@@ -73,17 +73,16 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 - `npm run perf -- --render` prints draw calls, shadow calls, triangles, geometries and shader stages (vertex and
   fragment counted apart, so the number is not comparable with the old "programs"). Run it before and after
   anything that adds meshes, lights, passes or per-frame GPU work.
-- `npm run look` and the scenarios run on the WebGL 2 backend by default: the harness loads the game with
-  `?gfx=webgl2` (`forceWebGL` on the renderer), the same path Firefox Android players take. It also passes
-  `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable; both work in
-  any browser tab by hand. Pass `--webgpu --gpu` (on a Mac) to see the real WebGPU backend. Every run
+- `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI, Metal on a Mac. The harness
+  passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable, and a
+  scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.
-- `window.boogle.gfx` (`gfx()` in `scene.js`) is `'webgpu'` or `'webgl2'`, null until `rendererReady` (`init()` may fall
-  back from WebGPU); telemetry reports it with each connection.
+- `window.boogle.gfx` (`gfx()` in `scene.js`) is `'webgpu'` once `rendererReady` resolves, null before; telemetry
+  reports it with each connection.
 - Headless frame rates mean nothing. Judge frame time on a real iPhone, iPad and a mid-range Android.
 
 ## Where this is going
