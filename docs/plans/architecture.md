@@ -49,7 +49,8 @@ The open questions in the two plans have working answers so work can start; chan
 - [x] Instance pools (`src/render/instances.ts`); move critters, gifts and blob shadows onto them; freeze static
       decor matrices (step 3).
 - [x] Shadow pass trimmed (tighter shadow camera, fewer casters): the 52 shadow draw calls are the cheapest GPU win.
-- [ ] Compute particles behind `emit()`; compute-driven pools (step 4).
+- [x] Compute particles behind `emit()` (step 4): storage buffers, a spawn pass and an update pass on the GPU.
+- [ ] Compute-driven pools (step 4): when a pool shows up in `?prof=1` (today the biggest, fish, costs 0.02 ms/frame).
 - [ ] Convert `src/sim/`, `src/world/rules/`, `src/world/`, `src/netplay/` and `src/net/` to `.ts`, with exported
       types for wire messages, presence, ops and states (step 8b).
 
