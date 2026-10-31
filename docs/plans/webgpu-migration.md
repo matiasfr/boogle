@@ -1,5 +1,8 @@
 # WebGPU migration (done)
 
+> **2026-10-31:** the WebGL 2 fallback described below is gone; the game and every test run are WebGPU only
+> ([src/render/README.md](../../src/render/README.md)).
+
 > A record, not a plan. Landed 30 October 2026 in #65, simplified in #69, shader precompile behind the lobby in #70.
 > The living contract is [src/render/README.md](../../src/render/README.md); what is left (a quality setting) is the
 > "Graphics quality tiers" item in [PLAN.md](../../PLAN.md). The full plan is in this file's git history.

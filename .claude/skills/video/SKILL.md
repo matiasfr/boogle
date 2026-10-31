@@ -22,8 +22,7 @@ footage that shouldn't be committed.
 
 ## 1. Record: `npm run clip`
 
-Options: `--gif` (palette GIF next to each mp4), `--size 1280x720`, `--fps 30`, `--sw` (software GL instead of the
-GPU), `--root <checkout>` (serve another checkout, e.g. `git worktree add <dir> origin/<branch>` with `node_modules`
+Options: `--gif` (palette GIF next to each mp4), `--size 1280x720`, `--fps 30`, `--root <checkout>` (serve another checkout, e.g. `git worktree add <dir> origin/<branch>` with `node_modules`
 symlinked; the harness itself still comes from this checkout).
 
 Clips are smooth whatever the render speed: the page clock is faked and each frame advances it by exactly 1/fps
