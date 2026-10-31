@@ -8,6 +8,8 @@
 //   t.open({ name, room, size, hud, touch })   a player (Game from dev/look/lib.mjs); same `room` = same island;
 //                                              touch: true starts a phone client
 //   t.check(label, ok, detail)                 records PASS/FAIL (never throws); put images in the detail
+//   t.page(pathname, { size, colorScheme })    a plain page of the stack (not the game), e.g. the atlas at 'atlas/';
+//                                              its uncaught errors fail the scenario like a player's
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
@@ -57,9 +59,18 @@ try {
     fs.mkdirSync(out, { recursive: true });
     console.log(`\n== ${name}: ${mod.about || ''}`);
     const games = [];
+    const pages = [];
     let bads = 0;
     const t = {
       out,
+      async page(pathname, { size = [1280, 900], colorScheme = 'light' } = {}) {
+        const page = await browser.newPage({ viewport: { width: size[0], height: size[1] }, colorScheme });
+        const errors = [];
+        page.on('pageerror', (e) => errors.push(e.message));
+        pages.push({ page, errors, name: pathname });
+        await page.goto(new URL(pathname, stack.base).href);
+        return page;
+      },
       VIEWS,
       sleep,
       async open(opts = {}) {
@@ -103,6 +114,13 @@ try {
           bads++;
           console.log(`  FAIL  ${g.name} asked for WebGPU but runs ${g.gfx ?? 'an unknown backend'}`);
         }
+    for (const p of pages) {
+      if (p.errors.length) {
+        bads++;
+        console.log(`  FAIL  page errors on ${p.name}: ${p.errors.slice(0, 2).join(' | ')}`);
+      }
+      await p.page.close().catch(() => {});
+    }
     if (games.length) reportGfxErrors(games);
     for (const g of games) {
       if (bads) await g.still(`${g.name}-final`).catch(() => {});

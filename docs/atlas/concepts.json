@@ -1,0 +1,202 @@
+{
+  "intro": {
+    "title": "Boogle in one picture",
+    "lead": "Every player runs the whole game in their own browser tab. There is no game server: tabs talk directly, and one of them is the host.",
+    "question": "So the key question for any feature is how its state is shared. There are five answers, and the colours everywhere in this atlas follow them:",
+    "foot": "Cheapest first: pick the simplest one that works.",
+    "ways": [
+      { "kind": "local", "says": "Only you see it", "eg": "particles, sky, sounds" },
+      { "kind": "owner", "says": "One player drives it, others watch", "eg": "your avatar, the ball, what you hold" },
+      { "kind": "host", "says": "The host decides for everyone", "eg": "the Boogler" },
+      { "kind": "lock", "says": "Everyone agrees exactly, and it lasts", "eg": "mushrooms, gifts, prototype flags" },
+      { "kind": "msg", "says": "A one-off event, nothing kept", "eg": "honk, ping" }
+    ]
+  },
+  "kinds": {
+    "lock": "Deterministic shared state; every peer runs the same ticks. Persists.",
+    "adapter": "Submits edits to lockstep state and reacts once they apply.",
+    "host": "The host decides and broadcasts; restarts with the next host.",
+    "owner": "One player drives it and streams it at 20 Hz; latest wins.",
+    "msg": "One-off events over the room: reliable, ordered.",
+    "local": "Only this tab sees it. No sync."
+  },
+  "channels": {
+    "owner": {
+      "name": "Presence",
+      "d": "Each player streams a few numbers at 20 Hz. Latest wins; a missing key means off.",
+      "tag": "20 Hz · per player"
+    },
+    "host": {
+      "name": "Host fields",
+      "d": "The host owns the value; it restarts with the next host.",
+      "tag": "host → all"
+    },
+    "lock": {
+      "name": "Lockstep",
+      "d": "Ops are edits the host orders and every peer applies; states are snapshotted and hashed.",
+      "tag": "ordered · persisted"
+    },
+    "msg": {
+      "name": "Messages",
+      "d": "One-off events, reliable and ordered, to every other peer.",
+      "tag": "one-off · reliable"
+    }
+  },
+  "folders": {
+    "features": "Self-contained plug-ins. Each hooks the frame loop and the shared registries.",
+    "player": "The local player, camera, input and the controls registry.",
+    "physics": "cannon-es world, the beach ball, thrown items, water.",
+    "render": "Scene, sky, sea, particles, the audio context.",
+    "boot": "The loading screen and key art, shown before the game downloads.",
+    "boogler": "The Boogler NPC: brain, talk, friendship.",
+    "guest": "Playing as the guest character; engine glue.",
+    "decomp": "Files the player brings, shared by engine characters.",
+    "pois": "Caves, lighthouse and other places.",
+    "island": "The base ground and its shape.",
+    "debug": "Dev tools behind URL flags, loaded lazily.",
+    "(core)": "main.js boots the game; loop.js runs the frame phases.",
+    "adapters": "The game side of lockstep state: meshes that follow it, edits submitted.",
+    "world": "Edit sync, snapshots and hashing.",
+    "world/rules": "One module per lockstep system, in an append-only order.",
+    "sim": "Pure deterministic logic, unit-tested.",
+    "netplay": "Presence fields, remote players, interpolation.",
+    "net": "The room interface over PeerJS.",
+    "server": "Signaling and the snapshot store on Fly."
+  },
+  "boxes": {
+    "you.features": "{features} plug-ins: honk, hotbar, ping, gifts, mushroom garden…",
+    "you.registries": "controls · interact · particles",
+    "you.loop": "input → physics → world → update → late → draw",
+    "you.systems": "player · physics · rendering · characters · places",
+    "you.world": "mushrooms · gifts · prototype flags",
+    "you.netplay": "presence and the room",
+    "you.input": "keys · pad · touch",
+    "you.screen": "three.js draws it",
+    "fr.features": "the same plug-ins",
+    "fr.systems": "player · physics · rendering",
+    "fr.netplay": "presence and the room",
+    "fr.world": "the same copy, kept in step",
+    "fr.screen": "three.js draws it",
+    "server": "introductions · saves · problem reports"
+  },
+  "concepts": [
+    {
+      "id": "input",
+      "title": "Input",
+      "one": "Keys, gamepad and touch all become named actions.",
+      "like": "A mixing desk: every physical control is mapped to a named channel.",
+      "rules": [
+        "Every button is a registerAction on a free pad slot; it also appears in the controls guide.",
+        "No key-only controls: if there is no slot left, rethink the layout."
+      ],
+      "code": [
+        { "file": "src/player/input.js" },
+        { "file": "src/player/controls.js" },
+        { "file": "src/features/gamepad.js" }
+      ]
+    },
+    {
+      "id": "features",
+      "title": "Features",
+      "one": "Each file in src/features is one thing a player can see or do. main.js loads them all.",
+      "like": "Apps on a phone: each one is self-contained and plugs into the same system services.",
+      "rules": [
+        "A feature never imports another feature; shared code moves into src/.",
+        "It joins the game through the frame loop and the registries, not by editing main.js.",
+        "Heavy or rarely used parts load later with import()."
+      ],
+      "code": [{ "dir": "src/features" }]
+    },
+    {
+      "id": "registries",
+      "title": "Registries",
+      "one": "Shared sign-up sheets that features put their name on.",
+      "like": "A venue’s booking sheet: everyone writes into the same list, so nothing clashes.",
+      "rules": [
+        "Controls: every button and its guide row.",
+        "Interact: the E button asks every feature for targets in reach and picks one.",
+        "Particles: one shared pool; never build your own."
+      ],
+      "code": [
+        { "file": "src/player/controls.js" },
+        { "file": "src/player/hands.js" },
+        { "file": "src/render/particles.js" }
+      ]
+    },
+    {
+      "id": "loop",
+      "title": "Frame loop",
+      "one": "The heartbeat. About 60 times a second: read input, step physics, run every hook in order, draw.",
+      "like": "A sequencer: each hook sits on a track (phase) at a step (order), and the playhead runs left to right every frame.",
+      "rules": [
+        "Phases run world → update → late.",
+        "Features use order −10 and up; the core owns the lower numbers.",
+        "See the Frame tab for every hook."
+      ],
+      "code": [{ "file": "src/loop.js" }, { "file": "src/main.js" }],
+      "view": "frame"
+    },
+    {
+      "id": "systems",
+      "title": "Game systems",
+      "one": "The machinery features build on: the player and camera, physics, rendering, characters and places.",
+      "like": "The instruments in the studio. Features play them.",
+      "rules": [
+        "Physics (cannon-es) and rendering (three.js) are local to each tab.",
+        "Anything other players must see goes through netplay or the shared world."
+      ],
+      "code": [
+        { "dir": "src/player" },
+        { "dir": "src/physics" },
+        { "dir": "src/render" },
+        { "dir": "src/boogler" },
+        { "dir": "src/pois" }
+      ]
+    },
+    {
+      "id": "world",
+      "title": "Shared world",
+      "one": "The island state everyone must agree on exactly: mushrooms, gifts, prototype flags. It persists.",
+      "like": "Chess by post: players send moves, never the board, and everyone replays the same moves in the same order.",
+      "rules": [
+        "Tabs send edits, not state. The host puts them in order and stamps a tick.",
+        "Every tab applies the same edits with the same deterministic code, then compares hashes.",
+        "Effects (sounds, splashes) happen after an edit is applied, never before.",
+        "No Math.random, clocks, sin or cos in this code."
+      ],
+      "code": [{ "dir": "src/world" }, { "dir": "src/world/rules" }, { "dir": "src/sim" }, { "dir": "src/adapters" }]
+    },
+    {
+      "id": "netplay",
+      "title": "Netplay",
+      "one": "Connects your tab to the room: sends your presence 20 times a second and shows the other players.",
+      "like": "A radio: everyone broadcasts a few numbers about themselves; you hear the latest from each.",
+      "rules": [
+        "Presence is a few numbers per player under a short key, latest wins.",
+        "Others are drawn 120 ms in the past so their motion stays smooth.",
+        "A missing key means “off”: clear it when the thing stops."
+      ],
+      "code": [{ "dir": "src/netplay" }, { "dir": "src/net" }],
+      "view": "flow"
+    },
+    {
+      "id": "screen",
+      "title": "Screen",
+      "one": "three.js draws the scene once per frame, after every hook has run.",
+      "like": "The output meter: it only shows what everything before it decided.",
+      "rules": ["Cosmetic code is Local: random numbers and floats are fine here."],
+      "code": [{ "dir": "src/render" }]
+    },
+    {
+      "id": "server",
+      "title": "Server",
+      "one": "A small service that introduces tabs to each other, keeps the island’s save, and collects problem reports. It does not run the game.",
+      "like": "A promoter: gets everyone into the venue, then steps aside while the show runs.",
+      "rules": [
+        "Signaling: tabs find each other through it, then talk directly.",
+        "Only the host saves the shared world there, every 30 s or so."
+      ],
+      "code": [{ "dir": "server" }]
+    }
+  ]
+}

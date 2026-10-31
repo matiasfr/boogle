@@ -1,7 +1,7 @@
 // The registry scan (dev/registry/scan.mjs): clashes inside one tree, and what a change does to main's registry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scanSources, checkRegistry, compareRegistries, shapeOf, calls } from '../dev/registry/scan.mjs';
+import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.mjs';
 
 const file = (path, text) => ({ path, text });
 const NET = file(
@@ -10,12 +10,20 @@ const NET = file(
 );
 const CONTROLS = file('src/player/controls.js', "export const PAD = [\n  'a',\n  'b',\n  'x',\n];\n");
 
-test('calls splits top-level args and ignores commas and brackets in strings and comments', () => {
-  const [c] = calls("onFrame(() => { f(1, 2); }, { phase: 'late', order: 5 }) // onFrame(x)", 'onFrame');
-  assert.equal(c.args.length, 2);
-  assert.equal(c.args[1], "{ phase: 'late', order: 5 }");
-  assert.equal(calls("const s = 'onFrame(a, b)';", 'onFrame').length, 0);
-  assert.equal(calls('export function onFrame(fn, opts) {}', 'onFrame').length, 0);
+test('the scan ignores calls in strings and comments, and definitions', () => {
+  const reg = scanSources([
+    file(
+      'src/features/a.js',
+      "const s = \"addPresenceField('x', f)\"; // addHostField('y', f)\nexport function addPresenceField(key, fn) {}\naddPresenceField('z', () => 1, { a: [1, 2] });",
+    ),
+  ]);
+  assert.deepEqual(Object.keys(reg.presence), ['z']);
+  assert.deepEqual(reg.presence.z, ['src/features/a.js:3']);
+});
+
+test('a file the registry cannot parse is an error, not a silent skip', () => {
+  const reg = scanSources([file('src/features/bad.js', 'addPresenceField(')]);
+  assert.match(checkRegistry(reg).join('\n'), /bad\.js: .*cannot read this file/);
 });
 
 test('a presence key taken twice (core or field) fails', () => {
@@ -32,7 +40,10 @@ test('a presence key taken twice (core or field) fails', () => {
 
 test('a message type sent from two files fails; a receiver-only file does not count', () => {
   const reg = scanSources([
-    file('src/features/honk.js', "room.send({ t: 'honk' });\nif (m.t !== 'honk') return;"),
+    file(
+      'src/features/honk.js',
+      "room.send({ t: 'honk' });\nexport function on(m) {\n  if (m.t !== 'honk') return;\n}",
+    ),
     file('src/sim/honk-check.js', "export const ok = (m) => m.t === 'honk';"),
     file('src/features/other.js', "const ctx = { context: 'honk' };\nroom.send({ t: 'beep' });"),
   ]);

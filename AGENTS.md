@@ -55,6 +55,7 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 - `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
 - `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
 - Headless runs use the WebGL 2 backend (the harness loads the game with `?gfx=webgl2&dpr=fixed`; nightly CI also runs `smoke` on WebGPU); `npm run look -- --webgpu --gpu` shows the WebGPU one on a Mac. A `gfx errors` line with entries is a bug.
+- **Atlas** (internal, boogle.club/atlas; docs/atlas/README.md): shipping a new sync system or a big feature, add or update a story in docs/atlas/stories/. `npm run atlas -- --check` lists citations your change broke; fixing them is welcome but never blocks (the daily agent fixes what's left).
 
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too). Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.

@@ -34,6 +34,7 @@ jobs:
           - interact
           - caves
           - lighthouse
+          - atlas
         # Production players get WebGPU, but every other leg runs three's WebGL 2 backend. This one runs smoke on
         # WebGPU (SwiftShader over Vulkan, dev/look/lib.mjs `launch`) and fails if the page fell back to WebGL 2.
         include:

@@ -1,0 +1,115 @@
+name: Atlas upkeep
+
+# Keeps the words in the atlas (boogle.club/atlas, docs/atlas/) current: fixes broken citations, adds stories for new
+# sync systems, and writes a "What changed" entry, as a claude/atlas-<date> PR that automerge.yml merges when CI is
+# green. The facts in the atlas come from the code on every build; only the narrative needs this. Never blocks
+# anything. Procedure: dev/atlas/agent-prompt.md.
+# Runs daily, after any merge (automerge.yml dispatches it), after a direct push to main that touches the sync code,
+# and by hand from the Actions tab (`force` skips the gate). `npm run atlas -- --gate` decides whether a run is worth
+# it (dev/atlas/git.mjs); it needs no install.
+
+on:
+  schedule:
+    - cron: '7 13 * * *' # daily, 13:07 UTC, before the patch video at 14:23
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Skip the gate (and the debounce)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'src/world/rules/**'
+      - 'src/net/**'
+      - 'src/netplay/**'
+      - 'server/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  id-token: write # claude-code-action
+
+# One running and one pending run (a newer pending run replaces the older), so a burst of merges is at most two runs,
+# and Claude is never killed mid-push.
+concurrency:
+  group: atlas
+  cancel-in-progress: false
+
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Plain git, so it runs before npm ci. `force` makes it go.
+      - name: Gate
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          out=$(node dev/atlas/cli.mjs --gate --event "$EVENT")
+          if [ "$FORCE" = "true" ]; then out=$(sed 's/^go=.*/go=1/' <<<"$out"); fi
+          echo "$out" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      # An open atlas PR younger than a day is still on its way: skip. An older one is stuck (CI red or
+      # conflicting): close it with a comment and carry on, so the page does not stay stale.
+      - name: Check open atlas PRs
+        id: prs
+        if: steps.gate.outputs.go == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ "$FORCE" = "true" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          now=$(date -u +%s)
+          young=0
+          while read -r num created; do
+            [ -n "$num" ] || continue
+            if [ $((now - $(date -u -d "$created" +%s))) -lt 86400 ]; then
+              young=1
+              echo "Atlas PR #$num is under a day old; skipping."
+            else
+              gh pr close "$num" --delete-branch --comment "Closing this atlas update: it has been open for over a day, so the atlas upkeep run is replacing it with a fresh one."
+            fi
+          done < <(gh pr list --state open --json number,headRefName,createdAt \
+            --jq '.[] | select(.headRefName | startswith("claude/atlas-")) | "\(.number) \(.createdAt)"')
+          if [ "$young" = "0" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
+
+      # Let a burst of merges settle: one run covers them all. Then take main's tip, so Claude sees all of them.
+      - name: Debounce
+        if: steps.prs.outputs.go == '1' && github.event_name != 'schedule' && inputs.force != true
+        run: |
+          sleep 600
+          git pull --ff-only
+
+      - uses: actions/setup-node@v4
+        if: steps.prs.outputs.go == '1'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        if: steps.prs.outputs.go == '1'
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Update the atlas (Claude)
+        if: steps.prs.outputs.go == '1'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true # Claude's messages in the log, to see why a run stopped
+          claude_args: >-
+            --model claude-opus-5-5
+            --allowed-tools "Read,Write,Edit,Glob,Grep,Bash(npm run *),Bash(npm ci),Bash(node *),Bash(npx prettier *),Bash(git *),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(ls *),Bash(cat *)"
+          prompt: |
+            You are the atlas upkeep loop for Boogle, running unattended. Today is ${{ steps.gate.outputs.date }}; the
+            last atlas update is ${{ steps.gate.outputs.last }}. Read dev/atlas/agent-prompt.md and follow it.
