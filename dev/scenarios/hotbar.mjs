@@ -26,7 +26,7 @@ const LAYOUT = `${DOM}
 
 export default {
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
-  timeout: 300000, // two software-rendered players in a row on a busy machine
+  timeout: 420000, // two software-rendered players in a row on a busy machine; CI took ~280 s before traces
   async run(t) {
     const g = await t.open({ name: 'holder', hud: 'play' });
     const consoleErrors = [];
