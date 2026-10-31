@@ -2,13 +2,12 @@
 // never throws: a file that does not parse is skipped and reported in loadProblems, so the page and the build
 // survive a broken edit.
 
-export const EMPTY_CONCEPTS = { intro: null, kinds: {}, channels: {}, folders: {}, boxes: {}, concepts: [] };
+const EMPTY_CONCEPTS = { intro: null, kinds: {}, channels: {}, folders: {}, boxes: {}, concepts: [] };
 
 const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 
 // conceptsText: string | undefined. storyTexts: { [path]: text }.
-// Returns { N, loadProblems }; N is the concepts object plus `stories` (sorted by order, then id) and
-// `loadProblems` again for convenience.
+// Returns N: the concepts object plus `stories` (sorted by order, then id) and `loadProblems`.
 export function parseNarrative({ conceptsText, storyTexts } = {}) {
   const loadProblems = [];
   let c = { ...EMPTY_CONCEPTS };
@@ -42,6 +41,5 @@ export function parseNarrative({ conceptsText, storyTexts } = {}) {
     }
   }
   stories.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) || String(a.id).localeCompare(String(b.id)));
-  const N = { ...c, stories, loadProblems };
-  return { N, loadProblems };
+  return { ...c, stories, loadProblems };
 }

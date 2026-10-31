@@ -35,11 +35,22 @@ export function layerOf(dir) {
   return LAYERS.find((L) => L.dirs.includes(dir)) ?? LAYERS[1];
 }
 
+export const layerById = (id) => LAYERS.find((L) => L.id === id) ?? LAYERS[1];
+
+export const sumLoc = (list) => list.reduce((n, f) => n + f.loc, 0);
+
 export function buildModel(facts) {
   const list = Array.isArray(facts?.files) ? facts.files : [];
-  const files = list.map((x) => ({ ...x, dir: dirOf(x.f), kind: kindOf(x), name: x.f.split('/').pop(), users: [] }));
+  const files = list.map((x) => ({
+    ...x,
+    dir: dirOf(x.f),
+    kind: kindOf(x),
+    name: x.f.split('/').pop(),
+    uses: new Set([...x.imports, ...x.lazy]),
+    users: [],
+  }));
   const byPath = new Map(files.map((x) => [x.f, x]));
-  for (const x of files) for (const i of new Set([...x.imports, ...x.lazy])) byPath.get(i)?.users.push(x.f);
+  for (const x of files) for (const i of x.uses) byPath.get(i)?.users.push(x.f);
   const dirs = {};
   for (const x of files) (dirs[x.dir] ||= []).push(x);
   for (const d in dirs) dirs[d].sort((a, b) => b.loc - a.loc || a.f.localeCompare(b.f));
@@ -146,7 +157,7 @@ export function resolveCite(cite, model) {
       case 'message':
         return match((f) => f.msgs.includes(v), `sends or reads message ${v}`);
       case 'action':
-        return match((f) => f.actions.some((a) => a.id === v), `registers action ${v}`);
+        return match((f) => f.actions.includes(v), `registers action ${v}`);
       default:
         return match((f) => f.routes.includes(v), `serves route ${v}`);
     }
@@ -167,7 +178,7 @@ export function searchIndex(model, narrative) {
       text: d,
     })),
     ...model.files.flatMap((f) =>
-      [...f.owner, ...f.host, ...f.ops, ...f.states, ...f.msgs, ...f.actions.map((a) => a.id)].map((k) => ({
+      [...f.owner, ...f.host, ...f.ops, ...f.states, ...f.msgs, ...f.actions].map((k) => ({
         key: 'f:' + f.f,
         label: k,
         hint: f.name,
@@ -204,10 +215,7 @@ export function registrations(f) {
   add('ops', f.ops);
   add('state', f.states);
   add('messages', f.msgs);
-  add(
-    'actions',
-    f.actions.map((a) => a.id),
-  );
+  add('actions', f.actions);
   add(
     'frame',
     f.frames.map((h) => `${h.phase} ${h.order}`),
