@@ -4,7 +4,7 @@
 import './bump.css';
 import { me, cam } from '../player/player.js';
 import { ball, claimBall } from '../physics/ball.js';
-import { sendPresence } from '../netplay/net.js';
+import { sendPresence } from '../netplay/net.ts';
 import { onStart } from '../loop.js';
 import { registerAction } from '../player/controls.js';
 

@@ -6,8 +6,8 @@ import { scene } from '../render/scene.js';
 import { ballMat, teleport } from './physics.js';
 import { createBody, addBody, setMotion } from './engine.ts';
 import { me, handPosition, carryPosition, throwVelocity } from '../player/player.js';
-import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.js';
-import { createSnaps } from '../netplay/snaps.js';
+import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.ts';
+import { createSnaps } from '../netplay/snaps.ts';
 import { onFrame } from '../loop.js';
 
 function beachBallTexture() {

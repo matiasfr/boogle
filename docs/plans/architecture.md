@@ -51,7 +51,7 @@ The open questions in the two plans have working answers so work can start; chan
 - [x] Shadow pass trimmed (tighter shadow camera, fewer casters): the 52 shadow draw calls are the cheapest GPU win.
 - [x] Compute particles behind `emit()` (step 4): storage buffers, a spawn pass and an update pass on the GPU.
 - [ ] Compute-driven pools (step 4): when a pool shows up in `?prof=1` (today the biggest, fish, costs 0.02 ms/frame).
-- [ ] Convert `src/sim/` (done 2026-10-31), `src/world/rules/` (done 2026-10-31), `src/world/` (done 2026-10-31), `src/netplay/` and `src/net/` to `.ts`,
+- [ ] Convert `src/sim/` (done 2026-10-31), `src/world/rules/` (done 2026-10-31), `src/world/` (done 2026-10-31), `src/netplay/` (done 2026-10-31) and `src/net/` to `.ts`,
       with exported types for wire messages, presence, ops and states (step 8b).
 
 **Done when** draw calls stay flat as content grows and particles and critters cost no main-thread time.

@@ -6,7 +6,7 @@ import './pause.css';
 import { onFrame, onStart } from '../loop.js';
 import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.js';
 import { me } from '../player/player.js';
-import { remotes, getRoomId } from '../netplay/net.js';
+import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.js';
 import { canvas } from '../render/scene.js';
 import { openModal, closeModal, modalOpen } from '../player/modal.js';

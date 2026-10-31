@@ -6,7 +6,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { onApplied } from '../world/sync.ts';
-import { net } from '../netplay/net.js';
+import { net } from '../netplay/net.ts';
 import { cellX, cellZ, groundHeight } from '../adapters/terrain.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
 import { FULL, type Cell } from '../sim/sources.ts';

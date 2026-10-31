@@ -7,7 +7,7 @@ import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { teleport } from '../physics/physics.js';
 import { addBody } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
-import { sendPresence } from '../netplay/net.js';
+import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.js';
 import { input } from './input.js';
 import { heldId } from './inventory.js';

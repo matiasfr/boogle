@@ -9,7 +9,7 @@ import { FIXED } from '../constants.js';
 import { clamp } from '../math.js';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.js';
-import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { remotes, getRoomId, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';

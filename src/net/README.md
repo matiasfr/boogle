@@ -1,6 +1,6 @@
 # Networking
 
-`peer-room.js` is the one module the game talks to for multiplayer. `src/netplay/net.js` (game-side presence, remotes and
+`peer-room.js` is the one module the game talks to for multiplayer. `src/netplay/net.ts` (game-side presence, remotes and
 interpolation) imports `createPeerRoom` (and `defaultHostScore`, which it folds world readiness into) from here and uses nothing else. It implements the host-peer design in
 [PLAN.md](../../PLAN.md) ("Key decision"); message types and host migration are documented at the top of the file.
 Changes must keep this interface; run `npm run test:net` after touching it.

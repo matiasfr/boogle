@@ -9,7 +9,7 @@ name); others register a
 random id and connect to it with two data channels: `u` (unordered presence) and `r` (reliable, ordered messages,
 heartbeats). The host relays presence and messages. Ids in messages are each tab's stable `selfId`, not PeerJS ids.
 Heartbeats every 500 ms; a peer silent for 3 s is gone. Messages are capped at 16,000 characters. Without
-`VITE_BOOGLE_SERVER`, PeerJS's public signaling server and default STUN are used ([src/netplay/net.js](../../src/netplay/net.js)). A
+`VITE_BOOGLE_SERVER`, PeerJS's public signaling server and default STUN are used ([src/netplay/net.ts](../../src/netplay/net.ts)). A
 failed join drops to "Solo" and retries.
 
 A room holds at most 8 players, host included (`MAX_PEERS`). A ninth is turned away (`room_full`): they play solo,

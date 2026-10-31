@@ -7,21 +7,23 @@
 //   snaps.clear(), snaps.length
 //
 // Sample at now - INTERP_MS so there is usually a sample on each side; `over` lets fast things extrapolate.
-export function createSnaps(max = 40) {
-  const list = [];
+export type Sample = { time: number; [k: string]: unknown };
+export function createSnaps<S extends object = Record<string, unknown>>(max = 40) {
+  const list: (S & { time: number })[] = [];
   return {
     get length() {
       return list.length;
     },
-    push(time, sample) {
-      sample.time = time;
-      list.push(sample);
+    push(time: number, sample: S) {
+      const s = sample as S & { time: number };
+      s.time = time;
+      list.push(s);
       if (list.length > max) list.shift();
     },
     clear() {
       list.length = 0;
     },
-    sample(t) {
+    sample(t: number) {
       if (!list.length) return null;
       while (list.length > 2 && list[1].time <= t) list.shift();
       const a = list[0],

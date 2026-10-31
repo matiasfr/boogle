@@ -116,7 +116,7 @@ export function scanSources(files) {
   const reg = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
   for (const { path, text } of files) {
     if (bare(path) === CORE_PRESENCE_FILE) {
-      const body = text.match(/function buildPresence\(\)\s*\{\s*const pr = (\{[^}]*\})/)?.[1];
+      const body = text.match(/function buildPresence\(\)[^{]*\{\s*const pr(?::\s*\w+)? = (\{[^}]*\})/)?.[1];
       for (const m of body?.matchAll(/^\s*([a-z]\w*)\s*:/gm) ?? []) add(reg.presence, m[1], `${path} (core)`);
     }
     for (const fn of ['addPresenceField', 'addHostField']) {

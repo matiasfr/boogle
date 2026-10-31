@@ -3,7 +3,7 @@
 // and goes to 'connecting'; the client tosses then. (Stalling the client instead would freeze the tab that has to
 // submit, and its frozen-timer guard would stop it declaring the host silent.) Once both tabs are live again the host
 // has the item, the client dropped no held edit, and both tabs hash every state the same at one tick.
-// Run it after changing held edits in src/world/sync.ts, reconnects in src/net/peer-room.js, or src/netplay/net.js attach/fail.
+// Run it after changing held edits in src/world/sync.ts, reconnects in src/net/peer-room.js, or src/netplay/net.ts attach/fail.
 // Window handles only (window.boogle.sync, src/features/debug-handle.js), so `--url` works too. Not in the nightly smoke:
 // a forced stall adds timing flakiness to a job that files issues.
 import { toss, TOSSED, MET, roles, hashesAtOneTick } from './lib/world.mjs';

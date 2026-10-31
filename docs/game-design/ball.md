@@ -9,7 +9,7 @@
   falls below −15 m.
 - **Controls.** E / pad B grab or steal; click / pad X charge and throw; V / pad RT bump; R / View respawn.
 - **Sync kind.** Owner. The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
-  velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.js](../../src/netplay/snaps.js))
+  velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.ts](../../src/netplay/snaps.ts))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An
   orphaned ball is claimed after 600 ms by the visible peer with the lowest id.
 - **Tuning.** Linear damping 0.12, angular 0.3; ground friction 0.6, restitution 0.55 (ground), 0.45 (players), 0.95
@@ -23,7 +23,7 @@
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host, them) plus 120 ms late;
   join reports carry the slowest link's round trip as `rttMs` (6.15). The ball is not persisted: it
   starts at its spawn each session. Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
-  sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.js](../../src/netplay/net.js)).
+  sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.ts](../../src/netplay/net.ts)).
 
 ---
 

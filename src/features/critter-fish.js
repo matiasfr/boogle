@@ -21,7 +21,7 @@ import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
-import { remotes } from '../netplay/net.js';
+import { remotes } from '../netplay/net.ts';
 import { patchNode } from '../render/material-patch.js';
 import { createPool } from '../render/instances.ts';
 

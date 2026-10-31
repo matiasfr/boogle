@@ -3,7 +3,7 @@
 // the URL (?room=) and everything shown to players keep the plain room name. PeerJS ids allow no dots, hence 'v01'.
 // dev/registry skips its mixed-build comparison with main when this differs from main's (no old tab can join). A
 // bump wipes every room's world: it is a deliberate clean break, never a way to quiet that check.
-// Pure: read by src/netplay/net.js, the registry check and tests.
+// Pure: read by src/netplay/net.ts, the registry check and tests.
 export const WORLD_NS = 'v01';
 
 // The id a room's world lives under. The server and peer-room take [a-z0-9-]{1,32}: a room name too long to fit keeps

@@ -8,13 +8,13 @@
 // how many of its links went through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is
 // one that would have failed without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
 // slowest link's round trip; a non-owner sees the ball about rtt (owner -> host -> them) + INTERP_MS late. They also
-// say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.js; a yes or no, never the ids).
+// say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
-import { net, getRoomId, onNetState } from '../netplay/net.js';
+import { net, getRoomId, onNetState } from '../netplay/net.ts';
 import { world, onDesync, onSnapFail } from '../world/sync.ts';
-import { mixedBuilds } from '../netplay/builds.js';
-import { coarseUa, firstFrame, scrub } from '../netplay/report-format.js';
+import { mixedBuilds } from '../netplay/builds.ts';
+import { coarseUa, firstFrame, scrub } from '../netplay/report-format.ts';
 import { gfx } from '../render/scene.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;

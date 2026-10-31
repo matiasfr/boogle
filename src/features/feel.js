@@ -17,7 +17,7 @@ import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const JUMP = {
