@@ -5,16 +5,19 @@
 // The stair is a smooth helical ramp for physics (no step bumps) with treads drawn on top; railings on the outer
 // edge and round the deck keep people from falling off (mostly). The top of the deck is open where the stair arrives.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, vec4, pow, uv } from 'three/tsl';
 import { scene, camera } from '../../render/scene.js';
-import { world, groundMat, GROUP } from '../../physics/physics.js';
+import { groundMat, GROUP } from '../../physics/physics.js';
+import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.js';
 import { skyNow } from '../../render/sky.js';
-import { sharedSeconds } from '../../netplay/shared-time.js';
+import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { addLightSource } from '../../render/lights.js';
 import { reducedMotion } from '../../constants.js';
 import site, { PAD_Y } from './site.js';
+import { freezeStatic } from '../../render/instances.ts';
 
 const CX = site.x,
   CZ = site.z;
@@ -59,13 +62,16 @@ function boxBetween(p0, p1, w, t) {
   return { mid, quat: new THREE.Quaternion().setFromRotationMatrix(basis), size: new THREE.Vector3(w, t, len) };
 }
 
-function addCannonBox(body, b) {
-  const shape = new CANNON.Box(new CANNON.Vec3(b.size.x / 2, b.size.y / 2, b.size.z / 2));
-  body.addShape(
-    shape,
-    new CANNON.Vec3(b.mid.x - CX, b.mid.y - BASE_Y, b.mid.z - CZ),
-    new CANNON.Quaternion(b.quat.x, b.quat.y, b.quat.z, b.quat.w),
-  );
+// A collider box for boxBetween's result, relative to the stair body at (CX, BASE_Y, CZ).
+function addColliderBox(shapes, b) {
+  shapes.push({
+    kind: 'box',
+    hx: b.size.x / 2,
+    hy: b.size.y / 2,
+    hz: b.size.z / 2,
+    offset: { x: b.mid.x - CX, y: b.mid.y - BASE_Y, z: b.mid.z - CZ },
+    rotation: { x: b.quat.x, y: b.quat.y, z: b.quat.z, w: b.quat.w },
+  });
 }
 
 let beams = null,
@@ -149,7 +155,7 @@ function build() {
   put(new THREE.SphereGeometry(0.22, 10, 6), new THREE.Vector3(CX, DECK_Y + 4.05, CZ), '#2d3035');
 
   // The spiral stair: treads, outer posts and a handrail; a smooth ramp and a low wall for physics.
-  const stairBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
+  const stairShapes = [];
   const treadN = Math.round(TOWER_H / 0.2);
   for (let k = 0; k < treadN; k++) {
     const u = (k + 0.5) / treadN,
@@ -185,12 +191,12 @@ function build() {
       p1 = at(stairA(u1), r1, stairY(u1) - 0.14);
     const ramp = boxBetween(p0, p1, STAIR_W, 0.28);
     ramp.size.z *= 1.12; // overlap so there are no seams to catch on
-    addCannonBox(stairBody, ramp);
+    addColliderBox(stairShapes, ramp);
     const w0 = at(stairA(u0), r0 + STAIR_W / 2 + 0.05, stairY(u0) + 0.5),
       w1 = at(stairA(u1), r1 + STAIR_W / 2 + 0.05, stairY(u1) + 0.5);
     const wall = boxBetween(w0, w1, 0.1, 1.2);
     wall.size.z *= 1.1;
-    if (u0 >= RAIL_FROM) addCannonBox(stairBody, wall);
+    if (u0 >= RAIL_FROM) addColliderBox(stairShapes, wall);
   }
   // Deck ring and its railing, the tower, the lantern room, the plinth.
   for (let k = 0; k < 24; k++) {
@@ -200,24 +206,47 @@ function build() {
       pb = at(a1, (R_TOP + DECK_R) / 2, DECK_Y - 0.15);
     const seg = boxBetween(pa, pb, DECK_R - R_TOP + 0.2, 0.3);
     seg.size.z *= 1.15;
-    addCannonBox(stairBody, seg);
+    addColliderBox(stairShapes, seg);
     const ra = at(a0, DECK_R, DECK_Y + 0.6),
       rb = at(a1, DECK_R, DECK_Y + 0.6);
     const rail = boxBetween(ra, rb, 0.1, 1.2);
     rail.size.z *= 1.1;
-    addCannonBox(stairBody, rail);
+    addColliderBox(stairShapes, rail);
   }
-  stairBody.position.set(CX, BASE_Y, CZ);
-  world.addBody(stairBody);
-  const tower = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-  tower.addShape(new CANNON.Cylinder(R_TOP, R_BOT, TOWER_H, 16));
-  tower.addShape(new CANNON.Cylinder(1.45, 1.45, 3, 12), new CANNON.Vec3(0, TOWER_H / 2 + 1.5, 0));
-  tower.addShape(
-    new CANNON.Cylinder(PLINTH_R, PLINTH_R, PLINTH_H + 0.6, 10),
-    new CANNON.Vec3(0, -TOWER_H / 2 - 0.45, 0),
+  addBody(
+    createBody({
+      material: groundMat,
+      group: GROUP.SCENERY,
+      position: { x: CX, y: BASE_Y, z: CZ },
+      shapes: stairShapes,
+    }),
   );
-  tower.position.set(CX, BASE_Y + TOWER_H / 2, CZ);
-  world.addBody(tower);
+  addBody(
+    createBody({
+      material: groundMat,
+      group: GROUP.SCENERY,
+      position: { x: CX, y: BASE_Y + TOWER_H / 2, z: CZ },
+      shapes: [
+        { kind: 'cylinder', rTop: R_TOP, rBottom: R_BOT, h: TOWER_H, segments: 16 },
+        {
+          kind: 'cylinder',
+          rTop: 1.45,
+          rBottom: 1.45,
+          h: 3,
+          segments: 12,
+          offset: { x: 0, y: TOWER_H / 2 + 1.5, z: 0 },
+        },
+        {
+          kind: 'cylinder',
+          rTop: PLINTH_R,
+          rBottom: PLINTH_R,
+          h: PLINTH_H + 0.6,
+          segments: 10,
+          offset: { x: 0, y: -TOWER_H / 2 - 0.45, z: 0 },
+        },
+      ],
+    }),
+  );
 
   const statics = new THREE.Mesh(
     mergeParts(parts),
@@ -225,6 +254,7 @@ function build() {
   );
   statics.castShadow = statics.receiveShadow = true;
   scene.add(statics);
+  freezeStatic(statics); // never moves: no per-frame matrix work
 
   // Lantern glass, lamp, beams, halo.
   glass = new THREE.Mesh(
@@ -245,20 +275,17 @@ function build() {
   lamp.position.set(CX, DECK_Y + 1.3, CZ);
   scene.add(lamp);
 
-  const beamMat = new THREE.ShaderMaterial({
+  const uOn = uniform(0);
+  const beamMat = new MeshBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
-    uniforms: { uOn: { value: 0 } },
-    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float uOn; varying vec2 vUv;
-      void main() {
-        float along = vUv.y;                          // 1 at the lamp, 0 at the far end
-        float a = pow(along, 1.6) * uOn * 0.42;
-        gl_FragColor = vec4(1.0, 0.9, 0.6, a);
-      }`,
+    fog: false,
   });
+  // uv().y: 1 at the lamp, 0 at the far end. Warm lamp colour.
+  const warm = new THREE.Color().setRGB(1, 0.9, 0.6, THREE.SRGBColorSpace);
+  beamMat.colorNode = vec4(warm.r, warm.g, warm.b, pow(uv().y, 1.6).mul(uOn).mul(0.42));
   beams = new THREE.Group();
   for (const dir of [1, -1]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(6, 70, 20, 1, true), beamMat);
@@ -268,7 +295,7 @@ function build() {
     beams.add(cone);
   }
   beams.position.copy(lamp.position);
-  beams.userData.mat = beamMat;
+  beams.userData.on = uOn;
   scene.add(beams);
 
   const c = document.createElement('canvas');
@@ -309,7 +336,7 @@ function update() {
   if (n <= 0.01) return;
   const a = reducedMotion ? 0.3 : sharedSeconds() * 0.55;
   beams.rotation.y = a;
-  beams.userData.mat.uniforms.uOn.value = n;
+  beams.userData.on.value = n;
   // The halo flares when a beam swings round to face you.
   toCam.subVectors(camera.position, lamp.position).setY(0).normalize();
   beamDir.set(Math.cos(a), 0, -Math.sin(a));

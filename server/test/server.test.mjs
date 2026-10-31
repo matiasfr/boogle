@@ -289,6 +289,51 @@ test('/ice: TURN_SECRET ephemeral credentials', async () => {
   }
 });
 
+test('/ice: Cloudflare TURN minted once, port 53 dropped, STUN-only on failure', async () => {
+  const calls = [];
+  let fail = false;
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, init });
+    if (fail) return new Response('nope', { status: 500 });
+    return Response.json({
+      iceServers: [
+        { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.cloudflare.com:53'] },
+        {
+          urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turn:turn.cloudflare.com:53?transport=udp'],
+          username: 'u',
+          credential: 'c',
+        },
+      ],
+    });
+  };
+  const env = { CF_TURN_KEY_ID: 'key1', CF_TURN_API_TOKEN: 'tok', TURN_TTL: '600' };
+  const s = await start(env, { fetch: fakeFetch });
+  try {
+    for (let i = 0; i < 2; i++) {
+      const j = await (await fetch(`${s.base}/ice`)).json();
+      assert.deepEqual(j.iceServers, [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: ['turn:turn.cloudflare.com:3478?transport=udp'], username: 'u', credential: 'c' },
+      ]);
+    }
+    assert.equal(calls.length, 1, 'credentials are cached');
+    assert.equal(calls[0].url, 'https://rtc.live.cloudflare.com/v1/turn/keys/key1/credentials/generate-ice-servers');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer tok');
+    assert.deepEqual(JSON.parse(calls[0].init.body), { ttl: 600 });
+  } finally {
+    await s.stop();
+  }
+  fail = true;
+  const f = await start(env, { fetch: fakeFetch });
+  try {
+    assert.deepEqual((await (await fetch(`${f.base}/ice`)).json()).iceServers, [
+      { urls: 'stun:stun.l.google.com:19302' },
+    ]);
+  } finally {
+    await f.stop();
+  }
+});
+
 test('/ice: TURN_URLS without credentials adds nothing', async () => {
   const s = await start({ TURN_URLS: 'turn:turn.example.com:3478' });
   try {
@@ -365,5 +410,28 @@ test('/peerjs: websocket handshake yields OPEN', { skip: typeof WebSocket === 'u
     assert.equal(msg.type, 'OPEN');
   } finally {
     await s.stop();
+  }
+});
+
+// Upgrades go through one router (src/host/upgrade.ts): PeerJS signaling at /peerjs/peerjs, anything unknown 404.
+test('PeerJS signaling works through the upgrade router; an unknown upgrade path is refused', async () => {
+  const { WebSocket } = await import('ws');
+  const { svc, base } = await start({}, { unrefTimers: true });
+  try {
+    const ws = base.replace('http', 'ws');
+    const first = await new Promise((resolve, reject) => {
+      const s = new WebSocket(`${ws}/peerjs/peerjs?key=peerjs&id=router-test&token=t1`);
+      s.on('message', (m) => (resolve(JSON.parse(String(m))), s.close()));
+      s.on('error', reject);
+    });
+    assert.equal(first.type, 'OPEN');
+    const refused = await new Promise((resolve) => {
+      const s = new WebSocket(`${ws}/nope`);
+      s.on('unexpected-response', (_req, res) => resolve(res.statusCode));
+      s.on('error', () => resolve('error'));
+    });
+    assert.equal(refused, 404);
+  } finally {
+    await svc.close();
   }
 });

@@ -46,8 +46,8 @@ The island is baked at module import from constants, and several systems hard-co
 ### Cited Findings (local code, read-only inspection)
 - `src/adapters/terrain.js` computes `heights[][]` at import time from `naturalHeight` (radial distance with fbm wobble, a Gaussian hill at (-12,-6), bumps, and a sea falloff) and flattens a court at `COURT` — local file
 - `src/world/terrain-edits.js` quantises base to cm at import; editability = beach band `EDIT_MIN_CM..EDIT_MAX_CM` (-120..160 cm) or court, excluding the mushroom garden — local file
-- `src/sim/mushrooms.js` fixes `PATCH = { i0: 78, j0: 52, w: 10, h: 10 }`; `COURT`, `SPAWN`, `BALL_SPAWN`, `ISLAND_R` are constants used by `terrain.js`, `player.js`, `ball.js`, `props.js`, `boogler.js`, `main.js` — local files
-- `src/world/sync.js` holds `world.seed` (default 20261028) and snapshots carry `{tick, seed, epochMs, data}`; terrain state serialises only deltas, assuming every peer has the same base — local file
+- `src/sim/mushrooms.ts` fixes `PATCH = { i0: 78, j0: 52, w: 10, h: 10 }`; `COURT`, `SPAWN`, `BALL_SPAWN`, `ISLAND_R` are constants used by `terrain.js`, `player.js`, `ball.js`, `props.js`, `boogler.js`, `main.js` — local files
+- `src/world/sync.ts` holds `world.seed` (default 20261028) and snapshots carry `{tick, seed, epochMs, data}`; terrain state serialises only deltas, assuming every peer has the same base — local file
 - DESIGN.md principles: determinism from day one (integers, seeded RNG, integer hashing for noise), sync edits not state, small and readable, measure before optimising, leave something for the next visitor — [DESIGN.md](../../../../DESIGN.md)
 
 ### Inferences

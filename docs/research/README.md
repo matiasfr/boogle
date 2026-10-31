@@ -22,6 +22,9 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [discovery-progression.md](discovery-progression.md): discovery as progression (Outer Wilds, Tunic, Subnautica, Fez, Animal Well and others), co-op and spoilers, pitfalls, and a lead → blueprint → build → world design for Boogle.
 - [progression-models.md](progression-models.md): nine progression models that don't depend on mini-games, compared for drop-in friends, with four hybrid recipes and their smallest prototypes.
 - [rail-as-play.md](rail-as-play.md): building and running the rail network as play; track that grows from your feet, timetabled mainlines derived from the network, a drivable handcar.
+- [shared-state-at-scale.md](shared-state-at-scale.md): how open-world games share simulation state (server authority, interest management by spatial grid, delta snapshots, client mirrors, prediction) and what it means for Boogle: no client sim worker, the server first, then state by relevance.
 - [_primary-source-notes.md](_primary-source-notes.md): raw fetched facts and quotes behind the reports, with fetch status. No proposals.
+
+- [0.1/](0.1/): the 0.1 direction (2026-10-30/31; the briefs say "v2"): what is settled ([SETTLED.md](0.1/SETTLED.md)), the haul-stack resource loop ([7-resource-loop.md](0.1/7-resource-loop.md)), sources, contribution tiers and casual play ([8-collecting-tiers.md](0.1/8-collecting-tiers.md)), rarity done kindly ([9-brainrot-hooks.md](0.1/9-brainrot-hooks.md)), and identity, persistence and the groundwork milestones ([10-groundwork.md](0.1/10-groundwork.md)). Plan: [docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md).
 
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.

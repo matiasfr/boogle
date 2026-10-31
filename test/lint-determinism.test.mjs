@@ -49,11 +49,12 @@ test('nor sneak them past the lint as Date() or globalThis.Math.*', async () => 
 
 // A renamed or moved rules module would otherwise silently drop out of the lint (flat config never warns).
 test('every named lockstep file exists and is linted', async () => {
-  for (const entry of LOCKSTEP_FILES.filter((f) => !f.includes('*'))) {
-    assert.ok(
-      existsSync(new URL('../' + entry, import.meta.url)),
-      `${entry} is in LOCKSTEP_FILES but missing: update eslint.config.js`,
-    );
+  for (const named of LOCKSTEP_FILES.filter((f) => !f.includes('*'))) {
+    // `grid.{js,ts}`: whichever of the two exists (modules move from .js to .ts).
+    const entry = ['.js', '.ts']
+      .map((ext) => named.replace('.{js,ts}', ext))
+      .find((f) => existsSync(new URL('../' + f, import.meta.url)));
+    assert.ok(entry, `${named} is in LOCKSTEP_FILES but missing: update eslint.config.js`);
     const rules = await lint('Math.random();', entry);
     assert.ok(rules.includes('no-restricted-properties'), `${entry} should be linted, got ${rules}`);
   }

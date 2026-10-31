@@ -1,6 +1,6 @@
 # Emergent / systemic mechanics on simulated environments (for Boogle)
 
-Scope note: Boogle already has a 2.5D integer column water sim (0-255 units per cell, active-cell lists), host-stamped terrain edits, mushrooms in `src/sim/mushrooms.js`, a planned telegraphed tide, and DESIGN.md principles "Toys before chores", "Only the world is the antagonist", "Telegraph everything", "Slapstick over precision" and "Determinism from day one". The earlier research doc `docs/research/water-farming-multiplayer.md` already covers Townscaper/Animal Crossing/Timberborn-style farming and sync basics; these notes focus on systemic/emergent mechanics layered on top. Search budget was ~16 tool calls; several primary talks (GDC Vault videos) were gated, so some claims rest on reputable secondary write-ups, flagged where relevant.
+Scope note: Boogle already has a 2.5D integer column water sim (0-255 units per cell, active-cell lists), host-stamped terrain edits, mushrooms in `src/sim/mushrooms.ts`, a planned telegraphed tide, and DESIGN.md principles "Toys before chores", "Only the world is the antagonist", "Telegraph everything", "Slapstick over precision" and "Determinism from day one". The earlier research doc `docs/research/water-farming-multiplayer.md` already covers Townscaper/Animal Crossing/Timberborn-style farming and sync basics; these notes focus on systemic/emergent mechanics layered on top. Search budget was ~16 tool calls; several primary talks (GDC Vault videos) were gated, so some claims rest on reputable secondary write-ups, flagged where relevant.
 
 ## Which systemic interactions create the most emergent "stories" among friends? (with the mechanic catalog)
 
@@ -72,7 +72,7 @@ Effort tags: **[night]** = prototype in one evening on Boogle's existing grid; *
    - Precedent: no direct game source found (see Gaps); Noita has grass/moss growth but devs say players rarely notice it ([80.lv](https://80.lv/articles/noita-a-game-based-on-falling-sand-simulation/)). Technique is reaction-diffusion / growth CA.
    - Fun: emergent shared goal without quests: the island's network visibly grows when several friends tend different mushrooms ("Cooperation is automatic").
    - Implementation: integer `hypha` strength per soil cell; spread to a wet neighbour with probability from seeded RNG when strength > threshold; decay when dry. Render as glowing veins in the sand shader (cosmetic layer reads, never writes).
-   - Sync: deterministic CA over the existing garden region; mushrooms already flow through `src/world/sync.js`.
+   - Sync: deterministic CA over the existing garden region; mushrooms already flow through `src/world/sync.ts`.
 
 8. **Ecological succession / pioneer greening** [weekend]
    - What: bare sand -> beach grass (stabilises sand, slows slumping) -> shrubs -> palms, each stage requiring moisture and low salt; vegetation feeds back on terrain (roots resist erosion, plants hold water).

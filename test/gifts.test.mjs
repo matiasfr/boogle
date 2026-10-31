@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MAX_SHORE,
   DROP_OFFSETS,
   MAX_ITEMS,
   REGROW_TICKS,
   LIFE,
+  NEVER,
   ON_GROUND,
   ON_PERCH,
   PERCH_REFILL,
@@ -20,21 +20,19 @@ import {
   serializeGifts,
   loadGifts,
   hashGifts,
-} from '../src/sim/gifts.js';
-import { GIFTS, giftIndex } from '../src/sim/gift-catalog.js';
+} from '../src/sim/gifts.ts';
+import { GIFTS, giftIndex, carryable } from '../src/sim/gift-catalog.ts';
 
-const SEED = 20261028;
 const layout = () => ({
   trees: [
     { i: 40, j: 40 },
     { i: 60, j: 70 },
     { i: 80, j: 30 },
   ],
-  shore: Array.from({ length: 60 }, (_, k) => [10 + k, 100 + (k % 5)]),
   perches: [{ i: 200, j: 150, kind: giftIndex('frisbee') }],
 });
 const run = (s, from, to) => {
-  for (let t = from; t <= to; t++) tickGifts(s, t, SEED);
+  for (let t = from; t <= to; t++) tickGifts(s, t);
 };
 
 test('same ticks and edits give the same island on every client', () => {
@@ -50,25 +48,25 @@ test('same ticks and edits give the same island on every client', () => {
   assert.deepEqual(serializeGifts(a), serializeGifts(b));
 });
 
-test('shore items wash up over time, never past MAX_SHORE', () => {
+test('nothing washes up, and saved shore items age out', () => {
   const s = createGifts(layout());
-  run(s, 1, 400);
-  assert.ok(s.items.length >= 3, 'an empty beach fills quickly');
-  run(s, 401, LIFE.shore - 1);
-  const shore = s.items.filter((it) => it.src === SRC.SHORE);
-  assert.equal(shore.length, MAX_SHORE);
-  for (const it of shore) {
-    assert.equal(GIFTS[it.kind].src, 'shore');
-    assert.ok(s.shore.some(([i, j]) => i === it.i && j === it.j));
-  }
-});
-
-test('the tide takes old shore items back', () => {
-  const s = createGifts(layout());
-  run(s, 1, 1);
-  const first = s.items.find((it) => it.src === SRC.SHORE).id;
-  run(s, 2, LIFE.shore + 1);
-  assert.ok(!s.items.some((it) => it.id === first));
+  loadGifts(s, { v: 2, it: [1, giftIndex('shell'), 10, 100, SRC.SHORE, 1, ON_GROUND], n: 2, w: 3, at: 5 });
+  assert.equal(s.items.length, 1);
+  assert.equal(s.nextWash, NEVER, 'the saved wash schedule is ignored');
+  run(s, 1, LIFE.shore);
+  assert.ok(
+    s.items.some((it) => it.src === SRC.SHORE),
+    'still there at the end of its life',
+  );
+  run(s, LIFE.shore + 1, LIFE.shore + 1);
+  assert.ok(!s.items.some((it) => it.src === SRC.SHORE), 'gone just past it');
+  assert.equal(s.nextWash, NEVER);
+  assert.equal(s.washed, 3, 'the counter never moves');
+  run(s, LIFE.shore + 2, 3000 + LIFE.shore);
+  assert.ok(
+    s.items.every((it) => it.src !== SRC.SHORE),
+    'nothing new washed up',
+  );
 });
 
 test('a palm drops one fruit, then regrows', () => {
@@ -101,13 +99,13 @@ test('a perch holds its item and refills PERCH_REFILL ticks after it is taken', 
 });
 
 test('thrown things land where they were thrown and rot like fruit', () => {
-  const s = createGifts({ trees: [], shore: [] });
-  const duck = giftIndex('duck');
-  const it = tossItem(s, duck, 7, 9, 2950, 100);
-  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [duck, 7, 9, 2950, SRC.TOSS]);
-  assert.equal(tossItem(s, duck, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
+  const s = createGifts({ trees: [] });
+  const mango = giftIndex('mango');
+  const it = tossItem(s, mango, 7, 9, 2950, 100);
+  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [mango, 7, 9, 2950, SRC.TOSS]);
+  assert.equal(tossItem(s, mango, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
   assert.equal(tossItem(s, giftIndex('ball'), 7, 9, ON_GROUND, 100), null, 'the beach ball is never a ground item');
-  assert.equal(tossItem(s, duck, -1, 9, ON_GROUND, 100), null);
+  assert.equal(tossItem(s, mango, -1, 9, ON_GROUND, 100), null);
   run(s, 101, 100 + LIFE.toss - 1);
   assert.equal(s.items.length, 1);
   run(s, 100 + LIFE.toss, 100 + LIFE.toss);
@@ -115,10 +113,10 @@ test('thrown things land where they were thrown and rot like fruit', () => {
 });
 
 test('a full island sweeps away the oldest thrown thing to make room', () => {
-  const s = createGifts({ trees: [], shore: [] });
-  const shell = giftIndex('shell');
-  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, shell, k, 0, ON_GROUND, k);
-  const it = tossItem(s, shell, 99, 0, ON_GROUND, 500);
+  const s = createGifts({ trees: [] });
+  const can = giftIndex('can');
+  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, can, k, 0, ON_GROUND, k);
+  const it = tossItem(s, can, 99, 0, ON_GROUND, 500);
   assert.equal(s.items.length, MAX_ITEMS);
   assert.equal(s.items[0].i, 1);
   assert.equal(s.items.at(-1).id, it.id);
@@ -132,7 +130,7 @@ test('taking an item works once', () => {
 });
 
 test('ground items never exceed MAX_ITEMS', () => {
-  const s = createGifts({ trees: Array.from({ length: 64 }, (_, k) => ({ i: k, j: 5 })), shore: layout().shore });
+  const s = createGifts({ trees: Array.from({ length: 64 }, (_, k) => ({ i: k, j: 5 })) });
   for (let t = 0; t < 64; t++) dropFruit(s, t, 1);
   assert.equal(s.items.length, MAX_ITEMS);
   assert.equal(canDrop(s, 63, 1), false);
@@ -196,4 +194,11 @@ test('fruit lands on the requested side, and bad directions are refused', () => 
   assert.equal(canDrop(s, 1, 1, 8), false);
   assert.equal(canDrop(s, 1, 1, -1), false);
   assert.equal(canDrop(s, 1, 1, 1.5), false);
+});
+
+test('retired catalog entries keep their index but cannot be carried or thrown', () => {
+  assert.equal(giftIndex('shell'), 5, 'indices are append only');
+  assert.equal(giftIndex('doppi'), 21);
+  for (const g of GIFTS) if (g.src === 'sea' || g.id === 'shovel') assert.equal(carryable(g), false, g.id);
+  assert.ok(GIFTS.filter(carryable).every((g) => g.name && g.taste && g.line));
 });

@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { BALL_R, BALL_MASS, BALL_SPAWN, REACH, INTERP_MS, HALF, PLAYER_R, HEAD_OFFSET } from '../constants.js';
 import { clamp, lerp, finiteArr, r2, r3 } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from '../render/scene.js';
-import { world, ballMat, teleport } from './physics.js';
+import { ballMat, teleport } from './physics.js';
+import { createBody, addBody, setMotion } from './engine.ts';
 import { me, handPosition, carryPosition, throwVelocity } from '../player/player.js';
-import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.js';
-import { createSnaps } from '../netplay/snaps.js';
+import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.ts';
+import { createSnaps } from '../netplay/snaps.ts';
 import { onFrame } from '../loop.js';
 
 function beachBallTexture() {
@@ -29,7 +29,13 @@ function beachBallTexture() {
 }
 
 export const ball = {
-  body: new CANNON.Body({ mass: BALL_MASS, material: ballMat, linearDamping: 0.12, angularDamping: 0.3 }),
+  body: createBody({
+    mass: BALL_MASS,
+    material: ballMat,
+    linearDamping: 0.12,
+    angularDamping: 0.3,
+    shapes: [{ kind: 'sphere', r: BALL_R }],
+  }),
   mesh: new THREE.Mesh(
     new THREE.SphereGeometry(BALL_R, 32, 18),
     new THREE.MeshStandardMaterial({ map: beachBallTexture(), roughness: 0.4 }),
@@ -42,25 +48,13 @@ export const ball = {
   orphanSince: 0,
   disp: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
 };
-ball.body.addShape(new CANNON.Sphere(BALL_R));
 ball.mesh.castShadow = true;
 scene.add(ball.mesh);
-world.addBody(ball.body);
+addBody(ball.body);
 ball.disp.p.set(BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + BALL_R + 0.4, BALL_SPAWN.z);
 
 // sim: dynamic and collides. ghost: kinematic, positioned by hand or by the network, no collision response.
-export function setBallMode(mode) {
-  const b = ball.body;
-  if (mode === 'sim') {
-    b.type = CANNON.Body.DYNAMIC;
-    b.collisionResponse = true;
-  } else {
-    b.type = CANNON.Body.KINEMATIC;
-    b.collisionResponse = false;
-    b.velocity.setZero();
-    b.angularVelocity.setZero();
-  }
-}
+export const setBallMode = (mode) => setMotion(ball.body, mode === 'sim' ? 'dynamic' : 'kinematic');
 setBallMode('ghost');
 teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
 ball.mesh.position.copy(ball.disp.p);
@@ -135,8 +129,8 @@ export function respawnBall() {
   ball.held = false;
   setBallMode('sim');
   teleport(ball.body, BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + 3, BALL_SPAWN.z);
-  ball.body.velocity.setZero();
-  ball.body.angularVelocity.setZero();
+  ball.body.velocity.set(0, 0, 0);
+  ball.body.angularVelocity.set(0, 0, 0);
   sendPresence();
 }
 

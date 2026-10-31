@@ -1,13 +1,14 @@
 // The talk box: The Boogler's line typed out, your answers as buttons (or number keys; a gift answer shows the gift),
-// the friendship meter, his portrait to pet (pad Y), and a close button (Escape, pad B). While it is open it swallows
-// game keys and clicks, takes the gamepad, and frees the mouse pointer.
-import { reducedMotion } from '../constants.js';
-import { requestLock } from '../player/input.js';
-import { openModal, closeModal } from '../player/modal.js';
-import { MAX_LEVEL } from './friendship.js';
+// the friendship meter, his portrait to pet (pad Y), and a close button (Escape, E, pad B). Not a modal: the game keeps
+// playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.js). It
+// takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
+import { isTouch, reducedMotion } from '../constants.js';
+import { setPadGrab } from '../player/controls.js';
+import { modalOpen } from '../player/modal.js';
+import { heartsText } from './friendship.js';
 import { boogler } from './boogler.js';
-import { GIFTS } from '../sim/gift-catalog.js';
-import { iconFor } from '../player/item-icons.js';
+import { GIFTS } from '../sim/gift-catalog.ts';
+import { setIcon } from '../player/item-icons.js';
 import { glyph } from '../player/glyphs.js';
 
 const CHARS_PER_S = 48;
@@ -21,7 +22,8 @@ const MOUTHS = {
   worry:
     '<path d="M17.4 23 Q18.6 22.2 19.6 23 Q20.6 23.8 21.6 23 Q22.4 22.4 22.8 23" stroke="#1d1640" stroke-width="1" fill="none" stroke-linecap="round"/>',
 };
-const face = (mood) => `
+// His portrait, in the talk box with the mood's mouth.
+export const portrait = (mood) => `
   <svg viewBox="0 0 40 40" aria-hidden="true">
     <ellipse cx="11" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
     <ellipse cx="29" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
@@ -77,7 +79,6 @@ function dom() {
   el = {
     root,
     wrap: q('.bd-wrap'),
-    card: q('.bd-card'),
     faceBtn: q('.bd-face'),
     face: q('.bd-face-svg'),
     pet: q('.bd-pet'),
@@ -91,11 +92,17 @@ function dom() {
     say: q('.bd-say'),
     opts: q('.bd-opts'),
   };
-  root.addEventListener('pointerdown', (e) => {
+  // Only the card takes taps and clicks (boogler.css); the joystick and the canvas work around it.
+  el.wrap.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     if (cur?.typing && !e.target.closest('button')) finishTyping();
   });
-  root.addEventListener('contextmenu', (e) => e.preventDefault());
+  el.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
+  // On a desktop, Escape with the pointer locked only ends the lock (the page never sees the key): that ends the talk.
+  // Added on first use, after src/features/pause.js's own listener, which skips the pause view while a talk is open.
+  document.addEventListener('pointerlockchange', () => {
+    if (!document.pointerLockElement && !isTouch) cur?.onClose?.();
+  });
   el.faceBtn.addEventListener('click', () => cur?.onPet?.());
   el.close.addEventListener('click', () => cur?.onClose?.());
   return el;
@@ -124,7 +131,8 @@ function moveFocus(dir) {
 }
 
 // D-pad picks an answer, A or X skips the typing and then says it, Y pets him, B walks away. With no answer picked
-// yet, A picks the first one rather than saying it.
+// yet, A picks the first one rather than saying it. The stick and the other buttons stay with the game.
+const PAD_SLOTS = ['a', 'b', 'x', 'y', 'up', 'down'];
 function padPress(slot) {
   if (!cur) return;
   if (slot === 'b') cur.onClose?.();
@@ -142,15 +150,15 @@ function padPress(slot) {
 export function showDialogue(view, bond, onPick, onClose, onPet) {
   const d = dom();
   const opening = !dialogue.open;
-  if (opening && !openModal({ onKey, onPad: padPress })) return; // the pause view is up
+  if (opening && modalOpen()) return; // the pause view is up
+  if (opening) setPadGrab(padPress, PAD_SLOTS);
   dialogue.open = true;
   d.root.hidden = false;
   if (opening) {
     d.close.innerHTML = glyph('close') || CROSS;
     d.pet.innerHTML = glyph('pet') || HAND;
   }
-  if (performance.now() >= react.until) d.face.innerHTML = face(view.mood);
-  d.card.dataset.mood = view.mood;
+  if (performance.now() >= react.until) d.face.innerHTML = portrait(view.mood);
   setBond(bond);
   cur = {
     text: view.say,
@@ -177,7 +185,7 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
         const img = document.createElement('img');
         img.className = 'bd-gift';
         img.alt = '';
-        img.src = iconFor(gift.id);
+        setIcon(img, gift.id);
         b.append(img);
       }
       b.addEventListener('click', () => choose(i));
@@ -189,17 +197,20 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
   if (!cur.typing) finishTyping();
 }
 
+// Plays a one-shot CSS animation (class `cls`) again from the start.
+export function replay(node, cls) {
+  node.classList.remove(cls);
+  void node.offsetWidth;
+  node.classList.add(cls);
+}
+
 let bondLevel = -1;
 function setBond(b) {
   const d = dom();
-  d.hearts.textContent = '♥'.repeat(b.level) + '♡'.repeat(MAX_LEVEL - b.level);
+  d.hearts.textContent = heartsText(b.level);
   d.level.textContent = b.name;
   d.bar.style.width = `${Math.round(b.frac * 100)}%`;
-  if (bondLevel >= 0 && b.level > bondLevel) {
-    d.bond.classList.remove('up');
-    void d.bond.offsetWidth; // restart the level-up animation
-    d.bond.classList.add('up');
-  }
+  if (bondLevel >= 0 && b.level > bondLevel) replay(d.bond, 'up');
   bondLevel = b.level;
 }
 
@@ -209,18 +220,15 @@ export function dialogueReact({ line, mood, hearts = false, bond = null }) {
   const d = dom();
   react.until = performance.now() + REACT_MS;
   d.popText.textContent = line;
-  d.face.innerHTML = face(mood);
+  d.face.innerHTML = portrait(mood);
   if (bond) setBond(bond);
   const w = d.wrap.getBoundingClientRect(),
     f = d.faceBtn.getBoundingClientRect();
   const x = f.left + f.width / 2 - w.left;
   d.pop.style.left = `${Math.max(0, x - 30).toFixed(0)}px`;
   d.pop.hidden = false;
-  for (const c of [d.pop, d.faceBtn]) {
-    c.classList.remove('pop');
-    void c.offsetWidth; // restart the pop animation
-    c.classList.add('pop');
-  }
+  replay(d.pop, 'pop');
+  replay(d.faceBtn, 'pop');
   if (!hearts || reducedMotion) return;
   for (let k = 0; k < 4; k++) {
     const h = document.createElement('span');
@@ -240,17 +248,16 @@ export function closeDialogue() {
   cur = null;
   react.until = 0;
   el.pop.hidden = true;
-  closeModal();
+  setPadGrab(null);
   boogler.me.speaking = false;
   el.root.hidden = true;
-  requestLock();
 }
 
 export function updateDialogue(now) {
   if (react.until && now >= react.until) {
     react.until = 0;
     el.pop.hidden = true;
-    if (cur) el.face.innerHTML = face(cur.mood);
+    if (cur) el.face.innerHTML = portrait(cur.mood);
   }
   if (!cur?.typing) return;
   const n = Math.min(cur.text.length, Math.floor(((now - cur.at) / 1000) * CHARS_PER_S));
@@ -261,29 +268,22 @@ export function updateDialogue(now) {
   if (n >= cur.text.length) finishTyping();
 }
 
-// Runs before the game's own key handlers (src/player/modal.js) and keeps them from seeing the key.
-function onKey(e) {
-  if (!cur) return;
-  if (e.code === 'Escape') {
+// Capture phase on window, so it runs before the game's own key handlers; it stops only the keys it answers with
+// (number keys would also switch the hotbar slot) and lets the rest through to the game.
+addEventListener(
+  'keydown',
+  (e) => {
+    if (!cur || e.ctrlKey || e.metaKey || e.altKey) return;
+    const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+    if (!digit && e.code !== 'Escape' && e.code !== 'KeyE' && e.code !== 'Enter') return;
     e.preventDefault();
-    cur.onClose?.();
-    return;
-  }
-  // Skipping the typing must never also pick an answer, so these only press a button focused with the arrows or Tab.
-  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
-    e.preventDefault();
-    if (cur.typing) finishTyping();
-    else if (!e.repeat) focusedBtn()?.click();
-    return;
-  }
-  const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
-  if (digit) {
-    e.preventDefault();
-    if (!e.repeat) choose(Number(digit[1]) - 1);
-    return;
-  }
-  if (e.code === 'ArrowDown' || e.code === 'ArrowUp' || e.code === 'KeyS' || e.code === 'KeyW') {
-    e.preventDefault();
-    moveFocus(e.code === 'ArrowDown' || e.code === 'KeyS' ? 1 : -1);
-  }
-}
+    e.stopImmediatePropagation();
+    if (e.repeat) return;
+    if (e.code === 'Escape' || e.code === 'KeyE') cur.onClose?.();
+    else if (cur.typing)
+      finishTyping(); // skipping the typing never also picks an answer
+    else if (digit) choose(Number(digit[1]) - 1);
+    else focusedBtn()?.click(); // Enter: a button focused with Tab
+  },
+  { capture: true },
+);

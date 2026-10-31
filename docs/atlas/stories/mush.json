@@ -1,0 +1,91 @@
+{
+  "id": "mush",
+  "title": "You plant a mushroom",
+  "kind": "lock",
+  "order": 40,
+  "steps": [
+    {
+      "go": [["you.input", "you.features"]],
+      "text": "You use seeds on soil. The mushroom garden asks for a planting edit.",
+      "code": "src/adapters/mushroom-garden.js",
+      "cite": [
+        {
+          "file": "src/adapters/mushroom-garden.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.features", "you.world"]],
+      "text": "It submits the edit: plant at cell i, j. It is queued, not done. Nothing grows yet.",
+      "code": "submitEdit({ op: 'mush.plant', i, j })",
+      "cite": [
+        {
+          "file": "src/world/sync.ts",
+          "symbol": "submitEdit"
+        },
+        {
+          "op": "mush.plant"
+        }
+      ]
+    },
+    {
+      "go": [["you.world", "lane:lock", "fr.world"]],
+      "text": "The edit travels to the host. The host checks it and stamps it with a tick number.",
+      "code": "validate(edit, ctx) · host only",
+      "cite": [
+        {
+          "file": "src/world/rules/mushrooms.ts"
+        },
+        {
+          "file": "src/world/sync.ts"
+        }
+      ]
+    },
+    {
+      "go": [["fr.world", "lane:lock", "you.world"]],
+      "text": "The host sends the stamped edit to every tab, itself included.",
+      "code": "{ t: 'w:edits', list }",
+      "cite": [
+        {
+          "message": "w:edits"
+        }
+      ]
+    },
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "Every tab applies it at the same tick with the same code, so every island stays identical.",
+      "code": "world/rules/mushrooms.ts · apply(edit, tick)",
+      "cite": [
+        {
+          "file": "src/world/rules/mushrooms.ts"
+        },
+        {
+          "state": "mushrooms"
+        }
+      ]
+    },
+    {
+      "go": [["you.world", "you.features", "you.screen"]],
+      "text": "Only now does the mushroom appear, with its splash and sound.",
+      "code": "onApplied(edit, tick, result)",
+      "cite": [
+        {
+          "file": "src/adapters/mushroom-garden.js"
+        }
+      ]
+    },
+    {
+      "go": [["fr.world", "lane:lock", "you.world"]],
+      "text": "Every so often the host sends a hash of the world. A tab that disagrees asks for a fresh copy.",
+      "code": "{ t: 'w:hash' } → { t: 'w:need' }",
+      "cite": [
+        {
+          "message": "w:hash"
+        },
+        {
+          "message": "w:need"
+        }
+      ]
+    }
+  ]
+}

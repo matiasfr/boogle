@@ -1,0 +1,52 @@
+{
+  "id": "ball",
+  "title": "You kick the ball",
+  "kind": "owner",
+  "order": 30,
+  "steps": [
+    {
+      "go": [["you.input", "you.systems"]],
+      "text": "You walk into the ball. Your tab claims it and now runs its physics.",
+      "code": "ball.js · world phase, order −280",
+      "cite": [
+        {
+          "file": "src/physics/ball.js"
+        }
+      ]
+    },
+    {
+      "go": [["you.systems", "you.netplay"]],
+      "text": "The ball’s position goes into your presence under the key b.",
+      "code": "addPresenceField('b', getter)",
+      "cite": [
+        {
+          "presence": "b"
+        }
+      ]
+    },
+    {
+      "go": [["you.netplay", "lane:owner", "fr.netplay"]],
+      "text": "Presence goes out 20 times a second. Only the latest value matters.",
+      "code": "20 Hz · latest wins",
+      "cite": [
+        {
+          "file": "src/netplay/net.ts"
+        }
+      ]
+    },
+    {
+      "go": [["fr.netplay", "fr.screen"]],
+      "text": "Their tab draws the ball 120 ms in the past, blending between two samples so it moves smoothly.",
+      "code": "createSnaps() · INTERP_MS = 120",
+      "cite": [
+        {
+          "file": "src/constants.js",
+          "symbol": "INTERP_MS"
+        },
+        {
+          "file": "src/netplay/snaps.ts"
+        }
+      ]
+    }
+  ]
+}

@@ -1,21 +1,20 @@
-// Fireflies (prototype flag `fireflies`), cosmetic tier: at night a few dozen soft blinking lights drift around the
+// Fireflies, cosmetic tier: at night a few dozen soft blinking lights drift around the
 // mushroom garden and over the grass. One additive point cloud; positions and blinks are local floats.
 // Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../render/scene.js';
+import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { CELL, HALF } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { skyDebug } from '../render/sky.js';
-import { PATCH } from '../sim/mushrooms.js';
-import { proto } from '../adapters/proto-flags.js';
+import { PATCH } from '../sim/mushrooms.ts';
 
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),
   col = new Float32Array(FLIES.count * 3);
-const geo = new THREE.BufferGeometry();
-geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
-geo.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+const posAttr = dynAttr(pos, 3);
+const colAttr = dynAttr(col, 3);
 const glow = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
@@ -28,20 +27,14 @@ const glow = (() => {
   g.fillRect(0, 0, 32, 32);
   return new THREE.CanvasTexture(c);
 })();
-const flies = new THREE.Points(
-  geo,
-  new THREE.PointsMaterial({
-    size: FLIES.size,
-    map: glow,
-    vertexColors: true,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }),
-);
-flies.frustumCulled = false;
-flies.visible = false;
-scene.add(flies);
+const fliesMat = new THREE.PointsNodeMaterial({
+  size: FLIES.size,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+fliesMat.colorNode = texture(glow).mul(vec4(instancedDynamicBufferAttribute(colAttr), 1));
+const flies = instancedSprite(fliesMat, posAttr, FLIES.count);
 
 const F = [];
 onStart(() => {
@@ -69,7 +62,7 @@ onStart(() => {
 let shown = 0;
 onFrame(
   ({ dt, elapsed }) => {
-    const want = proto.on('fireflies') && skyDebug.state.day < FLIES.night ? 1 : 0;
+    const want = skyDebug.state.day < FLIES.night ? 1 : 0;
     shown += (want - shown) * Math.min(1, dt * 0.5);
     flies.visible = shown > 0.01 && F.length > 0;
     if (!flies.visible) return;
@@ -86,8 +79,8 @@ onFrame(
       col[k * 3 + 1] = 1.0 * blink;
       col[k * 3 + 2] = 0.35 * blink;
     }
-    geo.attributes.position.needsUpdate = true;
-    geo.attributes.color.needsUpdate = true;
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
   },
   { phase: 'update' },
 );

@@ -18,7 +18,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Full history, without the file contents: the atlas page shows the commit count (dev/atlas/extract.ts);
+      # without history it hides.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -29,12 +34,13 @@ jobs:
       - run: npm run lint
       - run: npm run build
         env:
-          BASE: /boogle/
+          BASE: /
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
           VITE_BUILD: ${{ github.sha }}
       # Share pages for patch videos (video-* releases, dev/video/site.mjs). Never blocks a game deploy.
       - run: node dev/video/site.mjs dist || true
         env:
+          SITE_URL: https://boogle.club/
           GH_TOKEN: ${{ github.token }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

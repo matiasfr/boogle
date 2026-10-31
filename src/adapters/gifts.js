@@ -1,48 +1,40 @@
-// Island gifts in the game: fruit on the palms, things washed up on the beach, things players threw, and the frisbee
-// on the lighthouse deck. Shared state lives in src/world/rules/gifts.js and changes only through world/sync edits; what
+// Island gifts in the game: fruit on the palms, things players threw, and the frisbee
+// on the lighthouse deck. Shared state lives in src/world/rules/gifts.ts and changes only through world/sync edits; what
 // you carry is your hotbar (src/player/inventory.js).
-import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, HOME, REACH, PLAYER_R, reducedMotion } from '../constants.js';
-import { heights, groundHeight } from './terrain.js';
+import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
+import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
-import { world as physics } from '../physics/physics.js';
-import { trees, obstacles } from '../render/props.js';
+import { onPostStep, forEachContact } from '../physics/engine.ts';
+import { trees } from '../render/props.js';
 import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
-import { net } from '../netplay/net.js';
-import { world, onApplied, submitEdit } from '../world/sync.js';
-import { SEEDS, LOST } from '../world/rules/gifts.js';
+import { net } from '../netplay/net.ts';
+import { world, onApplied, submitEdit } from '../world/sync.ts';
+import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';
-import { PATCH } from '../sim/mushrooms.js';
-import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
-import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
+import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.ts';
 import { itemModel } from '../player/item-models.js';
 import { STEP, flyPath, dropPoint } from '../physics/flight.js';
 import { inv, take, roomFor } from '../player/inventory.js';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
 import { splash } from '../render/splash.js';
+import { createPool } from '../render/instances.ts';
 
 const SHAKE_R = 2.1; // metres from a palm's base
 const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
-const SHORE_MIN_CM = 12;
-const SHORE_MAX_CM = 70;
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 
-// The gifts, their ops and tick live in world/rules/gifts.js (lockstep); this module adapts them to meshes, flights,
-// the interact prompt and the hotbar. The layout (palms, beach cells, perches) is the land's, filled in createGifts3d.
+// The gifts, their ops and tick live in world/rules/gifts.ts (lockstep); this module adapts them to meshes, flights,
+// the interact prompt and the hotbar. The layout (palms, perches) is the land's, filled in createGifts3d.
 const { layout } = land;
 const perchSpots = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
 
-const cellX = (i) => i * CELL - HALF;
-const cellZ = (j) => HALF - j * CELL;
-const cellOf = (x, z) => [
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
-];
 const fx = { falling: new Map(), wobble: new Map(), leaving: [], arriving: new Map() };
 
 // The effects of each gift op, from what its apply returned (r): the item that fell, was taken or landed.
@@ -66,26 +58,12 @@ onApplied((e, tick, r) => {
 export function createGifts3d() {
   for (const t of trees.slice(0, MAX_TREES))
     layout.trees.push({ i: Math.round((t.x + HALF) / CELL), j: Math.round((HALF - t.z) / CELL) });
-  // Things wash up on the home beaches only (constants.js HOME), where the players and the Boogler hang out.
-  for (let i = 0; i < GRID_RES; i++)
-    for (let j = 0; j < GRID_RES; j++) {
-      const hx = cellX(i),
-        hz = cellZ(j);
-      if (hx < HOME.x0 + 2 || hx > HOME.x1 - 2 || hz < HOME.z0 + 2 || hz > HOME.z1 - 2) continue;
-      const cm = Math.round(heights[i][j] * 100);
-      if (cm < SHORE_MIN_CM || cm > SHORE_MAX_CM) continue;
-      if (i >= PATCH.i0 - 3 && i < PATCH.i0 + PATCH.w + 3 && j >= PATCH.j0 - 3 && j < PATCH.j0 + PATCH.h + 3) continue;
-      const x = cellX(i),
-        z = cellZ(j);
-      if (obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 0.8)) continue;
-      layout.shore.push([i, j]);
-    }
   // The frisbee's perch: its cell only names it in the shared state; it is drawn at the exact spot on the deck.
   const [pi, pj] = [Math.round((FRISBEE_SPOT.x + HALF) / CELL), Math.round((HALF - FRISBEE_SPOT.z) / CELL)];
   layout.perches.push({ i: pi, j: pj, kind: giftIndex('frisbee') });
   perchSpots.push(new THREE.Vector3(FRISBEE_SPOT.x, FRISBEE_SPOT.y, FRISBEE_SPOT.z));
   buildTreeFruit();
-  physics.addEventListener('postStep', knockFruit);
+  onPostStep(knockFruit);
 }
 
 function itemPos(it, out) {
@@ -98,7 +76,7 @@ function itemPos(it, out) {
   return out.set(x, it.y === ON_GROUND || it.src === SRC.PERCH ? groundHeight(x, z) : it.y / 100, z);
 }
 
-// A twinkle over washed-up things and the frisbee on its perch, so they are easy to spot from afar.
+// A twinkle over the frisbee on its perch, so it is easy to spot from afar.
 const sparkleMat = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -138,19 +116,21 @@ function buildTreeFruit() {
   });
   for (const [kind, slots] of slotsByKind) {
     const src = itemModel(GIFTS[kind].id).children[0];
-    const mesh = new THREE.InstancedMesh(src.geometry, src.material, slots.length);
-    mesh.castShadow = true;
-    mesh.frustumCulled = false;
+    const pool = createPool(src.geometry, src.material, slots.length);
+    const mesh = pool.mesh;
+    // No shadow: fruit hangs in the palm's own shadow, and each kind would be one more shadow-pass draw call.
     mesh.userData.base = { r: src.rotation.clone(), s: src.scale.clone() };
     scene.add(mesh);
-    fruitMeshes.set(kind, { mesh, slots });
+    fruitMeshes.set(kind, { mesh, pool, slots });
   }
 }
 
 function updateTreeFruit(now) {
-  for (const { mesh, slots } of fruitMeshes.values()) {
+  for (const { mesh, pool, slots } of fruitMeshes.values()) {
     const { r, s } = mesh.userData.base;
-    slots.forEach((sl, k) => {
+    pool.begin();
+    for (let k = 0; k < slots.length; k++) {
+      const sl = slots[k];
       const left = gifts.ripeAt[sl.t] - world.tick;
       const grow = left <= 0 ? 1 : 0.25 + 0.55 * (1 - left / REGROW_TICKS);
       const wob = (now - (fx.wobble.get(sl.t) ?? -1e9)) / 1000;
@@ -158,9 +138,9 @@ function updateTreeFruit(now) {
       e4.set(r.x + shake, r.y + sl.a, r.z + shake * 0.5);
       q4.setFromEuler(e4);
       m4.compose(v4.set(sl.x, sl.y, sl.z), q4, s4.copy(s).multiplyScalar(grow));
-      mesh.setMatrixAt(k, m4);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
+      pool.pushMatrix(m4);
+    }
+    pool.end();
   }
 }
 
@@ -246,7 +226,7 @@ function makeVisual(it) {
   root.add(itemModel(GIFTS[it.kind].id));
   root.rotation.y = ((it.id * 2.399) % (PI * 2)) - PI;
   let sparkle = null;
-  if (it.src === SRC.SHORE || it.src === SRC.PERCH) {
+  if (it.src === SRC.PERCH) {
     sparkle = new THREE.Sprite(sparkleMat);
     sparkle.position.y = 0.6;
     root.add(sparkle);
@@ -284,7 +264,7 @@ function updateItems(dt, now, target) {
         if (!v.vy) v.y = null;
       }
       y = v.y ?? gy;
-    } else if (it.src === SRC.SHORE && !reducedMotion) y += Math.sin(now / 700 + v.phase) * 0.02;
+    }
     v.root.position.set(x, y, z);
     if (v.slide < 1) {
       v.slide = Math.min(1, v.slide + dt / 0.18);
@@ -333,7 +313,7 @@ function dropEdit(t, x, z) {
 
 // What interacting could do here (see interactTarget in src/player/hands.js): for each item in reach { id, verb, at, item, run }
 // to pick it up, or { id, verb, at, item, blocked } when your hotbar has no room for it, and { id, verb, at, run } to
-// shake each ripe palm in reach. The pick, not distance alone, decides between them, so a shell behind you does not hide
+// shake each ripe palm in reach. The pick, not distance alone, decides between them, so a coconut behind you does not hide
 // the palm you face.
 const reachAt = new THREE.Vector3();
 export function giftTargets() {
@@ -345,6 +325,7 @@ export function giftTargets() {
   for (const it of gifts.items) {
     // Not one you already asked to take, nor a thrown one still in the air.
     if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
+    if (!carryable(GIFTS[it.kind])) continue; // a retired find an older build threw: not drawn, not picked up
     const pos = itemPos(it, reachAt);
     if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || Math.hypot(pos.x - p.x, pos.z - p.z) >= REACH) continue;
     const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
@@ -358,11 +339,20 @@ export function giftTargets() {
         },
       });
   }
+  // One shake, two drops: ripe fruit (the toy) and, while the palm holds any, logs (src/world/rules/sources.ts, which
+  // go straight onto your stack). The ball knocks fruit only: it never produces material (SETTLED).
   layout.trees.forEach((_, t) => {
     const { x, z } = trees[t];
-    if (!canDrop(gifts, t, world.tick) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
+    const ripe = canDrop(gifts, t, world.tick),
+      logs = rules.sources.charges(t) > 0;
+    if ((!ripe && !logs) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
     const at = new THREE.Vector3(x, groundHeight(x, z) + 1.7, z);
-    out.push({ id: `palm${t}`, verb: 'Shake', at, run: () => dropEdit(t, me.body.position.x, me.body.position.z) });
+    const run = () => {
+      if (ripe) dropEdit(t, me.body.position.x, me.body.position.z);
+      if (logs) submitEdit({ op: 'src.take', i: layout.trees[t].i, j: layout.trees[t].j, id: t });
+      fx.wobble.set(t, performance.now()); // the palm shakes at once, whatever falls out
+    };
+    out.push({ id: `palm${t}`, verb: 'Shake', at, run });
   });
   return out;
 }
@@ -372,17 +362,17 @@ const treeOfBody = new Map();
 function knockFruit() {
   if (!ball.mine || ball.held) return;
   if (!treeOfBody.size) trees.forEach((t, k) => k < layout.trees.length && treeOfBody.set(t.body, k));
-  for (const c of physics.contacts) {
-    const other = c.bi === ball.body ? c.bj : c.bj === ball.body ? c.bi : null;
-    const t = other ? treeOfBody.get(other) : undefined;
-    if (t === undefined || !canDrop(gifts, t, world.tick)) continue;
+  forEachContact(ball.body, (nx, ny, nz, other) => {
+    const t = treeOfBody.get(other);
+    if (t === undefined || !canDrop(gifts, t, world.tick)) return;
     const now = performance.now();
-    if (now - (knockedAt.get(t) ?? -1e9) < 1500) continue;
+    if (now - (knockedAt.get(t) ?? -1e9) < 1500) return;
     // Contacts are read after the bounce; disp.v still has the previous frame's (pre-bounce) velocity.
-    if (ball.body.velocity.length() < KNOCK_SPEED && ball.disp.v.length() < KNOCK_SPEED) continue;
+    const v = ball.body.velocity;
+    if (Math.hypot(v.x, v.y, v.z) < KNOCK_SPEED && ball.disp.v.length() < KNOCK_SPEED) return;
     knockedAt.set(t, now);
     dropEdit(t, ball.body.position.x, ball.body.position.z);
-  }
+  });
 }
 
 // `target` is the item id the interact prompt is on (see giftTargets), highlighted; null for none.

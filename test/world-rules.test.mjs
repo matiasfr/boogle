@@ -3,14 +3,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createSync } from '../src/world/sync.js';
-import { RULES, installRules } from '../src/world/rules/index.js';
+import { createSync } from '../src/world/sync.ts';
+import { RULES, installRules } from '../src/world/rules/index.ts';
 import { homeLand, fixture } from './helpers/land.mjs';
-import { giftIndex } from '../src/sim/gift-catalog.js';
-import { ON_GROUND, SRC } from '../src/sim/gifts.js';
-import { SEEDS } from '../src/world/rules/gifts.js';
+import { giftIndex } from '../src/sim/gift-catalog.ts';
+import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
+import { SEEDS } from '../src/world/rules/gifts.ts';
 
-const CANONICAL = ['terrain', 'mushrooms', 'gifts', 'proto', 'water']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -23,23 +23,6 @@ const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms
 // One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
 // A new rules module with ops adds its script here.
 const SCRIPTS = {
-  terrain({ rules }) {
-    const { n, mask, base } = rules.terrain.state;
-    let c = -1;
-    for (let k = 0; k < n * n && c < 0; k++) {
-      const i = (k / n) | 0,
-        j = k % n;
-      if ([-1, 0, 1].every((di) => [-1, 0, 1].every((dj) => mask[(i + di) * n + j + dj]))) c = k;
-    }
-    assert.ok(c >= 0, 'no sand on the home land');
-    const i = (c / n) | 0,
-      j = c % n;
-    return [
-      { op: 'dig', i, j },
-      { op: 'pile', i: i + 1, j },
-      { op: 'flatten', i, j, h: base[c] - 100 }, // below the ground: the bucket has room, it may be empty
-    ];
-  },
   mushrooms: () => [
     { op: 'mush.plant', i: 228, j: 200 },
     { op: 'mush.water', i: 228, j: 200 },
@@ -53,18 +36,24 @@ const SCRIPTS = {
     { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
-  water({ rules }) {
-    const { water, region } = rules.water;
-    const { w: W, h: H } = region;
-    let c = -1;
-    for (let k = 0; k < W * H && c < 0; k++) {
-      const wi = (k / H) | 0,
-        wj = k % H;
-      if (wi >= 2 && wj >= 2 && wi <= W - 3 && wj <= H - 3 && water.depth[k] >= 50) c = k;
-    }
-    assert.ok(c >= 0, 'no sea in the water region');
-    return [{ op: 'slosh', i: region.i0 + ((c / H) | 0), j: region.j0 + (c % H), amt: 100 }];
-  },
+  roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
+  piles: () => [
+    ({ rules }) => {
+      rules.piles.drop(212, 188, 0, 9); // a pile to start from, the same on both peers (nothing else makes one yet)
+      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 6 };
+    },
+    { op: 'pile.drop', i: 214, j: 188, n: 2 },
+  ],
+  sources: () => [{ op: 'src.take', i: 175, j: 200, id: 0 }],
+  bank: () => [{ op: 'bank.wake', i: 0, j: 0, ms: 3600000 }], // what a host that loaded an hour-old save measures
+  sites: () => [
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
+    ({ rules }) => {
+      rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
+      return { op: 'site.run', i: 0, j: 0, s: 0 };
+    },
+  ],
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
@@ -96,7 +85,7 @@ test('every op has an accepted edit, and the same edits give the same state on t
     b = peer();
   const fresh = a.s.stateHashes();
   const ops = new Set(play(a).map((e) => e.op));
-  assert.deepEqual([...ops], a.s.registry().ops, 'every registered op needs an edit in SCRIPTS');
+  assert.deepEqual([...ops].sort(), [...a.s.registry().ops].sort(), 'every registered op needs an edit in SCRIPTS');
   for (const e of play(b)) assert.ok(ops.has(e.op));
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   for (const m of RULES)
@@ -106,9 +95,8 @@ test('every op has an accepted edit, and the same edits give the same state on t
 test('a snapshot round-trips through JSON and stays in step for 50 ticks', () => {
   const a = peer();
   play(a);
-  a.rules.proto.proto.set({ mask: 0b101 }); // proto has no ops: the host's URL sets it
   const b = peer();
-  assert.notEqual(b.s.stateHashes().proto, a.s.stateHashes().proto);
+  assert.notDeepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
@@ -116,57 +104,6 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   tick(b, 50);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
-});
-
-// The first sand cell (3x3 all sand) inside the water region, as [i, j].
-function sandInWater({ rules }) {
-  const { n, mask } = rules.terrain.state;
-  const { i0, j0, w, h } = rules.water.region;
-  for (let i = i0 + 2; i < i0 + w - 2; i++)
-    for (let j = j0 + 2; j < j0 + h - 2; j++)
-      if ([-1, 0, 1].every((di) => [-1, 0, 1].every((dj) => mask[(i + di) * n + j + dj]))) return [i, j];
-  assert.fail('no sand in the water region');
-}
-
-test('flatten reaches the water sim: its ground matches the terrain, and a joiner stays in step', () => {
-  const a = peer();
-  const [i, j] = sandInWater(a);
-  const { state } = a.rules.terrain;
-  const { simTerrain, region } = a.rules.water;
-  const c = i * state.n + j;
-  for (const e of [
-    { op: 'dig', i, j },
-    { op: 'dig', i, j },
-    { op: 'flatten', i, j, h: state.base[c] + 20 }, // fills the pit back up from the bucket
-  ]) {
-    const before = Int16Array.from(state.delta);
-    assert.equal(a.s.submitEdit(e), true, `${e.op} was rejected`);
-    tick(a, 3);
-    assert.notDeepEqual(state.delta, before, `${e.op} changed nothing`);
-  }
-  for (let a0 = region.i0; a0 < region.i0 + region.w; a0++)
-    for (let b0 = region.j0; b0 < region.j0 + region.h; b0++) {
-      const g = a0 * state.n + b0;
-      assert.equal(simTerrain[(a0 - region.i0) * region.h + (b0 - region.j0)], state.base[g] + state.delta[g]);
-    }
-  const b = peer();
-  b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot())));
-  tick(a, 30);
-  tick(b, 30);
-  assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
-});
-
-test('saves from the 129-cell island (before 2026-10-29) load fresh sand and mushrooms', () => {
-  const a = peer(),
-    fresh = a.s.stateHashes();
-  a.s.loadSnapshot({
-    tick: 5,
-    seed: 1,
-    epochMs: 0,
-    data: { terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] }, mushrooms: [80, 60, 0] },
-  });
-  assert.equal(a.s.stateHashes().terrain, fresh.terrain);
-  assert.equal(a.s.stateHashes().mushrooms, fresh.mushrooms);
 });
 
 test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
@@ -182,7 +119,7 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
-  const allowed = /\/src\/(world\/rules\/[^/]+|world\/(grid|terrain-logic)|sim\/[^/]+)\.js$/;
+  const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
   const seen = new Set();
   const visit = (url) => {
     if (seen.has(url.href)) return;
@@ -197,5 +134,5 @@ test('rules import only pure modules (no three.js, DOM or constants.js)', () => 
       visit(new URL(spec, url));
     }
   };
-  visit(new URL('../src/world/rules/index.js', import.meta.url));
+  visit(new URL('../src/world/rules/index.ts', import.meta.url));
 });

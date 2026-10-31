@@ -1,20 +1,20 @@
 // Context ping (G, middle click, or the touch Ping button): drops a marker where you are aiming, "Ball!" near the
-// ball, "Dig!" on editable sand, "Look!" otherwise. Everyone sees it in the pinger's colour with their name for a few
+// ball, "Look!" otherwise. Everyone sees it in the pinger's colour with their name for a few
 // seconds, pinned to the screen edge with an arrow when it is off-screen. Sent as a reliable room message
-// { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.js). No scores, no sim state.
+// { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
 import { scene, camera, toScreen } from '../render/scene.js';
-import { COLORS, GRID_RES, CELL, HALF, SEA, reducedMotion } from '../constants.js';
+import { COLORS, HALF, SEA, reducedMotion } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
+import { clamp } from '../math.js';
 import { me, camForward } from '../player/player.js';
 import { ball } from '../physics/ball.js';
-import { net, remotes, onRoomReady } from '../netplay/net.js';
-import { terrain } from '../world/terrain-edits.js';
+import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.js';
 import { onFrame, onStart } from '../loop.js';
 import { registerAction } from '../player/controls.js';
-import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
+import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.ts';
 
 const TUNE = {
   lifeMs: 4000,
@@ -55,21 +55,16 @@ function aimPing() {
       }
       const hx = o.x + fwd.x * hi,
         hz = o.z + fwd.z * hi;
-      const gh = groundHeight(hx, hz);
-      const i = Math.round((hx + HALF) / CELL),
-        j = Math.round((HALF - hz) / CELL);
-      const dig =
-        gh > SEA + 0.05 && i >= 1 && j >= 1 && i < GRID_RES - 1 && j < GRID_RES - 1 && terrain.mask[i * GRID_RES + j];
-      return { x: hx, y: Math.max(gh, SEA), z: hz, k: dig ? 'dig' : 'look' };
+      return { x: hx, y: Math.max(groundHeight(hx, hz), SEA), z: hz, k: 'look' };
     }
     prev = s;
   }
   // Sky or beyond the island: a far point along the view, kept inside the bounds.
   const d = 40;
   return {
-    x: Math.max(-HALF + 2, Math.min(HALF - 2, o.x + fwd.x * d)),
+    x: clamp(o.x + fwd.x * d, -HALF + 2, HALF - 2),
     y: o.y + fwd.y * d,
-    z: Math.max(-HALF + 2, Math.min(HALF - 2, o.z + fwd.z * d)),
+    z: clamp(o.z + fwd.z * d, -HALF + 2, HALF - 2),
     k: 'look',
   };
 }
@@ -145,7 +140,7 @@ function chime(colorIdx, kind, own) {
   const { ctx, out } = a;
   const f = honkFreq(colorIdx) * 2;
   const t = ctx.currentTime + 0.005;
-  const notes = kind === 'ball' ? [f, f * 1.5] : kind === 'dig' ? [f * 1.25, f] : [f, f * 1.25];
+  const notes = kind === 'ball' ? [f, f * 1.5] : [f, f * 1.25];
   notes.forEach((hz, k) => {
     const o = ctx.createOscillator();
     o.type = 'sine';

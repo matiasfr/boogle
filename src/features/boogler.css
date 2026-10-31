@@ -1,4 +1,5 @@
-/* The Boogler: bouncy name tag over his head, and an edge pointer when he's off screen. */
+/* The Boogler: a small talk-bubble mark over his head at range, his name plate up close, and the same mark on the
+   screen edge when he's off screen. Quiet on purpose: he is a neighbour, not an objective. */
 .boogler-tag,
 .boogler-find {
   position: absolute;
@@ -6,64 +7,88 @@
   top: 0;
   will-change: transform;
 }
-.boogler-tag-bob {
+/* A column bottom-anchored over his head: his speech bubble stacks on whichever sign is showing. The hidden sign is
+   taken out of the flow so it doesn't push the bubble up. */
+.boogler-tag-stack {
   position: absolute;
   left: 0;
   bottom: 0;
   translate: -50% 0;
-  padding-bottom: 14px;
-  font: 400 24px/1 var(--font-display);
-  white-space: nowrap;
-  color: var(--paper);
-  -webkit-text-stroke: 2px rgba(19, 36, 63, 0.55);
-  paint-order: stroke fill;
-  text-shadow:
-    0 3px 0 rgba(19, 36, 63, 0.5),
-    0 0 14px rgba(19, 36, 63, 0.3);
-  transform-origin: 50% 100%;
-  animation: boogler-bounce 0.9s cubic-bezier(0.33, 0, 0.67, 1) infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.boogler-tag-bob::after {
-  content: '';
+.boogler-tag-sign {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.boogler-tag-mark,
+.boogler-tag-plate {
+  transform-origin: 50% 100%;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.boogler-tag:not(.near) .boogler-tag-plate,
+.boogler-tag.near .boogler-tag-mark {
   position: absolute;
   left: 50%;
   bottom: 0;
   translate: -50% 0;
-  border: 8px solid transparent;
-  border-top: 11px solid var(--paper);
-  border-bottom-width: 0;
-  filter: drop-shadow(0 2px 0 rgba(19, 36, 63, 0.5));
 }
-@keyframes boogler-bounce {
-  0%,
-  100% {
-    transform: translateY(-2px) scale(1);
-  }
-  45% {
-    transform: translateY(-13px) scale(0.97, 1.04);
-  }
-  88% {
-    transform: translateY(0) scale(1.06, 0.93);
-  }
+.boogler-tag-mark {
+  width: 22px;
+  height: 22px;
+  opacity: 0.85;
+  filter: drop-shadow(0 1px 2px rgba(19, 36, 63, 0.45));
+}
+.boogler-tag-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.boogler-tag-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 400 16px/1 var(--font-display);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  color: var(--paper);
+  text-shadow:
+    0 1px 2px rgba(19, 36, 63, 0.75),
+    0 0 8px rgba(19, 36, 63, 0.35);
+  opacity: 0;
+  transform: translateY(4px) scale(0.92);
+  pointer-events: none;
+}
+.boogler-tag.near .boogler-tag-plate {
+  opacity: 1;
+  transform: none;
+}
+.boogler-tag.near .boogler-tag-mark {
+  opacity: 0;
+  transform: scale(0.6);
 }
 .boogler-find-badge {
   position: absolute;
-  left: -23px;
-  top: -23px;
-  width: 46px;
-  height: 46px;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--glass);
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
   box-sizing: border-box;
 }
 .boogler-find-badge svg {
-  width: 36px;
-  height: 36px;
+  width: 18px;
+  height: 18px;
 }
 .boogler-find-arrow {
   position: absolute;
@@ -75,53 +100,39 @@
 .boogler-find-arrow::before {
   content: '';
   position: absolute;
-  left: 26px;
-  top: -9px;
-  border: 9px solid transparent;
-  border-left: 13px solid var(--paper);
+  left: 18px;
+  top: -5px;
+  border: 5px solid transparent;
+  border-left: 7px solid rgba(255, 255, 255, 0.85);
   border-right-width: 0;
-  filter: drop-shadow(0 1px 1px rgba(19, 36, 63, 0.6));
-  animation: boogler-nudge 0.9s ease-in-out infinite;
-}
-@keyframes boogler-nudge {
-  50% {
-    transform: translateX(4px);
-  }
+  filter: drop-shadow(0 1px 1px rgba(19, 36, 63, 0.5));
 }
 .boogler-find-dist {
   position: absolute;
   left: 0;
-  top: 25px;
+  top: 17px;
   translate: -50% 0;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--glass);
-  font: 700 11px/1.3 var(--font-body);
+  font: 700 10px/1.2 var(--font-body);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  color: var(--paper);
+  opacity: 0.8;
+  text-shadow: 0 1px 2px rgba(19, 36, 63, 0.7);
 }
 @media (prefers-reduced-motion: reduce) {
-  .boogler-tag-bob,
-  .boogler-find-arrow::before {
-    animation: none;
+  .boogler-tag-mark,
+  .boogler-tag-plate {
+    transition: none;
   }
 }
 
-/* Friendship hearts under his name, and his speech bubble above it. */
-.boogler-tag-bob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+/* Friendship hearts under his name, and his speech bubble above the tag. */
 .boogler-tag-bond {
-  margin-top: 2px;
-  font: 800 13px/1 var(--font-body);
+  margin-top: 3px;
+  font: 800 10px/1 var(--font-body);
   letter-spacing: 1px;
-  color: #ff5d8f;
-  -webkit-text-stroke: 0;
-  text-shadow:
-    0 1px 0 rgba(19, 36, 63, 0.6),
-    0 0 6px rgba(19, 36, 63, 0.35);
+  color: #ff7aa5;
+  text-shadow: 0 1px 2px rgba(19, 36, 63, 0.7);
 }
 .boogler-tag-bond:empty {
   display: none;
@@ -131,10 +142,7 @@
   color: #ffd2c4;
 }
 .boogler-say {
-  position: absolute;
-  left: 0;
-  bottom: 58px;
-  translate: -50% 0;
+  margin-bottom: 8px;
   transform-origin: 50% 100%;
 }
 .boogler-say-text {
@@ -182,9 +190,11 @@
   justify-content: center;
   padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(19, 36, 63, 0) 55%, rgba(19, 36, 63, 0.28));
+  pointer-events: none; /* the game keeps playing around the card */
 }
 .bd-wrap {
   position: relative;
+  pointer-events: auto;
   width: min(580px, 100%);
 }
 .bd-card {
@@ -468,6 +478,26 @@ body.gamepad .bd-opt:focus {
 body.touch .bd-opt kbd,
 body.gamepad .bd-opt kbd {
   display: none;
+}
+/* On a phone the left 45% of the screen is the move stick (src/player/input.js): keep the card off it, so you can walk
+   away mid-talk. Landscape: to the right. Portrait: up top, under the hotbar. */
+@media (orientation: landscape) {
+  body.touch .bd {
+    justify-content: flex-end;
+  }
+  body.touch .bd-wrap {
+    width: min(460px, 55vw - 16px);
+  }
+}
+@media (orientation: portrait) {
+  body.touch .bd {
+    align-items: flex-start;
+    padding-top: calc(118px + env(safe-area-inset-top, 0px));
+    background: none;
+  }
+  body.touch .bd-card {
+    max-height: 46vh;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .boogler-say.pop,

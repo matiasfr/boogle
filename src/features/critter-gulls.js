@@ -1,16 +1,16 @@
-// Gulls (prototype flag `gulls`), cosmetic tier: a few gulls idle and peck on the sand, burst into the air when a
+// Gulls, cosmetic tier: a few gulls idle and peck on the sand, burst into the air when a
 // player runs at them or the ball lands nearby, circle for a while and resettle somewhere quiet. Two instanced meshes
 // (bodies, wings). Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.js';
 import { scene } from '../render/scene.js';
+import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
-import { remotes } from '../netplay/net.js';
-import { proto } from '../adapters/proto-flags.js';
+import { remotes } from '../netplay/net.ts';
 
 const GULLS = {
   count: 7,
@@ -24,18 +24,15 @@ const GULLS = {
 
 const bodyGeo = new THREE.SphereGeometry(0.17, 8, 6).scale(1, 0.8, 2.1);
 const wingGeo = new THREE.PlaneGeometry(0.62, 0.24).translate(0.31, 0, 0).rotateX(-Math.PI / 2);
-const bodies = new THREE.InstancedMesh(
-  bodyGeo,
-  new THREE.MeshStandardMaterial({ color: '#f4f6f8', roughness: 0.8 }),
-  GULLS.count,
-);
-const wings = new THREE.InstancedMesh(
+const bodyPool = createPool(bodyGeo, new THREE.MeshStandardMaterial({ color: '#f4f6f8', roughness: 0.8 }), GULLS.count);
+const wingPool = createPool(
   wingGeo,
   new THREE.MeshStandardMaterial({ color: '#c9d1da', roughness: 0.8, side: THREE.DoubleSide }),
   GULLS.count * 2,
 );
+const bodies = bodyPool.mesh,
+  wings = wingPool.mesh;
 for (const m of [bodies, wings]) {
-  m.frustumCulled = false;
   m.visible = false;
   m.castShadow = true;
   scene.add(m);
@@ -89,20 +86,23 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   one = new THREE.Vector3(1, 1, 1),
-  mir = new THREE.Vector3(-1, 1, 1),
+  UP = new THREE.Vector3(0, 1, 0),
+  sc = new THREE.Vector3(),
   v3 = new THREE.Vector3(),
   off = new THREE.Vector3();
 let lastBallY = 0;
 
 onFrame(
   ({ dt, elapsed }) => {
-    const on = proto.on('gulls') && G.length > 0;
+    const on = G.length > 0;
     bodies.visible = wings.visible = on;
     if (!on || dt <= 0) return;
     const th = threats();
     const bp = ball.mesh.position;
     const ballLanding = lastBallY - bp.y > 0.03 && bp.y - groundHeight(bp.x, bp.z) < 0.7;
     lastBallY = bp.y;
+    bodyPool.begin();
+    wingPool.begin();
     for (let k = 0; k < G.length; k++) {
       const g = G[k];
       g.t -= dt;
@@ -167,21 +167,20 @@ onFrame(
       }
       const pos = v3.set(g.x, g.y + 0.16, g.z);
       q.setFromEuler(e.set(0, g.yaw, 0));
-      bodies.setMatrixAt(k, m4.compose(pos, q, one));
+      bodyPool.pushMatrix(m4.compose(pos, q, one));
       // wings: flap when flying, folded along the body when idle
       const flying = g.state !== 'idle';
       const beat = flying ? Math.sin(elapsed * 13 + k) * 0.7 * g.flap : -0.15;
       const span = flying ? 1 : 0.45;
       for (const side of [1, -1]) {
         q.setFromEuler(e.set(0, g.yaw, side * beat, 'YXZ'));
-        off.set(0.1 * side, 0.05, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.yaw);
-        const scale = side > 0 ? one : mir;
-        m4.compose(v3.copy(pos).add(off), q, scale).multiply(new THREE.Matrix4().makeScale(span, 1, 1));
-        wings.setMatrixAt(k * 2 + (side > 0 ? 0 : 1), m4);
+        off.set(0.1 * side, 0.05, 0).applyAxisAngle(UP, g.yaw);
+        m4.compose(v3.copy(pos).add(off), q, sc.set(side * span, 1, 1));
+        wingPool.pushMatrix(m4);
       }
     }
-    bodies.instanceMatrix.needsUpdate = true;
-    wings.instanceMatrix.needsUpdate = true;
+    bodyPool.end();
+    wingPool.end();
   },
   { phase: 'update' },
 );

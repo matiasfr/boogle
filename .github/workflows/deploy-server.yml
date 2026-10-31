@@ -7,7 +7,15 @@ name: Deploy server to Fly.io
 on:
   push:
     branches: [main]
-    paths: ['server/**', '.github/workflows/deploy-server.yml']
+    paths:
+      - 'server/**'
+      - 'src/world/**'
+      - 'src/sim/**'
+      - 'src/net/ids.ts'
+      - 'src/net/ws-wire.ts'
+      - 'package.json'
+      - '.dockerignore'
+      - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
 
 permissions:
@@ -35,6 +43,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Build the image (from the repo root)
+        working-directory: .
+        run: docker build -f server/Dockerfile .
       - name: Check for FLY_API_TOKEN
         id: token
         env:
@@ -52,9 +63,6 @@ jobs:
     if: needs.test.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: server
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
@@ -65,9 +73,10 @@ jobs:
         id: app
         env:
           FLY_APP: ${{ vars.FLY_APP }}
-        run: echo "name=${FLY_APP:-$(sed -n 's/^app *= *"\(.*\)".*/\1/p' fly.toml)}" >> "$GITHUB_OUTPUT"
-      # One machine: the volume is per machine and signaling state lives in memory.
-      - run: flyctl deploy --remote-only --ha=false --app "$APP"
+        run: echo "name=${FLY_APP:-$(sed -n 's/^app *= *"\(.*\)".*/\1/p' server/fly.toml)}" >> "$GITHUB_OUTPUT"
+      # One machine: the volume is per machine and signaling state lives in memory. Built from the repo root: the
+      # image carries src/world, src/sim and the shared net modules (server/Dockerfile).
+      - run: flyctl deploy . --config server/fly.toml --dockerfile server/Dockerfile --remote-only --ha=false --app "$APP"
         env:
           APP: ${{ steps.app.outputs.name }}
       - name: Wait for /healthz

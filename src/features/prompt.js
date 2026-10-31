@@ -1,17 +1,17 @@
 // The interact prompt: what E (pad B, the touch action button) would act on, marked where it is with the button and the
-// verb, "[E] Pick up" floating over a shell, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
+// verb, "[E] Pick up" floating over a mango, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
 // itself; see registerInteractable in src/player/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
 import { onFrame } from '../loop.js';
 import { toScreen } from '../render/scene.js';
 import { me } from '../player/player.js';
-import { interactTarget, touchTarget } from '../player/hands.js';
+import { interactTarget } from '../player/hands.js';
 import { dialogue } from '../boogler/dialogue.js';
-import { glyph, inputKind } from '../player/glyphs.js';
+import { glyph } from '../player/glyphs.js';
 
 const onScreen = { x: 0, y: 0, behind: false };
-const ui = { root: null, html: '', id: '', kind: '', show: null, showId: '' };
+const ui = { root: null, html: '', id: '', show: null, showId: '' };
 
 const chip = (t) =>
   `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph('interact')}<span>${t.verb}</span></span>` +
@@ -28,9 +28,7 @@ function build() {
 onFrame(
   () => {
     if (!ui.root) build();
-    const kind = inputKind();
-    const pick = kind === 'touch' ? touchTarget : interactTarget; // on touch, what the main button would act on
-    const t = me.entered && !me.charging && !dialogue.open ? pick() : null;
+    const t = me.entered && !me.charging && !dialogue.open ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');
@@ -44,9 +42,8 @@ onFrame(
       return;
     }
     const inner = ui.root.firstChild;
-    if (html !== ui.html || kind !== ui.kind) {
+    if (html !== ui.html) {
       ui.html = html;
-      ui.kind = kind;
       inner.innerHTML = html;
     }
     if (id !== ui.id) {

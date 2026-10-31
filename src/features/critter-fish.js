@@ -1,20 +1,29 @@
-// Fish (prototype flag `fish`), cosmetic tier: a school that lives in water deep enough to swim in (the sea, the
-// flooded beach, a channel or pool players dug: it reads the shared water surface), with simple boids and a
+// Fish, cosmetic tier: a school that lives in water deep enough to swim in (the sea or the
+// cave pond: it reads the shared water surface), with simple boids and a
 // steer toward deeper water; it scatters when the ball splashes in or a player swims through. One instanced mesh, the
-// tail wiggle is in the vertex shader. Local Math.random is fine: nothing here is read by the sim.
+// tail wiggle is in the material's positionNode. Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (the island is alive) and 2 (the ball scares fish). With 36 fish, plain pairwise boids is cheaper
 // than bucketing them on the cell grid.
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  positionLocal,
+  positionGeometry,
+  instancedDynamicBufferAttribute,
+  instanceIndex,
+  float,
+  sin,
+  max,
+  time,
+} from 'three/tsl';
 import { onFrame, onStart } from '../loop.js';
 import { scene } from '../render/scene.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
-import { remotes } from '../netplay/net.js';
-import { waterMat } from '../render/water-render.js';
-import { patchMaterial } from '../render/material-patch.js';
-import { proto } from '../adapters/proto-flags.js';
+import { remotes } from '../netplay/net.ts';
+import { patchNode } from '../render/material-patch.js';
+import { createPool } from '../render/instances.ts';
 
 const FISH = {
   count: 36,
@@ -25,25 +34,34 @@ const FISH = {
   scare: 3.5, // m from a swimmer or a splashing ball
 };
 
+const PROBES = [
+  [1.5, 0],
+  [-1.5, 0],
+  [0, 1.5],
+  [0, -1.5],
+];
 const depthAt = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
 const geo = new THREE.ConeGeometry(0.11, 0.48, 5).rotateX(Math.PI / 2); // points along +z
-const mat = new THREE.MeshStandardMaterial({
+const mat = new THREE.MeshStandardNodeMaterial({
   color: '#ff6a1a',
   emissive: '#7a2a00',
   roughness: 0.6,
   flatShading: true,
 });
-patchMaterial(mat, 'fishwiggle', (sh) => {
-  sh.uniforms.uT = waterMat.uniforms.uTime;
-  sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nuniform float uT;')
-    .replace(
-      '#include <begin_vertex>',
-      '#include <begin_vertex>\ntransformed.x += sin(uT * 13.0 + float(gl_InstanceID) * 1.7) * max(0.0, -position.z) * 0.35;',
-    );
-});
-const fish = new THREE.InstancedMesh(geo, mat, FISH.count);
-fish.frustumCulled = false;
+const pool = createPool(geo, mat, FISH.count);
+const fish = pool.mesh;
+// positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space: column
+// 0 of its instance matrix, read through a view on the same GPU buffer (how three reads the matrix itself).
+const side = instancedDynamicBufferAttribute(new THREE.InterleavedBufferAttribute(fish.instanceMatrix, 3, 0));
+patchNode(mat, 'positionNode', (prev) =>
+  (prev ?? positionLocal).add(
+    side.mul(
+      sin(time.mul(13).add(float(instanceIndex).mul(1.7)))
+        .mul(max(0, positionGeometry.z.negate()))
+        .mul(0.35),
+    ),
+  ),
+);
 fish.visible = false;
 scene.add(fish);
 
@@ -71,19 +89,15 @@ onStart(() => {
   for (const f of P) respawn(f);
 });
 
-const m4 = new THREE.Matrix4(),
-  q = new THREE.Quaternion(),
-  e = new THREE.Euler(),
-  one = new THREE.Vector3(1, 1, 1),
-  pos = new THREE.Vector3();
 let lastBallY = 0;
+const scares = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
 onFrame(
   ({ dt }) => {
-    fish.visible = proto.on('fish') && !!home;
+    fish.visible = !!home;
     if (!fish.visible || dt <= 0) return;
     // scares: a ball that just hit the water near the surface, players swimming
-    const scares = [];
+    scares.length = 0;
     const bp = ball.mesh.position;
     const bs = waterField.surfaceAt(bp.x, bp.z);
     if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
@@ -92,14 +106,16 @@ onFrame(
     for (const r of remotes.values()) if (r.state === 2) scares.push(r.target);
     let cx = 0,
       cz = 0;
-    for (const f of P) {
-      cx += f.x / FISH.count;
-      cz += f.z / FISH.count;
+    for (let k = 0; k < P.length; k++) {
+      cx += P[k].x / FISH.count;
+      cz += P[k].z / FISH.count;
     }
-    for (const f of P) {
+    for (let k = 0; k < P.length; k++) {
+      const f = P[k];
       let ax = (cx - f.x) * 0.15 + (Math.random() - 0.5) * 2,
         az = (cz - f.z) * 0.15 + (Math.random() - 0.5) * 2;
-      for (const o of P) {
+      for (let m = 0; m < P.length; m++) {
+        const o = P[m];
         if (o === f) continue;
         const dx = f.x - o.x,
           dz = f.z - o.z,
@@ -112,7 +128,8 @@ onFrame(
           az += (o.vz - f.vz) * 0.05;
         }
       }
-      for (const s of scares) {
+      for (let m = 0; m < scares.length; m++) {
+        const s = scares[m];
         const dx = f.x - s.x,
           dz = f.z - s.z,
           d = Math.hypot(dx, dz);
@@ -128,12 +145,9 @@ onFrame(
         let best = -1e9,
           bx = 0,
           bz = 0;
-        for (const [px, pz] of [
-          [1.5, 0],
-          [-1.5, 0],
-          [0, 1.5],
-          [0, -1.5],
-        ]) {
+        for (let m = 0; m < PROBES.length; m++) {
+          const px = PROBES[m][0],
+            pz = PROBES[m][1];
           const d = depthAt(f.x + px, f.z + pz);
           if (d > best) {
             best = d;
@@ -160,12 +174,13 @@ onFrame(
       if (surf - g < 0.12 || Math.hypot(f.x - home.x, f.z - home.z) > 80) respawn(f); // stranded or lost
       f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
     }
+    pool.begin();
     for (let k = 0; k < FISH.count; k++) {
-      const f = P[k];
-      q.setFromEuler(e.set(0, Math.atan2(f.vx, f.vz), 0));
-      fish.setMatrixAt(k, m4.compose(pos.set(f.x, f.y, f.z), q, one));
+      const f = P[k],
+        h = Math.atan2(f.vx, f.vz) / 2;
+      pool.push(f.x, f.y, f.z, 0, Math.sin(h), 0, Math.cos(h), 1, 1, 1);
     }
-    fish.instanceMatrix.needsUpdate = true;
+    pool.end();
   },
   { phase: 'update' },
 );

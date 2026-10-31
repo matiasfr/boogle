@@ -14,7 +14,7 @@
 //     the rest describes the control for the guide, see below; guide: false keeps it off the guide (it is covered by
 //     another row, or has nothing to show)
 //   describeControl(id, { label, detail, keys, pad, touch, group, order, context })
-//     a display-only row for a control with no pad action of its own (move, look, hotbar digits, dig, dive). It never
+//     a display-only row for a control with no pad action of its own (move, look, hotbar digits). It never
 //     claims a slot and never dispatches. pad may be a slot, an array of slots, or a stick: 'ls' / 'rs'. Describing
 //     the same id again replaces it.
 //   listControls()     every action (guide !== false) and described control as plain rows, sorted by GROUPS index,
@@ -34,14 +34,16 @@
 // A control with keys or touch must also have a pad binding (AGENTS.md: every control is playable on a gamepad).
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
-// A key with no pad action of its own (hotbar digits, dive) binds through onKey(codes, { down, up }), same guard.
+// A key with no pad action of its own (hotbar digits) binds through onKey(codes, { down, up }), same guard.
 //
-// To layer behaviour onto another module's action (feel.js turns pile into a dive while swimming), wrap it from
+// To layer behaviour onto another module's action, wrap it from
 // onStart, once it is registered; never overwrite its handlers by hand:
 //   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
 //                                  none) and decides whether to call it; the last wrap runs first
+//   triggerAction(id, edge)        presses ('down') or releases ('up') an action, wraps included, for an input route
+//                                  the registry does not bind itself (the mouse button in src/player/input.js)
 //   actionById(id)                 the registered action or null; for dev tooling and tests
-// Both log a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
+// Each logs a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
 // wraps.
 
 // Index = button index in the W3C "standard" gamepad mapping.
@@ -87,7 +89,6 @@ export const GROUPS = [
   ['camera', 'Camera'],
   ['ball', 'The ball'],
   ['hands', 'Hands'],
-  ['sand', 'Sand'],
   ['friends', 'Friends'],
   ['menu', 'Menu'],
 ];
@@ -198,7 +199,7 @@ function touchButton(action, { label, className }) {
 
 export function registerAction(
   id,
-  { pad, key, label, detail, keys, touch, group, order, guide = true, down = null, up = null, held = null },
+  { pad, key, label, detail, keys, touch, group, order, context, guide = true, down = null, up = null, held = null },
 ) {
   if (!PAD.includes(pad)) {
     console.warn(`[controls] ${id}: unknown pad slot "${pad}"`);
@@ -222,6 +223,7 @@ export function registerAction(
     touch: touchLabel(touch),
     group,
     order,
+    context, // like describeControl's: a situation it only applies in, so it may share a key
     guide,
     down,
     up,
@@ -292,12 +294,19 @@ export function wrapAction(id, wrap) {
   return true;
 }
 
+export const triggerAction = (id, edge) => actionById(id, 'triggerAction')?.[edge]?.();
+
 export const actionForSlot = (pad) => bySlot.get(pad) || null;
-export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to, for glyphs
-// While a modal (the Boogler's talk box) takes the pad, src/features/gamepad.js sends it each new press by slot and
-// runs no action. setPadModal(null) hands the pad back.
+export const slotFor = (id) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to
+// While a modal (the pause view) takes the pad, src/features/gamepad.js sends it each new press by slot and runs no
+// action. setPadModal(null) hands the pad back.
 let modal = null;
 export const setPadModal = (fn) => (modal = fn);
 export const padModal = () => modal;
+// Lighter: something on screen that the game keeps playing behind (the Boogler's talk box) takes just these slots'
+// new presses, and the stick and every other button keep working. setPadGrab(null) lets go.
+let grab = null;
+export const setPadGrab = (fn, slots = []) => (grab = fn ? { fn, slots } : null);
+export const padGrab = () => grab;
 export const listActions = () => PAD.map((p) => bySlot.get(p)).filter(Boolean);
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));

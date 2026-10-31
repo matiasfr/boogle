@@ -43,19 +43,16 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 ## Rules
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
-  quantized to centimetres once (`ground.js`), so every client builds the same heightfield. Node tests build it with
-  the same code (`test/helpers/land.mjs`, `test/land.test.mjs`).
-- **Home is special.** The shared water sim, sand digging and beach gifts only run inside `HOME` (`src/constants.js`):
-  the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
-  exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME` on ground above the
-  sand band (`EDIT_MAX_CM` in `src/world/terrain-logic.js`, 1.6 m), where nobody can dig under it; the lighthouse
+  quantized to centimetres once (`ground.js`), so every client builds the same heightfield (`npm run island-map` composes it the
+  same way in Node, `dev/island/map.mjs`).
+- **Home is special.** `HOME` (`src/world/grid.ts`) is the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
+  exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME`; the lighthouse
   hill and the west end of the windmill farm do.
 - **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid (before
-  2026-10-29) are no longer migrated: their sand and mushrooms load fresh, and their loose items (gifts saved without `v`)
+  2026-10-29) are no longer migrated: their mushrooms load fresh, and their loose items (gifts saved without `v`)
   stay at their old cells, now open sea in the far corner, until they rot away. A future grid change needs a new state
   version and a migration for every state that stores cells (`registerState(key, { version, migrate })`,
   `src/world/README.md`).
-- Stamps change the base ground, not player edits: sand dug or piled on top keeps its depth.
 
 ## Underground POIs (the caves)
 
@@ -68,6 +65,8 @@ a few hooks anyone can reuse:
   `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.
   Bodies moved by code (remote players, the Boogler, windmill sails) use `NOT_SCENERY` and skip static stuff entirely.
 - `groundProbe.under` (`src/physics/physics.js`): the floor under a point, for code that would otherwise read the terrain.
+- `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
+  (which puts bodies under the terrain back on top) leaves that area to your own safety net.
 - `camConstraints` (`src/player/player.js`): keep the camera somewhere special (inside the tunnels).
 - `atmosphere.underground` (`src/render/sky.js`): 0..1, dims the sky light and closes the fog in.
 

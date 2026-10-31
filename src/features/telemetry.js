@@ -4,16 +4,19 @@
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
 //
-// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`, so "how many joins
-// fail without TURN" (PLAN Phase 1) has an answer. Whether a relay candidate was actually gathered or used is not
-// visible from here without reaching into peer-room's RTCPeerConnections, so it is not reported. They also say whether
-// the room was running mixed builds (`mixedBuilds`, src/netplay/builds.js; a yes or no, never the build ids).
+// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server), `role` (host, client, or server
+// when the server hosts the room) and `transport` (src/net/room.ts). A good join also says how many of its links went
+// through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is one that would have failed
+// without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
+// slowest link's round trip; a non-owner sees the ball about rtt (owner -> host -> them) + INTERP_MS late. They also
+// say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
-import { net, getRoomId, onNetState } from '../netplay/net.js';
-import { world, onDesync, onSnapFail } from '../world/sync.js';
-import { mixedBuilds } from '../netplay/builds.js';
-import { coarseUa, firstFrame, scrub } from '../netplay/report-format.js';
+import { net, getRoomId, onNetState } from '../netplay/net.ts';
+import { world, onDesync, onSnapFail } from '../world/sync.ts';
+import { mixedBuilds } from '../netplay/builds.ts';
+import { coarseUa, firstFrame, scrub } from '../netplay/report-format.ts';
+import { gfx } from '../render/scene.js';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
@@ -80,7 +83,13 @@ if (SERVER) {
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
-  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds() });
+  const base = () => ({
+    role,
+    transport: net.room?.transport ?? null,
+    hadTurn: net.turn,
+    mixedBuilds: mixedBuilds(),
+    gfx: gfx(),
+  });
   const armStuck = () => {
     clearTimeout(stuckTimer);
     stuckTimer = setTimeout(() => {
@@ -91,7 +100,7 @@ if (SERVER) {
   };
   if (net.state === 'connecting') armStuck();
   onNetState((s, prev) => {
-    if (net.room) role = net.room.isHost() ? 'host' : 'client';
+    if (net.room) role = net.room.transport === 'server' ? 'server' : net.room.isHost() ? 'host' : 'client';
     if (s !== 'connecting') clearTimeout(stuckTimer);
     if (s === 'connecting' && prev !== 'connecting') {
       since = performance.now();
@@ -100,8 +109,14 @@ if (SERVER) {
       if (!okSent) {
         okSent = true;
         const ms = Math.round(performance.now() - since); // ms spent 'connecting'
-        const at = { ms, retries: failed, ...base() };
-        setTimeout(() => report('connect', { result: 'ok', ...at, mixedBuilds: mixedBuilds() }), SETTLE_MS);
+        const at = { ms, retries: failed };
+        setTimeout(async () => {
+          const links = (await net.room?.linkStats?.().catch(() => null)) ?? [];
+          const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
+          const path = { links: links.length, relayed: links.filter((l) => l.relay).length };
+          if (rtts.length) path.rttMs = Math.max(...rtts);
+          report('connect', { result: 'ok', ...at, ...path, ...base() });
+        }, SETTLE_MS);
       }
       wasLive = true;
     } else if (s === 'solo') {

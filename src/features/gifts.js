@@ -1,5 +1,5 @@
-// Island gifts (src/adapters/gifts.js): fruit on the palms, things washing up on the beach, things players threw, and the
-// frisbee on the lighthouse deck.
+// Island gifts (src/adapters/gifts.js): fruit on the palms, things players threw, and the frisbee on the lighthouse
+// deck.
 import { onFrame, onStart } from '../loop.js';
 import { gifts, createGifts3d, updateGifts, giftTargets } from '../adapters/gifts.js';
 import { interactTarget, registerInteractable } from '../player/hands.js';

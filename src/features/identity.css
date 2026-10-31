@@ -1,0 +1,16 @@
+/* "second tab: playing as a guest" (src/features/identity.ts), a quiet line under the top edge. */
+.guest-note {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(20, 30, 40, 0.55);
+  color: #fff;
+  font:
+    600 12px/1.3 system-ui,
+    sans-serif;
+  pointer-events: none;
+  z-index: 5;
+}

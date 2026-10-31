@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export { clamp, lerp, smoothstep, hash2, valueNoise, fbm } from './math-pure.js';
 export const r2 = (v) => Math.round(v * 100) / 100;
 export const r3 = (v) => Math.round(v * 1000) / 1000;
@@ -10,17 +8,6 @@ export function angleLerp(a, b, t) {
   return a + d * t;
 }
 
-export { mulberry32 } from './sim/rng.js';
+export { mulberry32 } from './sim/rng.ts';
 
-export function srgbVec(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
-}
-
-export function sanitizeName(s) {
-  return String(s ?? '')
-    .replace(/[\p{Cc}\p{Cf}]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 16);
-}
+export { cleanName as sanitizeName } from './sim/roster.ts'; // one name rule, also the roster's (lockstep)

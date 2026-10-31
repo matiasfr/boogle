@@ -1,16 +1,17 @@
 // Windmill farm: three rustic wooden windmills whose sails turn with the shared clock (everyone sees the same sails),
 // plus hay bales and a fence along the track. The sails are solid: they bonk players and bat the ball about.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { groundHeight } from '../../adapters/terrain.js';
 import { scene } from '../../render/scene.js';
-import { world, groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.js';
+import { groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.js';
+import { createBody, addBody, onPreStep, BODY } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.js';
 import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.js';
-import { sharedSeconds } from '../../netplay/shared-time.js';
+import { sharedSeconds } from '../../netplay/shared-time.ts';
 import site, { MILLS, TRACK } from './site.js';
+import { freezeStatic } from '../../render/instances.ts';
 
 const TOWER_H = 7.2;
 const R_BOTTOM = 2.5,
@@ -21,7 +22,7 @@ const SAIL_LEN = 7.2;
 const SPIN = 0.55; // rad/s
 
 const frame = siteFrame(site);
-const mills = []; // { group, rotor, body, axis, phase }
+const mills = []; // { rotor, body, base, axis, phase }
 
 const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
@@ -147,28 +148,35 @@ function build() {
     scene.add(rotor);
 
     // Colliders: the tower (static) and the four sails (kinematic, spun to match the mesh every step).
-    const tower = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-    tower.addShape(new CANNON.Cylinder(R_TOP, R_BOTTOM + 0.4, TOWER_H + PLINTH_H, 8), new CANNON.Vec3(0, 0, 0));
-    tower.addShape(new CANNON.Sphere(R_TOP + 0.5), new CANNON.Vec3(0, (TOWER_H + PLINTH_H) / 2, 0));
-    tower.position.set(x, y + (TOWER_H + PLINTH_H) / 2, z);
-    world.addBody(tower);
-    const body = new CANNON.Body({
-      mass: 0,
-      type: CANNON.Body.KINEMATIC,
+    addBody(
+      createBody({
+        material: groundMat,
+        group: GROUP.SCENERY,
+        position: { x, y: y + (TOWER_H + PLINTH_H) / 2, z },
+        shapes: [
+          { kind: 'cylinder', rTop: R_TOP, rBottom: R_BOTTOM + 0.4, h: TOWER_H + PLINTH_H, segments: 8 },
+          { kind: 'sphere', r: R_TOP + 0.5, offset: { x: 0, y: (TOWER_H + PLINTH_H) / 2, z: 0 } },
+        ],
+      }),
+    );
+    const body = createBody({
+      type: BODY.KINEMATIC,
       material: groundMat,
-      collisionFilterMask: NOT_SCENERY,
+      mask: NOT_SCENERY,
+      position: hub,
+      shapes: [0, 1, 2, 3].map((a) => {
+        const ang = (a / 4) * Math.PI * 2;
+        return {
+          kind: 'box',
+          hx: SAIL_LEN * 0.42,
+          hy: 0.75,
+          hz: 0.15,
+          offset: { x: Math.cos(ang) * SAIL_LEN * 0.55, y: Math.sin(ang) * SAIL_LEN * 0.55, z: 0 },
+          rotation: { x: 0, y: 0, z: Math.sin(ang / 2), w: Math.cos(ang / 2) },
+        };
+      }),
     });
-    for (let a = 0; a < 4; a++) {
-      const ang = (a / 4) * Math.PI * 2;
-      const sq = new CANNON.Quaternion().setFromEuler(0, 0, ang);
-      body.addShape(
-        new CANNON.Box(new CANNON.Vec3(SAIL_LEN * 0.42, 0.75, 0.15)),
-        new CANNON.Vec3(Math.cos(ang) * SAIL_LEN * 0.55, Math.sin(ang) * SAIL_LEN * 0.55, 0),
-        sq,
-      );
-    }
-    body.position.set(hub.x, hub.y, hub.z);
-    world.addBody(body);
+    addBody(body);
     mills.push({
       rotor,
       body,
@@ -188,10 +196,14 @@ function build() {
     const [x, z] = frame.toWorld(lx, lz);
     const y = groundHeight(x, z);
     put(staticParts, bale, x, y + 0.72, z, 1, 1, 1, '#d6b35d', new THREE.Euler(Math.PI / 2, rng() * 3, 0));
-    const b = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-    b.addShape(new CANNON.Sphere(0.78));
-    b.position.set(x, y + 0.72, z);
-    world.addBody(b);
+    addBody(
+      createBody({
+        material: groundMat,
+        group: GROUP.SCENERY,
+        position: { x, y: y + 0.72, z },
+        shapes: [{ kind: 'sphere', r: 0.78 }],
+      }),
+    );
   }
   // Fences either side of the track where it runs through the wheat (local z 13 to 22.5).
   const [[ax, az], [bx, bz]] = TRACK.slice(1);
@@ -222,8 +234,9 @@ function build() {
   const statics = new THREE.Mesh(mergeParts(staticParts), mat);
   statics.castShadow = statics.receiveShadow = true;
   scene.add(statics);
+  freezeStatic(statics); // never moves: no per-frame matrix work
 
-  world.addEventListener('preStep', spinBodies);
+  onPreStep(spinBodies);
 }
 
 const sailAngle = (t, phase) => SPIN * t + 0.35 * Math.sin(t * 0.05 + phase) + phase;

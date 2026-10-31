@@ -22,8 +22,7 @@ footage that shouldn't be committed.
 
 ## 1. Record: `npm run clip`
 
-Options: `--gif` (palette GIF next to each mp4), `--size 1280x720`, `--fps 30`, `--sw` (software GL instead of the
-GPU), `--root <checkout>` (serve another checkout, e.g. `git worktree add <dir> origin/<branch>` with `node_modules`
+Options: `--gif` (palette GIF next to each mp4), `--size 1280x720`, `--fps 30`, `--root <checkout>` (serve another checkout, e.g. `git worktree add <dir> origin/<branch>` with `node_modules`
 symlinked; the harness itself still comes from this checkout).
 
 Clips are smooth whatever the render speed: the page clock is faked and each frame advances it by exactly 1/fps
@@ -84,7 +83,7 @@ export default {
       caption: { title: 'Talk and bring presents', sub: 'He has stories from home', top: true } }, // UI at the bottom
     { card: { kicker: 'Also in this patch', title: 'Quality of life', list: ['Gamepad sprint is a click toggle'] },
       seconds: 5.5, bg: 'island-windmills', bgFrom: 1 },
-    { card: { kicker: 'Out now', title: 'Come play', sub: 'matiasfr.github.io/boogle' },
+    { card: { kicker: 'Out now', title: 'Come play', sub: 'boogle.club' },
       seconds: 3.6, bg: 'island-lighthouse', bgFrom: 5 },
   ],
 };
@@ -108,7 +107,7 @@ npm run video:publish -- .look/reels/x.mp4 --title "Patch notes: Nov 5" --summar
 
 Hosting: the video file lives on a GitHub release `video-<date>` (video.mp4 about 15-25 MB, poster.jpg, meta.json),
 never in git. The Pages deploy (`.github/workflows/deploy.yml` runs `dev/video/site.mjs`) turns every `video-*`
-release into a share page at `https://matiasfr.github.io/boogle/updates/<tag>/` (player, link-preview tags, a "Play
+release into a share page at `https://boogle.club/updates/<tag>/` (player, link-preview tags, a "Play
 Boogle" button) and an index at `/updates/`. The script starts that deploy, waits for the page to answer, and prints
 the share link. `--dry` makes the files under `.look/publish/<tag>/` without releasing. Publishing is public: only
 publish when asked to (or by the patch video loop below). Pages has a 1 GB site limit: past about 40 videos, delete

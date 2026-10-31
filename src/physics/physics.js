@@ -1,25 +1,26 @@
-import * as CANNON from 'cannon-es';
-import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS } from '../constants.js';
+import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
+import {
+  material,
+  createBody,
+  addBody,
+  teleport,
+  onPreStep,
+  onPostStep,
+  physicsTime,
+  forEachContact,
+} from './engine.ts';
 import { clamp } from '../math.js';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 
-const cur = { x: 0, z: 0 };
-const PLAYER_DRIFT = 0.6; // share of a stream's speed that carries a wading player
+// The physics world lives in ./engine.ts, the only module that imports a physics library.
+export { teleport };
 
-export const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
-world.broadphase = new CANNON.SAPBroadphase(world);
-world.allowSleep = false;
+// A contact uses the product of its two materials' values (ground is neutral): ball on ground 0.6 / 0.55.
+export const groundMat = material('ground', { friction: 1, restitution: 1 });
+export const playerMat = material('player', { friction: 0, restitution: 0 });
+export const ballMat = material('ball', { friction: 0.6, restitution: 0.55 });
 
-export const groundMat = new CANNON.Material('ground');
-export const playerMat = new CANNON.Material('player');
-export const ballMat = new CANNON.Material('ball');
-world.addContactMaterial(new CANNON.ContactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 }));
-world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
-
-// The shape reads `heights` directly, so edits only need to invalidate its caches (see refreshGround).
 // Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
 // need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and
 // anyone underground (the caves switch players and the ball to the CAVE group's colliders instead of the ground).
@@ -27,25 +28,32 @@ export const GROUP = { DEFAULT: 1, SCENERY: 2, CAVE: 4 };
 export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies moved by code
 
 // Height of the ground below a point. The terrain, unless a feature with ground under the terrain (the caves) says
-// the point is underground.
-export const groundProbe = { under: (x, y, z) => groundHeight(x, z) };
+// the point is underground. `netted(x, z)`: false where a feature owns what is below the terrain (the caves have their
+// own safety net), so the fall-through net in installStepHooks leaves bodies there alone.
+export const groundProbe = { under: (x, y, z) => groundHeight(x, z), netted: () => true };
 
-const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
-groundBody.addShape(groundShape);
-groundBody.position.set(-HALF, 0, HALF);
-groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-world.addBody(groundBody);
-
-// Call after changing `heights` in place so collisions use the new ground immediately.
-export function refreshGround() {
-  groundShape.update();
-  groundShape.updateMinValue();
-  groundShape.updateMaxValue();
-  groundShape.updateBoundingSphereRadius();
-  groundBody.updateBoundingRadius();
-  groundBody.aabbNeedsUpdate = true;
+// The physics engine has no continuous collision: a sphere that moves more than its radius in one step can end up with its
+// centre under the heightfield, and the contact then pushes it out the bottom. Falls are capped below that speed
+// (0.33 m a step against a 0.45 m radius), and anything that still gets through is put back on top.
+const MAX_FALL = 20; // m/s
+const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
+function catchFallThrough(body, r) {
+  const p = body.position;
+  if (!groundProbe.netted(p.x, p.z)) return;
+  const g = groundProbe.under(p.x, p.y, p.z);
+  if (p.y > g - NET_DEPTH) return;
+  teleport(body, p.x, g + r, p.z);
+  if (body.velocity.y < 0) body.velocity.y = 0;
 }
+
+addBody(
+  createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position: { x: -HALF, y: 0, z: HALF },
+    shapes: [{ kind: 'heightfield', heights, cell: CELL }],
+  }),
+);
 
 export function addStaticSpheres(spheres) {
   // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.
@@ -57,25 +65,19 @@ export function addStaticSpheres(spheres) {
     cy += s.y / spheres.length;
     cz += s.z / spheres.length;
   }
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-  for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x - cx, s.y - cy, s.z - cz));
-  body.position.set(cx, cy, cz);
-  world.addBody(body);
+  const body = createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position: { x: cx, y: cy, z: cz },
+    shapes: spheres.map((s) => ({ kind: 'sphere', r: s.r, offset: { x: s.x - cx, y: s.y - cy, z: s.z - cz } })),
+  });
+  addBody(body);
   return body;
 }
 
-export function teleport(body, x, y, z) {
-  body.position.set(x, y, z);
-  body.previousPosition.set(x, y, z);
-  body.interpolatedPosition.set(x, y, z);
-}
-
-// Controller feel knobs (src/features/feel.js changes them when the `feel` prototype flag is on).
-export const feelTune = { jumpAdd: false, brakeAccel: 70 };
-
 // Registered from main.js with the game state so this module stays free of import cycles.
 export function installStepHooks({ me, ball, remotes }) {
-  world.addEventListener('preStep', () => {
+  onPreStep(() => {
     for (const r of remotes.values()) {
       if (!r.body) continue;
       const p = r.body.position;
@@ -84,7 +86,7 @@ export function installStepHooks({ me, ball, remotes }) {
         dz = r.target.z - p.z;
       if (dx * dx + dy * dy + dz * dz > 36) {
         teleport(r.body, r.target.x, r.target.y, r.target.z);
-        r.body.velocity.setZero();
+        r.body.velocity.set(0, 0, 0);
       } else {
         r.body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
       }
@@ -98,16 +100,9 @@ export function installStepHooks({ me, ball, remotes }) {
       me.swimming = depth > 0;
       const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
       const braking = me.wish.x * b.velocity.x + me.wish.z * b.velocity.z < 0;
-      const accel = me.coyote > 0 ? (braking ? feelTune.brakeAccel : 70) : me.swimming ? 18 : 14;
-      let cx = 0,
-        cz = 0;
-      if (depth > 0.05) {
-        waterField.currentAt(b.position.x, b.position.z, cur); // streams carry waders downstream
-        cx = cur.x * PLAYER_DRIFT;
-        cz = cur.z * PLAYER_DRIFT;
-      }
-      let dx = me.wish.x * speed + cx - b.velocity.x,
-        dz = me.wish.z * speed + cz - b.velocity.z;
+      const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : 14;
+      let dx = me.wish.x * speed - b.velocity.x,
+        dz = me.wish.z * speed - b.velocity.z;
       const dl = Math.hypot(dx, dz),
         maxDv = accel * FIXED;
       if (dl > maxDv) {
@@ -116,9 +111,10 @@ export function installStepHooks({ me, ball, remotes }) {
       }
       b.velocity.x += dx;
       b.velocity.z += dz;
+      if (b.velocity.y < -MAX_FALL) b.velocity.y = -MAX_FALL;
       if (me.jumpQueued > 0) {
         if (me.coyote > 0) {
-          b.velocity.y = feelTune.jumpAdd ? Math.min(Math.max(b.velocity.y, 0), 6) + 7.6 : 7.6; // add: bounces chain
+          b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + 7.6; // adds to an upward bounce: bounces chain
           me.coyote = 0;
           me.jumpQueued = 0;
         } else if (me.swimming) {
@@ -145,24 +141,23 @@ export function installStepHooks({ me, ball, remotes }) {
         const k = 1 - (Math.hypot(bb.velocity.x, bb.velocity.z) < 0.5 ? 10 : 1.2) * FIXED;
         bb.velocity.x *= k;
         bb.velocity.z *= k;
-        bb.angularVelocity.scale(k, bb.angularVelocity);
+        bb.angularVelocity.set(bb.angularVelocity.x * k, bb.angularVelocity.y * k, bb.angularVelocity.z * k);
       }
       // Surf: the surface bobs with the same waves the sea shader draws, and a slow, smoothly varying
       // current runs along the shore. A gentle, surging inward drift keeps the ball washing in eventually.
-      const t = world.time;
+      const t = physicsTime();
       const px = bb.position.x,
         pz = bb.position.z;
-      const simSurf = waterField.surfaceAt(px, pz);
-      const inSim = simSurf > SEA + 0.06; // a pool or stream above sea level: no waves, no sea drift
-      const surf = inSim ? simSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
+      const pondSurf = waterField.surfaceAt(px, pz);
+      const still = pondSurf > SEA + 0.06; // a pond above sea level: no waves, no sea drift
+      const surf = still ? pondSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
       const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
       if (sub > 0) {
-        let cx, cz, grip;
-        if (inSim) {
-          // carried downstream: pulled towards the local flow, more firmly the deeper the water
-          waterField.currentAt(px, pz, cur);
-          cx = cur.x;
-          cz = cur.z;
+        let cx = 0,
+          cz = 0,
+          grip;
+        if (still) {
+          // pulled to a stop, more firmly the deeper the water
           grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);
         } else {
           const rr = Math.hypot(px, pz) || 1;
@@ -181,16 +176,15 @@ export function installStepHooks({ me, ball, remotes }) {
     }
   });
 
-  world.addEventListener('postStep', () => {
+  onPostStep(() => {
+    if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R);
     const b = me.body;
     if (!b) return;
-    for (const c of world.contacts) {
-      if (!c.enabled || (c.bi !== b && c.bj !== b)) continue;
-      const ny = c.bi === b ? -c.ni.y : c.ni.y;
-      if (ny > 0.55) {
-        me.coyote = 0.1;
-        break;
-      }
-    }
+    catchFallThrough(b, PLAYER_R);
+    forEachContact(b, (nx, ny) => {
+      if (ny <= 0.55) return false;
+      me.coyote = 0.1;
+      return true;
+    });
   });
 }

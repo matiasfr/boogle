@@ -1,0 +1,16 @@
+name: Review
+
+# Does nothing itself. A submitted review starts this, and its completion starts automerge.yml from main (workflow_run
+# always runs the default branch's copy), so an approval merges a PR that was waiting on it without running workflow
+# code from the PR's branch.
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions: {}
+
+jobs:
+  noted:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Review on PR ${{ github.event.pull_request.number }} (${{ github.event.review.state }})."

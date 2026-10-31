@@ -1,19 +1,24 @@
 name: Smoke
 
-# Nightly two-player check of the live site (dev/scenarios/smoke.mjs): two headless tabs join room smoke-<UTC weekday
-# 1-7>, see each other, dig, throw the ball and compare per-state world hashes. Seven rooms in rotation keep nightly
-# runs from filling the server's MAX_ROOMS, and a reused room also loads its stored snapshot. On failure (or timeout)
+# Two-player check of the live site, after every deploy and nightly (dev/scenarios/smoke.mjs): two headless tabs join room smoke-<UTC weekday
+# 1-7>, see each other, toss an item, throw the ball and compare per-state world hashes. Seven rooms in rotation keep
+# nightly runs from filling the server's MAX_ROOMS, and a reused room also loads its stored snapshot. On failure (or timeout)
 # it opens, or comments on, the one open issue labelled 'smoke', with the failing checks and a link to the run
 # (screenshots are its artifact).
 
 on:
+  # After each deploy of main, so a build that breaks the live site (WebGPU on a real CDN, the Fly server) is caught
+  # within minutes instead of the next morning.
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
   schedule:
     - cron: '37 9 * * *' # daily, 09:37 UTC
   workflow_dispatch:
     inputs:
       url:
         description: Game URL to test
-        default: https://matiasfr.github.io/boogle/
+        default: https://boogle.club/
 
 permissions:
   contents: read
@@ -25,11 +30,12 @@ concurrency:
 
 jobs:
   live:
-    if: github.repository == 'matiasfr/boogle' # forks have no live site of their own here
+    # Forks have no live site of their own here; a failed deploy has nothing new to check.
+    if: github.repository == 'matiasfr/boogle' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      URL: ${{ inputs.url || 'https://matiasfr.github.io/boogle/' }}
+      URL: ${{ inputs.url || 'https://boogle.club/' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,7 +74,7 @@ jobs:
           gh label create smoke --color d93f0b --description 'Nightly live smoke test' 2>/dev/null || true
           run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fails=$(grep -E 'FAIL|threw|page error' smoke.log 2>/dev/null | head -20 || true)
-          body=$(printf 'The nightly smoke test failed or timed out against %s (%s).\n\n```\n%s\n```\n\nScreenshots: the smoke-screenshots artifact of that run.' \
+          body=$(printf 'The live smoke test failed or timed out against %s (%s).\n\n```\n%s\n```\n\nScreenshots: the smoke-screenshots artifact of that run.' \
             "$URL" "$run" "${fails:-no scenario output; see the run log}")
           num=$(gh issue list --label smoke --state open --limit 1 --json number --jq '.[0].number')
           if [ -n "$num" ]; then

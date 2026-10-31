@@ -1,11 +1,8 @@
 // Critters (924924d): run at the gulls and they burst off the sand, drop the ball on the fish school and it scatters,
 // fireflies over the mushroom garden at night.
+import { STAND } from './_stand.mjs';
+
 const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
-const TP = (x, z) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);
-  return groundHeight(${x}, ${z});`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
 const RUN = (x, z, on) => `
   const { input } = await import('/src/player/input.js');
@@ -71,7 +68,7 @@ export default {
     const [fx, fy, fz, away] = await g.eval(FLOCK);
     const sx = fx + Math.cos(away) * 11,
       sz = fz + Math.sin(away) * 11;
-    await g.eval(TP(sx, sz));
+    await g.eval(STAND(sx, sz));
     await g.wait(0.5);
     await g.eval(FLOCK);
     const side = away + 1.25;
@@ -93,7 +90,7 @@ export default {
     // Fish: the school in clear shallow water seen from close above, then the ball drops into the middle of it.
     const spot = await g.eval(SHALLOWS);
     if (!spot) throw new Error('no clear shallows near the fish');
-    await g.eval(TP(spot[0] + 14, spot[1] - 14));
+    await g.eval(STAND(spot[0] + 14, spot[1] - 14));
     await g.eval(SHALLOWS);
     await g.wait(1);
     let cx, cy, cz;
@@ -118,13 +115,13 @@ export default {
 
     // Fireflies: a full-moon night over the mushroom garden, a crane down from above so the dark soil is the backdrop.
     const garden = await g.eval(`
-      const { PATCH } = await import('/src/sim/mushrooms.js');
+      const { PATCH } = await import('/src/sim/mushrooms.ts');
       const { CELL, HALF } = await import('/src/constants.js');
       const { groundHeight } = await import('/src/adapters/terrain.js');
       const x = (PATCH.i0 + PATCH.w / 2) * CELL - HALF, z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
       return [x, groundHeight(x, z), z];`);
     const [gx, , gz] = garden;
-    await g.eval(TP(gx + 16, gz - 16));
+    await g.eval(STAND(gx + 16, gz - 16));
     await g.eval(SKY(0.8, 0.5));
     await g.wait(6);
     // They're spread thin: read their positions off the point cloud and film the firefly with the most company.

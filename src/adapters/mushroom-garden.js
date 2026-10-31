@@ -1,23 +1,23 @@
 // Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
-// Shared state lives in src/world/rules/mushrooms.js and changes only through world/sync edits. Seeds and the watering can are
+// Shared state lives in src/world/rules/mushrooms.ts and changes only through world/sync edits. Seeds and the watering can are
 // hotbar items (src/player/inventory.js); src/player/hands.js calls plantFront and pour when you use them.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.js';
-import { heights, groundHeight } from './terrain.js';
+import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
-import { world, groundMat, playerMat, ballMat, GROUP } from '../physics/physics.js';
+import { groundMat, GROUP } from '../physics/physics.js';
+import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/player.js';
-import { setEnv, onApplied, submitEdit } from '../world/sync.js';
+import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
 import { waterField } from '../physics/water-field.js';
 import { dropPoint } from '../physics/flight.js';
 import { splash } from '../render/splash.js';
 import { itemModel } from '../player/item-models.js';
 import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.js';
-import { GROW_TICKS } from '../sim/mushrooms.js';
+import { GROW_TICKS } from '../sim/mushrooms.ts';
 
 const SEEDS_PER_VISIT = 5;
 const BOUNCE_SPEED = 15;
@@ -31,23 +31,21 @@ const RESHAPE = 0.03; // rebuild a growing mushroom's collider once its scale ha
 const PUSH = 5.5; // m/s: a growing mushroom shoves you out from under it at least this fast
 export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
-// The garden, its ops and growth live in world/rules/mushrooms.js (lockstep); this module adapts it to meshes,
+// The garden, its ops and growth live in world/rules/mushrooms.ts (lockstep); this module adapts it to meshes,
 // colliders, the stall and the hotbar.
 export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
 
-const cellX = (i) => i * CELL - HALF;
-const cellZ = (j) => HALF - j * CELL;
-
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
-function spotOk(i, j) {
+// dev/scenarios/world-inputs.mjs bakes it into src/world/home-land.json for the server, which has no renderer.
+export function canPlantAt(i, j) {
   const x = cellX(i),
     z = cellZ(j),
     g = heights[i][j];
   if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
   return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
 }
-const env = { canPlantAt: spotOk };
+const env = { canPlantAt };
 setEnv(env);
 
 // Open, dry land with room in the garden: where a seed may go in (the host runs this same check on mush.plant).
@@ -61,65 +59,80 @@ onApplied((e, t, r) => {
 });
 
 // ---------------------------------------------------------------- physics
-const mushroomMat = new CANNON.Material('mushroom');
-world.addContactMaterial(new CANNON.ContactMaterial(mushroomMat, playerMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(mushroomMat, ballMat, { friction: 0.3, restitution: 0.95 }));
+const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
 
 const capBodies = new Map(); // body -> visual
 
-// Cannon shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
+// Physics shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
 function shapeBody(v, s) {
   if (!v.body) {
-    v.body = new CANNON.Body({ mass: 0, material: mushroomMat, collisionFilterGroup: GROUP.SCENERY });
-    v.body.position.copy(v.root.position);
-    world.addBody(v.body);
+    v.body = createBody({ material: mushroomMat, group: GROUP.SCENERY, position: v.root.position });
+    addBody(v.body);
     capBodies.set(v.body, v);
   }
-  const b = v.body;
-  while (b.shapes.length) b.removeShape(b.shapes[0]);
-  b.addShape(
-    new CANNON.Cylinder(STEM_TOP_R * s, STEM_BASE_R * s, STEM_H * s, 10),
-    new CANNON.Vec3(0, (STEM_H * s) / 2, 0),
-  );
-  b.addShape(
-    new CANNON.Cylinder(CAP_R * s, CAP_R * 0.85 * s, CAP_T * s, 16),
-    new CANNON.Vec3(0, (STEM_H + CAP_T / 2) * s, 0),
-  );
-  b.aabbNeedsUpdate = true;
+  setShapes(v.body, [
+    {
+      kind: 'cylinder',
+      rTop: STEM_TOP_R * s,
+      rBottom: STEM_BASE_R * s,
+      h: STEM_H * s,
+      segments: 10,
+      offset: { x: 0, y: (STEM_H * s) / 2, z: 0 },
+    },
+    {
+      kind: 'cylinder',
+      rTop: CAP_R * s,
+      rBottom: CAP_R * 0.85 * s,
+      h: CAP_T * s,
+      segments: 16,
+      offset: { x: 0, y: (STEM_H + CAP_T / 2) * s, z: 0 },
+    },
+  ]);
   v.bodyS = s;
 }
 
-world.addEventListener('postStep', () => {
+onPostStep(() => {
   const b = me.body;
   if (!b) return;
-  for (const c of world.contacts) {
-    const other = c.bi === b ? c.bj : c.bj === b ? c.bi : null;
-    const vis = other && capBodies.get(other);
-    if (!vis) continue;
-    if (b.position.y < other.position.y + STEM_H * vis.bodyS) continue;
+  forEachContact(b, (nx, ny, nz, other) => {
+    const vis = capBodies.get(other);
+    if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
     b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
     me.coyote = 0;
     vis.squishAt = performance.now();
-    break;
-  }
+    return true;
+  });
 });
 
-// A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top).
-world.addEventListener('preStep', () => {
+// A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top). The shove
+// works from the size it is drawn at (v.drawS), and its collider doesn't grow while you are under it (updateGarden), so
+// the mushroom pushes you out sideways instead of a new collider appearing around you, which each physics engine
+// resolves its own way (Rapier would pop you up onto the cap).
+function underCap(b, v, s) {
+  const base = v.root.position;
+  const feet = b.position.y - PLAYER_R;
+  if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return 0;
+  const d = Math.hypot(b.position.x - base.x, b.position.z - base.z);
+  return d < CAP_R * s + PLAYER_R ? Math.max(d, 1e-6) : 0;
+}
+// Whether the player's body would intersect this mushroom's collider at scale s (its full height, with a margin).
+function overlaps(b, v, s) {
+  const base = v.root.position;
+  if (b.position.y - PLAYER_R > base.y + (STEM_H + CAP_T) * s + 0.05) return false;
+  if (b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return false;
+  return Math.hypot(b.position.x - base.x, b.position.z - base.z) < CAP_R * s + PLAYER_R + 0.05;
+}
+onPreStep(() => {
   const b = me.body;
   if (!b) return;
   for (const v of visuals.values()) {
-    if (!v.body || v.shown >= 1) continue;
-    const base = v.root.position,
-      s = v.bodyS;
-    const feet = b.position.y - PLAYER_R;
-    if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) continue;
-    const dx = b.position.x - base.x,
-      dz = b.position.z - base.z;
-    const d = Math.hypot(dx, dz);
-    if (d >= CAP_R * s + PLAYER_R) continue;
-    const nx = d > 0.01 ? dx / d : 1,
-      nz = d > 0.01 ? dz / d : 0;
+    const s = v.drawS ?? 0;
+    if (s < MIN_BODY || v.shown >= 1) continue;
+    const d = underCap(b, v, s);
+    if (!d) continue;
+    const base = v.root.position;
+    const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
+      nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
     const out = b.velocity.x * nx + b.velocity.z * nz;
     if (out >= PUSH) continue;
     b.velocity.x += nx * (PUSH - out);
@@ -197,20 +210,11 @@ function makeVisual(p) {
 // Overshoots then settles, so the mushroom pops up.
 const easeOutBack = (t) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
 
-function updateMushrooms(dt, now) {
+export function updateGarden(dt, now) {
   for (const p of garden.plots) {
     const key = `${p.i},${p.j}`;
     let v = visuals.get(key);
     if (!v) visuals.set(key, (v = makeVisual(p)));
-    // Mushrooms grow anywhere now, sand included, so they follow the ground when someone digs beside them.
-    const gy = heights[p.i][p.j];
-    if (v.root.position.y !== gy) {
-      v.root.position.y = gy;
-      if (v.body) {
-        v.body.position.y = gy;
-        v.body.aabbNeedsUpdate = true;
-      }
-    }
     const target = p.g / GROW_TICKS;
     v.shown = reducedMotion ? target : Math.min(target, v.shown + (dt * 10) / GROW_TICKS);
     v.mound.material = p.g > 0 ? wetMat : moundMat;
@@ -219,7 +223,9 @@ function updateMushrooms(dt, now) {
     const sinceSquish = (now - v.squishAt) / 1000;
     const squish = !reducedMotion && sinceSquish < 0.5 ? Math.sin(sinceSquish * 25) * 0.18 * (1 - sinceSquish * 2) : 0;
     v.shroom.scale.set(s * (1 + squish * 0.5), s * (1 - squish), s * (1 + squish * 0.5));
-    if (s >= MIN_BODY && (Math.abs(s - v.bodyS) >= RESHAPE || (v.shown >= 1 && v.bodyS !== s))) shapeBody(v, s);
+    v.drawS = s;
+    const grow = Math.abs(s - v.bodyS) >= RESHAPE || (v.shown >= 1 && v.bodyS !== s);
+    if (s >= MIN_BODY && grow && !(me.body && overlaps(me.body, v, s))) shapeBody(v, s); // never around you: the shove first
   }
 }
 
@@ -303,11 +309,15 @@ export function createStall() {
   stall.updateMatrixWorld(true);
   for (const p of pickups) p.world = stall.localToWorld(p.local.clone());
 
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-  body.addShape(new CANNON.Box(new CANNON.Vec3(1.4, 0.5, 0.45)), new CANNON.Vec3(0, 0.5, 0));
-  body.position.set(STALL.x, y, STALL.z);
-  body.quaternion.setFromEuler(0, STALL.yaw, 0);
-  world.addBody(body);
+  addBody(
+    createBody({
+      material: groundMat,
+      group: GROUP.SCENERY,
+      position: { x: STALL.x, y, z: STALL.z },
+      rotation: { x: 0, y: Math.sin(STALL.yaw / 2), z: 0, w: Math.cos(STALL.yaw / 2) },
+      shapes: [{ kind: 'box', hx: 1.4, hy: 0.5, hz: 0.45, offset: { x: 0, y: 0.5, z: 0 } }],
+    }),
+  );
   obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
 }
 
@@ -380,7 +390,3 @@ export function pour() {
   return true;
 }
 export const pouring = () => performance.now() < pourAt.until;
-
-export function updateGarden(dt, now) {
-  updateMushrooms(dt, now);
-}

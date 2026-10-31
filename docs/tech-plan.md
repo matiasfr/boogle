@@ -11,13 +11,13 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 - [x] **A1. Determinism lint.** ESLint bans `Math.random`, `Math.sin/cos/tan/pow/exp/log/atan2/hypot/...`, `**`,
       `Date.now`, `performance.now`, `new Date()` and `Date()` in lockstep code (`src/sim/**`,
-      `src/world/terrain-logic.js`, and the rules modules from B1). Cosmetic helpers that live in `src/sim/` today
+      and the rules modules from B1). Cosmetic helpers that live in `src/sim/` today
       (`honkFreq`, the moon's `illum`) move out or are marked cosmetic. A tiny test proves the rule fires.
 - [x] **A2. Reports to the server.** `POST /report` on `server/` (small JSON, rate-limited, appended to a daily JSONL
       file) and `GET /reports` behind a token. A plug-in feature (`src/features/telemetry.js`) sends JS errors, desyncs
       (which state key, which tick), snapshot load failures and connection failures, only when `VITE_BOOGLE_SERVER` is
       set. Nothing personal: room, kind, short detail, build, coarse browser.
-- [x] **A3. Nightly live smoke test.** A scheduled GitHub Actions job opens two headless tabs on the deployed site, digs
+- [x] **A3. Nightly live smoke test.** (historical: digging removed 2026-10-30) A scheduled GitHub Actions job opens two headless tabs on the deployed site, digs
       and throws the ball, checks the world hashes agree, and opens (or updates) an issue on failure.
 - [x] **A4. Server deploy job + TURN measurement (PLAN Phase 1).** A workflow deploys `server/` to Fly.io on changes
       to `server/` when a `FLY_API_TOKEN` secret exists (skips cleanly otherwise). Connection reports from A2 say
@@ -25,10 +25,11 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *Needs a human:* create the Fly app and volume, set the secrets and the `VITE_BOOGLE_SERVER` repo variable.
       *2026-10-29:* deploy job done (`.github/workflows/deploy-server.yml`). Connection reports carry `hadTurn` only
       (our ICE config listed a TURN server); whether a relay candidate was gathered or used is not observed yet. The
-      human steps in server/README.md remain.
-- [x] **A5. Measure the sim.** `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
+      human steps in server/README.md remain. *Since #57:* a good join also reports `links`, `relayed` (through TURN)
+      and `rttMs`; the server runs on Fly with Cloudflare TURN (#55, #56).
+- [x] **A5. Measure the sim.** (historical: the water sim was removed 2026-10-30) `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
-      *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
+      *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.ts`, opt-in wrappers, nothing in normal
       play). Headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run back to back;
       runs vary widely. Idle island: whole tick avg 0.3 to 1.0 ms, p95 0.7 to 4 ms. Busy water (6511 home cells
       flooded 40 cm, ~6400 of 13287 cells active, a channel dug at the rate limit): in four runs, whole tick avg 2.3
@@ -48,7 +49,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       gets a three.js-free rules module that registers its ops, state and tick functions on a sync instance it is
       given; the existing files become render/input adapters that subscribe through `onApplied`/`onSnapshot`. Pure
       helpers the rules need (island base heights, noise) move out of three.js-importing modules. No behavior change:
-      scenarios `dig-channel`, `two-player-dig`, `hotbar`, `caves`, `lighthouse` and `npm run check:full` stay green.
+      scenarios `dig-channel`, `two-player-dig` (now `two-player-edit`), `hotbar`, `caves`, `lighthouse` and `npm run check:full` stay green.
 - [x] **B2. Replay test.** One Node test builds a host and clients from the real rules, feeds a seeded random stream
       of every op (each rules module exports an edit generator; the test fails if a registered op has none), kills the
       host midway, adds a late joiner, reloads a snapshot, and requires identical per-state hashes everywhere. Under a
@@ -77,7 +78,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *2026-10-30:* `src/boogler/`, `player/`, `render/`, `netplay/`, `physics/`, `adapters/`; map in `src/README.md`.
 - [x] **C3. Faster first load.** Code-split what isn't needed to stand on the island (caves, POI decor, Boogler
       dialogue, debug tools); compare bundle size and `npm run perf` before and after.
-- [x] **C4. Sim worker, only if A5 says so.** DESIGN.md: measure first, sleep settled regions before workers.
+- [x] **C4. Sim worker, only if A5 says so.** (historical: the water sim was removed 2026-10-30) DESIGN.md: measure first, sleep settled regions before workers.
       *Decided: no worker.* A5 measured the sim at about 1 ms per tick on average; the render-side water surface scan
       is the bigger cost, and a worker would not help it. If it is ever needed, spread the surface scan and the hash
       over several ticks first.
@@ -95,5 +96,8 @@ Reviews and cut lists respect these until the owner changes them.
   (useful; improve it: stop committing per-video reel scripts once published, drive shots through `window.boogle` and
   actions instead of importing game internals).
 - **Remove unused legacy code:** the 129-cell save migration (`src/world/legacy-grid.js` and its call sites), the dead
-  water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31.*
-- **Server stack:** pending the owner's call on deploying `server/` to Fly.io with TURN (see `server/README.md`).
+  water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31; sim/world/net exports swept 2026-10-30.*
+- **Server stack:** Deployed on Fly with Cloudflare TURN (#55–#57).
+- **ROMs only** (e0f9410): names of characters, games and companies are fine in copy, docs, code and commits. The
+  hard line is ROM data: never commit, bundle, deploy or fetch anything from a ROM
+  ([src/guest/README.md](../src/guest/README.md)).

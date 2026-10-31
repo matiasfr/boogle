@@ -18,7 +18,7 @@ import {
   serializeFriend,
   loadFriend,
 } from '../src/boogler/friendship.js';
-import { giftIndex } from '../src/sim/gift-catalog.js';
+import { giftIndex } from '../src/sim/gift-catalog.ts';
 
 const MIN = 60000;
 
@@ -47,17 +47,17 @@ test('petting scores with a gap and a cap per window', () => {
 test('gifts score by taste, halve on repeats and stop at the window cap', () => {
   const f = createFriend();
   const t = 1e6;
-  const melon = giftIndex('melon'),
-    boot = giftIndex('boot'),
-    shell = giftIndex('shell');
-  assert.equal(giveGift(f, melon, t).pts, TASTE_PTS.love);
-  assert.equal(giveGift(f, melon, t).pts, TASTE_PTS.love / 2);
-  assert.equal(giveGift(f, boot, t).pts, TASTE_PTS.dislike);
-  assert.equal(giveGift(f, shell, t).pts, TASTE_PTS.like);
-  const capped = giveGift(f, shell, t);
+  const apricot = giftIndex('apricot'),
+    coconut = giftIndex('coconut'),
+    mango = giftIndex('mango');
+  assert.equal(giveGift(f, apricot, t).pts, TASTE_PTS.love);
+  assert.equal(giveGift(f, apricot, t).pts, TASTE_PTS.love / 2);
+  assert.equal(giveGift(f, coconut, t).pts, TASTE_PTS.meh);
+  assert.equal(giveGift(f, mango, t).pts, TASTE_PTS.like);
+  const capped = giveGift(f, mango, t);
   assert.equal(capped.capped, true);
   assert.equal(capped.pts, 0);
-  assert.equal(giveGift(f, shell, t + RULES.giftWindow).capped, false);
+  assert.equal(giveGift(f, mango, t + RULES.giftWindow).capped, false);
   assert.equal(giveGift(f, 9999, t), null);
 });
 
@@ -75,7 +75,7 @@ test('enough kick-offs make him wary; time and gifts forgive', () => {
 
   kickedOff(f, (t += RULES.kickDecay));
   assert.equal(isWary(f, t), true);
-  const r = giveGift(f, giftIndex('shell'), t);
+  const r = giveGift(f, giftIndex('mango'), t);
   assert.equal(r.forgave, true);
   assert.equal(isWary(f, t), false);
 });
@@ -114,7 +114,7 @@ test('friendship round-trips through storage and ignores junk', () => {
   addPts(f, 77);
   f.learned.push('home0');
   f.flags.slogan = 'Rice to meet you.';
-  giveGift(f, giftIndex('duck'), 5);
+  giveGift(f, giftIndex('banana'), 5);
   const g = loadFriend(serializeFriend(f));
   assert.deepEqual(g, f);
   for (const junk of ['', '{', 'null', '[1]', '{"pts":"lots","learned":[1,"x"],"gifts":[{"kind":-1,"at":0}]}']) {

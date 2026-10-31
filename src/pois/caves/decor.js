@@ -6,9 +6,9 @@
 // Things are placed by probing the cave's distance field (caveSd), so lanterns sit on real walls and stalactites
 // hang from the real ceiling even if the network changes. Colliders are in the CAVE group: only bodies underground
 // touch them.
-import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import * as THREE from 'three/webgpu';
 import { groundMat, GROUP } from '../../physics/physics.js';
+import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { addLightSource } from '../../render/lights.js';
 import { mulberry32 } from '../../math.js';
@@ -38,7 +38,7 @@ function wallAt(x, y, z, dx, dz, inset) {
 }
 
 // Points every `step` metres along a polyline (floor heights interpolated), with the direction there.
-function along(pts, step, from = 0, to = 0) {
+function along(pts, step, from = 0) {
   const out = [];
   let carry = from;
   for (let k = 0; k + 1 < pts.length; k++) {
@@ -53,7 +53,7 @@ function along(pts, step, from = 0, to = 0) {
     }
     carry = Math.max(0, carry - len) + ((step - ((len - carry) % step)) % step);
   }
-  return to ? out.slice(0, Math.max(0, out.length - Math.ceil(to / step))) : out;
+  return out;
 }
 
 const yawOf = (dx, dz) => Math.atan2(dx, dz);
@@ -108,13 +108,12 @@ export function mouthFrame(m) {
     half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
   };
 }
-export function buildDecor({ world, scene }) {
+export function buildDecor({ scene }) {
   const root = new THREE.Group();
   const parts = [],
     glow = [];
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
-  const O = NODES.hub; // collider offsets are relative to the hub
-  body.position.set(O.x, O.y, O.z);
+  const shapes = []; // colliders, relative to the hub
+  const O = NODES.hub;
 
   const put = (geo, x, y, z, sx, sy, sz, color, rx = 0, ry = 0, rz = 0, list = parts) => {
     q.setFromEuler(e.set(rx, ry, rz, 'YXZ'));
@@ -122,11 +121,14 @@ export function buildDecor({ world, scene }) {
     addPart(list, geo, m4, color);
   };
   const solid = (x, y, z, hx, hy, hz, ry = 0) =>
-    body.addShape(
-      new CANNON.Box(new CANNON.Vec3(hx, hy, hz)),
-      new CANNON.Vec3(x - O.x, y - O.y, z - O.z),
-      new CANNON.Quaternion().setFromEuler(0, ry, 0),
-    );
+    shapes.push({
+      kind: 'box',
+      hx,
+      hy,
+      hz,
+      offset: { x: x - O.x, y: y - O.y, z: z - O.z },
+      rotation: { x: 0, y: Math.sin(ry / 2), z: 0, w: Math.cos(ry / 2) },
+    });
 
   // ---------------------------------------------------------------- lanterns
   const lanternGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.32, 6);
@@ -204,20 +206,21 @@ export function buildDecor({ world, scene }) {
 
   // ---------------------------------------------------------------- stalactites (hub and pond)
   const coneGeo = new THREE.ConeGeometry(1, 1, 6);
-  const drips = (n, cx, cz, r, y0, count, rockColor) => {
+  const drips = (n, count, rockColor) => {
+    const y0 = n.y;
     for (let k = 0; k < count; k++) {
       const a = rng() * Math.PI * 2,
-        d = Math.sqrt(rng()) * r;
-      const x = cx + Math.cos(a) * d,
-        z = cz + Math.sin(a) * d;
+        d = Math.sqrt(rng()) * n.r[0];
+      const x = n.x + Math.cos(a) * d,
+        z = n.z + Math.sin(a) * d;
       if (caveSd(x, y0 + 1.5, z) > -0.3) continue;
       const top = ceilingAbove(x, y0 + 1.5, z);
       const len = 0.5 + rng() * 1.5;
       put(coneGeo, x, top - len / 2 + 0.15, z, 0.18 + len * 0.08, len, 0.18 + len * 0.08, rockColor, Math.PI);
     }
   };
-  drips(NODES.hub, NODES.hub.x, NODES.hub.z, NODES.hub.r[0], NODES.hub.y, 12, '#8a8073');
-  drips(NODES.pond, NODES.pond.x, NODES.pond.z, NODES.pond.r[0], NODES.pond.y, 26, '#76838a');
+  drips(NODES.hub, 12, '#8a8073');
+  drips(NODES.pond, 26, '#76838a');
 
   // ---------------------------------------------------------------- the mine
   {
@@ -248,10 +251,9 @@ export function buildDecor({ world, scene }) {
       }
     });
     // Timber supports in the mine's tunnels (not in the chamber itself).
+    const half = Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.3;
     for (const p of along(track, 4.2, 9)) {
-      const inChamber = (n) => Math.hypot((p.x - n.x) / n.r[0], (p.z - n.z) / n.r[2]) < 1.05;
-      if (inChamber(mine) || inChamber(NODES.hub)) continue;
-      const half = Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.3;
+      if (inside(mine, p.x, p.z, 0.05) || inside(NODES.hub, p.x, p.z, 0.05)) continue;
       const yaw = yawOf(p.dx, p.dz);
       for (const sd of [-1, 1]) {
         put(box, p.x - p.dz * half * sd, p.y + 1.35, p.z + p.dx * half * sd, 0.24, 2.7, 0.24, '#6a4a2d', 0, yaw);
@@ -359,7 +361,6 @@ export function buildDecor({ world, scene }) {
     water.scale.set(POND.rx * 0.86, 1, POND.rz * 0.86);
     water.position.set(POND.x, POND.level, POND.z);
     root.add(water);
-    root.userData.pond = water;
     // Crystal clusters round the edge and in the walls; some of them light the place.
     const crystal = new THREE.OctahedronGeometry(0.3, 0);
     const colors = ['#79f0ff', '#b48cff', '#7cf5c8'];
@@ -520,13 +521,13 @@ export function buildDecor({ world, scene }) {
   for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3], sp[v * 3 + 2]);
   solidGeo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   const mat = withCaveAmbient(
-    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
+    new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
   );
   const solidMesh = new THREE.Mesh(solidGeo, mat);
   solidMesh.receiveShadow = true;
   const glowMesh = new THREE.Mesh(mergeParts(glow), new THREE.MeshBasicMaterial({ vertexColors: true }));
   root.add(solidMesh, glowMesh);
   scene.add(root);
-  world.addBody(body);
+  addBody(createBody({ material: groundMat, group: GROUP.CAVE, position: O, shapes }));
   return root;
 }

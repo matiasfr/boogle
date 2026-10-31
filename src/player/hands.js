@@ -1,18 +1,15 @@
 // What your hands do with the hotbar (src/player/inventory.js), and the one interact button.
 //
 //   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, fruit, frisbee) winds up a throw and
-//                            flies on release; the shovel digs, the can pours, seeds go in at your feet. Empty hands
+//                            flies on release; the can pours, seeds go in at your feet. Empty hands
 //                            interact.
 //   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
-//   touchDown                the touch main button: acts on touchTarget() when it can, otherwise uses
+//   touchDown                the touch main button: acts on interactTarget() when it can, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
-//   canThrow()               whether what you hold can be thrown: anything but the shovel, which is a key item on every
-//                            device (no wind-up, no Toss, and a wind-up you switch to it from is dropped)
-//   interactTarget()         the one thing in front of you (see below), or null
-//   touchTarget()            what the touch main button acts on: interactTarget(), but null while you hold the shovel
-//                            (it digs, even on a beach full of things; tap the shovel slot for empty hands)
-//   useVerb()                what using the thing in your hand does ('Throw', 'Dig', ...), null for empty hands
+//   canThrow()               whether you hold anything (everything held can be thrown)
+//   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
+//   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
 // Interactables plug in, like actions in src/player/controls.js:
@@ -31,24 +28,21 @@
 //              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
 //     Other fields are yours (gifts put the item id on theirs).
 //
-// The pick is src/sim/interact-pick.js: something that would act beats something blocked, then nearest wins, with a
+// The pick is src/sim/interact-pick.ts: something that would act beats something blocked, then nearest wins, with a
 // nudge toward where you look. Ties go to the provider registered first.
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.js; the ball keeps its own physics.
 import * as THREE from 'three';
 import { me, cam, chargeAmount, throwFrom, throwVelocity } from './player.js';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.js';
-import { inv, heldId, take, useOne, drop, has, roomFor, slotOf, select, onHotbarChange } from './inventory.js';
-import { toggleShovel, setHold } from '../world/terrain-edits.js';
+import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.js';
 import { throwItem } from '../adapters/gifts.js';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.js';
-import { giftIndex } from '../sim/gift-catalog.js';
-import { pickInteract } from '../sim/interact-pick.js';
+import { giftIndex } from '../sim/gift-catalog.ts';
+import { pickInteract } from '../sim/interact-pick.ts';
 
-const USE_VERB = { shovel: 'Dig', can: 'Water', seeds: 'Plant' };
-// The shovel is always at hand: it never leaves it by a throw, so nobody loses it to the sea or a friend.
-const throwable = (id) => !!id && id !== 'shovel';
-export const canThrow = () => throwable(heldId());
+const USE_VERB = { can: 'Water', seeds: 'Plant' };
+export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
 // The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
@@ -58,7 +52,6 @@ function syncBall() {
   me.holding = carried && heldId() === 'ball';
 }
 onHotbarChange(() => {
-  toggleShovel(heldId() === 'shovel');
   if (me.charging && !canThrow()) me.charging = false;
   syncBall();
 });
@@ -114,7 +107,7 @@ function windUp() {
 
 function throwHeld(c) {
   const id = heldId();
-  if (!throwable(id) || !me.body) return;
+  if (!id || !me.body) return;
   if (id === 'ball') return throwBall(c);
   const kind = giftIndex(id);
   const from = throwFrom();
@@ -137,43 +130,23 @@ export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
   if (!id) return interact();
-  if (id === 'shovel') return (setHold('dig'), true);
   if (id === 'can') return pour();
   if (id === 'seeds') return plantFront() || deny(plantTarget()?.text ?? '');
   return windUp();
 }
 
-export function useUp() {
-  setHold(null, 'dig');
-  releaseThrow();
-}
+export const useUp = releaseThrow;
 
 export const interactDown = () => (me.entered && me.body ? interact() : false);
 // E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.
 export const interactUp = () => {
   me.suppressUp = false;
 };
-export const touchTarget = () => (heldId() === 'shovel' ? null : interactTarget());
 export function touchDown() {
-  const t = touchTarget();
+  const t = interactTarget();
   return t?.run ? interact(t) : useDown();
 }
 export const throwDown = windUp;
-
-// The shovel is always at hand: Q, Z and F pull it out (a fresh one if an old save lost it).
-export function ensureShovel() {
-  if (heldId() === 'shovel') return true;
-  const k = slotOf('shovel');
-  if (k >= 0) select(k);
-  else if (!take('shovel')) deny('Hotbar full'); // an old save that lost it with every slot full: say why
-  return heldId() === 'shovel';
-}
-let beforeShovel = -1;
-export function toggleShovelHand() {
-  if (heldId() === 'shovel') return select(beforeShovel === inv.sel ? -1 : beforeShovel);
-  beforeShovel = inv.sel;
-  ensureShovel();
-}
 
 export function useVerb() {
   const id = heldId();

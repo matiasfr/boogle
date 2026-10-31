@@ -1,8 +1,8 @@
 # Boogle iteration plan
 
-Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends shape water together to grow a shared garden, while the beach ball stays the main toy.
+Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them, while the beach ball stays the main toy.
 
-The design direction comes from the [research report](docs/research/water-farming-multiplayer.md). Its short version: **water is the glue between the ball and the farm.** Players dig channels and pile sand to steer water. Crops grow where the soil is wet. The tide is the shared threat. The garden persists, so the next visitor finds what the last one left.
+Today that island has the ball, fruit and gifts you pick up and throw, mushrooms you plant from the stall and bounce on, The Boogler to befriend, the lighthouse and its frisbee, and the caves. The shared world persists, so the next visitor finds what the last one left. Digging and the water sim, built from the [research report](docs/research/water-farming-multiplayer.md) ("water is the glue between the ball and the farm"), were removed on 2026-10-30 to clear room around the ball; the garden and the tide below are still open and need a new design without them.
 
 Engineering groundwork (lint, replay test, snapshot versions, telemetry) is tracked in [docs/tech-plan.md](docs/tech-plan.md).
 
@@ -12,16 +12,18 @@ The design and technical principles live in [DESIGN.md](DESIGN.md). Read it befo
 
 ## Key decision: PeerJS (WebRTC), with one browser as host
 
+- [ ] The server hosts every room, no PeerJS fallback ([docs/plans/server-host.md](docs/plans/server-host.md)); then the co-op net roadmap ([docs/plans/net-roadmap.md](docs/plans/net-roadmap.md)).
+
 Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
 
-**Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the water and garden sim a single authority, the way a server would.
+**Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the shared world a single authority, the way a server would.
 
 **Finding the island (no lobby needed).** Every room has a well-known host ID, e.g. `boogle-<room>-host`.
 1. On join, try to register as `boogle-<room>-host`.
 2. If PeerJS says the ID is taken (`unavailable-id`), someone is already hosting. Register with a random ID and connect to the host.
 3. If the host leaves, every client sees the connection close, waits a small random delay, and tries to claim the host ID. The first one to succeed becomes the new host; the rest reconnect to it.
 
-**Two channels per connection.** One **unreliable/unordered** data channel for presence and the ball (latest state wins, like UDP), and one **reliable/ordered** channel for edits (dig, plant, harvest) that must never be dropped.
+**Two channels per connection.** One **unreliable/unordered** data channel for presence and the ball (latest state wins, like UDP), and one **reliable/ordered** channel for edits (plant a seed, shake a palm, pick up a gift) that must never be dropped.
 
 **Persistence without a game server.** Every client keeps the latest garden snapshot the host sent (in memory and in `localStorage`). A new host loads the newest snapshot it has. To make the garden survive when *nobody* is online, the host also saves snapshots to a tiny storage endpoint we host (`PUT/GET /rooms/:id/snapshot`), which can live in the same process as our PeerServer.
 
@@ -36,7 +38,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 **Authority split:**
 - Player movement: client-authoritative (as today).
 - Ball: owner-authoritative with the epoch rule (as today), now carried over the unreliable channel.
-- Water + garden: **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
+- Shared world (gifts, mushrooms): **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
 - Trust: the host validates edits (reach, rate limits). We're playing with friends, so a cheating host isn't a concern.
 
 **PeerJS is the only transport.** We're dropping the claude.ai artifact `room` and the same-browser `BroadcastChannel` fallback, and the repo no longer targets claude.ai. Local testing works with PeerJS too: two tabs on one machine connect to each other like any two peers.
@@ -54,11 +56,11 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 ## Phase 1: PeerJS networking
 
 - [x] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
-- [x] Write `src/net/peer-room.js` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
+- [x] Write `src/net/peer-room.ts` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.
 - [x] Add a **reliable message channel** (`send(msg)` / `onMessage(handler)`) for edits.
 - [x] Name comes from the lobby input and `localStorage` only (no claude.ai profile prefill).
 - [x] Self-hostable server in `server/` (PeerJS signaling, `/ice` with TURN support, snapshot storage). Game reads `VITE_BOOGLE_SERVER`.
-- [ ] Deploy `server/` (Fly.io) and add TURN credentials.
+- [x] Deploy `server/` (Fly.io) and add TURN credentials (Cloudflare).
 - [ ] Measure: ball latency for non-owners, and how many test connections fail without TURN.
 - [x] Host the static client on GitHub Pages / Netlify.
 
@@ -75,6 +77,8 @@ The sea already makes the ball float and players swim (see the `preStep` buoyanc
 **Done when:** people spontaneously play a game with the ball in the water. **Playtest question:** do people play with the ball in the water?
 
 ## Phase 3: Shape the ground (dig and pile)
+
+> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
 
 The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 world units) shared by the mesh, the physics body and the water shader's height texture. Editing it is the foundation for everything after.
 
@@ -93,6 +97,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Phase 4: Living water (the core sim)
 
+> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
+
 - [x] A **2.5D column water sim**, not 3D voxels. The island has no overhangs, so 3D buys almost nothing for a big cost. Each cell has terrain height plus integer water depth (0–255). Water flows to lower neighbors by a fixed integer rule in a fixed scan order, so every machine gets bit-identical results.
 - [x] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
 - [x] The sim is one JS module ~~run in a Web Worker~~ on every client. The host's copy is authoritative; it sends a compact snapshot every few seconds plus a hash, and clients that disagree adopt the snapshot. The host also saves it to snapshot storage. No worker: decided in [tech plan](docs/tech-plan.md) C4.
@@ -107,7 +113,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 > On hold: crops and farming are cut for now while the design is reworked by hand. The items below are the old plan, kept for reference.
 
 - [ ] **Soil and hydration.** Garden-region cells within N cells of standing water are "wet" (soil darkens, like Minecraft's 4-block rule). Make it visible.
-- [x] **Mushroom stall.** A stall by a dirt patch hands out mushroom seeds and a watering can. Bury a seed, water it, and it grows into a big flat-topped mushroom that bounces players and the ball. Shared state in `src/sim/mushrooms.js`, edits through `src/world/sync.js`.
+- [x] **Mushroom stall.** A stall by a dirt patch hands out mushroom seeds and a watering can. Bury a seed, water it, and it grows into a big flat-topped mushroom that bounces players and the ball. Shared state in `src/sim/mushrooms.js`, edits through `src/world/sync.ts`.
 - [ ] **Plant / water / harvest.** Seeds planted on dry or wet soil, a watering action (carry water from a pond, or a splash from the ball). Crops grow only while hydrated.
 - [ ] **Growth from timestamps, not ticks.** Store `plantedAt` and hydrated time per crop, and compute the stage from elapsed time. The garden grows while everyone is offline.
 - [ ] **Visitor bonus** (from Animal Crossing): each *different* player who waters a plant today adds a growth bonus. Show "watered by 3 friends" sparkles.
@@ -117,6 +123,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 **Done when:** a player who returns the next day sees that the garden changed. **Playtest question:** do people come back to check on it?
 
 ## Phase 6: The tide (co-op challenge)
+
+> The water sim is removed (2026-10-30): the second bullet needs a new water model.
 
 - [ ] Every few minutes, a **telegraphed tide** rises over the beach for a minute: a visible wave on the horizon and a warning 30–60 s ahead. The schedule is a pure function of a shared clock (the host's tick, synced to clients) and a seed, so everyone sees the same tide. (Report idea #1)
 - [ ] Rising sea floods low cells into the sim; sand walls hold it back, and the sim erodes weak walls.
@@ -129,10 +137,20 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - [x] **Friendship.** Pet him, talk to him and give him presents to move up six levels, from Stranger to Best friend; hearts burst from his head at each new level. Personal, kept in localStorage per room (`src/boogler/friendship.js`).
 - [x] **Talking.** A dialogue box with answer choices. Chapters about his home in Uzbekistan, his mother and his business dream unlock with friendship; asking too much too soon makes him go quiet (`src/boogler/lines.js`, `src/boogler/talk.js`).
 - [x] **Riding.** Stand on him and he carries you, complains, then puffs up an orb that launches you and tells you off. Too many launches and he runs from you until time, an apology or a present forgives you (`src/boogler/play.js`).
-- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach. Shared state in `src/sim/gifts.js`.
-- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the shovel, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held but the shovel can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
+- [x] **Island gifts.** Palms grow fruit you can shake loose (or knock down with the ball), and odds and ends wash up on the beach (wash-ups removed 2026-10-30). Shared state in `src/sim/gifts.js`.
+- [x] **Hotbar.** Everything you pick up (gifts, seeds, the can, the ball, the frisbee on the lighthouse deck) takes one of eight slots (keys 1-8) and shows in your hand. Anything held can be thrown and lands for everyone; The Boogler takes what you hold but not key items. Seeds go in anywhere, and growing mushrooms are solid.
 
 **Playtest question:** do people check on The Boogler when they drop in, and do friends compare how far they've got with him?
+
+## 0.1 groundwork: identity, haul stack, work sites
+
+[docs/plans/0.1-groundwork.md](docs/plans/0.1-groundwork.md), from [docs/research/0.1/](docs/research/0.1/10-groundwork.md).
+
+- [x] M1 Clean break: the `v01` world namespace; proto, terrain and water retired.
+- [x] M2 A stable player id (pid) and the roster. · [x] M3 Ground piles. · [x] M4 The haul stack.
+- [x] M5 Work sites and plaques. · [x] M6 Palms as log sources. · [x] M7 Machine runs. · [x] M8 Offline helper bank. · [x] M9 Snapshot budget.
+
+**Playtest question:** does anyone pour without being told, and does the stack's spill make people laugh or groan?
 
 ## Later / stretch
 
@@ -144,10 +162,16 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - One-seed-per-few-minutes "r/place garden" mode for a slow collective flower mosaic.
 - Mud and erosion: wet sand slows players; plants anchor soil (From Dust).
 - **Skip:** full 3D voxel fluid. It's a lot of cost for little gameplay on a beach island.
+- **Active:** the Fly server hosts every room ([docs/plans/server-host.md](docs/plans/server-host.md)), then [docs/plans/net-roadmap.md](docs/plans/net-roadmap.md).
+- **Active: the architecture overhaul** ([docs/plans/architecture.md](docs/plans/architecture.md)): the ordered checklist for the items below.
+- **Future: a bigger, open world.** Dedicated server, asset packing (glb + meshopt, KTX2), then chunk streaming and LOD, in that order ([docs/plans/open-world.md](docs/plans/open-world.md)).
+
+- [x] **WebGPU renderer.** `WebGPURenderer` + TSL, WebGPU only since 2026-10-31 (no WebGL 2 fallback), linear HDR, adaptive resolution ([src/render/README.md](src/render/README.md)).
+- [ ] **Graphics quality tiers.** A Local pause-view setting (auto, low, medium, high; auto picks by backend, touch and frame time). Low is today's floor; medium adds compute particles behind `emit()`, TRAA, bloom, clustered night lights and cascaded shadows; high adds GTAO, SSGI, SSR and god rays. Measure each rung with `npm run perf` and on device ([src/render/README.md](src/render/README.md)).
 
 ## Open questions for the group
 
-- Where to host the PeerServer + snapshot storage (Fly, Railway, Render), and which TURN provider?
+- ~~Where to host the PeerServer + snapshot storage, and which TURN provider?~~ Fly, with Cloudflare TURN (#55–#57).
 - Is it OK that whoever is host carries more CPU and upload load? (Fine for a handful of friends; revisit if lobbies grow past ~8.)
 - One shared island, or rooms per friend group (`?room=`)?
 - How hard is the tide? Pure toy, or can you actually lose the garden?

@@ -37,7 +37,7 @@ const TUNNELS = [
 export const POND = { x: -65, z: -90, rx: 4.6, rz: 3.9, level: 3.0, bed: 2.0 }; // water surface and basin floor
 
 const MOUTH_REACH = 5; // how far a mouth's tunnel sticks out of the hill into its trench (it is trimmed there)
-export const TRENCH = { len: 12, w: 6.4 }; // the approach dug down to each mouth (len per mouth: node.trench)
+export const TRENCH = { w: 6.4 }; // the approach dug down to each mouth (its length per mouth: node.trench)
 
 // ---------------------------------------------------------------- derived geometry
 const norm = ([x, z]) => {
@@ -73,7 +73,7 @@ export const MOUTHS = Object.entries(NODES)
   .filter(([, n]) => n.kind === 'mouth')
   .map(([id, n]) => {
     const [ox, oz] = norm(n.out);
-    return { id, x: n.x, z: n.z, y: n.y, ox, oz, label: n.label, trench: n.trench ?? TRENCH.len };
+    return { id, x: n.x, z: n.z, y: n.y, ox, oz, label: n.label, trench: n.trench };
   });
 
 // ---------------------------------------------------------------- signed distance (negative = open cave)
@@ -128,7 +128,14 @@ function cellarSd(px, py, pz, n) {
 // Zones: which part of the cave a point belongs to (colours, decor, noise). Tunnels take the zone of their chamber.
 export const ZONE = { TUNNEL: 0, HUB: 1, MINE: 2, POND: 3, CELLAR: 4 };
 const KIND_ZONE = { hub: ZONE.HUB, mine: ZONE.MINE, pond: ZONE.POND, cellar: ZONE.CELLAR };
+// Each tunnel takes the zone of a chamber at either end (the hub's own tunnels count as plain tunnel, except the one
+// into the mine); the chambers themselves are their own parts.
 const tunnelZone = (s) => KIND_ZONE[NODES[s.from].kind] ?? KIND_ZONE[NODES[s.to].kind] ?? ZONE.TUNNEL;
+const SEG_ZONE = SEGMENTS.map((s) => {
+  const z = s.from === 'hub' && s.to === 'mine' ? ZONE.MINE : tunnelZone(s);
+  return z === ZONE.HUB ? ZONE.TUNNEL : z;
+});
+const CHAMBERS = Object.values(NODES).filter((n) => n.kind !== 'mouth');
 
 // Distance to the open cave at p, plus the zone and floor height of the nearest part (out.zone, out.floor).
 // Shapes are joined smoothly, then cut by one floor blended from theirs, so junctions stay flat (a smooth union of two
@@ -140,17 +147,15 @@ const partD = new Float64Array(MAX_PARTS),
   partF = new Float64Array(MAX_PARTS);
 export function networkSd(px, py, pz, out = info) {
   let n = 0;
-  for (const s of SEGMENTS) {
-    const z = s.from === 'hub' && s.to === 'mine' ? ZONE.MINE : tunnelZone(s);
+  for (let si = 0; si < SEGMENTS.length; si++) {
+    const s = SEGMENTS[si];
     for (let k = 0; k + 1 < s.pts.length; k++) {
-      const c = segmentSd(px, py, pz, s.pts[k], s.pts[k + 1]);
-      partD[n] = c;
-      partZ[n] = z === ZONE.HUB ? ZONE.TUNNEL : z;
+      partD[n] = segmentSd(px, py, pz, s.pts[k], s.pts[k + 1]);
+      partZ[n] = SEG_ZONE[si];
       partF[n++] = segFloor;
     }
   }
-  for (const node of Object.values(NODES)) {
-    if (node.kind === 'mouth') continue;
+  for (const node of CHAMBERS) {
     const c = node.kind === 'cellar' ? cellarSd(px, py, pz, node) : ellipsoidSd(px, py, pz, node);
     partD[n] = c - 0.3; // chambers win ties near their walls
     partZ[n] = KIND_ZONE[node.kind];

@@ -73,7 +73,7 @@ jobs:
             --allowed-tools "Read,Write,Edit,Glob,Grep,Agent,Bash(npm run *),Bash(npm ci),Bash(node *),Bash(npx *),Bash(ffmpeg *),Bash(ffprobe *),Bash(git *),Bash(gh pr create:*),Bash(gh pr view:*),Bash(ls *),Bash(cat *),Bash(mkdir *)"
           prompt: |
             You are the patch-video loop for Boogle, running unattended in GitHub Actions on a macOS runner (GPU
-            recording works as on a Mac; never pass --sw). Read AGENTS.md and .claude/skills/video/SKILL.md, then follow
+            recording works as on a Mac). Read AGENTS.md and .claude/skills/video/SKILL.md, then follow
             section "5. Patch video loop" with these CI specifics:
 
             - Step 1: `npm run video:changes`. If fewer than 3 new things a player would notice and enjoy, stop:

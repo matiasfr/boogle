@@ -33,6 +33,8 @@ jobs:
       # but a red main for whitespace isn't worth it yet.
       - run: npm run build
       - run: npm run test:unit
+      # Shared names (presence keys, message types, pad slots, frame orders) and mixed-build rules against main.
+      - run: git fetch -q --depth=1 origin main:refs/remotes/origin/main && npm run registry
 
   server:
     runs-on: ubuntu-latest
@@ -49,6 +51,9 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Build the image (from the repo root, as the deploy does)
+        working-directory: .
+        run: docker build -f server/Dockerfile .
 
   net:
     runs-on: ubuntu-latest
@@ -59,9 +64,13 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: npm --prefix server ci # ws-run.ts runs the real server in-process
       - id: pw
         run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
@@ -72,9 +81,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
 
-  # The fast browser scenarios (dev/scenarios/), one leg each so the slowest sets the wall time. The rest run nightly
-  # (scenarios-nightly.yml), so a PR's CI stays around two minutes. A flaky leg here gets a better wait (on a
-  # condition, not a time), never a skip; one that can't fit the budget moves to the nightly list.
+  # Single-player browser scenarios only, one leg each so the slowest sets the wall time. Two tabs drawing in the
+  # runner's software WebGPU (SwiftShader) run at a few frames a second and time out at random, so SCENARIO_GATE=pr
+  # makes run.mjs refuse a second player. Multiplayer is covered here by test:net (real rooms, no rendering) and the
+  # replay unit test; end to end, `smoke` runs on a Mac's GPU before every `npm run ship` (`npm run check:gpu`) and
+  # against the live site after every deploy (smoke.yml). The rest run nightly (scenarios-nightly.yml). A flaky leg
+  # here gets a better wait (on a condition, not a time), never a skip; one that can't be reliable here moves to the
+  # device gate or the nightly list.
   scenarios:
     name: scenario ${{ matrix.scenario }}
     runs-on: ubuntu-latest
@@ -84,8 +97,6 @@ jobs:
       matrix:
         scenario:
           - world-inputs
-          - smoke
-          - two-player-dig
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -104,6 +115,8 @@ jobs:
       - name: Install Chromium and system deps
         run: npx playwright install --with-deps chromium
       - run: npm run scenario -- ${{ matrix.scenario }}
+        env:
+          SCENARIO_GATE: pr # one player only; run.mjs refuses a second tab
       - if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:

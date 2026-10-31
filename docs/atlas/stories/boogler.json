@@ -1,0 +1,48 @@
+{
+  "id": "boogler",
+  "title": "The Boogler wanders",
+  "kind": "host",
+  "order": 50,
+  "steps": [
+    {
+      "hl": ["fr.systems"],
+      "text": "Only the host runs the Boogler’s brain. Your friend’s tab is the host here.",
+      "code": "src/boogler/boogler.js",
+      "cite": [
+        {
+          "file": "src/boogler/boogler.js"
+        }
+      ]
+    },
+    {
+      "go": [["fr.systems", "fr.netplay", "lane:host", "you.netplay"]],
+      "text": "The host publishes his state as a host field called g.",
+      "code": "addHostField('g', publish, hear)",
+      "cite": [
+        {
+          "hostField": "g"
+        }
+      ]
+    },
+    {
+      "go": [["you.netplay", "you.screen"]],
+      "text": "Every other tab shows him where the host says he is.",
+      "code": "hear(value)",
+      "cite": [
+        {
+          "hostField": "g"
+        }
+      ]
+    },
+    {
+      "hl": ["fr.systems", "you.systems"],
+      "text": "If the host leaves, another tab becomes host and the Boogler carries on from there.",
+      "code": "Host state restarts with the next host",
+      "cite": [
+        {
+          "file": "src/boogler/boogler.js"
+        }
+      ]
+    }
+  ]
+}

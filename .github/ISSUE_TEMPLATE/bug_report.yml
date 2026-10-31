@@ -27,7 +27,7 @@ body:
     attributes:
       label: Room name and URL
       description: Live site or local dev? Were you the host?
-      placeholder: https://matiasfr.github.io/boogle/?room=test
+      placeholder: https://boogle.club/?room=test
   - type: textarea
     id: logs
     attributes:

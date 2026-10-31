@@ -6,7 +6,7 @@
 
 ## The conceit
 
-A book has already washed up on the beach. It's a gift in `src/sim/gift-catalog.js`:
+A book has already washed up on the beach. It's a gift in `src/sim/gift-catalog.ts`:
 
 > *"'Business for Beginners.' The pages are stuck together. I will read it cover to cover. Again."*
 
@@ -25,7 +25,7 @@ The device does several jobs at once:
 - **It has to end.** The communal report suggests about 8–15 wants across 3–4 landmarks, finishable "in a few weeks of casual sessions" (Terra Nil, Stardew's ~30 bundles). This book has about 45 pages, so it is split into **seasons** (see "Seasons" below). Season 1 is about a dozen pages. The rest come later, the way Sky and Deep Rock Galactic bring seasons back.
 - **Nothing grows while nobody hosts, yet.** `world.epochMs` is saved but never read, so every "while you were away" idea here (the Boat Fund, the apricot, Oyijon's letters) needs the communal report's capped, grow-only **`world.catchup(n)` op** first. The snapshot server isn't deployed either; that's the owner's pending call in the tech plan. Until both exist, a different friend hosting can start from an empty island. These are the two prerequisites for everything below.
 - **Grow while away, never decay while away.** This rule comes from Animal Crossing's history in the communal report, and it now applies to every page: nothing players made or planted expires.
-- **Together moments use the honk chord.** `src/sim/social.js` already detects 3+ *different* players acting within about a second. The bell (3.4), the sumalak stirring (6.4) and any "ring it together" page use that detector. Once it changes shared state, the host detects it and stamps an op. Each gate also has a slower solo path (`min(3, players online)`).
+- **Together moments use the honk chord.** `src/sim/social.ts` already detects 3+ *different* players acting within about a second. The bell (3.4), the sumalak stirring (6.4) and any "ring it together" page use that detector. Once it changes shared state, the host detects it and stamps an op. Each gate also has a slower solo path (`min(3, players online)`).
 - **The storm tide is the clock.** The ambitious-mechanics report recommends a telegraphed tide and a king-tide crate that needs two pushers. Here, the sandbar (8.2) uses the same tide function, Gary's boat parts arrive in king-tide crates (8.1), and that report calls rafts (4.6) "the best next bundle".
 - **No goal asks for a shape of sand.** The communal report: "keep sand as a toy and stop asking it to carry progression", and simplify the shovel to one dig verb. Chapter 7's stitch-the-sand idea broke that rule, so it now offers a coarse version (7.2).
 - **Controls are tight.** Every interaction now goes through one button with a glyph prompt, and pad slots are close to full (check `freeSlots()` in `src/player/controls.js`). Vehicles board with the interact button and drive through a context layer (`wrapAction`, the way `feel.js` turns pile into a dive while swimming), not new buttons. See [vehicles.md](vehicles.md).
@@ -86,7 +86,7 @@ The Boogler stops walking around and opens a stall. This chapter is the incremen
 | 3.1 **A Place of Business** | "Location! I will stand in one location. Revolutionary." | A crate stall by the seed stall, where he spends part of each day. | 10 driftwood, 1 regular |
 | 3.2 **Pricing** | "Everything must have a price. The price is: a smile." | Hand him anything and he "sells" it to imaginary customers (seagulls, a crab). He pays in **coins into the Boat Fund jar**, not to you. | 3.1, any 5 different gift kinds |
 | 3.3 **Signage** | "A sign! With the slogan!" | A painted sign with the slogan someone picked in his dialogue (the `{slogan}` flag), plus the names of everyone who helped. | 3.2, paint (crushed pomegranate + shell), 2 regulars |
-| 3.4 **The Little Bell** | "Ding. That is the sound of business." | A bell anyone can ring. Its chord follows the honk pitch table (`src/sim/social.js`), so several ringers sound good. Ring it and he shows up. Three *different* ringers within a second (the honk-chord detector, host-detected) count as a "grand opening": confetti, and he gives a speech. | 3.3 |
+| 3.4 **The Little Bell** | "Ding. That is the sound of business." | A bell anyone can ring. Its chord follows the honk pitch table (`src/sim/social.ts`), so several ringers sound good. Ring it and he shows up. Three *different* ringers within a second (the honk-chord detector, host-detected) count as a "grand opening": confetti, and he gives a speech. | 3.3 |
 | 3.5 **Passive Income** | "Money that comes while you sleep! I am very good at sleeping." | **The Boat Fund grows on its own while the island is empty**, at a rate set by the stall's level and how many different visitors came today. | 3.4, 3 regulars |
 | 3.6 **Haggling** | "Never pay the first price." | When you hand him something, a timing mini-toy: let him walk away slowly and call him back. A better haggle earns *you* a cosmetic stamp; the fund still gets its coin. | 3.5 |
 | 3.7 *Seashell Consulting* (joke) | "Chapter 3, part 7: consult the experts." | You can arrange shells in rows. Over a few minutes they slowly drift back to where they were. "They did not listen. Again." | none |
@@ -213,7 +213,7 @@ Each season can be "finished", and the island stays a toy box afterwards. Later 
 
 ## Sync summary
 
-Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/netplay/net.js`, smoothed with `createSnaps`), and Lockstep is `registerOp`/`registerState`/`onTick` with `submitEdit` from features. One-off events (a bell ring, a page fluttering) are room messages, not state.
+Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePresence`, Host is `addHostField` (both in `src/netplay/net.ts`, smoothed with `createSnaps`), and Lockstep is `registerOp`/`registerState`/`onTick` with `submitEdit` from features. One-off events (a bell ring, a page fluttering) are room messages, not state.
 
 | State | Kind | Where it would live |
 | --- | --- | --- |
@@ -222,9 +222,9 @@ Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePres
 | Partner card, cosmetics, known patterns, last-seen tick | Local (localStorage) | like `src/boogler/friendship.js` |
 | Carts, buggies, yachts, rafts, the qozon while carried | Owner | `addPresenceField`, epoch rule as in `src/physics/ball.js` |
 | The Seagull Courier, the king-tide crate | Host | `addHostField`, like The Boogler |
-| Wind, tide, Oyijon's letter schedule, sumalak night | Lockstep without state | functions of tick + seed (`src/sim/sky-clock.js` style; the tide is the storm-tide `tideAt`) |
+| Wind, tide, Oyijon's letter schedule, sumalak night | Lockstep without state | functions of tick + seed (`src/sim/sky-clock.ts` style; the tide is the storm-tide `tideAt`) |
 | Letters, smiles, pattern stones, ruts, blue tiles | Lockstep, as edits | `registerOp` |
-| Bell chords that change state | Lockstep op, host-detected | the honk-chord detector in `src/sim/social.js`, run on the host |
+| Bell chords that change state | Lockstep op, host-detected | the honk-chord detector in `src/sim/social.ts`, run on the host |
 | Sparks, steam, page-peel effects, the jar's glint | Local | feature modules |
 
 ## Where to start, if you want a first slice

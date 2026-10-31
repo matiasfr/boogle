@@ -1,6 +1,6 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (terrain edits, water, weather, tide) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
+Everything players can change and everyone must agree on (mushrooms, items) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
 
 ## Pieces
 
@@ -8,12 +8,12 @@ Everything players can change and everyone must agree on (terrain edits, water, 
 |---|---|
 | `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration and persistence (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
-| `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.terrain`, ...). Adapters import it first. |
-| `terrain-logic.js`, `grid.js` | Pure, lockstep: the sand layer (`TERRAIN_OPS`) and grid constants. |
-| `terrain-edits.js`, `water-world.js` | Adapters: sand mesh, physics and shovel; water rendering and the ball's water field. |
-| `background.js`, `clock-worker.js` | Keep the world ticking while the tab is hidden. |
+| `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
+| `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
+| `grid.js` | Pure, lockstep: grid constants. |
+| `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden. |
 
-Pure sim logic lives in `../sim/` (water, mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
+Pure sim logic lives in `../sim/` (mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.js`;
 tests install the rules on their own sync instances (`test/helpers/net.mjs`).
 
@@ -21,13 +21,14 @@ tests install the rules on their own sync instances (`test/helpers/net.mjs`).
 
 ```js
 // Rules modules get registerOp/registerState/onTick through install(sync, ...); adapters import the rest.
-import { TICK_MS, world, submitEdit, onApplied, onAfterTick, onSnapshot, setEnv } from './world/sync.js';
+import { TICK_MS, world, submitEdit, onApplied, onAfterTick, onSnapshot, setEnv } from './world/sync.ts';
 
 TICK_MS                      // 100: sim runs at 10 ticks/s
 world.tick                   // integer, current sim tick (same on every client once synced)
-world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/sim/rng.js)
+world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/sim/rng.ts)
 
 registerOp(op, {
+  hostOnly: false,           // true: only the host's own submit is stamped (a broadcast edit can't be replayed by a client)
   validate(edit, ctx) { },   // host only: return true to accept. ctx = { from, tick, env }. Reject out-of-range, rate abuse.
   apply(edit, tick) { },     // everyone: mutate registered state, deterministically. No effects: return a result instead.
 })                           // registering an op or state key twice throws (order is wire order)
@@ -46,10 +47,14 @@ onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied 
                              // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
-submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
+submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. Sync adds `p` (the session's selfId),
+                                   // and the host adds `u` (the player's pid, bound through w:id; an edit's own u is
+                                   // dropped). Edits from a tab whose pid the host doesn't know are rejected.
                                    // Returns true if queued, not applied: the host may reject it, and edits held
                                    // while reconnecting can be dropped (see sync.js header). Use onApplied for
                                    // anything irreversible.
+setPid(pid)                  // this tab's player id (src/player/identity.ts; the selfId stands in until set)
+pidOf(selfId)                // a session's pid, or null
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
 registry()                   // { ops, states }: registered keys in order
@@ -59,26 +64,40 @@ Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at th
 
 Grid cells use the heightfield indexing from `src/adapters/terrain.js`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
-Integer units: heights and water depths are stored in **centimetres** (`Int16`/`Int32`). Base terrain is quantized once with `Math.round(h * 100)`.
+Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 
 ### Ordering inside one tick
 1. Apply that tick's edits (host sequence order).
-2. Run `onTick` handlers in registration order (e.g. water flow first, then systems that read water).
+2. Run `onTick` handlers in registration order (a system that reads another's state registers after it).
 3. Run `onAfterTick` handlers in registration order.
 
-Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs` for offline growth, which the host fixes).
+Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-clock time enters only through the tick number (and `world.epochMs`, the wall time of tick 0, which a host that loaded a save compares with its clock to submit `bank.wake` for the time nobody hosted).
 
 ## Other exports
 
-Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.js`); without a room it
+Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.ts`); without a room it
 runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
 them.
 
+- `saveNow(force?)`: save now (localStorage, and the server's snapshot for a host), with `force` even if no state changed
+  since the last save (the tick moved on); `attachWorld(room, { saveMs })` sets how
+  often saves happen (default 30 s; the server host uses 2 s).
+- `adoptSnapshot(snap)`: host only; replace the world with a handed-over snapshot (clients follow by resync). A host
+  that is demoted POSTs its world to the server's `/rooms/:id/handoff` first.
 - `onSnapshot(fn)`: state was replaced from a snapshot; rebuild meshes.
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
 - `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
-- `worldStatus()`: debug. `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
+- `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
+  at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
   newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).
+
+## The land as data
+
+`home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm and perch cells) and
+`plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
+and Node tests read it (`test/helpers/land.mjs`); `dev/scenarios/world-inputs.mjs` checks it against the running game
+and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI
+moves on purpose.

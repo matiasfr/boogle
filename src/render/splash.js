@@ -1,28 +1,26 @@
 // Cosmetic splashes: foam droplets (the shared pool, src/render/particles.js) plus a ripple ring in the sea shader.
 // Detected locally on every client from displayed positions, never networked, so floats and Math.random are fine here.
 import * as THREE from 'three';
-import { SEA, BALL_R, GRAVITY, reducedMotion } from '../constants.js';
-import { waterMat } from './water-render.js';
+import { BALL_R, GRAVITY, reducedMotion } from '../constants.js';
+import { seaRipples } from './water-render.js';
 import { emit } from './particles.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 
-const MAX_RIPPLES = 8;
 const FEET = 0.35; // waterline offset used by the swim code in physics.js
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
 
-// ripples: x, z, start time, strength (0 = unused)
-const ripples = waterMat.uniforms.uRip.value;
+// seaRipples: x, z, start time, strength (0 = unused); the sea shader's ripple array sets how many
 let rippleCursor = 0;
 function addRipple(x, z, strength) {
-  ripples[rippleCursor].set(x, z, elapsedNow, strength);
-  rippleCursor = (rippleCursor + 1) % MAX_RIPPLES;
+  seaRipples[rippleCursor].set(x, z, elapsedNow, strength);
+  rippleCursor = (rippleCursor + 1) % seaRipples.length;
 }
 
-// strength 0..1
-export function splash(x, z, strength, level = SEA) {
+// strength 0..1, level: the water surface there
+export function splash(x, z, strength, level) {
   strength = Math.min(Math.max(strength, 0), 1);
   addRipple(x, z, 0.35 + strength * 0.65);
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));
@@ -32,7 +30,7 @@ export function splash(x, z, strength, level = SEA) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * (0.15 + strength * 0.35);
     const sp = spread * (0.3 + Math.random() * 0.7);
-    emit('soft', {
+    emit({
       x: x + Math.cos(a) * r,
       y: level + 0.05,
       z: z + Math.sin(a) * r,
@@ -58,7 +56,7 @@ const ballTrack = makeTracker(-BALL_R);
 const meTrack = makeTracker(-FEET);
 const remoteTracks = new Map();
 
-function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
+function track(t, x, y, z, vyHint, dt, minSpeed, scale) {
   const bottom = y + t.bottomOffset;
   const prev = t.y;
   const moved = Math.abs(x - t.x) + Math.abs(z - t.z) + Math.abs(bottom - prev);
@@ -67,13 +65,12 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
   t.z = z;
   t.cool -= dt;
   if (Number.isNaN(prev) || moved > 4 || dt <= 0) return; // teleport or first sample
-  const level = waterField.surfaceAt(x, z); // the sea, or a pool/stream from the sim where that is higher
+  const level = waterField.surfaceAt(x, z); // the sea, or the cave pond where that is higher
   if (prev > level && bottom <= level && t.cool <= 0 && groundHeight(x, z) < level - 0.1) {
     const vy = vyHint !== null ? vyHint : (bottom - prev) / dt;
     const speed = -vy;
     if (speed >= minSpeed) {
       splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1, level);
-      if (isMyBall && waterField.onBallImpact) waterField.onBallImpact(x, z, speed);
       t.cool = 0.2;
     }
   }
@@ -82,7 +79,7 @@ function track(t, x, y, z, vyHint, dt, minSpeed, scale, isMyBall = false) {
 export function updateSplash(dt, elapsed, ball, me, remotes) {
   elapsedNow = elapsed;
   const bp = ball.mesh.position;
-  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1, ball.mine);
+  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1);
 
   if (me.entered && me.body) {
     const p = me.body.position;

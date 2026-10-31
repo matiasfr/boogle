@@ -1,12 +1,13 @@
-import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import * as THREE from 'three/webgpu';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
 import { clamp, angleLerp, sanitizeName } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
-import { world, teleport } from '../physics/physics.js';
+import { dynAttr, instancedSprite } from '../render/sprites.js';
+import { teleport } from '../physics/physics.js';
+import { addBody } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
-import { sendPresence } from '../netplay/net.js';
+import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.js';
 import { input } from './input.js';
 import { heldId } from './inventory.js';
@@ -17,11 +18,14 @@ export const me = {
   entered: false,
   name: '',
   colorIdx: 0,
+  /** @type {import('../physics/engine.ts').Body | null} */
   body: null,
+  /** @type {import('three').Group | null} */
   avatar: null,
   yaw: 0,
   coyote: 0,
   jumpQueued: 0,
+  jumpHeld: false,
   swimming: false,
   sprint: false,
   holding: false,
@@ -39,7 +43,7 @@ export function camForward(out = new THREE.Vector3()) {
   return out.set(-Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp);
 }
 function playerPos() {
-  return me.body ? me.body.interpolatedPosition : new CANNON.Vec3(SPAWN.x, 2, SPAWN.z);
+  return me.body ? me.body.interpolatedPosition : { x: SPAWN.x, y: 2, z: SPAWN.z };
 }
 // A point beside the player in their own frame (x right, y up, z back; the avatar faces -z), in world space.
 function fromBody(out, x, y, z) {
@@ -86,7 +90,7 @@ export function enterIsland() {
   const y = groundHeight(x, z) + PLAYER_R + 0.6;
   me.body = makePlayerBody(false);
   teleport(me.body, x, y, z);
-  world.addBody(me.body);
+  addBody(me.body);
   me.avatar = makeAvatar(me.colorIdx);
   scene.add(me.avatar);
   me.yaw = cam.yaw;
@@ -130,7 +134,7 @@ export const camConstraints = [];
 const camPos = new THREE.Vector3(),
   camLook = new THREE.Vector3(),
   fwd = new THREE.Vector3();
-export function updateCamera(elapsed) {
+function updateCamera(elapsed) {
   if (!me.entered || !me.body) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
     camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);
@@ -167,31 +171,25 @@ const dotTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 const PREVIEW_N = 48;
-const previewGeo = new THREE.BufferGeometry();
-previewGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PREVIEW_N * 3), 3));
-const preview = new THREE.Points(
-  previewGeo,
-  new THREE.PointsMaterial({
-    map: dotTex,
-    size: 0.2,
-    transparent: true,
-    opacity: 0.9,
-    alphaTest: 0.3,
-    depthWrite: false,
-  }),
-);
-preview.frustumCulled = false;
-preview.visible = false;
-scene.add(preview);
+const previewAttr = dynAttr(new Float32Array(PREVIEW_N * 3), 3);
+const previewMat = new THREE.PointsNodeMaterial({
+  map: dotTex,
+  size: 0.2,
+  transparent: true,
+  opacity: 0.9,
+  alphaTest: 0.3,
+  depthWrite: false,
+});
+const preview = instancedSprite(previewMat, previewAttr);
 
-export function updatePreview() {
+function updatePreview() {
   preview.visible = me.charging;
   if (!me.charging) return;
   const id = heldId();
   const glide = id === 'frisbee';
   const p = id === 'ball' ? handPosition() : throwFrom();
   const v = throwVelocity(chargeAmount(), p, glide);
-  const arr = previewGeo.attributes.position.array;
+  const arr = previewAttr.array;
   let n = 0;
   for (; n < PREVIEW_N; n++) {
     arr[n * 3] = p.x;
@@ -203,8 +201,8 @@ export function updatePreview() {
       break;
     }
   }
-  previewGeo.setDrawRange(0, n);
-  previewGeo.attributes.position.needsUpdate = true;
+  preview.count = n;
+  previewAttr.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
@@ -213,7 +211,7 @@ onFrame(
   () => {
     if (me.body && me.body.position.y < -25) {
       teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
-      me.body.velocity.setZero();
+      me.body.velocity.set(0, 0, 0);
     }
   },
   { phase: 'world', order: -290 },
@@ -235,4 +233,4 @@ onFrame(
 onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });
 
 // late -200, first in late, before the HUD (hud.js, -190).
-onFrame(() => updatePreview(), { phase: 'late', order: -200 });
+onFrame(updatePreview, { phase: 'late', order: -200 });

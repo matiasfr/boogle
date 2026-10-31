@@ -1,101 +1,14 @@
-// End-to-end test of src/net/peer-room.js: local PeerServer + headless Chromium pages (see README.md).
-import http from 'node:http';
-import net from 'node:net';
-import path from 'node:path';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
-import { PeerServer } from 'peer';
-import * as esbuild from 'esbuild';
-
-const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
-const here = path.dirname(fileURLToPath(import.meta.url));
-
-const freePort = () =>
-  new Promise((res) => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => {
-      const p = s.address().port;
-      s.close(() => res(p));
-    });
-  });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// End-to-end test of src/net/peer-room.ts (`npm run test:net`): local PeerServer + headless Chromium pages running
+// page.js. Room interface: src/net/README.md.
+import { startHarness, waitFor, ev, snap, seesAll, sleep } from './harness.mjs';
 
 const results = [];
 function check(name, ok, detail = '') {
   results.push({ name, ok });
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
 }
-// Polls fn until truthy; returns elapsed ms, or -1 on timeout.
-async function waitFor(fn, timeout = 8000, step = 50) {
-  const t0 = Date.now();
-  for (;;) {
-    try {
-      if (await fn()) return Date.now() - t0;
-    } catch {
-      /* page may be mid-navigation */
-    }
-    if (Date.now() - t0 > timeout) return -1;
-    await sleep(step);
-  }
-}
-const ev = (page, fn, arg) => page.evaluate(fn, arg);
 
-const signalPort = await freePort(),
-  webPort = await freePort();
-const server = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/peerjs' });
-const built = await esbuild.build({
-  entryPoints: [path.join(here, 'page.js')],
-  bundle: true,
-  format: 'iife',
-  write: false,
-  platform: 'browser',
-  logLevel: 'warning',
-});
-const js = built.outputFiles[0].text;
-const web = http
-  .createServer((req, res) => {
-    if (req.url.startsWith('/bundle.js')) {
-      res.writeHead(200, { 'content-type': 'text/javascript' });
-      res.end(js);
-    } else {
-      res.writeHead(200, { 'content-type': 'text/html' });
-      res.end('<!doctype html><script src="/bundle.js"></script>');
-    }
-  })
-  .listen(webPort, '127.0.0.1');
-
-const browser = await chromium.launch();
-const room = 'test' + Math.random().toString(36).slice(2, 8);
-async function open(name) {
-  const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  page.on('pageerror', (e) => console.log(`  [${name}] pageerror: ${e.message}`));
-  if (process.env.VERBOSE) page.on('console', (m) => console.log(`  [${name}] ${m.text()}`));
-  await page.goto(
-    `http://127.0.0.1:${webPort}/?room=${room}&port=${signalPort}${process.env.STUN ? '&stun=1' : ''}${process.env.VERBOSE ? '&debug=' + process.env.VERBOSE : ''}`,
-  );
-  const selfId = await ev(page, () => window.T.start());
-  return { name, page, ctx, selfId };
-}
-const snap = (p) => ev(p.page, () => window.T.snap());
-// True when every page in `group` lists exactly the other members (plus itself, first, sameTab).
-async function seesAll(group) {
-  for (const p of group) {
-    const s = await snap(p);
-    const want = group
-      .filter((o) => o !== p)
-      .map((o) => o.selfId)
-      .sort();
-    const got = s.peers
-      .filter((x) => !x.sameTab)
-      .map((x) => x.peer)
-      .sort();
-    if (JSON.stringify(want) !== JSON.stringify(got)) return false;
-    if (s.peers.filter((x) => x.sameTab).length !== 1 || s.peers[0].peer !== p.selfId || !s.peers[0].sameTab)
-      return false;
-  }
-  return true;
-}
+const { room, open, close } = await startHarness();
 
 let exitCode;
 try {
@@ -127,6 +40,17 @@ try {
     return true;
   }, 3000);
   check('presence values propagate', presOk >= 0, presOk + ' ms');
+  // Presence rides the fast lane (unreliable, no retransmits) on every link once both ends have it.
+  const lanes = (pages, want) =>
+    waitFor(async () => {
+      for (const p of pages) {
+        const rows = await ev(p.page, () => window.T.room.linkStats());
+        if (!rows.length || !rows.every((r) => want(r))) return false;
+      }
+      return true;
+    }, 5000);
+  const fastOk = await lanes(all, (r) => r.fast);
+  check('presence rides the fast lane on every link', fastOk >= 0, fastOk + ' ms');
   await ev(A.page, () => window.T.room.presence({ x: null }));
   check(
     'presence null deletes key',
@@ -150,6 +74,17 @@ try {
     'presence latency < 500 ms',
     lats.length > 200 && maxLat < 500,
     `n=${lats.length} p50=${p50}ms max=${maxLat}ms`,
+  );
+
+  // linkStats(): the host has a link to each client, each client one to the host; all direct (no TURN here)
+  const links = await Promise.all(
+    all.map((p) => ev(p.page, async () => ({ host: window.T.room.isHost(), rows: await window.T.room.linkStats() }))),
+  );
+  check(
+    'linkStats(): one row per link, direct, with an RTT',
+    links.every((l) => l.rows.length === (l.host ? 2 : 1)) &&
+      links.flatMap((l) => l.rows).every((r) => r.relay === false && Number.isFinite(r.rttMs)),
+    JSON.stringify(links.map((l) => l.rows.map((r) => `${r.local}/${r.remote} ${r.rttMs}ms`))),
   );
 
   // 3. reliable messages: ordered, exactly once, from every sender to both others
@@ -264,6 +199,8 @@ try {
     'messages flow after migration',
     post[0].msgs[C.selfId]?.length === 20 && post[1].msgs[B.selfId]?.length === 20,
   );
+  const fastAfter = await lanes(BC, (r) => r.fast);
+  check('the fast lane comes back after migration', fastAfter >= 0, fastAfter + ' ms');
 
   // 5. a newcomer joins the migrated room; then a client crashes, then one closes gracefully
   const D = await open('D');
@@ -343,6 +280,121 @@ try {
     hardMs >= 0 && Date.now() - tHard < 5000,
     `${Date.now() - tHard} ms`,
   );
+
+  // Mixed builds: a tab without the fast lane (fastLane: false, like builds from before it) gets and sends presence
+  // on 'u'; the host keeps its lane to the tabs that have one.
+  const laneRoom = room + 'lane';
+  const L1 = await open('L1', { in: laneRoom }),
+    L2 = await open('L2', { in: laneRoom }),
+    L3 = await open('L3', { in: laneRoom, query: '&nolane=1' });
+  const mixed = [L1, L2, L3];
+  await Promise.all(mixed.map((p, i) => ev(p.page, (i) => window.T.room.presence({ name: 'l' + i }), i)));
+  const mixedOk = await waitFor(async () => {
+    for (const p of mixed) {
+      const s = await snap(p);
+      for (const o of mixed)
+        if (o !== p && s.peers.find((x) => x.peer === o.selfId)?.presence.name !== 'l' + mixed.indexOf(o)) return false;
+    }
+    return true;
+  }, 5000);
+  check('mixed builds: presence flows between lane and no-lane tabs', mixedOk >= 0, mixedOk + ' ms');
+  const hostRows = await ev(L1.page, () => window.T.room.linkStats());
+  check(
+    'mixed builds: the host uses the lane only with the tab that has it',
+    hostRows.find((r) => r.peer === L2.selfId)?.fast === true &&
+      hostRows.find((r) => r.peer === L3.selfId)?.fast === false,
+    JSON.stringify(hostRows.map((r) => [r.peer === L2.selfId ? 'L2' : 'L3', r.fast])),
+  );
+  for (const p of mixed) await p.page.close();
+
+  // Room cap (maxPeers, host included): a newcomer past the cap is turned away with room_full, and gets in once
+  // someone leaves.
+  const capRoom = room + 'cap';
+  const capOpts = { in: capRoom, query: '&max=3' };
+  const X = await open('X', capOpts),
+    Y = await open('Y', capOpts),
+    Z = await open('Z', capOpts);
+  check('cap: three join a room capped at 3', (await waitFor(() => seesAll([X, Y, Z]), 5000)) >= 0);
+  const W = await open('W', capOpts);
+  check(
+    'cap: a fourth is turned away with room_full',
+    W.selfId?.error === 'room_full' && W.selfId.max === 3,
+    JSON.stringify(W.selfId),
+  );
+  await sleep(800);
+  check('cap: the room never lists the fourth', (await snap(X)).peers.length === 3);
+  await ev(Z.page, () => window.T.room.close());
+  await waitFor(() => seesAll([X, Y]), 5000);
+  W.selfId = await ev(W.page, () => window.T.start());
+  check(
+    'cap: once one leaves, the fourth gets in',
+    typeof W.selfId === 'string' && (await waitFor(() => seesAll([X, Y, W]), 5000)) >= 0,
+    JSON.stringify(W.selfId),
+  );
+  // Y leaves, V takes the spot, Y's tab connects again (same selfId, as after a blip): the host admits it over the
+  // cap. (A fresh createPeerRoom restarts its presence seq, which the host's tombstone ignores, so this only checks
+  // admission; a real blip reconnects the same room and keeps its seq.)
+  await ev(Y.page, () => window.T.room.close());
+  await waitFor(() => seesAll([X, W]), 5000);
+  const V = await open('V', capOpts);
+  await waitFor(() => seesAll([X, W, V]), 5000);
+  const back = await ev(Y.page, () => window.T.start());
+  check('cap: a tab the room has seen before is not turned away', back === Y.selfId, JSON.stringify(back));
+  await Promise.all([X, Y, Z, W, V].map((p) => p.ctx.close()));
+
+  // Host choice: a host whose score drops (a hidden tab) hands over to the best-scored client, and stays in the room.
+  const hoRoom = room + 'ho';
+  const H = await open('H', { in: hoRoom, query: '&score=3' }),
+    K = await open('K', { in: hoRoom, query: '&score=2' }),
+    L = await open('L', { in: hoRoom, query: '&score=3' });
+  await waitFor(() => seesAll([H, K, L]), 5000);
+  check('handover: the first page hosts', (await snap(H)).host);
+  await ev(H.page, () => (window.T.score = 0));
+  const tHo = Date.now();
+  const handedMs = await waitFor(async () => (await snap(L)).host, 20000); // a new host keeps the role 15 s
+  check('handover: a hidden host hands over to the best-scored client', handedMs >= 0, `${Date.now() - tHo} ms`);
+  const hosts3 = (await Promise.all([H, K, L].map(snap))).filter((s) => s.host).length;
+  check('handover: exactly one host after it', hosts3 === 1, `hosts=${hosts3}`);
+  check('handover: the old host is back in as a client', (await waitFor(() => seesAll([H, K, L]), 10000)) >= 0);
+  await Promise.all([H, K, L].map((p) => p.ctx.close()));
+
+  // World ids: world sync binds each page's player id (pid) to its session, ignores a pid an edit claims, and keeps
+  // the binding across a host crash (src/world/sync.ts, w:id; docs/plans/0.1-groundwork.md M2).
+  const idRoom = room + 'id';
+  const P = await open('P', { in: idRoom, query: '&pid=pidp' }); // first in: the host
+  const [Q, R] = await Promise.all(['Q', 'R'].map((n) => open(n, { in: idRoom, query: `&pid=pid${n.toLowerCase()}` })));
+  const PQR = [P, Q, R];
+  const world = (p) => ev(p.page, () => window.T.worldSnap());
+  const rosterHas = async (pages, want) =>
+    (await Promise.all(pages.map(world))).every((w) => {
+      const rows = Object.fromEntries(w.roster.map((r) => [r[0], r[1]]));
+      return w.roster.length === Object.keys(want).length && Object.entries(want).every(([u, n]) => rows[u] === n);
+    });
+  await waitFor(async () => (await Promise.all(PQR.map(world))).every((w) => w.ready), 8000);
+  check('world ids: the first page hosts the world', (await world(P)).mode === 'host');
+  await Promise.all(PQR.map((p) => ev(p.page, (n) => window.T.who(n), p.name)));
+  const bound = await waitFor(() => rosterHas(PQR, { pidp: 'P', pidq: 'Q', pidr: 'R' }), 8000);
+  check('world ids: every page names each pid after its own who.set', bound >= 0, bound + ' ms');
+  await ev(Q.page, () => window.T.who('Mallory', 'pidp')); // claims P's pid: the host stamps Q's instead
+  const forged = await waitFor(() => rosterHas(PQR, { pidp: 'P', pidq: 'Mallory', pidr: 'R' }), 8000);
+  check('world ids: a pid claimed in an edit is ignored', forged >= 0);
+  await P.page.close(); // the host crashes
+  await waitFor(async () => (await Promise.all([Q, R].map(world))).some((w) => w.mode === 'host'), 10000);
+  await waitFor(async () => (await Promise.all([Q, R].map(world))).every((w) => w.ready), 8000);
+  // A client keeps the dead host pinned for HOST_STALE_MS (3 s) and drops the new host's edits until then (it resyncs
+  // after); rename once that window has passed, so a desync here means a pid problem.
+  await sleep(3500);
+  await Promise.all([Q, R].map((p) => ev(p.page, (n) => window.T.who(n + '2'), p.name)));
+  const kept = await waitFor(() => rosterHas([Q, R], { pidp: 'P', pidq: 'Q2', pidr: 'R2' }), 10000);
+  check('world ids: after a host crash the new host still binds each pid', kept >= 0, kept + ' ms');
+  const bad = (await Promise.all([Q, R].map(world))).map((w) => [w.mode, w.hashBad, w.lastBad, w.resyncs]);
+  check(
+    'world ids: no desync',
+    bad.every((b) => b[1] === 0),
+    JSON.stringify(bad),
+  );
+  await Promise.all(PQR.map((p) => p.ctx.close().catch(() => {})));
+
   const BD = [hostPage];
   const errs = await Promise.all(BD.map((p) => ev(p.page, () => window.T.errors)));
   check(
@@ -359,8 +411,6 @@ try {
     `\n${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length}/${results.length} checks passed`,
   );
   exitCode = failed.length ? 1 : 0;
-  await browser.close().catch(() => {});
-  web.close();
-  server.close?.();
+  await close();
   process.exit(exitCode);
 }

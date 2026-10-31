@@ -7,18 +7,22 @@ name: Auto-merge
 # - A PR from any other branch in this repo (claude/* from Claude, a friend's feature branch): squash-merged when CI
 #   on it is green.
 # Opt out per PR with the `no-automerge` label, or by leaving it as a draft.
+# Owner gate: a change by anyone outside OWNERS that touches RISKY paths (networking, world sync and saves, the server,
+# CI and tooling, dependencies) is labelled `needs-owner` and waits for an owner's approval of its current head commit.
+# review.yml exists so that approval starts this workflow (from main) and merges the PR if CI is green.
 # A PR that conflicts with main is handed to ci-autofix.yml, which merges main into the branch.
 # Merges made with GITHUB_TOKEN don't trigger push workflows, so this also starts the deploys and CI on main.
 # Opening PRs needs Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests".
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI, Review]
     types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
   actions: write
 
 concurrency:
@@ -34,7 +38,8 @@ jobs:
       (
         (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' &&
          !startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
-        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/'))
+        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
+        github.event.workflow_run.name == 'Review'
       )
     runs-on: ubuntu-latest
     env:
@@ -44,6 +49,10 @@ jobs:
       SHA: ${{ github.event.workflow_run.head_sha }}
       GREEN: ${{ github.event.workflow_run.conclusion == 'success' }}
       SHIPPER: ${{ github.event.workflow_run.actor.login }}
+      TRIGGER: ${{ github.event.workflow_run.name }}
+      # GitHub logins whose changes never wait, and the paths that make anyone else's change wait for one of them.
+      OWNERS: matiasfr
+      RISKY: '^(src/net/|src/netplay/|src/world/|src/sim/|server/|scripts/|\.github/|eslint\.config\.js$|package(-lock)?\.json$)'
     steps:
       - name: Find or open the PR
         id: pr
@@ -74,9 +83,27 @@ jobs:
           fi
           echo "number=$pr" >> "$GITHUB_OUTPUT"
 
+      # A review run says nothing about CI: look up the CI run on this commit (ship/* counts its push run).
+      - name: Is CI green?
+        id: ci
+        if: steps.pr.outputs.number != ''
+        run: |
+          if [ "$TRIGGER" != Review ]; then
+            echo "green=$GREEN" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ev=pull_request
+          [[ "$BRANCH" == ship/* ]] && ev=push
+          c=$(gh run list --workflow ci.yml --commit "$SHA" --event "$ev" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+          if [ "$c" = success ]; then
+            echo "green=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "CI on $SHA is '${c:-not finished}'; its green run will merge it."
+          fi
+
       - name: Merge
         id: merge
-        if: env.GREEN == 'true' && steps.pr.outputs.number != ''
+        if: steps.ci.outputs.green == 'true'
         env:
           PR: ${{ steps.pr.outputs.number }}
         run: |
@@ -95,6 +122,37 @@ jobs:
             gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
             exit 0
           fi
+          # Owner gate (see the top of this file). A ship PR's author is the shipper recorded in its body.
+          if [[ "$BRANCH" == ship/* ]]; then
+            author=$(gh pr view "$PR" --json body --jq .body | sed -n 's/.*<!-- shipper: \([^ ]*\) -->.*/\1/p' | head -1)
+          else
+            author=$(gh pr view "$PR" --json author --jq .author.login)
+          fi
+          if ! grep -qxF "$author" <<<"${OWNERS// /$'\n'}"; then
+            risky=$(gh pr diff "$PR" --name-only | grep -E "$RISKY" || true)
+            if [ -n "$risky" ]; then
+              # The latest approve or request-changes by an owner on this exact commit decides.
+              approved=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/reviews" |
+                jq -rs --arg sha "$SHA" --arg owners "$OWNERS" '
+                  [.[][] | select(.commit_id == $sha and (.user.login as $u | $owners | split(" ") | index($u)))
+                         | select(.state == "APPROVED" or .state == "CHANGES_REQUESTED")]
+                  | (last | .state) == "APPROVED"')
+              if [ "$approved" != true ]; then
+                echo "#$PR by $author touches owner-gated paths; waiting for an owner to approve $SHA."
+                gh label create needs-owner --color FBCA04 \
+                  --description "Touches networking, sync, saves, server or tooling; waits for an owner's approval" 2>/dev/null || true
+                gh pr edit "$PR" --add-label needs-owner
+                if ! gh pr view "$PR" --json comments --jq '.comments[].body' | grep -q '<!-- needs-owner -->'; then
+                  who=$(sed 's/[^ ][^ ]*/@&/g' <<<"$OWNERS")
+                  gh pr comment "$PR" --body "$(printf '%s\n\n%s\n\n%s\n%s' \
+                    "This touches networking, world sync, saves, the server or tooling, so it waits for $who to approve it. CI still runs; an approval of the latest commit merges it once CI is green." \
+                    "Files:" "$(sed 's/.*/- `&`/' <<<"$risky")" '<!-- needs-owner -->')"
+                fi
+                exit 0
+              fi
+              gh pr edit "$PR" --remove-label needs-owner 2>/dev/null || true
+            fi
+          fi
           if [[ "$BRANCH" == ship/* ]]; then
             gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA"
           else
@@ -109,8 +167,13 @@ jobs:
         run: |
           gh workflow run deploy.yml --ref main
           gh workflow run ci.yml --ref main
-          if gh pr diff "$PR" --name-only | grep -q '^server/'; then
+          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/net/ids\.ts|src/net/ws-wire\.ts|\.dockerignore)'; then
             gh workflow run deploy-server.yml --ref main
+          fi
+          # The atlas upkeep's gate (atlas.yml) decides whether a merge matters; this only wakes it. A GITHUB_TOKEN
+          # merge never fires its push trigger. Atlas PRs themselves don't wake it.
+          if [[ "$BRANCH" != claude/atlas-* ]]; then
+            gh workflow run atlas.yml --ref main
           fi
 
       # Opening a ship PR starts a pull_request CI run, and merging it seconds later deletes the ref that run needs, so

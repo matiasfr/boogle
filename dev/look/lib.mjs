@@ -22,10 +22,11 @@ export const VIEWS = {
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
+  garden: { cam: [30, 7, 15], look: [30, 1, 2.5] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };
 
-const freePort = () =>
+export const freePort = () =>
   new Promise((res) => {
     const s = net.createServer().listen(0, '127.0.0.1', () => {
       const p = s.address().port;
@@ -72,24 +73,44 @@ export async function startStack({ url = null, root: dir = root } = {}) {
   };
 }
 
-// Software GL by default (same pictures on every machine). `gpu` uses the real GPU where there is one (Metal on a
-// Mac): about 60 fps instead of 7, for clips.
-export const launch = ({ gpu = false } = {}) =>
-  chromium.launch({
-    args:
-      gpu && process.platform === 'darwin'
-        ? ['--use-angle=metal', '--ignore-gpu-blocklist']
-        : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
-  });
+// The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
+// on a Mac it runs on the real GPU (Metal), about 60 fps.
+export const launch = () => {
+  // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
+  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
+  if (process.platform === 'darwin') args.push('--use-angle=metal');
+  // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
+  else
+    args.push(
+      ...['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
+    );
+  return chromium.launch({ args });
+};
+
+// Prints the THREE.* console errors a game collected (once each), if any.
+export function reportGfxErrors(games) {
+  const seen = new Set(games.flatMap((g) => g.gfxErrors));
+  if (!seen.size) return console.log('gfx errors: none');
+  console.log(`gfx errors (${seen.size} distinct):`);
+  for (const e of seen) console.log('  ' + e.split('\n')[0].slice(0, 240));
+}
+
+// BOOGLE_QUERY=physics=rapier (any URL params) is added to every page the harness opens: scenarios on another backend.
+const EXTRA_QUERY = process.env.BOOGLE_QUERY ? '&' + process.env.BOOGLE_QUERY : '';
 
 export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
   // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
+  // Every page gets `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
-  // layout viewport, and the game only needs the coarse pointer)
+  // layout viewport, and the game only needs the coarse pointer),
+  // trace (record a Playwright trace: the action timeline, console, network and page errors; `close({ trace: file })`
+  // keeps it. No screencast or DOM snapshots: on a CI runner's software GL they starve the frame loop, since waitFor
+  // evaluates every 100 ms and each call snapshots the DOM, and the stills already show the canvas)
   static async open(browser, stack, opts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -98,6 +119,8 @@ export class Game {
     g.size = opts.size || [960, 600];
     g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] }, hasTouch: !!opts.touch });
     if (opts.clock) await g.ctx.clock.install();
+    g.tracing = !!opts.trace;
+    if (g.tracing) await g.ctx.tracing.start({ title: g.name });
     // src/constants.js reads isTouch once at load, so this must run before the page's code.
     if (opts.touch)
       await g.ctx.addInitScript(() => {
@@ -117,24 +140,35 @@ export class Game {
       );
     g.page = await g.ctx.newPage();
     g.errors = [];
+    g.gfxErrors = []; // console errors from three (THREE.*): unported materials show up here
+    g.page.on('console', (m) => {
+      if (m.type() === 'error' && m.text().startsWith('THREE.')) g.gfxErrors.push(m.text());
+    });
     g.page.on('pageerror', (e) => {
       g.errors.push(e.message);
       console.error(`[${g.name} page error]`, e.message);
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
-      timeout: 90000,
-    });
-    // A deployed site (`--url`) over a slow link can take a while to load.
-    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
+    await g.page.goto(
+      `${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}${EXTRA_QUERY}`,
+      {
+        timeout: 90000,
+      },
+    );
+    // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
+    // every shader before the lobby opens.
+    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
-    await g.page.waitForFunction(() => window.__debugCam && window.__water, null, { timeout: 20000 });
+    await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the first-run
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.first-run, .hud-tl, .hud-tr, .reticle' : null;
     if (hide) await g.page.addStyleTag({ content: `${hide}, .touch, .lobby { display: none !important }` });
+    await g.page.addStyleTag({ content: '.splash { display: none !important }' }); // still fading out
+    g.gfx = await g.page.evaluate(() => window.boogle?.gfx).catch(() => undefined);
+    console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);
     await sleep(300);
     fs.mkdirSync(g.out, { recursive: true });
     return g;
@@ -290,7 +324,9 @@ export class Game {
     else await sleep(seconds * 1000);
   }
 
-  async close() {
+  // trace: a .zip path to save the trace to (`npx playwright show-trace <zip>`); without it the trace is dropped.
+  async close({ trace } = {}) {
+    if (this.tracing) await this.ctx.tracing.stop(trace ? { path: trace } : {}).catch(() => {});
     await this.ctx.close();
   }
 }

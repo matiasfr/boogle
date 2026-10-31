@@ -2,15 +2,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate } from 'node:timers';
-import * as singleton from '../src/world/sync.js';
-import { createSync } from '../src/world/sync.js';
+import * as singleton from '../src/world/sync.ts';
+import { createSync } from '../src/world/sync.ts';
 import { makeNet, run, live } from './helpers/net.mjs';
 
 // opts: env goes to createSync (the host facts validate reads); failLoad ({ on }) makes grid loads throw while on (bad data
 // from a peer); the rest goes to attachWorld (storage, serverUrl, fetch, ...).
 function makePeer(net, id, host, opts = {}) {
-  const { env, failLoad, ...attach } = opts;
+  const { env, failLoad, pid, extra, ...attach } = opts;
   const s = createSync({ env });
+  if (pid) s.setPid(pid);
   const grid = new Int32Array(16);
   const log = [];
   s.registerState('grid', {
@@ -28,7 +29,7 @@ function makePeer(net, id, host, opts = {}) {
       log.push(`${e.p}:${e.v}`);
     },
   });
-  const last = new Map(); // like terrain/slosh: one edit per player per 2 ticks, recorded in validate
+  const last = new Map(); // a per-player rate limit: one edit per 2 ticks, recorded in validate
   s.registerOp('slow', {
     validate: (e, ctx) => {
       if (ctx.tick - (last.get(e.p) ?? -1e9) < 2) return false;
@@ -40,7 +41,9 @@ function makePeer(net, id, host, opts = {}) {
       log.push(`${e.p}:${e.v}`);
     },
   });
+  s.registerOp('mark', { apply: (e) => log.push(`${e.p}=${e.u}`) }); // who sent it, as the host stamped it
   s.registerOp('gate', { validate: (e, ctx) => ctx.env.allow(e.v), apply: (e) => (grid[e.i * 4 + e.j] += e.v) });
+  extra?.(s); // more states or ops on this peer only, registered before it attaches
   const p = net.add(id, host);
   s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234, ...attach });
   return { s, grid, log, p };
@@ -83,6 +86,67 @@ test('edits from all peers converge in identical order', async () => {
   assert.deepEqual(clients[1].log, host.log);
   assert.ok(!host.log.some((l) => l.startsWith('forged')), 'p comes from the real sender');
   assert.ok(Math.abs(clients[0].s.world.tick - host.s.world.tick) <= 6);
+});
+
+test("the host stamps each edit with its sender's pid (u), never one the edit claims", async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pidh' });
+  all[0].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pid0' });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log.sort(), ['c0=pid0', 'h=pidh']);
+  assert.deepEqual(all[1].log.sort(), all[0].log);
+  assert.equal(all[0].s.pidOf('c0'), 'pid0');
+  assert.equal(all[1].s.pidOf('h'), 'pidh');
+});
+
+test('an edit from a tab that never said its pid is rejected', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' })];
+  await run(net, all, 20);
+  const ghost = net.add('ghost', false); // a raw room: no sync, so no w:id
+  ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, []);
+  ghost.room.send({ t: 'w:id', u: 'pidg' });
+  ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, ['ghost=pidg']);
+});
+
+test('pids survive host migration, even to a late joiner that never heard the others say theirs', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  const late = makePeer(net, 'late', false, { pid: 'pidl' }); // learns pid0 only from the host's snapshot
+  all.push(late);
+  await run(net, all, 60);
+  // the late joiner is next in line, so it takes over when the host dies
+  net.peers.splice(net.peers.indexOf(late.p), 1);
+  net.peers.splice(1, 0, late.p);
+  net.killHost();
+  await run(net, all, 80);
+  assert.equal(late.s.worldStatus().mode, 'host');
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  late.s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  await run(net, all, 40);
+  assert.deepEqual(late.log.sort(), ['c0=pid0', 'late=pidl']);
+  assert.deepEqual(all[1].log.sort(), late.log);
+});
+
+test('a pid already held by a session in the room cannot be claimed by another', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  const thief = net.add('thief', false); // a raw room claiming c0's pid, then the host's
+  thief.room.send({ t: 'w:id', u: 'pid0' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  thief.room.send({ t: 'w:id', u: 'pidh' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, ['c0=pid0'], 'only the real holder plays as pid0');
 });
 
 test('host rejects invalid edits', async () => {
@@ -169,12 +233,12 @@ test('a fresh edit after a reconnect replaces the held backlog and goes out in t
   net.setUp(clients[0].p, true);
   await run(net, all, 1); // the first held edit goes out
   for (let v = 5; v <= 8; v++) {
-    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held shovel button
+    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held button
     await run(net, all, 5);
   }
   await run(net, all, 60);
   assert.equal(clients[0].s.worldStatus().heldDropped, 3);
-  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the shovel's own repeat, which can be
+  // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the button's own repeat, which can be
   // too soon after 5 for the host's rate limit: at most that one live edit is lost.
   assert.deepEqual(host.log.slice(0, 2), ['c0:1', 'c0:5']);
   assert.deepEqual(host.log.slice(-2), ['c0:7', 'c0:8']);
@@ -185,15 +249,15 @@ test('live input after a reconnect is back to normal latency', async () => {
   const { net, host, clients, all } = await setup(1);
   const c = clients[0];
   let v = 0;
-  const dig = async () => {
+  const press = async () => {
     assert.ok(c.s.submitEdit({ op: 'slow', i: 0, j: 2, v: ++v }));
-    await run(net, all, 5); // the shovel's repeat, rounded up to whole frames like the held-edit pacing
+    await run(net, all, 5); // the button's repeat, rounded up to whole frames like the held-edit pacing
   };
   net.setUp(c.p, false);
-  for (let k = 0; k < 16; k++) await dig(); // 4 s down with the button held
+  for (let k = 0; k < 16; k++) await press(); // 4 s down with the button held
   net.setUp(c.p, true);
-  for (let k = 0; k < 20; k++) await dig(); // 5 s more
-  await run(net, all, 15); // with the 5 frames after the last dig: 1 s
+  for (let k = 0; k < 20; k++) await press(); // 5 s more
+  await run(net, all, 15); // with the 5 frames after the last press: 1 s
   assert.equal(host.log.at(-1), `c0:${v}`, 'the last edit lands within 1 s, not seconds behind a backlog');
   const live = host.log.slice(host.log.indexOf('c0:17')).map((l) => Number(l.slice(3)));
   assert.ok(live.length >= 19, 'live edits are accepted (at most one lost to the rate limit after the delayed one)');
@@ -309,6 +373,7 @@ test('clients save the world too (but only the host uploads), so the next host s
   await run(net, [host, client], 620); // past the 30 s save interval
   assert.equal(client.grid[11], 7);
   assert.ok(store.getItem('boogle.world.test'), 'client saved');
+  assert.equal(client.s.worldStatus().snapBytes, store.getItem('boogle.world.test').length, 'the size is reported');
   assert.deepEqual(clientCalls, [], 'a client never touches the server');
   assert.equal(client.s.worldStatus().saves, 0);
   assert.ok(hostCalls.includes('PUT'), 'the host uploads');
@@ -651,4 +716,109 @@ test('a snapshot served by a tab that skipped a newer state is never saved by th
   assert.ok(c.s.worldStatus().hashOk > 0, 'the client is in step');
   assert.equal(c.s.worldStatus().newerSave, true);
   assert.equal(store.writes, 0, 'the client saved nothing');
+});
+
+test('a client re-pins to a new host right after its room reconnects', async () => {
+  const net = makeNet();
+  const h1 = makePeer(net, 'h1', true);
+  const h2 = makePeer(net, 'h2', false);
+  const c = makePeer(net, 'c', false);
+  const all = [h1, h2, c];
+  await run(net, all, 60);
+  net.setUp(c.p, false);
+  net.killHost(); // h2 hosts now
+  await run(net, all, 10);
+  net.setUp(c.p, true);
+  await run(net, all, 10); // 500 ms, well under HOST_STALE_MS
+  assert.equal(c.s.worldStatus().hostId, 'h2');
+  const before = h2.grid[1];
+  c.s.submitEdit({ op: 'add', i: 0, j: 1, v: 3 });
+  await run(net, all, 20);
+  assert.equal(h2.grid[1], before + 3, 'the edit the client sent next was applied on the new host');
+});
+
+test("a state only the host has does not fail the client's hash check", async () => {
+  const net = makeNet();
+  let n = 0;
+  const host = makePeer(net, 'h', true, {
+    extra: (s) => s.registerState('serverOnly', { serialize: () => n, load: (v) => (n = v), hash: () => (n += 1) }),
+  });
+  const c = makePeer(net, 'c', false);
+  await run(net, [host, c], 60);
+  const st = c.s.worldStatus();
+  assert.ok(st.hashOk > 0, 'hash checks ran');
+  assert.equal(st.hashBad, 0);
+  assert.equal(st.resyncs, 0);
+});
+
+test('a state skipped as newer is left out of the hash check', async () => {
+  const net = makeNet();
+  let t = 0;
+  const thing = (version) => (s) =>
+    s.registerState('thing', { version, serialize: () => t, load: () => {}, hash: () => (t += 7) });
+  const host = makePeer(net, 'h', true, { extra: thing(2) });
+  const c = makePeer(net, 'c', false, { extra: thing(1) });
+  await run(net, [host, c], 60);
+  const st = c.s.worldStatus();
+  assert.equal(st.newerSave, true);
+  assert.ok(st.resyncs <= 1, `resyncs ${st.resyncs}`);
+});
+
+test('saveMs sets how often a host saves', async () => {
+  const net = makeNet();
+  const storage = mem();
+  const host = makePeer(net, 'h', true, { storage, saveMs: 1000 });
+  await run(net, [host], 4);
+  const w0 = storage.writes;
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
+  await run(net, [host], 25); // 1.25 s
+  assert.equal(storage.writes - w0, 1);
+});
+
+test('saveNow writes at once and skips an unchanged world', async () => {
+  const net = makeNet();
+  const storage = mem();
+  const host = makePeer(net, 'h', true, { storage });
+  await run(net, [host], 4);
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 2 });
+  await run(net, [host], 4);
+  const w0 = storage.writes;
+  assert.equal(host.s.saveNow(), true);
+  assert.equal(storage.writes, w0 + 1);
+  assert.equal(host.s.saveNow(), false, 'nothing changed since');
+  assert.equal(storage.writes, w0 + 1);
+});
+
+test("adoptSnapshot replaces the host's world and its clients follow", async () => {
+  const { net, host, clients, all } = await setup(1);
+  const c = clients[0];
+  const other = createSync();
+  const grid = new Int32Array(16);
+  grid[5] = 42;
+  other.registerState('grid', { serialize: () => Array.from(grid), load: (a) => grid.set(a), hash: () => 0 });
+  const snap = other.snapshot();
+  snap.tick = host.s.world.tick + 100;
+  assert.equal(c.s.adoptSnapshot(snap), false, 'a client cannot adopt');
+  assert.equal(host.s.adoptSnapshot(snap), true);
+  assert.equal(host.grid[5], 42);
+  await run(net, all, 100); // 100 ticks to catch up at ~2.5 a frame, then a hash check and a resync
+  assert.equal(c.grid[5], 42, 'the client resynced to the adopted world');
+  assert.ok(c.s.world.tick >= snap.tick);
+});
+
+test('a demoted host hands its world to the server', async () => {
+  const net = makeNet();
+  const calls = [];
+  const fetch = async (url, init) => (
+    calls.push({ url: String(url), method: init?.method ?? 'GET', body: init?.body }),
+    { ok: false, status: 404 }
+  );
+  const host = makePeer(net, 'h', true, { roomId: 'replay', serverUrl: SERVER, fetch });
+  await run(net, [host], 10);
+  calls.length = 0;
+  net.demote(host.p);
+  const handoff = calls.filter((x) => x.url.endsWith('/rooms/replay/handoff'));
+  assert.equal(handoff.length, 1);
+  assert.equal(handoff[0].method, 'POST');
+  assert.equal(JSON.parse(handoff[0].body).tick, host.s.world.tick);
 });

@@ -1,0 +1,86 @@
+/* The loading screen: full-bleed key art, the title in the open sky, the bar in the calm strip along the bottom. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: linear-gradient(180deg, #4aa8f0 0%, #bfe6f5 60%, #2cc6cf 100%);
+  transition: opacity 0.45s ease;
+}
+.splash.gone {
+  opacity: 0;
+  pointer-events: none;
+  transition-delay: 0.15s;
+}
+.splash-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 60%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.splash-art.in {
+  opacity: 1;
+}
+.splash-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: max(9vh, calc(24px + env(safe-area-inset-top, 0px)));
+  text-align: center;
+  font: 400 clamp(64px, 13vw, 150px) / 0.9 var(--font-display, 'Lilita One', sans-serif);
+  color: #fff;
+  -webkit-text-stroke: clamp(3px, 0.6vw, 6px) #13243f;
+  paint-order: stroke fill;
+  text-shadow: 0 clamp(4px, 0.8vw, 9px) 0 #13243f;
+  letter-spacing: 1px;
+}
+.splash-title .o {
+  color: #ffc93d;
+}
+.splash-foot {
+  position: absolute;
+  left: 50%;
+  bottom: max(7vh, calc(24px + env(safe-area-inset-bottom, 0px)));
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 48px));
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+.splash-bar {
+  width: 100%;
+  height: 22px;
+  box-sizing: border-box;
+  padding: 3px;
+  border: 3px solid #13243f;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 5px 0 #13243f;
+}
+.splash-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd85c, #ffb21e);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.splash.gone .splash-fill {
+  transition: transform 0.25s ease-out;
+}
+.splash-label {
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(12, 28, 52, 0.58);
+  color: #f3f8ff;
+  font: 700 14px/1.2 var(--font-body, 'Figtree', system-ui, sans-serif);
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash,
+  .splash-art {
+    transition: none;
+  }
+}

@@ -920,23 +920,6 @@ export const SMALL_TALK = [
     },
   },
   {
-    id: 'washups',
-    lvl: 0,
-    nodes: {
-      a: {
-        say: 'Things wash up on the beach all the time. Shells, boots, ducks. Once, a whole chair. I sat on it. It was a good day.',
-        opts: [
-          { say: 'A whole chair?', to: 'b' },
-          { say: "I'll keep an eye out for presents.", pts: 1, to: 'b' },
-        ],
-      },
-      b: {
-        say: 'Then the tide took it back. The sea gives, the sea takes. The sea is a bad business partner.',
-        opts: [{ say: 'Ha! True.', pts: 1 }, { say: "Maybe it'll come back." }],
-      },
-    },
-  },
-  {
     id: 'fruit',
     lvl: 0,
     nodes: {
@@ -951,26 +934,6 @@ export const SMALL_TALK = [
         say: 'If it is magic, it should grow apricots on every tree. And rice. And a qozon. Magic should be more practical.',
         mood: 'grump',
         opts: [{ say: "I'll file a complaint.", pts: 1 }, { say: 'Shake a few trees. You might get lucky.' }],
-      },
-    },
-  },
-  {
-    id: 'holes',
-    lvl: 1,
-    nodes: {
-      a: {
-        say: 'People here dig holes and build sand walls. Yesterday I walked into a hole. I just... stood in it for a while.',
-        opts: [
-          { say: 'Were you stuck?', to: 'b' },
-          { say: 'Sorry, that was probably me.', to: 'b', pts: 1 },
-        ],
-      },
-      b: {
-        say: 'Not stuck. Thinking. A hole is a good place to think. Nobody can see you. Very private office.',
-        opts: [
-          { say: 'A hole office.', pts: 1 },
-          { say: "I'll dig you a nice one.", pts: 2 },
-        ],
       },
     },
   },
@@ -1061,7 +1024,6 @@ export const GREETINGS = [
 ];
 export const AFTER = ['What else?', 'Anything else on your mind?', 'Mm. What else, {name}?'];
 export const BYE = ['Bye, Boogler!', 'See you later!', "I'd better go."];
-export const BYE_OPTS = ['Xayr!', 'See you soon!'];
 export const FAREWELL = [
   "Xayr! That means 'goodbye'.",
   'Xayr, {name}!',
@@ -1107,6 +1069,9 @@ export const SORRY_YES = '...Okay. I accept a little bit of the sorry. Keep it u
 export const SORRY_NO = 'You already said sorry. Sorry is not a present.';
 export const SORRY_OPTS = ['Okay.', 'Fair enough.'];
 
+// Picking a chapter back up where you walked off last time; it goes before the line he stopped at.
+export const RESUME = ['Now, where was I? Ah, yes.', 'As I was saying, before you ran off...'];
+
 export const GIFT_ASK = 'I brought you {gift}.';
 export const GIFT_KEPT_OPTS = ['Fair enough.', 'Worth a try.'];
 export const GIFT_FORGAVE = '...Fine. You are forgiven. Mostly.';
@@ -1119,5 +1084,137 @@ export const GIFT_OPTS = {
   dislike: ['Oops. Sorry!', "I thought you'd find it funny."],
 };
 
-// The short lines he says outside a talk live in barks.js (loaded up front; this file loads when talk does).
-export { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
+// Talking to him as Mario: he is starstruck and nervous, and Mario only answers in Mario. Every answer comes from
+// MARIO_SAYS. Unscored, and he forgets he was cross with you.
+export const MARIO_SAYS = [
+  "It's-a me, Mario!",
+  'Hello!',
+  'Wahoo!',
+  'Yahoo!',
+  'Woo-hoo!',
+  'Yippee!',
+  'Mamma mia!',
+  'Mamma mia...',
+  'Okey-dokey!',
+  "Let's-a go!",
+  'Here we go!',
+  'Ha-ha!',
+  'Wa... hoo!',
+  'Spaghetti!',
+  'Thank you so much!',
+  'Bye-bye!',
+];
+export const MARIO_TALK = [
+  {
+    id: 'meet',
+    nodes: {
+      a: {
+        say: 'Oh. Oh no. Oh no, no, no. You are... HIM. The plumber. On MY island. And I look like this. I always look like this, but today I feel it.',
+        mood: 'worry',
+        opts: [
+          { say: "It's-a me, Mario!", to: 'b' },
+          { say: 'Hello!', to: 'b' },
+        ],
+      },
+      b: {
+        say: 'It IS you! Assalomu alaykum, Mister Mario. Sir. Mister Sir. I have a business. Melons. Would you like a melon? I do not have a melon.',
+        mood: 'worry',
+        opts: [
+          { say: 'Wahoo!', to: 'c' },
+          { say: 'Mamma mia!', to: 'd' },
+        ],
+      },
+      c: {
+        say: 'He said wahoo. To ME. Oyijon will never believe this. Can you say it again? Slower. For my memories.',
+        mood: 'joy',
+        opts: [{ say: 'Wa... hoo!' }, { say: 'Yahoo!' }],
+      },
+      d: {
+        say: 'Mamma mia, yes! Mamma mia indeed! I am also mamma mia! ...What does it mean? It does not matter. I will put it on a shirt.',
+        mood: 'joy',
+        opts: [{ say: 'Okey-dokey!' }, { say: "Let's-a go!" }],
+      },
+    },
+  },
+  {
+    id: 'autograph',
+    nodes: {
+      a: {
+        say: 'Mister Mario! Would you sign something? I do not have paper. Or a pen. Or hands. Could you sign... me?',
+        mood: 'worry',
+        opts: [
+          { say: 'Okey-dokey!', to: 'b' },
+          { say: 'Mamma mia...', to: 'c' },
+        ],
+      },
+      b: {
+        say: 'Here, on my side. ...You jumped on my head. Is that the autograph? It is perfect. I will never wash again. I never washed before, but now it is on purpose.',
+        mood: 'joy',
+        opts: [{ say: 'Yahoo!' }, { say: 'Thank you so much!' }],
+      },
+      c: {
+        say: 'Too much? Too much. Sorry. I am normal. A normal blob talking to a normal plumber. Ha ha. Do you want a ride? NO. Nobody rides. Except... no. No.',
+        mood: 'worry',
+        opts: [{ say: 'Ha-ha!' }, { say: 'Here we go!' }],
+      },
+    },
+  },
+  {
+    id: 'deal',
+    nodes: {
+      a: {
+        say: 'Mister Mario, I have a business idea and only you can help. Mario melons. They jump. Your face on every one. Fifty-fifty?',
+        mood: 'worry',
+        opts: [
+          { say: "Let's-a go!", to: 'b' },
+          { say: 'Mamma mia!', to: 'c' },
+        ],
+      },
+      b: {
+        say: 'He said let us go! We are partners! I will draw the contract. With what? I do not have hands. You draw it. You have famous hands.',
+        mood: 'joy',
+        opts: [{ say: 'Wahoo!' }, { say: 'Okey-dokey!' }],
+      },
+      c: {
+        say: 'Seventy-thirty? For you! Eighty! Ninety! Mister Mario, you drive a hard bargain without saying anything.',
+        mood: 'worry',
+        opts: [{ say: 'Ha-ha!' }, { say: 'Yippee!' }],
+      },
+    },
+  },
+  {
+    id: 'questions',
+    nodes: {
+      a: {
+        say: 'Sorry, I am sweating. A blob sweats everywhere at once. Question. Is it true you jump into paintings?',
+        mood: 'worry',
+        opts: [
+          { say: 'Wahoo!', to: 'b' },
+          { say: 'Here we go!', to: 'b' },
+        ],
+      },
+      b: {
+        say: 'I KNEW it. I have a painting of a melon field in my head. Jump in! No, wait, come back, you cannot jump into a head.',
+        mood: 'worry',
+        opts: [
+          { say: 'Mamma mia!', to: 'c' },
+          { say: 'Woo-hoo!', to: 'c' },
+        ],
+      },
+      c: {
+        say: 'Okay. Last question. What is your favorite fruit? Say melon. ...Mister Mario, please say melon.',
+        mood: 'worry',
+        opts: [{ say: 'Spaghetti!' }, { say: 'Thank you so much!' }],
+      },
+    },
+  },
+];
+export const MARIO_AFTER = [
+  'He talked to me. He TALKED to me!',
+  'I need to lie down. For one week.',
+  'Bye-bye, Mister Mario! Come back! Or do not! Both are an honor!',
+  'Nobody will believe this. I do not believe this.',
+];
+export const MARIO_GIFT = 'Here we go!';
+export const MARIO_GIFT_GASP = 'A present? From MARIO?!';
+export const MARIO_GIFT_OPTS = ['Wahoo!', 'Okey-dokey!'];

@@ -45,6 +45,39 @@ body.touch .first-run {
   top: 30%;
   max-width: min(300px, 60vw);
 }
+/* A laptop narrower than the card plus half the hotbar: the card sits above the hotbar instead of beside it. */
+@media (max-width: 1180px) {
+  body:not(.touch) .first-run {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+/* Short screens (a phone held sideways, a small laptop window): the hands group waits for the menu, and the card
+   sits just under the roster so the whole of it fits. */
+@media (max-height: 520px) {
+  .first-run {
+    padding: 10px 14px 9px;
+    gap: 7px;
+  }
+  .first-run .guide-group[data-group='hands'] {
+    display: none;
+  }
+  .first-run-more {
+    padding-top: 6px;
+  }
+  body.touch .first-run {
+    top: calc(88px + env(safe-area-inset-top, 0px));
+  }
+}
+/* An upright phone: the held-item buttons (Toss) rise up the right side to the card's height, so the hands group waits
+   for the menu here too, and the card sits higher (under a full hotbar). */
+@media (max-width: 480px) {
+  body.touch .first-run {
+    top: calc(128px + env(safe-area-inset-top, 0px));
+  }
+  body.touch .first-run .guide-group[data-group='hands'] {
+    display: none;
+  }
+}
 @keyframes first-run-in {
   from {
     opacity: 0;
@@ -66,4 +99,34 @@ body.touch .first-run {
   color: var(--paper);
   background: var(--ink);
   font-size: 16px;
+}
+
+/* The one part of the card that takes clicks (the rest lets them through to the island). */
+.first-run-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 700 22px/1 var(--font-body);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.first-run-close:hover,
+.first-run-close:focus-visible {
+  color: var(--ink);
+  background: rgba(19, 36, 63, 0.08);
+}
+body.touch .first-run-close {
+  top: 2px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
 }

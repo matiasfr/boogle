@@ -2,7 +2,7 @@
 //
 // Authority: Host state. The host decides where he walks and publishes it as the host field `g: { p:[x,z], r, w, m }`
 // (r = yaw, w = 1 while walking, m = MODE; missing means CALM). Everyone else interpolates those snapshots, like a
-// remote player. He is not part of the deterministic world sim (he never changes terrain, water or crops), so his brain
+// remote player. He is not part of the deterministic world sim (he never changes terrain or crops), so his brain
 // can use floats; it still uses the seeded RNG so no Math.random sneaks into shared code. Solo tabs, and clients that
 // hear nothing from a host for a few seconds, walk him locally so he never freezes. Animation (waddle, breathing, hops)
 // is cosmetic and local.
@@ -11,22 +11,22 @@
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.js): the host stops for
 // players who talk to or pet him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.js';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, toScreen } from '../render/scene.js';
-import { world, playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';
+import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';
+import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.js';
 import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
-import { PATCH } from '../sim/mushrooms.js';
+import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.js';
-import { net, remotes, addHostField } from '../netplay/net.js';
-import { createSnaps } from '../netplay/snaps.js';
+import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
+import { createSnaps } from '../netplay/snaps.ts';
 
 // Shape: about three times as wide as he is tall.
-const W_R = 0.8; // half width
+export const W_R = 0.8; // half width
 const H_R = 0.27; // half height
 const BODY_Y = 0.32; // body center above the ground
 const BODY_HEX = '#b99cff';
@@ -47,7 +47,14 @@ const HOME_RANGE = 22; // metres around the garden where he just potters about
 const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere far
 const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
-const LABEL_Y = 1.15; // label anchor above the ground
+// His top hat, comically tall: the brim is a third of his radius (it sits on top of his head, covering none of it), the
+// crown half the brim's radius, and the whole hat about one and a half times his height.
+const BRIM_R = W_R / 3;
+const CROWN_R = BRIM_R / 2;
+const BRIM_H = 0.03;
+const HAT_H = 1.5 * (BODY_Y + H_R); // brim included
+const HAT_SINK = 0.015; // into the curve of his head, so no gap shows under the brim
+const LABEL_GAP = 0.45; // name tag anchor above the top of the hat (a crushed hat too, so it clears a rider)
 const FLEE_SPEED = 3.4;
 const RIDDEN_SPEED = 2.3;
 const FLEE_RANGE = 9;
@@ -117,17 +124,19 @@ function pathClear(x0, z0, x1, z1) {
 // Where he's heading on a trip away from home (a POI or a random far spot), or null while pottering about.
 let trip = null;
 
+// Sets his next walk target if the way there is clear.
+function headFor(x, z) {
+  if (!pathClear(sim.x, sim.z, x, z)) return false;
+  sim.tx = x;
+  sim.tz = z;
+  return true;
+}
+
 function tryStep(a, dmin, dmax) {
   for (let tries = 0; tries < 12; tries++) {
     const aa = a + (rng() - 0.5) * (tries < 6 ? 0.9 : 2.6),
       d = range(dmin, dmax);
-    const x = sim.x + Math.cos(aa) * d,
-      z = sim.z + Math.sin(aa) * d;
-    if (pathClear(sim.x, sim.z, x, z)) {
-      sim.tx = x;
-      sim.tz = z;
-      return true;
-    }
+    if (headFor(sim.x + Math.cos(aa) * d, sim.z + Math.sin(aa) * d)) return true;
   }
   return false;
 }
@@ -186,30 +195,9 @@ function fleeFrom(t) {
   const away = Math.atan2(sim.z - t.z, sim.x - t.x);
   for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
     const d = range(7, 12);
-    const x = sim.x + Math.cos(away + off) * d,
-      z = sim.z + Math.sin(away + off) * d;
-    if (pathClear(sim.x, sim.z, x, z)) {
-      sim.tx = x;
-      sim.tz = z;
-      return true;
-    }
+    if (headFor(sim.x + Math.cos(away + off) * d, sim.z + Math.sin(away + off) * d)) return true;
   }
   return false;
-}
-
-function nearestPlayer() {
-  let best = null,
-    bestD = FACE_RANGE;
-  const consider = (x, z) => {
-    const d = Math.hypot(x - sim.x, z - sim.z);
-    if (d < bestD && d > 0.5) {
-      bestD = d;
-      best = { x, z };
-    }
-  };
-  if (me.entered && me.body) consider(me.body.position.x, me.body.position.z);
-  for (const r of remotes.values()) if (r.entered && r.avatar) consider(r.target.x, r.target.z);
-  return best;
 }
 
 function turnToward(yaw, dt) {
@@ -225,9 +213,12 @@ function think(dt) {
     focusD = ATTEND_RANGE,
     threat = null,
     threatD = FLEE_RANGE,
+    nearest = null, // whoever he turns to look at while idle
+    nearestD = FACE_RANGE,
     ridden = false;
   for (const v of visitors()) {
     const d = Math.hypot(v.x - sim.x, v.z - sim.z);
+    if (d < nearestD && d > 0.5) [nearest, nearestD] = [v, d];
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
     else if (v.act === ACT.TALK) {
       if (d < focusD) [focus, focusD] = [v, d];
@@ -250,8 +241,7 @@ function think(dt) {
   } else if (ridden) sim.wait = Math.min(sim.wait, 0.3);
 
   if (!sim.walking) {
-    const p = nearestPlayer();
-    if (p) turnToward(facing(p), dt);
+    if (nearest) turnToward(facing(nearest), dt);
     sim.wait -= dt;
     if (sim.wait <= 0) {
       if (pickTarget()) sim.walking = true;
@@ -443,10 +433,23 @@ function buildModel() {
     root.add(f);
     return f;
   });
+  // The hat stands on its own pivot (the middle of the brim) so it can lag, wobble and get crushed without stretching.
+  const hat = new THREE.Group();
+  const hatMat = new THREE.MeshStandardMaterial({ color: '#111114', roughness: 0.42 });
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(BRIM_R, BRIM_R, BRIM_H, 28), hatMat);
+  brim.position.y = BRIM_H / 2;
+  const crownH = HAT_H - BRIM_H;
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(CROWN_R * 1.06, CROWN_R, crownH, 20), hatMat);
+  crown.position.y = BRIM_H + crownH / 2;
+  hat.add(brim, crown);
+  root.add(hat);
   root.traverse((o) => {
-    if (o.isMesh) o.castShadow = true;
+    if (!o.isMesh) return;
+    // Only parts big enough to show in the shadow map: eyes, buttons and hat trims would each cost a shadow draw call.
+    o.geometry.computeBoundingSphere();
+    o.castShadow = o.geometry.boundingSphere.radius >= 0.3;
   });
-  return { root, inner, bodyMesh, hands, feet };
+  return { root, inner, bodyMesh, hands, feet, hat };
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -459,17 +462,18 @@ export function createBoogler() {
   scene.add(group);
   addHostField('g', publish, hear);
 
-  body = new CANNON.Body({
-    mass: 0,
-    type: CANNON.Body.KINEMATIC,
+  body = createBody({
+    type: BODY.KINEMATIC,
     material: playerMat,
-    collisionFilterMask: NOT_SCENERY,
+    mask: NOT_SCENERY,
+    shapes: [
+      { kind: 'cylinder', rTop: W_R, rBottom: W_R, h: H_R * 2, segments: 14, offset: { x: 0, y: BODY_Y, z: 0 } },
+    ],
   });
-  body.addShape(new CANNON.Cylinder(W_R, W_R, H_R * 2, 14), new CANNON.Vec3(0, BODY_Y, 0));
   teleport(body, s.x, groundHeight(s.x, s.z), s.z);
-  world.addBody(body);
+  addBody(body);
   boogler.body = body;
-  world.addEventListener('preStep', () => {
+  onPreStep(() => {
     const p = body.position;
     const tx = disp.x,
       tz = disp.z,
@@ -479,12 +483,20 @@ export function createBoogler() {
       dz = tz - p.z;
     if (dx * dx + dy * dy + dz * dz > 36) {
       teleport(body, tx, ty, tz);
-      body.velocity.setZero();
+      body.velocity.set(0, 0, 0);
     } else body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
   });
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };
+// The hat's springs (cosmetic): height above his head, lean (x forward/back, z sideways) and squash (crushed flat like an
+// opera hat while someone rides him, popping back up after).
+const hatSpring = { y: 0, vy: 0, lx: 0, vlx: 0, lz: 0, vlz: 0, s: 1, vs: 0, top: null };
+// Steps the damped spring h[x] (velocity h[v]) toward `to` in place: no allocation per frame.
+const spring = (h, x, v, to, k, d, dt) => {
+  h[v] += ((to - h[x]) * k - h[v] * d) * dt;
+  h[x] += h[v] * dt;
+};
 const react = { petAt: -1e9, puffAt: -1e9, joyUntil: 0, grumpUntil: 0 };
 
 // Cosmetic reactions, played on every client: 'pet' (squish and a happy face), 'joy', 'grump', 'puff' (inflate for
@@ -569,11 +581,39 @@ function animate(dt, now) {
   });
   const face = faceTexture(expression(now));
   if (parts.bodyMesh.material.map !== face) parts.bodyMesh.material.map = face;
+  animateHat(dt);
+}
+
+function animateHat(dt) {
+  const h = hatSpring;
+  const top = parts.inner.position.y + BODY_Y + H_R * parts.inner.scale.y - HAT_SINK;
+  dt = Math.min(dt, 1 / 30); // keep the springs stable through a slow frame
+  if (reducedMotion) {
+    h.y = top;
+    h.lx = 0;
+    h.lz = parts.inner.rotation.z;
+  } else {
+    if (h.top === null) h.y = top;
+    // The head moving up or down kicks the hat's lean a little, so hops make it wobble.
+    const rise = h.top === null ? 0 : (top - h.top) / dt;
+    h.vlx += rise * 0.9 * dt;
+    spring(h, 'y', 'vy', top, 260, 16, dt);
+    h.y = Math.max(h.y, top - 0.02); // never sinks into him
+    spring(h, 'lx', 'vlx', 0.07 * anim.walk, 70, 5, dt); // leans back a touch when he walks
+    spring(h, 'lz', 'vlz', parts.inner.rotation.z * 2.2, 70, 5, dt); // and sways more than he does
+  }
+  h.top = top;
+  const crushed = disp.mode === MODE.RIDDEN;
+  spring(h, 's', 'vs', crushed ? 0.06 : 1, crushed ? 900 : 180, crushed ? 40 : 7, dt);
+  h.s = Math.max(0.04, h.s);
+  parts.hat.position.set(0, h.y, 0);
+  parts.hat.rotation.set(h.lx, 0, h.lz);
+  parts.hat.scale.set(1 + (1 - h.s) * 0.25, h.s, 1 + (1 - h.s) * 0.25);
 }
 
 export function updateBoogler(dt, now) {
   if (!group) return;
-  const isHost = net.room?.isHost() ?? false;
+  const isHost = isLead(); // the tab that runs him for everyone
   const solo = !net.room || net.state === 'solo';
   const stale = now - Math.max(lastSnapAt, bootAt) > STALE_MS;
   const shouldSim = solo || isHost || stale;
@@ -611,7 +651,7 @@ export function updateBoogler(dt, now) {
   group.rotation.y = disp.yaw;
   animate(dt, now);
   boogler.center.set(disp.x, gy + BODY_Y + parts.inner.position.y, disp.z);
-  boogler.labelPos.set(disp.x, gy + LABEL_Y + parts.inner.position.y, disp.z);
+  boogler.labelPos.set(disp.x, gy + hatSpring.y + HAT_H + LABEL_GAP, disp.z);
 }
 
 // Screen-space position for the HUD label and edge pointer (hud.js).

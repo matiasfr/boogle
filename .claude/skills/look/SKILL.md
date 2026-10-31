@@ -5,12 +5,12 @@ description: Validate a feature in the running game - see stills and motion, and
 
 # Look and validate
 
-Unit tests cover pure logic. For "does it actually work in the running game" (things that happen over time, flicker, objects that move or vanish, two players seeing the same thing) use the headless harness in `dev/look/` and `dev/scenarios/`. It starts Vite and a local signaling server, drives Chromium (Playwright), and cleans up after itself. Output goes to `.look/` (gitignored). **Always open the PNGs with Read and look at them**; numbers alone miss things.
+Unit tests cover pure logic. For "does it actually work in the running game" (things that happen over time, flicker, objects that move or vanish, two players seeing the same thing) use the headless harness in `dev/look/` and `dev/scenarios/`. It starts Vite and a local signaling server, drives Chromium (Playwright), and cleans up after itself. Output goes to `.look/` (gitignored). **Always open the PNGs with Read and look at them**; numbers alone miss things. A visible change puts a still on its PR: `scripts/pr-shot.sh <png>...` uploads it and prints the Markdown (AGENTS.md, "Shipping").
 
 ## 1. Inspect: `npm run look`
 
 ```
-npm run look -- --view hill                           # preset: hill | shore | court | overview
+npm run look -- --view hill                           # preset: hill | shore | court | overview | garden
 npm run look -- --cam -10,12,-14 --look -22,3.5,-21   # any pose (metres, y up); --fov 60
 npm run look -- --view shore --eval setup.js --warm 5 --region 0.3,0.3,0.4,0.4
 ```
@@ -23,30 +23,40 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 `dev/look/lib.mjs`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
 
+**Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
+Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only single-player scenarios, `world-inputs`; `smoke` runs
+here, `npm run check:gpu`, inside `npm run ship`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
+run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
+material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
+`night.js`, `particles.js`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:
+`src/render/README.md`.
+
 ## 2. Validate: scenarios (`npm run scenario -- <name>`, `npm run scenarios` for all)
 
 A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
 the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. CI runs `world-inputs`, `smoke` and `two-player-dig` on every PR and the rest nightly
-(`.github/workflows/scenarios-nightly.yml`); a failing leg's images are its `scenario-<name>` artifact. So local runs
+risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` runs `smoke` on a Mac's GPU in `npm run ship`, and the rest run nightly
+(`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
+Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
+console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
 are optional; on a slow sandbox, push and read CI.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
-`reconnect-dig` (stalls the host tab, digs while the client reconnects) is another, kept out of the nightly run: run it
+`reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly run: run it
 after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/netplay/net.js` attach/fail.
 
 ```js
 export default {
-  about: 'a dig by B shows up for A',
+  about: 'a toss by B shows up for A',
   async run(t) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room });          // same room = same island, real net via local server
     const B = await t.open({ name: 'Bob', room });
-    await B.eval(`const { submitEdit } = await import('/src/world/sync.js'); submitEdit({ op: 'dig', i: 70, j: 90 });`);
-    const ms = await A.waitFor(`(async () => (await import('/src/world/terrain-edits.js')).terrain.delta[70*129+90] < 0)()`);
-    t.check("B's dig reaches A", ms >= 0, ms + ' ms');
+    await B.eval(`window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 0, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] })`);
+    const ms = await A.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230)`);
+    t.check("B's toss reaches A", ms >= 0, ms + ' ms');
   },
 };
 ```
@@ -56,7 +66,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.js`).
-- `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (the shovel is Q/Z/F, throw is click-hold).
+- `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
 - `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSnaps } from '../src/netplay/snaps.js';
+import { createSnaps } from '../src/netplay/snaps.ts';
 
 test('sample interpolates between the two snapshots around t', () => {
   const s = createSnaps();

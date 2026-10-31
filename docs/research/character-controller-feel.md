@@ -34,7 +34,7 @@ Water follows the same principle: separate states, not a single force. Practitio
 
 ## Prioritized recommendations for Boogle's controller
 
-The table orders changes by laughs and responsiveness gained per line of code. All of them are local to the player's own body or render layer, so none touches `src/world/sync.js` or the deterministic sim. Each serves principle 10 (slapstick over precision) or principle 1 (toys before chores). The numbers are starting points for playtests, not answers.
+The table orders changes by laughs and responsiveness gained per line of code. All of them are local to the player's own body or render layer, so none touches `src/world/sync.ts` or the deterministic sim. Each serves principle 10 (slapstick over precision) or principle 1 (toys before chores). The numbers are starting points for playtests, not answers.
 
 | # | Change | Where | Concrete starting values |
 |---|---|---|---|

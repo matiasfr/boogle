@@ -5,16 +5,17 @@
   "description": "PeerJS signaling, snapshot storage and ICE config for Boogle",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "main": "src/server.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test test/server.test.mjs"
+    "test": "node --test test/*.test.mjs test/*.test.ts"
   },
   "dependencies": {
     "express": "5.3.0",
-    "peer": "1.0.2"
+    "peer": "1.0.2",
+    "ws": "8.22.0"
   }
 }

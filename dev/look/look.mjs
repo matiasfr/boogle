@@ -3,7 +3,7 @@
 // and a per-pixel stddev heatmap, and prints a motion score. Scenario checks live in dev/scenarios/.
 import fs from 'node:fs';
 import path from 'node:path';
-import { startStack, launch, Game, VIEWS } from './lib.mjs';
+import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.mjs';
 
 const opt = {
   view: 'hill',
@@ -70,6 +70,7 @@ try {
   const still = await g.still(label);
   const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region: opt.region });
   console.log(`still:   ${still}\nmotion:  ${m.sheet}\nheatmap: ${m.heat}`);
+  reportGfxErrors([g]);
   console.log(
     `motion score (${label}): ${m.score.toFixed(3)}  (mean temporal stddev 0-255; hot pixels >8: ${(m.hotFrac * 100).toFixed(1)}%; ${(await g.fps()).toFixed(1)} fps)`,
   );

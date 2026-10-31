@@ -1,9 +1,9 @@
 import { COLORS, isTouch } from '../constants.js';
 import { me, enterIsland, chargeAmount } from './player.js';
-import { net, remotes } from '../netplay/net.js';
+import { net, remotes } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.js';
 import { canvas } from '../render/scene.js';
-import { touchTarget, useVerb } from './hands.js';
+import { interactTarget, useVerb } from './hands.js';
 import { glyph, inputKind } from './glyphs.js';
 import { onFrame } from '../loop.js';
 
@@ -29,7 +29,7 @@ export const dom = {
 };
 
 let lastHint = null;
-export function updateHud() {
+function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
   const hint = me.entered && inputKind() === 'kbm' && !inputState.locked && !inputState.lockFailed;
@@ -39,7 +39,7 @@ export function updateHud() {
     dom.hintEl.hidden = !hint;
   }
   if (!isTouch || !me.entered) return;
-  const t = me.charging ? null : touchTarget(); // mid wind-up the button only throws
+  const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
   if (dom.grabBtn.textContent !== label) {
     dom.grabBtn.textContent = label;
@@ -47,7 +47,7 @@ export function updateHud() {
   }
 }
 // late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.js lists the orders).
-onFrame(() => updateHud(), { phase: 'late', order: -190 });
+onFrame(updateHud, { phase: 'late', order: -190 });
 
 let peopleKey = '';
 export function renderPeople() {
@@ -81,13 +81,18 @@ export function renderPeople() {
   for (const r of on) addRow(r.name, r.colorIdx, false);
 
   const count = on.length + (me.entered ? 1 : 0);
+  const cap = typeof net.full === 'number' ? ` (${net.full} players)` : '';
   if (net.state === 'solo')
-    dom.netLabel.textContent = `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
+    dom.netLabel.textContent = net.full
+      ? `Solo · island full${net.retryAt ? ' · waiting for a spot' : ''}`
+      : `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 
   if (net.state === 'solo') {
-    dom.hereEl.textContent = "Couldn't reach the island's room, so it's yours alone. Reload the page to try again.";
+    dom.hereEl.textContent = net.full
+      ? `The island is full${cap}. You'll join when someone leaves.`
+      : "Couldn't reach the island's room, so it's yours alone. Reload the page to try again.";
   } else if (!on.length) dom.hereEl.textContent = 'Nobody else is on the island yet. Share this page to bring friends.';
   else {
     const names = on.map((r) => r.name);
@@ -118,6 +123,12 @@ function renderSwatches() {
   });
 }
 
+// The island can be drawn: Jump in becomes available (the lobby itself, and the network, do not wait for this).
+export function lobbyReady() {
+  dom.enterBtn.disabled = false;
+  dom.enterBtn.textContent = 'Jump in';
+}
+
 export function initLobby() {
   let storedName = '',
     storedColor = NaN;
@@ -133,10 +144,9 @@ export function initLobby() {
       ? storedColor
       : Math.floor(Math.random() * COLORS.length);
   renderSwatches();
-  dom.enterBtn.disabled = false;
-  dom.enterBtn.textContent = 'Jump in';
   dom.joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (dom.enterBtn.disabled) return; // the graphics are still starting
     enterIsland();
     canvas.focus();
     requestLock();

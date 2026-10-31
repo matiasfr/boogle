@@ -1,8 +1,10 @@
-// Presents for The Boogler (ea29f9f): shake ripe fruit off a palm and pick it up; things wash up on the home beach.
+// Presents for The Boogler (ea29f9f): shake ripe fruit off a palm and pick it up.
+import { STAND } from './_stand.mjs';
+
 // Page code: the ripe palm nearest home, with its position.
 const PALM = `
   const { trees } = await import('/src/render/props.js');
-  const { isRipe } = await import('/src/sim/gifts.js');
+  const { isRipe } = await import('/src/sim/gifts.ts');
   const { gifts, sync: { world } } = window.boogle;
   let best = null;
   gifts.trees.forEach((_, t) => {
@@ -12,15 +14,11 @@ const PALM = `
     if (!best || d < best.d) best = { t, d, x: trees[t].x, z: trees[t].z, top: [top.x, top.y, top.z] };
   });
   return best;`;
-const STAND = (x, z) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const b = window.boogle.me.body;
-  b.position.set(${x}, groundHeight(${x}, ${z}) + 1, ${z}); b.velocity.set(0, 0, 0);
-  return groundHeight(${x}, ${z});`;
-const ACT = `return (await import('/src/player/hands.js')).interactDown()`;
+// A press of the interact button (E, pad B), through the controls registry.
+const ACT = `const a = (await import('/src/player/controls.js')).actionById('interact'); a.down(); a.up();`;
 
 export default {
-  about: 'shake fruit off a palm and pocket it; finds on the beach',
+  about: 'shake fruit off a palm and pocket it',
   async run(c) {
     const g = await c.open({ room: 'clipgifts', hud: 'play' });
     await g.wait(3);
@@ -50,40 +48,6 @@ export default {
         },
       }),
     );
-    // Things that washed up: fast-forward the shared clock until a few lie on the beach, then glide along them.
-    const items = await g.eval(`
-      const { gifts, sync: { world } } = window.boogle;
-      const { updateWorld } = await import('/src/world/sync.js'); // fast-forward: no handle for that
-      const t0 = world.tick;
-      while (gifts.items.filter((it) => it.src === 0).length < 5 && world.tick < t0 + 3000) updateWorld(0.1);
-      const { CELL, HALF } = await import('/src/constants.js');
-      return gifts.items.filter((it) => it.src === 0).map((it) => [-HALF + it.i * CELL, HALF - it.j * CELL, it.kind]);`);
-    if (items.length) {
-      // The find with the most company within 8 m, so several share the frame.
-      const near = (a) => items.filter((b) => Math.hypot(a[0] - b[0], a[1] - b[1]) < 8).length;
-      const [x, z] = items.reduce((a, b) => (near(b) > near(a) ? b : a));
-      await g.eval(STAND(x + 30, z + 30));
-      // Look from the land side, out over the find toward the sea: the direction where the ground is highest.
-      const [gy, a] = await g.eval(`
-        const { groundHeight } = await import('/src/adapters/terrain.js');
-        let a = 0, best = -1e9;
-        for (let k = 0; k < 16; k++) {
-          const b = (k / 16) * Math.PI * 2, h = groundHeight(${x} + Math.cos(b) * 6, ${z} + Math.sin(b) * 6);
-          if (h > best) (best = h), (a = b);
-        }
-        return [groundHeight(${x}, ${z}), a];`);
-      const from = (d, h, da) => [x + Math.cos(a + da) * d, gy + h, z + Math.sin(a + da) * d];
-      out.push(
-        await g.record('gifts-beach', {
-          seconds: 5,
-          each: c.move(
-            { cam: from(4.5, 2, 0.5), look: [x, gy + 0.2, z] },
-            { cam: from(2.2, 0.9, 0.2), look: [x, gy + 0.2, z] },
-            5,
-          ),
-        }),
-      );
-    }
     return out;
   },
 };

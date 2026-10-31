@@ -137,9 +137,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top (filled slots only) and the shovel chip
-   below its name tag. Portrait: a column down the right edge, under the net pill and menu button and above the button
-   stack. */
+/* Touch: the bottom edge belongs to the buttons, so the hotbar sits at the top (filled slots only).
+   Portrait: a column down the right edge, under the net pill and menu button and above the button stack. */
 body.touch .hotbar {
   top: calc(10px + env(safe-area-inset-top, 0px));
   bottom: auto;
@@ -162,9 +161,6 @@ body.touch .hotbar-icon {
 }
 body.touch .hotbar-key {
   display: none;
-}
-body.touch .shovel-chip {
-  top: calc(100px + env(safe-area-inset-top, 0px));
 }
 @media (orientation: portrait) {
   body.touch .hotbar {
@@ -190,7 +186,7 @@ body.touch .shovel-chip {
     padding-top: 8px;
   }
 }
-/* Toss throws what you hold when the main button would not (src/player/hud.js sets main-throws); never the shovel. */
+/* Toss throws what you hold when the main button would not (src/player/hud.js sets main-throws) */
 .tbtn.toss {
   display: none;
   right: calc(108px + env(safe-area-inset-right, 0px));

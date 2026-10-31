@@ -1,26 +1,23 @@
-// Controller feel pass (prototype flag `feel`). The body setup stays as it is (dynamic cannon body, steered horizontal
+// Controller feel pass. The body setup stays as it is (dynamic physics body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
-//   - ground snap: running over a dug ridge no longer launches you (recently grounded, ground just below, no jump)
-//   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
-//   - swimming: dig (Q) and pad LT dive; let go and you pop back up, breaching out of the water
+//     an upward bounce instead of replacing it (src/physics/physics.js), so mushroom bounces chain
+//   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
+//   - braking: a harder brake than turn (src/physics/physics.js) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame } from '../loop.js';
+import { clamp } from '../math.js';
 import { emit } from '../render/particles.js';
-import { world as physics, feelTune } from '../physics/physics.js';
+import { GROUP } from '../physics/physics.js';
+import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
-import { wrapAction, describeControl, onKey } from '../player/controls.js';
-import { shovel, setHold } from '../world/terrain-edits.js';
-import { proto } from '../adapters/proto-flags.js';
+import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const JUMP = {
@@ -30,15 +27,8 @@ const JUMP = {
   apexSpeed: 1.6, // m/s: "near the top"
 };
 const MOVE = {
-  brakeAccel: 115, // m/s² when pushing against your own velocity on the ground (turning stays at 70)
   snapMaxGap: 0.45, // m: ground this close below the feet pulls you back down after a crest
   skidSpeed: 4, // m/s: braking faster than this kicks up dust
-};
-const SWIM = {
-  diveSpeed: 5.5, // m/s down when the dive starts
-  diveHold: 2.9, // x gravity pushing down while the dive is held (beats buoyancy)
-  diveMaxS: 1.2,
-  breachBoost: 3.2, // m/s added when you surface fast after a dive
 };
 const SPRING = {
   k: 260, // stiffness of the squash spring (1/s²)
@@ -59,73 +49,40 @@ const FLOP = {
 };
 const KINDS = ['splat', 'stomp', 'bonk'];
 
-const on = () => proto.on('feel');
-
-// ---------------------------------------------------------------- physics: jump shape, snap, dive
+// ---------------------------------------------------------------- physics: jump shape, snap
+const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
+const floorGap = (b) => {
+  ray.to.x = b.position.x;
+  ray.to.y = b.position.y - PLAYER_R - MOVE.snapMaxGap;
+  ray.to.z = b.position.z;
+  const mask = getMask(b) & (GROUP.SCENERY | GROUP.CAVE); // static floors only, never your own body
+  return raycastClosest(b.position, ray.to, { mask, skipBackfaces: true }, ray.hit)
+    ? ray.hit.distance - PLAYER_R
+    : Infinity;
+};
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
-let diving = 0; // seconds left in a held dive
-let diveAt = -1e9;
-let wasUnder = false;
-let padPile = false; // pad LT is holding a pile that started on land
-physics.addEventListener('preStep', () => {
-  const enabled = on();
-  feelTune.jumpAdd = enabled;
-  feelTune.brakeAccel = enabled ? MOVE.brakeAccel : 70;
+onPreStep(() => {
   const b = me.body;
-  if (!enabled || !b) return;
-  const dtStep = physics.dt || 1 / 60;
+  if (!b) return;
   const vy = b.velocity.y;
   const surf = waterField.surfaceAt(b.position.x, b.position.z);
   const under = surf - (b.position.y + 0.35) > 0;
-  if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
+  // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
   if (vy <= 0) jumpActive = false;
+  if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
   if (!under) {
     let g = 1;
     if (vy < 0) g = JUMP.fallGravity;
     else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
     else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
-    // ground snap: just left the ground over a crest without jumping, ground right below: stay on it
-    const gap = b.position.y - PLAYER_R - groundHeight(b.position.x, b.position.z);
-    if (!jumpActive && me.coyote > 0 && vy > 0.4 && gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
-  } else {
-    if (diving > 0) {
-      diving -= dtStep;
-      b.force.y -= PLAYER_MASS * GRAVITY * SWIM.diveHold;
+    // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
+    // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
+    if (!jumpActive && me.coyote > 0 && vy > 0.4) {
+      const gap = floorGap(b);
+      if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
     }
   }
-  // breach: surfacing fast soon after a dive throws you out of the water
-  if (wasUnder && !under && vy > 2 && performance.now() - diveAt < 3000) {
-    b.velocity.y += SWIM.breachBoost;
-    diveAt = -1e9;
-  }
-  wasUnder = under;
-});
-
-function dive() {
-  if (!me.body) return;
-  me.body.velocity.y = -SWIM.diveSpeed;
-  diving = SWIM.diveMaxS;
-  diveAt = performance.now();
-}
-const swimDive = () => on() && me.swimming;
-
-onStart(() => {
-  // Q and pad LT (pile) dive while swimming; elsewhere they dig and pile as before
-  onKey('KeyQ', { owner: 'dive', down: () => swimDive() && dive(), up: () => (diving = 0) });
-  describeControl('dive', {
-    label: 'Dive',
-    detail: 'While swimming',
-    keys: ['KeyQ'],
-    pad: 'lt',
-    group: 'move',
-    order: 3,
-    context: 'swimming',
-  });
-  wrapAction('pile', {
-    down: (next) => (swimDive() ? dive() : (next(), (padPile = shovel.hold === 'pile'))),
-    up: (next) => ((padPile = false), (diving = 0), next()),
-  });
 });
 
 // ---------------------------------------------------------------- my flops
@@ -134,7 +91,7 @@ const startFlop = (kind, ms) => {
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
 };
 addPresenceField('fl', () =>
-  on() && flop && flop.until > performance.now()
+  flop && flop.until > performance.now()
     ? [KINDS.indexOf(flop.kind), Math.round(flop.until - performance.now())]
     : null,
 );
@@ -154,7 +111,7 @@ const DUST = new THREE.Color(0xe8d6a6);
 function puff(x, y, z, n, spread) {
   if (reducedMotion) return;
   for (let k = 0; k < n; k++)
-    emit('soft', {
+    emit({
       x,
       y,
       z,
@@ -183,14 +140,6 @@ function stateOf(a) {
 
 function spring(a, dt, t, flopOf, isMe) {
   const s = stateOf(a);
-  if (!on()) {
-    a.scale.set(1, 1, 1);
-    a.rotation.x = a.rotation.z = 0;
-    s.px = a.position.x;
-    s.py = a.position.y;
-    s.pz = a.position.z;
-    return;
-  }
   const k = 1 - Math.exp(-dt * 20); // smooth the velocity estimate (remote positions are interpolated)
   const nvx = (a.position.x - s.px) / dt,
     nvy = (a.position.y - s.py) / dt,
@@ -214,17 +163,16 @@ function spring(a, dt, t, flopOf, isMe) {
     }
   } else if (prevVy < 2 && s.vy > 4) s.sqv -= SPRING.takeoffK;
   s.sqv += (-SPRING.k * s.sq - SPRING.damp * s.sqv) * dt;
-  s.sq = Math.max(-SPRING.maxSquash, Math.min(SPRING.maxSquash, s.sq + s.sqv * dt));
+  s.sq = clamp(s.sq + s.sqv * dt, -SPRING.maxSquash, SPRING.maxSquash);
   // lean toward acceleration, in the avatar's own frame (it faces -Z at yaw 0)
   const yaw = a.rotation.y;
   const fx = -Math.sin(yaw),
     fz = -Math.cos(yaw);
   const aF = ax * fx + az * fz,
     aS = ax * -fz + az * fx;
-  const clampL = (v) => Math.max(-SPRING.maxLean, Math.min(SPRING.maxLean, v));
   const e = 1 - Math.exp(-dt * SPRING.leanEase);
-  s.lx += (clampL(-aF * SPRING.leanK) - s.lx) * e;
-  s.lz += (clampL(-aS * SPRING.leanK) - s.lz) * e;
+  s.lx += (clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lx) * e;
+  s.lz += (clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lz) * e;
   // flops
   let fy = 1,
     fxz = 1,
@@ -271,10 +219,6 @@ function spring(a, dt, t, flopOf, isMe) {
 onFrame(
   ({ dt, elapsed }) => {
     if (dt <= 0) return;
-    // Q and pad LT dive while swimming: never leave a Q dig or an LT pile hold running underwater (Z and the mouse
-    // still pile there)
-    if (on() && me.swimming && shovel.hold === 'dig') setHold(null, 'dig');
-    if (on() && me.swimming && padPile && shovel.hold === 'pile') setHold(null, 'pile');
     if (me.avatar) spring(me.avatar, dt, elapsed, () => flop, true);
     for (const r of remotes.values()) if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false);
   },
@@ -284,11 +228,9 @@ onFrame(
 window.__feel = {
   JUMP,
   MOVE,
-  SWIM,
   SPRING,
   FLOP,
   get flop() {
     return flop;
   },
-  dive,
 };

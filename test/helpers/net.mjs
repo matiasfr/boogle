@@ -36,6 +36,11 @@ export function makeNet() {
       p.up = up;
       for (const h of p.connCb) h(up);
     },
+    // The host steps down while staying in the room (the server took over): it hears isHost = false.
+    demote(p) {
+      p.host = false;
+      for (const h of p.hostCb) h(false);
+    },
     killHost() {
       const old = peers.find((p) => p.host && p.alive);
       old.alive = false;
