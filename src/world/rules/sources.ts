@@ -1,5 +1,5 @@
-// Source rules: the src.take op and the `sources` state (../../sim/sources.ts): palms (and, later, each age's own
-// sources) that give the age's material straight onto the taker's stack (./stacks.ts); what doesn't fit drops as a
+// Source rules: the src.take op and the `sources` state (../../sim/sources.ts): home palm cells (where the log bundles lie) and,
+// later, each age's own sources, that give the age's material straight onto the taker's stack (./stacks.ts); what doesn't fit drops as a
 // pile at the source (./piles.ts). Sources refill when a section is laid (./sites.ts onSectionDone) and on a seeded
 // trickle. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {

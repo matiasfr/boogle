@@ -261,7 +261,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - Verify: `npm run check`. Optionally `npm run scenario -- hotbar` and a `/look` still of the hotbar on desktop and
     on phone portrait. Read the stills, and put them in the commit body with `scripts/pr-shot.sh`.
 
-- [ ] **3a. Logs come from the log bundles, not a palm Shake.** Serves 1 (toys before chores: logs lie there to take,
+- [x] **3a. Logs come from the log bundles, not a palm Shake.** Serves 1 (toys before chores: logs lie there to take,
   instead of hiding behind a fruit gesture). No wire, rules or saved-shape change, so no bump. Lane B first.
   - `src/features/log-sources.ts`: add `logTargets()` and `registerInteractable(logTargets)` (import from
     `../player/hands.js`), as in Design, "Log supply without the Shake". `run` is
