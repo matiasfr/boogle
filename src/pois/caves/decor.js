@@ -6,7 +6,7 @@
 // Things are placed by probing the cave's distance field (caveSd), so lanterns sit on real walls and stalactites
 // hang from the real ceiling even if the network changes. Colliders are in the CAVE group: only bodies underground
 // touch them.
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import * as CANNON from 'cannon-es';
 import { groundMat, GROUP } from '../../physics/physics.js';
 import { addPart, mergeParts } from '../../render/props.js';
@@ -519,7 +519,7 @@ export function buildDecor({ world, scene }) {
   for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3], sp[v * 3 + 2]);
   solidGeo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   const mat = withCaveAmbient(
-    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
+    new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),
   );
   const solidMesh = new THREE.Mesh(solidGeo, mat);
   solidMesh.receiveShadow = true;

@@ -12,7 +12,7 @@ export default defineConfig({
   // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
   // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.js).
   build: {
-    chunkSizeWarningLimit: 800, // three.js alone is ~700 kB minified
+    chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
     rollupOptions: {
       output: {
         manualChunks(id) {

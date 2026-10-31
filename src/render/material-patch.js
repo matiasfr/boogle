@@ -1,15 +1,10 @@
-// Several features extend the same built-in materials (terrain, props) through onBeforeCompile. Chain the patches and
-// give each combination its own program cache key, so two materials of the same type with different patches never
-// share a compiled shader.
-export function patchMaterial(mat, key, fn) {
-  if (!mat) return;
-  const prev = mat.onBeforeCompile;
-  const keys = [...(mat.userData.patchKeys ?? []), key];
-  mat.userData.patchKeys = keys;
-  mat.onBeforeCompile = (shader, renderer) => {
-    prev?.call(mat, shader, renderer);
-    fn(shader, renderer);
-  };
-  mat.customProgramCacheKey = () => keys.join('+');
+// Several modules extend the same node material (terrain, props, critters, caves). patchNode wraps whatever is in one
+// node slot (positionNode, colorNode, emissiveNode, aoNode, ...) with fn(prev) and returns the material. prev is null
+// when the slot is empty: fn supplies the default (positionLocal for positionNode, materialColor for colorNode, ...).
+// No program cache keys: three keys node materials by their node graph.
+export function patchNode(mat, slot, fn) {
+  if (!mat) return mat;
+  mat[slot] = fn(mat[slot] ?? null);
   mat.needsUpdate = true;
+  return mat;
 }

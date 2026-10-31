@@ -31,6 +31,11 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
   .map((property) => ({ object: 'Math', property, message: det(`Math.${property}`) + ' Use a table or polynomial.' }));
 
+// WebGPURenderer (docs/plans/webgpu-migration.md) never calls onBeforeCompile, can't draw ShaderMaterial and draws
+// THREE.Points as 1 px dots. UNPORTED shrinks to [] as the migration lands.
+const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (docs/plans/webgpu-migration.md).';
+const UNPORTED = [];
+
 export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/'] },
   js.configs.recommended,
@@ -100,6 +105,25 @@ export default [
         },
       ],
       'no-restricted-globals': ['error', 'window', 'document', 'navigator', 'localStorage'],
+    },
+  },
+  {
+    files: ['src/**/*.js'],
+    ignores: [...LOCKSTEP_FILES, ...UNPORTED],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'MemberExpression[property.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points)$/]',
+          message: GL_ONLY,
+        },
+        {
+          selector:
+            'MemberExpression[property.name=/^(onBeforeCompile|customProgramCacheKey|readRenderTargetPixels)$/]',
+          message: GL_ONLY,
+        },
+      ],
     },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule

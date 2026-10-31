@@ -81,7 +81,7 @@ if (SERVER) {
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
-  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds() });
+  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds(), gfx: window.boogle?.gfx });
   const armStuck = () => {
     clearTimeout(stuckTimer);
     stuckTimer = setTimeout(() => {
@@ -107,7 +107,7 @@ if (SERVER) {
           const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
           const path = { links: links.length, relayed: links.filter((l) => l.relay).length };
           if (rtts.length) path.rttMs = Math.max(...rtts);
-          report('connect', { result: 'ok', ...at, ...path, mixedBuilds: mixedBuilds() });
+          report('connect', { result: 'ok', ...at, ...path, mixedBuilds: mixedBuilds(), gfx: window.boogle?.gfx });
         }, SETTLE_MS);
       }
       wasLive = true;

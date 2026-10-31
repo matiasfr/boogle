@@ -14,7 +14,7 @@ import { inv, SLOTS, heldId, select } from '../player/inventory.js';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
 import { pouring } from '../adapters/mushroom-garden.js';
 import { itemModel } from '../player/item-models.js';
-import { iconFor } from '../player/item-icons.js';
+import { setIcon } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
@@ -169,7 +169,7 @@ function renderHud(now) {
       b.hidden = !s && kind === 'touch';
       b.title = label(s);
       img.hidden = !s;
-      if (s) img.src = iconFor(s.id);
+      if (s) setIcon(img, s.id);
       b.querySelector('.hotbar-n').textContent = s?.id === 'seeds' ? String(s.n) : '';
     });
     ui.name.innerHTML = nameTag(inv.slots[inv.sel], kind);
