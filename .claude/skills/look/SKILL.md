@@ -23,9 +23,8 @@ camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to
 `dev/look/lib.mjs`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
 
-**Graphics backend.** Runs use three's WebGL 2 backend by default (the harness loads the page with `?gfx=webgl2`, as CI does; `?dpr=fixed` keeps adaptive resolution off, also
-always passed);
-`--webgpu --gpu` uses the real WebGPU backend on this Mac's GPU, at about 60 fps. Check visual work on both. Every
+**Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
+Vulkan on Linux and CI. `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
 run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
 material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
 `night.js`, `particles.js`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:

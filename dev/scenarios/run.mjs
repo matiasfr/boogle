@@ -12,11 +12,11 @@
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
 // (`npx playwright show-trace <zip>`: the action timeline, console, network and errors; `--no-trace` skips it).
-// With BOOGLE_GFX=webgpu a player that came up on WebGL 2 instead fails the scenario.
+// A player whose renderer didn't come up on WebGPU fails the scenario.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors, wantWebgpu } from '../look/lib.mjs';
+import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors } from '../look/lib.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const all = fs
@@ -97,12 +97,11 @@ try {
         console.log(`  FAIL  page errors in ${g.name}: ${g.errors.slice(0, 2).join(' | ')}`);
       }
     }
-    if (wantWebgpu())
-      for (const g of games)
-        if (g.gfx !== 'webgpu') {
-          bads++;
-          console.log(`  FAIL  ${g.name} asked for WebGPU but runs ${g.gfx ?? 'an unknown backend'}`);
-        }
+    for (const g of games)
+      if (g.gfx !== 'webgpu') {
+        bads++;
+        console.log(`  FAIL  ${g.name} runs ${g.gfx ?? 'no renderer'}, not WebGPU`);
+      }
     if (games.length) reportGfxErrors(games);
     for (const g of games) {
       if (bads) await g.still(`${g.name}-final`).catch(() => {});

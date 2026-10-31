@@ -2,8 +2,7 @@
 // sky day -> sunset -> night, fires particles, holds a throw and cycles the hotbar, and records every frame over 33 ms
 // with what was happening: the tour step, the sky time, and whether three's resource counters (programs, geometries,
 // textures) moved that frame, which means a shader compile or an upload landed in it.
-// Defaults to the real GPU and WebGPU on a Mac (`--no-gpu` / `--no-webgpu` to change); headless software rendering is
-// too slow to say anything about hitches. Options: `--url http://...` (a running game), `--limit 33` (ms),
+// Run it on a Mac (real GPU, WebGPU on Metal); CI's software WebGPU is too slow to say anything about hitches. Options: `--url http://...` (a running game), `--limit 33` (ms),
 // `--json file` (write every hitch as JSON), `--root dir` (serve another checkout).
 // The 'enter' step includes the harness's own click (pointer lock in headless Chromium costs ~200 ms there).
 import fs from 'node:fs';
@@ -12,9 +11,6 @@ import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.mjs';
 
 const argv = process.argv.slice(2);
 const val = (name, d) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : d);
-const mac = process.platform === 'darwin';
-const gpu = mac && !argv.includes('--no-gpu');
-const webgpu = !argv.includes('--no-webgpu');
 const url = val('--url', null);
 const root = val('--root', undefined); // another checkout to serve (before/after comparisons)
 const LIMIT = Number(val('--limit', 33));
@@ -122,12 +118,14 @@ const TOUR = `
 let stack, browser;
 try {
   stack = await startStack({ url, root });
-  browser = await launch({ gpu, webgpu });
-  const g = await Game.open(browser, stack, { name: 'hitches', webgpu, hud: 'play', init: ENTER_FRAMES });
+  browser = await launch();
+  const g = await Game.open(browser, stack, { name: 'hitches', hud: 'play', init: ENTER_FRAMES });
   g.page.on('framenavigated', (f) => f === g.page.mainFrame() && console.log('page navigated to', f.url()));
   if (process.env.HDEBUG) g.page.on('console', (m) => console.log('console:', m.text().slice(0, 200)));
   const gfx = await g.eval(INSTALL);
-  console.log(`tour on ${gfx}${gpu ? ' (real GPU)' : ' (software: numbers are not meaningful)'} ...`);
+  console.log(
+    `tour on ${gfx}${process.platform === 'darwin' ? ' (real GPU)' : ' (software: numbers are not meaningful)'} ...`,
+  );
   const frames = await g.eval(`const VIEWS = ${JSON.stringify(VIEWS)};` + TOUR);
   const lobby = await g.eval('return window.__lobby;');
   console.log(

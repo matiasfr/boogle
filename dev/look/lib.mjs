@@ -73,26 +73,16 @@ export async function startStack({ url = null, root: dir = root } = {}) {
   };
 }
 
-// Software GL by default (same pictures on every machine). `gpu` uses the real GPU where there is one (Metal on a
-// Mac): about 60 fps instead of 7, for clips.
-// `webgpu` (or BOOGLE_GFX=webgpu) turns WebGPU on in the browser; Game.open asks the game for `?gfx=webgl2` otherwise,
-// so three takes its WebGL 2 backend (what CI and older browsers run).
-export const wantWebgpu = () => process.env.BOOGLE_GFX === 'webgpu';
-export const launch = ({ gpu = false, webgpu = wantWebgpu() } = {}) => {
-  const real = gpu && process.platform === 'darwin';
-  const args = real
-    ? ['--use-angle=metal', '--ignore-gpu-blocklist']
-    : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
-  if (webgpu)
+// The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
+// on a Mac it runs on the real GPU (Metal), about 60 fps.
+export const launch = () => {
+  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'];
+  if (process.platform === 'darwin') args.push('--use-angle=metal');
+  // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
+  else
     args.push(
-      ...(process.platform === 'darwin'
-        ? ['--enable-unsafe-webgpu', ...(real ? [] : ['--use-angle=metal'])]
-        : [
-            '--enable-unsafe-webgpu',
-            '--enable-features=Vulkan',
-            '--use-vulkan=swiftshader',
-            '--use-webgpu-adapter=swiftshader',
-          ]),
+      ...['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
     );
   return chromium.launch({ args });
 };
@@ -110,9 +100,7 @@ export class Game {
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
   // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
-  // webgpu (default: BOOGLE_GFX=webgpu; the browser must be launched with launch({ webgpu })): let the game use
-  // WebGPU, otherwise the page gets `?gfx=webgl2` and three uses its WebGL 2 backend. Every page also gets
-  // `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
+  // Every page gets `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
   // layout viewport, and the game only needs the coarse pointer),
@@ -158,13 +146,9 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    const gfx = (opts.webgpu ?? wantWebgpu()) ? '' : 'gfx=webgl2&';
-    await g.page.goto(
-      `${stack.base}${sep}${gfx}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`,
-      {
-        timeout: 90000,
-      },
-    );
+    await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
+      timeout: 90000,
+    });
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
     // every shader before the lobby opens.
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });

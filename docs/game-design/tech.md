@@ -3,7 +3,7 @@
 Brief; the rules for contributors are in [AGENTS.md](../../AGENTS.md) (imported by [CLAUDE.md](../../CLAUDE.md)) and the
 folder map in [src/README.md](../../src/README.md).
 
-- **Stack.** three.js 0.187 (`WebGPURenderer` with its WebGL 2 fallback; shaders in TSL, see
+- **Stack.** three.js 0.187 (`WebGPURenderer`, WebGPU only; shaders in TSL, see
   [src/render/README.md](../../src/render/README.md)), cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../../package.json));
   the build splits three, cannon-es and peerjs into vendor chunks ([vite.config.js](../../vite.config.js)).
 - **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),
@@ -24,8 +24,8 @@ folder map in [src/README.md](../../src/README.md).
   [dev/scenarios/](../../dev/scenarios/): caves, controls-guide, hotbar, interact,
   lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, two-player-edit, world-inputs. CI runs
   `world-inputs`, `smoke` and `two-player-edit` on every PR (they must pass); the rest run nightly in
-  `scenarios-nightly.yml` and never block. Headless runs use the WebGL 2 backend; `npm run look -- --webgpu --gpu`
-  shows WebGPU on a Mac. `npm run island-map` renders the composed island.
+  `scenarios-nightly.yml` and never block; `smoke` also runs against the live site after every deploy and nightly
+  (`smoke.yml`). Every run is WebGPU (SwiftShader on Linux and CI, Metal on a Mac). `npm run island-map` renders the composed island.
 - **Perf.** `npm run perf`: draw calls, shadow calls, triangles, shader stages and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../../dev/video/)).
 - **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the

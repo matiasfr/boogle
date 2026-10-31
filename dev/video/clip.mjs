@@ -20,7 +20,7 @@ const all = fs
   .filter((f) => f.endsWith('.mjs') && !f.startsWith('_'))
   .map((f) => f.slice(0, -4))
   .sort();
-const opt = { names: [], root: undefined, gif: false, size: [1280, 720], fps: 30, gpu: true, out: '.look' };
+const opt = { names: [], root: undefined, gif: false, size: [1280, 720], fps: 30, out: '.look' };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
   const a = argv[k];
@@ -29,10 +29,9 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--gif') opt.gif = true;
   else if (a === '--size') opt.size = v().split('x').map(Number);
   else if (a === '--fps') opt.fps = Number(v());
-  else if (a === '--sw') opt.gpu = false;
   else if (a === '--out') opt.out = v();
   else if (a === '--help' || a === '-h' || a.startsWith('-')) {
-    console.log(`npm run clip -- <shot | path/to/shot.mjs>... [--gif] [--size 1280x720] [--fps 30] [--sw (software GL)] [--out .look]
+    console.log(`npm run clip -- <shot | path/to/shot.mjs>... [--gif] [--size 1280x720] [--fps 30] [--out .look]
   [--root ../other-checkout (serve a worktree, e.g. a prototype branch)]
 shots: ${all.join(', ')}`);
     process.exit(a.startsWith('--h') || a === '-h' ? 0 : 2);
@@ -69,7 +68,7 @@ const move =
 let stack, browser;
 try {
   stack = await startStack({ root: opt.root });
-  browser = await launch({ gpu: opt.gpu });
+  browser = await launch();
   for (const name of opt.names) {
     const shot = (await import(shotFile(name))).default;
     console.log(`\n== ${name}: ${shot.about || ''}`);

@@ -7,7 +7,7 @@
 
 ## Already done (don't redo)
 
-- **WebGPU + TSL.** `WebGPURenderer` with three's WebGL 2 fallback, every shader in TSL
+- **WebGPU + TSL.** `WebGPURenderer` WebGPU only (no fallback since 2026-10-31), every shader in TSL
   ([webgpu-migration.md](webgpu-migration.md), [src/render/README.md](../../src/render/README.md)).
 - **WebRTC transport.** PeerJS data channels, one browser as host ([src/net/peer-room.js](../../src/net/peer-room.js)).
 - **No prediction needed for your own movement.** Each player owns their own physics, so input never waits on the host.
@@ -65,17 +65,12 @@ obstacle is lockstep over the whole world: `RULES` is `terrain, mushrooms, gifts
 the garden would not unblock chunking, since terrain and gifts are also lockstep. Under a server, these become chunked
 server state that clients subscribe to. Decide which to keep when section 1 starts, not before.
 
-## WebGL 2 fallback
+## WebGPU only (decided 2026-10-31)
 
-Keep it for now. It covers Firefox on Android and Linux, older iOS and headless CI, and on desktop it is close to free.
-Its cost:
-
-- Compute shaders and storage buffers (GPU particles, GPU culling, GPU-driven instancing) need a second path or a
-  WebGL 2 tier that goes without them.
-- CI scenarios run on WebGL 2, so the WebGPU path is less tested (nightly `smoke` on WebGPU only).
-
-Revisit when telemetry shows the WebGL 2 share is small and a WebGPU-only feature (GPU culling for a large world)
-becomes core rather than an extra.
+The WebGL 2 fallback is gone ([src/render/README.md](../../src/render/README.md)), so GPU compute, storage buffers
+and indirect draws are available to every section above without a second path: compute particles, GPU culling and
+GPU-driven instancing for a large world. Browsers without WebGPU (Firefox on Android and Linux, iOS before 26) see a
+lobby note instead. Watch `gfx` in telemetry `connect` reports for how many players that turns away.
 
 ## Frame-loop audit (baseline 2026-10-31)
 
@@ -84,7 +79,7 @@ Rerun this as the world grows; compare against these numbers, not against generi
 | Check | Result |
 |---|---|
 | `npm run hitches` (WebGPU, island tour, day to night) | 3,144 frames, median 16.7 ms, p99 16.8 ms; only hitches are the harness's pointer-lock click on "enter" |
-| `npm run perf` (WebGL 2, headless) | 128 draw calls (52 in the shadow pass), 224k triangles, 176 geometries, 64 programs |
+| `npm run perf` (WebGL 2 at the time, headless) | 128 draw calls (52 in the shadow pass), 224k triangles, 176 geometries, 64 programs |
 | Shared sim, idle island | 0.004 ms per tick on average |
 
 Already in place: clamped delta (`src/main.js`, 50 ms cap), fixed physics step with up to 4 substeps, one
@@ -100,7 +95,7 @@ What to do as complexity increases, in order of expected payoff:
 4. **Static matrices.** Only one file sets `matrixAutoUpdate = false`, so three.js recomputes every static decor
    matrix each frame. Freeze static decor (`matrixAutoUpdate = false` plus one `updateMatrix()`) once object counts
    grow.
-5. **Compute particles** behind `emit()` (PLAN.md, "Graphics quality tiers"), WebGPU only with the CPU pool as fallback.
+5. **Compute particles** behind `emit()` (PLAN.md, "Graphics quality tiers"), replacing the CPU pool.
 6. **Culling audit.** Eight files turn `frustumCulled` off (critters, sprites, sky, gifts, blob shadows, lighthouse,
    precompile), mostly instanced or shader-moved meshes whose bounds three.js can't know. Fine while they are small; give
    large ones real bounds (`computeBoundingSphere` over the instances) before the world grows.
