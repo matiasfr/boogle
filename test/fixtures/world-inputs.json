@@ -1,8 +1,8 @@
 {
   "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
   "n": 409,
-  "states": ["mushrooms", "gifts"],
-  "ops": ["mush.plant", "mush.water", "fruit.drop", "gift.take", "gift.toss"],
+  "states": ["mushrooms", "gifts", "roster"],
+  "ops": ["mush.plant", "mush.water", "fruit.drop", "gift.take", "gift.toss", "who.set"],
   "layout": {
     "trees": [
       { "i": 175, "j": 200 },

@@ -46,10 +46,14 @@ onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied 
                              // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
-submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. `p` (player selfId) is added by sync.
+submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. Sync adds `p` (the session's selfId),
+                                   // and the host adds `u` (the player's pid, bound through w:id; an edit's own u is
+                                   // dropped). Edits from a tab whose pid the host doesn't know are rejected.
                                    // Returns true if queued, not applied: the host may reject it, and edits held
                                    // while reconnecting can be dropped (see sync.js header). Use onApplied for
                                    // anything irreversible.
+setPid(pid)                  // this tab's player id (src/player/identity.js; the selfId stands in until set)
+pidOf(selfId)                // a session's pid, or null
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
 registry()                   // { ops, states }: registered keys in order

@@ -7,8 +7,9 @@ import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
 import { createPeerRoom, defaultHostScore } from '../net/peer-room.js';
-import { attachWorld, detachWorld, setSelfId, worldStatus } from '../world/sync.js';
+import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.js';
 import { worldRoomId } from '../world/namespace.js';
+import { identity } from '../player/identity.js';
 import { createSnaps } from './snaps.js';
 import { mergeFields, hostField } from './presence-fields.js';
 import { onFrame } from '../loop.js';
@@ -294,6 +295,7 @@ export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSave(getRoomId());
   const roomId = worldRoomId(getRoomId());
+  setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
   let room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)

@@ -37,6 +37,8 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Feature | Kind | Channel / API |
 |---|---|---|
 | Your avatar (name, colour, position, yaw, state) | Owner | presence `n`, `c`, `p`, `r`, `s` |
+| Your player id (pid) | Owner + bound by the host | presence `u`; message `w:id`; stamped on every edit as `e.u` |
+| Who each pid is (name, colour) | Lockstep | op `who.set`; state `roster` |
 | Beach ball | Owner (epoch rule) | presence `b` |
 | What you hold | Owner | presence `hd` |
 | Flops, face-plant | Owner | presence `fl`, `kd` |
@@ -76,6 +78,8 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | World snapshot (every state in `RULES`, tick) | localStorage on every ready peer, every 30 s and on pagehide if changed (clients only save hash-verified ticks) | `boogle.world.v01-<room>` | per room, per browser |
 | World snapshot | Server, host only, bodies under 250 KB | `PUT /rooms/v01-<room>/snapshot` | per room, only with `VITE_BOOGLE_SERVER` |
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
+| Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
+| Guest pid (a second tab) | sessionStorage | `boogle.guestPid` | per tab |
 | Hotbar | localStorage | `boogle.hotbar` (old `boogle.pocket` migrated once) | global, not per room |
 | Boogler friendship | localStorage | `boogle.boogler.<room>` | per room |
 | First-run card seen | localStorage | `boogle.firstRun.<kind>` | global |
@@ -90,7 +94,19 @@ The server ([server/README.md](../../server/README.md)) is one Node service: Pee
 (256 KB max, 30 PUTs per minute per IP, 1,000 rooms), `/report` and `/reports`, `/ice` (Google STUN plus
 Cloudflare TURN credentials) and `/healthz`. It runs on Fly (`boogle-server`); the game is served from boogle.club.
 
-## 8.6 Known gaps
+## 8.6 Who you are (player id)
+
+[src/player/identity.js](../../src/player/identity.js), [src/features/identity.js](../../src/features/identity.js).
+No sign-up. Each browser gets a random player id (pid) on its first visit, kept in `boogle.pid`, plus the name and
+colour you pick at Jump in. A reload, a new room or a new day is the same player; clearing site data, another browser
+or another device is a new one (old plaque lines stay under the old name). The tab says its pid to the room (`w:id`)
+before anything else, and the host stamps that pid on each of the tab's edits, ignoring any pid an edit claims; the
+session id `p` is unchanged. The roster (`who.set`, sent on Jump in and after a rename) remembers each pid's name and
+colour, so credit can name players who have gone home; it holds 256 players per room. A second tab of the same
+browser can't take the `boogle.pid` Web Lock: it plays as a guest with its own pid and shows "second tab: playing as a
+guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-groundwork.md, "Identity: now and later").
+
+## 8.7 Known gaps
 
 - **`world.epochMs` is never read.** It is set when a host starts fresh, saved and loaded with snapshots, and checked
   as an integer, but no game logic reads it. Nothing grows from elapsed wall-clock time: growth, regrowth and the day

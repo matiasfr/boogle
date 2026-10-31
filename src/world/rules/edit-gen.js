@@ -30,6 +30,6 @@ export function bad(r, op) {
         l: r.chance(0.5) ? [1, 2, 3] : 'x',
       };
     default:
-      return { op, i, j, p: 'someone-else' }; // a forged player id (the host overwrites it)
+      return { op, i, j, p: 'someone-else', u: 'someone' }; // forged session and player ids (the host overwrites both)
   }
 }

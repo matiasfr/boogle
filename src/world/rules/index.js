@@ -3,8 +3,9 @@
 // The list restarted with the 0.1 namespace (../namespace.js): terrain, proto and water were retired then.
 import * as mushrooms from './mushrooms.js';
 import * as gifts from './gifts.js';
+import * as roster from './roster.js';
 
-export const RULES = [mushrooms, gifts];
+export const RULES = [mushrooms, gifts, roster];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.

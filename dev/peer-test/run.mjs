@@ -319,6 +319,43 @@ try {
   check('handover: the old host is back in as a client', (await waitFor(() => seesAll([H, K, L]), 10000)) >= 0);
   await Promise.all([H, K, L].map((p) => p.ctx.close()));
 
+  // World ids: world sync binds each page's player id (pid) to its session, ignores a pid an edit claims, and keeps
+  // the binding across a host crash (src/world/sync.js, w:id; docs/plans/0.1-groundwork.md M2).
+  const idRoom = room + 'id';
+  const P = await open('P', { in: idRoom, query: '&pid=pidp' }); // first in: the host
+  const [Q, R] = await Promise.all(['Q', 'R'].map((n) => open(n, { in: idRoom, query: `&pid=pid${n.toLowerCase()}` })));
+  const PQR = [P, Q, R];
+  const world = (p) => ev(p.page, () => window.T.worldSnap());
+  const rosterHas = async (pages, want) =>
+    (await Promise.all(pages.map(world))).every((w) => {
+      const rows = Object.fromEntries(w.roster.map((r) => [r[0], r[1]]));
+      return w.roster.length === Object.keys(want).length && Object.entries(want).every(([u, n]) => rows[u] === n);
+    });
+  await waitFor(async () => (await Promise.all(PQR.map(world))).every((w) => w.ready), 8000);
+  check('world ids: the first page hosts the world', (await world(P)).mode === 'host');
+  await Promise.all(PQR.map((p) => ev(p.page, (n) => window.T.who(n), p.name)));
+  const bound = await waitFor(() => rosterHas(PQR, { pidp: 'P', pidq: 'Q', pidr: 'R' }), 8000);
+  check('world ids: every page names each pid after its own who.set', bound >= 0, bound + ' ms');
+  await ev(Q.page, () => window.T.who('Mallory', 'pidp')); // claims P's pid: the host stamps Q's instead
+  const forged = await waitFor(() => rosterHas(PQR, { pidp: 'P', pidq: 'Mallory', pidr: 'R' }), 8000);
+  check('world ids: a pid claimed in an edit is ignored', forged >= 0);
+  await P.page.close(); // the host crashes
+  await waitFor(async () => (await Promise.all([Q, R].map(world))).some((w) => w.mode === 'host'), 10000);
+  await waitFor(async () => (await Promise.all([Q, R].map(world))).every((w) => w.ready), 8000);
+  // A client keeps the dead host pinned for HOST_STALE_MS (3 s) and drops the new host's edits until then (it resyncs
+  // after); rename once that window has passed, so a desync here means a pid problem.
+  await sleep(3500);
+  await Promise.all([Q, R].map((p) => ev(p.page, (n) => window.T.who(n + '2'), p.name)));
+  const kept = await waitFor(() => rosterHas([Q, R], { pidp: 'P', pidq: 'Q2', pidr: 'R2' }), 10000);
+  check('world ids: after a host crash the new host still binds each pid', kept >= 0, kept + ' ms');
+  const bad = (await Promise.all([Q, R].map(world))).map((w) => [w.mode, w.hashBad, w.lastBad, w.resyncs]);
+  check(
+    'world ids: no desync',
+    bad.every((b) => b[1] === 0),
+    JSON.stringify(bad),
+  );
+  await Promise.all(PQR.map((p) => p.ctx.close().catch(() => {})));
+
   const BD = [hostPage];
   const errs = await Promise.all(BD.map((p) => ev(p.page, () => window.T.errors)));
   check(

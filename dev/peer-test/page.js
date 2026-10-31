@@ -1,5 +1,7 @@
 // Test page: wraps createPeerRoom and records everything the assertions in run.mjs need.
 import { createPeerRoom } from '../../src/net/peer-room.js';
+import { createSync } from '../../src/world/sync.js';
+import { installRules } from '../../src/world/rules/index.js';
 
 const q = new URLSearchParams(location.search);
 
@@ -43,7 +45,9 @@ const T = (window.T = {
       (e) => T.errors.push(String(e.code)),
     );
     room.onHostChange((h) => T.hostChanges.push({ at: Date.now(), h }));
+    if (q.get('pid')) startWorld(room, q.get('pid'));
     room.onMessage((m, from) => {
+      if (typeof m.t === 'string') return; // world sync's own messages (w:...)
       if (m.from !== from) T.errors.push('from mismatch');
       (T.msgs[from] ||= []).push(m.n);
     });
@@ -127,3 +131,19 @@ const T = (window.T = {
     };
   },
 });
+
+// With ?pid=: the real world sync and rules on this room, playing as that player id (run.mjs, "world ids").
+function startWorld(room, pid) {
+  const w = (T.world = createSync());
+  w.setPid(pid);
+  T.rules = installRules(w, { n: 409, layout: { trees: [], perches: [] } });
+  w.attachWorld(room, { roomId: q.get('room'), storage: null });
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    w.updateWorld((now - last) / 1000);
+    last = now;
+  }, 50);
+  T.who = (n, u) => w.submitEdit({ op: 'who.set', i: 0, j: 0, n, c: 1, ...(u ? { u } : {}) });
+  T.worldSnap = () => ({ ...w.worldStatus(), roster: JSON.parse(JSON.stringify(w.snapshot().data.roster)) });
+}

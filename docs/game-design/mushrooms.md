@@ -13,7 +13,7 @@
 - **Files.** [src/sim/mushrooms.js](../../src/sim/mushrooms.js), [src/world/rules/mushrooms.js](../../src/world/rules/mushrooms.js),
   [src/adapters/mushroom-garden.js](../../src/adapters/mushroom-garden.js), [src/features/mushroom-garden.js](../../src/features/mushroom-garden.js).
 - **Known issues and limits.** Watering is only by can (not sim water or the ball). Growth counts ticks, which only run
-  while someone is online, so nothing grows while the island is empty (see 8.6). Mushrooms never wilt or get
+  while someone is online, so nothing grows while the island is empty (see 8.7). Mushrooms never wilt or get
   harvested. The rest of Phase 5 (soil, crops, visitor bonus) is on hold.
 
 ---
