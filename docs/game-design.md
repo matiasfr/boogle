@@ -117,6 +117,9 @@ Files: [src/player/player.js](../src/player/player.js), [src/physics/physics.js]
   not pushed).
 - Gravity 18 m/s². Walk 5.6 m/s, sprint 9.5 m/s, both × 0.55 in water. Acceleration 70 m/s² on the ground, 14 in the
   air, 18 swimming. With the `feel` flag, braking against your velocity uses 115 m/s².
+- Falls top out at 20 m/s (about an 11 m drop), so a step never moves the body further than its radius and long falls
+  can't tunnel through the ground. A player or ball whose centre still ends up under the terrain is put back on top
+  (`catchFallThrough`, [src/physics/physics.js](../src/physics/physics.js); `npm run scenario -- falls`).
 - Jump: 7.6 m/s up, with 0.1 s of ledge grace (coyote) and a 0.15 s jump buffer. With `feel`, jumps add to an upward
   bounce (capped at 6 m/s before adding), so mushroom bounces chain.
 - `feel` jump shape: 1.7× gravity falling, 2.5× rising after letting go (short hop), 0.5× near the apex (under

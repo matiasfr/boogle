@@ -1,5 +1,5 @@
 import * as CANNON from 'cannon-es';
-import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS } from '../constants.js';
+import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
 import { clamp } from '../math.js';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
@@ -23,8 +23,23 @@ export const GROUP = { DEFAULT: 1, SCENERY: 2, CAVE: 4 };
 export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies moved by code
 
 // Height of the ground below a point. The terrain, unless a feature with ground under the terrain (the caves) says
-// the point is underground.
-export const groundProbe = { under: (x, y, z) => groundHeight(x, z) };
+// the point is underground. `netted(x, z)`: false where a feature owns what is below the terrain (the caves have their
+// own safety net), so the fall-through net in installStepHooks leaves bodies there alone.
+export const groundProbe = { under: (x, y, z) => groundHeight(x, z), netted: () => true };
+
+// cannon-es has no continuous collision: a sphere that moves more than its radius in one step can end up with its
+// centre under the heightfield, and the contact then pushes it out the bottom. Falls are capped below that speed
+// (0.33 m a step against a 0.45 m radius), and anything that still gets through is put back on top.
+const MAX_FALL = 20; // m/s
+const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
+function catchFallThrough(body, r) {
+  const p = body.position;
+  if (!groundProbe.netted(p.x, p.z)) return;
+  const g = groundProbe.under(p.x, p.y, p.z);
+  if (p.y > g - NET_DEPTH) return;
+  teleport(body, p.x, g + r, p.z);
+  if (body.velocity.y < 0) body.velocity.y = 0;
+}
 
 const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
 const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
@@ -95,6 +110,7 @@ export function installStepHooks({ me, ball, remotes }) {
       }
       b.velocity.x += dx;
       b.velocity.z += dz;
+      if (b.velocity.y < -MAX_FALL) b.velocity.y = -MAX_FALL;
       if (me.jumpQueued > 0) {
         if (me.coyote > 0) {
           b.velocity.y = feelTune.jumpAdd ? Math.min(Math.max(b.velocity.y, 0), 6) + 7.6 : 7.6; // add: bounces chain
@@ -160,8 +176,10 @@ export function installStepHooks({ me, ball, remotes }) {
   });
 
   world.addEventListener('postStep', () => {
+    if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R);
     const b = me.body;
     if (!b) return;
+    catchFallThrough(b, PLAYER_R);
     for (const c of world.contacts) {
       if (!c.enabled || (c.bi !== b && c.bj !== b)) continue;
       const ny = c.bi === b ? -c.ni.y : c.ni.y;

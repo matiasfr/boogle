@@ -338,6 +338,8 @@ onStart(() => {
   };
   const under0 = groundProbe.under;
   groundProbe.under = (x, y, z) => (inCave(x, y, z) ? floorBelow(x, y, z) : under0(x, y, z));
+  const netted0 = groundProbe.netted;
+  groundProbe.netted = (x, z) => !nearCaves(x, z) && netted0(x, z); // track() is the net here
   camConstraints.push(keepCameraInside);
   world.addEventListener('preStep', () => {
     if (me.body) track(me.body, 0.4);
