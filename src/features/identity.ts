@@ -1,5 +1,5 @@
 // Your player id in the room (src/player/identity.ts): the pid goes to world sync (which binds it to this session for
-// the host) and into presence as `u`, so others can match your avatar to your stack and plaque lines; the roster
+// the host) and into presence as `pid`, so others can match your avatar to your stack and plaque lines; the roster
 // (src/world/rules/roster.ts) learns your name and colour from Jump in and any rename after; and a second tab of the
 // same browser says it plays as a guest. Serves DESIGN.md 8 (drop-in, drop-out: you are the same player after a
 // reload) and 6 (personal rewards need a person to belong to).
@@ -18,7 +18,7 @@ identity.ready.then(({ pid, guest }) => {
   if (pid) setPid(pid);
   if (guest) showGuestNote();
 });
-addPresenceField('u', () => identity.pid);
+addPresenceField('pid', () => identity.pid);
 
 // The roster says who you are from your last who.set; send one whenever it disagrees with this tab (Jump in, a
 // rename, a fresh world, a room that started before you were in it).

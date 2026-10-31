@@ -27,7 +27,7 @@ into a site's ring.
 
 Code: [src/sim/stacks.ts](../../src/sim/stacks.ts), [src/world/rules/stacks.ts](../../src/world/rules/stacks.ts),
 [src/features/haul-stack.ts](../../src/features/haul-stack.ts). Lockstep state `stacks` (by roster index), changed by
-other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `u`.
+other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `pid`.
 
 ## Sources: palms give logs
 

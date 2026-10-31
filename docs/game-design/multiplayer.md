@@ -37,7 +37,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Feature | Kind | Channel / API |
 |---|---|---|
 | Your avatar (name, colour, position, yaw, state) | Owner | presence `n`, `c`, `p`, `r`, `s` |
-| Your player id (pid) | Owner + bound by the host | presence `u`; message `w:id`; stamped on every edit as `e.u` |
+| Your player id (pid) | Owner + bound by the host | presence `pid`; message `w:id`; stamped on every edit as `e.u` |
 | Who each pid is (name, colour) | Lockstep | op `who.set`; state `roster` |
 | Beach ball | Owner (epoch rule) | presence `b` |
 | What you hold | Owner | presence `hd` |
