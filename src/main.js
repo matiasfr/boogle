@@ -15,6 +15,7 @@ import { renderPeople, initLobby, lobbyReady } from './player/hud.js';
 import { initInput } from './player/input.js';
 import { createStall } from './adapters/mushroom-garden.js';
 import { runFrame, runStart } from './loop.js';
+import { splashStage, splashProgress, splashDone } from './boot/splash.js';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.js).
 import.meta.glob('./features/*.js', { eager: true });
@@ -47,7 +48,8 @@ function frame(now = performance.now()) {
 }
 
 // The network and the lobby do not wait for the GPU. Only the first frame does (renderer.render throws until init), and
-// Enter, so nobody gets in before it can draw. Shaders are compiled behind the lobby, not in the first frames.
+// Enter, so nobody gets in before it can draw. Shaders are compiled behind the loading screen (src/boot/splash.js), not
+// in the first frames.
 function start() {
   initInput();
   initLobby();
@@ -58,15 +60,18 @@ function start() {
 
 async function play() {
   // Slow GPUs (and software rendering) can take many seconds: past 8 s the game opens anyway and the rest builds on.
-  await Promise.race([precompile(), new Promise((r) => setTimeout(r, 8000))]);
+  splashStage(0.45, 0.95, 'Warming up the shaders');
+  await Promise.race([precompile(null, splashProgress), new Promise((r) => setTimeout(r, 8000))]);
   last = performance.now();
   renderer.setAnimationLoop(frame); // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
   lobbyReady();
+  splashDone();
 }
 
 // Debug handle for poking at the game from the console (before start(): features' onStart hooks add to it).
 window.boogle = { THREE, CANNON, scene, world, camera, me, ball, net, remotes };
 
 start();
-rendererReady.then(play);
+splashStage(0.3, 0.45, 'Waking up the graphics');
+rendererReady.then(play, splashDone); // no graphics: the lobby says why

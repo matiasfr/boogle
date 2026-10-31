@@ -1,6 +1,7 @@
 // The first-run card: the first time a player enters with a keyboard, a gamepad or a touch screen, a small paper card
-// lists the basics (generated from the control registry, src/player/guide.js) and points at the menu. It never takes input,
-// and goes away once the player has walked about for a few seconds, or after 15. Local only: one flag per input kind
+// lists the basics (generated from the control registry, src/player/guide.js) and points at the menu. Only its close
+// button takes clicks; it goes away once the player has walked about for a few seconds, after 15, when closed, or when the
+// menu opens (the menu lists every control). Local only: one flag per input kind
 // in localStorage. Serves DESIGN.md's "drop-in, drop-out": the controls are one glance away, never a manual.
 import './first-run.css';
 import { onFrame } from '../loop.js';
@@ -42,6 +43,14 @@ function hide() {
   card = null;
 }
 
+function dismiss() {
+  if (!card) return;
+  card.classList.add('gone');
+  const c = card;
+  card = null;
+  setTimeout(() => c.remove(), 400);
+}
+
 function show(k) {
   hide();
   remember(k);
@@ -55,7 +64,16 @@ function show(k) {
     k === 'touch'
       ? '<span class="first-run-burger">☰</span> <span>All controls and the menu</span>'
       : `${pause} <span>All controls and the menu</span>`;
-  card.append(renderGuide(k, { groups: GROUPS }), more);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'first-run-close';
+  close.setAttribute('aria-label', 'Close');
+  close.textContent = '×';
+  close.addEventListener('click', () => {
+    dismiss();
+    document.getElementById('view')?.focus();
+  });
+  card.append(close, renderGuide(k, { groups: GROUPS }), more);
   (document.querySelector('.hud') ?? document.body).append(card);
 }
 
@@ -72,16 +90,12 @@ onFrame(
       if (!seen(k)) show(k);
     }
     if (!card) return;
-    card.hidden = modalOpen() || dialogue.open; // the pause view or a talk
+    if (modalOpen()) return dismiss(); // the menu has every control in it
+    card.hidden = dialogue.open;
     if (card.hidden) return;
     shown += dt;
     if (walking()) moved += dt;
-    if (moved >= MOVE_S || shown >= MAX_S) {
-      card.classList.add('gone');
-      const c = card;
-      card = null;
-      setTimeout(() => c.remove(), 400);
-    }
+    if (moved >= MOVE_S || shown >= MAX_S) dismiss();
   },
   { phase: 'late' },
 );

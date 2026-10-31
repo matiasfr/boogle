@@ -3,7 +3,8 @@
 // stalls for tens of ms. compileAsync builds them ahead, but only for what the renderer would draw: it skips hidden
 // objects and anything outside the camera's frustum, so those are switched on for the length of the call.
 //
-//   precompile()          main.js, behind the lobby: the whole scene, then every warm-up object
+//   precompile(null, fn)  main.js, behind the loading screen: the whole scene, then every warm-up object; fn(0..1) as
+//                         each part finishes
 //   precompile(object)    a lazy part, as it is built: that object (in the scene already or not)
 //   warmUp(make)          for things that only appear once someone plays (a new player's avatar, a held item): make()
 //                         returns a throwaway Object3D with the same materials; it is compiled at start, never drawn
@@ -55,8 +56,13 @@ async function compileNow(root) {
 }
 
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
-export async function precompile(root = null) {
+export async function precompile(root = null, onProgress = () => {}) {
   if (root) return compile(root);
+  const parts = warmups.length + 2; // the scene counts as two: it is most of the work
   await compile(scene);
-  for (const make of warmups) await compile(make());
+  onProgress(2 / parts);
+  for (let i = 0; i < warmups.length; i++) {
+    await compile(warmups[i]());
+    onProgress((i + 3) / parts);
+  }
 }
