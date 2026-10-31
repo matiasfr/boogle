@@ -63,6 +63,10 @@ and shapes, positions and velocities, kinematic moves, groups, `onPreStep` / `on
 raycast and the interpolated pose. Port every module above onto it, one folder per PR, with no behavior change
 (scenarios, `/look` motion sheets and `npm run perf` before and after). ESLint bans `cannon-es` outside the facade.
 
+Progress: the facade exists (`src/physics/engine.ts`) and `src/physics/physics.js` and `src/main.js` use it. Still on
+the legacy `world` export: `src/physics/ball.js`, `src/physics/flight.js`, `src/player/`, `src/adapters/` (mushroom
+garden, gifts), `src/boogler/`, `src/guest/`, `src/features/feel.js`, `src/pois/` (windmills, caves, lighthouse).
+
 ### 2. A Rapier backend behind `?physics=rapier`
 
 The same facade on Rapier, chosen at load. CCD on the ball, the player and thrown items. Scenarios run on both

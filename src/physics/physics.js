@@ -1,20 +1,32 @@
-import * as CANNON from 'cannon-es';
 import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
+import {
+  legacyWorld,
+  material,
+  contactMaterial,
+  createBody,
+  addBody,
+  teleport,
+  onPreStep,
+  onPostStep,
+  physicsTime,
+  forEachContact,
+} from './engine.ts';
 import { clamp } from '../math.js';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 
-export const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
-world.broadphase = new CANNON.SAPBroadphase(world);
-world.allowSleep = false;
+// The physics world lives in ./engine.ts. `world` is its cannon-es world, for modules not yet on the facade
+// (docs/plans/rapier.md, step 1).
+export const world = legacyWorld;
+export { teleport };
 
-export const groundMat = new CANNON.Material('ground');
-export const playerMat = new CANNON.Material('player');
-export const ballMat = new CANNON.Material('ball');
-world.addContactMaterial(new CANNON.ContactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 }));
-world.addContactMaterial(new CANNON.ContactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 }));
+export const groundMat = material('ground');
+export const playerMat = material('player');
+export const ballMat = material('ball');
+contactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 });
+contactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 });
+contactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 });
+contactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 });
 
 // Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
 // need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and
@@ -41,12 +53,14 @@ function catchFallThrough(body, r) {
   if (body.velocity.y < 0) body.velocity.y = 0;
 }
 
-const groundBody = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-const groundShape = new CANNON.Heightfield(heights, { elementSize: CELL });
-groundBody.addShape(groundShape);
-groundBody.position.set(-HALF, 0, HALF);
-groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-world.addBody(groundBody);
+addBody(
+  createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position: { x: -HALF, y: 0, z: HALF },
+    shapes: [{ kind: 'heightfield', heights, cell: CELL }],
+  }),
+);
 
 export function addStaticSpheres(spheres) {
   // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.
@@ -58,22 +72,19 @@ export function addStaticSpheres(spheres) {
     cy += s.y / spheres.length;
     cz += s.z / spheres.length;
   }
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.SCENERY });
-  for (const s of spheres) body.addShape(new CANNON.Sphere(s.r), new CANNON.Vec3(s.x - cx, s.y - cy, s.z - cz));
-  body.position.set(cx, cy, cz);
-  world.addBody(body);
+  const body = createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position: { x: cx, y: cy, z: cz },
+    shapes: spheres.map((s) => ({ kind: 'sphere', r: s.r, offset: { x: s.x - cx, y: s.y - cy, z: s.z - cz } })),
+  });
+  addBody(body);
   return body;
-}
-
-export function teleport(body, x, y, z) {
-  body.position.set(x, y, z);
-  body.previousPosition.set(x, y, z);
-  body.interpolatedPosition.set(x, y, z);
 }
 
 // Registered from main.js with the game state so this module stays free of import cycles.
 export function installStepHooks({ me, ball, remotes }) {
-  world.addEventListener('preStep', () => {
+  onPreStep(() => {
     for (const r of remotes.values()) {
       if (!r.body) continue;
       const p = r.body.position;
@@ -141,7 +152,7 @@ export function installStepHooks({ me, ball, remotes }) {
       }
       // Surf: the surface bobs with the same waves the sea shader draws, and a slow, smoothly varying
       // current runs along the shore. A gentle, surging inward drift keeps the ball washing in eventually.
-      const t = world.time;
+      const t = physicsTime();
       const px = bb.position.x,
         pz = bb.position.z;
       const pondSurf = waterField.surfaceAt(px, pz);
@@ -172,18 +183,15 @@ export function installStepHooks({ me, ball, remotes }) {
     }
   });
 
-  world.addEventListener('postStep', () => {
+  onPostStep(() => {
     if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R);
     const b = me.body;
     if (!b) return;
     catchFallThrough(b, PLAYER_R);
-    for (const c of world.contacts) {
-      if (!c.enabled || (c.bi !== b && c.bj !== b)) continue;
-      const ny = c.bi === b ? -c.ni.y : c.ni.y;
-      if (ny > 0.55) {
-        me.coyote = 0.1;
-        break;
-      }
-    }
+    forEachContact(b, (nx, ny) => {
+      if (ny <= 0.55) return false;
+      me.coyote = 0.1;
+      return true;
+    });
   });
 }
