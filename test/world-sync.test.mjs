@@ -28,7 +28,7 @@ function makePeer(net, id, host, opts = {}) {
       log.push(`${e.p}:${e.v}`);
     },
   });
-  const last = new Map(); // like terrain/slosh: one edit per player per 2 ticks, recorded in validate
+  const last = new Map(); // a per-player rate limit: one edit per 2 ticks, recorded in validate
   s.registerOp('slow', {
     validate: (e, ctx) => {
       if (ctx.tick - (last.get(e.p) ?? -1e9) < 2) return false;

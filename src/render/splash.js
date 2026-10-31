@@ -30,7 +30,7 @@ export function splash(x, z, strength, level) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * (0.15 + strength * 0.35);
     const sp = spread * (0.3 + Math.random() * 0.7);
-    emit('soft', {
+    emit({
       x: x + Math.cos(a) * r,
       y: level + 0.05,
       z: z + Math.sin(a) * r,

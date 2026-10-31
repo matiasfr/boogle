@@ -14,5 +14,5 @@ const sites = Object.keys(found)
   .map((path) => ({ id: path.split('/').at(-2), ...found[path].default }));
 
 export const island = createIsland(sites);
-// Base heights in cm on the world grid (ground.js), the ground the shared sim and the terrain mesh start from.
+// Base heights in cm on the world grid (ground.js): the fixed ground the terrain mesh and heightfield are built from.
 export const baseCm = islandBaseCm(island);

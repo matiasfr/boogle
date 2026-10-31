@@ -116,7 +116,7 @@ const DUST = new THREE.Color(0xe8d6a6);
 function puff(x, y, z, n, spread) {
   if (reducedMotion) return;
   for (let k = 0; k < n; k++)
-    emit('soft', {
+    emit({
       x,
       y,
       z,

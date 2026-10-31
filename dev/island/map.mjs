@@ -9,8 +9,19 @@ import { fileURLToPath } from 'node:url';
 globalThis.matchMedia ??= () => ({ matches: false }); // src/constants.js reads it at import time
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-// The same sites, in the same order, as the game and the Node tests compose.
-const { sites, island } = await import('../../test/helpers/land.mjs');
+// The same sites, in the same order, as the game composes. src/island/index.js finds them with Vite's
+// import.meta.glob('../pois/*/site.js'), which Node lacks: this reads the same folders and sorts by the same key.
+const islandDir = new URL('../../src/island/', import.meta.url); // the glob's keys are relative to index.js
+const keys = fs
+  .readdirSync(path.join(root, 'src/pois'), { withFileTypes: true })
+  .filter((d) => d.isDirectory() && fs.existsSync(path.join(root, 'src/pois', d.name, 'site.js')))
+  .map((d) => '../pois/' + d.name + '/site.js')
+  .sort();
+const sites = await Promise.all(
+  keys.map(async (key) => ({ id: key.split('/').at(-2), ...(await import(new URL(key, islandDir))).default })),
+);
+const { createIsland } = await import('../../src/island/stamps.js');
+const island = createIsland(sites);
 const { HALF, CELL } = await import('../../src/constants.js');
 
 const SCALE = Number(process.argv[2]) || 2; // metres per pixel

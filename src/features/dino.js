@@ -47,7 +47,7 @@ function puff() {
   const p = me.body.position;
   for (let k = 0; k < 24; k++) {
     const a = (k / 24) * Math.PI * 2;
-    emit('soft', {
+    emit({
       x: p.x,
       y: p.y + 0.4,
       z: p.z,

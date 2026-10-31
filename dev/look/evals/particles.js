@@ -2,7 +2,7 @@
 const { emit } = await import('/src/render/particles.js');
 const C = window.boogle.THREE.Color;
 for (let k = 0; k < 200; k++)
-  emit('soft', {
+  emit({
     x: 11 + Math.random() * 3,
     y: 1 + Math.random() * 2,
     z: 22 + Math.random() * 3,

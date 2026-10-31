@@ -23,8 +23,9 @@ Four files, nothing else edited:
 
 Run `npm run check:full`. Notes:
 
-- A system on the ground (markers, castles) stores grid cells and reads the height of cell `g = i*n + j` as
-  `land.base[g]` (cm). The ground is fixed: no op changes it (digging was removed 2026-10-30).
+- A system on the ground (markers, castles) stores grid cells `g = i*n + j`. The ground is fixed (digging was removed
+  2026-10-30) and is not a lockstep input: `land` holds only `n` and the gifts `layout`. A height that validate needs
+  comes in through `setEnv`.
 - `setEnv` is only for validate facts the rules cannot compute (what the render side sees: trees, props). Anything
   derivable from `land` and the rules' state is checked in validate directly.
 - An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in

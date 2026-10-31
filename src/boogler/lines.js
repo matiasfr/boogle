@@ -1024,7 +1024,6 @@ export const GREETINGS = [
 ];
 export const AFTER = ['What else?', 'Anything else on your mind?', 'Mm. What else, {name}?'];
 export const BYE = ['Bye, Boogler!', 'See you later!', "I'd better go."];
-export const BYE_OPTS = ['Xayr!', 'See you soon!'];
 export const FAREWELL = [
   "Xayr! That means 'goodbye'.",
   'Xayr, {name}!',

@@ -1,8 +1,8 @@
 // One cosmetic particle pool for dust, sand and spray. Local only: never networked and never read by the simulation,
-// so floats and Math.random are fine. One look, 'soft': round soft dots (an instanced Sprite), used by splash foam
+// so floats and Math.random are fine. One look: round soft dots (an instanced Sprite), used by splash foam
 // (src/render/splash.js), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
 //
-//   emit('soft', p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
+//   emit(p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
 //                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),
 //                    floor: a height it dies falling through (water level),
 //                    grow: [start, end] size multipliers over its life (default [1, 1]),
@@ -66,11 +66,10 @@ const softPoints = instancedSprite(softMat, posAttr);
 softPoints.renderOrder = 5;
 
 // ---------------------------------------------------------------- emit
-const pools = { soft };
 const rgb = { r: 0, g: 0, b: 0 };
 
-export function emit(style, p) {
-  const P = pools[style];
+export function emit(p) {
+  const P = soft;
   let k = P.n;
   if (k >= P.max) k = Math.floor(Math.random() * P.max);
   else P.n++;
