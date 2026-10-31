@@ -225,7 +225,7 @@ addPresenceField('hd', () => {
   return id && id !== 'ball' ? giftIndex(id) : -1;
 });
 onRemotePresence((r, pr) => {
-  // A retired item (an old build's shovel) shows as empty hands; itemModel would draw a coconut.
+  // A retired item (an old build's shovel or seashell) shows as empty hands.
   r.hd = Number.isInteger(pr.hd) && carryable(GIFTS[pr.hd]) ? GIFTS[pr.hd].id : null;
 });
 

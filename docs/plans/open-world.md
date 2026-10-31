@@ -61,7 +61,7 @@ Start this when the first authored models land.
 ## Lockstep systems and the garden
 
 The garden is not the obstacle. It is already deterministic, and the farming phase is on hold (PLAN.md, Phase 5). The
-obstacle is lockstep over the whole world: `RULES` is `terrain, mushrooms, gifts, proto, water` (water retired). Removing
+obstacle is lockstep over the whole world: `RULES` is `terrain, mushrooms, gifts, proto, water` (terrain, proto and water retired stubs). Removing
 the garden would not unblock chunking, since terrain and gifts are also lockstep. Under a server, these become chunked
 server state that clients subscribe to. Decide which to keep when section 1 starts, not before.
 

@@ -1,4 +1,4 @@
-// Fireflies (prototype flag `fireflies`), cosmetic tier: at night a few dozen soft blinking lights drift around the
+// Fireflies, cosmetic tier: at night a few dozen soft blinking lights drift around the
 // mushroom garden and over the grass. One additive point cloud; positions and blinks are local floats.
 // Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
 import * as THREE from 'three/webgpu';
@@ -9,7 +9,6 @@ import { CELL, HALF } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { skyDebug } from '../render/sky.js';
 import { PATCH } from '../sim/mushrooms.js';
-import { proto } from '../adapters/proto-flags.js';
 
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),
@@ -63,7 +62,7 @@ onStart(() => {
 let shown = 0;
 onFrame(
   ({ dt, elapsed }) => {
-    const want = proto.on('fireflies') && skyDebug.state.day < FLIES.night ? 1 : 0;
+    const want = skyDebug.state.day < FLIES.night ? 1 : 0;
     shown += (want - shown) * Math.min(1, dt * 0.5);
     flies.visible = shown > 0.01 && F.length > 0;
     if (!flies.visible) return;

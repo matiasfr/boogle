@@ -2,7 +2,8 @@
 
 - **What and how it plays.** Home palms grow fruit you can shake loose (E within 2.1 m of the trunk) or knock down with
   a ball moving at 3 m/s or more; fruit falls on the side you shook from. Nothing washes up on the beach any more (removed 2026-10-30; items saved
-  before that age out). The frisbee twinkles so you can spot it. Anything lying around can be picked up (if your hotbar
+  before that age out). The 17 seashore finds are retired (2026-10-31): one an older build throws or saved
+  earlier is not drawn and cannot be picked up, and it rots like any thrown thing. The frisbee twinkles so you can spot it. Anything lying around can be picked up (if your hotbar
   has room) or was thrown there by someone.
 - **Controls.** E / pad B: Pick up, or shake a palm.
 - **Sync kind.** Lockstep. Ops `fruit.drop` (`t` tree, `d` direction 0..7), `gift.take` (`id`), `gift.toss`

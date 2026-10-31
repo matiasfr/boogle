@@ -128,6 +128,6 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `terrain.js` | none | `terrain` | `{}`: retired stub, keeps the slot (step 1 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
-| `proto.js` | none | `proto` | `{ proto }`: the prototype flag bitmask (`../../sim/proto.js`), all on until the adapter sets this tab's URL flags |
+| `proto.js` | none | `proto` | `{}`: retired stub (prototype flags removed 2026-10-31), keeps the slot; echoes any saved bitmask and hashes it as older builds do |
 | `water.js` | none | `water` | `{}`: retired stub, keeps the slot (step 2 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

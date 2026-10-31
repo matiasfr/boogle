@@ -4,7 +4,7 @@
   World time 0 is early morning. A smiling sun and a sleepy moon cross the sky; the moon's phase cycles every 8 days
   (2 h 40 min of play) and the first night has a waxing half moon. Key light, ambient, fog, sky, clouds and water follow.
   At night the lighthouse lamp comes on (up to 26 m of light) and two beams sweep; the shadow pass turns off and blob
-  shadows (flag `shadows`) mark where players and the ball are.
+  shadows mark where players and the ball are.
 - **Sync kind.** Lockstep without state: a pure function of `world.tick` ([src/sim/sky-clock.js](../../src/sim/sky-clock.js)),
   so everyone sees the same sky. Lighting is Local. Windmill sails and the lighthouse beam use
   [src/netplay/shared-time.js](../../src/netplay/shared-time.js) (ticks filled in with local time).

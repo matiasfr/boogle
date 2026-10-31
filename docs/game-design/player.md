@@ -8,13 +8,13 @@ Files: [src/player/player.js](../../src/player/player.js), [src/physics/physics.
 - Body: two spheres of radius 0.45 m stacked 0.8 m apart, 70 kg, fixed rotation, zero friction (velocity is steered,
   not pushed).
 - Gravity 18 m/s². Walk 5.6 m/s, sprint 9.5 m/s, both × 0.55 in water. Acceleration 70 m/s² on the ground, 14 in the
-  air, 18 swimming. With the `feel` flag, braking against your velocity uses 115 m/s².
+  air, 18 swimming. Braking against your velocity uses 115 m/s².
 - Falls top out at 20 m/s (about an 11 m drop), so a step never moves the body further than its radius and long falls
   can't tunnel through the ground. A player or ball whose centre still ends up under the terrain is put back on top
   (`catchFallThrough`, [src/physics/physics.js](../../src/physics/physics.js); `npm run scenario -- falls`).
-- Jump: 7.6 m/s up, with 0.1 s of ledge grace (coyote) and a 0.15 s jump buffer. With `feel`, jumps add to an upward
+- Jump: 7.6 m/s up, with 0.1 s of ledge grace (coyote) and a 0.15 s jump buffer. Jumps add to an upward
   bounce (capped at 6 m/s before adding), so mushroom bounces chain.
-- `feel` jump shape: 1.7× gravity falling, 2.5× rising after letting go (short hop), 0.5× near the apex (under
+- Jump shape: 1.7× gravity falling, 2.5× rising after letting go (short hop), 0.5× near the apex (under
   1.6 m/s) while held. Ground snap pulls you back onto a crest within 0.45 m,
   measured to the floor under you (terrain, stair, deck or cave floor), so ramps and stairs don't trigger it.
 - Pad sprint is a latch: click L3 once and it stays on until the stick rests.
@@ -26,7 +26,7 @@ Files: [src/player/player.js](../../src/player/player.js), [src/physics/physics.
   damping. Jump swims up at 4.5 m/s.
 - There is no dive (removed 2026-10-30, [plans/cleanup-dig-water-junk.md](../plans/cleanup-dig-water-junk.md)).
 
-## Flops (cosmetic, `feel`)
+## Flops (cosmetic)
 
 Every avatar gets a render-only spring: landing squash (about 15 % on a normal landing, max 45 %), take-off stretch,
 lean toward acceleration (max 0.35 rad). Your own client starts flops and publishes them as presence `fl`:
