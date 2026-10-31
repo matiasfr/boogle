@@ -1,6 +1,6 @@
 // The right-hand inspector: a card for whatever is selected. ctx = { S, M, N, select, render, css, kc, esc }.
 import { KINDS, LAYERS } from '../layout.js';
-import { hooks, layerOf, registrations, resolveCite, wireOf } from '../model.js';
+import { hooks, layerDirs, layerOf, registrations, resolveCite, wireOf } from '../model.js';
 import { conceptCard, howIntro } from './how.js';
 
 const sentences = (t) => {
@@ -97,7 +97,7 @@ export function inspector(ctx) {
       <div><h3>Largest files · ${list.length}</h3>${fileList(ctx, list)}</div>`;
   } else if (sel.t === 'layer') {
     const L = LAYERS.find((x) => x.id === sel.id) ?? LAYERS[1];
-    const ds = L.dirs.filter((d) => M.dirs[d]);
+    const ds = layerDirs(M, L);
     el.innerHTML = `<div><h2>${L.name}</h2></div><p>${L.note}</p><div><h3>Folders</h3><div class="list">${ds
       .map(
         (d) =>
@@ -133,7 +133,7 @@ export function inspector(ctx) {
     el.innerHTML = `<div><h2>${M.files.length} files · ${sum(M.files).toLocaleString()} lines</h2>${commits ? `<div class="path">${commits} commits${since ? ` since ${since}` : ''}</div>` : ''}</div>
       <p>Five layers, top to bottom: from what a player touches to the wire. Click anything to see it here; press <b>/</b> to search.</p>
       <div><h3>Colour is the sync kind</h3>${legend(ctx)}</div>
-      <div><h3>Layers</h3><div class="list">${LAYERS.map((L) => `<button data-layer="${L.id}" style="--c:var(${L.c})"><i style="outline:1px solid var(--line)"></i>${L.name}<span>${L.dirs.filter((d) => M.dirs[d]).length}</span></button>`).join('')}</div></div>
+      <div><h3>Layers</h3><div class="list">${LAYERS.map((L) => `<button data-layer="${L.id}" style="--c:var(${L.c})"><i style="outline:1px solid var(--line)"></i>${L.name}<span>${layerDirs(M, L).length}</span></button>`).join('')}</div></div>
       ${problemsNote(ctx)}`;
   }
 }

@@ -462,7 +462,7 @@ glance".
     dist/assets/*.js` lists no file referenced by `dist/index.html`; the game's `dist/assets/index-*.js` size is
     unchanged from a `main` build. `npm run check`.
 
-- [ ] **6. Map views.** Create `atlas/views/map.js` by porting `mapLayers`, `stackBar`, `hier`, `nodeSel`, `fillFor`,
+- [x] **6. Map views.** Create `atlas/views/map.js` by porting `mapLayers`, `stackBar`, `hier`, `nodeSel`, `fillFor`,
   `litFor`, `mapPack` and `mapTree`. Replace `d3.hierarchy/pack/treemap/treemapSquarify` with `d3-hierarchy` imports,
   `d3.select` with `d3-selection`, `d3.interpolateZoom` with `d3-interpolate`, and `import 'd3-transition'` for
   `.transition()`. Folder notes come from `N.folders` (missing renders as nothing); layers use `layerOf` with its
