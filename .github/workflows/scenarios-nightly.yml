@@ -34,6 +34,7 @@ jobs:
           - interact
           - caves
           - lighthouse
+          - atlas
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

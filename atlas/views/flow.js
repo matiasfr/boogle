@@ -62,7 +62,7 @@ export function flowView(ctx, el) {
     .attr('x', (d) => d.source.x1 + 8)
     .attr('y', (d) => d.y0 + 4)
     .style('font', `11px ${css('--mono')}`)
-    .style('fill', (d) => css(KINDS[d.kind].c))
+    .style('fill', css('--fg'))
     .style('paint-order', 'stroke')
     .style('stroke', css('--panel'))
     .style('stroke-width', 3)
