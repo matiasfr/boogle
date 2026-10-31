@@ -65,6 +65,8 @@ a few hooks anyone can reuse:
   `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.
   Bodies moved by code (remote players, the Boogler, windmill sails) use `NOT_SCENERY` and skip static stuff entirely.
 - `groundProbe.under` (`src/physics/physics.js`): the floor under a point, for code that would otherwise read the terrain.
+- `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
+  (which puts bodies under the terrain back on top) leaves that area to your own safety net.
 - `camConstraints` (`src/player/player.js`): keep the camera somewhere special (inside the tunnels).
 - `atmosphere.underground` (`src/render/sky.js`): 0..1, dims the sky light and closes the fog in.
 
