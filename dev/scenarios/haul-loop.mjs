@@ -31,6 +31,10 @@ export default {
       { timeout: 20000 },
     );
     t.check("Alice matches Bob's avatar to his stack", seen >= 0);
+    await A.waitFor(
+      `(() => { const p = [...window.boogle.remotes.values()][0]?.avatar?.position; return p && Math.hypot(p.x - 13, p.z - 10) < 1; })()`,
+      { timeout: 15000 },
+    );
     await A.still('A-sees-stack');
 
     // Walk into the Track ring of site 0 (8.6, 6): the stack pours itself in.
