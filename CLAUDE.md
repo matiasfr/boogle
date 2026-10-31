@@ -7,6 +7,7 @@
 
 ### Project skills
 - `/ship`: commit and ship with `npm run ship`.
+- `/simplify` before shipping a change over ~3 files or ~150 lines (PRs merge without review, so this is the cleanup pass); add `/code-review` for `src/net*`, `src/world/` or `server/`. Skip both in the GitHub Action flows below.
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
 - `/feature <name> <request>`: for work spanning several files or shared state. The `planner` agent writes `docs/plans/<name>.md`, you wait for approval, then the `implementer` agent builds it.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
