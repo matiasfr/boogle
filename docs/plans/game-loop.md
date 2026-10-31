@@ -11,7 +11,7 @@ The bones are already right; the steps build on them rather than replacing them.
 
 - **One loop, three clocks.** `renderer.setAnimationLoop(frame)` in `src/main.js` drives a variable-rate render, a fixed
   60 Hz cannon-es step (`world.step(FIXED, dt, 4)`; the game reads `interpolatedPosition`), and the 10 Hz lockstep tick
-  (`updateWorld` in `src/world/sync.js`, an accumulator with catch-up). `dt` is clamped to 50 ms.
+  (`updateWorld` in `src/world/sync.ts`, an accumulator with catch-up). `dt` is clamped to 50 ms.
 - **Plug-in hooks.** `onFrame(fn, { phase, order })` in `src/loop.js`: features never edit the loop. Every step below
   keeps that contract.
 - **Pure sim.** `src/sim/` imports nothing from `src/` and has no three.js, so it can run in a worker or on a server

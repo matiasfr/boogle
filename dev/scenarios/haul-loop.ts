@@ -17,7 +17,7 @@ type Run = {
   sleep: (ms: number) => Promise<void>;
 };
 
-const R = `const { rules } = await import('/src/world/game-world.js'); const { identity } = await import('/src/player/identity.ts');`;
+const R = `const { rules } = await import('/src/world/game-world.ts'); const { identity } = await import('/src/player/identity.ts');`;
 
 export default {
   about: 'shake, carry, pour, run: one section of the railway gets laid and both players see it',
@@ -69,7 +69,7 @@ export default {
     // The run lasts 500 ticks; two software-rendered tabs tick far slower than 10/s, so this checks it is laying
     // track (the end of a run is covered by test/sites.test.ts).
     const laying = await A.waitFor(
-      `(async () => { ${R} const { world } = await import('/src/world/sync.js'); return rules.sites.run(0, world.tick).total >= 150; })()`,
+      `(async () => { ${R} const { world } = await import('/src/world/sync.ts'); return rules.sites.run(0, world.tick).total >= 150; })()`,
       { timeout: 150000 },
     );
     t.check('the machine is laying track for Alice too', laying >= 0, laying + ' ms');

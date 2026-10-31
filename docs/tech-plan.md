@@ -29,7 +29,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       and `rttMs`; the server runs on Fly with Cloudflare TURN (#55, #56).
 - [x] **A5. Measure the sim.** (historical: the water sim was removed 2026-10-30) `npm run perf` also reports ms per lockstep tick (water, terrain, gifts, mushrooms) with
       busy water. The result decides C4.
-      *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.js`, opt-in wrappers, nothing in normal
+      *2026-10-29:* `npm run perf -- --sim` (`profileTicks` in `src/world/sync.ts`, opt-in wrappers, nothing in normal
       play). Headless Chromium, swiftshader, 4 cores shared with other agents (load 5 to 10), ticks run back to back;
       runs vary widely. Idle island: whole tick avg 0.3 to 1.0 ms, p95 0.7 to 4 ms. Busy water (6511 home cells
       flooded 40 cm, ~6400 of 13287 cells active, a channel dug at the rate limit): in four runs, whole tick avg 2.3

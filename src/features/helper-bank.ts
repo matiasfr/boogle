@@ -2,8 +2,8 @@
 // nobody hosted and submits that gap as the host's own bank.wake; the helper huts' freight for it (capped at one
 // section) lands in the open Track ring, and the machine waits for a player to start it. Serves DESIGN.md 9 (leave
 // something for the next visitor: the island did some work while you were away). Lockstep, from a host measurement.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
-import { world, onSnapshot, submitEdit, worldStatus } from '../world/sync.js';
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import { world, onSnapshot, submitEdit, worldStatus } from '../world/sync.ts';
 import { offlineGap, MIN_GAP_MS } from '../sim/bank.ts';
 
 // A host's onSnapshot fires once it holds the world (a save, or fresh with epochMs = now: no gap); a live migration

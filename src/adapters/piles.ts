@@ -1,8 +1,8 @@
 // Ground piles in the game: each pile (src/world/rules/piles.ts) drawn as a little heap of pieces, and walk-over
 // pickup. Placeholder visuals (0.1 groundwork). Walking into a pile takes it; the host decides who got it.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
-import { onApplied, submitEdit } from '../world/sync.js';
+import { onApplied, submitEdit } from '../world/sync.ts';
 import { cellX, cellZ, groundHeight } from './terrain.js';
 import { me } from '../player/player.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';

@@ -3,7 +3,7 @@
 // pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.ts: no 0.1 tab loads an older save.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync } from '../src/world/sync.js';
+import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import fs from 'node:fs';
 import { homeLand } from './helpers/land.mjs';

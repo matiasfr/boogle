@@ -8,7 +8,7 @@ import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
 import { createPeerRoom, defaultHostScore } from '../net/peer-room.js';
-import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.js';
+import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.js';

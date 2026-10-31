@@ -4,7 +4,7 @@
 //
 // An input, not the sim: like shape.js it uses Math.hypot, so it stays out of the determinism lint's lockstep files.
 // No three.js, no DOM.
-import { GRID_RES, CELL, HALF, COURT } from '../world/grid.js';
+import { GRID_RES, CELL, HALF, COURT } from '../world/grid.ts';
 import { lerp, smoothstep } from '../math-pure.js';
 
 const courtH = new WeakMap(); // island -> the ground height at the court's centre, which the court is levelled to

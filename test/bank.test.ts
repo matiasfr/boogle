@@ -3,11 +3,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { offlineGap, offlineFreight, MS_PER_TICK, MIN_GAP_MS } from '../src/sim/bank.ts';
-import { TICK_MS, createSync } from '../src/world/sync.js';
+import { TICK_MS, createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import { HELPER_EVERY } from '../src/sim/sites.ts';
 import { homeLand } from './helpers/land.mjs';
 import { makeNet, run } from './helpers/net.mjs';
+import type { WorldRoom } from '../src/world/sync.ts';
 
 test('the gap is wall time not covered by ticks or earlier wakes, never negative', () => {
   assert.equal(MS_PER_TICK, TICK_MS);
@@ -55,7 +56,7 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
       const ms = offlineGap(now, s.world.epochMs, s.world.tick, rules.bank.ms());
       if (ms >= MIN_GAP_MS) s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
     });
-    s.attachWorld((p as unknown as { room: object }).room, { roomId: 'bank', storage, now: () => now });
+    s.attachWorld((p as unknown as { room: WorldRoom }).room, { roomId: 'bank', storage, now: () => now });
     return { s, rules, p };
   };
   const host = mk('h', true);

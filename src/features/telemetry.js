@@ -12,7 +12,7 @@
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
 import { net, getRoomId, onNetState } from '../netplay/net.js';
-import { world, onDesync, onSnapFail } from '../world/sync.js';
+import { world, onDesync, onSnapFail } from '../world/sync.ts';
 import { mixedBuilds } from '../netplay/builds.js';
 import { coarseUa, firstFrame, scrub } from '../netplay/report-format.js';
 import { gfx } from '../render/scene.js';

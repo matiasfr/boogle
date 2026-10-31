@@ -4,7 +4,7 @@
 // with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
 // Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
-// profileTicks in src/world/sync.js), on the idle island. The page runs the ticks back to back (updateWorld), so slow
+// profileTicks in src/world/sync.ts), on the idle island. The page runs the ticks back to back (updateWorld), so slow
 // headless frames don't starve the sample; the numbers are still wall clock on a machine that is also software
 // rendering, so compare before/after on your change, not absolute numbers.
 import { startStack, launch, Game, sleep } from './lib.mjs';
@@ -40,7 +40,7 @@ const STATS = `
 
 // Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
 const FULL_GARDEN = `
-  const { snapshot, loadSnapshot } = await import('/src/world/sync.js');
+  const { snapshot, loadSnapshot } = await import('/src/world/sync.ts');
   const { PATCH, GROW_TICKS } = await import('/src/sim/mushrooms.ts');
   const s = snapshot();
   s.data.mushrooms = [];
@@ -52,7 +52,7 @@ const FULL_GARDEN = `
 // Run `n` ticks under profileTicks, yielding to the page every few so frames and timers still run. A host hashes every state every 20 ticks; a solo page is not a host, so
 // this does it in its place.
 const PROFILE = (n) => `
-  const { profileTicks, updateWorld, stateHashes, worldStatus, TICK_MS } = await import('/src/world/sync.js');
+  const { profileTicks, updateWorld, stateHashes, worldStatus, TICK_MS } = await import('/src/world/sync.ts');
   const prof = profileTicks();
   let res;
   try {

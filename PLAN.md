@@ -111,7 +111,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 > On hold: crops and farming are cut for now while the design is reworked by hand. The items below are the old plan, kept for reference.
 
 - [ ] **Soil and hydration.** Garden-region cells within N cells of standing water are "wet" (soil darkens, like Minecraft's 4-block rule). Make it visible.
-- [x] **Mushroom stall.** A stall by a dirt patch hands out mushroom seeds and a watering can. Bury a seed, water it, and it grows into a big flat-topped mushroom that bounces players and the ball. Shared state in `src/sim/mushrooms.js`, edits through `src/world/sync.js`.
+- [x] **Mushroom stall.** A stall by a dirt patch hands out mushroom seeds and a watering can. Bury a seed, water it, and it grows into a big flat-topped mushroom that bounces players and the ball. Shared state in `src/sim/mushrooms.js`, edits through `src/world/sync.ts`.
 - [ ] **Plant / water / harvest.** Seeds planted on dry or wet soil, a watering action (carry water from a pond, or a splash from the ball). Crops grow only while hydrated.
 - [ ] **Growth from timestamps, not ticks.** Store `plantedAt` and hydrated time per crop, and compute the stage from elapsed time. The garden grows while everyone is offline.
 - [ ] **Visitor bonus** (from Animal Crossing): each *different* player who waters a plant today adds a growth bonus. Show "watered by 3 friends" sparkles.

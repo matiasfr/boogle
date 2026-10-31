@@ -2,10 +2,10 @@
 // (the palm's Shake, src/adapters/gifts.js) sends them flying onto your stack. Placeholder visuals (0.1).
 // Serves DESIGN.md 1 (toys before chores: the shake you already play with also gathers) and 9 (sources refill as the
 // railway grows, so there is always more for the next visitor). Lockstep charges, Local view.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
-import { onApplied } from '../world/sync.js';
+import { onApplied } from '../world/sync.ts';
 import { net } from '../netplay/net.js';
 import { cellX, cellZ, groundHeight } from '../adapters/terrain.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';

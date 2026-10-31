@@ -1,7 +1,7 @@
 // Smooth shared time for cosmetic motion that should look the same for everyone (windmill sails, lighthouse beam):
 // the world clock (10 Hz ticks, the same on every client once synced) filled in between ticks with local time.
 // Not for the deterministic sim, which works in whole ticks.
-import { world, TICK_MS } from '../world/sync.js';
+import { world, TICK_MS } from '../world/sync.ts';
 
 let tick = -1,
   tickAt = 0,

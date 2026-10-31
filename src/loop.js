@@ -24,7 +24,7 @@
 // dynamic import(), e.g. `onStart(() => import('../pois/caves/index.js'))` (src/features/pois.js) or
 // `if (flag) import('../debug/netdebug.js')` (src/features/syncsafety.js). The lazy module registers its own hooks when
 // it arrives: onStart then runs at once, and onFrame hooks slot in by order (ties: after the eager ones). Never lazy:
-// anything that registers sync ops or state (src/world/sync.js), the rules modules (src/world/rules/), or anything a
+// anything that registers sync ops or state (src/world/sync.ts), the rules modules (src/world/rules/), or anything a
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
 
 const hooks = { world: [], update: [], late: [] };
