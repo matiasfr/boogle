@@ -199,7 +199,7 @@ function touchButton(action, { label, className }) {
 
 export function registerAction(
   id,
-  { pad, key, label, detail, keys, touch, group, order, guide = true, down = null, up = null, held = null },
+  { pad, key, label, detail, keys, touch, group, order, context, guide = true, down = null, up = null, held = null },
 ) {
   if (!PAD.includes(pad)) {
     console.warn(`[controls] ${id}: unknown pad slot "${pad}"`);
@@ -223,6 +223,7 @@ export function registerAction(
     touch: touchLabel(touch),
     group,
     order,
+    context, // like describeControl's: a situation it only applies in, so it may share a key
     guide,
     down,
     up,
