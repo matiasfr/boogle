@@ -34,8 +34,18 @@ export default {
     const g = await c.open({ room: ROOM, hud: 'play', init: `(${seed})('${ROOM}')` });
     await g.wait(3);
     const out = [];
+    const a0 = 0;
+    // His comically tall top hat (613629e, 104edef): a slow low orbit, the player out of frame.
+    await g.eval(STAND(9, a0 + Math.PI));
+    out.push(
+      await g.record('boogler-hat', {
+        seconds: 5,
+        each: async (t) => {
+          await orbit(g, a0 + 0.6 + t * 0.18, 4.6, 0.6, 0.9)();
+        },
+      }),
+    );
     // Pet: the player beside him opens the talk and pets his portrait, the camera slowly circling the pair.
-    let a0 = 0;
     out.push(
       await g.record('boogler-pet', {
         seconds: 5.5,
