@@ -39,6 +39,7 @@
     "video:publish": "node dev/video/publish.mjs"
   },
   "dependencies": {
+    "@dimforge/rapier3d": "0.19.3",
     "cannon-es": "0.20.0",
     "peerjs": "1.5.5",
     "three": "^0.187.0"
@@ -55,6 +56,7 @@
     "prettier": "3.9.10",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.1",
-    "vite": "6.4.5"
+    "vite": "6.4.5",
+    "vite-plugin-wasm": "^3.6.0"
   }
 }

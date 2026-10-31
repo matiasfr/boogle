@@ -1,8 +1,10 @@
-// The physics facade (docs/plans/rapier.md, step 1): the only module that imports a physics library. Today the backend
-// is cannon-es; a Rapier backend comes next, behind ?physics=rapier. Game code builds bodies from plain shape
-// descriptions and reads and writes the body fields both backends keep: position, velocity, angularVelocity, force,
-// quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z (w)
-// and set(): cannon's vector methods (setZero, scale, vadd, ...) don't exist on the Rapier backend.
+// The physics facade (docs/plans/rapier.md): the only door to a physics library. Game code builds bodies from plain
+// shape descriptions and reads and writes the body fields every backend keeps: position, velocity, angularVelocity,
+// force, quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z
+// (w) and set(): no backend's own vector methods.
+//
+// Backends: cannon-es (./backend-cannon.ts, the default) and Rapier (./backend-rapier.ts, `?physics=rapier`, step 2 of
+// the plan). `physicsReady` resolves once the backend can step (Rapier loads its WASM first); main.js waits for it.
 //
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
@@ -10,17 +12,18 @@
 //   setMotion(body, 'dynamic' | 'kinematic', response, mass)   switch how it moves; kinematic stops it (response:
 //                                  pushes; mass: set it too)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
-//   material(name), contactMaterial(a, b, { friction, restitution })
+//   material(name, { friction, restitution }), contactMaterial(a, b, { friction, restitution })   cannon uses the pair
+//                                  table; Rapier multiplies the two materials' own values
 //   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
 //   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.js only
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
-//   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.hitPointWorld, hit.hitNormalWorld
+//   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
 //   physicsTime()                  seconds of simulated time
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
 //                                  built from (src/guest/collision.js triangulates them; heightfields included)
-import * as CANNON from 'cannon-es';
-import { FIXED, GRAVITY } from '../constants.js';
+import * as cannon from './backend-cannon.ts';
+import * as rapier from './backend-rapier.ts';
 
 export type V3 = { x: number; y: number; z: number };
 export type Quat = { x: number; y: number; z: number; w: number };
@@ -34,34 +37,22 @@ export type Shape = Placed &
     // heights[i][j]: i steps +x, j steps -z, `cell` metres apart, from the body's position (the i = 0, j = 0 corner)
     | { kind: 'heightfield'; heights: number[][]; cell: number }
   );
-export type Body = CANNON.Body;
-export type Material = CANNON.Material;
-export const BODY = { DYNAMIC: CANNON.Body.DYNAMIC, STATIC: CANNON.Body.STATIC, KINEMATIC: CANNON.Body.KINEMATIC };
-
-const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) });
-world.broadphase = new CANNON.SAPBroadphase(world);
-world.allowSleep = false;
-
-const shapesOf = new WeakMap<Body, Shape[]>(); // the descriptions each body was built from
-const vec = (v?: V3) => (v ? new CANNON.Vec3(v.x, v.y, v.z) : undefined);
-const quat = (q?: Quat) => (q ? new CANNON.Quaternion(q.x, q.y, q.z, q.w) : undefined);
-function addShape(body: Body, s: Shape) {
-  let shape: CANNON.Shape;
-  if (s.kind === 'sphere') shape = new CANNON.Sphere(s.r);
-  else if (s.kind === 'box') shape = new CANNON.Box(new CANNON.Vec3(s.hx, s.hy, s.hz));
-  else if (s.kind === 'cylinder') shape = new CANNON.Cylinder(s.rTop, s.rBottom, s.h, s.segments);
-  else if (s.kind === 'trimesh') shape = new CANNON.Trimesh(Array.from(s.vertices), Array.from(s.indices));
-  else {
-    // cannon's heightfield lies in its local x/y plane: turn the body so local y is world -z
-    shape = new CANNON.Heightfield(s.heights, { elementSize: s.cell });
-    body.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-  }
-  body.addShape(shape, vec(s.offset), quat(s.rotation));
-}
-
+type Vec = V3 & { set(x: number, y: number, z: number): unknown };
+export type Body = {
+  position: Vec;
+  velocity: Vec;
+  angularVelocity: Vec;
+  force: Vec;
+  quaternion: Quat & { set(x: number, y: number, z: number, w: number): unknown };
+  interpolatedPosition: Vec;
+};
+export type BodyKind = 'dynamic' | 'static' | 'kinematic';
+export const BODY = { DYNAMIC: 'dynamic', STATIC: 'static', KINEMATIC: 'kinematic' } as const;
+export type Material = { name: string };
+export type MaterialProps = { friction: number; restitution: number };
 export type BodyOptions = {
   mass?: number;
-  type?: CANNON.BodyType;
+  type?: BodyKind; // default: dynamic with a mass, static without
   material?: Material;
   group?: number;
   mask?: number;
@@ -73,87 +64,33 @@ export type BodyOptions = {
   linearDamping?: number;
   angularDamping?: number;
 };
-export function createBody(o: BodyOptions = {}): Body {
-  const body = new CANNON.Body({
-    mass: o.mass ?? 0,
-    material: o.material,
-    collisionFilterGroup: o.group,
-    collisionFilterMask: o.mask,
-    fixedRotation: o.fixedRotation,
-    linearDamping: o.linearDamping,
-    angularDamping: o.angularDamping,
-  });
-  if (o.type !== undefined) body.type = o.type;
-  if (o.response === false) body.collisionResponse = false;
-  if (o.position) body.position.set(o.position.x, o.position.y, o.position.z);
-  if (o.rotation) body.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
-  for (const s of o.shapes ?? []) addShape(body, s);
-  shapesOf.set(body, o.shapes ?? []);
-  return body;
-}
-export function setShapes(body: Body, shapes: Shape[]) {
-  while (body.shapes.length) body.removeShape(body.shapes[0]);
-  for (const s of shapes) addShape(body, s);
-  shapesOf.set(body, shapes);
-  body.updateMassProperties();
-  body.aabbNeedsUpdate = true;
-}
-export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response = motion === 'dynamic', mass?: number) {
-  body.type = motion === 'dynamic' ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC;
-  body.collisionResponse = response;
-  if (mass !== undefined) {
-    body.mass = mass;
-    body.updateMassProperties();
-  }
-  if (motion === 'kinematic') {
-    body.velocity.set(0, 0, 0);
-    body.angularVelocity.set(0, 0, 0);
-  }
-}
-export const getMask = (body: Body) => body.collisionFilterMask;
-export function setMask(body: Body, mask: number) {
-  body.collisionFilterMask = mask;
-}
-export const addBody = (body: Body) => world.addBody(body);
-export const removeBody = (body: Body) => world.removeBody(body);
-export function teleport(body: Body, x: number, y: number, z: number) {
-  body.position.set(x, y, z);
-  body.previousPosition.set(x, y, z);
-  body.interpolatedPosition.set(x, y, z);
-}
+export type RayHit = { hasHit: boolean; distance: number; hitPointWorld: V3; hitNormalWorld: V3 };
 
-export const material = (name: string): Material => new CANNON.Material(name);
-export function contactMaterial(a: Material, b: Material, o: { friction: number; restitution: number }) {
-  world.addContactMaterial(new CANNON.ContactMaterial(a, b, o));
-}
+const backend = new URLSearchParams(globalThis.location?.search ?? '').get('physics') === 'rapier' ? rapier : cannon;
+export const physicsBackend = backend === rapier ? 'rapier' : 'cannon';
+export const physicsReady: Promise<void> = backend.ready();
 
-export const onPreStep = (fn: () => void) => world.addEventListener('preStep', fn);
-export const onPostStep = (fn: () => void) => world.addEventListener('postStep', fn);
-export const stepPhysics = (dt: number) => world.step(FIXED, dt, 4);
-export const stepFixed = () => world.step(FIXED);
-export const physicsTime = () => world.time;
-export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) => void) {
-  for (const body of world.bodies)
-    if (body.type === CANNON.Body.STATIC && body.collisionFilterGroup & mask) fn(body, shapesOf.get(body) ?? []);
-}
-
-// cannon's contact normal points from bi to bj; flip it so it points into `body`.
-export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void) {
-  for (const c of world.contacts) {
-    if (!c.enabled || (c.bi !== body && c.bj !== body)) continue;
-    const s = c.bi === body ? -1 : 1;
-    if (fn(c.ni.x * s, c.ni.y * s, c.ni.z * s, c.bi === body ? c.bj : c.bi) === true) return;
-  }
-}
-
-export type RayHit = CANNON.RaycastResult;
-export const rayHit = (): RayHit => new CANNON.RaycastResult();
-export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) {
-  hit.reset();
-  return world.raycastClosest(
-    from as CANNON.Vec3,
-    to as CANNON.Vec3,
-    { collisionFilterMask: o.mask, skipBackfaces: o.skipBackfaces },
-    hit,
-  );
-}
+export const createBody: (o?: BodyOptions) => Body = backend.createBody;
+export const setShapes: (body: Body, shapes: Shape[]) => void = backend.setShapes;
+export const setMotion: (body: Body, motion: 'dynamic' | 'kinematic', response?: boolean, mass?: number) => void =
+  backend.setMotion;
+export const getMask: (body: Body) => number = backend.getMask;
+export const setMask: (body: Body, mask: number) => void = backend.setMask;
+export const addBody: (body: Body) => void = backend.addBody;
+export const removeBody: (body: Body) => void = backend.removeBody;
+export const teleport: (body: Body, x: number, y: number, z: number) => void = backend.teleport;
+export const material: (name: string, props: MaterialProps) => Material = backend.material;
+export const contactMaterial: (a: Material, b: Material, o: MaterialProps) => void = backend.contactMaterial;
+export const onPreStep: (fn: () => void) => void = backend.onPreStep;
+export const onPostStep: (fn: () => void) => void = backend.onPostStep;
+export const stepPhysics: (dt: number) => void = backend.stepPhysics;
+export const stepFixed: () => void = backend.stepFixed;
+export const physicsTime: () => number = backend.physicsTime;
+export const forEachStatic: (mask: number, fn: (body: Body, shapes: Shape[]) => void) => void = backend.forEachStatic;
+export const forEachContact: (
+  body: Body,
+  fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void,
+) => void = backend.forEachContact;
+export const rayHit: () => RayHit = backend.rayHit;
+export const raycastClosest: (from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) => boolean =
+  backend.raycastClosest;

@@ -8,7 +8,7 @@ const CLIMB = `
   const CX = site.x, CZ = site.z, b = me.body;
   const BASE = DECK_Y - 18; // tower foot = stair start
   b.position.set(CX + Math.cos(2.7) * 3.3, PAD_Y + 0.8, CZ + Math.sin(2.7) * 3.3); // on the plinth, just before the stair's foot
-  b.previousPosition.copy(b.position);
+  b.previousPosition.set(b.position.x, b.position.y, b.position.z);
   b.velocity.set(0, 0, 0);
   let top = 0, k = 0;
   for (; k < 60 * 45; k++) {

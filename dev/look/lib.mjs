@@ -96,6 +96,9 @@ export function reportGfxErrors(games) {
   for (const e of seen) console.log('  ' + e.split('\n')[0].slice(0, 240));
 }
 
+// BOOGLE_QUERY=physics=rapier (any URL params) is added to every page the harness opens: scenarios on another backend.
+const EXTRA_QUERY = process.env.BOOGLE_QUERY ? '&' + process.env.BOOGLE_QUERY : '';
+
 export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
@@ -147,9 +150,12 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
-      timeout: 90000,
-    });
+    await g.page.goto(
+      `${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}${EXTRA_QUERY}`,
+      {
+        timeout: 90000,
+      },
+    );
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
     // every shader before the lobby opens.
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
