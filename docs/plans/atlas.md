@@ -340,7 +340,7 @@ glance".
   agents ship to one codebase, and the people steering them learn it visually. Also records why an internal page may
   carry dependencies the game doesn't." Verify: `npm run check`.
 
-- [ ] **2. Extractor + parser tests.**
+- [x] **2. Extractor + parser tests.**
   - `npm install --save-dev --save-exact acorn@8.19.0`. Check that `package-lock.json` only moves acorn's entry to a
     direct dependency. Commit body: "acorn (already installed through eslint) pinned so the atlas extractor reads
     real syntax instead of regexes."
