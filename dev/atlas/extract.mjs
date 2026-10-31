@@ -4,8 +4,11 @@
 // give the same JSON (no timestamps). Schema: docs/plans/atlas.md, "Facts schema".
 import * as acorn from 'acorn';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { dirOf } from '../../atlas/model.js';
+import { git } from './git.mjs';
 
 const posix = path.posix;
 
@@ -84,7 +87,6 @@ function frameOf(call, file) {
     phase: read('phase', 'update', (v) => (isStr(v) ? v.value : undefined)),
     order: read('order', 0, numberOf),
     name: frameName(call.arguments[0], file),
-    line: call.loc.start.line,
   };
 }
 
@@ -102,7 +104,6 @@ function emptyRecord(f, loc) {
     head: '',
     imports: [],
     lazy: [],
-    globs: [],
     exports: [],
     names: [],
     frames: [],
@@ -147,7 +148,6 @@ export function extractFile(file, text) {
 
   const imports = [];
   const lazy = [];
-  const globs = [];
   const exportsList = [];
   const names = [];
   const owner = [];
@@ -218,14 +218,8 @@ export function extractFile(file, text) {
         else if (name === 'registerState' && isStr(a0)) states.push(a0.value);
         else if (name === 'onTick' && isStr(n.arguments[1])) ticks.push(n.arguments[1].value);
         else if (name === 'registerInteractable') rec.interact++;
-        else if (name === 'registerAction' && isStr(a0)) {
-          const o = n.arguments[1];
-          const lit = (key) => {
-            const v = prop(o, key);
-            return isStr(v) ? v.value : null;
-          };
-          actions.push({ id: a0.value, pad: lit('pad'), key: lit('key') });
-        } else if (
+        else if (name === 'registerAction' && isStr(a0)) actions.push(a0.value);
+        else if (
           isServer &&
           ['get', 'put', 'post', 'delete', 'use'].includes(name) &&
           n.callee.type === 'MemberExpression' &&
@@ -234,13 +228,6 @@ export function extractFile(file, text) {
           isStr(a0)
         ) {
           routes.push(`${name.toUpperCase()} ${a0.value}`);
-        } else if (
-          name === 'glob' &&
-          n.callee.type === 'MemberExpression' &&
-          n.callee.object.type === 'MetaProperty' &&
-          isStr(a0)
-        ) {
-          globs.push(a0.value);
         }
         break;
       }
@@ -250,7 +237,6 @@ export function extractFile(file, text) {
 
   rec.imports = uniq(imports.filter(Boolean));
   rec.lazy = uniq(lazy.filter(Boolean));
-  rec.globs = uniq(globs);
   rec.exports = uniq(exportsList);
   rec.names = uniq(names);
   rec.owner = uniq(owner);
@@ -259,7 +245,7 @@ export function extractFile(file, text) {
   rec.states = uniq(states);
   rec.ticks = uniq(ticks);
   rec.msgs = sendsOrListens ? uniq(msgCandidates) : [];
-  rec.actions = actions;
+  rec.actions = uniq(actions);
   rec.routes = uniq(routes);
   return rec;
 }
@@ -280,55 +266,17 @@ export function listSources(root) {
   return out.sort((a, b) => a.localeCompare(b));
 }
 
-function git(root, ...args) {
-  return execFileSync('git', args, {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-    stdio: ['ignore', 'pipe', 'ignore'],
-  });
-}
-
-// { git, growth }, or null when this is not a git checkout. Never throws. A shallow clone has no usable history, so
-// it reports only the head and an empty growth.
+// { head, commits, first } (the short sha, the commit count and the date of the first commit), or null when this is
+// not a git checkout. Never throws. A shallow clone has no usable history, so it reports only the head.
 export function gitFacts(root) {
   try {
     git(root, 'rev-parse', '--git-dir');
-    const head = git(root, 'rev-parse', '--short', 'HEAD').trim();
-    const date = git(root, 'log', '-1', '--format=%cI').trim();
-    if (git(root, 'rev-parse', '--is-shallow-repository').trim() === 'true') {
-      return { git: { head, date, commits: null, first: null }, growth: [] };
-    }
-    const commits = Number(git(root, 'rev-list', '--count', 'HEAD').trim());
-    const rootSha = git(root, 'rev-list', '--max-parents=0', 'HEAD').trim().split('\n').pop();
-    const first = git(root, 'log', '-1', '--format=%cI', rootSha).trim();
-    const log = git(
-      root,
-      'log',
-      '--reverse',
-      '--no-renames',
-      '--format=@%h|%cI',
-      '--name-status',
-      '--diff-filter=AD',
-      '--',
-      'src',
-      'server/src',
-    );
-    const growth = [];
-    let n = 0;
-    let cur = null;
-    for (const line of log.split('\n')) {
-      if (line.startsWith('@')) {
-        if (cur) growth.push({ h: cur.h, d: cur.d, n });
-        const [h, d] = line.slice(1).split('|');
-        cur = { h, d };
-      } else if (line) {
-        const [status, p] = line.split('\t');
-        if (p?.endsWith('.js')) n += status === 'A' ? 1 : -1;
-      }
-    }
-    if (cur) growth.push({ h: cur.h, d: cur.d, n });
-    return { git: { head, date, commits, first }, growth };
+    const head = git(root, 'rev-parse', '--short', 'HEAD');
+    if (git(root, 'rev-parse', '--is-shallow-repository') === 'true') return { head, commits: null, first: null };
+    const commits = Number(git(root, 'rev-list', '--count', 'HEAD'));
+    const rootSha = git(root, 'rev-list', '--max-parents=0', 'HEAD').split('\n').pop();
+    const first = git(root, 'log', '-1', '--format=%cI', rootSha);
+    return { head, commits, first };
   } catch {
     return null;
   }
@@ -338,54 +286,34 @@ export function gitFacts(root) {
 export function extractFacts({ root = process.cwd(), git: withGit = true, sources } = {}) {
   const src = sources ?? listSources(root).map((p) => ({ path: p, text: fs.readFileSync(path.join(root, p), 'utf8') }));
   const files = src.map((s) => extractFile(s.path, s.text)).sort((a, b) => a.f.localeCompare(b.f));
-  const g = withGit ? gitFacts(root) : null;
-  return { schema: 1, git: g?.git ?? null, growth: g?.growth ?? [], files };
+  return { schema: 1, git: withGit ? gitFacts(root) : null, files };
 }
 
-// The facts as they were at a git ref (src/ and server/src/ read with `git show`), for `npm run atlas -- --changes`.
+// The facts as they were at a git ref, for `npm run atlas -- --changes`: the ref's src/ and server/src/ unpacked with
+// one `git archive` into a temp dir (as baseTree in dev/registry/check.mjs does), then read like the working tree.
 export function factsAt(root, ref) {
-  const names = git(root, 'ls-tree', '-r', '--name-only', ref, '--', 'src', 'server/src')
-    .split('\n')
-    .filter((p) => p.endsWith('.js'));
-  const sources = [];
-  for (const p of names) {
-    try {
-      sources.push({ path: p, text: git(root, 'show', `${ref}:${p}`) });
-    } catch {
-      // A path that vanished between ls-tree and show: skip it.
-    }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-atlas-'));
+  try {
+    const tar = execFileSync('git', ['archive', ref, 'src', 'server/src'], { cwd: root, maxBuffer: 1 << 28 });
+    execFileSync('tar', ['-x', '-C', dir], { input: tar });
+    return extractFacts({ root: dir, git: false });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
-  return extractFacts({ root, git: false, sources });
 }
 
-const KEY_LISTS = {
-  ops: (f) => f.ops,
-  states: (f) => f.states,
-  owner: (f) => f.owner,
-  host: (f) => f.host,
-  msgs: (f) => f.msgs,
-  actions: (f) => f.actions.map((a) => a.id),
-  routes: (f) => f.routes,
-};
-
-const folderOf = (p) => {
-  const parts = p.replace(/^(server\/)?src\//, '').split('/');
-  return p.startsWith('server/')
-    ? 'server'
-    : parts.length === 1
-      ? '(core)'
-      : parts.slice(0, parts[0] === 'world' && parts[1] === 'rules' ? 2 : 1).join('/');
-};
+// The kinds of key diffFacts compares: each is a list of names on a file record.
+const KEY_KINDS = ['ops', 'states', 'owner', 'host', 'msgs', 'actions', 'routes'];
 
 // What changed between two facts objects: files and folders added or removed, and keys added or removed per kind.
 export function diffFacts(before, after) {
   const paths = (facts) => new Set(facts.files.map((f) => f.f));
   const [pb, pa] = [paths(before), paths(after)];
   const only = (a, b) => [...a].filter((x) => !b.has(x)).sort();
-  const folders = (set) => new Set([...set].map(folderOf));
+  const folders = (set) => new Set([...set].map(dirOf));
   const keys = {};
-  for (const [kind, pick] of Object.entries(KEY_LISTS)) {
-    const [kb, ka] = [new Set(before.files.flatMap(pick)), new Set(after.files.flatMap(pick))];
+  for (const kind of KEY_KINDS) {
+    const [kb, ka] = [new Set(before.files.flatMap((f) => f[kind])), new Set(after.files.flatMap((f) => f[kind]))];
     const added = only(ka, kb);
     const removed = only(kb, ka);
     if (added.length || removed.length) keys[kind] = { added, removed };

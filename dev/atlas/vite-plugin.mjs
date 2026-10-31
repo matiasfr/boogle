@@ -13,7 +13,7 @@ function safeFacts() {
   try {
     return extractFacts({ root: ROOT, git: true });
   } catch (err) {
-    return { schema: 1, git: null, growth: [], files: [], error: String(err?.message ?? err) };
+    return { schema: 1, git: null, files: [], error: String(err?.message ?? err) };
   }
 }
 

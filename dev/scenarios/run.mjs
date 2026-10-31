@@ -10,7 +10,6 @@
 //   t.check(label, ok, detail)                 records PASS/FAIL (never throws); put images in the detail
 //   t.page(pathname, { size, colorScheme })    a plain page of the stack (not the game), e.g. the atlas at 'atlas/';
 //                                              its uncaught errors fail the scenario like a player's
-//   t.base                                     the stack's base URL
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
@@ -69,7 +68,6 @@ try {
     let bads = 0;
     const t = {
       out,
-      base: stack.base,
       async page(pathname, { size = [1280, 900], colorScheme = 'light' } = {}) {
         const page = await browser.newPage({ viewport: { width: size[0], height: size[1] }, colorScheme });
         const errors = [];

@@ -1,8 +1,8 @@
 // The citation report: everything in docs/atlas/ that no longer matches the code or the layout. PURE.
 // `npm run atlas -- --check` prints it and always exits 0; nothing ever fails a build because of it.
-import { BOX, CHANNEL_IDS, KINDS, LANES, PRE_STEP, VIEWS } from './layout.js';
+import { BOX, CHANNEL_IDS, KINDS, LANES, PRE_STEP, VIEWS, validRef } from './layout.js';
 import { buildModel, resolveCite } from './model.js';
-import { parseChanges } from './changes.js';
+import { linksOf, parseChanges } from './changes.js';
 
 const isStr = (x) => typeof x === 'string' && x.trim() !== '';
 const CONCEPTS = 'docs/atlas/concepts.json';
@@ -67,15 +67,15 @@ export function checkAtlas({ facts, concepts, stories = [], changes, mainSource,
             if (!Array.isArray(route) || route.length < 2)
               out.push(`${where}: a go route needs at least 2 refs (${JSON.stringify(route)})`);
             else
-              for (const ref of route) {
-                if (typeof ref === 'string' && ref.startsWith('lane:')) {
-                  if (!(ref.slice(5) in LANES))
-                    out.push(`${where}: unknown lane ${ref} (lanes: ${Object.keys(LANES).join(', ')})`);
-                } else if (!(ref in BOX))
+              for (const ref of route)
+                if (!validRef(ref))
                   out.push(
-                    `${where}: unknown box ${JSON.stringify(ref)} in go (boxes: ${Object.keys(BOX).join(', ')})`,
+                    `${where}: unknown box or lane ${JSON.stringify(ref)} in go (boxes: ${Object.keys(BOX).join(', ')}; lanes: ${Object.keys(
+                      LANES,
+                    )
+                      .map((k) => 'lane:' + k)
+                      .join(', ')})`,
                   );
-              }
           });
       }
       if (st.hl !== undefined) {
@@ -154,8 +154,7 @@ function checkChanges(out, text, stories, concepts) {
       prev = e.date;
     }
     if (!e.body) out.push(`${CHANGES}: ## ${e.date} has no text`);
-    for (const m of e.body.matchAll(/\]\(#(story|concept|view)\/([^)]*)\)/g)) {
-      const [, kind, id] = m;
+    for (const { kind, id } of linksOf(e.body)) {
       const ok = kind === 'story' ? stories.has(id) : kind === 'concept' ? concepts.has(id) : VIEWS.includes(id);
       if (!ok) out.push(`${CHANGES} ## ${e.date}: link #${kind}/${id} points at nothing (fix the id or drop the link)`);
     }

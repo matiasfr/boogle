@@ -73,6 +73,9 @@ export const LANES = { msg: { y: 97 }, owner: { y: 222 }, host: { y: 262 }, lock
 // Routes between these two ids bend through a waypoint: the lockstep lane runs under Netplay.
 export const ROUTE_VIA = [{ a: 'you.world', b: 'lane:lock', via: [378, 362] }];
 
+// Is this id a route end the How diagram can draw: a BOX id, or `lane:<channel>`?
+export const validRef = (id) => (typeof id === 'string' && id.startsWith('lane:') ? id.slice(5) in LANES : id in BOX);
+
 export const CHANNEL_IDS = ['owner', 'host', 'lock', 'msg'];
 export const VIEWS = ['how', 'map', 'focus', 'flow', 'frame'];
 

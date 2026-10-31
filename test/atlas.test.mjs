@@ -38,19 +38,17 @@ export function honkNow() {}
 test('extractFile reads every registration kind', () => {
   const r = extractFile('src/features/sample.js', SAMPLE);
   const lines = SAMPLE.split('\n');
-  const lineOf = (s) => lines.findIndex((l) => l.includes(s)) + 1;
   assert.deepEqual(r, {
     f: 'src/features/sample.js',
     loc: lines.length,
     head: 'Sample feature. Second line.',
     imports: ['src/x/y.js', 'src/features/z.js'],
     lazy: ['src/lazy/part.js'],
-    globs: [],
     exports: ['b', 'honkNow'],
     names: ['honkNow'],
     frames: [
-      { phase: 'world', order: -280, name: 'update', line: lineOf('  () => update(dt)') - 1 },
-      { phase: 'update', order: 0, name: 'tick', line: lineOf('onFrame(tick)') },
+      { phase: 'world', order: -280, name: 'update' },
+      { phase: 'update', order: 0, name: 'tick' },
     ],
     owner: ['zz'],
     host: ['hh'],
@@ -60,7 +58,7 @@ test('extractFile reads every registration kind', () => {
     msgs: ['yo'],
     onMessage: true,
     submits: true,
-    actions: [{ id: 'act', pad: 'y', key: 'KeyT' }],
+    actions: ['act'],
     interact: 1,
     routes: [],
   });
@@ -77,12 +75,8 @@ test('extractFile survives a syntax error', () => {
   assert.deepEqual([r.imports, r.frames, r.msgs, r.names, r.actions], [[], [], [], [], []]);
 });
 
-test('extractFile reads import.meta.glob and names', () => {
-  const r = extractFile(
-    'src/main.js',
-    `import.meta.glob('./features/*.js', { eager: true });\nconst o = { go() {}, n: 1 };\nclass K {}\n`,
-  );
-  assert.deepEqual(r.globs, ['./features/*.js']);
+test('extractFile reads names', () => {
+  const r = extractFile('src/main.js', `const o = { go() {}, n: 1 };\nclass K {}\n`);
   assert.deepEqual(r.names, ['o', 'go', 'K']);
 });
 
@@ -181,8 +175,8 @@ test('checkAtlas names each problem once', () => {
   run((g) => cite(g, { file: 'src/features/honk.js', symbol: 'zzz' }), /has no symbol zzz/);
   run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
   run((g) => cite(g, { op: 'mush.plant', state: 'mushrooms' }), /exactly one of/);
-  run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box "nowhere" in go/);
-  run((g) => (g.stories[0].steps[0].go = [['you.features', 'lane:zzz']]), /unknown lane lane:zzz/);
+  run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box or lane "nowhere" in go/);
+  run((g) => (g.stories[0].steps[0].go = [['you.features', 'lane:zzz']]), /unknown box or lane "lane:zzz"/);
   run((g) => (g.stories[0].steps[1].hl = ['nope.box']), /unknown box "nope\.box" in hl/);
   run(
     (g) => (g.concepts.concepts = g.concepts.concepts.filter((c) => c.id !== 'server')),
@@ -198,14 +192,14 @@ test('checkAtlas names each problem once', () => {
 });
 
 test('parseNarrative never throws', () => {
-  const { N, loadProblems } = parseNarrative({
+  const N = parseNarrative({
     conceptsText: '{ not json',
     storyTexts: {
       'x/docs/atlas/stories/a.json': '{"id":"a"}',
       'x/docs/atlas/stories/b.json': '{"id":"b","order":2,"steps":[]}',
     },
   });
-  assert.equal(loadProblems.length, 2);
+  assert.equal(N.loadProblems.length, 2);
   assert.deepEqual(N.concepts, []);
   assert.deepEqual(N.boxes, {});
   assert.deepEqual(

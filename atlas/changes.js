@@ -16,6 +16,11 @@ export function parseChanges(md) {
   return out;
 }
 
+// The [text](#story|concept|view/id) links in a body, as [{ kind, id }]; the id is whatever sits between the slash and
+// the closing bracket, so a broken one can be reported.
+export const linksOf = (body) =>
+  [...body.matchAll(/\]\(#(story|concept|view)\/([^)]*)\)/g)].map(([, kind, id]) => ({ kind, id }));
+
 const INLINE = /`([^`]+)`|\[([^\]]+)\]\(#(story|concept|view)\/([a-z0-9-]+)\)/g;
 
 // Escaped inline HTML: `code`, and [text](#story/id | #concept/id | #view/id) links. A link whose target is not in
@@ -31,7 +36,7 @@ function inline(text, known) {
       const [, , label, kind, id] = m;
       const live =
         kind === 'story' ? known.stories?.has(id) : kind === 'concept' ? known.concepts?.has(id) : known.views?.has(id);
-      out += live ? `<a href="#${kind}/${id}" data-link="${kind}/${id}">${esc(label)}</a>` : esc(label);
+      out += live ? `<a href="#${kind}/${id}">${esc(label)}</a>` : esc(label);
     }
   }
   return out + esc(text.slice(last));
