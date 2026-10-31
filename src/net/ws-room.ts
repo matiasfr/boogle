@@ -48,7 +48,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
   let ws: WebSocket | null = null;
   let connected = false,
     closed = false,
-    redirected = false,
+    stopped = false, // refused or moved to PeerJS: no reconnecting
+    openedAt = 0,
     lead: string | null = null,
     mine: Msg = {},
     mySeq = 0,
@@ -90,6 +91,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
   // One socket's life. `first` settles the first connect; later sockets only reconnect.
   function open(first?: { resolve: () => void; reject: (e: RoomError) => void }) {
     const sock = (ws = new WebSocket(url, WS_PROTOCOL));
+    openedAt = performance.now();
     let listed = false,
       graceful = false;
     heard = performance.now();
@@ -101,6 +103,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
       switch (m.t) {
         case 'welcome':
           setLead(typeof m.lead === 'string' ? m.lead : null);
+          if (!first) table.expectBack(GRACE_MS); // before the list: what it names is back
           return;
         case 'list':
           if (Array.isArray(m.peers))
@@ -115,10 +118,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
             mySeq++; // a new seq, so the server (maybe a new process) takes it
             pushPresence();
             for (const msg of outbox.splice(0)) raw({ t: 'm', d: msg });
-            if (back) {
-              table.expectBack(GRACE_MS);
-              call(connHandlers, true);
-            }
+            if (back) call(connHandlers, true);
             first?.resolve();
             first = undefined;
           }
@@ -142,21 +142,24 @@ export async function createWsRoom(opts: WsRoomOptions) {
           graceful = true;
           return;
         case 'full':
-          first?.reject(err('room_full', 'the room is full', { max: Number(m.max) || undefined }));
-          first = undefined;
-          return;
+          return refused(err('room_full', 'the room is full', { max: Number(m.max) || undefined }));
         case 'peer':
-          redirected = true; // no point reconnecting: the room moved to PeerJS
-          if (first) first.reject(err('peer_hosted', 'this room is not hosted by the server'));
-          else call(redirectHandlers, 'peer');
-          first = undefined;
-          return;
+          if (!first) {
+            stopped = true; // no point reconnecting: the room moved to PeerJS
+            return void call(redirectHandlers, 'peer');
+          }
+          return refused(err('peer_hosted', 'this room is not hosted by the server'));
         case 'bad':
-          first?.reject(err('bad', 'the server refused this room or id'));
-          first = undefined;
-          return;
+          return refused(err('bad', 'the server refused this room or id'));
       }
     };
+    // The first connect rejects; a reconnect turned away stops and tells onError (fatal), as peer-room does.
+    function refused(e: RoomError) {
+      stopped = true;
+      if (first) first.reject(e);
+      else call(errHandlers, Object.assign(e, { fatal: true }));
+      first = undefined;
+    }
     sock.onerror = () => {};
     sock.onclose = () => {
       if (ws !== sock) return;
@@ -171,7 +174,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
         downSince = performance.now();
         call(connHandlers, false);
       }
-      if (closed || redirected) return;
+      if (closed || stopped) return;
       const delay = graceful ? 500 + Math.random() * 1000 : jitter(BACKOFF[Math.min(attempt++, BACKOFF.length - 1)]);
       log('reconnecting in', Math.round(delay), 'ms');
       reconnectTimer = setTimeout(() => open(), delay);
@@ -195,6 +198,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
   });
 
   const heartbeat = setInterval(() => {
+    if (ws?.readyState === WebSocket.CONNECTING && performance.now() - openedAt > (opts.openTimeoutMs ?? 5000))
+      return void ws.close(); // a reconnect stuck on a dead route: try again
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     if (performance.now() - heard > DEAD_MS) return void ws.close();
     hbAt = performance.now();
@@ -257,8 +262,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
       if (!isObj(msg)) throw new TypeError('send() takes a JSON object');
       if (tooBig({ t: 'm', d: msg })) throw err('too_big', 'message too large');
       if (closed) return;
-      if (!connected) {
-        if (outbox.length < OUTBOX_MAX) outbox.push(msg);
+      if (!connected || ws?.readyState !== WebSocket.OPEN) {
+        if (outbox.length < OUTBOX_MAX) outbox.push(msg); // flushed once the next socket is listed
         return;
       }
       raw({ t: 'm', d: msg });

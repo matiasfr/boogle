@@ -254,9 +254,11 @@ export function createService(cfg) {
     const doc = snapshotDoc(req.body);
     if (!doc) return res.status(400).json(BAD_DOC);
     try {
-      const result =
-        (await roomHost?.handoff(req.params.roomId, doc)) ??
-        (await store.write(req.params.roomId, doc, { ifNewer: true }));
+      let result = await roomHost?.handoff(req.params.roomId, doc);
+      // Stored like a PUT, so PUT's size cap applies.
+      if (!result && Number(req.get('content-length') ?? 0) > 256 * 1024)
+        return res.status(413).json({ error: 'payload too large' });
+      result ??= await store.write(req.params.roomId, doc, { ifNewer: true });
       res.status(result.status).json(result.body);
     } catch (e) {
       next(e);

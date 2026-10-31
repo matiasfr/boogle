@@ -102,7 +102,7 @@ export function createPeerTable(selfId: string) {
   return {
     setSelf: (presence: Record<string, unknown>) => note('u', selfId, set(selfId, presence)),
     upsert(id: string, presence: Record<string, unknown>, seq: number) {
-      if (id === selfId || seq <= (seqs.get(id) ?? -1)) return false;
+      if (id === selfId || !Number.isSafeInteger(seq) || seq <= (seqs.get(id) ?? -1)) return false;
       seqs.set(id, seq);
       stale.delete(id);
       note(table.has(id) ? 'u' : 'j', id, set(id, presence));
