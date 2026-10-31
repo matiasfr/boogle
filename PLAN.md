@@ -12,6 +12,8 @@ The design and technical principles live in [DESIGN.md](DESIGN.md). Read it befo
 
 ## Key decision: PeerJS (WebRTC), with one browser as host
 
+- [ ] The server hosts the main room, PeerJS stays as fallback ([docs/plans/server-host.md](docs/plans/server-host.md)).
+
 Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
 
 **Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the shared world a single authority, the way a server would.
