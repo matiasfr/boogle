@@ -75,9 +75,8 @@ backends locally; CI stays on the default.
 Progress (2026-10-31): the backend runs behind `?physics=rapier` (`src/physics/backend-rapier.ts`, Rapier 0.19.3 in its
 own chunk); `BOOGLE_QUERY=physics=rapier npm run scenario -- <name>` runs any scenario on it. On Rapier, smoke, hotbar,
 interact, falls, lighthouse, particles, shared-kinds, haul-loop, guest-play, reconnect-edit, world-inputs and the caves
-walk pass. Still failing: one of the eight hard throws in `caves` escapes into the rock near the south mouth, where the
-cave tracker switches the ball to the surface colliders while it is still underground (seen with the trace in the PR
-that added this note). Moving bodies never sleep (cannon had sleep off; a woken body skipped a step), and only touching
+walk pass. The one `caves` throw that looked lost in the rock had bounced out of the south mouth onto the hillside; the
+scenario now counts that as fine. Moving bodies never sleep (cannon had sleep off; a woken body skipped a step), and only touching
 contacts are reported (Rapier also keeps speculative ones). Materials carry their own friction and restitution, which
 Rapier multiplies; ball-player contacts are softer than cannon's pair table (0 vs 0.45 restitution).
 

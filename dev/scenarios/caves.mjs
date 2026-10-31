@@ -34,6 +34,7 @@ const STEP_ROUTE = `
 
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
+  const { groundHeight } = await import('/src/adapters/terrain.js');
   const { ball, claimBall } = await import('/src/physics/ball.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { NODES, POND } = await import('/src/pois/caves/network.js');
@@ -48,7 +49,9 @@ const THROWS = `
       if (k % 30 === 0) await new Promise((r) => setTimeout(r, 0));
       stepFixed();
     }
-    ends.push(+caveSd(bb.position.x, bb.position.y, bb.position.z).toFixed(2));
+    // caveSd: < 0 in the cave. A ball that bounced out of a mouth onto the hillside is fine too ('out').
+    const p = bb.position;
+    ends.push(p.y > groundHeight(p.x, p.z) ? 'out' : +caveSd(p.x, p.y, p.z).toFixed(2));
   }
   bb.position.set(POND.x, POND.level + 2, POND.z);
   bb.previousPosition.set(bb.position.x, bb.position.y, bb.position.z);
@@ -93,7 +96,7 @@ export default {
     const balls = await g.eval(THROWS);
     t.check(
       'hard throws stay in the cave (not in the rock)',
-      balls.ends.every((d) => d < 0.3),
+      balls.ends.every((d) => d === 'out' || d < 0.3),
       balls.ends.join(' '),
     );
     t.check('the ball floats on the pond', Math.abs(balls.pondY - balls.level - 0.2) < 0.3, JSON.stringify(balls));
