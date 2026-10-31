@@ -528,9 +528,43 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `npm --prefix server ci` before `npm run test:net` (add `server/package-lock.json` to the npm cache paths).
   - Verify: `npm run check:full`.
 
+- [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
+  `src/features/telemetry.js`, `src/debug/netdebug.js`).
+  - `room.js` as in Design, with every transition of the table.
+  - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =
+    import.meta.env.VITE_BOOGLE_SERVER; const p2p = new URLSearchParams(location.search).has('p2p');` and
+    `createRoom({ roomId, debug, server: base && !(p2p && roomId !== DEFAULT_ROOM) ? base : null, peerOptions:
+    serverOptions, build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12) })` (warn in the console when `p2p`
+    is ignored, open question 8). Add `export const isLead = () => !!net.room && (net.room.isLead ? net.room.isLead()
+    : net.room.isHost());`, use it in `addHostField` and in the late frame hook's `net.room.isHost()`; next to
+    `room.onHostChange(() => sendPresence())` add `room.onLeadChange?.(() => sendPresence())`.
+  - `boogler.js` (`updateBoogler`): `const isHost = isLead();` (import it from `net.js`).
+  - `telemetry.js`: the connect report's `role` becomes `server` when `net.room.transport === 'server'`, and gains
+    `transport`. `netdebug.js`: show `transport` and the lead.
+  - `ws-run.mjs` part 2 (a second local `PeerServer` plays the public cloud, passed as `fallbackSignal`; pages get
+    `timing: { wsGraceMs: 3000, probeMs: 1000, handoffMs: 300, firstWsMs: 1500 }`):
+    10. server down for 5 s: every page moves to `transport === 'fallback'`, exactly one `isHost()`, presence flows,
+        and a plot planted there reaches every page.
+    11. server back (it loads its older save): within 6 s every page is on `server`, `/rooms/<id>/host` reports a tick
+        at least the fallback host's last one, and a new page F sees the fallback-era plot.
+    12. restart with `SERVER_ROOMS` empty: pages move to `peer` on our signaling and keep the world (the plot is
+        there, ticks did not reset).
+    13. while hosting, a page on plain `createPeerRoom` for the same room never reports `isHost()` within 10 s (no
+        split brain).
+    14. a join with the server's port closed and no fallback server: `createRoom` rejects within `connectTimeoutMs`.
+  - Scenarios: `smoke` and `shared-kinds` use the harness's bare PeerServer, so the picker lands on
+    `peer` (T4, 404 rule); run them.
+  - Done as `src/net/room.ts` (ws-run part 2: 13 more checks, 33 in all). Verified with the real game on a
+    server-hosted room (two headless tabs: both live on `server`, the lead runs the Boogler and the other tab draws him
+    within 0.3 m as he walks, the world a hash-verified client of the server).
+  - Verify: `npm run check:full`, `npm run check:gpu`, `npm run scenario -- shared-kinds`, and a
+    `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
+    (server answers `peer`).
+
 - [ ] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
   `src/features/telemetry.js`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
-  `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated.
+  `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
+  `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
   - Server: `SERVER_ROOMS=*` (any valid id; rooms created on first join, unloaded when idle and saved, `MAX_ROOMS`
     default 20, refusal `{ t:'full' }` with a room-count reason past it). A test in `server/test/` covers create,
     unload with save, reload from disk and the room cap.

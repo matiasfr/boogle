@@ -4,9 +4,10 @@
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
 //
-// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server) and `role`. A good join also says
-// how many of its links went through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is
-// one that would have failed without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
+// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server), `role` (host, client, or server
+// when the server hosts the room) and `transport` (src/net/room.ts). A good join also says how many of its links went
+// through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is one that would have failed
+// without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
 // slowest link's round trip; a non-owner sees the ball about rtt (owner -> host -> them) + INTERP_MS late. They also
 // say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
@@ -82,7 +83,13 @@ if (SERVER) {
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
-  const base = () => ({ role, hadTurn: net.turn, mixedBuilds: mixedBuilds(), gfx: gfx() });
+  const base = () => ({
+    role,
+    transport: net.room?.transport ?? null,
+    hadTurn: net.turn,
+    mixedBuilds: mixedBuilds(),
+    gfx: gfx(),
+  });
   const armStuck = () => {
     clearTimeout(stuckTimer);
     stuckTimer = setTimeout(() => {
@@ -93,7 +100,7 @@ if (SERVER) {
   };
   if (net.state === 'connecting') armStuck();
   onNetState((s, prev) => {
-    if (net.room) role = net.room.isHost() ? 'host' : 'client';
+    if (net.room) role = net.room.transport === 'server' ? 'server' : net.room.isHost() ? 'host' : 'client';
     if (s !== 'connecting') clearTimeout(stuckTimer);
     if (s === 'connecting' && prev !== 'connecting') {
       since = performance.now();

@@ -7,7 +7,8 @@ import { addBody, removeBody } from '../physics/engine.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
-import { createPeerRoom, defaultHostScore } from '../net/peer-room.ts';
+import { defaultHostScore } from '../net/peer-room.ts';
+import { createRoom, type Room } from '../net/room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
@@ -17,7 +18,6 @@ import { onFrame } from '../loop.js';
 import type { Presence } from './presence-fields.ts';
 import type { Body } from '../physics/engine.ts';
 
-type Room = Awaited<ReturnType<typeof createPeerRoom>>;
 /** A peer as the room reports it (src/net/README.md). */
 type PeerEntry = { peer: string; sameTab?: boolean; presence?: Presence };
 type PoseSample = { p: number[]; r: number; s: unknown };
@@ -114,12 +114,15 @@ export function addPresenceField(key: string, getter: () => unknown) {
 export function onRemotePresence(fn: RemoteHook) {
   remoteHooks.push(fn);
 }
+// Whether this tab publishes Host fields: the room's lead (on a peer room, its host; on the server's room, the tab the
+// server picked, since the server itself publishes no presence).
+export const isLead = () => !!net.room && net.room.isLead();
 export function addHostField(
   key: string,
   getter: () => unknown,
   onValue: (v: unknown, time: number, peer: string) => void,
 ) {
-  const h = hostField(getter, onValue, () => !!net.room?.isHost());
+  const h = hostField(getter, onValue, isLead);
   presenceFields.push([key, h.get]);
   remoteHooks.push((r, pr, time) => h.hear(pr[key], time, r.peer));
 }
@@ -350,7 +353,19 @@ export async function connectRoom() {
   let room: Room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)
-    room = await createPeerRoom({ roomId, debug, hostScore, ...(await serverOptions()) });
+    // ?p2p skips the server for other rooms (?room=dev&p2p); the main room is hosted there, so it can't (plan, Q8).
+    const p2p = new URLSearchParams(location.search).has('p2p');
+    if (p2p && getRoomId() === DEFAULT_ROOM)
+      console.warn('[boogle] ?p2p is for other rooms; the main room joins the server');
+    const base = import.meta.env.VITE_BOOGLE_SERVER;
+    room = await createRoom({
+      roomId,
+      debug,
+      hostScore,
+      server: base && !(p2p && getRoomId() !== DEFAULT_ROOM) ? base : null,
+      peerOptions: serverOptions,
+      build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12),
+    });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     noteError(e as NetError, 'connect_failed');
@@ -388,6 +403,7 @@ export async function connectRoom() {
   // Host fields follow the role at once: a demoted host (even one still on the title screen, which sends no presence
   // otherwise) clears them before it rejoins, and a new host publishes them without waiting for its next send.
   room.onHostChange(() => sendPresence());
+  room.onLeadChange(() => sendPresence());
   sendPresence();
 }
 
@@ -447,7 +463,7 @@ onFrame(
 onFrame(
   ({ now }: { now: number }) => {
     if (!net.room || now - net.lastSend < SEND_MS) return;
-    if (me.entered || presenceReasons.some((fn) => fn()) || net.room.isHost()) sendPresence();
+    if (me.entered || presenceReasons.some((fn) => fn()) || isLead()) sendPresence();
   },
   { phase: 'late', order: 3000 },
 );

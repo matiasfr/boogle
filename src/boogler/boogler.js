@@ -22,7 +22,7 @@ import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
 import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.js';
-import { net, remotes, addHostField } from '../netplay/net.ts';
+import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
 
 // Shape: about three times as wide as he is tall.
@@ -613,7 +613,7 @@ function animateHat(dt) {
 
 export function updateBoogler(dt, now) {
   if (!group) return;
-  const isHost = net.room?.isHost() ?? false;
+  const isHost = isLead(); // the tab that runs him for everyone
   const solo = !net.room || net.state === 'solo';
   const stale = now - Math.max(lastSnapAt, bootAt) > STALE_MS;
   const shouldSim = solo || isHost || stale;
