@@ -6,9 +6,9 @@ import {
   AFTER,
   FAREWELL,
   RESUME,
-  MARIO_TALK,
-  MARIO_SAYS,
-  MARIO_AFTER,
+  GUEST_TALK,
+  GUEST_SAYS,
+  GUEST_AFTER,
 } from '../src/boogler/lines.js';
 import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.js';
 import {
@@ -25,7 +25,7 @@ import {
 import { mulberry32 } from '../src/sim/rng.js';
 import { giftIndex } from '../src/sim/gift-catalog.js';
 
-const trees = [...Object.values(THREADS).flatMap((th) => th.chapters), ...SMALL_TALK, ...MARIO_TALK];
+const trees = [...Object.values(THREADS).flatMap((th) => th.chapters), ...SMALL_TALK, ...GUEST_TALK];
 
 function ctx(over = {}) {
   const pocket = over.pocket ?? [];
@@ -280,29 +280,29 @@ test('a finished thread retells one of its chapters, a different one each time, 
   }
 });
 
-test('as Mario he is starstruck even when wary, and every answer is something Mario says', () => {
+test('as the guest he is starstruck even when wary, and every answer is one of GUEST_SAYS', () => {
   for (let seed = 0; seed < 20; seed++) {
     const rng = mulberry32(seed);
     const f = createFriend();
     for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
     const pts = f.pts;
-    const t = openTalk(f, ctx({ rng, mario: true, pocket: [giftIndex('duck')] }));
+    const t = openTalk(f, ctx({ rng, guest: true, pocket: [giftIndex('duck')] }));
     for (let step = 0; step < 10 && talkView(t); step++) {
       const v = talkView(t);
-      for (const o of v.opts) assert.ok(MARIO_SAYS.includes(o), `Mario would not say "${o}"`);
+      for (const o of v.opts) assert.ok(GUEST_SAYS.includes(o), `the guest would not say "${o}"`);
       const out = pickTalk(t, Math.floor(rng() * v.opts.length));
-      if (!talkView(t)) assert.ok(MARIO_AFTER.includes(out.bubble), out.bubble);
+      if (!talkView(t)) assert.ok(GUEST_AFTER.includes(out.bubble), out.bubble);
     }
     assert.equal(talkView(t), null);
-    if (!f.gifts?.length) assert.equal(f.pts, pts, 'chatting as Mario does not score');
+    if (!f.gifts?.length) assert.equal(f.pts, pts, 'chatting as the guest does not score');
   }
 });
 
-test('as Mario he does not open with the same conversation twice in a row', () => {
+test('as the guest he does not open with the same conversation twice in a row', () => {
   const f = createFriend();
   let last = null;
   for (let seed = 0; seed < 20; seed++) {
-    const say = talkView(openTalk(f, ctx({ rng: mulberry32(seed), mario: true }))).say;
+    const say = talkView(openTalk(f, ctx({ rng: mulberry32(seed), guest: true }))).say;
     assert.notEqual(say, last);
     last = say;
   }
