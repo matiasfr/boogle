@@ -483,7 +483,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       localStorage per browser".
   - Verify: `npm run check`.
 
-- [ ] **5. One throw module for the ball and every item.** Serves 10 (slapstick: every throw feels the same) and
+- [x] **5. One throw module for the ball and every item.** Serves 10 (slapstick: every throw feels the same) and
   "Small and readable". Lane B, after step 3.
   - New `src/player/throw-curve.ts` and `src/player/throw.ts` (Design, "Throw module").
   - New `test/throw-curve.test.ts`:

@@ -3,11 +3,12 @@
 // so paths on different machines only need to look alike.
 //
 //   stepFlight(p, v, glide, dt)   one free-flight step, in place (the aim preview uses it too)
+//   stepBall(p, v, dt)            one step of the beach ball's flight: gravity and its linear damping (the preview only)
 //   flyPath(p, v, glide)          -> { points: [Vector3 every STEP], rest: Vector3, lost }; lost = it sank
 //
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
-import { GRAVITY } from '../constants.js';
+import { GRAVITY, BALL_DAMPING } from '../constants.js';
 import { GROUP } from './physics.js';
 import { raycastClosest, rayHit } from './engine.ts';
 import { groundHeight } from '../adapters/terrain.js';
@@ -43,6 +44,14 @@ export function stepFlight(p, v, glide, dt = STEP) {
   }
   const k = 1 - Math.min(0.5, (glide ? GLIDE.drag : DRAG) * sp * dt);
   v.multiplyScalar(k);
+  p.addScaledVector(v, dt);
+}
+
+// The beach ball flies on its own physics body; this is the same arc for the aim preview (gravity, then the body's
+// linear damping, which the physics engine applies as v / (1 + dt * damping)).
+export function stepBall(p, v, dt = STEP) {
+  v.y -= GRAVITY * dt;
+  v.multiplyScalar(1 / (1 + dt * BALL_DAMPING));
   p.addScaledVector(v, dt);
 }
 

@@ -6,6 +6,7 @@ export const GRAVITY = 18;
 export { GRID_RES, CELL, HALF, SEA, SEABED, COURT } from './world/grid.ts';
 export const BALL_R = 0.45;
 export const BALL_MASS = 0.6;
+export const BALL_DAMPING = 0.12; // the beach ball's linear damping (its flight preview uses it too)
 export const PLAYER_R = 0.45;
 export const PLAYER_MASS = 70;
 export const HEAD_OFFSET = 0.8;

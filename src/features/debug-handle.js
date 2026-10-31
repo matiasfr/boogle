@@ -9,6 +9,7 @@ import { onStart } from '../loop.js';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.ts';
 import { gfx } from '../render/scene.js';
 import { grabBall, throwBall } from '../physics/ball.js';
+import { launch } from '../player/throw.ts';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting
 
@@ -31,7 +32,8 @@ onStart(() => {
     hashesAt: (tick) => marks.get(tick) ?? null,
     tossBall(charge = 0.5) {
       grabBall();
-      throwBall(charge);
+      const { p, v } = launch('ball', charge);
+      throwBall(p, v);
     },
   };
 });

@@ -13,8 +13,7 @@
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An
   orphaned ball is claimed after 600 ms by the visible peer with the lowest id.
 - **Tuning.** Linear damping 0.12, angular 0.3; ground friction 0.6, restitution 0.55 (ground), 0 (players), 0.95
-  (mushrooms); Rapier multiplies the two materials' values, and the player material has none. Reach 2.4 m. Throw: full charge in 0.9 s, power 8 + 20 × charge m/s, aimed at a point 30 m along the
-  camera, plus half your velocity and 1.5 m/s up, spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
+  (mushrooms); Rapier multiplies the two materials' values, and the player material has none. Reach 2.4 m. Throw: see 6.7 (the same module throws everything), plus spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
   25 % of old velocity, capped at 10.4 m/s, 300 ms cooldown. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
 - **Files.** [src/physics/ball.js](../../src/physics/ball.js), [src/physics/physics.js](../../src/physics/physics.js), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at

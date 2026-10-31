@@ -1,5 +1,6 @@
 import { COLORS, isTouch } from '../constants.js';
-import { me, enterIsland, chargeAmount } from './player.js';
+import { me, enterIsland } from './player.js';
+import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
 import { net, remotes } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.js';
 import { canvas } from '../render/scene.js';
@@ -31,7 +32,7 @@ export const dom = {
 let lastHint = null;
 function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
-  if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeAmount() * 100)}%`;
+  if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
   const hint = me.entered && inputKind() === 'kbm' && !inputState.locked && !inputState.lockFailed;
   if (hint !== lastHint) {
     lastHint = hint;
