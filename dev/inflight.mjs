@@ -62,12 +62,13 @@ function inflight() {
       ...PREFIXES.map((p) => `refs/remotes/origin/${p}/`),
     ),
   );
+  const done = settledHeads();
   const rows = [];
   for (const ref of refs) {
     const [name, at, author] = ref.split('\t');
     if (now - Number(at) > WEEK) continue;
     const tip = git('rev-parse', name);
-    if (tip === me || isAncestor(tip, 'origin/main')) continue;
+    if (tip === me || done.has(tip) || isAncestor(tip, 'origin/main')) continue;
     if (isAncestor(tip, 'HEAD')) continue; // already in this checkout
     const files = lines(git('diff', '--name-only', `origin/main...${tip}`));
     if (!files.length || landed(tip, files)) continue;
@@ -90,6 +91,24 @@ function inflight() {
   }
   const n = rows.filter((r) => r.overlap.length).length;
   if (n) console.log(`\ninflight: ${n} branch(es) touch files you changed (!). Coordinate, or keep your edits apart.`);
+}
+
+// Head commits of PRs that were merged or closed, from `gh` when it is installed and signed in (else none): a branch
+// still at that commit is finished or abandoned, even when main has its change under other hashes and later edits
+// (a ship/ superseded by a rebased copy). A branch pushed again after its PR closed has a new tip, so it still shows.
+function settledHeads() {
+  try {
+    const out = execFileSync(
+      'gh',
+      ['pr', 'list', '--state', 'all', '--limit', '300', '--json', 'headRefName,headRefOid,state'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 15000 },
+    );
+    const prs = JSON.parse(out).filter((p) => PREFIXES.some((x) => p.headRefName.startsWith(x + '/')));
+    const open = new Set(prs.filter((p) => p.state === 'OPEN').map((p) => p.headRefOid));
+    return new Set(prs.filter((p) => p.state !== 'OPEN' && !open.has(p.headRefOid)).map((p) => p.headRefOid));
+  } catch {
+    return new Set();
+  }
 }
 
 // Already on main under other hashes: every commit has an equal patch there (a rebased ship/), or main has the
