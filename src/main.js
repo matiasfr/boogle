@@ -18,7 +18,7 @@ import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.js';
 import { splashStage, splashProgress, splashDone } from './boot/splash.js';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.js).
-import.meta.glob('./features/*.js', { eager: true });
+import.meta.glob('./features/*.{js,ts}', { eager: true });
 
 createTerrainMesh();
 createWaterMesh();

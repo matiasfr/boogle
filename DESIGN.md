@@ -71,7 +71,7 @@ Lockstep state must produce bit-identical results on every machine:
 - conserved quantities are integers (item counts and ids), so totals stay exact and snapshots stay small;
 - other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and cannon-es call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
 - fixed update order and a fixed tick rate;
-- seeded randomness ([`mulberry32`](src/sim/rng.js)), never `Math.random()` in shared logic;
+- seeded randomness ([`mulberry32`](src/sim/rng.ts)), never `Math.random()` in shared logic;
 - events (tide, weather) are a pure function of tick + seed.
 
 ### Sync edits, not state
@@ -91,7 +91,7 @@ For lockstep systems, clients send small **edit events** (plant, water, toss, ha
 Networking is PeerJS with one browser acting as host (see PLAN.md, "Key decision"). There are no alternate transports and no claude.ai artifact build. Keep the game talking to the small room interface in [`src/net/README.md`](src/net/README.md), never to PeerJS directly.
 
 ### Small and readable
-This is a friends' project. Prefer plain modules, few dependencies and code someone can read in one sitting. Measure before optimizing; when you do optimize the sim, sleep settled regions (active-cell lists) before reaching for workers or the GPU.
+This is a friends' project. Prefer plain modules, few dependencies and code someone can read in one sitting. Everything is TypeScript (`strict`): types are how many people and agents change shared code at once without breaking each other's wire messages and state shapes, and Vite and Node run it as written, with no build step of ours. Measure before optimizing; when you do optimize the sim, sleep settled regions (active-cell lists) before reaching for workers or the GPU.
 
 ## How we work
 

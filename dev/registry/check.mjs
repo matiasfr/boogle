@@ -16,7 +16,7 @@ function sources(root) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.js')) out.push({ path: path.relative(root, p), text: fs.readFileSync(p, 'utf8') });
+      else if (/\.[jt]s$/.test(e.name)) out.push({ path: path.relative(root, p), text: fs.readFileSync(p, 'utf8') });
     }
   };
   walk(path.join(root, 'src'));

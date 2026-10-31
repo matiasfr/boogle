@@ -22,7 +22,7 @@ import {
   loadFriend,
   serializeFriend,
 } from '../src/boogler/friendship.js';
-import { mulberry32 } from '../src/sim/rng.js';
+import { mulberry32 } from '../src/sim/rng.ts';
 import { giftIndex } from '../src/sim/gift-catalog.js';
 
 const trees = [...Object.values(THREADS).flatMap((th) => th.chapters), ...SMALL_TALK, ...MARIO_TALK];

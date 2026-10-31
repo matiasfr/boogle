@@ -1,5 +1,5 @@
 // Seeded RNG for shared simulation (no three.js/DOM, safe in Node tests and workers).
-export function mulberry32(seed) {
+export function mulberry32(seed: number): () => number {
   let a = seed;
   return () => {
     a = (a + 0x6d2b79f5) | 0;

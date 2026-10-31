@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
@@ -17,7 +18,7 @@ const RULES_GLOBALS = [
 ];
 // Lockstep registration belongs to the rules modules; everything else in src/ reacts to them (B1, docs/tech-plan.md).
 const syncBan = {
-  group: ['**/world/sync.js', './sync.js'],
+  group: ['**/world/sync.{js,ts}', './sync.{js,ts}'],
   importNames: ['registerOp', 'registerState', 'onTick'],
   message:
     'Lockstep ops/state/ticks live in src/world/rules/<name>.js (see its README). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
@@ -25,7 +26,7 @@ const syncBan = {
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
-export const LOCKSTEP_FILES = ['src/sim/**/*.js', 'src/world/rules/**/*.js', 'src/world/grid.js'];
+export const LOCKSTEP_FILES = ['src/sim/**/*.{js,ts}', 'src/world/rules/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
 const det = (what) => `${what} is not deterministic across browsers; see DESIGN.md "Determinism from day one".`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh']
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
@@ -39,25 +40,27 @@ export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/'] },
   js.configs.recommended,
   {
-    files: ['**/*.js', '**/*.mjs'],
+    files: ['**/*.js', '**/*.mjs', '**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: globals.browser,
     },
   },
+  // TypeScript everywhere (AGENTS.md): typescript-eslint's recommended rules on .ts files; tsc does the type checking.
+  ...tseslint.configs.recommended.map((c) => ({ ...c, files: ['**/*.ts'] })),
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the peerjs and sync bans.
   {
-    files: ['src/**/*.js'],
+    files: ['src/**/*.{js,ts}'],
     ignores: ['src/net/**'],
     rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan], patterns: [syncBan] }] },
   },
   {
-    files: ['src/world/game-world.js'],
+    files: ['src/world/game-world.{js,ts}'],
     rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan] }] },
   },
   {
-    files: ['src/world/rules/**/*.js'],
+    files: ['src/world/rules/**/*.{js,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -65,8 +68,8 @@ export default [
           paths: [peerjsBan, ...['three', 'cannon-es'].map((name) => ({ name, message: rulesMessage }))],
           patterns: [
             {
-              // three/*, and any ../ path except ../grid.js and ../../sim/<file>
-              regex: '^(three/|\\.\\./(?!grid\\.js$|\\.\\./sim/[^/.]+\\.js$))',
+              // three/*, and any ../ path except ../grid and ../../sim/<file> (.js or .ts)
+              regex: '^(three/|\\.\\./(?!grid\\.[jt]s$|\\.\\./sim/[^/.]+\\.[jt]s$))',
               message: rulesMessage,
             },
           ],
@@ -76,7 +79,7 @@ export default [
     },
   },
   {
-    files: ['src/features/**/*.js'],
+    files: ['src/features/**/*.{js,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -94,7 +97,7 @@ export default [
     },
   },
   {
-    files: ['src/sim/**/*.js'],
+    files: ['src/sim/**/*.{js,ts}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -107,7 +110,7 @@ export default [
     },
   },
   {
-    files: ['src/**/*.js'],
+    files: ['src/**/*.{js,ts}'],
     ignores: LOCKSTEP_FILES,
     rules: {
       'no-restricted-syntax': [
@@ -127,11 +130,11 @@ export default [
     rules: {
       'no-restricted-properties': [
         'error',
-        { object: 'Math', property: 'random', message: det('Math.random') + ' Use mulberry32 from src/sim/rng.js.' },
+        { object: 'Math', property: 'random', message: det('Math.random') + ' Use mulberry32 from src/sim/rng.ts.' },
         ...['getRandomValues', 'randomUUID'].map((property) => ({
           object: 'crypto',
           property,
-          message: det(`crypto.${property}`) + ' Use mulberry32 from src/sim/rng.js.',
+          message: det(`crypto.${property}`) + ' Use mulberry32 from src/sim/rng.ts.',
         })),
         ...UNSAFE_MATH,
         { object: 'Date', property: 'now', message: det('Date.now') + ' Use the world tick.' },

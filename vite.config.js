@@ -29,8 +29,8 @@ export default defineConfig({
       // `onFrame.in('features/foo.js')(`, in dev and build alike.
       name: 'boogle-hook-names',
       transform(code, id) {
-        const m = id.match(/\/src\/(.+\.js)$/);
-        if (!m || m[1] === 'loop.js' || !code.includes('onFrame(')) return null;
+        const m = id.match(/\/src\/(.+\.[jt]s)$/);
+        if (!m || /^loop\.[jt]s$/.test(m[1]) || !code.includes('onFrame(')) return null;
         return { code: code.replace(/\bonFrame\(/g, `onFrame.in(${JSON.stringify(m[1])})(`), map: null };
       },
     },

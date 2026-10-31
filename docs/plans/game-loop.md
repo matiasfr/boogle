@@ -103,29 +103,29 @@ cannon-es on the main thread is cheap today. A worker adds a frame of latency to
 are shared, and sharing them without copies needs `SharedArrayBuffer`, which needs cross-origin isolation (COOP and
 COEP headers). GitHub Pages can't set those (open question 2). Leave this until physics shows up in the top hooks.
 
-### 8. TypeScript on the core, in two stages
+### 8. TypeScript everywhere
 
-**8a. Type-check the JS (one PR, no renames).** `tsconfig.json` with `allowJs`, `checkJs`, `strict`, `noEmit`, scoped
-to `src/loop.js`, `src/sim/`, `src/world/`, `src/net/`, `src/netplay/` and `src/render/instances.js`; `tsc` joins
-`npm run check`. JSDoc types first where bugs come from: wire messages, presence payloads, op and state shapes, the
-`onFrame` context. `typescript` is the new dev dependency (the reason goes in the commit).
+Policy since 2026-10-31 (AGENTS.md, "TypeScript everywhere"; DESIGN.md, "Small and readable"): every new file is
+`.ts`, and the existing JavaScript converts.
 
-**8b. Convert the core to `.ts` (one PR per folder, `src/sim/` first).** Before the first rename, one tooling PR:
-- ESLint globs: `'**/*.{js,ts}'` in every `files` entry and in `LOCKSTEP_FILES`, with `typescript-eslint`'s parser.
-- `npm run registry`, the feature auto-loader (`import.meta.glob('./features/*.{js,ts}')`) and any script that walks
-  `src/` for `.js` accept `.ts`.
-- Unit tests import `.ts` directly: bump `.nvmrc` to 24 (Node strips types natively), no build step for tests.
-- Vite builds `.ts` already. Features may stay `.js`: plug-ins don't need to convert.
+**8a. Tooling (done).** `tsconfig.json` (`strict`, `erasableSyntaxOnly`, `.ts` import extensions, unconverted JS
+allowed in but not checked); `npm run typecheck` in `check`; typescript-eslint on `.ts`; lint globs, the registry, the
+feature, POI and site auto-loaders and the profiler's hook names accept `.ts`; Node 24 (`.nvmrc`) runs `.ts` tests and
+tools directly. `src/sim/rng.ts` is the first module.
 
-Then rename folder by folder, in its own PR each: `src/sim/`, `src/world/rules/`, `src/world/`, `src/netplay/`,
-`src/net/`, `src/loop.js` and `src/render/instances.js`. Each PR only renames and adds types; no behavior change, and
-the replay test plus `check:full` must pass unchanged.
+**8b. Convert, one folder per PR**, in this order (most shared state first): `src/sim/`, `src/world/rules/`,
+`src/world/`, `src/netplay/`, `src/net/`, `src/loop.js` and `src/main.js`, `src/physics/`, `src/player/`,
+`src/render/`, `src/adapters/`, `src/boogler/`, `src/pois/`, `src/island/`, `src/features/`, the rest of `src/`, then
+`test/`, `dev/`, `server/` (its Dockerfile to Node 24) and the config files. Each PR renames and adds types only: no
+behavior change, and `check` (plus `check:full` for `src/world*`, `src/net*`, `server/`) passes unchanged. Exported
+types for wire messages, presence payloads and op/state shapes come with their folder.
 
-**Done when** the core is `.ts` under `strict`, and a wrong wire-message field fails `npm run check`.
+**Done when** no `.js` or `.mjs` is left outside `node_modules`, `allowJs` is off, and a wrong wire-message field
+fails `npm run check`.
 
 ## Order
 
-1 → 8a → 2 → 3, then 4 and 8b in either order, then 5 and 6. 7 only on evidence. Steps 1, 2 and 8 change no
+1 → 8a → 2 → 3, then 4 and 8b alongside, then 5 and 6. 7 only on evidence. Steps 1, 2 and 8 change no
 player-visible behavior. Steps 3 and 4 need a `/look` still in their PR, since they redraw things.
 
 ## Open questions for the user
