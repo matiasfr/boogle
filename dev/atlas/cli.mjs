@@ -4,149 +4,148 @@
 //   --check    the citation report: what in docs/atlas/ no longer matches the code or atlas/layout.js
 //   --changes [--since <ref>]  for the daily upkeep: the report, the commits since <ref> (default: the last commit that
 //              touched docs/atlas/), what the code gained and lost since then, and folders with no note
+//   --gate [--event schedule|merge|push|manual] [--since <ref>]  whether the upkeep should run: prints `last=<sha>` and
+//              `go=0|1` for $GITHUB_OUTPUT (the reason goes to stderr). Needs no `npm ci`.
 // Every mode exits 0 unless the CLI itself crashes: the atlas never blocks anything.
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
-import { diffFacts, extractFacts, factsAt } from './extract.mjs';
-import { parseNarrative } from '../../atlas/narrative.js';
-import { checkAtlas, foldersToDo } from '../../atlas/check.js';
+import { gate, git, sinceRef } from './git.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2);
-const read = (rel) => {
-  try {
-    return fs.readFileSync(path.join(ROOT, rel), 'utf8');
-  } catch {
-    return undefined;
-  }
-};
+const flag = (name) => (args.includes(name) ? (args[args.indexOf(name) + 1] ?? '') : undefined);
+const ref = () => flag('--since') || sinceRef(ROOT);
 
-function summary(facts) {
-  const sum = (key) => facts.files.reduce((n, f) => n + f[key].length, 0);
-  const parts = [
-    `${facts.files.length} files`,
-    `${facts.files.reduce((n, f) => n + f.loc, 0)} lines`,
-    `${sum('ops')} ops`,
-    `${sum('states')} states`,
-    `${sum('owner')} presence keys`,
-    `${sum('host')} host fields`,
-    `${new Set(facts.files.flatMap((f) => f.msgs)).size} message types`,
-    `${sum('actions')} actions`,
-    `${sum('frames')} hooks`,
-    `${sum('routes')} routes`,
-    `${facts.files.filter((f) => f.parseError).length} parse errors`,
-  ];
-  return parts.join(', ');
-}
-
-// The citation report as { problems, todo }: reads the narrative files from disk.
-export function report(facts) {
-  const storyDir = path.join(ROOT, 'docs/atlas/stories');
-  const storyTexts = {};
-  if (fs.existsSync(storyDir)) {
-    for (const f of fs.readdirSync(storyDir).sort()) {
-      if (f.endsWith('.json')) storyTexts[`docs/atlas/stories/${f}`] = fs.readFileSync(path.join(storyDir, f), 'utf8');
-    }
-  }
-  const { N, loadProblems } = parseNarrative({ conceptsText: read('docs/atlas/concepts.json'), storyTexts });
-  const problems = checkAtlas({
-    facts,
-    concepts: N,
-    stories: N.stories,
-    changes: read('docs/atlas/changes.md'),
-    mainSource: read('src/main.js'),
-    loadProblems,
-  });
-  return { problems, todo: foldersToDo(facts, N) };
-}
-
-function printReport(facts, { showTodo = true } = {}) {
-  const { problems, todo } = report(facts);
-  const groups = new Map();
-  for (const p of problems) {
-    const key = p.match(/^\S+?\.(?:json|md|js|mjs)\b/)?.[0] ?? 'other';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
-  }
-  for (const [file, list] of groups) {
-    console.log(`\n${file}`);
-    for (const p of list) console.log(`  - ${p}`);
-  }
-  if (showTodo) printTodo(todo);
-  console.log(`\n${problems.length} problem${problems.length === 1 ? '' : 's'}`);
-  return todo;
-}
-
-function printTodo(todo) {
-  if (!todo.length) return;
-  console.log(`\nFolders with no note in docs/atlas/concepts.json "folders" (to do, not errors):`);
-  for (const d of todo) console.log(`  - ${d}`);
-}
-
-const git = (...a) =>
-  execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-
-// The upkeep report: the --check report, commits since <ref>, the code's diff since then, folders to do. Exits 0.
-function printChanges() {
-  const at = args.indexOf('--since');
-  let ref = at >= 0 ? args[at + 1] : '';
-  if (!ref) {
-    try {
-      ref = git('log', '-1', '--format=%H', '--', 'docs/atlas/');
-    } catch {
-      ref = '';
-    }
-  }
-  if (!ref) {
-    try {
-      ref = git('rev-parse', 'HEAD~20');
-    } catch {
-      ref = git('rev-list', '--max-parents=0', 'HEAD').split('\n').pop();
-    }
-  }
-  const now = extractFacts({ root: ROOT, git: false });
-  console.log(`# 1. Citation report`);
-  const todo = printReport(now, { showTodo: false });
-  console.log(`\n# 2. Commits since ${ref.slice(0, 7)}`);
-  try {
-    console.log(git('log', '--no-merges', '--format=%h %s', `${ref}..HEAD`) || '(none)');
-  } catch (err) {
-    console.log(`(could not read the log: ${err.message})`);
-  }
-  console.log(`\n# 3. What the code gained and lost`);
-  try {
-    const d = diffFacts(factsAt(ROOT, ref), now);
-    const list = (label, items) => items.length && console.log(`${label}: ${items.join(', ')}`);
-    list('Files added', d.filesAdded);
-    list('Files removed', d.filesRemoved);
-    list('Folders added', d.foldersAdded);
-    list('Folders removed', d.foldersRemoved);
-    for (const [kind, { added, removed }] of Object.entries(d.keys)) {
-      list(`${kind} added`, added);
-      list(`${kind} removed`, removed);
-    }
-    if (!d.filesAdded.length && !d.filesRemoved.length && !Object.keys(d.keys).length)
-      console.log('(no files or keys added or removed)');
-  } catch (err) {
-    console.log(`(could not read ${ref}: ${err.message})`);
-  }
-  console.log(`\n# 4. Folders with no note`);
-  console.log(todo.length ? todo.map((d) => `  - ${d}`).join('\n') : '(none)');
-}
-
-if (args.includes('--changes')) {
-  printChanges();
-} else if (args.includes('--check')) {
-  printReport(extractFacts({ root: ROOT, git: false }));
-} else if (args.includes('--json')) {
-  process.stdout.write(JSON.stringify(extractFacts({ root: ROOT, git: true }), null, 2) + '\n');
+if (args.includes('--gate')) {
+  const r = gate(ROOT, ref(), flag('--event') || 'manual');
+  console.error(r.why);
+  console.log(`last=${r.last}\ngo=${r.go ? 1 : 0}`);
 } else {
-  const facts = extractFacts({ root: ROOT, git: true });
-  const out = path.join(ROOT, '.look/atlas/facts.json');
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(facts, null, 2) + '\n');
-  console.log(`atlas facts: ${summary(facts)}`);
-  console.log(`wrote ${path.relative(ROOT, out)}`);
+  await run();
+}
+
+async function run() {
+  const fs = await import('node:fs');
+  const { diffFacts, extractFacts, factsAt } = await import('./extract.mjs');
+  const { parseNarrative } = await import('../../atlas/narrative.js');
+  const { checkAtlas, foldersToDo } = await import('../../atlas/check.js');
+  const { sumLoc } = await import('../../atlas/model.js');
+
+  const read = (rel) => {
+    try {
+      return fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    } catch {
+      return undefined;
+    }
+  };
+
+  function summary(facts) {
+    const sum = (key) => facts.files.reduce((n, f) => n + f[key].length, 0);
+    const parts = [
+      `${facts.files.length} files`,
+      `${sumLoc(facts.files)} lines`,
+      `${sum('ops')} ops`,
+      `${sum('states')} states`,
+      `${sum('owner')} presence keys`,
+      `${sum('host')} host fields`,
+      `${new Set(facts.files.flatMap((f) => f.msgs)).size} message types`,
+      `${sum('actions')} actions`,
+      `${sum('frames')} hooks`,
+      `${sum('routes')} routes`,
+      `${facts.files.filter((f) => f.parseError).length} parse errors`,
+    ];
+    return parts.join(', ');
+  }
+
+  // The citation report as { problems, todo }: reads the narrative files from disk.
+  function report(facts) {
+    const storyDir = path.join(ROOT, 'docs/atlas/stories');
+    const storyTexts = {};
+    if (fs.existsSync(storyDir)) {
+      for (const f of fs.readdirSync(storyDir).sort()) {
+        if (f.endsWith('.json')) storyTexts[`docs/atlas/stories/${f}`] = read(`docs/atlas/stories/${f}`);
+      }
+    }
+    const N = parseNarrative({ conceptsText: read('docs/atlas/concepts.json'), storyTexts });
+    const problems = checkAtlas({
+      facts,
+      concepts: N,
+      stories: N.stories,
+      changes: read('docs/atlas/changes.md'),
+      mainSource: read('src/main.js'),
+      loadProblems: N.loadProblems,
+    });
+    return { problems, todo: foldersToDo(facts, N) };
+  }
+
+  const todoLines = (todo) => (todo.length ? todo.map((d) => `  - ${d}`).join('\n') : '(none)');
+
+  // Prints the problems grouped by file and returns the folders with no note, for the caller to print once.
+  function printProblems(facts) {
+    const { problems, todo } = report(facts);
+    const groups = new Map();
+    for (const p of problems) {
+      const key = p.match(/^\S+?\.(?:json|md|js|mjs)\b/)?.[0] ?? 'other';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    }
+    for (const [file, list] of groups) {
+      console.log(`\n${file}`);
+      for (const p of list) console.log(`  - ${p}`);
+    }
+    console.log(`\n${problems.length} problem${problems.length === 1 ? '' : 's'}`);
+    return todo;
+  }
+
+  // The upkeep report: the --check report, commits since <ref>, the code's diff since then, folders to do.
+  function printChanges() {
+    const since = ref();
+    const now = extractFacts({ root: ROOT, git: false });
+    console.log(`# 1. Citation report`);
+    const todo = printProblems(now);
+    console.log(`\n# 2. Commits since ${since.slice(0, 7)}`);
+    try {
+      console.log(git(ROOT, 'log', '--no-merges', '--format=%h %s', `${since}..HEAD`) || '(none)');
+    } catch (err) {
+      console.log(`(could not read the log: ${err.message})`);
+    }
+    console.log(`\n# 3. What the code gained and lost`);
+    try {
+      const d = diffFacts(factsAt(ROOT, since), now);
+      const list = (label, items) => items.length && console.log(`${label}: ${items.join(', ')}`);
+      list('Files added', d.filesAdded);
+      list('Files removed', d.filesRemoved);
+      list('Folders added', d.foldersAdded);
+      list('Folders removed', d.foldersRemoved);
+      for (const [kind, { added, removed }] of Object.entries(d.keys)) {
+        list(`${kind} added`, added);
+        list(`${kind} removed`, removed);
+      }
+      if (!d.filesAdded.length && !d.filesRemoved.length && !Object.keys(d.keys).length)
+        console.log('(no files or keys added or removed)');
+    } catch (err) {
+      console.log(`(could not read ${since}: ${err.message})`);
+    }
+    console.log(`\n# 4. Folders with no note`);
+    console.log(todoLines(todo));
+  }
+
+  if (args.includes('--changes')) {
+    printChanges();
+  } else if (args.includes('--check')) {
+    const todo = printProblems(extractFacts({ root: ROOT, git: false }));
+    if (todo.length) {
+      console.log(`\nFolders with no note in docs/atlas/concepts.json "folders" (to do, not errors):`);
+      console.log(todoLines(todo));
+    }
+  } else if (args.includes('--json')) {
+    process.stdout.write(JSON.stringify(extractFacts({ root: ROOT, git: true }), null, 2) + '\n');
+  } else {
+    const facts = extractFacts({ root: ROOT, git: true });
+    const out = path.join(ROOT, '.look/atlas/facts.json');
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(facts, null, 2) + '\n');
+    console.log(`atlas facts: ${summary(facts)}`);
+    console.log(`wrote ${path.relative(ROOT, out)}`);
+  }
 }

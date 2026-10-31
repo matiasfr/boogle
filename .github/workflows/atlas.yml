@@ -4,8 +4,9 @@ name: Atlas upkeep
 # sync systems, and writes a "What changed" entry, as a claude/atlas-<date> PR that automerge.yml merges when CI is
 # green. The facts in the atlas come from the code on every build; only the narrative needs this. Never blocks
 # anything. Procedure: dev/atlas/agent-prompt.md.
-# Runs daily, after a merge that touches the sync code (dispatched by automerge.yml, or a direct push to main), and by
-# hand from the Actions tab (`force` skips the gate).
+# Runs daily, after any merge (automerge.yml dispatches it), after a direct push to main that touches the sync code,
+# and by hand from the Actions tab (`force` skips the gate). `npm run atlas -- --gate` decides whether a run is worth
+# it (dev/atlas/git.mjs); it needs no install.
 
 on:
   schedule:
@@ -16,10 +17,6 @@ on:
         description: Skip the gate (and the debounce)
         type: boolean
         default: false
-      reason:
-        description: Why it runs
-        type: string
-        default: manual
   push:
     branches: [main]
     paths:
@@ -27,7 +24,6 @@ on:
       - 'src/net/**'
       - 'src/netplay/**'
       - 'server/**'
-      - 'src/features/**'
 
 permissions:
   contents: write
@@ -46,47 +42,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      # Let a burst of merges settle: one run covers them all.
-      - name: Debounce
-        if: github.event_name != 'schedule' && inputs.force != true
-        run: sleep 600
-
-      # After the sleep, so this is main's tip.
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
+      # Plain git, so it runs before npm ci. `force` makes it go.
       - name: Gate
         id: gate
         env:
-          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           FORCE: ${{ inputs.force }}
         run: |
-          last=$(git log -1 --format=%H -- docs/atlas/)
-          if [ -z "$last" ]; then last=$(git rev-parse HEAD~20); fi
-          echo "last=$last" >> "$GITHUB_OUTPUT"
+          out=$(node dev/atlas/cli.mjs --gate --event "$EVENT")
+          if [ "$FORCE" = "true" ]; then out=$(sed 's/^go=.*/go=1/' <<<"$out"); fi
+          echo "$out" >> "$GITHUB_OUTPUT"
           echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
-          if [ "$FORCE" = "true" ]; then
-            echo "go=1" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Citations only break through commits under src/ or server/, so this never skips a needed fix for long.
-          if [ "$(git rev-list --count "$last"..HEAD -- src server)" = "0" ]; then
-            echo "No src or server commits since the last atlas update; nothing to do."
-            exit 0
-          fi
-          if [ "$EVENT" != "schedule" ]; then
-            sync=$(git diff --name-only "$last"..HEAD -- src/world/rules src/net src/netplay server)
-            feat=$(git diff --name-only --diff-filter=AD "$last"..HEAD -- src/features)
-            if [ -z "$sync$feat" ]; then
-              echo "No sync-code change or added or removed feature since the last atlas update; waiting for the daily run."
-              exit 0
-            fi
-          fi
-          # An open atlas PR younger than a day is still on its way: skip. An older one is stuck (CI red or
-          # conflicting): close it with a comment and carry on, so the page does not stay stale.
+
+      # An open atlas PR younger than a day is still on its way: skip. An older one is stuck (CI red or
+      # conflicting): close it with a comment and carry on, so the page does not stay stale.
+      - name: Check open atlas PRs
+        id: prs
+        if: steps.gate.outputs.go == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ "$FORCE" = "true" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; exit 0; fi
           now=$(date -u +%s)
           young=0
           while read -r num created; do
@@ -101,19 +83,26 @@ jobs:
             --jq '.[] | select(.headRefName | startswith("claude/atlas-")) | "\(.number) \(.createdAt)"')
           if [ "$young" = "0" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
 
+      # Let a burst of merges settle: one run covers them all. Then take main's tip, so Claude sees all of them.
+      - name: Debounce
+        if: steps.prs.outputs.go == '1' && github.event_name != 'schedule' && inputs.force != true
+        run: |
+          sleep 600
+          git pull --ff-only
+
       - uses: actions/setup-node@v4
-        if: steps.gate.outputs.go
+        if: steps.prs.outputs.go == '1'
         with:
           node-version-file: .nvmrc
           cache: npm
       - name: Install dependencies
-        if: steps.gate.outputs.go
+        if: steps.prs.outputs.go == '1'
         run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: Update the atlas (Claude)
-        if: steps.gate.outputs.go
+        if: steps.prs.outputs.go == '1'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
