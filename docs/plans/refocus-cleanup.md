@@ -224,7 +224,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
 
 ---
 
-- [ ] **1. Write the dev-phase policy into AGENTS.md.** File: `AGENTS.md`, section "Mixed builds". Append one paragraph
+- [x] **1. Write the dev-phase policy into AGENTS.md.** File: `AGENTS.md`, section "Mixed builds". Append one paragraph
   of three or four lines, roughly:
   > **Dev phase (until public playtests):** progress may be lost, so prefer a clean break over compatibility code. To
   > remove or reshape ops, states or catalog entries, bump `WORLD_NS` in `src/world/namespace.ts` in the same commit
