@@ -1,8 +1,19 @@
 # Plan: the server hosts the main room
 
-> Status: plan, not built. Steps 1-10 below are separate PRs, each leaving `main` green. Production behavior only
-> changes at step 10 (one Fly env var); until then the server answers "this room is peer-hosted" and every tab plays
-> exactly as today.
+> **Status: shelved (2026-10-30).** For rapid iteration peer hosting is enough: `npm run load` shows an 8-player room
+> costs the host about 1.7 Mbit/s up and 2% of a main thread, and a server would make every rules change a coupled
+> server + client deploy. Pick this plan up when one of these holds:
+> - public playtests with strangers (cheating, trust in saves, a host on someone else's phone);
+> - world progress while nobody is online (PLAN.md Phase 5, "growth from timestamps");
+> - rooms past the 8-player cap;
+> - telemetry (`connect` reports) shows failed joins, TURN-only links or host migrations regularly hurting sessions.
+>
+> Until then, choosing the host on purpose (prefer a visible desktop tab, hand over before hiding) covers most of what
+> this plan fixes. Steps 2 (land as JSON) and 3 (sync re-pin and shared-state hashes) help either way and can ship on
+> their own. Re-check the code references below before starting: they were read on 2026-10-30.
+>
+> Steps 1-10 below are separate PRs, each leaving `main` green. Production behavior only changes at step 10 (one Fly
+> env var); until then the server answers "this room is peer-hosted" and every tab plays exactly as today.
 
 ## Open questions for the user (answer before the step named)
 
