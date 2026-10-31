@@ -41,6 +41,7 @@ const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt
 
 export default {
   about: 'one Talk prompt by The Boogler, gifts and pets in the talk, Pick up over items, a reason when planting fails',
+  timeout: 300000, // the nightly runner's software WebGPU took ~140 s; the default is 120 s
   async run(t) {
     const g = await t.open({ name: 'talker', hud: 'play' });
 
@@ -105,10 +106,13 @@ export default {
     };
     await openTalk();
     const from = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
-    await g.key('KeyS', 1600); // facing him, so this walks away
-    const walked = await g.eval(
-      `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]});`,
-    );
+    // Facing him, so S walks away. Hold it until you have walked 2 m (or 20 s): a fixed hold covers too few frames on a
+    // slow software-rendered runner.
+    const dist = `(() => { const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]}); })()`;
+    await g.down('KeyS');
+    await g.waitFor(`${dist} > 2`, { timeout: 20000 });
+    await g.up('KeyS');
+    const walked = await g.eval(`return ${dist};`);
     const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 3000 });
     t.check(
       'walking while talking moves you, and walking off ends the talk',

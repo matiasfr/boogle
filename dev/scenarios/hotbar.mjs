@@ -26,7 +26,7 @@ const LAYOUT = `${DOM}
 
 export default {
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
-  timeout: 420000, // two software-rendered players in a row on a busy machine; CI took ~280 s before traces
+  timeout: 600000, // two software-rendered players in a row on a busy machine; the nightly runner took ~450 s
   async run(t) {
     const g = await t.open({ name: 'holder', hud: 'play' });
     const consoleErrors = [];
@@ -138,8 +138,11 @@ export default {
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
     t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
     await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
-    await g.wait(1.5);
-    // Stand on the seed while it grows.
+    // Stand on the seed as soon as it starts growing, before it has a collider: later, on a fast machine, the cap is
+    // already above your feet and you land on top and ride it up instead (that is intended, but not this check).
+    await g.waitFor(`(async () => {
+      const { garden } = await import('/src/adapters/mushroom-garden.js');
+      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`);
     await g.eval(TP(spot.x + 0.3, spot.z));
     const before = await g.eval(
       `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${spot.x}, p.z - ${spot.z});`,
