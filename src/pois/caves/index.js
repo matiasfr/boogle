@@ -47,6 +47,7 @@ import { waterField } from '../../physics/water-field.js';
 import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
 import { buildDecor, mouthFrame } from './decor.js';
+import { freezeStatic } from '../../render/instances.ts';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
@@ -225,6 +226,7 @@ function* build() {
   caveMesh.receiveShadow = true;
   caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
   scene.add(caveMesh);
+  freezeStatic(caveMesh); // never moves: no per-frame matrix work
   precompile(caveMesh); // their pipelines build now, not when the first player walks in
 
   addBody(
@@ -238,6 +240,7 @@ function* build() {
 
   collarMesh = makeCollars(yield* buildCollarMeshSteps());
   scene.add(collarMesh);
+  freezeStatic(collarMesh);
   precompile(collarMesh);
   yield;
 

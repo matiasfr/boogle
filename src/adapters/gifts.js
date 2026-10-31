@@ -22,6 +22,7 @@ import { STEP, flyPath, dropPoint } from '../physics/flight.js';
 import { inv, take, roomFor } from '../player/inventory.js';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
 import { splash } from '../render/splash.js';
+import { createPool } from '../render/instances.ts';
 
 const SHAKE_R = 2.1; // metres from a palm's base
 const KNOCK_SPEED = 3; // ball speed that knocks fruit loose
@@ -115,19 +116,21 @@ function buildTreeFruit() {
   });
   for (const [kind, slots] of slotsByKind) {
     const src = itemModel(GIFTS[kind].id).children[0];
-    const mesh = new THREE.InstancedMesh(src.geometry, src.material, slots.length);
+    const pool = createPool(src.geometry, src.material, slots.length);
+    const mesh = pool.mesh;
     mesh.castShadow = true;
-    mesh.frustumCulled = false;
     mesh.userData.base = { r: src.rotation.clone(), s: src.scale.clone() };
     scene.add(mesh);
-    fruitMeshes.set(kind, { mesh, slots });
+    fruitMeshes.set(kind, { mesh, pool, slots });
   }
 }
 
 function updateTreeFruit(now) {
-  for (const { mesh, slots } of fruitMeshes.values()) {
+  for (const { mesh, pool, slots } of fruitMeshes.values()) {
     const { r, s } = mesh.userData.base;
-    slots.forEach((sl, k) => {
+    pool.begin();
+    for (let k = 0; k < slots.length; k++) {
+      const sl = slots[k];
       const left = gifts.ripeAt[sl.t] - world.tick;
       const grow = left <= 0 ? 1 : 0.25 + 0.55 * (1 - left / REGROW_TICKS);
       const wob = (now - (fx.wobble.get(sl.t) ?? -1e9)) / 1000;
@@ -135,9 +138,9 @@ function updateTreeFruit(now) {
       e4.set(r.x + shake, r.y + sl.a, r.z + shake * 0.5);
       q4.setFromEuler(e4);
       m4.compose(v4.set(sl.x, sl.y, sl.z), q4, s4.copy(s).multiplyScalar(grow));
-      mesh.setMatrixAt(k, m4);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
+      pool.pushMatrix(m4);
+    }
+    pool.end();
   }
 }
 

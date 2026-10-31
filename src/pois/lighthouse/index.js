@@ -17,6 +17,7 @@ import { sharedSeconds } from '../../netplay/shared-time.js';
 import { addLightSource } from '../../render/lights.js';
 import { reducedMotion } from '../../constants.js';
 import site, { PAD_Y } from './site.js';
+import { freezeStatic } from '../../render/instances.ts';
 
 const CX = site.x,
   CZ = site.z;
@@ -253,6 +254,7 @@ function build() {
   );
   statics.castShadow = statics.receiveShadow = true;
   scene.add(statics);
+  freezeStatic(statics); // never moves: no per-frame matrix work
 
   // Lantern glass, lamp, beams, halo.
   glass = new THREE.Mesh(

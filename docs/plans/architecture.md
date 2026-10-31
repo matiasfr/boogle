@@ -46,7 +46,7 @@ The open questions in the two plans have working answers so work can start; chan
 - [x] Physics on Rapier ([rapier.md](rapier.md)): spike and measure (done: Rapier 0.19.3, 6× faster steps, ~2 KB
       vs ~62 KB garbage per step, 584 KB WASM), a physics facade on cannon-es (done), a Rapier backend
       behind `?physics=rapier`, feel tuning, then the switch and removing cannon-es.
-- [ ] Instance pools (`src/render/instances.js`); move critters, gifts and blob shadows onto them; freeze static
+- [x] Instance pools (`src/render/instances.ts`); move critters, gifts and blob shadows onto them; freeze static
       decor matrices (step 3).
 - [ ] Shadow pass trimmed (tighter shadow camera, fewer casters): the 52 shadow draw calls are the cheapest GPU win.
 - [ ] Compute particles behind `emit()`; compute-driven pools (step 4).

@@ -8,6 +8,7 @@ import { groundHeight } from '../adapters/terrain.js';
 import { scene } from './scene.js';
 import { addStaticSpheres } from '../physics/physics.js';
 import { onFrame } from '../loop.js';
+import { freezeStatic } from './instances.ts';
 
 // Concatenate many small vertex-colored geometries into one draw call (POIs use these too).
 export function addPart(parts, geo, matrix, color) {
@@ -280,6 +281,7 @@ export function createProps() {
   const group = new THREE.Group();
   tiles.addTo(group, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }));
   scene.add(group);
+  freezeStatic(group); // never moves: no per-frame matrix work
 }
 
 export const clouds = [];
