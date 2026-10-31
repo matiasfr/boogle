@@ -57,6 +57,8 @@ export function loadConfig(env = process.env, overrides = {}) {
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     adoptWindowMs: Number(env.ADOPT_WINDOW_MS ?? 600000), // how long after start a hosted room adopts a handoff
+    roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
+    maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
     log: (...a) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -238,8 +240,8 @@ export function createService(cfg) {
   app.put('/rooms/:roomId/snapshot', validRoom, saveLimit, express.json({ limit: '256kb' }), async (req, res, next) => {
     const doc = snapshotDoc(req.body);
     if (!doc) return res.status(400).json(BAD_DOC);
-    const room = roomHost?.room(req.params.roomId);
-    if (room) return res.status(409).json({ error: 'server-hosted', tick: room.status().tick });
+    if (roomHost?.hosts(req.params.roomId))
+      return res.status(409).json({ error: 'server-hosted', tick: roomHost.status(req.params.roomId).tick });
     try {
       const result = await store.write(req.params.roomId, doc, { ifNewer: true });
       res.status(result.status).json(result.body);

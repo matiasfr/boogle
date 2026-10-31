@@ -28,7 +28,7 @@ export default {
     const B = await t.open({ name: 'Bob', room, hud: true });
     t.check('the players see each other', (await B.waitFor(MET, { timeout: 30000 })) >= 0);
     const r = await roles(A, B);
-    t.check('one host and one client', r.ok, r.modes.join());
+    t.check("both tabs hold the server's world", r.ok, r.modes.join());
 
     // Shake 15 palms: 4 logs each onto Bob's stack.
     const got = await B.eval(`${R}

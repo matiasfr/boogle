@@ -10,9 +10,9 @@ Engineering groundwork (lint, replay test, snapshot versions, telemetry) is trac
 
 The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question our ongoing playtests (2–4 real people, notes in [docs/playtests.md](docs/playtests.md)) should answer.
 
-## Key decision: PeerJS (WebRTC), with one browser as host
+## Key decision: PeerJS (WebRTC), with one browser as host (replaced 2026-10-31: the server hosts every room)
 
-- [ ] The server hosts every room, no PeerJS fallback ([docs/plans/server-host.md](docs/plans/server-host.md)); then the co-op net roadmap ([docs/plans/net-roadmap.md](docs/plans/net-roadmap.md)).
+- [x] The server hosts every room, no PeerJS fallback ([docs/plans/server-host.md](docs/plans/server-host.md)); then the co-op net roadmap ([docs/plans/net-roadmap.md](docs/plans/net-roadmap.md)).
 
 Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
 

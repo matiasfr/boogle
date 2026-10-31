@@ -6,7 +6,8 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { PeerServer } from 'peer';
+import os from 'node:os';
+import { createService, loadConfig } from '../../server/src/server.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -34,13 +35,16 @@ export const freePort = () =>
     });
   });
 
-// Starts Vite on a free port and a local PeerJS signaling server (so rooms work offline). With `url`, only
-// uses that already-running game (no signaling server: the game's own settings apply).
+// Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
+// a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
 export async function startStack({ url = null, root: dir = root } = {}) {
   if (url) return { base: url, close: async () => {} };
-  const sigPort = await freePort();
-  const signaling = PeerServer({ port: sigPort, host: '127.0.0.1', path: '/peerjs' });
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
+  const server = createService(
+    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {}, unrefTimers: true }),
+  );
+  const sigPort = await server.listen(0);
   const port = await freePort();
   const vite = spawn(
     process.execPath,
@@ -68,7 +72,8 @@ export async function startStack({ url = null, root: dir = root } = {}) {
     base,
     async close() {
       if (!vite.killed) vite.kill('SIGTERM');
-      await new Promise((r) => signaling.close?.(r) ?? r());
+      await server.close({ save: false });
+      fs.rmSync(dataDir, { recursive: true, force: true });
     },
   };
 }

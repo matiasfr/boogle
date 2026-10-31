@@ -15,7 +15,7 @@ One small Node 24 service (Express + the official `peer` package) that gives the
 | `GET /ice` | `{ iceServers: [...] }` with Google STUN, plus TURN if configured. |
 | `GET /healthz` | `ok` |
 
-**Hosting rooms** (`SERVER_ROOMS`, `src/host/`; design: `docs/plans/server-host.md`). For each listed room the server runs the game's lockstep world itself (`src/world/sync.ts` and every rules module on the land in `src/world/home-land.json`), from start to shutdown with or without players, saving it every `SERVER_SAVE_MS` as `writerId: 'server'`. Tabs join over `/room/:id`; the server relays presence and messages, picks the lead (the oldest visible tab) and holds the room's PeerJS host id (registrations get `ID-TAKEN`), so no browser can host it too. `SIGTERM` says `bye`, saves and closes the sockets with 1012. Rooms not listed work as before: PeerJS with a browser host.
+**Hosting rooms** (`SERVER_ROOMS`, `src/host/`; design: `docs/plans/server-host.md`). Production hosts every room (`SERVER_ROOMS=*` in `fly.toml`), so this is how every game is played; `npm run dev` runs the same service in-process (`vite.config.js`, saves in `.boogle-data/`). For each hosted room the server runs the game's lockstep world itself (`src/world/sync.ts` and every rules module on the land in `src/world/home-land.json`), from start to shutdown with or without players, saving it every `SERVER_SAVE_MS` as `writerId: 'server'`. Tabs join over `/room/:id`; the server relays presence and messages, picks the lead (the oldest visible tab) and holds the room's PeerJS host id (registrations get `ID-TAKEN`), so no browser can host it too. `SIGTERM` says `bye`, saves and closes the sockets with 1012. Rooms not listed work as before: PeerJS with a browser host.
 
 Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. No database. CORS applies to every endpoint.
 
@@ -37,7 +37,9 @@ Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp fil
 | `TURN_USERNAME`, `TURN_CREDENTIAL` | unset | Static TURN credentials (used with `TURN_URLS`). |
 | `TURN_SECRET` | unset | coturn `static-auth-secret`. Instead of static creds, `/ice` returns ephemeral ones: username `${expiryUnix}:boogle`, credential = base64 HMAC-SHA1(username, secret). Used only if static username/credential are not both set. |
 | `CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN` | unset | Cloudflare TURN key. `/ice` mints credentials from Cloudflare's API (cached, re-minted at half of `TURN_TTL`) and adds them; on API failure it serves STUN only. |
-| `SERVER_ROOMS` | unset | Comma-separated rooms this server hosts (above). Unset: none; every room is PeerJS. |
+| `SERVER_ROOMS` | unset | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept). Unset: none. |
+| `ROOM_IDLE_MS` | `600000` | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join). |
+| `MAX_HOSTED_ROOMS` | `20` | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`. |
 | `MAX_PLAYERS` | `8` | Players per hosted room (the server is not one). A reconnecting player is always let back in. |
 | `SERVER_SAVE_MS` | `2000` | How often a hosted room saves its world (when it changed). |
 | `ADOPT_WINDOW_MS` | `600000` | How long after the server starts a hosted room adopts a newer handoff (the peer host it took over from). |

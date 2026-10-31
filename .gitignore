@@ -158,3 +158,6 @@ CLAUDE.local.md
 
 # npm run look output
 .look/
+
+# The dev server's own game server saves (vite.config.js, boogle-local-server)
+.boogle-data/
