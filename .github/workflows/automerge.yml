@@ -112,11 +112,10 @@ jobs:
           if gh pr diff "$PR" --name-only | grep -q '^server/'; then
             gh workflow run deploy-server.yml --ref main
           fi
-          # The atlas upkeep reads sync-code changes and new or removed features; a GITHUB_TOKEN merge never fires its
-          # push trigger, so start it here. Atlas PRs touch only docs/atlas/, so they never start another run.
-          if gh pr diff "$PR" --name-only | grep -qE '^(src/world/rules/|src/net/|src/netplay/|server/)' ||
-             gh api "repos/$GH_REPO/pulls/$PR/files" --paginate --jq '.[] | select(.status=="added" or .status=="removed") | .filename' | grep -q '^src/features/'; then
-            gh workflow run atlas.yml --ref main -f reason=merge
+          # The atlas upkeep's gate (atlas.yml) decides whether a merge matters; this only wakes it. A GITHUB_TOKEN
+          # merge never fires its push trigger. Atlas PRs themselves don't wake it.
+          if [[ "$BRANCH" != claude/atlas-* ]]; then
+            gh workflow run atlas.yml --ref main
           fi
 
       # Opening a ship PR starts a pull_request CI run, and merging it seconds later deletes the ref that run needs, so
