@@ -200,7 +200,7 @@ try {
   );
   if (sampled) {
     // Sum each function's own sampled bytes (garbage included) across the call tree.
-    // Library allocations are charged to the nearest game frame that called them ('src/... -> cannon-es vmult').
+    // Library allocations are charged to the nearest game frame that called them ('src/... -> rapier step').
     const sites = new Map();
     const where = (c) =>
       `${c.functionName || '(anonymous)'} ${c.url.replace(/^.*?\/(src|node_modules)\//, '$1/').replace(/\?v=\w+/, '')}:${c.lineNumber + 1}`;
@@ -223,7 +223,7 @@ try {
       '\ntop allocation sites over the tour (sampled, garbage included; "a -> b": game code a calling library b)',
     );
     console.table(top([...sites], 20));
-    console.log("the game's own allocations (not inside three.js or cannon-es)");
+    console.log("the game's own allocations (not inside three.js or the physics engine)");
     console.table(
       top(
         [...sites].filter(([k]) => !k.includes(' -> ')),

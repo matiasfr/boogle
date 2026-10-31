@@ -54,13 +54,13 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 | Kind | Use when | Who computes it | Math | Today |
 |---|---|---|---|---|
 | **Local** | Nobody else needs to see it, or it only decorates | Each tab | Anything, including `Math.random()` and the GPU | Particles, ripples, sounds, camera shake |
-| **Owner** | One player drives it, or physics moves it | The owner's tab; others smooth its broadcast pose. Ownership changes hands by epoch | Anything (cannon-es, three.js math) | Your avatar, the beach ball |
+| **Owner** | One player drives it, or physics moves it | The owner's tab; others smooth its broadcast pose. Ownership changes hands by epoch | Anything (Rapier physics, three.js math) | Your avatar, the beach ball |
 | **Host** | Shared, small (a few dozen numbers), changes over time | The host; it broadcasts the values (presence or messages) and clients interpolate | Anything | The Boogler |
 | **Lockstep** | Shared and big (a grid or many cells), changes in many places at once, often persists | Every tab, from host-stamped edits | Deterministic (below) | Mushrooms, gifts |
 
 In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/netplay/net.js`](src/netplay/net.js)); Lockstep is `submitEdit` + `onApplied`/`onSnapshot` for features, with the rules registered through `registerOp`, `registerState` and `onTick` ([`src/world/sync.js`](src/world/sync.js)). One-off events (a honk, a ping) are not state: send them as messages with `net.room.send` and receive them through `onRoomReady(room => room.onMessage(...))`, reliable and ordered, reaching every other peer (see [`src/net/README.md`](src/net/README.md)); presence fields are for state that has a current value. Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/netplay/snaps.js). Lockstep ticks at 10 Hz, compares hashes every 2 s and saves to the server every 30 s.
 
-- **Physics is never lockstep.** cannon-es (and three.js math) isn't bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball reads the ground) and change it only by submitting edits (a splash).
+- **Physics is never lockstep.** Our physics (and three.js math) isn't kept bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball reads the ground) and change it only by submitting edits (a splash).
 - **Crossing kinds goes through edits.** A ball splashing, an NPC planting, a thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
 - **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever hosts next. Your own things (hotbar, friendship with The Boogler) are yours, kept in localStorage.
 - **Tide and weather are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth and need no snapshot. Their visuals read the same function.
@@ -69,7 +69,7 @@ In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` a
 ### Determinism from day one
 Lockstep state must produce bit-identical results on every machine:
 - conserved quantities are integers (item counts and ids), so totals stay exact and snapshots stay small;
-- other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and cannon-es call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
+- other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and the physics engine call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
 - fixed update order and a fixed tick rate;
 - seeded randomness ([`mulberry32`](src/sim/rng.ts)), never `Math.random()` in shared logic;
 - events (tide, weather) are a pure function of tick + seed.

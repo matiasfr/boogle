@@ -1,7 +1,6 @@
 import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
 import {
   material,
-  contactMaterial,
   createBody,
   addBody,
   teleport,
@@ -17,14 +16,10 @@ import { waterField } from './water-field.js';
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
 
-// Own values: what Rapier multiplies per contact (ground is neutral); the pair table below is what cannon uses.
+// A contact uses the product of its two materials' values (ground is neutral): ball on ground 0.6 / 0.55.
 export const groundMat = material('ground', { friction: 1, restitution: 1 });
 export const playerMat = material('player', { friction: 0, restitution: 0 });
 export const ballMat = material('ball', { friction: 0.6, restitution: 0.55 });
-contactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 });
-contactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 });
-contactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 });
-contactMaterial(ballMat, playerMat, { friction: 0.2, restitution: 0.45 });
 
 // Collision groups. Static scenery (the ground, trees, rocks, POI structures) is its own group so bodies that never
 // need it can skip it: kinematic bodies (they are moved by code, so contacts with static things are wasted work) and

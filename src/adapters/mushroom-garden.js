@@ -8,17 +8,8 @@ import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '..
 import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
-import { groundMat, playerMat, ballMat, GROUP } from '../physics/physics.js';
-import {
-  material,
-  contactMaterial,
-  createBody,
-  setShapes,
-  addBody,
-  onPreStep,
-  onPostStep,
-  forEachContact,
-} from '../physics/engine.ts';
+import { groundMat, GROUP } from '../physics/physics.js';
+import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/player.js';
 import { setEnv, onApplied, submitEdit } from '../world/sync.js';
 import { waterField } from '../physics/water-field.js';
@@ -68,8 +59,6 @@ onApplied((e, t, r) => {
 
 // ---------------------------------------------------------------- physics
 const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
-contactMaterial(mushroomMat, playerMat, { friction: 0, restitution: 0 });
-contactMaterial(mushroomMat, ballMat, { friction: 0.3, restitution: 0.95 });
 
 const capBodies = new Map(); // body -> visual
 

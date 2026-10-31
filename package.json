@@ -40,7 +40,6 @@
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
-    "cannon-es": "0.20.0",
     "peerjs": "1.5.5",
     "three": "^0.187.0"
   },

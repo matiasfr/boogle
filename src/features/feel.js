@@ -1,4 +1,4 @@
-// Controller feel pass. The body setup stays as it is (dynamic cannon body, steered horizontal
+// Controller feel pass. The body setup stays as it is (dynamic physics body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
 //     an upward bounce instead of replacing it (src/physics/physics.js), so mushroom bounces chain
