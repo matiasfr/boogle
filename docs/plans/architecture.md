@@ -30,7 +30,8 @@ The open questions in the two plans have working answers so work can start; chan
       (game-loop.md, step 1).
 - [x] TypeScript everywhere: the policy, strict `tsconfig.json`, `npm run typecheck` in `check`, `.ts`-aware lint,
       registry and loaders, Node 24 (step 8a).
-- [ ] Allocation-free hot path, heap tracking in `hitches` (step 2).
+- [ ] Allocation-free hot path (step 2). Heap tracking and `hitches --allocs` are in; our hooks still allocate ~15
+      KB/frame, cannon-es ~60 KB/frame (decision needed: keep it or move to Rapier).
 - [ ] Baseline on the target devices: `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
 - [ ] Unreliable presence channel (native `RTCDataChannel`, `maxRetransmits: 0`), before/after `npm run load`

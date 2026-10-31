@@ -35,14 +35,21 @@ Everything after this is judged against these numbers, so it comes first.
 
 ### 2. A hot path that doesn't allocate
 
-- Module-scope scratch objects (`const _v = new THREE.Vector3()`) instead of `new` inside `onFrame` callbacks. About
-  10 files in `src/features`, `src/player` and `src/boogler` allocate three.js math objects; fix the ones on the hot path.
-- A GC counter in the harness (CDP `HeapProfiler` / `Performance.getMetrics`, `JSHeapUsedSize` sampled per tour step)
-  printed by `hitches`, so a change that starts allocating every frame shows up as a rising line.
-- An ESLint rule (`no-restricted-syntax` on `new THREE.Vector3|Quaternion|Matrix4|Color` inside a function passed to
-  `onFrame`), if it can be written without false positives; otherwise a note in AGENTS.md.
+**Measured (2026-10-31, `npm run hitches -- --allocs`, Mac, WebGPU):** about 130 KB of JS heap per frame, a GC every
+~150 frames, no hitch from it on the Mac. Roughly 60 KB is cannon-es inside `world.step` (its narrowphase allocates
+vectors: `vadd`, `vmult`, `vsub`, `calculateWorldAABB`), about 15 KB is three.js's per-frame render bookkeeping
+(`painterSortStable`, `equals`, `update`), and about 15 KB is ours, spread thin (the biggest: fish flocking 6 KB,
+interact targets 2 KB, gulls and fireflies under 1 KB each).
 
-**Done when** a 60 s idle tour allocates about nothing per frame (heap flat between GCs).
+- Done: `hitches` reports heap per frame and GCs per tour step; `--allocs` lists allocation sites, charging library
+  allocations to the game code that called them. The profiler, the frame context and the fish hook allocate nothing.
+- Next, ours: module-scope scratch objects and index loops in the remaining hooks above, and interact targets
+  (`registerInteractable`) that reuse their objects.
+- The physics engine is the real cost: cannon-es can't be made allocation-free from outside. **Decision needed:**
+  keep cannon-es (and accept ~60 KB/frame), or move physics to a WASM engine such as Rapier (no JS garbage, faster,
+  and it fits the physics worker of step 7). That is its own plan, since every collider and the controller change.
+
+**Done when** our own hooks allocate under 1 KB per frame and the physics decision is made.
 
 ### 3. Instance pools: the `emit()` of meshes
 

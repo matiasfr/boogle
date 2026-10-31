@@ -94,13 +94,14 @@ const m4 = new THREE.Matrix4(),
   one = new THREE.Vector3(1, 1, 1),
   pos = new THREE.Vector3();
 let lastBallY = 0;
+const scares = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
 onFrame(
   ({ dt }) => {
     fish.visible = !!home;
     if (!fish.visible || dt <= 0) return;
     // scares: a ball that just hit the water near the surface, players swimming
-    const scares = [];
+    scares.length = 0;
     const bp = ball.mesh.position;
     const bs = waterField.surfaceAt(bp.x, bp.z);
     if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
@@ -109,14 +110,16 @@ onFrame(
     for (const r of remotes.values()) if (r.state === 2) scares.push(r.target);
     let cx = 0,
       cz = 0;
-    for (const f of P) {
-      cx += f.x / FISH.count;
-      cz += f.z / FISH.count;
+    for (let k = 0; k < P.length; k++) {
+      cx += P[k].x / FISH.count;
+      cz += P[k].z / FISH.count;
     }
-    for (const f of P) {
+    for (let k = 0; k < P.length; k++) {
+      const f = P[k];
       let ax = (cx - f.x) * 0.15 + (Math.random() - 0.5) * 2,
         az = (cz - f.z) * 0.15 + (Math.random() - 0.5) * 2;
-      for (const o of P) {
+      for (let m = 0; m < P.length; m++) {
+        const o = P[m];
         if (o === f) continue;
         const dx = f.x - o.x,
           dz = f.z - o.z,
@@ -129,7 +132,8 @@ onFrame(
           az += (o.vz - f.vz) * 0.05;
         }
       }
-      for (const s of scares) {
+      for (let m = 0; m < scares.length; m++) {
+        const s = scares[m];
         const dx = f.x - s.x,
           dz = f.z - s.z,
           d = Math.hypot(dx, dz);
@@ -145,7 +149,9 @@ onFrame(
         let best = -1e9,
           bx = 0,
           bz = 0;
-        for (const [px, pz] of PROBES) {
+        for (let m = 0; m < PROBES.length; m++) {
+          const px = PROBES[m][0],
+            pz = PROBES[m][1];
           const d = depthAt(f.x + px, f.z + pz);
           if (d > best) {
             best = d;

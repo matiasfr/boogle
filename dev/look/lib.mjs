@@ -76,7 +76,8 @@ export async function startStack({ url = null, root: dir = root } = {}) {
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
 export const launch = () => {
-  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'];
+  // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
+  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
   if (process.platform === 'darwin') args.push('--use-angle=metal');
   // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
   else

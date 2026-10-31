@@ -4,6 +4,9 @@
 // textures) moved that frame, which means a shader compile or an upload landed in it.
 // Run it on a Mac (real GPU, WebGPU on Metal); CI's software WebGPU is too slow to say anything about hitches. Options: `--url http://...` (a running game), `--limit 33` (ms),
 // `--json file` (write every hitch as JSON), `--root dir` (serve another checkout).
+// Every run also reports JS heap allocated per frame and GCs per tour step (performance.memory: a GC shows as the heap
+// dropping). `--allocs` adds Chrome's sampling heap profiler over the tour and lists the functions that allocate the
+// most, garbage included: the starting point for an allocation-free hot path (docs/plans/game-loop.md, step 2).
 // The 'enter' step includes the harness's own click (pointer lock in headless Chromium costs ~200 ms there).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +17,7 @@ const val = (name, d) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : d
 const url = val('--url', null);
 const root = val('--root', undefined); // another checkout to serve (before/after comparisons)
 const LIMIT = Number(val('--limit', 33));
+const allocs = argv.includes('--allocs');
 const jsonOut = val('--json', null);
 
 // Runs in the page. Frames are timed from a requestAnimationFrame loop of its own (it sees the same vsync the game
@@ -32,7 +36,7 @@ const INSTALL = `
       dp: (mm.programs ?? 0) - p, dg: (mm.geometries ?? 0) - g, dt2: (mm.textures ?? 0) - t,
       shadow: sun.shadow.autoUpdate,
       cpu: +(window.boogle.prof?.last.ms ?? 0).toFixed(1), top: window.boogle.prof?.last.top ?? '',
-      topMs: +(window.boogle.prof?.last.topMs ?? 0).toFixed(1),
+      topMs: +(window.boogle.prof?.last.topMs ?? 0).toFixed(1), heap: performance.memory?.usedJSHeapSize ?? 0,
     });
     prev = now; p = mm.programs ?? 0; g = mm.geometries ?? 0; t = mm.textures ?? 0;
   };
@@ -128,7 +132,17 @@ try {
   console.log(
     `tour on ${gfx}${process.platform === 'darwin' ? ' (real GPU)' : ' (software: numbers are not meaningful)'} ...`,
   );
+  const cdp = allocs ? await g.page.context().newCDPSession(g.page) : null;
+  if (cdp) {
+    await cdp.send('HeapProfiler.enable');
+    await cdp.send('HeapProfiler.startSampling', {
+      samplingInterval: 8192,
+      includeObjectsCollectedByMajorGC: true,
+      includeObjectsCollectedByMinorGC: true,
+    });
+  }
   const frames = await g.eval(`const VIEWS = ${JSON.stringify(VIEWS)};` + TOUR);
+  const sampled = cdp ? (await cdp.send('HeapProfiler.stopSampling')).profile : null;
   const lobby = await g.eval('return window.__lobby;');
   console.log(
     `lobby: Jump in enabled ${lobby.enterAt} ms after page start; ${lobby.slow.length} frames over 33 ms before it (worst ${Math.max(0, ...lobby.slow)} ms)`,
@@ -150,10 +164,18 @@ try {
     `\n${frames.length} frames, median ${q(0.5)} ms, p99 ${q(0.99)} ms, max ${dts.at(-1)} ms; ` +
       `${hitches.length} over ${LIMIT} ms, ${hitches.filter((f) => f.dt > 100).length} over 100 ms`,
   );
+  // Allocation: the heap only grows between GCs, so the positive deltas add up to what was allocated.
+  for (let k = 1; k < frames.length; k++) {
+    const d = (frames[k].heap ?? 0) - (frames[k - 1].heap ?? 0);
+    frames[k].alloc = frames[k].heap && frames[k - 1].heap && d > 0 ? d : 0;
+    frames[k].gc = frames[k].heap && frames[k - 1].heap && d < -65536 ? 1 : 0;
+  }
   const by = new Map();
   for (const f of frames) {
-    const s = by.get(f.step) ?? { frames: 0, hitches: 0, worst: 0, compiles: 0, uploads: 0 };
+    const s = by.get(f.step) ?? { frames: 0, hitches: 0, worst: 0, compiles: 0, uploads: 0, 'KB/frame': 0, gcs: 0 };
     s.frames++;
+    s['KB/frame'] += (f.alloc ?? 0) / 1024;
+    s.gcs += f.gc ?? 0;
     if (f.dt > LIMIT) {
       s.hitches++;
       s.worst = Math.max(s.worst, f.dt);
@@ -163,7 +185,52 @@ try {
     by.set(f.step, s);
   }
   console.log('\nper tour step');
-  console.table(Object.fromEntries([...by].map(([k, v]) => [k, { ...v, worst: Math.round(v.worst) }])));
+  console.table(
+    Object.fromEntries(
+      [...by].map(([k, v]) => [
+        k,
+        { ...v, worst: Math.round(v.worst), 'KB/frame': +(v['KB/frame'] / v.frames).toFixed(1) },
+      ]),
+    ),
+  );
+  const allocated = frames.reduce((a, f) => a + (f.alloc ?? 0), 0);
+  console.log(
+    `JS heap: ${(allocated / 1024 / frames.length).toFixed(1)} KB allocated per frame, ` +
+      `${frames.reduce((a, f) => a + (f.gc ?? 0), 0)} GCs over ${frames.length} frames`,
+  );
+  if (sampled) {
+    // Sum each function's own sampled bytes (garbage included) across the call tree.
+    // Library allocations are charged to the nearest game frame that called them ('src/... -> cannon-es vmult').
+    const sites = new Map();
+    const where = (c) =>
+      `${c.functionName || '(anonymous)'} ${c.url.replace(/^.*?\/(src|node_modules)\//, '$1/').replace(/\?v=\w+/, '')}:${c.lineNumber + 1}`;
+    const walk = (n, owner) => {
+      const c = n.callFrame;
+      const mine = c.url.includes('/src/') ? where(c) : owner;
+      if (n.selfSize && c.url) {
+        const key = mine && mine !== where(c) ? `${mine} -> ${c.functionName || '(anonymous)'}` : where(c);
+        sites.set(key, (sites.get(key) ?? 0) + n.selfSize);
+      }
+      for (const ch of n.children) walk(ch, mine);
+    };
+    walk(sampled.head, null);
+    const top = (rows, n) =>
+      rows
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .map(([site, bytes]) => ({ site, 'KB/frame': +(bytes / 1024 / frames.length).toFixed(2) }));
+    console.log(
+      '\ntop allocation sites over the tour (sampled, garbage included; "a -> b": game code a calling library b)',
+    );
+    console.table(top([...sites], 20));
+    console.log("the game's own allocations (not inside three.js or cannon-es)");
+    console.table(
+      top(
+        [...sites].filter(([k]) => !k.includes(' -> ')),
+        15,
+      ),
+    );
+  }
   console.log(
     'hitches (ms, step, sky time, new programs / geometries / textures, main-thread CPU and its slowest section that frame)',
   );
