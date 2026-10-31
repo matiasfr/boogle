@@ -569,9 +569,14 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     default 20, refusal `{ t:'full' }` with a room-count reason past it). A test in `server/test/` covers create,
     unload with save, reload from disk and the room cap.
   - `net.ts`: `connectRoom` calls `createWsRoom({ roomId, server: VITE_BOOGLE_SERVER, build, debug })` directly; no
-    PeerJS options. A `NOT_HOSTED` refusal (a server not yet on this deploy) retries like an unreachable server.
-    `isLead()` helper as in Design (`net.room.isLead()`), used in `addHostField` and the late frame hook; `room.onLeadChange(() => sendPresence())`.
-  - `boogler.js`: `const isHost = isLead();`.
+    PeerJS options, no `defaultHostScore`. A `NOT_HOSTED` refusal (a server not yet on this deploy) retries like an
+    unreachable server. `isLead()`, `addHostField`, the Boogler and the presence hook stay as 8b left them.
+  - Delete `src/net/room.ts` (the picker, its `peer`/`fallback` transports, probes, `fallbackSignal`, `?p2p`). The
+    `Room` type moves to `ws-room.ts` (or callers use `WsRoom`); `src/net/README.md` names it.
+  - `ws-run`: drop part 2's fallback and peer-move checks (10-14 of 8b's list and the others part 2 added for the
+    picker); keep the full-room check (T5) and the restart and crash checks (T6).
+  - Steps 7-8 left in place, no change: the malformed `/room/` path guard, the forced save on close and every 30 s,
+    and the repo-root Docker build checked in CI.
   - Local dev: a dev-only Vite plugin starts `createService` in-process (`SERVER_ROOMS=*`, `DATA_DIR` under
     `.boogle-data/`, gitignored) and sets `VITE_BOOGLE_SERVER` to it, so `npm run dev` needs nothing else.
   - Harness: `dev/look/lib.mjs` starts `createService` instead of the bare `PeerServer`, so `smoke`,
