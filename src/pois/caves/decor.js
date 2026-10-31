@@ -7,8 +7,8 @@
 // hang from the real ceiling even if the network changes. Colliders are in the CAVE group: only bodies underground
 // touch them.
 import * as THREE from 'three/webgpu';
-import * as CANNON from 'cannon-es';
 import { groundMat, GROUP } from '../../physics/physics.js';
+import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { addLightSource } from '../../render/lights.js';
 import { mulberry32 } from '../../math.js';
@@ -108,13 +108,12 @@ export function mouthFrame(m) {
     half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
   };
 }
-export function buildDecor({ world, scene }) {
+export function buildDecor({ scene }) {
   const root = new THREE.Group();
   const parts = [],
     glow = [];
-  const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
-  const O = NODES.hub; // collider offsets are relative to the hub
-  body.position.set(O.x, O.y, O.z);
+  const shapes = []; // colliders, relative to the hub
+  const O = NODES.hub;
 
   const put = (geo, x, y, z, sx, sy, sz, color, rx = 0, ry = 0, rz = 0, list = parts) => {
     q.setFromEuler(e.set(rx, ry, rz, 'YXZ'));
@@ -122,11 +121,14 @@ export function buildDecor({ world, scene }) {
     addPart(list, geo, m4, color);
   };
   const solid = (x, y, z, hx, hy, hz, ry = 0) =>
-    body.addShape(
-      new CANNON.Box(new CANNON.Vec3(hx, hy, hz)),
-      new CANNON.Vec3(x - O.x, y - O.y, z - O.z),
-      new CANNON.Quaternion().setFromEuler(0, ry, 0),
-    );
+    shapes.push({
+      kind: 'box',
+      hx,
+      hy,
+      hz,
+      offset: { x: x - O.x, y: y - O.y, z: z - O.z },
+      rotation: { x: 0, y: Math.sin(ry / 2), z: 0, w: Math.cos(ry / 2) },
+    });
 
   // ---------------------------------------------------------------- lanterns
   const lanternGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.32, 6);
@@ -526,6 +528,6 @@ export function buildDecor({ world, scene }) {
   const glowMesh = new THREE.Mesh(mergeParts(glow), new THREE.MeshBasicMaterial({ vertexColors: true }));
   root.add(solidMesh, glowMesh);
   scene.add(root);
-  world.addBody(body);
+  addBody(createBody({ material: groundMat, group: GROUP.CAVE, position: O, shapes }));
   return root;
 }
