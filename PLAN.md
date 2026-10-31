@@ -151,6 +151,9 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 - Mud and erosion: wet sand slows players; plants anchor soil (From Dust).
 - **Skip:** full 3D voxel fluid. It's a lot of cost for little gameplay on a beach island.
 
+- [x] **WebGPU renderer.** `WebGPURenderer` + TSL with a WebGL 2 fallback, linear HDR, adaptive resolution ([src/render/README.md](src/render/README.md)).
+- [ ] **Graphics quality tiers.** A pause-view setting; compute particles, TRAA, bloom, clustered night lights, cascaded shadows, then GTAO/SSGI/SSR (docs/plans/webgpu-migration.md, phase 3).
+
 ## Open questions for the group
 
 - Where to host the PeerServer + snapshot storage (Fly, Railway, Render), and which TURN provider?

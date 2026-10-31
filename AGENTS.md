@@ -1,11 +1,16 @@
 # Boogle: agent instructions
 
-Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js + cannon-es, Vite, PeerJS with one browser as host; `server/` does signaling and snapshots. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://boogle.club/.
+Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js (`WebGPURenderer`, shaders in TSL) + cannon-es, Vite, PeerJS with one browser as host; `server/` does signaling and snapshots. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://boogle.club/.
 
 Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, and asks before bending one) and [PLAN.md](PLAN.md) (roadmap; tick an item in the commit that finishes it). [src/README.md](src/README.md) maps the folders. [docs/game-design.md](docs/game-design.md) describes the game as built: a change that adds, changes or removes something a player can see or do (a system, control, item, tuning number, place) updates its section in the same commit; refactors and tooling don't.
 
 ## A feature is a plug-in
 `src/features/<name>.js`, auto-loaded by `main.js`. Frame work: `onFrame(fn, { phase, order })`, `onStart(fn)` (`src/loop.js` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Heavy or rarely used parts (far-off decor, dialogue, debug tools) load with a dynamic `import()` from the small eager feature file ("Lazy parts" in `src/loop.js`); never lazy: sync ops or state, `src/world/rules/`, or anything visible in the first seconds. Hotspots (`src/main.js`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.js`): a line or two at most. Plain modules; a new dependency needs a reason in the commit.
+
+## Rendering
+`WebGPURenderer` with three's WebGL 2 fallback, one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](src/render/README.md).
+- Custom looks go in node slots (`colorNode`, `positionNode`, `maskNode`, ...) of a `*NodeMaterial` from `three/webgpu`; extend someone else's material with `patchNode` (`src/render/material-patch.js`). No GLSL, `ShaderMaterial`, `onBeforeCompile` or `THREE.Points` (lint fails them).
+- Colours are linear; draw through `renderFrame()`; post effects extend `pipeline.outputNode`. A Local feature may use WebGPU-only features (compute, storage buffers) behind `renderer.backend.isWebGPUBackend`, with a fallback.
 
 ## Pick a sync kind for each piece of state
 Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
@@ -28,6 +33,7 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 - Rules import only `src/sim/`, `../grid.js` and sibling rules; `src/sim/` imports nothing from `src/`.
 - Features don't import other features: shared code moves to `src/` (an adapter, `src/player/`, ...).
 - No `peerjs` outside `src/net/`.
+- No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
 
 ## Don't (each one broke a room recently)
 - **Effects in `apply`.** Apply changes state and returns a result; splashes, sounds, inventory go in the adapter's `onApplied(e, tick, result)`.
@@ -45,7 +51,8 @@ Tabs reload onto new deploys (`src/features/updates.js`), but a visible tab wait
 - `npm run check` (lint, unit tests, build; seconds): before every push.
 - `npm run check:full` (+ server tests, headless network test, ~30 s): when you touch `src/net*`, `src/world/sync.js`, `src/world/rules/`, `src/world/game-world.js` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
 - Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): CI runs `world-inputs`, `smoke` and `two-player-edit` on every PR (must pass), the rest nightly (never block). Local runs are optional, for iterating on visuals and feel; a failed leg's images are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
-- `npm run perf`: before/after anything adding meshes, lights or per-tick sim work.
+- `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
+- Headless runs use the WebGL 2 backend (the harness hides `navigator.gpu`); `npm run look -- --webgpu --gpu` shows the WebGPU one on a Mac. A `gfx errors` line with entries is a bug.
 
 ## Shipping
 - Style: ESLint + Prettier (single quotes, 120 columns); `npx prettier --write <your files>`, never the whole repo.

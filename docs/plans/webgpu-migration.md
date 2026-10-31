@@ -1,5 +1,9 @@
 # WebGPU migration (phase 1: parity port; phases 2 and 3 sketched)
 
+> **Status, 30 October 2026: phases 1 and 2 landed together** on `claude/webgpu-migration`, following "Owner's
+> decisions" at the end (no parity, one PR). Neutral tone mapping won over AgX. The step checkboxes below are
+> superseded; phase 3 (the quality ladder) is open. The living contract is [src/render/README.md](../../src/render/README.md).
+
 ## Goal
 
 Move Boogle from `THREE.WebGLRenderer` to `WebGPURenderer` (`three/webgpu`, three ^0.187) for everyone, with no flag:

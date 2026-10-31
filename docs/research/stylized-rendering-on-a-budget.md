@@ -1,5 +1,11 @@
 # Paint the island inside the materials
 
+> **Update, 30 October 2026.** Boogle has since moved to `WebGPURenderer` with TSL node materials and a
+> `RenderPipeline` (one output pass for tone mapping), on purpose: the owner wants the high end (compute, TRAA,
+> bloom, GTAO, SSGI) on modern devices, iOS 26 Safari included. Read "add a pass" below as "add a pass on a quality
+> tier, measured on device". The in-material looks here are still the floor every device gets, and the GLSL snippets
+> translate to TSL node slots ([src/render/README.md](../../src/render/README.md)).
+
 Boogle can reach the Sable, A Short Hike and Elysium tier of stylized look on iPhone and iPad without adding a single post-processing pass, because nearly every look worth having lives inside the fragment shaders it already runs. Apple's tile-based GPUs reject hidden opaque pixels before shading them, so overdrawn opaque geometry is close to free, while alpha blending, `discard` and full-screen render targets are where the cost lands. That inverts the usual desktop priority list: inverted-hull outlines, vertex-shader wind and baked ambient occlusion are cheap on an iPad, while screen-space outlines, SSAO, LUT grading and radial-blur god rays are expensive. Boogle's water already uses "vertical depth" (water height minus a heightmap ground), which is exactly the fix the three.js community recommends for depth-buffer foam that breaks at grazing angles, so the shoreline needs art direction rather than new plumbing. The strongest prototypes, in order, are: toon-banded water with a moving shore foam line and shallow-water caustics; palm-frond sway and terrain grass tufts driven by one wind uniform; a global in-shader time-of-day grade plus sun-tinted fog; inverted-hull outlines on the merged props and the ball; and vertex-baked AO with blob shadows for the night. Each adds zero to a handful of draw calls. Real-time GI in the style of Tiny Glade, and anything that needs a depth texture or a second scene render, should stay off the table for mobile.
 
 ## On an iPad, blending and extra passes cost more than draw calls

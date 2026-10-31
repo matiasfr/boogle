@@ -10,7 +10,7 @@ Unit tests cover pure logic. For "does it actually work in the running game" (th
 ## 1. Inspect: `npm run look`
 
 ```
-npm run look -- --view hill                           # preset: hill | shore | court | overview
+npm run look -- --view hill                           # preset: hill | shore | court | overview | garden
 npm run look -- --cam -10,12,-14 --look -22,3.5,-21   # any pose (metres, y up); --fov 60
 npm run look -- --view shore --eval setup.js --warm 5 --region 0.3,0.3,0.4,0.4
 ```
@@ -22,6 +22,12 @@ and popping show up as bright speckle or edges in the heatmap. `--eval file.js` 
 camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to the `VIEWS` table in
 `dev/look/lib.mjs`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
+
+**Graphics backend.** Runs use three's WebGL 2 backend by default (the harness hides `navigator.gpu`, as CI does);
+`--webgpu --gpu` uses the real WebGPU backend on this Mac's GPU, at about 60 fps. Check visual work on both. Every
+run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
+material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
+`night.js`, `particles.js`. Rendering rules: `src/render/README.md`.
 
 ## 2. Validate: scenarios (`npm run scenario -- <name>`, `npm run scenarios` for all)
 

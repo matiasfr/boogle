@@ -564,6 +564,20 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
 - **Known issues.** Not yet tried with two players, on the lighthouse stair, in the caves, on a gamepad or on touch.
   The plan for more such characters is [plans/decomp-characters.md](plans/decomp-characters.md).
 
+### 6.18 Graphics and devices
+
+- **What.** The island draws with WebGPU where the browser has it (Chrome and Edge, Safari 26 on iPhone, iPad and
+  Mac, Firefox on Windows and Apple Silicon) and with WebGL 2 everywhere else; both look the same. The lobby's
+  "Loading island" waits for the graphics device. Light is linear HDR through Neutral tone mapping (exposure 0.9),
+  with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
+  in 10 % steps to 0.6x after 2 s of slow frames (over 18.5 ms) and climbs back after 5 s of fast ones (under 14 ms).
+  If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
+  once a minute.
+- **Sync kind.** Local: nothing about rendering crosses the network.
+- **Files.** [src/render/scene.js](../src/render/scene.js), [src/features/adaptive-res.js](../src/features/adaptive-res.js);
+  rules for drawing things in [src/render/README.md](../src/render/README.md).
+- **Limits.** No quality setting yet; post effects (bloom, ambient occlusion, reflections) are planned as tiers.
+
 ## 7. Content inventory
 
 ### 7.1 Items (gift catalog)
@@ -775,7 +789,8 @@ TURN) and `/healthz`.
 Brief; the rules for contributors are in [AGENTS.md](../AGENTS.md) (imported by [CLAUDE.md](../CLAUDE.md)) and the
 folder map in [src/README.md](../src/README.md).
 
-- **Stack.** three.js 0.186.1, cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json));
+- **Stack.** three.js 0.187 (`WebGPURenderer` with its WebGL 2 fallback; shaders in TSL, see
+  [src/render/README.md](../src/render/README.md)), cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json));
   the build splits three, cannon-es and peerjs into vendor chunks ([vite.config.js](../vite.config.js)).
 - **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),
   `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),
@@ -795,8 +810,9 @@ folder map in [src/README.md](../src/README.md).
   [dev/scenarios/](../dev/scenarios/): caves, controls-guide, hotbar, interact,
   lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, two-player-edit, world-inputs. CI runs
   `world-inputs`, `smoke` and `two-player-edit` on every PR (they must pass); the rest run nightly in
-  `scenarios-nightly.yml` and never block. `npm run island-map` renders the composed island.
-- **Perf.** `npm run perf`: draw calls, triangles and ms per lockstep tick, with rows tagged by handler.
+  `scenarios-nightly.yml` and never block. Headless runs use the WebGL 2 backend; `npm run look -- --webgpu --gpu`
+  shows WebGPU on a Mac. `npm run island-map` renders the composed island.
+- **Perf.** `npm run perf`: draw calls, shadow calls, triangles, shader stages and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../dev/video/)).
 - **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the
   nightly live two-tab test; `deploy-server.yml` deploys `server/` when a token exists.
