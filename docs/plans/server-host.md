@@ -383,7 +383,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, then `npm run scenario -- world-inputs` passes;
     `npm run check` (replay test, registry check).
 
-- [ ] **3. Sync: clients re-pin on reconnect, hash checks over shared states** (`src/world/sync.ts`).
+- [x] **3. Sync: clients re-pin on reconnect, hash checks over shared states** (`src/world/sync.ts`).
   - `onConnected(c)`: when `c` turns true while `mode === 'client'`, set `hostId = null`, `hostTick = 0`,
     `hostTickAt = 0`, `pendingHash.clear()`, so the next host message re-pins at once instead of after `HOST_STALE_MS`.
   - `loadState`: when a state is skipped as newer, add its key to a new `skipped` Set.
