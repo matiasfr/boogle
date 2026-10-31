@@ -25,6 +25,13 @@ room.close()
 // peer entry: Object.freeze({ peer: string /*stable selfId of that tab*/, sameTab: boolean /*true for me*/, presence: object, updatedAt: number })
 ```
 
+`ws-room.ts` implements the same interface for a room our server hosts (docs/plans/server-host.md): `createWsRoom({
+roomId, server, build })`, one WebSocket (wire: `ws-wire.ts`), `transport: 'server'`, `isHost()` always false (the
+server's sync is the lockstep host; its messages come `from` `SERVER_ID`), a lead the server picks (the oldest visible
+tab), plus `onRedirect(h)` and `downMs()` for the room picker. It rejects with `room_full` (+ `max`), `peer_hosted`,
+`unreachable` or `browser-incompatible`, then reconnects by itself. Its peer table is `peer-table.ts`. Tested by
+`dev/peer-test/ws-run.ts` (in `npm run test:net`); not used by the game until step 9.
+
 The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) and `entry.peer` for ball-ownership
 tie-breaks, so `peer` must be the stable `selfId`, not the PeerJS id.
 

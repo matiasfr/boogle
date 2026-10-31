@@ -486,7 +486,11 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `npm --prefix server test`, `docker build -f server/Dockerfile .`, `npm run check:full`. Production is
     unchanged (no `SERVER_ROOMS`): `curl https://<app>.fly.dev/rooms/beach/host` says `{ "mode": "peer" }` after deploy.
 
-- [ ] **8. The client WebSocket room** (`src/net/peer-table.js`, `src/net/ws-room.js`, `dev/peer-test/`).
+- [x] **8. The client WebSocket room** (`src/net/peer-table.js`, `src/net/ws-room.js`, `dev/peer-test/`).
+  - Built as `peer-table.ts`, `ws-room.ts`, `dev/peer-test/ws-page.ts` and `ws-run.ts` (20 checks; `WS_LOAD=1`: 8 pages
+    at 20 Hz cost the server 8% of one core, 100% of presence delivered). Found on the way: saves skip an unchanged
+    world, so a restart went back to the tick of the last change, and the helper bank would count that idle hosted time
+    as offline. `saveNow(true)` now saves regardless; the server forces one on close and every 30 s.
   - Build both as in Design. Not used by the game yet.
   - `dev/peer-test/ws-page.js`: like `page.js`, but `createRoom` (from step 9; until then `createWsRoom`) plus a world:
     `createSync({ env: { canPlantAt: () => true } })`, `installRules(sync, land)` with `home-land.json` imported

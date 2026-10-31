@@ -656,12 +656,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
   // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
   // handoff: a demoted host's last word, sent to the server's handoff endpoint whether or not the world changed.
-  // Returns true when it wrote.
-  function persist(unloading: boolean, handoff = false) {
+  // force: write even if no state changed (the tick still moved on: the server's shutdown save). Returns true when it wrote.
+  function persist(unloading: boolean, handoff = false, force = handoff) {
     if (mode === 'local' || !ready || awaiting || newerSave || (mode === 'client' && verifiedTick !== world.tick))
       return false;
     const hsh = combine(0);
-    if (hsh === lastSavedHash && !handoff) return false;
+    if (hsh === lastSavedHash && !force) return false;
     lastSavedHash = hsh;
     const snap = snapshot();
     const text = JSON.stringify(snap);
@@ -844,7 +844,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     updateWorld,
     snapshot,
     loadSnapshot,
-    saveNow: () => persist(false),
+    saveNow: (force = false) => persist(false, false, force), // force: even if no state changed since the last save
     adoptSnapshot,
     worldHash,
     attachWorld,

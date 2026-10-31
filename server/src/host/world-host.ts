@@ -21,6 +21,9 @@ import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 
 const STEP_MS = 50;
+// Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
+// hosted from the saved tick: so the tick is saved at least this often, and always on close.
+const TICK_SAVE_MS = 30000;
 
 type Msg = Record<string, unknown>;
 export type WorldHostOptions = {
@@ -78,12 +81,17 @@ export function createWorldHost({
     { roomId, serverUrl: '', storage, now: Date.now, saveMs },
   );
 
-  let last = performance.now();
+  let last = performance.now(),
+    tickSaved = last;
   const timer = tick
     ? setInterval(() => {
         const now = performance.now();
         sync.updateWorld(Math.min(now - last, 1000) / 1000);
         last = now;
+        if (now - tickSaved > TICK_SAVE_MS) {
+          tickSaved = now;
+          sync.saveNow(true);
+        }
       }, STEP_MS)
     : null;
   timer?.unref();
@@ -114,7 +122,7 @@ export function createWorldHost({
     },
     async close({ save = true } = {}) {
       if (timer) clearInterval(timer);
-      if (save) sync.saveNow();
+      if (save) sync.saveNow(true);
       sync.detachWorld();
       await writing;
     },
