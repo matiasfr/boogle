@@ -6,6 +6,8 @@
 //   roomHost.upgrade(req, socket, head)   a /room/:id upgrade: checks, then the room's join (or a refusal)
 //   roomHost.holdsPeerId(id)              a PeerJS id this server holds
 //   roomHost.room(id)                     the hosted room, or undefined
+//   roomHost.status(id)                   GET /rooms/:id/host: { mode: 'server', ... } or { mode: 'peer' }
+//   await roomHost.handoff(id, doc)       POST /rooms/:id/handoff for a hosted room ({ status, body }), else null
 //   await roomHost.close({ save })
 import crypto from 'node:crypto';
 import type http from 'node:http';
@@ -21,12 +23,14 @@ const UPGRADES_PER_MIN = 20; // per IP
 
 export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
+  adoptWindowMs: number;
   allowedOrigins: string[];
   log: (...a: unknown[]) => void;
 };
 
 export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const boot = crypto.randomBytes(4).toString('hex');
+  const startedAt = performance.now();
   const rooms = new Map<string, HostedRoom>();
   for (const id of cfg.serverRooms)
     if (ROOM_ID_RE.test(id)) rooms.set(id, createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log }));
@@ -53,6 +57,27 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   return {
     room: (id: string) => rooms.get(id),
     holdsPeerId: (id: string) => held.has(id),
+    status(id: string) {
+      const room = rooms.get(id);
+      if (!room) return { mode: 'peer' };
+      const { boot: b, tick, players, max, noSave } = room.status();
+      return { mode: 'server', boot: b, tick, players, max, noSave };
+    },
+    // The newest-by-tick rule (docs/plans/server-host.md, "Adopting a handoff"): a world that loads cleanly, is newer
+    // than the hosted one, and arrives while this process is young (a peer host the server just took over from).
+    async handoff(id: string, doc: { tick: number; data: unknown }) {
+      const room = rooms.get(id);
+      if (!room) return null;
+      const tick = room.status().tick;
+      if (!room.world.validate(doc.data)) return { status: 400, body: { error: 'bad snapshot' } };
+      const newer = (doc.data as { tick: number }).tick > tick;
+      if (!newer || performance.now() - startedAt > cfg.adoptWindowMs)
+        return { status: 409, body: { adopted: false, tick } };
+      const adopted = await room.adopt(doc.data);
+      return adopted
+        ? { status: 200, body: { adopted: true, tick: room.status().tick } }
+        : { status: 400, body: { error: 'bad snapshot' } };
+    },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
       const origin = req.headers.origin;
       if (!cfg.allowedOrigins.includes('*') && !(origin && cfg.allowedOrigins.includes(origin)))

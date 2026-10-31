@@ -204,3 +204,62 @@ test('guard: the PeerJS id of a hosted room is taken; another room registers', a
     await svc.close({ save: false });
   }
 });
+
+test('routes: who hosts, PUT refused for a hosted room, handoffs adopted only when newer and early', async () => {
+  const { svc, base } = await start();
+  const http = base.replace('ws', 'http');
+  const post = (room: string, body: unknown, method = 'POST', route = 'handoff') =>
+    fetch(`${http}/rooms/${room}/${route}`, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  try {
+    const host = await (await fetch(`${http}/rooms/beach/host`)).json();
+    assert.deepEqual(Object.keys(host).sort(), ['boot', 'max', 'mode', 'noSave', 'players', 'tick']);
+    assert.deepEqual([host.mode, host.max, host.noSave], ['server', 8, false]);
+    assert.deepEqual(await (await fetch(`${http}/rooms/other/host`)).json(), { mode: 'peer' });
+
+    const world = svc.roomHost()!.room('beach')!.world;
+    const put = await post('beach', { tick: 1e6, writerId: 'tab', data: {} }, 'PUT', 'snapshot');
+    assert.equal(put.status, 409);
+    assert.equal((await put.json()).error, 'server-hosted');
+
+    const a = connect(base, 'beach', 'aaa');
+    await a.next(isWorld('w:snap'));
+    const snap = { ...world.sync.snapshot(), tick: world.sync.world.tick + 1000 };
+    assert.equal((await post('beach', { tick: snap.tick, writerId: 'tab', data: { tick: 5 } })).status, 400);
+    const from = a.msgs.length;
+    const ok = await post('beach', { tick: snap.tick, writerId: 'tab', data: snap });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), { adopted: true, tick: snap.tick });
+    await a.next(isWorld('w:snap'), 2000, from); // re-served at once
+    const doc = await (await fetch(`${http}/rooms/beach/snapshot`)).json();
+    assert.deepEqual([doc.writerId, doc.tick >= snap.tick], ['server', true]);
+    const older = await post('beach', { tick: 10, writerId: 'tab', data: { ...snap, tick: 10 } });
+    assert.deepEqual([older.status, (await older.json()).adopted], [409, false]);
+
+    // A room the server does not host: a handoff is a PUT.
+    assert.equal((await post('other', { tick: 3, writerId: 'tab', data: { x: 1 } })).status, 200);
+    assert.deepEqual((await (await fetch(`${http}/rooms/other/snapshot`)).json()).data, { x: 1 });
+    a.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('routes: past ADOPT_WINDOW_MS a hosted room keeps its world', async () => {
+  const { svc, base } = await start({ ADOPT_WINDOW_MS: '0' });
+  try {
+    const world = svc.roomHost()!.room('beach')!.world;
+    const snap = { ...world.sync.snapshot(), tick: world.sync.world.tick + 1000 };
+    const r = await fetch(`${base.replace('ws', 'http')}/rooms/beach/handoff`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tick: snap.tick, writerId: 'tab', data: snap }),
+    });
+    assert.deepEqual([r.status, (await r.json()).adopted], [409, false]);
+  } finally {
+    await svc.close({ save: false });
+  }
+});
