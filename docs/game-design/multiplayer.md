@@ -18,8 +18,15 @@ already knows (back after a blip, or from before a host migration) always get ba
 
 ## 8.2 Host migration
 
-When the host goes, every client waits a random 200 to 1200 ms and tries to claim the host id; the winner hosts and the
-rest reconnect. Peers that do not come back within 9 s are reported as left. The new host continues from its own world
+When the host goes, every client waits a random delay that depends on how good a host it would be (visible desktop
+100–500 ms, visible touch device 450–900 ms, hidden tab 950–1750 ms) and tries to claim the host id; the winner hosts
+and the rest reconnect.
+
+The host also hands over on purpose. Each client reports its host score (3 visible desktop, 2 visible touch, 0
+hidden). A host hidden for 5 s while a better tab is in the room, or a touch-device host with a desktop in the room for
+20 s (after its first minute as host), names the best client and lets go of the id; that client claims it at once and
+the others give it 0.7 s, then race by score. A host never hands over in its first 15 s (hidden) or minute (touch), and a tab that has not loaded the verified world scores 0, so it is never handed the room. A hidden host's timers are throttled, so coalesced relays wait up to a second and, after minutes in the background, heartbeats stop;
+so this keeps the room smooth when the host player switches tabs. Peers that do not come back within 9 s are reported as left. The new host continues from its own world
 state, bumps the edit sequence and hashes soon. Edits the old host never stamped are lost; edits made while
 reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 
