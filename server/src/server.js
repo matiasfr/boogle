@@ -7,6 +7,7 @@ import { ExpressPeerServer } from 'peer';
 import { WebSocketServer } from 'ws';
 import { createStore } from './store.ts';
 import { routeUpgrades } from './host/upgrade.ts';
+import { createRoomHost } from './host/rooms.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const STUN = 'stun:stun.l.google.com:19302';
@@ -52,6 +53,9 @@ export function loadConfig(env = process.env, overrides = {}) {
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
+    serverRooms: list(env.SERVER_ROOMS), // rooms this server hosts (docs/plans/server-host.md); empty: PeerJS only
+    maxPlayers: Number(env.MAX_PLAYERS ?? 8),
+    serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     log: (...a) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -158,7 +162,7 @@ function createCloudflareTurn(cfg) {
 
 /**
  * Build (but don't start listening) the service.
- * Returns { app, server, listen(port), close(), config }.
+ * Returns { app, server, listen(port), close({ save }), config, roomHost() }.
  */
 export function createService(cfg) {
   const app = express();
@@ -350,7 +354,8 @@ export function createService(cfg) {
     globalThis.setTimeout = (...a) => realSetTimeout(...a).unref();
   }
   app.use('/peerjs', peerApp);
-  routeUpgrades(server, { peerWss: () => peerWss, roomHost: null });
+  let roomHost = null; // made in listen(), once the store is ready
+  routeUpgrades(server, { peerWss: () => peerWss, roomHost: () => roomHost });
 
   // ---- errors ----
   app.use((req, res) => res.status(404).json({ error: 'not found' }));
@@ -368,15 +373,19 @@ export function createService(cfg) {
     app,
     server,
     config: cfg,
+    roomHost: () => roomHost,
     async listen(port = cfg.port) {
       await store.init();
+      roomHost ??= createRoomHost(cfg, store);
       await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(port, () => resolve());
       });
       return server.address().port;
     },
-    close() {
+    // The hosted rooms first (bye, save, close 1012), so index.js's shutdown needs nothing else.
+    async close({ save = true } = {}) {
+      await roomHost?.close({ save });
       return new Promise((resolve) => {
         const force = setTimeout(() => {
           server.closeAllConnections?.();
