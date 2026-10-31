@@ -15,6 +15,7 @@ window.RTCPeerConnection.prototype = RTC.prototype;
 
 const T = (window.T = {
   room: null,
+  score: Number(q.get('score') || 0), // with ?score=: this tab's host score (tests change it to force a handover)
   events: [],
   left: [],
   msgs: {},
@@ -32,6 +33,7 @@ const T = (window.T = {
         iceServers: q.get('stun') ? [{ urls: 'stun:stun.l.google.com:19302' }] : [],
         debug: Number(q.get('debug') || 0),
         ...(q.get('max') ? { maxPeers: Number(q.get('max')) } : {}),
+        ...(q.get('score') ? { hostScore: () => T.score } : {}),
       });
     } catch (e) {
       return { error: String(e.code), max: e.max };

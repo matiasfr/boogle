@@ -6,8 +6,8 @@ import { world, teleport } from '../physics/physics.js';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
-import { createPeerRoom } from '../net/peer-room.js';
-import { attachWorld, detachWorld, setSelfId } from '../world/sync.js';
+import { createPeerRoom, defaultHostScore } from '../net/peer-room.js';
+import { attachWorld, detachWorld, setSelfId, worldStatus } from '../world/sync.js';
 import { createSnaps } from './snaps.js';
 import { mergeFields, hostField } from './presence-fields.js';
 import { onFrame } from '../loop.js';
@@ -276,12 +276,16 @@ function scheduleRetry(e) {
   }, wait);
 }
 
+// Host choice (src/net/peer-room.js): a tab that doesn't hold the verified world yet would restart the room from the
+// last save if it took over, so it scores 0 and is never handed the room.
+const hostScore = () => (worldStatus().ready ? defaultHostScore() : 0);
+
 export async function connectRoom() {
   const roomId = getRoomId();
   let room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)
-    room = await createPeerRoom({ roomId, debug, ...(await serverOptions()) });
+    room = await createPeerRoom({ roomId, debug, hostScore, ...(await serverOptions()) });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);
     noteError(e, 'connect_failed');

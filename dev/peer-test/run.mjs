@@ -303,6 +303,22 @@ try {
   check('cap: a tab the room has seen before is not turned away', back === Y.selfId, JSON.stringify(back));
   await Promise.all([X, Y, Z, W, V].map((p) => p.ctx.close()));
 
+  // Host choice: a host whose score drops (a hidden tab) hands over to the best-scored client, and stays in the room.
+  const hoRoom = room + 'ho';
+  const H = await open('H', { in: hoRoom, query: '&score=3' }),
+    K = await open('K', { in: hoRoom, query: '&score=2' }),
+    L = await open('L', { in: hoRoom, query: '&score=3' });
+  await waitFor(() => seesAll([H, K, L]), 5000);
+  check('handover: the first page hosts', (await snap(H)).host);
+  await ev(H.page, () => (window.T.score = 0));
+  const tHo = Date.now();
+  const handedMs = await waitFor(async () => (await snap(L)).host, 20000); // a new host keeps the role 15 s
+  check('handover: a hidden host hands over to the best-scored client', handedMs >= 0, `${Date.now() - tHo} ms`);
+  const hosts3 = (await Promise.all([H, K, L].map(snap))).filter((s) => s.host).length;
+  check('handover: exactly one host after it', hosts3 === 1, `hosts=${hosts3}`);
+  check('handover: the old host is back in as a client', (await waitFor(() => seesAll([H, K, L]), 10000)) >= 0);
+  await Promise.all([H, K, L].map((p) => p.ctx.close()));
+
   const BD = [hostPage];
   const errs = await Promise.all(BD.map((p) => ev(p.page, () => window.T.errors)));
   check(
