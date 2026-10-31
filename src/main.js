@@ -5,7 +5,7 @@ import { precompile } from './render/precompile.js';
 import { createTerrainMesh } from './adapters/terrain.js';
 import { createWaterMesh } from './render/water-render.js';
 import { installStepHooks } from './physics/physics.js';
-import { stepPhysics } from './physics/engine.ts';
+import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.js';
 import { ball, resolveBallOwner, prepareBall } from './physics/ball.js';
 import { me, updateIntent } from './player/player.js';
@@ -80,4 +80,4 @@ window.boogle = { THREE, scene, camera, me, ball, net, remotes };
 
 start();
 splashStage(0.3, 0.45, 'Waking up the graphics');
-rendererReady.then(play, splashDone); // no graphics: the lobby says why
+Promise.all([rendererReady, physicsReady]).then(play, splashDone); // no graphics: the lobby says why

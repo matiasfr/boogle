@@ -67,7 +67,7 @@ onApplied((e, t, r) => {
 });
 
 // ---------------------------------------------------------------- physics
-const mushroomMat = material('mushroom');
+const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
 contactMaterial(mushroomMat, playerMat, { friction: 0, restitution: 0 });
 contactMaterial(mushroomMat, ballMat, { friction: 0.3, restitution: 0.95 });
 

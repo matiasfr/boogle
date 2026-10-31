@@ -4,7 +4,7 @@
 // publish. Loaded on first use by src/features/dino.js.
 import * as THREE from 'three';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.js';
-import { onPreStep, setMotion } from '../physics/engine.ts';
+import { onPreStep, setMotion, getMask } from '../physics/engine.ts';
 import { waterField } from '../physics/water-field.js';
 import { ball, claimBall } from '../physics/ball.js';
 import { scene } from '../render/scene.js';
@@ -56,7 +56,7 @@ function moveOrigin(x, z) {
 
 // Loads the triangles around world point (x, z) and the water there.
 function loadSurfaces(x, z) {
-  const n = gatherSurfaces(sim, x, z, origin.x, origin.z, me.body.collisionFilterMask);
+  const n = gatherSurfaces(sim, x, z, origin.x, origin.z, getMask(me.body));
   sim.loadSurfaces(n, waterField.surfaceAt(x, z) * UNITS);
 }
 

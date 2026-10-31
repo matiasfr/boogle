@@ -2,7 +2,7 @@
 // inside; the ball floats on the underground pond. Physics is stepped directly in the page (fast and repeatable).
 const STEP_ROUTE = `
   const { GROUP } = await import('/src/physics/physics.js');
-  const { stepFixed } = await import('/src/physics/engine.ts');
+  const { stepFixed, getMask } = await import('/src/physics/engine.ts');
   const { SEGMENTS } = await import('/src/pois/caves/network.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { groundHeight } = await import('/src/adapters/terrain.js');
@@ -12,7 +12,7 @@ const STEP_ROUTE = `
     [-36.5, -92.5], ...seg('mine', 'east').slice(1), [-17, -95]];
   const b = me.body;
   b.position.set(-31, groundHeight(-31, -69.5) + 1.2, -69.5);
-  b.previousPosition.copy(b.position);
+  b.previousPosition.set(b.position.x, b.position.y, b.position.z);
   b.velocity.set(0, 0, 0);
   let w = 0, best = Infinity, bestAt = 0, stuck = 0, wentIn = false, sank = 0;
   for (let k = 0; k < 60 * 120 && w < route.length; k++) {
@@ -24,13 +24,13 @@ const STEP_ROUTE = `
     if (k - bestAt > 240) { stuck++; w++; best = Infinity; bestAt = k; continue; }
     me.wish.set(dx / d, 0, dz / d);
     stepFixed();
-    if (!(b.collisionFilterMask & GROUP.SCENERY)) {
+    if (!(getMask(b) & GROUP.SCENERY)) {
       wentIn = true;
       sank = Math.max(sank, 0.45 + caveSd(b.position.x, b.position.y, b.position.z)); // > 0: centre below its rest height
     }
   }
   me.wish.set(0, 0, 0);
-  return { reached: w, of: route.length, stuck, wentIn, outside: !!(b.collisionFilterMask & GROUP.SCENERY), sank: +sank.toFixed(2) };`;
+  return { reached: w, of: route.length, stuck, wentIn, outside: !!(getMask(b) & GROUP.SCENERY), sank: +sank.toFixed(2) };`;
 
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
@@ -42,7 +42,7 @@ const THROWS = `
   for (let n = 0; n < 8; n++) {
     const a = n * 2.399, up = (n % 4) * 0.25 - 0.2;
     bb.position.set(NODES.hub.x + 1.5, NODES.hub.y + 1.6, NODES.hub.z + 1.5);
-    bb.previousPosition.copy(bb.position);
+    bb.previousPosition.set(bb.position.x, bb.position.y, bb.position.z);
     bb.velocity.set(Math.cos(a) * 28, up * 28, Math.sin(a) * 28);
     for (let k = 0; k < 180; k++) {
       if (k % 30 === 0) await new Promise((r) => setTimeout(r, 0));
@@ -51,7 +51,7 @@ const THROWS = `
     ends.push(+caveSd(bb.position.x, bb.position.y, bb.position.z).toFixed(2));
   }
   bb.position.set(POND.x, POND.level + 2, POND.z);
-  bb.previousPosition.copy(bb.position);
+  bb.previousPosition.set(bb.position.x, bb.position.y, bb.position.z);
   bb.velocity.set(0, 0, 0);
   for (let k = 0; k < 300; k++) {
     if (k % 30 === 0) await new Promise((r) => setTimeout(r, 0));

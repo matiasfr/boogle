@@ -11,7 +11,7 @@ const DROPS = `
   const b = me.body, clear = (body) => body.position.y - groundHeight(body.position.x, body.position.z);
   const put = (body, x, y, z, vx, vy, vz) => {
     body.position.set(x, y, z);
-    body.previousPosition.copy(body.position);
+    body.previousPosition.set(body.position.x, body.position.y, body.position.z);
     body.velocity.set(vx, vy, vz);
   };
   const spots = [];

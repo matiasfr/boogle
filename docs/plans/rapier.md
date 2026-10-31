@@ -72,6 +72,13 @@ through x, y, z (w) and `set()`.
 The same facade on Rapier, chosen at load. CCD on the ball, the player and thrown items. Scenarios run on both
 backends locally; CI stays on the default.
 
+Progress (2026-10-31): the backend runs behind `?physics=rapier` (`src/physics/backend-rapier.ts`, Rapier 0.19.3 in its
+own chunk); `BOOGLE_QUERY=physics=rapier npm run scenario -- <name>` runs any scenario on it. Passing on Rapier: smoke,
+interact, falls, lighthouse, the caves walk. Still failing: hotbar (the ball doesn't take a slot, The Boogler doesn't
+take the mango, a growing mushroom doesn't shove you) and caves (a hard throw ends up in the rock). Moving bodies never
+sleep (cannon had sleep off; a woken body skipped a step). Materials carry their own friction and restitution, which
+Rapier multiplies; ball-player contacts are softer than cannon's pair table (0 vs 0.45 restitution).
+
 ### 3. Tune the feel
 
 Side by side: jump arc, ground snapping, ball bounce and roll, mushroom bounce, the Boogler ride and launch, windmill

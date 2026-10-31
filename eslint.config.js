@@ -4,6 +4,7 @@ import tseslint from 'typescript-eslint';
 
 const peerjsBan = { name: 'peerjs', message: 'Use createPeerRoom from src/net/ (see src/net/README.md).' };
 const cannonBan = { name: 'cannon-es', message: 'Physics goes through src/physics/engine.ts (docs/plans/rapier.md).' };
+const rapierBan = { name: '@dimforge/rapier3d', message: cannonBan.message };
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage = 'src/world/rules/ is lockstep only: src/sim/, ../grid.js and sibling rules (see its README).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
@@ -54,11 +55,11 @@ export default [
   {
     files: ['src/**/*.{js,ts}'],
     ignores: ['src/net/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, cannonBan], patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, cannonBan, rapierBan], patterns: [syncBan] }] },
   },
   {
     files: ['src/world/game-world.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, cannonBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan, cannonBan, rapierBan] }] },
   },
   {
     files: ['src/world/rules/**/*.{js,ts}'],
@@ -85,7 +86,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [peerjsBan, cannonBan],
+          paths: [peerjsBan, cannonBan, rapierBan],
           patterns: [
             {
               group: ['./*', '!./*.css'],
@@ -124,9 +125,9 @@ export default [
       ],
     },
   },
-  // The physics facade is the one module that may import cannon-es (docs/plans/rapier.md).
+  // The physics backends are the only modules that import a physics library (docs/plans/rapier.md).
   {
-    files: ['src/physics/engine.ts'],
+    files: ['src/physics/backend-*.ts'],
     rules: { 'no-restricted-imports': ['error', { paths: [peerjsBan], patterns: [syncBan] }] },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule

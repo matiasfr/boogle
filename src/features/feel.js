@@ -67,8 +67,9 @@ onPreStep(() => {
   const vy = b.velocity.y;
   const surf = waterField.surfaceAt(b.position.x, b.position.z);
   const under = surf - (b.position.y + 0.35) > 0;
-  if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
+  // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
   if (vy <= 0) jumpActive = false;
+  if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
   if (!under) {
     let g = 1;
     if (vy < 0) g = JUMP.fallGravity;

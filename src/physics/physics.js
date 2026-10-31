@@ -17,9 +17,10 @@ import { waterField } from './water-field.js';
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
 
-export const groundMat = material('ground');
-export const playerMat = material('player');
-export const ballMat = material('ball');
+// Own values: what Rapier multiplies per contact (ground is neutral); the pair table below is what cannon uses.
+export const groundMat = material('ground', { friction: 1, restitution: 1 });
+export const playerMat = material('player', { friction: 0, restitution: 0 });
+export const ballMat = material('ball', { friction: 0.6, restitution: 0.55 });
 contactMaterial(playerMat, groundMat, { friction: 0, restitution: 0 });
 contactMaterial(playerMat, playerMat, { friction: 0, restitution: 0 });
 contactMaterial(ballMat, groundMat, { friction: 0.6, restitution: 0.55 });
