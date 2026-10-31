@@ -406,6 +406,9 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
   quiet for 90 s. Nosiness wears off at one per minute.
 - **Flags** set by answers fill later lines: `mom`, `idea`, `slogan`, plus `kicked` (count) and `recent` (last three
   small-talk topics, so they rotate).
+- **As the guest** (6.17) he is starstruck by "Mister Famous" whatever his mood: one of four short conversations (not
+  the one from last time; melon pitch, autograph, haggling, questions), every answer a short exclamation ("Hoo-hoo!",
+  "Ta-da!"). Unscored, though a present still counts.
 
 #### Riding and launch
 
