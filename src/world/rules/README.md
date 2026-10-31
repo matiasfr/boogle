@@ -97,9 +97,12 @@ op names.
 
 ## env keys
 
-| Key | Set by | Used by |
-|---|---|---|
-| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+| Key | Set by | Server | Used by |
+|---|---|---|---|
+| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+
+The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
+`server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.
 
 ## Template
 
