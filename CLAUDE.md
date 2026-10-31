@@ -16,4 +16,4 @@
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
 - `npm ci && npm run check` before committing (`check:full` per AGENTS.md, "Tests").
-- Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENTS.md, "Shipping"): imperative title; body says what changed and which DESIGN.md principle it serves.
+- Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENTS.md, "Shipping"): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.
