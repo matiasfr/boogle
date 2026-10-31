@@ -78,7 +78,12 @@ export async function startStack({ url = null, root: dir = root } = {}) {
 export const launch = () => {
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'];
   if (process.platform === 'darwin') args.push('--use-angle=metal');
-  else args.push('--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader');
+  // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
+  else
+    args.push(
+      ...['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
+    );
   return chromium.launch({ args });
 };
 
