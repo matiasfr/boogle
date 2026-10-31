@@ -85,6 +85,27 @@ export default {
     await g.eval(`document.querySelector('[data-act=leave]').click();`);
     const leave = await g.eval(`return document.querySelector('[data-act=leave]').textContent;`);
     t.check('the first Leave press asks "Leave the island?"', leave === 'Leave the island?', leave);
+
+    // 4b. Fullscreen: a real click toggles it. (The refused path, a gamepad press, can't be tested: page.evaluate is a
+    // user gesture to Playwright.)
+    const fsText = `return { text: document.querySelector('[data-act=fullscreen]')?.textContent, on: !!document.fullscreenElement };`;
+    await g.page.click('[data-act=fullscreen]');
+    await g.waitFor(`!!document.fullscreenElement`, { timeout: 3000 }).catch(() => -1);
+    await g.wait(0.2);
+    const fsOn = await g.eval(fsText);
+    await g.page.click('[data-act=fullscreen]');
+    await g.waitFor(`!document.fullscreenElement`, { timeout: 3000 }).catch(() => -1);
+    await g.wait(0.2);
+    const fsOff = await g.eval(fsText);
+    t.check(
+      'Fullscreen toggles the page in and out and the pause view stays open',
+      fsOn.on &&
+        fsOn.text === 'Exit fullscreen' &&
+        !fsOff.on &&
+        fsOff.text === 'Fullscreen' &&
+        (await g.eval(`return ${isOpen};`)),
+      JSON.stringify({ fsOn, fsOff }),
+    );
     await g.eval(`document.querySelector('[data-act=resume]').click();`);
     await g.wait(0.3);
     t.check('Resume closes it', !(await g.eval(`return ${isOpen};`)));
