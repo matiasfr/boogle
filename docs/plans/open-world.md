@@ -76,3 +76,35 @@ Its cost:
 
 Revisit when telemetry shows the WebGL 2 share is small and a WebGPU-only feature (GPU culling for a large world)
 becomes core rather than an extra.
+
+## Frame-loop audit (baseline 2026-10-31)
+
+Rerun this as the world grows; compare against these numbers, not against generic advice. Mac, real GPU:
+
+| Check | Result |
+|---|---|
+| `npm run hitches` (WebGPU, island tour, day to night) | 3,144 frames, median 16.7 ms, p99 16.8 ms; only hitches are the harness's pointer-lock click on "enter" |
+| `npm run perf` (WebGL 2, headless) | 128 draw calls (52 in the shadow pass), 224k triangles, 176 geometries, 64 programs |
+| Shared sim, idle island | 0.004 ms per tick on average |
+
+Already in place: clamped delta (`src/main.js`, 50 ms cap), fixed physics step with up to 4 substeps, one
+`RenderPipeline` (scene pass, then one output pass), frustum culling on by default.
+
+What to do as complexity increases, in order of expected payoff:
+
+1. **Measure on the weakest device first.** Run `hitches` and `perf` against an iPad or phone (`--url`); the Mac
+   numbers above say nothing about tile GPUs.
+2. **Shadows.** The shadow pass is about 40% of draw calls. Tighten the shadow camera to the player's surroundings and
+   cast shadows only from objects that need them.
+3. **Instancing** of repeated decor once draw calls grow (section 3).
+4. **Static matrices.** Only one file sets `matrixAutoUpdate = false`, so three.js recomputes every static decor
+   matrix each frame. Freeze static decor (`matrixAutoUpdate = false` plus one `updateMatrix()`) once object counts
+   grow.
+5. **Compute particles** behind `emit()` (PLAN.md, "Graphics quality tiers"), WebGPU only with the CPU pool as fallback.
+6. **Culling audit.** Eight files turn `frustumCulled` off (critters, sprites, sky, gifts, blob shadows, lighthouse,
+   precompile), mostly instanced or shader-moved meshes whose bounds three.js can't know. Fine while they are small; give
+   large ones real bounds (`computeBoundingSphere` over the instances) before the world grows.
+
+Doesn't apply: moving player movement or physics to GPU compute (cannon-es, collisions and the network need positions
+on the CPU, and readback costs more than it saves), and any "drop-in" loop rewrite (features plug in through the
+`onFrame` phases and orders in `src/loop.js`).
