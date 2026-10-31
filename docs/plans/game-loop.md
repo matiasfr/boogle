@@ -42,7 +42,8 @@ vectors: `vadd`, `vmult`, `vsub`, `calculateWorldAABB`), about 15 KB is three.js
 interact targets 2 KB, gulls and fireflies under 1 KB each).
 
 - Done: `hitches` reports heap per frame and GCs per tour step; `--allocs` lists allocation sites, charging library
-  allocations to the game code that called them. The profiler, the frame context and the fish hook allocate nothing.
+  allocations to the game code that called them. The profiler and the frame context allocate nothing; the fish hook lost its per-frame array and
+  iterators (still ~6 KB/frame, see the open lead below).
 - Next, ours: module-scope scratch objects and index loops in the remaining hooks above, and interact targets
   (`registerInteractable`) that reuse their objects.
 - Open lead (2026-10-31): the fish hook still allocates ~6 KB/frame with no object, array or iterator left in it, and

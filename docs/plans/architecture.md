@@ -36,7 +36,7 @@ The open questions in the two plans have working answers so work can start; chan
       under 1 KB/frame.
 - [ ] Baseline on the target devices (skipped for now, 2026-10-31: needs the devices in hand): `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
-- [ ] Unreliable presence channel (native `RTCDataChannel`, `maxRetransmits: 0`), before/after `npm run load`
+- [x] Unreliable presence channel (native `RTCDataChannel`, `maxRetransmits: 0`), before/after `npm run load`
       (open-world.md, section 1, "Until then").
 
 **Done when** a frame's cost is visible per hook on the live site and on the target devices.
