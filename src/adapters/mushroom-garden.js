@@ -37,14 +37,15 @@ export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
 
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
-function spotOk(i, j) {
+// dev/scenarios/world-inputs.mjs bakes it into src/world/home-land.json for the server, which has no renderer.
+export function canPlantAt(i, j) {
   const x = cellX(i),
     z = cellZ(j),
     g = heights[i][j];
   if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
   return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
 }
-const env = { canPlantAt: spotOk };
+const env = { canPlantAt };
 setEnv(env);
 
 // Open, dry land with room in the garden: where a seed may go in (the host runs this same check on mush.plant).

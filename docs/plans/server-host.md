@@ -369,7 +369,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     ([docs/plans/server-host.md](docs/plans/server-host.md))."
   - Verify: `npm run check`. Commit body names "Designed for drop-in, drop-out".
 
-- [ ] **2. The land as data (`src/world/home-land.json`).**
+- [x] **2. The land as data (`src/world/home-land.json`).**
   - `src/adapters/mushroom-garden.js`: rename `spotOk` to an exported `canPlantAt(i, j)` (same body); keep
     `const env = { canPlantAt }` and `setEnv(env)`.
   - `dev/scenarios/world-inputs.mjs`: in `READ`, also import `/src/adapters/mushroom-garden.js`, fail the check
