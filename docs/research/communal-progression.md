@@ -55,7 +55,7 @@ The passing streak deserves a second look because the codebase already tried a v
 
 ## Keep the ball, shrink the shovel, and make the Boogler everyone's friend
 
-`src/` is about **14,200 lines**. The together engines are the ball with its slapstick layer, the honk chord and ping, and shared sand and water editing. The largest single cluster, **the Boogler plus island gifts at about 4,100 lines (29%)**, runs on personal localStorage progression rather than communal progression ([codebase inventory](notes/communal-progression/codebase-inventory.md)). The verdicts below follow from the two questions in the brief: does this make the moment better when everyone is online, and can it carry the island's progress without grind or precision?
+`src/` is about **14,200 lines**. The together engines are the ball with its slapstick layer, the honk chord and ping, and shared sand and water editing. The largest single cluster, **the Boogler plus island gifts at about 4,100 lines (29%)**, runs on personal localStorage progression rather than communal progression (a codebase inventory at the time, since deleted as stale; see git history). The verdicts below follow from the two questions in the brief: does this make the moment better when everyone is online, and can it carry the island's progress without grind or precision?
 
 | System (approx. lines) | Verdict | Reason | Principle |
 |---|---|---|---|
