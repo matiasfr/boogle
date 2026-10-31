@@ -29,14 +29,14 @@ export default {
     const hasHandle = await A.eval(`return !!window.boogle.sync;`);
     if (!t.check('the build has the debug handle (window.boogle.sync)', hasHandle)) return;
     const { modes, ok, host, client } = await roles(A, B);
-    if (!t.check('one host and one client, both holding the world', ok, modes.join())) return;
+    if (!t.check("both tabs hold the server's world", ok, modes.join())) return;
 
-    // The client tosses a coconut at a beach cell west of the court; the host sees the item.
+    // One tab tosses a coconut at a beach cell west of the court; the other sees the item.
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
     const item = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
     const sent = await client.eval(`return ${toss(0, 'Date.now() % 1000')};`);
     const landed = await host.waitFor(item, { timeout: 60000 });
-    t.check("the client's toss reaches the host", landed >= 0, `${landed} ms; sent ${sent}`);
+    t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 
     // The client throws the ball: it takes ownership and the host watches it fly.
     const ballAt = `(() => { const p = window.boogle.ball.disp.p; return [p.x, p.y, p.z]; })()`;
@@ -60,7 +60,7 @@ export default {
     const hashes = await hashesAtOneTick(host, client);
     t.check('both tabs hash every state the same at one tick', hashes.same, hashes.detail);
 
-    // And sync's own check (the host broadcasts per-state hashes every 2 s) ran on the client, without a mismatch.
+    // And sync's own check (the server broadcasts per-state hashes every 2 s) ran on the client, without a mismatch.
     // A long wait: on a CI runner's software WebGPU (the live-site run in smoke.yml) two tabs draw a few frames a
     // second and the client can take minutes to reach a hashed tick. It returns as soon as the check runs.
     const ok0 = (await client.eval(`return window.boogle.sync.worldStatus().hashOk;`)) || 0;

@@ -1,6 +1,11 @@
 # Replace the app name (must be globally unique): fly launch --no-deploy --copy-config --name <yours>
 # (or leave it and set the FLY_APP repo variable for .github/workflows/deploy-server.yml).
 app = "boogle-server"
+# A graceful stop says bye to every tab, saves every room and closes the sockets (server/src/index.js on SIGTERM).
+kill_signal = "SIGTERM"
+kill_timeout = 10
+# TODO: pick the region nearest most players. A volume is region-bound: moving means a new volume in the new region,
+# copying /data/*.json across (fly ssh sftp), then switching primary_region and the mount.
 primary_region = "iad"
 
 # Built from the repo root: flyctl deploy . --config server/fly.toml --dockerfile server/Dockerfile (server/Dockerfile).
@@ -10,6 +15,9 @@ primary_region = "iad"
 [env]
   PORT = "9000"
   DATA_DIR = "/data"
+  # The server hosts every room and runs its world (docs/plans/server-host.md); idle rooms unload after ROOM_IDLE_MS.
+  SERVER_ROOMS = "*"
+  NODE_OPTIONS = "--max-old-space-size=384"
   # ALLOWED_ORIGINS (default *), TURN_* and REPORT_TOKEN are secrets: fly secrets set ... (server/README.md)
 
 # Must match DATA_DIR above.
@@ -33,4 +41,4 @@ primary_region = "iad"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"

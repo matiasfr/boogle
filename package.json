@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "postinstall": "npm --prefix server ci --no-audit --no-fund",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",

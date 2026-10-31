@@ -10,7 +10,7 @@ export default {
     const ready = `[...window.boogle.remotes.values()].some((r) => r.avatar)`;
     const connected = await B.waitFor(`window.boogle.net.room && ${ready}`, { timeout: 30000 });
     t.check('the players see each other', connected >= 0 && (await A.waitFor(ready, { timeout: 15000 })) >= 0);
-    const hostA = await A.eval(`return window.boogle.net.room.isHost();`);
+    const hostA = await A.eval(`return window.boogle.net.room.isLead();`); // the lead runs the Boogler
     const [host, client] = hostA ? [A, B] : [B, A];
 
     // Distance between what the latest presence from the other tab says and where this tab draws it.

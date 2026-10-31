@@ -7,9 +7,8 @@ import { addBody, removeBody } from '../physics/engine.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
 import { me } from '../player/player.js';
 import { renderPeople, dom } from '../player/hud.js';
-import { defaultHostScore } from '../net/peer-room.ts';
-import { createRoom, type Room } from '../net/room.ts';
-import { attachWorld, detachWorld, setPid, setSelfId, worldStatus } from '../world/sync.ts';
+import { createWsRoom, type Room } from '../net/ws-room.ts';
+import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
@@ -291,27 +290,6 @@ function setNet(state: string) {
   }
 }
 
-// Our own server (see server/README.md): set VITE_BOOGLE_SERVER=https://your-app.fly.dev at build/dev time.
-// Without it, PeerJS's free public signaling server and default STUN are used (fine for trying things out).
-async function serverOptions() {
-  const base = import.meta.env.VITE_BOOGLE_SERVER;
-  if (!base) return {};
-  const url = new URL(base);
-  const secure = url.protocol === 'https:';
-  const signal = { host: url.hostname, port: Number(url.port) || (secure ? 443 : 80), path: '/peerjs', secure };
-  try {
-    const res = await fetch(new URL('/ice', url));
-    const { iceServers } = await res.json();
-    net.turn =
-      Array.isArray(iceServers) &&
-      iceServers.some((s: { urls?: string | string[] }) => [s?.urls].flat().some((u) => /^turns?:/.test(String(u))));
-    return { signal, iceServers };
-  } catch (e) {
-    console.warn('[boogle] could not fetch ICE servers, using defaults:', e);
-    return { signal };
-  }
-}
-
 // Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
 // unless the browser can't do WebRTC at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer: ReturnType<typeof setTimeout> | 0 = 0;
@@ -332,10 +310,6 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// Host choice (src/net/peer-room.ts): a tab that doesn't hold the verified world yet would restart the room from the
-// last save if it took over, so it scores 0 and is never handed the room.
-const hostScore = () => (worldStatus().ready ? defaultHostScore() : 0);
-
 // Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.ts).
 function dropOldSave(room: string) {
   try {
@@ -352,18 +326,15 @@ export async function connectRoom() {
   setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
   let room: Room;
   try {
-    const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (or 3 for PeerJS internals)
-    // ?p2p skips the server for other rooms (?room=dev&p2p); the main room is hosted there, so it can't (plan, Q8).
-    const p2p = new URLSearchParams(location.search).has('p2p');
-    if (p2p && getRoomId() === DEFAULT_ROOM)
-      console.warn('[boogle] ?p2p is for other rooms; the main room joins the server');
-    const base = import.meta.env.VITE_BOOGLE_SERVER;
-    room = await createRoom({
+    const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (2: every reconnect)
+    // Our server hosts every room (server/README.md): VITE_BOOGLE_SERVER, set by deploy.yml, and by the dev server's
+    // own in-process one in `npm run dev` (vite.config.js).
+    const server = import.meta.env.VITE_BOOGLE_SERVER;
+    if (!server) throw Object.assign(new Error('VITE_BOOGLE_SERVER is not set'), { code: 'no_server' });
+    room = await createWsRoom({
       roomId,
+      server,
       debug,
-      hostScore,
-      server: base && !(p2p && getRoomId() !== DEFAULT_ROOM) ? base : null,
-      peerOptions: serverOptions,
       build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12),
     });
   } catch (e) {

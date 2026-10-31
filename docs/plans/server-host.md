@@ -561,10 +561,16 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
     (server answers `peer`).
 
-- [ ] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
+- [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
   `src/features/telemetry.js`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
+  - Done. Deviations: the loaded-room cap is `MAX_HOSTED_ROOMS` (default 20), since `MAX_ROOMS` already caps saved
+    rooms (1000); the server's packages install with the root `npm ci` (a `postinstall`), so `vite.config.js` and the
+    harness can import it; `ws-room` got a test seam, `pause(ms)`, because Chromium's offline mode spares localhost
+    and `reconnect-edit` (now: a tab drops, tosses while reconnecting, the toss lands) needs a real drop. The scenarios'
+    `roles()` now means "both tabs follow the server", with the lead tab first. `npm run load` and
+    `dev/peer-test/run.mjs` still drive peer-room until step 11 deletes them.
   - Server: `SERVER_ROOMS=*` (any valid id; rooms created on first join, unloaded when idle and saved, `MAX_ROOMS`
     default 20, refusal `{ t:'full' }` with a room-count reason past it). A test in `server/test/` covers create,
     unload with save, reload from disk and the room cap.
@@ -594,7 +600,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     tabs. After the deploy: `/rooms/beach/host` reports a rising tick, two browsers on boogle.club both live, `fly
     logs` clean, the next day's `/reports` free of new `connect` failures.
 
-- [ ] **10. (merged into 9.)** The old "turn it on" step ships with the switch.
+- [x] **10. (merged into 9.)** The old "turn it on" step ships with the switch.
 
 - [ ] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
   Owner-gated. Ships once step 9 has been live a day with clean `/reports`.
