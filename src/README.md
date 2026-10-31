@@ -13,7 +13,7 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 - `netplay/`: game networking on top of the room: `net.js` (presence, remote players, interpolation) and its pure
   helpers (snapshot buffer, presence fields, build tags, report scrubbing, smooth shared time).
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...).
-- `adapters/`: the game side of lockstep state: gifts, mushroom garden, prototype flags. They submit edits and react
+- `adapters/`: the game side of lockstep state: gifts, mushroom garden. They submit edits and react
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
   modules must import it. `terrain.js` is left here but is static render now: the fixed ground's heights and mesh.
 - `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).

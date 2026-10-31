@@ -45,7 +45,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Water | none | retired 2026-10-30; `water` is a stub state |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
-| Prototype flags | Lockstep | state `proto` |
+| Prototype flags | none | retired 2026-10-31; `proto` is a stub state |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |

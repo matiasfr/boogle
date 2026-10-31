@@ -1,6 +1,6 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (mushrooms, items, prototype flags) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
+Everything players can change and everyone must agree on (mushrooms, items) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
 
 ## Pieces
 

@@ -1,4 +1,4 @@
-// Blob shadows (prototype flag `shadows`): soft dark discs under players and the ball at night, when the shadow pass
+// Blob shadows: soft dark discs under players and the ball at night, when the shadow pass
 // is off, so you can still read where you and the ball will land. They shrink as the body rises above the ground.
 // Serves DESIGN.md 10 (slapstick needs readable jumps and catches). Cosmetic, local.
 import * as THREE from 'three';
@@ -10,7 +10,6 @@ import { groundHeight } from '../adapters/terrain.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
-import { proto } from '../adapters/proto-flags.js';
 
 const OPACITY = 0.4;
 const MAX = 16;
@@ -27,7 +26,7 @@ const m4 = new THREE.Matrix4();
 
 onFrame(
   () => {
-    const night = proto.on('shadows') && !skyNow.keyLight; // no key light: no shadow pass
+    const night = !skyNow.keyLight; // no key light: no shadow pass
     blobs.visible = night;
     if (!night) return;
     let n = 0;

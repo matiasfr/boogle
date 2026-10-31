@@ -1,4 +1,4 @@
-// Fish (prototype flag `fish`), cosmetic tier: a school that lives in water deep enough to swim in (the sea or the
+// Fish, cosmetic tier: a school that lives in water deep enough to swim in (the sea or the
 // cave pond: it reads the shared water surface), with simple boids and a
 // steer toward deeper water; it scatters when the ball splashes in or a player swims through. One instanced mesh, the
 // tail wiggle is in the material's positionNode. Local Math.random is fine: nothing here is read by the sim.
@@ -23,7 +23,6 @@ import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
 import { patchNode } from '../render/material-patch.js';
-import { proto } from '../adapters/proto-flags.js';
 
 const FISH = {
   count: 36,
@@ -98,7 +97,7 @@ let lastBallY = 0;
 
 onFrame(
   ({ dt }) => {
-    fish.visible = proto.on('fish') && !!home;
+    fish.visible = !!home;
     if (!fish.visible || dt <= 0) return;
     // scares: a ball that just hit the water near the surface, players swimming
     const scares = [];

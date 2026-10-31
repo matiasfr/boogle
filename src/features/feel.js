@@ -1,9 +1,9 @@
-// Controller feel pass (prototype flag `feel`). The body setup stays as it is (dynamic cannon body, steered horizontal
+// Controller feel pass. The body setup stays as it is (dynamic cannon body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/physics/physics.js feelTune), so mushroom bounces chain
+//     an upward bounce instead of replacing it (src/physics/physics.js), so mushroom bounces chain
 //   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
-//   - braking: a harder brake than turn (feelTune.brakeAccel) with a dust skid
+//   - braking: a harder brake than turn (src/physics/physics.js) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk
@@ -13,12 +13,11 @@ import { onFrame } from '../loop.js';
 import { clamp } from '../math.js';
 import { emit } from '../render/particles.js';
 import * as CANNON from 'cannon-es';
-import { world as physics, feelTune, GROUP } from '../physics/physics.js';
+import { world as physics, GROUP } from '../physics/physics.js';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.js';
-import { proto } from '../adapters/proto-flags.js';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const JUMP = {
@@ -28,7 +27,6 @@ const JUMP = {
   apexSpeed: 1.6, // m/s: "near the top"
 };
 const MOVE = {
-  brakeAccel: 115, // m/s² when pushing against your own velocity on the ground (turning stays at 70)
   snapMaxGap: 0.45, // m: ground this close below the feet pulls you back down after a crest
   skidSpeed: 4, // m/s: braking faster than this kicks up dust
 };
@@ -51,8 +49,6 @@ const FLOP = {
 };
 const KINDS = ['splat', 'stomp', 'bonk'];
 
-const on = () => proto.on('feel');
-
 // ---------------------------------------------------------------- physics: jump shape, snap
 const ray = { from: new CANNON.Vec3(), to: new CANNON.Vec3(), hit: new CANNON.RaycastResult() };
 const floorGap = (b) => {
@@ -65,11 +61,8 @@ const floorGap = (b) => {
 };
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
 physics.addEventListener('preStep', () => {
-  const enabled = on();
-  feelTune.jumpAdd = enabled;
-  feelTune.brakeAccel = enabled ? MOVE.brakeAccel : 70;
   const b = me.body;
-  if (!enabled || !b) return;
+  if (!b) return;
   const vy = b.velocity.y;
   const surf = waterField.surfaceAt(b.position.x, b.position.z);
   const under = surf - (b.position.y + 0.35) > 0;
@@ -96,7 +89,7 @@ const startFlop = (kind, ms) => {
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
 };
 addPresenceField('fl', () =>
-  on() && flop && flop.until > performance.now()
+  flop && flop.until > performance.now()
     ? [KINDS.indexOf(flop.kind), Math.round(flop.until - performance.now())]
     : null,
 );
@@ -145,14 +138,6 @@ function stateOf(a) {
 
 function spring(a, dt, t, flopOf, isMe) {
   const s = stateOf(a);
-  if (!on()) {
-    a.scale.set(1, 1, 1);
-    a.rotation.x = a.rotation.z = 0;
-    s.px = a.position.x;
-    s.py = a.position.y;
-    s.pz = a.position.z;
-    return;
-  }
   const k = 1 - Math.exp(-dt * 20); // smooth the velocity estimate (remote positions are interpolated)
   const nvx = (a.position.x - s.px) / dt,
     nvy = (a.position.y - s.py) / dt,

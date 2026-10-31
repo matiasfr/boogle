@@ -1,4 +1,4 @@
-// Gulls (prototype flag `gulls`), cosmetic tier: a few gulls idle and peck on the sand, burst into the air when a
+// Gulls, cosmetic tier: a few gulls idle and peck on the sand, burst into the air when a
 // player runs at them or the ball lands nearby, circle for a while and resettle somewhere quiet. Two instanced meshes
 // (bodies, wings). Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
@@ -10,7 +10,6 @@ import { waterField } from '../physics/water-field.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
-import { proto } from '../adapters/proto-flags.js';
 
 const GULLS = {
   count: 7,
@@ -97,7 +96,7 @@ let lastBallY = 0;
 
 onFrame(
   ({ dt, elapsed }) => {
-    const on = proto.on('gulls') && G.length > 0;
+    const on = G.length > 0;
     bodies.visible = wings.visible = on;
     if (!on || dt <= 0) return;
     const th = threats();

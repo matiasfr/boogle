@@ -27,7 +27,7 @@ Every feature passes DESIGN.md's toy test first: "would someone fiddle with this
 
 ## 3. Build behind a proto flag, play it on the live site
 
-`src/adapters/proto-flags.js` already lets the host's URL turn features on for the whole room. Each tech-tree page or direction slice goes in behind a flag (`?proto=stall`). That way:
+The old room-wide prototype flags (`src/adapters/proto-flags.js`) were removed 2026-10-31; a new slice brings back a small URL flag of its own. Each tech-tree page or direction slice goes in behind a flag (`?proto=stall`). That way:
 
 - it ships with `npm run ship` (a self-merging PR once CI is green) without changing the default game;
 - the group plays it on purpose;

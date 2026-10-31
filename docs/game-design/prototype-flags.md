@@ -1,9 +1,9 @@
 # 6.16 Prototype flags
 
-Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies`, `shadows`, all on by default.
-`?proto=0` turns all off, `?off=feel,gulls` turns some off. The host's URL wins: the bitmask is the Lockstep state
-`proto` (no ops), adopted by joiners with the snapshot. Files: [src/sim/proto.js](../../src/sim/proto.js),
-[src/world/rules/proto.js](../../src/world/rules/proto.js), [src/adapters/proto-flags.js](../../src/adapters/proto-flags.js).
+Removed 2026-10-31. The features they gated (controller feel, fish, gulls, fireflies, blob shadows) are always on, and
+`?proto=` / `?off=` do nothing. The `proto` state key stays in `RULES` as a stub with no ops
+([src/world/rules/proto.js](../../src/world/rules/proto.js)): it keeps any bitmask a save or an older host sends and
+hashes it as older builds do, so mixed-build rooms agree; nothing reads it.
 
 ---
 

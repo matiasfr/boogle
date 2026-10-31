@@ -190,8 +190,7 @@ now: Date.now, saveMs: cfg.serverSaveMs })` where:
 - `env.canPlantAt` comes from `land.js`. A server test (step 7) submits every op's `edits` generator through the world
   host and requires each op to be accepted at least once, so a future validate that needs a new `env` fact fails CI
   until the server provides it (the rules README's env table gains a "Server" column).
-- Prototype flags: after the first `onSnapshot`, `rules.proto.proto.set(parseFlags('?' + cfg.protoFlags))` (from
-  `src/sim/proto.js`), mirroring `src/adapters/proto-flags.js`.
+- Prototype flags: removed 2026-10-31; `proto` is a stub state the server leaves alone.
 
 **Joining (`hosted-room.js`).** On a `/room/<id>` upgrade: reject with `bad` unless the id is in `SERVER_ROOMS`
 (then `peer`), `self` passes `okId` and is not `SERVER_ID`, and the protocol is `boogle.1`; check `Origin` against

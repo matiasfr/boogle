@@ -77,9 +77,7 @@ test('every op has an accepted edit, and the same edits give the same state on t
 test('a snapshot round-trips through JSON and stays in step for 50 ticks', () => {
   const a = peer();
   play(a);
-  a.rules.proto.proto.set({ mask: 0b101 }); // proto has no ops: the host's URL sets it
   const b = peer();
-  assert.notEqual(b.s.stateHashes().proto, a.s.stateHashes().proto);
   assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
