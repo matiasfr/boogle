@@ -365,7 +365,7 @@ glance".
       are `deepEqual`, the files come back sorted by path, and `imports` resolve between the fixtures.
   - Verify: `node --test test/atlas.test.mjs` (well under a second), then `npm run check`.
 
-- [ ] **3. `npm run atlas` CLI.** Create `dev/atlas/cli.mjs`. Default mode: `extractFacts({ root, git: true })`, write
+- [x] **3. `npm run atlas` CLI.** Create `dev/atlas/cli.mjs`. Default mode: `extractFacts({ root, git: true })`, write
   `.look/atlas/facts.json`, and print one summary line (files, lines, ops, states, presence keys, host fields, message
   types, actions, hooks, routes, parse errors). `--json` prints the facts to stdout. Add
   `"atlas": "node dev/atlas/cli.mjs"` to `package.json` scripts. Every mode exits 0 unless the CLI itself crashes.
