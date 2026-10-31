@@ -255,8 +255,9 @@ function build() {
     side: THREE.DoubleSide,
     fog: false,
   });
-  // uv().y: 1 at the lamp, 0 at the far end. Warm lamp colour, in linear.
-  beamMat.colorNode = vec4(1.0, 0.79, 0.32, pow(uv().y, 1.6).mul(uOn).mul(0.42));
+  // uv().y: 1 at the lamp, 0 at the far end. Warm lamp colour.
+  const warm = new THREE.Color().setRGB(1, 0.9, 0.6, THREE.SRGBColorSpace);
+  beamMat.colorNode = vec4(warm.r, warm.g, warm.b, pow(uv().y, 1.6).mul(uOn).mul(0.42));
   beams = new THREE.Group();
   for (const dir of [1, -1]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(6, 70, 20, 1, true), beamMat);

@@ -4,7 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import { onFrame, onStart } from '../loop.js';
-import { scene } from '../render/scene.js';
+import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { CELL, HALF } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { skyDebug } from '../render/sky.js';
@@ -14,8 +14,8 @@ import { proto } from '../adapters/proto-flags.js';
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),
   col = new Float32Array(FLIES.count * 3);
-const posAttr = new THREE.InstancedBufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage);
-const colAttr = new THREE.InstancedBufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage);
+const posAttr = dynAttr(pos, 3);
+const colAttr = dynAttr(col, 3);
 const glow = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
@@ -33,15 +33,9 @@ const fliesMat = new THREE.PointsNodeMaterial({
   transparent: true,
   depthWrite: false,
   blending: THREE.AdditiveBlending,
-  alphaToCoverage: false,
 });
-fliesMat.positionNode = instancedDynamicBufferAttribute(posAttr);
 fliesMat.colorNode = texture(glow).mul(vec4(instancedDynamicBufferAttribute(colAttr), 1));
-const flies = new THREE.Sprite(fliesMat);
-flies.count = FLIES.count;
-flies.frustumCulled = false;
-flies.visible = false;
-scene.add(flies);
+const flies = instancedSprite(fliesMat, posAttr, FLIES.count);
 
 const F = [];
 onStart(() => {

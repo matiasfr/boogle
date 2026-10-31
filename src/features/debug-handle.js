@@ -7,7 +7,7 @@
 // Read-only for the sim: the tick hook only hashes. Serves "Determinism from day one" (a live desync gets caught).
 import { onStart } from '../loop.js';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.js';
-import { renderer } from '../render/scene.js';
+import { gfx } from '../render/scene.js';
 import { grabBall, throwBall } from '../physics/ball.js';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting
@@ -18,7 +18,7 @@ onStart(() => {
     if (marks.has(t)) marks.set(t, stateHashes());
   });
   if (!window.boogle) return;
-  window.boogle.gfx = renderer.backend?.isWebGPUBackend ? 'webgpu' : 'webgl2';
+  window.boogle.gfx = gfx();
   window.boogle.sync = {
     world,
     worldStatus,

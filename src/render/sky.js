@@ -28,6 +28,8 @@ import {
   step,
   sqrt,
   Discard,
+  If,
+  time,
   positionGeometry,
 } from 'three/tsl';
 import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.js';
@@ -203,7 +205,6 @@ const skyU = {
   uMoonGlow: uniform(0),
   uStars: uniform(0),
   uStarRot: uniform(new THREE.Matrix3()),
-  uTime: uniform(0),
 };
 
 const hash = Fn(([p0]) => {
@@ -218,23 +219,26 @@ const skyColor = Fn(() => {
   col.addAssign(skyU.uGlow.mul(pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3))));
   const m = max(dot(d, skyU.uMoon), 0);
   col.addAssign(vec3(0.5, 0.58, 0.88).mul(pow(m, 40)).mul(skyU.uMoonGlow));
-  // Stars: one jittered point per lit cell of a 3D grid, branch-free (no uniform control flow to worry about).
-  const q = skyU.uStarRot.mul(d).mul(150);
-  const c = floor(q);
-  const h = hash(c);
-  const o = vec3(hash(c.add(1.7)), hash(c.add(3.1)), hash(c.add(5.3))).sub(0.5);
-  const dd = length(fract(q).sub(0.5).sub(o.mul(0.5)));
-  const tw = sin(skyU.uTime.mul(h.mul(4).add(1.3)).add(h.mul(91)))
-    .mul(0.3)
-    .add(0.7);
-  const bright = h.sub(0.991).div(0.009).mul(0.55).add(0.45);
-  const star = tslSmoothstep(0.04, 0.24, dd).oneMinus().mul(bright).mul(tw).mul(skyU.uStars);
-  col.addAssign(
-    vec3(1, 0.97, 0.9)
-      .mul(star)
-      .mul(tslSmoothstep(0, 0.18, d.y))
-      .mul(step(0.991, h)),
-  );
+  // Stars: one jittered point per lit cell of a 3D grid. Skipped by day; the branch is on a uniform and holds no
+  // texture sample or derivative, so it is safe in WGSL.
+  If(skyU.uStars.greaterThan(0.001), () => {
+    const q = skyU.uStarRot.mul(d).mul(150);
+    const c = floor(q);
+    const h = hash(c);
+    const o = vec3(hash(c.add(1.7)), hash(c.add(3.1)), hash(c.add(5.3))).sub(0.5);
+    const dd = length(fract(q).sub(0.5).sub(o.mul(0.5)));
+    const tw = sin(time.mul(h.mul(4).add(1.3)).add(h.mul(91)))
+      .mul(0.3)
+      .add(0.7);
+    const bright = h.sub(0.991).div(0.009).mul(0.55).add(0.45);
+    const star = tslSmoothstep(0.04, 0.24, dd).oneMinus().mul(bright).mul(tw).mul(skyU.uStars);
+    col.addAssign(
+      vec3(1, 0.97, 0.9)
+        .mul(star)
+        .mul(tslSmoothstep(0, 0.18, d.y))
+        .mul(step(0.991, h)),
+    );
+  });
   return vec4(min(col, 1), 1);
 });
 
@@ -265,8 +269,7 @@ function makeMoonMat(map) {
   return mat;
 }
 
-let moonMat = null,
-  sunGroup = null,
+let sunGroup = null,
   sunFace = null,
   sunRays = null,
   moonGroup = null,
@@ -285,9 +288,8 @@ export function createSky() {
   sunFace.position.z = 1;
   sunGroup.add(sunRays, sunFace);
 
-  moonMat = makeMoonMat(moonFaceTexture());
   moonGroup = new THREE.Group();
-  moonGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(MOON_R * 2, MOON_R * 2), moonMat));
+  moonGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(MOON_R * 2, MOON_R * 2), makeMoonMat(moonFaceTexture())));
 
   for (const g of [sunGroup, moonGroup])
     g.traverse((o) => {
@@ -307,7 +309,7 @@ const sunDir = new THREE.Vector3(),
   starQ = new THREE.Quaternion(),
   starM = new THREE.Matrix4();
 let clockMs = null;
-const debug = { frac: null, phase: null };
+const debug = { frac: null, phase: null, noShadowPass: false };
 
 // Smooth the 10 Hz world tick into a continuous clock (and jump if it moves a lot, e.g. after loading a snapshot).
 function worldMs(dt) {
@@ -343,18 +345,16 @@ export function updateSky(dt, elapsed) {
   const moonUp = smoothstep(-0.04, 0.12, moonY);
 
   // Sky colours.
-  const u = skyU;
-  u.uTop.value.lerpColors(C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.55);
+  skyU.uTop.value.lerpColors(C.nightTop, C.dayTop, day).lerp(C.setTop, warm * 0.55);
   horizon.lerpColors(C.nightHorizon, C.dayHorizon, day).lerp(C.setHorizon, warm * 0.75);
-  u.uHorizon.value.copy(horizon);
-  u.uSun.value.copy(sunDir);
-  u.uMoon.value.copy(moonDir);
-  u.uGlow.value.lerpColors(C.glow, C.setGlow, warm).multiplyScalar(smoothstep(-0.2, 0.0, sunY));
-  u.uMoonGlow.value = 0.35 * s.illum * moonUp * night;
-  u.uStars.value = smoothstep(0.35, 0.95, night);
+  skyU.uHorizon.value.copy(horizon);
+  skyU.uSun.value.copy(sunDir);
+  skyU.uMoon.value.copy(moonDir);
+  skyU.uGlow.value.lerpColors(C.glow, C.setGlow, warm).multiplyScalar(smoothstep(-0.2, 0.0, sunY));
+  skyU.uMoonGlow.value = 0.35 * s.illum * moonUp * night;
+  skyU.uStars.value = smoothstep(0.35, 0.95, night);
   starQ.setFromAxisAngle(AXIS, -s.sunAngle); // stars turn with the sky
-  u.uStarRot.value.setFromMatrix4(starM.makeRotationFromQuaternion(starQ));
-  u.uTime.value = elapsed;
+  skyU.uStarRot.value.setFromMatrix4(starM.makeRotationFromQuaternion(starQ));
   scene.fog.color.copy(horizon);
 
   // Key light: the sun by day, the moon by night (brighter the fuller it is). It also casts the shadows.
@@ -365,7 +365,8 @@ export function updateSky(dt, elapsed) {
   if (byMoon) sun.color.copy(L.moon);
   else sun.color.copy(L.sunDay).lerp(L.sunSet, warm);
   sun.intensity = byMoon ? moonI : sunI;
-  sun.shadow.autoUpdate = sun.intensity > 0.01; // no key light, no shadow pass
+  state.keyLight = sun.intensity > 0.01;
+  sun.shadow.autoUpdate = state.keyLight && !debug.noShadowPass; // no key light, no shadow pass
 
   if (hemi) {
     hemi.color.copy(L.hemiSkyNight).lerp(L.hemiSkyDay, day);
@@ -390,9 +391,8 @@ export function updateSky(dt, elapsed) {
     cm.emissiveIntensity = lerp(0.05, 0.45, day);
   }
 
-  const w = seaU;
-  w.uLight.value.lerpColors(C.waterNight, C.waterDay, day).lerp(C.waterSet, warm * 0.6);
-  w.uSpecCol.value.copy(sun.color).multiplyScalar(byMoon ? 0.5 + 0.5 * s.illum : 1);
+  seaU.uLight.value.lerpColors(C.waterNight, C.waterDay, day).lerp(C.waterSet, warm * 0.6);
+  seaU.uSpecCol.value.copy(sun.color).multiplyScalar(byMoon ? 0.5 + 0.5 * s.illum : 1);
 
   // Billboards.
   placeBillboard(sunGroup, sunDir);
@@ -417,13 +417,18 @@ export function updateSky(dt, elapsed) {
 
 // Console handle (window.boogle.sky): sky.state, sky.preview(0.55) for sunset, sky.preview(0.8, 0.5) for a full moon at
 // night, sky.preview(null) to follow the world clock again. Local only.
-const state = { frac: 0, phase: 0, illum: 0, day: 1, sunDir, moonDir };
-// Read-only view of the current sky for other modules: day (0 night .. 1 day), frac, phase, illum.
+const state = { frac: 0, phase: 0, illum: 0, day: 1, keyLight: true, sunDir, moonDir };
+// Read-only view of the current sky for other modules: day (0 night .. 1 day), frac, phase, illum, keyLight (a sun or
+// moon bright enough to cast shadows).
 export const skyNow = state;
 export const skyDebug = {
   state,
   preview(frac, phase = null) {
     debug.frac = frac;
     debug.phase = frac === null ? null : phase;
+  },
+  // Turn the sun's shadow pass off without changing the light (npm run perf counts its draw calls this way).
+  shadowPass(on) {
+    debug.noShadowPass = !on;
   },
 };

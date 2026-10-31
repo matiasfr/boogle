@@ -3,7 +3,6 @@
 // when the slot is empty: fn supplies the default (positionLocal for positionNode, materialColor for colorNode, ...).
 // No program cache keys: three keys node materials by their node graph.
 export function patchNode(mat, slot, fn) {
-  if (!mat) return mat;
   mat[slot] = fn(mat[slot] ?? null);
   mat.needsUpdate = true;
   return mat;

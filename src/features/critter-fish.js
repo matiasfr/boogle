@@ -1,7 +1,7 @@
 // Fish (prototype flag `fish`), cosmetic tier: a school that lives in water deep enough to swim in (the sea or the
 // cave pond: it reads the shared water surface), with simple boids and a
 // steer toward deeper water; it scatters when the ball splashes in or a player swims through. One instanced mesh, the
-// tail wiggle is in the vertex shader. Local Math.random is fine: nothing here is read by the sim.
+// tail wiggle is in the material's positionNode. Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (the island is alive) and 2 (the ball scares fish). With 36 fish, plain pairwise boids is cheaper
 // than bucketing them on the cell grid.
 import * as THREE from 'three/webgpu';
@@ -23,6 +23,7 @@ import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.js';
 import { patchNode } from '../render/material-patch.js';
+import { dynAttr } from '../render/sprites.js';
 import { proto } from '../adapters/proto-flags.js';
 
 const FISH = {
@@ -49,7 +50,7 @@ const mat = new THREE.MeshStandardNodeMaterial({
   flatShading: true,
 });
 // positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space.
-const side = new THREE.InstancedBufferAttribute(new Float32Array(FISH.count * 3), 3).setUsage(THREE.DynamicDrawUsage);
+const side = dynAttr(new Float32Array(FISH.count * 3), 3);
 patchNode(mat, 'positionNode', (prev) =>
   (prev ?? positionLocal).add(
     instancedDynamicBufferAttribute(side).mul(

@@ -17,25 +17,25 @@ const IDLE_TICKS = 100;
 
 // The game renders once per animation frame and three resets renderer.info once per frame too, so the sample is taken
 // right after the game's own renderFrame (calling it again inside one frame draws only the output pass: the scene
-// pass runs once per frame). sky.js sets sun.shadow.autoUpdate every frame, so it is pinned off for the second sample.
+// pass runs once per frame). The second sample turns the shadow pass off through the sky's debug handle.
 const STATS = `
   const { renderer, pipeline, sun } = await import('/src/render/scene.js');
+  const { skyDebug } = await import('/src/render/sky.js');
   let last = null;
   const orig = pipeline.render;
   pipeline.render = function () { const r = orig.call(this); last = { ...renderer.info.render }; return r; };
   const frame = () => new Promise((res) => { last = null; const t = setInterval(() => last && (clearInterval(t), res(last)), 20); });
   await frame();
   const a = await frame(); // with the shadow pass
-  Object.defineProperty(sun.shadow, 'autoUpdate', { get: () => false, set() {}, configurable: true });
+  skyDebug.shadowPass(false);
   sun.shadow.needsUpdate = false;
   await frame();
   const b = await frame(); // no shadow pass
-  delete sun.shadow.autoUpdate;
+  skyDebug.shadowPass(true);
   pipeline.render = orig;
-  const calls = a.drawCalls ?? a.calls;
   return {
-    backend: renderer.backend?.isWebGPUBackend ? 'webgpu' : 'webgl2',
-    calls, shadowCalls: calls - (b.drawCalls ?? b.calls), tris: a.triangles,
+    backend: window.boogle.gfx,
+    calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,
     geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs };`;
 
 // Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
