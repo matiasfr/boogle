@@ -1,5 +1,5 @@
 // Pile rules: the pile.drop and pile.take ops and the `piles` state (../../sim/piles.js): loose material on the ground
-// that anyone can pick up. Lockstep: everything here runs the same on every peer (see ./README.md).
+// that anyone can pick up onto their stack (./stacks.js), or spill from it. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
   createPiles,
   dropPile,
@@ -13,24 +13,42 @@ import {
   MAX_N,
   PILE_CAP,
 } from '../../sim/piles.js';
-import { okKind, MATERIALS } from '../../sim/materials.js';
+import { MATERIALS } from '../../sim/materials.js';
 import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'piles';
 const isInt = Number.isSafeInteger;
 
-export function install(sync, land) {
+export function install(sync, land, rules) {
   const piles = createPiles();
+  const { stacks } = rules;
   const onLand = (i, j) => isInt(i) && isInt(j) && i >= 1 && j >= 1 && i <= land.n - 2 && j <= land.n - 2;
-  const dropOk = (i, j, k, n) =>
-    onLand(i, j) && okKind(k) && isInt(n) && n >= 1 && n <= PILE_CAP && room(piles, k, n) === n;
+  // Put down n from your own stack (a jump past the soft cap spills its top this way): the kind is the stack's.
   sync.registerOp('pile.drop', {
-    validate: (e) => dropOk(e.i, e.j, e.k, e.n),
-    apply: (e) => dropPile(piles, e.i, e.j, e.k, e.n),
+    validate: (e) => {
+      const k = stacks.kind(e.u);
+      if (!onLand(e.i, e.j) || !isInt(e.n) || e.n < 1 || e.n > PILE_CAP || e.n > stacks.count(e.u)) return false;
+      return room(piles, k, e.n) === e.n;
+    },
+    apply: (e) => {
+      const k = stacks.kind(e.u);
+      const n = stacks.take(e.u, e.n);
+      return { k, ...dropPile(piles, e.i, e.j, k, n) };
+    },
   });
+  // Take up to n onto your stack: refused when you carry another material or are full (state checks bound it).
   sync.registerOp('pile.take', {
-    validate: (e) => isInt(e.id) && isInt(e.n) && e.n >= 1 && e.n <= MAX_N && !!findPile(piles, e.id),
-    apply: (e) => takePile(piles, e.id, e.n), // { id, k, n }: what was taken
+    validate: (e) => {
+      const p = isInt(e.id) && isInt(e.n) && e.n >= 1 && e.n <= MAX_N ? findPile(piles, e.id) : null;
+      return !!p && stacks.room(e.u, p.k) > 0;
+    },
+    apply: (e) => {
+      const p = findPile(piles, e.id);
+      if (!p) return null;
+      const got = takePile(piles, e.id, Math.min(e.n, stacks.room(e.u, p.k)));
+      stacks.add(e.u, got.k, got.n);
+      return got; // { id, k, n }: what went onto the stack
+    },
   });
   sync.registerState('piles', {
     serialize: () => serializePiles(piles),
@@ -40,12 +58,12 @@ export function install(sync, land) {
   return { piles, drop: (i, j, k, n) => dropPile(piles, i, j, k, n), room: (k, n) => room(piles, k, n) };
 }
 
-// Replay-test generators (./README.md): drop near the court (often onto an existing pile), take part or all of one.
+// Replay-test generators (./README.md): put some of your stack down near the court (often onto an existing pile), take
+// part or all of a pile. (Stacks only fill from piles, sources and so on, so the first pile comes from a later module's
+// overflow or a spill; the replay seeds one with a test-only drop, see test/world-replay.test.mjs.)
 export const edits = {
   'pile.drop': (r) =>
-    r.chance(JUNK)
-      ? bad(r, 'pile.drop')
-      : { op: 'pile.drop', i: r.int(210, 216), j: r.int(185, 191), k: r.int(0, 1), n: r.int(1, 40) },
+    r.chance(JUNK) ? bad(r, 'pile.drop') : { op: 'pile.drop', i: r.int(210, 216), j: r.int(185, 191), n: r.int(1, 6) },
   'pile.take': (r, view) => {
     if (r.chance(JUNK)) return bad(r, 'pile.take');
     const { list } = view.rules.piles.piles;

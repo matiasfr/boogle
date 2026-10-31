@@ -1,11 +1,14 @@
 // Saved worlds on the real rules: a save without state versions loads at version 0, and malformed snapshots or states
-// never throw: a bad state starts fresh and the world keeps ticking. (The pre-0.1 fixtures were retired with the
-// namespace bump, src/world/namespace.js: no 0.1 tab ever loads an older save.)
+// never throw: a bad state starts fresh and the world keeps ticking. A 0.1 save captured at M4 keeps loading. (The
+// pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.js: no 0.1 tab loads an older save.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.js';
 import { installRules } from '../src/world/rules/index.js';
+import fs from 'node:fs';
 import { homeLand } from './helpers/land.mjs';
+
+const v01 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v01.json', import.meta.url), 'utf8'));
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -33,6 +36,15 @@ test('a save without vers loads every state at version 0, and re-saves with vers
   assert.equal(s.worldStatus().loadErrors, 0);
   const saved = copy(s.snapshot());
   assert.deepEqual(Object.keys(saved.vers), Object.keys(hashes));
+});
+
+test('a 0.1 save (test/fixtures/snap-v01.json) still loads to the same hashes', () => {
+  const s = peer();
+  assert.equal(s.loadSnapshot(copy(v01.snap)), true);
+  const now = s.stateHashes();
+  for (const [k, h] of Object.entries(v01.hashes)) assert.equal(now[k], h, `${k} loads differently`);
+  assert.equal(s.worldStatus().loadErrors, 0);
+  assert.equal(s.worldStatus().newerSave, false);
 });
 
 const JUNK = [

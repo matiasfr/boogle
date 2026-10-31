@@ -32,6 +32,7 @@ function redraw() {
   dirty = false;
   let n = 0;
   for (const p of piles.list) {
+    if (pending.has(p.id)) continue; // taken a moment ago: its pieces are flying to you
     pilePos(p, at);
     for (let m = 0; m < Math.min(p.n, SHOWN) && n < mesh.instanceMatrix.count; m++) {
       mesh.setMatrixAt(n, heapMatrix(m, p.id, at.x, at.y, at.z, m4));
@@ -44,18 +45,26 @@ function redraw() {
 }
 
 // Walk-over pickup: one pile.take per pile you touch, retried after a while if the host never applied it. `want(p)`
-// says how many to ask for (0: leave it), so the haul stack can refuse a kind it can't carry.
+// says how many to ask for (0: leave it), so you never ask for a kind you can't carry. onPick(fn) hears each take as
+// it is sent, fn(pile, n, position): the haul stack flies the pieces to your back at once, before the host answers.
 const pending = new Map(); // pile id -> ms submitted
+const pickFns = [];
+export const onPick = (fn) => pickFns.push(fn);
+onApplied((e) => e.op === 'pile.take' && pending.delete(e.id) && (dirty = true));
 export function updatePiles(now, want = (p) => p.n) {
   if (dirty) redraw();
   if (!me.entered || !me.body) return;
   const pos = me.body.position;
   for (const p of piles.list) {
-    if (now - (pending.get(p.id) ?? -1e9) < 1500) continue;
+    if (pending.has(p.id)) continue;
     pilePos(p, at);
     if (Math.abs(pos.y - PLAYER_R - at.y) > PICK_DY || Math.hypot(at.x - pos.x, at.z - pos.z) > PICK_R) continue;
     const n = want(p);
-    if (n > 0 && submitEdit({ op: 'pile.take', i: p.i, j: p.j, id: p.id, n })) pending.set(p.id, now);
+    if (n > 0 && submitEdit({ op: 'pile.take', i: p.i, j: p.j, id: p.id, n })) {
+      pending.set(p.id, now);
+      dirty = true;
+      for (const fn of pickFns) fn(p, Math.min(n, p.n), at);
+    }
   }
-  for (const [id, t] of pending) if (now - t > 4000) pending.delete(id);
+  for (const [id, t] of pending) if (now - t > 1500 && pending.delete(id)) dirty = true; // refused: show it again
 }

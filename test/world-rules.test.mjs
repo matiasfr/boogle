@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.js';
 import { ON_GROUND, SRC } from '../src/sim/gifts.js';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster', 'piles']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -38,8 +38,11 @@ const SCRIPTS = {
   ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
   piles: () => [
-    { op: 'pile.drop', i: 212, j: 188, k: 0, n: 9 },
-    ({ rules }) => ({ op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 4 }),
+    ({ rules }) => {
+      rules.piles.drop(212, 188, 0, 9); // a pile to start from, the same on both peers (nothing else makes one yet)
+      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 6 };
+    },
+    { op: 'pile.drop', i: 214, j: 188, n: 2 },
   ],
 };
 
@@ -72,7 +75,7 @@ test('every op has an accepted edit, and the same edits give the same state on t
     b = peer();
   const fresh = a.s.stateHashes();
   const ops = new Set(play(a).map((e) => e.op));
-  assert.deepEqual([...ops], a.s.registry().ops, 'every registered op needs an edit in SCRIPTS');
+  assert.deepEqual([...ops].sort(), [...a.s.registry().ops].sort(), 'every registered op needs an edit in SCRIPTS');
   for (const e of play(b)) assert.ok(ops.has(e.op));
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   for (const m of RULES)

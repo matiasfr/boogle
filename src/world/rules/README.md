@@ -61,7 +61,8 @@ Rules:
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
   `migrate[v]` step for older saves
-  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/world-snapshots.test.mjs`).
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v01.json` is one, checked by
+  `test/world-snapshots.test.mjs`).
 
 ## Edit generators and invariants
 
@@ -128,4 +129,5 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
 | `roster.js` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.js` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.js`); `drop` returns `{ placed, ids }` |
+| `stacks.js` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.js`), by roster index; later rules call `add`/`take` in their apply |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

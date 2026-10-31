@@ -4,9 +4,10 @@
 import * as mushrooms from './mushrooms.js';
 import * as gifts from './gifts.js';
 import * as roster from './roster.js';
+import * as stacks from './stacks.js';
 import * as piles from './piles.js';
 
-export const RULES = [mushrooms, gifts, roster, piles];
+export const RULES = [mushrooms, gifts, roster, stacks, piles];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
