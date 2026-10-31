@@ -75,6 +75,9 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 - States have versions and migrations (`registerState(key, { version, migrate })`); all are at version 0 today. A
   state that fails to load starts fresh; a state from a newer build is skipped and that tab stops persisting.
 - The world seed is the constant 20261028 for every room.
+- Budget: a world with every state at its caps (256 players, 128 piles, full plaques) saves under 60 KB (about 27 KB
+  today, `test/world-size.test.mjs`), so the pagehide upload keeps `keepalive`. `worldStatus().snapBytes` reports the
+  last size; telemetry doesn't send it yet.
 
 ## 8.5 What persists and where
 

@@ -358,6 +358,7 @@ test('clients save the world too (but only the host uploads), so the next host s
   await run(net, [host, client], 620); // past the 30 s save interval
   assert.equal(client.grid[11], 7);
   assert.ok(store.getItem('boogle.world.test'), 'client saved');
+  assert.equal(client.s.worldStatus().snapBytes, store.getItem('boogle.world.test').length, 'the size is reported');
   assert.deepEqual(clientCalls, [], 'a client never touches the server');
   assert.equal(client.s.worldStatus().saves, 0);
   assert.ok(hostCalls.includes('PUT'), 'the host uploads');

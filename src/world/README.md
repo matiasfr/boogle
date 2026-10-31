@@ -82,7 +82,8 @@ them.
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
 - `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
-- `worldStatus()`: debug. `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
+- `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
+  at its caps, `test/world-size.test.mjs`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
   newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).

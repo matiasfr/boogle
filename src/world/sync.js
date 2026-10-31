@@ -95,6 +95,7 @@ export function createSync({ env: env0 } = {}) {
     saves: 0,
     heldDropped: 0,
     loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
+    snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.mjs)
   };
   let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
   // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
@@ -439,6 +440,7 @@ export function createSync({ env: env0 } = {}) {
     // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
     const ids = [...pids, [selfId, myPid()]];
     const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave, ids });
+    stats.snapBytes = json.length;
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
     for (let k = 0; k < n; k++) send({ t: 'w:snap', to, id, n, k, s: json.slice(k * CHUNK, (k + 1) * CHUNK) });
@@ -588,8 +590,10 @@ export function createSync({ env: env0 } = {}) {
     if (hsh === lastSavedHash) return;
     lastSavedHash = hsh;
     const snap = snapshot();
+    const text = JSON.stringify(snap);
+    stats.snapBytes = text.length;
     try {
-      cfg.storage?.setItem(storageKey(), JSON.stringify(snap));
+      cfg.storage?.setItem(storageKey(), text);
     } catch {
       // quota or private mode: ignore
     }

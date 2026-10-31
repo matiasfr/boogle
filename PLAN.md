@@ -146,7 +146,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 - [x] M1 Clean break: the `v01` world namespace; proto, terrain and water retired.
 - [x] M2 A stable player id (pid) and the roster. · [x] M3 Ground piles. · [x] M4 The haul stack.
-- [x] M5 Work sites and plaques. · [x] M6 Palms as log sources. · [x] M7 Machine runs. · [x] M8 Offline helper bank. · [ ] M9 Snapshot budget.
+- [x] M5 Work sites and plaques. · [x] M6 Palms as log sources. · [x] M7 Machine runs. · [x] M8 Offline helper bank. · [x] M9 Snapshot budget.
 
 **Playtest question:** does anyone pour without being told, and does the stack's spill make people laugh or groan?
 
