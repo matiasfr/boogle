@@ -1,11 +1,11 @@
 import * as THREE from 'three/webgpu';
-import * as CANNON from 'cannon-es';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
 import { clamp, angleLerp, sanitizeName } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
 import { dynAttr, instancedSprite } from '../render/sprites.js';
-import { world, teleport } from '../physics/physics.js';
+import { teleport } from '../physics/physics.js';
+import { addBody } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.js';
 import { dom, renderPeople } from './hud.js';
@@ -43,7 +43,7 @@ export function camForward(out = new THREE.Vector3()) {
   return out.set(-Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp);
 }
 function playerPos() {
-  return me.body ? me.body.interpolatedPosition : new CANNON.Vec3(SPAWN.x, 2, SPAWN.z);
+  return me.body ? me.body.interpolatedPosition : { x: SPAWN.x, y: 2, z: SPAWN.z };
 }
 // A point beside the player in their own frame (x right, y up, z back; the avatar faces -z), in world space.
 function fromBody(out, x, y, z) {
@@ -90,7 +90,7 @@ export function enterIsland() {
   const y = groundHeight(x, z) + PLAYER_R + 0.6;
   me.body = makePlayerBody(false);
   teleport(me.body, x, y, z);
-  world.addBody(me.body);
+  addBody(me.body);
   me.avatar = makeAvatar(me.colorIdx);
   scene.add(me.avatar);
   me.yaw = cam.yaw;
@@ -211,7 +211,7 @@ onFrame(
   () => {
     if (me.body && me.body.position.y < -25) {
       teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
-      me.body.velocity.setZero();
+      me.body.velocity.set(0, 0, 0);
     }
   },
   { phase: 'world', order: -290 },
