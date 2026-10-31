@@ -8,6 +8,7 @@ import { buildModel, esc, layerOf, searchIndex } from './model.js';
 import { parseNarrative } from './narrative.js';
 import { howView, stopHow } from './views/how.js';
 import { inspector } from './views/inspector.js';
+import { mapLayers, mapPack, mapTree, resetPackZoom } from './views/map.js';
 
 const storyTexts = import.meta.glob('../docs/atlas/stories/*.json', { eager: true, query: '?raw', import: 'default' });
 
@@ -76,11 +77,16 @@ function render(rebuild = true) {
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === S.view));
   const el = $('#canvas');
   const key = S.view + S.mapStyle + (S.view === 'focus' ? S.focusFile : '');
-  if (rebuild || built !== key || S.view === 'how') {
+  if (rebuild || built !== key || S.view === 'how' || (S.view === 'map' && S.mapStyle === 'layers')) {
     built = key;
     stopHow();
     if (S.view === 'how') howView(ctx, el);
+    else if (S.view === 'map')
+      (S.mapStyle === 'layers' ? mapLayers : S.mapStyle === 'pack' ? mapPack : mapTree)(ctx, el);
     else soon(el);
+  } else if (S.view === 'map') {
+    if (S.mapStyle === 'pack') mapPack.update(ctx);
+    if (S.mapStyle === 'treemap') mapTree.update(ctx);
   }
   inspector(ctx);
   crumbs();
@@ -136,6 +142,7 @@ document.addEventListener('click', (e) => {
   } else if (d.layer) select({ t: 'layer', id: d.layer }, false);
   else if (d.root !== undefined) {
     S.openDir = null;
+    resetPackZoom();
     select({ t: 'root' });
   } else if (d.hook) {
     S.sel = { t: 'hook', id: d.hook };

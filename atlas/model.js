@@ -219,3 +219,15 @@ export function registrations(f) {
   );
   return r;
 }
+
+// The folders of a layer that exist in the code. A folder no layer lists joins "Game systems", so it is still drawn.
+export function layerDirs(model, L) {
+  const known = new Set(LAYERS.flatMap((x) => x.dirs));
+  const extra =
+    L === LAYERS[1]
+      ? Object.keys(model.dirs)
+          .filter((d) => !known.has(d))
+          .sort()
+      : [];
+  return [...L.dirs, ...extra].filter((d) => model.dirs[d]);
+}
