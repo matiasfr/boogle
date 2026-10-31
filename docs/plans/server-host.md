@@ -50,7 +50,7 @@
 ## Risks
 
 - **Hotspots touched:** `src/netplay/net.ts` (room picking, lead helper: about 15 lines), `src/world/sync.ts` (four
-  additive changes, each tested), `src/net/peer-room.js` (imports ids, adds three members), `DESIGN.md`, `PLAN.md`
+  additive changes, each tested), `src/net/peer-room.ts` (imports ids, adds three members), `DESIGN.md`, `PLAN.md`
   (one line), `AGENTS.md` (one line), `package.json` (`test:net`), `.github/workflows/ci.yml` and
   `deploy-server.yml`. `src/world/rules/` is not edited (except its README).
 - **AGENTS.md "Don't":** "Save or serve unverified state": the server never uploads or serves a state that failed to
@@ -432,7 +432,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `npm --prefix server test` and `npm run test:net` (PeerJS through the new router) pass unchanged;
     `npm run check:full`.
 
-- [ ] **6. Shared net modules** (`src/net/ids.js`, `src/net/ws-wire.js`, `src/net/peer-room.js`).
+- [ ] **6. Shared net modules** (`src/net/ids.js`, `src/net/ws-wire.js`, `src/net/peer-room.ts`).
   - Create `ids.js` and `ws-wire.js` as in Design. `peer-room.js` imports `SELF_ID`, `okId`, `safeRoom`,
     `peerHostId` from `ids.js` (delete its copies) and adds `transport: 'peer'`, `isLead: () => isHostNow`,
     `onLeadChange(h)` (registered with the host handlers).

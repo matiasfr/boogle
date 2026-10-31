@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mergeFields, hostField } from '../src/netplay/presence-fields.ts';
 
-// The room's presence(patch) rule (src/net/peer-room.js): merge onto what we sent before, null deletes the key.
+// The room's presence(patch) rule (src/net/peer-room.ts): merge onto what we sent before, null deletes the key.
 function applyPatch(mine, patch) {
   const next = { ...mine };
   for (const [k, v] of Object.entries(patch)) {
