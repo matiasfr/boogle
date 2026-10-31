@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.js';
 import { ON_GROUND, SRC } from '../src/sim/gifts.js';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'piles']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -37,6 +37,10 @@ const SCRIPTS = {
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
+  piles: () => [
+    { op: 'pile.drop', i: 212, j: 188, k: 0, n: 9 },
+    ({ rules }) => ({ op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 4 }),
+  ],
 };
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.

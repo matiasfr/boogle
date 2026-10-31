@@ -45,6 +45,7 @@ reconnecting are held (up to 64, 5 s) and released one per 210 ms.
 | Your build id | Owner | presence `bv` |
 | How you treat the Boogler | Owner | presence `bg` |
 | The Boogler's position and mode | Host | `addHostField('g')` |
+| Ground piles | Lockstep | ops `pile.drop`, `pile.take`; state `piles` |
 | Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
 | Fruit, thrown things, frisbee | Lockstep | ops `fruit.drop`, `gift.take`, `gift.toss`; state `gifts` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
