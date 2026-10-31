@@ -4,7 +4,7 @@ import { STAND } from './_stand.mjs';
 // Page code: the ripe palm nearest home, with its position.
 const PALM = `
   const { trees } = await import('/src/render/props.js');
-  const { isRipe } = await import('/src/sim/gifts.js');
+  const { isRipe } = await import('/src/sim/gifts.ts');
   const { gifts, sync: { world } } = window.boogle;
   let best = null;
   gifts.trees.forEach((_, t) => {

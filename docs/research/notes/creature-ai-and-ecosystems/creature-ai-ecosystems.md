@@ -111,7 +111,7 @@ Floats are not reliably deterministic across machines, so any creature that chan
 - Boogle authority table: the Boogler is host-simulated and published in the host's presence. — Boogle `DESIGN.md`; `src/boogler/boogler.js` header: host publishes `g: { p:[x,z], r, w }`, others interpolate; he never changes terrain/water/crops so his brain may use floats but uses seeded RNG; solo tabs and clients without a host snapshot for 3 s (STALE_MS) walk him locally; kinematic physics body so the ball bounces off him; avoids the mushroom patch so he never looks like he's trampling the garden.
 - Boogle world contract: sim ticks at 10/s (TICK_MS 100); `registerOp`/`registerState`/`onTick`/`onApplied`; edits applied in host sequence order; state needs serialize/load/hash. — Boogle `src/world/README.md`
 - Recent Boogle commit "Ban native trig in the deterministic shared sim" — consistent with Fiedler's transcendental-function warning. — Boogle git log (local)
-- Boogle's sky clock is a pure function of world.tick (DAY_MS 20 min, 8-day lunar cycle, DAYLIGHT 0.6). — Boogle `src/sim/sky-clock.js`
+- Boogle's sky clock is a pure function of world.tick (DAY_MS 20 min, 8-day lunar cycle, DAYLIGHT 0.6). — Boogle `src/sim/sky-clock.ts`
 
 ### Inferences
 - Four tiers for Boogle critters: (1) cosmetic local (fish, gulls, fireflies); (2) shared seeded spawn schedule + local motion (crabs emerge from the same burrow at the same tick for everyone, so "look, a crab!" works); (3) host-simulated + presence (Boogler, a giant crab event, ≤ a handful); (4) integer sim state via registerState (only for things that change the world or persist, e.g. pet affinity counters, a creature that drops seeds).

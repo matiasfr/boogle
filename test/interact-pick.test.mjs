@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickInteract, FACING } from '../src/sim/interact-pick.js';
+import { pickInteract, FACING } from '../src/sim/interact-pick.ts';
 
 // You stand at the origin looking along -z (three.js forward at yaw 0); +x and -x are beside you, +z is behind.
 const pick = (targets) => pickInteract(targets, 0, 0, 0, -1);

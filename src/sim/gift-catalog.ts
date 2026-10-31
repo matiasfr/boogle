@@ -110,7 +110,8 @@ export const GIFTS = [
   },
 ];
 
-export const giftIndex = (id) => GIFTS.findIndex((g) => g.id === id);
+export const giftIndex = (id: string) => GIFTS.findIndex((g) => g.id === id);
 // Whether a catalog entry can sit in a hotbar and be thrown: everything but the ball (its own owner rules) and retired
 // entries.
-export const carryable = (g) => !!g && g.src !== 'ball' && !g.retired;
+export const carryable = (g: (typeof GIFTS)[number] | undefined) =>
+  !!g && g.src !== 'ball' && !('retired' in g && g.retired);

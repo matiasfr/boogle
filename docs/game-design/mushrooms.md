@@ -10,7 +10,7 @@
 - **Tuning.** Growth 120 ticks (12 s) after watering; a dry seed waits forever. At most 60 plots, at least 3 cells
   apart (Chebyshev). 5 seeds per take, stack of 20. Cap radius 1.9 m, stem 0.85 m. Player bounce 15 × (0.55 + 0.45 ×
   growth) m/s; growth push at least 5.5 m/s. Pour animation 600 ms. A second seed waits 500 ms for the first to land.
-- **Files.** [src/sim/mushrooms.js](../../src/sim/mushrooms.js), [src/world/rules/mushrooms.js](../../src/world/rules/mushrooms.js),
+- **Files.** [src/sim/mushrooms.ts](../../src/sim/mushrooms.ts), [src/world/rules/mushrooms.js](../../src/world/rules/mushrooms.js),
   [src/adapters/mushroom-garden.js](../../src/adapters/mushroom-garden.js), [src/features/mushroom-garden.js](../../src/features/mushroom-garden.js).
 - **Known issues and limits.** Watering is only by can (not sim water or the ball). Growth counts ticks, which only run
   while someone is online, so nothing grows while the island is empty (see 8.7). Mushrooms never wilt or get

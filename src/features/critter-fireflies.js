@@ -8,7 +8,7 @@ import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { CELL, HALF } from '../constants.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { skyDebug } from '../render/sky.js';
-import { PATCH } from '../sim/mushrooms.js';
+import { PATCH } from '../sim/mushrooms.ts';
 
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),

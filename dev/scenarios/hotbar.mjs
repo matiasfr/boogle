@@ -46,7 +46,7 @@ export default {
     await g.wait(0.5);
     await g.eval(`${INV} H.interactDown(); H.interactUp();`);
     const held = await g.waitFor(
-      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.js'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
+      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
     );
     await g.view({ cam: [item.x + 3.5, 2.2, item.z + 3.5], look: [item.x + 0.6, 0.6, item.z] });
     const s1 = await g.still('in-hand');
@@ -128,7 +128,7 @@ export default {
     const spot = await g.eval(`${INV}
       const { CELL, HALF, GRID_RES } = await import('/src/constants.js');
       const G = await import('/src/adapters/mushroom-garden.js');
-      const { PATCH } = await import('/src/sim/mushrooms.js');
+      const { PATCH } = await import('/src/sim/mushrooms.ts');
       for (let r = 6; r < 60; r += 2)
         for (let a = 0; a < 24; a++) {
           const i = Math.round(PATCH.i0 - r * Math.cos(a / 3.8)), j = Math.round(PATCH.j0 - r * Math.sin(a / 3.8));
@@ -206,13 +206,13 @@ export default {
     });
     const flight = await g.motion('frisbee', { frames: 8, seconds: 3 });
     const fris = await g.waitFor(
-      `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.js');
+      `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
         return window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === giftIndex('frisbee')); })()`,
       { timeout: 20000 },
     );
     const dist = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.js');
-      const { giftIndex } = await import('/src/sim/gift-catalog.js');
+      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.kind === giftIndex('frisbee'));
       return it ? Math.hypot(it.i * CELL - HALF - 6, HALF - it.j * CELL + 58) : -1;`);
     t.check(

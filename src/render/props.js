@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { SPAWN, COURT, CELL, HALF } from '../constants.js';
 import { island } from '../island/index.js';
 import { MASSIF } from '../island/shape.js';
-import { PATCH } from '../sim/mushrooms.js';
+import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from './scene.js';

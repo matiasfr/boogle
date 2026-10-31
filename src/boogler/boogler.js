@@ -20,7 +20,7 @@ import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.js';
 import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
-import { PATCH } from '../sim/mushrooms.js';
+import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.js';
 import { net, remotes, addHostField } from '../netplay/net.js';
 import { createSnaps } from '../netplay/snaps.js';

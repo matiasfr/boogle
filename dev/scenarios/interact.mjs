@@ -153,7 +153,7 @@ export default {
     t.check('a Pick up prompt floats over the tossed item', pickMs >= 0, `${pickMs} ms; ${itemShot}`);
     await g.key('KeyE');
     const got = await g.waitFor(
-      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.js'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
+      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
     );
     await g.wait(0.3);
     const tag = await g.eval(`return ${text('.hotbar-name')};`);
@@ -192,7 +192,7 @@ export default {
       const { teleport } = await import('/src/physics/physics.js');
       const { camera } = await import('/src/render/scene.js');
       const { cam } = await import('/src/player/player.js');
-      const { giftIndex } = await import('/src/sim/gift-catalog.js');
+      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.js');
       const b = window.boogle.me.body, can = giftIndex('can');
       const items = () => window.boogle.gifts.items; // a new array whenever things expire

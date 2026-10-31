@@ -13,7 +13,7 @@ import {
   serializeGarden,
   loadGarden,
   hashGarden,
-} from '../src/sim/mushrooms.js';
+} from '../src/sim/mushrooms.ts';
 
 const { i0, j0 } = PATCH;
 

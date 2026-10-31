@@ -63,7 +63,7 @@ import {
   settle,
   RULES,
 } from './friendship.js';
-import { GIFTS } from '../sim/gift-catalog.js';
+import { GIFTS } from '../sim/gift-catalog.ts';
 
 const THREAD_ORDER = ['home', 'mom', 'biz'];
 const node = (say, opts, mood = 'smile') => ({ say, mood, opts });

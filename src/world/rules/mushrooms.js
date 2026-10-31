@@ -1,4 +1,4 @@
-// Mushroom rules: the mush.plant and mush.water ops, the `mushrooms` state (the garden from ../../sim/mushrooms.js) and
+// Mushroom rules: the mush.plant and mush.water ops, the `mushrooms` state (the garden from ../../sim/mushrooms.ts) and
 // its growth tick. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
   createGarden,
@@ -13,7 +13,7 @@ import {
   PATCH,
   SPACING,
   MAX_PLOTS,
-} from '../../sim/mushrooms.js';
+} from '../../sim/mushrooms.ts';
 import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'mushrooms';

@@ -8,8 +8,8 @@ import { homeLand } from './helpers/land.mjs';
 import { setWho, MAX_PLAYERS } from '../src/sim/roster.ts';
 import { addTo, HARD_CAP } from '../src/sim/stacks.ts';
 import { MAX_PILES, MAX_N } from '../src/sim/piles.ts';
-import { MAX_ITEMS, tossItem } from '../src/sim/gifts.js';
-import { plant, MAX_PLOTS, PATCH } from '../src/sim/mushrooms.js';
+import { MAX_ITEMS, tossItem } from '../src/sim/gifts.ts';
+import { plant, MAX_PLOTS, PATCH } from '../src/sim/mushrooms.ts';
 import { TRACK, HELPER, costOf } from '../src/sim/route.ts';
 
 const BUDGET = 60000;

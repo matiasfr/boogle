@@ -17,7 +17,7 @@ import { dropPoint } from '../physics/flight.js';
 import { splash } from '../render/splash.js';
 import { itemModel } from '../player/item-models.js';
 import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.js';
-import { GROW_TICKS } from '../sim/mushrooms.js';
+import { GROW_TICKS } from '../sim/mushrooms.ts';
 
 const SEEDS_PER_VISIT = 5;
 const BOUNCE_SPEED = 15;

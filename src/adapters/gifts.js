@@ -15,8 +15,8 @@ import { world, onApplied, submitEdit } from '../world/sync.js';
 import { SEEDS, LOST } from '../world/rules/gifts.js';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';
-import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
-import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
+import { MAX_TREES, REGROW_TICKS, DROP_OFFSETS, ON_GROUND, SRC, canDrop, treeFruit } from '../sim/gifts.ts';
 import { itemModel } from '../player/item-models.js';
 import { STEP, flyPath, dropPoint } from '../physics/flight.js';
 import { inv, take, roomFor } from '../player/inventory.js';

@@ -18,7 +18,7 @@ import { modalOpen } from '../player/modal.js';
 import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
 import { heldId, useOne } from '../player/inventory.js';
-import { GIFTS, giftIndex } from '../sim/gift-catalog.js';
+import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { guest } from '../guest/state.js';
 
 const TALK_RANGE = 3.6; // metres from his centre

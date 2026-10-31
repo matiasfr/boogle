@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DAY_MS, LUNAR_DAYS, DAYLIGHT, skyAt, skyState } from '../src/sim/sky-clock.js';
+import { DAY_MS, LUNAR_DAYS, DAYLIGHT, skyAt, skyState } from '../src/sim/sky-clock.ts';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 

@@ -1,6 +1,6 @@
 # 7.1 Items (gift catalog)
 
-From [src/sim/gift-catalog.js](../../src/sim/gift-catalog.js), in catalog order (the index is the wire id: append only).
+From [src/sim/gift-catalog.ts](../../src/sim/gift-catalog.ts), in catalog order (the index is the wire id: append only).
 Source `sea` items (5 to 21) used to wash up on the beach. Wash-ups went 2026-10-30, and the 17 seashore finds were
 retired 2026-10-31: each is a bare stub (`id`, `src`, `retired`) kept for its index, with no model, name or line;
 saved hotbars drop them and nobody can throw them. Points are the friendship value of a first present.

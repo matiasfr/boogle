@@ -1,7 +1,7 @@
 // Context ping (G, middle click, or the touch Ping button): drops a marker where you are aiming, "Ball!" near the
 // ball, "Look!" otherwise. Everyone sees it in the pinger's colour with their name for a few
 // seconds, pinned to the screen edge with an arrow when it is off-screen. Sent as a reliable room message
-// { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.js). No scores, no sim state.
+// { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
 import { scene, camera, toScreen } from '../render/scene.js';
@@ -14,7 +14,7 @@ import { net, remotes, onRoomReady } from '../netplay/net.js';
 import { getAudio } from '../render/audio.js';
 import { onFrame, onStart } from '../loop.js';
 import { registerAction } from '../player/controls.js';
-import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.js';
+import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.ts';
 
 const TUNE = {
   lifeMs: 4000,
