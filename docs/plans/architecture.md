@@ -56,12 +56,18 @@ The open questions in the two plans have working answers so work can start; chan
 
 **Done when** draw calls stay flat as content grows and particles and critters cost no main-thread time.
 
-## Phase 3: the sim off the main thread, then the server
+## Phase 3: the server, then state by relevance
 
-- [ ] The lockstep sim in a worker (step 5), shaped so the same module runs in Node.
+Decided 2026-10-31 ([shared-state-at-scale.md](../research/shared-state-at-scale.md)): no client-side sim worker. The
+server becomes the only simulator of shared state and, after it lands, sends each client only the state near it.
+
+- [ ] Dedicated server ([server-host.md](server-host.md), steps 1-10): the server hosts the main room's lockstep
+      world, PeerJS stays the fallback. DESIGN.md "PeerJS only" is rewritten in step 1 (approved 2026-10-31); the
+      plan's open questions take its recommended answers.
+- [ ] Interest-managed state: rules states serialize by chunk, the server sends each client the dirty chunks near it
+      against an acknowledged baseline, and clients keep a read-only mirror instead of running ticks.
+- [ ] Edits predicted on the client (a cosmetic preview until the server's delta arrives).
 - [ ] Convert the rest of `src/` to `.ts` (step 8b order).
-- [ ] Dedicated server: pick up [server-host.md](server-host.md), with the server running the sim worker module and
-      sending each client only nearby state. Bends DESIGN.md "PeerJS only" on purpose, in its first PR.
 - [ ] Client-side prediction and reconciliation for your own player, once the server checks movement.
 
 **Done when** the main room is server-hosted and a client's bandwidth depends on what is near it, not the world size.

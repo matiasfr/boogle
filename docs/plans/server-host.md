@@ -1,6 +1,7 @@
 # Plan: the server hosts the main room
 
-> **Status: shelved (2026-10-30).** For rapid iteration peer hosting is enough: `npm run load` shows an 8-player room
+> **Status: active (2026-10-31), approved by the user; the open questions below take their recommended answers
+> (question 7's prototype flags are gone since #88, so it no longer applies).** Was: shelved (2026-10-30). For rapid iteration peer hosting is enough: `npm run load` shows an 8-player room
 > costs the host about 1.7 Mbit/s up and 2% of a main thread, and a server would make every rules change a coupled
 > server + client deploy. Pick this plan up when one of these holds:
 > - public playtests with strangers (cheating, trust in saves, a host on someone else's phone);
