@@ -194,3 +194,28 @@ export function searchIndex(model, narrative) {
     });
   return idx;
 }
+
+// What a file registers, as [label, text] rows for the inspector and Focus.
+export function registrations(f) {
+  const r = [];
+  const add = (k, v) => v.length && r.push([k, v.join(', ')]);
+  add('presence', f.owner);
+  add('host field', f.host);
+  add('ops', f.ops);
+  add('state', f.states);
+  add('messages', f.msgs);
+  add(
+    'actions',
+    f.actions.map((a) => a.id),
+  );
+  add(
+    'frame',
+    f.frames.map((h) => `${h.phase} ${h.order}`),
+  );
+  if (f.interact) r.push(['interact', `${f.interact} target source${f.interact > 1 ? 's' : ''}`]);
+  add(
+    'lazy loads',
+    f.lazy.map((p) => p.split('/').pop()),
+  );
+  return r;
+}

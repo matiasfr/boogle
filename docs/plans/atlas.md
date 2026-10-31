@@ -415,7 +415,7 @@ glance".
   - Verify: `npm run check`; `npm run atlas -- --check` reports 0 problems. Break one cite by hand: `--check` lists it
     with file, step and fix, and still exits 0 (`echo $?`). Revert.
 
-- [ ] **5. Page shell + "How it works".**
+- [x] **5. Page shell + "How it works".**
   - `npm install --save-exact d3-selection@3.0.0 d3-transition@3.0.1 d3-interpolate@3.0.1 d3-hierarchy@3.1.2
     d3-shape@3.2.0 d3-sankey@0.12.3`. Commit body: "d3 modules draw the atlas page's diagrams (map, circle pack,
     treemap, sankey, story routes). Internal page only: imported only from atlas/, so they never reach the game

@@ -1,4 +1,8 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+import { atlasFacts } from './dev/atlas/vite-plugin.mjs';
+
+const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
 // VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
@@ -14,6 +18,8 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
     rollupOptions: {
+      // The atlas (/atlas/) is a second page; d3 is imported only from atlas/, so it stays out of the game's chunks.
+      input: { main: resolve('index.html'), atlas: resolve('atlas/index.html') },
       output: {
         manualChunks(id) {
           if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
@@ -24,6 +30,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    atlasFacts(),
     {
       name: 'boogle-version',
       apply: 'build',
