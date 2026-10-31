@@ -23,6 +23,7 @@
     "check:gpu": "node dev/scenarios/run.mjs smoke",
     "look": "node dev/look/look.mjs",
     "registry": "node dev/registry/check.mjs",
+    "atlas": "node dev/atlas/cli.mjs",
     "inflight": "node dev/inflight.mjs",
     "wip": "node dev/inflight.mjs wip",
     "perf": "node dev/look/perf.mjs",
