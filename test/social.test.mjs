@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validatePing, createLimiter, createChordDetector, honkFreq } from '../src/sim/social.js';
+import { validatePing, createLimiter, createChordDetector, honkFreq } from '../src/sim/social.ts';
 
 test('validatePing accepts good pings and rejects junk', () => {
   assert.deepEqual(validatePing({ t: 'ping', x: 1.234, y: 2, z: -3, k: 'ball' }), { x: 1.2, y: 2, z: -3, k: 'ball' });

@@ -20,8 +20,8 @@ import {
   serializeGifts,
   loadGifts,
   hashGifts,
-} from '../src/sim/gifts.js';
-import { GIFTS, giftIndex, carryable } from '../src/sim/gift-catalog.js';
+} from '../src/sim/gifts.ts';
+import { GIFTS, giftIndex, carryable } from '../src/sim/gift-catalog.ts';
 
 const layout = () => ({
   trees: [

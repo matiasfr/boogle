@@ -18,7 +18,7 @@ import { warmUp } from '../render/precompile.js';
 import { setIcon } from '../player/item-icons.js';
 import { glyph, inputKind } from '../player/glyphs.js';
 import { describeControl, onKey } from '../player/controls.js';
-import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.js';
+import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).

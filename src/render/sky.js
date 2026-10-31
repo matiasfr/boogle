@@ -1,6 +1,6 @@
 // Day and night: a smiling sun and a sleepy, phased moon cross the sky on a 20-minute cycle, and the island's lighting
 // follows them (key light, ambient, fog, sky, clouds, water). Time comes from the shared world clock through
-// src/sim/sky-clock.js, so everyone sees the same sky. Everything here is cosmetic.
+// src/sim/sky-clock.ts, so everyone sees the same sky. Everything here is cosmetic.
 //
 // SUN_DIR (constants.js) is the key light's direction, read by the shadow-casting light in player.js and the water's
 // glints. This module points it at the sun by day and at the moon by night.
@@ -38,7 +38,7 @@ import { renderer, scene, camera, sun, sky } from './scene.js';
 import { seaU } from './water-render.js';
 import { clouds } from './props.js';
 import { world, TICK_MS } from '../world/sync.js';
-import { skyAt, skyState } from '../sim/sky-clock.js';
+import { skyAt, skyState } from '../sim/sky-clock.ts';
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)
 const SUN_R = 34;

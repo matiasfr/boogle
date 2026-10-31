@@ -159,7 +159,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
   - `docs/game-design/prototype-flags.md`.
 - **Keep:** `mushrooms` (a toy, and a bounce up to monorail balloons), `gifts` (fruit, frisbee perch, thrown things),
   the hotbar, the Boogler.
-- **Lean: gifts keeps its version-0 format.** Its legacy fields (`washed`, `nextWash`, `SRC.SHORE`; `src/sim/gifts.js:9-16`)
+- **Lean: gifts keeps its version-0 format.** Its legacy fields (`washed`, `nextWash`, `SRC.SHORE`; `src/sim/gifts.ts:9-16`)
   could go in a v1 format, but it isn't worth the churn in M1.
 - **Result:** `RULES = [mushrooms, gifts]` and the doors open for appending.
 - **Files:** `net.js`, `rules/index.js`, the retired files, test fixtures, `multiplayer.md` 8.3–8.5, the `rules/README.md`
@@ -198,7 +198,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Limits.**
   - Integer counts, Uint16.
   - A per-pile cap of 64. Over it, a new pile spawns beside it.
-  - A room cap of 128 piles, **separate from gifts' `MAX_ITEMS = 48`** (`src/sim/gifts.js:8`).
+  - A room cap of 128 piles, **separate from gifts' `MAX_ITEMS = 48`** (`src/sim/gifts.ts:8`).
   - When full, merge into the nearest pile of that kind instead of failing, so nothing is ever lost.
   - No ageing: nothing decays (SETTLED).
 - **Invariants:** total units are conserved apart from drops and takes; ids are unique; caps hold.
@@ -258,7 +258,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Files:** `src/sim/scripted-run.js` + test. This is a pure helper, not a rules module.
   - `runAt(script, t0, tick)` returns `{phase, progress /*0..1000 int*/, done}`.
   - The script is integer keyframes.
-  - Lockstep-safe (`+ - * /` only), like `src/sim/sky-clock.js`.
+  - Lockstep-safe (`+ - * /` only), like `src/sim/sky-clock.ts`.
 - **Visuals** read `src/netplay/shared-time.js:17` for a smooth fractional tick.
 - **The machine run:**
   - Op `site.run {s}` (anyone, when stocked) stores `t0` in the site state.

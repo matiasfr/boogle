@@ -1,7 +1,7 @@
 // Gift rules: the fruit.drop, gift.take and gift.toss ops, the `gifts` state (fruit on the palms, things players
-// threw, the frisbee on its perch; ../../sim/gifts.js) and its tick. Lockstep: everything
+// threw, the frisbee on its perch; ../../sim/gifts.ts) and its tick. Lockstep: everything
 // here runs the same on every peer (see ./README.md).
-import { GIFTS, giftIndex, carryable } from '../../sim/gift-catalog.js';
+import { GIFTS, giftIndex, carryable } from '../../sim/gift-catalog.ts';
 import {
   createGifts,
   canDrop,
@@ -17,7 +17,7 @@ import {
   MAX_ITEMS,
   NEVER,
   ON_GROUND,
-} from '../../sim/gifts.js';
+} from '../../sim/gifts.ts';
 import { JUNK, bad } from './edit-gen.js';
 
 export const name = 'gifts';

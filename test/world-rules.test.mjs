@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import { createSync } from '../src/world/sync.js';
 import { RULES, installRules } from '../src/world/rules/index.js';
 import { homeLand, fixture } from './helpers/land.mjs';
-import { giftIndex } from '../src/sim/gift-catalog.js';
-import { ON_GROUND, SRC } from '../src/sim/gifts.js';
+import { giftIndex } from '../src/sim/gift-catalog.ts';
+import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
 const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank']; // production order (test/fixtures/world-inputs.json)

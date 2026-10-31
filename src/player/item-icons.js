@@ -3,7 +3,7 @@
 // (the same renderOutput the main view ends with) into an 8-bit target, which is read back. A CanvasTarget can't do
 // this: the WebGPU canvas is opaque.
 //
-//   setIcon(img, id)   fills an <img> with the icon for a catalog id (src/sim/gift-catalog.js) or 'ball' (async)
+//   setIcon(img, id)   fills an <img> with the icon for a catalog id (src/sim/gift-catalog.ts) or 'ball' (async)
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv, vec4 } from 'three/tsl';
 import { renderer } from '../render/scene.js';

@@ -3,7 +3,7 @@ import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray 
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.js';
 import { lerp, smoothstep, valueNoise } from '../math.js';
 import { scene } from '../render/scene.js';
-import { PATCH } from '../sim/mushrooms.js';
+import { PATCH } from '../sim/mushrooms.ts';
 import { island, baseCm } from '../island/index.js';
 import { freezeStatic } from '../render/instances.ts';
 

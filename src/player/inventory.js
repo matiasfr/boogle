@@ -1,10 +1,10 @@
 // Your hotbar: everything you carry, one thing at a time in your hand. Personal (DESIGN.md: personal rewards) and kept
 // in localStorage, except the beach ball, whose slot follows ball ownership (src/player/hands.js syncs it every frame).
 //
-//   inv.slots[k] = { id, n } | null   id: a catalog id (src/sim/gift-catalog.js) or 'ball'; n: how many (seeds stack)
+//   inv.slots[k] = { id, n } | null   id: a catalog id (src/sim/gift-catalog.ts) or 'ball'; n: how many (seeds stack)
 //   inv.sel                           the slot in your hand, -1 for empty hands
 //   onHotbarChange(fn)                fn() after any change (selection included)
-import { GIFTS, carryable } from '../sim/gift-catalog.js';
+import { GIFTS, carryable } from '../sim/gift-catalog.ts';
 
 export const SLOTS = 8;
 export const MAX_SEEDS = 20;

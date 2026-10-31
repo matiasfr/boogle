@@ -41,7 +41,7 @@ const STATS = `
 // Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
 const FULL_GARDEN = `
   const { snapshot, loadSnapshot } = await import('/src/world/sync.js');
-  const { PATCH, GROW_TICKS } = await import('/src/sim/mushrooms.js');
+  const { PATCH, GROW_TICKS } = await import('/src/sim/mushrooms.ts');
   const s = snapshot();
   s.data.mushrooms = [];
   for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w; i += 3)

@@ -28,7 +28,7 @@
 //              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
 //     Other fields are yours (gifts put the item id on theirs).
 //
-// The pick is src/sim/interact-pick.js: something that would act beats something blocked, then nearest wins, with a
+// The pick is src/sim/interact-pick.ts: something that would act beats something blocked, then nearest wins, with a
 // nudge toward where you look. Ties go to the provider registered first.
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.js; the ball keeps its own physics.
@@ -38,8 +38,8 @@ import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../phys
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.js';
 import { throwItem } from '../adapters/gifts.js';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.js';
-import { giftIndex } from '../sim/gift-catalog.js';
-import { pickInteract } from '../sim/interact-pick.js';
+import { giftIndex } from '../sim/gift-catalog.ts';
+import { pickInteract } from '../sim/interact-pick.ts';
 
 const USE_VERB = { can: 'Water', seeds: 'Plant' };
 export const canThrow = () => !!heldId();

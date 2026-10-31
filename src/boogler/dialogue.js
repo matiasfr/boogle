@@ -7,7 +7,7 @@ import { setPadGrab } from '../player/controls.js';
 import { modalOpen } from '../player/modal.js';
 import { heartsText } from './friendship.js';
 import { boogler } from './boogler.js';
-import { GIFTS } from '../sim/gift-catalog.js';
+import { GIFTS } from '../sim/gift-catalog.ts';
 import { setIcon } from '../player/item-icons.js';
 import { glyph } from '../player/glyphs.js';
 
