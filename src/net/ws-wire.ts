@@ -1,6 +1,6 @@
 // The wire between a browser and the server host (docs/plans/server-host.md, "Wire"): JSON text frames on a WebSocket
-// at /room/<roomId>?self=<selfId>&b=<build>, subprotocol WS_PROTOCOL. Message shapes copy peer-room's, so both rooms
-// share their handling. Pure; the server imports it too.
+// at /room/<roomId>?self=<selfId>&b=<build>, subprotocol WS_PROTOCOL. Message shapes follow the
+// old peer room's. Pure; the server imports it too.
 export const WS_PROTOCOL = 'boogle.1';
 export const CLOSE = { NOT_HOSTED: 4000, FULL: 4008, REPLACED: 4009, BAD: 4400, RESTART: 1012 } as const;
 export const MAX_MSG = 16000;

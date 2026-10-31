@@ -1,6 +1,5 @@
 // The peer table a room keeps (src/net/README.md): me first, then everyone known, as frozen entries, with changes batched
-// 8 ms into one onPeers call. The same rules as peer-room.ts's own table (written fresh, so peer-room stays untouched):
-// a presence older than the newest seen for that id is stale, and a dropped id keeps its seq as a tombstone so a late
+// 8 ms into one onPeers call. A presence older than the newest seen for that id is stale, and a dropped id keeps its seq as a tombstone so a late
 // packet can't bring it back.
 //
 //   const t = createPeerTable(selfId)
@@ -11,7 +10,19 @@
 //   t.onChange(h)                    h({ peers, joined, left, updated }); returns unsubscribe
 //   t.expectBack(ms)                 after a reconnect: drop, after ms, every remote not upserted since
 //   t.clear()                        stop timers
-import type { PeerEntry, PeersChange } from './peer-room.ts';
+/** One peer as onPeers and peers() hand it out. */
+export type PeerEntry = Readonly<{
+  peer: string;
+  sameTab: boolean;
+  presence: Readonly<Record<string, unknown>>;
+  updatedAt: number;
+}>;
+export type PeersChange = {
+  peers: readonly PeerEntry[];
+  joined: readonly PeerEntry[];
+  left: readonly PeerEntry[];
+  updated: readonly PeerEntry[];
+};
 
 type Rec = { presence: Readonly<Record<string, unknown>>; at: number; entry: PeerEntry };
 
@@ -76,7 +87,7 @@ export function createPeerTable(selfId: string) {
         console.error('[peer-table] handler threw', e);
       }
   }
-  function list() {
+  function list(): readonly PeerEntry[] {
     if (!cache) {
       for (const id of pj) shown.add(id);
       cache = Object.freeze([

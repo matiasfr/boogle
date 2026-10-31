@@ -10,38 +10,18 @@ Engineering groundwork (lint, replay test, snapshot versions, telemetry) is trac
 
 The design and technical principles live in [DESIGN.md](DESIGN.md). Read it before picking up a phase. Every phase below ends with the question our ongoing playtests (2–4 real people, notes in [docs/playtests.md](docs/playtests.md)) should answer.
 
-## Key decision: PeerJS (WebRTC), with one browser as host (replaced 2026-10-31: the server hosts every room)
+## Key decision: our server hosts every room
 
 - [x] The server hosts every room, no PeerJS fallback ([docs/plans/server-host.md](docs/plans/server-host.md)); then the co-op net roadmap ([docs/plans/net-roadmap.md](docs/plans/net-roadmap.md)).
 
-Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other directly over WebRTC data channels. Our hosting is only for the pieces WebRTC can't do on its own.
-
-**Topology: star around a host peer.** One player's browser is the **host**. Everyone else connects only to the host, and the host relays presence between them. This avoids a full mesh (every player connected to every other, which grows with the square of the player count) and gives the shared world a single authority, the way a server would.
-
-**Finding the island (no lobby needed).** Every room has a well-known host ID, e.g. `boogle-<room>-host`.
-1. On join, try to register as `boogle-<room>-host`.
-2. If PeerJS says the ID is taken (`unavailable-id`), someone is already hosting. Register with a random ID and connect to the host.
-3. If the host leaves, every client sees the connection close, waits a small random delay, and tries to claim the host ID. The first one to succeed becomes the new host; the rest reconnect to it.
-
-**Two channels per connection.** One **unreliable/unordered** data channel for presence and the ball (latest state wins, like UDP), and one **reliable/ordered** channel for edits (plant a seed, shake a palm, pick up a gift) that must never be dropped.
-
-**Persistence without a game server.** Every client keeps the latest garden snapshot the host sent (in memory and in `localStorage`). A new host loads the newest snapshot it has. To make the garden survive when *nobody* is online, the host also saves snapshots to a tiny storage endpoint we host (`PUT/GET /rooms/:id/snapshot`), which can live in the same process as our PeerServer.
-
-**What we host:**
-| Piece | Why | Options |
-|---|---|---|
-| PeerJS signaling server | Introduces peers to each other. The free public `0.peerjs.com` is fine for prototyping but not reliable enough to depend on. | Self-host `peerjs-server` (Node) on Fly.io / Railway / Render |
-| TURN relay | Without one, some players behind strict NATs or corporate/school networks can't connect at all. | Hosted TURN (Metered, Twilio, Cloudflare) or our own coturn |
-| Snapshot storage | Garden survives when the island is empty. | A couple of HTTP routes next to the PeerServer, writing JSON to disk or a small DB |
-| Static site | Serve the client | GitHub Pages / Netlify |
+Until 2026-10-31 Boogle ran on PeerJS with one player's browser as the host. Now our server (`server/`, on Fly) hosts every room: each tab opens one WebSocket to it, the server runs the room's lockstep world, relays presence and messages, picks the lead tab for Host-kind fields, and saves the world to its own disk, so the island never waits for a host and keeps going while it is loaded with nobody in it.
 
 **Authority split:**
-- Player movement: client-authoritative (as today).
-- Ball: owner-authoritative with the epoch rule (as today), now carried over the unreliable channel.
-- Shared world (gifts, mushrooms): **host-authoritative.** Clients send edits to the host; the host stamps them with a tick and broadcasts them; everyone runs the same deterministic sim, so clients predict locally. The host sends a snapshot + hash every few seconds, and clients that disagree adopt it.
-- Trust: the host validates edits (reach, rate limits). We're playing with friends, so a cheating host isn't a concern.
-
-**PeerJS is the only transport.** We're dropping the claude.ai artifact `room` and the same-browser `BroadcastChannel` fallback, and the repo no longer targets claude.ai. Local testing works with PeerJS too: two tabs on one machine connect to each other like any two peers.
+- Player movement: client-authoritative.
+- Ball: owner-authoritative with the epoch rule.
+- Shared world (gifts, mushrooms, sites): **server-authoritative.** Tabs send edits; the server validates, stamps them with a tick and broadcasts them; every tab runs the same deterministic sim. The server sends per-state hashes every 2 s, and a tab that disagrees reloads a snapshot.
+- The Boogler: the lead tab, picked by the server, until the net roadmap moves him onto the server.
+- Trust: the server validates edits (ranges, rates, state). Fine among friends.
 
 ---
 
@@ -53,7 +33,7 @@ Networking runs on [PeerJS](https://peerjs.com): browsers talk to each other dir
 
 **Done when:** the game behaves exactly as before and `npm run dev` / `npm run build` work.
 
-## Phase 1: PeerJS networking
+## Phase 1: PeerJS networking (superseded: the server hosts every room)
 
 - [x] Remove the claude.ai-only code: `window.claude.use('room')`, `createLocalRoom()` (BroadcastChannel), the `permissions` and `user` capability calls, `window.claude.hot` snapshot/ready, and the "only runs inside the claude.ai artifact viewer" messages.
 - [x] Write `src/net/peer-room.ts` on PeerJS: host-ID claim, star topology with host relay, unreliable presence channel, host migration (see "Key decision" above). Keep the same small surface the game already calls (`presence(patch)`, `onPeers(handler)`, `onConnection(handler)`) so the game code barely changes. Rooms come from the URL (`/?room=beach`) so friend groups can have their own island.

@@ -46,8 +46,7 @@ export type Remote = {
 type RemoteHook = (r: Remote, pr: Presence, time: number) => void;
 
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
-// state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); turn: our ICE config includes a TURN server
-// (for connection reports); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
+// state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
 // attempt while solo (0: none scheduled); full: the last join was turned away ('room_full'): the cap, or true.
 export const net = {
   room: null as Room | null, // the room interface (src/net/README.md) once joined
@@ -57,7 +56,6 @@ export const net = {
   state: 'connecting',
   error: null as string | null,
   full: 0 as number | true,
-  turn: false,
   retries: 0,
   retryAt: 0,
 };
@@ -310,10 +308,12 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.ts).
+// World copies tabs kept before the server hosted every room (under the plain name before the 0.1 clean break, then the
+// world room id): nothing loads them any more, so each tab clears its own.
 function dropOldSave(room: string) {
   try {
     localStorage.removeItem(`boogle.world.${room}`);
+    localStorage.removeItem(`boogle.world.${worldRoomId(room)}`);
   } catch {
     // storage unavailable: nothing to drop
   }
@@ -352,7 +352,7 @@ export async function connectRoom() {
   setNet('connecting');
   setSelfId(room.selfId);
   for (const fn of roomHooks.splice(0)) fn(room);
-  attachWorld(room, { roomId, serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
+  attachWorld(room, { roomId });
   const fail = (e: NetError) => {
     if (net.state === 'solo') return;
     noteError(e, 'unknown');

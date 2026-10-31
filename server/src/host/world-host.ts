@@ -6,9 +6,7 @@
 //   wh.onSend((msg) => ...)       the sync's outgoing messages, for the hosted room to fan out (a w:snap only to msg.to)
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
 //   wh.step(dt)                   advance dt seconds by hand (tests pass tick: false; otherwise a 50 ms timer does it)
-//   wh.status(), wh.adopt(snap)   worldStatus() plus the tick; adoptSnapshot (a handed-over world)
-//   wh.validate(snap)             it loads cleanly on a scratch sync: no load errors, no newer-build state, same seed
-//   await wh.save()               save now (if the world changed) and wait for the file
+//   wh.status()                   worldStatus() plus the tick
 //   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
 //
 // The host-side work a browser host does outside the rules is done here too: src/features/helper-bank.ts's bank.wake
@@ -70,15 +68,13 @@ export function createWorldHost({
   sync.attachWorld(
     {
       selfId: SERVER_ID,
-      isHost: () => true,
       send: (msg) => {
         for (const fn of sendFns) fn(msg as Msg);
       },
       onMessage: (h) => (msgFns.add(h), () => msgFns.delete(h)),
       onConnection: (h) => (h(true), () => {}),
-      onHostChange: () => () => {},
     },
-    { roomId, serverUrl: '', storage, now: Date.now, saveMs },
+    { roomId, host: true, storage, now: Date.now, saveMs },
   );
 
   let last = performance.now(),
@@ -108,18 +104,6 @@ export function createWorldHost({
     },
     step: (dt: number) => sync.updateWorld(dt),
     status: () => ({ tick: sync.world.tick, ...sync.worldStatus() }),
-    adopt: (snap: unknown) => sync.adoptSnapshot(snap),
-    validate(snap: unknown) {
-      const scratch = createSync({ env: { canPlantAt: home.canPlantAt } });
-      installRules(scratch, home.land as Parameters<typeof installRules>[1]);
-      if (!scratch.loadSnapshot(snap as Parameters<typeof scratch.loadSnapshot>[0])) return false;
-      const st = scratch.worldStatus();
-      return st.loadErrors === 0 && !st.newerSave && scratch.world.seed === sync.world.seed;
-    },
-    async save() {
-      sync.saveNow();
-      await writing;
-    },
     async close({ save = true } = {}) {
       if (timer) clearInterval(timer);
       if (save) sync.saveNow(true);

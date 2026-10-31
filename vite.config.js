@@ -27,7 +27,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
-          const m = id.match(/node_modules\/(three|peerjs)\//);
+          const m = id.match(/node_modules\/(three)\//);
           return m ? m[1] : undefined;
         },
       },

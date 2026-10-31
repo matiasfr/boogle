@@ -6,7 +6,7 @@
 // Pure: read by src/netplay/net.ts, the registry check and tests.
 export const WORLD_NS = 'v01';
 
-// The id a room's world lives under. The server and peer-room take [a-z0-9-]{1,32}: a room name too long to fit keeps
+// The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
 const MAX = 31 - WORLD_NS.length;
 function shortHash(s: string): string {

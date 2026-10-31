@@ -79,7 +79,6 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | What | Where | Key or route | Scope |
 |---|---|---|---|
 | World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v01-<room>.json` (`GET /rooms/v01-<room>/snapshot`) | per room |
-| World snapshot (unused copy) | localStorage on every tab, hash-verified ticks only; goes away with the peer model's removal | `boogle.world.v01-<room>` | per room, per browser |
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
 | Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
 | Guest pid (a second tab) | sessionStorage | `boogle.guestPid` | per tab |
@@ -93,8 +92,7 @@ Saves from before 0.1 (`boogle.world.<room>`, the server's `<room>`) are never l
 2026-10-31 started every room's world fresh, and each tab deletes its old local key on connect. Not persisted: the ball, the Boogler's position.
 
 The server ([server/README.md](../../server/README.md)) is one Node service: the rooms (`/room/:id`), their saves,
-`/report` and `/reports`, and `/healthz`; the PeerJS signaling, `/ice` and snapshot uploads of the old peer model are
-still there until they are removed (docs/plans/server-host.md, step 11). It runs on Fly (`boogle-server`); the game is served from boogle.club.
+`/report` and `/reports`, and `/healthz`. It runs on Fly (`boogle-server`); the game is served from boogle.club.
 
 ## 8.6 Who you are (player id)
 
@@ -115,8 +113,7 @@ guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-ground
   after its last player left) doesn't. `world.epochMs` (the wall time of tick 0) is read by the helper bank alone: the
   server submits `bank.wake` when it loads a save, for the time it was unloaded (6.19). Mushroom growth, fruit regrowth
   and the day count ticks.
-- How many joins need the TURN relay, and the ball's lag for non-owners, are reported (`relayed`, `links`, `rttMs`;
-  6.15); PLAN Phase 1's "Measure" item stays open until someone reads the numbers.
+- The ball's lag for non-owners is reported (`rttMs`, the round trip to the server; 6.15).
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.ts](../../src/world/background.ts)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
