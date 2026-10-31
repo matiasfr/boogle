@@ -9,9 +9,10 @@ export const MAX_ITEMS = 48;
 // Wash-ups are gone; the saved schedule (`at`) stays pinned here so older builds that load our state never wash either.
 // Shore items from older saves age out on LIFE.shore.
 export const NEVER = 0x7fffffff;
-export const LIFE = { shore: 12000, fruit: 6000, toss: 6000 }; // then the tide takes it back, or it rots away
+export const LIFE = { shore: 12000, fruit: 6000, toss: 6000 }; // ticks an item lies on the ground before it is gone
 export const PERCH_REFILL = 600; // a perch gets a new item this long after its last one was taken
 const MAX_PERCHES = 4;
+// SHORE: washed up by older builds. Nothing makes one now; it stays so their saved items load and age out.
 export const SRC = { SHORE: 0, FRUIT: 1, TOSS: 2, PERCH: 3 };
 // Item height: on the terrain, on its perch, or a resting height in cm (a deck, a rock, a cap).
 export const ON_GROUND = -1;

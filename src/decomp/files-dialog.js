@@ -92,7 +92,7 @@ export function openFilesDialog({ title, needs, ext, onFile }) {
   dlg.showModal();
 }
 
-export function closeFilesDialog() {
+function closeFilesDialog() {
   if (!dlg?.open) return;
   dlg.close();
   closeModal();
