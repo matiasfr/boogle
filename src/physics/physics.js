@@ -93,7 +93,7 @@ export function installStepHooks({ me, ball, remotes }) {
         dz = r.target.z - p.z;
       if (dx * dx + dy * dy + dz * dz > 36) {
         teleport(r.body, r.target.x, r.target.y, r.target.z);
-        r.body.velocity.setZero();
+        r.body.velocity.set(0, 0, 0);
       } else {
         r.body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
       }
@@ -148,7 +148,7 @@ export function installStepHooks({ me, ball, remotes }) {
         const k = 1 - (Math.hypot(bb.velocity.x, bb.velocity.z) < 0.5 ? 10 : 1.2) * FIXED;
         bb.velocity.x *= k;
         bb.velocity.z *= k;
-        bb.angularVelocity.scale(k, bb.angularVelocity);
+        bb.angularVelocity.set(bb.angularVelocity.x * k, bb.angularVelocity.y * k, bb.angularVelocity.z * k);
       }
       // Surf: the surface bobs with the same waves the sea shader draws, and a slow, smoothly varying
       // current runs along the shore. A gentle, surging inward drift keeps the ball washing in eventually.

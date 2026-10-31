@@ -7,9 +7,9 @@
 //
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { GRAVITY } from '../constants.js';
-import { world, GROUP } from './physics.js';
+import { GROUP } from './physics.js';
+import { raycastClosest, rayHit } from './engine.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 
@@ -46,17 +46,9 @@ export function stepFlight(p, v, glide, dt = STEP) {
   p.addScaledVector(v, dt);
 }
 
-const from = new CANNON.Vec3(),
-  to = new CANNON.Vec3(),
-  hit = new CANNON.RaycastResult(),
-  RAY = { collisionFilterMask: GROUP.SCENERY, skipBackfaces: true };
-function cast(a, b) {
-  from.set(a.x, a.y, a.z);
-  to.set(b.x, b.y, b.z);
-  hit.reset();
-  world.raycastClosest(from, to, RAY, hit);
-  return hit.hasHit ? hit : null;
-}
+const hit = rayHit(),
+  RAY = { mask: GROUP.SCENERY, skipBackfaces: true };
+const cast = (a, b) => (raycastClosest(a, b, RAY, hit) ? hit : null);
 
 const underwater = (p) => waterField.surfaceAt(p.x, p.z) > p.y + 0.05;
 const normal = new THREE.Vector3(),

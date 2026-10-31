@@ -1,10 +1,12 @@
 // The physics facade (docs/plans/rapier.md, step 1): the only module that imports a physics library. Today the backend
 // is cannon-es; a Rapier backend comes next, behind ?physics=rapier. Game code builds bodies from plain shape
 // descriptions and reads and writes the body fields both backends keep: position, velocity, angularVelocity, force,
-// quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps).
+// quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z (w)
+// and set(): cannon's vector methods (setZero, scale, vadd, ...) don't exist on the Rapier backend.
 //
 //   createBody({ mass, type, material, group, mask, response, position, shapes })   a body, not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
+//   setMotion(body, 'dynamic' | 'kinematic', response)   switch how it moves; kinematic stops it (response: pushes)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
 //   material(name), contactMaterial(a, b, { friction, restitution })
 //   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
@@ -86,6 +88,14 @@ export function setShapes(body: Body, shapes: Shape[]) {
   body.updateMassProperties();
   body.aabbNeedsUpdate = true;
 }
+export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response = motion === 'dynamic') {
+  body.type = motion === 'dynamic' ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC;
+  body.collisionResponse = response;
+  if (motion === 'kinematic') {
+    body.velocity.set(0, 0, 0);
+    body.angularVelocity.set(0, 0, 0);
+  }
+}
 export const addBody = (body: Body) => world.addBody(body);
 export const removeBody = (body: Body) => world.removeBody(body);
 export function teleport(body: Body, x: number, y: number, z: number) {
@@ -116,6 +126,7 @@ export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: numb
 export type RayHit = CANNON.RaycastResult;
 export const rayHit = (): RayHit => new CANNON.RaycastResult();
 export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) {
+  hit.reset();
   return world.raycastClosest(
     from as CANNON.Vec3,
     to as CANNON.Vec3,
