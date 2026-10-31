@@ -1,8 +1,21 @@
 {
   "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
   "n": 409,
-  "states": ["terrain", "mushrooms", "gifts", "proto", "water"],
-  "ops": ["mush.plant", "mush.water", "fruit.drop", "gift.take", "gift.toss"],
+  "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources", "bank"],
+  "ops": [
+    "mush.plant",
+    "mush.water",
+    "fruit.drop",
+    "gift.take",
+    "gift.toss",
+    "who.set",
+    "pile.drop",
+    "pile.take",
+    "site.stock",
+    "site.run",
+    "src.take",
+    "bank.wake"
+  ],
   "layout": {
     "trees": [
       { "i": 175, "j": 200 },

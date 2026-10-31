@@ -1,13 +1,14 @@
-// Saved worlds on the real rules (B3): a snapshot captured before state versions existed still loads to the same
-// hashes, and malformed snapshots or states never throw: a bad state starts fresh and the world keeps ticking.
+// Saved worlds on the real rules: a save without state versions loads at version 0, and malformed snapshots or states
+// never throw: a bad state starts fresh and the world keeps ticking. A 0.1 save captured at M4 keeps loading. (The
+// pre-0.1 fixtures were retired with the namespace bump, src/world/namespace.ts: no 0.1 tab loads an older save.)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { createSync } from '../src/world/sync.js';
 import { installRules } from '../src/world/rules/index.js';
+import fs from 'node:fs';
 import { homeLand } from './helpers/land.mjs';
 
-const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-pre-version.json', import.meta.url), 'utf8'));
+const v01 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v01.json', import.meta.url), 'utf8'));
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -17,19 +18,33 @@ function peer() {
 }
 const copy = (v) => JSON.parse(JSON.stringify(v));
 
-test('a snapshot saved before state versions (no vers) still loads to the same hashes', () => {
-  assert.equal(fixture.snap.vers, undefined);
+// A world with something in it: a planted mushroom and a mango on the ground.
+function played() {
   const s = peer();
-  assert.equal(s.loadSnapshot(copy(fixture.snap)), true);
-  assert.deepEqual(s.stateHashes(), fixture.hashes);
+  s.submitEdit({ op: 'mush.plant', i: 228, j: 200 });
+  s.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 3, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
+  for (let k = 0; k < 5; k++) s.updateWorld(0.1);
+  return { snap: copy(s.snapshot()), hashes: s.stateHashes() };
+}
+
+test('a save without vers loads every state at version 0, and re-saves with versions', () => {
+  const { snap, hashes } = played();
+  delete snap.vers;
+  const s = peer();
+  assert.equal(s.loadSnapshot(copy(snap)), true);
+  assert.deepEqual(s.stateHashes(), hashes);
+  assert.equal(s.worldStatus().loadErrors, 0);
+  const saved = copy(s.snapshot());
+  assert.deepEqual(Object.keys(saved.vers), Object.keys(hashes));
+});
+
+test('a 0.1 save (test/fixtures/snap-v01.json) still loads to the same hashes', () => {
+  const s = peer();
+  assert.equal(s.loadSnapshot(copy(v01.snap)), true);
+  const now = s.stateHashes();
+  for (const [k, h] of Object.entries(v01.hashes)) assert.equal(now[k], h, `${k} loads differently`);
   assert.equal(s.worldStatus().loadErrors, 0);
   assert.equal(s.worldStatus().newerSave, false);
-  // and this build's own save of it carries versions and round-trips
-  const saved = copy(s.snapshot());
-  assert.deepEqual(Object.keys(saved.vers), Object.keys(fixture.hashes));
-  const t = peer();
-  t.loadSnapshot(saved);
-  assert.deepEqual(t.stateHashes(), fixture.hashes);
 });
 
 const JUNK = [
@@ -45,25 +60,26 @@ const JUNK = [
   [1, 2, 3],
   {},
   { d: 'x', players: 5 },
-  { d: [1.5, 'a', -9, null], players: [[1, 2, 3], 'p', ['p', 'lots', 'x']], n: 409 },
   { v: 2, p: 'x', it: [1, 2], r: 'q', pa: {}, n: -1 },
   { v: 2, it: Array(70).fill(7), n: 1e300 },
-  { width: 1, height: 1, cells: 'x', src: 5 },
-  { mask: 'x' },
-  { region: 5, cells: [1e9, 5, -1, 2, 'a', 3], src: ['a', 'b'], width: 'w' },
+  { a: 'x', c: [1e9, -1, 'a'] },
+  [['x', 'y', 'z']],
+  [[1e9, 5, -1, 2, 'a', 3]],
+  { k: 'x', n: [1, 2], ms: 'q' },
 ];
 
 test('malformed snapshots and states never throw; bad states start fresh and the world keeps ticking', (t) => {
   const warn = console.warn;
   console.warn = () => {}; // every bad state logs a warning: expected here
   t.after(() => (console.warn = warn));
+  const { snap, hashes } = played();
   const s = peer();
   const fresh = s.stateHashes();
-  for (const bad of [null, 'x', [], {}, { tick: -1 }, { ...fixture.snap, data: 5 }, { ...fixture.snap, seed: 'a' }])
+  for (const bad of [null, 'x', [], {}, { tick: -1 }, { ...snap, data: 5 }, { ...snap, seed: 'a' }])
     assert.equal(s.loadSnapshot(copy(bad ?? null)), false);
   assert.deepEqual(s.stateHashes(), fresh, 'a rejected snapshot changes nothing');
 
-  const keys = Object.keys(fixture.hashes);
+  const keys = Object.keys(hashes);
   for (let k = 0; k < JUNK.length; k++) {
     // every state gets a junk value (each sees every one over the loop), and every third round junk versions too
     const data = Object.fromEntries(keys.map((key, n) => [key, JUNK[(k + n) % JUNK.length]]));
@@ -74,30 +90,6 @@ test('malformed snapshots and states never throw; bad states start fresh and the
   }
   assert.ok(s.worldStatus().loadErrors > 0, 'some junk was caught by a throwing load');
   assert.equal(s.worldStatus().newerSave, false);
-  s.loadSnapshot(copy(fixture.snap)); // a good save afterwards loads as usual
-  assert.deepEqual(s.stateHashes(), fixture.hashes);
-});
-
-test('an old snapshot with sand deltas, water cells and shore items loads cleanly and deterministically', () => {
-  const a = peer(),
-    b = peer();
-  for (const s of [a, b]) {
-    assert.equal(s.loadSnapshot(copy(fixture.snap)), true);
-    assert.equal(s.worldStatus().loadErrors, 0);
-  }
-  assert.deepEqual(a.stateHashes(), b.stateHashes());
-  assert.equal(a.stateHashes().water, 2166136261); // the retired water stub
-  for (let k = 0; k < 50; k++) {
-    a.updateWorld(0.1);
-    b.updateWorld(0.1);
-  }
-  assert.deepEqual(a.stateHashes(), b.stateHashes());
-  // Past the life of the saved shore items (12,000 ticks): they age out on both, nothing new washes up, hashes agree.
-  for (let k = 0; k < 12100; k++) {
-    a.updateWorld(0.1);
-    b.updateWorld(0.1);
-  }
-  for (const s of [a, b])
-    assert.ok(!s.snapshot().data.gifts.it.some((v, k) => k % 7 === 4 && v === 0), 'shore items left');
-  assert.deepEqual(a.stateHashes(), b.stateHashes());
+  s.loadSnapshot(copy(snap)); // a good save afterwards loads as usual
+  assert.deepEqual(s.stateHashes(), hashes);
 });

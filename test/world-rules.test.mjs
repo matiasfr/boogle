@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.js';
 import { ON_GROUND, SRC } from '../src/sim/gifts.js';
 import { SEEDS } from '../src/world/rules/gifts.js';
 
-const CANONICAL = ['terrain', 'mushrooms', 'gifts', 'proto', 'water']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -35,6 +35,24 @@ const SCRIPTS = {
     },
     { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
+  ],
+  roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
+  piles: () => [
+    ({ rules }) => {
+      rules.piles.drop(212, 188, 0, 9); // a pile to start from, the same on both peers (nothing else makes one yet)
+      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 6 };
+    },
+    { op: 'pile.drop', i: 214, j: 188, n: 2 },
+  ],
+  sources: () => [{ op: 'src.take', i: 175, j: 200, id: 0 }],
+  bank: () => [{ op: 'bank.wake', i: 0, j: 0, ms: 3600000 }], // what a host that loaded an hour-old save measures
+  sites: () => [
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
+    { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
+    ({ rules }) => {
+      rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
+      return { op: 'site.run', i: 0, j: 0, s: 0 };
+    },
   ],
 };
 
@@ -67,7 +85,7 @@ test('every op has an accepted edit, and the same edits give the same state on t
     b = peer();
   const fresh = a.s.stateHashes();
   const ops = new Set(play(a).map((e) => e.op));
-  assert.deepEqual([...ops], a.s.registry().ops, 'every registered op needs an edit in SCRIPTS');
+  assert.deepEqual([...ops].sort(), [...a.s.registry().ops].sort(), 'every registered op needs an edit in SCRIPTS');
   for (const e of play(b)) assert.ok(ops.has(e.op));
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   for (const m of RULES)
@@ -78,6 +96,7 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   const a = peer();
   play(a);
   const b = peer();
+  assert.notDeepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))), true);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
@@ -85,19 +104,6 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   tick(b, 50);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
-});
-
-test('saves from the 129-cell island (before 2026-10-29) load a bare island and no mushrooms', () => {
-  const a = peer(),
-    fresh = a.s.stateHashes();
-  a.s.loadSnapshot({
-    tick: 5,
-    seed: 1,
-    epochMs: 0,
-    data: { terrain: { d: [60 * 129 + 70, -40], players: [['p', 40, 3]] }, mushrooms: [80, 60, 0] },
-  });
-  assert.equal(a.s.stateHashes().terrain, fresh.terrain);
-  assert.equal(a.s.stateHashes().mushrooms, fresh.mushrooms);
 });
 
 test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
@@ -113,7 +119,7 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
-  const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.js$/;
+  const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
   const seen = new Set();
   const visit = (url) => {
     if (seen.has(url.href)) return;

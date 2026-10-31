@@ -20,4 +20,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [big-walk-and-communal-endings.md](big-walk-and-communal-endings.md): House House on Big Walk (short-range voice, tools to reconnect, folk games, the ritualized goodbye) and Untitled Goose Game (mundane stakes, moments-then-systems, music as narrator), plus Journey. Feeds [docs/proposals/story-and-finale.md](../proposals/story-and-finale.md).
 - [_primary-source-notes.md](_primary-source-notes.md): raw fetched facts and quotes behind the reports, with fetch status. No proposals.
 
+- [0.1/](0.1/): the 0.1 direction (2026-10-30/31; the briefs say "v2"): what is settled ([SETTLED.md](0.1/SETTLED.md)), the haul-stack resource loop ([7-resource-loop.md](0.1/7-resource-loop.md)), sources, contribution tiers and casual play ([8-collecting-tiers.md](0.1/8-collecting-tiers.md)), rarity done kindly ([9-brainrot-hooks.md](0.1/9-brainrot-hooks.md)), and identity, persistence and the groundwork milestones ([10-groundwork.md](0.1/10-groundwork.md)). Plan: [docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md).
+
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.

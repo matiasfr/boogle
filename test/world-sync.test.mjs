@@ -9,8 +9,9 @@ import { makeNet, run, live } from './helpers/net.mjs';
 // opts: env goes to createSync (the host facts validate reads); failLoad ({ on }) makes grid loads throw while on (bad data
 // from a peer); the rest goes to attachWorld (storage, serverUrl, fetch, ...).
 function makePeer(net, id, host, opts = {}) {
-  const { env, failLoad, ...attach } = opts;
+  const { env, failLoad, pid, ...attach } = opts;
   const s = createSync({ env });
+  if (pid) s.setPid(pid);
   const grid = new Int32Array(16);
   const log = [];
   s.registerState('grid', {
@@ -40,6 +41,7 @@ function makePeer(net, id, host, opts = {}) {
       log.push(`${e.p}:${e.v}`);
     },
   });
+  s.registerOp('mark', { apply: (e) => log.push(`${e.p}=${e.u}`) }); // who sent it, as the host stamped it
   s.registerOp('gate', { validate: (e, ctx) => ctx.env.allow(e.v), apply: (e) => (grid[e.i * 4 + e.j] += e.v) });
   const p = net.add(id, host);
   s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234, ...attach });
@@ -83,6 +85,67 @@ test('edits from all peers converge in identical order', async () => {
   assert.deepEqual(clients[1].log, host.log);
   assert.ok(!host.log.some((l) => l.startsWith('forged')), 'p comes from the real sender');
   assert.ok(Math.abs(clients[0].s.world.tick - host.s.world.tick) <= 6);
+});
+
+test("the host stamps each edit with its sender's pid (u), never one the edit claims", async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pidh' });
+  all[0].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pid0' });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log.sort(), ['c0=pid0', 'h=pidh']);
+  assert.deepEqual(all[1].log.sort(), all[0].log);
+  assert.equal(all[0].s.pidOf('c0'), 'pid0');
+  assert.equal(all[1].s.pidOf('h'), 'pidh');
+});
+
+test('an edit from a tab that never said its pid is rejected', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' })];
+  await run(net, all, 20);
+  const ghost = net.add('ghost', false); // a raw room: no sync, so no w:id
+  ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, []);
+  ghost.room.send({ t: 'w:id', u: 'pidg' });
+  ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, ['ghost=pidg']);
+});
+
+test('pids survive host migration, even to a late joiner that never heard the others say theirs', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  const late = makePeer(net, 'late', false, { pid: 'pidl' }); // learns pid0 only from the host's snapshot
+  all.push(late);
+  await run(net, all, 60);
+  // the late joiner is next in line, so it takes over when the host dies
+  net.peers.splice(net.peers.indexOf(late.p), 1);
+  net.peers.splice(1, 0, late.p);
+  net.killHost();
+  await run(net, all, 80);
+  assert.equal(late.s.worldStatus().mode, 'host');
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  late.s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  await run(net, all, 40);
+  assert.deepEqual(late.log.sort(), ['c0=pid0', 'late=pidl']);
+  assert.deepEqual(all[1].log.sort(), late.log);
+});
+
+test('a pid already held by a session in the room cannot be claimed by another', async () => {
+  const net = makeNet();
+  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
+  await run(net, all, 60);
+  const thief = net.add('thief', false); // a raw room claiming c0's pid, then the host's
+  thief.room.send({ t: 'w:id', u: 'pid0' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  thief.room.send({ t: 'w:id', u: 'pidh' });
+  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
+  await run(net, all, 20);
+  assert.deepEqual(all[0].log, ['c0=pid0'], 'only the real holder plays as pid0');
 });
 
 test('host rejects invalid edits', async () => {
@@ -309,6 +372,7 @@ test('clients save the world too (but only the host uploads), so the next host s
   await run(net, [host, client], 620); // past the 30 s save interval
   assert.equal(client.grid[11], 7);
   assert.ok(store.getItem('boogle.world.test'), 'client saved');
+  assert.equal(client.s.worldStatus().snapBytes, store.getItem('boogle.world.test').length, 'the size is reported');
   assert.deepEqual(clientCalls, [], 'a client never touches the server');
   assert.equal(client.s.worldStatus().saves, 0);
   assert.ok(hostCalls.includes('PUT'), 'the host uploads');

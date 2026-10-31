@@ -5,7 +5,8 @@
   before that age out). The 17 seashore finds are retired (2026-10-31): one an older build throws or saved
   earlier is not drawn and cannot be picked up, and it rots like any thrown thing. The frisbee twinkles so you can spot it. Anything lying around can be picked up (if your hotbar
   has room) or was thrown there by someone.
-- **Controls.** E / pad B: Pick up, or shake a palm.
+- **Controls.** E / pad B: Pick up, or shake a palm. The same shake also takes the palm's logs while it holds any
+  (6.19, [haul.md](haul.md)); a palm with logs but no ripe fruit still offers Shake.
 - **Sync kind.** Lockstep. Ops `fruit.drop` (`t` tree, `d` direction 0..7), `gift.take` (`id`), `gift.toss`
   (`k` kind, `i, j`, `y` resting height or −1 ground / −3 lost, `l` launch, `n` nonce); state `gifts`. Palms and
   the frisbee perch are a static layout filled before tick 1.

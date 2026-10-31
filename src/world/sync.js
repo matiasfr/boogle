@@ -4,14 +4,22 @@
 // The host is whoever room.isHost() says. All wire messages are `room.send` JSON with a `w:` type. NOTE room.send reaches every
 // OTHER peer; a client's message also reaches the other clients (relayed, `from` = origin), so each side ignores types it does not own.
 //
-//   client -> host   { t:'w:edit', e }                      an edit request (host overwrites e.p with the real sender id)
+//   client -> host   { t:'w:edit', e }                      an edit request (host overwrites e.p with the real sender id
+//                                                           and e.u with that sender's pid)
 //                    { t:'w:need' }                         please send me a snapshot (late join, desync, late edit)
+//   any -> all       { t:'w:id', u }                        this tab's player id (pid, src/player/identity.ts). Sent before
+//                                                           w:need, by a new host, after a reconnect and when a client
+//                                                           re-pins the host; every tab keeps selfId -> pid, so a
+//                                                           promoted client already knows the room's pids
 //   host -> all      { t:'w:edits', ht, list:[{tick,seq,e}] }  stamped edits (tick = host tick + DELAY); ht = host tick now
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
 //                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
 //                                                           hs = { stateKey: hash } so a client can name what diverged
-//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht, noSave }; only `to` uses it.
-//                                                           pend = stamped edits not yet applied at snap.tick (so a joiner misses none)
+//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht, noSave, ids };
+//                                                           only `to` uses it. pend = stamped edits not yet applied at snap.tick (so a
+//                                                           joiner misses none); ids = the host's [selfId, pid] pairs
+// Player ids: `p` on an edit is the session (selfId), `u` the player (pid) that outlives a reload. The host sets both
+// from its own records and never from the edit; an edit from a peer whose pid it doesn't know is rejected.
 // Clients pin the first sender of a host-type message as the host (re-pinned if it was silent for HOST_STALE_MS, i.e. migration).
 // Host migration: the new host continues from its own state, bumps seq, stamps with extra delay for a while and hashes soon.
 // Edits a client submitted that the old host never stamped are lost. Edits submitted while the room is down (a client
@@ -37,6 +45,8 @@
 // skipped, and this tab stops persisting, so an old tab never overwrites a newer save; the snapshots it serves carry
 // noSave, so the clients that load them stop persisting too.
 
+import { okPid } from '../sim/roster.ts';
+
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
 const CLOCK_EVERY = 2;
@@ -48,13 +58,16 @@ const CHUNK = 7000; // chars of snapshot JSON per message (peer-room caps messag
 const MAX_CHUNKS = 400;
 const MAX_EDIT_JSON = 1000;
 const MAX_HELD = 64; // edits kept while the room is reconnecting
-// Release held edits this far apart: over the 2-tick per-player op rate limit (200 ms), under a held button's
-// ~220 ms repeat, so a fresh edit waiting for its slot goes out before the next repeat replaces it.
+// Release held edits this far apart: two ticks (200 ms), so a burst never lands on one host tick, and under a held
+// button's ~220 ms repeat, so a fresh edit waiting for its slot goes out before the next repeat replaces it. (No rules
+// module rate-limits per player; ops bound themselves through state checks, such as a pour needing a stack.)
 const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
+const MAX_PIDS = 256; // selfId -> pid records kept (sessions seen this page load)
+const ID_EVERY_MS = 5000; // a client repeats its w:id this often, so a host that missed or dropped it learns it again
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = Number.isSafeInteger;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -83,6 +96,7 @@ export function createSync({ env: env0 } = {}) {
     saves: 0,
     heldDropped: 0,
     loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
+    snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
   };
   let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
   // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
@@ -93,6 +107,9 @@ export function createSync({ env: env0 } = {}) {
   let queue = []; // [{ tick, seq, e }] stamped, not yet applied
   let seq = 0;
   let selfId = 'local';
+  let pid = null; // this tab's player id (setPid); until set, its selfId stands in (tests, the first frames)
+  const myPid = () => pid ?? selfId;
+  const pids = new Map(); // selfId -> pid of every tab heard from (w:id, snapshot ids)
   let acc = 0;
   let wall = 0; // ms of frame time seen by updateWorld (all timers use this, so tests are deterministic)
 
@@ -171,7 +188,10 @@ export function createSync({ env: env0 } = {}) {
   function stamp(edit, from) {
     const h = ops.get(edit?.op);
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
-    const e = { ...edit, p: from }; // never trust a client-supplied p
+    const u = from === selfId ? myPid() : pids.get(from);
+    if (!u) return false; // no w:id from that tab yet (it repeats one every ID_EVERY_MS)
+    if (h.hostOnly && from !== selfId) return false; // an op only the host itself submits (a broadcast can't be replayed)
+    const e = { ...edit, p: from, u }; // never trust a client-supplied p or u
     try {
       if (h.validate && !h.validate(e, { from, tick: world.tick, env })) return false;
     } catch (err) {
@@ -197,6 +217,7 @@ export function createSync({ env: env0 } = {}) {
   function submitEdit(edit) {
     if (!isObj(edit) || !ops.has(edit.op) || !isInt(edit.i) || !isInt(edit.j)) return false;
     const e = { ...edit, p: selfId };
+    delete e.u; // the host sets it
     if (mode === 'client' && JSON.stringify(e).length > MAX_EDIT_JSON) return false;
     // Nowhere to deliver it yet (the room is down, so send() would drop it, or a reclaimed host is still loading): hold it.
     if (mode === 'client' ? !connected : held.length && !canRelease()) {
@@ -226,6 +247,26 @@ export function createSync({ env: env0 } = {}) {
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c) {
     connected = c;
+  }
+  let nextIdAt = 0;
+  function sendId() {
+    nextIdAt = wall + ID_EVERY_MS;
+    send({ t: 'w:id', u: myPid() });
+  }
+  // Whether a session is in the room now (unknown without room.peers: assume it is).
+  const live = (sid) => !room?.peers || room.peers().some((p) => p.peer === sid);
+  // A pid belongs to one live session: a claim on a pid that this tab or another live session holds is ignored, so
+  // a tab can't play as someone who is here (their pid is public in presence). The claimant keeps repeating its w:id
+  // and gets the pid once the holder has left (a reload's old session times out in a few seconds).
+  function notePid(from, u) {
+    if (!okPid(u) || typeof from !== 'string' || from === selfId || pids.get(from) === u) return;
+    if (u === myPid()) return;
+    for (const [sid, v] of pids) if (v === u && sid !== from && live(sid)) return;
+    pids.delete(from); // re-inserted last, so the oldest record goes first when full
+    pids.set(from, u);
+    if (pids.size <= MAX_PIDS) return;
+    const gone = [...pids.keys()].find((sid) => !live(sid)) ?? pids.keys().next().value;
+    pids.delete(gone);
   }
   // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick and trip rate limits.
   function releaseHeld() {
@@ -280,6 +321,7 @@ export function createSync({ env: env0 } = {}) {
     wall += dt * 1000;
     releaseHeld();
     if (mode === 'client') {
+      if (connected && wall >= nextIdAt) sendId();
       if (awaiting && wall - needAt > 2000) {
         needAt = wall;
         send({ t: 'w:need' });
@@ -409,7 +451,9 @@ export function createSync({ env: env0 } = {}) {
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
     // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave });
+    const ids = [...pids, [selfId, myPid()]];
+    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave, ids });
+    stats.snapBytes = json.length;
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
     for (let k = 0; k < n; k++) send({ t: 'w:snap', to, id, n, k, s: json.slice(k * CHUNK, (k + 1) * CHUNK) });
@@ -439,6 +483,7 @@ export function createSync({ env: env0 } = {}) {
       (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
     );
     if (isInt(p.seq)) seq = Math.max(seq, p.seq);
+    if (Array.isArray(p.ids)) for (const r of p.ids.slice(0, MAX_PIDS)) if (Array.isArray(r)) notePid(r[0], r[1]);
     hostTick = world.tick;
     hostTickAt = wall;
     ready = true;
@@ -457,6 +502,7 @@ export function createSync({ env: env0 } = {}) {
   }
   function acceptHost(from) {
     if (hostId === null || (from !== hostId && wall - hostSeenAt > HOST_STALE_MS)) {
+      if (hostId !== null) sendId(); // a migration: make sure the new host knows our pid before our next edit
       hostId = from; // first sender, or the old host went quiet: a migration
       hostTick = 0;
       hostTickAt = 0;
@@ -469,6 +515,7 @@ export function createSync({ env: env0 } = {}) {
 
   function onMessage(msg, from) {
     if (!isObj(msg) || typeof msg.t !== 'string' || !msg.t.startsWith('w:') || from === selfId) return;
+    if (msg.t === 'w:id') return notePid(from, msg.u); // every tab keeps the map, in any role
     if (mode === 'host') {
       if (msg.t === 'w:edit' && isObj(msg.e) && JSON.stringify(msg.e).length <= MAX_EDIT_JSON) stamp(msg.e, from);
       else if (msg.t === 'w:need') serveSnapshot(from);
@@ -556,8 +603,10 @@ export function createSync({ env: env0 } = {}) {
     if (hsh === lastSavedHash) return;
     lastSavedHash = hsh;
     const snap = snapshot();
+    const text = JSON.stringify(snap);
+    stats.snapBytes = text.length;
     try {
-      cfg.storage?.setItem(storageKey(), JSON.stringify(snap));
+      cfg.storage?.setItem(storageKey(), text);
     } catch {
       // quota or private mode: ignore
     }
@@ -612,6 +661,7 @@ export function createSync({ env: env0 } = {}) {
     awaiting = false;
     asm = null;
     lastSavedHash = null;
+    sendId();
     if (ready && !unverifiedFallback) {
       // Migration: our state is in sync; keep going, stamp conservatively, hash soon so others can resync.
       seq += 1000;
@@ -637,6 +687,7 @@ export function createSync({ env: env0 } = {}) {
     hostTickAt = 0;
     awaiting = true;
     needAt = wall;
+    sendId(); // before w:need and before any held edit is released: the same reliable channel keeps the order
     send({ t: 'w:need' });
   }
 
@@ -698,6 +749,13 @@ export function createSync({ env: env0 } = {}) {
     onSnapFail: (fn) => snapFailFns.push(fn),
     stateHashes,
     setSelfId: (id) => (selfId = id),
+    // This tab's player id (src/player/identity.ts); announced at once if a room is attached.
+    setPid(u) {
+      if (!okPid(u) || u === pid) return;
+      pid = u;
+      sendId();
+    },
+    pidOf: (sid) => (sid === selfId ? myPid() : (pids.get(sid) ?? null)), // a session's pid, or null
     submitEdit,
     updateWorld,
     snapshot,
@@ -726,6 +784,8 @@ export const {
   onSnapFail,
   stateHashes,
   setSelfId,
+  setPid,
+  pidOf,
   submitEdit,
   updateWorld,
   snapshot,

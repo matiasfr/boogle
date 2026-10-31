@@ -61,8 +61,8 @@ Rules:
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
   `migrate[v]` step for older saves
-  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-pre-version.json`
-  is one, checked by `test/world-snapshots.test.mjs`).
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v01.json` is one, checked by
+  `test/world-snapshots.test.mjs`).
 
 ## Edit generators and invariants
 
@@ -89,6 +89,11 @@ export function invariants(api, rules) {
   grid, oversized payloads. Return `null` when there is nothing sensible to do yet.
 - Edits are JSON-safe, with integer `i`/`j` and no `p` (sync adds it).
 - Invariants check what would silently break: conserved quantities, unique ids, caps, spacing.
+
+**Redrawing views.** A sim state that views draw can keep a `rev` counter, bumped on every change (in its own
+functions and on load) and never saved or hashed (`piles`, `sites`, `sources`). A view redraws when `rev` differs
+from the one it last drew: that covers edits, ticks (freight, trickles, runs ending) and snapshots, without matching
+op names.
 
 ## env keys
 
@@ -125,9 +130,12 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `terrain.js` | none | `terrain` | `{}`: retired stub, keeps the slot (step 1 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
-| `proto.js` | none | `proto` | `{}`: retired stub (prototype flags removed 2026-10-31), keeps the slot; echoes any saved bitmask and hashes it as older builds do |
-| `water.js` | none | `water` | `{}`: retired stub, keeps the slot (step 2 of docs/plans/cleanup-dig-water-junk.md); loads any save, hashes a constant |
+| `roster.ts` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
+| `piles.ts` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.ts`); `drop` returns `{ placed, ids }` |
+| `stacks.ts` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.ts`), by roster index; later rules call `add`/`take` in their apply |
+| `sites.ts` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), isDone(s), points(pid), room(s, ring), canRun(s), run(s, tick), helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.ts`, `../../sim/route.ts`), plaques, machine runs (`../../sim/scripted-run.ts`), helper freight and the age change (derived from `open`); later rules subscribe to `onSectionDone` at install |
+| `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the palms in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
+| `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |

@@ -81,6 +81,17 @@ test('RULES must keep main as a prefix', () => {
   assert.match(compareRegistries(base, rulesReg(['terrain'], {})).errors[0], /RULES order changed/);
 });
 
+test("a new world namespace is a clean break: main's rules, ops and states bind nothing", () => {
+  const s = (version, value) => ({ version, shape: shapeOf(value) });
+  const base = rulesReg(['terrain', 'gifts'], { terrain: s(0, {}), gifts: s(0, { v: 1 }) }, { 'g.take': 'gifts' });
+  const head = { ...rulesReg(['gifts'], { gifts: s(0, { w: 1 }) }, {}), ns: 'v01' };
+  const { errors, notes } = compareRegistries(base, head);
+  assert.deepEqual(errors, []);
+  assert.ok(notes.some((n) => /namespace \(none\) -> v01/.test(n)));
+  // the same namespace on both sides compares as usual
+  assert.match(compareRegistries({ ...base, ns: 'v01' }, head).errors.join('\n'), /RULES order changed/);
+});
+
 test('states: no removal, no version going down, no shape change without a version bump', () => {
   const s = (version, value) => ({ version, shape: shapeOf(value) });
   const base = rulesReg([], { g: s(0, { v: 1, it: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });

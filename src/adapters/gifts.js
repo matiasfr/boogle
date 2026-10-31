@@ -3,8 +3,8 @@
 // you carry is your hotbar (src/player/inventory.js).
 import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { CELL, HALF, GRID_RES, REACH, PLAYER_R, reducedMotion } from '../constants.js';
-import { groundHeight, cellX, cellZ } from './terrain.js';
+import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
+import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { world as physics } from '../physics/physics.js';
 import { trees } from '../render/props.js';
@@ -34,10 +34,6 @@ const perchSpots = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
 
-const cellOf = (x, z) => [
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
-];
 const fx = { falling: new Map(), wobble: new Map(), leaving: [], arriving: new Map() };
 
 // The effects of each gift op, from what its apply returned (r): the item that fell, was taken or landed.
@@ -340,11 +336,20 @@ export function giftTargets() {
         },
       });
   }
+  // One shake, two drops: ripe fruit (the toy) and, while the palm holds any, logs (src/world/rules/sources.ts, which
+  // go straight onto your stack). The ball knocks fruit only: it never produces material (SETTLED).
   layout.trees.forEach((_, t) => {
     const { x, z } = trees[t];
-    if (!canDrop(gifts, t, world.tick) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
+    const ripe = canDrop(gifts, t, world.tick),
+      logs = rules.sources.charges(t) > 0;
+    if ((!ripe && !logs) || Math.hypot(x - p.x, z - p.z) >= SHAKE_R) return;
     const at = new THREE.Vector3(x, groundHeight(x, z) + 1.7, z);
-    out.push({ id: `palm${t}`, verb: 'Shake', at, run: () => dropEdit(t, me.body.position.x, me.body.position.z) });
+    const run = () => {
+      if (ripe) dropEdit(t, me.body.position.x, me.body.position.z);
+      if (logs) submitEdit({ op: 'src.take', i: layout.trees[t].i, j: layout.trees[t].j, id: t });
+      fx.wobble.set(t, performance.now()); // the palm shakes at once, whatever falls out
+    };
+    out.push({ id: `palm${t}`, verb: 'Shake', at, run });
   });
   return out;
 }

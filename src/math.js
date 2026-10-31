@@ -10,10 +10,4 @@ export function angleLerp(a, b, t) {
 
 export { mulberry32 } from './sim/rng.ts';
 
-export function sanitizeName(s) {
-  return String(s ?? '')
-    .replace(/[\p{Cc}\p{Cf}]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 16);
-}
+export { cleanName as sanitizeName } from './sim/roster.ts'; // one name rule, also the roster's (lockstep)
