@@ -412,3 +412,26 @@ test('/peerjs: websocket handshake yields OPEN', { skip: typeof WebSocket === 'u
     await s.stop();
   }
 });
+
+// Upgrades go through one router (src/host/upgrade.ts): PeerJS signaling at /peerjs/peerjs, anything unknown 404.
+test('PeerJS signaling works through the upgrade router; an unknown upgrade path is refused', async () => {
+  const { WebSocket } = await import('ws');
+  const { svc, base } = await start({}, { unrefTimers: true });
+  try {
+    const ws = base.replace('http', 'ws');
+    const first = await new Promise((resolve, reject) => {
+      const s = new WebSocket(`${ws}/peerjs/peerjs?key=peerjs&id=router-test&token=t1`);
+      s.on('message', (m) => (resolve(JSON.parse(String(m))), s.close()));
+      s.on('error', reject);
+    });
+    assert.equal(first.type, 'OPEN');
+    const refused = await new Promise((resolve) => {
+      const s = new WebSocket(`${ws}/nope`);
+      s.on('unexpected-response', (_req, res) => resolve(res.statusCode));
+      s.on('error', () => resolve('error'));
+    });
+    assert.equal(refused, 404);
+  } finally {
+    await svc.close();
+  }
+});

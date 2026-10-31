@@ -1,4 +1,5 @@
-FROM node:22-alpine
+# Node 24 runs the server's .ts modules as they are (type stripping).
+FROM node:24-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./
