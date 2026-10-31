@@ -1,16 +1,21 @@
 # Boogle server
 
-One small Node 20+ service (Express + the official `peer` package) that gives the P2P game the few things WebRTC can't do alone:
+One small Node 24 service (Express + the official `peer` package) that gives the P2P game the few things WebRTC can't do alone:
 
 | Endpoint | Purpose |
 |---|---|
 | `/peerjs` | PeerJS signaling (WebSocket + REST), via `ExpressPeerServer`. Discovery disabled. Logs connect/disconnect counts only. |
 | `GET /rooms/:roomId/snapshot` | Stored garden snapshot (200 JSON) or 404. |
-| `PUT /rooms/:roomId/snapshot` | Body `{ tick: number, writerId: string, data: any }`. Stored unless the stored tick is higher (409 with the current tick). Max 256 KB (413). `roomId` must match `^[a-z0-9-]{1,32}$` (400). 30 PUTs/min/IP (429). Max `MAX_ROOMS` rooms (507). |
+| `PUT /rooms/:roomId/snapshot` | Body `{ tick: number, writerId: string, data: any }`. Stored unless the stored tick is higher (409 with the current tick). Max 256 KB (413). `roomId` must match `^[a-z0-9-]{1,32}$` (400). 30 PUTs/min/IP (429). Max `MAX_ROOMS` rooms (507). A room the server hosts answers `409 { error: 'server-hosted', tick }` and writes nothing. |
+| `POST /rooms/:roomId/handoff` | A demoted peer host's last save, same body (max 1 MB), sharing PUT's rate limit. A hosted room adopts it when it loads cleanly (else 400), is newer than the hosted world and arrives within `ADOPT_WINDOW_MS` of the server starting (else `409 { adopted: false, tick }`): `200 { adopted: true, tick }`, and every connected tab is re-sent the world. Any other room stores it like a PUT. |
+| `GET /rooms/:roomId/host` | `{ mode: 'server', boot, tick, players, max, noSave }` for a hosted room, else `{ mode: 'peer' }`. `noSave`: the world holds a state saved by a newer build, so the server stopped saving (deploy the server). |
+| `/room/:roomId?self=<id>&b=<build>` | WebSocket (subprotocol `boogle.1`) into a hosted room; wire in `src/net/ws-wire.ts`. Refusals: `peer` 4000 (not hosted here), `bad` 4400, `full` 4008; a second socket for the same `self` replaces the first (4009). 20 upgrades/min/IP. |
 | `POST /report` | Problem reports from players' browsers (`src/features/telemetry.js`): one `{ room, kind, detail, tick?, build?, ua? }` or an array of up to 10. `kind` is `error`, `desync`, `snapshot` or `connect`; `detail` is a string (cut to 500 chars) or a flat object of strings/numbers/booleans (12 keys, strings cut to 200). Other fields are dropped; no IP or headers are kept. Accepts `text/plain` (what `navigator.sendBeacon` sends) or JSON. 204 stored, 400 invalid, 413 over 8 KB, 429 over `REPORT_RATE_PER_MIN`, 507 when today's file is full. |
 | `GET /reports?day=YYYY-MM-DD` | That UTC day's reports as JSON lines (default today; empty if none). Only exists when `REPORT_TOKEN` is set (404 otherwise) and needs `Authorization: Bearer <REPORT_TOKEN>` (401). |
 | `GET /ice` | `{ iceServers: [...] }` with Google STUN, plus TURN if configured. |
 | `GET /healthz` | `ok` |
+
+**Hosting rooms** (`SERVER_ROOMS`, `src/host/`; design: `docs/plans/server-host.md`). For each listed room the server runs the game's lockstep world itself (`src/world/sync.ts` and every rules module on the land in `src/world/home-land.json`), from start to shutdown with or without players, saving it every `SERVER_SAVE_MS` as `writerId: 'server'`. Tabs join over `/room/:id`; the server relays presence and messages, picks the lead (the oldest visible tab) and holds the room's PeerJS host id (registrations get `ID-TAKEN`), so no browser can host it too. `SIGTERM` says `bye`, saves and closes the sockets with 1012. Rooms not listed work as before: PeerJS with a browser host.
 
 Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. No database. CORS applies to every endpoint.
 
@@ -32,6 +37,10 @@ Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp fil
 | `TURN_USERNAME`, `TURN_CREDENTIAL` | unset | Static TURN credentials (used with `TURN_URLS`). |
 | `TURN_SECRET` | unset | coturn `static-auth-secret`. Instead of static creds, `/ice` returns ephemeral ones: username `${expiryUnix}:boogle`, credential = base64 HMAC-SHA1(username, secret). Used only if static username/credential are not both set. |
 | `CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN` | unset | Cloudflare TURN key. `/ice` mints credentials from Cloudflare's API (cached, re-minted at half of `TURN_TTL`) and adds them; on API failure it serves STUN only. |
+| `SERVER_ROOMS` | unset | Comma-separated rooms this server hosts (above). Unset: none; every room is PeerJS. |
+| `MAX_PLAYERS` | `8` | Players per hosted room (the server is not one). A reconnecting player is always let back in. |
+| `SERVER_SAVE_MS` | `2000` | How often a hosted room saves its world (when it changed). |
+| `ADOPT_WINDOW_MS` | `600000` | How long after the server starts a hosted room adopts a newer handoff (the peer host it took over from). |
 | `TURN_TTL` | `86400` | Lifetime in seconds of ephemeral TURN credentials (TURN_SECRET and Cloudflare). |
 
 ## Run locally
@@ -45,6 +54,8 @@ npm test
 
 ## Deploy to Fly.io
 
+The image is built from the repo root (`server/Dockerfile` copies `src/world`, `src/sim` and the shared net modules beside `server/`; check it with `docker build -f server/Dockerfile .`).
+
 ```sh
 cd server
 fly launch --no-deploy --copy-config --name <your-unique-app-name>   # edit app name in fly.toml
@@ -54,7 +65,7 @@ fly secrets set ALLOWED_ORIGINS=https://<your-site-origin>
 fly secrets set REPORT_TOKEN=$(openssl rand -hex 16)
 # optional TURN:
 fly secrets set TURN_URLS=turn:turn.example.com:3478 TURN_USERNAME=... TURN_CREDENTIAL=...
-fly deploy
+cd .. && fly deploy . --config server/fly.toml --dockerfile server/Dockerfile
 curl https://<app>.fly.dev/healthz
 ```
 
@@ -62,7 +73,7 @@ Keep it on a single machine: the volume is per-machine and signaling state is in
 
 ## Continuous deploy
 
-`.github/workflows/deploy-server.yml` runs the server tests and then `flyctl deploy` (one machine) on every push to `main` that touches `server/`, on merged PRs that touch it (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
+`.github/workflows/deploy-server.yml` runs the server tests, builds the image and then `flyctl deploy` (one machine) from the repo root on every push to `main` that touches `server/` or what the image carries (`src/world/`, `src/sim/`, `src/net/ids.ts`, `src/net/ws-wire.ts`), on merged PRs that touch them (dispatched by `automerge.yml`), and by hand from the Actions tab. It then polls `https://<app>.fly.dev/healthz` for up to two minutes. Without a `FLY_API_TOKEN` secret the deploy job is skipped (grey, not red), so forks stay green.
 
 Human checklist, once:
 

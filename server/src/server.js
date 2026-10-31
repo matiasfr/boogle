@@ -56,6 +56,7 @@ export function loadConfig(env = process.env, overrides = {}) {
     serverRooms: list(env.SERVER_ROOMS), // rooms this server hosts (docs/plans/server-host.md); empty: PeerJS only
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
+    adoptWindowMs: Number(env.ADOPT_WINDOW_MS ?? 600000), // how long after start a hosted room adopts a handoff
     log: (...a) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -199,6 +200,7 @@ export function createService(cfg) {
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);
   const { readIfExists, withLock } = store;
+  let roomHost = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
 
   const validRoom = (req, res, next) => {
     if (!ROOM_ID_RE.test(req.params.roomId)) return res.status(400).json({ error: 'invalid roomId' });
@@ -216,36 +218,56 @@ export function createService(cfg) {
     }
   });
 
-  app.put(
-    '/rooms/:roomId/snapshot',
-    validRoom,
-    createRateLimiter({ perMinute: cfg.putRatePerMin }),
-    express.json({ limit: '256kb' }),
-    async (req, res, next) => {
-      const id = req.params.roomId;
-      const b = req.body;
-      if (
-        !b ||
-        typeof b !== 'object' ||
-        Array.isArray(b) ||
-        typeof b.tick !== 'number' ||
-        !Number.isFinite(b.tick) ||
-        typeof b.writerId !== 'string' ||
-        b.writerId.length < 1 ||
-        b.writerId.length > 128 ||
-        !('data' in b)
-      ) {
-        return res.status(400).json({ error: 'body must be { tick: number, writerId: string, data: any }' });
-      }
-      try {
-        const doc = { tick: b.tick, writerId: b.writerId, data: b.data, updatedAt: new Date().toISOString() };
-        const result = await store.write(id, doc, { ifNewer: true });
-        res.status(result.status).json(result.body);
-      } catch (e) {
-        next(e);
-      }
-    },
-  );
+  // A snapshot document from a request body, or null: { tick: number, writerId: string, data: any }.
+  const snapshotDoc = (b) =>
+    b &&
+    typeof b === 'object' &&
+    !Array.isArray(b) &&
+    typeof b.tick === 'number' &&
+    Number.isFinite(b.tick) &&
+    typeof b.writerId === 'string' &&
+    b.writerId.length >= 1 &&
+    b.writerId.length <= 128 &&
+    'data' in b
+      ? { tick: b.tick, writerId: b.writerId, data: b.data, updatedAt: new Date().toISOString() }
+      : null;
+  const BAD_DOC = { error: 'body must be { tick: number, writerId: string, data: any }' };
+  const saveLimit = createRateLimiter({ perMinute: cfg.putRatePerMin }); // PUT and handoff share it
+
+  // A room the server hosts keeps its own save: a peer host's PUT gets 409 and writes nothing.
+  app.put('/rooms/:roomId/snapshot', validRoom, saveLimit, express.json({ limit: '256kb' }), async (req, res, next) => {
+    const doc = snapshotDoc(req.body);
+    if (!doc) return res.status(400).json(BAD_DOC);
+    const room = roomHost?.room(req.params.roomId);
+    if (room) return res.status(409).json({ error: 'server-hosted', tick: room.status().tick });
+    try {
+      const result = await store.write(req.params.roomId, doc, { ifNewer: true });
+      res.status(result.status).json(result.body);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // A demoted peer host's last save (src/world/sync.ts, persist with handoff): a hosted room adopts it if newer
+  // (src/host/rooms.ts); any other room stores it like a PUT.
+  app.post('/rooms/:roomId/handoff', validRoom, saveLimit, express.json({ limit: '1mb' }), async (req, res, next) => {
+    const doc = snapshotDoc(req.body);
+    if (!doc) return res.status(400).json(BAD_DOC);
+    try {
+      const result =
+        (await roomHost?.handoff(req.params.roomId, doc)) ??
+        (await store.write(req.params.roomId, doc, { ifNewer: true }));
+      res.status(result.status).json(result.body);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Who hosts a room (the client's room picker asks before choosing a transport).
+  app.get('/rooms/:roomId/host', validRoom, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(roomHost?.status(req.params.roomId) ?? { mode: 'peer' });
+  });
 
   // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
   // Appended as JSON lines to DATA_DIR/reports/YYYY-MM-DD.jsonl (UTC day), capped per day. Clients send text/plain
@@ -354,7 +376,6 @@ export function createService(cfg) {
     globalThis.setTimeout = (...a) => realSetTimeout(...a).unref();
   }
   app.use('/peerjs', peerApp);
-  let roomHost = null; // made in listen(), once the store is ready
   routeUpgrades(server, { peerWss: () => peerWss, roomHost: () => roomHost });
 
   // ---- errors ----
