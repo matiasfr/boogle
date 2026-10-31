@@ -16,6 +16,9 @@ room.onConnection(handler, onError) // handler(connected: boolean). returns unsu
 room.send(msg)         // reliable, ordered JSON message to every OTHER peer (relayed through host)
 room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
 room.isHost()          // boolean
+room.transport         // 'peer' | 'server' | 'fallback' (fallback: peer-hosted on the public signaling server)
+room.isLead()          // true when this tab publishes Host-kind fields (addHostField); a peer room's lead is its host
+room.onLeadChange(h)   // h(isLead); returns unsubscribe. On a peer room the same events as onHostChange
 room.linkStats()       // Promise<[{ peer, fast, relay, local, remote, rttMs }]>: the ICE pair each open link uses (a client's link to the host, or the host's to each client); relay = goes through TURN; fast = presence rides the unreliable fast lane
 room.onHostChange(handler) // handler(isHost: boolean). returns unsubscribe
 room.close()

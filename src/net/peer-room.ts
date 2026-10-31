@@ -44,6 +44,7 @@
 // 'room_full' (`max`: the cap, when the host said). Old builds ignore 'full' and retry until their connect timeout.
 
 import { Peer, type DataConnection } from 'peerjs';
+import { SELF_ID, okId, safeRoom, peerHostId, rand } from './ids.ts';
 
 type Timer = ReturnType<typeof setTimeout>;
 /** A wire message: a plain object with a `t` field, read field by field (see the list above). */
@@ -96,18 +97,11 @@ const claimDelay = (score: number) =>
   score >= 3 ? 100 + Math.random() * 400 : score >= 2 ? 450 + Math.random() * 450 : 950 + Math.random() * 800;
 const FATAL = new Set(['browser-incompatible', 'invalid-id', 'invalid-key', 'ssl-unavailable']);
 
-const rand = (n: number) => {
-  const b = crypto.getRandomValues(new Uint8Array(n));
-  return Array.from(b, (x) => (x % 36).toString(36)).join('');
-};
-const SELF_ID = rand(10); // per page load; deliberately not the PeerJS id
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const isObj = (v: unknown): v is Msg => v !== null && typeof v === 'object' && !Array.isArray(v);
-const okId = (s: unknown): s is string => typeof s === 'string' && /^[a-z0-9]{1,32}$/.test(s);
 const okSeq = (n: unknown): n is number => Number.isSafeInteger(n) && (n as number) >= 0;
 const tooBig = (v: unknown) => JSON.stringify(v).length > MAX_MSG;
 const err = (code: string, msg?: string) => Object.assign(new Error(msg || code), { code });
-const safeRoom = (s: string) => s.replace(/[^A-Za-z0-9]/g, (c) => '_' + c.charCodeAt(0).toString(16));
 
 // Sends, closes and destroys on a connection or peer that may already be closing: errors are expected, ignore them.
 function quietly(fn: () => unknown) {
@@ -325,7 +319,7 @@ type Client = {
 export async function createPeerRoom(opts: RoomOptions = {}) {
   if (typeof RTCPeerConnection === 'undefined') throw err('browser-incompatible', 'WebRTC is not available');
   const roomId = String(opts.roomId ?? 'default');
-  const hostId = `boogle-${safeRoom(roomId)}-host`;
+  const hostId = peerHostId(roomId);
   const peerOpts: Record<string, unknown> = { debug: opts.debug ?? 0 };
   const fastLane = opts.fastLane !== false; // false: presence only on 'u', as builds before the lane (tests, a kill switch)
   for (const k of ['host', 'port', 'path', 'secure', 'key'] as const)
@@ -1093,6 +1087,13 @@ export async function createPeerRoom(opts: RoomOptions = {}) {
       return () => msgHandlers.delete(h);
     },
     isHost: () => isHostNow,
+    // Shared with the server room (src/net/README.md): on a peer room the lead is the host.
+    transport: 'peer' as 'peer' | 'server' | 'fallback',
+    isLead: () => isHostNow,
+    onLeadChange(h: (isLead: boolean) => void) {
+      hostHandlers.add(h);
+      return () => hostHandlers.delete(h);
+    },
     // One row per open presence link: a client's link to the host, or the host's link to each client. `fast`: presence
     // to that peer rides the fast lane (both sides have it and it is open).
     async linkStats() {
