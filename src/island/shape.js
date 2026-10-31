@@ -11,7 +11,7 @@
 // Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; ground.js quantizes
 // them to centimetres once, so the shared sim never sees raw floats.
 import { lerp, smoothstep, fbm } from '../math-pure.js';
-import { SEABED } from '../world/grid.js';
+import { SEABED } from '../world/grid.ts';
 
 const HOME_R = 52;
 const HOME_KEEP = 22; // metres from the origin where the home ground is untouched

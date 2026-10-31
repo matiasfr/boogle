@@ -15,7 +15,7 @@ Four files, nothing else edited:
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
 3. One line appended to `RULES` in `index.js`. Append only: states snapshot, load and hash in its order, so
    reordering it desyncs rooms where peers run different builds.
-4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.js` **first** (so the rules are
+4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
    If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin

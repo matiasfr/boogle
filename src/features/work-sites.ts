@@ -4,11 +4,11 @@
 // the plaque lists who brought what (credit only: nobody is listed for not pouring). Placeholder visuals (0.1).
 // Serves DESIGN.md 4 (cooperation is automatic: everyone's pours land in the same ring) and 6 (communal world,
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { scene } from '../render/scene.js';
-import { onApplied, submitEdit } from '../world/sync.js';
+import { onApplied, submitEdit } from '../world/sync.ts';
 import { sharedSeconds } from '../netplay/shared-time.js';
 import { registerInteractable } from '../player/hands.js';
 import { groundHeight } from '../adapters/terrain.js';

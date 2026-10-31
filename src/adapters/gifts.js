@@ -1,7 +1,7 @@
 // Island gifts in the game: fruit on the palms, things players threw, and the frisbee
 // on the lighthouse deck. Shared state lives in src/world/rules/gifts.ts and changes only through world/sync edits; what
 // you carry is your hotbar (src/player/inventory.js).
-import { land, rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
 import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
@@ -11,7 +11,7 @@ import { trees } from '../render/props.js';
 import { me, throwFrom } from '../player/player.js';
 import { ball } from '../physics/ball.js';
 import { net } from '../netplay/net.js';
-import { world, onApplied, submitEdit } from '../world/sync.js';
+import { world, onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.js';

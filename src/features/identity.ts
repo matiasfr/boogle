@@ -3,14 +3,14 @@
 // (src/world/rules/roster.ts) learns your name and colour from Jump in and any rename after; and a second tab of the
 // same browser says it plays as a guest. Serves DESIGN.md 8 (drop-in, drop-out: you are the same player after a
 // reload) and 6 (personal rewards need a person to belong to).
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import './identity.css';
 import { onFrame } from '../loop.js';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.js';
 import { sanitizeName } from '../math.js';
 import { addPresenceField } from '../netplay/net.js';
-import { setPid, submitEdit, worldStatus } from '../world/sync.js';
+import { setPid, submitEdit, worldStatus } from '../world/sync.ts';
 
 const WHO_EVERY_MS = 3000; // at most one who.set this often (the host also refuses one that changes nothing)
 

@@ -5,14 +5,14 @@
 // pickup is walking into a pile, pouring is walking into a site's ring (work-sites.ts).
 // Serves DESIGN.md 1 (toys before chores: a wobbly tower is fun to carry with nothing to do) and 10 (slapstick: the
 // spill is a laugh and lands where anyone can scoop it up). Lockstep counts, Owner spill decision, Local wobble.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.js';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.js';
 import { remotes, onRemotePresence } from '../netplay/net.js';
-import { submitEdit } from '../world/sync.js';
+import { submitEdit } from '../world/sync.ts';
 import { okPid } from '../sim/roster.ts';
 import { cellOf } from '../adapters/terrain.js';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';

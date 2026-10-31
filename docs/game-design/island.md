@@ -3,7 +3,7 @@
 ## Shape and size
 
 - The world is a **510 m square** heightfield of **409 × 409 cells, 1.25 m each**, centred on the origin
-  ([src/world/grid.js](../../src/world/grid.js)). +x is east, **+z is south** (towards home), −z is north. Sea level is
+  ([src/world/grid.ts](../../src/world/grid.ts)). +x is east, **+z is south** (towards home), −z is north. Sea level is
   0 m, the seabed −7.5 m.
 - The ground is a pure function in layers ([src/island/README.md](../../src/island/README.md)): natural shape
   ([src/island/shape.js](../../src/island/shape.js)), then each POI's stamps ([src/island/stamps.js](../../src/island/stamps.js)),

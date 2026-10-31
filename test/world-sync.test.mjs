@@ -2,8 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate } from 'node:timers';
-import * as singleton from '../src/world/sync.js';
-import { createSync } from '../src/world/sync.js';
+import * as singleton from '../src/world/sync.ts';
+import { createSync } from '../src/world/sync.ts';
 import { makeNet, run, live } from './helpers/net.mjs';
 
 // opts: env goes to createSync (the host facts validate reads); failLoad ({ on }) makes grid loads throw while on (bad data

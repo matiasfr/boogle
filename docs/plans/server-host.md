@@ -49,7 +49,7 @@
 
 ## Risks
 
-- **Hotspots touched:** `src/netplay/net.js` (room picking, lead helper: about 15 lines), `src/world/sync.js` (four
+- **Hotspots touched:** `src/netplay/net.js` (room picking, lead helper: about 15 lines), `src/world/sync.ts` (four
   additive changes, each tested), `src/net/peer-room.js` (imports ids, adds three members), `DESIGN.md`, `PLAN.md`
   (one line), `AGENTS.md` (one line), `package.json` (`test:net`), `.github/workflows/ci.yml` and
   `deploy-server.yml`. `src/world/rules/` is not edited (except its README).
@@ -319,7 +319,7 @@ does not host, handoff is PUT (stored if not older). Same per-IP rate limit as P
 
 ### Land on the server
 
-`src/world/game-world.js` cannot run in Node (`land.layout` is filled from `src/render/props.js`, and `src/island/`
+`src/world/game-world.ts` cannot run in Node (`land.layout` is filled from `src/render/props.js`, and `src/island/`
 uses `import.meta.glob`). The rules need only `land = { n, layout }` (the README says so), and Node tests already run
 them on the layout pinned in `test/fixtures/world-inputs.json`. Step 2 moves `n` and `layout` to
 `src/world/home-land.json` and adds `plant`, a run-length mask of `canPlantAt(i, j)` over `g = i * n + j` (runs
@@ -351,7 +351,7 @@ reads the new file.
 
 ## Steps
 
-Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/net*`, `src/world/sync.js` or
+Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/net*`, `src/world/sync.ts` or
 `server/`: run `npm run check:full`. Use `/simplify` and `/code-review` before shipping those.
 
 - [ ] **1. Principle and roadmap (docs only).**
@@ -382,7 +382,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, then `npm run scenario -- world-inputs` passes;
     `npm run check` (replay test, registry check).
 
-- [ ] **3. Sync: clients re-pin on reconnect, hash checks over shared states** (`src/world/sync.js`).
+- [ ] **3. Sync: clients re-pin on reconnect, hash checks over shared states** (`src/world/sync.ts`).
   - `onConnected(c)`: when `c` turns true while `mode === 'client'`, set `hostId = null`, `hostTick = 0`,
     `hostTickAt = 0`, `pendingHash.clear()`, so the next host message re-pins at once instead of after `HOST_STALE_MS`.
   - `loadState`: when a state is skipped as newer, add its key to a new `skipped` Set.
@@ -399,7 +399,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
       client version 1; after the snapshot and 60 frames: `newerSave` true on the client, `resyncs <= 1`.
   - Verify: `npm run check:full`.
 
-- [ ] **4. Sync: what a server host needs** (`src/world/sync.js`, all additive).
+- [ ] **4. Sync: what a server host needs** (`src/world/sync.ts`, all additive).
   - `attachWorld(r, { ..., saveMs })`: `cfg.saveMs = opts.saveMs ?? SAVE_MS`; `nextSave = wall + cfg.saveMs` on
     attach; `saveSoon` uses `cfg.saveMs`.
   - `saveNow()`: `persist(false)` now; returns true when it wrote. Export it from `createSync` and the singleton.

@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { createSync } from '../src/world/sync.js';
+import { createSync } from '../src/world/sync.ts';
 import { RULES, installRules } from '../src/world/rules/index.ts';
 import { homeLand, fixture } from './helpers/land.mjs';
 import { giftIndex } from '../src/sim/gift-catalog.ts';

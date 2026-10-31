@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 export const FIXED = 1 / 60;
 export const GRAVITY = 18;
-// The grid, sea levels, HOME and COURT live in the pure src/world/grid.js (the shared sim and Node tests read it).
-export { GRID_RES, CELL, HALF, SEA, SEABED, COURT } from './world/grid.js';
+// The grid, sea levels, HOME and COURT live in the pure src/world/grid.ts (the shared sim and Node tests read it).
+export { GRID_RES, CELL, HALF, SEA, SEABED, COURT } from './world/grid.ts';
 export const BALL_R = 0.45;
 export const BALL_MASS = 0.6;
 export const PLAYER_R = 0.45;

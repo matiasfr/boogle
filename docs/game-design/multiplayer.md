@@ -63,7 +63,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 
 ## 8.4 Lockstep world, snapshots and saves
 
-[src/world/sync.js](../../src/world/sync.js), [src/world/README.md](../../src/world/README.md),
+[src/world/sync.ts](../../src/world/sync.ts), [src/world/README.md](../../src/world/README.md),
 [src/world/rules/README.md](../../src/world/rules/README.md).
 
 - 10 ticks per second. Clients send `w:edit`; the host validates, stamps each edit 3 ticks ahead and broadcasts
@@ -124,7 +124,7 @@ guest". Not yet: transfer codes, accounts and "forget me" (docs/plans/0.1-ground
 - How many joins need the TURN relay, and the ball's lag for non-owners, are reported (`relayed`, `links`, `rttMs`;
   6.15); PLAN Phase 1's "Measure" item stays open until someone reads the numbers.
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
-  ticking through a worker heartbeat ([src/world/background.js](../../src/world/background.js)), catching up at most 5 s.
+  ticking through a worker heartbeat ([src/world/background.ts](../../src/world/background.ts)), catching up at most 5 s.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
   `impact.js`).
 - Trust: host validation checks ranges, rates and state, but not the player's reach (PLAN's "Key decision" mentions

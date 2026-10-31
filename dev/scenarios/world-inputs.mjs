@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 const FIXTURE = fileURLToPath(new URL('../../test/fixtures/world-inputs.json', import.meta.url));
 // Runs in the page.
 const READ = `
-  const sync = await import('/src/world/sync.js');
-  const { land } = await import('/src/world/game-world.js');
+  const sync = await import('/src/world/sync.ts');
+  const { land } = await import('/src/world/game-world.ts');
   const g = window.boogle.gifts;
   const pick = (o) => JSON.parse(JSON.stringify(o));
   return {

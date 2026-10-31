@@ -2,7 +2,7 @@
 // Ticks only run while someone hosts and world.epochMs is the wall time of tick 0, so the time nobody hosted is
 // now - (epochMs + tick * MS_PER_TICK); `credited` is what earlier wakes already banked. Pure: the host computes the
 // gap from its clock, the lockstep op only ever sees the number it validated.
-export const MS_PER_TICK = 100; // src/world/sync.js TICK_MS
+export const MS_PER_TICK = 100; // src/world/sync.ts TICK_MS
 export const MIN_GAP_MS = 60000; // shorter absences (a host hand-over, a reload) bank nothing
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 

@@ -1,7 +1,7 @@
 // Ground piles (src/adapters/piles.ts): heaps of loose material anyone can walk over to pick up. Serves DESIGN.md 10
 // (slapstick: a spilled stack lands where everyone can scoop it back) and 5 (nothing is ever lost, so nobody can
 // grief it away). Lockstep piles, Local pieces.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import { onFrame, onStart } from '../loop.js';
 import { updatePiles, piles } from '../adapters/piles.ts';
 import { identity } from '../player/identity.ts';

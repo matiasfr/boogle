@@ -37,7 +37,7 @@ import { lerp, smoothstep } from '../math.js';
 import { renderer, scene, camera, sun, sky } from './scene.js';
 import { seaU } from './water-render.js';
 import { clouds } from './props.js';
-import { world, TICK_MS } from '../world/sync.js';
+import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)

@@ -30,7 +30,7 @@ export default {
   async run(t) {
     const g = await t.open({ name: 'dusty' });
     await g.view({ cam: [12, 4.5, 29], look: [12, 0.8, 21] });
-    await g.waitFor(`(async () => (await import('/src/world/sync.js')).worldStatus().ready)()`, { timeout: 20000 });
+    await g.waitFor(`(async () => (await import('/src/world/sync.ts')).worldStatus().ready)()`, { timeout: 20000 });
     for (let k = 0; k < 2; k++) {
       await g.eval(FX);
       await t.sleep(150);

@@ -1,7 +1,7 @@
 // Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
 // Shared state lives in src/world/rules/mushrooms.ts and changes only through world/sync edits. Seeds and the watering can are
 // hotbar items (src/player/inventory.js); src/player/hands.js calls plantFront and pour when you use them.
-import { rules } from '../world/game-world.js'; // first: the lockstep rules register before anything else
+import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.js';
@@ -11,7 +11,7 @@ import { obstacles } from '../render/props.js';
 import { groundMat, GROUP } from '../physics/physics.js';
 import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/player.js';
-import { setEnv, onApplied, submitEdit } from '../world/sync.js';
+import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
 import { waterField } from '../physics/water-field.js';
 import { dropPoint } from '../physics/flight.js';
 import { splash } from '../render/splash.js';

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createBackgroundAdvance } from '../src/world/background.js';
+import { createBackgroundAdvance } from '../src/world/background.ts';
 
 test('background advance: slices elapsed time, caps catch-up, does not double count', () => {
   const calls = [];

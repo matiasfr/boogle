@@ -2,7 +2,7 @@
 
 Scope: what makes it great when a whole friend group is online at once, in games that need little fine control. Target: Boogle (three.js + cannon-es island, one beach ball, creatures, water, weather, tide, PeerJS host-peer, deterministic shared sim). Boogle already ships some of this: Honk (T) with a 3+ player chord within ~1 s (`src/features/honk.js`), context Ping (G) (`src/features/ping.js`), volleyball Bump (V) (`src/features/bump.js`), and island gifts. A sibling note, `research_notes/Ambitious mechanics for Boogle/social_multiplayer.md`, covers physics networking and game modes in more depth; this note focuses on synchronous group moments, input simplicity and "needs N players" hooks.
 
-Legend used in inferences: **Input** = 1-button / direction-only / precision-needed. **Cost** = Low (cosmetic room message, no shared state), Med (host-stamped op via `src/world/sync.js` or ball-ownership path), High (cross-peer physics constraints between players, new authority rules).
+Legend used in inferences: **Input** = 1-button / direction-only / precision-needed. **Cost** = Low (cosmetic room message, no shared state), Med (host-stamped op via `src/world/sync.ts` or ball-ownership path), High (cross-peer physics constraints between players, new authority rules).
 
 ## Physical / emergent co-op and play (Gang Beasts, Human: Fall Flat, TRDS, Wobbly Life, Peak, Super Bunny Man, Moving Out, Overcooked, Fall Guys, Wii Sports)
 

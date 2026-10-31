@@ -3,7 +3,7 @@
 // (sleepers pile up, your name goes on the plaque), build a helper hut, start the machine and watch it lay track.
 const ROOM = 'cliphaul';
 
-const R = `const { rules } = await import('/src/world/game-world.js');
+const R = `const { rules } = await import('/src/world/game-world.ts');
   const { identity } = await import('/src/player/identity.ts');`;
 // Put the player on the ground at (x, z), still, facing yaw.
 const TP = (x, z, yaw) => `

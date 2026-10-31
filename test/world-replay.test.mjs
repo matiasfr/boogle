@@ -5,7 +5,7 @@
 // hold, and a second run with the same seed must give the same results. See src/world/rules/README.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync } from '../src/world/sync.js';
+import { createSync } from '../src/world/sync.ts';
 import { RULES, installRules } from '../src/world/rules/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.mjs';

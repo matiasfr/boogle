@@ -7,7 +7,7 @@
 import { onStart } from '../loop.js';
 import { onRoomReady } from '../netplay/net.js';
 import { BUILD, otherBuilds } from '../netplay/builds.js';
-import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.js';
+import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.ts';
 
 const CACHE = 6; // host: states kept for the last few hash ticks
 

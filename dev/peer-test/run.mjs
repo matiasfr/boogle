@@ -359,7 +359,7 @@ try {
   await Promise.all([H, K, L].map((p) => p.ctx.close()));
 
   // World ids: world sync binds each page's player id (pid) to its session, ignores a pid an edit claims, and keeps
-  // the binding across a host crash (src/world/sync.js, w:id; docs/plans/0.1-groundwork.md M2).
+  // the binding across a host crash (src/world/sync.ts, w:id; docs/plans/0.1-groundwork.md M2).
   const idRoom = room + 'id';
   const P = await open('P', { in: idRoom, query: '&pid=pidp' }); // first in: the host
   const [Q, R] = await Promise.all(['Q', 'R'].map((n) => open(n, { in: idRoom, query: `&pid=pid${n.toLowerCase()}` })));

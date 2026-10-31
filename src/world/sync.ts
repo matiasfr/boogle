@@ -46,6 +46,37 @@
 // noSave, so the clients that load them stop persisting too.
 
 import { okPid } from '../sim/roster.ts';
+import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
+
+// Wire messages and edits arrive as unchecked JSON objects: every field is read as unknown and checked before use.
+type Obj = Record<string, unknown>;
+/** A stamped edit waiting for its tick. */
+type Queued = { tick: number; seq: number; e: Obj };
+type State = StateHandlers & { version: number; migrate: Record<number, (json: unknown) => unknown>; fresh: string };
+/** The world as saved and served: tick, seed, epoch, each state's serialized form and version. */
+export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj; vers: Obj };
+/** The part of a room (src/net/README.md) the world uses. */
+export type WorldRoom = {
+  selfId: string;
+  send(m: unknown): void;
+  peers?: () => { peer: string }[];
+  onMessage(h: (m: unknown, from: string) => void): () => void;
+  onConnection(h: (connected: boolean) => void): () => void;
+  onHostChange(h: (isHost: boolean) => void): () => void;
+  isHost(): boolean;
+};
+export type AttachOptions = {
+  roomId?: string;
+  serverUrl?: string;
+  storage?: SaveStore | null;
+  fetch?: typeof fetch;
+  now?: () => number;
+};
+type Cfg = { roomId: string; serverUrl: string; storage: SaveStore | null; fetch: typeof fetch; now: () => number };
+type Desync = { tick: number; keys: string[] };
+/** Where a peer keeps its copy of the world: localStorage, or a stand-in in tests. */
+type SaveStore = Pick<Storage, 'getItem' | 'setItem'>;
+type SnapFail = { from: string; reason: string };
 
 export const TICK_MS = 100;
 const DELAY = 3; // host stamps edits this many ticks ahead
@@ -68,24 +99,24 @@ const SAVE_MS = 30000;
 const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
 const MAX_PIDS = 256; // selfId -> pid records kept (sessions seen this page load)
 const ID_EVERY_MS = 5000; // a client repeats its w:id this often, so a host that missed or dropped it learns it again
-const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-const isInt = Number.isSafeInteger;
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
+const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
+const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
 // opts.env: host-only facts handed to validate as ctx.env (they may differ per machine, so never to apply or ticks).
-export function createSync({ env: env0 } = {}) {
+export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const world = { tick: 0, seed: 20261028, epochMs: 0 };
-  const env = { ...(env0 ?? {}) };
-  const ops = new Map();
-  const states = new Map();
-  const tickFns = [];
-  const afterFns = []; // fn(tick) after every onTick handler (render work that reads the tick's final state)
-  const appliedFns = [];
-  const labels = new Map(); // handler fn -> name shown by profileTicks
-  const snapFns = [];
-  const desyncFns = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
-  const hashFns = []; // fn(tick) on the host right after it sent a hash
-  const snapFailFns = []; // fn({ from: 'peer'|'local'|'server'|'state', reason }): a snapshot (or a state) failed to load
+  const env: Obj = { ...(env0 ?? {}) };
+  const ops = new Map<string, OpHandlers<object>>();
+  const states = new Map<string, State>();
+  const tickFns: ((tick: number) => void)[] = [];
+  const afterFns: ((tick: number) => void)[] = []; // fn(tick) after every onTick handler (render work that reads the tick's final state)
+  const appliedFns: ((e: Obj, tick: number, result: unknown) => void)[] = [];
+  const labels = new Map<unknown, string>(); // handler fn -> name shown by profileTicks
+  const snapFns: ((tick: number) => void)[] = [];
+  const desyncFns: ((d: Desync) => void)[] = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
+  const hashFns: ((tick: number) => void)[] = []; // fn(tick) on the host right after it sent a hash
+  const snapFailFns: ((f: SnapFail) => void)[] = []; // fn({ from: 'peer'|'local'|'server'|'state', reason }): a snapshot (or a state) failed to load
   const stats = {
     resyncs: 0,
     snapsSent: 0,
@@ -102,45 +133,45 @@ export function createSync({ env: env0 } = {}) {
   // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
   // keep (and upload) that state, but load the saved copy instead.
   let unverifiedFallback = false;
-  let subsystems = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
-  let lastBad = null; // { tick, keys } of the latest mismatch
-  let queue = []; // [{ tick, seq, e }] stamped, not yet applied
+  let subsystems: Record<string, 'ok' | 'bad'> = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
+  let lastBad: Desync | null = null; // { tick, keys } of the latest mismatch
+  let queue: Queued[] = []; // [{ tick, seq, e }] stamped, not yet applied
   let seq = 0;
   let selfId = 'local';
-  let pid = null; // this tab's player id (setPid); until set, its selfId stands in (tests, the first frames)
+  let pid: string | null = null; // this tab's player id (setPid); until set, its selfId stands in (tests, the first frames)
   const myPid = () => pid ?? selfId;
-  const pids = new Map(); // selfId -> pid of every tab heard from (w:id, snapshot ids)
+  const pids = new Map<string, string>(); // selfId -> pid of every tab heard from (w:id, snapshot ids)
   let acc = 0;
   let wall = 0; // ms of frame time seen by updateWorld (all timers use this, so tests are deterministic)
 
-  let mode = 'local';
-  let room = null;
-  let cfg = {};
-  let cleanup = [];
+  let mode: 'local' | 'host' | 'client' = 'local';
+  let room: WorldRoom | null = null;
+  let cfg = {} as Cfg; // set by attachWorld
+  let cleanup: (() => void)[] = [];
   let connected = true;
   let ready = true; // false until we hold authoritative state
   let epoch = 0; // bumps on every role change (cancels stale async loads)
-  let hostId = null;
+  let hostId: string | null = null;
   let hostSeenAt = 0;
   let hostTick = 0;
   let hostTickAt = 0;
-  const pendingHash = new Map();
+  const pendingHash = new Map<number, [number, unknown]>();
   let needAt = -1e9;
   let awaiting = false;
-  let asm = null; // snapshot being assembled
+  let asm: { id: number; n: number; parts: string[]; got: number } | null = null; // snapshot being assembled
   let snapId = 0;
-  const served = new Map();
-  let out = []; // stamped edits waiting to be broadcast
-  let held = []; // [{ e, at, fresh }] edits submitted while the room was down (or one waiting for its slot); releaseHeld
+  const served = new Map<string, number>();
+  let out: Queued[] = []; // stamped edits waiting to be broadcast
+  let held: { e: Obj; at: number; fresh?: boolean }[] = []; // [{ e, at, fresh }] edits submitted while the room was down (or one waiting for its slot); releaseHeld
   let heldAt = 0; // wall time the next held edit may go
   let extraUntil = 0;
   let nextHashTick = HASH_EVERY;
-  let lastSavedHash = null;
+  let lastSavedHash: number | null = null;
   let nextSave = SAVE_MS;
   let verifiedTick = -1; // client: the tick whose hash last matched the host's (the only state a client may save)
 
   // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
-  const snapFail = (from, reason) => {
+  const snapFail = (from: string, reason: string) => {
     for (const fn of snapFailFns) {
       try {
         fn({ from, reason });
@@ -149,7 +180,7 @@ export function createSync({ env: env0 } = {}) {
       }
     }
   };
-  const send = (m) => {
+  const send = (m: unknown) => {
     if (!room || !connected) return;
     try {
       room.send(m);
@@ -160,13 +191,13 @@ export function createSync({ env: env0 } = {}) {
 
   // ------------------------------------------------------------ registry
   // Registration order is wire order (hash combine, snapshot, load), so a key registered twice is a bug: throw.
-  function registerOp(op, handlers) {
+  function registerOp<F>(op: string, handlers: OpHandlers<F>) {
     if (ops.has(op)) throw new Error('duplicate op ' + op);
-    ops.set(op, handlers);
+    ops.set(op, handlers as unknown as OpHandlers<object>);
   }
   // handlers: { serialize, load, hash, version = 0, migrate = { [v]: json => json } }. What serialize returns now is the
   // state's fresh form, loaded when a snapshot's copy fails.
-  function registerState(key, handlers) {
+  function registerState(key: string, handlers: StateHandlers) {
     if (states.has(key)) throw new Error('duplicate state ' + key);
     const version = handlers.version ?? 0;
     if (!isInt(version) || version < 0) throw new Error(`state ${key}: bad version ${version}`);
@@ -178,22 +209,22 @@ export function createSync({ env: env0 } = {}) {
     });
   }
   const registry = () => ({ ops: [...ops.keys()], states: [...states.keys()] });
-  function addHandler(list, fn, label) {
+  function addHandler<F>(list: F[], fn: F, label?: string) {
     list.push(fn);
     if (label) labels.set(fn, label);
   }
 
   // ------------------------------------------------------------ edits
   // Host (or local): validate, stamp, queue, broadcast.
-  function stamp(edit, from) {
-    const h = ops.get(edit?.op);
+  function stamp(edit: Obj, from: string) {
+    const h = ops.get(String(edit.op));
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
     const u = from === selfId ? myPid() : pids.get(from);
     if (!u) return false; // no w:id from that tab yet (it repeats one every ID_EVERY_MS)
     if (h.hostOnly && from !== selfId) return false; // an op only the host itself submits (a broadcast can't be replayed)
     const e = { ...edit, p: from, u }; // never trust a client-supplied p or u
     try {
-      if (h.validate && !h.validate(e, { from, tick: world.tick, env })) return false;
+      if (h.validate && !h.validate(e as unknown as Edit, { from, tick: world.tick, env })) return false;
     } catch (err) {
       console.warn('[world] validate threw', err);
       return false;
@@ -214,9 +245,9 @@ export function createSync({ env: env0 } = {}) {
     send({ t: 'w:edits', ht: world.tick, list });
   }
 
-  function submitEdit(edit) {
-    if (!isObj(edit) || !ops.has(edit.op) || !isInt(edit.i) || !isInt(edit.j)) return false;
-    const e = { ...edit, p: selfId };
+  function submitEdit(edit: unknown) {
+    if (!isObj(edit) || !ops.has(String(edit.op)) || !isInt(edit.i) || !isInt(edit.j)) return false;
+    const e: Obj = { ...edit, p: selfId };
     delete e.u; // the host sets it
     if (mode === 'client' && JSON.stringify(e).length > MAX_EDIT_JSON) return false;
     // Nowhere to deliver it yet (the room is down, so send() would drop it, or a reclaimed host is still loading): hold it.
@@ -238,14 +269,14 @@ export function createSync({ env: env0 } = {}) {
     }
     return deliver(e);
   }
-  function deliver(e) {
+  function deliver(e: Obj) {
     if (mode !== 'client') return stamp(e, selfId);
     send({ t: 'w:edit', e });
     return true;
   }
   const canRelease = () => connected && (mode === 'client' || ready);
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
-  function onConnected(c) {
+  function onConnected(c: boolean) {
     connected = c;
   }
   let nextIdAt = 0;
@@ -254,19 +285,19 @@ export function createSync({ env: env0 } = {}) {
     send({ t: 'w:id', u: myPid() });
   }
   // Whether a session is in the room now (unknown without room.peers: assume it is).
-  const live = (sid) => !room?.peers || room.peers().some((p) => p.peer === sid);
+  const live = (sid: string) => !room?.peers || room.peers().some((p) => p.peer === sid);
   // A pid belongs to one live session: a claim on a pid that this tab or another live session holds is ignored, so
   // a tab can't play as someone who is here (their pid is public in presence). The claimant keeps repeating its w:id
   // and gets the pid once the holder has left (a reload's old session times out in a few seconds).
-  function notePid(from, u) {
+  function notePid(from: unknown, u: unknown) {
     if (!okPid(u) || typeof from !== 'string' || from === selfId || pids.get(from) === u) return;
     if (u === myPid()) return;
     for (const [sid, v] of pids) if (v === u && sid !== from && live(sid)) return;
     pids.delete(from); // re-inserted last, so the oldest record goes first when full
-    pids.set(from, u);
+    pids.set(from, u as string);
     if (pids.size <= MAX_PIDS) return;
     const gone = [...pids.keys()].find((sid) => !live(sid)) ?? pids.keys().next().value;
-    pids.delete(gone);
+    if (gone !== undefined) pids.delete(gone);
   }
   // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick.
   function releaseHeld() {
@@ -275,7 +306,7 @@ export function createSync({ env: env0 } = {}) {
       stats.heldDropped++;
     }
     if (!held.length || !canRelease() || wall < heldAt) return; // a reclaimed host keeps them until it is ready
-    const { e, fresh } = held.shift();
+    const { e, fresh } = held.shift()!;
     deliver(e);
     if (!fresh) heldAt = wall + HELD_EVERY_MS; // a fresh edit is live input again: its caller paces the next one
   }
@@ -288,7 +319,7 @@ export function createSync({ env: env0 } = {}) {
     world.tick = t;
     for (const { e } of due) {
       try {
-        const r = ops.get(e.op)?.apply(e, t); // a throwing apply skips the listeners
+        const r = ops.get(String(e.op))?.apply(e as unknown as Edit, t); // a throwing apply skips the listeners
         // Listeners get apply's result; each is guarded, so a failing effect does not stop the next listener.
         for (const fn of appliedFns) {
           try {
@@ -311,13 +342,14 @@ export function createSync({ env: env0 } = {}) {
         for (const fn of hashFns) fn(t);
       }
     } else if (mode === 'client' && pendingHash.has(t)) {
-      checkHash(t, ...pendingHash.get(t));
+      const [h, hs] = pendingHash.get(t)!;
+      checkHash(t, h, hs);
     }
     for (const k of pendingHash.keys()) if (k <= t) pendingHash.delete(k);
   }
 
   // Called from the frame loop with real elapsed seconds; runs whole ticks only.
-  function updateWorld(dt) {
+  function updateWorld(dt: number) {
     wall += dt * 1000;
     releaseHeld();
     if (mode === 'client') {
@@ -356,25 +388,25 @@ export function createSync({ env: env0 } = {}) {
   }
 
   // ------------------------------------------------------------ snapshots + hashes
-  function snapshot() {
-    const data = {},
-      vers = {};
+  function snapshot(): Snapshot {
+    const data: Obj = {},
+      vers: Obj = {};
     for (const [k, s] of states) {
       data[k] = s.serialize();
       vers[k] = s.version;
     }
     return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data, vers };
   }
-  function validSnap(s) {
+  function validSnap(s: unknown): s is Snapshot {
     return isObj(s) && isInt(s.tick) && s.tick >= 0 && isInt(s.seed) && isInt(s.epochMs) && isObj(s.data);
   }
-  function loadSnapshot(snap) {
+  function loadSnapshot(snap: unknown) {
     if (!validSnap(snap)) return false;
     world.tick = snap.tick;
     world.seed = snap.seed;
     world.epochMs = snap.epochMs;
     verifiedTick = -1; // a loaded snapshot is verified only by the next hash check
-    const vers = isObj(snap.vers) ? snap.vers : {};
+    const vers: Obj = isObj(snap.vers) ? snap.vers : {};
     unverifiedFallback = false;
     for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k], vers[k] ?? 0);
     queue = [];
@@ -383,7 +415,7 @@ export function createSync({ env: env0 } = {}) {
     return true;
   }
   // One state from a snapshot: migrate from its saved version up to ours, then load. Never throws.
-  function loadState(k, s, json, v) {
+  function loadState(k: string, s: State, json: unknown, v: unknown) {
     if (isInt(v) && v > s.version) {
       newerSave = true;
       console.warn(`[world] ${k} was saved by a newer build (v${v} > v${s.version}): skipped; not saving`);
@@ -406,7 +438,7 @@ export function createSync({ env: env0 } = {}) {
       }
     }
   }
-  function combine(h0) {
+  function combine(h0: number) {
     let h = h0;
     for (const [, s] of states) h = (Math.imul(h ^ s.hash(), 16777619) >>> 0) | 0;
     return h >>> 0;
@@ -415,14 +447,15 @@ export function createSync({ env: env0 } = {}) {
     return combine(world.tick | 0);
   }
   function stateHashes() {
-    const out = {};
+    const out: Record<string, number> = {};
     for (const [k, s] of states) out[k] = s.hash() >>> 0;
     return out;
   }
 
-  function checkHash(tick, h, hs) {
+  function checkHash(tick: number, h: number, hs0: unknown) {
     if (tick !== world.tick) return;
-    const mine = isObj(hs) ? stateHashes() : null;
+    const hs = isObj(hs0) ? hs0 : {};
+    const mine = isObj(hs0) ? stateHashes() : null;
     if (mine) subsystems = Object.fromEntries(Object.keys(mine).map((k) => [k, mine[k] === hs[k] ? 'ok' : 'bad']));
     if (worldHash() === h) {
       stats.hashOk++;
@@ -446,7 +479,7 @@ export function createSync({ env: env0 } = {}) {
     send({ t: 'w:need' });
   }
 
-  function serveSnapshot(to) {
+  function serveSnapshot(to: string) {
     if (!ready || wall - (served.get(to) ?? -1e9) < 1500) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
@@ -459,7 +492,7 @@ export function createSync({ env: env0 } = {}) {
     for (let k = 0; k < n; k++) send({ t: 'w:snap', to, id, n, k, s: json.slice(k * CHUNK, (k + 1) * CHUNK) });
     stats.snapsSent++;
   }
-  function onSnapChunk(m) {
+  function onSnapChunk(m: Obj) {
     if (m.to !== selfId || !isInt(m.id) || !isInt(m.n) || !isInt(m.k) || typeof m.s !== 'string') return;
     if (m.n < 1 || m.n > MAX_CHUNKS || m.k < 0 || m.k >= m.n || m.s.length > 16000) return;
     if (!asm || asm.id !== m.id || asm.n !== m.n) asm = { id: m.id, n: m.n, parts: [], got: 0 };
@@ -475,12 +508,13 @@ export function createSync({ env: env0 } = {}) {
       snapFail('peer', err instanceof SyntaxError ? 'parse' : 'load');
     }
   }
-  function applyPayload(p) {
+  function applyPayload(p: unknown) {
     if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
     if (p.noSave === true) newerSave = true;
     queue = p.pend.filter(
-      (q) => isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(q.e.op),
+      (q): q is Queued =>
+        isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(String(q.e.op)),
     );
     if (isInt(p.seq)) seq = Math.max(seq, p.seq);
     if (Array.isArray(p.ids)) for (const r of p.ids.slice(0, MAX_PIDS)) if (Array.isArray(r)) notePid(r[0], r[1]);
@@ -494,13 +528,13 @@ export function createSync({ env: env0 } = {}) {
   }
 
   // ------------------------------------------------------------ messages
-  function noteHostTick(ht) {
+  function noteHostTick(ht: unknown) {
     if (isInt(ht) && (ht > hostTick || hostTickAt === 0)) {
       hostTick = ht;
       hostTickAt = wall;
     }
   }
-  function acceptHost(from) {
+  function acceptHost(from: string) {
     if (hostId === null || (from !== hostId && wall - hostSeenAt > HOST_STALE_MS)) {
       if (hostId !== null) sendId(); // a migration: make sure the new host knows our pid before our next edit
       hostId = from; // first sender, or the old host went quiet: a migration
@@ -513,7 +547,7 @@ export function createSync({ env: env0 } = {}) {
     return true;
   }
 
-  function onMessage(msg, from) {
+  function onMessage(msg: unknown, from: string) {
     if (!isObj(msg) || typeof msg.t !== 'string' || !msg.t.startsWith('w:') || from === selfId) return;
     if (msg.t === 'w:id') return notePid(from, msg.u); // every tab keeps the map, in any role
     if (mode === 'host') {
@@ -531,7 +565,7 @@ export function createSync({ env: env0 } = {}) {
       else if (msg.tick > world.tick && pendingHash.size < 8) pendingHash.set(msg.tick, [msg.h >>> 0, msg.hs]);
     } else if (msg.t === 'w:edits' && Array.isArray(msg.list)) {
       for (const q of msg.list) {
-        if (!isObj(q) || !isInt(q.tick) || !isInt(q.seq) || !isObj(q.e) || !ops.has(q.e.op)) continue;
+        if (!isObj(q) || !isInt(q.tick) || !isInt(q.seq) || !isObj(q.e) || !ops.has(String(q.e.op))) continue;
         if (q.tick <= world.tick) {
           stats.lateEdits++;
           requestResync();
@@ -553,31 +587,31 @@ export function createSync({ env: env0 } = {}) {
     if (profiling) throw new Error('profileTicks: already profiling; stop() the first one');
     profiling = true;
     let active = true;
-    const rows = new Map(); // tick -> { label: ms }
-    const kinds = {}; // label -> 'sim' | 'applied' | 'view'
-    const timed = (label, fn, kind) => {
+    const rows = new Map<number, Record<string, number>>(); // tick -> { label: ms }
+    const kinds: Record<string, string> = {}; // label -> 'sim' | 'applied' | 'view'
+    const timed = <A extends unknown[], R>(label: string, fn: (...args: A) => R, kind: string) => {
       kinds[label] = kind;
-      return (...args) => {
+      return (...args: A) => {
         const t0 = now();
         try {
           return fn(...args);
         } finally {
           if (!rows.has(world.tick)) rows.set(world.tick, {});
-          const row = rows.get(world.tick);
+          const row = rows.get(world.tick)!;
           row[label] = (row[label] ?? 0) + now() - t0;
         }
       };
     };
-    const undo = [];
-    const swap = (map, key, h, field, label) => {
-      map.set(key, { ...h, [field]: timed(label, h[field], 'sim') });
+    const undo: (() => void)[] = [];
+    const swap = <H extends object>(map: Map<string, H>, key: string, h: H, field: keyof H & string, label: string) => {
+      map.set(key, { ...h, [field]: timed(label, h[field] as (...args: unknown[]) => unknown, 'sim') });
       undo.push(() => map.set(key, h));
     };
     for (const [op, h] of ops) swap(ops, op, h, 'apply', `op ${op}`);
     for (const [k, s] of states) swap(states, k, s, 'hash', `hash ${k}`);
-    const swapAll = (list, kind, name) =>
+    const swapAll = <F extends (...args: never[]) => unknown>(list: F[], kind: string, name: string) =>
       list.forEach((fn, k) => {
-        list[k] = timed(labels.get(fn) || `${name} #${k}`, fn, kind);
+        list[k] = timed(labels.get(fn) || `${name} #${k}`, fn, kind) as F;
         undo.push(() => (list[k] = fn));
       });
     swapAll(appliedFns, 'applied', 'applied');
@@ -596,7 +630,7 @@ export function createSync({ env: env0 } = {}) {
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   // Every peer keeps the latest world in its own storage, so whoever hosts next starts from it; only the host uploads.
   // A client saves only at a tick whose hash just matched the host's, so a diverged copy never becomes the next world.
-  function persist(unloading) {
+  function persist(unloading: boolean) {
     if (mode === 'local' || !ready || awaiting || newerSave || (mode === 'client' && verifiedTick !== world.tick))
       return;
     const hsh = combine(0);
@@ -614,7 +648,7 @@ export function createSync({ env: env0 } = {}) {
       mode === 'host' && cfg.serverUrl ? JSON.stringify({ tick: snap.tick, writerId: selfId, data: snap }) : '';
     if (body && body.length < 250000) {
       const url = new URL(`/rooms/${cfg.roomId}/snapshot`, cfg.serverUrl);
-      const init = {
+      const init: RequestInit = {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body,
@@ -625,8 +659,8 @@ export function createSync({ env: env0 } = {}) {
     }
   }
   async function loadPersisted() {
-    let best = null;
-    const consider = (s, from) => {
+    let best: Snapshot | null = null as Snapshot | null;
+    const consider = (s: unknown, from: string) => {
       if (s === null || s === undefined) return;
       if (!validSnap(s)) return snapFail(from, 'invalid');
       if (!best || s.tick > best.tick) best = s;
@@ -645,7 +679,8 @@ export function createSync({ env: env0 } = {}) {
         else if (res.status !== 404) snapFail('server', `http ${res.status}`);
       } catch (err) {
         // unreachable or garbled: go on with the local copy or a fresh world
-        const reason = err instanceof SyntaxError ? 'parse' : err?.name === 'TimeoutError' ? 'timeout' : 'unreachable';
+        const reason =
+          err instanceof SyntaxError ? 'parse' : (err as Error)?.name === 'TimeoutError' ? 'timeout' : 'unreachable';
         snapFail('server', reason);
       }
     }
@@ -692,7 +727,7 @@ export function createSync({ env: env0 } = {}) {
   }
 
   // Join a room. Returns detach(). opts: { roomId, serverUrl?, storage?, fetch?, now? }
-  function attachWorld(r, opts = {}) {
+  function attachWorld(r: WorldRoom, opts: AttachOptions = {}) {
     detachWorld();
     room = r;
     selfId = r.selfId;
@@ -739,23 +774,26 @@ export function createSync({ env: env0 } = {}) {
     registerOp,
     registerState,
     registry,
-    setEnv: (partial) => void Object.assign(env, partial), // host-only facts for validate (ctx.env)
-    onTick: (fn, label) => addHandler(tickFns, fn, label), // label: its name in `npm run perf`
-    onAfterTick: (fn, label) => addHandler(afterFns, fn, label), // fn(tick) after all onTick handlers
-    onApplied: (fn, label) => addHandler(appliedFns, fn, label), // fn(edit, tick, result of apply)
-    onSnapshot: (fn) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
-    onDesync: (fn) => desyncFns.push(fn),
-    onHashSent: (fn) => hashFns.push(fn),
-    onSnapFail: (fn) => snapFailFns.push(fn),
+    setEnv: (partial: Obj) => void Object.assign(env, partial), // host-only facts for validate (ctx.env)
+    onTick: (fn: (tick: number) => void, label?: string) => addHandler(tickFns, fn, label), // label: its name in `npm run perf`
+    onAfterTick: (fn: (tick: number) => void, label?: string) => addHandler(afterFns, fn, label), // fn(tick) after all onTick handlers
+    // Listeners type the edit and result they handle (e: { op: 'gift.take', id: number }, ...); the sync passes each the
+    // edit as stamped and apply's return value.
+    onApplied: (fn: (e: never, tick: number, result: never) => void, label?: string) =>
+      addHandler(appliedFns, fn as (e: Obj, tick: number, result: unknown) => void, label), // fn(edit, tick, result of apply)
+    onSnapshot: (fn: (tick: number) => void) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
+    onDesync: (fn: (d: Desync) => void) => desyncFns.push(fn),
+    onHashSent: (fn: (tick: number) => void) => hashFns.push(fn),
+    onSnapFail: (fn: (f: SnapFail) => void) => snapFailFns.push(fn),
     stateHashes,
-    setSelfId: (id) => (selfId = id),
+    setSelfId: (id: string) => (selfId = id),
     // This tab's player id (src/player/identity.ts); announced at once if a room is attached.
-    setPid(u) {
+    setPid(u: unknown) {
       if (!okPid(u) || u === pid) return;
-      pid = u;
+      pid = u as string;
       sendId();
     },
-    pidOf: (sid) => (sid === selfId ? myPid() : (pids.get(sid) ?? null)), // a session's pid, or null
+    pidOf: (sid: string) => (sid === selfId ? myPid() : (pids.get(sid) ?? null)), // a session's pid, or null
     submitEdit,
     updateWorld,
     snapshot,

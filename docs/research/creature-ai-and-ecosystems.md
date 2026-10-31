@@ -33,7 +33,7 @@ Authority follows from one hard fact. Floats are not reliably identical across m
 | 1. Cosmetic local | Floats, `Math.random`, per-client positions | No | Fish, gulls, fireflies, sand hoppers | `src/features/<name>.js` with `onFrame`, reading water/terrain read-only, reacting to `onApplied` edits |
 | 2. Shared schedule, local motion | Spawn place and time are a pure function of `world.tick` + `world.seed` (mulberry32); motion is cosmetic | Spawns yes, paths no | Crabs emerging from burrows, a coelacanth-style rare visitor in rain | Same as tier 1, with the schedule in a pure `src/sim/` module and unit tests |
 | 3. Host-published | Host simulates, broadcasts a few bytes in presence; local fallback | Yes (approximate) | The Boogler, giant-crab event, at most ~3 entities | Boogler pattern: presence field, interpolation, `STALE_MS` fallback |
-| 4. Integer sim state | `registerOp`/`registerState`, integer, hashed, persisted | Exactly | Pet affinity, anything that drops seeds or edits the world | `src/world/sync.js` contract, `src/sim/` pure logic, tests for determinism and round-trips |
+| 4. Integer sim state | `registerOp`/`registerState`, integer, hashed, persisted | Exactly | Pet affinity, anything that drops seeds or edits the world | `src/world/sync.ts` contract, `src/sim/` pure logic, tests for determinism and round-trips |
 
 Tier 2 solves a real co-op problem. If crabs are purely local, "look at that crab!" points at nothing on your friend's screen. If the burrow and emergence tick are shared, everyone sees a crab pop out of the same hole at the same moment, even though its scuttle path differs slightly between clients.
 
