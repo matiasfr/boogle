@@ -5,7 +5,7 @@
 //     the client right away (before the resync replaces it), the host from a small cache of its states at hash ticks
 // Serves the determinism principle (a desync is found and named, not silently repaired). Local only.
 import { onStart } from '../loop.js';
-import { onRoomReady } from '../netplay/net.ts';
+import { net, onRoomReady } from '../netplay/net.ts';
 import { BUILD, otherBuilds } from '../netplay/builds.ts';
 import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.ts';
 
@@ -65,6 +65,7 @@ onStart(() => {
       `  held drop ${s.heldDropped}\n` +
       (s.mode === 'host' ? 'authoritative: per-state hashes sent every 2 s' : subs || 'no hash check yet') +
       (s.lastBad ? `\nlast desync: tick ${s.lastBad.tick} in ${s.lastBad.keys.join(', ')}` : '') +
+      `\nroom ${net.room?.transport ?? 'none'}${net.room?.isLead() ? '  (lead)' : ''}` +
       `\nbuild ${BUILD}  ${other ? `✗ mixed: ${other}` : '✓ same as everyone heard'}`;
   }, 500);
 });

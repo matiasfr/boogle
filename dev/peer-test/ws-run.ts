@@ -1,9 +1,12 @@
-// End-to-end test of the server room (src/net/ws-room.ts, `npm run test:net`): the real server in-process, hosting a
-// random room, and headless pages running ws-page.ts with the world sync on the home land. WS_LOAD=1 adds an 8-page
+// End-to-end test of the server room (src/net/ws-room.ts, `npm run test:net`): the real server in-process, hosting
+// random rooms, and headless pages running ws-page.ts with the world sync on the home land. Part 2 drives the room
+// picker (src/net/room.ts) through the server going down, coming back and turning hosting off, with a second
+// PeerServer playing the public fallback signaling. WS_LOAD=1 adds an 8-page
 // load run that prints the server's CPU share. Plan: docs/plans/server-host.md, step 8.
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { PeerServer } from 'peer';
 import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.mjs';
 import { freePort } from '../look/lib.mjs';
 import { createService, loadConfig } from '../../server/src/server.js';
@@ -17,11 +20,12 @@ function check(name: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
 }
 
-const room = 'ws' + Math.random().toString(36).slice(2, 8);
+const room = 'ws' + Math.random().toString(36).slice(2, 8),
+  room2 = room + 'p';
 const port = await freePort();
 const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-'));
 async function serve(env: Record<string, string> = {}) {
-  const env0 = { DATA_DIR: dataDir, SERVER_ROOMS: room, MAX_PLAYERS: '4', SERVER_SAVE_MS: '200', ...env };
+  const env0 = { DATA_DIR: dataDir, SERVER_ROOMS: `${room},${room2}`, MAX_PLAYERS: '4', SERVER_SAVE_MS: '200', ...env };
   const svc = createService(loadConfig(env0, { log: () => {}, unrefTimers: true }));
   await svc.listen(port);
   return svc;
@@ -180,6 +184,87 @@ try {
   await Promise.all(all.map((p) => ev(p.page, () => (window.T.hashes = {}))));
   const syncMs = await waitFor(() => hashesAgree(all), 4000); // only hashes recorded after the crash
   check('after a crash the pages resync and hash the same within 4 s', syncMs >= 0, syncMs + ' ms');
+
+  // ---- part 2: the room picker ----
+  const fbPort = await freePort();
+  const fbServer = PeerServer({ port: fbPort, host: '127.0.0.1', path: '/peerjs' });
+  const pick = (name: string) => web.open(name, `room=${room2}&server=http://127.0.0.1:${port}&picker=1&fb=${fbPort}`);
+  const P = await pick('P'),
+    Q = await pick('Q'),
+    R = await pick('R');
+  const group = [P, Q, R];
+  const on = (t: string) => async () => (await Promise.all(group.map(snap))).every((s) => s.transport === t);
+  check('picker: every page joins the server', (await waitFor(on('server'), 5000)) >= 0);
+  await waitFor(async () => (await Promise.all(group.map(world))).every((w) => w.status.ready), 5000);
+
+  // 10. the server goes away: everyone moves to the fallback, one tab hosts there, play goes on
+  await svc.close({ save: true });
+  const fbMs = await waitFor(on('fallback'), 12000);
+  check('server down: every page moves to the fallback', fbMs >= 0, fbMs + ' ms');
+  const oneHost = await waitFor(
+    async () => (await Promise.all(group.map(snap))).filter((s) => s.host).length === 1,
+    5000,
+  );
+  check('exactly one page hosts the fallback', oneHost >= 0);
+  await ev(P.page, () => window.T.room.presence({ fb: 1 }));
+  const fbPres = await waitFor(async () => {
+    for (const p of [Q, R])
+      if ((await snap(p)).peers.find((x: { peer: string }) => x.peer === P.selfId)?.presence.fb !== 1) return false;
+    return true;
+  }, 3000);
+  check('presence flows on the fallback', fbPres >= 0, fbPres + ' ms');
+  await ev(Q.page, ([i, j]: number[]) => window.T.plant(i, j), cells[2]);
+  const fbPlant = await waitFor(
+    async () => (await Promise.all(group.map((p) => hasPlot(p, cells[2])))).every(Boolean),
+    4000,
+  );
+  check('a plot planted on the fallback reaches every page', fbPlant >= 0, fbPlant + ' ms');
+  const fbTick = Math.max(...(await Promise.all(group.map(world))).map((w) => w.tick));
+
+  // 11. the server comes back (from its older save): everyone moves back, and the server adopts the fallback's world
+  svc = await serve();
+  const backWs = await waitFor(on('server'), 8000);
+  check('server back: every page is on the server again within 6 s', backWs >= 0 && backWs < 6000, backWs + ' ms');
+  const status = await (await fetch(`http://127.0.0.1:${port}/rooms/${room2}/host`)).json();
+  check(
+    'the server took over the fallback world (tick)',
+    status.tick >= fbTick,
+    `server ${status.tick}, fallback ${fbTick}`,
+  );
+  const F = await pick('F');
+  check('a new page sees the plot planted on the fallback', (await waitFor(() => hasPlot(F, cells[2]), 4000)) >= 0);
+  group.push(F);
+
+  // 12. hosting switched off for this room: everyone moves to a peer room on our signaling and keeps the world
+  const tickBefore = Math.min(...(await Promise.all(group.map(world))).map((w) => w.tick));
+  await svc.close({ save: true });
+  svc = await serve({ SERVER_ROOMS: room });
+  const peerMs = await waitFor(on('peer'), 10000);
+  check('hosting off: every page moves to peer', peerMs >= 0, peerMs + ' ms');
+  const kept = await waitFor(
+    async () => (await Promise.all(group.map((p) => hasPlot(p, cells[2])))).every(Boolean),
+    4000,
+  );
+  const tickAfter = Math.min(...(await Promise.all(group.map(world))).map((w) => w.tick));
+  check('the peer room keeps the world', kept >= 0 && tickAfter >= tickBefore, `ticks ${tickBefore} -> ${tickAfter}`);
+
+  // 13. hosting on again: the pages move back, and an old-style peer tab can't host beside the server
+  await svc.close({ save: true });
+  svc = await serve();
+  check('hosting on: every page moves back to the server', (await waitFor(on('server'), 10000)) >= 0);
+  const G = await web.open('G', `room=${room2}&idle=1`);
+  const plain = await ev(G.page, (p: number) => window.T.plainPeer(p, 10000), port);
+  check(
+    'a plain peer tab never hosts a server-hosted room',
+    plain === false || plain === 'never joined',
+    String(plain),
+  );
+
+  // 14. nothing reachable: the join fails within the connect timeout
+  const [deadA, deadB] = [await freePort(), await freePort()];
+  const dead = await ev(G.page, ([a, b]: number[]) => window.T.tryJoin(a, b), [deadA, deadB]);
+  check('with nothing reachable the join rejects in time', !!dead.error && dead.ms < 6000, JSON.stringify(dead));
+  (fbServer as unknown as { close?: () => void }).close?.();
 
   // 9. WS_LOAD=1: 8 pages at 20 Hz for 20 s
   if (process.env.WS_LOAD) {
