@@ -445,8 +445,8 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
 
 - [ ] **7. The server host, off by default** (`server/src/host/*`, `server/src/server.js`, deploy files).
   - Shipped in three PRs: [x] 7a `land.ts` + `world-host.ts` (`server/test/land.test.ts`, `world-host.test.ts`: every
-    op accepted, snapshot to one client, save and resume); [ ] 7b `hosted-room.ts` + `rooms.ts` + the upgrade route;
-    [ ] 7c config, endpoints, Docker and deploy, README. Files are `.ts` (AGENTS.md, "TypeScript"). The world host also
+    op accepted, snapshot to one client, save and resume); [x] 7b `hosted-room.ts` + `rooms.ts`, the upgrade route and
+    its PeerJS id guard, `SERVER_ROOMS` / `MAX_PLAYERS` / `SERVER_SAVE_MS` (`server/test/host.test.ts`); [ ] 7c endpoints, Docker and deploy, README. Files are `.ts` (AGENTS.md, "TypeScript"). The world host also
     submits `bank.wake` on load, as `src/features/helper-bank.ts` does for a browser host.
   - Config (`loadConfig` + README table): `SERVER_ROOMS` (list, default empty), `MAX_PLAYERS` (8),
     `SERVER_SAVE_MS` (2000), `ADOPT_WINDOW_MS` (600000), `PROTO_FLAGS` (''). `ws-wire.js` and `ids.js` are imported
