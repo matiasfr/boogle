@@ -1,6 +1,6 @@
-// The right-hand inspector: a card for whatever is selected. ctx = { S, M, N, select, render, css, kc, esc }.
+// The right-hand inspector: a card for whatever is selected. ctx = { S, M, N, select, render, kc, esc }.
 import { KINDS, LAYERS, VIEWS } from '../layout.js';
-import { hooks, layerDirs, layerOf, registrations, resolveCite, wireOf } from '../model.js';
+import { hooks, layerById, layerDirs, layerOf, registrations, resolveCite, sumLoc, wireOf } from '../model.js';
 import { parseChanges, renderChanges } from '../changes.js';
 import { conceptCard, howIntro } from './how.js';
 
@@ -9,7 +9,6 @@ const sentences = (t) => {
   const i = t.lastIndexOf('. ');
   return i > 60 ? t.slice(0, i + 1) : t.length >= 255 ? t + '…' : t;
 };
-const sum = (l) => l.reduce((a, x) => a + x.loc, 0);
 
 export function legend({ kc }) {
   return `<div class="legend">${Object.entries(KINDS)
@@ -87,7 +86,7 @@ export function inspector(ctx) {
       return;
     }
     const regs = registrations(f);
-    const uses = [...new Set([...f.imports, ...f.lazy])].map((p) => M.byPath.get(p)).filter(Boolean);
+    const uses = [...f.uses].map((p) => M.byPath.get(p)).filter(Boolean);
     const by = f.users.map((p) => M.byPath.get(p));
     el.innerHTML = `<div><h2>${esc(f.name)}</h2><div class="path">${esc(f.f)}</div></div>
       <div class="pills"><span class="pill" style="--c:${kc(f.kind)}"><i></i>${KINDS[f.kind].name}</span><span class="pill">${f.loc} lines</span></div>
@@ -107,7 +106,7 @@ export function inspector(ctx) {
         .join('')}</div></div>
       <div><h3>Largest files · ${list.length}</h3>${fileList(ctx, list)}</div>`;
   } else if (sel.t === 'layer') {
-    const L = LAYERS.find((x) => x.id === sel.id) ?? LAYERS[1];
+    const L = layerById(sel.id);
     const ds = layerDirs(M, L);
     el.innerHTML = `<div><h2>${L.name}</h2></div><p>${L.note}</p><div><h3>Folders</h3><div class="list">${ds
       .map(
@@ -141,7 +140,7 @@ export function inspector(ctx) {
       ? new Date(M.facts.git.first).toLocaleDateString('en', { month: 'short', day: 'numeric' })
       : '';
     const commits = M.facts?.git?.commits;
-    el.innerHTML = `<div><h2>${M.files.length} files · ${sum(M.files).toLocaleString()} lines</h2>${commits ? `<div class="path">${commits} commits${since ? ` since ${since}` : ''}</div>` : ''}</div>
+    el.innerHTML = `<div><h2>${M.files.length} files · ${sumLoc(M.files).toLocaleString()} lines</h2>${commits ? `<div class="path">${commits} commits${since ? ` since ${since}` : ''}</div>` : ''}</div>
       <p>Five layers, top to bottom: from what a player touches to the wire. Click anything to see it here; press <b>/</b> to search.</p>
       <div><h3>Colour is the sync kind</h3>${legend(ctx)}</div>
       <div><h3>Layers</h3><div class="list">${LAYERS.map((L) => `<button data-layer="${L.id}" style="--c:var(${L.c})"><i style="outline:1px solid var(--faint)"></i>${L.name}<span>${layerDirs(M, L).length}</span></button>`).join('')}</div></div>

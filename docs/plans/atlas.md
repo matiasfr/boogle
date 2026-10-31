@@ -56,7 +56,7 @@ The plan was written before the WebGPU renderer migration landed. Re-read agains
 
 | Layer | Who writes it | Where | Committed? |
 |---|---|---|---|
-| **Facts** (files, imports, sync kind inputs, keys, ops, states, messages, actions, interactables, frame hooks, routes, git growth) | `dev/atlas/extract.mjs`, deterministic | Vite virtual module `virtual:atlas-facts` at build and dev time; `npm run atlas` writes `.look/atlas/facts.json` for inspection | **No** |
+| **Facts** (files, imports, sync kind inputs, keys, ops, states, messages, actions, interactables, frame hooks, routes, git head and commit count) | `dev/atlas/extract.mjs`, deterministic | Vite virtual module `virtual:atlas-facts` at build and dev time; `npm run atlas` writes `.look/atlas/facts.json` for inspection | **No** |
 | **Narrative** (concepts, stories, box subtitles, folder notes, kind and channel copy, "what changed" digest) | Agents and people, kept current by the daily agent | `docs/atlas/concepts.json`, `docs/atlas/stories/<id>.json`, `docs/atlas/changes.md` | Yes |
 | **Layout and mechanics** (box geometry, lanes, layers, colours, view code) | Code | `atlas/*.js` | Yes |
 
@@ -64,7 +64,7 @@ The plan was written before the WebGPU renderer migration landed. Re-read agains
 would conflict on nearly every rebase while friends ship in parallel. The deploy build can have git history:
 `deploy.yml` builds from `actions/checkout@v4` at the default depth 1 today, and step 10 sets `fetch-depth: 0` (the
 `.git` folder is about 9 MB). Without history (CI's shallow clones) the extractor returns `git: null` and
-`growth: []`, and the UI hides the commit count.
+only the head, and the UI hides the commit count.
 
 **Parser:** acorn 8.19.0 is already in `node_modules` through `eslint → espree`. Add it as an explicit devDependency at
 the same version, so the lockfile gains no new package. That way the extractor does not break if eslint ever stops
@@ -91,7 +91,7 @@ today (`dev/video/site.mjs`). The Vite dev server serves `/atlas/` too.
 Stale narrative is a chore for the daily agent, never a red build.
 - **Extractor:** a file acorn cannot parse gets `{ f, loc, parseError: '<message>' }` with empty arrays, and extraction
   goes on. `gitFacts` never throws. The Vite plugin wraps `extractFacts` in `try`, and on failure emits
-  `{ schema: 1, git: null, growth: [], files: [], error: '<message>' }`. The page then shows a banner and the
+  `{ schema: 1, git: null, files: [], error: '<message>' }`. The page then shows a banner and the
   narrative-only views.
 - **Narrative loading:** a broken JSON file must not fail the Vite build, so `atlas/main.js` imports
   `concepts.json` and the stories as raw text (`?raw`, and
@@ -133,7 +133,8 @@ atlas/                       the page (browser code; nothing under src/ imports 
   views/inspector.js         inspector() for every selection type, legend, fileList, stackBar, citeChip
 dev/atlas/
   extract.mjs                extractFile, listSources, extractFacts, gitFacts, factsAt, diffFacts
-  cli.mjs                    `npm run atlas` (summary), `--json`, `--check`, `--changes [--since <ref>]`
+  git.mjs                    no dependencies: the git wrapper, `sinceRef`, and the `gate` for `--gate`
+  cli.mjs                    `npm run atlas` (summary), `--json`, `--check`, `--changes [--since <ref>]`, `--gate [--event <name>]`
   vite-plugin.mjs            atlasFacts(): the virtual:atlas-facts module
   agent-prompt.md            what the daily agent does
 docs/atlas/
@@ -154,21 +155,19 @@ these files in Node.
 ```js
 {
   schema: 1,
-  git: { head: 'b969888', date: '2026-10-30T14:34:40-07:00', commits: 198, first: '2026-10-28T…' } | null,
-  growth: [{ h: 'b969888', d: '2026-10-30T…', n: 124 }],   // .js files in src/ + server/src after each commit; [] if shallow
+  git: { head: 'b969888', commits: 198, first: '2026-10-28T…' } | null,   // commits and first are null if shallow
   files: [{                                                 // sorted by path; arrays in source order, deduped
     f: 'src/features/honk.js', loc: 300,
     head: 'leading // comment block, joined, ≤260 chars',
     imports: ['src/…'],          // static `import … from './x.js'` and `export … from`, resolved to repo paths; .js only
     lazy: ['src/…'],             // import('./x.js') with a string literal
-    globs: ['./features/*.js'],  // import.meta.glob first arg
     exports: ['honkNow'],        // exported names ('default' for export default)
     names: ['honkNow', 'update'],// every function/class/variable declarator id and function-valued object key, any depth
-    frames: [{ phase: 'late', order: 0, name: 'update', line: 244 }],
+    frames: [{ phase: 'late', order: 0, name: 'update' }],
     owner: ['b'], host: ['g'],   // addPresenceField / addHostField first arg (string literal)
     ops: [], states: [], ticks: [], // *.registerOp / *.registerState first arg; *.onTick second arg
     msgs: ['honk'], onMessage: true, submits: false,
-    actions: [{ id: 'honk', pad: 'y', key: 'KeyT' }], // registerAction; pad/key null when not a string literal
+    actions: ['honk'],           // registerAction first arg (string literal)
     interact: 0,                 // registerInteractable call count
     routes: [],                  // server only: app.get|put|post|delete|use('<path>') -> 'PUT /rooms/:roomId/snapshot'
     parseError: undefined,       // set (and every array empty) only when acorn failed on this file
@@ -194,9 +193,10 @@ Extraction rules, so the implementer does not have to guess:
   keyed `t`, plus string literals compared (`===`/`!==`) with a `.t` member (`msg?.t !== 'honk'`).
 - `head`: `Line` comments before the first token, joined with spaces, trimmed, sliced to 260.
 - `gitFacts(root)`: return null when `git rev-parse` fails. When `git rev-parse --is-shallow-repository` prints
-  `true`, return `{ head, date, commits: null, first: null }` and `growth: []`. Otherwise run one
-  `git log --reverse --no-renames --format=@%h|%cI --name-status --diff-filter=AD -- src server/src` and keep a running
-  count of `.js` adds minus deletes per commit. Never call `git ls-tree` per commit (the prototype did).
+  `true`, return `{ head, commits: null, first: null }`. Otherwise add the commit count (`rev-list --count HEAD`) and the
+  date of the first commit. (The per-commit file-count `growth` series was removed after review: nothing drew it. The
+  time slider in the follow-ups needs it back, as one `git log --name-status --diff-filter=AD` pass, never a
+  `git ls-tree` per commit.) `factsAt(root, ref)` unpacks a ref with one `git archive` into a temp dir.
 - No timestamps, no `Date.now()`: the same tree and history give the same JSON.
 
 ### Derived model (`atlas/model.js`)
@@ -452,13 +452,13 @@ glance".
   - The root inspector shows "N commits since <date>" only when `facts.git?.commits`. It shows the "Atlas problems"
     note when `N.loadProblems` or `facts.error` is set. `#rev` shows `facts.git?.head ?? ''`.
   - Theme button: it cycles auto, light and dark, sets or removes `document.documentElement.dataset.theme`, and stores
-    the choice in `localStorage['boogle.atlas.theme']`. The prototype's `MutationObserver` re-renders on change.
+    the choice in `localStorage['boogle.atlas.theme']`. Every colour reaches the SVG as a `var(--x)` string, so a theme change needs no re-render.
   - Until steps 6 and 7 land, the other tabs render "Coming in the next commit" in the canvas.
   - Verify: `npm run dev`, open `/atlas/`: the diagram matches `.look/atlas/prototype/v4-concept.png`, every story
     steps through with the animated dot, and clicking a box opens its concept card. In a scratch edit (reverted), break
     a cite, a box ref and the JSON syntax of one story. The page still renders, shows a stale chip, skips the route
     with the out-of-date note, and lists the bad story under "Atlas problems"; `npm run build` still succeeds.
-    `npm run build`: `dist/atlas/index.html` exists and contains `noindex`; `grep -l sankeyLinkHorizontal
+    `npm run build`: `dist/atlas/index.html` exists and contains `noindex`; `grep -l linkHorizontal
     dist/assets/*.js` lists no file referenced by `dist/index.html`; the game's `dist/assets/index-*.js` size is
     unchanged from a `main` build. `npm run check`.
 
@@ -470,8 +470,8 @@ glance".
   selecting a file lights its uses (blue) and used-by (orange). `npm run check`.
 
 - [x] **7. Focus, Network flow, Frame.** Create `atlas/views/focus.js` (port `focusView` and `registrations`, with
-  actions shown as `a.id`), `atlas/views/flow.js` (port `flowView` with `sankey` and `sankeyLinkHorizontal` from
-  `d3-sankey`, channel names and tags from `N.channels` falling back to the `KINDS` name, and `wireOf` from model.js)
+  actions are plain ids), `atlas/views/flow.js` (port `flowView` with `sankey` from `d3-sankey` and `linkHorizontal` from
+  `d3-shape`, channel names and tags from `N.channels` falling back to the `KINDS` name, and `wireOf` from model.js)
   and `atlas/views/frame.js` (port `frameView` over `hooks(M)`, removing `CORE`; slices are grey when `core`,
   `data-hook` is the hook id, and the inspector looks the hook up by id). Remove the "Coming" placeholder. Verify
   against `v3-focus.png`, `v3-flow.png` and `v3-frame.png`: the Frame view now shows multi-line hooks the prototype
@@ -494,8 +494,7 @@ glance".
   `ci.yml`; it never blocks a merge). Verify: `npm run scenario -- atlas`, then Read the stills. `npm run check`.
 
 - [x] **10. Deploy with history.** (Workflow edit and the local checks are done; shipping and the post-deploy look at https://boogle.club/atlas/ are left to the user.) `.github/workflows/deploy.yml`: give the build job's `actions/checkout@v4`
-  `with: fetch-depth: 0`. Verify: locally, with full history, `npm run build` and `npm run atlas` show `git.commits`
-  and `growth.length` > 1. In a `git clone --depth 1` scratch copy, `growth` is `[]` and the page still renders. Ship
+  `with: fetch-depth: 0`. Verify: locally, with full history, `npm run build` and `npm run atlas` show `git.commits`. In a `git clone --depth 1` scratch copy, `commits` is null and the page still renders. Ship
   steps 0–10 with `npm run ship` from the worktree, then check https://boogle.club/atlas/ after deploy.
 
 - [x] **11. Agent upkeep.**
@@ -536,25 +535,25 @@ glance".
     `claude_code_oauth_token`, `show_full_output: true`, **`--model claude-opus-5-5`**), on `ubuntu-latest`,
     `timeout-minutes: 45`:
     - `on`: `schedule: - cron: '7 13 * * *'` (daily, before the patch video at 14:23 UTC); `workflow_dispatch` with
-      inputs `force` (boolean) and `reason` (string, default `manual`); `push: branches: [main]` with `paths:
-      [src/world/rules/**, src/net/**, src/netplay/**, server/**, src/features/**]` (direct pushes only; see the
-      automerge note below).
+      input `force` (boolean); `push: branches: [main]` with `paths:
+      [src/world/rules/**, src/net/**, src/netplay/**, server/**]` (direct pushes only; see the automerge note below).
     - `permissions`: `contents: write`, `pull-requests: write`, `actions: read`, `id-token: write`.
     - `concurrency: { group: atlas, cancel-in-progress: false }`. GitHub keeps one running and one pending run (a newer
       pending run replaces the older), so a burst of merges yields at most two runs, and Claude is never killed
       mid-push.
-    - Steps: (1) debounce `sleep 600` when `github.event_name != 'schedule'` and not `inputs.force`; (2)
-      `actions/checkout@v4` with `ref: main`, `fetch-depth: 0`, so it checks out main's tip *after* the sleep; (3) gate
-      (`GH_TOKEN: ${{ github.token }}`): `last=$(git log -1 --format=%H -- docs/atlas/)` (empty: `HEAD~20`). Skip if
-      `git rev-list --count "$last"..HEAD -- src server` is 0; citations only break through such commits, so this
-      never skips a needed fix for long. For non-schedule events, also skip unless
-      `git diff --name-only "$last"..HEAD -- src/world/rules src/net src/netplay server` or
-      `git diff --name-only --diff-filter=AD "$last"..HEAD -- src/features` is non-empty. Then check the open atlas
-      PRs (`gh pr list --state open --json number,headRefName,createdAt`, head starting with `claude/atlas-`): skip
-      when one is **less than a day old**; an older one is stuck (CI red or conflicting), so close it with
-      `gh pr close <n> --delete-branch --comment "..."` saying the upkeep run is replacing it, and carry on. `force` skips the gate.
-      Outputs: `go`, `last`, `date=$(date -u +%F)`. (4) setup-node + `npm ci` (with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`)
-      if `go`; (5) Claude if `go`, with prompt "You are the atlas upkeep loop for Boogle, running unattended. Today is
+    - Steps: (1) `actions/checkout@v4` with `ref: main`, `fetch-depth: 0`; (2) gate: `node dev/atlas/cli.mjs --gate
+      --event "$EVENT"` (dev/atlas/git.mjs, plain git, so it needs no install) prints `last=<sha>` (the last commit
+      touching `docs/atlas/`, else `HEAD~20`; the same ref `--changes` uses) and `go=0|1` for `$GITHUB_OUTPUT`. go is 0
+      when `git rev-list --count "$last"..HEAD -- src server` is 0 (citations only break through such commits, so this
+      never skips a needed fix for long), and, for non-schedule events, unless `src/world/rules`, `src/net`,
+      `src/netplay` or `server` changed or a `src/features` file was added or removed. `force` sets go=1. (3) Check the
+      open atlas PRs (`gh pr list --state open --json number,headRefName,createdAt`, head starting with
+      `claude/atlas-`): skip when one is **less than a day old**; an older one is stuck (CI red or conflicting), so close
+      it with `gh pr close <n> --delete-branch --comment "..."` saying the upkeep run is replacing it, and carry on.
+      (4) Only when still going and the event is not `schedule` or `force`: debounce `sleep 600`, then
+      `git pull --ff-only` so the agent sees main's tip.
+      Outputs: `go`, `last`, `date=$(date -u +%F)`. (5) setup-node + `npm ci` (with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`)
+      if going; (6) Claude if going, with prompt "You are the atlas upkeep loop for Boogle, running unattended. Today is
       ${{ steps.gate.outputs.date }}; the last atlas update is ${{ steps.gate.outputs.last }}. Read
       dev/atlas/agent-prompt.md and follow it." and `--allowed-tools
       "Read,Write,Edit,Glob,Grep,Bash(npm run *),Bash(npm ci),Bash(node *),Bash(npx prettier *),Bash(git *),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(ls *),Bash(cat *)"`.
@@ -562,12 +561,11 @@ glance".
     `push` workflows (the file's own header says so), so the `push` trigger alone would miss nearly every merge. After
     the `deploy-server.yml` lines, add:
     ```bash
-    if gh pr diff "$PR" --name-only | grep -qE '^(src/world/rules/|src/net/|src/netplay/|server/)' ||
-       gh api "repos/$GH_REPO/pulls/$PR/files" --paginate --jq '.[] | select(.status=="added" or .status=="removed") | .filename' | grep -q '^src/features/'; then
-      gh workflow run atlas.yml --ref main -f reason=merge
+    if [[ "$BRANCH" != claude/atlas-* ]]; then
+      gh workflow run atlas.yml --ref main
     fi
     ```
-    Atlas PRs touch only `docs/atlas/`, so they never dispatch another run.
+    The gate decides whether a merge matters.     Atlas PRs touch only `docs/atlas/`, so they never dispatch another run.
   - Verify: `npm run atlas -- --changes --since HEAD~10` prints the report and sensible diffs and exits 0;
     `npm run check`. After merge, run the workflow by hand with `force: true` and confirm it opens a
     `claude/atlas-<date>` PR that CI checks and automerge merges.
@@ -597,7 +595,7 @@ glance".
 - **The build must never fail because of the atlas.** The extractor catches parse errors per file, the Vite plugin
   catches everything, and the narrative is imported as raw text. Step 5's verification exercises all three.
 - **Hotspots:** `index.html`, `src/main.js`, `src/style.css`, `PLAN.md` and `src/world/rules/index.js` are untouched.
-  Shared config edits stay small: `vite.config.js` (one import, one plugin, `input`), `deploy.yml` (two lines),
+  Shared config edits stay small: `vite.config.js` (one import, one plugin, `input`), `deploy.yml` (two lines: `fetch-depth: 0` and `filter: blob:none`),
   `automerge.yml` (one `if`), `scenarios-nightly.yml` (one line), `AGENTS.md` and `README.md` (one line each),
   `DESIGN.md` (one section, its own commit).
 - **The game bundle must not grow.** d3 and the virtual facts module are imported only from `atlas/`. Step 5 checks
@@ -619,6 +617,6 @@ glance".
 
 - "Changed since you last looked" badges: store the newest `changes.md` date and a facts digest in `localStorage`, and
   mark new boxes, files and stories.
-- Git-history time slider over the Map, using `facts.growth` (already extracted in step 2).
+- Git-history time slider over the Map, which needs the per-commit file-count series (`growth`) extracted again; it was dropped because nothing drew it.
 - "Which sync kind?" wizard: DESIGN.md's table as questions, ending on the matching concept card and an example story.
 - Writing the hash for every selection (shareable links to files and hooks).

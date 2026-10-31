@@ -2,7 +2,7 @@
 // Every reference to the narrative or the code tolerates being out of date (see docs/plans/atlas.md, "Never fail the
 // build, never crash the page").
 import { line, curveCatmullRom } from 'd3-shape';
-import { BOX, KINDS, LANES, ROUTE_VIA } from '../layout.js';
+import { BOX, KINDS, LANES, ROUTE_VIA, validRef } from '../layout.js';
 import { citeChip } from './inspector.js';
 
 let raf = 0;
@@ -10,7 +10,6 @@ export const stopHow = () => cancelAnimationFrame(raf);
 
 const boxC = (b) => [b.x + b.w / 2, b.y + b.h / 2];
 const laneP = (k) => [645, LANES[k].y];
-const validRef = (id) => (typeof id === 'string' && id.startsWith('lane:') ? id.slice(5) in LANES : id in BOX);
 
 function edgeToward(b, [tx, ty]) {
   const [cx, cy] = boxC(b);
@@ -45,7 +44,7 @@ const subtitle = (ctx, id) => (ctx.N.boxes[id] ?? '').replace('{features}', Stri
 const titleOf = (ctx, b) => ctx.N.concepts.find((c) => c.id === b.c)?.title ?? b.c;
 
 export function howView(ctx, el) {
-  const { S, N, css, kc, esc } = ctx;
+  const { S, N, kc, esc } = ctx;
   stopHow();
   const st = S.story ? N.stories.find((s) => s.id === S.story) : null;
   const step = st?.steps?.[S.stepI];
@@ -96,7 +95,7 @@ export function howView(ctx, el) {
       }</g>`;
   }
   s += `<line x1="200" x2="215" y1="170" y2="170" stroke="var(--line)"/>`;
-  const color = css(KINDS[st?.kind]?.c ?? '--accent');
+  const color = `var(${KINDS[st?.kind]?.c ?? '--accent'})`;
   const curve = line().curve(curveCatmullRom.alpha(0.5));
   const routes = drawable.map((r) => curve(routePts(r)));
   s += routes
@@ -141,21 +140,21 @@ export function howView(ctx, el) {
     dot.setAttribute('cy', q.y);
     return dot;
   };
-  if (!routes.length) return;
+  if (!routes.length) return null;
   const paths = routes.map((_, i) => el.querySelector('#rt' + i));
+  const lengths = paths.map((p) => p.getTotalLength());
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    paths.forEach((p, i) => at(i, p, p.getTotalLength()));
-    return;
+    paths.forEach((p, i) => at(i, p, lengths[i]));
+    return null;
   }
   const t0 = performance.now();
   const tick = (now) => {
     const u = ((now - t0) % 1600) / 1600;
-    paths.forEach((p, i) =>
-      at(i, p, p.getTotalLength() * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? 0 : 1),
-    );
+    paths.forEach((p, i) => at(i, p, lengths[i] * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? 0 : 1));
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
+  return null;
 }
 
 export function conceptCard(ctx, id) {
