@@ -493,7 +493,7 @@ glance".
   there are no page errors. Add `- atlas` to the matrix in `.github/workflows/scenarios-nightly.yml` (never to
   `ci.yml`; it never blocks a merge). Verify: `npm run scenario -- atlas`, then Read the stills. `npm run check`.
 
-- [ ] **10. Deploy with history.** `.github/workflows/deploy.yml`: give the build job's `actions/checkout@v4`
+- [x] **10. Deploy with history.** (Workflow edit and the local checks are done; shipping and the post-deploy look at https://boogle.club/atlas/ are left to the user.) `.github/workflows/deploy.yml`: give the build job's `actions/checkout@v4`
   `with: fetch-depth: 0`. Verify: locally, with full history, `npm run build` and `npm run atlas` show `git.commits`
   and `growth.length` > 1. In a `git clone --depth 1` scratch copy, `growth` is `[]` and the page still renders. Ship
   steps 0–10 with `npm run ship` from the worktree, then check https://boogle.club/atlas/ after deploy.
