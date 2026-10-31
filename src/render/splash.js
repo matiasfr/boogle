@@ -2,7 +2,7 @@
 // Detected locally on every client from displayed positions, never networked, so floats and Math.random are fine here.
 import * as THREE from 'three';
 import { BALL_R, GRAVITY, reducedMotion } from '../constants.js';
-import { waterMat } from './water-render.js';
+import { seaRipples } from './water-render.js';
 import { emit } from './particles.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';
@@ -12,12 +12,11 @@ const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
 
-// ripples: x, z, start time, strength (0 = unused); the sea shader's uRip sets how many
-const ripples = waterMat.uniforms.uRip.value;
+// seaRipples: x, z, start time, strength (0 = unused); the sea shader's ripple array sets how many
 let rippleCursor = 0;
 function addRipple(x, z, strength) {
-  ripples[rippleCursor].set(x, z, elapsedNow, strength);
-  rippleCursor = (rippleCursor + 1) % ripples.length;
+  seaRipples[rippleCursor].set(x, z, elapsedNow, strength);
+  rippleCursor = (rippleCursor + 1) % seaRipples.length;
 }
 
 // strength 0..1, level: the water surface there

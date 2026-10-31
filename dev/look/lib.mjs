@@ -22,6 +22,7 @@ export const VIEWS = {
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
+  garden: { cam: [30, 7, 15], look: [30, 1, 2.5] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };
 
@@ -74,19 +75,44 @@ export async function startStack({ url = null, root: dir = root } = {}) {
 
 // Software GL by default (same pictures on every machine). `gpu` uses the real GPU where there is one (Metal on a
 // Mac): about 60 fps instead of 7, for clips.
-export const launch = ({ gpu = false } = {}) =>
-  chromium.launch({
-    args:
-      gpu && process.platform === 'darwin'
-        ? ['--use-angle=metal', '--ignore-gpu-blocklist']
-        : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
-  });
+// `webgpu` (or BOOGLE_GFX=webgpu) turns WebGPU on in the browser; Game.open asks the game for `?gfx=webgl2` otherwise,
+// so three takes its WebGL 2 backend (what CI and older browsers run).
+export const wantWebgpu = () => process.env.BOOGLE_GFX === 'webgpu';
+export const launch = ({ gpu = false, webgpu = wantWebgpu() } = {}) => {
+  const real = gpu && process.platform === 'darwin';
+  const args = real
+    ? ['--use-angle=metal', '--ignore-gpu-blocklist']
+    : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+  if (webgpu)
+    args.push(
+      ...(process.platform === 'darwin'
+        ? ['--enable-unsafe-webgpu', ...(real ? [] : ['--use-angle=metal'])]
+        : [
+            '--enable-unsafe-webgpu',
+            '--enable-features=Vulkan',
+            '--use-vulkan=swiftshader',
+            '--use-webgpu-adapter=swiftshader',
+          ]),
+    );
+  return chromium.launch({ args });
+};
+
+// Prints the THREE.* console errors a game collected (once each), if any.
+export function reportGfxErrors(games) {
+  const seen = new Set(games.flatMap((g) => g.gfxErrors));
+  if (!seen.size) return console.log('gfx errors: none');
+  console.log(`gfx errors (${seen.size} distinct):`);
+  for (const e of seen) console.log('  ' + e.split('\n')[0].slice(0, 240));
+}
 
 export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
   // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
+  // webgpu (default: BOOGLE_GFX=webgpu; the browser must be launched with launch({ webgpu })): let the game use
+  // WebGPU, otherwise the page gets `?gfx=webgl2` and three uses its WebGL 2 backend. Every page also gets
+  // `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
   // layout viewport, and the game only needs the coarse pointer)
@@ -117,17 +143,26 @@ export class Game {
       );
     g.page = await g.ctx.newPage();
     g.errors = [];
+    g.gfxErrors = []; // console errors from three (THREE.*): unported materials show up here
+    g.page.on('console', (m) => {
+      if (m.type() === 'error' && m.text().startsWith('THREE.')) g.gfxErrors.push(m.text());
+    });
     g.page.on('pageerror', (e) => {
       g.errors.push(e.message);
       console.error(`[${g.name} page error]`, e.message);
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(`${stack.base}${sep}debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`, {
-      timeout: 90000,
-    });
-    // A deployed site (`--url`) over a slow link can take a while to load.
-    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 60000 });
+    const gfx = (opts.webgpu ?? wantWebgpu()) ? '' : 'gfx=webgl2&';
+    await g.page.goto(
+      `${stack.base}${sep}${gfx}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}`,
+      {
+        timeout: 90000,
+      },
+    );
+    // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
+    // every shader before the lobby opens.
+    await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
     await g.page.click('#enter');
     await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
@@ -135,6 +170,8 @@ export class Game {
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.first-run, .hud-tl, .hud-tr, .reticle' : null;
     if (hide) await g.page.addStyleTag({ content: `${hide}, .touch, .lobby { display: none !important }` });
+    g.gfx = await g.page.evaluate(() => window.boogle?.gfx).catch(() => undefined);
+    console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);
     await sleep(300);
     fs.mkdirSync(g.out, { recursive: true });
     return g;

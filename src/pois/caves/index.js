@@ -9,9 +9,34 @@
 // - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.js `atmosphere`);
 //   the darkness with depth is baked per vertex (aAmb, see ambAt/withCaveAmbient), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  Fn,
+  abs,
+  attribute,
+  cross,
+  dFdx,
+  dFdy,
+  fract,
+  floor,
+  mix,
+  mod,
+  positionGeometry,
+  select,
+  step,
+  vec2,
+  vec3,
+  vec4,
+  normalize,
+  clamp,
+  float,
+  If,
+  rand,
+} from 'three/tsl';
+import { patchNode } from '../../render/material-patch.js';
 import * as CANNON from 'cannon-es';
 import { scene, camera } from '../../render/scene.js';
+import { precompile } from '../../render/precompile.js';
 import { world, groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.js';
@@ -136,58 +161,32 @@ export function ambAt(x, z) {
 }
 
 // Scales the sky's ambient (hemisphere) light by the geometry's aAmb attribute; lanterns and the sun are not.
-// Chains onto the material's own onBeforeCompile and keeps its program cache key apart.
-const HEMI_LINE = 'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal );';
-const HEMI_SCALED = THREE.ShaderChunk.lights_fragment_begin.replace(
-  HEMI_LINE,
-  'irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometryNormal ) * vAmb;',
-);
-if (!THREE.ShaderChunk.lights_fragment_begin.includes(HEMI_LINE))
-  console.warn('[caves] three.js changed its hemisphere chunk');
+// aoNode multiplies the indirect diffuse light, which here is only the hemisphere light.
+const aAmb = attribute('aAmb', 'float');
 export function withCaveAmbient(mat) {
-  const prev = mat.onBeforeCompile;
-  const key = 'caveAmb:' + mat.customProgramCacheKey();
-  mat.onBeforeCompile = (shader, renderer) => {
-    prev.call(mat, shader, renderer);
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aAmb; varying float vAmb;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAmb = aAmb;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vAmb;')
-      .replace('#include <lights_fragment_begin>', HEMI_SCALED);
-  };
-  mat.customProgramCacheKey = () => key;
-  return mat;
+  return patchNode(mat, 'aoNode', (prev) => (prev ? prev.mul(aAmb) : aAmb));
 }
 
 // Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.
 function brickMaterial() {
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
-  mat.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nattribute float aBrick; varying float vBrick; varying vec3 vCaveW;',
-      )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrick = aBrick; vCaveW = position;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vBrick; varying vec3 vCaveW;')
-      .replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-        if (vBrick > 0.5) {
-          vec3 n = normalize(cross(dFdx(vCaveW), dFdy(vCaveW)));
-          vec3 an = abs(n);
-          vec2 p = an.y > 0.7 ? vCaveW.xz * vec2(1.3, 1.3) : (an.x > an.z ? vCaveW.zy : vCaveW.xy) * vec2(2.0, 4.0);
-          float row = floor(p.y);
-          p.x += mod(row, 2.0) * 0.5;
-          vec2 f = fract(p);
-          float mortar = step(f.x, 0.06) + step(f.y, 0.1);
-          float tint = fract(sin(dot(floor(p), vec2(12.99, 78.23))) * 43758.5);
-          diffuseColor.rgb *= mix(0.86 + 0.24 * tint, 0.55, clamp(mortar, 0.0, 1.0));
-        }`,
-      );
-  };
+  const mat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+  const aBrick = attribute('aBrick', 'float');
+  mat.colorNode = Fn(() => {
+    const w = positionGeometry;
+    // Derivatives first (toVar emits them here), before the branch: WGSL wants them in uniform control flow.
+    const an = abs(normalize(cross(dFdx(w), dFdy(w)))).toVar();
+    const k = float(1).toVar();
+    If(aBrick.greaterThan(0.5), () => {
+      const flat = an.y.greaterThan(0.7);
+      const wall = select(an.x.greaterThan(an.z), w.zy, w.xy).mul(vec2(2, 4));
+      const p = select(flat, w.xz.mul(1.3), wall).toVar();
+      p.x.addAssign(mod(floor(p.y), 2).mul(0.5));
+      const f = fract(p);
+      const mortar = step(f.x, 0.06).add(step(f.y, 0.1));
+      k.assign(mix(rand(floor(p)).mul(0.24).add(0.86), 0.55, clamp(mortar, 0, 1)));
+    });
+    return vec4(vec3(k), 1);
+  })();
   return withCaveAmbient(mat);
 }
 
@@ -207,7 +206,7 @@ function makeCollars({ positions, indices }) {
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(
     geo,
-    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
+    new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
   );
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
@@ -226,6 +225,7 @@ function* build() {
   caveMesh.receiveShadow = true;
   caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
   scene.add(caveMesh);
+  precompile(caveMesh); // their pipelines build now, not when the first player walks in
 
   const body = new CANNON.Body({ mass: 0, material: groundMat, collisionFilterGroup: GROUP.CAVE });
   body.addShape(new CANNON.Trimesh(m.positions, colliderIndices));
@@ -234,9 +234,11 @@ function* build() {
 
   collarMesh = makeCollars(yield* buildCollarMeshSteps());
   scene.add(collarMesh);
+  precompile(collarMesh);
   yield;
 
   decorRoot = buildDecor({ world, scene });
+  precompile(decorRoot);
   setTerrainHoles(
     MOUTHS.map((mo) => ({
       a: [mo.x + mo.ox * 1.5, mo.y + FLOOR_CUT, mo.z + mo.oz * 1.5],

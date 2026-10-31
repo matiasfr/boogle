@@ -1,6 +1,6 @@
 # src/ map
 
-Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), `style.css`, `constants.js`,
+Top level: `main.js` (boot once the renderer is ready, then the frame loop), `loop.js` (`onFrame`/`onStart` phases), `style.css`, `constants.js`,
 `math.js` and `math-pure.js` (the pure half, also used in Node).
 
 - `features/`: self-contained plug-ins, auto-loaded by `main.js` (`import.meta.glob('./features/*.js')`). Add new
@@ -18,8 +18,9 @@ Top level: `main.js` (boot and render), `loop.js` (`onFrame`/`onStart` phases), 
 - `physics/`: cannon-es world and step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models.
-- `render/`: scene, renderer and camera, lights pool, sky, sea shader, props, particles,
-  splashes, material patching, and the shared (cosmetic) audio context.
+- `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,
+  node-material patching (`patchNode`), and the shared (cosmetic) audio context. How to draw things:
+  [render/README.md](render/README.md).
 - `debug/`: dev-only tools behind URL flags (`?netdebug=1`, `?debugcam=1`), loaded lazily by their stubs in `features/`.
 - `boogler/`: The Boogler NPC: brain and model (`boogler.js`), play, talk, lines, dialogue box, friendship, HUD, fx.
 - `decomp/`: shared pieces for characters run by an engine and files the player brings (the files dialog, the

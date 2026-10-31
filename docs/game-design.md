@@ -333,7 +333,9 @@ is gone.
 ### 6.8 The Boogler
 
 A lavender blob (`#b99cff`, about three times as wide as tall) with a face and feet, who speaks with Uzbek words and
-dreams of a restaurant. His HUD shows a bouncy name tag with your friendship hearts, his speech bubbles and the interact
+dreams of a restaurant. He wears a comically tall black top hat (cosmetic, no collider): brim radius a third of his,
+crown half the brim's, about 0.9 m tall (one and a half times his height). It lags and wobbles on springs when he hops and
+walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD shows a bouncy name tag with your friendship hearts, his speech bubbles and the interact
 prompt, and an edge-of-screen pointer with his distance when he is off screen (full within 35 m, gone by 60 m).
 
 #### Wander
@@ -406,9 +408,9 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
   quiet for 90 s. Nosiness wears off at one per minute.
 - **Flags** set by answers fill later lines: `mom`, `idea`, `slogan`, plus `kicked` (count) and `recent` (last three
   small-talk topics, so they rotate).
-- **As the guest** (6.17) he is starstruck by "Mister Famous" whatever his mood: one of four short conversations (not
-  the one from last time; melon pitch, autograph, haggling, questions), every answer a short exclamation ("Hoo-hoo!",
-  "Ta-da!"). Unscored, though a present still counts.
+- **As Mario** (6.17, the guest) he is starstruck whatever his mood: one of four short conversations (not the one from
+  last time; melon pitch, autograph, haggling, questions), every answer a Mario catchphrase ("Wahoo!", "It's-a me,
+  Mario!"). Unscored, though a present still counts.
 
 #### Riding and launch
 
@@ -561,6 +563,22 @@ Room-wide toggles for experimental features: `feel`, `fish`, `gulls`, `fireflies
   [src/decomp/](../src/decomp/) (files dialog, IndexedDB store), [native/guest/](../native/guest/README.md).
 - **Known issues.** Not yet tried with two players, on the lighthouse stair, in the caves, on a gamepad or on touch.
   The plan for more such characters is [plans/decomp-characters.md](plans/decomp-characters.md).
+
+### 6.18 Graphics and devices
+
+- **What.** The island draws with WebGPU where the browser has it (Chrome and Edge, Safari 26 on iPhone, iPad and
+  Mac, Firefox on Windows and Apple Silicon) and with WebGL 2 everywhere else; both look the same. The lobby's
+  "Loading island" waits for the graphics device and for every shader to be built, so Jump in is the moment nothing
+  is left to stall a frame; the room connects meanwhile. `?gfx=webgl2` forces the WebGL 2 backend and `?dpr=fixed`
+  keeps the render resolution at full (both are for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
+  with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
+  in 10 % steps to 0.6x after 2 s of slow frames (over 18.5 ms) and climbs back after 5 s of fast ones (under 14 ms).
+  If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
+  once a minute.
+- **Sync kind.** Local: nothing about rendering crosses the network.
+- **Files.** [src/render/scene.js](../src/render/scene.js), [src/features/adaptive-res.js](../src/features/adaptive-res.js);
+  rules for drawing things in [src/render/README.md](../src/render/README.md).
+- **Limits.** No quality setting yet; post effects (bloom, ambient occlusion, reflections) are planned as tiers.
 
 ## 7. Content inventory
 
@@ -773,7 +791,8 @@ TURN) and `/healthz`.
 Brief; the rules for contributors are in [AGENTS.md](../AGENTS.md) (imported by [CLAUDE.md](../CLAUDE.md)) and the
 folder map in [src/README.md](../src/README.md).
 
-- **Stack.** three.js 0.186.1, cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json));
+- **Stack.** three.js 0.187 (`WebGPURenderer` with its WebGL 2 fallback; shaders in TSL, see
+  [src/render/README.md](../src/render/README.md)), cannon-es 0.20.0, PeerJS 1.5.5, bundled with Vite ([package.json](../package.json));
   the build splits three, cannon-es and peerjs into vendor chunks ([vite.config.js](../vite.config.js)).
 - **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),
   `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),
@@ -793,8 +812,9 @@ folder map in [src/README.md](../src/README.md).
   [dev/scenarios/](../dev/scenarios/): caves, controls-guide, hotbar, interact,
   lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, two-player-edit, world-inputs. CI runs
   `world-inputs`, `smoke` and `two-player-edit` on every PR (they must pass); the rest run nightly in
-  `scenarios-nightly.yml` and never block. `npm run island-map` renders the composed island.
-- **Perf.** `npm run perf`: draw calls, triangles and ms per lockstep tick, with rows tagged by handler.
+  `scenarios-nightly.yml` and never block. Headless runs use the WebGL 2 backend; `npm run look -- --webgpu --gpu`
+  shows WebGPU on a Mac. `npm run island-map` renders the composed island.
+- **Perf.** `npm run perf`: draw calls, shadow calls, triangles, shader stages and ms per lockstep tick, with rows tagged by handler.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../dev/video/)).
 - **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the
   nightly live two-tab test; `deploy-server.yml` deploys `server/` when a token exists.

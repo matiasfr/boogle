@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray } from 'three/tsl';
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.js';
 import { lerp, smoothstep, valueNoise } from '../math.js';
 import { scene } from '../render/scene.js';
@@ -52,7 +53,7 @@ function buildPoiPaint() {
 }
 // The mesh is split into TILE x TILE-cell tiles so the camera and the shadow pass only draw the ones in view.
 const TILE = 51;
-const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+const terrainMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.
 function paintVertex(out, o, k, x, h, z, ny) {
@@ -151,26 +152,27 @@ export function setTerrainHoles(list) {
     holeB[k].set(...(h ? h.b : [0, 0, 0]), h ? h.floor : 0);
   });
 }
-terrainMat.onBeforeCompile = (shader) => {
-  shader.uniforms.uHoleA = { value: holeA };
-  shader.uniforms.uHoleB = { value: holeB };
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vGround;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGround = position;');
-  shader.fragmentShader = shader.fragmentShader
-    .replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vGround; uniform vec4 uHoleA[${MAX_HOLES}]; uniform vec4 uHoleB[${MAX_HOLES}];`,
-    )
-    .replace(
-      '#include <clipping_planes_fragment>',
-      `#include <clipping_planes_fragment>
-      for (int k = 0; k < ${MAX_HOLES}; k++) {
-        if (uHoleA[k].w <= 0.0) continue;
-        vec3 pa = vGround - uHoleA[k].xyz, ba = uHoleB[k].xyz - uHoleA[k].xyz;
-        float t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-        if (length(pa - ba * t) < uHoleA[k].w && vGround.y > uHoleB[k].w) discard;
-      }`,
-    );
-};
+const uHoleA = uniformArray(holeA, 'vec4'),
+  uHoleB = uniformArray(holeB, 'vec4');
+// maskNode is the fragment keep test (false discards); the shadow pass ignores it, as the old patch was ignored by the
+// depth material. Mesh positions are world coordinates.
+terrainMat.maskNode = Fn(() => {
+  const keep = bool(true).toVar();
+  const g = positionGeometry;
+  Loop(MAX_HOLES, ({ i }) => {
+    const a = uHoleA.element(i),
+      b = uHoleB.element(i);
+    If(a.w.greaterThan(0), () => {
+      const pa = g.sub(a.xyz),
+        ba = b.xyz.sub(a.xyz);
+      const t = clamp(dot(pa, ba).div(dot(ba, ba)), 0, 1);
+      If(
+        length(pa.sub(ba.mul(t)))
+          .lessThan(a.w)
+          .and(g.y.greaterThan(b.w)),
+        () => keep.assign(false),
+      );
+    });
+  });
+  return keep;
+})();

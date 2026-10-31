@@ -1,9 +1,10 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import * as CANNON from 'cannon-es';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
 import { clamp, angleLerp, sanitizeName } from '../math.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
+import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { world, teleport } from '../physics/physics.js';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.js';
@@ -168,22 +169,16 @@ const dotTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 const PREVIEW_N = 48;
-const previewGeo = new THREE.BufferGeometry();
-previewGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PREVIEW_N * 3), 3));
-const preview = new THREE.Points(
-  previewGeo,
-  new THREE.PointsMaterial({
-    map: dotTex,
-    size: 0.2,
-    transparent: true,
-    opacity: 0.9,
-    alphaTest: 0.3,
-    depthWrite: false,
-  }),
-);
-preview.frustumCulled = false;
-preview.visible = false;
-scene.add(preview);
+const previewAttr = dynAttr(new Float32Array(PREVIEW_N * 3), 3);
+const previewMat = new THREE.PointsNodeMaterial({
+  map: dotTex,
+  size: 0.2,
+  transparent: true,
+  opacity: 0.9,
+  alphaTest: 0.3,
+  depthWrite: false,
+});
+const preview = instancedSprite(previewMat, previewAttr);
 
 function updatePreview() {
   preview.visible = me.charging;
@@ -192,7 +187,7 @@ function updatePreview() {
   const glide = id === 'frisbee';
   const p = id === 'ball' ? handPosition() : throwFrom();
   const v = throwVelocity(chargeAmount(), p, glide);
-  const arr = previewGeo.attributes.position.array;
+  const arr = previewAttr.array;
   let n = 0;
   for (; n < PREVIEW_N; n++) {
     arr[n * 3] = p.x;
@@ -204,8 +199,8 @@ function updatePreview() {
       break;
     }
   }
-  previewGeo.setDrawRange(0, n);
-  previewGeo.attributes.position.needsUpdate = true;
+  preview.count = n;
+  previewAttr.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)

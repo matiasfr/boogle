@@ -1,5 +1,5 @@
 // One cosmetic particle pool for dust, sand and spray. Local only: never networked and never read by the simulation,
-// so floats and Math.random are fine. One look, 'soft': round soft dots (THREE.Points), used by splash foam
+// so floats and Math.random are fine. One look, 'soft': round soft dots (an instanced Sprite), used by splash foam
 // (src/render/splash.js), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
 //
 //   emit('soft', p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
@@ -9,8 +9,9 @@
 //                    shrink: the last fraction of its life it shrinks to nothing over (default 0, none),
 //                    fade: the last fraction of its life its alpha fades out over (default 0, none) }
 // A full pool recycles a random live slot. Updated once a frame, after the features that emit.
-import * as THREE from 'three';
-import { scene, camera, renderer } from './scene.js';
+import * as THREE from 'three/webgpu';
+import { Fn, Discard, length, uv, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
+import { dynAttr, instancedSprite } from './sprites.js';
 import { onFrame } from '../loop.js';
 
 const FLOOR_NONE = 0,
@@ -41,43 +42,28 @@ const VEC3 = ['pos', 'vel', 'color'];
 const SCALAR = ['life', 'maxLife', 'size', 'grow0', 'grow1', 'shrink', 'fade', 'alpha', 'gravity', 'drag', 'floor'];
 
 // ---------------------------------------------------------------- soft dots
+// One instanced Sprite: per-instance centre, world diameter, linear colour and alpha come from dynamic buffers that
+// wrap the pool arrays; sprite.count is the live number.
 const soft = createPool(720);
 const softSize = new Float32Array(soft.max);
 const softAlpha = new Float32Array(soft.max);
-const softGeo = new THREE.BufferGeometry();
-softGeo.setAttribute('position', new THREE.BufferAttribute(soft.pos, 3).setUsage(THREE.DynamicDrawUsage));
-softGeo.setAttribute('aColor', new THREE.BufferAttribute(soft.color, 3).setUsage(THREE.DynamicDrawUsage));
-softGeo.setAttribute('aSize', new THREE.BufferAttribute(softSize, 1).setUsage(THREE.DynamicDrawUsage));
-softGeo.setAttribute('aAlpha', new THREE.BufferAttribute(softAlpha, 1).setUsage(THREE.DynamicDrawUsage));
-softGeo.setDrawRange(0, 0);
-// aSize is a world diameter; uScale turns it into pixels at depth 1. Colours are written as sRGB, untouched.
-const softMat = new THREE.ShaderMaterial({
-  transparent: true,
-  depthWrite: false,
-  uniforms: { uScale: { value: 500 } },
-  vertexShader: `
-    attribute float aSize; attribute float aAlpha; attribute vec3 aColor; uniform float uScale;
-    varying float vA; varying vec3 vC;
-    void main() {
-      vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      vA = aAlpha;
-      vC = aColor;
-      gl_PointSize = max(aSize * uScale / max(-mv.z, 0.1), 1.0);
-      gl_Position = projectionMatrix * mv;
-    }`,
-  fragmentShader: `
-    varying float vA; varying vec3 vC;
-    void main() {
-      float d = length(gl_PointCoord - 0.5) * 2.0;
-      if (d > 1.0) discard;
-      gl_FragColor = vec4(vC, vA * (1.0 - d * d));
-    }`,
-});
-const softPoints = new THREE.Points(softGeo, softMat);
-softPoints.frustumCulled = false;
+const posAttr = dynAttr(soft.pos, 3),
+  colAttr = dynAttr(soft.color, 3),
+  sizeAttr = dynAttr(softSize, 1),
+  alphaAttr = dynAttr(softAlpha, 1);
+const softAttrs = [posAttr, colAttr, sizeAttr, alphaAttr];
+const softMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, fog: false });
+softMat.scaleNode = instancedDynamicBufferAttribute(sizeAttr);
+softMat.colorNode = Fn(() => {
+  const d = length(uv().sub(0.5)).mul(2);
+  Discard(d.greaterThan(1));
+  return vec4(
+    instancedDynamicBufferAttribute(colAttr),
+    instancedDynamicBufferAttribute(alphaAttr).mul(d.mul(d).oneMinus()),
+  );
+})();
+const softPoints = instancedSprite(softMat, posAttr);
 softPoints.renderOrder = 5;
-softPoints.visible = false;
-scene.add(softPoints);
 
 // ---------------------------------------------------------------- emit
 const pools = { soft };
@@ -94,7 +80,7 @@ export function emit(style, p) {
   P.vel[k * 3] = p.vx ?? 0;
   P.vel[k * 3 + 1] = p.vy ?? 0;
   P.vel[k * 3 + 2] = p.vz ?? 0;
-  p.color.getRGB(rgb, THREE.SRGBColorSpace); // the shader draws sRGB as is
+  p.color.getRGB(rgb); // linear: the output pass tone maps and encodes
   P.color[k * 3] = rgb.r;
   P.color[k * 3 + 1] = rgb.g;
   P.color[k * 3 + 2] = rgb.b;
@@ -162,9 +148,12 @@ onFrame(
     }
     softPoints.visible = ns > 0;
     if (ns > 0 || softHad) {
-      softGeo.setDrawRange(0, ns);
-      for (const a of Object.values(softGeo.attributes)) a.needsUpdate = true;
-      softMat.uniforms.uScale.value = renderer.domElement.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
+      softPoints.count = ns;
+      for (const a of softAttrs) {
+        a.clearUpdateRanges(); // upload only the live particles, not the whole pool
+        a.addUpdateRange(0, ns * a.itemSize);
+        a.needsUpdate = true;
+      }
     }
     softHad = ns > 0;
   },

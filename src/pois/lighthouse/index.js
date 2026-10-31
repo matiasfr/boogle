@@ -5,6 +5,8 @@
 // The stair is a smooth helical ramp for physics (no step bumps) with treads drawn on top; railings on the outer
 // edge and round the deck keep people from falling off (mostly). The top of the deck is open where the stair arrives.
 import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { uniform, vec4, pow, uv } from 'three/tsl';
 import * as CANNON from 'cannon-es';
 import { scene, camera } from '../../render/scene.js';
 import { world, groundMat, GROUP } from '../../physics/physics.js';
@@ -245,20 +247,17 @@ function build() {
   lamp.position.set(CX, DECK_Y + 1.3, CZ);
   scene.add(lamp);
 
-  const beamMat = new THREE.ShaderMaterial({
+  const uOn = uniform(0);
+  const beamMat = new MeshBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
-    uniforms: { uOn: { value: 0 } },
-    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float uOn; varying vec2 vUv;
-      void main() {
-        float along = vUv.y;                          // 1 at the lamp, 0 at the far end
-        float a = pow(along, 1.6) * uOn * 0.42;
-        gl_FragColor = vec4(1.0, 0.9, 0.6, a);
-      }`,
+    fog: false,
   });
+  // uv().y: 1 at the lamp, 0 at the far end. Warm lamp colour.
+  const warm = new THREE.Color().setRGB(1, 0.9, 0.6, THREE.SRGBColorSpace);
+  beamMat.colorNode = vec4(warm.r, warm.g, warm.b, pow(uv().y, 1.6).mul(uOn).mul(0.42));
   beams = new THREE.Group();
   for (const dir of [1, -1]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(6, 70, 20, 1, true), beamMat);
@@ -268,7 +267,7 @@ function build() {
     beams.add(cone);
   }
   beams.position.copy(lamp.position);
-  beams.userData.mat = beamMat;
+  beams.userData.on = uOn;
   scene.add(beams);
 
   const c = document.createElement('canvas');
@@ -309,7 +308,7 @@ function update() {
   if (n <= 0.01) return;
   const a = reducedMotion ? 0.3 : sharedSeconds() * 0.55;
   beams.rotation.y = a;
-  beams.userData.mat.uniforms.uOn.value = n;
+  beams.userData.on.value = n;
   // The halo flares when a beam swings round to face you.
   toCam.subVectors(camera.position, lamp.position).setY(0).normalize();
   beamDir.set(Math.cos(a), 0, -Math.sin(a));

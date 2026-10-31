@@ -2,7 +2,8 @@
 // feet), lit by the island's sun like everything else. The ROM textures sit in one atlas; each vertex says which
 // texture it shows and how it combines with the shade colour the way the N64 combiner did (blend by the texture's
 // alpha, decal, modulate).
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import { Fn, If, attribute, clamp, mix, texture, vec4 } from 'three/tsl';
 import { TEXTURES } from './textures.js';
 import { VERT_FLOATS, MAX_VERTS } from './engine.js';
 import { UNITS } from './collision.js';
@@ -49,35 +50,22 @@ const RECTS = TEXTURES.map((t, k) => [
 ]);
 
 function modelMaterial() {
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 });
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.guestAtlas = { value: atlas };
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nattribute vec2 guestUv;\nattribute vec4 guestRect;\nattribute float guestMix;\n' +
-          'varying vec2 vGuestUv;\nvarying vec4 vGuestRect;\nvarying float vGuestMix;',
-      )
-      .replace(
-        '#include <begin_vertex>',
-        '#include <begin_vertex>\nvGuestUv = guestUv;\nvGuestRect = guestRect;\nvGuestMix = guestMix;',
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nuniform sampler2D guestAtlas;\nvarying vec2 vGuestUv;\nvarying vec4 vGuestRect;\n' +
-          'varying float vGuestMix;',
-      )
-      .replace(
-        '#include <color_fragment>',
-        `vec3 guestCol = vColor.rgb;
-        if (vGuestMix > 0.5) {
-          vec4 t = texture2D(guestAtlas, vGuestRect.xy + clamp(vGuestUv, 0.0, 1.0) * vGuestRect.zw);
-          guestCol = vGuestMix < 1.5 ? mix(vColor.rgb, t.rgb, t.a) : vGuestMix < 2.5 ? t.rgb : vColor.rgb * t.rgb;
-        }
-        diffuseColor.rgb *= guestCol;`,
-      );
-  };
+  const mat = new THREE.MeshStandardNodeMaterial({ vertexColors: false, roughness: 0.7, metalness: 0 });
+  // The vertex colour is folded in by hand (vertexColors: false), together with the atlas texture.
+  const vc = attribute('color', 'vec3'),
+    gUv = attribute('guestUv', 'vec2');
+  const gRect = attribute('guestRect', 'vec4'),
+    gMix = attribute('guestMix', 'float');
+  mat.colorNode = Fn(() => {
+    const t = texture(atlas, gRect.xy.add(clamp(gUv, 0, 1).mul(gRect.zw))); // sampled first: uniform control flow
+    const col = vc.toVar();
+    If(gMix.greaterThan(0.5), () => {
+      If(gMix.lessThan(1.5), () => col.assign(mix(vc, t.rgb, t.a)))
+        .ElseIf(gMix.lessThan(2.5), () => col.assign(t.rgb))
+        .Else(() => col.assign(vc.mul(t.rgb)));
+    });
+    return vec4(col, 1);
+  })();
   return mat;
 }
 

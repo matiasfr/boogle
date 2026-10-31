@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.mjs';
+import { startStack, launch, Game, VIEWS, sleep, reportGfxErrors } from '../look/lib.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const all = fs
@@ -88,6 +88,7 @@ try {
         console.log(`  FAIL  page errors in ${g.name}: ${g.errors.slice(0, 2).join(' | ')}`);
       }
     }
+    if (games.length) reportGfxErrors(games);
     for (const g of games) {
       if (bads) await g.still(`${g.name}-final`).catch(() => {});
       await g.close().catch(() => {});

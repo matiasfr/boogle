@@ -1,6 +1,6 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half).
-// Render: draw calls, triangles, shadow-pass calls, geometries and shader programs for the island as you enter it and
+// Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it and
 // with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
 // Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
@@ -15,16 +15,28 @@ const doRender = !argv.includes('--sim');
 const doSim = !argv.includes('--render');
 const IDLE_TICKS = 100;
 
+// The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
+// renders, so right after a frame renderer.info.render holds that frame's counts (the scene pass runs once per frame,
+// calling pipeline.render again would count only the output pass). `frame` waits for the next frame to finish and
+// copies them. The second sample turns the shadow pass off through the sky's debug handle.
 const STATS = `
-  const { renderer, scene, camera, sun } = await import('/src/render/scene.js');
-  renderer.shadowMap.needsUpdate = true;
-  renderer.render(scene, camera);
-  const calls = renderer.info.render.calls, tris = renderer.info.render.triangles;
-  sun.castShadow = false;
-  renderer.render(scene, camera);
-  const shadowCalls = calls - renderer.info.render.calls;
-  sun.castShadow = true;
-  return { calls, shadowCalls, tris, geometries: renderer.info.memory.geometries, programs: renderer.info.programs.length };`;
+  const { renderer, sun } = await import('/src/render/scene.js');
+  const { skyDebug } = await import('/src/render/sky.js');
+  const frame = () => new Promise((res) => {
+    const at = renderer.info.frame;
+    const t = setInterval(() => renderer.info.frame > at && (clearInterval(t), res({ ...renderer.info.render })), 20);
+  });
+  await frame();
+  const a = await frame(); // with the shadow pass
+  skyDebug.shadowPass(false);
+  sun.shadow.needsUpdate = false;
+  await frame();
+  const b = await frame(); // no shadow pass
+  skyDebug.shadowPass(true);
+  return {
+    backend: window.boogle.gfx,
+    calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,
+    geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs };`;
 
 // Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
 const FULL_GARDEN = `
