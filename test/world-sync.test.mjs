@@ -9,7 +9,7 @@ import { makeNet, run, live } from './helpers/net.mjs';
 // opts: env goes to createSync (the host facts validate reads); failLoad ({ on }) makes grid loads throw while on (bad data
 // from a peer); the rest goes to attachWorld (storage, serverUrl, fetch, ...).
 function makePeer(net, id, host, opts = {}) {
-  const { env, failLoad, pid, ...attach } = opts;
+  const { env, failLoad, pid, extra, ...attach } = opts;
   const s = createSync({ env });
   if (pid) s.setPid(pid);
   const grid = new Int32Array(16);
@@ -43,6 +43,7 @@ function makePeer(net, id, host, opts = {}) {
   });
   s.registerOp('mark', { apply: (e) => log.push(`${e.p}=${e.u}`) }); // who sent it, as the host stamped it
   s.registerOp('gate', { validate: (e, ctx) => ctx.env.allow(e.v), apply: (e) => (grid[e.i * 4 + e.j] += e.v) });
+  extra?.(s); // more states or ops on this peer only, registered before it attaches
   const p = net.add(id, host);
   s.attachWorld(p.room, { roomId: 'test', storage: null, now: () => 1234, ...attach });
   return { s, grid, log, p };
@@ -715,4 +716,50 @@ test('a snapshot served by a tab that skipped a newer state is never saved by th
   assert.ok(c.s.worldStatus().hashOk > 0, 'the client is in step');
   assert.equal(c.s.worldStatus().newerSave, true);
   assert.equal(store.writes, 0, 'the client saved nothing');
+});
+
+test('a client re-pins to a new host right after its room reconnects', async () => {
+  const net = makeNet();
+  const h1 = makePeer(net, 'h1', true);
+  const h2 = makePeer(net, 'h2', false);
+  const c = makePeer(net, 'c', false);
+  const all = [h1, h2, c];
+  await run(net, all, 60);
+  net.setUp(c.p, false);
+  net.killHost(); // h2 hosts now
+  await run(net, all, 10);
+  net.setUp(c.p, true);
+  await run(net, all, 10); // 500 ms, well under HOST_STALE_MS
+  assert.equal(c.s.worldStatus().hostId, 'h2');
+  const before = h2.grid[1];
+  c.s.submitEdit({ op: 'add', i: 0, j: 1, v: 3 });
+  await run(net, all, 20);
+  assert.equal(h2.grid[1], before + 3, 'the edit the client sent next was applied on the new host');
+});
+
+test("a state only the host has does not fail the client's hash check", async () => {
+  const net = makeNet();
+  let n = 0;
+  const host = makePeer(net, 'h', true, {
+    extra: (s) => s.registerState('serverOnly', { serialize: () => n, load: (v) => (n = v), hash: () => (n += 1) }),
+  });
+  const c = makePeer(net, 'c', false);
+  await run(net, [host, c], 60);
+  const st = c.s.worldStatus();
+  assert.ok(st.hashOk > 0, 'hash checks ran');
+  assert.equal(st.hashBad, 0);
+  assert.equal(st.resyncs, 0);
+});
+
+test('a state skipped as newer is left out of the hash check', async () => {
+  const net = makeNet();
+  let t = 0;
+  const thing = (version) => (s) =>
+    s.registerState('thing', { version, serialize: () => t, load: () => {}, hash: () => (t += 7) });
+  const host = makePeer(net, 'h', true, { extra: thing(2) });
+  const c = makePeer(net, 'c', false, { extra: thing(1) });
+  await run(net, [host, c], 60);
+  const st = c.s.worldStatus();
+  assert.equal(st.newerSave, true);
+  assert.ok(st.resyncs <= 1, `resyncs ${st.resyncs}`);
 });

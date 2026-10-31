@@ -129,7 +129,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
     snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
   };
-  let newerSave = false; // a loaded snapshot held a state from a newer build: never persist over it
+  let newerSave = false;
+  const skipped = new Set<string>(); // states a snapshot held from a newer build: left out of hash checks // a loaded snapshot held a state from a newer build: never persist over it
   // A client's state fell back to fresh and no host hash has vouched for it since: if it takes over as host it must not
   // keep (and upload) that state, but load the saved copy instead.
   let unverifiedFallback = false;
@@ -277,6 +278,14 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const canRelease = () => connected && (mode === 'client' || ready);
   // peer-room reports the new role before the connection; updateWorld delivers what was held once it is back.
   function onConnected(c: boolean) {
+    // A client whose room just came back re-pins to whoever hosts now at once, instead of ignoring a new host for
+    // HOST_STALE_MS (the old one may be gone, or be the server after a fallback).
+    if (c && !connected && mode === 'client') {
+      hostId = null;
+      hostTick = 0;
+      hostTickAt = 0;
+      pendingHash.clear();
+    }
     connected = c;
   }
   let nextIdAt = 0;
@@ -418,6 +427,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function loadState(k: string, s: State, json: unknown, v: unknown) {
     if (isInt(v) && v > s.version) {
       newerSave = true;
+      skipped.add(k);
       console.warn(`[world] ${k} was saved by a newer build (v${v} > v${s.version}): skipped; not saving`);
       snapFail('state', `${k} newer`);
       return;
@@ -454,10 +464,15 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   function checkHash(tick: number, h: number, hs0: unknown) {
     if (tick !== world.tick) return;
+    // Per-state hashes, when the host sent them, decide: compared over the states both sides have, minus any this tab
+    // skipped as newer (a host, such as the server, may hold states this build lacks, and the reverse). The combined
+    // hash `h` decides only for a host that sent no per-state hashes.
     const hs = isObj(hs0) ? hs0 : {};
-    const mine = isObj(hs0) ? stateHashes() : null;
+    const all = isObj(hs0) ? stateHashes() : null;
+    const mine = all && Object.fromEntries(Object.entries(all).filter(([k]) => k in hs && !skipped.has(k)));
     if (mine) subsystems = Object.fromEntries(Object.keys(mine).map((k) => [k, mine[k] === hs[k] ? 'ok' : 'bad']));
-    if (worldHash() === h) {
+    const agree = mine ? Object.keys(mine).every((k) => mine[k] === hs[k]) : worldHash() === h;
+    if (agree) {
       stats.hashOk++;
       verifiedTick = tick;
       unverifiedFallback = false;
