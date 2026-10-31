@@ -11,7 +11,7 @@
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
 // failure every player's last frame is saved as <name>-final-still.png and a Playwright trace as <name>-trace.zip
-// (`npx playwright show-trace <zip>`: every action, console line, request and DOM snapshot; `--no-trace` skips it).
+// (`npx playwright show-trace <zip>`: the action timeline, console, network and errors; `--no-trace` skips it).
 // With BOOGLE_GFX=webgpu a player that came up on WebGL 2 instead fails the scenario.
 import fs from 'node:fs';
 import path from 'node:path';
