@@ -50,6 +50,7 @@ export type PostFlags = {
   taa: boolean;
   bloom: boolean;
   outline: boolean;
+  softline: boolean;
   grade: boolean;
   tilt: boolean;
 };
@@ -61,6 +62,7 @@ export const postU = {
   bloomThreshold: uniform(0.92),
   ink: uniform(0.8),
   gradeSat: uniform(1.12),
+  eraDesat: uniform(0), // the steam palette row's lower saturation (look-world.ts, era)
   gradeWarm: uniform(0.04),
   vignette: uniform(0.28),
   tiltBand: uniform(0.16),
@@ -90,7 +92,7 @@ export function buildPost(f: PostFlags) {
     return;
   }
   const taa = f.taa || f.ssgi; // SSGI is noisy per frame: it needs the temporal resolve
-  const needNormal = f.ao || f.ssgi || f.outline;
+  const needNormal = f.ao || f.ssgi || f.outline || f.softline;
   const p = pass(scene, camera, taa ? { samples: 0 } : {});
   ownPass = p;
   live.push(p);
@@ -140,11 +142,13 @@ export function buildPost(f: PostFlags) {
     col = vec4(col.rgb.add(b.rgb), 1);
   }
 
-  if (f.outline || f.grade || f.tilt) {
+  if (f.outline || f.softline || f.grade || f.tilt) {
     pipeline.outputColorTransform = false; // tone map here, so the screen-space looks work on display colours
     col = renderOutput(col);
   }
   if (f.outline) col = vec4(mix(col.rgb, vec3(0.13, 0.09, 0.1), inkEdge(depthTex, normalTex).mul(postU.ink)), 1);
+  else if (f.softline)
+    col = vec4(mix(col.rgb, col.rgb.mul(vec3(0.42, 0.36, 0.5)), softEdge(depthTex, normalTex).mul(postU.ink)) as N, 1);
   if (f.grade) col = grade(col);
   if (f.tilt) {
     const blurred: N = gaussianBlur(col, null, 4, { resolutionScale: 0.5 });
@@ -159,31 +163,36 @@ export function buildPost(f: PostFlags) {
 
 // Ink lines where depth jumps (relative to distance, so near and far read the same) or the normal turns sharply.
 // Fades past ~70 m, so distant hills stay soft instead of buzzing.
-const inkEdge = Fn(([depthTex, normalTex]: N[]) => {
-  const near = float(camera.near),
-    far = float(camera.far);
-  const z = (uv: N) => perspectiveDepthToViewZ(depthTex.sample(uv).r, near, far).negate();
-  const n = (uv: N) => colorToDirection(normalTex.sample(uv).rgb);
-  const c = screenUV;
-  const dx = vec2(texel.x, 0),
-    dy = vec2(0, texel.y);
-  const zc = z(c);
-  const zs = [z(c.add(dx)), z(c.sub(dx)), z(c.add(dy)), z(c.sub(dy))];
-  let dz: N = float(0);
-  for (const zi of zs) dz = max(dz, zc.sub(zi)); // only the far side of an edge inks: one pixel wide, not two
-  const depthEdge = tslSmoothstep(0.04, 0.12, dz.div(zc));
-  const nc = n(c);
-  let turn: N = float(0);
-  for (const o of [dx, dy]) turn = max(turn, float(1).sub(dot(nc, n(c.add(o)))));
-  const normalEdge = tslSmoothstep(0.25, 0.55, turn);
-  const fade = tslSmoothstep(70, 35, zc);
-  return max(depthEdge, normalEdge).mul(fade);
-});
+const inkFn = (fadeFrom: number, fadeTo: number, normalW: number) =>
+  Fn(([depthTex, normalTex]: N[]) => {
+    const near = float(camera.near),
+      far = float(camera.far);
+    const z = (uv: N) => perspectiveDepthToViewZ(depthTex.sample(uv).r, near, far).negate();
+    const n = (uv: N) => colorToDirection(normalTex.sample(uv).rgb);
+    const c = screenUV;
+    const dx = vec2(texel.x, 0),
+      dy = vec2(0, texel.y);
+    const zc = z(c);
+    const zs = [z(c.add(dx)), z(c.sub(dx)), z(c.add(dy)), z(c.sub(dy))];
+    let dz: N = float(0);
+    for (const zi of zs) dz = max(dz, zc.sub(zi)); // only the far side of an edge inks: one pixel wide, not two
+    const depthEdge = tslSmoothstep(0.04, 0.12, dz.div(zc));
+    const nc = n(c);
+    let turn: N = float(0);
+    for (const o of [dx, dy]) turn = max(turn, float(1).sub(dot(nc, n(c.add(o)))));
+    const normalEdge = tslSmoothstep(0.25, 0.55, turn);
+    const fade = tslSmoothstep(fadeTo, fadeFrom, zc);
+    return max(depthEdge, normalEdge.mul(normalW)).mul(fade);
+  });
+const inkEdge = inkFn(35, 70, 1);
+// Soft lines (the painted diorama): silhouettes first, creases at half strength, gone by 45 m (Sable fades its lines
+// with distance), drawn in a darker shade of the pixel's own colour instead of black.
+const softEdge = inkFn(15, 45, 0.5);
 
 // A light grade on display colours: a touch more saturation, warm highlights and cool shadows, a soft S-curve and a
 // vignette that keeps the eye on the middle of the screen.
 const grade = Fn(([c]: N[]) => {
-  let rgb: N = saturation(c.rgb, postU.gradeSat);
+  let rgb: N = saturation(c.rgb, postU.gradeSat.mul(float(1).sub(postU.eraDesat)));
   const l = luminance(rgb);
   const warm = vec3(1, 0.55, 0.15)
     .mul(postU.gradeWarm)

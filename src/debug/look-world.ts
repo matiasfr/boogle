@@ -15,6 +15,10 @@ import {
   cameraPosition,
   vertexColor,
   materialColor,
+  materialEmissive,
+  diffuseColor,
+  normalView,
+  positionViewDirection,
   instanceIndex,
   texture,
   transformNormalToView,
@@ -41,6 +45,7 @@ import {
 } from 'three/tsl';
 import { CSMShadowNode } from 'three/addons/csm/CSMShadowNode.js';
 import { scene, camera, sun } from '../render/scene.ts';
+import { skyU } from '../render/sky.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { SUN_DIR, GRID_RES, CELL, HALF, COURT } from '../constants.ts';
 import { heights } from '../adapters/terrain.ts';
@@ -57,6 +62,7 @@ export const worldU = {
   detail: uniform(0), // 0 off, 1 on: the patch stays installed
   sway: uniform(0),
   grassHeight: uniform(0.32),
+  rim: uniform(0),
 };
 
 const recompileAll = () =>
@@ -94,12 +100,69 @@ function makeHaze() {
   })();
   return fog(color, factor);
 }
-export function setHaze(on: boolean) {
-  if (on && !hazeNode) hazeNode = makeHaze();
-  const want = on ? hazeNode : null;
+// ---------------------------------------------------------------- sky fog: the painted-diorama fog
+// (docs/research/bang-for-buck-aesthetics.md, direction A) The fog takes the sky dome's own colour along the view ray
+// (sky.ts's top/horizon gradient and sun glow, so it follows the day, sunset and night palettes and melts into the sky
+// exactly), plus a low layer that pools over the water and the beaches: a deeper, bluer tint under ~4 m.
+let skyFogNode: N = null;
+function makeSkyFog() {
+  const f = scene.fog as THREE.Fog;
+  const near: N = reference('near', 'float', f),
+    far: N = reference('far', 'float', f);
+  const sunDir = uniform(SUN_DIR);
+  const factor = Fn(() => {
+    const dist = length(positionWorld.sub(cameraPosition));
+    const low = tslSmoothstep(float(4), float(0), positionWorld.y).mul(float(1).sub(exp(dist.mul(-0.006))));
+    const air = float(1).sub(exp(dist.mul(-0.0015)));
+    return max(rangeFogFactor(near, far), max(low.mul(0.55), air.mul(0.5)));
+  })();
+  const color = Fn(() => {
+    const dir = normalize(positionWorld.sub(cameraPosition));
+    const sky: N = mix(skyU.uHorizon, skyU.uTop, pow(max(dir.y, 0), 0.6));
+    const glow = skyU.uGlow.mul(pow(max(dot(dir, sunDir), 0), 6)).mul(0.35);
+    const lowTint = mix(sky, sky.mul(vec3(0.78, 0.88, 1.05)), tslSmoothstep(float(4), float(0), positionWorld.y));
+    return lowTint.add(glow);
+  })();
+  return fog(color, factor);
+}
+export function setFog(mode: 'none' | 'haze' | 'sky') {
+  if (mode === 'haze' && !hazeNode) hazeNode = makeHaze();
+  if (mode === 'sky' && !skyFogNode) skyFogNode = makeSkyFog();
+  const want = mode === 'haze' ? hazeNode : mode === 'sky' ? skyFogNode : null;
   if ((scene as N).fogNode === want) return;
   (scene as N).fogNode = want;
   recompileAll();
+}
+
+// ---------------------------------------------------------------- era palette: a second palette row ("steam")
+// Re-lights the island after sky.ts has set this frame's palette: hazier and closer fog, a browner horizon and sky, a
+// warmer and dimmer sun, duller ambient; plus lower saturation through the grade (postU.eraDesat). Tests whether a
+// palette alone reads as another era (bang-for-buck-aesthetics.md, "smallest test", step 3). Blends over ~1.5 s.
+const STEAM = {
+  top: new THREE.Color('#8a9aa8'),
+  horizon: new THREE.Color('#d2b892'),
+  fog: new THREE.Color('#bfa786'),
+  sun: new THREE.Color('#ffd2a0'),
+  hemiSky: new THREE.Color('#c9c0ae'),
+  hemiGround: new THREE.Color('#8a6f50'),
+};
+export const era = { target: 0, mix: 0 };
+export function updateEra(dt: number) {
+  era.mix += Math.sign(era.target - era.mix) * Math.min(Math.abs(era.target - era.mix), dt / 1.5);
+  const m = era.mix;
+  if (m <= 0) return;
+  const f = scene.fog as THREE.Fog;
+  f.color.lerp(STEAM.fog, m * 0.75);
+  f.near = f.near + (20 - f.near) * m;
+  f.far = f.far + (190 - f.far) * m;
+  skyU.uTop.value.lerp(STEAM.top, m * 0.6);
+  skyU.uHorizon.value.lerp(STEAM.horizon, m * 0.7);
+  sun.color.lerp(STEAM.sun, m * 0.6);
+  sun.intensity *= 1 - 0.15 * m;
+  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
+    THREE.HemisphereLight | undefined;
+  hemi?.color.lerp(STEAM.hemiSky, m * 0.6);
+  hemi?.groundColor.lerp(STEAM.hemiGround, m * 0.6);
 }
 
 // ---------------------------------------------------------------- shadows
@@ -275,20 +338,39 @@ export function setSway(on: boolean) {
 }
 
 // ---------------------------------------------------------------- toon: banded light
-// Swaps every lit standard material for a MeshToonNodeMaterial with a three-step ramp (keeping colour, maps, vertex
-// colours and any node patches), and swaps the originals back when off.
+// Swaps lit standard materials for MeshToonNodeMaterials (keeping colour, maps, vertex colours and any node patches),
+// and swaps the originals back when off. Two modes:
+//   toon   every lit material, a grey four-step ramp (the painterly-toon variant)
+//   paint  static decor only (terrain, trees, rocks, buildings; characters, ball and water keep their materials), a
+//          three-step ramp whose dark step is a cool violet and whose lit step is warm: shade reads coloured, never
+//          grey (bang-for-buck-aesthetics.md, direction A)
+type ToonMode = 'off' | 'toon' | 'paint';
 const toonOrig = new Map<THREE.Mesh, THREE.MeshStandardMaterial>();
-const toonOf = new WeakMap<THREE.Material, THREE.MeshToonNodeMaterial>();
-let ramp: THREE.DataTexture | null = null;
-function toonFor(m: THREE.MeshStandardMaterial) {
-  let t = toonOf.get(m);
+const toonOf = {
+  toon: new WeakMap<THREE.Material, THREE.MeshToonNodeMaterial>(),
+  paint: new WeakMap<THREE.Material, THREE.MeshToonNodeMaterial>(),
+};
+const ramps: Partial<Record<'toon' | 'paint', THREE.DataTexture>> = {};
+function rampFor(mode: 'toon' | 'paint') {
+  let r = ramps[mode];
+  if (r) return r;
+  const texels =
+    mode === 'toon'
+      ? [92, 160, 220, 255].map((v) => [v, v, v])
+      : [
+          [118, 104, 176],
+          [214, 206, 222],
+          [255, 248, 236],
+        ];
+  r = new THREE.DataTexture(new Uint8Array(texels.flatMap((t) => [...t, 255])), texels.length, 1);
+  r.colorSpace = THREE.SRGBColorSpace;
+  r.magFilter = r.minFilter = THREE.NearestFilter;
+  r.needsUpdate = true;
+  return (ramps[mode] = r);
+}
+function toonFor(m: THREE.MeshStandardMaterial, mode: 'toon' | 'paint') {
+  let t = toonOf[mode].get(m);
   if (t) return t;
-  if (!ramp) {
-    const steps = [92, 160, 220, 255];
-    ramp = new THREE.DataTexture(new Uint8Array(steps.flatMap((s) => [s, s, s, 255])), steps.length, 1);
-    ramp.magFilter = ramp.minFilter = THREE.NearestFilter;
-    ramp.needsUpdate = true;
-  }
   t = new THREE.MeshToonNodeMaterial({
     color: m.color,
     map: m.map,
@@ -301,9 +383,9 @@ function toonFor(m: THREE.MeshStandardMaterial) {
     side: m.side,
     alphaTest: m.alphaTest,
     depthWrite: m.depthWrite,
-    gradientMap: ramp,
+    gradientMap: rampFor(mode),
   });
-  toonOf.set(m, t);
+  toonOf[mode].set(m, t);
   return t;
 }
 // The original's node slots (its own looks, plus any detail or sway patch) as they are now.
@@ -312,21 +394,81 @@ function copySlots(from: THREE.Material, to: THREE.Material) {
     (to as N)[slot] = (from as N)[slot] ?? null;
   to.needsUpdate = true;
 }
-export function setToon(on: boolean) {
-  if (on) {
-    scene.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      const m = mesh.material as THREE.MeshStandardMaterial;
-      if (!mesh.isMesh || toonOrig.has(mesh) || Array.isArray(m) || !m?.isMeshStandardMaterial) return;
-      toonOrig.set(mesh, m);
-      const t = toonFor(m);
-      copySlots(m, t);
-      mesh.material = t;
-    });
-  } else {
-    for (const [mesh, m] of toonOrig) mesh.material = m;
-    toonOrig.clear();
+let toonMode: ToonMode = 'off';
+export function setToon(mode: ToonMode) {
+  if (mode === toonMode) return;
+  for (const [mesh, m] of toonOrig) mesh.material = m;
+  toonOrig.clear();
+  toonMode = mode;
+  if (mode === 'off') return;
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    const m = mesh.material as THREE.MeshStandardMaterial;
+    if (!mesh.isMesh || Array.isArray(m) || !m?.isMeshStandardMaterial) return;
+    if (mode === 'paint' && mesh.matrixAutoUpdate) return; // moving things keep their own material
+    toonOrig.set(mesh, m);
+    const t = toonFor(m, mode);
+    copySlots(m, t);
+    mesh.material = t;
+  });
+}
+
+// ---------------------------------------------------------------- rim: toy treatment for things that move
+// Players, The Boogler, the ball, critters (anything lit that isn't static decor): a warm rim on the silhouette and a
+// wrap term that lifts the shade side, both in the emissive slot, and a softer plastic roughness when `plastic` is on
+// (bang-for-buck-aesthetics.md, direction B). Re-applied every second so players who join later get it too.
+const rimmed: Patched = new Map();
+const roughOrig = new Map<THREE.MeshStandardMaterial, number>();
+function patchRim(m: THREE.MeshStandardMaterial) {
+  if (rimmed.has(m)) return;
+  rimmed.set(m, (m as N).emissiveNode ?? null);
+  patchNode(m, 'emissiveNode', (prev: N) => {
+    const e: N = prev ?? materialEmissive;
+    return Fn(() => {
+      const facing = max(dot(normalView, positionViewDirection), 0);
+      const rim = pow(float(1).sub(facing), 3).mul(worldU.rim);
+      const base: N = diffuseColor.rgb;
+      return e.add(vec3(1, 0.92, 0.8).mul(rim).mul(0.6)).add(base.mul(worldU.rim).mul(0.12));
+    })();
+  });
+}
+let rimOn = false,
+  plasticOn = false,
+  rimClock = 0;
+function rimTargets(fn: (m: THREE.MeshStandardMaterial) => void) {
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    const m = mesh.material as THREE.MeshStandardMaterial;
+    if (!mesh.isMesh || !mesh.matrixAutoUpdate || Array.isArray(m) || !m?.isMeshStandardMaterial) return;
+    fn(m);
+  });
+}
+function applyRim() {
+  rimTargets((m) => {
+    if (rimOn) patchRim(m);
+    if (plasticOn && !roughOrig.has(m)) {
+      roughOrig.set(m, m.roughness);
+      m.roughness = Math.min(m.roughness, 0.5);
+    }
+  });
+}
+export function setRim(rim: boolean, plastic: boolean) {
+  rimOn = rim;
+  plasticOn = plastic;
+  worldU.rim.value = rim ? 1 : 0;
+  if (!rim) unpatch(rimmed, 'emissiveNode');
+  if (!plastic) {
+    for (const [m, r] of roughOrig) m.roughness = r;
+    roughOrig.clear();
   }
+  applyRim();
+}
+export function updateRim(dt: number) {
+  if (!rimOn && !plasticOn) return;
+  rimClock += dt;
+  if (rimClock < 1) return;
+  rimClock = 0;
+  applyRim();
 }
 
 // ---------------------------------------------------------------- grass: a field that follows the camera

@@ -210,7 +210,7 @@ function moonFaceTexture() {
 }
 
 // ---------------------------------------------------------------- sky dome
-const skyU = {
+export const skyU = {
   uTop: uniform(C.dayTop.clone()),
   uHorizon: uniform(C.dayHorizon.clone()),
   uSun: uniform(new THREE.Vector3()),

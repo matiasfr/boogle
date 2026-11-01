@@ -1,8 +1,9 @@
 // The look lab (?proto=look; loaded by src/features/look-lab.ts; write-up: docs/proposals/visual-target.md). A panel
 // of render layers you can switch one by one, and presets that are sets of them. Nothing here changes the default
 // look: without the flag this module never loads.
-//   ?proto=look&look=high          start on a preset (today, mid, ipad, high, toon, diorama, ultra)
+//   ?proto=look&look=high          start on a preset (today, mid, ipad, high, toon, diorama, toybox, miniature, ultra)
 //   ?proto=look&look=mid&fx=ao,-bloom   then add or remove layers
+//   &era=steam                     start on the second palette row (Y toggles it, and the panel's Steam era button)
 // window.boogle.lookLab: { layers, presets, set(ids), preset(name), on(), bench({ batch, reps, dpr }) } for the harness
 // (dev/scenarios/look-lab.ts). bench() measures the cost of a frame by rendering batches back to back (see below).
 import './look-lab.css';
@@ -10,11 +11,29 @@ import { onFrame } from '../loop.ts';
 import { Vector2 } from 'three/webgpu';
 import { renderer, renderFrame, MAX_DPR } from '../render/scene.ts';
 import { buildPost, updatePostUniforms, postU, type PostFlags } from './look-post.ts';
-import { setHaze, setShadows, setDetail, setSway, setToon, setGrass, updateGrass, worldU } from './look-world.ts';
+import {
+  setFog,
+  setShadows,
+  setDetail,
+  setSway,
+  setToon,
+  setGrass,
+  setRim,
+  updateGrass,
+  updateRim,
+  updateEra,
+  era,
+  worldU,
+} from './look-world.ts';
 
 type Layer = { id: string; label: string; what: string };
 export const LAYERS: Layer[] = [
   { id: 'haze', label: 'Haze', what: 'aerial perspective: height fog that blues the distance, sun-side glow' },
+  {
+    id: 'skyfog',
+    label: 'Sky fog',
+    what: 'fog in the sky dome colour along the view, low layer over water (wins over haze)',
+  },
   { id: 'soft', label: 'Soft shadows', what: '4096 sun map, wider filter' },
   { id: 'csm', label: 'Cascaded shadows', what: 'three cascades to 160 m (today: 36 m); reloads the page' },
   { id: 'detail', label: 'Material detail', what: 'TSL noise on grass, sand and rock' },
@@ -26,7 +45,11 @@ export const LAYERS: Layer[] = [
   { id: 'bloom', label: 'Bloom', what: 'soft glow on the brightest highlights' },
   { id: 'grade', label: 'Grade', what: 'saturation, warm/cool split, S-curve, vignette' },
   { id: 'outline', label: 'Ink outlines', what: 'depth + normal edges, fade with distance' },
-  { id: 'toon', label: 'Toon shading', what: 'three-step light ramp on lit materials' },
+  { id: 'softline', label: 'Soft outlines', what: 'silhouettes in a darker shade of their own colour, gone by 45 m' },
+  { id: 'toon', label: 'Toon shading', what: 'four-step grey light ramp on every lit material' },
+  { id: 'paint', label: 'Painted light', what: 'three-step ramp, violet shade, warm light, static decor only' },
+  { id: 'rim', label: 'Rim + wrap', what: 'toy rim light and lifted shade on players, ball, Boogler' },
+  { id: 'plastic', label: 'Soft plastic', what: 'roughness 0.5 at most on things that move' },
   { id: 'tilt', label: 'Tilt-shift', what: 'miniature blur above and below the focus band' },
 ];
 const MID = ['haze', 'soft', 'detail', 'sway', 'bloom', 'grade'];
@@ -35,7 +58,10 @@ export const PRESETS: Record<string, string[]> = {
   mid: MID,
   high: [...MID, 'csm', 'grass', 'ao', 'taa'],
   toon: ['haze', 'soft', 'detail', 'sway', 'grade', 'outline', 'toon'], // no grass: thin blades ink into scribble
-  diorama: [...MID, 'ao', 'tilt'],
+  // bang-for-buck-aesthetics.md: A, the painted diorama (with B's rim on characters), and B, the toy box
+  diorama: ['skyfog', 'soft', 'detail', 'sway', 'paint', 'softline', 'rim', 'grade'],
+  toybox: ['haze', 'soft', 'detail', 'sway', 'rim', 'plastic', 'ao', 'grade'],
+  miniature: [...MID, 'ao', 'tilt'], // tilt-shift photo mode
   ultra: [...MID, 'csm', 'grass', 'ssgi', 'taa'],
   // the recommended M4 iPad Pro target (docs/proposals/visual-target.md): mid plus grass, minus bloom (nothing in
   // daylight is bright enough to bloom; it earns its 0.8 ms only once night lanterns glow)
@@ -58,18 +84,21 @@ function reloadWith() {
 function apply() {
   if (csmLive !== null && on.has('csm') !== csmLive) return reloadWith();
   csmLive = on.has('csm');
-  setHaze(on.has('haze'));
+  setToon('off'); // put the originals back first, so the swap below copies their current patches
+  setFog(on.has('skyfog') ? 'sky' : on.has('haze') ? 'haze' : 'none');
   setShadows(on.has('soft'), on.has('csm'));
   setDetail(on.has('detail'));
   setSway(on.has('sway'));
   setGrass(on.has('grass'));
-  setToon(on.has('toon'));
+  setRim(on.has('rim'), on.has('plastic'));
+  setToon(on.has('toon') ? 'toon' : on.has('paint') ? 'paint' : 'off');
   const f: PostFlags = {
     ao: on.has('ao'),
     ssgi: on.has('ssgi'),
     taa: on.has('taa'),
     bloom: on.has('bloom'),
     outline: on.has('outline'),
+    softline: on.has('softline'),
     grade: on.has('grade'),
     tilt: on.has('tilt'),
   };
@@ -213,8 +242,29 @@ const params = new URLSearchParams(location.search);
 }
 if (params.has('lookpanel') && params.get('lookpanel') === '0') panel.remove();
 
+function toggleEra() {
+  era.target = era.target ? 0 : 1;
+  eraBtn.classList.toggle('on', !!era.target);
+}
+const eraBtn = el('button', 'll-preset', 'Steam era (Y)');
+eraBtn.type = 'button';
+eraBtn.onclick = toggleEra;
+body.insertBefore(eraBtn, benchBtn);
+addEventListener('keydown', (e) => {
+  const t = e.target as HTMLElement | null;
+  if (e.code !== 'KeyY' || e.repeat || t?.closest('input, textarea, [contenteditable]')) return;
+  toggleEra();
+});
+if (params.get('era') === 'steam') {
+  toggleEra();
+  era.mix = 1;
+}
+
 onFrame(
-  () => {
+  ({ dt }) => {
+    updateEra(dt);
+    postU.eraDesat.value = era.mix * 0.45;
+    updateRim(dt);
     updatePostUniforms();
     if (on.has('grass')) updateGrass();
   },
@@ -228,6 +278,7 @@ window.boogle.lookLab = {
   preset,
   on: () => [...on],
   bench,
+  era,
   postU,
   worldU,
   maxDpr: MAX_DPR,

@@ -31,9 +31,10 @@ type Bench = {
   px: string;
 };
 
-const PRESETS = ['today', 'mid', 'ipad', 'high', 'toon', 'diorama', 'ultra'];
+const PRESETS = ['today', 'mid', 'ipad', 'high', 'toon', 'diorama', 'toybox', 'miniature', 'ultra'];
 const LAYERS = [
   'haze',
+  'skyfog',
   'soft',
   'csm',
   'detail',
@@ -45,12 +46,18 @@ const LAYERS = [
   'bloom',
   'grade',
   'outline',
+  'softline',
   'toon',
+  'paint',
+  'rim',
+  'plastic',
   'tilt',
 ];
 const VIEWS = ['court', 'shore', 'overview'];
-const MORNING = 0.2, // time of day (src/sim/sky-clock.ts: 0 sunrise, 0.6 sunset), pinned so shadows match
-  SUNSET = 0.55;
+const NOON = 0.3, // time of day (src/sim/sky-clock.ts: 0 sunrise, 0.6 sunset), pinned so shadows match
+  SUNSET = 0.55,
+  NIGHT = 0.8;
+const ERA = ['today', 'diorama']; // also shot on the steam palette row (&era=steam)
 const mode = process.env.LOOKLAB || 'all';
 const lab = 'window.boogle.lookLab';
 
@@ -64,7 +71,7 @@ export default {
     let k = 0;
     const page = async (query: string, size?: number[]) => {
       const g = await t.open({ name: 'Look' + k++, room: room + k, query: `proto=look&lookpanel=0&${query}`, size });
-      await g.eval(`window.boogle.sky.preview(${MORNING})`); // the same sun for every page
+      await g.eval(`window.boogle.sky.preview(${NOON})`); // the same sun for every page
       await t.sleep(3000); // pipelines build, TRAA settles
       return g;
     };
@@ -84,7 +91,21 @@ export default {
         await A.view('shore');
         await t.sleep(2500);
         await A.still(`${p}-sunset`);
+        await A.eval(`window.boogle.sky.preview(${NIGHT})`);
+        await A.view('court');
+        await t.sleep(2500);
+        await A.still(`${p}-night`);
         clean(A, p);
+        await A.close();
+      }
+      for (const p of ERA) {
+        const A = await page(`look=${p}&era=steam`);
+        for (const v of ['court', 'overview']) {
+          await A.view(v);
+          await t.sleep(2000);
+          await A.still(`${p}-steam-${v}`);
+        }
+        clean(A, p + ' steam');
         await A.close();
       }
     }
@@ -110,6 +131,7 @@ export default {
       await bench('today', 'look=today');
       for (const l of LAYERS) await bench('+' + l, `look=today&fx=${l}`);
       for (const p of PRESETS.slice(1)) await bench(p, `look=${p}`);
+      await bench('diorama+steam', 'look=diorama&era=steam');
       await bench('today again', 'look=today'); // drift on a shared GPU shows here
       fs.writeFileSync(path.join(t.out, 'bench.json'), JSON.stringify(rows, null, 2));
       t.check('the bench measured', !!rows.today?.court, path.join(t.out, 'bench.json'));
