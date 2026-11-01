@@ -10,6 +10,9 @@ import { FNV_SEED, fold, foldAll } from './hash.ts';
 export const FULL = 2; // charges a source holds
 export const YIELD = 4; // pieces a take gives
 export const TRICKLE_EVERY = 200; // ticks (20 s)
+// The ceiling of a playtest's tuned charges (./tune.ts); the numbers above are today's defaults, and the rules pass a
+// room's tuned ones in.
+export const FULL_MAX = 20;
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 
 // The sources of an age, from the static land layout: [{ i, j }] by source id.
@@ -29,9 +32,9 @@ export function createSources(): Sources {
 
 // Charges left at source id of `age` (count: how many sources that age has). Reading never changes state: counts from
 // an older age read as full.
-export function chargesOf(s: Sources, age: number, count: number, id: unknown): number {
+export function chargesOf(s: Sources, age: number, count: number, id: unknown, full = FULL): number {
   if (!isInt(id) || id < 0 || id >= count) return 0;
-  return FULL - (s.a === age ? (s.spent.get(id) ?? 0) : 0);
+  return Math.max(0, full - (s.a === age ? (s.spent.get(id) ?? 0) : 0));
 }
 // Ticks and apply only: forget the spent counts of an age that is over.
 export function matchAge(s: Sources, age: number): void {
@@ -40,12 +43,12 @@ export function matchAge(s: Sources, age: number): void {
   s.spent.clear();
   s.rev++;
 }
-export function take(s: Sources, age: number, count: number, id: number): number {
-  if (chargesOf(s, age, count, id) <= 0) return 0;
+export function take(s: Sources, age: number, count: number, id: number, full = FULL, n = YIELD): number {
+  if (chargesOf(s, age, count, id, full) <= 0) return 0;
   matchAge(s, age);
   s.spent.set(id, (s.spent.get(id) ?? 0) + 1);
   s.rev++;
-  return YIELD;
+  return n;
 }
 export function refillAll(s: Sources): void {
   s.spent.clear();
@@ -53,10 +56,10 @@ export function refillAll(s: Sources): void {
 }
 // R2: on every TRICKLE_EVERY-th tick, one empty source (picked from the room seed and the tick) fills. Returns its id
 // or -1.
-export function trickle(s: Sources, tick: number, seed: number): number {
-  if (tick % TRICKLE_EVERY !== 0) return -1;
+export function trickle(s: Sources, tick: number, seed: number, every = TRICKLE_EVERY, full = FULL): number {
+  if (tick % every !== 0) return -1;
   const empty = [...s.spent]
-    .filter(([, n]) => n >= FULL)
+    .filter(([, n]) => n >= full)
     .map(([id]) => id)
     .sort((a, b) => a - b);
   if (!empty.length) return -1;
@@ -78,7 +81,7 @@ export function loadSources(s: Sources, json: unknown): void {
   for (let k = 0; k < flat.length; k += 2) {
     const id: unknown = flat[k],
       n: unknown = flat[k + 1];
-    if (!isInt(id) || id < 0 || !isInt(n) || n < 1 || n > FULL) throw new Error('sources: bad snapshot');
+    if (!isInt(id) || id < 0 || !isInt(n) || n < 1 || n > FULL_MAX) throw new Error('sources: bad snapshot');
     spent.set(id, n);
   }
   Object.assign(s, { a, spent, rev: s.rev + 1 });

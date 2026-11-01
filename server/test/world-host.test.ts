@@ -26,10 +26,10 @@ function stream(seed: number) {
 const home = loadHomeLand();
 const settle = () => new Promise((r) => setImmediate(r));
 
-async function makeHost(dir: string, saveMs = 2000) {
+async function makeHost(dir: string, saveMs = 2000, roomId = 'beach') {
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
-  const wh = createWorldHost({ roomId: 'beach', store, saveMs, tick: false, pidOf: (sid) => sid + 'pid' });
+  const wh = createWorldHost({ roomId, store, saveMs, tick: false, pidOf: (sid) => sid + 'pid' });
   const sent: Msg[] = [];
   wh.onSend((m) => sent.push(m));
   await settle(); // becomeHost reads the save, then marks the world ready
@@ -38,7 +38,7 @@ async function makeHost(dir: string, saveMs = 2000) {
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-world-'));
 
 test('every op of every rules module is accepted from a client or, host-only, from the server', async () => {
-  const { wh, sent } = await makeHost(tmp());
+  const { wh, sent } = await makeHost(tmp(), 2000, 'v02-proto-beach'); // a playtest room: the tune ops run too
   assert.equal(wh.status().mode, 'host');
   assert.equal(wh.status().ready, true);
   // The replay test's head start: piles to take and a full Track ring so a run can start.
@@ -57,7 +57,9 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   const hostOnly = new Set(['bank.wake']);
   const r = stream(0x5e7);
   for (let f = 0; f < 600 && accepted.size < ops.length; f++) {
-    const op = r.pick(ops.filter((o) => !accepted.has(o)));
+    // the haul reset empties the head start, so it goes last
+    const left = ops.filter((o) => !accepted.has(o));
+    const op = r.pick(left.length > 1 ? left.filter((o) => o !== 'tune.reset') : left);
     const e = generators[op](r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
     if (e) {
       if (hostOnly.has(op)) wh.sync.submitEdit(e);
@@ -77,6 +79,18 @@ test('every op of every rules module is accepted from a client or, host-only, fr
     edits.some((x: Msg) => x.e.p === 'c1' && x.e.u === 'c1pid'),
     'stamped edits carry the sender',
   );
+  await wh.close({ save: false });
+});
+
+test('tuning and the haul reset are refused outside a proto- room', async () => {
+  const { wh } = await makeHost(tmp());
+  const applied: string[] = [];
+  wh.sync.onApplied((e: Msg) => void applied.push(e.op));
+  wh.deliver({ t: 'w:edit', e: { op: 'tune.set', i: 0, j: 0, key: 'hard', v: 30 } }, 'c1');
+  wh.deliver({ t: 'w:edit', e: { op: 'tune.reset', i: 0, j: 0 } }, 'c1');
+  for (let f = 0; f < 6; f++) (wh.step(0.05), await settle());
+  assert.deepEqual(applied, []);
+  assert.equal(wh.rules.tune.get('hard'), 60);
   await wh.close({ save: false });
 });
 

@@ -82,6 +82,20 @@ Code: [src/sim/sites.ts](../../src/sim/sites.ts), [src/sim/tiers.ts](../../src/s
 Lockstep state `sites`; op `site.stock {s, ring, n}` (validated against your own stack, the age's material and the open
 site). Ring reach is not checked by the host, like every reach today.
 
+## Playtest kit
+
+With `?proto=haul` a **Haul kit** panel opens top right (checklist: [docs/playtest-kits/haul.md](../playtest-kits/haul.md)).
+Its feel knobs (stack sway, pour cadence and handful, pickup flight) change only your tab
+([src/player/haul-feel.ts](../../src/player/haul-feel.ts)). In a room whose name starts with `proto-` its room knobs
+(wood section and helper cost, soft and hard cap, spill, logs per take, takes per bundle, bundle refill) change the
+world for everyone at the same tick, and Reset haul empties every stack and pile and puts the sites and bundles back to
+the start, keeping the tuning. Elsewhere the host refuses both. Without the flag nothing changes. Plaque points always
+use the default section cost.
+
+Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts),
+[src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
+`tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
+
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

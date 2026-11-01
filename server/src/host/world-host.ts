@@ -15,6 +15,7 @@ import { createSync } from '../../../src/world/sync.ts';
 import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
+import { isProtoRoom } from '../../../src/sim/tune.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 
@@ -43,7 +44,8 @@ export function createWorldHost({
   pidOf = () => null,
   log = () => {},
 }: WorldHostOptions) {
-  const sync = createSync({ env: { canPlantAt: home.canPlantAt } });
+  // protoRoom: playtest tuning (tune.set, tune.reset) is allowed in `proto-` rooms only (src/world/rules/tune.ts).
+  const sync = createSync({ env: { canPlantAt: home.canPlantAt, protoRoom: isProtoRoom(roomId) } });
   const rules = installRules(sync, home.land as Parameters<typeof installRules>[1]);
   const sendFns = new Set<(msg: Msg) => void>();
   const msgFns = new Set<(msg: unknown, from: string) => void>();

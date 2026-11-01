@@ -1,0 +1,116 @@
+/* The haul playtest kit's panel (src/debug/haul-kit.ts, ?proto=haul): top right under the net chip, collapsible. */
+.haul-kit {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  width: min(330px, calc(100vw - 28px));
+  max-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  color: var(--on-glass);
+  font: 13px/1.35 var(--font-body);
+  z-index: 20;
+  backdrop-filter: blur(6px);
+}
+.hk-head {
+  all: unset;
+  cursor: pointer;
+  padding: 8px 12px;
+  font: 15px/1.2 var(--font-display);
+  letter-spacing: 0.02em;
+}
+.hk-head::after {
+  content: ' ▸';
+}
+.haul-kit.open .hk-head::after {
+  content: ' ▾';
+}
+.hk-body {
+  display: none;
+  overflow-y: auto;
+  padding: 0 12px 10px;
+}
+.haul-kit.open .hk-body {
+  display: block;
+}
+.haul-kit h3 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+.hk-note {
+  margin: 0 0 6px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+.hk-qs {
+  margin: 0 0 4px;
+  padding-left: 18px;
+  font-weight: 600;
+}
+.hk-row {
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  grid-template-areas: 'label num' 'range range';
+  align-items: center;
+  gap: 0 8px;
+  margin: 4px 0 6px;
+}
+.hk-label {
+  grid-area: label;
+}
+.hk-row input[type='range'] {
+  grid-area: range;
+  width: 100%;
+  margin: 2px 0;
+  accent-color: var(--sun);
+  min-height: 24px;
+}
+.hk-row input[type='number'] {
+  grid-area: num;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.hk-row input:disabled {
+  opacity: 0.45;
+}
+.hk-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 6px;
+}
+.hk-buttons button {
+  flex: 1 1 auto;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--sun);
+  color: var(--ink);
+  font: 700 13px/1 var(--font-body);
+  cursor: pointer;
+}
+.hk-buttons button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.hk-status {
+  font-size: 12px;
+  user-select: text;
+}
+.haul-kit:not(.open) {
+  width: auto;
+}

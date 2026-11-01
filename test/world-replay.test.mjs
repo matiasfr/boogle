@@ -25,10 +25,11 @@ function stream(seed) {
 }
 const generators = Object.assign({}, ...RULES.map((m) => m.edits ?? {}));
 
-// One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state.
+// One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state. protoRoom: a playtest
+// room, so the tune ops run too.
 function makePeer(seed, net, id, host) {
   const salt = strHash(id);
-  const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0 } });
+  const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0, protoRoom: true } });
   const rules = installRules(s, homeLand());
   const x = { id, s, rules, r: stream(seed ^ salt), applied: new Map(), hashes: new Map() };
   s.onApplied((e) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));

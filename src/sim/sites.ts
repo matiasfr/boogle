@@ -7,6 +7,9 @@ import { ROUTE, AGES, TRACK, HELPER, costOf } from './route.ts';
 import { runAt, MACHINE_RUN, type RunState } from './scripted-run.ts';
 import { FNV_SEED, fold, foldAll } from './hash.ts';
 
+// A ring's cost (route.ts costOf by default; a playtest room passes its tuned one, ./tune.ts). Plaque credit always uses
+// the age's default cost, so points mean the same in every room.
+export type CostFn = (s: number, ring: number) => number;
 export const RUN_BONUS = 5; // points to whoever starts a machine run
 export const HELPER_EVERY = 270; // ticks per piece of freight each helper hut adds (brief 7: ~0.15x a hand rate)
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
@@ -52,11 +55,11 @@ export const isDone = (st: Sites, s: number): boolean => s < st.open;
 
 export const siteOpen = (st: Sites, s: unknown): s is number => isInt(s) && s === st.open && s < st.list.length;
 // How many more units ring can take at site s right now.
-export function ringRoom(st: Sites, s: number, ring: unknown): number {
+export function ringRoom(st: Sites, s: number, ring: unknown, cost: CostFn = costOf): number {
   const site = st.list[s];
   if (!site || isDone(st, s)) return 0;
-  if (ring === TRACK) return site.t0 >= 0 ? 0 : costOf(s, TRACK) - site.stock[TRACK];
-  if (ring === HELPER) return site.helpers ? 0 : costOf(s, HELPER) - site.stock[HELPER];
+  if (ring === TRACK) return site.t0 >= 0 ? 0 : cost(s, TRACK) - site.stock[TRACK];
+  if (ring === HELPER) return site.helpers ? 0 : cost(s, HELPER) - site.stock[HELPER];
   return 0;
 }
 
@@ -82,14 +85,21 @@ export function bonus(st: Sites, s: number, idx: number, pts: number): void {
 
 // Moves n units (already taken off idx's stack) into a ring; a full Helper ring builds the hut.
 // Returns { pts, built }.
-export function stock(st: Sites, s: number, ring: number, idx: number, n: number): { pts: number; built: boolean } {
+export function stock(
+  st: Sites,
+  s: number,
+  ring: number,
+  idx: number,
+  n: number,
+  cost: CostFn = costOf,
+): { pts: number; built: boolean } {
   const site = st.list[s];
   st.rev++;
   site.stock[ring] += n;
   site.poured += n;
   const pts = idx >= 0 ? credit(st, s, idx, n) : 0;
   let built = false;
-  if (ring === HELPER && site.stock[HELPER] >= costOf(s, HELPER)) {
+  if (ring === HELPER && site.stock[HELPER] >= cost(s, HELPER)) {
     site.used += site.stock[HELPER];
     site.stock[HELPER] = 0;
     site.helpers = 1;
@@ -99,8 +109,8 @@ export function stock(st: Sites, s: number, ring: number, idx: number, n: number
 }
 
 // A run can start at the open site once its Track ring holds a whole section and nothing is running there.
-export const canRun = (st: Sites, s: unknown): boolean =>
-  siteOpen(st, s) && st.list[s].t0 < 0 && st.list[s].stock[TRACK] >= costOf(s, TRACK);
+export const canRun = (st: Sites, s: unknown, cost: CostFn = costOf): boolean =>
+  siteOpen(st, s) && st.list[s].t0 < 0 && st.list[s].stock[TRACK] >= cost(s, TRACK);
 export function startRun(st: Sites, s: number, idx: number, tick: number): void {
   st.rev++;
   st.list[s].t0 = tick;
@@ -110,14 +120,14 @@ export const runOf = (st: Sites, s: number, tick: number): RunState => runAt(MAC
 
 // Ends the open site's run once its script is done: the section is laid, the starter gets RUN_BONUS, the next site
 // opens. Returns the laid section's index, or -1.
-export function finishRun(st: Sites, tick: number): number {
+export function finishRun(st: Sites, tick: number, cost: CostFn = costOf): number {
   const s = st.open;
   const site = st.list[s];
   if (!site || site.t0 < 0 || !runOf(st, s, tick).done) return -1;
-  const cost = costOf(s, TRACK);
+  const n = cost(s, TRACK);
   st.rev++;
-  site.stock[TRACK] -= cost;
-  site.used += cost;
+  site.stock[TRACK] -= n;
+  site.used += n;
   if (site.starter >= 0) bonus(st, s, site.starter, RUN_BONUS);
   st.open = s + 1;
   return s;
@@ -130,11 +140,11 @@ export const ageAt = (st: Sites): number =>
 // Helper huts send freight: every HELPER_EVERY ticks, one piece per built hut into the open site's Track ring (as far
 // as it has room; a full or running ring just waits). Returns the pieces added.
 export const helpersOf = (st: Sites): number => st.list.reduce((t, x) => t + x.helpers, 0);
-export const helperFreight = (st: Sites, tick: number): number =>
-  tick % HELPER_EVERY === 0 ? addFreight(st, helpersOf(st)) : 0;
-export function addFreight(st: Sites, n: number): number {
+export const helperFreight = (st: Sites, tick: number, cost: CostFn = costOf): number =>
+  tick % HELPER_EVERY === 0 ? addFreight(st, helpersOf(st), cost) : 0;
+export function addFreight(st: Sites, n: number, cost: CostFn = costOf): number {
   const s = st.open;
-  const add = Math.min(n, ringRoom(st, s, TRACK));
+  const add = Math.min(n, ringRoom(st, s, TRACK, cost));
   if (add <= 0) return 0;
   st.rev++;
   st.list[s].stock[TRACK] += add;
