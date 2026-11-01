@@ -71,9 +71,9 @@ the rail's speed plus the normal jump; running off the railhead flings you off w
 on the ground above 3 m/s is the tumble flop. Running into the wagon, the track machine while it's laying or another
 player on the line is a bonk: knocked back 4 m/s and up 4.5 m/s, with the bonk flop. The track machine standing on the
 line is hopped instead: you're lifted over it (clearing its boiler by 0.2 m, rising and falling over 1.8 m either
-side) with a clack. While grinding you stand sideways to the rail, 20 to 40 orange sparks a second fly from your feet
-(more with speed), a band-passed hiss rises with speed, each rail joint (every 4.5 m) clacks, and the camera drops 0.5
-m, swings behind your travel and looks 3 m ahead along the rail. The rail counts as ground (jump works, a double jump
+side) with a puff of sparks. While grinding you stand sideways to the rail, 20 to 40 orange sparks a second fly from your feet
+(more with speed), and the camera drops 0.5 m, swings behind your travel and looks 3 m ahead along the rail. Grinding
+is silent for now: the hiss, joint clacks, screech and bonk were cut in the sound audit (2026-11-02). The rail counts as ground (jump works, a double jump
 comes back). Others see you through your normal presence.
 
 ## Prototype: double jump and glide (&jump2=1, &glide=1)
