@@ -16,7 +16,7 @@ import { ON_GROUND, SRC } from '../sim/gifts.ts';
 import { itemModel } from '../player/item-models.ts';
 import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
 import { inv, take, roomFor } from '../player/inventory.ts';
-import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
+import { FRISBEE_SPOT } from '../pois/lighthouse/index.ts';
 import { splash } from '../render/splash.ts';
 import type { Item } from '../sim/gifts.ts';
 import type { Edit } from '../world/rules/types.ts';

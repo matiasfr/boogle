@@ -6,27 +6,31 @@
 // cellar is left smooth (it gets brickwork instead).
 import { edgeTable, triTable } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { smoothstep } from '../../math-pure.ts';
-import { networkSd, ZONE, MOUTHS, SEGMENTS, NODES, FLOOR_CUT } from './network.js';
+import { networkSd, ZONE, MOUTHS, SEGMENTS, NODES, FLOOR_CUT } from './network.ts';
+
+type V3t = [number, number, number];
+type Sd = (x: number, y: number, z: number) => number;
+type MouthFrame = (typeof MOUTHS)[number];
 
 const VOXEL = 0.62;
 const NOISE = 0.55; // metres of roughness on walls and ceilings
 
-function hash3(x, y, z) {
+function hash3(x: number, y: number, z: number) {
   let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(z, 1274126177)) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
-const fade = (t) => t * t * (3 - 2 * t);
-function vnoise(x, y, z) {
+const fade = (t: number) => t * t * (3 - 2 * t);
+function vnoise(x: number, y: number, z: number) {
   const ix = Math.floor(x),
     iy = Math.floor(y),
     iz = Math.floor(z);
   const fx = fade(x - ix),
     fy = fade(y - iy),
     fz = fade(z - iz);
-  const l = (a, b, t) => a + (b - a) * t;
-  const c = (dx, dy, dz) => hash3(ix + dx, iy + dy, iz + dz);
+  const l = (a: number, b: number, t: number) => a + (b - a) * t;
+  const c = (dx: number, dy: number, dz: number) => hash3(ix + dx, iy + dy, iz + dz);
   return (
     l(
       l(l(c(0, 0, 0), c(1, 0, 0), fx), l(c(0, 1, 0), c(1, 1, 0), fx), fy),
@@ -40,7 +44,7 @@ function vnoise(x, y, z) {
 
 // Signed distance to open cave (negative inside), with the rock noise. out gets zone and floor (see networkSd).
 const scratch = { zone: 0, floor: 0 };
-export function caveSd(x, y, z, out = scratch) {
+export function caveSd(x: number, y: number, z: number, out = scratch) {
   const d = networkSd(x, y, z, out);
   if (d > NOISE * 1.6 || out.zone === ZONE.CELLAR) return d;
   let w = smoothstep(out.floor + 0.3, out.floor + 1.4, y);
@@ -55,15 +59,15 @@ export function caveSd(x, y, z, out = scratch) {
 
 // Grid bounds around everything, with room for the tunnel radius and noise.
 function bounds() {
-  const pts = [];
+  const pts: number[][] = [];
   for (const s of SEGMENTS) for (const p of s.pts) pts.push([p.x, p.y, p.z, 3.5]);
   for (const n of Object.values(NODES)) {
     if (n.kind === 'mouth') continue;
     const r = n.kind === 'cellar' ? Math.max(...n.half) + 1 : Math.max(...n.r) + 1;
     pts.push([n.x, n.y, n.z, r]);
   }
-  const lo = [Infinity, Infinity, Infinity],
-    hi = [-Infinity, -Infinity, -Infinity];
+  const lo: V3t = [Infinity, Infinity, Infinity],
+    hi: V3t = [-Infinity, -Infinity, -Infinity];
   for (const [x, y, z, r] of pts) {
     lo[0] = Math.min(lo[0], x - r);
     hi[0] = Math.max(hi[0], x + r);
@@ -103,12 +107,18 @@ const EDGE = [
 
 // Marching cubes over field (dims [nx, ny, nz], voxel size, origin lo; inside = negative), sharing vertices along grid
 // edges. onVertex(x, y, z) runs once per new vertex. Generator (yields per slice); returns { pos, idx } as plain arrays.
-function* polygonize(field, [nx, ny, nz], lo, voxel, onVertex = null) {
-  const at = (i, j, k) => (k * ny + j) * nx + i;
-  const pos = [],
-    idx = [];
-  const edgeVert = new Map();
-  const vert = (i, j, k, e) => {
+function* polygonize(
+  field: Float32Array,
+  [nx, ny, nz]: number[],
+  lo: number[],
+  voxel: number,
+  onVertex: ((x: number, y: number, z: number) => void) | null = null,
+): Generator<undefined, { pos: number[]; idx: number[] }> {
+  const at = (i: number, j: number, k: number) => (k * ny + j) * nx + i;
+  const pos: number[] = [],
+    idx: number[] = [];
+  const edgeVert = new Map<number, number>();
+  const vert = (i: number, j: number, k: number, e: number) => {
     const [a, b] = EDGE[e];
     const A = CORNER[a],
       Bc = CORNER[b];
@@ -148,7 +158,7 @@ function* polygonize(field, [nx, ny, nz], lo, voxel, onVertex = null) {
 }
 
 // Winds every triangle so its front faces down sd's gradient (toward = -1) or up it (toward = 1).
-function* orient(pos, idx, sd, toward) {
+function* orient(pos: number[], idx: number[], sd: Sd, toward: number) {
   const g = 0.08;
   for (let n = 0; n < idx.length; n += 3) {
     if (n % 3000 === 0) yield;
@@ -181,7 +191,7 @@ export function* buildCaveMeshSteps() {
   const nx = Math.ceil((hi[0] - lo[0]) / VOXEL) + 1,
     ny = Math.ceil((hi[1] - lo[1]) / VOXEL) + 1,
     nz = Math.ceil((hi[2] - lo[2]) / VOXEL) + 1;
-  const at = (i, j, k) => (k * ny + j) * nx + i;
+  const at = (i: number, j: number, k: number) => (k * ny + j) * nx + i;
   const field = new Float32Array(nx * ny * nz);
 
   // Coarse pass: blocks whose corners are all far inside rock are filled without evaluating every voxel.
@@ -209,7 +219,7 @@ export function* buildCaveMeshSteps() {
       }
   }
 
-  const zones = [];
+  const zones: number[] = [];
   const zinfo = { zone: 0, floor: 0 };
   const { pos, idx } = yield* polygonize(field, [nx, ny, nz], lo, VOXEL, (x, y, z) => {
     networkSd(x, y, z, zinfo);
@@ -228,7 +238,7 @@ export function* buildCaveMeshSteps() {
 // A ring of rock round each mouth, overlapping both the hillside and the tunnel, so the seam where the heightfield's
 // hole meets the cave mesh (the tube's trimmed end, gaps at the floor corners) is behind solid rock. Inside = rock.
 const COLLAR = { inner: 2.16, outer: 3.5, back: -1.6, front: 1.1, below: 0.9, voxel: 0.5, noise: 0.35 };
-function collarSd(x, y, z, m) {
+function collarSd(x: number, y: number, z: number, m: MouthFrame) {
   const ay = m.y + FLOOR_CUT; // tunnel axis height at the mouth
   const along = (x - m.x) * m.ox + (z - m.z) * m.oz;
   const sx = x - m.x - along * m.ox,
@@ -248,8 +258,8 @@ function collarSd(x, y, z, m) {
 // One mesh for all four collars: { positions: Float32Array, indices: Uint32Array }, fronts facing out of the rock.
 // Generator, like buildCaveMeshSteps: yields per slice so the build stays inside the caves' per-frame budget.
 export function* buildCollarMeshSteps() {
-  const pos = [],
-    idx = [];
+  const pos: number[] = [],
+    idx: number[] = [];
   for (const m of MOUTHS) {
     const pad = COLLAR.outer + 1,
       v = COLLAR.voxel;
@@ -262,7 +272,7 @@ export function* buildCollarMeshSteps() {
       for (let j = 0; j < dims[1]; j++)
         for (let i = 0; i < dims[0]; i++) field[f++] = collarSd(lo[0] + i * v, lo[1] + j * v, lo[2] + k * v, m);
     }
-    const sd = (x, y, z) => collarSd(x, y, z, m);
+    const sd = (x: number, y: number, z: number) => collarSd(x, y, z, m);
     const part = yield* polygonize(field, dims, lo, v);
     yield* orient(part.pos, part.idx, sd, 1);
     const base = pos.length / 3;

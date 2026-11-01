@@ -178,7 +178,7 @@ export default {
 
     // The frisbee waits on the lighthouse deck; throw it off and it glides far.
     const { FRISBEE } = await g.eval(
-      `const L = await import('/src/pois/lighthouse/index.js'); return { FRISBEE: L.FRISBEE_SPOT };`,
+      `const L = await import('/src/pois/lighthouse/index.ts'); return { FRISBEE: L.FRISBEE_SPOT };`,
     );
     await g.eval(`window.__debugCam.clear();`);
     await g.eval(TP(FRISBEE.x, FRISBEE.z, FRISBEE.y + 0.8));

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { addPart, mergeParts } from '../render/props.ts';
 import { scene, toScreen } from '../render/scene.ts';
 import { groundHeight } from '../adapters/terrain.ts';
-import { NODES } from '../pois/caves/network.js';
+import { NODES } from '../pois/caves/network.ts';
 import { getSim } from './engine.js';
 import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
 

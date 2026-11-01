@@ -39,7 +39,7 @@ built outside the POI system.
 | **Windmill farm** | Site centre (82, −46), facing west | Three wooden windmills (7.2 m towers, 7.2 m sails at 0.55 rad/s on the shared clock) on knolls, striped fields (wheat, greens, ploughed earth), cart tracks, hay bales, a fence ([src/pois/windmills/](../../src/pois/windmills/)). | The sails are solid: they bonk players and bat the ball. Nothing else to do. |
 | **Caves** | Under the massif; mouths below | Tunnels of radius 2.3 m joining a hub (−50, −88), an abandoned mine (−35, −93: rails, minecart of ore, glowing veins), an underground pond (−64, −90: water at 3.0 m, crystals, glowing mushrooms, stalactites, a rowboat) and a wine cellar (−49, −99: barrel racks, bottle shelves, a cask, a candlelit table). Lanterns, timber mouth frames with name boards, a signpost ([src/pois/caves/](../../src/pois/caves/)). | Walk in and explore; throw and float the ball on the pond. Purely a place: no items or ops. |
 
-Cave mouths ([network.js](../../src/pois/caves/network.js)):
+Cave mouths ([network.js](../../src/pois/caves/network.ts)):
 
 | Mouth | Position | Board |
 |---|---|---|

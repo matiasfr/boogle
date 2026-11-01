@@ -49,7 +49,7 @@ export default {
     );
 
     // The frisbee: it waits on the lighthouse deck; pick it up and glide it off the hill.
-    const F = await g.eval(`return (await import('/src/pois/lighthouse/index.js')).FRISBEE_SPOT;`);
+    const F = await g.eval(`return (await import('/src/pois/lighthouse/index.ts')).FRISBEE_SPOT;`);
     // Facing +z (yaw 3.0), off the deck and down the hill: half a charge glides it well past the beach path.
     await g.eval(`${TP(F.x, F.z, F.y + 0.8)} ${AIM(3.0, -0.35)}`);
     await g.wait(1.2);

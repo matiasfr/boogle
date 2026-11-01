@@ -79,7 +79,7 @@ const TOUR = `
   const dbg = window.__debugCam;
   const I = await import('/src/player/inventory.ts');
   const H = await import('/src/player/hands.ts');
-  const { NODES } = await import('/src/pois/caves/network.js');
+  const { NODES } = await import('/src/pois/caves/network.ts');
   const { emit } = await import('/src/render/particles.ts');
   const sky = window.boogle.sky;
   const step = async (name, ms, fn) => { window.__step = name; if (fn) await fn(); await sleep(ms); };

@@ -3,7 +3,16 @@
 export const PAD_Y = 11; // height of the flat ground the tower stands on
 
 // A footpath from the hill (local metres; with dir [0, 1] local x, z are world x, z offsets from the site).
-const path = (...points) => ({ shape: 'path', points, w: 2, fade: 1, paint: '#b39a6d', strength: 0.7 });
+import type { Site, Stamp } from '../../island/stamps.ts';
+
+const path = (...points: [number, number][]): Stamp => ({
+  shape: 'path',
+  points,
+  w: 2,
+  fade: 1,
+  paint: '#b39a6d',
+  strength: 0.7,
+});
 
 export default {
   name: 'Lighthouse',
@@ -19,4 +28,4 @@ export default {
     path([-6, -4], [-24, -12], [-38, -20]), // up to the rocky upland
   ],
   keepOut: [{ r: 11 }],
-};
+} satisfies Site;

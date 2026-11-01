@@ -16,8 +16,9 @@ import { skyNow } from '../../render/sky.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { addLightSource } from '../../render/lights.ts';
 import { reducedMotion } from '../../constants.ts';
-import site, { PAD_Y } from './site.js';
+import site, { PAD_Y } from './site.ts';
 import { freezeStatic } from '../../render/instances.ts';
+import type { Shape } from '../../physics/engine.ts';
 
 const CX = site.x,
   CZ = site.z;
@@ -39,19 +40,19 @@ const GAP = (2.3 / (TOWER_H / TURNS)) * Math.PI * 2; // deck left open above the
 const RAIL_FROM = 0.035; // the first bit of stair has no railing, so it's easy to step on from the side
 const END_A = START_A + TURNS * Math.PI * 2;
 
-const towerR = (y) => R_BOT + (R_TOP - R_BOT) * THREE.MathUtils.clamp((y - BASE_Y) / TOWER_H, 0, 1);
-const stairY = (u) => BASE_Y + u * TOWER_H;
-const stairA = (u) => START_A + u * TURNS * Math.PI * 2;
-const at = (a, r, y) => new THREE.Vector3(CX + Math.cos(a) * r, y, CZ + Math.sin(a) * r);
+const towerR = (y: number) => R_BOT + (R_TOP - R_BOT) * THREE.MathUtils.clamp((y - BASE_Y) / TOWER_H, 0, 1);
+const stairY = (u: number) => BASE_Y + u * TOWER_H;
+const stairA = (u: number) => START_A + u * TURNS * Math.PI * 2;
+const at = (a: number, r: number, y: number) => new THREE.Vector3(CX + Math.cos(a) * r, y, CZ + Math.sin(a) * r);
 
 const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   s = new THREE.Vector3();
 const box = new THREE.BoxGeometry(1, 1, 1);
-const cyl = (rt, rb, h, n = 20) => new THREE.CylinderGeometry(rt, rb, h, n);
+const cyl = (rt: number, rb: number, h: number, n = 20) => new THREE.CylinderGeometry(rt, rb, h, n);
 
 // A box spanning from p to q (centre line), w wide (horizontal, perpendicular), t thick (vertical-ish).
-function boxBetween(p0, p1, w, t) {
+function boxBetween(p0: THREE.Vector3, p1: THREE.Vector3, w: number, t: number) {
   const mid = p0.clone().add(p1).multiplyScalar(0.5);
   const dir = p1.clone().sub(p0);
   const len = dir.length();
@@ -63,7 +64,7 @@ function boxBetween(p0, p1, w, t) {
 }
 
 // A collider box for boxBetween's result, relative to the stair body at (CX, BASE_Y, CZ).
-function addColliderBox(shapes, b) {
+function addColliderBox(shapes: Shape[], b: ReturnType<typeof boxBetween>) {
   shapes.push({
     kind: 'box',
     hx: b.size.x / 2,
@@ -74,15 +75,21 @@ function addColliderBox(shapes, b) {
   });
 }
 
-let beams = null,
-  lamp = null,
-  glass = null,
-  halo = null;
+let beams: THREE.Group | null = null,
+  lamp: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null = null,
+  glass: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshStandardMaterial> | null = null,
+  halo: THREE.Sprite | null = null;
 const night = () => THREE.MathUtils.smoothstep(1 - (skyNow.day ?? 1), 0.25, 0.6);
 
 function build() {
-  const parts = [];
-  const put = (geo, pos, color, quat, scale) => {
+  const parts: THREE.BufferGeometry[] = [];
+  const put = (
+    geo: THREE.BufferGeometry,
+    pos: THREE.Vector3,
+    color: string,
+    quat?: THREE.Quaternion | null,
+    scale?: THREE.Vector3,
+  ) => {
     m.compose(pos, quat ?? q.identity(), scale ?? s.set(1, 1, 1));
     addPart(parts, geo, m, color);
   };
@@ -155,7 +162,7 @@ function build() {
   put(new THREE.SphereGeometry(0.22, 10, 6), new THREE.Vector3(CX, DECK_Y + 4.05, CZ), '#2d3035');
 
   // The spiral stair: treads, outer posts and a handrail; a smooth ramp and a low wall for physics.
-  const stairShapes = [];
+  const stairShapes: Shape[] = [];
   const treadN = Math.round(TOWER_H / 0.2);
   for (let k = 0; k < treadN; k++) {
     const u = (k + 0.5) / treadN,
@@ -257,7 +264,7 @@ function build() {
   freezeStatic(statics); // never moves: no per-frame matrix work
 
   // Lantern glass, lamp, beams, halo.
-  glass = new THREE.Mesh(
+  const gl = (glass = new THREE.Mesh(
     cyl(1.4, 1.4, 2.4, 16),
     new THREE.MeshStandardMaterial({
       color: '#cfe9ff',
@@ -268,12 +275,15 @@ function build() {
       emissiveIntensity: 0,
       depthWrite: false,
     }),
-  );
-  glass.position.set(CX, DECK_Y + 1.25, CZ);
-  scene.add(glass);
-  lamp = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 10), new THREE.MeshBasicMaterial({ color: '#7a6a4a' }));
-  lamp.position.set(CX, DECK_Y + 1.3, CZ);
-  scene.add(lamp);
+  ));
+  gl.position.set(CX, DECK_Y + 1.25, CZ);
+  scene.add(gl);
+  const l = (lamp = new THREE.Mesh(
+    new THREE.SphereGeometry(0.45, 14, 10),
+    new THREE.MeshBasicMaterial({ color: '#7a6a4a' }),
+  ));
+  l.position.set(CX, DECK_Y + 1.3, CZ);
+  scene.add(l);
 
   const uOn = uniform(0);
   const beamMat = new MeshBasicNodeMaterial({
@@ -286,28 +296,28 @@ function build() {
   // uv().y: 1 at the lamp, 0 at the far end. Warm lamp colour.
   const warm = new THREE.Color().setRGB(1, 0.9, 0.6, THREE.SRGBColorSpace);
   beamMat.colorNode = vec4(warm.r, warm.g, warm.b, pow(uv().y, 1.6).mul(uOn).mul(0.42));
-  beams = new THREE.Group();
+  const bm = (beams = new THREE.Group());
   for (const dir of [1, -1]) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(6, 70, 20, 1, true), beamMat);
     cone.rotation.z = (dir * Math.PI) / 2; // lie it down along x
     cone.position.x = dir * 35; // apex at the lamp, widening out to sea
     cone.frustumCulled = false;
-    beams.add(cone);
+    bm.add(cone);
   }
-  beams.position.copy(lamp.position);
-  beams.userData.on = uOn;
-  scene.add(beams);
+  bm.position.copy(l.position);
+  bm.userData.on = uOn;
+  scene.add(bm);
 
   const c = document.createElement('canvas');
   c.width = c.height = 128;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   const grad = g.createRadialGradient(64, 64, 4, 64, 64, 64);
   grad.addColorStop(0, 'rgba(255,240,200,1)');
   grad.addColorStop(0.25, 'rgba(255,210,120,0.55)');
   grad.addColorStop(1, 'rgba(255,190,90,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 128, 128);
-  halo = new THREE.Sprite(
+  const h = (halo = new THREE.Sprite(
     new THREE.SpriteMaterial({
       map: new THREE.CanvasTexture(c),
       blending: THREE.AdditiveBlending,
@@ -315,12 +325,12 @@ function build() {
       transparent: true,
       opacity: 0,
     }),
-  );
-  halo.position.copy(lamp.position);
-  halo.scale.setScalar(7);
-  scene.add(halo);
+  ));
+  h.position.copy(l.position);
+  h.scale.setScalar(7);
+  scene.add(h);
 
-  addLightSource({ position: lamp.position.clone(), color: '#ffd9a0', intensity: 90, distance: 26, on: night });
+  addLightSource({ position: l.position.clone(), color: '#ffd9a0', intensity: 90, distance: 26, on: night });
 }
 
 const lampOff = new THREE.Color('#7a6a4a'),
@@ -328,7 +338,7 @@ const lampOff = new THREE.Color('#7a6a4a'),
   toCam = new THREE.Vector3(),
   beamDir = new THREE.Vector3();
 function update() {
-  if (!beams) return;
+  if (!beams || !halo || !lamp || !glass) return;
   const n = night();
   beams.visible = halo.visible = n > 0.01;
   lamp.material.color.copy(lampOff).lerp(lampOn, n);

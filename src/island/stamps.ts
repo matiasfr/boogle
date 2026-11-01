@@ -30,7 +30,7 @@ export type Stamp = {
   r?: number;
   hx?: number;
   hz?: number;
-  points?: [number, number, number?][];
+  points?: number[][]; // [x, z, y?]
   w?: number;
   fade?: number;
   set?: HeightValue;
@@ -44,6 +44,7 @@ export type Stamp = {
 /** A point of interest's placement: where it sits, which way it faces, its stamps and keep-out discs. */
 export type Site = {
   id?: string;
+  name?: string;
   x: number;
   z: number;
   dir?: [number, number];
