@@ -10,6 +10,14 @@ export type CarSpec = { hx: number; hz: number; top: number };
 export const LOCO: CarSpec = { hx: 0.8, hz: 1.5, top: 1.75 }; // the boiler top: rideable, after a jump
 export const TRAILER: CarSpec = { hx: 1.1, hz: 1.6, top: 0.7 }; // a flatbed: a hop up from the ground
 
+/** The freight on the last flatbed: centre x, z on the deck, size, yaw, and how high its bottom sits over the deck. */
+export const CRATES = [
+  { x: -0.45, z: -0.7, sz: 0.7, yaw: 0.1, base: 0 },
+  { x: 0.4, z: -0.75, sz: 0.6, yaw: -0.2, base: 0 },
+  { x: 0, z: 0.55, sz: 0.8, yaw: 0.05, base: 0 },
+  { x: -0.4, z: -0.7, sz: 0.5, yaw: 0.4, base: 0.7 }, // stacked on the first
+];
+
 export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
 
 /** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
@@ -66,15 +74,10 @@ export function wagonLook(trailers: number): WagonLook {
     box(g, TRAILER.hx * 2, 0.18, TRAILER.hz * 2, wood, 0, TRAILER.top - 0.09, 0);
     box(g, TRAILER.hx * 1.6, 0.3, TRAILER.hz * 1.9, black, 0, TRAILER.top - 0.33, 0);
     for (const sz of [-1, 1]) box(g, TRAILER.hx * 2, 0.25, 0.08, wood, 0, TRAILER.top + 0.12, sz * (TRAILER.hz - 0.04));
-    // The last flatbed carries freight for the work sites (lashed down: drawn only, you walk through it); the others
+    // The last flatbed carries freight for the work sites (solid: ./index.ts gives each crate a collider); the others
     // stay clear to ride.
     if (k === trailers - 1)
-      for (const [x, z, sz, yaw, base] of [
-        [-0.45, -0.7, 0.7, 0.1, 0],
-        [0.4, -0.75, 0.6, -0.2, 0],
-        [0, 0.55, 0.8, 0.05, 0],
-        [-0.4, -0.7, 0.5, 0.4, 0.7], // stacked on the first
-      ]) {
+      for (const { x, z, sz, yaw, base } of CRATES) {
         const c = box(g, sz, sz, sz, crate, x, TRAILER.top + base + sz / 2, z);
         c.rotation.y = yaw;
       }

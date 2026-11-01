@@ -18,7 +18,7 @@ import { onPreStep, type Body } from './engine.ts';
 
 export type Platform = { body: Body; hx: number; hz: number; top: number; move: (dt: number) => void };
 
-const CARRY = {
+export const CARRY = {
   boardS: 0.12, // s: the carry blends from what you had to the deck's speed (no snap when you land on a moving deck)
   edge: 0.2, // m past the deck's edge that still counts as on it (the body is a sphere)
   above: 0.15, // m of air under the feet that still counts as standing (then the snap pulls you down)

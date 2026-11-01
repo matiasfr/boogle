@@ -39,12 +39,14 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--size') opt.size = v().split('x').map(Number);
   else if (a === '--fov') opt.fov = Number(v());
   else if (a === '--name') opt.name = v();
+  else if (a === '--room')
+    opt.room = v(); // e.g. proto-wagon: a playtest room, where tune and shortcut ops are allowed
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--eval file.js] [--warm 10s] [--frames 8] [--seconds 2] [--region x,y,w,h (fractions)] [--size 960x600]
-  [--hud] [--out .look] [--name label] [--url http://...]`);
+  [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
@@ -59,7 +61,7 @@ let stack, browser;
 try {
   stack = await startStack({ url: opt.url });
   browser = await launch();
-  const g = await Game.open(browser, stack, { out: opt.out, size: opt.size, hud: opt.hud });
+  const g = await Game.open(browser, stack, { out: opt.out, size: opt.size, hud: opt.hud, room: opt.room });
   if (opt.eval) {
     const out = await g.eval(fs.readFileSync(path.resolve(opt.eval), 'utf8'));
     if (out !== undefined) console.log('eval result:', JSON.stringify(out));
