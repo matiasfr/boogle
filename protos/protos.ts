@@ -76,10 +76,14 @@ export const PROTOS: Proto[] = [
     id: 'era',
     title: 'Era swap (greybox)',
     step: 4,
-    status: 'building',
+    status: 'live',
     url: '/?room=proto-era&proto=era',
     questions: ['Does the island change enough at an era’s end?', 'Would a solo player notice from the court?'],
-    tryThis: ['Stand on the court and start opening day.', 'Walk the island after the swap and look for what changed.'],
+    tryThis: [
+      'Press “lay all sections”.',
+      'Walk to the lighthouse platform and start opening day.',
+      'Watch the court through the countdown and the swap.',
+    ],
     since: '2026-11-01',
   },
   {
