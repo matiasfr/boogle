@@ -18,6 +18,13 @@
   <body>
     <canvas id="view" tabindex="0" aria-label="Boogle island, 3D view"></canvas>
 
+    <!-- Under the HUD, so HUD buttons stay pressable on touch (the HUD itself lets taps through). -->
+    <div class="touch" id="touch">
+      <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+      <button class="tbtn jump" id="btn-jump" type="button">Jump</button>
+      <button class="tbtn grab" id="btn-grab" type="button">Grab</button>
+    </div>
+
     <div class="hud">
       <div class="hud-tl">
         <div class="brand">Boogle</div>
@@ -31,12 +38,6 @@
       <div class="reticle" id="reticle"></div>
       <div class="charge" id="charge"><div class="charge-fill" id="charge-fill"></div></div>
       <div class="hint" id="hint" hidden></div>
-    </div>
-
-    <div class="touch" id="touch">
-      <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
-      <button class="tbtn jump" id="btn-jump" type="button">Jump</button>
-      <button class="tbtn grab" id="btn-grab" type="button">Grab</button>
     </div>
 
     <div class="lobby" id="lobby">
