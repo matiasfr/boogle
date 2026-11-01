@@ -1,4 +1,4 @@
-// Haul stacks (src/sim/stacks.ts): one material at a time, the hard cap, the spill rule past the soft cap, and a
+// Haul stacks (src/sim/stacks.ts): one material at a time, the hard cap, and a
 // serialize/load round-trip with the same hash.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,14 +9,11 @@ import {
   countOf,
   kindOf,
   roomFor,
-  spillOf,
   serializeStacks,
   loadStacks,
   hashStacks,
-  SOFT_CAP,
   HARD_CAP,
   HARD_MAX,
-  SPILL,
 } from '../src/sim/stacks.ts';
 
 test('one material at a time, up to the hard cap', () => {
@@ -37,12 +34,6 @@ test('taking empties the stack and frees its kind', () => {
   assert.equal(takeFrom(s, 0, 10), 4);
   assert.equal(kindOf(s, 0), -1);
   assert.equal(addTo(s, 0, 1, 2), 2);
-});
-
-test('a jump spills only above the soft cap, at most SPILL', () => {
-  assert.equal(spillOf(SOFT_CAP), 0);
-  assert.equal(spillOf(SOFT_CAP + 1), 1);
-  assert.equal(spillOf(SOFT_CAP + 10), SPILL);
 });
 
 test('serialize/load round-trips with the same hash; bad rows throw', () => {

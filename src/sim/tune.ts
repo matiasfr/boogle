@@ -2,22 +2,23 @@
 // room can change a cap or a cost for everyone at the same tick. Every key defaults to today's constant, and only
 // overrides are saved and hashed, so a room that never tunes anything is unchanged. Pure and deterministic (lockstep).
 import { AGES, ROUTE, TRACK, costOf } from './route.ts';
-import { SOFT_CAP, HARD_CAP, SPILL, HARD_MAX } from './stacks.ts';
+import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
 import { FNV_SEED, foldAll } from './hash.ts';
 import type { CostFn } from './sites.ts';
 
-// APPEND ONLY: a key's index is folded into the hash.
+// APPEND ONLY: a key's index is folded into the hash. A key that goes away moves to RETIRED.
 export const TUNABLES = [
   { key: 'cost0', def: AGES[0].cost, min: 2, max: 600, label: 'Section cost (wood)' },
   { key: 'helper0', def: AGES[0].helper, min: 1, max: 600, label: 'Helper hut cost (wood)' },
-  { key: 'soft', def: SOFT_CAP, min: 1, max: HARD_MAX, label: 'Soft cap (wobble, spill)' },
   { key: 'hard', def: HARD_CAP, min: 1, max: HARD_MAX, label: 'Hard cap' },
-  { key: 'spill', def: SPILL, min: 0, max: 50, label: 'Spill per jump' },
   { key: 'yield', def: YIELD, min: 1, max: 60, label: 'Logs per take' },
   { key: 'full', def: FULL, min: 1, max: FULL_MAX, label: 'Takes per bundle' },
   { key: 'trickle', def: TRICKLE_EVERY, min: 10, max: 6000, label: 'Bundle refill every (ticks)' },
 ] as const;
+// Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
+// wobble and jump spill, removed after the first playtest).
+const RETIRED: readonly string[] = ['soft', 'spill'];
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];
 /** v: every key's current value; rev counts every change, for views (neither saved nor hashed). */
@@ -60,6 +61,7 @@ export function loadTune(t: Tune, json: unknown): void {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');
   const v = defaults();
   for (const [key, n] of Object.entries(json)) {
+    if (RETIRED.includes(key)) continue;
     if (!okTune(key, n)) throw new Error(`tune: bad ${key}`);
     v[key as TuneKey] = n;
   }

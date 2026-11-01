@@ -90,7 +90,7 @@ site). Ring reach is not checked by the host, like every reach today.
 With `?proto=haul` a **Haul kit** panel opens top right (checklist: [docs/playtest-kits/haul.md](../playtest-kits/haul.md)).
 Its feel knobs (pour cadence and handful, pickup flight) change only your tab
 ([src/player/haul-feel.ts](../../src/player/haul-feel.ts)). In a room whose name starts with `proto-` its room knobs
-(wood section and helper cost, soft and hard cap, spill, logs per take, takes per bundle, bundle refill) change the
+(wood section and helper cost, hard cap, logs per take, takes per bundle, bundle refill) change the
 world for everyone at the same tick, and Reset haul empties every stack and pile and puts the sites and bundles back to
 the start, keeping the tuning. Elsewhere the host refuses both. Without the flag nothing changes. Plaque points always
 use the default section cost.

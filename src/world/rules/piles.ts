@@ -28,7 +28,7 @@ export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi }
   const { stacks } = rules;
   const onLand = (i: unknown, j: unknown) =>
     isInt(i) && isInt(j) && i >= 1 && j >= 1 && i <= land.n - 2 && j <= land.n - 2;
-  // Put down n from your own stack (a jump past the soft cap spills its top this way): the kind is the stack's.
+  // Put down n from your own stack: the kind is the stack's.
   sync.registerOp<{ n: number }>('pile.drop', {
     validate: (e) => {
       const k = stacks.kind(e.u);
