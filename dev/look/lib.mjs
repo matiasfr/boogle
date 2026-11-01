@@ -149,7 +149,9 @@ export class Game {
     });
     g.page.on('pageerror', (e) => {
       g.errors.push(e.message);
-      console.error(`[${g.name} page error]`, e.message);
+      // The top few stack frames say where it came from; the message alone rarely does.
+      const where = (e.stack || '').split('\n').slice(1, 5).join('\n');
+      console.error(`[${g.name} page error]`, e.message + (where ? '\n' + where : ''));
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';

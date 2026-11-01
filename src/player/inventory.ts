@@ -69,8 +69,10 @@ function put(id: string, n: number) {
   return k;
 }
 
-// Puts `id` into the hotbar, and into your hand unless `hold` is false. Returns false if there is no room.
+// Puts `id` into the hotbar, and into your hand unless `hold` is false. Returns false if there is no room, or `id` is
+// neither the ball nor a carryable catalog item (the HUD names every slot from the catalog).
 export function take(id: string, n = 1, hold = true) {
+  if (id !== 'ball' && !known(id)) return false;
   const k = put(id, n);
   if (k < 0) return false;
   if (hold) inv.sel = k;
