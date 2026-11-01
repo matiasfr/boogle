@@ -93,31 +93,32 @@ These are standing preferences from the thread.
   - physics props do the comedy.
 - **Art:** a painted concept per era, then a building kit and a vehicle kit per era.
 
-### Sound (listening-pack audit, 2026-11-02)
+### Sound (listening-pack audit, 2026-11-01)
 
-- **2026-11-02, the wave stays as it is until the owner has played it** (he first marked its sound "cut", then said he may have misread it; undecided).
-- **2026-11-02, the synthesized groove loop is cut** (all five takes). The shared clock, mixer and stems loader can stay for the owner's own music later; no placeholder music plays.
-- **2026-11-02, cut sounds** (silence them, keep the mechanics): wagon whistle and clacks, freight thumps, stoke roar and chuffs, all grind sounds, all soapbox sounds, opening-day call/bell/swap. Better sounds come later, from references.
-- **2026-11-02, keep:** prompt pop, deny, haul count run (right direction), honk, all mini-game sounds (knock, pop ladder, fanfare, sad trombone, mushroom boing), the hut build, the board whoosh, the track machine.
-- **2026-11-02, tweak, with references:** hotbar tick (single tone or none; Fortnite), the "it worked" thunk, plaque flap, ping and ball boing (more subtle), double-jump whoop (more subtle; Fortnite), pickup thock and the magnet burst (Ratchet & Clank bolts: a deep dive), the haul count (towards Ratchet & Clank), the wood-age ambience (less white noise, more chill; go deeper).
-- **2026-11-02, honks form chords on their own:** a honk isn't always the same note; players' honks should land as a chord together.
+- **2026-11-01, the wave stays as it is until the owner has played it** (he first marked its sound "cut", then said he may have misread it; undecided).
+- **2026-11-01, the synthesized groove loop is cut** (all five takes). The shared clock, mixer and stems loader can stay for the owner's own music later; no placeholder music plays.
+- **2026-11-01, cut sounds** (silence them, keep the mechanics): wagon whistle and clacks, freight thumps, stoke roar and chuffs, all grind sounds, all soapbox sounds, opening-day call/bell/swap. Better sounds come later, from references.
+- **2026-11-01, keep:** prompt pop, deny, haul count run (right direction), honk, all mini-game sounds (knock, pop ladder, fanfare, sad trombone, mushroom boing), the hut build, the board whoosh, the track machine.
+- **2026-11-01, tweak, with references:** hotbar tick (single tone or none; Fortnite), the "it worked" thunk, plaque flap, ping and ball boing (more subtle), double-jump whoop (more subtle; Fortnite), pickup thock and the magnet burst (Ratchet & Clank bolts: a deep dive), the haul count (towards Ratchet & Clank), the wood-age ambience (less white noise, more chill; go deeper).
+- **2026-11-01, honks form chords on their own:** a honk isn't always the same note; players' honks should land as a chord together.
 
 ### Controls
 
-- **2026-11-02, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
+- **2026-11-01, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
 
-- **2026-11-02, no petting The Boogler** (owner: "not in the nature of the Boogler"). The △ pat added in the controller pass is rolled back. Talk hints: ✕ Next while text plays, ✕ Answer only when there are choices, ○ Leave; □ does nothing in a talk.
+- **2026-11-01, no petting The Boogler** (owner: "not in the nature of the Boogler"). The △ pat added in the controller pass is rolled back. Talk hints: ✕ Next while text plays, ✕ Answer only when there are choices, ○ Leave; □ does nothing in a talk.
 
-- **2026-11-02, no contribution-tier labels on the player** (owner: the "Porter" tag under his character "shouldn't be the case"). Tiers stay as data; nothing shows them until rewards are designed.
-- **2026-11-02, first visit and returning visit are different** (owner): the name-and-colour card shows on a player's first visit only; a returning player goes straight in, with their identity kept and editable from the pause view, and a light welcome back that shows what changed. Built for persistent progress and more UI later.
+- **2026-11-01, no contribution-tier labels on the player** (owner: the "Porter" tag under his character "shouldn't be the case"). Tiers stay as data; nothing shows them until rewards are designed.
+- **2026-11-01, first visit and returning visit are different** (owner): the name-and-colour card shows on a player's first visit only; a returning player goes straight in, with their identity kept and editable from the pause view, and a light welcome back that shows what changed. Built for persistent progress and more UI later.
 
 ### Process
 
 - **2026-11-01, start the asset pipeline now** (owner), ahead of the first authored model: glTF with meshopt or Draco geometry and KTX2 (Basis Universal) textures, ready for Blender (and Blender MCP) to feed it, including animated construction (scaffolding, pieces). Code stays the default where code is quicker or better; the split is written in [asset-pipeline.md](../plans/asset-pipeline.md). Was "when the first authored model lands" (architecture-fit, phase 5), see Changed.
 
-- **2026-11-02, don't over-index on the iPad** (owner). Desktop and iPad both matter; the iPad is one target among others, not the design constraint. Keep it working well, but don't make iPad-specific compromises unless something is clearly too heavy everywhere.
+- **2026-11-01, don't over-index on the iPad** (owner). Desktop and iPad both matter; the iPad is one target among others, not the design constraint. Keep it working well, but don't make iPad-specific compromises unless something is clearly too heavy everywhere.
 - **2026-11-01, the lowest target device is an M4 iPad Pro** (owner: "likely"). Replaces the 2021 iPad and mid-range Android phone in [architecture.md](../plans/architecture.md)'s assumptions. The visual quality target is set by a code-only graphics spike measured against it (find-the-fun.md, "Depth tracks").
 
+- **2026-11-01, one playtest path, verdicts sent to the server** (owner: "I don't think I need to press and sort of reload the game every time I want to try something"; "yes" to sending verdicts). `boogle.club/?play` puts every prototype that can share the island on one island, with the world-changing ones as chapters; variants switch live where they're Local, and the prototype bar plays the Start-here list with Next and Prev. A verdict and its one-line note go to the game server's report log (kind `playtest`) as well as staying in the browser; the director reads them with `npm run verdicts` and logs them in playtests.md, so the owner never pastes. Copy all stays as a fallback.
 - **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
 - **2026-11-01, a lighter test load.** `npm run ship` no longer runs smoke on the Mac by default (`-- --gpu` opts in); smoke runs against the live site after each deploy and nightly. New tests only for lockstep code; features and feel get looked at, not tested. `perf` only for heavy rendering changes.
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
@@ -128,7 +129,7 @@ These are standing preferences from the thread.
 
 ## Changed
 
-- **2026-11-02:** the synthesized groove loop was cut after the listening pack.
+- **2026-11-01:** the synthesized groove loop was cut after the listening pack.
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
 - **2026-11-01:** the haul stack's sway and jump spill (0.1 groundwork) were cut after the first solo haul playtest: the owner wants a plain back bundle.
 - **2026-11-01:** the asset pipeline moved from "when the first authored model lands" to now, so Blender work can start as soon as a look is picked.

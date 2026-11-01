@@ -25,7 +25,7 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Felt off: the tall, swaying Death Stranding-style stack. Wood should just sit on the character's back, not built so deliberately high, maybe stacked differently; it doesn't need to sway.
 - After: carry becomes a compact back bundle with no sway; the jump spill goes too, since nothing warns you of it without the sway (boogle-2.md, Decided).
 
-## 2026-11-02 (sound audit, listening pack)
+## 2026-11-01 (sound audit, listening pack)
 - Who: Matias, solo, the listening pack (39 recorded game sounds).
 - Kept: prompt pop, deny, haul count, honk, all mini-game sounds, the hut build, board whoosh, track machine.
 - Cut: the groove loop (all takes), wagon/freight/stoke/grind/soapbox sounds, the opening-day soundscape.
@@ -33,24 +33,24 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Wave: undecided; keep it as it is until played.
 - Idea: honks should form a chord on their own, and a honk doesn't have to be the same note every time.
 
-## 2026-11-02 (iPad, first look)
+## 2026-11-01 (iPad, first look)
 - Who: Matias, solo, iPad Pro, Safari 27.
 - Broke: boogle.club showed only the sky (no terrain, players) on Safari 27, with and without `?proto`. Cause: discarding the MSAA samples (memoryless attachments, new in Safari 27). Reverted; the island shows.
 - Broke: Fullscreen on iPad: once in it, controls stopped working.
 - Broke: mushrooms don't bounce; standing on one you're stuck, like an animation resetting.
 
-## 2026-11-02 (iPad + controller)
+## 2026-11-01 (iPad + controller)
 - Who: Matias, solo.
 - Broke: the watering can icon is upside down.
 - Felt off: Interact is on B; he expects X / Square, and B prompts everywhere confused him. Dialogue with The Boogler needs a controller pass that scales to other NPCs.
 
-## 2026-11-02 (iPad + Backbone controller)
+## 2026-11-01 (iPad + Backbone controller)
 - Who: Matias, solo, Backbone controller.
 - Broke: the D-pad doesn't move between answers in a Boogler talk.
 - Broke: launched from the Home Screen web app, touch works but the Backbone controller doesn't; an unrendered bar sits along the bottom of the screen.
 - Felt off: the △ pat isn't in The Boogler's nature (roll back); the "✕ Say" hint was unclear.
 
-## 2026-11-02 (iPad, HUD and arrival)
+## 2026-11-01 (iPad, HUD and arrival)
 - Who: Matias, solo.
 - Felt off: a "Porter" tag shows next to his character at the bottom (contribution tier on the haul chip).
 - Felt off: every visit asks for name and colour again; with persistent progress coming, returning players should go straight in.
