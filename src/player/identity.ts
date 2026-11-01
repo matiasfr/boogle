@@ -1,100 +1,60 @@
 // Who this player is across reloads: the player id (pid). The one owner of where the pid comes from, so a later
-// transfer code or optional account can adopt the same pid (adoptPid) instead of minting a new one. Plan:
-// docs/plans/0.1-groundwork.md, "Identity: now and later".
+// transfer code or optional account can adopt the same pid (adoptPid) instead of minting a new one. Plans:
+// docs/plans/0.1-groundwork.md, "Identity: now and later"; docs/plans/net-roadmap.md, phase 1.
 //
-//   identity            { pid, guest, ready }: ready resolves once pid is known (the Web Lock answers in a few ms)
+//   identity            { pid, key }: key is this browser's secret behind pid (never in presence or on screen)
 //   adoptPid(pid)       make this browser play as pid from the next load (a transfer code or account link, later)
 //
-// The pid is 10 random [a-z0-9] characters in localStorage `boogle.pid`, shared by every room. The host binds it to
-// this tab's session and stamps it on every edit (src/world/sync.ts), so a tab can't pour or take in someone else's
-// name by claiming their pid in an edit, nor claim the pid of anyone in the room. A second tab of the same browser can't take the `boogle.pid` Web Lock, so it
-// plays as a guest with its own pid in sessionStorage (it survives that tab's reloads; a lock of its own gives a
-// duplicated tab a fresh one) and says so: two tabs on one pid
-// would share one stack and one plaque line. Without Web Locks (an insecure context) every tab uses the stored pid.
-// Nothing here is personal data: a random id next to the nickname you typed.
+// The pid is 10 random [a-z0-9] characters in localStorage `boogle.pid`, shared by every room and every tab of this
+// browser, with a secret key in `boogle.key`. The tab sends both when it connects (src/net/ws-room.ts); the server
+// binds the pid to that socket and stamps it on every edit (src/world/sync.ts), and refuses a pid that is in the room
+// under another key, so nobody can take over a player who is there by copying the pid from presence. Two tabs of one
+// browser are one player: the newer one takes over and the older one stops (src/features/identity.ts says so). Where storage is blocked
+// (private mode, blocked site data) every load is a new player. Nothing here is personal data: a random id next to
+// the nickname you typed.
 import { okPid } from '../sim/roster.ts';
+import { okKey } from '../net/ids.ts';
 
 const KEY = 'boogle.pid';
-const GUEST_KEY = 'boogle.guestPid';
+const SECRET = 'boogle.key';
 const LEN = 10;
+const KEY_LEN = 24;
 
-function newPid() {
-  const bytes = crypto.getRandomValues(new Uint8Array(LEN));
+function newPid(len = LEN) {
+  const bytes = crypto.getRandomValues(new Uint8Array(len));
   return Array.from(bytes, (b) => (b % 36).toString(36)).join('');
 }
 
-// window.localStorage itself throws where site data is blocked: then every load is a new player.
-function storage(name: 'localStorage' | 'sessionStorage'): Storage | null {
+// window.localStorage itself throws where site data is blocked.
+function local(): Storage | null {
   try {
-    return globalThis[name] ?? null;
+    return globalThis.localStorage ?? null;
   } catch {
     return null;
   }
 }
-function stored(store: Storage | null, key: string): string {
+function stored(name: string, ok: (v: unknown) => v is string, len: number): string {
   try {
+    const store = local();
     if (!store) throw new Error('no storage');
-    const v = store.getItem(key);
-    if (okPid(v)) return v;
-    const fresh = newPid();
-    store.setItem(key, fresh);
+    const v = store.getItem(name);
+    if (ok(v)) return v;
+    const fresh = newPid(len);
+    store.setItem(name, fresh);
     return fresh;
   } catch {
-    return newPid(); // storage blocked (private mode): a new player each load
+    return newPid(len);
   }
 }
 
-// Resolves true if this tab holds the lock `name` for the rest of its life, false if another tab has it.
-function takeLock(name: string): Promise<boolean> {
-  if (!navigator.locks?.request) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    navigator.locks
-      .request(name, { ifAvailable: true }, (lock) => {
-        resolve(!!lock);
-        return lock ? new Promise(() => {}) : null; // held until the tab closes
-      })
-      .catch(() => resolve(true));
-  });
-}
-
-export type Identity = { pid: string | null; guest: boolean; ready: Promise<Identity> };
-
-// A guest pid has its own lock too: a duplicated tab copies sessionStorage, and must not play on its source's pid.
-async function resolve(): Promise<Identity> {
-  if (await takeLock(KEY)) {
-    identity.pid = stored(storage('localStorage'), KEY);
-    return identity;
-  }
-  identity.guest = true;
-  const session = storage('sessionStorage');
-  let pid = stored(session, GUEST_KEY);
-  if (!(await takeLock(`${KEY}.${pid}`))) {
-    pid = newPid();
-    try {
-      session?.setItem(GUEST_KEY, pid);
-    } catch {
-      // blocked storage: this guest pid lasts this load
-    }
-    await takeLock(`${KEY}.${pid}`);
-  }
-  identity.pid = pid;
-  return identity;
-}
-// ready never rejects: a failure still gives this load a pid, so the room never waits on identity.
-export const identity: Identity = {
-  pid: null,
-  guest: false,
-  ready: resolve().catch(() => {
-    identity.pid ??= newPid();
-    return identity;
-  }),
-};
+export type Identity = { pid: string; key: string };
+export const identity: Identity = { pid: stored(KEY, okPid, LEN), key: stored(SECRET, okKey, KEY_LEN) };
 
 export function adoptPid(pid: unknown): boolean {
   if (!okPid(pid)) return false;
   try {
-    storage('localStorage')?.setItem(KEY, pid);
-    return !!storage('localStorage');
+    local()?.setItem(KEY, pid);
+    return !!local();
   } catch {
     return false;
   }

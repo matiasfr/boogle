@@ -1,5 +1,6 @@
 // Test page for the server room (ws-run.ts): createWsRoom plus the real world sync and rules on the home land, and
-// records of everything the checks need. Query: ?room=&server=.
+// records of everything the checks need. Query: ?room=&server=&pid=&key= (the player and its browser's key; default
+// one of each per page).
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
@@ -13,6 +14,7 @@ declare global {
 
 const q = new URLSearchParams(location.search);
 const HASH_EVERY = 10; // ticks between recorded state hashes
+const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
 
 const T = (window.T = {
   room: null as Room | null,
@@ -22,6 +24,7 @@ const T = (window.T = {
   conn: [] as { at: number; c: boolean }[],
   leads: [] as { at: number; lead: boolean }[],
   errors: [] as string[],
+  fatal: null as string | null, // a fatal room error's code (elsewhere, room_full)
   hashes: {} as Record<number, string>,
   got: 0,
   async start() {
@@ -30,6 +33,8 @@ const T = (window.T = {
       room = T.room = await createWsRoom({
         roomId: q.get('room') ?? 'test',
         server: q.get('server')!,
+        pid: PID,
+        key: q.get('key') ?? 'k' + PID.padEnd(16, '0'), // one browser per page unless the query says otherwise
         build: 'test',
         debug: Number(q.get('debug') || 0),
       });
@@ -37,7 +42,10 @@ const T = (window.T = {
       const x = e as { code?: string; max?: number };
       return { error: String(x.code), max: x.max };
     }
-    room.onConnection((c) => T.conn.push({ at: Date.now(), c }));
+    room.onConnection(
+      (c) => T.conn.push({ at: Date.now(), c }),
+      (e) => (T.fatal = e.code ?? null),
+    );
     room.onLeadChange((lead) => T.leads.push({ at: Date.now(), lead }));
     room.onMessage((m, from) => {
       const msg = m as { t?: unknown; from?: string; n: number };
@@ -101,6 +109,7 @@ function startWorld(room: Room) {
   w.onAfterTick((t) => {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
   });
+  w.setPid(PID);
   w.attachWorld(room, { roomId: q.get('room') ?? 'test' });
   let last = performance.now();
   setInterval(() => {

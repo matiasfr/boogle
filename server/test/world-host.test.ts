@@ -29,7 +29,7 @@ const settle = () => new Promise((r) => setImmediate(r));
 async function makeHost(dir: string, saveMs = 2000) {
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
-  const wh = createWorldHost({ roomId: 'beach', store, saveMs, tick: false });
+  const wh = createWorldHost({ roomId: 'beach', store, saveMs, tick: false, pidOf: (sid) => sid + 'pid' });
   const sent: Msg[] = [];
   wh.onSend((m) => sent.push(m));
   await settle(); // becomeHost reads the save, then marks the world ready
@@ -49,7 +49,6 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   ])
     wh.rules.piles.drop(i, 188, k, 64);
   wh.rules.sites.addFreight(60);
-  wh.deliver({ t: 'w:id', u: 'c1pid' }, 'c1');
 
   const accepted = new Set<string>();
   wh.sync.onApplied((e: Msg) => void accepted.add(e.op));
@@ -99,7 +98,6 @@ test('a w:need gets snapshot chunks addressed to that client only', async () => 
 test('the world saves as the server and a restart resumes from it', async () => {
   const dir = tmp();
   let { store, wh } = await makeHost(dir, 500);
-  wh.deliver({ t: 'w:id', u: 'c1pid' }, 'c1');
   let cell: [number, number] | null = null;
   for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w && !cell; i++)
     for (let j = PATCH.j0; j < PATCH.j0 + PATCH.h && !cell; j++)

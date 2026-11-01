@@ -48,12 +48,13 @@ onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied 
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
 submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells. Sync adds `p` (the session's selfId),
-                                   // and the host adds `u` (the player's pid, bound through w:id; an edit's own u is
-                                   // dropped). Edits from a tab whose pid the host doesn't know are rejected.
+                                   // and the host adds `u` (the player's pid, from the room's pidOf: the server
+                                   // binds it when the tab connects; an edit's own u is dropped). Edits from a
+                                   // session with no pid are rejected.
                                    // Returns true if queued, not applied: the host may reject it, and edits held
                                    // while reconnecting can be dropped (see sync.js header). Use onApplied for
                                    // anything irreversible.
-setPid(pid)                  // this tab's player id (src/player/identity.ts; the selfId stands in until set)
+setPid(pid)                  // this tab's player id (src/player/identity.ts), for edits it stamps itself (local)
 pidOf(selfId)                // a session's pid, or null
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.

@@ -1,16 +1,39 @@
-/* "second tab: playing as a guest" (src/features/identity.ts), a quiet line under the top edge. */
-.guest-note {
+/* "You're playing in another tab" (src/features/identity.ts): a dim layer and a paper card, like the files dialog. */
+.elsewhere {
   position: fixed;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 10px;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--glass);
+  z-index: 60;
+}
+.elsewhere-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(360px, 100%);
+  box-sizing: border-box;
+  padding: 22px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 0 8px 0 var(--ink);
+  font: 600 16px/1.3 var(--font-body);
+  text-align: center;
+}
+.elsewhere-card p {
+  margin: 0;
+}
+.elsewhere-card button {
+  padding: 8px 18px;
+  background: #7fd14a;
+  color: var(--ink);
+  border: 3px solid var(--ink);
   border-radius: 999px;
-  background: rgba(20, 30, 40, 0.55);
-  color: #fff;
-  font:
-    600 12px/1.3 system-ui,
-    sans-serif;
-  pointer-events: none;
-  z-index: 5;
+  box-shadow: 0 3px 0 var(--ink);
+  font: 400 18px/1 var(--font-display);
+  cursor: pointer;
 }

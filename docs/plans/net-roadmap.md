@@ -37,15 +37,22 @@
 The game joins the server over WebSocket for every room (`beach`, dev rooms, local dev with a local server). Then
 PeerJS, TURN, browser hosting, host migration and snapshot PUTs are deleted. Done when no browser ever hosts a room.
 
-### 1. Stable player identity
+### 1. Stable player identity (done 2026-10-31)
 
-Today `SELF_ID` is new on every page load, so nothing can belong to a player across visits. Before any feature that
-owns things (creatures, inventory, a base):
+The player id is the pid the 0.1 groundwork added (`boogle.pid` in localStorage, `src/player/identity.ts`), so
+nothing new is minted:
 
-- A `playerId`: a random key kept in `localStorage`, sent in the `/room` upgrade next to `self` (which stays the
-  per-connection id). Accounts come later and map onto `playerId`; nothing above `src/net/` sees which it is.
-- The server keys per-player data by `playerId`. Two tabs with the same `playerId` are the same player (the newer one
-  wins, like `self` today).
+- The tab sends it in the `/room` upgrade next to `self` (which stays the per-connection id); the server binds it to
+  the socket and the sync stamps edits from that binding (`WorldRoom.pidOf`). The `w:id` message, the client-side pid
+  map and the snapshot's `ids` are gone. Accounts come later and map onto the pid; nothing above `src/net/` sees which
+  it is.
+- With it goes a secret `boogle.key`: the server refuses a pid that is in the room under another key, so a pid copied
+  from presence can't take a player over. The server only compares keys of sessions in the room; it stores none.
+- Two tabs with the same pid are the same player: the newer one wins (owner decision, 2026-10-31). The server closes
+  the older socket with `elsewhere` (4010) and announces it left at once; that tab stops reconnecting and offers Play
+  here. The Web Lock and the sessionStorage guest pid are gone. A reload's new session replaces the old one at once
+  too, instead of after the grace period.
+- Per-player data keyed by pid arrives with phase 2 (SQLite).
 - Not a trust boundary yet (friends only); it becomes one with accounts.
 
 ### 2. Storage: SQLite on the volume

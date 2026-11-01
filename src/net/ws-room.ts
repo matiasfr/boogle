@@ -7,9 +7,9 @@
 // (backoff 250 ms to 3 s, +-30%; 500-1500 ms after a graceful `bye`; through a deploy that briefly doesn't host the
 // room too), reports onConnection(false/true), re-sends its presence with a new seq, flushes what send() held
 // meanwhile, and drops the peers the server has not listed again within GRACE_MS. A reconnect turned away as full or
-// bad stops and reports a fatal error.
+// bad stops and reports a fatal error, and so does `elsewhere`: a newer tab of the same player (pid) joined.
 import { SELF_ID, SERVER_ID } from './ids.ts';
-import { WS_PROTOCOL, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
+import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
 import type { PeersChange } from './peer-table.ts';
 
@@ -20,6 +20,8 @@ type Msg = Record<string, unknown>;
 export type WsRoomOptions = {
   roomId?: string;
   server: string; // http(s) base of our server
+  pid: string; // the player this tab plays as (src/player/identity.ts); a newer tab with the same pid takes over
+  key: string; // this browser's secret behind pid: another key can't take a pid that is in the room
   build?: string;
   debug?: number;
   openTimeoutMs?: number;
@@ -41,7 +43,7 @@ const jitter = (ms: number) => ms * (0.7 + Math.random() * 0.6);
 export async function createWsRoom(opts: WsRoomOptions) {
   if (typeof WebSocket === 'undefined') throw err('browser-incompatible', 'WebSocket is not available');
   const roomId = String(opts.roomId ?? 'default');
-  const url = roomUrl(opts.server, roomId, SELF_ID, opts.build ?? 'dev');
+  const url = roomUrl(opts.server, roomId, { self: SELF_ID, pid: opts.pid, key: opts.key, b: opts.build ?? 'dev' });
   const log = (...a: unknown[]) => (opts.debug ?? 0) > 1 && console.log('[ws-room]', ...a);
   const table = createPeerTable(SELF_ID);
   const connHandlers = new Set<(c: boolean) => void>(),
@@ -148,6 +150,10 @@ export async function createWsRoom(opts: WsRoomOptions) {
         case 'peer':
           if (!first) return; // a server between deploys: the close that follows reconnects
           return refused(err('peer_hosted', 'this room is not hosted by the server'));
+        case 'elsewhere':
+          return refused(err('elsewhere', 'this player joined from another tab'));
+        case 'taken':
+          return refused(err('pid_taken', 'another browser is playing as this player here'));
         case 'bad':
           return refused(err('bad', 'the server refused this room or id'));
       }
@@ -160,9 +166,11 @@ export async function createWsRoom(opts: WsRoomOptions) {
       first = undefined;
     }
     sock.onerror = () => {};
-    sock.onclose = () => {
+    sock.onclose = (ev) => {
       if (ws !== sock) return;
       ws = null;
+      // The code alone is enough to stop, should the `elsewhere` frame before it have been lost.
+      if (ev.code === CLOSE.ELSEWHERE && !stopped) refused(err('elsewhere', 'this player joined from another tab'));
       if (first) {
         first.reject(err('unreachable', 'could not reach the server'));
         first = undefined;
