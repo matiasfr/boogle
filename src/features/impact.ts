@@ -64,7 +64,7 @@ function emitPuff(x: number, y: number, z: number, k: number) {
 let lastBoing = 0,
   boingBurst = 0,
   boingBurstAt = 0;
-function boing(speed: number, vol: number, low: boolean) {
+export function boing(speed: number, vol: number, low: boolean) {
   const a = getAudio();
   if (!a) return;
   const now = performance.now();

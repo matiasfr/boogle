@@ -160,7 +160,7 @@ function noiseOf(ctx: AudioContext): AudioBuffer {
   for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
   return noise;
 }
-function whoosh(mine: boolean) {
+export function whoosh(mine: boolean) {
   const a = getAudio();
   if (!a) return;
   const near = Math.hypot(mouthAt.x - camera.position.x, mouthAt.z - camera.position.z);

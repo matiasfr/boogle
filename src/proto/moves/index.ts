@@ -56,7 +56,7 @@ onPreStep(() => {
 
 // ---------------------------------------------------------------- feel: a puff and a whoop; a wisp trail gliding
 const PUFF = new THREE.Color('#f4efe4');
-function whoop() {
+export function whoop() {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;

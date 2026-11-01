@@ -73,7 +73,7 @@ function stopFor(laid: number, open: number): number {
   return best;
 }
 
-function thump(at: THREE.Vector3, k: number) {
+export function thump(at: THREE.Vector3, k: number) {
   const a = getAudio();
   if (!a) return;
   const vol = 1 / (1 + at.distanceTo(camera.position) / 8);

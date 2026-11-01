@@ -142,7 +142,7 @@ function removePing(from: string, p: Shown) {
   pings.delete(from);
 }
 
-function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
+export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;

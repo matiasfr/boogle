@@ -27,7 +27,7 @@ const chord = createChordDetector({ windowMs: TUNE.chordWindowMs, min: TUNE.chor
 // ---------------------------------------------------------------- sound
 const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
 
-function honkSound(note: number, vol: number) {
+export function honkSound(note: number, vol: number) {
   const a = getAudio();
   if (!a || vol < 0.02) return;
   const { ctx, out } = a;
@@ -59,7 +59,7 @@ function honkSound(note: number, vol: number) {
   }
 }
 
-function chordSound(notes: number[], vol: number) {
+export function chordSound(notes: number[], vol: number) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;

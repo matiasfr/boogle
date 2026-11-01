@@ -17,7 +17,13 @@ type Beds = {
   rumble: GainNode;
   out: GainNode;
 };
-let beds: Beds | null = null;
+let beds: Beds | null = null,
+  level = LEVEL;
+/** The bed's level (0 mutes it): the listening pack (dev/audio/render.ts) records the other sounds without it. */
+export function setAmbienceLevel(v: number): void {
+  level = v;
+  if (beds) beds.out.gain.value = v;
+}
 let next = { knock: 0, gull: 0, chuff: 0, whistle: 0, motif: 0 },
   chuffs = 0;
 
@@ -26,7 +32,7 @@ function setup(): Beds | null {
   if (!a) return null;
   const { ctx } = a;
   const out = ctx.createGain();
-  out.gain.value = LEVEL;
+  out.gain.value = level;
   out.connect(a.out);
   const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const d = noise.getChannelData(0);
