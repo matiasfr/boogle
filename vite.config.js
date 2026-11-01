@@ -8,7 +8,7 @@ const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
 // VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
 // import.meta.env.VITE_BUILD, and a build writes it to dist/version.json so open tabs notice a newer deploy
-// (src/features/updates.js).
+// (src/features/updates.ts).
 const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 
 let localServer = null; // the dev server's own game server (boogle-local-server below)

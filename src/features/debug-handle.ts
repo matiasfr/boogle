@@ -26,10 +26,10 @@ onStart(() => {
     worldStatus,
     stateHashes,
     submitEdit,
-    markHashes(tick) {
+    markHashes(tick: number) {
       marks.set(tick, null);
     },
-    hashesAt: (tick) => marks.get(tick) ?? null,
+    hashesAt: (tick: number) => marks.get(tick) ?? null,
     tossBall(charge = 0.5) {
       grabBall();
       const { p, v } = launch('ball', charge);

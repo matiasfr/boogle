@@ -396,7 +396,7 @@ function plotToWater() {
   return best;
 }
 
-// Tips the can (src/features/hotbar.js draws it pouring) and waters the nearest buried seed, if there is one.
+// Tips the can (src/features/hotbar.ts draws it pouring) and waters the nearest buried seed, if there is one.
 export function pour() {
   if (!me.body) return false;
   pourAt.until = performance.now() + 600;

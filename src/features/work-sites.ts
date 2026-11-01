@@ -55,7 +55,7 @@ function label(w = 512, h = 128): Label {
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
   sprite.renderOrder = 10;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   if (!g) throw new Error('work-sites: no 2D canvas');
   return { c, g, tex, sprite, text: '' };
 }

@@ -4,10 +4,10 @@ The registry in [src/player/controls.ts](../../src/player/controls.ts) is the so
 slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
 binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page and the first-run card are generated
-from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.js](../../src/features/controls-check.js) warns
-in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.js](../../src/features/feel.js),
-[hotbar.js](../../src/features/hotbar.js), [bump.js](../../src/features/bump.js), [honk.js](../../src/features/honk.js),
-[ping.js](../../src/features/ping.js), [pause.js](../../src/features/pause.js), [dino.js](../../src/features/dino.js) and [updates.js](../../src/features/updates.js).
+from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
+in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.js](../../src/features/feel.ts),
+[hotbar.js](../../src/features/hotbar.ts), [bump.js](../../src/features/bump.ts), [honk.js](../../src/features/honk.ts),
+[ping.js](../../src/features/ping.ts), [pause.js](../../src/features/pause.ts), [dino.js](../../src/features/dino.ts) and [updates.js](../../src/features/updates.ts).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
 |---|---|---|---|---|---|---|
@@ -44,7 +44,7 @@ Notes:
   B walks away; the sticks and other buttons keep playing. The pause view is still a modal
   ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
-  ([src/features/gamepad.js](../../src/features/gamepad.js)). Analog triggers count as pressed at 0.4.
+  ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4.
 
 ---
 

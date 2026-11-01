@@ -1,7 +1,7 @@
 // Playing as the guest. While it is on, the engine's guest (src/guest/engine.js) runs at his own 30 Hz inside the physics
 // step and this player's physics body becomes kinematic and follows him, so everything that reads the body (the ball,
 // the camera, interact targets, the hotbar, presence) keeps working. Other players' guests are drawn from the pose they
-// publish. Loaded on first use by src/features/dino.js.
+// publish. Loaded on first use by src/features/dino.ts.
 import * as THREE from 'three';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.ts';
 import { onPreStep, setMotion, getMask } from '../physics/engine.ts';

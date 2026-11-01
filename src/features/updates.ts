@@ -24,7 +24,7 @@ const session = {
       return null;
     }
   },
-  set(v) {
+  set(v: string) {
     try {
       sessionStorage.setItem(RELOADED_FOR, v);
     } catch {
@@ -33,8 +33,8 @@ const session = {
   },
 };
 
-let served = null; // the newer build the server has, once seen
-let toast = null;
+let served: string | null = null; // the newer build the server has, once seen
+let toast: HTMLElement | null = null;
 
 function reload() {
   if (!served) return; // the toast's pad action outlives a mismatch that went away

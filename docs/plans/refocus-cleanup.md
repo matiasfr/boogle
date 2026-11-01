@@ -242,7 +242,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     `saved.filter((s) => s && known(s.id)).slice(0, SLOTS).forEach((s, k) => ...)`. This compacts 8-slot saves for
     free. Delete the `boogle.pocket` branch, its `localStorage.getItem('boogle.pocket')` and the
     `removeItem('boogle.pocket')` in `save()`. If `saved` is not an array, start empty and do not save.
-  - `src/features/hotbar.js`: the header says five slots and keys 1-5. `describeControl('hotbar')` keys become
+  - `src/features/hotbar.ts`: the header says five slots and keys 1-5. `describeControl('hotbar')` keys become
     `['Digit1-5']`. Delete `GRIP.driftwood` (a retired item). Reword the `onRemotePresence` comment to "An unknown or
     uncarryable index shows as empty hands" (no shovel or seashell).
   - `src/features/hotbar.css`: change the comments "Eight slots" to five, and divide by `5` instead of `8` in both
@@ -376,8 +376,8 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - In `src/sim/mushrooms.ts`, the `loadGarden` comment becomes "anything else loads as an empty garden" (no
       129-cell mention, comment only).
     - In `src/debug/netdebug.js`, the subsystem list in the header no longer names water or terrain.
-    - `src/features/gifts.js`: the header has no fruit, and the `registerInteractable` comment says "Pick up".
-    - `src/features/prompt.js` header example: "over the can" instead of "over a mango".
+    - `src/features/gifts.ts`: the header has no fruit, and the `registerInteractable` comment says "Pick up".
+    - `src/features/prompt.ts` header example: "over the can" instead of "over a mango".
   - **Indices and fruit ids in tests and scenarios.** `grep -rnE "mango|coconut|banana|pomegranate|apricot" test dev`
     and `grep -rnE "k: ?[0-9]+|kind: ?[0-9]+|toss\([0-9]" src test dev`, then fix every hit:
     - `dev/scenarios/lib/world.mjs`: `toss(k = 1, ...)`, the can (index 0 is now seeds, which plant instead of
@@ -502,7 +502,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - `src/physics/ball.ts`: `throwBall(p, v)` uses the given launch (same spin rule) and no longer imports
     `throwVelocity`. `releaseBall` and `respawnBall` call `cancelCharge()` from `../player/throw.ts`. `linearDamping`
     is `BALL_DAMPING`. `throw.ts` must never import `ball.js`.
-  - `src/features/debug-handle.js`: `tossBall(charge)` becomes `grabBall(); const { p, v } = launch('ball', charge);
+  - `src/features/debug-handle.ts`: `tossBall(charge)` becomes `grabBall(); const { p, v } = launch('ball', charge);
     throwBall(p, v);`, importing `launch` from `../player/throw.ts`. The nightly and live `smoke` use it, so check it.
   - `src/physics/flight.ts`: add `stepBall(p, v, dt = STEP)` (and list it in the header).
   - `src/constants.ts`: `export const BALL_DAMPING = 0.12`.

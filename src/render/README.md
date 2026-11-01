@@ -27,7 +27,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   node from `scenePass` (`scenePass.getTextureNode()`, MRT outputs), assign `pipeline.outputNode`, and set
   `pipeline.needsUpdate = true`. Each full-screen effect costs fill on phones: measure it on a real device, and plan
   for a quality setting rather than turning it on for everyone.
-- [`features/adaptive-res.js`](../features/adaptive-res.js) moves the pixel ratio between 0.6x and 1x of
+- [`features/adaptive-res.js`](../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
   `min(devicePixelRatio, 2)` from the frame time. Don't call `setPixelRatio` elsewhere.
 
 ## Colour
@@ -76,7 +76,7 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 - `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI (a few fps with two tabs, so
   PR CI runs only the single-tab or light scenarios), Metal on a Mac. `npm run check:gpu` (smoke on the GPU) runs in
   `npm run ship` on a Mac, and `smoke.yml` runs smoke against the live site after every deploy. The harness
-  passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable, and a
+  passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.ts) off so images stay comparable, and a
   scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.

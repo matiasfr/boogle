@@ -17,15 +17,16 @@ const MAX_S = 15;
 const GROUPS = ['move', 'camera', 'ball', 'hands'];
 const WALK = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'];
 
-const flag = (kind) => `boogle.firstRun.${kind}`;
-const seen = (kind) => {
+type Kind = ReturnType<typeof inputKind>;
+const flag = (kind: Kind) => `boogle.firstRun.${kind}`;
+const seen = (kind: Kind) => {
   try {
     return localStorage.getItem(flag(kind)) !== null;
   } catch {
     return false;
   }
 };
-const remember = (kind) => {
+const remember = (kind: Kind) => {
   try {
     localStorage.setItem(flag(kind), '1');
   } catch {
@@ -33,8 +34,8 @@ const remember = (kind) => {
   }
 };
 
-let card = null;
-let last = null; // the input kind last looked at
+let card: HTMLElement | null = null;
+let last: Kind | null = null; // the input kind last looked at
 let moved = 0;
 let shown = 0;
 
@@ -51,12 +52,12 @@ function dismiss() {
   setTimeout(() => c.remove(), 400);
 }
 
-function show(k) {
+function show(k: Kind) {
   hide();
   remember(k);
   moved = shown = 0;
-  card = document.createElement('div');
-  card.className = 'first-run';
+  const c = (card = document.createElement('div'));
+  c.className = 'first-run';
   const more = document.createElement('div');
   more.className = 'first-run-more';
   const pause = glyph('pause');
@@ -73,8 +74,8 @@ function show(k) {
     dismiss();
     document.getElementById('view')?.focus();
   });
-  card.append(close, renderGuide(k, { groups: GROUPS }), more);
-  (document.querySelector('.hud') ?? document.body).append(card);
+  c.append(close, renderGuide(k, { groups: GROUPS }), more);
+  (document.querySelector('.hud') ?? document.body).append(c);
 }
 
 const walking = () => WALK.some((c) => input.keys.has(c)) || Math.abs(input.stickX) + Math.abs(input.stickY) > 0.25;

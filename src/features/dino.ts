@@ -36,15 +36,15 @@ const SPARK = new THREE.Color('#fff4b8');
 const WORD = 'Rawr!';
 const ROM_KEY = 'guest-rom';
 
-let rom = null; // { anims, textures } once known
+let rom: Awaited<ReturnType<typeof readRom>> | null = null; // { anims, textures } once known
 const ready = () => !!rom && hasEngine();
-let module = null;
+let module: typeof import('../guest/play.js') | null = null;
 const load = async () => (module ??= await import('../guest/play.js'));
 let switching = false; // becoming the guest takes a moment: the module, the engine
-let preloading = null; // loading the engine to draw other players' guests
+let preloading: Promise<unknown> | null = null; // loading the engine to draw other players' guests
 
 function puff() {
-  const p = me.body.position;
+  const p = me.body!.position;
   for (let k = 0; k < 24; k++) {
     const a = (k / 24) * Math.PI * 2;
     emit({
@@ -82,12 +82,12 @@ const needs = () => [
   { label: `The ROM it is built for (SHA-1 ${ROM_SHA1.slice(0, 8)}…)`, done: !!rom },
 ];
 
-const isWasm = async (file) => {
+const isWasm = async (file: File) => {
   const b = new Uint8Array(await file.slice(0, 4).arrayBuffer());
   return b[0] === 0 && b[1] === 0x61 && b[2] === 0x73 && b[3] === 0x6d; // \0asm
 };
 
-async function useFile(file) {
+async function useFile(file: File) {
   if (await isWasm(file)) {
     if (!(await takeEngineFile(file))) return filesDialogSays("That's not a guest engine build.");
   } else {
@@ -107,7 +107,7 @@ async function useFile(file) {
 async function talk() {
   if (switching) return;
   if (guest.active) {
-    module.stopGuest();
+    module!.stopGuest(); // loaded: it made us the guest
     puff();
     dinoSays(WORD);
     return;
@@ -129,7 +129,7 @@ addEventListener('dragover', (e) => {
 });
 addEventListener('drop', (e) => {
   const file = e.dataTransfer?.files[0];
-  const ext = file?.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  const ext = file?.name.slice(file.name.lastIndexOf('.')).toLowerCase() ?? '';
   if (!file || !(filesDialogOpen() || ENGINE_EXT.includes(ext) || ROM_EXT.includes(ext))) return;
   e.preventDefault();
   useFile(file);

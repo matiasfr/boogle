@@ -289,7 +289,7 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-// His interactable (see registerInteractable in src/player/hands.ts; src/features/boogler.js registers it). Range is to his
+// His interactable (see registerInteractable in src/player/hands.ts; src/features/boogler.ts registers it). Range is to his
 // middle; `r` makes the pick measure to his edge, so a ball at his feet does not win over him. Not while you ride him:
 // on his back he is always nearest, and would hide the ball and everything else behind a Talk that only says "Get off
 // me first!". The prompt shows in his name tag. While you talk it is Leave, so the touch main button walks away too

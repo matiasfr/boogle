@@ -15,7 +15,7 @@
 // Interactables plug in, like actions in src/player/controls.ts:
 //
 //   registerInteractable(fn)   fn() returns an array of targets in reach right now ([] for none). It is asked every
-//                              frame (for the prompt, src/features/prompt.js) and on every press, so keep it cheap and
+//                              frame (for the prompt, src/features/prompt.ts) and on every press, so keep it cheap and
 //                              do not cache. Register once, from your feature file in src/features/ (a module this
 //                              file imports, like gifts.js, would make an import cycle).
 //   target                     { id, verb, at, r?, run | blocked, show? }
@@ -43,7 +43,12 @@ import { giftIndex } from '../sim/gift-catalog.ts';
 import { pickInteract, type InteractTarget } from '../sim/interact-pick.ts';
 
 /** Something the interact button can act on: a verb shown in the prompt, and run (or why it is blocked). */
-export type Interactable = InteractTarget & { id: string; verb: string };
+export type Interactable = InteractTarget & {
+  id: string;
+  verb: string;
+  at: THREE.Vector3;
+  show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts
+};
 
 const USE_VERB: Record<string, string> = { can: 'Water', seeds: 'Plant' };
 export const canThrow = () => !!heldId();

@@ -1,4 +1,4 @@
-// Problem reports leave no peer ids, URLs or full user agents behind (src/netplay/report-format.ts, src/features/telemetry.js).
+// Problem reports leave no peer ids, URLs or full user agents behind (src/netplay/report-format.ts, src/features/telemetry.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { coarseUa, firstFrame, scrub } from '../src/netplay/report-format.ts';

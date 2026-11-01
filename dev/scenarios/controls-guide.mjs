@@ -12,9 +12,9 @@ export default {
     const problems = await g.eval(`${LIST} return controlProblems();`);
     t.check('the control registry has no gaps', problems.length === 0, JSON.stringify(problems));
 
-    // The guide lives in the pause view (src/features/pause.js): the keyboard tab, then the gamepad tab.
+    // The guide lives in the pause view (src/features/pause.ts): the keyboard tab, then the gamepad tab.
     const SHOWN = `${LIST}
-      const { openPause, closePause } = await import('/src/features/pause.js');`;
+      const { openPause, closePause } = await import('/src/features/pause.ts');`;
     const kbm = await g.eval(`${SHOWN} openPause('controls');
       const dlg = document.querySelector('dialog.pause');
       const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);

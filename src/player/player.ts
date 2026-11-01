@@ -29,6 +29,7 @@ export const me = {
   suppressUp: false,
   down: false,
   lostBallAt: -1e9,
+  bumpAt: undefined as number | undefined, // last time you walked into someone (src/features/bump.ts)
   wish: new THREE.Vector3(),
 };
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 6.5 };
@@ -52,7 +53,7 @@ export const handPosition = (out = new THREE.Vector3()) => fromBody(out, 0.55, 0
 // The beach ball rides on your back while something else is in your hand.
 export const carryPosition = (out = new THREE.Vector3()) =>
   me.holding ? handPosition(out) : fromBody(out, 0, 1.05, 0.85);
-// Where small held things sit (src/features/hotbar.js draws them there).
+// Where small held things sit (src/features/hotbar.ts draws them there).
 export const ITEM_HAND = { x: 0.5, y: 0.42, z: -0.42 };
 // Where they leave from when thrown: an overhand throw from head height, which clears a waist-high railing.
 export const throwFrom = (out = new THREE.Vector3()) => fromBody(out, 0.45, 1.0, -0.5);

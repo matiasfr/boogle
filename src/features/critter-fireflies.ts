@@ -3,6 +3,7 @@
 // Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 import { onFrame, onStart } from '../loop.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { CELL, HALF } from '../constants.ts';
@@ -18,7 +19,7 @@ const colAttr = dynAttr(col, 3);
 const glow = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 32;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   const r = g.createRadialGradient(16, 16, 0, 16, 16, 16);
   r.addColorStop(0, 'rgba(255,255,255,1)');
   r.addColorStop(0.3, 'rgba(255,255,255,0.6)');
@@ -33,10 +34,12 @@ const fliesMat = new THREE.PointsNodeMaterial({
   depthWrite: false,
   blending: THREE.AdditiveBlending,
 });
-fliesMat.colorNode = texture(glow).mul(vec4(instancedDynamicBufferAttribute(colAttr), 1));
+// the per-fly colour, a vec3 attribute (three's TSL types can't tell its size from the attribute)
+const flyColor = instancedDynamicBufferAttribute(colAttr) as unknown as Node<'vec3'>;
+fliesMat.colorNode = texture(glow).mul(vec4(flyColor, 1));
 const flies = instancedSprite(fliesMat, posAttr, FLIES.count);
 
-const F = [];
+const F: { x: number; z: number; h: number; ph: number; sp: number }[] = [];
 onStart(() => {
   const gx = (PATCH.i0 + PATCH.w / 2) * CELL - HALF,
     gz = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;

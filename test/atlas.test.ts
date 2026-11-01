@@ -167,7 +167,7 @@ function good() {
         text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
       },
       {
-        path: 'src/features/honk.js',
+        path: 'src/features/honk.ts',
         text: "registerAction('honk', { pad: 'y', key: 'KeyT' });\nnet.room.send({ t: 'honk' });\nexport function honkNow() {}\n",
       },
     ],
@@ -231,7 +231,7 @@ test('checkAtlas names each problem once', () => {
   };
   const cite = (g: Good, c: Cite) => (g.stories[0].steps[0].cite = [c]);
   run((g) => cite(g, { file: 'src/nope.js' }), /mush\.json step 1: .*src\/nope\.js does not exist/);
-  run((g) => cite(g, { file: 'src/features/honk.js', symbol: 'zzz' }), /has no symbol zzz/);
+  run((g) => cite(g, { file: 'src/features/honk.ts', symbol: 'zzz' }), /has no symbol zzz/);
   run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
   run((g) => cite(g, { op: 'mush.plant', state: 'mushrooms' }), /exactly one of/);
   run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box or lane "nowhere" in go/);
@@ -285,7 +285,7 @@ test('resolveCite never throws', () => {
     assert.equal(typeof r.error, 'string', JSON.stringify(c));
     assert.deepEqual(r.files, []);
   }
-  assert.deepEqual(resolveCite({ dir: 'src/features' }, model), { files: ['src/features/honk.js'], error: null });
+  assert.deepEqual(resolveCite({ dir: 'src/features' }, model), { files: ['src/features/honk.ts'], error: null });
 });
 
 test('kindOf classifies', () => {
@@ -307,7 +307,7 @@ test('kindOf classifies', () => {
   assert.equal(kindOf(rec('src/netplay/net.js', { owner: ['v', 'p'] })), 'owner');
   assert.equal(kindOf(rec('src/world/grid.js', { lockstep: true })), 'lock');
   assert.equal(kindOf(rec('src/netplay/snaps.js')), 'local');
-  assert.equal(kindOf(rec('src/features/ping.js', { onMessage: true })), 'msg');
+  assert.equal(kindOf(rec('src/features/ping.ts', { onMessage: true })), 'msg');
   assert.equal(kindOf(rec('src/features/g.js', { submits: true })), 'adapter');
   assert.equal(kindOf(rec('src/features/plain.js')), 'local');
 });

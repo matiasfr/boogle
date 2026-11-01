@@ -11,7 +11,7 @@
    Crashes stay funny but never stall the fun (principle 10).
 2. **Simple input, no new buttons** ("good controls are key"). Pad slots are close to full on `main`; check `freeSlots()` in `src/player/controls.ts`.
    - **Board and leave** with the existing interact button and its glyph prompt. Every interaction already goes through that one button.
-   - **While seated,** a context layer re-points existing actions: the left stick steers, the jump button brakes or drifts, and throw does a hop or the Puff Boost. Use `wrapAction`, the way `src/features/feel.js` turns pile into a dive while swimming.
+   - **While seated,** a context layer re-points existing actions: the left stick steers, the jump button brakes or drifts, and throw does a hop or the Puff Boost. Use `wrapAction`, the way `src/features/feel.ts` turns pile into a dive while swimming.
    - Describe the seated rows with `describeControl(..., { context: 'driving' })` so the pause view's controls page shows them.
 3. **Readability beats truth** (TotK enlarged a board so players could see it, even though it became too heavy). Make the wheels big, the suspension visible and the sparks loud.
 4. **Telegraph the boost** (MKWii sparks at fixed charge values). Show the charge and the "ready" state with sparks and a sound, not a HUD bar.

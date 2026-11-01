@@ -1,5 +1,5 @@
 // What a problem report may say about the player, kept pure (no DOM) so the privacy promise in
-// src/features/telemetry.js is unit-tested (test/report-format.test.mjs): a coarse browser name, a stack frame with no
+// src/features/telemetry.ts is unit-tested (test/report-format.test.mjs): a coarse browser name, a stack frame with no
 // origin or query string, and messages with peer ids and other id-like tokens scrubbed out.
 const BROWSERS: [string, RegExp][] = [
   ['Edge', /Edg\/(\d+)/],

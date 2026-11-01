@@ -1,7 +1,7 @@
 // The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts), Room (who is here, an
 // invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
 // it only takes this player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
-// Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.js.
+// Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
@@ -14,32 +14,34 @@ import { canvas } from '../render/scene.ts';
 import { openModal, closeModal, modalOpen } from '../player/modal.ts';
 import { dialogue } from '../boogler/dialogue.ts';
 import { registerAction, isTyping } from '../player/controls.ts';
-import { renderGuide } from '../player/guide.ts';
+import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 
-const TABS = [
+const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
   ['pad', 'Gamepad'],
   ['touch', 'Touch'],
 ];
 const LEAVE_MS = 3000;
 
-let dlg = null;
-let card = null;
-let menuBtn = null;
+// Built on first open (build) and at start (the menu button); used only after.
+let dlg!: HTMLDialogElement;
+let card!: HTMLElement;
+let menuBtn!: HTMLButtonElement;
 let open = false;
-let page = 'main';
-let tab = 'kbm';
-let leaveTimer = 0;
+type Page = 'main' | 'controls' | 'room';
+let page: Page = 'main';
+let tab: GuideKind = 'kbm';
+let leaveTimer: ReturnType<typeof setTimeout> | 0 = 0;
 let peopleKey = '';
 
-const el = (tag, cls, text) => {
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
 };
-const button = (text, onClick, cls = '') => {
+const button = (text: string, onClick: () => void, cls = '') => {
   const b = el('button', `pause-btn ${cls}`.trim(), text);
   b.type = 'button';
   b.addEventListener('click', onClick);
@@ -51,14 +53,15 @@ function inviteLink() {
   return location.origin + location.pathname + (id === DEFAULT_ROOM ? '' : `?room=${id}`);
 }
 
+type Person = { name: string; colorIdx: number; you?: boolean };
 function people() {
-  const out = [];
+  const out: Person[] = [];
   if (me.entered) out.push({ name: me.name, colorIdx: me.colorIdx, you: true });
   for (const r of remotes.values()) if (r.entered) out.push({ name: r.name, colorIdx: r.colorIdx });
   return out;
 }
 
-function personRow(p) {
+function personRow(p: Person) {
   const li = el('li', 'pause-person');
   const dot = el('span', 'pause-dot');
   dot.style.background = COLORS[p.colorIdx] ?? COLORS[0];
@@ -68,19 +71,25 @@ function personRow(p) {
 }
 
 // Fullscreen API, with the webkit names Safari on iPad still needs. The whole page goes fullscreen, so the HUD and this view stay.
-const doc = document;
+// The webkit names (not in the DOM types).
+const doc = document as Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitFullscreenEnabled?: boolean;
+  webkitExitFullscreen?: () => Promise<void>;
+};
+const nav = navigator as Navigator & { standalone?: boolean };
 const fsElement = () => doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
 const installed = () =>
   !fsElement() &&
-  (navigator.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
+  (nav.standalone === true || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
 const canFullscreen = () => !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled) && !installed();
 const fsLabel = () => (fsElement() ? 'Exit fullscreen' : 'Fullscreen');
 
-async function toggleFullscreen(b) {
+async function toggleFullscreen(b: HTMLElement) {
   try {
     if (fsElement()) await (doc.exitFullscreen ?? doc.webkitExitFullscreen).call(doc);
     else {
-      const root = doc.documentElement;
+      const root = doc.documentElement as HTMLElement & { webkitRequestFullscreen?: HTMLElement['requestFullscreen'] };
       await (root.requestFullscreen ?? root.webkitRequestFullscreen).call(root, { navigationUI: 'hide' });
     }
   } catch {
@@ -180,28 +189,28 @@ function fillPeople(list = card.querySelector('.pause-people')) {
   peopleKey = JSON.stringify(all);
 }
 
-function show(next) {
+function show(next: Page) {
   page = next;
   clearTimeout(leaveTimer);
   leaveTimer = 0;
   card.dataset.page = page;
   card
-    .querySelector('.pause-body')
+    .querySelector('.pause-body')!
     .replaceChildren(page === 'controls' ? renderControls() : page === 'room' ? renderRoom() : renderMain());
-  card.querySelector('.pause-body').scrollTop = 0;
+  card.querySelector('.pause-body')!.scrollTop = 0;
   focusFirst();
 }
 
-function setTab(kind) {
+function setTab(kind: GuideKind) {
   tab = kind;
-  const old = card.querySelector('.pause-page');
+  const old = card.querySelector('.pause-page')!;
   const fresh = renderControls();
   old.replaceWith(fresh);
-  fresh.querySelector(`[data-tab="${kind}"]`).focus({ preventScroll: true });
+  fresh.querySelector<HTMLElement>(`[data-tab="${kind}"]`)!.focus({ preventScroll: true });
 }
 
 const stops = () => {
-  const all = [...card.querySelectorAll('.pause-body button, .pause-body input')];
+  const all = [...card.querySelectorAll<HTMLElement>('.pause-body button, .pause-body input')];
   // The tabs are one stop (left and right pick one), so up and down go to Back.
   return page === 'controls'
     ? all.filter((b) => !b.matches('.pause-tab') || b.getAttribute('aria-selected') === 'true')
@@ -209,22 +218,24 @@ const stops = () => {
 };
 function focusFirst() {
   const target =
-    card.querySelector('[data-act="resume"]') ?? card.querySelector('[aria-selected="true"]') ?? stops()[0];
+    card.querySelector<HTMLElement>('[data-act="resume"]') ??
+    card.querySelector<HTMLElement>('[aria-selected="true"]') ??
+    stops()[0];
   target?.focus({ preventScroll: true });
 }
-function move(dir) {
+function move(dir: number) {
   const list = stops();
   if (!list.length) return;
-  const k = list.indexOf(document.activeElement);
+  const k = list.indexOf(document.activeElement as HTMLElement);
   list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length].focus({ preventScroll: true });
 }
-function moveTab(dir) {
+function moveTab(dir: number) {
   if (page !== 'controls') return;
   const k = TABS.findIndex(([kind]) => kind === tab);
   setTab(TABS[(k + dir + TABS.length) % TABS.length][0]);
 }
 
-function onKey(e) {
+function onKey(e: KeyboardEvent) {
   if (e.code === 'Escape') {
     e.preventDefault();
     if (page !== 'main') show('main');
@@ -245,13 +256,16 @@ function onKey(e) {
   }
 }
 
-function onPad(slot) {
+function onPad(slot: string) {
   if (slot === 'up') move(-1);
   else if (slot === 'down') move(1);
   else if (slot === 'left') moveTab(-1);
   else if (slot === 'right') moveTab(1);
-  else if (slot === 'a') document.activeElement?.closest?.('.pause button')?.click();
-  else if (slot === 'b') page === 'main' ? closePause() : show('main');
+  else if (slot === 'a') document.activeElement?.closest<HTMLElement>('.pause button')?.click();
+  else if (slot === 'b') {
+    if (page === 'main') closePause();
+    else show('main');
+  }
   else if (slot === 'menu') closePause();
 }
 
@@ -272,18 +286,19 @@ function build() {
     closeModal();
   });
   card.addEventListener('focusin', (e) => {
-    for (const b of card.querySelectorAll('[data-focus]')) delete b.dataset.focus;
-    if (e.target.matches?.('button, input')) e.target.dataset.focus = '1';
+    for (const b of card.querySelectorAll<HTMLElement>('[data-focus]')) delete b.dataset.focus;
+    const t = e.target as HTMLElement;
+    if (t.matches?.('button, input')) t.dataset.focus = '1';
   });
 }
 
-export function openPause(start = 'main') {
+export function openPause(start: Page = 'main') {
   if (!me.entered || open) return false;
   if (!dlg) build();
   if (!openModal({ onKey, onPad })) return false;
   open = true;
   tab = inputKind();
-  card.querySelector('.pause-title').textContent = getRoomId();
+  card.querySelector('.pause-title')!.textContent = getRoomId();
   dlg.showModal(); // after openModal: its setPadModal keeps gamepad.js from pulling focus off the buttons
   show(start);
   return true;
@@ -350,7 +365,7 @@ onStart(() => {
       const k = inputKind();
       if (k !== kind) {
         kind = k;
-        menuBtn.querySelector('.menu-glyph').innerHTML = glyph('pause');
+        menuBtn.querySelector('.menu-glyph')!.innerHTML = glyph('pause');
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
     },

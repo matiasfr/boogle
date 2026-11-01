@@ -1,7 +1,7 @@
 # Data-driven action registry: controls guide, button prompts and touch buttons from one place
 
 Context for the report writer: Boogle already has a small registry in `src/player/controls.ts`:
-`registerAction(id, { pad, label, down, up, held })`, one action per standard-mapping pad slot, clashes logged, `listActions()` / `freeSlots()`. `src/features/gamepad.js` builds its help card from `listActions()` (`[PAD_LABEL[a.pad], a.label]`), and `src/features/updates.js` copies `PAD_LABEL[pad]` into its own button text. Keyboard keys and touch buttons are bound elsewhere (`src/player/input.ts`), not in the registry. The findings below are about growing that registry, not replacing it.
+`registerAction(id, { pad, label, down, up, held })`, one action per standard-mapping pad slot, clashes logged, `listActions()` / `freeSlots()`. `src/features/gamepad.ts` builds its help card from `listActions()` (`[PAD_LABEL[a.pad], a.label]`), and `src/features/updates.ts` copies `PAD_LABEL[pad]` into its own button text. Keyboard keys and touch buttons are bound elsewhere (`src/player/input.ts`), not in the registry. The findings below are about growing that registry, not replacing it.
 
 ## 1. How engines and input middleware model actions, bindings, display strings, contexts and "last used device"
 
@@ -137,7 +137,7 @@ The engines' metadata fields (Unreal `Name`/`DisplayName`/`DisplayCategory`/`Met
 - Unreal mappable key metadata: unique `Name` used to save the mapping, localized `DisplayName`, `DisplayCategory` for grouping, `Metadata` for icons etc. — [Unreal API, UPlayerMappableKeySettings](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/UPlayerMappableKeySettings)
 - Godot exposes the registry for enumeration: `get_actions()`, `has_action()`, `action_get_events()`. — [Godot docs, InputMap](https://docs.godotengine.org/en/stable/classes/class_inputmap.html)
 - KAPLAY's `getButton(name)` returns the binding object per device, so UI can be generated from it. — [KAPLAY input guide](https://kaplayjs.com/docs/guides/input/)
-- Boogle today: `registerAction` refuses an unknown slot or a taken slot with a `console.warn` naming free slots; `gamepad.js` generates its help card from `listActions()`. Actions are registered from `src/player/input.ts`, `honk.js`, `ping.js`, `updates.js`, `gamepad.js`. — local code (`src/player/controls.ts`, `src/features/gamepad.js`)
+- Boogle today: `registerAction` refuses an unknown slot or a taken slot with a `console.warn` naming free slots; `gamepad.js` generates its help card from `listActions()`. Actions are registered from `src/player/input.ts`, `honk.js`, `ping.js`, `updates.js`, `gamepad.js`. — local code (`src/player/controls.ts`, `src/features/gamepad.ts`)
 
 ### Inferences
 - Rebind-ready data shape (bindings stored as data keyed by device kind, never closed over by UI), extending today's call rather than replacing it:

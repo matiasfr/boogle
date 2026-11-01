@@ -1,7 +1,7 @@
 # 6.12 Caves
 
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
-  ([src/features/pois.js](../../src/features/pois.js); its `site.js` ground stays eager): one seamless mesh, built a little
+  ([src/features/pois.ts](../../src/features/pois.ts); its `site.js` ground stays eager): one seamless mesh, built a little
   each frame once loaded,
   is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`), and a ring
   of rock round each mouth (look only) hides the seam where the hillside's hole meets the tunnel. Bodies switch

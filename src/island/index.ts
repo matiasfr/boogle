@@ -2,7 +2,7 @@
 //
 // Each POI is a folder in src/pois/. Its site.js (placement, terrain stamps, keep-out discs) is read here, before the
 // terrain is built; its index.js (meshes, colliders, lights, per-frame updates) is loaded later by
-// src/features/pois.js. Add or delete a folder to add or remove a POI; nothing else on the island changes.
+// src/features/pois.ts. Add or delete a folder to add or remove a POI; nothing else on the island changes.
 import { createIsland } from './stamps.ts';
 import { islandBaseCm } from './ground.ts';
 import type { Site } from './stamps.ts';

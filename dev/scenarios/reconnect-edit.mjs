@@ -3,7 +3,7 @@
 // 'connecting'; it tosses then, and reconnects once the pause is over. (Chromium's offline mode spares localhost.) Once it is live
 // again the other tab has the item, the tab dropped no held edit, and both tabs hash every state the same at one tick.
 // Run it after changing held edits in src/world/sync.ts, reconnects in src/net/ws-room.ts, or src/netplay/net.ts
-// attach/fail. Window handles only (window.boogle.sync, src/features/debug-handle.js), so `--url` works too. Not in the
+// attach/fail. Window handles only (window.boogle.sync, src/features/debug-handle.ts), so `--url` works too. Not in the
 // nightly smoke: a forced drop adds timing flakiness to a job that files issues.
 import { toss, TOSSED, MET, roles, hashesAtOneTick } from './lib/world.mjs';
 

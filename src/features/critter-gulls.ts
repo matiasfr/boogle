@@ -17,9 +17,9 @@ const GULLS = {
   scareRun: 4.5, // m: a player running (>= 3 m/s) this close
   scareBall: 5, // m: a ball landing this close
   flySpeed: 7,
-  circleR: [8, 14],
-  circleH: [6, 10],
-  circleS: [6, 12], // seconds up before resettling
+  circleR: [8, 14] as [number, number],
+  circleH: [6, 10] as [number, number],
+  circleS: [6, 12] as [number, number], // seconds up before resettling
 };
 
 const bodyGeo = new THREE.SphereGeometry(0.17, 8, 6).scale(1, 0.8, 2.1);
@@ -38,12 +38,12 @@ for (const m of [bodies, wings]) {
   scene.add(m);
 }
 
-const rnd = (a, b) => a + Math.random() * (b - a);
-const dry = (x, z) => {
+const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+const dry = (x: number, z: number) => {
   const g = groundHeight(x, z);
   return g > 0.4 && g < 2.4 && waterField.surfaceAt(x, z) <= g + 0.02;
 };
-function landingSpot(nearX, nearZ, avoid) {
+function landingSpot(nearX: number, nearZ: number, avoid: { x: number; z: number }[]) {
   for (let tries = 0; tries < 40; tries++) {
     const a = Math.random() * Math.PI * 2,
       r = rnd(4, 30);
@@ -56,10 +56,28 @@ function landingSpot(nearX, nearZ, avoid) {
   return null;
 }
 
-const G = [];
+type Gull = {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  state: string;
+  t: number;
+  flap: number;
+  hop?: number;
+  // set when it takes off (circle centre, radius, height, angle) and when it heads down (target)
+  cx: number;
+  cz: number;
+  cr: number;
+  ch: number;
+  ang: number;
+  tx: number;
+  tz: number;
+};
+const G: Gull[] = [];
 onStart(() => {
   // a flock on a stretch of beach
-  let spot = null;
+  let spot: { x: number; z: number } | null = null;
   for (let tries = 0; tries < 200 && !spot; tries++) {
     const a = Math.random() * Math.PI * 2,
       r = rnd(38, 55);
@@ -68,7 +86,15 @@ onStart(() => {
   spot ??= { x: 20, z: 30 };
   for (let k = 0; k < GULLS.count; k++) {
     const s = landingSpot(spot.x, spot.z, []) ?? spot;
-    G.push({ x: s.x, y: groundHeight(s.x, s.z), z: s.z, yaw: rnd(0, 6.3), state: 'idle', t: rnd(0, 3), flap: 0 });
+    G.push({
+      x: s.x,
+      y: groundHeight(s.x, s.z),
+      z: s.z,
+      yaw: rnd(0, 6.3),
+      state: 'idle',
+      t: rnd(0, 3),
+      flap: 0,
+    } as Gull);
   }
 });
 

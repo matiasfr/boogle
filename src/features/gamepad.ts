@@ -1,6 +1,6 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
 // stick looks, buttons dispatch the actions in src/player/controls.ts. While a pad is in use the touch overlay hides and the
-// reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.js).
+// reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.ts).
 // Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
 // play.
 import './gamepad.css';
@@ -27,13 +27,13 @@ let modalOn = false;
 function claimFocus() {
   const el = document.activeElement;
   if (el === canvas || el?.matches?.('input, textarea')) return;
-  el?.blur?.();
+  (el as HTMLElement | null)?.blur?.();
   canvas.focus({ preventScroll: true });
 }
 
-const dead = (v) => (Math.abs(v) < DEAD ? 0 : (Math.sign(v) * (Math.abs(v) - DEAD)) / (1 - DEAD));
+const dead = (v: number) => (Math.abs(v) < DEAD ? 0 : (Math.sign(v) * (Math.abs(v) - DEAD)) / (1 - DEAD));
 
-function setActive(on) {
+function setActive(on: boolean) {
   if (active === on) return;
   active = on;
   document.body.classList.toggle('gamepad', on);
@@ -51,7 +51,7 @@ function releaseAll() {
   }
 }
 
-function poll(dt) {
+function poll(dt: number) {
   const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.connected);
   if (!pad) {
     if (active) setActive(false);
@@ -83,7 +83,7 @@ function poll(dt) {
   }
   modalOn = false;
   const grab = padGrab();
-  const takes = (i) => !!grab?.slots.includes(PAD[i]);
+  const takes = (i: number) => !!grab?.slots.includes(PAD[i]);
   if (down.some((d, i) => d && !pressed[i] && !takes(i))) claimFocus(); // a grab moves focus between its own buttons
 
   // Before the island: A presses "Jump in".
@@ -104,7 +104,7 @@ function poll(dt) {
     const action = actionForSlot(PAD[i]);
     if (down[i] && !pressed[i]) {
       grabbed[i] = takes(i);
-      if (grabbed[i]) grab.fn(PAD[i]);
+      if (grabbed[i]) grab!.fn(PAD[i]);
       else action?.down?.();
     } else if (!down[i] && pressed[i] && !grabbed[i]) action?.up?.();
     if (down[i] && !grabbed[i]) action?.held?.(dt);

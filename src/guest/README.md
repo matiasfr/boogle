@@ -24,7 +24,7 @@ For agents changing this feature or adding another character like it. The player
 
 | File | Loads | What it does |
 | --- | --- | --- |
-| `src/features/dino.js` | eager | The dino's interactable, the files flow, controls (`guest-crouch` on LT, `guest-punch` row, a `use` wrap), presence `mr`, drawing remote guests |
+| `src/features/dino.ts` | eager | The dino's interactable, the files flow, controls (`guest-crouch` on LT, `guest-punch` row, a `use` wrap), presence `mr`, drawing remote guests |
 | `dino.js` | eager | The dino: the primitive model, the word bubble, and the swap to the engine's model (`showRealDino`) |
 | `state.js` | eager | `guest`: `active`, `pose`, and B/Z presses shared by the eager and lazy halves |
 | `engine.js` | eager (small) | Finds, checks and instantiates the engine (`findEngine`, `takeEngineFile`, `getSim`), defines the pose wire format |

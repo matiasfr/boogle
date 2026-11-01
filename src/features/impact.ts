@@ -5,6 +5,7 @@
 //  - face-plant: a fast ball to your own head knocks you on your back for a moment with stars circling. Your client
 //    decides and publishes it as the presence field `kd` (ms remaining), so everyone sees the flop.
 // Local cosmetics, so Math.random is fine. Nothing here is read by the shared simulation.
+import type { Avatar } from '../player/avatars.ts';
 import * as THREE from 'three';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
@@ -13,7 +14,7 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { clamp, lerp } from '../math.ts';
 import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.ts';
-import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
+import { remotes, addPresenceField, onRemotePresence, type Remote } from '../netplay/net.ts';
 import { onFrame } from '../loop.ts';
 import { getAudio } from '../render/audio.ts';
 
@@ -36,7 +37,7 @@ const tmpM = new THREE.Matrix4();
 
 // ---------------------------------------------------------------- sand puff (the shared pool, src/render/particles.ts)
 const PUFF = new THREE.Color('#f1dca8');
-function emitPuff(x, y, z, k) {
+function emitPuff(x: number, y: number, z: number, k: number) {
   const n = Math.round(6 + 8 * k);
   for (let q = 0; q < n; q++) {
     const a = Math.random() * Math.PI * 2,
@@ -63,7 +64,7 @@ function emitPuff(x, y, z, k) {
 let lastBoing = 0,
   boingBurst = 0,
   boingBurstAt = 0;
-function boing(speed, vol, low) {
+function boing(speed: number, vol: number, low: boolean) {
   const a = getAudio();
   if (!a) return;
   const now = performance.now();
@@ -105,17 +106,17 @@ function boing(speed, vol, low) {
     n.stop(t + dur + 0.03);
   }
 }
-const farGain = (x, z) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 300);
+const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 300);
 
 // ---------------------------------------------------------------- ball squash and stretch
 let sx = 0, // spring displacement: positive = squashed along `axis`, negative = stretched
   sv = 0;
-function kick(dir, amp) {
+function kick(dir: THREE.Vector3, amp: number) {
   axis.copy(dir).normalize();
   sx = Math.max(sx, amp);
   sv = 0;
 }
-function stepSpring(dt) {
+function stepSpring(dt: number) {
   let n = Math.max(1, Math.ceil(dt / 0.008));
   const h = dt / n;
   while (n--) {
@@ -162,9 +163,9 @@ let lastImpact = 0,
   freezeUntil = 0,
   freezeMine = false;
 
-function nearestPerson(p) {
+function nearestPerson(p: THREE.Vector3) {
   // Is the ball touching a player's body? Returns { me: bool } or null.
-  const test = (px, py, pz) => {
+  const test = (px: number, py: number, pz: number) => {
     const dy = clamp(p.y - py, 0, HEAD_OFFSET);
     return Math.hypot(p.x - px, p.y - (py + dy), p.z - pz) < PLAYER_R + BALL_R + 0.3;
   };
@@ -173,7 +174,7 @@ function nearestPerson(p) {
   return null;
 }
 
-function detect(now) {
+function detect(now: number) {
   if (ball.mine && me.holding) lastHeldByMe = now;
   const held = ball.held;
   const p = ball.disp.p;
@@ -219,7 +220,7 @@ function detect(now) {
 // ---------------------------------------------------------------- face-plant
 let downUntil = 0,
   immuneUntil = 0;
-function checkFaceplant(now, speed) {
+function checkFaceplant(now: number, speed: number) {
   if (!me.body || !me.entered) return;
   if (me.down) {
     if (now >= downUntil) {
@@ -242,18 +243,18 @@ function checkFaceplant(now, speed) {
 }
 addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(downUntil - performance.now())) : null));
 onRemotePresence((r, pr) => {
-  const kd = pr.kd;
+  const kd = pr.kd as number;
   // Temporary: tabs on builds before b0a3a7b never clear kd, so they repeat their last value forever. A live kd
   // counts down between packets, so an exact repeat is stale. Remove once every tab runs b0a3a7b or later.
   if (kd === r.kdLast) return;
   r.kdLast = kd;
   if (Number.isFinite(kd) && kd > 0 && kd <= 2000) {
     const now = performance.now();
-    if (!(r.kdUntil > now)) onRemoteDown(r);
+    if (!((r.kdUntil ?? -Infinity) > now)) onRemoteDown(r);
     r.kdUntil = now + kd;
   }
 });
-function onRemoteDown(r) {
+function onRemoteDown(r: Remote) {
   boing(16, 0.25 * farGain(r.target.x, r.target.z), true);
 }
 
@@ -261,7 +262,7 @@ function onRemoteDown(r) {
 const starTex = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.fillStyle = '#ffd84a';
   g.strokeStyle = '#b37a00';
   g.lineWidth = 3;
@@ -277,8 +278,8 @@ const starTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 const starMat = new THREE.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false });
-const ents = new WeakMap(); // avatar -> { amt, stars }
-function entOf(avatar) {
+const ents = new WeakMap<THREE.Object3D, { amt: number; stars: THREE.Group }>(); // avatar -> its flop state
+function entOf(avatar: THREE.Object3D) {
   let e = ents.get(avatar);
   if (!e) {
     const stars = new THREE.Group();
@@ -295,7 +296,7 @@ function entOf(avatar) {
   }
   return e;
 }
-function flop(avatar, down, left, dt, t) {
+function flop(avatar: Avatar, down: boolean, left: number, dt: number, t: number) {
   const e = entOf(avatar);
   const u = avatar.userData;
   e.amt = lerp(e.amt, down ? 1 : 0, 1 - Math.exp(-dt * (down ? 22 : 14)));

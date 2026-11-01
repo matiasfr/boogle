@@ -3,7 +3,7 @@
 // page shows the room and an invite button; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
 // input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
-const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.js');`;
+const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
 const TALK = `const D = await import('/src/boogler/dialogue.ts');
   const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] }, { level: 1, name: 'Stranger', frac: 0.3 },
     () => {}, () => D.closeDialogue(), () => {});`;

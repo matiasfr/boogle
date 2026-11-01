@@ -92,7 +92,7 @@
       "code": [
         { "file": "src/player/input.ts" },
         { "file": "src/player/controls.ts" },
-        { "file": "src/features/gamepad.js" }
+        { "file": "src/features/gamepad.ts" }
       ]
     },
     {

@@ -13,7 +13,7 @@ import { onFrame } from '../loop.ts';
 import { clamp } from '../math.ts';
 import { emit } from '../render/particles.ts';
 import { GROUP } from '../physics/physics.ts';
-import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
+import { onPreStep, raycastClosest, rayHit, getMask, type Body } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
 import { me } from '../player/player.ts';
@@ -51,7 +51,7 @@ const KINDS = ['splat', 'stomp', 'bonk'];
 
 // ---------------------------------------------------------------- physics: jump shape, snap
 const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
-const floorGap = (b) => {
+const floorGap = (b: Body) => {
   ray.to.x = b.position.x;
   ray.to.y = b.position.y - PLAYER_R - MOVE.snapMaxGap;
   ray.to.z = b.position.z;
@@ -86,8 +86,9 @@ onPreStep(() => {
 });
 
 // ---------------------------------------------------------------- my flops
-let flop = null; // { kind, until }
-const startFlop = (kind, ms) => {
+type Flop = { kind: string; until: number };
+let flop: Flop | null = null;
+const startFlop = (kind: string, ms: number) => {
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
 };
 addPresenceField('fl', () =>
@@ -99,7 +100,7 @@ onRemotePresence((r, pr) => {
   const f = pr.fl;
   // Temporary: same stale-repeat guard as kd in impact.js (old-build tabs never clear fl). Remove once every tab
   // runs b0a3a7b or later.
-  const left = Array.isArray(f) ? f[1] : undefined;
+  const left: number | undefined = Array.isArray(f) ? f[1] : undefined;
   if (left !== undefined && left === r.flLast) return;
   r.flLast = left;
   if (Array.isArray(f) && KINDS[f[0]] && Number.isFinite(f[1]) && f[1] > 0 && f[1] <= 2000)
@@ -108,7 +109,7 @@ onRemotePresence((r, pr) => {
 
 // ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.ts)
 const DUST = new THREE.Color(0xe8d6a6);
-function puff(x, y, z, n, spread) {
+function puff(x: number, y: number, z: number, n: number, spread: number) {
   if (reducedMotion) return;
   for (let k = 0; k < n; k++)
     emit({
@@ -127,8 +128,20 @@ function puff(x, y, z, n, spread) {
 }
 
 // ---------------------------------------------------------------- spring layer (every avatar)
-const states = new WeakMap();
-function stateOf(a) {
+type SpringState = {
+  px: number;
+  py: number;
+  pz: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  sq: number;
+  sqv: number;
+  lx: number;
+  lz: number;
+};
+const states = new WeakMap<THREE.Object3D, SpringState>();
+function stateOf(a: THREE.Object3D) {
   let s = states.get(a);
   if (!s) {
     s = { px: a.position.x, py: a.position.y, pz: a.position.z, vx: 0, vy: 0, vz: 0, sq: 0, sqv: 0, lx: 0, lz: 0 };
@@ -138,7 +151,7 @@ function stateOf(a) {
   return s;
 }
 
-function spring(a, dt, t, flopOf, isMe) {
+function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | null | undefined, isMe: boolean) {
   const s = stateOf(a);
   const k = 1 - Math.exp(-dt * 20); // smooth the velocity estimate (remote positions are interpolated)
   const nvx = (a.position.x - s.px) / dt,
@@ -200,12 +213,13 @@ function spring(a, dt, t, flopOf, isMe) {
     for (const r of remotes.values()) {
       const rs = r.avatar && states.get(r.avatar);
       if (!rs) continue;
-      const dy = r.avatar.position.y - a.position.y;
+      const av = r.avatar!;
+      const dy = av.position.y - a.position.y;
       if (
         rs.vy < -2.5 &&
         dy > 0.9 &&
         dy < 1.9 &&
-        Math.hypot(r.avatar.position.x - a.position.x, r.avatar.position.z - a.position.z) < 0.7
+        Math.hypot(av.position.x - a.position.x, av.position.z - a.position.z) < 0.7
       )
         startFlop('stomp', FLOP.stompMs);
     }

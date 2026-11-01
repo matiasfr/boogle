@@ -159,7 +159,7 @@ these files in Node.
   git: { head: 'b969888', commits: 198, first: '2026-10-28T…' } | null,   // commits and first are null if shallow
   loop: { pre: ['updateRemotes', …, 'world.step'], render: 'renderFrame' } | null, // main.js's frame function
   files: [{                                                 // sorted by path; arrays in source order, deduped
-    f: 'src/features/honk.js', loc: 300,
+    f: 'src/features/honk.ts', loc: 300,
     head: 'leading // comment block, joined, ≤260 chars',
     imports: ['src/…'],          // static `import … from './x.js'` and `export … from`, resolved to repo paths; .js only
     lazy: ['src/…'],             // import('./x.js') with a string literal
@@ -234,7 +234,7 @@ above, and `dev/registry/scan.mjs` into the registry. Where the two scanners dif
   `lock` channel (the lockstep wire).
 - `hooks(model)`: every extracted frame, plus `facts.loop.pre` as phase `'pre'` (in call order) and `facts.loop.render`
   as phase `'render'`; without `facts.loop` there is no pre or render row. `core` comes from the extractor
-  (`frames[].core`). Hook id: `` `${file}#${n}` `` (the nth `onFrame` in that file), because `src/features/boogler.js`
+  (`frames[].core`). Hook id: `` `${file}#${n}` `` (the nth `onFrame` in that file), because `src/features/boogler.ts`
   has two hooks with the same phase and order.
 - `resolveCite(cite, model) -> { files: string[], error: string | null }`. It never throws, including on a malformed
   cite. A cite has exactly one of these keys: `file` (with optional `symbol`, which must be in that file's `exports`
@@ -490,7 +490,7 @@ glance".
   and `atlas/views/frame.js` (port `frameView` over `hooks(M)`, removing `CORE`; slices are grey when `core`,
   `data-hook` is the hook id, and the inspector looks the hook up by id). Remove the "Coming" placeholder. Verify
   against `v3-focus.png`, `v3-flow.png` and `v3-frame.png`: the Frame view now shows multi-line hooks the prototype
-  missed (for example `src/features/impact.js`, `src/render/particles.ts`). `npm run check`.
+  missed (for example `src/features/impact.ts`, `src/render/particles.ts`). `npm run check`.
 
 - [x] **8. What changed + hash links.** In `atlas/main.js`: `[data-changes]` sets `S.sel = { t: 'changes' }`, and the
   inspector renders `renderChanges(parseChanges(changesMd).slice(0, 8), known)`. Hash routes are read on load and on
