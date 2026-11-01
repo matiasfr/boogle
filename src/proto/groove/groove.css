@@ -1,9 +1,8 @@
-/* The groove prototype (?proto=groove): the music chip, top centre. Click it to turn the music off or on. */
+/* The groove prototype (?proto=groove): the music chip, top right under the net pill (the prototype bar owns the top centre). Click it to turn the music off or on. */
 .groove-chip {
   position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(62px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: 8px;
