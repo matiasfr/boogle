@@ -2,10 +2,20 @@
 // the GPU's time per frame (every render pass: shadow, scene, output) from WebGPU timestamp queries where the device
 // has `timestamp-query` (scene.ts turns three's trackTimestamp on for ?prof=1). 'frame' is the whole frame's
 // main-thread CPU, from before the physics step to the end of the render call; GPU time is not in it. Names are module
-// paths (src/loop.ts). Also logs the adapter's features and limits to the console once (src/debug/gpu-info.ts).
+// paths (src/loop.ts). Above them, the boot timeline's phases (src/boot/timeline.ts), also logged to the console as one
+// line once the game is interactive and in a room. Also logs the adapter's features and limits to the console once (src/debug/gpu-info.ts).
 import { onFrame, onStart, prof } from '../loop.ts';
 import { renderer, rendererReady } from '../render/scene.ts';
 import { gpuInfo } from './gpu-info.ts';
+import { bootDone, bootLine } from '../boot/timeline.ts';
+
+let bootRow = '';
+bootDone.then((tl) => {
+  console.info('[boot] ' + bootLine());
+  const wanted = ['modules', 'gpu', 'shaders', 'first', 'interactive', 'room'];
+  const at = tl.marks.filter((m) => wanted.includes(m.name)).map((m) => `${m.name} ${m.t}`);
+  bootRow = `boot ms: ${at.join(' · ')}\n`;
+});
 
 const WINDOW = 240;
 const gpu = new Float32Array(WINDOW);
@@ -54,6 +64,6 @@ onStart(() => {
       gpuRow = `${ms(avg)} ${ms(s[Math.floor(gpuN * 0.95)])}  GPU, all passes\n`;
     }
     el.textContent =
-      '   avg    p95  ms\n' + gpuRow + rows.map((r) => `${ms(r.avg)} ${ms(r.p95)}  ${r.name}`).join('\n');
+      bootRow + '   avg    p95  ms\n' + gpuRow + rows.map((r) => `${ms(r.avg)} ${ms(r.p95)}  ${r.name}`).join('\n');
   }, 500);
 });
