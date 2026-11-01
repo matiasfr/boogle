@@ -17,7 +17,8 @@ Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.
   bounce (capped at 6 m/s before adding), so mushroom bounces chain.
 - Jump shape: 1.7× gravity falling, 2.5× rising after letting go (short hop), 0.5× near the apex (under
   1.6 m/s) while held. Ground snap pulls you back onto a crest within 0.45 m,
-  measured to the floor under you (terrain, stair, deck or cave floor), so ramps and stairs don't trigger it.
+  measured to the floor under you (terrain, stair, deck or cave floor), so ramps and stairs don't trigger it; rising
+  faster than 6 m/s is a launch (a mushroom bounce), which it leaves alone.
 - Pad sprint is a latch: click L3 once and it stays on until the stick rests.
 - A soft wall 18 m inside the map edge turns you back from the open sea.
 

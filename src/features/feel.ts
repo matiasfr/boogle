@@ -32,6 +32,10 @@ const JUMP = {
 };
 const MOVE = {
   snapMaxGap: 0.45, // m: ground this close below the feet pulls you back down after a crest
+  // m/s: rising faster than this is a launch (a mushroom cap, a bounce pad), never a crest. Walking or sprinting over
+  // a crest rises a few m/s at most; the slowest mushroom bounce is about 9. Without it the snap's ray found the cap
+  // you had just bounced off and cancelled the bounce every step, so you sat on the cap twitching.
+  snapMaxVy: 6,
   skidSpeed: 4, // m/s: braking faster than this kicks up dust
 };
 const SPRING = {
@@ -88,7 +92,7 @@ onPreStep(() => {
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
     // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
     // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
-    if (!jumpActive && me.coyote > 0 && vy > 0.4) {
+    if (!jumpActive && me.coyote > 0 && vy > 0.4 && vy < MOVE.snapMaxVy) {
       const gap = floorGap(b);
       if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
     }
