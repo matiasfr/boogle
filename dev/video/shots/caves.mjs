@@ -1,8 +1,8 @@
 // The caves (b0b3daf): walk in at the south mouth, the old mine, the ball floating on the underground pond, the wine
 // cellar. Places come from the cave network, so the shot follows it when it moves.
-import { NODES, MOUTHS, POND } from '../../../src/pois/caves/network.js';
+import { NODES, MOUTHS, POND } from '../../../src/pois/caves/network.ts';
 
-const READY = `(async () => (await import('/src/pois/caves/index.js')).cavesReady())()`;
+const READY = `(async () => (await import('/src/pois/caves/index.ts')).cavesReady())()`;
 // Put the player at (x, y, z), still (y is the floor: inside the caves groundHeight is the hill above).
 const AT = (x, y, z) => `
   const { teleport } = await import('/src/physics/physics.ts');

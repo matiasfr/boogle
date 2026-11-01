@@ -1,5 +1,5 @@
 // What The Boogler says outside a conversation: level-ups, pats, rides, running off. Small and loaded up front; the
-// conversations (lines.js, talk.js) load in their own chunk, after the first frame (src/boogler/play.ts).
+// conversations (lines.ts, talk.ts) load in their own chunk, after the first frame (src/boogler/play.ts).
 export const LEVEL_UP = [
   '',
   'Oh! You are a familiar face now!',

@@ -1,9 +1,10 @@
 // Cave system under the north-west massif (see network.js). The terrain part: keep enough rock over every tunnel and
 // chamber, and dig a trench down to each of the four mouths so you can walk in.
-import { NODES, MOUTHS, TRENCH, COVER, coverPaths } from './network.js';
+import { NODES, MOUTHS, TRENCH, COVER, coverPaths } from './network.ts';
 import { naturalHeight } from '../../island/shape.ts';
+import type { Site, Stamp } from '../../island/stamps.ts';
 
-const stamps = [];
+const stamps: Stamp[] = [];
 // Rock over the tunnels and chambers (only ever raises the ground).
 for (const c of coverPaths()) stamps.push({ shape: 'path', points: c.pts, w: c.w, fade: 10, max: 'path' });
 for (const n of Object.values(NODES)) {
@@ -49,4 +50,4 @@ export default {
   z: 0,
   stamps,
   keepOut: MOUTHS.map((m) => ({ x: m.x + m.ox * 6, z: m.z + m.oz * 6, r: 9 })),
-};
+} satisfies Site;

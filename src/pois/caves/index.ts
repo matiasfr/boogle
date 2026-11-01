@@ -37,16 +37,16 @@ import { patchNode } from '../../render/material-patch.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { precompile } from '../../render/precompile.ts';
 import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.ts';
-import { createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
+import { type Body, createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.ts';
 import { onStart, onFrame } from '../../loop.ts';
 import { atmosphere } from '../../render/sky.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { ball } from '../../physics/ball.ts';
 import { waterField } from '../../physics/water-field.ts';
-import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.js';
-import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
-import { buildDecor, mouthFrame } from './decor.js';
+import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.ts';
+import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.ts';
+import { buildDecor, mouthFrame } from './decor.ts';
 import { freezeStatic } from '../../render/instances.ts';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
@@ -66,11 +66,12 @@ const BOX = (() => {
     zs = pts.map((p) => p.z);
   return { x0: Math.min(...xs) - 16, x1: Math.max(...xs) + 16, z0: Math.min(...zs) - 16, z1: Math.max(...zs) + 16 };
 })();
-const nearCaves = (x, z, pad = 0) => x > BOX.x0 - pad && x < BOX.x1 + pad && z > BOX.z0 - pad && z < BOX.z1 + pad;
+const nearCaves = (x: number, z: number, pad = 0) =>
+  x > BOX.x0 - pad && x < BOX.x1 + pad && z > BOX.z0 - pad && z < BOX.z1 + pad;
 
 // How far out of a mouth (x, z) is: metres along its outward direction, for points in line with that mouth's tunnel
 // (within its radius, sideways); -Infinity anywhere else. Chambers that happen to lie beside a mouth are not "out".
-function outOfMouth(x, z) {
+function outOfMouth(x: number, z: number) {
   let best = -Infinity;
   for (const m of MOUTHS) {
     const dx = x - m.x,
@@ -85,16 +86,16 @@ function outOfMouth(x, z) {
 
 let ready = false;
 export const cavesReady = () => ready;
-export function inCave(x, y, z) {
+export function inCave(x: number, y: number, z: number) {
   if (!ready || !nearCaves(x, z) || y > 30) return false;
   return outOfMouth(x, z) < ENTER && caveSd(x, y, z) < -0.05;
 }
 
 // ---------------------------------------------------------------- build
-let caveMesh = null,
-  collarMesh = null,
-  decorRoot = null;
-const PALETTE = {
+let caveMesh: THREE.Mesh | null = null,
+  collarMesh: THREE.Mesh | null = null,
+  decorRoot: THREE.Object3D | null = null;
+const PALETTE: Record<number, [string, string]> = {
   [ZONE.TUNNEL]: ['#7b7166', '#6c6255'],
   [ZONE.HUB]: ['#80766a', '#6e6457'],
   [ZONE.MINE]: ['#8a6b4b', '#5f4a36'],
@@ -103,17 +104,18 @@ const PALETTE = {
 };
 
 // A steady 0..1 hash of vertex v's position, to vary the rock colour vertex by vertex.
-function vertexNoise(positions, v) {
+function vertexNoise(positions: ArrayLike<number>, v: number) {
   const h =
     Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
   return h - Math.floor(h);
 }
 
-function makeGeometry(m) {
+type CaveMesh = { positions: Float32Array; indices: Uint32Array; zones: Uint8Array; grid: number[] };
+function makeGeometry(m: CaveMesh) {
   const { positions, indices, zones } = m;
   // Look: everything behind the mouths. Collider: up to a little way out of them.
-  const vis = [],
-    col = [];
+  const vis: number[] = [],
+    col: number[] = [];
   for (let n = 0; n < indices.length; n += 3) {
     const a = indices[n] * 3,
       b = indices[n + 1] * 3,
@@ -155,7 +157,7 @@ function makeGeometry(m) {
 
 // Ambient (sky) light reaching a point at world (x, z): 1 at the mouths, AMB_DEEP deep in. Fill it into an aAmb vertex
 // attribute for any cave mesh drawn with withCaveAmbient, so it darkens with depth like the rock.
-export function ambAt(x, z) {
+export function ambAt(x: number, z: number) {
   let mouthD = Infinity;
   for (const mo of MOUTHS) mouthD = Math.min(mouthD, Math.hypot(x - mo.x, z - mo.z));
   return 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
@@ -164,7 +166,7 @@ export function ambAt(x, z) {
 // Scales the sky's ambient (hemisphere) light by the geometry's aAmb attribute; lanterns and the sun are not.
 // aoNode multiplies the indirect diffuse light, which here is only the hemisphere light.
 const aAmb = attribute('aAmb', 'float');
-export function withCaveAmbient(mat) {
+export function withCaveAmbient<M extends object>(mat: M) {
   return patchNode(mat, 'aoNode', (prev) => (prev ? prev.mul(aAmb) : aAmb));
 }
 
@@ -193,7 +195,7 @@ function brickMaterial() {
 
 // Rock rings round the mouths (mesh.js), hiding where the hillside's holes meet the tunnels. Look only: they sit
 // in the rock and the trench walls, a hand's width proud of the tunnel wall.
-function makeCollars({ positions, indices }) {
+function makeCollars({ positions, indices }: { positions: Float32Array; indices: Uint32Array }) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setIndex(new THREE.BufferAttribute(indices, 1));
@@ -259,8 +261,8 @@ function* build() {
 }
 
 // ---------------------------------------------------------------- bodies: ground or cave colliders
-const tracked = new WeakMap(); // body -> { cave, safe: { x, y, z } }
-function track(body, yOff) {
+const tracked = new WeakMap<Body, { cave: boolean; safe: { x: number; y: number; z: number } }>(); // body -> state
+function track(body: Body, yOff: number) {
   let st = tracked.get(body);
   if (!st)
     tracked.set(body, (st = { cave: false, safe: { x: body.position.x, y: body.position.y, z: body.position.z } }));
@@ -284,7 +286,7 @@ function track(body, yOff) {
 }
 
 // The floor under a point that is in the caves (for ball friction and the like).
-function floorBelow(x, y, z) {
+function floorBelow(x: number, y: number, z: number) {
   for (let k = 0; k < 40; k++) if (caveSd(x, y - k * 0.2, z) > 0) return y - k * 0.2;
   return y - 8;
 }
@@ -297,7 +299,7 @@ const CAM_EASE = 4; // 1/s
 const FRAMES = MOUTHS.map((m) => ({ m, ...mouthFrame(m) }));
 const tmpV = new THREE.Vector3();
 const camRay = { len: Infinity, at: 0 };
-function blocked(x, y, z) {
+function blocked(x: number, y: number, z: number) {
   for (const { m, rx, rz, fx, fz, half } of FRAMES) {
     const along = (x - fx) * m.ox + (z - fz) * m.oz;
     if (Math.abs(along) > 0.45) continue;
@@ -307,7 +309,7 @@ function blocked(x, y, z) {
   if (outOfMouth(x, z) > 0.5) return y < groundHeight(x, z) + 0.45;
   return caveSd(x, y, z) > -0.35;
 }
-function keepCameraInside(look, pos) {
+function keepCameraInside(look: THREE.Vector3, pos: THREE.Vector3) {
   const now = performance.now();
   const dt = Math.min(0.1, (now - camRay.at) / 1000);
   camRay.at = now;
@@ -329,8 +331,8 @@ function keepCameraInside(look, pos) {
 }
 
 let under = 0;
-function update({ dt }) {
-  if (!ready) return;
+function update({ dt }: { dt: number }) {
+  if (!ready || !caveMesh || !collarMesh || !decorRoot) return;
   const c = camera.position;
   caveMesh.visible = collarMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
   let target = 0;

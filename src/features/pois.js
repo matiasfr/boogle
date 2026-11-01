@@ -7,4 +7,4 @@
 import { onStart } from '../loop.ts';
 
 import.meta.glob(['../pois/*/index.{js,ts}', '!../pois/caves/index.{js,ts}'], { eager: true });
-onStart(() => import('../pois/caves/index.js'));
+onStart(() => import('../pois/caves/index.ts'));

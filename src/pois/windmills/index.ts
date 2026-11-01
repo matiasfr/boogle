@@ -10,8 +10,12 @@ import { onStart, onFrame } from '../../loop.ts';
 import { siteFrame } from '../../island/stamps.ts';
 import { mulberry32 } from '../../math.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
-import site, { MILLS, TRACK } from './site.js';
+import site, { MILLS, TRACK } from './site.ts';
 import { freezeStatic } from '../../render/instances.ts';
+import type { Body } from '../../physics/engine.ts';
+
+type Geos = THREE.BufferGeometry[];
+type Mill = { rotor: THREE.Mesh; body: Body; base: THREE.Quaternion; axis: THREE.Vector3; phase: number };
 
 const TOWER_H = 7.2;
 const R_BOTTOM = 2.5,
@@ -22,20 +26,31 @@ const SAIL_LEN = 7.2;
 const SPIN = 0.55; // rad/s
 
 const frame = siteFrame(site);
-const mills = []; // { rotor, body, base, axis, phase }
+const mills: Mill[] = [];
 
 const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   s = new THREE.Vector3();
 const box = new THREE.BoxGeometry(1, 1, 1);
-const put = (parts, geo, x, y, z, sx, sy, sz, color, rot) => {
+const put = (
+  parts: Geos,
+  geo: THREE.BufferGeometry,
+  x: number,
+  y: number,
+  z: number,
+  sx: number,
+  sy: number,
+  sz: number,
+  color: string,
+  rot?: THREE.Euler,
+) => {
   q.setFromEuler(rot ?? new THREE.Euler());
   m.compose(new THREE.Vector3(x, y, z), q, s.set(sx, sy, sz));
   addPart(parts, geo, m, color);
 };
 
 // One mill's static body (local frame: origin at its foot, sails towards local -z).
-function millBody(parts) {
+function millBody(parts: Geos) {
   put(
     parts,
     new THREE.CylinderGeometry(R_BOTTOM + 0.35, R_BOTTOM + 0.5, 1, 8),
@@ -76,7 +91,7 @@ function millBody(parts) {
   for (const [y, ang] of [
     [PLINTH_H + 3.6, 0.5],
     [PLINTH_H + 5.4, -0.9],
-  ]) {
+  ] as const) {
     const r = R_BOTTOM + (R_TOP - R_BOTTOM) * ((y - PLINTH_H) / TOWER_H) - 0.05;
     put(parts, box, Math.sin(ang) * r, y, -Math.cos(ang) * r, 0.55, 0.7, 0.15, '#3b2a1c', new THREE.Euler(0, -ang, 0));
   }
@@ -84,7 +99,7 @@ function millBody(parts) {
 
 // The rotor: four lattice sails with canvas on the leading side. Local frame: hub at the origin, sails in the xy plane.
 function rotorParts() {
-  const parts = [];
+  const parts: Geos = [];
   put(
     parts,
     new THREE.CylinderGeometry(0.42, 0.42, 0.5, 10),
@@ -100,7 +115,7 @@ function rotorParts() {
   for (let k = 0; k < 4; k++) {
     const a = (k / 4) * Math.PI * 2;
     const rot = new THREE.Euler(0, 0, a);
-    const along = (d, w) => [Math.cos(a) * d - Math.sin(a) * w, Math.sin(a) * d + Math.cos(a) * w];
+    const along = (d: number, w: number) => [Math.cos(a) * d - Math.sin(a) * w, Math.sin(a) * d + Math.cos(a) * w];
     const [cx, cy] = along(SAIL_LEN / 2, 0);
     put(parts, box, cx, cy, 0, SAIL_LEN, 0.2, 0.2, '#6b4c30', rot); // whip
     for (const w of [-0.75, 0.75]) {
@@ -119,7 +134,7 @@ function rotorParts() {
 }
 
 function build() {
-  const staticParts = [];
+  const staticParts: Geos = [];
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
   const rotorGeo = rotorParts();
   const fwd = new THREE.Vector3(frame.fx, 0, frame.fz);
@@ -129,7 +144,7 @@ function build() {
     const [x, z] = frame.toWorld(p.x, p.z);
     const y = groundHeight(x, z) - 0.15;
     // Static parts, merged across all mills (one draw call).
-    const local = [];
+    const local: Geos = [];
     millBody(local);
     const mm = new THREE.Matrix4().compose(
       new THREE.Vector3(x, y, z),
@@ -167,7 +182,7 @@ function build() {
       shapes: [0, 1, 2, 3].map((a) => {
         const ang = (a / 4) * Math.PI * 2;
         return {
-          kind: 'box',
+          kind: 'box' as const,
           hx: SAIL_LEN * 0.42,
           hy: 0.75,
           hz: 0.15,
@@ -239,13 +254,13 @@ function build() {
   onPreStep(spinBodies);
 }
 
-const sailAngle = (t, phase) => SPIN * t + 0.35 * Math.sin(t * 0.05 + phase) + phase;
-const sailSpeed = (t, phase) => SPIN + 0.35 * 0.05 * Math.cos(t * 0.05 + phase);
+const sailAngle = (t: number, phase: number) => SPIN * t + 0.35 * Math.sin(t * 0.05 + phase) + phase;
+const sailSpeed = (t: number, phase: number) => SPIN + 0.35 * 0.05 * Math.cos(t * 0.05 + phase);
 const tmpQ = new THREE.Quaternion(),
   spinQ = new THREE.Quaternion(),
   zAxis = new THREE.Vector3(0, 0, 1);
 
-function orient(mill, t, out) {
+function orient(mill: Mill, t: number, out: THREE.Quaternion) {
   spinQ.setFromAxisAngle(zAxis, sailAngle(t, mill.phase));
   return out.copy(mill.base).multiply(spinQ);
 }

@@ -12,9 +12,14 @@ import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.ts';
 import { addLightSource } from '../../render/lights.ts';
 import { mulberry32 } from '../../math.ts';
-import { caveSd } from './mesh.js';
-import { ambAt, withCaveAmbient } from './index.js';
-import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT } from './network.js';
+import { caveSd } from './mesh.ts';
+import { ambAt, withCaveAmbient } from './index.ts';
+import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT, type CaveNode } from './network.ts';
+import type { Shape } from '../../physics/engine.ts';
+
+type P3 = { x: number; y: number; z: number };
+type Step = P3 & { dx: number; dz: number };
+type Geos = THREE.BufferGeometry[];
 
 const rng = mulberry32(4242);
 const box = new THREE.BoxGeometry(1, 1, 1);
@@ -24,22 +29,22 @@ const m4 = new THREE.Matrix4(),
   sc = new THREE.Vector3();
 
 // ---------------------------------------------------------------- probing the cave
-function march(x, y, z, dx, dy, dz, max = 14) {
+function march(x: number, y: number, z: number, dx: number, dy: number, dz: number, max = 14) {
   for (let t = 0; t < max; t += 0.1) if (caveSd(x + dx * t, y + dy * t, z + dz * t) > 0) return t;
   return max;
 }
-const ceilingAbove = (x, y, z) => y + march(x, y, z, 0, 1, 0);
-const floorBelow = (x, y, z) => y - march(x, y, z, 0, -1, 0);
+const ceilingAbove = (x: number, y: number, z: number) => y + march(x, y, z, 0, 1, 0);
+const floorBelow = (x: number, y: number, z: number) => y - march(x, y, z, 0, -1, 0);
 // The wall in direction (dx, dz) from a point, pulled back by inset: [x, y, z].
-function wallAt(x, y, z, dx, dz, inset) {
+function wallAt(x: number, y: number, z: number, dx: number, dz: number, inset: number) {
   const l = Math.sqrt(dx * dx + dz * dz);
   const t = march(x, y, z, dx / l, 0, dz / l);
   return [x + (dx / l) * (t - inset), y, z + (dz / l) * (t - inset)];
 }
 
 // Points every `step` metres along a polyline (floor heights interpolated), with the direction there.
-function along(pts, step, from = 0) {
-  const out = [];
+function along(pts: P3[], step: number, from = 0) {
+  const out: Step[] = [];
   let carry = from;
   for (let k = 0; k + 1 < pts.length; k++) {
     const a = pts[k],
@@ -56,13 +61,14 @@ function along(pts, step, from = 0) {
   return out;
 }
 
-const yawOf = (dx, dz) => Math.atan2(dx, dz);
+const yawOf = (dx: number, dz: number) => Math.atan2(dx, dz);
 
 // Whether (x, z) is inside chamber n's footprint (grown by pad, as a fraction of its radii).
-const inside = (n, x, z, pad = 0.15) => Math.hypot((x - n.x) / n.r[0], (z - n.z) / n.r[2]) < 1 + pad;
+const inside = (n: { x: number; z: number; r: number[] }, x: number, z: number, pad = 0.15) =>
+  Math.hypot((x - n.x) / n.r[0], (z - n.z) / n.r[2]) < 1 + pad;
 
 // How close (x, z) is to the centre line of any tunnel leaving chamber `id`: keeps decor out of the doorways.
-function nearTunnel(id, x, z) {
+function nearTunnel(id: string, x: number, z: number) {
   let best = Infinity;
   for (const s of SEGMENTS) {
     if (s.from !== id && s.to !== id) continue;
@@ -79,11 +85,11 @@ function nearTunnel(id, x, z) {
 }
 
 // ---------------------------------------------------------------- text boards
-function board(text, w, h, bg = '#6b4a2c', fg = '#f6e7c8') {
+function board(text: string, w: number, h: number, bg = '#6b4a2c', fg = '#f6e7c8') {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = Math.round((256 * h) / w);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.fillStyle = bg;
   g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = 'rgba(0,0,0,0.18)';
@@ -99,7 +105,7 @@ function board(text, w, h, bg = '#6b4a2c', fg = '#f6e7c8') {
 }
 
 // A mouth's timber frame: posts `half` metres either side of (fx, fz) along (rx, rz), 2.8 m tall, beam on top.
-export function mouthFrame(m) {
+export function mouthFrame(m: { x: number; z: number; ox: number; oz: number }) {
   return {
     rx: -m.oz,
     rz: m.ox, // right, looking out
@@ -108,21 +114,34 @@ export function mouthFrame(m) {
     half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
   };
 }
-export function buildDecor({ scene }) {
+export function buildDecor({ scene }: { scene: THREE.Object3D }) {
   const root = new THREE.Group();
-  const parts = [],
-    glow = [];
-  const shapes = []; // colliders, relative to the hub
+  const parts: Geos = [],
+    glow: Geos = [];
+  const shapes: Shape[] = []; // colliders, relative to the hub
   const O = NODES.hub;
 
-  const put = (geo, x, y, z, sx, sy, sz, color, rx = 0, ry = 0, rz = 0, list = parts) => {
+  const put = (
+    geo: THREE.BufferGeometry,
+    x: number,
+    y: number,
+    z: number,
+    sx: number,
+    sy: number,
+    sz: number,
+    color: string,
+    rx = 0,
+    ry = 0,
+    rz = 0,
+    list = parts,
+  ) => {
     q.setFromEuler(e.set(rx, ry, rz, 'YXZ'));
     m4.compose(new THREE.Vector3(x, y, z), q, sc.set(sx, sy, sz));
     addPart(list, geo, m4, color);
   };
-  const solid = (x, y, z, hx, hy, hz, ry = 0) =>
+  const solid = (x: number, y: number, z: number, hx: number, hy: number, hz: number, ry = 0) =>
     shapes.push({
-      kind: 'box',
+      kind: 'box' as const,
       hx,
       hy,
       hz,
@@ -132,13 +151,13 @@ export function buildDecor({ scene }) {
 
   // ---------------------------------------------------------------- lanterns
   const lanternGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.32, 6);
-  const lantern = (x, y, z, color = '#ffc56e', intensity = 16) => {
+  const lantern = (x: number, y: number, z: number, color = '#ffc56e', intensity = 16) => {
     put(box, x, y + 0.22, z, 0.24, 0.05, 0.24, '#2b2622');
     put(box, x, y - 0.2, z, 0.26, 0.05, 0.26, '#2b2622');
     put(lanternGeo, x, y, z, 1, 1, 1, color, 0, 0, 0, glow);
     addLightSource({ position: new THREE.Vector3(x, y, z), color, intensity, distance: 13 });
   };
-  const wallLantern = (p, side) => {
+  const wallLantern = (p: Step, side: number) => {
     const [x, , z] = wallAt(p.x, p.y + 2.2, p.z, -p.dz * side, p.dx * side, 0.32);
     lantern(x, p.y + 2.2, z);
     put(
@@ -186,7 +205,7 @@ export function buildDecor({ scene }) {
       ['south', 'Way out'],
     ];
     targets.forEach(([id, label], k) => {
-      const n = NODES[id];
+      const n = (NODES as Record<string, CaveNode>)[id];
       const dx = n.x - h.x,
         dz = n.z - h.z;
       const l = Math.hypot(dx, dz);
@@ -206,7 +225,7 @@ export function buildDecor({ scene }) {
 
   // ---------------------------------------------------------------- stalactites (hub and pond)
   const coneGeo = new THREE.ConeGeometry(1, 1, 6);
-  const drips = (n, count, rockColor) => {
+  const drips = (n: { x: number; y: number; z: number; r: number[] }, count: number, rockColor: string) => {
     const y0 = n.y;
     for (let k = 0; k < count; k++) {
       const a = rng() * Math.PI * 2,
@@ -225,8 +244,8 @@ export function buildDecor({ scene }) {
   // ---------------------------------------------------------------- the mine
   {
     const mine = NODES.mine;
-    const toMine = SEGMENTS.find((s) => s.from === 'hub' && s.to === 'mine').pts;
-    const toEast = SEGMENTS.find((s) => s.from === 'mine' && s.to === 'east').pts;
+    const toMine = SEGMENTS.find((s) => s.from === 'hub' && s.to === 'mine')!.pts;
+    const toEast = SEGMENTS.find((s) => s.from === 'mine' && s.to === 'east')!.pts;
     const track = [...toMine.slice(0, -1), ...toEast.slice(0, -1)]; // hub -> mine -> just inside the east mouth
     // Rails and sleepers.
     const rail = along(track, 0.8, 7);
