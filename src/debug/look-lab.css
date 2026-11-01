@@ -1,8 +1,8 @@
-/* The look lab's panel (src/debug/look-lab.ts, ?proto=look): top left under the HUD chips, collapsible. */
+/* The look lab's panel (src/debug/look-lab.ts, ?proto=look): top right under the net chip (the controls card owns the left), collapsible. */
 .look-lab {
   position: fixed;
   top: calc(56px + env(safe-area-inset-top, 0px));
-  left: calc(14px + env(safe-area-inset-left, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
   width: min(240px, calc(100vw - 28px));
   max-height: calc(100vh - 140px);
   display: flex;
@@ -63,4 +63,18 @@
   margin-top: 6px;
   font-size: 12px;
   opacity: 0.85;
+}
+/* Touch: end above the right-hand button column (as the haul kit does, src/debug/haul-kit.css); the body scrolls. */
+body.touch .look-lab {
+  max-height: calc(100svh - 56px - 350px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 700px) and (min-height: 700px) {
+  body.touch .look-lab {
+    max-height: calc(100svh - 56px - 500px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (min-width: 1000px) and (min-height: 1000px) {
+  body.touch .look-lab {
+    max-height: calc(100svh - 56px - 552px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
 }

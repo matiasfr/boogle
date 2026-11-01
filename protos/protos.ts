@@ -100,6 +100,7 @@ export const PROTOS: Proto[] = [
     question: 'Is laying a section satisfying or dead time?',
     what: 'Fill the Track ring (top left), Start the machine (E): today’s 50 s run with thumping sleepers, clanking rails and chuffs. Hop on its deck to ride.',
     since: '2026-11-01',
+    spawn: { x: 7, z: 9, yaw: -0.52 }, // by the first work site (the Track ring and the machine), looking down the line
     variants: [
       {
         name: 'quick',
@@ -204,7 +205,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=look&look=ipad',
     question: 'Which look should Boogle aim for?',
-    what: 'Code-only graphics on the real island: presets and layers top left, Y for the steam palette, Measure frame for ms.',
+    what: 'Code-only graphics on the real island: presets and layers top right, Y for the steam palette, Measure frame for ms.',
     since: '2026-11-01',
     note: 'Write-up and numbers: docs/proposals/visual-target.md.',
     variants: [

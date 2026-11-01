@@ -114,3 +114,18 @@
 .haul-kit:not(.open) {
   width: auto;
 }
+/* Touch: end above the right-hand button column (Bump's top is 338 px up, times the tablet zoom in
+   src/player/touch.css), so the panel never covers Grab or Bump; the body scrolls. */
+body.touch .haul-kit {
+  max-height: calc(100svh - 56px - 350px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 700px) and (min-height: 700px) {
+  body.touch .haul-kit {
+    max-height: calc(100svh - 56px - 500px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (min-width: 1000px) and (min-height: 1000px) {
+  body.touch .haul-kit {
+    max-height: calc(100svh - 56px - 552px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
