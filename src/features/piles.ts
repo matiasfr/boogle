@@ -5,10 +5,13 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import { onFrame, onStart } from '../loop.ts';
 import { updatePiles, piles } from '../adapters/piles.ts';
 import { identity } from '../player/identity.ts';
+import { haulVariant } from '../player/haul-variant.ts';
 import type { Pile } from '../sim/piles.ts';
 
-// Ask for the whole pile, as much as your stack has room for; nothing of a kind you can't carry.
-const want = (p: Pile) => Math.min(p.n, identity.pid ? rules.stacks.room(identity.pid, p.k) : 0);
+// Ask for the whole pile, as much as your stack has room for; nothing of a kind you can't carry. With the barrow
+// (?proto=haul&v=barrow) you scoop piles with it instead (src/proto/haul/barrow.ts).
+const want = (p: Pile) =>
+  haulVariant === 'barrow' ? 0 : Math.min(p.n, identity.pid ? rules.stacks.room(identity.pid, p.k) : 0);
 
 const handle = window as unknown as { boogle?: Record<string, unknown> };
 onStart(() => handle.boogle && (handle.boogle.piles = piles)); // debug handle (scenarios)

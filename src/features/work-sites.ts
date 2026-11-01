@@ -16,6 +16,7 @@ import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt } from '../sim/route.ts';
 import { haulFeel } from '../player/haul-feel.ts';
+import { haulVariant } from '../player/haul-variant.ts';
 import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { MACHINE_RUN } from '../sim/scripted-run.ts';
@@ -261,6 +262,7 @@ registerInteractable(() => {
 // Pouring: standing in a ring of the open site with the right material pours a little every haulFeel.pourMs.
 let lastPour = -1e9;
 function pour(now: number): void {
+  if (haulVariant) return; // the haul variants bring logs another way (src/proto/haul/)
   if (!me.entered || !me.body || !identity.pid || now - lastPour < haulFeel.pourMs) return;
   const s = sites.open;
   if (s >= ROUTE.length || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s].age)) return;
