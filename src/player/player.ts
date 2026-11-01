@@ -5,6 +5,7 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
 import { addBody, type Body } from '../physics/engine.ts';
+import { carry } from '../physics/platforms.ts';
 import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.ts';
@@ -152,13 +153,18 @@ onFrame(
 );
 
 // update -290, after the ball mesh (ball.js, -300), before remote avatars (net.js, -280): the avatar follows the body.
+// A deck you ride turns you and the camera with it, and you walk at your speed on the deck, not over the ground.
 onFrame(
   ({ dt }) => {
     if (!me.avatar || !me.body) return;
+    me.yaw += carry.spin;
+    cam.yaw += carry.spin;
+    carry.spin = 0;
     const ip = me.body.interpolatedPosition;
     me.avatar.position.set(ip.x, ip.y, ip.z);
     me.avatar.rotation.y = me.yaw;
-    animateAvatar(me.avatar, Math.hypot(me.body.velocity.x, me.body.velocity.z), me.coyote <= 0 && !me.swimming, dt);
+    const v = me.body.velocity;
+    animateAvatar(me.avatar, Math.hypot(v.x - carry.x, v.z - carry.z), me.coyote <= 0 && !me.swimming, dt);
   },
   { phase: 'update', order: -290 },
 );

@@ -12,6 +12,7 @@ import {
 import { clamp } from '../math.ts';
 import { groundHeight, heights } from '../adapters/terrain.ts';
 import { waterField } from './water-field.ts';
+import { carry, carryStep } from './platforms.ts';
 import type { Body } from './engine.ts';
 import type { Remote } from '../netplay/net.ts';
 import type * as THREE from 'three';
@@ -119,14 +120,17 @@ export function installStepHooks({
     const b = me.body;
     if (b) {
       me.coyote -= FIXED;
+      carryStep(b, me); // a deck under you (./platforms.ts): steering below is relative to its motion
       const surfY = waterField.surfaceAt(b.position.x, b.position.z);
       const depth = surfY - (b.position.y + 0.35);
       me.swimming = depth > 0;
       const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
-      const braking = me.wish.x * b.velocity.x + me.wish.z * b.velocity.z < 0;
+      const rvx = b.velocity.x - carry.x,
+        rvz = b.velocity.z - carry.z;
+      const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
       const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : 14;
-      let dx = me.wish.x * speed - b.velocity.x,
-        dz = me.wish.z * speed - b.velocity.z;
+      let dx = me.wish.x * speed - rvx,
+        dz = me.wish.z * speed - rvz;
       const dl = Math.hypot(dx, dz),
         maxDv = accel * FIXED;
       if (dl > maxDv) {
