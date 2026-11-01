@@ -22,7 +22,7 @@ store.set(
     { id: 'seeds', n: 2 },
   ]),
 );
-const { inv, SLOTS, cycle, select } = await import('../src/player/inventory.ts');
+const { inv, SLOTS, cycle, select, take, drop } = await import('../src/player/inventory.ts');
 
 test('a longer save compacts to the first five filled known items', () => {
   assert.equal(SLOTS, 5);
@@ -41,4 +41,13 @@ test('cycling wraps and select outside the bar does nothing', () => {
   assert.equal(inv.sel, 0);
   select(5);
   assert.equal(inv.sel, 0);
+});
+
+test('take refuses an id that is not in the catalog', () => {
+  drop('can');
+  const version = inv.version;
+  assert.equal(take('driftwood'), false, 'a removed item never reaches a slot the HUD would name');
+  assert.equal(inv.version, version);
+  assert.ok(!inv.slots.some((s) => s?.id === 'driftwood'));
+  assert.equal(take('can'), true);
 });

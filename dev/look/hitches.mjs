@@ -113,7 +113,7 @@ const TOUR = `
   await step('throw preview', 1500, async () => { I.take('frisbee'); I.select(I.slotOf('frisbee')); H.useDown(); });
   await step('throw release', 1000, () => H.useUp());
   await step('hotbar', 2500, async () => {
-    for (const id of ['frisbee', 'driftwood', 'seeds', 'can']) { try { I.take(id); } catch {} }
+    for (const id of ['frisbee', 'seeds', 'can']) I.take(id);
     for (let s = 0; s < 6; s++) { I.select(s); await sleep(250); }
   });
   await step('sunset', 3000, () => { sky.preview(0.55); dbg.set(VIEWS.shore.cam, VIEWS.shore.look, null); });
