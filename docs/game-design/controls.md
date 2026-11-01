@@ -45,6 +45,11 @@ Notes:
   ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
   ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4.
+- Touch mode (the stick and buttons overlay, no reticle or pointer lock) follows the input in use, not the device: a
+  touch screen starts in it, a key press (outside a text field) or a mouse or trackpad click switches to keyboard and
+  mouse, and the next finger switches back ([src/player/input.ts](../../src/player/input.ts)). So an iPad with a Magic
+  Keyboard plays with the keyboard, trackpad look (pointer lock where Safari grants it, drag to look where it does not)
+  and the keyboard guide. HUD buttons sit above the touch overlay in both modes.
 
 ---
 

@@ -1,4 +1,4 @@
-import { COLORS, isTouch } from '../constants.ts';
+import { COLORS } from '../constants.ts';
 import { me, enterIsland } from './player.ts';
 import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
 import { net, remotes } from '../netplay/net.ts';
@@ -40,7 +40,7 @@ function updateHud() {
     dom.hintEl.innerHTML = hint ? `${glyph('use')}<span>Look around</span>` : '';
     dom.hintEl.hidden = !hint;
   }
-  if (!isTouch || !me.entered) return;
+  if (!document.body.classList.contains('touch') || !me.entered) return;
   const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
   const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
   if (dom.grabBtn.textContent !== label) {
