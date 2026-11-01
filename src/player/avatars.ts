@@ -12,8 +12,24 @@ const pupilMat = new THREE.MeshStandardMaterial({ color: '#13243f', roughness: 0
 const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
 
 /** What animateAvatar keeps on an avatar (group.userData). */
-export type AvatarData = { inner: THREE.Group; mat: THREE.MeshStandardMaterial; phase: number };
+export type AvatarData = { inner: THREE.Group; mat: THREE.MeshStandardMaterial; phase: number; colorIdx: number };
 export type Avatar = THREE.Group & { userData: AvatarData };
+
+/**
+ * Another body for every avatar, from a prototype (?proto=hero, src/features/proto-hero.ts). `dress` is called once
+ * per avatar (on every new one, and on the ones already there when the skin is set): it hides the capsule and adds its
+ * own figure inside `inner`, so the bob, the squash spring and the flops (src/features/feel.ts) still move it.
+ * `animate` runs after the bob each frame, to pose limbs. Render only.
+ */
+export type AvatarSkin = {
+  dress(a: Avatar, colorIdx: number): void;
+  animate(a: Avatar, speed: number, airborne: boolean, dt: number): void;
+};
+let skin: AvatarSkin | null = null;
+export function setAvatarSkin(s: AvatarSkin, existing: (Avatar | null | undefined)[]) {
+  skin = s;
+  for (const a of existing) if (a) s.dress(a, a.userData.colorIdx);
+}
 
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.
 export function makeAvatar(colorIdx: number): Avatar {
@@ -32,7 +48,8 @@ export function makeAvatar(colorIdx: number): Avatar {
     inner.add(eye, pupil);
   }
   group.add(inner);
-  group.userData = { inner, mat, phase: 0 } satisfies AvatarData;
+  group.userData = { inner, mat, phase: 0, colorIdx } satisfies AvatarData;
+  skin?.dress(group as Avatar, colorIdx);
   return group as Avatar;
 }
 
@@ -44,6 +61,7 @@ export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, 
   u.inner.rotation.x = lerp(u.inner.rotation.x, -0.16 * Math.min(moving, 1), 1 - Math.exp(-dt * 10));
   const squash = airborne ? 1.05 : 1 - Math.abs(Math.cos(u.phase)) * 0.04 * moving;
   u.inner.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
+  skin?.animate(avatar, speed, airborne, dt);
 }
 
 export function makeLabel(text: string) {

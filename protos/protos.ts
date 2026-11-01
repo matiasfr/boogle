@@ -260,6 +260,16 @@ export const PROTOS: Proto[] = [
     note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
   },
   {
+    id: 'hero',
+    title: 'Play as the hero',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=hero',
+    question: 'Does running and jumping as this character feel good enough to keep it?',
+    what: 'Every player is the jointed hero in their colour: a run cycle, arms up in the air, the old squash and flops on top, a blink. &hero=work or castaway dresses it.',
+    since: '2026-11-01',
+  },
+  {
     id: 'minis',
     title: 'Mini-game toys',
     step: 'depth',
