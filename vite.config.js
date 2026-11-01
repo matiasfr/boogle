@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atlasFacts } from './dev/atlas/vite-plugin.ts';
+import { build as esbuild } from 'esbuild';
 
 const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 
@@ -11,11 +12,19 @@ const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 // (src/features/updates.ts).
 const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 
+// BOOGLE_SW=off builds the service worker's kill switch (src/boot/sw-worker.ts): it clears its caches and unregisters.
+const swOff = process.env.BOOGLE_SW === 'off';
+// Lazy chunks the first frame waits for, precached with the page's static imports (docs/plans/loading.md).
+const FIRST_DYNAMIC = [/\/src\/main\.ts$/, /rapier3d-simd/];
+
 let localServer = null; // the dev server's own game server (boogle-local-server below)
 
 export default defineConfig({
   base: process.env.BASE || '/',
-  define: { 'import.meta.env.VITE_BUILD': JSON.stringify(build) },
+  define: {
+    'import.meta.env.VITE_BUILD': JSON.stringify(build),
+    'import.meta.env.VITE_SW': JSON.stringify(swOff ? 'off' : 'on'),
+  },
   // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
   // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.ts).
   build: {
@@ -76,6 +85,43 @@ export default defineConfig({
       apply: 'build',
       generateBundle() {
         this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build }) + '\n' });
+      },
+    },
+    {
+      // dist/sw.js, from src/boot/sw-worker.ts: bundled on its own, with this build's id and the files the first frame
+      // needs (the page's static imports, the FIRST_DYNAMIC chunks and their CSS and assets), for it to precache.
+      name: 'boogle-sw',
+      apply: 'build',
+      async generateBundle(_, bundle) {
+        const first = new Set();
+        const add = (file) => {
+          const c = bundle[file];
+          if (!c || first.has(file)) return;
+          first.add(file);
+          if (c.type !== 'chunk') return;
+          for (const f of [...(c.viteMetadata?.importedCss ?? []), ...(c.viteMetadata?.importedAssets ?? [])])
+            first.add(f);
+          c.imports.forEach(add);
+          for (const d of c.dynamicImports)
+            if (FIRST_DYNAMIC.some((re) => re.test(bundle[d]?.facadeModuleId ?? ''))) add(d);
+        };
+        for (const c of Object.values(bundle))
+          if (c.type === 'chunk' && c.isEntry && c.facadeModuleId?.endsWith('/index.html') && c.name === 'main')
+            add(c.fileName);
+        // Authored content (models, textures, audio) loads by need through the content manifest
+        // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
+        const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
+        const config = { build, first: [...first].filter((f) => !content.test(f)).sort(), off: swOff };
+        const out = await esbuild({
+          entryPoints: [resolve('src/boot/sw-worker.ts')],
+          bundle: true,
+          write: false,
+          minify: true,
+          format: 'iife',
+          target: 'es2022',
+          define: { SW_CONFIG: JSON.stringify(config) },
+        });
+        this.emitFile({ type: 'asset', fileName: 'sw.js', source: out.outputFiles[0].text });
       },
     },
   ],
