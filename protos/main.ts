@@ -1,11 +1,13 @@
-// boogle.club/protos/: a card per prototype (protos.ts) with a Play button, its one question and a box for your take
-// saved in this browser (store.ts) that copy out as a docs/playtests.md entry, with the verdict and behaviour counters
-// the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts). Nothing here
-// talks to a server.
+// boogle.club/protos/: the way in to the playtest playlist (`/?play`, docs/plans/find-the-fun.md, "One path") and its
+// steps, then a card per prototype (protos.ts) with a Play button, its one question and a box for your take saved in
+// this browser (store.ts) that copy out as a docs/playtests.md entry (entry.ts), with the verdicts and behaviour
+// counters the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts).
+// Nothing here talks to a server.
 import './protos.css';
-import { PLAYTEST_ORDER, PROTOS } from './protos.ts';
+import { PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
-import { VERDICTS, countsLine, read, sittingLine, sittings, urlParam, write, type Saved } from './store.ts';
+import { VERDICTS, countsLine, read, vName, write, type Saved } from './store.ts';
+import { allEntries, body, copy, header } from './entry.ts';
 import { heatMap } from './heat.ts';
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
@@ -27,55 +29,6 @@ const PLACEHOLDER = /<(\w+)>/;
 const href = (p: Proto, name: string) =>
   import.meta.env.BASE_URL + p.url.replace(/^\//, '').replace(PLACEHOLDER, encodeURIComponent(name.trim()));
 const stepLabel = (p: Proto) => (p.step === 'depth' ? 'Depth track' : `Step ${p.step}`);
-const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
-const oneLine = (s: string) => s.trim().replace(/\s*\n\s*/g, ' ');
-
-const hasNotes = (p: Proto) => {
-  const s = saved(p.id);
-  return (
-    s.notes.trim() !== '' ||
-    s.values.trim() !== '' ||
-    s.variant.trim() !== '' ||
-    s.verdict !== '' ||
-    Object.keys(s.counts).length > 0 ||
-    sittings(p.id).length > 0
-  );
-};
-
-// The prototype's part of an entry in docs/playtests.md (one bullet list, like the entries there).
-function body(p: Proto): string {
-  const s = saved(p.id);
-  const flag = p.url.replace(PLACEHOLDER, s.name.trim() || `<${p.url.match(PLACEHOLDER)?.[1]}>`);
-  const lines = [`- Prototype: ${p.title} (\`${flag}\`, find the fun ${stepLabel(p).toLowerCase()})`];
-  const quick = s.verdict
-    ? `${verdictLabel(s)}${s.verdictV ? ` (on ${s.verdictV})` : ''}${s.verdictNote.trim() ? `: ${oneLine(s.verdictNote)}` : ''}.`
-    : '';
-  lines.push(`- ${p.question} ${[quick, oneLine(s.notes)].filter(Boolean).join(' ') || '(no answer)'}`);
-  const did = countsLine(s.counts);
-  if (did) lines.push(`- Did: ${did}`);
-  const sat = sittingLine(sittings(p.id).at(-1));
-  if (sat) lines.push(`- Last sitting: ${sat}`);
-  if (p.variants?.length) lines.push(`- Variant preferred: ${oneLine(s.variant) || '___'}`);
-  if (s.values.trim()) lines.push(`- Values: \`${oneLine(s.values)}\``);
-  return lines.join('\n');
-}
-const header = () => `## ${today()}\n- Who: Matias, solo`;
-
-async function copy(text: string, said: HTMLElement) {
-  try {
-    await navigator.clipboard.writeText(text);
-    said.textContent = 'Copied.';
-  } catch {
-    // No clipboard (http, old browser): select the text in a box so a long-press copies it.
-    const box = el('textarea', 'fallback');
-    box.value = text;
-    box.readOnly = true;
-    said.replaceChildren(box);
-    box.select();
-    return;
-  }
-  setTimeout(() => (said.textContent = ''), 2500);
-}
 
 function field(label: string, value: string, rows: number, onInput: (v: string) => void, placeholder = '') {
   const wrap = el('label', 'field');
@@ -150,7 +103,14 @@ function card(p: Proto): HTMLElement {
   const drawPlayed = () => {
     const now = saved(p.id);
     const bits: HTMLElement[] = [];
-    if (now.verdict) {
+    const perV = Object.entries(now.byV).filter(([, v]) => v.verdict);
+    for (const [name, v] of perV) {
+      const b = el('span', `verdict ${v.verdict}`, VERDICTS.find((x) => x.id === v.verdict)?.label ?? '');
+      b.append(el('small', '', ` on ${name}`));
+      bits.push(b);
+      if (v.note.trim()) bits.push(el('span', 'why', v.note));
+    }
+    if (!perV.length && now.verdict) {
       const v = el('span', `verdict ${now.verdict}`, verdictLabel(now));
       if (now.verdictV) v.append(el('small', '', ` on ${now.verdictV}`));
       bits.push(v);
@@ -201,51 +161,45 @@ const redraws: (() => void)[] = [];
 addEventListener('storage', () => redraws.forEach((fn) => fn()));
 addEventListener('focus', () => redraws.forEach((fn) => fn()));
 
-// "Start here": PLAYTEST_ORDER as numbered steps of big Play buttons, one per variant, ticked once the game's bar has a
-// verdict for that variant. Entries whose card or variant is missing are skipped.
+// "Start here": the playlist (protos.ts, `playlist`) as numbered steps of big buttons, one per variant to compare, each
+// opening the `?play` island at that step and variant (a chapter's own page for the ones that can't share it), ticked
+// once the game's bar has a verdict for that variant. The big button resumes wherever the playlist got to.
+const playHref = (q: string) => `${import.meta.env.BASE_URL}?play${q ? `=${encodeURIComponent(q)}` : ''}`;
 function startHere(): HTMLElement {
-  type Run = { p: Proto; why: string; later: boolean; legs: { label: string; url: string; v: string }[] };
-  const runs: Run[] = [];
-  for (const step of PLAYTEST_ORDER) {
-    const p = PROTOS.find((x) => x.id === step.id && x.status !== 'retired');
-    const variant = step.variant ? p?.variants?.find((v) => v.name === step.variant) : undefined;
-    if (!p || (step.variant && !variant)) continue;
-    const leg = variant
-      ? { label: variant.name, url: import.meta.env.BASE_URL + variant.url.replace(/^\//, ''), v: variant.name }
-      : {
-          label: 'default',
-          url: PLACEHOLDER.test(p.url) && !saved(p.id).name.trim() ? `#${p.id}` : href(p, saved(p.id).name),
-          v: urlParam(p, 'v') ?? '',
-        };
-    const last = runs.at(-1);
-    if (last?.p === p) last.legs.push(leg);
-    else runs.push({ p, why: step.why, later: !!step.later, legs: [leg] });
-  }
-
+  const steps = playlist();
   const wrap = el('section', 'start');
+  const go = el('a', 'btn leg go', 'Play the playlist');
+  go.href = playHref('');
   wrap.append(
     el('h2', '', 'Start here'),
-    el('p', 'lede', 'Solo, iPad, about 20 minutes for 1–3. Copy each entry back to the director.'),
+    el(
+      'p',
+      'lede',
+      'One link for the whole run: the island with every toy on it, the bar walking you through them in this order (Next takes you to each), a verdict and a line per variant, Copy all at the end. Solo, iPad, pad or touch.',
+    ),
+    go,
   );
-  const list = (rs: Run[], numbered: boolean) => {
+  const list = (rs: typeof steps, numbered: boolean) => {
     const ol = el(numbered ? 'ol' : 'ul', 'steps');
     rs.forEach((r, i) => {
       const li = el('li', 'step');
       if (numbered) li.append(el('span', 'n', String(i + 1)));
       const text = el('div', 'text');
-      text.append(el('strong', '', r.p.title), el('span', 'why', r.why));
+      text.append(el('strong', '', r.card.title), el('span', 'why', r.why));
+      if (!onIsland(r.card)) text.append(el('span', 'why', `Own page: ${r.card.chapter ?? 'not on the island'}.`));
       const legs = el('div', 'legs');
       for (const leg of r.legs) {
         // A lone default is just "Play"; "default" only beside the variants it's compared with.
-        const a = el('a', 'btn leg', r.legs.length === 1 && leg.label === 'default' ? 'Play' : leg.label);
-        a.href = leg.url;
-        if (!touch && !leg.url.startsWith('#')) a.target = '_blank';
+        const name = vName(r.card, leg);
+        const a = el('a', 'btn leg', r.legs.length === 1 && !leg ? 'Play' : leg || 'default');
+        a.href = playHref(`${r.card.id}:${leg}`);
+        a.title = variantUrl(r.card, leg);
         const tick = el('span', 'tick', '✓');
         tick.setAttribute('aria-label', 'verdict saved');
         a.append(tick);
         const draw = () => {
-          const s = saved(r.p.id);
-          tick.hidden = !(s.verdict && s.verdictV === leg.v);
+          const s = saved(r.card.id);
+          tick.hidden = !(s.byV[name]?.verdict || (s.verdict && s.verdictV === leg));
         };
         draw();
         redraws.push(draw);
@@ -258,11 +212,11 @@ function startHere(): HTMLElement {
   };
   wrap.append(
     list(
-      runs.filter((r) => !r.later),
+      steps.filter((r) => !r.later),
       true,
     ),
   );
-  const later = runs.filter((r) => r.later);
+  const later = steps.filter((r) => r.later);
   if (later.length) wrap.append(el('h3', '', 'When you have time'), list(later, false));
   return wrap;
 }
@@ -274,8 +228,6 @@ const sorted = PROTOS.map((p, i) => ({ p, i }))
 document.getElementById('list')!.append(...sorted.map(card));
 
 // Copy all: every prototype with something written, under one date (all the live ones if nothing is written yet).
-document.getElementById('copy-all')!.addEventListener('click', () => {
-  const some = sorted.filter(hasNotes);
-  const pick = some.length ? some : sorted.filter((p) => p.status === 'live');
-  copy(`${header()}\n${pick.map(body).join('\n')}\n`, document.getElementById('said-all')!);
-});
+document
+  .getElementById('copy-all')!
+  .addEventListener('click', () => copy(allEntries(), document.getElementById('said-all')!));
