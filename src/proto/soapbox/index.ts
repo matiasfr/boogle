@@ -8,6 +8,9 @@
 //
 // Seated, your own body leaves the physics world and is put on the seat each frame, so the camera, your avatar and
 // your presence follow the cart. A hard hit throws you out.
+//
+// Silent for now: the rumble, rattle, wind, drift ticks, boost and crash sounds were cut in the sound audit
+// (2026-11-02); better ones come later.
 import * as THREE from 'three/webgpu';
 import { FIXED, INTERP_MS, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, r3 } from '../../math.ts';
@@ -41,7 +44,6 @@ import { onFrame, onStart } from '../../loop.ts';
 import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
 import { createGhost } from './ghost.ts';
-import { rollSound, chargeTick, boostSound, crashSound } from './sound.ts';
 import { protoMark, protoActivity } from '../mark.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
@@ -230,7 +232,6 @@ onPreStep(() => {
     if (!S.driftDir && Math.abs(S.steer) > 0.2) S.driftDir = Math.sign(S.steer);
     S.charge += S.driftDir && S.steer * S.driftDir >= 0.7 ? T.chargeInto : T.chargeOut;
     const tier = S.charge >= T.chargeBig ? 3 : S.charge >= T.chargeReady ? 2 : S.charge >= T.chargeSparks ? 1 : 0;
-    if (tier > S.tier) chargeTick(tier);
     S.tier = tier;
   } else if (!held && S.charge > 0) {
     if (S.tier >= 2) {
@@ -387,7 +388,6 @@ function crash() {
   S.hold = performance.now() + T.hitStop;
   protoMark('crash');
   addTrauma(T.traumaCrash);
-  crashSound();
   const p = pose.p;
   puff(p.x, p.y, p.z, 26, 6, DUST, 0.2);
   for (let k = 0; k < 10; k++) spark(p.x, p.y + 0.3, p.z, 7);
@@ -833,7 +833,6 @@ onFrame(
     stepWheel(dt);
     const v = body.velocity;
     const speed = Math.hypot(v.x, v.z);
-    rollSound(speed, S.grounded, S.seated && !S.hold);
     if (S.seated && me.body) {
       toWorld(seat, 0, SEAT.y, SEAT.z);
       teleport(me.body, seat.x, seat.y, seat.z);
@@ -866,7 +865,6 @@ onFrame(
         for (let k = 0; k < (big ? 40 : 24); k++)
           spark(wp.x, wp.y, wp.z, big ? 9 : 7, false, TIER[S.boosted], big ? 0.2 : 0.15);
         puff(wp.x, wp.y, wp.z, big ? 14 : 8, 4, TIER[S.boosted], big ? 0.4 : 0.3);
-        boostSound(big);
         fovKick = big ? 9 : 5;
         S.boosted = 0;
       }
