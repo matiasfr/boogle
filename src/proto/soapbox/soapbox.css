@@ -1,0 +1,38 @@
+/* The soapbox run's clock (src/proto/soapbox/run-hud.ts): top centre, big and chunky, like a hand-painted board. */
+.soapbox-run {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  color: #fff;
+  text-shadow:
+    0 2px 0 rgba(12, 28, 52, 0.55),
+    0 0 12px rgba(12, 28, 52, 0.35);
+}
+.soapbox-time {
+  font:
+    800 44px/1 Figtree,
+    system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.soapbox-note {
+  margin-top: 4px;
+  font:
+    700 16px/1.2 Figtree,
+    system-ui,
+    sans-serif;
+  opacity: 0.9;
+}
+.soapbox-run.is-ready .soapbox-time {
+  font-size: 30px;
+}
+.soapbox-run.is-crash .soapbox-time {
+  color: #ffcf6b;
+  transform: rotate(-4deg);
+}
+.soapbox-run.is-best .soapbox-time {
+  color: #ffe66b;
+}
