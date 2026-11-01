@@ -10,8 +10,8 @@ import { me, cam } from '../../player/player.ts';
 import { teleport } from '../../physics/physics.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { PLAYER_R } from '../../constants.ts';
-import { VERDICTS, cardFor, countsLine, read, write, type Verdict } from '../../../protos/store.ts';
-import { protoCount, flushCounts, onCounts } from '../count.ts';
+import { VERDICTS, cardFor, countsLine, read, urlParam, write, type Verdict } from '../../../protos/store.ts';
+import { protoCount, flushCounts, onCounts, readoutLine } from '../count.ts';
 
 const card = cardFor(location.search);
 const params = new URLSearchParams(location.search);
@@ -76,7 +76,7 @@ const button = (cls: string, text: string, fn: () => void) => {
 
 if (card) {
   const id = card.id;
-  const current = params.get('v') ?? '';
+  const current = params.get('v') ?? urlParam(card, 'v') ?? '';
   const bar = el('div', 'proto-bar');
   let folded = false;
   try {
@@ -103,7 +103,8 @@ if (card) {
   // Variants: the default first, then each `&v=`; the one playing is pressed.
   if (card.variants?.length) {
     const row = el('div', 'pb-row pb-variants');
-    for (const v of [{ name: '', url: card.url, what: 'The default take.' }, ...card.variants]) {
+    // A card whose own url names a variant (`&v=crawl`) shows that name on its first button.
+    for (const v of [{ name: urlParam(card, 'v') ?? '', url: card.url, what: 'The default take.' }, ...card.variants]) {
       const b = button('pb-btn', v.name || 'default', () => v.name !== current && switchTo(v.name, v.url));
       b.title = v.what;
       b.setAttribute('aria-pressed', String(v.name === current));
@@ -135,7 +136,8 @@ if (card) {
   bar.append(verdictRow, note);
 
   const counts = el('p', 'pb-counts');
-  bar.append(counts);
+  const live = el('p', 'pb-counts pb-readout');
+  bar.append(counts, live);
 
   function draw() {
     const s = read(id);
@@ -143,6 +145,8 @@ if (card) {
     if (document.activeElement !== note) note.value = s.verdictNote;
     chip.textContent = s.verdict ? (VERDICTS.find((v) => v.id === s.verdict)?.label ?? '') : '';
     counts.textContent = countsLine(s.counts);
+    live.textContent = readoutLine();
+    live.hidden = !live.textContent;
   }
   draw();
   onCounts(draw);
