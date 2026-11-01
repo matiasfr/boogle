@@ -58,12 +58,12 @@ and test it.
       test. No render.
 - [x] **Platform carry:** the player stands on a kinematic Rapier body and is carried without jitter; jumping off
       keeps the platform's speed. Proved on a test platform behind `?proto=ride`.
-- [ ] **Placeholder wagon:** a greybox wagon on `wagonAt` you can ride, behind `?proto=ride`.
+- [x] **Placeholder wagon:** a greybox wagon on `wagonAt` you can ride, behind `?proto=wagon`.
 - [ ] **Playtest 2.**
 
 ## 3. Does what you built feel like yours?
 
-- [ ] **Riding only on laid sections:** the wagon's run grows with each laid section (`?proto=ride`).
+- [x] **Riding only on laid sections:** the wagon's run grows with each laid section (`?proto=wagon`).
 - [ ] **Playtest 3.**
 
 ## 4. Does the island change enough at an era's end?
