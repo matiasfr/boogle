@@ -116,8 +116,8 @@ ring no longer pours; without `v` the loop above is unchanged. Starting numbers 
   for the slope and the load (it rocks first), or a hard hit, and it goes over: the load bursts out as physics logs.
   E stands it back up. Rolling it over a pile scoops it up. Push its front lip over a ring of the open site and E says
   Tip it in: it pitches over the wheel and the logs tumble out.
-- **`v=toss`:** take logs as usual, then with empty hands the use button (click, pad X; no touch button yet) lobs a
-  handful of 4 logs; holding it keeps tossing, one handful every 0.6 s, so a full bundle empties in about 9 s (rec 5).
+- **`v=toss`:** take logs as usual, then with empty hands the use button (click, pad X, or the touch Grab button when
+  nothing is in reach) lobs a handful of 4 logs; holding it keeps tossing, one handful every 0.6 s, so a full bundle empties in about 9 s (rec 5).
   It never tests aim: a ring of the open site within 10 m and roughly where the camera looks is aimed for you;
   otherwise the handful lands 8 m ahead. A log that lands within the ring's radius plus 1 m counts there ("+1" and a
   gold burst); a miss settles as a pile.

@@ -1,6 +1,6 @@
 // Haul variant `toss` (?proto=haul&v=toss): take logs from the bundles as usual, then toss them at the work site.
 // It shortens the last metres and never tests aim (docs/research/carrying-and-logistics-play.md rec 5): with empty
-// hands and logs on your back, the use button (click, pad X; no touch button yet) lobs a handful of 4 logs; holding it
+// hands and logs on your back, the use button (click, pad X, or the touch Use/Grab button when nothing is in reach) lobs a handful of 4 logs; holding it
 // keeps tossing, so a full 60-log bundle empties in about 9 s, as long as a walk-in pour. A ring of the open site within
 // reach (6-10 m) and roughly ahead of the camera is aimed for you; otherwise the handful lands 8 m ahead. Landing
 // within the ring's radius plus 1 m counts as poured; a miss settles as a pile (./loose-logs.ts). Walking into a ring
@@ -10,7 +10,8 @@ import { onFrame, onStart } from '../../loop.ts';
 import { GRAVITY } from '../../constants.ts';
 import { me, cam, throwFrom } from '../../player/player.ts';
 import { heldId } from '../../player/inventory.ts';
-import { wrapAction, describeControl } from '../../player/controls.ts';
+import { describeControl } from '../../player/controls.ts';
+import { emptyHands } from '../../player/hands.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { rules } from '../../world/game-world.ts';
 import { ROUTE, TRACK, HELPER, ringAt } from '../../sim/route.ts';
@@ -25,7 +26,7 @@ export const TOSS = {
   spread: 0.35, // m: how far the logs of one handful scatter around the aim
 };
 
-let held = false; // this module took the press (so its release is ours)
+let held = false; // the button is down and tossing
 let next = 0;
 const canToss = () => me.entered && !!me.body && !heldId() && myLogs() > 0;
 
@@ -73,23 +74,22 @@ function tossOnce() {
   return true;
 }
 
+// Empty hands (src/player/hands.ts): the click, pad X and the touch Use/Grab button all toss when you carry logs.
+emptyHands.down = () => {
+  if (!canToss()) return false;
+  held = true;
+  tossOnce();
+  next = performance.now() + TOSS.everyMs;
+  return true;
+};
+emptyHands.up = () => void (held = false);
+
 onStart(() => {
-  wrapAction('use', {
-    down: (nextFn) => {
-      if (!canToss()) return nextFn();
-      held = true;
-      tossOnce();
-      next = performance.now() + TOSS.everyMs;
-    },
-    up: (nextFn) => {
-      if (!held) return nextFn();
-      held = false;
-    },
-  });
   describeControl('haul-toss', {
     label: 'Toss logs at the site (hold to keep tossing)',
     keys: ['Mouse0'],
     pad: 'x',
+    touch: 'Grab',
     group: 'hands',
     order: 2,
     context: 'carrying logs',

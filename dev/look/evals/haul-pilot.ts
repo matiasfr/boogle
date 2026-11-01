@@ -8,6 +8,7 @@ import { identity } from '../../../src/player/identity.ts';
 import { input } from '../../../src/player/input.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
+import { touchDown, useUp } from '../../../src/player/hands.ts';
 import { teleport } from '../../../src/physics/physics.ts';
 import { groundHeight } from '../../../src/adapters/terrain.ts';
 
@@ -87,6 +88,15 @@ export async function holdUse(tx: number, tz: number, ms: number) {
   triggerAction('use', 'down');
   await sleep(ms);
   triggerAction('use', 'up');
+}
+
+/** The same through the touch Grab button's calls (src/player/input.ts: touchDown on press, useUp on release). */
+export async function holdTouch(tx: number, tz: number, ms: number) {
+  const p = me.body!.position;
+  cam.yaw = me.yaw = Math.atan2(-(tx - p.x), -(tz - p.z));
+  touchDown();
+  await sleep(ms);
+  useUp();
 }
 
 export const freeCam = () => setTimeout(() => win.__debugCam?.clear(), 400);

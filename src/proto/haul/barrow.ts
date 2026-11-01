@@ -29,6 +29,7 @@ import { onFrame } from '../../loop.ts';
 import { cellX, cellZ } from '../../adapters/terrain.ts';
 import { launchLog, myLogs, openRingNear } from './loose-logs.ts';
 import { makeBarrow, type BarrowMesh } from './barrow-mesh.ts';
+import { setBackBundleHidden } from '../../features/haul-stack.ts';
 
 // ---------------------------------------------------------------- tuning (window.__barrow.T in the console)
 const T = {
@@ -342,7 +343,7 @@ const tray = pieceMesh(T.maxShown + 12);
 const flights: { from: THREE.Vector3; n: number; t0: number }[] = [];
 const addFlight = (from: THREE.Vector3, n: number) =>
   flights.push({ from: from.clone(), n: Math.min(n, 6), t0: performance.now() });
-onFly(addFlight); // Take logs: the logs fly into the tray (the back bundle is hidden below)
+onFly(addFlight); // Take logs: the logs fly into the tray (your back bundle is hidden, below)
 
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
@@ -362,30 +363,8 @@ function trayLog(m: number, t: number, jig: number, out: THREE.Matrix4) {
   return out.compose(at.set(x, y, z), q.setFromEuler(e), one);
 }
 
-// The back bundle (src/features/haul-stack.ts) draws your stack on your back; with the barrow the stack is in the tray,
-// so its two meshes are hidden here. They are found once, as the instanced meshes drawing at your back.
-let backMeshes: THREE.Object3D[] | null = null;
-const probe = new THREE.Vector3();
-function hideBack() {
-  if (!me.avatar || !me.body) return;
-  if (!backMeshes) {
-    if (!identity.pid || rules.stacks.count(identity.pid) <= 0) return;
-    const p = me.body.interpolatedPosition;
-    const found: THREE.Object3D[] = [];
-    for (const o of scene.children) {
-      const im = o as THREE.InstancedMesh;
-      if (!im.isInstancedMesh || im === tray || !im.count) continue;
-      im.getMatrixAt(0, m4);
-      probe.setFromMatrixPosition(m4);
-      if (Math.hypot(probe.x - p.x, probe.z - p.z) < 1.0 && probe.y > p.y - 0.05 && probe.y < p.y + 2) found.push(im);
-    }
-    if (!found.length) return;
-    backMeshes = found;
-  }
-  for (const o of backMeshes) o.visible = false;
-}
-
-const tq = new THREE.Quaternion();
+const tq = new THREE.Quaternion(),
+  probe = new THREE.Vector3();
 onFrame(
   ({ dt, now }: { dt: number; now: number }) => {
     askCapacity(now);
@@ -434,9 +413,10 @@ onFrame(
       }
     }
     commitPieces(tray, c);
-    hideBack();
+    // the tray is your stack: your back bundle stays empty while the barrow variant is on, pushed or parked
+    if (identity.pid) setBackBundleHidden(identity.pid, true);
   },
-  { phase: 'update', order: 33 }, // after the back bundle (haul-stack, 32) has drawn, so hiding it sticks
+  { phase: 'update', order: 33 },
 );
 
 // ---------------------------------------------------------------- Owner sync: everyone sees your barrow
