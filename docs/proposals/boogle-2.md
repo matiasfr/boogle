@@ -122,7 +122,7 @@ These are standing preferences from the thread.
 
 ## Open questions (round 8 and the architecture review)
 
-1. Keep the short bell countdown before opening day (about 10 s)?
+1. Keep the short bell countdown before opening day (about 10 s)? Research recommends a ~45 s gathering call (smoke column, a bell that carries; ends early once everyone online is at the platform; solo goes straight to the bell) followed by the 10 s bell ([shared-moments-and-events.md](../research/shared-moments-and-events.md), rec 1). Being tried in the era prototype's round 2.
 2. When does the mini-games design pass happen?
 3. Apply the proposed re-ordering of [architecture.md](../plans/architecture.md) from [boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md)?
 4. ~~Who runs the baseline on a 2021 iPad and a mid-range Android phone?~~ Now the M4 iPad Pro (Decided, 1 November). Do phones stay supported at a lower quality, or drop?
