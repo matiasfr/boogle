@@ -319,25 +319,3 @@ body.playing .menu-btn {
   outline: 3px solid var(--sun);
   outline-offset: 2px;
 }
-
-/* ?proto=arrive: your name and colour on the Room page */
-.pause-you-edit {
-  display: grid;
-  gap: 8px;
-}
-.pause-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.pause .pause-swatch {
-  width: 34px;
-  height: 34px;
-  min-height: 0;
-  padding: 0;
-  border-radius: 50%;
-  border: 3px solid transparent;
-}
-.pause .pause-swatch[aria-pressed='true'] {
-  border-color: currentColor;
-}

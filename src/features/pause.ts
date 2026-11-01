@@ -16,8 +16,6 @@ import { dialogue } from '../boogler/dialogue.ts';
 import { registerAction, isTyping } from '../player/controls.ts';
 import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
-import { sanitizeName } from '../math.ts';
-import { renderPeople } from '../player/hud.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -25,8 +23,8 @@ const TABS: [GuideKind, string][] = [
   ['touch', 'Touch'],
 ];
 const LEAVE_MS = 3000;
-// ?proto=arrive skips the lobby (src/proto/arrive/), so the Room page lets you change your name and colour.
-const RENAME = new URLSearchParams(location.search).get('proto') === 'arrive';
+// Sections a prototype adds to the Room page, above Back (?proto=arrive's name and colour, src/proto/arrive/rename.ts).
+export const roomExtras: (() => HTMLElement)[] = [];
 
 // Built on first open (build) and at start (the menu button); used only after.
 let dlg!: HTMLDialogElement;
@@ -202,61 +200,9 @@ function renderRoom() {
   const back = button('Back', () => show('main'), 'pause-back');
   back.dataset.act = 'back';
   link.append(copy);
-  wrap.append(el('h2', 'pause-h', 'On the island'), list, link);
-  if (RENAME) wrap.append(renderYou());
-  wrap.append(back);
+  wrap.append(el('h2', 'pause-h', 'On the island'), list, link, ...roomExtras.map((part) => part()), back);
   fillPeople(list);
   return wrap;
-}
-
-function saveYou() {
-  try {
-    localStorage.setItem('boogle.name', me.name);
-    localStorage.setItem('boogle.color', String(me.colorIdx));
-  } catch {
-    // not remembered past this visit
-  }
-  me.avatar?.userData.mat.color.set(COLORS[me.colorIdx]);
-  renderPeople(); // presence sends the new name and colour; src/features/identity.ts tells the roster
-  fillPeople();
-}
-
-function renderYou() {
-  const you = el('div', 'pause-you-edit');
-  const name = el('input', 'pause-url');
-  name.type = 'text';
-  name.maxLength = 16;
-  name.spellcheck = false;
-  name.value = me.name;
-  name.enterKeyHint = 'done';
-  name.setAttribute('aria-label', 'Your name');
-  name.addEventListener('input', () => {
-    const n = sanitizeName(name.value);
-    if (!n || n === me.name) return;
-    me.name = n;
-    saveYou();
-  });
-  name.addEventListener('keydown', (e) => e.key === 'Enter' && name.blur());
-  const swatches = el('div', 'pause-swatches');
-  const paint = () =>
-    swatches.querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-pressed', String(k === me.colorIdx)));
-  COLORS.forEach((col, k) => {
-    const b = button(
-      '',
-      () => {
-        me.colorIdx = k;
-        paint();
-        saveYou();
-      },
-      'pause-swatch',
-    );
-    b.style.background = col;
-    b.setAttribute('aria-label', `Colour ${k + 1}`);
-    swatches.append(b);
-  });
-  paint();
-  you.append(el('h2', 'pause-h', 'You'), name, swatches);
-  return you;
 }
 
 function fillPeople(list = card.querySelector('.pause-people')) {
