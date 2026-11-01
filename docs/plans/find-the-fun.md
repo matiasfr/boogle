@@ -57,6 +57,8 @@ and test it.
 - [x] **Haul kit:** `?proto=haul` opens a live tuning panel (sway, spill, pour speed, section cost, caps, bundle
       yield and refill) and a playtest checklist ([docs/playtest-kits/haul.md](../playtest-kits/haul.md)). Room-wide
       numbers change for everyone in the room at once.
+- [x] **Haul variants:** a wheelbarrow (`&v=barrow`) and throwing logs (`&v=toss`) beside the back bundle, compared
+      in the same playtest ([haul.md](../game-design/haul.md), "Prototype: haul variants").
 - [ ] **Playtest 1** (solo); findings in playtests.md, answer in boogle-2.md.
 
 ## 2. Is riding fun? (the rail spike)
