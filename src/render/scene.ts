@@ -83,7 +83,7 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 // TRAA, GTAO...) extend this chain: set pipeline.outputNode from scenePass and pipeline.needsUpdate = true.
 // The 4x MSAA samples are stored as usual. Discarding them (storeMultisampled*Buffer: false, docs/research/
 // webgpu-on-ipad.md rec 2) blanked the whole scene on iPad Safari 27, the first Safari with TRANSIENT_ATTACHMENT
-// (2 Nov 2026): only the clear colour showed. Re-enable only after it's verified on a Safari 27 device.
+// (1 Nov 2026): only the clear colour showed. Re-enable only after it's verified on a Safari 27 device.
 export const scenePass = pass(scene, camera);
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
