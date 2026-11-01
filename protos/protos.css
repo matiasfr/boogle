@@ -1,0 +1,249 @@
+/* boogle.club/protos/: phone first, one column of cards; two columns on wide screens. */
+:root {
+  --bg: #f4f1ea;
+  --card: #ffffff;
+  --sunk: #f0ece3;
+  --fg: #1c1a17;
+  --mute: #6b655b;
+  --line: #e2dccf;
+  --accent: #1f7a55;
+  --accent-fg: #ffffff;
+  --badge: #b25e12;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12110f;
+    --card: #1c1a17;
+    --sunk: #26231f;
+    --fg: #f1ece3;
+    --mute: #a59e92;
+    --line: #34302a;
+    --accent: #3fbf88;
+    --accent-fg: #0b1a12;
+    --badge: #f0a050;
+    color-scheme: dark;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    17px/1.45 system-ui,
+    -apple-system,
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+.top {
+  padding: max(20px, env(safe-area-inset-top)) 16px 8px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+.top p {
+  margin: 0 0 12px;
+  color: var(--mute);
+}
+code,
+.url {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.85em;
+}
+#list {
+  display: grid;
+  gap: 16px;
+  padding: 8px 16px max(32px, env(safe-area-inset-bottom));
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (min-width: 820px) {
+  #list {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 16px 16px;
+  min-width: 0;
+}
+.card.building,
+.card.retired {
+  opacity: 0.62;
+}
+.card.building:focus-within,
+.card.retired:focus-within {
+  opacity: 1;
+}
+.meta {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mute);
+}
+.badge {
+  color: var(--badge);
+}
+h2 {
+  margin: 2px 0 4px;
+  font-size: 22px;
+}
+.note {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--mute);
+}
+h3 {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--sunk);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.play {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 56px;
+  font-size: 20px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.play.off {
+  pointer-events: none;
+  opacity: 0.45;
+}
+.playrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.playrow .play {
+  margin-top: 0;
+  width: auto;
+  flex: 1;
+}
+.name {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.url {
+  margin: 6px 0 0;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+.try {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.try label {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+.try input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.try input:checked + span {
+  color: var(--mute);
+  text-decoration: line-through;
+}
+.field {
+  display: block;
+  margin: 0 0 12px;
+}
+.field .q {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  resize: vertical;
+}
+textarea:focus,
+.name:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 4px;
+}
+.foot .btn {
+  flex: 1;
+}
+.kit {
+  color: var(--accent);
+  font-weight: 600;
+  padding: 12px 4px;
+}
+.said {
+  display: block;
+  min-height: 1em;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--accent);
+}
+.top .said {
+  display: inline;
+  margin-left: 10px;
+}
+.fallback {
+  margin-top: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  min-height: 140px;
+}
