@@ -7,7 +7,7 @@
 import '../render/ui-kit.css';
 import './prompt.css';
 import { onFrame } from '../loop.ts';
-import { toScreen } from '../render/scene.ts';
+import { toScreen, view } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
 import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
@@ -64,8 +64,8 @@ onFrame(
       inner.classList.add('pop');
       uiSound('pop');
     }
-    const { x, y, behind } = toScreen(t.at, onScreen, innerWidth, innerHeight);
-    const visible = !behind && x > 0 && x < innerWidth && y > 0 && y < innerHeight;
+    const { x, y, behind } = toScreen(t.at, onScreen);
+    const visible = !behind && x > 0 && x < view.w && y > 0 && y < view.h;
     root.hidden = !visible;
     if (!visible) return;
     root.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
