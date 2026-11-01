@@ -21,6 +21,10 @@ export const WAGON_CRUISE = 30; // cm per tick at full speed (3 m/s)
 export const WAGON_ACCEL = 30; // ticks to reach full speed from a stop, and to brake from it (3 s, so 1 m/s^2)
 export const WAGON_DWELL = 60; // ticks standing at each stop (6 s)
 
+/** A speed profile: cruise in cm per tick, accel in ticks to reach it from a stop. Playtest rooms tune it (./tune.ts). */
+export type WagonPace = { cruise: number; accel: number };
+export const WAGON_PACE: WagonPace = { cruise: WAGON_CRUISE, accel: WAGON_ACCEL };
+
 const TICKS_PER_S = 1000 / MS_PER_TICK;
 
 /**
@@ -80,53 +84,56 @@ function ceilSqrtOf(num: number, den: number): number {
 }
 
 // A run of `len` cm from rest to rest: `accel` ticks speeding up, then cruising, then `accel` braking, `ticks` in all.
-// The peak is len / (ticks - accel) <= WAGON_CRUISE, and the acceleration peak / accel <= WAGON_CRUISE / WAGON_ACCEL.
-export function runTicks(len: number): { ticks: number; accel: number } {
-  if (len >= WAGON_CRUISE * WAGON_ACCEL)
-    return { ticks: WAGON_ACCEL + Math.ceil(len / WAGON_CRUISE), accel: WAGON_ACCEL };
-  const accel = ceilSqrtOf(len * WAGON_ACCEL, WAGON_CRUISE); // too short to reach cruise: speed up, then brake
+// The peak is len / (ticks - accel) <= cruise, and the acceleration peak / accel <= cruise / pace.accel.
+export function runTicks(len: number, pace: WagonPace = WAGON_PACE): { ticks: number; accel: number } {
+  const { cruise, accel: a } = pace;
+  if (len >= cruise * a) return { ticks: a + Math.ceil(len / cruise), accel: a };
+  const accel = ceilSqrtOf(len * a, cruise); // too short to reach cruise: speed up, then brake
   return { ticks: 2 * accel, accel };
 }
 
-const cache: Step[][] = [];
-function timetable(laid: number): Step[] {
-  if (cache[laid]) return cache[laid];
+const cache = new Map<string, Step[]>();
+function timetable(laid: number, pace: WagonPace): Step[] {
+  const key = `${laid}:${pace.cruise}:${pace.accel}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
   const steps: Step[] = [];
   let t = 0;
   const add = (stop: number, section: number, dir: 1 | -1): void => {
     steps.push({ start: t, len: WAGON_DWELL, stop, section, dir, accel: 0, peak: 0 });
     t += WAGON_DWELL;
     const { len } = sections()[section];
-    const { ticks, accel } = runTicks(len);
+    const { ticks, accel } = runTicks(len, pace);
     steps.push({ start: t, len: ticks, stop: -1, section, dir, accel, peak: len / (ticks - accel) });
     t += ticks;
   };
   for (let k = 0; k < laid; k++) add(k, k, 1); // out: dwell at stop k, run section k
   for (let k = laid; k > 0; k--) add(k, k - 1, -1); // back: dwell at stop k, run section k - 1
-  return (cache[laid] = steps);
+  cache.set(key, steps);
+  return steps;
 }
 
 const clampLaid = (laid: number): number => Math.min(Math.floor(laid), ROUTE.length);
 
 /** Ticks in one round trip with `laid` sections laid (0 with none). The timetable repeats with this period. */
-export function wagonCycle(laid: number): number {
+export function wagonCycle(laid: number, pace: WagonPace = WAGON_PACE): number {
   const n = clampLaid(laid);
   if (!(n > 0)) return 0;
-  const steps = timetable(n);
+  const steps = timetable(n, pace);
   const last = steps[steps.length - 1];
   return last.start + last.len;
 }
 
 /**
  * The wagon at `tick` (integer or fractional) with `laid` sections laid, on a timetable whose cycle starts at tick `t0`
- * (default 0; ticks before t0 run the same cycle backwards in time, so the result is periodic everywhere). Null with
- * nothing laid: no wagon.
+ * (default 0; ticks before t0 run the same cycle backwards in time, so the result is periodic everywhere), at `pace`
+ * (default WAGON_PACE). Null with nothing laid: no wagon.
  */
-export function wagonAt(laid: number, tick: number, t0 = 0): WagonState | null {
+export function wagonAt(laid: number, tick: number, t0 = 0, pace: WagonPace = WAGON_PACE): WagonState | null {
   const n = clampLaid(laid);
   if (!(n > 0)) return null;
-  const steps = timetable(n);
-  const cycle = wagonCycle(n);
+  const steps = timetable(n, pace);
+  const cycle = wagonCycle(n, pace);
   let phase = (tick - t0) % cycle;
   if (phase < 0) phase += cycle;
   let k = 0;

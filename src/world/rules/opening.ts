@@ -4,7 +4,16 @@
 // follows are a scripted run from that tick, so a late joiner sees the same moment, and the era stays derived.
 // `open.lay {}` is the solo tester's shortcut: in a proto- room only (host-only fact `protoRoom`, set from the room id)
 // it lays every remaining section at once. Lockstep: everything here runs the same on every peer (see ./README.md).
-import { createOpening, canOpen, startOpening, resetOpening, openingAt, openedAt, eraOf } from '../../sim/era.ts';
+import {
+  createOpening,
+  canOpen,
+  startOpening,
+  resetOpening,
+  noteLaid,
+  openingAt,
+  openedAt,
+  eraOf,
+} from '../../sim/era.ts';
 import { serializeOpening, loadOpening, hashOpening, openingReady } from '../../sim/era.ts';
 import { layRest } from '../../sim/sites.ts';
 import { ROUTE } from '../../sim/route.ts';
@@ -29,8 +38,10 @@ export function install(sync: SyncView, land: Land, rules: { sites: SitesApi }) 
   });
   sync.registerOp('open.lay', {
     validate: (_e, ctx) => ctx.env.protoRoom === true && sites.open < ROUTE.length,
-    apply: () => {
+    apply: (_e, tick) => {
+      const from = sites.open;
       const n = layRest(sites);
+      if (n) noteLaid(opening, from, tick); // when they came, for a late joiner's wagon timetable
       return n ? { n } : null;
     },
   });

@@ -141,3 +141,23 @@ test('fractional ticks agree with integer ticks at integers, and laid beyond the
     for (let t = 0; t < 400; t++) assert.deepEqual(wagonAt(laid, t + 0.5 - 0.5), wagonAt(laid, t));
   assert.deepEqual(wagonAt(ROUTE.length + 5, 123.5), wagonAt(ROUTE.length, 123.5));
 });
+
+test('a tuned pace (a playtest room) keeps the caps, stays continuous, and the default pace is unchanged', () => {
+  const pace = { cruise: 65, accel: 20 };
+  const cruiseMs = pace.cruise / 10;
+  for (const len of [1, 50, 1299, 1300, 1301, 1803]) {
+    const { ticks, accel } = runTicks(len, pace);
+    const peak = len / (ticks - accel);
+    assert.ok(peak <= pace.cruise + EPS && peak / accel <= pace.cruise / pace.accel + EPS, `len ${len}`);
+  }
+  for (const laid of LAIDS) {
+    assert.ok(wagonCycle(laid, pace) < wagonCycle(laid), 'faster round trip');
+    assert.deepEqual(wagonAt(laid, 77.5, 3, { cruise: WAGON_CRUISE, accel: WAGON_ACCEL }), wagonAt(laid, 77.5, 3));
+    for (let t = 0; t < wagonCycle(laid, pace); t += 0.05) {
+      const a = wagonAt(laid, t, 0, pace)!;
+      const b = wagonAt(laid, t + 0.05, 0, pace)!;
+      assert.ok(Math.abs(a.speed) <= cruiseMs + EPS);
+      assert.ok(Math.hypot(b.x - a.x, b.z - a.z) <= (cruiseMs * 0.05) / 10 + 1e-9, `laid ${laid} t ${t}`);
+    }
+  }
+});

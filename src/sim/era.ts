@@ -26,9 +26,13 @@ export function eraOf(age: number, laid: number, opened: boolean): number {
   return opened && age >= 1 && openingReady(laid) ? 2 : 1;
 }
 
-/** Opening day's state: the tick it started, -1 before. rev counts changes for views (neither saved nor hashed). */
-export type Opening = { t0: number; rev: number };
-export const createOpening = (): Opening => ({ t0: -1, rev: 0 });
+/**
+ * Opening day's state: the tick it started, -1 before. `laid`: the playtest shortcut `open.lay`'s [first section it
+ * laid, tick], or null (so a late joiner knows when those sections came, for the wagon's timetable). rev counts changes
+ * for views (neither saved nor hashed).
+ */
+export type Opening = { t0: number; laid: [number, number] | null; rev: number };
+export const createOpening = (): Opening => ({ t0: -1, laid: null, rev: 0 });
 export const canOpen = (o: Opening, laid: number): boolean => o.t0 < 0 && openingReady(laid);
 export function startOpening(o: Opening, tick: number): void {
   o.t0 = tick;
@@ -36,16 +40,30 @@ export function startOpening(o: Opening, tick: number): void {
 }
 export function resetOpening(o: Opening): void {
   o.t0 = -1;
+  o.laid = null;
+  o.rev++;
+}
+/** Notes that `open.lay` laid every section from `from` on at `tick`. */
+export function noteLaid(o: Opening, from: number, tick: number): void {
+  o.laid = [from, tick];
   o.rev++;
 }
 export const openingAt = (o: Opening, tick: number): RunState => runAt(OPENING_DAY, o.t0, tick);
 export const openedAt = (o: Opening, tick: number): boolean => openingAt(o, tick).done;
 
-export const serializeOpening = (o: Opening): { t0: number } => ({ t0: o.t0 });
+// `la` only once the shortcut was used: an untouched room saves and hashes exactly as before.
+export const serializeOpening = (o: Opening): { t0: number; la?: [number, number] } =>
+  o.laid ? { t0: o.t0, la: [o.laid[0], o.laid[1]] } : { t0: o.t0 };
 export function loadOpening(o: Opening, json: unknown): void {
-  const t0 = (json as { t0?: unknown } | null)?.t0;
+  const { t0, la } = (json ?? {}) as { t0?: unknown; la?: unknown };
   if (!Number.isSafeInteger(t0) || (t0 as number) < -1) throw new Error('opening: bad snapshot');
+  const ok = Array.isArray(la) && la.length === 2 && la.every((n) => Number.isSafeInteger(n) && n >= 0);
+  if (la !== undefined && !ok) throw new Error('opening: bad la');
   o.t0 = t0 as number;
+  o.laid = ok ? [la[0], la[1]] : null;
   o.rev++;
 }
-export const hashOpening = (o: Opening): number => fold(FNV_SEED, o.t0 + 1);
+export const hashOpening = (o: Opening): number => {
+  const h = fold(FNV_SEED, o.t0 + 1);
+  return o.laid ? fold(fold(h, o.laid[0]), o.laid[1]) : h;
+};

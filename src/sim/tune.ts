@@ -4,6 +4,7 @@
 import { AGES, ROUTE, TRACK, costOf } from './route.ts';
 import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
+import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
 import { FNV_SEED, foldAll } from './hash.ts';
 import type { CostFn } from './sites.ts';
 
@@ -15,6 +16,8 @@ export const TUNABLES = [
   { key: 'yield', def: YIELD, min: 1, max: 60, label: 'Logs per take' },
   { key: 'full', def: FULL, min: 1, max: FULL_MAX, label: 'Takes per bundle' },
   { key: 'trickle', def: TRICKLE_EVERY, min: 10, max: 6000, label: 'Bundle refill every (ticks)' },
+  { key: 'wagonCruise', def: WAGON_CRUISE, min: 10, max: 100, label: 'Wagon cruise (cm per tick)' },
+  { key: 'wagonAccel', def: WAGON_ACCEL, min: 5, max: 100, label: 'Wagon speed-up (ticks to cruise)' },
 ] as const;
 // Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
 // wobble and jump spill, removed after the first playtest).
@@ -48,6 +51,9 @@ export const costIn =
   (t: Tune): CostFn =>
   (s, ring) =>
     ROUTE[s]?.age === 0 ? (ring === TRACK ? t.v.cost0 : t.v.helper0) : costOf(s, ring);
+
+// The wagon's speed profile under this tuning (../sim/wagon.ts).
+export const paceIn = (t: Tune): WagonPace => ({ cruise: t.v.wagonCruise, accel: t.v.wagonAccel });
 
 // Tuning is for playtest rooms only: the room id (after the world namespace, ../world/namespace.ts) starts `proto-`.
 export const isProtoRoom = (id: unknown): boolean => typeof id === 'string' && /^(v\d+-)?proto-/.test(id);
