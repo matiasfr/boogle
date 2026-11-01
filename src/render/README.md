@@ -81,7 +81,11 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
 - `?prof=1` (any build, live site included) overlays the frame's main-thread CPU per section: each `onFrame` hook by
-  module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows.
+  module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows. Its
+  top row is the GPU's time per frame (every render pass, from WebGPU timestamp queries: `?prof=1` turns three's
+  `trackTimestamp` on, so the numbers include its small cost), the only GPU timer on an iPad. It also logs the
+  adapter's features and limits to the console once; `?gpuinfo=1` shows them in a panel, to read on a device without
+  Web Inspector ([gpu-info.ts](../debug/gpu-info.ts)).
   `npm run perf` prints them, and `npm run hitches` names the slowest section of each hitch frame. `npm run hitches -- --allocs` adds JS heap
   allocated per frame and the functions that allocate most (library allocations charged to the game code calling them).
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and

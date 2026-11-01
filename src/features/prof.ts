@@ -5,4 +5,7 @@ import { onStart, prof } from '../loop.ts';
 onStart(() => {
   if (window.boogle) window.boogle.prof = prof;
 });
-if (Number(new URLSearchParams(location.search).get('prof')) > 0) import('../debug/prof-overlay.ts');
+const params = new URLSearchParams(location.search);
+if (Number(params.get('prof')) > 0) import('../debug/prof-overlay.ts');
+// `?gpuinfo=1`: the adapter's features and limits in a panel, to read on a device without Web Inspector.
+if (Number(params.get('gpuinfo')) > 0) onStart(() => import('../debug/gpu-info.ts').then((m) => m.showGpuInfo()));

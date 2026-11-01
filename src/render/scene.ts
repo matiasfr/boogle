@@ -8,7 +8,12 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.js starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
-export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+export const renderer = new THREE.WebGPURenderer({
+  canvas,
+  antialias: true,
+  powerPreference: 'high-performance',
+  trackTimestamp: Number(params.get('prof')) > 0, // GPU ms per frame in the ?prof=1 overlay (src/debug/prof-overlay.ts)
+});
 (renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
 export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
 export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
