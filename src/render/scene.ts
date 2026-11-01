@@ -28,6 +28,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const lobbyNote = (text: string) => {
   const sub = document.getElementById('lobby-sub');
   if (sub) sub.textContent = text;
+  document.getElementById('lobby')?.removeAttribute('hidden'); // a returning visit hides the card (src/player/hud.ts)
 };
 // The backend three is drawing with: 'webgpu' once rendererReady resolves, null before (telemetry, the harness).
 let started = false;
