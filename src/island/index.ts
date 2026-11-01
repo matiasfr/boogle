@@ -3,10 +3,11 @@
 // Each POI is a folder in src/pois/. Its site.js (placement, terrain stamps, keep-out discs) is read here, before the
 // terrain is built; its index.js (meshes, colliders, lights, per-frame updates) is loaded later by
 // src/features/pois.js. Add or delete a folder to add or remove a POI; nothing else on the island changes.
-import { createIsland } from './stamps.js';
-import { islandBaseCm } from './ground.js';
+import { createIsland } from './stamps.ts';
+import { islandBaseCm } from './ground.ts';
+import type { Site } from './stamps.ts';
 
-const found = import.meta.glob('../pois/*/site.{js,ts}', { eager: true });
+const found = import.meta.glob<{ default: Site }>('../pois/*/site.{js,ts}', { eager: true });
 
 // Folder order (alphabetical), so every client composes the stamps in the same order.
 const sites = Object.keys(found)

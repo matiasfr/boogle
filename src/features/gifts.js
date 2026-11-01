@@ -1,6 +1,6 @@
-// Island gifts (src/adapters/gifts.js): things players threw, and the frisbee on the lighthouse deck.
+// Island gifts (src/adapters/gifts.ts): things players threw, and the frisbee on the lighthouse deck.
 import { onFrame, onStart } from '../loop.ts';
-import { gifts, createGifts3d, updateGifts, giftTargets } from '../adapters/gifts.js';
+import { gifts, createGifts3d, updateGifts, giftTargets } from '../adapters/gifts.ts';
 import { interactTarget, registerInteractable } from '../player/hands.ts';
 
 onStart(() => {

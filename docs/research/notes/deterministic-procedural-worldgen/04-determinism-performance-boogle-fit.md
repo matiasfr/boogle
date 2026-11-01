@@ -14,7 +14,7 @@ Integer arithmetic, `Math.imul` hashing and seeded mulberry32 are reproducible e
 - Minecraft derives structure placement from world seed, position and an integer salt per structure set — [Minecraft Wiki, Structure set](https://minecraft.wiki/w/Structure_set)
 
 ### Inferences
-- Boogle's current base terrain (`src/adapters/terrain.js` `naturalHeight`) uses `Math.exp` and `Math.hypot` plus float fbm, then `Math.round(h*100)` in `src/world/terrain-edits.js`. Today all peers compute the same single island, so a 1-ulp difference only matters if a value lands near a .5 cm rounding boundary; with per-room seeds the number of opportunities multiplies. A per-room generator should be integer-only end to end (as `hash2` in `src/math.ts` already is, though `valueNoise`/`fbm` interpolate in floats).
+- Boogle's current base terrain (`src/adapters/terrain.ts` `naturalHeight`) uses `Math.exp` and `Math.hypot` plus float fbm, then `Math.round(h*100)` in `src/world/terrain-edits.js`. Today all peers compute the same single island, so a 1-ulp difference only matters if a value lands near a .5 cm rounding boundary; with per-room seeds the number of opportunities multiplies. A per-room generator should be integer-only end to end (as `hash2` in `src/math.ts` already is, though `valueNoise`/`fbm` interpolate in floats).
 - Two safe designs: (a) every peer regenerates from `{seed, genVersion}` and the snapshot hash catches mismatches; (b) the host generates and the base heightfield (129² Int16 = ~33 KB raw, compressible) travels in the snapshot. (a) is cheaper on the wire and fits "sync edits, not state"; (b) is robust to generator edits. Recommended: (a) plus storing `genVersion` in the persisted snapshot so old rooms keep their island when the generator changes (keep old versions or fall back to (b) for them).
 
 ### Gaps
@@ -44,7 +44,7 @@ At 129x129 (16,641 cells) a complete integer pipeline — shape + fbm, 50 iterat
 The island is baked at module import from constants, and several systems hard-code positions on it. Per-room generation needs (1) terrain built after the room seed is known, (2) layout anchors (court, spawn, garden patch, spring) produced by the generator instead of constants, and (3) validation that the generated island satisfies gameplay invariants.
 
 ### Cited Findings (local code, read-only inspection)
-- `src/adapters/terrain.js` computes `heights[][]` at import time from `naturalHeight` (radial distance with fbm wobble, a Gaussian hill at (-12,-6), bumps, and a sea falloff) and flattens a court at `COURT` — local file
+- `src/adapters/terrain.ts` computes `heights[][]` at import time from `naturalHeight` (radial distance with fbm wobble, a Gaussian hill at (-12,-6), bumps, and a sea falloff) and flattens a court at `COURT` — local file
 - `src/world/terrain-edits.js` quantises base to cm at import; editability = beach band `EDIT_MIN_CM..EDIT_MAX_CM` (-120..160 cm) or court, excluding the mushroom garden — local file
 - `src/sim/mushrooms.ts` fixes `PATCH = { i0: 78, j0: 52, w: 10, h: 10 }`; `COURT`, `SPAWN`, `BALL_SPAWN`, `ISLAND_R` are constants used by `terrain.js`, `player.js`, `ball.js`, `props.js`, `boogler.js`, `main.js` — local files
 - `src/world/sync.ts` holds `world.seed` (default 20261028) and snapshots carry `{tick, seed, epochMs, data}`; terrain state serialises only deltas, assuming every peer has the same base — local file

@@ -5,7 +5,7 @@ const DROPS = `
   const { groundProbe } = await import('/src/physics/physics.ts');
   const { stepFixed } = await import('/src/physics/engine.ts');
   const { ball, claimBall } = await import('/src/physics/ball.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { HALF, SEA } = await import('/src/constants.ts');
   const { me } = window.boogle;
   const b = me.body, clear = (body) => body.position.y - groundHeight(body.position.x, body.position.z);

@@ -12,7 +12,7 @@ import { me, ITEM_HAND } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { inv, SLOTS, heldId, select } from '../player/inventory.ts';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.ts';
-import { pouring } from '../adapters/mushroom-garden.js';
+import { pouring } from '../adapters/mushroom-garden.ts';
 import { itemModel } from '../player/item-models.ts';
 import { warmUp } from '../render/precompile.ts';
 import { setIcon, warmIcons } from '../player/item-icons.ts';

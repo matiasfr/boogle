@@ -43,7 +43,7 @@ onTick(fn, label?)           // fn(tick) every sim tick, in registration order, 
 onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
 onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
                              // result is what apply returned. Runs on every peer: effects for the submitter only check
-                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.js). Not replayed after
+                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.ts). Not replayed after
                              // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
@@ -62,7 +62,7 @@ registry()                   // { ops, states }: registered keys in order
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
 
-Grid cells use the heightfield indexing from `src/adapters/terrain.js`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
+Grid cells use the heightfield indexing from `src/adapters/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
 Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 

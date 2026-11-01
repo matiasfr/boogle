@@ -31,14 +31,14 @@
 // The pick is src/sim/interact-pick.ts: something that would act beats something blocked, then nearest wins, with a
 // nudge toward where you look. Ties go to the provider registered first.
 //
-// Thrown things other than the beach ball fly and land through src/adapters/gifts.js; the ball keeps its own physics.
+// Thrown things other than the beach ball fly and land through src/adapters/gifts.ts; the ball keeps its own physics.
 import * as THREE from 'three';
 import { me, cam } from './player.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
-import { throwItem } from '../adapters/gifts.js';
-import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.js';
+import { throwItem } from '../adapters/gifts.ts';
+import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
 import { pickInteract, type InteractTarget } from '../sim/interact-pick.ts';
 

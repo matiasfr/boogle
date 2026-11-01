@@ -164,7 +164,7 @@ export default {
 
     // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X then B alike).
     const wind = await g.eval(`${INV}
-      const { STALL } = await import('/src/adapters/mushroom-garden.js');
+      const { STALL } = await import('/src/adapters/mushroom-garden.ts');
       const { me } = window.boogle;
       I.take('frisbee');
       ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
@@ -184,9 +184,9 @@ export default {
     // A watering can behind you does not hide the log bundle you face: drop a can on open ground past a bundle, stand
     // between them facing the bundle, and the prompt says Take logs while the can is still in reach.
     const palm = await g.eval(`${INV}
-      const G = await import('/src/adapters/gifts.js');
+      const G = await import('/src/adapters/gifts.ts');
       const { rules } = await import('/src/world/game-world.ts');
-      const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.js');
+      const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       const { camera } = await import('/src/render/scene.ts');
       const { cam } = await import('/src/player/player.ts');
@@ -238,7 +238,7 @@ export default {
 
     // Seeds on ground they cannot go in: the click says why.
     const spot = await g.eval(`${INV}
-      const G = await import('/src/adapters/mushroom-garden.js');
+      const G = await import('/src/adapters/mushroom-garden.ts');
       const { me } = window.boogle;
       I.take('seeds', 3);
       for (let r = 0; r < 40; r += 2)

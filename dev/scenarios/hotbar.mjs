@@ -72,7 +72,7 @@ export default {
       const { ball } = await import('/src/physics/ball.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       const { boogler } = await import('/src/boogler/boogler.js');
-      const { groundHeight } = await import('/src/adapters/terrain.js');
+      const { groundHeight } = await import('/src/adapters/terrain.ts');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
       // The Boogler wanders: if he is close, E would pick Talk over the ball. Step 8 m away from him first.
@@ -127,7 +127,7 @@ export default {
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
     const spot = await g.eval(`${INV}
       const { CELL, HALF, GRID_RES } = await import('/src/constants.ts');
-      const G = await import('/src/adapters/mushroom-garden.js');
+      const G = await import('/src/adapters/mushroom-garden.ts');
       const { PATCH } = await import('/src/sim/mushrooms.ts');
       for (let r = 6; r < 60; r += 2)
         for (let a = 0; a < 24; a++) {
@@ -142,14 +142,14 @@ export default {
     await g.wait(0.4);
     await g.eval(`${INV} H.useDown(); H.useUp();`);
     const hasPlot = await g.waitFor(`(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.js');
+      const { garden } = await import('/src/adapters/mushroom-garden.ts');
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
     t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
     await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
     // Stand on the seed as soon as it starts growing, before it has a collider: later, on a fast machine, the cap is
     // already above your feet and you land on top and ride it up instead (that is intended, but not this check).
     await g.waitFor(`(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.js');
+      const { garden } = await import('/src/adapters/mushroom-garden.ts');
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`);
     await g.eval(TP(spot.x + 0.3, spot.z));
     const before = await g.eval(

@@ -1,4 +1,4 @@
-// Terrain stamps: how a point of interest reshapes and repaints the natural ground (src/island/shape.js) around it,
+// Terrain stamps: how a point of interest reshapes and repaints the natural ground (src/island/shape.ts) around it,
 // without touching anything else on the island. Sites (src/pois/<name>/site.js) list stamps in their own local frame;
 // createIsland() places them in the world and composes everything into one height and paint function.
 //
@@ -19,15 +19,47 @@
 //
 // Pure arithmetic and Math.sqrt only (correctly rounded everywhere), so every client gets the same ground.
 import { smoothstep } from '../math-pure.ts';
-import { naturalHeight } from './shape.js';
+import { naturalHeight } from './shape.ts';
 
-const hex = (s) => {
+type HeightValue = number | 'ground' | 'path';
+/** One terrain stamp (see the header). */
+export type Stamp = {
+  shape: 'disc' | 'box' | 'path';
+  x?: number;
+  z?: number;
+  r?: number;
+  hx?: number;
+  hz?: number;
+  points?: [number, number, number?][];
+  w?: number;
+  fade?: number;
+  set?: HeightValue;
+  add?: HeightValue;
+  min?: HeightValue;
+  max?: HeightValue;
+  paint?: string;
+  strength?: number;
+  stripes?: number;
+};
+/** A point of interest's placement: where it sits, which way it faces, its stamps and keep-out discs. */
+export type Site = {
+  id?: string;
+  x: number;
+  z: number;
+  dir?: [number, number];
+  stamps?: Stamp[];
+  keepOut?: { x?: number; z?: number; r: number }[];
+};
+type Op = 'set' | 'add' | 'min' | 'max';
+type Frame = ReturnType<typeof siteFrame>;
+
+const hex = (s: string): [number, number, number] => {
   const n = parseInt(s.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
 
 // Site frame: world = origin + right * lx + fwd * lz, with fwd = normalised dir and right = (fwd.z, -fwd.x).
-export function siteFrame(site) {
+export function siteFrame(site: { x: number; z: number; dir?: [number, number] }) {
   const [dx, dz] = site.dir ?? [0, 1];
   const l = Math.sqrt(dx * dx + dz * dz) || 1;
   const fx = dx / l,
@@ -39,10 +71,10 @@ export function siteFrame(site) {
     fz,
     rx: fz,
     rz: -fx,
-    toWorld(lx, lz) {
+    toWorld(lx: number, lz: number): [number, number] {
       return [site.x + fz * lx + fx * lz, site.z - fx * lx + fz * lz];
     },
-    toLocal(x, z) {
+    toLocal(x: number, z: number): [number, number] {
       const px = x - site.x,
         pz = z - site.z;
       return [px * fz - pz * fx, px * fx + pz * fz];
@@ -51,7 +83,7 @@ export function siteFrame(site) {
 }
 
 // Distance from p to segment ab, and the parameter t along it.
-function segDist(px, pz, ax, az, bx, bz) {
+function segDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number) {
   const ex = bx - ax,
     ez = bz - az;
   const ll = ex * ex + ez * ez;
@@ -63,16 +95,19 @@ function segDist(px, pz, ax, az, bx, bz) {
 }
 
 // Compile one stamp into world space: { box: [x0, z0, x1, z1], eval(x, z) -> { sd, y } }.
-function compile(stamp, frame, groundY) {
+function compile(stamp: Stamp, frame: Frame, groundY: number) {
   const fade = stamp.fade ?? 3;
-  let sdf, bounds;
+  let sdf: (x: number, z: number) => { sd: number; y?: number };
+  let bounds: number[];
   if (stamp.shape === 'disc') {
     const [cx, cz] = frame.toWorld(stamp.x ?? 0, stamp.z ?? 0);
-    sdf = (x, z) => ({ sd: Math.sqrt((x - cx) ** 2 + (z - cz) ** 2) - stamp.r });
-    bounds = [cx - stamp.r, cz - stamp.r, cx + stamp.r, cz + stamp.r];
+    const r = stamp.r!;
+    sdf = (x, z) => ({ sd: Math.sqrt((x - cx) ** 2 + (z - cz) ** 2) - r });
+    bounds = [cx - r, cz - r, cx + r, cz + r];
   } else if (stamp.shape === 'box') {
     const [cx, cz] = frame.toWorld(stamp.x ?? 0, stamp.z ?? 0);
-    const { hx, hz } = stamp;
+    const hx = stamp.hx!,
+      hz = stamp.hz!;
     sdf = (x, z) => {
       const px = x - cx,
         pz = z - cz;
@@ -85,8 +120,8 @@ function compile(stamp, frame, groundY) {
     const ext = Math.sqrt(hx * hx + hz * hz);
     bounds = [cx - ext, cz - ext, cx + ext, cz + ext];
   } else if (stamp.shape === 'path') {
-    const pts = stamp.points.map(([lx, lz, y]) => [...frame.toWorld(lx, lz), y ?? 0]);
-    const half = stamp.w / 2;
+    const pts = stamp.points!.map(([lx, lz, y]) => [...frame.toWorld(lx, lz), y ?? 0]);
+    const half = stamp.w! / 2;
     sdf = (x, z) => {
       let best = Infinity,
         y = pts[0][2];
@@ -106,21 +141,21 @@ function compile(stamp, frame, groundY) {
     bounds = [Math.min(...xs) - half, Math.min(...zs) - half, Math.max(...xs) + half, Math.max(...zs) + half];
   } else throw new Error(`stamp: unknown shape ${stamp.shape}`);
   const box = [bounds[0] - fade, bounds[1] - fade, bounds[2] + fade, bounds[3] + fade];
-  const op = ['set', 'add', 'min', 'max'].find((k) => stamp[k] !== undefined) ?? null;
+  const op = (['set', 'add', 'min', 'max'] as const).find((k) => stamp[k] !== undefined) ?? null;
   const value = op && stamp[op];
   return {
     op,
-    weight(x, z) {
+    weight(x: number, z: number) {
       if (x < box[0] || z < box[1] || x > box[2] || z > box[3]) return null;
       const r = sdf(x, z);
       const w = 1 - smoothstep(0, fade, r.sd);
       if (w <= 0) return null;
-      return { w, v: value === 'path' ? r.y : value === 'ground' ? groundY : value };
+      return { w, v: (value === 'path' ? r.y : value === 'ground' ? groundY : value) as number };
     },
   };
 }
 
-function applyHeight(h, op, w, v) {
+function applyHeight(h: number, op: Op | null, w: number, v: number) {
   if (op === 'set') return h + (v - h) * w;
   if (op === 'add') return h + v * w;
   if (op === 'min') return h > v ? h + (v - h) * w : h;
@@ -129,10 +164,11 @@ function applyHeight(h, op, w, v) {
 }
 
 // sites: [{ id, x, z, dir?, stamps?: [...], keepOut?: [{ x, z, r }] }] in a fixed order.
-export function createIsland(sites) {
-  const height = [],
-    paint = [],
-    keepOut = [];
+type Compiled = ReturnType<typeof compile>;
+export function createIsland(sites: Site[]) {
+  const height: Compiled[] = [],
+    paint: { c: Compiled; rgb: number[]; strength: number; stripes: number; frame: Frame }[] = [],
+    keepOut: { x: number; z: number; r: number }[] = [];
   for (const site of sites) {
     const frame = siteFrame(site);
     const groundY = naturalHeight(site.x, site.z);
@@ -149,7 +185,7 @@ export function createIsland(sites) {
 
   return {
     keepOut,
-    heightAt(x, z) {
+    heightAt(x: number, z: number) {
       let h = naturalHeight(x, z);
       for (const c of height) {
         const r = c.weight(x, z);
@@ -158,8 +194,8 @@ export function createIsland(sites) {
       return h;
     },
     // Paint over the natural colours at x, z: [r, g, b, amount 0..1] (sRGB 0..1), or null for none.
-    paintAt(x, z) {
-      let out = null;
+    paintAt(x: number, z: number) {
+      let out: number[] | null = null;
       for (const p of paint) {
         const r = p.c.weight(x, z);
         if (!r) continue;
@@ -182,7 +218,7 @@ export function createIsland(sites) {
       return out;
     },
     // True when (x, z) is inside some site's keep-out disc (grown by pad): no trees or rocks, the Boogler walks around.
-    keptOut(x, z, pad = 0) {
+    keptOut(x: number, z: number, pad = 0) {
       for (const k of keepOut) if ((x - k.x) ** 2 + (z - k.z) ** 2 < (k.r + pad) ** 2) return true;
       return false;
     },

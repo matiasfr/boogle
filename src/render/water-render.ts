@@ -28,7 +28,7 @@ import {
 } from 'three/tsl';
 import { GRID_RES, HALF, CELL, SUN_DIR } from '../constants.ts';
 import { clamp } from '../math.ts';
-import { heights } from '../adapters/terrain.js';
+import { heights } from '../adapters/terrain.ts';
 import { scene } from './scene.ts';
 import { onFrame } from '../loop.ts';
 

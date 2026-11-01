@@ -29,7 +29,7 @@ const R_BOT = 2.6,
   R_TOP = 2.0;
 export const DECK_Y = BASE_Y + TOWER_H; // walkable top of the gallery deck
 const DECK_R = 3.65;
-// Where the frisbee waits (src/adapters/gifts.js perches it): mid-deck, just past the top of the stair, which arrives at angle 0.
+// Where the frisbee waits (src/adapters/gifts.ts perches it): mid-deck, just past the top of the stair, which arrives at angle 0.
 export const FRISBEE_SPOT = { x: CX + 1.9, y: DECK_Y, z: CZ + 2.0 };
 const STAIR_W = 1.3;
 const TURNS = 2.5;

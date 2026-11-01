@@ -19,7 +19,7 @@ Four files, nothing else edited:
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
    If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
-   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.js`.
+   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.ts`.
 
 Run `npm run check:full`. Notes:
 
@@ -99,7 +99,7 @@ op names.
 
 | Key | Set by | Server | Used by |
 |---|---|---|---|
-| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.ts` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
 `server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.

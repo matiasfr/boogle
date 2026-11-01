@@ -1,6 +1,6 @@
 // Windmill farm: three rustic windmills on knolls among striped fields, on the eastern plain.
 export const MILLS = [
-  { x: -17, z: 4 }, // local metres, see src/island/stamps.js for the frame
+  { x: -17, z: 4 }, // local metres, see src/island/stamps.ts for the frame
   { x: 1, z: -11 },
   { x: 18, z: 3 },
 ];

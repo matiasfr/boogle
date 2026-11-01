@@ -7,18 +7,22 @@
 import { GRID_RES, CELL, HALF, COURT } from '../world/grid.ts';
 import { lerp, smoothstep } from '../math-pure.ts';
 
-const courtH = new WeakMap(); // island -> the ground height at the court's centre, which the court is levelled to
-const courtWeight = (x, z) => 1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
+import type { createIsland } from './stamps.ts';
+
+type Island = ReturnType<typeof createIsland>;
+const courtH = new WeakMap<Island, number>(); // island -> the ground height at the court's centre, which the court is levelled to
+const courtWeight = (x: number, z: number) =>
+  1 - smoothstep(COURT.r, COURT.r + 6, Math.hypot(x - COURT.x, z - COURT.z));
 
 // The island's height (metres) at world (x, z), with the court levelled.
-function levelledHeight(island, x, z) {
+function levelledHeight(island: Island, x: number, z: number) {
   let h = courtH.get(island);
   if (h === undefined) courtH.set(island, (h = island.heightAt(COURT.x, COURT.z)));
   return lerp(island.heightAt(x, z), h, courtWeight(x, z));
 }
 
 // Base heights in cm, index i*n + j (cell (i, j) sits at x = i*CELL - HALF, z = HALF - j*CELL).
-export function islandBaseCm(island) {
+export function islandBaseCm(island: Island) {
   const n = GRID_RES;
   const out = new Int16Array(n * n);
   for (let i = 0; i < n; i++)

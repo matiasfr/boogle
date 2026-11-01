@@ -7,10 +7,10 @@
     {
       "go": [["you.input", "you.features"]],
       "text": "You use seeds on soil. The mushroom garden asks for a planting edit.",
-      "code": "src/adapters/mushroom-garden.js",
+      "code": "src/adapters/mushroom-garden.ts",
       "cite": [
         {
-          "file": "src/adapters/mushroom-garden.js"
+          "file": "src/adapters/mushroom-garden.ts"
         }
       ]
     },
@@ -70,7 +70,7 @@
       "code": "onApplied(edit, tick, result)",
       "cite": [
         {
-          "file": "src/adapters/mushroom-garden.js"
+          "file": "src/adapters/mushroom-garden.ts"
         }
       ]
     },

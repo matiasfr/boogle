@@ -1,4 +1,4 @@
-// The island's natural ground, before any point of interest reshapes it (src/island/stamps.js does that).
+// The island's natural ground, before any point of interest reshapes it (src/island/stamps.ts does that).
 //
 // Two landmasses joined into one island:
 // - home: the original island around the origin (spawn, court, mushroom garden). Inside HOME_KEEP metres of the origin
@@ -27,7 +27,7 @@ const LOBES = [
 export const MASSIF = { x: -54, z: -92, rx: 42, rz: 30, h: 15 };
 
 // Original island, unchanged.
-function homeHeight(x, z) {
+function homeHeight(x: number, z: number) {
   const d = Math.hypot(x, z * 1.12) / HOME_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
   const hill = 6.5 * Math.exp(-((x + 12) ** 2 + (z + 6) ** 2) / (2 * 13 * 13));
   const bumps = fbm(x * 0.08, z * 0.08) * 1.1 * (1 - smoothstep(0.55, 0.85, d));
@@ -35,28 +35,29 @@ function homeHeight(x, z) {
   return lerp(inland, SEABED, smoothstep(0.8, 1.12, d));
 }
 
-const ellipse = (x, z, e) => {
+type Ellipse = { x: number; z: number; rx: number; rz: number };
+const ellipse = (x: number, z: number, e: Ellipse) => {
   const u = (x - e.x) / e.rx,
     v = (z - e.z) / e.rz;
   return Math.sqrt(u * u + v * v);
 };
 // Smooth minimum: joins two distance fields without a crease.
-function smin(a, b, k) {
+function smin(a: number, b: number, k: number) {
   const h = Math.max(k - Math.abs(a - b), 0) / k;
   return Math.min(a, b) - h * h * k * 0.25;
 }
 
 // 0 inside the coastline, 1 at the coast, > 1 out at sea (normalised, noisy).
-function mainlandDistance(x, z) {
+function mainlandDistance(x: number, z: number) {
   let d = ellipse(x, z, MAINLAND);
   for (const l of LOBES) d = smin(d, ellipse(x, z, l), 0.35);
   return d + fbm(x * 0.011 + 3.1, z * 0.011 - 5.7) * 0.14 + fbm(x * 0.045 - 2, z * 0.045 + 9) * 0.035;
 }
 
 // 0..1 bump with a flat-ish top: 1 at the centre, 0 at t >= 1.
-const bump = (t) => (t >= 1 ? 0 : (1 - t * t) * (1 - t * t));
+const bump = (t: number) => (t >= 1 ? 0 : (1 - t * t) * (1 - t * t));
 
-function mainlandHeight(x, z) {
+function mainlandHeight(x: number, z: number) {
   const d = mainlandDistance(x, z);
   if (d > 1.25) return SEABED;
   const meadow = 1.9 + 1.5 * (1 - smoothstep(0.3, 0.85, d)) + fbm(x * 0.018 + 7, z * 0.018 + 1) * 2.4;
@@ -70,12 +71,12 @@ function mainlandHeight(x, z) {
 }
 
 // Smooth maximum of two heights (union of two landmasses).
-function smax(a, b, k) {
+function smax(a: number, b: number, k: number) {
   const h = Math.max(k - Math.abs(a - b), 0) / k;
   return Math.max(a, b) + h * h * k * 0.25;
 }
 
-export function naturalHeight(x, z) {
+export function naturalHeight(x: number, z: number) {
   const home = homeHeight(x, z);
   const r = Math.sqrt(x * x + z * z);
   if (r < HOME_KEEP) return home;
