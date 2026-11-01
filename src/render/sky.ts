@@ -221,7 +221,7 @@ export const skyU = {
   uStarRot: uniform(new THREE.Matrix3()),
 };
 // The dome's colours as updateSky left them this frame. A feature may tint them after it (onFrame order > -5) for a
-// Local look; updateSky sets them afresh every frame, so a tint never sticks (the era prototype, src/pois/era/).
+// Local look; updateSky sets them afresh every frame, so a tint never sticks (the era prototype, src/proto/era/).
 export const skyColors = { top: skyU.uTop.value as THREE.Color, horizon: skyU.uHorizon.value as THREE.Color };
 
 // TSL's typings can't follow a vec3 through fract and back to .x/.y/.z: the node is typed loosely here.

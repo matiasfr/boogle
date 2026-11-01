@@ -132,7 +132,7 @@
 
 ## What this means for Boogle
 
-These are recommendations, not decisions; the design record ([boogle-2.md](../proposals/boogle-2.md)) owns the picks. The greybox era swap (`?proto=era`, `src/pois/era/`) is the place to test most of them.
+These are recommendations, not decisions; the design record ([boogle-2.md](../proposals/boogle-2.md)) owns the picks. The greybox era swap (`?proto=era`, `src/proto/era/`) is the place to test most of them.
 
 1. **Give every era a kit across six channels, not just new blocks.** Palette (sky, fog, ground tint), silhouette, material, sound, vehicle and pace. A first cut for Boogle:
 
