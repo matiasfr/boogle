@@ -3,7 +3,7 @@
 - **What and how it plays.** Things you throw land on the island and lie there for anyone to pick up (if their hotbar
   has room) until they rot. The frisbee waits on a perch on the lighthouse deck and twinkles so you can spot it; a
   perch refills a minute after its item is taken. Throwing is 6.7, what you carry is 6.6.
-- **Controls.** E / pad B: Pick up (the interact button, nothing new). Logs are taken from their bundle: 6.19,
+- **Controls.** E / pad X: Pick up (the interact button, nothing new). Logs are taken from their bundle: 6.19,
   [haul.md](haul.md).
 - **Sync kind.** Lockstep. Ops `gift.take` (`id`) and `gift.toss` (`k` kind, `i, j`, `y` resting height or -1 ground /
   -3 lost, `l` launch, `n` nonce); state `gifts`. The frisbee perch is a static layout filled before tick 1.

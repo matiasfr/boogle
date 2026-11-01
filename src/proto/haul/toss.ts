@@ -1,6 +1,6 @@
 // Haul variant `toss` (?proto=haul&v=toss): take logs from the bundles as usual, then toss them at the work site.
 // It shortens the last metres and never tests aim (docs/research/carrying-and-logistics-play.md rec 5): with empty
-// hands and logs on your back, the use button (click, pad X, or the touch Use/Grab button when nothing is in reach) lobs a handful of 4 logs; holding it
+// hands and logs on your back, the use button (click, pad X or D-pad →, or the touch Use/Grab button when nothing is in reach) lobs a handful of 4 logs; holding it
 // keeps tossing, so a full 60-log bundle empties in about 9 s, as long as a walk-in pour. A ring of the open site within
 // reach (6-10 m) and roughly ahead of the camera is aimed for you; otherwise the handful lands 8 m ahead. Landing
 // within the ring's radius plus 1 m counts as poured; a miss settles as a pile (./loose-logs.ts). Walking into a ring
@@ -74,7 +74,7 @@ function tossOnce() {
   return true;
 }
 
-// Empty hands (src/player/hands.ts): the click, pad X and the touch Use/Grab button all toss when you carry logs.
+// Empty hands (src/player/hands.ts): the click, pad X (D-pad →) and the touch Use/Grab button all toss when you carry logs.
 emptyHands.down = () => {
   if (!canToss()) return false;
   held = true;

@@ -1,7 +1,7 @@
 # 6.17 The dino and the guest
 
 - **What.** A dino stands just outside the wine cellar's cave mouth on the north cliff, facing out along the trench
-  ([src/guest/dino.ts](../../src/guest/dino.ts)). Talk to him (E, pad B) and you become the guest: a character with its
+  ([src/guest/dino.ts](../../src/guest/dino.ts)). Talk to him (E, pad X) and you become the guest: a character with its
   own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
   run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
   hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
@@ -15,7 +15,7 @@
 - **How it plays.** While you are the guest, the engine runs at 30 Hz inside the physics step and your body turns
   kinematic and follows it, so the camera, interact targets, the ball and presence keep working. The engine collides
   with the terrain and every static body within 5 m, using the body's collision mask (so the caves work). Jump is
-  Space or pad A; punch, kick and dive are click or pad X with empty hands (near the ball, click punches and E grabs);
+  Space or pad A; punch, kick and dive are click, pad D-pad → or pad X with nothing in reach, with empty hands (near the ball, click punches and E / pad X grab);
   crouch, ground pound, long jump and backflip use Shift or LT.
 - **Sync kind.** Owner: presence `mr` carries your guest's pose (24 numbers). Other players with both files see your
   guest; without them they see your usual avatar.

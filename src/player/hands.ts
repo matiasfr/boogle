@@ -1,9 +1,9 @@
 // What your hands do with the hotbar (src/player/inventory.ts), and the one interact button.
 //
-//   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, frisbee, ...) winds up a throw and
+//   useDown/useUp            click, pad D-pad → (and X with nothing in reach): use what is in your hand. A thing (ball, frisbee, ...) winds up a throw and
 //                            flies on release; the can pours, seeds go in at your feet. Empty hands
 //                            interact.
-//   interactDown/interactUp  E, pad B: act on interactTarget(), and only on it; nothing while a throw winds up, and the
+//   interactDown/interactUp  E, pad X: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
 //   touchDown                the touch main button: acts on interactTarget() when it can, otherwise uses
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)

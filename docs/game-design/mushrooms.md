@@ -4,7 +4,7 @@
   dry, open ground (the patch or anywhere else); use the can to water the nearest buried seed in reach. A watered seed
   grows into a big flat-topped mushroom that bounces players and the ball, and shoves you out from under it as it grows.
   A thrown seed plants itself where it lands. The Boogler likes seeds as a present.
-- **Controls.** E / pad B "Take" at the stall; click / pad X with seeds (Plant) or can (Water).
+- **Controls.** E / pad X "Take" at the stall; click / pad X (nothing in reach) / D-pad → with seeds (Plant) or can (Water).
 - **Sync kind.** Lockstep. Ops `mush.plant`, `mush.water`; state `mushrooms` (`[i, j, g]` per plot). A browser
   host's render-side spot check (no water, rock, tree or cap) is passed in through `setEnv` as `env.canPlantAt`; the
   server, which has no renderer, uses the plant mask baked from it into
