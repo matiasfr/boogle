@@ -17,7 +17,7 @@ const ARRIVE_MS = 300; // about when the flying pieces reach you (haul-feel flyM
 let squashAt = -1e9;
 const pending: number[] = []; // ms a pickup's pieces arrive
 
-function thock(count: number) {
+export function thock(count: number) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;

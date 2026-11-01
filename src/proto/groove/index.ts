@@ -74,7 +74,8 @@ const layers: Record<string, GainNode> = {};
 let state: GrooveState = 'silent',
   playing: GrooveState = 'silent', // what the layers are set to (changes on bar lines)
   wasPlaying: GrooveState = 'silent', // the bar before, so fading layers keep their notes
-  dropAt = -1; // the step of a pending one-beat drop
+  dropAt = -1, // the step of a pending one-beat drop
+  forced: GrooveState | null = null; // __groove.force(s): hold a state (the listening pack, dev/audio/render.ts)
 
 const layerOn = (s: GrooveState, l: string) => song.states[s].includes(l);
 const layerGain = (l: string) => dbToGain(song.gainDb?.[l] ?? 0);
@@ -250,6 +251,7 @@ onFrame(
     else if (VARIANT === 'always') state = 'sparse';
     else if (VARIANT === 'silent-first') state = everMoved ? 'sparse' : 'silent';
     else state = nearSpawn ? 'silent' : 'sparse';
+    if (forced) state = forced;
     chip();
   },
   { phase: 'late' },
@@ -284,4 +286,14 @@ function chip() {
 }
 
 // For the two-tab timing check and live tuning in the console.
-Object.assign(window, { __groove: { GROOVE, MIX, song, trace, state: () => ({ state, playing, off, VARIANT }) } });
+Object.assign(window, {
+  __groove: {
+    GROOVE,
+    MIX,
+    song,
+    trace,
+    state: () => ({ state, playing, off, VARIANT }),
+    force: (s: GrooveState | null) => (forced = s),
+    wipeout,
+  },
+});

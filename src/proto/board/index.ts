@@ -466,7 +466,7 @@ document.body.append(fade);
 (document.querySelector('.hud') ?? document.body).append(toast);
 let hopping = false;
 
-function whoosh() {
+export function whoosh() {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
