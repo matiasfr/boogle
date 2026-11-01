@@ -11,6 +11,9 @@
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
+//   emptyHands               { down, up }: what using empty hands does before it falls back to interacting; a
+//                            prototype sets it (the haul toss, src/proto/haul/toss.ts). down returns true if it acted.
+//                            Mouse, pad and the touch main button all reach it.
 //
 // Interactables plug in, like actions in src/player/controls.ts:
 //
@@ -121,7 +124,10 @@ function throwHeld(c: number) {
   if (!throwItem(giftIndex(id), p, v)) take(id);
 }
 
+export const emptyHands: { down: () => boolean; up: () => void } = { down: () => false, up: () => {} };
+
 export function releaseThrow() {
+  emptyHands.up();
   if (me.suppressUp) {
     me.suppressUp = false;
     return;
@@ -134,7 +140,7 @@ export function releaseThrow() {
 export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
-  if (!id) return interact();
+  if (!id) return emptyHands.down() || interact();
   if (id === 'can') return pour();
   if (id === 'seeds') return plantFront() || deny(plantTarget()?.text ?? '');
   return windUp();

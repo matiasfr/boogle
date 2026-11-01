@@ -70,6 +70,11 @@ const stackOf = (pid: string | null | undefined): Stack => {
   return k < 0 ? { n: 0, k: -1 } : { n: rules.stacks.countAt(k), k: rules.stacks.kindAt(k) };
 };
 export const myStack = () => stackOf(identity.pid);
+// A player whose stack is drawn somewhere else (the haul prototype's wheelbarrow tray): no bundle on their back and no
+// fly-ins to it. Local.
+const elsewhere = new Set<string>();
+export const setBackBundleHidden = (pid: string, hidden: boolean): void =>
+  void (hidden ? elsewhere.add(pid) : elsewhere.delete(pid));
 
 // The bundle's frame: the avatar's inner group (it bobs, leans and squashes with the walk), so the logs ride along.
 const frameOf = (a: THREE.Object3D): THREE.Object3D => (a.userData as { inner?: THREE.Object3D }).inner ?? a;
@@ -105,7 +110,7 @@ onFrame(
       b = 0;
     const draw = (a: THREE.Object3D | null, pid: string | null | undefined) => {
       const { n, k } = stackOf(pid);
-      if (!a || !n) return;
+      if (!a || !n || (pid && elsewhere.has(pid))) return;
       a.updateMatrixWorld();
       const f = frameOf(a);
       const len = lenOf(n),
@@ -123,7 +128,7 @@ onFrame(
     for (let f = flights.length - 1; f >= 0; f--) {
       const fl = flights[f];
       const u = (now - fl.t0) / haulFeel.flyMs;
-      if (u >= 1 || !me.avatar) {
+      if (u >= 1 || !me.avatar || (identity.pid && elsewhere.has(identity.pid))) {
         flights.splice(f, 1);
         continue;
       }

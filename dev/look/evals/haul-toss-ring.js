@@ -5,4 +5,8 @@ const H = await import('/dev/look/evals/haul-pilot.ts');
 await H.fill(24);
 H.stand(8.4, 14, 0);
 H.overlay(() => `logs on your back ${H.myCount()}`);
-setTimeout(() => H.holdUse(8.6, 6, 3200), 300);
+// the first half with the mouse's use action, the second with the touch Grab button's own calls
+setTimeout(async () => {
+  await H.holdUse(8.6, 6, 1600);
+  await H.holdTouch(8.6, 6, 1600);
+}, 300);
