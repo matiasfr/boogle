@@ -95,26 +95,27 @@ async function build() {
   const model = bay(SPAWN.x - 2.6, true);
   const coded = bay(SPAWN.x + 2.6, false);
   for (const r of roots) await precompile(r);
+  const bays = [
+    { list: model, isModel: true },
+    { list: coded, isModel: false },
+  ];
   let t = 0;
   onFrame(
     ({ dt }) => {
       t = (t + dt) % CYCLE;
-      SLOTS.forEach((s, i) => {
+      for (let i = 0; i < SLOTS.length; i++) {
         const at = t - i * STAGGER;
         const show = at >= 0 && t < CYCLE - 0.3;
-        for (const [list, isModel] of [
-          [model, true],
-          [coded, false],
-        ] as const) {
+        for (const { list, isModel } of bays) {
           const p = list[i];
           p.holder.visible = show;
           if (!show) p.started = false;
           else if (isModel && !p.started) {
             p.started = true;
-            play(p.holder, kit.clip('drop', s.piece));
+            play(p.holder, kit.clip('drop', SLOTS[i].piece));
           } else if (!isModel) codeDrop(p.holder.children[0], Math.min(at, 0.6));
         }
-      });
+      }
     },
     { phase: 'update', order: 40 },
   );
