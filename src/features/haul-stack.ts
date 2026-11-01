@@ -16,13 +16,12 @@ import { submitEdit } from '../world/sync.ts';
 import { okPid } from '../sim/roster.ts';
 import { cellOf } from '../adapters/terrain.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
-import { SOFT_CAP, spillOf } from '../sim/stacks.ts';
+import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { TIERS, tierOf } from '../sim/tiers.ts';
 import { reducedMotion } from '../constants.ts';
 
 const SHOWN = 40; // pieces drawn per stack
-const FLY_MS = 380;
 const SPILL_BACK = 2.8; // metres: walk-over reach (1.3) plus a cell's rounding and a step
 const mesh = pieceMesh(9 * SHOWN + 48);
 const m4 = new THREE.Matrix4(),
@@ -42,12 +41,13 @@ const stackOf = (pid: string | null | undefined): Stack => {
 export const myStack = () => stackOf(identity.pid);
 
 // Where piece m of a stack of n sits on avatar a, at time t (s): along the back, swaying more the higher it is and
-// the more you carry past the soft cap.
+// the more you carry past the room's soft cap (feel numbers: src/player/haul-feel.ts).
 function pieceAt(a: THREE.Object3D, m: number, n: number, t: number, seed: number, out: THREE.Matrix4) {
-  const over = Math.max(0, n - SOFT_CAP) / SOFT_CAP;
-  const amp = reducedMotion ? 0 : 0.012 + over * 0.05;
+  const soft = rules.stacks.soft();
+  const over = Math.max(0, n - soft) / soft;
+  const amp = reducedMotion ? 0 : haulFeel.sway + over * haulFeel.swayOver;
   const h = m / SHOWN;
-  const sway = Math.sin(t * (2.2 + over) + seed) * amp * m * (1 + h);
+  const sway = Math.sin(t * (haulFeel.swayHz + over) + seed) * amp * m * (1 + h);
   const lean = Math.sin(t * 1.3 + seed * 2) * amp * 0.5 * m;
   v.set(sway, -0.1 + m * PIECE.r * 1.85, 0.42 + lean);
   e.set(0, (m % 2) * 0.12 - 0.06, sway * 0.6);
@@ -70,7 +70,7 @@ function watchJump(mine: Stack): void {
   if (!me.entered || !me.body) return;
   const grounded = me.coyote > 0;
   if (wasGrounded && !grounded && me.body.velocity.y > 3) {
-    const spill = spillOf(mine.n);
+    const spill = rules.stacks.spill(mine.n);
     if (spill) {
       const p = me.body.position;
       // behind you (you face -z at yaw 0), past walk-over reach, so you don't scoop it straight back on landing
@@ -104,7 +104,7 @@ onFrame(
     // fly-ins: a short hop from the pile to the top of your stack
     for (let f = flights.length - 1; f >= 0; f--) {
       const fl = flights[f];
-      const u = (now - fl.t0) / FLY_MS;
+      const u = (now - fl.t0) / haulFeel.flyMs;
       if (u >= 1 || !me.avatar) {
         flights.splice(f, 1);
         continue;
@@ -130,7 +130,7 @@ onFrame(
 // plaques; rebuilt only when your stack or the sites change.
 let chipKey = '';
 function updateChip(mine: Stack): void {
-  const key = `${mine.n}/${mine.k}/${rules.sites.sites.rev}`;
+  const key = `${mine.n}/${mine.k}/${rules.sites.sites.rev}/${rules.tune.tune.rev}`;
   if (key === chipKey) return;
   chipKey = key;
   const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name;
@@ -139,6 +139,6 @@ function updateChip(mine: Stack): void {
     chipText = text;
     chip.textContent = text;
     chip.classList.toggle('on', !!text);
-    chip.classList.toggle('wobbly', mine.n > SOFT_CAP);
+    chip.classList.toggle('wobbly', mine.n > rules.stacks.soft());
   }
 }

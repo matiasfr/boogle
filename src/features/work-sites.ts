@@ -14,16 +14,16 @@ import { registerInteractable } from '../player/hands.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
-import { ROUTE, TRACK, HELPER, RING_R, ringAt, costOf } from '../sim/route.ts';
+import { ROUTE, TRACK, HELPER, RING_R, ringAt } from '../sim/route.ts';
+import { haulFeel } from '../player/haul-feel.ts';
 import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { MACHINE_RUN } from '../sim/scripted-run.ts';
 import type { Site } from '../sim/sites.ts';
 
-const POUR_EVERY_MS = 300; // one site.stock this often while you stand in a ring
-const POUR_N = 2; // pieces per pour
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
+const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest rooms)
 
 const ringGeo = new THREE.RingGeometry(RING_R - 0.18, RING_R, 40).rotateX(-Math.PI / 2);
 const ringMat = [
@@ -253,17 +253,17 @@ registerInteractable(() => {
   ];
 });
 
-// Pouring: standing in a ring of the open site with the right material pours a little every POUR_EVERY_MS.
+// Pouring: standing in a ring of the open site with the right material pours a little every haulFeel.pourMs.
 let lastPour = -1e9;
 function pour(now: number): void {
-  if (!me.entered || !me.body || !identity.pid || now - lastPour < POUR_EVERY_MS) return;
+  if (!me.entered || !me.body || !identity.pid || now - lastPour < haulFeel.pourMs) return;
   const s = sites.open;
   if (s >= ROUTE.length || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s].age)) return;
   const pos = me.body.position;
   for (const ring of [TRACK, HELPER]) {
     const p = ringAt(s, ring);
     if (Math.hypot(pos.x - p.x, pos.z - p.z) > RING_R || rules.sites.room(s, ring) <= 0) continue;
-    const n = Math.min(POUR_N, rules.stacks.count(identity.pid));
+    const n = Math.min(haulFeel.pourN, rules.stacks.count(identity.pid));
     lastPour = now;
     submitEdit({ op: 'site.stock', i: 0, j: 0, s, ring, n });
     return;
@@ -275,7 +275,7 @@ onFrame(
   ({ now }: { now: number }) => {
     // Redraw on any change to the sites (pours, freight, runs, loads) or a rename; the railway every frame only while
     // a machine runs.
-    const key = `${sites.rev}/${names}`;
+    const key = `${sites.rev}/${names}/${rules.tune.tune.rev}`;
     const running = sites.list[sites.open]?.t0 >= 0;
     if (key !== drawn || running) drawRailway(sharedSeconds() * 10); // shared time in ticks (TICK_MS = 100)
     if (key !== drawn) redraw();
