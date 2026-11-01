@@ -1,6 +1,8 @@
 /* The shared talk input (src/player/conversation.ts): the selected answer and the button hints row. A talk box may
    restyle both; these are the defaults. */
-body:not(.touch) .talk-sel {
+/* body.gamepad too: an iPad keeps body.touch while its pad plays (src/features/gamepad.ts). */
+body:not(.touch) .talk-sel,
+body.gamepad .talk-sel {
   background: var(--sun) !important;
   outline: 3px solid var(--ink);
   outline-offset: 1px;

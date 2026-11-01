@@ -1,9 +1,14 @@
-// The Boogler friendship (ea29f9f): open the talk and pet his portrait to a new level (hearts), talk and give a
-// present, ride him until he launches you.
+// The Boogler friendship (ea29f9f): talk and give a present, ride him until he launches you.
 const ROOM = 'clipboog';
 const seed = () => {
   localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
-  localStorage.setItem('boogle.hotbar', JSON.stringify([{ id: 'seeds', n: 3 }, { id: 'frisbee', n: 1 }]));
+  localStorage.setItem(
+    'boogle.hotbar',
+    JSON.stringify([
+      { id: 'seeds', n: 3 },
+      { id: 'frisbee', n: 1 },
+    ]),
+  );
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d, a) => `
@@ -29,7 +34,7 @@ const pick = (g, re) =>
   );
 
 export default {
-  about: 'pet The Boogler to a new level, talk and give a present, walk off mid-talk, ride him and get launched',
+  about: 'talk to The Boogler and give a present, walk off mid-talk, ride him and get launched',
   async run(c) {
     const g = await c.open({ room: ROOM, hud: 'play', init: `(${seed})('${ROOM}')` });
     await g.wait(3);
@@ -42,20 +47,6 @@ export default {
         seconds: 5,
         each: async (t) => {
           await orbit(g, a0 + 0.6 + t * 0.18, 4.6, 0.6, 0.9)();
-        },
-      }),
-    );
-    // Pet: the player beside him opens the talk and pets his portrait, the camera slowly circling the pair.
-    out.push(
-      await g.record('boogler-pet', {
-        seconds: 5.5,
-        each: async (t, k) => {
-          if (k % 2 === 0) await g.eval(STAND(1.9, a0));
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
-          // Pet once the caption is up, so the hearts land under it.
-          if (k === 36) await g.eval(`document.querySelector('.bd-face')?.click()`);
-          // The Boogler high in frame so the talk box (bottom centre) doesn't cover him.
-          await orbit(g, a0 + 1.7 + t * 0.06, 4.2, 1.6, -0.2)();
         },
       }),
     );

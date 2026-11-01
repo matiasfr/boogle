@@ -1,10 +1,9 @@
-// The Boogler as a friend: talk to him (the interact button, see talkTargets), and in the talk pet him and give him what
-// you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
+// The Boogler as a friend: talk to him (the interact button, see talkTargets), and in the talk give him what you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
 // Get launched too often and he runs when you come near.
 //
 // Friendship is personal (src/boogler/friendship.ts), saved in localStorage once per browser, shared by every room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.ts) reads act and wary, and every client plays
-// ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
+// ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
 import { FIXED } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
@@ -15,8 +14,8 @@ import { booglerHearts, booglerPuff } from './fx.ts';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.ts';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.ts';
 import { modalOpen } from '../player/modal.ts';
-import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
-import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.ts';
+import { LEVEL_UP, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
+import { bond, createFriend, loadFriend, serializeFriend, kickedOff, rideLimit, isWary } from './friendship.ts';
 import { heldId, useOne } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { NO_TARGETS } from '../sim/interact-pick.ts';
@@ -30,7 +29,7 @@ const LEAVE_RANGE = TALK_RANGE + 1;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
-const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
+const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 }; // PET: only from tabs that still pet him
 
 let friend: Friend | null = null;
 const storeKey = 'boogle.boogler'; // global: you are yours in every room (the old per-room keys are ignored)
@@ -247,7 +246,7 @@ function render() {
   const v = talk && talkApi!.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
-  showDialogue(v, bond(f()), answer, leave, petInTalk);
+  showDialogue(v, bond(f()), answer, leave);
 }
 
 // A line over his head, up long enough to read.
@@ -302,19 +301,6 @@ export function talkTargets() {
   const target = { id: 'boogler', at: boogler.center, r: W_R, show: setTagPrompt };
   if (dialogue.open) return [{ ...target, verb: 'Leave', run: leave }];
   return [{ ...target, verb: 'Talk', run: booglerTalk }];
-}
-
-function petInTalk() {
-  const r = pet(f(), Date.now());
-  save();
-  emit(r.kind === 'happy' ? EV.PET : r.kind === 'wary' ? EV.YUCK : EV.PAT);
-  dialogueReact({
-    line: pick(PET[r.kind]),
-    mood: r.kind === 'wary' ? 'grump' : 'joy',
-    hearts: r.kind === 'happy',
-    bond: bond(f()),
-  });
-  if (r.levelUp) celebrate(r.levelUp);
 }
 
 // ---------------------------------------------------------------- frame

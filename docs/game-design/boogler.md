@@ -25,7 +25,7 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 ## Friendship
 
 - **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
-  so the lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
+  so the lead's brain knows who is talking, riding or wary, and every client plays the hearts and launches.
 - **Levels** ([src/boogler/friendship.ts](../../src/boogler/friendship.ts)):
 
 | Level | Name | Points |
@@ -41,7 +41,6 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 
 | Action | Points | Limits |
 |---|---|---|
-| Pet (inside the talk) | +4 | 2.5 s apart, 8 scoring pets per 10 min |
 | Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is loved or disliked) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
 | New story chapter | +8, plus answer points | once per chapter |
 | Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
@@ -50,13 +49,17 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 
 Points never drop below 0. Each new level bursts hearts and plays a level-up line. A 15-minute visit (a pet
 every 2.5 min, a talk every 5) reaches Best friend in about five visits with no presents; presents (a seed, the
-frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
+frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.) There is no petting since 2026-11-02 (not in
+his nature, the owner's call), but the pace model and `pet()` in friendship.ts still count a pet (+4) every 2.5 min,
+so without them it takes longer: a retune is pending.
 
 ## Talk
 
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
-  ([npcs.md](npcs.md)): A / E says the selected answer, D-pad or stick / ↑ ↓ picks, B / Esc leaves, Y pets; a present answer offers what is in your hand (he turns down key items: the ball). His portrait can be petted.
+  ([npcs.md](npcs.md)): A / E goes on or says the selected answer, D-pad or stick / ↑ ↓ picks, B / Esc leaves; a
+  present answer offers what is in your hand (he turns down key items: the ball). His portrait shows his mood and
+  squishes when he reacts; it is not a button (no petting).
   On a phone the card keeps off the move stick (the left 45 %): to the right in landscape, at the top in portrait.
 - **Easy in, easy out.** Talks are short. You stand still while one is open (the camera turns to frame him), and
   pressing Esc / pad B / the close button (on a phone, also the main button, which says Leave while you talk), opening
@@ -71,7 +74,7 @@ frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye (one press: his farewell
   is a bubble). Greetings and farewells change with your level.
 - **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
-  opened before it arrives waits for it. What he says outside a talk (level-ups, pats, ride complaints, "Nope!") is in
+  opened before it arrives waits for it. What he says outside a talk (level-ups, ride complaints, "Nope!") is in
   the small eager [src/boogler/barks.ts](../../src/boogler/barks.ts) ([src/boogler/play.ts](../../src/boogler/play.ts)).
 - **Story threads** ([src/boogler/lines.ts](../../src/boogler/lines.ts), [src/boogler/talk.ts](../../src/boogler/talk.ts)):
   `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows

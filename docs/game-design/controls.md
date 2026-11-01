@@ -24,7 +24,7 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Throw what you hold (`toss`) | described | (use) | D-pad → | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
 | Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action, wrapped) | X | Grab, when nothing is in reach | Getting around | as the guest |
-| Answer in a talk (`talk-answer`) | described | 1-8, ↑ ↓ (E, Space, Enter say it; Esc leaves) | D-pad ↑ ↓ or left stick, A or X says it (B leaves) | Tap an answer | Friends | talking |
+| Answer in a talk (`talk-answer`) | described | 1-8, ↑ ↓ (E, Space, Enter: next or say it; Esc leaves) | D-pad ↑ ↓ or left stick, A: next or say it (B leaves; X does nothing) | Tap an answer | Friends | talking |
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
 | Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
@@ -50,12 +50,15 @@ Notes:
 - Talk boxes are not modals: they share the NPC talk input ([npcs.md](npcs.md),
   [src/player/conversation.ts](../../src/player/conversation.ts)). The island keeps running and you can look around,
   but you stand still; it takes the keys it answers with (E, Space, Enter, Esc, ↑ ↓, W S, 1-9) and, on the pad
-  (`setPadGrab(fn, slots, { stick: true })` in [src/player/controls.ts](../../src/player/controls.ts)), A, B, X, the
-  D-pad ↑ ↓, the left stick and any extra buttons the box asks for (Y pets The Boogler). The pause view is still a
-  modal ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
+  (`setPadGrab(fn, slots, { stick: true })` in [src/player/controls.ts](../../src/player/controls.ts)), A, B, X (so
+  interact does nothing mid-talk), the D-pad ↑ ↓ and the left stick, picking with repeat while held. The other buttons
+  keep their actions (Y still honks). The pause view is still a modal ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
 - With a pad, B (back) also leaves a focused text field (the prototype bar's note) without doing anything else.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
-  ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4.
+  ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4. On an iPad
+  `body.touch` stays on while the pad plays, so pad-only styles key on `body.gamepad`. A pad without the standard
+  mapping that reports its D-pad as axes works like D-pad buttons 12-15: a hat axis (the one resting past ±1;
+  SDL_GameControllerDB lists MFi pads, Backbone included, with a hat D-pad), or else a pair on axes 6 and 7.
 - Finding the pad: with none known the game does no per-frame pad work; it asks the browser for pads on
   `gamepadconnected`, on any tap, click or key, when the page comes back (visible, focused, shown) and once after load,
   so a pad connected before the page opened is found too (browsers show a pad only after one of its buttons is pressed

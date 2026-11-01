@@ -1,6 +1,6 @@
 // Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
-// the talk, with its icon; you pet him from the talk box; you stand still while you talk and Esc leaves, and a chapter
+// the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
 // left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a can behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
@@ -40,7 +40,7 @@ const onBack = (check) => `(async () => {
 const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt')}.includes('Talk')`;
 
 export default {
-  about: 'one Talk prompt by The Boogler, gifts and pets in the talk, Pick up over items, a reason when planting fails',
+  about: 'one Talk prompt by The Boogler, gifts in the talk, Pick up over items, a reason when planting fails',
   timeout: 300000, // the nightly runner's software WebGPU took ~140 s; the default is 120 s
   async run(t) {
     const g = await t.open({ name: 'talker', hud: 'play' });
@@ -68,20 +68,6 @@ export default {
       'E opens the talk; the frisbee is an answer with its icon',
       gift.has && gift.icon,
       `${JSON.stringify(gift)}; ${talk}`,
-    );
-
-    // Pet him from the talk box: he answers in a bubble over the card and scores a pet.
-    const PETS = `(JSON.parse(localStorage.getItem('boogle.boogler') ?? 'null')?.pets?.length ?? 0)`;
-    const before = await g.eval(`return ${PETS};`);
-    await g.eval(`document.querySelector('.bd-face').click();`);
-    await g.wait(0.25);
-    const pet = await g.eval(`
-      return { pop: !document.querySelector('.bd-pop').hidden, line: ${text('.bd-pop-text')}, pets: ${PETS} };`);
-    const petShot = await g.still('pet');
-    t.check(
-      'petting the portrait answers in a bubble and counts as a pet',
-      pet.pop && pet.line && pet.pets === before + 1,
-      `${JSON.stringify(pet)} (before ${before}); ${petShot}`,
     );
 
     await g.eval(`document.querySelector('.bd-close').click();`);

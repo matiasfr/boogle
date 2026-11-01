@@ -2,7 +2,7 @@
 // and triggers on a gamepad (body.gamepad), nothing on touch (body.touch), where the buttons carry their own labels.
 //
 //   glyph(action)   HTML for one control: 'interact' (E / X), 'use' (click / D-pad →), 'close' (Esc / B),
-//                   'confirm' (E / A), 'pet' (Y on a gamepad only); '' when the input has no glyph for it
+//                   'confirm' (E / A); '' when the input has no glyph for it
 //   inputKind()     'pad' | 'touch' | 'kbm'
 //   padBrand()      'xbox' | 'ps' | 'nintendo': body[data-pad], set by src/features/gamepad.ts from the pad's id. Slots
 //                   are positions (W3C standard mapping: a is the bottom face button, b the right, x the left, y the
@@ -61,14 +61,12 @@ const KBM: Record<string, string> = {
   use: MOUSE('l'),
   close: key('Esc'),
   confirm: key('E'),
-  pet: '',
 };
 // Not actions: talk boxes and menus read these buttons themselves (src/player/conversation.ts, src/player/modal.ts
 // users); menuSlot swaps confirm and back on a Switch pad.
 const PAD_FIXED: Record<string, () => string> = {
   close: () => pad(menuSlot('back')),
   confirm: () => pad(menuSlot('confirm')),
-  pet: () => pad('y'),
 };
 
 const KEY_TEXT: Record<string, string> = {
