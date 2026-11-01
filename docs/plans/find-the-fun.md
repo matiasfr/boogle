@@ -40,6 +40,8 @@ until a look is picked; none of it blocks a playtest.
   (home in detail for eras 1–2; a rough archipelago), with `?layout=<name>` to walk an option in greybox.
 - **Graphics ceiling spike (started 1 November):** a code-only scene behind `?proto=look` using what WebGPU and TSL
   offer, measured per effect, to set the visual quality target on an M4 iPad Pro.
+- **Construction you can watch (built 1 November):** the helper hut goes up piece by piece as its ring fills,
+  scaffolding first, behind `?room=proto-build&proto=build` (one gut question: is watching it go up satisfying?).
 - **Feel passes** on whatever a playtest says is close: one facet per agent (the stack's sway, the wagon's clack).
 
 ## 1. Is hauling fun as a toy? (the haul playtest kit)

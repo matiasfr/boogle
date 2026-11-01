@@ -118,6 +118,24 @@ Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../..
 sets are one table, [blocks.ts](../../src/pois/era/blocks.ts)). Lockstep state `opening`; ops `open.start`, `open.lay`
 (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
 
+## Prototype: construction you can watch (?proto=build)
+
+Asks "is watching it go up satisfying?" with greybox boxes only. With `?proto=build` each site's helper hut builds
+up as its Helper ring fills, instead of appearing whole when the ring is full: scaffolding poles rise with the first
+logs, then sills, posts, top plates, wall planks (a doorway facing the ring), the ridge, four roof boards and the
+station sign's posts drop into place one after another, each with a thump and a puff of dust, as far as the ring's
+stock has reached. When the ring fills, the sign's board goes up last and the scaffolding tips over and goes. The
+stage is derived from the ring's lockstep stock, so every player sees the same pieces; the drops are drawn by each
+tab, and a late joiner or a reload sees the stage as it is, without the drops. The build is one data table (every
+piece with the stock fraction it appears at), shaped for a later "projects as data" system. In a `proto-` room
+(`?room=proto-build&proto=build`) a **Pour 10 logs** button (top left) takes logs from the bundles and pours ten
+into the open site's Helper ring with the usual ops (`src.take`, `site.stock`), so one tester builds a hut in four
+presses; **Reset** is the haul kit's reset. Without the flag the hut is the old box.
+
+Code: [src/proto/build/blueprint.ts](../../src/proto/build/blueprint.ts) (the pieces),
+[src/proto/build/index.ts](../../src/proto/build/index.ts), [src/features/build-proto.ts](../../src/features/build-proto.ts).
+No new state or ops. Scenario: `npm run scenario -- build-proto`.
+
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

@@ -24,6 +24,8 @@ import type { Site } from '../sim/sites.ts';
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
 const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest rooms)
+// The build prototype (?proto=build, src/proto/build/) draws the hut going up instead of this box.
+const BUILD_PROTO = new URLSearchParams(location.search).get('proto') === 'build';
 
 const ringGeo = new THREE.RingGeometry(RING_R - 0.18, RING_R, 40).rotateX(-Math.PI / 2);
 const ringMat = [
@@ -142,7 +144,7 @@ function redraw() {
       v.rings[ring].material = open ? ringMat[ring] : doneMat;
       paint(v.ringLabels[ring], [ring === TRACK ? 'Track' : 'Helper hut', ringLine(x, s, ring, k)]);
     }
-    v.hut.visible = x.helpers > 0;
+    v.hut.visible = x.helpers > 0 && !BUILD_PROTO;
     // sleepers stacked in the Track ring as it fills
     const p = ringAt(s, TRACK);
     const shown = rules.sites.isDone(s) ? 0 : Math.round((SLEEPERS * x.stock[TRACK]) / costOf(s, TRACK));
