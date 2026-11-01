@@ -95,7 +95,7 @@ These are standing preferences from the thread.
 
 ### Sound (listening-pack audit, 2026-11-02)
 
-- **2026-11-02, the wave is cut as a mechanic** (owner: "wave shouldn't be a game mechanic to worry about"). The `v=wave` haul variant is retired. See Changed.
+- **2026-11-02, the wave stays as it is until the owner has played it** (he first marked its sound "cut", then said he may have misread it; undecided).
 - **2026-11-02, the synthesized groove loop is cut** (all five takes). The shared clock, mixer and stems loader can stay for the owner's own music later; no placeholder music plays.
 - **2026-11-02, cut sounds** (silence them, keep the mechanics): wagon whistle and clacks, freight thumps, stoke roar and chuffs, all grind sounds, all soapbox sounds, opening-day call/bell/swap. Better sounds come later, from references.
 - **2026-11-02, keep:** prompt pop, deny, haul count run (right direction), honk, all mini-game sounds (knock, pop ladder, fanfare, sad trombone, mushroom boing), the hut build, the board whoosh, the track machine.
@@ -119,7 +119,7 @@ These are standing preferences from the thread.
 
 ## Changed
 
-- **2026-11-02:** the wave haul variant (from the Roblox research) was cut after the listening pack: the wave shouldn't be something to worry about. The synthesized groove loop was cut too.
+- **2026-11-02:** the synthesized groove loop was cut after the listening pack.
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
 - **2026-11-01:** the haul stack's sway and jump spill (0.1 groundwork) were cut after the first solo haul playtest: the owner wants a plain back bundle.
 - **2026-11-01:** the asset pipeline moved from "when the first authored model lands" to now, so Blender work can start as soon as a look is picked.
