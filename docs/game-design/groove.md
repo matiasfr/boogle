@@ -23,7 +23,7 @@ at `/?room=proto-groove&proto=groove`.*
   clacks land on the next 8th note.
 - **Mixer:** music, sfx, ui and voice buses (music at -13 dB). Every sound effect goes through the sfx bus, and
   anything over -24 dBFS there ducks the music by 9 dB, easing back in about half a second.
-- **The chip** at the top centre shows the state and bar.beat with a dot pulsing on the beat; click it to turn the
+- **The chip** at the top right, under the net pill, shows the state and bar.beat with a dot pulsing on the beat; click it to turn the
   music off or on.
 
 ## Variants

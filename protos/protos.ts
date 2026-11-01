@@ -183,7 +183,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-groove&proto=groove',
     question: 'Does the island feel more alive and fun with the groove?',
-    what: 'A placeholder house loop on one shared beat: quiet when idle, grooving when you move, full on the wagon, a one-beat drop when you wipe out. Honks and clacks land on the beat and in key. The chip top centre mutes it.',
+    what: 'A placeholder house loop on one shared beat: quiet when idle, grooving when you move, full on the wagon, a one-beat drop when you wipe out. Honks and clacks land on the beat and in key. The chip top right mutes it.',
     since: '2026-11-01',
     variants: [
       {
