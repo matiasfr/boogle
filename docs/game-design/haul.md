@@ -174,12 +174,12 @@ longer pours; without `v` the loop above is unchanged. Starting numbers from
   pentatonic step higher each time from C6 to C7, then a payout shimmer among the top three notes, starting over after
   0.7 s with nothing landing, ±6 cents, panned to alternate sides; every 4th is accented and a pickup of 4 or more
   closes on a cha-ching (C6, G6, C7 clinks 40 ms apart, E7 too after 10, a shimmer and a low knock). Undrawn pieces
-  tick in 45 ms apart up to 12 ticks a pickup; the rest are counted with the last. At most 8 tick voices; with
-  `?proto=groove` they land on the beat and in the chord. The chip's number and the logs on your back go up with each
-  landing, then follow the host's count. Take logs spills the bundle's 4 logs out in a fan toward you (up 4-4.5 m/s,
-  out 1.5-2.5 m/s, tumbling), one bounce, a puff of dust, 120-160 ms lying there, then the magnet takes them: about a
-  second from E to the last tick. Same ops as ever (`pile.take`, `src.take`); everything new is Local. Tuning:
-  `window.__magnet.T`. Look evals: `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
+  tick in 45 ms apart up to 12 ticks a pickup; the rest are counted with the last. At most 8 tick voices. The
+  chip's number and the logs on your back go up with each landing, then follow the host's count. Take logs spills the
+  bundle's 4 logs out in a fan toward you (up 4-4.5 m/s, out 1.5-2.5 m/s, tumbling), one bounce, a puff of dust,
+  120-160 ms lying there, then the magnet takes them: about a second from E to the last tick. Same ops as ever
+  (`pile.take`, `src.take`); everything new is Local. Tuning: `window.__magnet.T`. Look evals:
+  `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
 
 Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
 then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`

@@ -7,12 +7,12 @@
 // is what a player hears, levels included.
 //
 //   node dev/audio/render.ts                       every take into .look/audio/ (WAV + MP3 + manifest.json)
-//   node dev/audio/render.ts --only groove,ui      just the takes whose id or page starts with one of these
+//   node dev/audio/render.ts --only haul,ui        just the takes whose id or page starts with one of these
 //   node dev/audio/render.ts --out <dir>
 //
 // Files are peak-normalized to -1 dBFS so they audition at the same loudness on a phone; manifest.json keeps each
 // one's in-game peak and RMS (dBFS at the game's master), so relative loudness is still on record. One-shots are
-// trimmed of leading and trailing silence; the groove's loops are cut on bar lines, sample-exact, so they loop.
+// trimmed of leading and trailing silence.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -185,14 +185,6 @@ const PRE = `const R = window.__rec, { sleep, until } = R;`;
 // A take that calls `calls` (page code) in order, `gap` ms apart; each entry is one statement.
 const seq = (imports: string, calls: string[], gap: number) => `${imports}
   return R.run(null, async () => { for (const f of [${calls.map((c) => `async () => { ${c} }`).join(', ')}]) { await f(); await sleep(${gap}); } });`;
-// Groove: hold a state, then record `bars` from the next clean bar line (a whole bar after the state took over).
-const groove = (state: string, bars: number, during = '') => `
-  const G = window.__groove;
-  G.force('${state}');
-  await until(() => G.state().playing === '${state}', 20000);
-  const BAR = (60 / G.song.bpm) * 4, off = G.state().off;
-  const at = (Math.ceil((R.ctx.currentTime - off) / BAR + 0.15) + 1) * BAR + off;
-  return R.run(${bars} * BAR, async () => { ${during} }, { at, trim: false });`;
 const followWagon = `const W = window.__wagon;
   const follow = setInterval(() => { const p = W.cars[0].mesh.position; window.__debugCam.set([p.x + 4, p.y + 2.5, p.z + 4], [p.x, p.y, p.z]); }, 50);`;
 const grindShot = (shot: string, seconds: number) => `
@@ -351,55 +343,6 @@ const PAGES: Page[] = [
         title: 'Double jump',
         when: 'The second jump in the air (any ?proto= page with &jump2=1): a quiet puff of air, three of them.',
         body: seq(`const { whoop } = await import('/src/proto/moves/index.ts');`, Array(3).fill(`whoop();`), 550),
-      },
-    ],
-  },
-  {
-    key: 'groove',
-    query: 'proto=groove',
-    takes: [
-      {
-        id: 'groove-sparse',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, sparse (8 bars)',
-        when: 'Standing still away from spawn: hats and soft stabs. Cut on bar lines, so it loops.',
-        body: groove('sparse', 8),
-      },
-      {
-        id: 'groove-groove',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, groove (8 bars)',
-        when: 'Moving around (and for 3 s after you stop): kick, hats and bass. Loops.',
-        body: groove('groove', 8),
-      },
-      {
-        id: 'groove-full',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, full (8 bars)',
-        when: 'Riding something (the wagon, a deck): all four layers. Loops.',
-        body: groove('full', 8),
-      },
-      {
-        id: 'groove-drop',
-        group: 'Groove (?proto=groove)',
-        title: 'Wipeout drop (4 bars of full)',
-        when: 'A hard landing, being knocked flat or a tumble: one beat of silence with a slide down through it.',
-        body: groove('full', 4, `await sleep(((60 / G.song.bpm) * 4 * 1.6) * 1000); G.wipeout();`),
-      },
-      {
-        id: 'groove-snap',
-        group: 'Groove (?proto=groove)',
-        title: 'Sound effects on the grid (4 bars of full)',
-        when: 'Honks and a magnet burst over the music: they land on the next 16th and in the current chord, and duck the music.',
-        body: groove(
-          'full',
-          4,
-          `const { honkSound } = await import('/src/features/honk.ts'); const { honkFreq } = await import('/src/sim/social.ts');
-          const { arrivalTick, burstChord } = await import('/src/proto/haul/magnet-sound.ts');
-          await sleep(900); honkSound(honkFreq(0), 0.16); await sleep(700); honkSound(honkFreq(3), 0.16);
-          await sleep(1300); for (let k = 0; k < 10; k++) { arrivalTick(); await sleep(55); } burstChord();
-          await sleep(1400); honkSound(honkFreq(5), 0.16);`,
-        ),
       },
     ],
   },
@@ -781,7 +724,7 @@ try {
         `${PRE} await until(() => R.ready && R.node && R.ctx.state === 'running', 20000);
         ${page.setup ?? ''}`,
       );
-      // What the page plays by itself (beds, the music), for reading the takes' levels against.
+      // What the page plays by itself (beds), for reading the takes' levels against.
       const floor = (await g.eval(
         `${PRE} await sleep(1500); const r = await R.run(1, null, { trim: false }); return r.peakDb;`,
       )) as number;

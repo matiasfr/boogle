@@ -76,7 +76,7 @@ tick of 100 ms (10 per second).
 - [6.20 Prototype: soapbox (`?proto=soapbox`)](game-design/soapbox.md)
 - [6.21 Prototype: mini-game toys (`?proto=minis`)](game-design/minis.md)
 - [6.22 Prototype: departures board (`?proto=board`)](game-design/board.md)
-- [6.23 Prototype: the groove (`?proto=groove`)](game-design/groove.md)
+- [6.23 Prototype: the groove (retired: cut)](game-design/groove.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)

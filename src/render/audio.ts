@@ -33,8 +33,8 @@ for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click',
   addEventListener(ev, unlock, { passive: true, capture: true });
 }
 
-// Mixer buses. Without a mixer installed every bus is the master; the groove prototype (src/proto/groove/, behind
-// ?proto=groove) installs one with a gain per bus and the music ducked under big sound effects.
+// Mixer buses. Without a mixer installed (the case today: the groove prototype was cut) every bus is the master;
+// src/proto/groove/mixer.ts is one with a gain per bus and the music ducked under big sound effects, for music later.
 export type Bus = 'music' | 'sfx' | 'ui' | 'voice';
 type Mixer = (ctx: AudioContext, master: GainNode) => (bus: Bus) => AudioNode;
 let makeMixer: Mixer | null = null;
@@ -50,8 +50,8 @@ export function getAudio(bus: Bus = 'sfx'): { ctx: AudioContext; out: AudioNode 
   return { ctx, out: route ? route(bus) : master };
 }
 
-// When (AudioContext time) and at what pitch a musical sound effect plays: as asked, unless a music prototype snaps
-// sound effects to its beat grid (`grid`: 16 = the next 16th note, 8 = the next 8th) and to its current chord (a
+// When (AudioContext time) and at what pitch a musical sound effect plays: as asked (no music installs a snap today,
+// so this adds no latency), unless music snaps sound effects to its beat grid (`grid`: 16 = the next 16th note, 8 = the next 8th) and to its current chord (a
 // pitch in Hz; 0 leaves an unpitched sound alone). The action itself never waits, only its sound.
 type NoteSnap = (t: number, freq: number, grid: 8 | 16) => { t: number; freq: number };
 let snap: NoteSnap | null = null;
