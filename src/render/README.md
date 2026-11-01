@@ -14,7 +14,9 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
   screen). Behind it, [`precompile.js`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
   `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
-  `precompile(object)` as it builds its meshes. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
+  `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
+  "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
+  create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
   last frame's counts until the next one starts. A lost GPU device
   reloads the page once it is visible, at most once a minute.
