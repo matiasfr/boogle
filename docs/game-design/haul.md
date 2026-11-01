@@ -60,8 +60,8 @@ while signs further off read at full size.
 Every pour is credited on that site's plaque: 1 point per 1% of the age's section cost (a log is 1.67 points), with
 the remainder kept per player so rounding never loses anything. The plaque lists the top four by points, names from
 the roster; nobody is listed for not pouring. Your contribution tier is derived from your points in this room (Hand
-25, Porter 100, Navvy 300, Ganger 600, Foreman 1,000, Engineer 1,600, Stationmaster 2,500; brief 8) and shows only to
-you, on the haul chip. Tiers give nothing yet.
+25, Porter 100, Navvy 300, Ganger 600, Foreman 1,000, Engineer 1,600, Stationmaster 2,500; brief 8). Tiers are data
+only: nothing shows them (the haul chip shows just what you carry) and they give nothing until rewards are designed.
 
 ## Machine runs, helpers and the age change
 

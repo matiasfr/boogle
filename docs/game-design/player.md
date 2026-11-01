@@ -100,8 +100,9 @@ you enter, it slowly circles the island.
 - Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.ts)).
 - Eight colours ([constants.js](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
-- Name: up to 16 characters, control and format characters stripped, default "Dat Frinco". Name and colour are kept
-  in localStorage (`boogle.name`, `boogle.color`); a first visit gets a random colour.
+- Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage
+  (`boogle.name`, `boogle.color`); a first visit's card offers a friendly random name and a random colour, later
+  visits go straight in with them, and the pause view's Room page changes them ([identity.md](identity.md)).
 - Remote players show a floating name label; the HUD roster lists everyone, and the net chip says "Live · N on the
   island", "Connecting" or "Solo".
 

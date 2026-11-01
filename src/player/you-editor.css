@@ -1,4 +1,4 @@
-/* ?proto=arrive: your name and colour on the pause view's Room page (./rename.ts) */
+/* Your name and colour on the pause view Room page (./you-editor.ts) */
 .pause-you-edit {
   display: grid;
   gap: 8px;

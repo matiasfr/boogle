@@ -66,13 +66,6 @@
 .haul-n.ui-tick {
   animation: ui-tick var(--dur-pop) var(--ease-pop);
 }
-.haul-tier:not(:empty) {
-  padding: 2px 9px;
-  margin-left: 3px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 15px;
-}
 .haul-chip.kit.full {
   background: color-mix(in srgb, var(--sun) 92%, transparent);
   color: var(--ink);

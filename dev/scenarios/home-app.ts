@@ -3,12 +3,14 @@
 // loaded, with no gamepadconnected event ever fired. Checks that the pad is found anyway and plays on its first press,
 // that the lobby's "press any button" line shows only while no pad is known, that the canvas fills the screen (and
 // still does when the viewport comes up a status bar short, as iOS lays it out: WebKit bug 237961), and that a bare
-// launch offers "Continue in" the room it was last in. Serves DESIGN.md "Designed for drop-in, drop-out".
+// launch goes back to the room it was last in (straight in when returning; "Continue in" on a first visit's card).
+// Serves DESIGN.md "Designed for drop-in, drop-out".
 type Page = {
   url: () => string;
   goto: (u: string) => Promise<unknown>;
   setViewportSize: (s: { width: number; height: number }) => Promise<void>;
   waitForSelector: (s: string, o?: { timeout?: number }) => Promise<unknown>;
+  waitForFunction: (fn: () => unknown, arg: null, o?: { timeout?: number }) => Promise<unknown>;
   evaluate: (fn: string) => Promise<unknown>;
 };
 type Game = {
@@ -53,7 +55,8 @@ const H = `getComputedStyle(document.documentElement).getPropertyValue('--app-h'
 const CANVAS = `[document.getElementById('view').clientHeight, document.getElementById('view').height]`;
 
 export default {
-  about: 'the Home Screen app on iPad: a pad there before load is found, the canvas fills the screen, Continue in',
+  about:
+    'the Home Screen app on iPad: a pad there before load is found, the canvas fills the screen, back to the last room',
   timeout: 240000,
   async run(t: Run) {
     const g = await t.open({ name: 'homeapp', hud: true, size: [1180, 820], init: homeScreenIpad });
@@ -117,12 +120,24 @@ export default {
     );
     await g.page.setViewportSize({ width: 1180, height: 820 });
 
-    // This visit was in a room; a bare launch of the app offers to go back to it.
+    // This visit was in a room; a bare launch of the app by a returning player goes straight back into it.
     const room = new URL(g.page.url()).searchParams.get('room');
     const saved = await g.eval(`return localStorage.getItem('boogle.lastLaunch');`);
     t.check('a visit to a room is remembered', saved === `room=${room}`, String(saved));
     const bare = new URL(g.page.url());
     bare.search = '?dpr=fixed';
+    await g.page.goto(bare.href);
+    await g.page.waitForFunction(() => document.body.classList.contains('playing'), null, { timeout: 120000 });
+    const back = new URL(g.page.url()).searchParams.get('room');
+    const lobby = await g.page.evaluate(`document.getElementById('lobby').hidden`);
+    t.check(
+      'a returning bare launch lands straight in that room, no card',
+      back === room && lobby === true,
+      String(back),
+    );
+
+    // A first visit in the app (its storage starts empty; only the cookie came along) offers Continue on the card.
+    await g.page.evaluate(`localStorage.removeItem('boogle.name')`);
     await g.page.goto(bare.href);
     await g.page.waitForSelector('.continue-last', { timeout: 60000 });
     const label = await g.page.evaluate(`document.querySelector('.continue-last').textContent`);

@@ -1,12 +1,13 @@
-// ?proto=arrive skips the lobby, so the pause view's Room page gets a "You" section: your name and colour, saved for
-// next time and sent with presence (src/features/identity.ts tells the roster). Loaded by ./index.ts; the Room page
-// draws it through roomExtras (src/features/pause.ts). Local: only your own identity.
-import './rename.css';
-import { COLORS } from '../../constants.ts';
-import { sanitizeName } from '../../math.ts';
-import { me } from '../../player/player.ts';
-import { renderPeople } from '../../player/hud.ts';
-import { roomExtras } from '../../features/pause.ts';
+// "You" on the pause view's Room page (src/features/pause.ts): your name and colour, changeable at any time and saved
+// for next time (the same localStorage keys the first-visit card writes; src/player/arrival.ts). Presence carries the
+// new name and colour on its next beat, and src/features/identity.ts tells the roster, so plaques follow. Local: only
+// your own identity. Serves DESIGN.md 8 (Designed for drop-in: a returning player skips the card, so this is where a
+// name changes).
+import './you-editor.css';
+import { COLORS } from '../constants.ts';
+import { sanitizeName } from '../math.ts';
+import { me } from './player.ts';
+import { renderPeople } from './hud.ts';
 
 function save() {
   try {
@@ -19,7 +20,7 @@ function save() {
   renderPeople(); // the Room page's list follows on its own (it watches who is on the island)
 }
 
-roomExtras.push(() => {
+export function youEditor(): HTMLElement {
   const you = document.createElement('div');
   you.className = 'pause-you-edit';
   const h = document.createElement('h2');
@@ -48,6 +49,7 @@ roomExtras.push(() => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'pause-btn pause-swatch';
+    b.dataset.color = String(k);
     b.style.background = col;
     b.setAttribute('aria-label', `Colour ${k + 1}`);
     b.addEventListener('click', () => {
@@ -60,4 +62,4 @@ roomExtras.push(() => {
   paint();
   you.append(h, name, swatches);
   return you;
-});
+}

@@ -1,7 +1,8 @@
 // The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts; on the Gamepad tab a
-// drawn controller with a set per situation, src/player/pad-diagram.ts, or the list), Room (who is here, an
-// invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
-// it only takes this player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
+// drawn controller with a set per situation, src/player/pad-diagram.ts, or the list), Room (who is here, an invite link,
+// and You: your name and colour, src/player/you-editor.ts) and Leave (back to the name-and-colour card).
+// The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
+// player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
@@ -18,6 +19,8 @@ import { registerAction, isTyping, menuSlot } from '../player/controls.ts';
 import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
 import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
+import { youEditor } from '../player/you-editor.ts';
+import { leaveIsland } from '../player/arrival.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -25,7 +28,7 @@ const TABS: [GuideKind, string][] = [
   ['touch', 'Touch'],
 ];
 const LEAVE_MS = 3000;
-// Sections a prototype adds to the Room page, above Back (?proto=arrive's name and colour, src/proto/arrive/rename.ts).
+// Sections a prototype adds to the Room page, above You.
 export const roomExtras: (() => HTMLElement)[] = [];
 
 // Built on first open (build) and at start (the menu button); used only after.
@@ -141,7 +144,7 @@ doc.addEventListener('webkitfullscreenchange', syncFsButton);
 
 function renderMain() {
   const leave = button('Leave', () => {
-    if (leaveTimer) location.reload();
+    if (leaveTimer) leaveIsland();
     leave.textContent = 'Leave the island?';
     leave.classList.add('sure');
     leaveTimer = setTimeout(() => {
@@ -253,7 +256,7 @@ function renderRoom() {
   const back = button('Back', () => show('main'), 'pause-back');
   back.dataset.act = 'back';
   link.append(copy);
-  wrap.append(el('h2', 'pause-h', 'On the island'), list, link, ...roomExtras.map((part) => part()), back);
+  wrap.append(el('h2', 'pause-h', 'On the island'), list, link, ...roomExtras.map((part) => part()), youEditor(), back);
   fillPeople(list);
   return wrap;
 }
@@ -309,7 +312,7 @@ function moveTab(dir: number) {
 }
 
 function onKey(e: KeyboardEvent) {
-  if (e.code !== 'Escape' && isTyping(e)) return; // the Room page's name box (?proto=arrive)
+  if (e.code !== 'Escape' && isTyping(e)) return; // the Room page's name box
   if (e.code === 'Escape') {
     e.preventDefault();
     if (page !== 'main') show('main');

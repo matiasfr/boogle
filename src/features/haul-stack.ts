@@ -1,6 +1,6 @@
 // The haul stack: what you carry, drawn as a bundle of pieces on your back (and on everyone else's, from the lockstep
-// stacks matched to avatars through presence `pid`). A small chip shows your count and your own contribution tier
-// (from the plaques). Pickups fly to your back the moment you walk into a pile (Local), while the host confirms
+// stacks matched to avatars through presence `pid`). A small chip shows your count (no contribution tier: tiers stay
+// data in src/sim/tiers.ts until rewards are designed; docs/proposals/boogle-2.md, 2026-11-02). Pickups fly to your back the moment you walk into a pile (Local), while the host confirms
 // (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own: pickup is walking into a pile, pouring is
 // walking into a site's ring (work-sites.ts).
 // Serves DESIGN.md 1 (toys before chores: wood on your back, carried around with nothing to do). Lockstep counts,
@@ -20,7 +20,6 @@ import { scene } from '../render/scene.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
 import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
-import { TIERS, tierOf } from '../sim/tiers.ts';
 import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
 import { protoActivity } from '../proto/mark.ts';
 
@@ -181,16 +180,10 @@ onFrame(
   { phase: 'update', order: 32 },
 );
 
-// The chip: your material and count, and your own tier only (brief 8: no readout on anyone else), derived from the
-// plaques; rebuilt only when your stack or the sites change.
-let chipKey = '';
+// The chip: your material and count, only while you carry something.
 function updateChip(host: Stack): void {
-  const mine = { n: backSeam.count(host.n), k: host.k };
-  const key = `${mine.n}/${mine.k}/${rules.sites.sites.rev}`;
-  if (key === chipKey) return;
-  chipKey = key;
-  const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name;
-  const text = [mine.n ? `${MATERIALS[mine.k]} ${mine.n}` : '', tier ?? ''].filter(Boolean).join(' · ');
+  const n = backSeam.count(host.n);
+  const text = n ? `${MATERIALS[host.k]} ${n}` : '';
   if (text !== chipText) {
     chipText = text;
     chip.textContent = text;
@@ -199,15 +192,15 @@ function updateChip(host: Stack): void {
 }
 
 // ?proto=uisfx: the chip's parts, and the count it shows ticking toward the confirmed one (about 300 ms per change).
-const kit = { n: null as HTMLElement | null, what: null as HTMLElement | null, tier: null as HTMLElement | null };
+const kit = { n: null as HTMLElement | null, what: null as HTMLElement | null };
 const shown = { n: 0, to: 0, step: 0, at: 0, key: '' };
 if (UI_KIT) {
   chip.classList.add('kit');
   chip.innerHTML =
     '<svg class="haul-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="18" height="10" rx="5"/>' +
     '<ellipse cx="19" cy="12" rx="3.2" ry="5"/><ellipse cx="19" cy="12" rx="1.3" ry="2"/></svg>' +
-    '<span class="haul-n"></span><span class="haul-what"></span><span class="haul-tier"></span>';
-  [kit.n, kit.what, kit.tier] = [...chip.querySelectorAll('span')] as HTMLElement[];
+    '<span class="haul-n"></span><span class="haul-what"></span>';
+  [kit.n, kit.what] = [...chip.querySelectorAll('span')] as HTMLElement[];
 }
 function tickChip(host: Stack, now: number): void {
   const mine = { n: backSeam.count(host.n), k: host.k };
@@ -224,14 +217,12 @@ function tickChip(host: Stack, now: number): void {
     uiSound('count', d);
     replay(kit.n, 'ui-tick');
   }
-  const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name ?? '';
-  const key = `${shown.n}/${mine.k}/${tier}`;
+  const key = `${shown.n}/${mine.k}`;
   if (key === shown.key) return;
   shown.key = key;
   kit.n!.textContent = shown.n ? String(shown.n) : '';
   kit.what!.textContent = shown.n ? MATERIALS[Math.max(0, mine.k)] : '';
-  kit.tier!.textContent = tier;
-  chip.classList.toggle('on', !!(shown.n || tier));
+  chip.classList.toggle('on', !!shown.n);
   chip.classList.toggle('carrying', !!shown.n);
   chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
 }

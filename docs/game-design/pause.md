@@ -10,9 +10,10 @@
   iPad fullscreen without keyboard access: only Space, the arrows, Tab, Enter and the modifiers reach the page, so
   W A S D, E, R, H, the digits and Esc go dead) and a controller's shoulder buttons and triggers (WebKit bug 311151),
   and suggests Add to Home Screen; the button then reads Fullscreen anyway (touch only)) and
-  Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc (when the pointer
-  lock ends), H (on the Controls page), pad Menu and the corner menu button. Behind `?proto=arrive` (no lobby) the
-  Room page also has a You section: a name box and the colour swatches, saved as you type or tap.
+  Leave (press twice within 3 s). The title is the room id. It opens on Esc (when the pointer
+  lock ends), H (on the Controls page), pad Menu and the corner menu button. The Room page ends with a You section: a
+  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Leave reloads onto the
+  first-visit card once, so a returning player can still go through it ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/pad-diagram.ts](../../src/player/pad-diagram.ts),
