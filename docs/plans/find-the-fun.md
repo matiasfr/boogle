@@ -77,6 +77,8 @@ and test it.
 ## 3. Does what you built feel like yours?
 
 - [x] **Riding only on laid sections:** the wagon's run grows with each laid section (`?proto=wagon`).
+- [x] **Laying-run variants:** is the 50 s laying run satisfying or dead time? Crawl (today's, juicier), quick (14 s)
+      and push (lays only while pushed), rideable, compared in one sitting (`?room=proto-lay&proto=lay&v=`).
 - [ ] **Playtest 3.**
 
 ## 4. Does the island change enough at an era's end?

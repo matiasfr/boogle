@@ -12,6 +12,7 @@ import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import { PATCH } from '../../src/sim/mushrooms.ts';
+import { PUSH_RUN_KIND } from '../../src/sim/scripted-run.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -49,6 +50,7 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   ])
     wh.rules.piles.drop(i, 188, k, 64);
   wh.rules.sites.addFreight(60);
+  wh.rules.tune.tune.v.run = PUSH_RUN_KIND; // the push run, so site.push has a run to push (the same on every peer: none here)
 
   const accepted = new Set<string>();
   wh.sync.onApplied((e: Msg) => void accepted.add(e.op));
@@ -60,7 +62,7 @@ test('every op of every rules module is accepted from a client or, host-only, fr
     // The haul reset empties the head start and opening day's shortcut closes the route, so they go last: the
     // shortcut, then opening day, then the reset.
     const left = ops.filter((o) => !accepted.has(o));
-    const late = ['open.lay', 'open.start', 'tune.reset'];
+    const late = ['open.lay', 'open.start', 'tune.reset', 'tune.fill']; // a fill needs an empty ring: after the reset
     const early = left.filter((o) => !late.includes(o));
     const op = early.length ? r.pick(early) : late.find((o) => left.includes(o))!;
     const e = generators[op](r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
