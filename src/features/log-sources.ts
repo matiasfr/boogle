@@ -11,6 +11,7 @@ import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { registerInteractable, type Interactable } from '../player/hands.ts';
 import { me } from '../player/player.ts';
+import { haulHooks } from '../player/haul-variant.ts';
 import { net } from '../netplay/net.ts';
 import { cellX, cellZ, groundHeight } from '../adapters/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
@@ -58,14 +59,18 @@ registerInteractable(() => {
     if (rules.sources.charges(id) <= 0 || now - (pending.get(id) ?? -1e9) < 1500) return;
     spot(p, bundleAt);
     if (Math.hypot(bundleAt.x - pos.x, bundleAt.z - pos.z) >= REACH_LOGS) return;
-    out.push({
-      id: `logs${id}`,
-      verb: 'Take logs',
-      at: new THREE.Vector3(bundleAt.x, bundleAt.y + 0.5, bundleAt.z),
-      run: () => {
-        if (submitEdit({ op: 'src.take', i: p.i, j: p.j, id })) pending.set(id, performance.now());
-      },
-    });
+    const t = { id: `logs${id}`, verb: 'Take logs', at: new THREE.Vector3(bundleAt.x, bundleAt.y + 0.5, bundleAt.z) };
+    const blocked = haulHooks.takeBlocked(bundleAt.x, bundleAt.z); // a haul variant's rule (the barrow must be near)
+    out.push(
+      blocked
+        ? { ...t, blocked }
+        : {
+            ...t,
+            run: () => {
+              if (submitEdit({ op: 'src.take', i: p.i, j: p.j, id })) pending.set(id, performance.now());
+            },
+          },
+    );
   });
   return out;
 });

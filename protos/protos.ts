@@ -33,10 +33,22 @@ export const PROTOS: Proto[] = [
     step: 1,
     status: 'live',
     url: '/?room=proto-haul&proto=haul',
-    question: 'Is hauling fun as a toy, with no goal?',
+    question: 'Which way of moving logs is the most fun?',
     what: "Logs on your back from the palm bundles, poured into the rail's work site. Tuning panel top right.",
     since: '2026-11-01',
     values: true,
+    variants: [
+      {
+        name: 'barrow',
+        url: '/?room=proto-haul-barrow&proto=haul&v=barrow',
+        what: 'A wheelbarrow that holds 150 (E to push); too fast downhill and it spills. Tip it into the ring.',
+      },
+      {
+        name: 'toss',
+        url: '/?room=proto-haul-toss&proto=haul&v=toss',
+        what: 'Hold click near the site: your logs fly into the ring by handfuls.',
+      },
+    ],
   },
   {
     id: 'ride',

@@ -8,4 +8,7 @@ import { getRoomId } from '../netplay/net.ts';
 import { isProtoRoom } from '../sim/tune.ts';
 
 setEnv({ protoRoom: isProtoRoom(getRoomId()) });
-if (new URLSearchParams(location.search).get('proto') === 'haul') import('../debug/haul-kit.ts');
+if (new URLSearchParams(location.search).get('proto') === 'haul') {
+  import('../debug/haul-kit.ts');
+  import('../proto/haul/index.ts'); // pickup feel, and with &v=barrow or &v=toss another way to move logs
+}

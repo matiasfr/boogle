@@ -10,8 +10,9 @@
 import { rules } from '../world/game-world.ts';
 import './haul-kit.css';
 import { onFrame } from '../loop.ts';
-import { submitEdit } from '../world/sync.ts';
-import { getRoomId } from '../netplay/net.ts';
+import { submitEdit, onApplied } from '../world/sync.ts';
+import { getRoomId, net } from '../netplay/net.ts';
+import { me } from '../player/player.ts';
 import { TUNABLES, isProtoRoom, type TuneKey } from '../sim/tune.ts';
 import { haulFeel, HAUL_FEEL_DEFAULTS, type HaulFeel } from '../player/haul-feel.ts';
 
@@ -136,6 +137,31 @@ const roomRows = TUNABLES.map((t) => {
   return r;
 });
 
+// Chores this section (Local, this tab): how much gathering and walking one section takes, to see whether the chore
+// is the gathering (docs/research/carrying-and-logistics-play.md rec 1: about 15 Take-logs presses across ~8 palms;
+// start from at most 6-8 deliberate actions and under ~2 minutes per section). Counts from your first take after the
+// section opens until its machine starts; starts over when the next section opens or the haul is reset.
+body.append(el('h3', '', 'Chores this section (this tab)'));
+const choreLine = el('p', 'hk-note hk-chores');
+body.append(choreLine);
+const chores = { site: -1, presses: 0, palms: new Set<number>(), metres: 0, t0: 0, t1: 0 };
+let lastPos: { x: number; z: number } | null = null;
+function choresReset(site: number) {
+  Object.assign(chores, { site, presses: 0, metres: 0, t0: 0, t1: 0 });
+  chores.palms.clear();
+}
+onApplied((e: { op: string; p?: string; id?: number }) => {
+  if (e.op === 'tune.reset') choresReset(rules.sites.sites.open);
+  if (e.op !== 'src.take' || e.p !== (net.room?.selfId ?? 'local')) return;
+  chores.presses++;
+  if (typeof e.id === 'number') chores.palms.add(e.id);
+  if (!chores.t0) chores.t0 = performance.now();
+});
+const choreText = () => {
+  const s = (((chores.t1 || (chores.t0 ? performance.now() : 0)) - chores.t0) / 1000) | 0;
+  return `presses ${chores.presses} · palms ${chores.palms.size} · walked ${Math.round(chores.metres)} m · ${s} s`;
+};
+
 const status = el('p', 'hk-note hk-status');
 const buttons = el('div', 'hk-buttons');
 const resetBtn = el('button', '', 'Reset haul');
@@ -170,7 +196,8 @@ const valuesLine = () =>
   `haul-kit room=${room} ` +
   TUNABLES.map((t) => `${t.key}=${tune.v[t.key]}`).join(' ') +
   ' | ' +
-  LOCAL.map((k) => `${k.key}=${haulFeel[k.key]}`).join(' ');
+  LOCAL.map((k) => `${k.key}=${haulFeel[k.key]}`).join(' ') +
+  ` | section ${chores.site + 1}: ${choreText()}`;
 copyBtn.addEventListener('click', async () => {
   const line = valuesLine();
   try {
@@ -185,6 +212,18 @@ copyBtn.addEventListener('click', async () => {
 let drawn = -1;
 onFrame(
   () => {
+    // the chore counter runs whether or not the panel is open
+    const site = rules.sites.sites.open;
+    if (site !== chores.site) choresReset(site);
+    const running = rules.sites.sites.list[site]?.t0 >= 0;
+    if (running && chores.t0 && !chores.t1) chores.t1 = performance.now();
+    const p = me.entered ? me.body?.position : null;
+    if (p) {
+      const d = lastPos ? Math.hypot(p.x - lastPos.x, p.z - lastPos.z) : 0;
+      if (chores.t0 && !chores.t1 && d < 3) chores.metres += d; // a bigger jump is a teleport, not a walk
+      lastPos = { x: p.x, z: p.z };
+    }
+    if (open) choreLine.textContent = choreText();
     if (!open) return;
     const now = performance.now();
     let settled = false;

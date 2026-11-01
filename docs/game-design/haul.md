@@ -100,6 +100,44 @@ Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/hau
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
 
+## Prototype: haul variants (?proto=haul&v=barrow | toss)
+
+Two other ways to get logs from the palms to the work site, so the owner can compare them with the back bundle in one
+sitting (find the fun, step 1: "if hauling is a chore, test a different core loop"). Each variant has its own room on
+the protos page (`proto-haul-barrow`, `proto-haul-toss`), so their saves never mix. With a variant on, walking into a
+ring no longer pours; without `v` the loop above is unchanged. Starting numbers from
+[docs/research/carrying-and-logistics-play.md](../research/carrying-and-logistics-play.md) (recs 1, 3, 5, 6).
+
+- **`v=barrow`:** a wheelbarrow stands beside the first work site, and stays wherever you leave it. E grabs its
+  handles (or walk into it to shove it); it rolls ahead of you at arm's length and swings to where you walk, at 85% of
+  your pace on the flat and a little faster downhill. It holds 150 logs (rec 6: 2-3 sections): the tray is your stack,
+  so in a `proto-` room the barrow raises the room's hard cap to 150 (elsewhere the room's cap stays). Take logs only
+  works with the barrow within 4.5 m of the bundle, and the logs fly into its tray instead of onto your back. Too fast
+  for the slope and the load (it rocks first), or a hard hit, and it goes over: the load bursts out as physics logs.
+  E stands it back up. Rolling it over a pile scoops it up. Push its front lip over a ring of the open site and E says
+  Tip it in: it pitches over the wheel and the logs tumble out.
+- **`v=toss`:** take logs as usual, then with empty hands the use button (click, pad X; no touch button yet) lobs a
+  handful of 4 logs; holding it keeps tossing, one handful every 0.6 s, so a full bundle empties in about 9 s (rec 5).
+  It never tests aim: a ring of the open site within 10 m and roughly where the camera looks is aimed for you;
+  otherwise the handful lands 8 m ahead. A log that lands within the ring's radius plus 1 m counts there ("+1" and a
+  gold burst); a miss settles as a pile.
+
+Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
+then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`
+from your stack, one that comes to rest anywhere else a `pile.drop` where it lies (a full ring piles the rest beside
+it). Until the host applies that, the logs are still on your stack, so a refused edit loses nothing. Tuning lives in
+`window.__barrow.T` and `window.__toss.TOSS`.
+
+With `?proto=haul` (any variant) every pickup also squashes your avatar 7% for 110 ms and knocks a wooden "thock" whose
+pitch rises with your load (rec 3), and the haul kit counts the chores of the open section in this tab: Take-logs
+presses, palms used, metres walked and seconds from your first take to the machine's start (rec 1: is the chore the
+gathering?). Copy values includes that line.
+
+Code: [src/player/haul-variant.ts](../../src/player/haul-variant.ts) (the flag), [src/proto/haul/](../../src/proto/haul/index.ts)
+(`loose-logs.ts`, `barrow.ts`, `barrow-mesh.ts`, `toss.ts`, `pickup-feel.ts`), the chore counter in
+[src/debug/haul-kit.ts](../../src/debug/haul-kit.ts). The barrow is Owner kind (presence `barrow`); loose logs are
+Local. Look evals: `dev/look/evals/haul-barrow-push.js`, `haul-barrow-tip.js`, `haul-toss-ring.js`.
+
 ## Prototype: era swap (?proto=era)
 
 Asks "does the island change enough at an era's end?" with blocks only (no ceremony, no mayor). With `?proto=era`,
