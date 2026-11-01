@@ -29,8 +29,16 @@ export function protoCount(name: string, by = 1) {
   if (!timer) timer = window.setTimeout(flushCounts, 2000);
 }
 
-/** Called after counts are written (the bar redraws its line). */
+/** Called after counts are written or the readout changes (the bar redraws its lines). */
 export const onCounts = (fn: () => void) => listeners.add(fn);
+
+let line = '';
+/** One live line a prototype shows on the bar under its counters (this visit's timings, say). Not saved. */
+export function protoReadout(text: string) {
+  line = text;
+  for (const fn of listeners) fn();
+}
+export const readoutLine = () => line;
 
 addEventListener('pagehide', flushCounts);
 document.addEventListener('visibilitychange', () => document.hidden && flushCounts());

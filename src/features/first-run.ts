@@ -12,14 +12,19 @@ import { dialogue } from '../boogler/dialogue.ts';
 import { renderGuide } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 
-const MOVE_S = 3; // seconds of walking that teach enough
-const MAX_S = 15;
-const GROUPS = ['move', 'camera', 'ball', 'hands'];
+// ?proto=arrive (src/proto/arrive/, wordless-onboarding rec 8): only what the world can't teach (move, camera, jump),
+// on every visit, gone after the first steps. Its `v=lobby` keeps today's card.
+const sp = new URLSearchParams(location.search);
+const TRIM = sp.get('proto') === 'arrive' && sp.get('v') !== 'lobby';
+const MOVE_S = TRIM ? 0.8 : 3; // seconds of walking that teach enough
+const MAX_S = TRIM ? 20 : 15;
+const GROUPS = TRIM ? ['move', 'camera'] : ['move', 'camera', 'ball', 'hands'];
 const WALK = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'];
 
 type Kind = ReturnType<typeof inputKind>;
 const flag = (kind: Kind) => `boogle.firstRun.${kind}`;
 const seen = (kind: Kind) => {
+  if (TRIM) return false;
   try {
     return localStorage.getItem(flag(kind)) !== null;
   } catch {

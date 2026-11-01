@@ -244,4 +244,21 @@ export const PROTOS: Proto[] = [
     what: 'Walk a layout option in greybox: lighthouse-line (recommended), east-bay or west-cove. Compare them on the map at claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT.',
     since: '2026-11-01',
   },
+  {
+    id: 'arrive',
+    title: 'Arrival: the first 30 seconds',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-arrive&proto=arrive&v=direct',
+    question: 'Opening the link cold, were you playing within 10 seconds without reading anything?',
+    what: 'No lobby: you land facing the court with the ball rolling toward you, a two-line controls card, and timings on the bar. Rename in the menu’s Room page.',
+    since: '2026-11-01',
+    variants: [
+      {
+        name: 'lobby',
+        url: '/?room=proto-arrive&proto=arrive&v=lobby',
+        what: 'Today’s flow (name, colour, Jump in; the full card), timed the same way.',
+      },
+    ],
+  },
 ];
