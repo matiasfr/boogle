@@ -1,10 +1,12 @@
 // boogle.club/protos/: a card per prototype (protos.ts) with a Play button, its one question and a box for your take
 // saved in this browser (store.ts) that copy out as a docs/playtests.md entry, with the verdict and behaviour counters
-// the in-game prototype bar (src/proto/bar/) recorded. Nothing here talks to a server.
+// the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts). Nothing here
+// talks to a server.
 import './protos.css';
 import { PLAYTEST_ORDER, PROTOS } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
-import { VERDICTS, countsLine, read, urlParam, write, type Saved } from './store.ts';
+import { VERDICTS, countsLine, read, sittingLine, sittings, urlParam, write, type Saved } from './store.ts';
+import { heatMap } from './heat.ts';
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -35,7 +37,8 @@ const hasNotes = (p: Proto) => {
     s.values.trim() !== '' ||
     s.variant.trim() !== '' ||
     s.verdict !== '' ||
-    Object.keys(s.counts).length > 0
+    Object.keys(s.counts).length > 0 ||
+    sittings(p.id).length > 0
   );
 };
 
@@ -50,6 +53,8 @@ function body(p: Proto): string {
   lines.push(`- ${p.question} ${[quick, oneLine(s.notes)].filter(Boolean).join(' ') || '(no answer)'}`);
   const did = countsLine(s.counts);
   if (did) lines.push(`- Did: ${did}`);
+  const sat = sittingLine(sittings(p.id).at(-1));
+  if (sat) lines.push(`- Last sitting: ${sat}`);
   if (p.variants?.length) lines.push(`- Variant preferred: ${oneLine(s.variant) || '___'}`);
   if (s.values.trim()) lines.push(`- Values: \`${oneLine(s.values)}\``);
   return lines.join('\n');
@@ -175,6 +180,10 @@ function card(p: Proto): HTMLElement {
     c.append(
       field('Copy values line (paste from the kit)', s.values, 2, (v) => save(p.id, { values: v }), 'haul-kit room=…'),
     );
+
+  const heat = heatMap(p);
+  redraws.push(heat.redraw);
+  c.append(heat.el);
 
   const foot = el('div', 'foot');
   const copyBtn = el('button', 'btn', 'Copy playtest entry');

@@ -20,6 +20,7 @@ import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
 import { carry } from '../physics/platforms.ts';
 import { me } from '../player/player.ts';
+import { protoMark } from '../proto/mark.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)
@@ -99,6 +100,7 @@ type Flop = { kind: string; until: number };
 let flop: Flop | null = null;
 let seenTumbles = 0;
 const startFlop = (kind: string, ms: number) => {
+  protoMark(kind); // a dot on the playtest map (src/proto/trace/)
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
 };
 addPresenceField('fl', () =>

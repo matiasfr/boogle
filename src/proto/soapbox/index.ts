@@ -42,6 +42,7 @@ import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts
 import { createRunHud, type RunHud } from './run-hud.ts';
 import { createGhost } from './ghost.ts';
 import { rollSound, chargeTick, boostSound, crashSound } from './sound.ts';
+import { protoMark, protoActivity } from '../mark.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
 // ---------------------------------------------------------------- tuning (window.__soapbox.T in the console)
@@ -174,6 +175,7 @@ const S = {
   landKick: 0, // m/s of fall speed at the last landing, for the mesh bounce
   camDist: 0, // the zoom you had before you got in
 };
+protoActivity(() => (S.seated ? 'driving' : null)); // for the playtest trace
 let trauma = 0; // camera shake, 0..1 (shake = trauma²)
 const addTrauma = (t: number) => (trauma = Math.min(1, trauma + t));
 const n = new THREE.Vector3(0, 1, 0); // ground normal under the cart
@@ -383,6 +385,7 @@ function getOut(thrown: boolean) {
 function crash() {
   if (S.hold) return;
   S.hold = performance.now() + T.hitStop;
+  protoMark('crash');
   addTrauma(T.traumaCrash);
   crashSound();
   const p = pose.p;

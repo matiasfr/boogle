@@ -22,6 +22,11 @@
   thing to try: give every live card one. A variant that is a different place (minis) has its own `spawn`, and
   switching to it takes you there. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
   time in the prototype and variant switches are counted already; the counts go into the copied playtest entry.
+- **A trace of every sitting.** Each `?proto=` page load records where the owner went (1 Hz, 1 m), idled, failed
+  and quit, and the seconds to the verb (`src/proto/trace/`, research: [playtest-telemetry.md](../research/playtest-telemetry.md)),
+  kept in this browser only; the protos page draws it as a heat map under the card and adds one line to the entry.
+  Failures are `protoMark('crash')` one-liners where they already happen; a verb that isn't a ride, drive or carry is
+  the card's `verb` counter. `&trace=1` draws the last sitting's path on the ground.
 - **Options, not one guess.** Where the feel is uncertain, a prototype carries 2–3 variants (`&v=<name>`) the owner
   compares in one sitting.
 - **From [finding-the-fun.md](../research/finding-the-fun.md):** each question is about a feeling; every "no" is

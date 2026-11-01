@@ -1,0 +1,64 @@
+/* The heat map under a card (heat.ts). */
+.heat {
+  margin: 14px 0 0;
+}
+.heat[hidden] {
+  display: none;
+}
+.heat-head {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.heat-n {
+  color: var(--mute);
+}
+.heat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.heat-tog {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sunk);
+  color: var(--mute);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.heat-tog[aria-pressed='true'] {
+  background: var(--fg);
+  border-color: var(--fg);
+  color: var(--card);
+}
+.heat-map {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: #1a5ea3;
+}
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--mute);
+}
+.heat-kind::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.heat-last {
+  flex-basis: 100%;
+}

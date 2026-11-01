@@ -13,9 +13,11 @@ import { groundHeight } from '../../adapters/terrain.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { VERDICTS, cardFor, countsLine, read, urlParam, write, type Verdict } from '../../../protos/store.ts';
 import { protoCount, flushCounts, onCounts, readoutLine } from '../count.ts';
+import '../trace/record.ts';
 
 const card = cardFor(location.search);
 const params = new URLSearchParams(location.search);
+if (card && params.has('trace')) void import('../trace/draw.ts'); // the last sitting's path on the ground
 const HINT = 'boogle-proto-spawn'; // sessionStorage: where you stood when you switched variant
 const FOLD = 'boogle-proto-bar-folded'; // localStorage: the bar folded or open
 
