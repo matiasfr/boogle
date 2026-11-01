@@ -171,7 +171,8 @@ export class Game {
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the first-run
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.first-run, .hud-tl, .hud-tr, .reticle' : null;
-    if (hide) await g.page.addStyleTag({ content: `${hide}, .touch, .lobby { display: none !important }` });
+    // The overlay is .touch; body.touch (touch mode) must not match, or the whole page goes blank.
+    if (hide) await g.page.addStyleTag({ content: `${hide}, .touch:not(body), .lobby { display: none !important }` });
     await g.page.addStyleTag({ content: '.splash { display: none !important }' }); // still fading out
     g.gfx = await g.page.evaluate(() => window.boogle?.gfx).catch(() => undefined);
     console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);

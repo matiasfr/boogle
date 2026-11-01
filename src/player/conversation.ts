@@ -11,17 +11,19 @@
 //     choices()  the answer buttons shown now ([] while typing); saying one clicks it
 //     close()    the player backs out (pad B, Esc, losing the pointer lock): end the talk your way, which calls
 //                closeConversation()
-//     extra      optional { [pad slot]: () => void }, more buttons the box answers (The Boogler: { y: pet })
 //     focus      optional () => world point or null: where the NPC is, for the camera
 //     hints      optional element the button hints are drawn in (talkHints), kept up to date
 //   closeConversation()      hands the input back; call it however the talk ends
 //   conversation.open
-//   talkHints()              HTML for the hint row: confirm, pick and leave, with the glyphs of the input in use
+//   talkHints()              HTML for the hint row, with the glyphs of the input in use: confirm is Next while the line
+//                            types or there is only one way on, Answer when there are choices; Pick; Leave always
 //
-// Controls: confirm (pad A, or X: the interact button that opened the talk; E, Space, Enter) skips the typing, then
-// says the selected answer. Up and down (D-pad, left stick, arrow keys, W and S) move the selection; number keys say an
-// answer at once. Back (pad B, Esc) leaves. A Switch pad swaps confirm and back (menuSlot in src/player/controls.ts).
-// Touch: tap the box to skip, tap an answer. The selected answer has the class talk-sel (hidden on touch).
+// Controls: confirm (pad A / ✕; E, Space, Enter) skips the typing, then says the selected answer. Up and down (D-pad,
+// left stick, arrow keys, W and S) move the selection, repeating while held; number keys say an answer at once. Back
+// (pad B / ○, Esc) leaves. Pad X / □ (interact, which opened the talk) does nothing in one. A Switch pad swaps confirm
+// and back (menuSlot in src/player/controls.ts). Touch: tap the box to skip, tap an answer. The selected answer has the
+// class talk-sel, shown while a pad or keyboard plays (body.gamepad, or not body.touch: an iPad keeps body.touch while
+// its pad plays).
 import './conversation.css';
 import { onFrame } from '../loop.ts';
 import { angleLerp } from '../math.ts';
@@ -39,7 +41,6 @@ export type Talk = {
   skip: () => void;
   choices: () => HTMLButtonElement[];
   close: () => void;
-  extra?: Record<string, () => void>;
   focus?: () => Point | null;
   hints?: HTMLElement;
 };
@@ -102,9 +103,9 @@ const confirm = () => (cur?.typing() ? cur.skip() : say(sel));
 function padPress(slot: string) {
   if (!cur) return;
   if (slot === menuSlot('back')) cur.close();
-  else if (slot === menuSlot('confirm') || slot === 'x') confirm();
+  else if (slot === menuSlot('confirm')) confirm();
   else if (slot === 'up' || slot === 'down') move(slot === 'down' ? 1 : -1);
-  else cur.extra?.[slot]?.();
+  // x: taken so interact does nothing mid-talk (it would leave)
 }
 
 // Esc with the pointer locked only ends the lock (the page never sees the key): that ends the talk. Added on the first
@@ -127,8 +128,7 @@ export function openConversation(talk: Talk) {
   selFirst = null;
   hintHtml = '';
   watchLock();
-  const slots = ['a', 'b', 'x', 'up', 'down', ...Object.keys(talk.extra ?? {})];
-  setPadGrab(padPress, slots, { stick: true });
+  setPadGrab(padPress, ['a', 'b', 'x', 'up', 'down'], { stick: true });
   if (!tapped.has(talk.box)) {
     tapped.add(talk.box);
     talk.box.addEventListener('pointerdown', (e) => {
@@ -152,15 +152,14 @@ const hint = (glyphs: string, word: string) => `<span class="talk-hint">${glyphs
 export function talkHints() {
   const kind = inputKind();
   if (!cur || kind === 'touch') return '';
-  const typing = cur.typing();
-  const n = typing ? 0 : sync().length;
+  const n = cur.typing() ? 0 : sync().length; // answers shown
   const pick =
     n < 2
       ? ''
       : kind === 'pad'
         ? hint(padGlyph('up') + padGlyph('down'), 'Pick')
         : hint(keyGlyph(['ArrowUp', 'ArrowDown']), 'Pick');
-  return hint(glyph('confirm'), typing ? 'Skip' : n ? 'Say' : 'OK') + pick + hint(glyph('close'), 'Leave');
+  return hint(glyph('confirm'), n >= 2 ? 'Answer' : 'Next') + pick + hint(glyph('close'), 'Leave');
 }
 
 // Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (number keys
@@ -226,8 +225,8 @@ onFrame(
 describeControl('talk-answer', {
   label: 'Answer in a talk',
   detail: {
-    kbm: 'E, Space or Enter says the picked answer; ↑ ↓ or W S pick; Esc leaves',
-    pad: '{confirm} or {x} says it, the left stick picks too, {back} leaves',
+    kbm: 'E, Space or Enter: next, or say the picked answer; ↑ ↓ or W S pick; Esc leaves',
+    pad: '{confirm}: next, or say the picked answer; the left stick picks too; {back} leaves',
   },
   keys: ['Digit1-8', ['ArrowUp', 'ArrowDown']],
   pad: ['up', 'down'],

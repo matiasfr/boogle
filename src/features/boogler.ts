@@ -1,5 +1,5 @@
 // The Boogler: a wandering NPC (src/boogler/boogler.ts) with a bouncy name tag and an off-screen pointer (src/boogler/hud.ts),
-// who you can talk to, pet, give presents and ride (src/boogler/play.ts, src/boogler/dialogue.ts, src/boogler/fx.ts).
+// who you can talk to, give presents and ride (src/boogler/play.ts, src/boogler/dialogue.ts, src/boogler/fx.ts).
 import './boogler.css';
 import { onFrame, onStart } from '../loop.ts';
 import { boogler, createBoogler, updateBoogler } from '../boogler/boogler.ts';

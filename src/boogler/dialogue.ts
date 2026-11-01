@@ -1,7 +1,7 @@
 // The talk box: The Boogler's line typed out, your answers as buttons (a gift answer shows the gift), the friendship
-// meter, his portrait to pet (pad Y), a close button, and the button hints for the input in use. Its keys, pad buttons,
-// taps, the held movement and the camera are the shared NPC talk input (src/player/conversation.ts): confirm (pad A or
-// X, E, Space, Enter) skips the typing and says the selected answer, up and down pick, number keys answer at once, back
+// meter, his portrait, a close button, and the button hints for the input in use. Its keys, pad buttons,
+// taps, the held movement and the camera are the shared NPC talk input (src/player/conversation.ts): confirm (pad A,
+// E, Space, Enter) skips the typing and says the selected answer, up and down pick, number keys answer at once, back
 // (pad B, Esc) leaves.
 import { reducedMotion } from '../constants.ts';
 import { openConversation, closeConversation } from '../player/conversation.ts';
@@ -35,11 +35,6 @@ export const portrait = (mood: string) => `
     ${(MOUTHS as Record<string, string>)[mood] ?? MOUTHS.smile}
   </svg>`;
 
-const HAND = `
-  <svg viewBox="0 0 20 20" aria-hidden="true">
-    <path d="M5 10V5.2a1.4 1.4 0 0 1 2.8 0V9V3.6a1.4 1.4 0 0 1 2.8 0V9V4.4a1.4 1.4 0 0 1 2.8 0v5.1V6.6a1.4 1.4 0 0 1 2.8 0V12a6 6 0 0 1-6 6h-.6a5 5 0 0 1-4-2l-3.3-3.7a1.4 1.4 0 0 1 2.2-1.8Z"
-      fill="#ffe3c7" stroke="#13243f" stroke-width="1.5" stroke-linejoin="round" />
-  </svg>`;
 const CROSS = `<svg class="bd-x" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" /></svg>`;
 
 const MARKUP = `
@@ -47,9 +42,7 @@ const MARKUP = `
     <div class="bd-pop" hidden><div class="bd-pop-text"></div></div>
     <div class="bd-card" role="dialog" aria-modal="true" aria-labelledby="bd-name">
       <div class="bd-head">
-        <button type="button" class="bd-face" aria-label="Pet The Boogler" title="Pet">
-          <span class="bd-face-svg"></span><span class="bd-pet"></span>
-        </button>
+        <span class="bd-face"><span class="bd-face-svg"></span></span>
         <span class="bd-name" id="bd-name">The Boogler</span>
         <span class="bd-bond">
           <span class="bd-hearts" aria-hidden="true"></span>
@@ -69,9 +62,8 @@ export type DialogueView = { say: string; mood: string; opts: string[]; gifts?: 
 export type Bond = { level: number; name: string; frac: number };
 type Dom = Record<
   | 'wrap'
-  | 'faceBtn'
+  | 'faceBox'
   | 'face'
-  | 'pet'
   | 'close'
   | 'pop'
   | 'popText'
@@ -91,7 +83,6 @@ type Current = {
   mood: string;
   onPick: (i: number) => void;
   onClose?: () => void;
-  onPet?: () => void;
   opts: string[];
   typing: boolean;
 };
@@ -111,9 +102,8 @@ function dom(): Dom {
   const d: Dom = (el = {
     root,
     wrap: q('.bd-wrap'),
-    faceBtn: q('.bd-face'),
+    faceBox: q('.bd-face'),
     face: q('.bd-face-svg'),
-    pet: q('.bd-pet'),
     close: q('.bd-close'),
     pop: q('.bd-pop'),
     popText: q('.bd-pop-text'),
@@ -128,7 +118,6 @@ function dom(): Dom {
   // Only the card takes taps and clicks (boogler.css); the canvas works around it.
   d.wrap.addEventListener('pointerdown', (e) => e.stopPropagation());
   d.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
-  d.faceBtn.addEventListener('click', () => cur?.onPet?.());
   d.close.addEventListener('click', () => cur?.onClose?.());
   return d;
 }
@@ -148,26 +137,18 @@ function choose(i: number) {
   cur.onPick(i);
 }
 
-// The close button and the pet badge show the button for the input in use (a cross and a hand on touch).
+// The close button shows the button for the input in use (a cross on touch).
 let glyphKey = '';
 function refreshGlyphs() {
   const key = inputKind() + padBrand();
   if (key === glyphKey) return;
   glyphKey = key;
-  const d = dom();
-  d.close.innerHTML = glyph('close') || CROSS;
-  d.pet.innerHTML = glyph('pet') || HAND;
+  dom().close.innerHTML = glyph('close') || CROSS;
 }
 
 // view: { say, mood, opts, gifts? } (gifts[i]: the catalog index answer i hands over); bond: { level, name, frac };
-// onPick(i) answers; onClose() runs on back (Esc, pad B) and the close button; onPet() on the portrait (pad Y).
-export function showDialogue(
-  view: DialogueView,
-  bond: Bond,
-  onPick: (i: number) => void,
-  onClose?: () => void,
-  onPet?: () => void,
-) {
+// onPick(i) answers; onClose() runs on back (Esc, pad B) and the close button.
+export function showDialogue(view: DialogueView, bond: Bond, onPick: (i: number) => void, onClose?: () => void) {
   const d = dom();
   const opening = !dialogue.open;
   if (opening) {
@@ -177,7 +158,6 @@ export function showDialogue(
       skip: finishTyping,
       choices: () => (cur?.typing ? [] : [...d.opts.querySelectorAll<HTMLButtonElement>('button')]),
       close: () => cur?.onClose?.(),
-      extra: { y: () => cur?.onPet?.() },
       focus: () => boogler.center,
       hints: d.hints,
     };
@@ -196,7 +176,6 @@ export function showDialogue(
     mood: view.mood,
     onPick,
     onClose,
-    onPet,
     opts: view.opts,
     typing: !reducedMotion,
   };
@@ -243,7 +222,7 @@ function setBond(b: Bond) {
   bondLevel = b.level;
 }
 
-// His reaction while the box is open (a pet, a level up): a speech bubble over the card, a face for a moment, hearts.
+// His reaction while the box is open (a level up): a speech bubble over the card, a face for a moment, hearts.
 export function dialogueReact({
   line,
   mood,
@@ -262,12 +241,12 @@ export function dialogueReact({
   d.face.innerHTML = portrait(mood);
   if (bond) setBond(bond);
   const w = d.wrap.getBoundingClientRect(),
-    f = d.faceBtn.getBoundingClientRect();
+    f = d.faceBox.getBoundingClientRect();
   const x = f.left + f.width / 2 - w.left;
   d.pop.style.left = `${Math.max(0, x - 30).toFixed(0)}px`;
   d.pop.hidden = false;
   replay(d.pop, 'pop');
-  replay(d.faceBtn, 'pop');
+  replay(d.faceBox, 'pop');
   if (!hearts || reducedMotion) return;
   for (let k = 0; k < 4; k++) {
     const h = document.createElement('span');

@@ -1,6 +1,7 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
 // stick looks, buttons dispatch the actions in src/player/controls.ts. While a pad is in use the touch overlay hides and the
-// reticle shows; the next touch brings the touch controls back. Menu opens the pause view (src/features/pause.ts).
+// reticle shows; the next touch brings the touch controls back. body.touch stays on an iPad while its pad plays (only a
+// key or a click clears it), so pad styles key on body.gamepad, never on body:not(.touch). Menu opens the pause view (src/features/pause.ts).
 // The pad's brand (from its id) names the buttons in prompts (body[data-pad], src/player/glyphs.ts): Xbox letters,
 // PlayStation shapes, Switch letters; on a Switch pad confirm and back swap places in menus and talks (menuSlot). B
 // (the back button) also leaves a focused text field, such as the prototype bar's note.
@@ -13,8 +14,9 @@
 // any button on your controller" until one is known. Patterns borrowed: Babylon.js's GamepadManager (polls only once a
 // pad is known, started by gamepadconnected), Phaser 3's GamepadPlugin (re-reads getGamepads() on connect, and warns a
 // browser may hide a pad until a button is pressed), and the usual pressed-last-frame edges for down and up. A pad that
-// reports mapping "" (no standard layout) is still followed, standard ones first; SDL_GameControllerDB's community
-// mappings would be the way to remap such a pad, not needed while WebKit reports iPad MFi pads (Backbone) as standard.
+// reports mapping "" (no standard layout) is still followed, standard ones first, and its D-pad is read as buttons
+// 12-15 or as a hat or axis pair (dpadAxes, below, after SDL_GameControllerDB); a full remap of such a pad is not
+// needed while WebKit reports iPad MFi pads (Backbone) as standard.
 // Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
 // play.
 import './gamepad.css';
@@ -33,8 +35,12 @@ const LOOK_PITCH = 1.8;
 const PRESS = 0.4; // analog trigger threshold
 
 const STICK_PICK = 0.5; // a grabbed left stick past this presses up or down
-const STICK_FIRST_MS = 380; // then repeats while held: first after this, then every STICK_EVERY_MS
-const STICK_EVERY_MS = 170;
+const PICK_FIRST_MS = 380; // a grabbed pick (D-pad or stick) repeats while held: first after this, then every PICK_EVERY_MS
+const PICK_EVERY_MS = 170;
+const UP = PAD.indexOf('up'),
+  DOWN = PAD.indexOf('down'),
+  LEFT = PAD.indexOf('left'),
+  RIGHT = PAD.indexOf('right');
 
 const pressed = new Array(PAD.length).fill(false);
 const grabbed = new Array(PAD.length).fill(false); // this press went to padGrab(), not to its action
@@ -43,10 +49,11 @@ let padIndex = -1; // the known pad's slot in navigator.getGamepads(), -1 while 
 let active = false;
 let modalOn = false;
 let padId = '';
-const stickPick = { dir: '', next: 0 };
+const picking = { dir: '', next: 0 };
 
 // The brand by the USB vendor id or the name in Gamepad.id (Sony 054c, Nintendo 057e); anything else reads as Xbox,
-// the standard mapping's own names (Backbone's standard edition included).
+// the standard mapping's own names. Safari on iPad names a Backbone "Wireless Controller Extended Gamepad" (the MFi
+// profile; the owner's, 2026-11-02), which "wireless controller" reads as PlayStation on purpose: the shapes he saw.
 export function brandOf(id: string) {
   if (/054c|playstation|dualsense|dualshock|wireless controller/i.test(id)) return 'ps';
   if (/057e|nintendo|pro controller|joy-?con/i.test(id)) return 'nintendo';
@@ -60,17 +67,49 @@ function setBrand(id: string) {
   setMenuSwap(brand === 'nintendo');
 }
 
-// A grabbed left stick picks like the D-pad: one press on the push, then repeats while held.
-function pickWithStick(ly: number, now: number, fn: (slot: string) => void) {
-  const dir = ly < -STICK_PICK ? 'up' : ly > STICK_PICK ? 'down' : '';
-  if (dir !== stickPick.dir) {
-    stickPick.dir = dir;
-    stickPick.next = now + STICK_FIRST_MS;
+// A grabbed pick (D-pad up or down, or the left stick pushed): one press on the push, then repeats while held.
+function pick(dir: string, now: number, fn: (slot: string) => void) {
+  if (dir !== picking.dir) {
+    picking.dir = dir;
+    picking.next = now + PICK_FIRST_MS;
     if (dir) fn(dir);
-  } else if (dir && now >= stickPick.next) {
-    stickPick.next = now + STICK_EVERY_MS;
+  } else if (dir && now >= picking.next) {
+    picking.next = now + PICK_EVERY_MS;
     fn(dir);
   }
+}
+
+// A pad without the "standard" mapping (mapping '') may report its D-pad as an axis rather than buttons 12-15.
+// SDL_GameControllerDB (github.com/mdqinc/SDL_GameControllerDB, gamecontrollerdb.txt: "Backbone One" and "MFi
+// Extended Gamepad", platform:iOS) lists Apple MFi pads, Backbone included, with face buttons 0-3 as in the standard
+// mapping but the D-pad as a hat (dpup:h0.1 ... dpleft:h0.8). Browsers hand a raw hat to the page as one axis: -1 is
+// up, then clockwise in steps of 2/7, and past ±1 (9/7) when centred; Chrome puts it at axis 9 (HID usage 0x39 - 0x30).
+// So: the first axis from 4 up seen resting past ±1 is the hat; with none, a pair on axes 6 and 7 (-1 / 0 / 1), as
+// some drivers report it. OR'd into buttons 12-15, which are still read. (Phaser 3 reads only buttons 12-15; Babylon.js
+// picks a pad class by id and leaves a non-standard D-pad unread: neither covers this.)
+const hat = { id: '', axis: -1 };
+function dpadAxes(pad: Gamepad, down: boolean[]) {
+  if (pad.mapping === 'standard') return;
+  const a = pad.axes;
+  if (hat.id !== pad.id) Object.assign(hat, { id: pad.id, axis: -1 });
+  if (hat.axis < 0) hat.axis = a.findIndex((v, i) => i >= 4 && Math.abs(v) > 1.01);
+  let x = 0,
+    y = 0;
+  if (hat.axis >= 0) {
+    const v = a[hat.axis] ?? 9;
+    if (Math.abs(v) <= 1.01) {
+      const k = Math.round(((v + 1) * 7) / 2) % 8; // 0 up, 1 up-right, 2 right ... 7 up-left
+      x = [0, 1, 1, 1, 0, -1, -1, -1][k];
+      y = [-1, -1, 0, 1, 1, 1, 0, -1][k];
+    }
+  } else {
+    x = a[6] ?? 0;
+    y = a[7] ?? 0;
+  }
+  if (y < -0.5) down[UP] = true;
+  if (y > 0.5) down[DOWN] = true;
+  if (x < -0.5) down[LEFT] = true;
+  if (x > 0.5) down[RIGHT] = true;
 }
 const typingIn = () => document.activeElement?.matches?.('input, textarea') ?? false;
 
@@ -150,13 +189,12 @@ function poll(dt: number) {
     ly = dead(pad.axes[1] ?? 0),
     rx = dead(pad.axes[2] ?? 0),
     ry = dead(pad.axes[3] ?? 0);
-  let any = false;
   for (let i = 0; i < PAD.length; i++) {
     const b = pad.buttons[i];
     down[i] = !!b && (b.pressed || b.value > PRESS);
-    any ||= down[i];
   }
-  if (!active && (lx || ly || rx || ry || any)) setActive(true);
+  dpadAxes(pad, down);
+  if (!active && (lx || ly || rx || ry || down.includes(true))) setActive(true);
   if (!active) return;
   setBrand(pad.id);
 
@@ -190,13 +228,16 @@ function poll(dt: number) {
     return;
   }
 
-  if (grab?.stick) {
+  // A grab with stick: true picks with D-pad up and down and the left stick alike (with repeat), in the loop below's stead.
+  const picks = !!grab?.stick;
+  if (picks) {
     input.stickX = input.stickY = 0;
-    pickWithStick(ly, performance.now(), grab.fn);
+    const dir = down[UP] ? 'up' : down[DOWN] ? 'down' : ly < -STICK_PICK ? 'up' : ly > STICK_PICK ? 'down' : '';
+    pick(dir, performance.now(), grab!.fn);
   } else {
     input.stickX = lx;
     input.stickY = ly;
-    stickPick.dir = '';
+    picking.dir = '';
   }
   // Squared response: fine aim near the centre, fast turns at the edge.
   cam.yaw -= rx * Math.abs(rx) * LOOK_YAW * dt;
@@ -209,9 +250,10 @@ function poll(dt: number) {
       claimFocus();
       grabbed[i] = true;
     } else if (down[i] && !pressed[i]) {
-      grabbed[i] = takes(i);
-      if (grabbed[i]) grab!.fn(PAD[i]);
-      else action?.down?.();
+      const picked = picks && (i === UP || i === DOWN); // pick() above sent it
+      grabbed[i] = picked || takes(i);
+      if (!grabbed[i]) action?.down?.();
+      else if (!picked) grab!.fn(PAD[i]);
     } else if (!down[i] && pressed[i] && !grabbed[i]) action?.up?.();
     if (down[i] && !grabbed[i]) action?.held?.(dt);
     pressed[i] = down[i];

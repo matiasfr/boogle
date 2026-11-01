@@ -9,7 +9,7 @@
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the host stops for
-// players who talk to or pet him, hurries while someone rides him, and runs from players he's wary of.
+// players who talk to him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
@@ -91,7 +91,7 @@ const bootAt = performance.now();
 let group: THREE.Group | null = null;
 let modelParts: Parts | null = null;
 
-// `me` is this player's side of things, written by src/boogler/play.ts: act (ACT; petting is part of TALK), wary (he
+// `me` is this player's side of things, written by src/boogler/play.ts: act (ACT), wary (he
 // runs from us), and the face to pull while we talk (mood, speaking).
 export const boogler = {
   disp,

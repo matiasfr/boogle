@@ -119,6 +119,8 @@ export function settle(f: Friend, now: number) {
 export const isWary = (f: Friend, now: number) => (settle(f, now), f.kicks >= RULES.waryAt);
 export const isQuiet = (f: Friend, now: number) => now < f.quietUntil;
 
+// No caller since petting left the talk (docs/proposals/boogle-2.md, 2026-11-02, "no petting The Boogler"); kept, with
+// RULES.pet*, while test/boogler-pace.test.ts tunes the pace with a pet every 2.5 min: removing it is a retune.
 // kind: 'happy' (scored), 'again' (too soon or too many, no points), 'wary' (still sore about rides).
 export function pet(f: Friend, now: number): { kind: 'happy' | 'again' | 'wary'; pts: number; levelUp: number } {
   if (isWary(f, now)) return { kind: 'wary', pts: 0, levelUp: 0 };
