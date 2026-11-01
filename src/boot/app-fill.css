@@ -1,0 +1,20 @@
+/* Standalone (Home Screen) only: full-screen layers take their height from --app-h (app-fill.ts), not the short viewport. */
+html.app-fill,
+html.app-fill body {
+  height: var(--app-h, 100%);
+}
+html.app-fill #view,
+html.app-fill .hud,
+html.app-fill div.touch,
+html.app-fill .lobby,
+html.app-fill .splash,
+html.app-fill .bd,
+html.app-fill .elsewhere,
+html.app-fill dialog.pause,
+html.app-fill dialog.files-dlg {
+  top: 0;
+  bottom: auto;
+  height: var(--app-h, 100%);
+  max-height: none;
+  box-sizing: border-box;
+}

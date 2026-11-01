@@ -4,6 +4,17 @@
 // The pad's brand (from its id) names the buttons in prompts (body[data-pad], src/player/glyphs.ts): Xbox letters,
 // PlayStation shapes, Switch letters; on a Switch pad confirm and back swap places in menus and talks (menuSlot). B
 // (the back button) also leaves a focused text field, such as the prototype bar's note.
+// Finding the pad: with none known there is no per-frame work. navigator.getGamepads() is read on gamepadconnected, on
+// any pointer, key or touch, on visibilitychange, focus and pageshow, and once after load, so a pad connected before
+// the page loaded (or one whose gamepadconnected never comes, as in the owner's Home Screen app playtest) is still
+// found: WebKit exposes a pad only after one of its buttons is pressed in the page, and fires gamepadconnected then.
+// Once a pad is known its snapshot is read once a frame ('late' phase; the Gamepad API has no button events), without
+// allocating; gamepaddisconnected or an empty slot goes back to waiting. In the Home Screen app the lobby says "Press
+// any button on your controller" until one is known. Patterns borrowed: Babylon.js's GamepadManager (polls only once a
+// pad is known, started by gamepadconnected), Phaser 3's GamepadPlugin (re-reads getGamepads() on connect, and warns a
+// browser may hide a pad until a button is pressed), and the usual pressed-last-frame edges for down and up. A pad that
+// reports mapping "" (no standard layout) is still followed, standard ones first; SDL_GameControllerDB's community
+// mappings would be the way to remap such a pad, not needed while WebKit reports iPad MFi pads (Backbone) as standard.
 // Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
 // play.
 import './gamepad.css';
@@ -14,6 +25,7 @@ import { clamp } from '../math.ts';
 import { dom } from '../player/hud.ts';
 import { canvas } from '../render/scene.ts';
 import { PAD, actionForSlot, padModal, padGrab, setMenuSwap, menuSlot } from '../player/controls.ts';
+import { standalone } from '../boot/app-fill.ts';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -26,6 +38,8 @@ const STICK_EVERY_MS = 170;
 
 const pressed = new Array(PAD.length).fill(false);
 const grabbed = new Array(PAD.length).fill(false); // this press went to padGrab(), not to its action
+const down = new Array(PAD.length).fill(false); // this frame's buttons, reused
+let padIndex = -1; // the known pad's slot in navigator.getGamepads(), -1 while none is known
 let active = false;
 let modalOn = false;
 let padId = '';
@@ -89,21 +103,60 @@ function releaseAll() {
   }
 }
 
+// The pad to follow: a connected one, the standard mapping first, then the one used last. Returns its slot or -1.
+function pickPad(pads: ArrayLike<Gamepad | null>) {
+  let best = -1;
+  for (let i = 0; i < pads.length; i++) {
+    const p = pads[i];
+    if (!p?.connected) continue;
+    const b = best < 0 ? null : pads[best]!;
+    const std = p.mapping === 'standard',
+      bstd = b?.mapping === 'standard';
+    if (!b || (std && !bstd) || (std === bstd && p.timestamp > b.timestamp)) best = i;
+  }
+  return best;
+}
+
+function scan() {
+  const i = pickPad(navigator.getGamepads?.() ?? []);
+  if (i === padIndex) return;
+  padIndex = i;
+  if (i < 0) setActive(false);
+  else setBrand(navigator.getGamepads()[i]!.id);
+  syncHint();
+}
+
+// "Press any button on your controller", on the lobby card, while the Home Screen app knows no pad.
+let hint: HTMLElement | null = null;
+function syncHint() {
+  if (!standalone) return;
+  if (!hint) {
+    hint = document.createElement('p');
+    hint.className = 'pad-hint';
+    hint.textContent = 'Playing with a controller? Press any button on it.';
+    dom.joinForm.append(hint);
+  }
+  hint.hidden = padIndex >= 0;
+}
+
 function poll(dt: number) {
-  const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.connected);
-  if (!pad) {
-    if (active) setActive(false);
+  if (padIndex < 0) return; // no pad known: nothing to do each frame
+  const pad = navigator.getGamepads?.()[padIndex];
+  if (!pad?.connected) {
+    scan(); // gone, or moved to another slot
     return;
   }
   const lx = dead(pad.axes[0] ?? 0),
     ly = dead(pad.axes[1] ?? 0),
     rx = dead(pad.axes[2] ?? 0),
     ry = dead(pad.axes[3] ?? 0);
-  const down = PAD.map((_, i) => {
+  let any = false;
+  for (let i = 0; i < PAD.length; i++) {
     const b = pad.buttons[i];
-    return !!b && (b.pressed || b.value > PRESS);
-  });
-  if (!active && (lx || ly || rx || ry || down.some(Boolean))) setActive(true);
+    down[i] = !!b && (b.pressed || b.value > PRESS);
+    any ||= down[i];
+  }
+  if (!active && (lx || ly || rx || ry || any)) setActive(true);
   if (!active) return;
   setBrand(pad.id);
 
@@ -113,23 +166,27 @@ function poll(dt: number) {
     if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
     modalOn = true;
     input.stickX = input.stickY = 0;
-    down.forEach((d, i) => {
-      if (d && !pressed[i]) modal(PAD[i]);
-      pressed[i] = d;
+    for (let i = 0; i < PAD.length; i++) {
+      if (down[i] && !pressed[i]) modal(PAD[i]);
+      pressed[i] = down[i];
       grabbed[i] = true; // its release belongs to the modal too
-    });
+    }
     return;
   }
   modalOn = false;
   const grab = padGrab();
   const takes = (i: number) => !!grab?.slots.includes(PAD[i]);
-  if (down.some((d, i) => d && !pressed[i] && !takes(i))) claimFocus(); // a grab moves focus between its own buttons
+  for (let i = 0; i < PAD.length; i++)
+    if (down[i] && !pressed[i] && !takes(i)) {
+      claimFocus(); // a grab moves focus between its own buttons
+      break;
+    }
 
   // Before the island: A presses "Jump in".
   if (!me.entered) {
     input.stickX = input.stickY = 0;
     if (down[0] && !pressed[0] && !dom.enterBtn.disabled) dom.enterBtn.click();
-    down.forEach((d, i) => (pressed[i] = d));
+    for (let i = 0; i < PAD.length; i++) pressed[i] = down[i];
     return;
   }
 
@@ -162,12 +219,21 @@ function poll(dt: number) {
 }
 
 onStart(() => {
-  addEventListener('gamepadconnected', () => setActive(true));
-  addEventListener('gamepaddisconnected', () => poll(0));
+  addEventListener('gamepadconnected', (e) => {
+    scan();
+    if (padIndex === e.gamepad.index) setActive(true);
+  });
+  addEventListener('gamepaddisconnected', scan);
+  // Any input, or coming back to the page, looks for a pad again (cheap: only while none is known, or to switch pads).
+  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'focus', 'pageshow'])
+    addEventListener(ev, scan, { passive: true, capture: true });
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && scan());
   // Touching the screen hands control back to the touch overlay.
   addEventListener('touchstart', () => setActive(false), { passive: true });
   // input.js zeroes the stick on blur; the next poll reads the pad afresh.
   addEventListener('blur', releaseAll);
+  scan(); // once after load: a pad connected before the page was
+  setTimeout(scan, 1000);
 });
 
 // 'late' so the sticks land in input before next frame's updateIntent.

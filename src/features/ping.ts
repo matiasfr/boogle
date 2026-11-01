@@ -4,7 +4,7 @@
 // { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
-import { scene, camera, toScreen } from '../render/scene.ts';
+import { scene, camera, toScreen, view } from '../render/scene.ts';
 import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { clamp } from '../math.ts';
@@ -171,8 +171,8 @@ const EDGE_X = 100,
 const over = new THREE.Vector3(),
   onScreen = { x: 0, y: 0, behind: false };
 function updatePings(now: number) {
-  const w = innerWidth,
-    h = innerHeight;
+  const w = view.w,
+    h = view.h;
   for (const [from, p] of pings) {
     const age = now - p.born;
     if (age > TUNE.lifeMs) {

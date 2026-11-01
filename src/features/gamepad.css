@@ -5,3 +5,11 @@ body.gamepad .touch {
 body.gamepad.playing .reticle {
   display: block;
 }
+
+/* Home Screen app, no pad known yet: a line under the lobby's Jump in. */
+.pad-hint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sea);
+}

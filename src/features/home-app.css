@@ -1,0 +1,19 @@
+/* "Continue in room x · prototype y": a second, quieter button under Jump in (Home Screen app only). */
+.continue-last {
+  font: 700 15px/1.2 var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 10px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.continue-last:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.continue-last:focus-visible {
+  outline: 3px solid var(--sea);
+  outline-offset: 3px;
+}

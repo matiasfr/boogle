@@ -56,6 +56,12 @@ Notes:
 - With a pad, B (back) also leaves a focused text field (the prototype bar's note) without doing anything else.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
   ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4.
+- Finding the pad: with none known the game does no per-frame pad work; it asks the browser for pads on
+  `gamepadconnected`, on any tap, click or key, when the page comes back (visible, focused, shown) and once after load,
+  so a pad connected before the page opened is found too (browsers show a pad only after one of its buttons is pressed
+  in the page). Once a pad is known it is read once a frame; when it disconnects the game goes back to waiting. With
+  several pads it follows a standard-layout one, the one used last. In the Home Screen app the lobby card says
+  "Playing with a controller? Press any button on it." until a pad is known.
 - Touch mode (the stick and buttons overlay, no reticle or pointer lock) follows the input in use, not the device: a
   touch screen starts in it, a key press (outside a text field) or a mouse or trackpad click switches to keyboard and
   mouse, and so does a wheel or two-finger scroll; the next finger switches back

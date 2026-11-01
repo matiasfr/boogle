@@ -88,12 +88,20 @@ export const scenePass = pass(scene, camera);
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
 
+// The canvas's CSS box, in CSS pixels: the window, except in the Home Screen app, where src/boot/app-fill.ts may make it
+// taller than innerHeight to reach the bottom of the screen. The drawing buffer and the camera follow the box.
+export const view = { w: innerWidth, h: innerHeight };
 function resize() {
-  renderer.setSize(innerWidth, innerHeight, false);
-  camera.aspect = innerWidth / Math.max(1, innerHeight);
+  const w = canvas.clientWidth,
+    h = canvas.clientHeight;
+  view.w = w > 1 ? w : innerWidth;
+  view.h = h > 1 ? h : innerHeight;
+  renderer.setSize(view.w, view.h, false);
+  camera.aspect = view.w / Math.max(1, view.h);
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
+new ResizeObserver(resize).observe(canvas);
 resize();
 
 // Where world point v lands on a w x h screen, in pixels (y down): out.x, out.y, and out.behind when it is behind the
@@ -102,8 +110,8 @@ const ndc = new THREE.Vector3();
 export function toScreen<T extends { x: number; y: number; behind?: boolean }>(
   v: THREE.Vector3,
   out: T,
-  w = innerWidth,
-  h = innerHeight,
+  w = view.w,
+  h = view.h,
 ): T & { behind: boolean } {
   ndc.copy(v).project(camera);
   out.x = (ndc.x * 0.5 + 0.5) * w;
