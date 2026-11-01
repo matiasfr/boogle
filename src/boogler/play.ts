@@ -207,8 +207,10 @@ function updateRide(dt: number, now: number) {
 }
 
 // ---------------------------------------------------------------- talking
-// Talks are short and the game keeps playing around them: walk more than LEAVE_RANGE away, hop on him, or open the
-// pause view and the talk ends (a kick-off telling-off waits for your answer, however far you flew).
+// Talks are short and the island keeps playing around them, but you stand still while one is open (the shared talk
+// input, src/player/conversation.ts): back (pad B, Esc), the close button, ending up more than LEAVE_RANGE away (a ball
+// knocks you), hopping on him or the pause view end it (a kick-off telling-off waits for your answer, however far you
+// flew).
 // The conversations (talk.js and its ~1,100 lines, lines.js) are their own chunk: fetched right after start
 // (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
 let talk: Talk | null = null;
@@ -266,7 +268,7 @@ function answer(i: number) {
   else if (out.bubble) sayFor(out.bubble);
 }
 
-// Walked off, or closed it (Escape, E, pad B, the close button): he bookmarks a story you left halfway and says bye.
+// Closed it (back: Esc, pad B; the close button) or ended up away from him: he bookmarks a story you left halfway and says bye.
 function leave() {
   if (!talk) return hangUp();
   const line = talkApi!.leaveTalk(talk);
@@ -294,7 +296,7 @@ export function booglerTalk() {
 // middle; `r` makes the pick measure to his edge, so a ball at his feet does not win over him. Not while you ride him:
 // on his back he is always nearest, and would hide the ball and everything else behind a Talk that only says "Get off
 // me first!". The prompt shows in his name tag. While you talk it is Leave, so the touch main button walks away too
-// (E and pad B already do, through the talk box) rather than throwing what you hold.
+// (Esc and pad B already do, through the talk box) rather than throwing what you hold.
 export function talkTargets() {
   if (!me.entered || riding() || (!dialogue.open && dist() > TALK_RANGE)) return NO_TARGETS;
   const target = { id: 'boogler', at: boogler.center, r: W_R, show: setTagPrompt };

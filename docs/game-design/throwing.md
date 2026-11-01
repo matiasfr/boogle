@@ -6,7 +6,7 @@
   damping. Everything but the ball flies on a scripted path that bounces off scenery up to 6 times and comes to rest; a thing that lands in
   water is lost; a seed plants itself where it lands. The frisbee is thrown flatter and glides: lift with airspeed,
   heavy drag and a fade to the left as it slows.
-- **Controls.** Click or pad X (hold, release); touch Toss.
+- **Controls.** Click, pad X with nothing in reach, or pad D-pad → (hold, release); pad B puts a wind-up away; touch Toss.
 - **Sync kind.** Local flight, Lockstep landing. The thrower computes the path and submits `gift.toss` with the launch
   and the landing cell; every client replays the flight from the launch; only the landing is shared state.
 - **Tuning** ([src/physics/flight.ts](../../src/physics/flight.ts), [src/player/throw-curve.ts](../../src/player/throw-curve.ts)). Throws leave

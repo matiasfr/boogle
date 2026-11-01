@@ -16,8 +16,8 @@ drop-in, drop-out) and 7 (Telegraph everything). Without the flag nothing loads:
   (`> LIGHTHOUSE 0:42`, `< COURT 1:10`; `BOARDING` in green while it stands here), and a line map of the whole route
   with the laid part solid, the rest dashed, this station ringed (YOU ARE HERE) and the wagon as a yellow marker.
   Changed letters riffle three flaps (70 ms each), a ticking digit one.
-- **Interact** (E, pad B, touch action) within 3.4 m of the face opens a picker of every laid station (keys 1–4,
-  arrows, Enter; Esc or E closes; pad up/down, A, B).
+- **Interact** (E, pad X, touch action) within 3.4 m of the face opens a picker of every laid station (keys 1–4,
+  arrows, Enter; Esc or E closes; pad up/down, A, B; a Switch pad swaps A and B).
 - **`&v=hop`** (default): choosing a station travels there: a puff, a whoosh, a 0.16 s fade to warm white, and you
   stand in front of that station's sign, facing it, with its name big on screen for 1.8 s.
 - **`&v=ride`**: no teleport. The picker says which wagon to catch (`▶ wagon towards Lighthouse in 0:05 · 2 stops`);

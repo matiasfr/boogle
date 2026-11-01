@@ -159,6 +159,32 @@ The WWDC26 session "Make your game great with touch" and the Touch Controller fr
 
 Boogle today (derived): sprint is a held Shift on the keyboard but a latch on the pad. Touch has no sprint. Mouse look is the only look on a keyboard with no lock (no arrow-key look). Pinch is blocked, so no gesture is required.
 
+## 8. Interact, talk and back on a controller (2026-11-01)
+
+Asked after the owner's iPad + controller playtest (2026-11-02 in [playtests.md](../playtests.md)): Interact was on B
+and "B prompts everywhere" confused him; he expected X / Square. A quick web pass (standard search, mostly community
+wikis and guides, so secondary) plus what the games are known to do:
+
+- **Sea of Thieves** (Xbox): Interact is X, Primary use RT, Jump A; B drops the held item. The closest match to Boogle (co-op, hands full of things, interact on the west button) ([Xbox Wire, 2018](https://news.xbox.com/en-us/2018/03/16/sea-of-thieves-controls-feature-xbox-one-windows-10), [wiki](https://seaofthieves.wiki.gg/wiki/Controls)).
+- **Fortnite**: Interact (tap or hold) is X / Square / Y on Switch, shared with Reload; A jumps (community guides, no Epic page found: [outsidergaming](https://outsidergaming.com/fortnite-complete-controls-guide-pc-xbox-one-ps4-switch-and-mobile/)).
+- **Zelda: Tears of the Kingdom, Animal Crossing** (Nintendo): A talks, picks up and advances text; B cancels and closes; Animal Crossing also picks up from the ground with Y. On a Switch, A is the right button, so "the confirm button" is the right one there.
+- **Genshin Impact**: interact and advancing text share the confirm button (F on PC); console guides tell you to tap the confirm face button to skip lines ([Twinfinite, old](https://twinfinite.net/?p=614966), [PCGamesN](https://www.pcgamesn.com/genshin-impact/skip-dialogue-machine)).
+- **Stardew Valley**: X is "use item / check", A selects; its forums complain that one context button gifts what you hold to a villager instead of talking ([forum thread](https://forums.stardewvalley.net/threads/talking-to-villagers-is-incredibly-unintuitive.25259)). Lesson: the talk prompt must win over using what you hold, and a gift should be a choice in the talk (Boogle already does both).
+- **Confirm and cancel by brand**: Xbox and PlayStation (worldwide since PS5) confirm with the bottom button and go back with the right one. Nintendo confirms with A on the right and cancels with B at the bottom; Sakurai notes the Switch is the only modern console where the bottom button does not confirm ([Push Square](https://www.pushsquare.com/news/2020/10/sony_abandons_decades-old_japanese_controller_logic_for_ps5), [EventHubs](https://eventhubs.com/news/2021/feb/24/masahiro-sakurai-playstation5-swap-famitsu)). Apple's HIG: A confirms, B goes back, Menu pauses (section 5).
+
+What Boogle did (2026-11-01, [controls.md](../game-design/controls.md)):
+
+1. Interact on X / □ (standard button 2), and as on touch it uses what you hold when nothing is in reach, so the
+   one hands button never sits idle. Use what you hold (even next to something) moved to D-pad →; RT stays Bump,
+   since a dig is a reflex and the triggers are the only fast spare.
+2. B / ○ is back everywhere: talks, the pause view, pickers, a focused text field; in the world it puts a wound-up
+   throw away. Nothing a player does in the world prompts B any more.
+3. Prompts name the buttons by brand from `Gamepad.id` (vendor 054c or "DualSense" etc. for PlayStation, 057e or
+   "Pro Controller" for Switch, else Xbox). Slots stay positional; a Switch pad swaps confirm and back in menus and
+   talks to match Nintendo. Not yet seen on a real DualSense or Switch pad on the iPad (item 6 below still applies).
+4. One talk input for every NPC (A advances and says, D-pad or stick picks, B leaves, hints on the box; you stand
+   still and the camera frames the NPC): [npcs.md](../game-design/npcs.md).
+
 ## What this means for Boogle
 
 Each item ends with the smallest test that would confirm or refute it. "On the iPad" means the M4 iPad Pro with a Magic Keyboard, in Safari, on the live site or a LAN dev server.

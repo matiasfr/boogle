@@ -16,7 +16,7 @@ it (and otherwise only hides a remote driver; see Sync).*
   eight short planks tilted to the ground under them (so it lies on a slope instead of standing proud of it), with
   knee-high flags: nothing tall for the chase camera to clip. (The course used to go on through a palm slalom and along
   the bay's flat shore: its last 8 s were kicking along at 5 m/s.)
-- **Get in:** Interact (E, pad B, touch Grab) within 2.6 m. **Get out:** Interact again. Stopped (under 1.5 m/s) more
+- **Get in:** Interact (E, pad X, touch Grab) within 2.6 m. **Get out:** Interact again. Stopped (under 1.5 m/s) more
   than 4 m from the start, Interact reads **Back to the top** instead: you and the cart are put back on the start.
 - **Driving** uses the move input, relative to the cart: left and right steer, forward kicks off (up to 5 m/s, to get
   off the flat shoulder), back brakes (and creeps backwards from a standstill). **Jump** (Space, pad A, touch Jump) is

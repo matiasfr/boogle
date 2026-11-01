@@ -393,11 +393,21 @@ export const slotFor = (id: string) => actions.get(id)?.pad ?? null; // the pad 
 let modal: ((slot: string) => void) | null = null;
 export const setPadModal = (fn: ((slot: string) => void) | null) => (modal = fn);
 export const padModal = () => modal;
-// Lighter: something on screen that the game keeps playing behind (the Boogler's talk box) takes just these slots'
-// new presses, and the stick and every other button keep working. setPadGrab(null) lets go.
-let grab: { fn: (slot: string) => void; slots: string[] } | null = null;
-export const setPadGrab = (fn: ((slot: string) => void) | null, slots: string[] = []) =>
-  (grab = fn ? { fn, slots } : null);
+// Lighter: something on screen that the game keeps playing behind (a talk box, src/player/conversation.ts) takes just
+// these slots' new presses, and every other button keeps working. With stick: true it also takes the left stick, as
+// 'up' / 'down' presses (with repeat), and the player stands still. setPadGrab(null) lets go.
+type Grab = { fn: (slot: string) => void; slots: string[]; stick: boolean };
+let grab: Grab | null = null;
+export const setPadGrab = (
+  fn: ((slot: string) => void) | null,
+  slots: string[] = [],
+  { stick = false }: { stick?: boolean } = {},
+) => (grab = fn ? { fn, slots, stick } : null);
 export const padGrab = () => grab;
+// The face buttons that confirm and go back in menus and talk boxes: A and B by position, swapped on a Switch pad
+// (its A is on the right; src/features/gamepad.ts calls setMenuSwap). Interact is X / □ / Y wherever you are.
+let swap = false;
+export const setMenuSwap = (on: boolean) => (swap = on);
+export const menuSlot = (what: 'confirm' | 'back') => ((what === 'confirm') !== swap ? 'a' : 'b');
 export const listActions = () => PAD.map((p) => bySlot.get(p)).filter((a): a is Action => !!a);
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));

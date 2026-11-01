@@ -1,7 +1,7 @@
-// Interaction prompts: one button (E, pad B, the touch action button) acts on the one thing in front of you, marked
+// Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
-// the talk, with its icon; you pet him from the talk box; the game keeps playing while you talk, so walking off ends
-// it, and a chapter left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
+// the talk, with its icon; you pet him from the talk box; you stand still while you talk and Esc leaves, and a chapter
+// left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a can behind you does not hide the palm you face, riding him puts the
 // ball first, and a failed planting says why.
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
@@ -88,7 +88,7 @@ export default {
     await g.wait(0.2);
     t.check('the close button leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // The game keeps playing while you talk: the move keys walk you, and walking off ends the talk.
+    // You stand still while you talk (src/player/conversation.ts): the move keys do not walk you, Esc leaves.
     const BOX = `!document.querySelector('.bd').hidden`;
     const READY = `${BOX} && !document.querySelector('.bd-opts').hidden`; // his line is typed out, answers shown
     const SAY = `return document.querySelector('.bd-say').textContent;`;
@@ -104,18 +104,18 @@ export default {
     };
     await openTalk();
     const from = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
-    // Facing him, so S walks away. Hold it until the talk closes (or 20 s), then check how far you went: a fixed hold
-    // covers too few frames on a slow software-rendered runner, and a fixed distance may stop inside his talk range.
     const dist = `(() => { const p = window.boogle.me.body.position; return Math.hypot(p.x - ${from[0]}, p.z - ${from[1]}); })()`;
-    await g.down('KeyS');
-    const closedMs = await g.waitFor(`document.querySelector('.bd').hidden`, { timeout: 20000 });
-    await g.up('KeyS');
-    const walked = await g.eval(`return ${dist};`);
+    await g.down('KeyD');
+    await g.wait(1.5);
+    await g.up('KeyD');
+    const held = await g.eval(`return { walked: ${dist}, open: !document.querySelector('.bd').hidden };`);
     t.check(
-      'walking while talking moves you, and walking off ends the talk',
-      walked > 1 && closedMs >= 0,
-      `walked ${walked.toFixed(1)} m; closed after ${closedMs} ms`,
+      'talking, the move keys do not walk you and the talk stays open',
+      held.walked < 0.3 && held.open,
+      JSON.stringify(held),
     );
+    await g.key('Escape');
+    await g.wait(0.2);
 
     // Leave halfway through a story chapter, and next time he picks it back up where you stopped.
     const ASK = `return [...document.querySelectorAll('.bd-opt')].findIndex((b) => b.textContent.includes('Where are you from?')) + 1;`;
@@ -123,7 +123,7 @@ export default {
     await answer(await g.eval(ASK));
     await answer(1);
     const stopped = await g.eval(SAY);
-    await g.key('KeyE');
+    await g.key('Escape');
     await g.wait(0.2);
     const left = await g.eval(`return document.querySelector('.bd').hidden;`);
     await openTalk();
@@ -132,7 +132,7 @@ export default {
     const { RESUME } = await g.eval(`const { RESUME } = await import('/src/boogler/lines.ts'); return { RESUME };`);
     const resumeShot = await g.still('resume');
     t.check(
-      'leaving mid-chapter (E) closes the talk, and asking again resumes where you stopped',
+      'leaving mid-chapter (Esc) closes the talk, and asking again resumes where you stopped',
       left && resumed.endsWith(stopped) && RESUME.some((r) => resumed.startsWith(r)),
       `stopped at "${stopped.slice(0, 40)}...", resumed "${resumed.slice(0, 60)}..."; ${resumeShot}`,
     );
@@ -162,7 +162,7 @@ export default {
       `"${tag}"; ${tagShot}`,
     );
 
-    // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X then B alike).
+    // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X alike).
     const wind = await g.eval(`${INV}
       const { STALL } = await import('/src/adapters/mushroom-garden.ts');
       const { me } = window.boogle;
@@ -277,17 +277,17 @@ export default {
       JSON.stringify(look),
     );
 
-    // A gamepad: the same prompt with the B button.
+    // A gamepad: the same prompt with the X button.
     await g.eval(`document.body.classList.add('gamepad');`);
     const padMs = await g.waitFor(
-      beside(`${TAG_TALK} && !!document.querySelector('.boogler-tag-prompt .g-pad[data-b="b"]')`),
+      beside(`${TAG_TALK} && !!document.querySelector('.boogler-tag-prompt .g-pad[data-b="x"]')`),
       {
         timeout: 20000,
       },
     );
     await g.wait(0.4);
     const padShot = await g.still('pad');
-    t.check('on a gamepad his tag says B Talk', padMs >= 0, `${padMs} ms; ${padShot}`);
+    t.check('on a gamepad his tag says X Talk', padMs >= 0, `${padMs} ms; ${padShot}`);
 
     // Riding him, he is not something to talk to: the ball beside you gets the prompt, and his tag has none.
     const rideMs = await g.waitFor(

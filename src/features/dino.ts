@@ -142,9 +142,9 @@ registerInteractable(() => {
   return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: talk }];
 });
 
-// B (punch, kick, dive) is the use button (click, pad X) with empty hands, unless something other than the ball is in
-// reach: near the ball it punches, and the interact button (E, pad B) grabs. The touch Grab button punches only when
-// nothing is in reach, since it interacts first.
+// B (punch, kick, dive) is the use button (click, pad D-pad →, and pad X with nothing to act on) with empty hands,
+// unless something other than the ball is in reach: near the ball the click punches, and the interact button (E, pad X)
+// grabs. The touch Grab button punches only when nothing is in reach, since it interacts first.
 function punches() {
   if (!guest.active || heldId()) return false;
   const t = interactTarget();

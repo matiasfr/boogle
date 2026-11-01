@@ -34,7 +34,7 @@ other ops (`pile.take` adds, `site.stock` pours). Remote stacks are matched to a
 
 ## Sources: log bundles
 
-In the wood age a log bundle lies at the foot of each of the 36 home palms. Each holds 2 charges. E (pad B, the touch
+In the wood age a log bundle lies at the foot of each of the 36 home palms. Each holds 2 charges. E (pad X, the touch
 action) on a bundle with charges says Take logs, spends a charge and puts 4 logs straight onto your stack (they fly to
 your back). What doesn't fit (another material on your back, or a full stack) drops as a pile beside the bundle. The
 ball never gives logs: the ball is never income. Every bundle refills when a section is laid, and every 20 s one empty
@@ -139,7 +139,7 @@ longer pours; without `v` the loop above is unchanged. Starting numbers from
   for the slope and the load (it rocks first), or a hard hit, and it goes over: the load bursts out as physics logs.
   E stands it back up. Rolling it over a pile scoops it up. Push its front lip over a ring of the open site and E says
   Tip it in: it pitches over the wheel and the logs tumble out.
-- **`v=toss`:** take logs as usual, then with empty hands the use button (click, pad X, or the touch Grab button when
+- **`v=toss`:** take logs as usual, then with empty hands the use button (click, pad X or D-pad →, or the touch Grab button when
   nothing is in reach) lobs a handful of 4 logs; holding it keeps tossing, one handful every 0.6 s, so a full bundle empties in about 9 s (rec 5).
   It never tests aim: a ring of the open site within 10 m and roughly where the camera looks is aimed for you;
   otherwise the handful lands 8 m ahead. A log that lands within the ring's radius plus 1 m counts there ("+1" and a

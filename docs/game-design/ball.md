@@ -7,7 +7,7 @@
   mushrooms (restitution 0.95) and off the Boogler and windmill sails. Walking into a slow ball takes it over so the
   push resolves locally. It respawns at (12, 20) on R, or by itself when it leaves the map (3 m from the edge) or
   falls below −15 m.
-- **Controls.** E / pad B grab or steal; click / pad X charge and throw; V / pad RT bump; R / View respawn.
+- **Controls.** E / pad X grab or steal; click / pad X (nothing in reach) or D-pad → charge and throw, pad B puts the wind-up away; V / pad RT bump; R / View respawn.
 - **Sync kind.** Owner for the ball in play, plus its resting spot: Lockstep `ball.rest` (state `ball`). The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
   velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.ts](../../src/netplay/snaps.ts))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An

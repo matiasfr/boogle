@@ -6,20 +6,23 @@ import { me, cam } from './player.ts';
 import { respawnBall, releaseBall } from '../physics/ball.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom } from './hud.ts';
-import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
+import { useDown, useUp, interactDown, interactUp, interactTarget, touchDown } from './hands.ts';
+import { cancelCharge } from './throw.ts';
 import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
 
 export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
 // canLock: the browser has Pointer Lock at all (Safari on iPadOS has none, research/cross-device-input.md rec 3), so
 // mouse look there is a click-drag or a two-finger trackpad scroll. looked: one of those has turned the camera (the
-// hint in hud.ts then goes). seated: in a vehicle's seat (setSeated), where its chase camera owns the view.
+// hint in hud.ts then goes). seated: in a vehicle's seat (setSeated), where its chase camera owns the view. held: the
+// player stands still (no move or jump) while a talk is open (src/player/conversation.ts).
 export const inputState = {
   locked: false,
   lockFailed: false,
   canLock: 'requestPointerLock' in Element.prototype,
   looked: false,
   seated: false,
+  held: false,
 };
 
 // A vehicle calls this when you sit down and stand up (the soapbox). Seated, ← → only steer (no arrow turn) and a
@@ -277,25 +280,49 @@ export function initInput() {
     down: pressJump,
     up: () => (me.jumpHeld = false),
   });
-  registerAction('use', {
+  // Pad X is the one hands button, like the touch main button: it acts on the prompt when there is one (Talk, Pick up,
+  // Take, Get in), and otherwise uses what you hold (hold to charge a throw). D-pad → uses what you hold even next to
+  // something; E and the click stay apart. B is back: it closes talks and menus and puts a wound-up throw away.
+  let padUsed = false; // this X press went to use, so its release does too
+  registerAction('interact', {
     pad: 'x',
+    label: 'Talk, pick up, take',
+    detail: { pad: 'Nothing in reach: uses what you hold (hold to charge a throw)' },
+    keys: ['KeyE'],
+    touch: 'Grab',
+    group: 'hands',
+    order: 0,
+    down: () => {
+      padUsed = !interactTarget()?.run;
+      if (padUsed) triggerAction('use', 'down');
+      else interactDown();
+    },
+    up: () => {
+      if (padUsed) triggerAction('use', 'up');
+      else interactUp();
+      padUsed = false;
+    },
+  });
+  registerAction('use', {
+    pad: 'right',
     label: 'Use what you hold',
-    detail: 'Hold to charge a throw, release to throw. With empty hands it does the same as the interact button.',
+    detail: {
+      kbm: 'Hold to charge a throw, release to throw. With empty hands it does the same as the interact button.',
+      pad: 'Throws (waters, plants) even with something in reach; hold to charge',
+    },
     keys: ['Mouse0'],
     group: 'hands',
     order: 1,
     down: useDown,
     up: useUp,
   });
-  registerAction('interact', {
+  registerAction('back', {
     pad: 'b',
-    label: 'Talk, pick up, take',
-    keys: ['KeyE'],
-    touch: 'Grab',
-    group: 'hands',
-    order: 0,
-    down: interactDown,
-    up: interactUp,
+    label: 'Back',
+    detail: { pad: 'Closes talks and menus, leaves a text box, puts a wound-up throw away' },
+    group: 'menu',
+    order: 1,
+    down: () => me.charging && cancelCharge(),
   });
   registerAction('respawn', {
     pad: 'view',

@@ -101,3 +101,30 @@
   background: #4b5d7a;
   font-size: calc(15 * var(--gu, 1px));
 }
+/* Brands (body[data-pad], src/features/gamepad.ts): PlayStation's face buttons are dark with coloured shapes, a Switch
+   pad's are plain dark with white letters. */
+.g-pad[data-brand='ps'][data-b='a'],
+.g-pad[data-brand='ps'][data-b='b'],
+.g-pad[data-brand='ps'][data-b='x'],
+.g-pad[data-brand='ps'][data-b='y'] {
+  background: #2c3446;
+  font: 800 calc(15 * var(--gu, 1px)) / 1 var(--font-body);
+}
+.g-pad[data-brand='ps'][data-b='a'] {
+  color: #8db4ff;
+}
+.g-pad[data-brand='ps'][data-b='b'] {
+  color: #ff7b72;
+}
+.g-pad[data-brand='ps'][data-b='x'] {
+  color: #f59bd6;
+}
+.g-pad[data-brand='ps'][data-b='y'] {
+  color: #45d6b0;
+}
+.g-pad[data-brand='nintendo'][data-b='a'],
+.g-pad[data-brand='nintendo'][data-b='b'],
+.g-pad[data-brand='nintendo'][data-b='x'],
+.g-pad[data-brand='nintendo'][data-b='y'] {
+  background: #2c3446;
+}

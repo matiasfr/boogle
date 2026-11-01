@@ -1,4 +1,4 @@
-// The interact pick: which of the things in reach the one interact button (E, pad B, the touch action button, a click
+// The interact pick: which of the things in reach the one interact button (E, pad X, the touch action button, a click
 // with empty hands) acts on. Local logic, not shared state; it lives here so it can be unit-tested, and it still passes
 // the determinism lint (Math.sqrt only).
 //
