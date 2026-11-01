@@ -122,6 +122,16 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
   },
   {
+    id: 'uisfx',
+    title: 'UI that answers',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=uisfx',
+    question: 'Does the UI feel alive and satisfying without getting in the way?',
+    what: 'HUD sounds (hotbar tick, prompt pop, take thunk, full deny, haul count), presses that squash, a haul count that ticks up, bigger text on darker glass. Compare with plain /.',
+    since: '2026-11-01',
+  },
+  {
     id: 'look',
     title: 'Graphics ceiling',
     step: 'depth',
