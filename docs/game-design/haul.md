@@ -18,16 +18,19 @@ Code: [src/sim/piles.ts](../../src/sim/piles.ts), [src/world/rules/piles.ts](../
 ## The haul stack
 
 What you pick up goes onto a stack on your back: one material at a time (you can't pick up ore while carrying logs),
-up to 60 pieces (at most 40 drawn). A chip above the hotbar shows the material and count while you carry anything.
-Past 20 (the soft cap) the stack sways harder and the chip turns orange; jumping then knocks the top pieces (up to 3,
-never below 20) into a pile behind you. Walking into a pile takes as much of it as fits; its pieces fly to your back at
+up to 60 pieces. It is drawn as a lashed bundle: logs lying crosswise across your back, stacked up and out from it,
+with two rope bands round them. It fills out rather than towers: at most 22 logs are drawn (every piece up to 12,
+then about one in five more), and the logs get longer as the count grows (half as long again at 60), so a full load is
+wider than you and only reaches the top of your head. It has no motion of its own (it rides your walk's bob and lean)
+and nothing falls off: jumping with any load is safe. A chip above the hotbar shows the material and count while you
+carry anything. Walking into a pile takes as much of it as fits; its pieces fly to your back at
 once, and the count follows when the host confirms (about half a second). Your stack belongs to the room: it waits for
 you after a reload, and other players see it on your avatar. No new control: pickup is walking, pouring is walking
 into a site's ring.
 
 Code: [src/sim/stacks.ts](../../src/sim/stacks.ts), [src/world/rules/stacks.ts](../../src/world/rules/stacks.ts),
 [src/features/haul-stack.ts](../../src/features/haul-stack.ts). Lockstep state `stacks` (by roster index), changed by
-other ops (`pile.take` adds, `pile.drop` spills). Remote stacks are matched to avatars through presence `pid`.
+other ops (`pile.take` adds, `site.stock` pours). Remote stacks are matched to avatars through presence `pid`.
 
 ## Sources: log bundles
 
@@ -85,7 +88,7 @@ site). Ring reach is not checked by the host, like every reach today.
 ## Playtest kit
 
 With `?proto=haul` a **Haul kit** panel opens top right (checklist: [docs/playtest-kits/haul.md](../playtest-kits/haul.md)).
-Its feel knobs (stack sway, pour cadence and handful, pickup flight) change only your tab
+Its feel knobs (pour cadence and handful, pickup flight) change only your tab
 ([src/player/haul-feel.ts](../../src/player/haul-feel.ts)). In a room whose name starts with `proto-` its room knobs
 (wood section and helper cost, soft and hard cap, spill, logs per take, takes per bundle, bundle refill) change the
 world for everyone at the same tick, and Reset haul empties every stack and pile and puts the sites and bundles back to

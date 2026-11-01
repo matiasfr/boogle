@@ -1,6 +1,6 @@
 // The haul playtest kit's panel (?proto=haul; loaded by src/features/haul-kit.ts; checklist:
 // docs/playtest-kits/haul.md). Two kinds of knobs:
-// - This tab: the Local feel numbers (src/player/haul-feel.ts): stack sway, pour cadence, pickup flight. Instant, never
+// - This tab: the Local feel numbers (src/player/haul-feel.ts): pour cadence, pickup flight. Instant, never
 //   sent.
 // - Whole room: the lockstep haul numbers (src/world/rules/tune.ts): a tune.set edit, so everyone in the room changes
 //   at the same tick. Only in a `proto-` room (the host refuses it elsewhere).
@@ -16,14 +16,11 @@ import { TUNABLES, isProtoRoom, type TuneKey } from '../sim/tune.ts';
 import { haulFeel, HAUL_FEEL_DEFAULTS, type HaulFeel } from '../player/haul-feel.ts';
 
 const QUESTIONS = [
-  'Does carrying a wobbly stack feel good with no goal?',
+  'Does carrying a load of wood feel good with no goal?',
   'Does filling a rail section feel like effort or a chore?',
   'Which numbers changed how it felt, and to what?',
 ];
 const LOCAL: { key: keyof HaulFeel; label: string; min: number; max: number; step: number }[] = [
-  { key: 'sway', label: 'Sway', min: 0, max: 0.05, step: 0.001 },
-  { key: 'swayOver', label: 'Sway past soft cap', min: 0, max: 0.2, step: 0.005 },
-  { key: 'swayHz', label: 'Sway speed', min: 0.5, max: 6, step: 0.1 },
   { key: 'pourMs', label: 'Pour every (ms)', min: 50, max: 1000, step: 10 },
   { key: 'pourN', label: 'Pieces per pour', min: 1, max: 12, step: 1 },
   { key: 'flyMs', label: 'Pickup flight (ms)', min: 100, max: 1500, step: 20 },
