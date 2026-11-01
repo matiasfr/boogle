@@ -19,7 +19,8 @@
   fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
 - **Into the verb in seconds.** On any `?proto=` page the prototype bar (`src/proto/bar/`) shows the card's question,
   its variants (switching keeps your spot) and a one-tap verdict, and drops you at the card's `spawn`, next to the
-  thing to try: give every live card one. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
+  thing to try: give every live card one. A variant that is a different place (minis) has its own `spawn`, and
+  switching to it takes you there. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
   time in the prototype and variant switches are counted already; the counts go into the copied playtest entry.
 - **Options, not one guess.** Where the feel is uncertain, a prototype carries 2–3 variants (`&v=<name>`) the owner
   compares in one sitting.

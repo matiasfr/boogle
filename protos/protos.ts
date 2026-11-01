@@ -4,6 +4,8 @@
 
 export type ProtoStatus = 'live' | 'building' | 'retired';
 
+export type Spawn = { x: number; z: number; yaw: number };
+
 export type Proto = {
   id: string;
   title: string;
@@ -22,11 +24,12 @@ export type Proto = {
   note?: string;
   /** The prototype has a "Copy values" button whose line belongs in the playtest entry. */
   values?: boolean;
-  /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. */
-  variants?: { name: string; url: string; what: string }[];
+  /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. A variant's
+   * own `spawn` replaces the card's when that variant is playing. */
+  variants?: { name: string; url: string; what: string; spawn?: Spawn }[];
   /** Where the in-game prototype bar drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
    * toward -z, forward = (-sin, -cos)). Leave it out to start at the usual spawn. */
-  spawn?: { x: number; z: number; yaw: number };
+  spawn?: Spawn;
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
 };
@@ -244,16 +247,19 @@ export const PROTOS: Proto[] = [
         name: 'topple',
         url: '/?proto=minis&v=topple',
         what: 'Knock six crates off the stump with the ball or your body; it rebuilds itself 4 s after the last falls.',
+        spawn: { x: 15.9, z: 26.2, yaw: -2.28 }, // on the court side of the stump, the crates just right of you
       },
       {
         name: 'golf',
         url: '/?proto=minis&v=golf',
         what: 'E at the tee, then throws and bumps into the striped bucket past the palms. Par 3; carrying costs a stroke per 3 m.',
+        spawn: { x: 8, z: 22, yaw: 1.3 }, // beside the tee (just right of you), looking west down the hole
       },
       {
         name: 'hop',
         url: '/?proto=minis&v=hop',
         what: 'Bounce down five mushrooms to the flag without touching the sand. E to go again.',
+        spawn: { x: 7, z: 26, yaw: 1.94 }, // north-east of the start crate, the mushroom line running off to the left
       },
     ],
   },
