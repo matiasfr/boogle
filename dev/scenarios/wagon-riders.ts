@@ -1,7 +1,9 @@
 // A rider on another tab stays on the wagon's deck (src/netplay/net.ts, "riding a shared platform"): Bob stands on the
-// last car (`wagon:car2`) from a stop, through the departure, a corner at the next station and the stop there; Alice
-// watches. Her copy of Bob is drawn in the car's frame, so his offset on the deck she draws barely moves, while his
-// world presence (what was drawn before) trails the deck by the interpolation delay. Serves DESIGN.md 4 and 10.
+// middle car (`wagon:car1`: the last one's solid crates leave no clear spot) from a stop, through the departure, a
+// corner at the next station and the stop there; Alice watches. Her copy of Bob is drawn in the car's frame, so his
+// offset on the deck she draws barely moves, while his world presence (what was drawn before) trails the deck by the
+// interpolation delay. With `laid=3` faked, the train runs over the open section, where the track machine sinks out of
+// its way (src/features/track-machine.ts). Serves DESIGN.md 4 and 10.
 // Two rendering tabs: runs on a Mac (`npm run scenario -- wagon-riders`) or nightly, never in PR CI.
 import { MET } from './lib/world.mjs';
 
@@ -17,7 +19,7 @@ type Run = {
   check: (label: string, ok: boolean, detail?: string) => void;
 };
 
-const CAR = 2;
+const CAR = 1;
 const SECONDS = 24;
 // Bob on the car, a little off its centre, facing along it (feet sphere just above the deck).
 const BOARD = `
@@ -88,7 +90,7 @@ export default {
     const B = await t.open({ name: 'Bob', room, query });
     t.check('the players see each other', (await A.waitFor(MET, { timeout: 30000 })) >= 0);
 
-    // Board at a stop the last car leaves past a corner: the first site, or the first station on the way out.
+    // Board at a stop the car leaves past a corner: the first site, or the first station on the way out.
     const STOP = `(() => { const w = window.__wagon.state; return w && (w.stop === 0 || (w.stop === 1 && w.dir === 1)); })()`;
     const atStop = await B.waitFor(STOP, { timeout: 120000 });
     t.check('the wagon reaches a stop', atStop >= 0, `${atStop} ms`);

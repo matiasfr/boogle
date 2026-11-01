@@ -333,7 +333,9 @@ const sign = (() => {
 // Once the whole route is laid it sinks out of sight. Push runs read whole ticks (their clock stands still between
 // pushes); the others the smooth shared time. Where the ?proto=wagon train stands at the end of the line its loco
 // overhangs the railhead by about 5 m, so the drawn machine keeps its back bar CLEAR m ahead of the loco's nose
-// (`clearOfWagon`) and drops back to its spot as the train pulls away: Local, the run's timing is unchanged.
+// (`clearOfWagon`) and drops back to its spot as the train pulls away: Local, the run's timing is unchanged. A faked
+// laid count (the wagon panel's +, `?laid=N`) runs the train on over the open section: the machine sinks into the
+// ground out of its way (`goal.sunk`; it is solid, and would sweep riders off the decks) until the train is back off it.
 const PARK = M.hz + 1.6,
   START = M.front - M.hz,
   CLEAR = 0.5;
@@ -348,10 +350,10 @@ function clearOfWagon(s: number, at: number): number {
     rz = loco.body.position.z - ROUTE[s].z;
   if (Math.abs(rx * fz - rz * fx) > 4) return at; // off this line
   const nose = rx * fx + rz * fz + loco.hz + 0.2; // its buffer beam
-  if (nose > 6.5) return at; // a faked laid count (the wagon panel's +) runs it over the open section: let it by
-  return Math.max(at, nose + CLEAR + M.hz + 0.12); // the push bar sits 0.12 m behind the deck
+  goal.sunk = nose > 6.5; // a faked laid count runs it on over the open section: sink where the nose passed us
+  return Math.max(at, Math.min(nose, 6.5) + CLEAR + M.hz + 0.12); // the push bar sits 0.12 m behind the deck
 }
-const goal = { s: 0, d: 0, at: PARK, x: 0, y: 0, z: 0, yaw: 0, running: false, name: '', gone: false };
+const goal = { s: 0, d: 0, at: PARK, x: 0, y: 0, z: 0, yaw: 0, running: false, name: '', gone: false, sunk: false };
 function laidAt(s: number, tick: number): number {
   const x = sites.list[s];
   if (rules.sites.isDone(s)) return LINES[s].len;
@@ -373,11 +375,12 @@ function aim(tick: number): void {
   goal.name = r?.name ?? '';
   goal.gone = open >= ROUTE.length;
   goal.at = !r ? PARK : r.name === 'warm' ? PARK + ((START - PARK) * r.progress) / 1000 : goal.d + START;
+  goal.sunk = false;
   if (!goal.gone) goal.at = clearOfWagon(s, goal.at);
   const c = along(s, goal.at);
   goal.x = c.x;
   goal.z = c.z;
-  goal.y = c.y + M.lift - (goal.gone ? 4 : 0);
+  goal.y = c.y + M.lift - (goal.gone || goal.sunk ? 4 : 0);
   goal.yaw = LINES[s].yaw;
 }
 
