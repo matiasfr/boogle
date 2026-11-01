@@ -20,8 +20,19 @@ const lockRefused = () => {
   if (!everLocked) inputState.lockFailed = true;
 };
 
+// Touch mode (body.touch: the stick and buttons overlay, no pointer lock) follows what the player uses, not the device:
+// an iPad with a Magic Keyboard starts in touch mode (its primary pointer is coarse), and the first key press or
+// trackpad click switches it to keyboard and mouse; the next finger on the glass switches it back.
+const touchMode = () => document.body.classList.contains('touch');
+function setTouchMode(on: boolean) {
+  if (touchMode() === on) return;
+  releaseInputFn?.();
+  document.body.classList.toggle('touch', on);
+  if (on && document.pointerLockElement) document.exitPointerLock();
+}
+
 export function requestLock() {
-  if (isTouch || inputState.locked || !canvas.requestPointerLock) return;
+  if (touchMode() || inputState.locked || !canvas.requestPointerLock) return;
   try {
     const p = canvas.requestPointerLock();
     if (p && p.catch) p.catch(lockRefused);
@@ -35,6 +46,10 @@ export const releaseInput = () => releaseInputFn?.();
 // Wired from main.js after every module has loaded (hud.js and input.js import each other).
 export function initInput() {
   if (isTouch) document.body.classList.add('touch');
+  // Capture phase, so the switch happens before the press is handled. A key aimed at a text field may come from the
+  // on-screen keyboard, so it does not count.
+  addEventListener('keydown', (e) => !isTyping(e) && setTouchMode(false), { capture: true });
+  addEventListener('pointerdown', (e) => e.pointerType && setTouchMode(e.pointerType !== 'mouse'), { capture: true });
   document.addEventListener('pointerlockchange', () => {
     inputState.locked = document.pointerLockElement === canvas;
     if (inputState.locked) everLocked = true;

@@ -276,7 +276,6 @@ dialog.pause::backdrop {
 }
 .menu-btn {
   position: relative;
-  z-index: 5; /* above the touch overlay */
   pointer-events: auto;
   display: none;
   align-items: center;

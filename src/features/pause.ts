@@ -6,7 +6,7 @@
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
 import { onFrame, onStart } from '../loop.ts';
-import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.ts';
+import { COLORS, DEFAULT_ROOM } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
@@ -344,7 +344,7 @@ addEventListener(
 let wasLocked = false;
 document.addEventListener('pointerlockchange', () => {
   const locked = !!document.pointerLockElement;
-  if (wasLocked && !locked && me.entered && !modalOpen() && !dialogue.open && !isTouch) openPause();
+  if (wasLocked && !locked && me.entered && !modalOpen() && !dialogue.open && inputKind() !== 'touch') openPause();
   wasLocked = locked;
 });
 

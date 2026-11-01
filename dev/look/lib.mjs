@@ -163,7 +163,8 @@ export class Game {
     // every shader before the lobby opens.
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
     await g.page.fill('#name-input', g.name).catch(() => {});
-    await g.page.click('#enter');
+    // A phone taps in: a mouse click would switch the page to keyboard-and-mouse mode (src/player/input.ts).
+    await (opts.touch ? g.page.tap('#enter') : g.page.click('#enter'));
     await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the first-run
     // card, roster, net pill or reticle (cleaner footage); true keeps everything.

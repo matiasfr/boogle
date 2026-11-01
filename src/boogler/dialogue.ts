@@ -2,7 +2,7 @@
 // the friendship meter, his portrait to pet (pad Y), and a close button (Escape, E, pad B). Not a modal: the game keeps
 // playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.ts). It
 // takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
-import { isTouch, reducedMotion } from '../constants.ts';
+import { reducedMotion } from '../constants.ts';
 import { setPadGrab } from '../player/controls.ts';
 import { modalOpen } from '../player/modal.ts';
 import { heartsText } from './friendship.ts';
@@ -131,7 +131,7 @@ function dom(): Dom {
   // On a desktop, Escape with the pointer locked only ends the lock (the page never sees the key): that ends the talk.
   // Added on first use, after src/features/pause.ts's own listener, which skips the pause view while a talk is open.
   document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && !isTouch) cur?.onClose?.();
+    if (!document.pointerLockElement && !document.body.classList.contains('touch')) cur?.onClose?.();
   });
   d.faceBtn.addEventListener('click', () => cur?.onPet?.());
   d.close.addEventListener('click', () => cur?.onClose?.());
