@@ -1,6 +1,6 @@
 // The rail takes over (docs/research/carrying-and-logistics-play.md, rec 7): helper-hut freight arrives by wagon. When
 // a helper hut has been built and the wagon runs, the freight that lands in the open site's Track ring shows up as
-// crates hopping off the rear flatbed into the ring, with a thump, at the stop nearest that ring. Serves DESIGN.md 1
+// crates hopping off the rear flatbed into the ring, with a puff of dust, at the stop nearest that ring. Serves DESIGN.md 1
 // (Toys before chores): you watch the railway do the hauling instead of reading a counter.
 //
 // Local and cosmetic: the freight itself is lockstep (src/sim/sites.ts `helperFreight`, every HELPER_EVERY ticks) and
@@ -11,9 +11,8 @@
 import * as THREE from 'three/webgpu';
 import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
-import { scene, camera } from '../../render/scene.ts';
+import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { getAudio } from '../../render/audio.ts';
 import { world, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
@@ -50,7 +49,7 @@ type Hop = {
   from: THREE.Vector3;
   to: THREE.Vector3;
   spin: THREE.Vector3;
-  thumped: boolean;
+  landed: boolean;
 };
 const hops: Hop[] = [];
 const pool: THREE.Mesh[] = [];
@@ -73,36 +72,7 @@ function stopFor(laid: number, open: number): number {
   return best;
 }
 
-export function thump(at: THREE.Vector3, k: number) {
-  const a = getAudio();
-  if (!a) return;
-  const vol = 1 / (1 + at.distanceTo(camera.position) / 8);
-  if (vol < 0.04) return;
-  const { ctx, out } = a;
-  const t = ctx.currentTime + 0.005;
-  const g = ctx.createGain();
-  g.connect(out);
-  g.gain.setValueAtTime(0.32 * vol, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-  const o = ctx.createOscillator();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(120 - k * 8 + Math.random() * 12, t);
-  o.frequency.exponentialRampToValueAtTime(45, t + 0.18);
-  o.connect(g);
-  o.start(t);
-  o.stop(t + 0.24);
-  // a woody knock on top
-  const g2 = ctx.createGain();
-  g2.connect(out);
-  g2.gain.setValueAtTime(0.1 * vol, t);
-  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-  const o2 = ctx.createOscillator();
-  o2.type = 'square';
-  o2.frequency.setValueAtTime(330 + Math.random() * 60, t);
-  o2.connect(g2);
-  o2.start(t);
-  o2.stop(t + 0.06);
-}
+// The crates land silently for now (their thump was cut in the sound audit, 2026-11-02); a better one comes later.
 
 // Throws `n` crates off the rear flatbed into the open site's Track ring; the first lands `lead` s from now.
 function drop(w: FreightWagon, open: number, n: number, lead: number, late: boolean) {
@@ -124,7 +94,7 @@ function drop(w: FreightWagon, open: number, n: number, lead: number, late: bool
       tz = r.z + Math.sin(a) * rr;
     const to = new THREE.Vector3(tx, groundHeight(tx, tz) + c.sz / 2, tz);
     const spin = new THREE.Vector3((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 6);
-    hops.push({ mesh, t: HOP.flight - lead - k * HOP.stagger, from, to, spin, thumped: false });
+    hops.push({ mesh, t: HOP.flight - lead - k * HOP.stagger, from, to, spin, landed: false });
   }
 }
 
@@ -202,11 +172,10 @@ export function wagonFreight(w: FreightWagon): void {
           m.rotation.set(h.spin.x * h.t, h.spin.y * h.t, h.spin.z * h.t);
           continue;
         }
-        if (!h.thumped) {
-          h.thumped = true;
+        if (!h.landed) {
+          h.landed = true;
           m.position.copy(h.to);
           m.rotation.set(0, h.spin.y * HOP.flight, 0);
-          thump(h.to, k);
           const base = h.to.y - m.scale.y / 2;
           for (let n = 0; n < (reducedMotion ? 4 : 12); n++) {
             const a = (n / 12) * Math.PI * 2 + Math.random() * 0.4,

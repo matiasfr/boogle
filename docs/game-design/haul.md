@@ -271,8 +271,9 @@ A greybox steam wagon (a loco and two flatbeds, the rear one loaded with crates)
 section brings it out standing at the first site; each newly laid section extends its run from the next stop it
 reaches (no teleport). It stops 6 s at each site, cruises at 3 m/s, and shuttles back and forth push-pull (the loco
 stays at the lighthouse end). Every car is a kinematic platform (src/physics/platforms.ts): stand on a flatbed, or
-jump onto the boiler, and you're carried; jump off and you keep its speed. It chuffs with speed, rocks and clacks over
-rail joints every 4.5 m, and whistles just before leaving a stop. Its wheels turn with the distance covered, the
+jump onto the boiler, and you're carried; jump off and you keep its speed. It puffs smoke with speed, rocks over rail
+joints every 4.5 m, and bursts steam just before leaving a stop; it is silent for now (the whistle and rail clacks were
+cut in the sound audit, 2026-11-02, until better sounds come). Its wheels turn with the distance covered, the
 loco's side rods, connecting rods and pistons follow its wheels, and the cars shuffle on a little buffer slack as it
 starts and stops (src/proto/wagon/look.ts). `&v=lively` (rockier, bouncier, more smoke, a
 camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
@@ -282,8 +283,8 @@ Jumping off a moving car keeps its speed and slides it away on landing in a dust
 opening on the tumble flop's held beat (docs/game-design/player.md); the crates on the rear flatbed are solid.
 
 **The rail takes over** (src/proto/wagon/freight.ts, Local). With a helper hut built and the wagon running, helper freight
-arrives by wagon: crates hop off the rear flatbed in an arc into the open site's Track ring and land with a thump and
-a ring of dust, then sink into the pile, at the stop nearest that ring. When the wagon stands there on the freight tick
+arrives by wagon: crates hop off the rear flatbed in an arc into the open site's Track ring and land (silently for now:
+the thump was cut in the sound audit) with a ring of dust, then sink into the pile, at the stop nearest that ring. When the wagon stands there on the freight tick
 (one piece per hut every 27 s), the crates are thrown early so they land on that tick, as the ring's count goes up;
 freight that lands while the wagon is elsewhere rides along and hops off 0.8 s after it next stands there (the count
 went up already: only the show waits). Nothing changes when or how much freight counts; with no wagon running (nothing
@@ -296,7 +297,8 @@ flares and throws sparks. Anyone's logs count. Steam is speed: each log burns 10
 from 3 logs' worth up the wagon runs flat out at 6.5 m/s; below that it slows in a straight line to walking pace
 (1.5 m/s) when the fire is out. It never stops for want of steam, and it still stands 6 s at each stop (the fire burns
 on while it stands). Speed eases in and out over about 4 s. The glow, the embers, the gauge's needle and the chimney
-follow the fire: a hot one puffs big sooty clouds with a loud chuff, a cold one thin wisps. The steam is lockstep (the
+follow the fire: a hot one puffs big sooty clouds, a cold one thin wisps. No sound for now: the fire's roar and the
+chimney's chuffs were cut in the sound audit (2026-11-02). The steam is lockstep (the
 `wagon` state, `wagon.stoke {n}` spending logs from your own stack, in `proto-` rooms only; src/world/rules/wagon.ts):
 the wagon's place is
 its timetable read at its own clock, which steam runs faster, so every tab sees the same speed. Reset the route
