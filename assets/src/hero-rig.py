@@ -40,11 +40,11 @@ from mathutils import Matrix, Vector
 
 out = sys.argv[sys.argv.index('--') + 1]
 
-# Proportion knobs, for exploring in Blender without touching the numbers below: HERO_PROPS="legs=-0.06,wide=1.05"
-# (unset, the shipped proportions). legs: metres added to the leg length (the body rides up or down on them); tall:
-# metres added to the pill's straight middle; wide: the pill's width and depth, as a factor; eyes: the eyes' size, as
-# a factor.
-PROPS = {'legs': 0.0, 'tall': 0.0, 'wide': 1.0, 'eyes': 1.0}
+# Proportion knobs, for exploring in Blender without touching the numbers below: HERO_PROPS="legs=-0.1,wide=1.1"
+# overrides them. legs: metres added to the leg length (the body rides up or down on them); tall: metres added to the
+# pill's straight middle; wide: the pill's width and depth, as a factor; eyes: the eyes' size, as a factor. The
+# defaults are the owner's pick of 2026-11-01 ("Astro": shorter legs, a little chubbier, bigger eyes).
+PROPS = {'legs': -0.06, 'tall': 0.0, 'wide': 1.08, 'eyes': 1.2}
 for kv in filter(None, os.environ.get('HERO_PROPS', '').split(',')):
     k, v = kv.split('=')
     PROPS[k] = float(v)
@@ -260,7 +260,7 @@ def bean_region(above):
 part('body', 'body', 'body', bean_region(False), normal=bean_normal)
 part('crown', 'body', 'body', bean_region(True), normal=bean_normal)
 
-# Face: three eye styles to compare (code shows one, &eyes=<style>; googly by default). Parts are named
+# Face: three eye styles to compare (code shows one, &eyes=<style>; bead by default, the owner's pick). Parts are named
 # eyes_<style>_<what>_<side>; code moves each style's pupils to look at things. All ride the body bone, so they
 # follow its lean.
 # - googly: big white balls standing out of the bean, big pupils with a glint (today's).
@@ -444,19 +444,38 @@ def boots(sx, side):
 sides(boots)
 
 # ---------------------------------------------------------------- the "wave" clip
-# Poses as data: per key, degrees per bone as (x, z) in three.js terms (x pitches forward, z swings out to the
-# figure's side; positive z raises the right arm, negative the left). Keys are 30 fps frames. Pose-to-pose with
-# toon timing: a quick anticipation dip, a snap up, three waves, a settle.
+# Poses as data: per key, degrees per bone as (x, z) in three.js terms. For a limb hanging below its joint, +x swings
+# it forward and +z swings it out to the figure's right side (so +z raises the right arm, -z the left). Keys are
+# 30 fps frames. Pose-to-pose with toon timing, and overlap so it doesn't read as a robot:
+# - a small anticipation: the body dips away and the arm pulls in;
+# - the arm snaps up out to the side and forward (in front of the head's side, so the hand is never hidden behind it),
+#   elbow bent so the hand sits beside the face;
+# - three waves from the elbow, the hand trailing the forearm a beat behind (it flops), the body rocking with them;
+# - the arm drops with a little overshoot and settles.
+UP = {'arm_r': (25, 95), 'forearm_r': (0, 70), 'body': (-3, -5), 'arm_l': (0, -6)}
+
+
+def wave_key(swing, hand_lag, rock):
+    k = dict(UP)
+    k['forearm_r'] = (UP['forearm_r'][0], UP['forearm_r'][1] + swing)
+    k['hand_r'] = (0, hand_lag)
+    k['body'] = (UP['body'][0], UP['body'][1] + rock)
+    return k
+
+
 WAVE = [
     (0, {}),
-    (4, {'body': (4, 0), 'arm_r': (10, -10), 'forearm_r': (-20, 0), 'thigh_l': (-8, 0), 'shin_l': (14, 0)}),
-    (9, {'body': (-4, -6), 'arm_r': (0, 150), 'forearm_r': (0, 25), 'hand_r': (0, 10), 'arm_l': (0, -8)}),
-    (14, {'body': (-4, -6), 'arm_r': (0, 145), 'forearm_r': (0, -30), 'hand_r': (0, -15), 'arm_l': (0, -8)}),
-    (19, {'body': (-4, -6), 'arm_r': (0, 150), 'forearm_r': (0, 25), 'hand_r': (0, 10), 'arm_l': (0, -8)}),
-    (24, {'body': (-4, -6), 'arm_r': (0, 145), 'forearm_r': (0, -30), 'hand_r': (0, -15), 'arm_l': (0, -8)}),
-    (29, {'body': (-4, -6), 'arm_r': (0, 150), 'forearm_r': (0, 25), 'hand_r': (0, 10), 'arm_l': (0, -8)}),
-    (36, {'body': (2, 0), 'arm_r': (0, 20), 'forearm_r': (-10, 0)}),
-    (42, {}),
+    (4, {'body': (3, 3), 'arm_r': (-5, -8), 'forearm_r': (-10, 0), 'arm_l': (0, 3)}),
+    (9, wave_key(-10, 20, 0)),
+    (11, wave_key(-4, 12, -1)),
+    (15, wave_key(22, -18, 1.5)),
+    (20, wave_key(-22, 22, -1.5)),
+    (25, wave_key(22, -18, 1.5)),
+    (30, wave_key(-22, 22, -1.5)),
+    (35, wave_key(18, -14, 1)),
+    (40, wave_key(0, 0, 0)),
+    (45, {'arm_r': (-8, -6), 'forearm_r': (-12, 0), 'body': (1, 1)}),
+    (50, {}),
 ]
 
 

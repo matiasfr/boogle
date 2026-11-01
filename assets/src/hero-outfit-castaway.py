@@ -67,7 +67,7 @@ def shorts(bm):
 
 
 part('wear_body_shorts', 'body', 'cloth_red', shorts)
-part('wear_body_shorts_belt', 'body', 'rope', lambda bm: ring(bm, (0, 0, SHORTS_TOP - 0.02), 0.445, 0.05, segs=28))
+part('wear_body_shorts_belt', 'body', 'rope', lambda bm: ring(bm, (0, 0, SHORTS_TOP - 0.02), 0.445 * W, 0.05, segs=28))
 
 
 def shorts_legs(sx, side):
