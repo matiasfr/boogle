@@ -33,7 +33,29 @@ for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click',
   addEventListener(ev, unlock, { passive: true, capture: true });
 }
 
-// { ctx, out } once audio is running, otherwise null (callers just skip the sound).
-export function getAudio() {
-  return ctx && master && ctx.state === 'running' ? { ctx, out: master } : null;
+// Mixer buses. Without a mixer installed every bus is the master; the groove prototype (src/proto/groove/, behind
+// ?proto=groove) installs one with a gain per bus and the music ducked under big sound effects.
+export type Bus = 'music' | 'sfx' | 'ui' | 'voice';
+type Mixer = (ctx: AudioContext, master: GainNode) => (bus: Bus) => AudioNode;
+let makeMixer: Mixer | null = null;
+let route: ((bus: Bus) => AudioNode) | null = null;
+export function installMixer(make: Mixer) {
+  makeMixer = make;
 }
+
+// { ctx, out } once audio is running, otherwise null (callers just skip the sound). `out` is the bus's input.
+export function getAudio(bus: Bus = 'sfx'): { ctx: AudioContext; out: AudioNode } | null {
+  if (!ctx || !master || ctx.state !== 'running') return null;
+  if (makeMixer && !route) route = makeMixer(ctx, master);
+  return { ctx, out: route ? route(bus) : master };
+}
+
+// When (AudioContext time) and at what pitch a musical sound effect plays: as asked, unless a music prototype snaps
+// sound effects to its beat grid (`grid`: 16 = the next 16th note, 8 = the next 8th) and to its current chord (a
+// pitch in Hz; 0 leaves an unpitched sound alone). The action itself never waits, only its sound.
+type NoteSnap = (t: number, freq: number, grid: 8 | 16) => { t: number; freq: number };
+let snap: NoteSnap | null = null;
+export function setNoteSnap(fn: NoteSnap | null) {
+  snap = fn;
+}
+export const onBeat = (t: number, freq = 0, grid: 8 | 16 = 16) => (snap ? snap(t, freq, grid) : { t, freq });

@@ -8,7 +8,7 @@ import { scene, camera } from '../render/scene.ts';
 import { COLORS } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
-import { getAudio } from '../render/audio.ts';
+import { getAudio, onBeat } from '../render/audio.ts';
 import { onFrame, onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
 import { createLimiter, createChordDetector, honkFreq } from '../sim/social.ts';
@@ -27,11 +27,11 @@ const chord = createChordDetector({ windowMs: TUNE.chordWindowMs, min: TUNE.chor
 // ---------------------------------------------------------------- sound
 const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
 
-function honkSound(freq: number, vol: number) {
+function honkSound(note: number, vol: number) {
   const a = getAudio();
   if (!a || vol < 0.02) return;
   const { ctx, out } = a;
-  const t = ctx.currentTime + 0.004;
+  const { t, freq } = onBeat(ctx.currentTime + 0.004, note); // on the beat and in key under ?proto=groove
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.value = 1700;
@@ -59,11 +59,12 @@ function honkSound(freq: number, vol: number) {
   }
 }
 
-function chordSound(freqs: number[], vol: number) {
+function chordSound(notes: number[], vol: number) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
-  const t = ctx.currentTime + 0.01;
+  const t = onBeat(ctx.currentTime + 0.01).t;
+  const freqs = notes.map((f) => onBeat(t, f).freq);
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.value = 2600;
