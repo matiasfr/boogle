@@ -3,7 +3,8 @@
 // packet can't bring it back.
 //
 //   const t = createPeerTable(selfId)
-//   t.setSelf(presence)              my presence changed
+//   t.setSelf(presence)              my presence changed: list() shows it, onChange doesn't announce it (20 Hz, and
+//                                    no reader needs it: my own entry only comes with the first call, in joined)
 //   t.upsert(id, presence, seq)      a remote's presence; false if stale
 //   t.drop(id, seq?)                 a remote left; true if it was there
 //   t.has(id), t.list()              list() is me first, frozen, cached until the next change
@@ -104,7 +105,7 @@ export function createPeerTable(selfId: string) {
   set(selfId, {});
 
   return {
-    setSelf: (presence: Record<string, unknown>) => note('u', selfId, set(selfId, presence)),
+    setSelf: (presence: Record<string, unknown>) => void set(selfId, presence),
     upsert(id: string, presence: Record<string, unknown>, seq: number) {
       if (id === selfId || !Number.isSafeInteger(seq) || seq <= (seqs.get(id) ?? -1)) return false;
       seqs.set(id, seq);

@@ -15,7 +15,7 @@ const room = await createWsRoom({ roomId, server /* our server's http(s) base */
 room.selfId            // string, stable per tab for the life of the page
 room.presence(patch)   // Promise<void>; shallow-merges patch into my presence (value null deletes key) and broadcasts
 room.peers()           // frozen array of entries
-room.onPeers(handler, onError) // handler({ peers, joined, left, updated }); called once soon after subscribe with all current peers in `joined`. returns unsubscribe
+room.onPeers(handler, onError) // handler({ peers, joined, left, updated }); called once soon after subscribe with all current peers in `joined` (me included), then on remote changes only: my own presence() updates show in peers() but don't call it. returns unsubscribe
 room.onConnection(handler, onError) // handler(connected: boolean). returns unsubscribe
 room.send(msg)         // reliable, ordered JSON message to every OTHER tab (relayed by the server; held while reconnecting)
 room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
