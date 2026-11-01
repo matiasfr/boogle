@@ -66,8 +66,17 @@ const pre: (() => void)[] = [],
 let acc = 0,
   time = 0;
 
+// Rapier's SIMD build steps about 1.4x faster (a 1024-body pile: 0.50 vs 0.70 ms a step in Chrome on an M-series Mac;
+// docs/research/webgpu-on-ipad.md, recommendation 11). It needs WASM SIMD, which every WebGPU browser has (Safari since
+// 16.4); if it fails to instantiate anyway, the plain build loads instead. Same version, same API.
+const load = (): Promise<R> =>
+  (import('@dimforge/rapier3d-simd') as Promise<unknown> as Promise<R>).catch((e) => {
+    console.warn('[physics] Rapier SIMD build failed to load, using the plain one:', e);
+    return import('@dimforge/rapier3d');
+  });
+
 export function ready() {
-  return import('@dimforge/rapier3d').then((mod) => {
+  return load().then((mod) => {
     R = mod;
     world = new R.World({ x: 0, y: -GRAVITY, z: 0 });
     world.timestep = FIXED;
