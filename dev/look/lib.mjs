@@ -124,7 +124,7 @@ export class Game {
     if (opts.clock) await g.ctx.clock.install();
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });
-    // src/constants.js reads isTouch once at load, so this must run before the page's code.
+    // src/constants.ts reads isTouch once at load, so this must run before the page's code.
     if (opts.touch)
       await g.ctx.addInitScript(() => {
         const mm = window.matchMedia.bind(window);

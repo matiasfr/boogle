@@ -2,7 +2,7 @@
 // Math.random is fine here.
 import * as THREE from 'three';
 import { scene } from '../render/scene.js';
-import { reducedMotion } from '../constants.js';
+import { reducedMotion } from '../constants.ts';
 import { boogler, booglerReact, PUFF_MS } from './boogler.js';
 
 function heartTexture() {

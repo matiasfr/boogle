@@ -8,13 +8,13 @@
 import * as THREE from 'three';
 import { camera } from '../render/scene.js';
 import { emit } from '../render/particles.js';
-import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.js';
+import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { clamp, lerp } from '../math.js';
+import { clamp, lerp } from '../math.ts';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { getAudio } from '../render/audio.js';
 
 // ---------------------------------------------------------------- tunables

@@ -5,7 +5,7 @@
 // Floors stay flat (no noise near them), noise fades out near the mouths (so they meet the terrain's openings) and the
 // cellar is left smooth (it gets brickwork instead).
 import { edgeTable, triTable } from 'three/examples/jsm/objects/MarchingCubes.js';
-import { smoothstep } from '../../math-pure.js';
+import { smoothstep } from '../../math-pure.ts';
 import { networkSd, ZONE, MOUTHS, SEGMENTS, NODES, FLOOR_CUT } from './network.js';
 
 const VOXEL = 0.62;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.js';
-import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.js';
+import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.ts';
+import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.ts';
 import { scene } from '../render/scene.js';
 import { teleport } from '../physics/physics.js';
 import { addBody, removeBody } from '../physics/engine.ts';
@@ -13,7 +13,7 @@ import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
 import { mergeFields, hostField } from './presence-fields.ts';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import type { Presence } from './presence-fields.ts';
 import type { Body } from '../physics/engine.ts';
 
@@ -412,7 +412,7 @@ export function updateRemotes(now: number) {
   }
 }
 
-// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
+// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
 // update -280, after this player's avatar (player.js, -290), before the camera (-200): remote avatars take their
 // interpolated pose and walk at the speed they moved since last frame.
 const tmpV = new THREE.Vector3();

@@ -3,7 +3,7 @@
 // the camera, interact targets, the hotbar, presence) keeps working. Other players' guests are drawn from the pose they
 // publish. Loaded on first use by src/features/dino.js.
 import * as THREE from 'three';
-import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.js';
+import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.ts';
 import { onPreStep, setMotion, getMask } from '../physics/engine.ts';
 import { waterField } from '../physics/water-field.js';
 import { ball, claimBall } from '../physics/ball.js';
@@ -11,7 +11,7 @@ import { scene } from '../render/scene.js';
 import { emit } from '../render/particles.js';
 import { me, cam } from '../player/player.js';
 import { input } from '../player/input.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { getSim, BUTTON } from './engine.js';
 import { gatherSurfaces, UNITS } from './collision.js';
 import { getAtlas, createModelMesh, updateModelMesh } from './model.js';

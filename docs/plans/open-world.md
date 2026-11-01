@@ -81,7 +81,7 @@ Rerun this as the world grows; compare against these numbers, not against generi
 | `npm run perf` (WebGL 2 at the time, headless) | 128 draw calls (52 in the shadow pass), 224k triangles, 176 geometries, 64 programs |
 | Shared sim, idle island | 0.004 ms per tick on average |
 
-Already in place: clamped delta (`src/main.js`, 50 ms cap), fixed physics step with up to 4 substeps, one
+Already in place: clamped delta (`src/main.ts`, 50 ms cap), fixed physics step with up to 4 substeps, one
 `RenderPipeline` (scene pass, then one output pass), frustum culling on by default.
 
 What to do as complexity increases, in order of expected payoff:
@@ -101,4 +101,4 @@ What to do as complexity increases, in order of expected payoff:
 
 Doesn't apply: moving player movement or physics to GPU compute (cannon-es, collisions and the network need positions
 on the CPU, and readback costs more than it saves), and any "drop-in" loop rewrite (features plug in through the
-`onFrame` phases and orders in `src/loop.js`).
+`onFrame` phases and orders in `src/loop.ts`).

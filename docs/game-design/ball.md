@@ -17,7 +17,7 @@
   25 % of old velocity, capped at 10.4 m/s, 300 ms cooldown. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
 - **Files.** [src/physics/ball.js](../../src/physics/ball.js), [src/physics/physics.js](../../src/physics/physics.js), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
-  orders −300 and −280 in the `world` phase, listed in [src/loop.js](../../src/loop.js)), [src/features/bump.js](../../src/features/bump.js), [src/features/impact.js](../../src/features/impact.js)
+  orders −300 and −280 in the `world` phase, listed in [src/loop.ts](../../src/loop.ts)), [src/features/bump.js](../../src/features/bump.js), [src/features/impact.js](../../src/features/impact.js)
   (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../../src/render/splash.js).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;
   join reports carry the slowest link's round trip as `rttMs` (6.15). The ball's resting spot is saved per room: once it has lain under 0.3 m/s for 1.5 s, its

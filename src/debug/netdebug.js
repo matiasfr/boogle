@@ -4,7 +4,7 @@
 //   - on a mismatch, both sides save the diverging subsystems' serialized state at that tick as JSON, to diff:
 //     the client right away (before the resync replaces it), the host from a small cache of its states at hash ticks
 // Serves the determinism principle (a desync is found and named, not silently repaired). Local only.
-import { onStart } from '../loop.js';
+import { onStart } from '../loop.ts';
 import { net, onRoomReady } from '../netplay/net.ts';
 import { BUILD, otherBuilds } from '../netplay/builds.ts';
 import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.ts';

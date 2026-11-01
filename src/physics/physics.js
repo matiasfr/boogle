@@ -1,4 +1,4 @@
-import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.js';
+import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.ts';
 import {
   material,
   createBody,
@@ -9,7 +9,7 @@ import {
   physicsTime,
   forEachContact,
 } from './engine.ts';
-import { clamp } from '../math.js';
+import { clamp } from '../math.ts';
 import { groundHeight, heights } from '../adapters/terrain.js';
 import { waterField } from './water-field.js';
 

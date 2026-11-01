@@ -94,7 +94,7 @@ outlive a reload, so it can't be `selfId`, and it is the first per-person value 
     presence as `u` so renderers can map avatars to pids.
 - **Names must enter Lockstep.** **(correction)** A plaque `[[pid, pts]]` can't print "Ana" once Ana has gone home,
   and names live only in presence today. Add a small `roster` state, `pid → {name, colorIdx}`, set by `who.set {n, c}`.
-  Sanitize with the lobby's own `sanitizeName` (`src/math.js:13`), keep the last value, rate-limit it, and fire it on
+  Sanitize with the lobby's own `sanitizeName` (`src/math.ts:13`), keep the last value, rate-limit it, and fire it on
   Jump in and on rename. Pids get a dense index in order of first sight (Uint16). Every other table stores the index,
   never the string, so hashes stay integer folds.
 - **Two tabs in one browser** share `boogle.pid`, and with it the stack (section 3). The fix is S: the

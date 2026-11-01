@@ -183,7 +183,7 @@ function resolveImport(file: string, spec: string | undefined): string | null {
 
 const uniq = <T>(list: T[]): T[] => [...new Set(list)];
 
-// A hook is core when it is outside src/features/ and sits in a range src/loop.js reserves for the core modules:
+// A hook is core when it is outside src/features/ and sits in a range src/loop.ts reserves for the core modules:
 // below the feature range, or 3000 and up in 'late'. Lazy feature parts outside src/features/ use the feature range.
 export const MIN_FEATURE_ORDER = -10;
 export const CORE_LATE = 3000;

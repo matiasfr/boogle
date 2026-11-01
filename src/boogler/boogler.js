@@ -11,8 +11,8 @@
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.js): the host stops for
 // players who talk to or pet him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.js';
-import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.js';
+import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
+import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, toScreen } from '../render/scene.js';
 import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';

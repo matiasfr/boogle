@@ -9,10 +9,10 @@
 
 The bones are already right; the steps build on them rather than replacing them.
 
-- **One loop, three clocks.** `renderer.setAnimationLoop(frame)` in `src/main.js` drives a variable-rate render, a fixed
+- **One loop, three clocks.** `renderer.setAnimationLoop(frame)` in `src/main.ts` drives a variable-rate render, a fixed
   60 Hz cannon-es step (`world.step(FIXED, dt, 4)`; the game reads `interpolatedPosition`), and the 10 Hz lockstep tick
   (`updateWorld` in `src/world/sync.ts`, an accumulator with catch-up). `dt` is clamped to 50 ms.
-- **Plug-in hooks.** `onFrame(fn, { phase, order })` in `src/loop.js`: features never edit the loop. Every step below
+- **Plug-in hooks.** `onFrame(fn, { phase, order })` in `src/loop.ts`: features never edit the loop. Every step below
   keeps that contract.
 - **Pure sim.** `src/sim/` imports nothing from `src/` and has no three.js, so it can run in a worker or on a server
   unchanged.
@@ -129,7 +129,7 @@ feature, POI and site auto-loaders and the profiler's hook names accept `.ts`; N
 tools directly. `src/sim/rng.ts` is the first module.
 
 **8b. Convert, one folder per PR**, in this order (most shared state first): `src/sim/`, `src/world/rules/`,
-`src/world/`, `src/netplay/`, `src/net/`, `src/loop.js` and `src/main.js`, `src/physics/`, `src/player/`,
+`src/world/`, `src/netplay/`, `src/net/`, `src/loop.ts` and `src/main.ts`, `src/physics/`, `src/player/`,
 `src/render/`, `src/adapters/`, `src/boogler/`, `src/pois/`, `src/island/`, `src/features/`, the rest of `src/`, then
 `test/`, `dev/`, `server/` (its Dockerfile to Node 24) and the config files. Each PR renames and adds types only: no
 behavior change, and `check` (plus `check:full` for `src/world*`, `src/net*`, `server/`) passes unchanged. Exported

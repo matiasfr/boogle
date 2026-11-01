@@ -9,12 +9,12 @@
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk
 // Serves DESIGN.md 10 (slapstick over precision) and 1 (moving around is a toy). Authority: you, for your own body.
 import * as THREE from 'three';
-import { onFrame } from '../loop.js';
-import { clamp } from '../math.js';
+import { onFrame } from '../loop.ts';
+import { clamp } from '../math.ts';
 import { emit } from '../render/particles.js';
 import { GROUP } from '../physics/physics.js';
 import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
-import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.js';
+import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.js';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';

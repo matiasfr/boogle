@@ -31,7 +31,7 @@ built outside the POI system.
 
 | POI | Where | What is there | What you can do |
 |---|---|---|---|
-| **Spawn** | (14, 26), random within 3 m | [src/constants.js](../../src/constants.js) `SPAWN` | Land here; fall below −25 m and you are put back. |
+| **Spawn** | (14, 26), random within 3 m | [src/constants.ts](../../src/constants.ts) `SPAWN` | Land here; fall below −25 m and you are put back. |
 | **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.js](../../src/island/ground.js), [terrain.js](../../src/adapters/terrain.js)). No net or lines. | The ball spawns at (12, 20). |
 | **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/adapters/mushroom-garden.js](../../src/adapters/mushroom-garden.js)). | Take 5 seeds per press (stack up to 20) and the watering can. |
 | **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.ts](../../src/sim/mushrooms.ts)). Kept clear of trees. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |

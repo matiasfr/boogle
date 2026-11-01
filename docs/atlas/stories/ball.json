@@ -40,7 +40,7 @@
       "code": "createSnaps() · INTERP_MS = 120",
       "cite": [
         {
-          "file": "src/constants.js",
+          "file": "src/constants.ts",
           "symbol": "INTERP_MS"
         },
         {

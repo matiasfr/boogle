@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { pass } from 'three/tsl';
-import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.js';
+import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
 
 export const canvas = document.getElementById('view');
 

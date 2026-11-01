@@ -6,7 +6,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
-globalThis.matchMedia ??= () => ({ matches: false }); // src/constants.js reads it at import time
+globalThis.matchMedia ??= () => ({ matches: false }); // src/constants.ts reads it at import time
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // The same sites, in the same order, as the game composes. src/island/index.js finds them with Vite's
@@ -22,7 +22,7 @@ const sites = await Promise.all(
 );
 const { createIsland } = await import('../../src/island/stamps.js');
 const island = createIsland(sites);
-const { HALF, CELL } = await import('../../src/constants.js');
+const { HALF, CELL } = await import('../../src/constants.ts');
 
 const SCALE = Number(process.argv[2]) || 2; // metres per pixel
 const N = Math.round((2 * HALF) / SCALE);

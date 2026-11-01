@@ -32,8 +32,8 @@ import {
   time,
   positionGeometry,
 } from 'three/tsl';
-import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.js';
-import { lerp, smoothstep } from '../math.js';
+import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.ts';
+import { lerp, smoothstep } from '../math.ts';
 import { renderer, scene, camera, sun, sky } from './scene.js';
 import { seaU } from './water-render.js';
 import { clouds } from './props.js';

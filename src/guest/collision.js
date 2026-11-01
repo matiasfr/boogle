@@ -2,7 +2,7 @@
 // windmills, rocks, trees, the caves), as triangles around him in engine units, built from the shape descriptions the
 // physics facade keeps (src/physics/engine.ts, forEachStatic), so it works on any physics backend. Collision groups follow the player body's
 // mask, so the caves swap the ground for their own colliders just as they do for the normal player.
-import { CELL, HALF, GRID_RES } from '../constants.js';
+import { CELL, HALF, GRID_RES } from '../constants.ts';
 import { heights } from '../adapters/terrain.js';
 import { GROUP } from '../physics/physics.js';
 import { forEachStatic } from '../physics/engine.ts';

@@ -4,7 +4,7 @@
 // the ball at load. Serves DESIGN.md 9 (leave something for the next visitor) and "you global, world per room".
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import { onSnapshot, submitEdit } from '../world/sync.ts';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { ball, placeBall } from '../physics/ball.js';
 
 const STILL_SPEED = 0.3; // m/s: slower than this counts as lying still

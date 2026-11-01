@@ -5,8 +5,8 @@
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
-import { onFrame, onStart } from '../loop.js';
-import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.js';
+import { onFrame, onStart } from '../loop.ts';
+import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.ts';
 import { me } from '../player/player.js';
 import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.js';

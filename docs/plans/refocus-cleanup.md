@@ -196,7 +196,7 @@ come from it.
 - The preview steps each kind with its own flight: `'plain'` and `'glide'` with `stepFlight` as today, and `'ball'`
   with a new `stepBall(p, v, dt)` in `src/physics/flight.js` (gravity plus Rapier's linear damping,
   `v *= 1 / (1 + dt * BALL_DAMPING)`). Today the ball's preview uses item drag, so it promises a longer arc than the
-  ball flies. `BALL_DAMPING = 0.12` moves to `src/constants.js`, and `ball.js` uses it for `linearDamping`.
+  ball flies. `BALL_DAMPING = 0.12` moves to `src/constants.ts`, and `ball.js` uses it for `linearDamping`.
 - Items keep the scripted `flyPath` and the lockstep `gift.toss` landing. The ball keeps physics. The frisbee keeps
   its `GLIDE` table in `flight.js` and its profile.
 - `src/player/hud.js` computes the charge meter with `chargeOf(performance.now() - me.chargeStart)` from
@@ -372,7 +372,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     backwards, in try/catch). Call it where it is called now, and update its comment.
   - **Leftovers.**
     - Delete `HOME` from `src/world/grid.ts` (nothing imports it), and drop "HOME" from the comment in
-      `src/constants.js`.
+      `src/constants.ts`.
     - In `src/sim/mushrooms.ts`, the `loadGarden` comment becomes "anything else loads as an empty garden" (no
       129-cell mention, comment only).
     - In `src/debug/netdebug.js`, the subsystem list in the header no longer names water or terrain.
@@ -505,9 +505,9 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - `src/features/debug-handle.js`: `tossBall(charge)` becomes `grabBall(); const { p, v } = launch('ball', charge);
     throwBall(p, v);`, importing `launch` from `../player/throw.ts`. The nightly and live `smoke` use it, so check it.
   - `src/physics/flight.js`: add `stepBall(p, v, dt = STEP)` (and list it in the header).
-  - `src/constants.js`: `export const BALL_DAMPING = 0.12`.
+  - `src/constants.ts`: `export const BALL_DAMPING = 0.12`.
   - `src/player/hud.js`: the charge meter uses `chargeOf` from `throw-curve.ts` (Design explains why not `throw.ts`).
-  - `src/loop.js`: the order comment "late -200 player.js: throw preview" names `throw.ts`.
+  - `src/loop.ts`: the order comment "late -200 player.js: throw preview" names `throw.ts`.
   - Docs: `docs/game-design/throwing.md` (one module; files; the ball's preview now follows the ball's damping) and
     the Tuning line of `docs/game-design/ball.md` ("Throw: see 6.7").
   - Verify:
@@ -598,7 +598,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - Unverified saves: step 3 changes `net.ts` (save cleanup) but not the guards in `sync.ts`, and no step touches
     `sync.ts`.
 - **Hotspots.** `src/world/rules/index.ts` (step 6: one import, one array entry). `PLAN.md` (one or two lines per
-  step). `src/main.js`, `index.html` and `src/style.css` are untouched.
+  step). `src/main.ts`, `index.html` and `src/style.css` are untouched.
 - **Step 3 is the big one.** It is mostly deletions, but it renumbers the catalog (now only four entries). Every
   hardcoded index and fruit id must be re-checked: the greps in step 3, the `smoke` toss default, and
   `home-land.json`, because the CI scenario `world-inputs` pins it. Moving the palm-cell fill into `log-sources.ts`

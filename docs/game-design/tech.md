@@ -12,7 +12,7 @@ folder map in [src/README.md](../../src/README.md).
   `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),
   `physics/`, `player/`, `render/`, `boogler/`, `guest/` and `decomp/` (the dino's guest), `boot/` (the loading
   screen), `debug/`.
-- **Plug-ins.** A feature registers `onFrame(fn, { phase, order })` and `onStart(fn)` ([src/loop.js](../../src/loop.js),
+- **Plug-ins.** A feature registers `onFrame(fn, { phase, order })` and `onStart(fn)` ([src/loop.ts](../../src/loop.ts),
   which lists the core hooks' orders; features use −10 and up). `main.js` only wires modules and renders. Heavy or
   rarely used parts load with a dynamic `import()` ("Lazy parts" in `loop.js`): today the caves, the Boogler's
   conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared

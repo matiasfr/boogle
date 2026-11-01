@@ -56,6 +56,6 @@ export const TP = (x, z, y) => `
 export const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
 // The item `toss()` made: its id, kind and world position.
 export const TOSSED_ITEM = `
-  const { CELL, HALF } = await import('/src/constants.js');
+  const { CELL, HALF } = await import('/src/constants.ts');
   const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
   return { id: it.id, kind: it.kind, x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;

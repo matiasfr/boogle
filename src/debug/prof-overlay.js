@@ -1,7 +1,7 @@
 // `?prof=1`: the frame's most expensive sections (avg and p95 CPU ms over the last 240 frames), twice a second.
 // 'frame' is the whole frame's main-thread CPU, from before the physics step to the end of the render call; GPU time
-// is not in it. Names are module paths (src/loop.js).
-import { onStart, prof } from '../loop.js';
+// is not in it. Names are module paths (src/loop.ts).
+import { onStart, prof } from '../loop.ts';
 
 onStart(() => {
   const el = document.createElement('pre');

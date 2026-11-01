@@ -191,7 +191,7 @@ export default {
       const { camera } = await import('/src/render/scene.js');
       const { cam } = await import('/src/player/player.js');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const { CELL, HALF, SEA } = await import('/src/constants.js');
+      const { CELL, HALF, SEA } = await import('/src/constants.ts');
       const b = window.boogle.me.body, can = giftIndex('can');
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -8,7 +8,7 @@
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.js';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
@@ -19,7 +19,7 @@ import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/hau
 import { SOFT_CAP, spillOf } from '../sim/stacks.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { TIERS, tierOf } from '../sim/tiers.ts';
-import { reducedMotion } from '../constants.js';
+import { reducedMotion } from '../constants.ts';
 
 const SHOWN = 40; // pieces drawn per stack
 const FLY_MS = 380;

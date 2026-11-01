@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { SPAWN, COURT, CELL, HALF } from '../constants.js';
+import { SPAWN, COURT, CELL, HALF } from '../constants.ts';
 import { island } from '../island/index.js';
 import { MASSIF } from '../island/shape.js';
 import { PATCH } from '../sim/mushrooms.ts';
-import { mulberry32 } from '../math.js';
+import { mulberry32 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from './scene.js';
 import { addStaticSpheres } from '../physics/physics.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { freezeStatic } from './instances.ts';
 
 // Concatenate many small vertex-colored geometries into one draw call (POIs use these too).
@@ -322,5 +322,5 @@ function updateClouds(dt) {
     if (c.position.x > 340) c.position.x = -340;
   }
 }
-// update -190, after the camera (player.js, -200), before the feature update hooks (src/loop.js lists the orders).
+// update -190, after the camera (player.js, -200), before the feature update hooks (src/loop.ts lists the orders).
 onFrame(({ dt }) => updateClouds(dt), { phase: 'update', order: -190 });

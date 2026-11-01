@@ -9,7 +9,7 @@
 // Serves DESIGN.md "Designed for drop-in, drop-out" (a tab left open for hours still plays with the friends who just
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import './updates.css';
-import { onStart } from '../loop.js';
+import { onStart } from '../loop.ts';
 import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.js';
 import { BUILD } from '../netplay/builds.ts';
 

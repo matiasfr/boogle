@@ -79,7 +79,7 @@ test('extractFile survives a syntax error', () => {
 });
 
 test('extractFile reads names', () => {
-  const r = extractFile('src/main.js', `const o = { go() {}, n: 1 };\nclass K {}\n`);
+  const r = extractFile('src/main.ts', `const o = { go() {}, n: 1 };\nclass K {}\n`);
   assert.deepEqual(r.names, ['o', 'go', 'K']);
 });
 
@@ -161,7 +161,7 @@ function good() {
   const facts = extractFacts({
     git: false,
     sources: [
-      { path: 'src/main.js', text: MAIN },
+      { path: 'src/main.ts', text: MAIN },
       {
         path: 'src/world/rules/mushrooms.js',
         text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
@@ -358,10 +358,10 @@ test('the reader tells senders from receivers, and keeps core presence keys and 
   assert.deepEqual(net.owner, ['v', 'p']);
   const main = extractFacts({
     git: false,
-    sources: [{ path: 'src/main.js', text: MAIN }],
+    sources: [{ path: 'src/main.ts', text: MAIN }],
   });
   assert.deepEqual(main.loop, { pre: ['updateRemotes', 'world.step'], render: 'renderFrame' });
-  assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.js', text: 'const a = 1;' }] }).loop, null);
+  assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.ts', text: 'const a = 1;' }] }).loop, null);
 });
 
 test('hooks are core by reserved order, and lockstep comes from the lint globs', () => {

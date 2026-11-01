@@ -1,4 +1,4 @@
-import { COLORS, isTouch } from '../constants.js';
+import { COLORS, isTouch } from '../constants.ts';
 import { me, enterIsland } from './player.js';
 import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
 import { net, remotes } from '../netplay/net.ts';
@@ -6,7 +6,7 @@ import { inputState, requestLock } from './input.js';
 import { canvas } from '../render/scene.js';
 import { interactTarget, useVerb } from './hands.js';
 import { glyph, inputKind } from './glyphs.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 const $ = (id) => document.getElementById(id);
 export const dom = {
@@ -47,7 +47,7 @@ function updateHud() {
     document.body.classList.toggle('main-throws', label === 'Throw');
   }
 }
-// late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.js lists the orders).
+// late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.ts lists the orders).
 onFrame(updateHud, { phase: 'late', order: -190 });
 
 let peopleKey = '';
