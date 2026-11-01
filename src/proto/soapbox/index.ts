@@ -40,6 +40,7 @@ import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
 import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
+import { createGhost } from './ghost.ts';
 import { rollSound, chargeTick, boostSound, crashSound } from './sound.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
@@ -888,9 +889,12 @@ onFrame(
 );
 
 // The run: from the start circle to the line at the path's foot. Lives in run-hud.ts; told where the cart is here.
+const ghost = createGhost();
 runHud.configure({
   started: (x, z) => flat(x, z, START.x, START.z) > START_GO,
   finished: crossedFinish,
+  begun: () => ghost.begin(),
+  done: (t) => ghost.finish(t),
 });
 
 // ---------------------------------------------------------------- meshes: my cart, gates, remote carts
@@ -906,6 +910,10 @@ onFrame(
     lastP.set(ip.x, ip.y, ip.z);
     S.wheel = S.mode === 'parked' ? 0 : S.wheel;
     poseCart(mine, S.wheel, d);
+    // your best run, on the run clock (recorded while it runs; shown seated, from Ready to a second past its finish)
+    const clock = S.seated ? runHud.clock(physicsTime()) : null;
+    if (clock !== null && runHud.state.state === 'running') ghost.record(clock, pose.p, pose.q, S.wheel);
+    ghost.show(clock, dt);
     if (S.seated && me.avatar) sit(me.avatar, pose.q);
     // thrown out: a flip on the way, after feel.ts's spring (order 20) has set the lean
     if (S.tumble > 0 && me.avatar) {
@@ -1000,6 +1008,7 @@ window.__soapbox = {
   START,
   FINISH,
   LINE,
+  ghost,
   board,
   getOut,
   backToTop,

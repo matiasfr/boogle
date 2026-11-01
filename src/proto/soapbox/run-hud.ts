@@ -2,16 +2,24 @@
 // circle and stops on the finish line; a wipeout or getting out ends the run. Your best time stays in localStorage,
 // for you only (DESIGN.md 6: personal rewards; this one is not even a reward, just a number).
 import './soapbox.css';
+import { protoCount } from '../count.ts';
 
 type State = 'idle' | 'ready' | 'running' | 'done' | 'crashed';
 type Route = {
   started: (x: number, z: number) => boolean;
   finished: (px: number, pz: number, x: number, z: number) => boolean;
+  begun?: () => void; // the clock started
+  done?: (time: number) => number | null; // the clock stopped: the split against the ghost (s, + is slower), if any
 };
 export type RunHud = ReturnType<typeof createRunHud>;
 
 const KEY = 'boogle.soapbox.best';
 const fmt = (s: number) => s.toFixed(2);
+// the split against the ghost, to the hundredth: '+0.40 s' slower, '−0.40 s' ahead
+const fmtSplit = (s: number) => {
+  const r = Math.round(s * 100) / 100;
+  return (r < 0 ? '−' : '+') + Math.abs(r).toFixed(2) + ' s';
+};
 
 function loadBest() {
   try {
@@ -30,7 +38,9 @@ export function createRunHud() {
   big.className = 'soapbox-time';
   const small = document.createElement('div');
   small.className = 'soapbox-note';
-  el.append(big, small);
+  const split = document.createElement('div');
+  split.className = 'soapbox-split';
+  el.append(big, small, split);
   (document.querySelector('.hud') ?? document.body).append(el);
 
   let route: Route | null = null;
@@ -39,11 +49,13 @@ export function createRunHud() {
     pz = 0,
     hideAt = 0;
   const run = { state: 'idle' as State, time: 0, best: loadBest() };
-  const show = (a: string, b: string, cls = '') => {
+  const show = (a: string, b: string, cls = '', c = '') => {
     el.hidden = false;
     el.className = 'soapbox-run ' + cls;
     big.textContent = a;
     small.textContent = b;
+    split.textContent = c;
+    split.classList.toggle('is-ahead', c.startsWith('−'));
   };
   const bestNote = () => (run.best ? 'best ' + fmt(run.best) : '');
   const later = (ms: number) => (hideAt = performance.now() + ms);
@@ -52,6 +64,10 @@ export function createRunHud() {
     state: run,
     configure(r: Route) {
       route = r;
+    },
+    /** Run time at physics time `now`: 0 while ready, null when no run is on. */
+    clock(now: number) {
+      return run.state === 'ready' ? 0 : run.state === 'running' ? now - t0 : null;
     },
     ready() {
       run.state = 'ready';
@@ -82,6 +98,7 @@ export function createRunHud() {
       if (run.state === 'ready' && route.started(x, z)) {
         run.state = 'running';
         t0 = now;
+        route.begun?.();
       }
       if (run.state === 'running') {
         const t = now - t0;
@@ -97,7 +114,9 @@ export function createRunHud() {
               // storage unavailable: the best lasts this visit
             }
           }
-          show(fmt(t), pb ? 'New best!' : bestNote(), pb ? 'is-best' : 'is-done');
+          protoCount('runs');
+          const vs = route.done?.(t) ?? null;
+          show(fmt(t), pb ? 'New best!' : bestNote(), pb ? 'is-best' : 'is-done', vs === null ? '' : fmtSplit(vs));
         } else if (t > 60) {
           run.state = 'idle';
           el.hidden = true;
