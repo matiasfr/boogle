@@ -15,7 +15,7 @@ import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, toScreen } from '../render/scene.js';
-import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.js';
+import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.js';
 import { island } from '../island/index.js';

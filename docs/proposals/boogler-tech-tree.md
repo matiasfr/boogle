@@ -155,7 +155,7 @@ Feel numbers and sync for every vehicle are in [vehicles.md](vehicles.md).
 | --- | --- | --- |
 | 6.1 **Find the Qozon** | The big iron pot is lost in the abandoned mine in the caves. It is heavy: one player drags it slowly, two carry it at walking pace (R.E.P.O.-style carrying, slapstick on stairs). This is the first reason to go deep into the caves. | Owner while carried; resting place is Lockstep |
 | 6.2 *Coconut Osh* (joke) | Cook coconuts in the qozon. The result is a "crime". He will not talk about it, and the item gets the "dislike" reaction from him forever. | Lockstep (it's an item) |
-| 6.3 **The Tandir** | Pile sand into a clay oven and bake non: flat, round and stamped with **your own pattern** (a personal cosmetic). Non flies like the frisbee, using the glide in `src/physics/flight.js`. 🏐 Hit the ball with a flying non and the ball spins. | the oven is terrain plus a prop (Lockstep); a non in flight is Local replay |
+| 6.3 **The Tandir** | Pile sand into a clay oven and bake non: flat, round and stamped with **your own pattern** (a personal cosmetic). Non flies like the frisbee, using the glide in `src/physics/flight.ts`. 🏐 Hit the ball with a flying non and the ball spins. | the oven is terrain plus a prop (Lockstep); a non in flight is Local replay |
 | 6.4 **Sumalak Night** | A real-world event in the lore: "Everyone takes turns stirring and singing ... it takes forever." Start the pot at dusk (day-night already exists). Anyone who stirs adds to it, and **more different stirrers make it sweeter**. A steam column marks it for the whole island. At dawn, everyone who stirred gets a bowl (a personal keepsake); visitors who missed it find the pot scraped clean and a thank-you note. | Lockstep (a stir counter and a distinct-stirrer set); the pot is a function of the day cycle |
 | 6.5 **Oyijon's Apricot** | Plant one apricot sapling. It grows over **real weeks** into the tallest tree on the island and becomes a landmark, a big triangle in BotW's terms. The Boogler sits under it and counts apricots. Mirrors the tree Oyijon "planted the year I was born". | Lockstep, grown from elapsed time like the planned garden |
 
@@ -220,7 +220,7 @@ Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePres
 | Open pages, page progress, regulars, Boat Fund coins, contributor names | Lockstep | `src/sim/ledger.js` (pure, integer; it joins the ESLint lockstep list), `registerState('ledger')` |
 | Catch-up growth while nobody hosted | Lockstep op | `world.catchup(n)` from the communal report, a capped integer advance |
 | Partner card, cosmetics, known patterns, last-seen tick | Local (localStorage) | like `src/boogler/friendship.js` |
-| Carts, buggies, yachts, rafts, the qozon while carried | Owner | `addPresenceField`, epoch rule as in `src/physics/ball.js` |
+| Carts, buggies, yachts, rafts, the qozon while carried | Owner | `addPresenceField`, epoch rule as in `src/physics/ball.ts` |
 | The Seagull Courier, the king-tide crate | Host | `addHostField`, like The Boogler |
 | Wind, tide, Oyijon's letter schedule, sumalak night | Lockstep without state | functions of tick + seed (`src/sim/sky-clock.ts` style; the tide is the storm-tide `tideAt`) |
 | Letters, smiles, pattern stones, ruts, blue tiles | Lockstep, as edits | `registerOp` |

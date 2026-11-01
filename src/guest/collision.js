@@ -4,7 +4,7 @@
 // mask, so the caves swap the ground for their own colliders just as they do for the normal player.
 import { CELL, HALF, GRID_RES } from '../constants.ts';
 import { heights } from '../adapters/terrain.js';
-import { GROUP } from '../physics/physics.js';
+import { GROUP } from '../physics/physics.ts';
 import { forEachStatic } from '../physics/engine.ts';
 
 export const UNITS = 100; // engine units per metre

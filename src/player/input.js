@@ -2,7 +2,7 @@ import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.js';
 import { me, cam } from './player.js';
-import { respawnBall, releaseBall } from '../physics/ball.js';
+import { respawnBall, releaseBall } from '../physics/ball.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom } from './hud.js';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';

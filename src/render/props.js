@@ -6,7 +6,7 @@ import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from './scene.js';
-import { addStaticSpheres } from '../physics/physics.js';
+import { addStaticSpheres } from '../physics/physics.ts';
 import { onFrame } from '../loop.ts';
 import { freezeStatic } from './instances.ts';
 

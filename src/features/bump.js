@@ -3,7 +3,7 @@
 // first (claimBall, the normal epoch path) and apply the impulse in our own sim so it resolves immediately.
 import './bump.css';
 import { me, cam } from '../player/player.js';
-import { ball, claimBall } from '../physics/ball.js';
+import { ball, claimBall } from '../physics/ball.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.js';

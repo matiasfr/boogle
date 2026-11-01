@@ -81,7 +81,7 @@ For lockstep systems, clients send small **edit events** (plant, water, toss, ha
 | Thing | Authority |
 |---|---|
 | Your player's movement | You (client) |
-| The beach ball | Its current owner (epoch rule in [`src/physics/ball.js`](src/physics/ball.js)) |
+| The beach ball | Its current owner (epoch rule in [`src/physics/ball.ts`](src/physics/ball.ts)) |
 | Garden, gifts, weather | The server |
 | The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.js`](src/boogler/boogler.js)) |
 | Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler/play.js`](src/boogler/play.js), [`src/player/inventory.js`](src/player/inventory.js)) |

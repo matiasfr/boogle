@@ -2,7 +2,7 @@
 // the hotbar, thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
 const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
 const TP = (x, z, y) => `
-  const { teleport } = await import('/src/physics/physics.js');
+  const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});

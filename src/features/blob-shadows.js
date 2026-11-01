@@ -8,7 +8,7 @@ import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.js';
 import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { ball } from '../physics/ball.js';
+import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.ts';
 

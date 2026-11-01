@@ -5,8 +5,8 @@
 import * as THREE from 'three';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.ts';
 import { onPreStep, setMotion, getMask } from '../physics/engine.ts';
-import { waterField } from '../physics/water-field.js';
-import { ball, claimBall } from '../physics/ball.js';
+import { waterField } from '../physics/water-field.ts';
+import { ball, claimBall } from '../physics/ball.ts';
 import { scene } from '../render/scene.js';
 import { emit } from '../render/particles.js';
 import { me, cam } from '../player/player.js';

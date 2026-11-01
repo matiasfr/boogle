@@ -16,7 +16,7 @@
   (mushrooms); Rapier multiplies the two materials' values, and the player material has none. Reach 2.4 m. Throw: see 6.7 (the same module throws everything), plus spin 8 rad/s. Bump: reach 3.4 m, 9.2 m/s up, 3.4 m/s forward, keeps
   25 % of old velocity, capped at 10.4 m/s, 300 ms cooldown. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
-- **Files.** [src/physics/ball.js](../../src/physics/ball.js), [src/physics/physics.js](../../src/physics/physics.js), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
+- **Files.** [src/physics/ball.ts](../../src/physics/ball.ts), [src/physics/physics.ts](../../src/physics/physics.ts), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
   orders −300 and −280 in the `world` phase, listed in [src/loop.ts](../../src/loop.ts)), [src/features/bump.js](../../src/features/bump.js), [src/features/impact.js](../../src/features/impact.js)
   (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../../src/render/splash.js).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;

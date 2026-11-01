@@ -35,7 +35,7 @@
 import * as THREE from 'three';
 import { me, cam } from './player.js';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
-import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.js';
+import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.js';
 import { throwItem } from '../adapters/gifts.js';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.js';

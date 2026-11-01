@@ -7,8 +7,8 @@ import { onFrame, onStart } from '../loop.ts';
 import { scene } from '../render/scene.js';
 import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { waterField } from '../physics/water-field.js';
-import { ball } from '../physics/ball.js';
+import { waterField } from '../physics/water-field.ts';
+import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.js';
 import { remotes } from '../netplay/net.ts';
 

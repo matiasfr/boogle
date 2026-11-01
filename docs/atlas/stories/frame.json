@@ -27,7 +27,7 @@
           "symbol": "frame"
         },
         {
-          "file": "src/physics/physics.js"
+          "file": "src/physics/physics.ts"
         }
       ]
     },

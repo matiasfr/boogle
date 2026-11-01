@@ -3,17 +3,17 @@
 > **Status: done (2026-10-31): Rapier is the only physics engine; cannon-es is removed.** Part of [architecture.md](architecture.md), phase 2.
 > Why: cannon-es allocates about 60 KB of JS garbage per frame inside `world.step` (measured with
 > `npm run hitches -- --allocs`, [game-loop.md](game-loop.md) step 2), has no continuous collision (the fall-speed cap
-> and fall-through net in `src/physics/physics.js` exist for that), and is pure JS on the main thread. Rapier
+> and fall-through net in `src/physics/physics.ts` exist for that), and is pure JS on the main thread. Rapier
 > (`@dimforge/rapier3d-compat`) runs in WASM: no JS garbage per step, continuous collision, faster narrowphase, and it
 > can run in a worker later (game-loop.md step 7). Each step is one PR that leaves `main` green; physics feel is the
 > risk, so nothing changes for players until step 4.
 
 ## What uses physics today (2026-10-31)
 
-About 15 modules. The heaviest are `src/physics/physics.js` (world, ground, player controller, fall net),
-`src/physics/ball.js`, `src/adapters/mushroom-garden.js` (growing colliders, bounce), `src/player/player.js`,
+About 15 modules. The heaviest are `src/physics/physics.ts` (world, ground, player controller, fall net),
+`src/physics/ball.ts`, `src/adapters/mushroom-garden.js` (growing colliders, bounce), `src/player/player.js`,
 `src/pois/windmills/`, `src/pois/caves/`, `src/pois/lighthouse/`, `src/guest/`, `src/boogler/` and
-`src/physics/flight.js`. They use spheres, boxes, cylinders, a heightfield, two trimeshes and one convex polyhedron;
+`src/physics/flight.ts`. They use spheres, boxes, cylinders, a heightfield, two trimeshes and one convex polyhedron;
 dynamic, kinematic and static bodies; collision groups and masks (`GROUP` in `physics.js`); non-colliding bodies
 (`collisionResponse = false`); four contact materials; `preStep`/`postStep` listeners in nine modules;
 `world.contacts` (ground and impact checks); one `raycastClosest`; and `interpolatedPosition` for drawing.

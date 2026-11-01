@@ -61,10 +61,10 @@ a few hooks anyone can reuse:
 
 - `setTerrainHoles` (`src/adapters/terrain.js`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
   hillside. Visual only.
-- Collision groups (`GROUP` in `src/physics/physics.js`): the ground and surface scenery are `SCENERY`, the cave's colliders
+- Collision groups (`GROUP` in `src/physics/physics.ts`): the ground and surface scenery are `SCENERY`, the cave's colliders
   `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.
   Bodies moved by code (remote players, the Boogler, windmill sails) use `NOT_SCENERY` and skip static stuff entirely.
-- `groundProbe.under` (`src/physics/physics.js`): the floor under a point, for code that would otherwise read the terrain.
+- `groundProbe.under` (`src/physics/physics.ts`): the floor under a point, for code that would otherwise read the terrain.
 - `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
   (which puts bodies under the terrain back on top) leaves that area to your own safety net.
 - `camConstraints` (`src/player/player.js`): keep the camera somewhere special (inside the tunnels).

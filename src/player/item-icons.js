@@ -9,7 +9,7 @@
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv, vec4 } from 'three/tsl';
 import { renderer } from '../render/scene.js';
-import { ball } from '../physics/ball.js';
+import { ball } from '../physics/ball.ts';
 import { itemModel } from './item-models.js';
 
 const ICON = 96;

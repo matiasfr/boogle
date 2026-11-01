@@ -1,7 +1,7 @@
 // The caves: walk in at the south mouth, through the hub and the mine, out of the east mouth; balls thrown hard stay
 // inside; the ball floats on the underground pond. Physics is stepped directly in the page (fast and repeatable).
 const STEP_ROUTE = `
-  const { GROUP } = await import('/src/physics/physics.js');
+  const { GROUP } = await import('/src/physics/physics.ts');
   const { stepFixed, getMask } = await import('/src/physics/engine.ts');
   const { SEGMENTS } = await import('/src/pois/caves/network.js');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
@@ -35,7 +35,7 @@ const STEP_ROUTE = `
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
-  const { ball, claimBall } = await import('/src/physics/ball.js');
+  const { ball, claimBall } = await import('/src/physics/ball.ts');
   const { caveSd } = await import('/src/pois/caves/mesh.js');
   const { NODES, POND } = await import('/src/pois/caves/network.js');
   claimBall(false);

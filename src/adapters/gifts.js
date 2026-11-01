@@ -10,11 +10,11 @@ import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
-import { waterField } from '../physics/water-field.js';
+import { waterField } from '../physics/water-field.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../sim/gifts.ts';
 import { itemModel } from '../player/item-models.js';
-import { STEP, flyPath, dropPoint } from '../physics/flight.js';
+import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
 import { inv, take, roomFor } from '../player/inventory.js';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
 import { splash } from '../render/splash.js';

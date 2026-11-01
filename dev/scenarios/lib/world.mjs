@@ -48,7 +48,7 @@ export async function hashesAtOneTick(host, client) {
 
 // Put the player at (x, z), standing on the ground unless `y` is given.
 export const TP = (x, z, y) => `
-  const { teleport } = await import('/src/physics/physics.js');
+  const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});

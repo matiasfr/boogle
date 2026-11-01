@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
-import { playerMat, NOT_SCENERY } from '../physics/physics.js';
+import { playerMat, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, BODY } from '../physics/engine.ts';
 import { warmUp } from '../render/precompile.js';
 

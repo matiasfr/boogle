@@ -2,8 +2,8 @@
 // thing flies, and the launch velocity. src/player/throw.ts reads the camera and the hand and calls these. Serves
 // DESIGN.md 10 (slapstick: every throw feels the same, whatever you hold).
 //
-//   flight   'ball' the beach ball's own physics body (src/physics/ball.js), 'plain' an ordinary thing and 'glide' the
-//            frisbee, both scripted flights (src/physics/flight.js)
+//   flight   'ball' the beach ball's own physics body (src/physics/ball.ts), 'plain' an ordinary thing and 'glide' the
+//            frisbee, both scripted flights (src/physics/flight.ts)
 export type Profile = {
   power0: number; // m/s at no charge
   powerK: number; // extra m/s at full charge

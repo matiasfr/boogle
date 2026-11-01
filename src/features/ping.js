@@ -9,7 +9,7 @@ import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { clamp } from '../math.ts';
 import { me, camForward } from '../player/player.js';
-import { ball } from '../physics/ball.js';
+import { ball } from '../physics/ball.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.js';
 import { onFrame, onStart } from '../loop.ts';

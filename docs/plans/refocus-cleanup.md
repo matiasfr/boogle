@@ -159,7 +159,7 @@ come from it.
     `submitEdit({ op: 'ball.rest', i: 0, j: 0, x, y, z })` with `Math.round(m * 100)` of `ball.disp.p`.
   - **Restore:** in `onSnapshot`, the first time only, if `rules.ball.rest()` is not null, it calls
     `placeBall(x / 100, y / 100 + 0.05, z / 100)`.
-- `src/physics/ball.js` gains `placeBall(x, y, z)`. It returns false without doing anything if `ball.owner?.remote`
+- `src/physics/ball.ts` gains `placeBall(x, y, z)`. It returns false without doing anything if `ball.owner?.remote`
   (a live ball elsewhere wins) or `ball.held`. Otherwise it sets `disp.p`, zeroes `disp.v`, calls `teleport`, zeroes
   the body's linear and angular velocity, copies the mesh position, calls `sendPresence()` if `ball.mine`, and
   returns true.
@@ -194,7 +194,7 @@ come from it.
   `me.chargeStart`, because `prompt.js`, `bump.js`, `impact.js`, `input.js` and `hotbar.js` read or reset it. Only
   `throw.ts` starts a charge.
 - The preview steps each kind with its own flight: `'plain'` and `'glide'` with `stepFlight` as today, and `'ball'`
-  with a new `stepBall(p, v, dt)` in `src/physics/flight.js` (gravity plus Rapier's linear damping,
+  with a new `stepBall(p, v, dt)` in `src/physics/flight.ts` (gravity plus Rapier's linear damping,
   `v *= 1 / (1 + dt * BALL_DAMPING)`). Today the ball's preview uses item drag, so it promises a longer arc than the
   ball flies. `BALL_DAMPING = 0.12` moves to `src/constants.ts`, and `ball.js` uses it for `linearDamping`.
 - Items keep the scripted `flyPath` and the lockstep `gift.toss` landing. The ball keeps physics. The frisbee keeps
@@ -499,12 +499,12 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     and then `throwHeld(chargeAmount())`. `throwHeld(c)` calls `const { p, v } = launch(id, c)`, then
     `throwBall(p, v)` for the ball, or `useOne()` and `throwItem(kind, p, v)` for items (with `take(id)` on failure,
     as now). Update the header (no "fruit") and the imports.
-  - `src/physics/ball.js`: `throwBall(p, v)` uses the given launch (same spin rule) and no longer imports
+  - `src/physics/ball.ts`: `throwBall(p, v)` uses the given launch (same spin rule) and no longer imports
     `throwVelocity`. `releaseBall` and `respawnBall` call `cancelCharge()` from `../player/throw.ts`. `linearDamping`
     is `BALL_DAMPING`. `throw.ts` must never import `ball.js`.
   - `src/features/debug-handle.js`: `tossBall(charge)` becomes `grabBall(); const { p, v } = launch('ball', charge);
     throwBall(p, v);`, importing `launch` from `../player/throw.ts`. The nightly and live `smoke` use it, so check it.
-  - `src/physics/flight.js`: add `stepBall(p, v, dt = STEP)` (and list it in the header).
+  - `src/physics/flight.ts`: add `stepBall(p, v, dt = STEP)` (and list it in the header).
   - `src/constants.ts`: `export const BALL_DAMPING = 0.12`.
   - `src/player/hud.js`: the charge meter uses `chargeOf` from `throw-curve.ts` (Design explains why not `throw.ts`).
   - `src/loop.ts`: the order comment "late -200 player.js: throw preview" names `throw.ts`.
@@ -524,7 +524,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - Edits:
     - `src/world/rules/index.ts`: one appended import and `ball` at the end of `RULES` (hotspot: those lines only);
     - `src/world/rules/types.ts`: the `Rules` entry;
-    - `src/physics/ball.js`: `placeBall`;
+    - `src/physics/ball.ts`: `placeBall`;
     - `test/fixtures/world-inputs.json`: `"ball"` appended to `states`, `"ball.rest"` to `ops`;
     - `test/world-rules.test.mjs`: `'ball'` appended to `CANONICAL`, and
       `SCRIPTS.ball = () => [{ op: 'ball.rest', i: 0, j: 0, x: 1200, y: 150, z: 2000 }]`;

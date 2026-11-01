@@ -3,7 +3,7 @@ import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion 
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
-import { teleport } from '../physics/physics.js';
+import { teleport } from '../physics/physics.ts';
 import { addBody } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.ts';

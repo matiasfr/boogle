@@ -11,7 +11,7 @@ import { emit } from '../render/particles.js';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { clamp, lerp } from '../math.ts';
-import { ball } from '../physics/ball.js';
+import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { onFrame } from '../loop.ts';

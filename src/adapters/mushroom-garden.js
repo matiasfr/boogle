@@ -8,12 +8,12 @@ import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '..
 import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
-import { groundMat, GROUP } from '../physics/physics.js';
+import { groundMat, GROUP } from '../physics/physics.ts';
 import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/player.js';
 import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
-import { waterField } from '../physics/water-field.js';
-import { dropPoint } from '../physics/flight.js';
+import { waterField } from '../physics/water-field.ts';
+import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.js';
 import { itemModel } from '../player/item-models.js';
 import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.js';
