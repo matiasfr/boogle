@@ -71,5 +71,6 @@ and test it.
 
 ## 5. Is driving a vehicle fun?
 
-- [ ] **Soapbox cart:** an Owner vehicle down the lighthouse path (`?proto=soapbox`).
+- [x] **Soapbox cart:** an Owner vehicle down the lighthouse path (`?proto=soapbox`;
+      [docs/game-design/soapbox.md](../game-design/soapbox.md)).
 - [ ] **Playtest 5.**
