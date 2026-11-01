@@ -93,6 +93,8 @@ These are standing preferences from the thread.
 
 ### Process
 
+- **2026-11-01, start the asset pipeline now** (owner), ahead of the first authored model: glTF with meshopt or Draco geometry and KTX2 (Basis Universal) textures, ready for Blender (and Blender MCP) to feed it, including animated construction (scaffolding, pieces). Code stays the default where code is quicker or better; the split is written in [asset-pipeline.md](../plans/asset-pipeline.md). Was "when the first authored model lands" (architecture-fit, phase 5), see Changed.
+
 - **2026-11-01, the lowest target device is an M4 iPad Pro** (owner: "likely"). Replaces the 2021 iPad and mid-range Android phone in [architecture.md](../plans/architecture.md)'s assumptions. The visual quality target is set by a code-only graphics spike measured against it (find-the-fun.md, "Depth tracks").
 
 - **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
@@ -107,6 +109,7 @@ These are standing preferences from the thread.
 
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
 - **2026-11-01:** the haul stack's sway and jump spill (0.1 groundwork) were cut after the first solo haul playtest: the owner wants a plain back bundle.
+- **2026-11-01:** the asset pipeline moved from "when the first authored model lands" to now, so Blender work can start as soon as a look is picked.
 - **2026-11-01:** implementers moved from Sonnet to Opus at medium effort.
 
 ## Parked by the owner
