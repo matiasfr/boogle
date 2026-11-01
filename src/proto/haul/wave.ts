@@ -79,7 +79,6 @@ const spotAt = SPOTS.map((s) => new THREE.Vector3(s.x, sandAt(s.x, s.z), s.z));
 SPOTS.forEach((s) => bundlePole(s.x, s.z));
 const REACH = 2.6;
 const pending = new Map<number, number>(); // group -> ms of the press
-const mine = new Map<number, number>(); // source id -> group, for the takes we sent
 registerInteractable(() => {
   if (!me.body || !claim()) return NO_TARGETS;
   const pos = me.body.interpolatedPosition;
@@ -102,10 +101,7 @@ registerInteractable(() => {
               let sent = 0;
               for (const id of groups[g])
                 for (let c = rules.sources.charges(id); c > 0 && sent < n; c--)
-                  if (submitEdit({ op: 'src.take', i: 0, j: 0, id })) {
-                    mine.set(id, g);
-                    sent++;
-                  }
+                  if (submitEdit({ op: 'src.take', i: 0, j: 0, id })) sent++;
               if (sent) pending.set(g, now);
             },
           },
@@ -331,7 +327,7 @@ function showChip(text: string, urgent: boolean) {
 // ---------------------------------------------------------------- every frame
 let lastPhase = '',
   lastN = -1,
-  hornAt = -1,
+  blasted = false, // this wave's two short blasts at 10 s
   splashT = 0;
 onFrame(
   ({ dt }: { dt: number }) => {
@@ -343,11 +339,11 @@ onFrame(
     // telegraph: the horn at the start of the warning and two short blasts at 10 s
     if (ph.phase === 'warn' && (lastPhase !== 'warn' || lastN !== ph.n)) {
       if (left > WAVE.warn - 1.5) horn(1);
-      hornAt = 0;
+      blasted = false;
     }
-    if (ph.phase === 'warn' && left < 10 && hornAt === 0) {
+    if (ph.phase === 'warn' && left < 10 && !blasted) {
       horn(2);
-      hornAt = 1;
+      blasted = true;
     }
     if (ph.phase === 'sweep' && lastPhase === 'warn') whoosh(1);
     lastPhase = ph.phase;
