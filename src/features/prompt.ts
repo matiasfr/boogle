@@ -1,4 +1,4 @@
-// The interact prompt: what E (pad B, the touch action button) would act on, marked where it is with the button and the
+// The interact prompt: what E (pad X, the touch action button) would act on, marked where it is with the button and the
 // verb, "[E] Pick up" floating over the can, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
 // itself; see registerInteractable in src/player/hands.ts). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
@@ -11,7 +11,7 @@ import { toScreen } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
 import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
-import { dialogue } from '../boogler/dialogue.ts';
+import { conversation } from '../player/conversation.ts';
 import { glyph } from '../player/glyphs.ts';
 
 const onScreen = { x: 0, y: 0, behind: false };
@@ -39,7 +39,7 @@ function build() {
 onFrame(
   () => {
     const root = ui.root ?? build();
-    const t = me.entered && !me.charging && !dialogue.open ? interactTarget() : null;
+    const t = me.entered && !me.charging && !conversation.open ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');

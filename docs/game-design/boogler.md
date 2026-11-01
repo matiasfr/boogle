@@ -54,15 +54,17 @@ frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
 
 ## Talk
 
-- Open with E / pad B within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
-  second and lists answers; a present answer offers what is in your hand (he turns down key items: the ball). His portrait can be petted.
+- Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
+  second and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
+  ([npcs.md](npcs.md)): A / E says the selected answer, D-pad or stick / ↑ ↓ picks, B / Esc leaves, Y pets; a present answer offers what is in your hand (he turns down key items: the ball). His portrait can be petted.
   On a phone the card keeps off the move stick (the left 45 %): to the right in landscape, at the top in portrait.
-- **Easy in, easy out.** Talks are short and you keep playing: walk more than 4.6 m away, hop on his back, open the
-  pause view, or press E / Esc / pad B / the close button (on a phone, the main button, which says Leave while you
-  talk) and the talk ends at once, with his farewell (by level) as a
+- **Easy in, easy out.** Talks are short. You stand still while one is open (the camera turns to frame him), and
+  pressing Esc / pad B / the close button (on a phone, also the main button, which says Leave while you talk), opening
+  the pause view, hopping on his back or ending up more than 4.6 m away (a ball knocks you) ends it at once, with his
+  farewell (by level) as a
   speech bubble over his head (none while he is cross: a kick-off, wary or quiet talk). A finished chapter, small talk
   or present also ends the talk, with a "What else?" line as a bubble (or the level-up line); E opens the menu again.
-  The kick-off telling-off ignores distance (you may have flown far), but E / Esc still close it.
+  The kick-off telling-off ignores distance (you may have flown far), but Esc / pad B still close it.
 - **Bookmarks.** Leave a story chapter halfway and he remembers where (flag `at.<thread>` = `<chapter>.<node>`); asking
   about that thread again picks it up there, opened with "Now, where was I? Ah, yes." or "As I was saying, before you
   ran off..." (`RESUME`).

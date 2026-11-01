@@ -12,8 +12,8 @@ import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
 import { canvas } from '../render/scene.ts';
 import { openModal, closeModal, modalOpen } from '../player/modal.ts';
-import { dialogue } from '../boogler/dialogue.ts';
-import { registerAction, isTyping } from '../player/controls.ts';
+import { conversation } from '../player/conversation.ts';
+import { registerAction, isTyping, menuSlot } from '../player/controls.ts';
 import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 
@@ -287,8 +287,8 @@ function onPad(slot: string) {
   else if (slot === 'down') move(1);
   else if (slot === 'left') moveTab(-1);
   else if (slot === 'right') moveTab(1);
-  else if (slot === 'a') document.activeElement?.closest<HTMLElement>('.pause button')?.click();
-  else if (slot === 'b') {
+  else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();
+  else if (slot === menuSlot('back')) {
     if (page === 'main') closePause();
     else show('main');
   } else if (slot === 'menu') closePause();
@@ -354,7 +354,7 @@ addEventListener(
   'keydown',
   (e) => {
     if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered) return;
-    if (e.code === 'Escape' && dialogue.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
+    if (e.code === 'Escape' && conversation.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
     if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     if (openPause(e.code === 'KeyH' ? 'controls' : 'main')) {
       e.preventDefault();
@@ -365,11 +365,11 @@ addEventListener(
 );
 
 // Esc ends the pointer lock: that is the way in on a desktop. This view releases the lock after it marks itself open
-// (openModal), so it does not trigger it; during a talk, losing the lock ends the talk instead (src/boogler/dialogue.ts).
+// (openModal), so it does not trigger it; during a talk, losing the lock ends the talk instead (src/player/conversation.ts).
 let wasLocked = false;
 document.addEventListener('pointerlockchange', () => {
   const locked = !!document.pointerLockElement;
-  if (wasLocked && !locked && me.entered && !modalOpen() && !dialogue.open && inputKind() !== 'touch') openPause();
+  if (wasLocked && !locked && me.entered && !modalOpen() && !conversation.open && inputKind() !== 'touch') openPause();
   wasLocked = locked;
 });
 

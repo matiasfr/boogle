@@ -1,15 +1,15 @@
-// The talk box: The Boogler's line typed out, your answers as buttons (or number keys; a gift answer shows the gift),
-// the friendship meter, his portrait to pet (pad Y), and a close button (Escape, E, pad B). Not a modal: the game keeps
-// playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.ts). It
-// takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
+// The talk box: The Boogler's line typed out, your answers as buttons (a gift answer shows the gift), the friendship
+// meter, his portrait to pet (pad Y), a close button, and the button hints for the input in use. Its keys, pad buttons,
+// taps, the held movement and the camera are the shared NPC talk input (src/player/conversation.ts): confirm (pad A or
+// X, E, Space, Enter) skips the typing and says the selected answer, up and down pick, number keys answer at once, back
+// (pad B, Esc) leaves.
 import { reducedMotion } from '../constants.ts';
-import { setPadGrab } from '../player/controls.ts';
-import { modalOpen } from '../player/modal.ts';
+import { openConversation, closeConversation } from '../player/conversation.ts';
 import { heartsText } from './friendship.ts';
 import { boogler } from './boogler.ts';
 import { GIFTS } from '../sim/gift-catalog.ts';
 import { setIcon } from '../player/item-icons.ts';
-import { glyph } from '../player/glyphs.ts';
+import { glyph, inputKind, padBrand } from '../player/glyphs.ts';
 
 const CHARS_PER_S = 48;
 const REACT_MS = 1500;
@@ -60,6 +60,7 @@ const MARKUP = `
       </div>
       <p class="bd-say" aria-live="polite"></p>
       <div class="bd-opts" role="group" aria-label="Your answer"></div>
+      <div class="talk-hints bd-hints" hidden></div>
     </div>
   </div>`;
 
@@ -79,7 +80,8 @@ type Dom = Record<
   | 'bond'
   | 'bar'
   | 'say'
-  | 'opts',
+  | 'opts'
+  | 'hints',
   HTMLElement
 > & { root: HTMLElement };
 type Current = {
@@ -121,18 +123,11 @@ function dom(): Dom {
     bar: q('.bd-bar i'),
     say: q('.bd-say'),
     opts: q('.bd-opts'),
+    hints: q('.bd-hints'),
   });
-  // Only the card takes taps and clicks (boogler.css); the joystick and the canvas work around it.
-  d.wrap.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    if (cur?.typing && !(e.target as Element | null)?.closest('button')) finishTyping();
-  });
+  // Only the card takes taps and clicks (boogler.css); the canvas works around it.
+  d.wrap.addEventListener('pointerdown', (e) => e.stopPropagation());
   d.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
-  // On a desktop, Escape with the pointer locked only ends the lock (the page never sees the key): that ends the talk.
-  // Added on first use, after src/features/pause.ts's own listener, which skips the pause view while a talk is open.
-  document.addEventListener('pointerlockchange', () => {
-    if (!document.pointerLockElement && !document.body.classList.contains('touch')) cur?.onClose?.();
-  });
   d.faceBtn.addEventListener('click', () => cur?.onPet?.());
   d.close.addEventListener('click', () => cur?.onClose?.());
   return d;
@@ -153,31 +148,19 @@ function choose(i: number) {
   cur.onPick(i);
 }
 
-const focusedBtn = () => (document.activeElement?.closest?.('.bd button') as HTMLButtonElement | null) ?? null;
-function moveFocus(dir: number) {
-  const btns = [...dom().opts.querySelectorAll('button')];
-  const k = btns.indexOf(document.activeElement as HTMLButtonElement);
-  const next = k < 0 ? (dir > 0 ? 0 : btns.length - 1) : (k + dir + btns.length) % btns.length;
-  btns[next]?.focus({ preventScroll: true });
-}
-
-// D-pad picks an answer, A or X skips the typing and then says it, Y pets him, B walks away. With no answer picked
-// yet, A picks the first one rather than saying it. The stick and the other buttons stay with the game.
-const PAD_SLOTS = ['a', 'b', 'x', 'y', 'up', 'down'];
-function padPress(slot: string) {
-  if (!cur) return;
-  if (slot === 'b') cur.onClose?.();
-  else if (slot === 'y') cur.onPet?.();
-  else if (slot === 'up' || slot === 'down') moveFocus(slot === 'down' ? 1 : -1);
-  else if (slot === 'a' || slot === 'x') {
-    if (cur.typing) finishTyping();
-    else if (focusedBtn()) focusedBtn()!.click();
-    else moveFocus(1);
-  }
+// The close button and the pet badge show the button for the input in use (a cross and a hand on touch).
+let glyphKey = '';
+function refreshGlyphs() {
+  const key = inputKind() + padBrand();
+  if (key === glyphKey) return;
+  glyphKey = key;
+  const d = dom();
+  d.close.innerHTML = glyph('close') || CROSS;
+  d.pet.innerHTML = glyph('pet') || HAND;
 }
 
 // view: { say, mood, opts, gifts? } (gifts[i]: the catalog index answer i hands over); bond: { level, name, frac };
-// onPick(i) answers; onClose() runs on Escape and the close button; onPet() on the portrait.
+// onPick(i) answers; onClose() runs on back (Esc, pad B) and the close button; onPet() on the portrait (pad Y).
 export function showDialogue(
   view: DialogueView,
   bond: Bond,
@@ -187,14 +170,23 @@ export function showDialogue(
 ) {
   const d = dom();
   const opening = !dialogue.open;
-  if (opening && modalOpen()) return; // the pause view is up
-  if (opening) setPadGrab(padPress, PAD_SLOTS);
+  if (opening) {
+    const talk = {
+      box: d.wrap,
+      typing: () => !!cur?.typing,
+      skip: finishTyping,
+      choices: () => (cur?.typing ? [] : [...d.opts.querySelectorAll<HTMLButtonElement>('button')]),
+      close: () => cur?.onClose?.(),
+      extra: { y: () => cur?.onPet?.() },
+      focus: () => boogler.center,
+      hints: d.hints,
+    };
+    if (!openConversation(talk)) return; // the pause view is up, or another talk
+    glyphKey = '';
+    refreshGlyphs();
+  }
   dialogue.open = true;
   d.root.hidden = false;
-  if (opening) {
-    d.close.innerHTML = glyph('close') || CROSS;
-    d.pet.innerHTML = glyph('pet') || HAND;
-  }
   if (performance.now() >= react.until) d.face.innerHTML = portrait(view.mood);
   setBond(bond);
   cur = {
@@ -296,12 +288,13 @@ export function closeDialogue() {
   react.until = 0;
   const d = dom();
   d.pop.hidden = true;
-  setPadGrab(null);
+  closeConversation();
   boogler.me.speaking = false;
   d.root.hidden = true;
 }
 
 export function updateDialogue(now: number) {
+  if (dialogue.open) refreshGlyphs();
   if (react.until && now >= react.until) {
     react.until = 0;
     dom().pop.hidden = true;
@@ -315,23 +308,3 @@ export function updateDialogue(now: number) {
   }
   if (n >= cur.text.length) finishTyping();
 }
-
-// Capture phase on window, so it runs before the game's own key handlers; it stops only the keys it answers with
-// (number keys would also switch the hotbar slot) and lets the rest through to the game.
-addEventListener(
-  'keydown',
-  (e) => {
-    if (!cur || e.ctrlKey || e.metaKey || e.altKey) return;
-    const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
-    if (!digit && e.code !== 'Escape' && e.code !== 'KeyE' && e.code !== 'Enter') return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if (e.repeat) return;
-    if (e.code === 'Escape' || e.code === 'KeyE') cur.onClose?.();
-    else if (cur.typing)
-      finishTyping(); // skipping the typing never also picks an answer
-    else if (digit) choose(Number(digit[1]) - 1);
-    else focusedBtn()?.click(); // Enter: a button focused with Tab
-  },
-  { capture: true },
-);

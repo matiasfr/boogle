@@ -1,0 +1,30 @@
+/* The shared talk input (src/player/conversation.ts): the selected answer and the button hints row. A talk box may
+   restyle both; these are the defaults. */
+body:not(.touch) .talk-sel {
+  background: var(--sun) !important;
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+}
+.talk-hints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+  margin-top: 10px;
+  font: 800 13px/1 var(--font-body);
+  color: var(--ink-soft, var(--ink));
+}
+.talk-hints[hidden] {
+  display: none;
+}
+.talk-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.talk-hint .g-cluster {
+  gap: 2px;
+}
+.talk-hint .g-pad + .g-pad {
+  margin-left: -3px;
+}

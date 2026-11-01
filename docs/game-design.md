@@ -70,6 +70,7 @@ tick of 100 ms (10 per second).
 - [6.13 Pause view and controls guide](game-design/pause.md)
 - [6.14 First-run card](game-design/first-run.md)
 - [6.15 Telemetry and updates](game-design/telemetry-and-updates.md)
+- [6.16 Talking to NPCs](game-design/npcs.md)
 - [6.17 The dino and the guest](game-design/dino-and-guest.md)
 - [6.18 Graphics and devices](game-design/graphics.md)
 - [6.19 Haul: piles, the stack, sources and work sites](game-design/haul.md)
