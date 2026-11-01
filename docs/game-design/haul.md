@@ -87,7 +87,9 @@ clanks down with sparks, the funnel chuffs as it goes and the Track ring's pile 
 end, then rolls up to park on the next section. Its deck is a platform: hop on and ride it. Once the whole route is
 laid it sinks away. With the ?proto=wagon train standing at the end of the line (its loco overhangs the railhead by
 about 5 m), the machine waits just ahead of the loco's nose instead of backing into it, and drops back to the head
-as the train pulls away (drawn only: the run's timing is the same).
+as the train pulls away (drawn only: the run's timing is the same). With a faked laid count (the wagon panel's +,
+`?laid=N`) the train runs on over the open section, so the machine sinks into the ground until it is back off it
+(it is solid, and would sweep riders off the decks).
 
 **Run variants** (`?room=proto-lay&proto=lay&v=crawl|quick|push`, docs/plans/find-the-fun.md step 3). The room's run
 is the `run` tune key (proto- rooms; never changed mid-run): crawl (0, the default above), quick (1: 1.5 s warm, 11 s
