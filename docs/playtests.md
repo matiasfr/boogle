@@ -38,3 +38,8 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Broke: boogle.club showed only the sky (no terrain, players) on Safari 27, with and without `?proto`. Cause: discarding the MSAA samples (memoryless attachments, new in Safari 27). Reverted; the island shows.
 - Broke: Fullscreen on iPad: once in it, controls stopped working.
 - Broke: mushrooms don't bounce; standing on one you're stuck, like an animation resetting.
+
+## 2026-11-02 (iPad + controller)
+- Who: Matias, solo.
+- Broke: the watering can icon is upside down.
+- Felt off: Interact is on B; he expects X / Square, and B prompts everywhere confused him. Dialogue with The Boogler needs a controller pass that scales to other NPCs.
