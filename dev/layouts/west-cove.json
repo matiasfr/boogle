@@ -55,7 +55,7 @@
         "name": "Mine Isle",
         "era": 3,
         "x": -330,
-        "z": -20,
+        "z": -30,
         "r": 55,
         "link": "iron trestle",
         "from": "home"
@@ -74,8 +74,8 @@
         "id": "melon",
         "name": "Melon Isle",
         "era": 5,
-        "x": 60,
-        "z": -420,
+        "x": 100,
+        "z": -640,
         "r": 95,
         "link": "concrete causeway",
         "from": "home"
@@ -84,8 +84,8 @@
         "id": "outer",
         "name": "Outer Isles",
         "era": 6,
-        "x": 420,
-        "z": -120,
+        "x": 560,
+        "z": -220,
         "r": 70,
         "link": "electric viaduct",
         "from": "home"
