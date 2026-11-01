@@ -12,7 +12,7 @@ import { onApplied, submitEdit } from '../world/sync.ts';
 import { registerInteractable, type Interactable } from '../player/hands.ts';
 import { me } from '../player/player.ts';
 import { net } from '../netplay/net.ts';
-import { cellX, cellZ, groundHeight } from '../adapters/terrain.js';
+import { cellX, cellZ, groundHeight } from '../adapters/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
 import { FULL, type Cell } from '../sim/sources.ts';
 import { materialOf } from '../sim/materials.ts';
@@ -20,7 +20,7 @@ import { materialOf } from '../sim/materials.ts';
 // The home palm cells: where the wood age's log bundles lie (src/world/rules/sources.ts reads them). Filled before the
 // first world tick, so every client builds the same list.
 onStart(() => {
-  const cells = land.layout.trees as Cell[]; // the land's own type says never[]
+  const cells = land.layout.trees;
   for (const t of trees.slice(0, 64))
     cells.push({ i: Math.round((t.x + HALF) / CELL), j: Math.round((HALF - t.z) / CELL) });
   const handle = (window as unknown as { boogle?: Record<string, unknown> }).boogle;

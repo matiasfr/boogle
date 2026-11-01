@@ -7,7 +7,7 @@ const seed = () => {
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d, a) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { boogler } = window.boogle, b = window.boogle.me.body, p = boogler.disp;
   const x = p.x + Math.cos(${a}) * ${d}, z = p.z + Math.sin(${a}) * ${d};
   b.position.set(x, ${d} ? groundHeight(x, z) + 1 : boogler.center.y + 1.6, z);

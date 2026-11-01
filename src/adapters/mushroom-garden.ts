@@ -5,7 +5,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
-import { heights, groundHeight, cellX, cellZ } from './terrain.js';
+import { heights, groundHeight, cellX, cellZ } from './terrain.ts';
 import { scene } from '../render/scene.ts';
 import { obstacles } from '../render/props.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
@@ -18,6 +18,21 @@ import { splash } from '../render/splash.ts';
 import { itemModel } from '../player/item-models.ts';
 import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.ts';
 import { GROW_TICKS } from '../sim/mushrooms.ts';
+import type { Body } from '../physics/engine.ts';
+import type { Interactable } from '../player/hands.ts';
+
+/** The meshes and collider drawn for one garden plot. */
+type Visual = {
+  root: THREE.Group;
+  mound: THREE.Mesh;
+  sprout: THREE.Mesh;
+  shroom: THREE.Group;
+  body: Body | null;
+  bodyS: number;
+  shown: number;
+  squishAt: number;
+  drawS?: number;
+};
 
 const SEEDS_PER_VISIT = 5;
 const BOUNCE_SPEED = 15;
@@ -38,7 +53,7 @@ const pourAt = { until: 0 };
 
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
 // dev/scenarios/world-inputs.mjs bakes it into src/world/home-land.json for the server, which has no renderer.
-export function canPlantAt(i, j) {
+export function canPlantAt(i: number, j: number) {
   const x = cellX(i),
     z = cellZ(j),
     g = heights[i][j];
@@ -49,9 +64,9 @@ const env = { canPlantAt };
 setEnv(env);
 
 // Open, dry land with room in the garden: where a seed may go in (the host runs this same check on mush.plant).
-export const plantOk = (i, j) => rules.mushrooms.plantOk(i, j, env);
+export const plantOk = (i: number, j: number) => rules.mushrooms.plantOk(i, j, env);
 
-onApplied((e, t, r) => {
+onApplied((e: { op: string; i: number; j: number }, _t: number, r: unknown) => {
   if (e.op !== 'mush.water' || !r) return;
   const x = cellX(e.i),
     z = cellZ(e.j);
@@ -61,16 +76,16 @@ onApplied((e, t, r) => {
 // ---------------------------------------------------------------- physics
 const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
 
-const capBodies = new Map(); // body -> visual
+const capBodies = new Map<Body, Visual>(); // body -> visual
 
 // Physics shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
-function shapeBody(v, s) {
+function shapeBody(v: Visual, s: number) {
   if (!v.body) {
     v.body = createBody({ material: mushroomMat, group: GROUP.SCENERY, position: v.root.position });
     addBody(v.body);
     capBodies.set(v.body, v);
   }
-  setShapes(v.body, [
+  setShapes(v.body!, [
     {
       kind: 'cylinder',
       rTop: STEM_TOP_R * s,
@@ -108,7 +123,7 @@ onPostStep(() => {
 // works from the size it is drawn at (v.drawS), and its collider doesn't grow while you are under it (updateGarden), so
 // the mushroom pushes you out sideways instead of a new collider appearing around you, which each physics engine
 // resolves its own way (Rapier would pop you up onto the cap).
-function underCap(b, v, s) {
+function underCap(b: Body, v: Visual, s: number) {
   const base = v.root.position;
   const feet = b.position.y - PLAYER_R;
   if (feet > base.y + (STEM_H + CAP_T) * s - 0.1 || b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return 0;
@@ -116,7 +131,7 @@ function underCap(b, v, s) {
   return d < CAP_R * s + PLAYER_R ? Math.max(d, 1e-6) : 0;
 }
 // Whether the player's body would intersect this mushroom's collider at scale s (its full height, with a margin).
-function overlaps(b, v, s) {
+function overlaps(b: Body, v: Visual, s: number) {
   const base = v.root.position;
   if (b.position.y - PLAYER_R > base.y + (STEM_H + CAP_T) * s + 0.05) return false;
   if (b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return false;
@@ -191,9 +206,9 @@ function makeMushroomMesh() {
   return g;
 }
 
-const visuals = new Map(); // "i,j" -> { root, mound, sprout, shroom, body, bodyS, shown, squishAt }
+const visuals = new Map<string, Visual>(); // "i,j" -> its meshes
 
-function makeVisual(p) {
+function makeVisual(p: { i: number; j: number }): Visual {
   const root = new THREE.Group();
   root.position.set(cellX(p.i), heights[p.i][p.j], cellZ(p.j));
   const mound = new THREE.Mesh(moundGeo, moundMat);
@@ -208,9 +223,9 @@ function makeVisual(p) {
 }
 
 // Overshoots then settles, so the mushroom pops up.
-const easeOutBack = (t) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
+const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
 
-export function updateGarden(dt, now) {
+export function updateGarden(dt: number, now: number) {
   for (const p of garden.plots) {
     const key = `${p.i},${p.j}`;
     let v = visuals.get(key);
@@ -237,7 +252,7 @@ function stripedAwning() {
   const c = document.createElement('canvas');
   c.width = 128;
   c.height = 8;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   for (let k = 0; k < 8; k++) {
     g.fillStyle = k % 2 ? '#fffaf0' : '#e5483b';
     g.fillRect(k * 16, 0, 16, 8);
@@ -248,9 +263,9 @@ function stripedAwning() {
 }
 
 const stall = new THREE.Group();
-const pickups = []; // { kind, local: Vector3, world: Vector3 }
+const pickups: { kind: 'seeds' | 'can'; local: THREE.Vector3; world?: THREE.Vector3 }[] = [];
 {
-  const box = (w, h, d, mat, x, y, z) => {
+  const box = (w: number, h: number, d: number, mat: THREE.Material, x: number, y: number, z: number) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.set(x, y, z);
     m.castShadow = m.receiveShadow = true;
@@ -288,7 +303,7 @@ function signMaterial() {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.fillStyle = '#7d5230';
   g.fillRect(0, 0, 256, 64);
   g.fillStyle = '#fffaf0';
@@ -328,11 +343,11 @@ export function createStall() {
 export function stallTargets() {
   if (!me.entered || !me.body) return [];
   const p = me.body.interpolatedPosition;
-  const out = [];
+  const out: Interactable[] = [];
   for (const pick of pickups) {
     if (!pick.world || Math.hypot(pick.world.x - p.x, pick.world.z - p.z) >= REACH + 0.6) continue;
     if (pick.kind === 'can' && has('can')) continue;
-    if (pick.kind === 'seeds' && inv.slots[slotOf('seeds')]?.n >= MAX_SEEDS) continue;
+    if (pick.kind === 'seeds' && (inv.slots[slotOf('seeds')]?.n ?? 0) >= MAX_SEEDS) continue;
     const at = pick.world.clone().setY(pick.world.y + 0.35);
     const t = { id: `stall-${pick.kind}`, verb: 'Take', at };
     if (roomFor(pick.kind) < 0) out.push({ ...t, blocked: 'Hotbar full' });
@@ -342,7 +357,7 @@ export function stallTargets() {
 }
 
 function plantCell() {
-  const p = me.body.interpolatedPosition;
+  const p = me.body!.interpolatedPosition;
   const x = p.x - Math.sin(me.yaw) * 0.9,
     z = p.z - Math.cos(me.yaw) * 0.9;
   return { i: Math.round((x + HALF) / CELL), j: Math.round((HALF - z) / CELL) };
@@ -367,7 +382,7 @@ export function plantFront() {
 }
 
 function plotToWater() {
-  const p = me.body.interpolatedPosition;
+  const p = me.body!.interpolatedPosition;
   let best = null,
     bestD = REACH;
   for (const plot of garden.plots) {

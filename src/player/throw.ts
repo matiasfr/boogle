@@ -1,11 +1,11 @@
 // One throw for everything you hold: the beach ball, the frisbee and every other item (src/player/throw-curve.ts has the
 // numbers). Hold to charge, aim where the camera looks, release to launch; the dots show where it will go. The thing
-// itself flies in src/physics/ball.ts (the ball) or src/adapters/gifts.js (items). Serves DESIGN.md 10 (slapstick: every
+// itself flies in src/physics/ball.ts (the ball) or src/adapters/gifts.ts (items). Serves DESIGN.md 10 (slapstick: every
 // throw feels the same). The charge state stays in me.charging / me.chargeStart (the HUD, bump, impact and the input
 // code read or reset it), but only startCharge here starts one. This file must not import ball.js (it imports us).
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';

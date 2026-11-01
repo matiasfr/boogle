@@ -11,7 +11,7 @@ import { scene } from '../render/scene.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
 import { registerInteractable } from '../player/hands.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt, costOf } from '../sim/route.ts';

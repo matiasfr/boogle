@@ -13,13 +13,13 @@
 import * as THREE from 'three';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { scene, camera, toScreen } from '../render/scene.ts';
 import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.ts';
-import { island } from '../island/index.js';
-import { MAINLAND } from '../island/shape.js';
+import { island } from '../island/index.ts';
+import { MAINLAND } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, addHostField, isLead } from '../netplay/net.ts';

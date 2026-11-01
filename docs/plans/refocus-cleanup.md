@@ -83,7 +83,7 @@ wobble goes with fruit.
 
 Today the wood-age sources are the 36 home palm cells (`land.layout.trees`). Each holds 2 charges, drawn as a small log
 bundle at the palm's foot by `src/features/log-sources.ts`, and they are taken by the palm's Shake in `giftTargets`
-(`src/adapters/gifts.js`). The rules side (`src/world/rules/sources.ts`, `src/sim/sources.ts`) knows nothing about
+(`src/adapters/gifts.ts`). The rules side (`src/world/rules/sources.ts`, `src/sim/sources.ts`) knows nothing about
 shaking: it is `src.take {id}` against a list of cells, with refills on a laid section and a seeded trickle.
 
 The cleanest decoupling changes no rules, no wire and no saved shape. **The log bundle itself becomes the
@@ -217,7 +217,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   lane B. It does share an adjacent row of the multiplayer persistence table with step 4 (hotbar row, friendship
   row): ship 2 before 4, or keep both sides on rebase.
 - **Lane B: 3a, then 3, then 5, then 6, then 7, then 8.** Each shares code or docs with the one before it:
-  `src/adapters/gifts.js`, `log-sources.ts` and `haul.md`; `ball.md` and `constants.js`; `ball.js`, the rules index and
+  `src/adapters/gifts.ts`, `log-sources.ts` and `haul.md`; `ball.md` and `constants.js`; `ball.js`, the rules index and
   the fixtures; `game-design.md`.
 - **Step 4 runs after step 3** (both touch Boogler tests and `boogler.md`). It shares no file with 5 or 6, so it can
   run in parallel with them.
@@ -267,7 +267,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     `../player/hands.js`), as in Design, "Log supply without the Shake". `run` is
     `submitEdit({ op: 'src.take', i: p.i, j: p.j, id })` (`submitEdit` from `../world/sync.ts`), with the pending
     guard. Rewrite the header: logs are taken from the bundle at a palm's foot, not by shaking.
-  - `src/adapters/gifts.js` `giftTargets`: the palm target offers fruit only. Delete the `logs` variable, the
+  - `src/adapters/gifts.ts` `giftTargets`: the palm target offers fruit only. Delete the `logs` variable, the
     `src.take` submit and the "one shake, two drops" comment. The `rules` import goes if nothing else in the file
     uses it. The palm still says Shake while it has ripe fruit, until step 3.
   - Comments only: `src/sim/sources.ts` header ("the home palm cells (`layout.trees`), where the wood age's log
@@ -307,7 +307,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - **Gifts rules.** `src/world/rules/gifts.ts`: delete the `fruit.drop` op, `DropFields`, its generator and the
     `NEVER` invariant, and fix the header ("palms" goes). Tosses with `k` from `THROWABLE` now cover seeds, can and
     frisbee.
-  - **Gifts adapter.** `src/adapters/gifts.js`:
+  - **Gifts adapter.** `src/adapters/gifts.ts`:
     - Delete the `fruit.drop` branch of `onApplied`, and `fx.falling` and `fx.wobble` (the fall in `makeVisual`
       becomes `y: null`).
     - Delete `HANG`, `fruitMeshes`, `buildTreeFruit`, `updateTreeFruit`, the matrix temps, `knockFruit`,

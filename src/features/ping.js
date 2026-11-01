@@ -6,7 +6,7 @@ import './ping.css';
 import * as THREE from 'three';
 import { scene, camera, toScreen } from '../render/scene.ts';
 import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { clamp } from '../math.ts';
 import { me, camForward } from '../player/player.ts';
 import { ball } from '../physics/ball.ts';

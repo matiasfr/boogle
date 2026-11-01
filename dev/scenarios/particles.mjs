@@ -2,7 +2,7 @@
 // hard-landing splat and a splash, fired together beside the seed stall so their looks can be compared in one still.
 const HEAD = `
   const { teleport } = await import('/src/physics/physics.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { claimBall } = await import('/src/physics/ball.ts');
   const { splash } = await import('/src/render/splash.ts');
   const { particleCounts } = await import('/src/render/particles.ts');

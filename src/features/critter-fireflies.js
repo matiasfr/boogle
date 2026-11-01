@@ -6,7 +6,7 @@ import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import { onFrame, onStart } from '../loop.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { CELL, HALF } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { skyDebug } from '../render/sky.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 

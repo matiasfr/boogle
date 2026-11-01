@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { SPAWN, COURT, CELL, HALF } from '../constants.ts';
-import { island } from '../island/index.js';
-import { MASSIF } from '../island/shape.js';
+import { island } from '../island/index.ts';
+import { MASSIF } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
-import { groundHeight } from '../adapters/terrain.js';
+import { groundHeight } from '../adapters/terrain.ts';
 import { scene } from './scene.ts';
 import { addStaticSpheres } from '../physics/physics.ts';
 import { onFrame } from '../loop.ts';

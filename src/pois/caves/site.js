@@ -1,7 +1,7 @@
 // Cave system under the north-west massif (see network.js). The terrain part: keep enough rock over every tunnel and
 // chamber, and dig a trench down to each of the four mouths so you can walk in.
 import { NODES, MOUTHS, TRENCH, COVER, coverPaths } from './network.js';
-import { naturalHeight } from '../../island/shape.js';
+import { naturalHeight } from '../../island/shape.ts';
 
 const stamps = [];
 // Rock over the tunnels and chambers (only ever raises the ground).

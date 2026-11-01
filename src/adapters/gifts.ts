@@ -3,13 +3,13 @@
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
-import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
+import { groundHeight, cellX, cellZ, cellOf } from './terrain.ts';
 import { scene } from '../render/scene.ts';
 import { me, throwFrom } from '../player/player.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';
-import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
+import { plantOk } from './mushroom-garden.ts'; // the thrower's own landing check for seeds
 import { waterField } from '../physics/water-field.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../sim/gifts.ts';
@@ -18,27 +18,51 @@ import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
 import { inv, take, roomFor } from '../player/inventory.ts';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
 import { splash } from '../render/splash.ts';
+import type { Item } from '../sim/gifts.ts';
+import type { Edit } from '../world/rules/types.ts';
+import type { TakeFields, TossFields } from '../world/rules/gifts.ts';
+import type { Interactable } from '../player/hands.ts';
+
+/** A thrown thing in the air (flyPath's path plus its mesh). */
+type Flight = ReturnType<typeof flyPath> & {
+  mesh: THREE.Object3D;
+  glide: boolean;
+  nonce: number;
+  t0: number;
+  done: boolean;
+};
+/** What is drawn for one ground item. */
+type Visual = {
+  root: THREE.Group;
+  sparkle: THREE.Sprite | null;
+  phase: number;
+  y: number | null;
+  vy: number;
+  flight: Flight | null;
+  slide: number;
+  from?: THREE.Vector3;
+};
 
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 
 // The gifts, their ops and tick live in world/rules/gifts.ts (lockstep); this module adapts them to meshes, flights,
 // the interact prompt and the hotbar. The layout (perches) is the land's, filled in createGifts3d.
 const { layout } = land;
-const perchSpots = []; // world positions, parallel to layout.perches
+const perchSpots: THREE.Vector3[] = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
 
-const fx = { leaving: [], arriving: new Map() };
+const fx = { leaving: [] as { v: Visual; t: number }[], arriving: new Map<number, Flight>() };
 
 // The effects of each gift op, from what its apply returned (r): the item that was taken or landed.
-onApplied((e, tick, r) => {
+onApplied((e: Edit<Partial<TakeFields & TossFields>>, _tick: number, r: Item | null) => {
   if (e.op === 'gift.take') {
-    pending.delete(e.id);
+    pending.delete(e.id!);
     if (!r || e.p !== myId()) return;
     // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
     if (!take(GIFTS[r.kind].id, 1, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
   } else if (e.op === 'gift.toss') {
-    const fl = claimFlight(e);
+    const fl = claimFlight(e as Edit<TossFields>);
     if (e.y !== LOST && e.k !== SEEDS && r) fx.arriving.set(r.id, fl);
   }
 });
@@ -53,7 +77,7 @@ export function createGifts3d() {
   built = true;
 }
 
-function itemPos(it, out) {
+function itemPos(it: Item, out: THREE.Vector3) {
   if (it.src === SRC.PERCH) {
     const k = layout.perches.findIndex((p) => p.i === it.i && p.j === it.j);
     if (k >= 0) return out.copy(perchSpots[k]);
@@ -67,7 +91,7 @@ function itemPos(it, out) {
 const sparkleMat = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   grad.addColorStop(0, 'rgba(255,255,255,1)');
   grad.addColorStop(0.25, 'rgba(255,250,220,0.7)');
@@ -84,11 +108,11 @@ const sparkleMat = (() => {
 // ---------------------------------------------------------------- flights
 // Everything in the air, for everyone: { mesh, points, t0, rest, lost, nonce, done }. The thrower starts a flight the
 // moment they let go; everyone else replays it from the launch when the `gift.toss` edit arrives.
-const flights = [];
+const flights: Flight[] = [];
 const seedGeo = new THREE.SphereGeometry(0.07, 8, 6);
 const seedMat = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9 });
 
-function startFlight(kind, p, v, nonce) {
+function startFlight(kind: number, p: THREE.Vector3, v: THREE.Vector3, nonce: number): Flight {
   const glide = GIFTS[kind].id === 'frisbee';
   const path = flyPath(p, v, glide);
   const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind].id);
@@ -99,21 +123,21 @@ function startFlight(kind, p, v, nonce) {
   return fl;
 }
 
-function claimFlight(e) {
+function claimFlight(e: Edit<TossFields>) {
   const mine = e.p === myId() && flights.find((f) => f.nonce === e.n);
   if (mine) return mine;
   const [x, y, z, vx, vy, vz] = e.l.map((v) => v / 100);
   return startFlight(e.k, new THREE.Vector3(x, y, z), new THREE.Vector3(vx, vy, vz), e.n);
 }
 
-function endFlight(fl) {
+function endFlight(fl: Flight) {
   fl.done = true;
   scene.remove(fl.mesh);
   flights.splice(flights.indexOf(fl), 1);
   if (fl.lost) splash(fl.rest.x, fl.rest.z, 0.5, waterField.surfaceAt(fl.rest.x, fl.rest.z));
 }
 
-function updateFlights(now) {
+function updateFlights(now: number) {
   for (let k = flights.length - 1; k >= 0; k--) {
     const fl = flights[k];
     const t = Math.max(0, (now - fl.t0) / 1000 / STEP); // a frame's timestamp can predate a flight started mid-frame
@@ -130,7 +154,7 @@ function updateFlights(now) {
 }
 
 // The shared item's height once a flight is snapped to cell (i, j): whatever lies under the cell's centre.
-function landingY(kind, fl, i, j) {
+function landingY(kind: number, fl: Flight, i: number, j: number) {
   if (fl.lost) return LOST;
   if (kind === SEEDS) return plantOk(i, j) ? ON_GROUND : LOST;
   const x = cellX(i),
@@ -142,7 +166,7 @@ function landingY(kind, fl, i, j) {
 
 // Throws `kind` from p with velocity v: it flies for everyone and lands as a shared item, or a seed plants itself where
 // it lands. Returns false if the edit could not be sent (the caller keeps the item).
-export function throwItem(kind, p, v) {
+export function throwItem(kind: number, p: THREE.Vector3, v: THREE.Vector3) {
   const nonce = (Math.random() * 2 ** 30) | 0;
   const fl = startFlight(kind, p, v, nonce);
   const [i, j] = cellOf(fl.rest.x, fl.rest.z);
@@ -154,15 +178,15 @@ export function throwItem(kind, p, v) {
 }
 
 // ---------------------------------------------------------------- ground items
-const visuals = new Map(); // id -> { root, sparkle, phase, y, vy, flight, slide }
+const visuals = new Map<number, Visual>(); // item id -> what is drawn for it
 const PI = Math.PI;
 const at = new THREE.Vector3();
 
-function makeVisual(it) {
+function makeVisual(it: Item): Visual {
   const root = new THREE.Group();
   root.add(itemModel(GIFTS[it.kind].id));
   root.rotation.y = ((it.id * 2.399) % (PI * 2)) - PI;
-  let sparkle = null;
+  let sparkle: THREE.Sprite | null = null;
   if (it.src === SRC.PERCH) {
     sparkle = new THREE.Sprite(sparkleMat);
     sparkle.position.y = 0.6;
@@ -174,8 +198,8 @@ function makeVisual(it) {
   return { root, sparkle, phase: it.id * 1.7, y: null, vy: 0, flight, slide: 1 };
 }
 
-function updateItems(dt, now, target) {
-  const live = new Set();
+function updateItems(dt: number, now: number, target: number | null) {
+  const live = new Set<number>();
   for (const it of gifts.items) {
     live.add(it.id);
     let v = visuals.get(it.id);
@@ -203,7 +227,7 @@ function updateItems(dt, now, target) {
     v.root.position.set(x, y, z);
     if (v.slide < 1) {
       v.slide = Math.min(1, v.slide + dt / 0.18);
-      v.root.position.lerpVectors(v.from, v.root.position, 1 - (1 - v.slide) ** 2);
+      v.root.position.lerpVectors(v.from!, v.root.position, 1 - (1 - v.slide) ** 2);
     }
     const pulse = target === it.id && !reducedMotion ? 1.15 + Math.sin(now / 120) * 0.08 : 1;
     v.root.scale.setScalar(pulse);
@@ -231,7 +255,7 @@ function updateItems(dt, now, target) {
 }
 
 // ---------------------------------------------------------------- actions
-const pending = new Map(); // item id -> submitted at (ms)
+const pending = new Map<number, number>(); // item id -> submitted at (ms)
 
 function playerAt() {
   return me.entered && me.body ? me.body.interpolatedPosition : null;
@@ -243,7 +267,7 @@ const reachAt = new THREE.Vector3();
 export function giftTargets() {
   const p = playerAt();
   if (!p) return [];
-  const out = [];
+  const out: (Interactable & { item: number })[] = [];
   const now = performance.now();
   const full = inv.slots.filter((s) => !s).length <= pending.size;
   for (const it of gifts.items) {
@@ -266,7 +290,7 @@ export function giftTargets() {
 }
 
 // `target` is the item id the interact prompt is on (see giftTargets), highlighted; null for none.
-export function updateGifts(dt, now, target = null) {
+export function updateGifts(dt: number, now: number, target: number | null = null) {
   if (!built) return;
   for (const [id, at] of pending) if (now - at > 4000) pending.delete(id);
   updateFlights(now);

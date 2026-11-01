@@ -10,7 +10,7 @@ import {
   forEachContact,
 } from './engine.ts';
 import { clamp } from '../math.ts';
-import { groundHeight, heights } from '../adapters/terrain.js';
+import { groundHeight, heights } from '../adapters/terrain.ts';
 import { waterField } from './water-field.ts';
 import type { Body } from './engine.ts';
 import type { Remote } from '../netplay/net.ts';

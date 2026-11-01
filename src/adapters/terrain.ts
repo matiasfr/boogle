@@ -1,31 +1,32 @@
 import * as THREE from 'three/webgpu';
 import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray } from 'three/tsl';
+import type { vec4 } from 'three/tsl';
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
 import { lerp, smoothstep, valueNoise } from '../math.ts';
 import { scene } from '../render/scene.ts';
 import { PATCH } from '../sim/mushrooms.ts';
-import { island, baseCm } from '../island/index.js';
+import { island, baseCm } from '../island/index.ts';
 import { freezeStatic } from '../render/instances.ts';
 
 // heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the
-// island's base ground (src/island/ground.js: natural shape plus every POI's stamps, court levelled), in whole
+// island's base ground (src/island/ground.ts: natural shape plus every POI's stamps, court levelled), in whole
 // centimetres like the shared sim. Nothing edits it.
-export const heights = [];
+export const heights: number[][] = [];
 for (let i = 0; i < GRID_RES; i++) {
   const col = new Array(GRID_RES);
   for (let j = 0; j < GRID_RES; j++) col[j] = baseCm[i * GRID_RES + j] / 100;
   heights.push(col);
 }
 
-export const cellX = (i) => i * CELL - HALF;
-export const cellZ = (j) => HALF - j * CELL;
+export const cellX = (i: number) => i * CELL - HALF;
+export const cellZ = (j: number) => HALF - j * CELL;
 // The cell [i, j] nearest world x, z, kept off the grid's edge (where edits are refused).
-export const cellOf = (x, z) => [
+export const cellOf = (x: number, z: number): [number, number] => [
   Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
   Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
 ];
 
-export function groundHeight(x, z) {
+export function groundHeight(x: number, z: number) {
   const fi = (x + HALF) / CELL,
     fj = (HALF - z) / CELL;
   if (fi < 0 || fj < 0 || fi >= GRID_RES - 1 || fj >= GRID_RES - 1) return SEABED;
@@ -45,9 +46,9 @@ const GRASS_DK = new THREE.Color('#4e9a3d'),
 const tmpC = new THREE.Color(),
   tmpG = new THREE.Color(),
   tmpP = new THREE.Color();
-// POI paint per vertex (index j*GRID_RES+i): sRGB colour and amount, from the site stamps (src/island/stamps.js).
+// POI paint per vertex (index j*GRID_RES+i): sRGB colour and amount, from the site stamps (src/island/stamps.ts).
 // Only alive while createTerrainMesh paints the ground.
-let poiPaint = null;
+let poiPaint: Float32Array | null = null;
 function buildPoiPaint() {
   const out = new Float32Array(GRID_RES * GRID_RES * 4);
   for (let j = 0; j < GRID_RES; j++)
@@ -62,7 +63,7 @@ const TILE = 51;
 const terrainMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.
-function paintVertex(out, o, k, x, h, z, ny) {
+function paintVertex(out: Float32Array, o: number, k: number, x: number, h: number, z: number, ny: number) {
   const nse = valueNoise(x * 0.3, z * 0.3);
   const c = tmpC,
     g = tmpG;
@@ -73,8 +74,9 @@ function paintVertex(out, o, k, x, h, z, ny) {
   c.lerp(ROCK, smoothstep(0.86, 0.72, ny) * grassy);
   c.lerp(ROCK, smoothstep(11, 22, h) * 0.55 * grassy); // the massif turns stony towards the top
   c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
-  const pa = poiPaint[k * 4 + 3];
-  if (pa > 0) c.lerp(tmpP.setRGB(poiPaint[k * 4], poiPaint[k * 4 + 1], poiPaint[k * 4 + 2], THREE.SRGBColorSpace), pa);
+  const pp = poiPaint!;
+  const pa = pp[k * 4 + 3];
+  if (pa > 0) c.lerp(tmpP.setRGB(pp[k * 4], pp[k * 4 + 1], pp[k * 4 + 2], THREE.SRGBColorSpace), pa);
   const i = k % GRID_RES,
     j = (k - i) / GRID_RES;
   if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
@@ -85,12 +87,12 @@ function paintVertex(out, o, k, x, h, z, ny) {
 }
 
 // Writes position, normal and colour of grid vertex (i, j) into a tile geometry's arrays at local index o.
-function writeVertex(geo, o, i, j) {
+function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number) {
   const n = GRID_RES;
   const k = j * n + i;
-  const pos = geo.attributes.position.array,
-    nrm = geo.attributes.normal.array,
-    col = geo.attributes.color.array;
+  const pos = geo.attributes.position.array as Float32Array,
+    nrm = geo.attributes.normal.array as Float32Array,
+    col = geo.attributes.color.array as Float32Array;
   const h = heights[i][j];
   pos[o * 3] = i * CELL - HALF;
   pos[o * 3 + 1] = h;
@@ -123,7 +125,7 @@ export function createTerrainMesh() {
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
       geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
       geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
-      const idx = [];
+      const idx: number[] = [];
       for (let j = 0; j < h - 1; j++)
         for (let i = 0; i < w - 1; i++) {
           const a = j * w + i,
@@ -152,11 +154,15 @@ export function createTerrainMesh() {
 const MAX_HOLES = 6;
 const holeA = Array.from({ length: MAX_HOLES }, () => new THREE.Vector4(0, 0, 0, 0)),
   holeB = Array.from({ length: MAX_HOLES }, () => new THREE.Vector4(0, 0, 0, 0));
-export function setTerrainHoles(list) {
+type V3t = [number, number, number];
+export type TerrainHole = { a: V3t; b: V3t; r: number; floor: number };
+export function setTerrainHoles(list: TerrainHole[]) {
   holeA.forEach((v, k) => {
     const h = list[k];
-    v.set(...(h ? h.a : [0, 0, 0]), h ? h.r : 0);
-    holeB[k].set(...(h ? h.b : [0, 0, 0]), h ? h.floor : 0);
+    const [ax, ay, az] = h ? h.a : [0, 0, 0],
+      [bx, by, bz] = h ? h.b : [0, 0, 0];
+    v.set(ax, ay, az, h ? h.r : 0);
+    holeB[k].set(bx, by, bz, h ? h.floor : 0);
   });
 }
 const uHoleA = uniformArray(holeA, 'vec4'),
@@ -168,8 +174,9 @@ terrainMat.maskNode = Fn(() => {
   const keep = bool(true).toVar();
   const g = positionGeometry;
   Loop(MAX_HOLES, ({ i }) => {
-    const a = uHoleA.element(i),
-      b = uHoleB.element(i);
+    // vec4 elements (three's types say string)
+    const a = uHoleA.element(i) as unknown as ReturnType<typeof vec4>,
+      b = uHoleB.element(i) as unknown as ReturnType<typeof vec4>;
     If(a.w.greaterThan(0), () => {
       const pa = g.sub(a.xyz),
         ba = b.xyz.sub(a.xyz);

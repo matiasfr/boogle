@@ -2,7 +2,7 @@ import './style.css';
 import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
 import { precompile } from './render/precompile.ts';
-import { createTerrainMesh } from './adapters/terrain.js';
+import { createTerrainMesh } from './adapters/terrain.ts';
 import { createWaterMesh } from './render/water-render.ts';
 import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
@@ -12,7 +12,7 @@ import { me, updateIntent } from './player/player.ts';
 import { net, remotes, connectRoom, updateRemotes } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
-import { createStall } from './adapters/mushroom-garden.js';
+import { createStall } from './adapters/mushroom-garden.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.js';
 

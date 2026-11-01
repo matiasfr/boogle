@@ -3,8 +3,9 @@
 import { GRID_RES } from './grid.ts';
 import { world, registerOp, registerState, onTick, onApplied, onSnapshot } from './sync.ts';
 import { installRules } from './rules/index.ts';
+import type { Land } from './rules/types.ts';
 
 // Static and the same on every peer. layout is filled by reference before tick 1 (rules must not read it at install).
 /** @type {import('./rules/types.ts').Land} */
-export const land = { n: GRID_RES, layout: { trees: [], perches: [] } };
+export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 export const rules = installRules({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land);

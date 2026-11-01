@@ -65,7 +65,7 @@ Wind is a cheap vertex-shader sine plus noise; the cost on mobile is vertex thro
 - Elysium has wind-swayed foliage and player-reactive grass, with graphics presets (Extreme = fluffiest grass) — [Elysium thread](https://discourse.threejs.org/t/elysium-the-most-beautiful-stylized-world-on-the-web/55541)
 
 ### Codebase findings (Boogle)
-- Terrain is vertex-colored with grass above ~1.35 m (`src/adapters/terrain.js` `paintVertex`); palms are merged into a single props mesh, fronds are 4-sided cones, `MeshStandardMaterial` flat shaded, cast/receive shadow — `src/render/props.ts`.
+- Terrain is vertex-colored with grass above ~1.35 m (`src/adapters/terrain.ts` `paintVertex`); palms are merged into a single props mesh, fronds are 4-sided cones, `MeshStandardMaterial` flat shaded, cast/receive shadow — `src/render/props.ts`.
 
 ### Inferences
 - Palm-frond sway can be added to the existing merged props mesh with a per-vertex sway-weight attribute and `onBeforeCompile` — zero new draw calls (also affects the shadow pass if the depth material is patched too, or leave shadows static).
@@ -108,7 +108,7 @@ High-end indie (Tiny Glade) uses real-time GI with ReSTIR-style techniques on de
 - AO approximates exposure to ambient light, is non-directional, often a post effect — [Wikipedia: Ambient occlusion](https://en.wikipedia.org/wiki/Ambient_occlusion)
 
 ### Codebase findings
-- Terrain already bakes shading into vertex colors: hollows darken by Laplacian, crests brighten, steep edited faces darken — `src/adapters/terrain.js`; scene lighting is a `HemisphereLight` (sky blue / sand ground) plus one shadow-casting directional light; shadows are skipped at night (recent commit).
+- Terrain already bakes shading into vertex colors: hollows darken by Laplacian, crests brighten, steep edited faces darken — `src/adapters/terrain.ts`; scene lighting is a `HemisphereLight` (sky blue / sand ground) plus one shadow-casting directional light; shadows are skipped at night (recent commit).
 
 ### Inferences
 - Extend vertex-baked AO: a heightfield horizon/occlusion term computed on CPU when cells refresh (already done per-edit region), plus AO darkening at the base of palms/rocks; blob shadows (one instanced quad set) for ball/players at night when the shadow pass is off.

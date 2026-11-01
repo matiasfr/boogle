@@ -14,7 +14,7 @@ import { me } from '../player/player.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { submitEdit } from '../world/sync.ts';
 import { okPid } from '../sim/roster.ts';
-import { cellOf } from '../adapters/terrain.js';
+import { cellOf } from '../adapters/terrain.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
 import { SOFT_CAP, spillOf } from '../sim/stacks.ts';
 import { MATERIALS } from '../sim/materials.ts';

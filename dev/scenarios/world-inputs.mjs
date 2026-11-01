@@ -16,7 +16,7 @@ const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta
 const READ = `
   const sync = await import('/src/world/sync.ts');
   const { land } = await import('/src/world/game-world.ts');
-  const { canPlantAt, garden } = await import('/src/adapters/mushroom-garden.js');
+  const { canPlantAt, garden } = await import('/src/adapters/mushroom-garden.ts');
   const pick = (o) => JSON.parse(JSON.stringify(o));
   // Plant mask over cell g = i * n + j: run lengths, alternating, starting with unplantable. Caps count as cover, so it
   // needs an empty garden.
