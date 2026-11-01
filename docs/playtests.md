@@ -32,3 +32,9 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Tweak: hotbar tick (single tone or none, Fortnite), thunk, plaque flap, ping and ball boing (subtler), double-jump (subtler, Fortnite), pickup thock and magnet burst (Ratchet & Clank bolts), wood-age ambience (less white noise, more chill).
 - Wave: undecided; keep it as it is until played.
 - Idea: honks should form a chord on their own, and a honk doesn't have to be the same note every time.
+
+## 2026-11-02 (iPad, first look)
+- Who: Matias, solo, iPad Pro, Safari 27.
+- Broke: boogle.club showed only the sky (no terrain, players) on Safari 27, with and without `?proto`. Cause: discarding the MSAA samples (memoryless attachments, new in Safari 27). Reverted; the island shows.
+- Broke: Fullscreen on iPad: once in it, controls stopped working.
+- Broke: mushrooms don't bounce; standing on one you're stuck, like an animation resetting.
