@@ -101,6 +101,7 @@ onFrame(
   ({ dt }) => {
     fish.visible = !!home;
     if (!fish.visible || dt <= 0) return;
+    const hm = home!;
     // scares: a ball that just hit the water near the surface, players swimming
     scares.length = 0;
     const bp = ball.mesh.position;
@@ -137,7 +138,7 @@ onFrame(
         const s = scares[m];
         const dx = f.x - s.x,
           dz = f.z - s.z,
-          d = Math.hypot(dx, dz);
+          d = Math.sqrt(dx * dx + dz * dz);
         if (d < FISH.scare) {
           f.scare = 1.2;
           ax += (dx / (d + 0.1)) * 40;
@@ -145,7 +146,7 @@ onFrame(
         }
       }
       // stay in deep enough water: steer toward the deepest of four probes when the way ahead gets shallow
-      const sp = Math.hypot(f.vx, f.vz) || 1;
+      const sp = Math.sqrt(f.vx * f.vx + f.vz * f.vz) || 1;
       if (depthAt(f.x + (f.vx / sp) * 1.2, f.z + (f.vz / sp) * 1.2) < FISH.minDepth) {
         let best = -1e9,
           bx = 0,
@@ -167,7 +168,7 @@ onFrame(
       f.vx += ax * dt;
       f.vz += az * dt;
       const max = f.scare > 0 ? FISH.fleeSpeed : FISH.speed;
-      const v = Math.hypot(f.vx, f.vz);
+      const v = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
       if (v > max) {
         f.vx *= max / v;
         f.vz *= max / v;
@@ -176,7 +177,7 @@ onFrame(
       f.z += f.vz * dt;
       const g = groundHeight(f.x, f.z),
         surf = waterField.surfaceAt(f.x, f.z);
-      if (surf - g < 0.12 || Math.hypot(f.x - home!.x, f.z - home!.z) > 80) respawn(f); // stranded or lost
+      if (surf - g < 0.12 || (f.x - hm.x) * (f.x - hm.x) + (f.z - hm.z) * (f.z - hm.z) > 80 * 80) respawn(f); // stranded or lost
       f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
     }
     pool.begin();

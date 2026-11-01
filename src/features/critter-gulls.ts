@@ -64,7 +64,7 @@ type Gull = {
   state: string;
   t: number;
   flap: number;
-  hop?: number;
+  hop: number;
   // set when it takes off (circle centre, radius, height, angle) and when it heads down (target)
   cx: number;
   cz: number;
@@ -94,18 +94,48 @@ onStart(() => {
       state: 'idle',
       t: rnd(0, 3),
       flap: 0,
-    } as Gull);
+      hop: 0, // every field from the start: one object shape for all gulls
+      cx: 0,
+      cz: 0,
+      cr: 0,
+      ch: 0,
+      ang: 0,
+      tx: 0,
+      tz: 0,
+    });
   }
 });
 
+// Players near the gulls, refilled every frame into reused entries (the hot path allocates nothing).
+type Threat = { p: { x: number; z: number }; run: boolean };
+const th: Threat[] = [];
+let threatCount = 0;
+function threat(p: { x: number; z: number }, run: boolean) {
+  const t = th[threatCount] ?? (th[threatCount] = { p, run });
+  t.p = p;
+  t.run = run;
+  threatCount++;
+}
 function threats() {
-  const out = [];
+  threatCount = 0;
   if (me.body && me.entered) {
     const v = me.body.velocity;
-    out.push({ p: me.body.position, run: Math.hypot(v.x, v.z) >= 3 });
+    threat(me.body.position, v.x * v.x + v.z * v.z >= 9);
   }
-  for (const r of remotes.values()) if (r.avatar) out.push({ p: r.target, run: r.speed >= 3 });
-  return out;
+  for (const r of remotes.values()) if (r.avatar) threat(r.target, r.speed >= 3);
+}
+const RUN2 = GULLS.scareRun * GULLS.scareRun,
+  BALL2 = GULLS.scareBall * GULLS.scareBall;
+function scaredBy(g: Gull, ballLanding: boolean, bp: THREE.Vector3) {
+  for (let k = 0; k < threatCount; k++) {
+    const t = th[k];
+    const dx = t.p.x - g.x,
+      dz = t.p.z - g.z;
+    if (t.run && dx * dx + dz * dz < RUN2) return true;
+  }
+  const dx = bp.x - g.x,
+    dz = bp.z - g.z;
+  return ballLanding && dx * dx + dz * dz < BALL2;
 }
 
 const m4 = new THREE.Matrix4(),
@@ -123,7 +153,7 @@ onFrame(
     const on = G.length > 0;
     bodies.visible = wings.visible = on;
     if (!on || dt <= 0) return;
-    const th = threats();
+    threats();
     const bp = ball.mesh.position;
     const ballLanding = lastBallY - bp.y > 0.03 && bp.y - groundHeight(bp.x, bp.z) < 0.7;
     lastBallY = bp.y;
@@ -133,10 +163,7 @@ onFrame(
       const g = G[k];
       g.t -= dt;
       if (g.state === 'idle') {
-        const scared =
-          th.some(({ p, run }) => run && Math.hypot(p.x - g.x, p.z - g.z) < GULLS.scareRun) ||
-          (ballLanding && Math.hypot(bp.x - g.x, bp.z - g.z) < GULLS.scareBall);
-        if (scared) {
+        if (scaredBy(g, ballLanding, bp)) {
           g.state = 'up';
           g.cx = g.x + rnd(-6, 6);
           g.cz = g.z + rnd(-6, 6);
@@ -149,7 +176,7 @@ onFrame(
           g.t = rnd(1, 4);
           g.hop = 0.25;
         }
-        g.hop = Math.max(0, (g.hop ?? 0) - dt);
+        g.hop = Math.max(0, g.hop - dt);
         g.y = groundHeight(g.x, g.z) + Math.sin((g.hop / 0.25) * Math.PI) * 0.12;
         g.flap = Math.max(0, g.flap - dt * 4);
       } else if (g.state === 'up') {
@@ -167,7 +194,7 @@ onFrame(
           const s = landingSpot(
             g.cx,
             g.cz,
-            th.map((t) => t.p),
+            th.slice(0, threatCount).map((t) => t.p),
           );
           if (s) {
             g.state = 'down';
@@ -178,7 +205,7 @@ onFrame(
       } else {
         const dx = g.tx - g.x,
           dz = g.tz - g.z,
-          d = Math.hypot(dx, dz);
+          d = Math.sqrt(dx * dx + dz * dz);
         const gy = groundHeight(g.tx, g.tz);
         g.yaw = Math.atan2(dx, dz);
         const step = Math.min(d, GULLS.flySpeed * dt);
@@ -198,7 +225,7 @@ onFrame(
       const flying = g.state !== 'idle';
       const beat = flying ? Math.sin(elapsed * 13 + k) * 0.7 * g.flap : -0.15;
       const span = flying ? 1 : 0.45;
-      for (const side of [1, -1]) {
+      for (let side = 1; side >= -1; side -= 2) {
         q.setFromEuler(e.set(0, g.yaw, side * beat, 'YXZ'));
         off.set(0.1 * side, 0.05, 0).applyAxisAngle(UP, g.yaw);
         m4.compose(v3.copy(pos).add(off), q, sc.set(side * span, 1, 1));
