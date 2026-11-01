@@ -147,6 +147,35 @@ dialog.pause::backdrop {
   background: var(--ink);
   color: var(--paper);
 }
+/* The Gamepad tab's second row: situation chips (LB / RB cycle them) and the list toggle. */
+.pause-padbar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.pause-ctxs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pause-ctx-hint {
+  --gu: 0.85px;
+  display: inline-flex;
+  gap: 3px;
+  margin-right: 4px;
+}
+.pause-padbar .pause-btn {
+  min-height: 40px;
+  padding: 6px 14px;
+  font-size: 17px;
+  box-shadow: none;
+}
+.pause-ctx[aria-selected='true'] {
+  background: var(--sun);
+}
 .pause-guide {
   --pause-gu: calc(var(--pause-fs) / 16);
   flex: 1 1 auto;
