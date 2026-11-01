@@ -1,4 +1,5 @@
-// A handbrake drift on the steep part of the lighthouse path (dev/look/evals/soapbox-pilot.ts):
-// BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-drift.js --hud --warm 1.2 --seconds 2.5 --frames 12
-const { drive, PATH } = await import('/dev/look/evals/soapbox-pilot.ts');
-await drive({ path: PATH, drift: [1.4, 2.6], driftSteer: -1 });
+// A handbrake drift through the long right-hander across the lowland (dev/look/evals/soapbox-pilot.ts). Add &v=grip
+// or &v=drifty to BOOGLE_QUERY to compare the handling variants:
+// BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-drift.js --hud --warm 8.8 --seconds 3 --frames 12
+const { drive } = await import('/dev/look/evals/soapbox-pilot.ts');
+await drive({ drift: [9.4, 10.8], driftSteer: 1 });

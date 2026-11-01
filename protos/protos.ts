@@ -83,8 +83,16 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=soapbox',
     question: 'Is driving fun?',
-    what: 'A cart down the lighthouse path from the hill’s south shoulder (E to get in); hold Jump to drift.',
+    what: 'A ~20 s run off the rocky massif’s summit (north-west): the ridge, a drop down the face, a palm slalom and the bay shore. E to get in, hold Jump to drift.',
     since: '2026-11-01',
+    variants: [
+      { name: 'grip', url: '/?proto=soapbox&v=grip', what: 'Planted and precise: short, tidy drifts.' },
+      {
+        name: 'drifty',
+        url: '/?proto=soapbox&v=drifty',
+        what: 'Loose rear, long drifts; let go of a long one (hot sparks) for a little boost.',
+      },
+    ],
   },
   {
     id: 'build',

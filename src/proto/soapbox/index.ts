@@ -29,7 +29,7 @@ import {
 } from '../../physics/engine.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { me, cam } from '../../player/player.ts';
+import { me, cam, camConstraints } from '../../player/player.ts';
 import { input } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { heldId } from '../../player/inventory.ts';
@@ -37,9 +37,9 @@ import { describeControl, wrapAction } from '../../player/controls.ts';
 import { remotes, addPresenceField, onRemotePresence, sendPresence } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
-import site from '../../pois/lighthouse/site.ts';
 import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
+import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
 // ---------------------------------------------------------------- tuning (window.__soapbox.T in the console)
 const T = {
@@ -47,7 +47,7 @@ const T = {
   r: 0.5, // m: the rolling sphere under the cart
   push: 5, // m/s²: kicking along with forward held, up to pushMax
   pushMax: 5, // m/s
-  brake: 10, // m/s²: back held
+  brake: 16, // m/s²: back held (enough to hold the cart on the massif's steep face)
   rolling: 0.35, // m/s²: rolling resistance
   drag: 0.014, // 1/m: air drag (a = drag·v²); about 22 m/s on the steepest part of the hill
   grip: 36, // m/s²: most sideways acceleration the wheels give before they slide
@@ -64,28 +64,35 @@ const T = {
   handbrake: 1.6, // m/s² it costs
   airYaw: 1.0, // rad/s of turn in the air
   coastBrake: 2.5, // m/s² that stops a cart nobody drives
-  crashDv: 7, // m/s of speed knocked off by hits within a few steps (a leaky sum) that throws you out
+  crashDv: 9, // m/s of speed knocked off by hits within a few steps (a leaky sum) that throws you out
   crashLand: 15, // m/s of upward change in one step (a landing) that throws you out
   crashMin: 6, // m/s: slower than this nothing throws you
   throwUp: 11, // m/s up when thrown
   throwKeep: 0.55, // share of the cart's speed you keep when thrown (over whatever you hit, not into it)
   returnAfter: 3.5, // s an empty cart waits before it rolls itself back to the top
+  boostAfter: 0, // s of drifting that charges a boost on release (0: no boost)
+  boost: 0, // m/s added forward on release once charged, scaled up to x1.5 for a long drift
 };
+// Handling variants for comparing in one sitting: &v=grip (planted, precise, short drifts) and &v=drifty (loose rear,
+// long drifts, a small boost when you let go of a long one). No &v: the tuning above.
+const VARIANTS: Record<string, Partial<typeof T>> = {
+  grip: { grip: 48, driftGrip: 14, driftYaw: 1.15, driftAngle: 0.55, keepSlide: 0.5, handbrake: 2.2 },
+  drifty: {
+    grip: 26,
+    driftGrip: 3,
+    driftYaw: 1.7,
+    driftAngle: 1.35,
+    keepSlide: 0.75,
+    handbrake: 1.0,
+    boostAfter: 0.6,
+    boost: 3,
+  },
+};
+const variant = new URLSearchParams(location.search).get('v') ?? '';
+Object.assign(T, VARIANTS[variant] ?? {});
 const MAX_FALL = 22; // m/s, as physics.ts: no continuous collision against the heightfield
 
 // ---------------------------------------------------------------- the route
-const TOWER = { x: site.x, z: site.z };
-const pathDir = (ax: number, az: number, bx: number, bz: number) => {
-  const l = Math.hypot(bx - ax, bz - az);
-  return { x: (bx - ax) / l, z: (bz - az) / l };
-};
-const D1 = pathDir(0, 7, 2, 22); // the lighthouse path's first leg (site.ts)
-const D2 = pathDir(2, 22, 4, 34);
-const yawOf = (d: { x: number; z: number }) => Math.atan2(-d.x, -d.z); // forward = (-sin, -cos), as me.yaw
-const START = { x: TOWER.x + D1.x * 13, z: TOWER.z + 7 + D1.z * 6, h: yawOf(D1) }; // on the shoulder, before the drop
-const START_R = 14.5; // m from the tower: crossing it starts the clock
-// Across the flats at the bottom, short of home: the hill gives the speed, the flats ask you to keep it.
-const FINISH = { x: 12.5, z: 4, half: 8, h: yawOf(pathDir(10, -24, 12.5, 4)) };
 const startY = () => groundHeight(START.x, START.z) + T.r + 0.05;
 const flat = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax - bx, az - bz);
 
@@ -115,6 +122,9 @@ const S = {
   vf: 0, // m/s forward
   yawRate: 0,
   looseAt: 0,
+  charge: 0, // s drifting so far
+  boostKick: 0, // m/s to add on the next grounded step
+  boosted: 0, // the last boost, for its sparks (cleared by the frame hook)
   tumble: 0, // s left of the thrown-out spin
   tumbleAngle: 0,
   landKick: 0, // m/s of fall speed at the last landing, for the mesh bounce
@@ -155,7 +165,14 @@ onPreStep(() => {
     fz = -Math.cos(S.heading);
   let vf = v.x * fx + v.z * fz;
   const speed = Math.abs(vf);
+  const wasDrifting = S.drifting;
   S.drifting = S.seated && me.jumpHeld && S.grounded && speed > 4;
+  if (S.drifting) S.charge += FIXED;
+  else if (wasDrifting) {
+    // drifty: letting go of a long drift kicks you forward (vehicles.md's miniturbo, as seconds)
+    if (T.boostAfter > 0 && S.charge >= T.boostAfter) S.boostKick = T.boost * Math.min(1.5, S.charge / T.boostAfter);
+    S.charge = 0;
+  } else S.charge = 0;
   const angle = S.steer * lerp(T.steerLow, T.steerHigh, clamp((speed - 4) / (T.steerFade - 4), 0, 1));
   S.wheel = -angle;
 
@@ -190,11 +207,16 @@ onPreStep(() => {
     const sgn = Math.sign(vf);
     let a = -T.rolling * sgn - T.drag * vf * Math.abs(vf);
     if (S.drifting) a -= T.handbrake * sgn;
-    if (!S.seated) a -= T.coastBrake * sgn;
+    if (!S.seated || runHud.state.state === 'done') a -= T.coastBrake * 2 * sgn; // empty, or past the finish: stop
     if (ctl.throttle > 0 && vf < T.pushMax) a += T.push * ctl.throttle;
     if (ctl.throttle < 0) a += vf > 0.3 ? T.brake * ctl.throttle : vf > -2 ? T.push * 0.5 * ctl.throttle : 0;
     const nvf = vf + a * FIXED;
     vf = ctl.throttle === 0 && Math.sign(nvf) !== sgn ? 0 : nvf; // friction stops you, never reverses you
+    if (S.boostKick > 0) {
+      vf += S.boostKick * sgn;
+      S.boosted = S.boostKick;
+      S.boostKick = 0;
+    }
     v.x = fx * vf + rx * vl2;
     v.z = fz * vf + rz * vl2;
   } else {
@@ -423,7 +445,7 @@ function puff(x: number, y: number, z: number, count: number, spread: number, co
       fade: 0.5,
     });
 }
-function spark(x: number, y: number, z: number, speed: number) {
+function spark(x: number, y: number, z: number, speed: number, hot = false) {
   if (reducedMotion) return;
   emit({
     x,
@@ -434,7 +456,7 @@ function spark(x: number, y: number, z: number, speed: number) {
     vz: (Math.random() - 0.5) * speed,
     life: 0.2 + Math.random() * 0.25,
     size: 0.07,
-    color: Math.random() < 0.4 ? HOT : SPARK,
+    color: hot || Math.random() < 0.4 ? HOT : SPARK,
     gravity: 14,
     shrink: 0.5,
   });
@@ -463,14 +485,66 @@ function wheelFx(dt: number) {
         grow: [1, 2.5],
         fade: 0.6,
       });
+    // a charged drift (drifty) telegraphs with hot, thicker sparks: let go now (vehicles.md rule 4)
+    const charged = T.boostAfter > 0 && S.charge >= T.boostAfter;
     if ((S.drifting || Math.abs(S.slip) > 3) && Math.abs(S.slip) > 1.5)
-      for (let k = 0; k < 2; k++) if (Math.random() < dt * 40) spark(wp.x, wp.y + 0.05, wp.z, 4);
+      for (let k = 0; k < (charged ? 4 : 2); k++)
+        if (Math.random() < dt * 40) spark(wp.x, wp.y + 0.05, wp.z, 4, charged);
   }
 }
 
 // ---------------------------------------------------------------- frame: seat, run, camera
 const seat = new THREE.Vector3();
 const baseFov = camera.fov;
+let fovKick = 0;
+
+// Seated: the rider tilts with the cart, sits low in the tub and leans back a little, with no walk cycle (this runs
+// after animateAvatar and feel.ts's spring and overrides both).
+function sit(avatar: THREE.Object3D, q: THREE.Quaternion) {
+  avatar.quaternion.copy(q);
+  avatar.scale.set(1.06, 0.82, 1.06);
+  const inner = (avatar.userData as { inner?: THREE.Object3D }).inner;
+  if (!inner) return;
+  inner.position.y = -0.12;
+  inner.rotation.x = 0.22;
+  inner.scale.set(1, 1, 1);
+}
+
+// Seated, world labels (work-site rings and plaques, signs: canvas sprites straight under the scene) hide, so the run
+// reads; they come back when you get out. Enforced every frame, after their own hooks.
+const hidden = new Map<THREE.Object3D, boolean>();
+let scanAt = 0;
+onFrame(
+  ({ now }) => {
+    if (!S.seated) {
+      if (hidden.size) {
+        for (const [o, was] of hidden) o.visible = was;
+        hidden.clear();
+      }
+      return;
+    }
+    if (now > scanAt) {
+      scanAt = now + 500;
+      for (const o of scene.children) {
+        const map = (o as THREE.Sprite).isSprite ? ((o as THREE.Sprite).material as THREE.SpriteMaterial).map : null;
+        if (map?.image instanceof HTMLCanvasElement && !hidden.has(o)) hidden.set(o, o.visible);
+      }
+    }
+    for (const o of hidden.keys()) o.visible = false;
+  },
+  { phase: 'late', order: 1500 },
+);
+
+// The chase camera stays on this side of rocks and trunks: pulled in to just short of whatever is in the way.
+const camRay = { hit: rayHit() };
+camConstraints.push((look, pos) => {
+  if (!S.seated) return false;
+  if (raycastClosest(look, pos, { mask: GROUP.SCENERY }, camRay.hit)) {
+    const d = look.distanceTo(pos);
+    pos.lerp(look, Math.min(1, (d - Math.max(1.2, camRay.hit.distance - 0.4)) / d));
+  }
+  return false;
+});
 onFrame(
   ({ dt, now }) => {
     if (S.seated && (!me.entered || !me.body)) S.seated = false;
@@ -497,6 +571,13 @@ onFrame(
         runHud.tick(body.position.x, body.position.z, physicsTime());
       }
       wheelFx(dt);
+      if (S.boosted > 0) {
+        toWorld(wp, 0, 0, AXLE_Z + 0.4);
+        for (let k = 0; k < 18; k++) spark(wp.x, wp.y, wp.z, 6, true);
+        puff(wp.x, wp.y, wp.z, 8, 3, DUST, 0.18);
+        fovKick = 6;
+        S.boosted = 0;
+      }
     }
     if (S.tumble > 0) S.tumble -= dt;
   },
@@ -505,13 +586,8 @@ onFrame(
 
 // The run: from the start circle to the line at the path's foot. Lives in run-hud.ts; told where the cart is here.
 runHud.configure({
-  started: (x, z) => flat(x, z, TOWER.x, TOWER.z) > START_R,
-  finished: (px, pz, x, z) => {
-    // crossed the finish line (perpendicular to the path's second leg) this frame, within its width
-    const along = (ax: number, az: number) => (ax - FINISH.x) * D2.x + (az - FINISH.z) * D2.z;
-    const across = Math.abs((x - FINISH.x) * D2.z - (z - FINISH.z) * D2.x);
-    return along(px, pz) < 0 && along(x, z) >= 0 && across < FINISH.half;
-  },
+  started: (x, z) => flat(x, z, START.x, START.z) > START_GO,
+  finished: crossedFinish,
 });
 
 // ---------------------------------------------------------------- meshes: my cart, gates, remote carts
@@ -527,6 +603,7 @@ onFrame(
     lastP.set(ip.x, ip.y, ip.z);
     S.wheel = S.mode === 'parked' ? 0 : S.wheel;
     poseCart(mine, S.wheel, d);
+    if (S.seated && me.avatar) sit(me.avatar, pose.q);
     // thrown out: a flip on the way, after feel.ts's spring (order 20) has set the lean
     if (S.tumble > 0 && me.avatar) {
       S.tumbleAngle += dt * 13;
@@ -534,7 +611,8 @@ onFrame(
     } else S.tumbleAngle = 0;
     // a little more field of view with speed
     const v = body.velocity;
-    const want = S.seated ? baseFov + clamp((Math.hypot(v.x, v.z) - 6) * 0.6, 0, 9) : baseFov;
+    fovKick *= Math.exp(-dt * 3);
+    const want = S.seated ? baseFov + clamp((Math.hypot(v.x, v.z) - 6) * 0.6, 0, 9) + fovKick : baseFov;
     if (Math.abs(camera.fov - want) > 0.05) {
       camera.fov = lerp(camera.fov, want, 1 - Math.exp(-dt * 4));
       camera.updateProjectionMatrix();
@@ -543,36 +621,7 @@ onFrame(
   { phase: 'update', order: 25 },
 );
 
-function gate(x: number, z: number, h: number, color: string) {
-  const g = new THREE.Group();
-  const post = new THREE.MeshStandardMaterial({ color: '#8a6a45', roughness: 0.9 });
-  const flag = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
-  const postGeo = new THREE.BoxGeometry(0.16, 2.6, 0.16);
-  const w = 5.2;
-  for (const s of [-1, 1]) {
-    const m = new THREE.Mesh(postGeo, post);
-    const px = x + Math.cos(h) * s * (w / 2),
-      pz = z - Math.sin(h) * s * (w / 2);
-    m.position.set(px, groundHeight(px, pz) + 1.2, pz);
-    m.castShadow = true;
-    g.add(m);
-  }
-  const banner = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, 0.06), flag);
-  banner.position.set(
-    x,
-    Math.max(
-      groundHeight(x, z),
-      ...[-1, 1].map((s) => groundHeight(x + Math.cos(h) * s * 2.6, z - Math.sin(h) * s * 2.6)),
-    ) + 2.45,
-    z,
-  );
-  banner.rotation.y = h;
-  banner.castShadow = true;
-  g.add(banner);
-  scene.add(g);
-}
-gate(TOWER.x + D1.x * START_R, TOWER.z + D1.z * START_R, START.h, '#f4f1e6');
-gate(FINISH.x, FINISH.z, FINISH.h, '#e2483d');
+buildMarkers();
 
 // Owner sync: the cart you sit in, as [x, y, z, qx, qy, qz, qw, front wheel angle, speed]. Null when you are not in
 // it (an empty cart is local only: it rolls back to the top by itself).
@@ -631,6 +680,8 @@ onFrame(
       tq2.set(B[3], B[4], B[5], B[6]).normalize();
       t.mesh.quaternion.slerpQuaternions(tq, tq2, u);
       poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt);
+      const r = remotes.get(peer);
+      if (r?.avatar) sit(r.avatar, t.mesh.quaternion);
     }
   },
   { phase: 'update', order: 26 },
@@ -643,6 +694,7 @@ window.__soapbox = {
   body,
   START,
   FINISH,
+  LINE,
   board,
   getOut,
   backToTop,

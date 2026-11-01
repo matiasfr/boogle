@@ -7,16 +7,18 @@ import { forEachStatic } from '../../../src/physics/engine.ts';
 import { GROUP } from '../../../src/physics/physics.ts';
 
 type Box = {
-  S: { heading: number; seated: boolean; slip: number; drifting: boolean };
+  S: { heading: number; seated: boolean; slip: number; drifting: boolean; grounded: boolean };
+  LINE: [number, number][];
   body: { position: { x: number; y: number; z: number }; velocity: { x: number; y: number; z: number } };
   board: () => void;
   backToTop: () => void;
   run: { state: string; time: number; best: number };
 };
 type Plan = {
-  path: [number, number][]; // world x, z waypoints to steer through
+  path?: [number, number][]; // world x, z waypoints to steer through (default: the course's line)
   drift?: [number, number]; // seconds after the start to hold the handbrake (steering `driftSteer`)
   driftSteer?: number; // -1 left .. 1 right
+  driftCorners?: boolean; // handbrake into the sharp corners instead of braking
   seconds?: number;
 };
 export type Stats = {
@@ -24,6 +26,7 @@ export type Stats = {
   top: number; // m/s
   slip: number; // most sideways speed, m/s
   drifted: number; // s with the handbrake drifting
+  air: number; // longest time off the ground, s
   thrown: boolean;
   state: string;
   time: number;
@@ -61,34 +64,47 @@ export async function drive(plan: Plan) {
     top: 0,
     slip: 0,
     drifted: 0,
+    air: 0,
     thrown: false,
     state: '',
     time: 0,
     seconds: 0,
   });
-  let last = t0;
+  let last = t0,
+    airFor = 0;
+  const path = plan.path ?? box.LINE.slice(1);
   const step = () => {
     const now = performance.now();
     const t = (now - t0) / 1000;
     const v = box.body.velocity;
     const speed = Math.hypot(v.x, v.z);
-    while (wp < plan.path.length - 1 && Math.hypot(plan.path[wp][0] - p.x, plan.path[wp][1] - p.z) < 4) wp++;
-    const [tx, tz] = plan.path[wp];
+    while (wp < path.length - 1 && Math.hypot(path[wp][0] - p.x, path[wp][1] - p.z) < 4) wp++;
+    const [tx, tz] = path[wp];
     const err = wrap(Math.atan2(-(tx - p.x), -(tz - p.z)) - box.S.heading);
     let steer = Math.max(-1, Math.min(1, -err * 2.5));
-    const drifting = !!plan.drift && t > plan.drift[0] && t < plan.drift[1];
+    // how sharp the corner at the next waypoint is, and how far off it is: brake (or drift) into the sharp ones
+    const nx = path[Math.min(wp + 1, path.length - 1)];
+    const turn = Math.abs(wrap(Math.atan2(-(nx[0] - tx), -(nx[1] - tz)) - Math.atan2(-(tx - p.x), -(tz - p.z))));
+    const dist = Math.hypot(tx - p.x, tz - p.z);
+    const sharp = turn > 1.3 && dist < 9 + speed * 0.4;
+    let drifting = !!plan.drift && t > plan.drift[0] && t < plan.drift[1];
     if (drifting) steer = plan.driftSteer ?? steer;
+    if (plan.driftCorners && (sharp || (box.S.drifting && Math.abs(err) > 0.35)) && speed > 6) drifting = true;
     me.jumpHeld = drifting;
     input.stickX = steer;
-    input.stickY = speed < 4.5 && t < 3 ? -1 : 0; // kick off the pad
+    const bend = turn > 0.6 && dist < 6 + speed * 0.6 && speed > 9;
+    const brake = !drifting && ((sharp && speed > 8) || bend || (Math.abs(err) > 1 && speed > 6));
+    input.stickY = brake ? 1 : speed < 4.5 ? -1 : 0; // kick along when slow
     stats.top = Math.max(stats.top, speed);
     stats.slip = Math.max(stats.slip, Math.abs(box.S.slip));
     if (box.S.drifting) stats.drifted += (now - last) / 1000;
+    airFor = box.S.grounded ? 0 : airFor + (now - last) / 1000;
+    stats.air = Math.max(stats.air, airFor);
     last = now;
     stats.state = box.run.state;
     stats.time = box.run.time;
     stats.seconds = t;
-    if (box.S.seated && t < (plan.seconds ?? 14) && box.run.state !== 'done') requestAnimationFrame(step);
+    if (box.S.seated && t < (plan.seconds ?? 60) && box.run.state !== 'done') requestAnimationFrame(step);
     else {
       stats.thrown = !box.S.seated && box.run.state === 'crashed';
       input.stickX = input.stickY = 0;
@@ -98,17 +114,6 @@ export async function drive(plan: Plan) {
   requestAnimationFrame(step);
   return { boarded: box.S.seated };
 }
-
-// The lighthouse path from the start to past the finish (src/pois/lighthouse/site.ts, path "down towards home"), on to the finish on the flats.
-export const PATH: [number, number][] = [
-  [6.6, -45],
-  [8, -36],
-  [9.5, -27],
-  [10.6, -16],
-  [11.5, -6],
-  [12.5, 4],
-  [13, 12],
-];
 
 /** The nearest solid thing (a palm trunk, a rock) to x, z, not the lighthouse: something to crash into. */
 export function obstacle(x: number, z: number): [number, number] | null {
