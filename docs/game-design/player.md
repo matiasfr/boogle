@@ -37,6 +37,12 @@ lean toward acceleration (max 0.35 rad). Your own client starts flops and publis
 | splat | Landing faster than 13.5 m/s | 700 ms |
 | stomp | A friend landing on your head | 550 ms |
 | bonk | Losing 6.5 m/s in one frame while sprinting over 7 m/s | 650 ms |
+| tumble | Landing above 3 m/s after jumping off a moving deck (the wagon, the ride) | 700 ms |
+
+The tumble opens on a held beat (docs/research/comedy-in-games.md, rec 4): 70 ms frozen squashed flat where you landed
+(capped at 120 ms), shivering sideways, while your body slides on underneath; then a few frames' blend into a
+face-plant tipped forward on your nose while the skid carries you, and a pop back up as it ends. With reduced motion
+there is no shiver and no freeze in place (the pose still holds).
 
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
 ([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
@@ -51,7 +57,7 @@ starts and stops, 5 s stopped at each end to hop on. Each tab runs its own flatb
 Standing on it carries you ([src/physics/platforms.ts](../../src/physics/platforms.ts)): your steering is relative to
 the deck point under you, the deck's turn turns you and the camera, and you stay snapped to its floor. Landing on a
 moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
-ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s wobbles you (the bonk flop).
+ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
 ## Camera
 
