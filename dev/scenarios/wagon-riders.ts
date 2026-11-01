@@ -136,5 +136,43 @@ export default {
       drawn < 0.12,
       `drawn wanders ${drawn.toFixed(3)} m; presence (moving) wanders ${presence.toFixed(3)} m; ${sheet.sheet}`,
     );
+
+    // Bob jumps off sideways while it runs: Alice blends him from the deck back to his world presence, no pop.
+    const moving = await B.waitFor(`Math.abs(window.__wagon.state?.speed ?? 0) > 2`, { timeout: 60000 });
+    t.check('the wagon runs again', moving >= 0, `${moving} ms`);
+    await A.eval(`
+      const r = [...window.boogle.remotes.values()][0];
+      window.__leave = [];
+      const t0 = performance.now();
+      const f = () => {
+        if (r.avatar) window.__leave.push([performance.now() - t0, r.avatar.position.x, r.avatar.position.z, r.ride ? r.ride.w : -1]);
+        if (performance.now() - t0 < 2500) requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+      return true;`);
+    await B.eval(`
+      const { me, cam } = await import('/src/player/player.ts');
+      const { input } = await import('/src/player/input.ts');
+      const { yawOf } = await import('/src/physics/platforms.ts');
+      window.__debugCam.clear();
+      cam.yaw = yawOf(window.__wagon.cars[${CAR}].body.quaternion) + Math.PI; // looking along it: D steps off a side
+      input.keys.add('KeyD');
+      me.jumpQueued = 0.15;
+      me.jumpHeld = true;
+      setTimeout(() => { input.keys.delete('KeyD'); me.jumpHeld = false; }, 1500);
+      return true;`);
+    await A.waitFor(`window.__leave.length && window.__leave.at(-1)[0] >= 2400`, { timeout: 8000 });
+    const trail = (await A.eval(`return window.__leave;`)) as number[][];
+    const steps = trail
+      .slice(1)
+      .map((s, k) => Math.hypot(s[1] - trail[k][1], s[2] - trail[k][2]) / Math.max(1, s[0] - trail[k][0]));
+    const fastest = Math.max(...steps) * 1000; // m/s between two frames
+    const off = await A.waitFor(`![...window.boogle.remotes.values()][0].ride`, { timeout: 3000 });
+    t.check('Bob leaves the deck in her view', off >= 0, `${off} ms`);
+    t.check(
+      'and slides off it without a pop',
+      fastest < 12,
+      `fastest frame-to-frame ${fastest.toFixed(1)} m/s over ${trail.length} frames`,
+    );
   },
 };
