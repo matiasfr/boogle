@@ -9,7 +9,7 @@ import { carry } from '../physics/platforms.ts';
 import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.ts';
-import { input } from './input.ts';
+import { input, inputState } from './input.ts';
 import { onFrame } from '../loop.ts';
 
 export const me = {
@@ -85,12 +85,20 @@ export function enterIsland() {
   renderPeople();
 }
 
+const KEY_TURN = 2; // rad/s while ← or → is held without mouse look
+
 export function updateIntent(dt: number) {
   const k = input.keys;
   if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests
   me.sprint = input.sprint || k.has('ShiftLeft') || k.has('ShiftRight');
+  // With no mouse look (unlocked: keyboard only, or the iPad, which has no Pointer Lock) ← → turn the camera instead of
+  // stepping sideways (research/cross-device-input.md rec 15).
+  const arrowsTurn = !inputState.locked;
+  const turn = (k.has('ArrowLeft') ? 1 : 0) - (k.has('ArrowRight') ? 1 : 0);
+  if (arrowsTurn && turn && me.entered) cam.yaw += turn * KEY_TURN * dt;
   let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
-  let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+  let s = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
+  if (!arrowsTurn) s -= turn;
   f -= input.stickY;
   s += input.stickX;
   const fx = -Math.sin(cam.yaw),

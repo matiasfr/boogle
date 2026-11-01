@@ -34,10 +34,21 @@ let lastHint: boolean | null = null;
 function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
-  const hint = me.entered && inputKind() === 'kbm' && !inputState.locked && !inputState.lockFailed;
+  // No Pointer Lock (the iPad): the hint says how to look instead, until the player has.
+  const { canLock } = inputState;
+  const hint =
+    me.entered &&
+    inputKind() === 'kbm' &&
+    !inputState.locked &&
+    !inputState.lockFailed &&
+    (canLock || !inputState.looked);
   if (hint !== lastHint) {
     lastHint = hint;
-    dom.hintEl.innerHTML = hint ? `${glyph('use')}<span>Look around</span>` : '';
+    dom.hintEl.innerHTML = !hint
+      ? ''
+      : canLock
+        ? `${glyph('use')}<span>Look around</span>`
+        : '<span>Drag or scroll with two fingers to look around</span>';
     dom.hintEl.hidden = !hint;
   }
   if (!document.body.classList.contains('touch') || !me.entered) return;

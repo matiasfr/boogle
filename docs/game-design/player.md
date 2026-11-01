@@ -57,7 +57,10 @@ ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s wobbles
 
 Third-person orbit, looking past your right shoulder. Distance 6.5 m by default; pad R3 cycles 4, 6.5 and
 10 m. The wheel, trackpad and pinch don't zoom. Pitch −1.25 to 0.9 rad. Mouse 0.0024 rad/px when locked, 0.005 when dragging unlocked; touch
-0.006; pad right stick 2.8 rad/s yaw, 1.8 rad/s pitch, 0.15 deadzone. It stays above the ground (and above the sea
+0.006; pad right stick 2.8 rad/s yaw, 1.8 rad/s pitch, 0.15 deadzone. While the mouse is not locked (always on iPad,
+which has no Pointer Lock) a two-finger trackpad scroll turns the camera (0.0035 rad/px yaw, 0.0028 pitch; fingers
+right look right with natural scrolling), and ← → turn it at 2 rad/s instead of stepping sideways. The touch stick
+has a scaled radial dead zone of 12% of its travel (50 px on phones, 60 px on tablets). It stays above the ground (and above the sea
 unless you swim). Features can take it over through `camConstraints` (the caves keep it inside the tunnels). Before
 you enter, it slowly circles the island.
 
