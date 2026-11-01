@@ -20,6 +20,7 @@
 - One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
 - Split work so tracks don't touch the same files; `npm run inflight` shows what's in flight. Owner-gated paths go in their own small PRs.
 - Each worker sees its own result before shipping (AGENTS.md, "See it before you ship") and ships itself. The director reads the diff and the stills afterwards.
+- A facet with real depth (level design, vehicle handling, rendering, construction, pipelines) gets a deep-research subagent first: web sources, GDC talks, postmortems, summarised in `docs/research/<topic>.md` with sources and numbered recommendations. Builders cite it.
 - One Mac GPU is shared: `/look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)

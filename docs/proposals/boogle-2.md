@@ -31,6 +31,7 @@ These are standing preferences from the thread.
 - **Decides through HTML pages with pick buttons.** The concept page ends with a round of questions and a copyable summary. Keep its localStorage key `boogle-2-v5`: changing it wipes the owner's picks.
 - **Solo first** (1 November). Every prototype must work and be fun for one person playing alone; multiplayer builds on top.
 - **Fast iteration over test coverage** (1 November). Agents run many tasks in parallel, see their own results and ship by themselves; tests only where lockstep needs them.
+- **Research before deep facets** (1 November). A facet with real depth (level design, vehicle feel, construction, rendering, asset pipelines) starts with deep research into industry practice, written to `docs/research/`, before its options are drafted.
 - **Painted concepts** come from `npm run concepts` (the `concept-art` skill). They run through Codex CLI on the owner's Mac, using a session started on that Mac. They're references, not game art.
 
 ## Decided
