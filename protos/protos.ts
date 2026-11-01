@@ -123,11 +123,10 @@ export const PROTOS: Proto[] = [
     id: 'layout',
     title: 'Island layout',
     step: 'depth',
-    status: 'building',
+    status: 'live',
     url: '/?room=proto-layout&layout=<name>',
     question: 'Which layout feels best to walk?',
-    what: 'A layout option from the lab, in greybox.',
+    what: 'Walk a layout option in greybox: lighthouse-line (recommended), east-bay or west-cove. Compare them on the map at claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT.',
     since: '2026-11-01',
-    note: 'The layout lab artifact link will be added here.',
   },
 ];
