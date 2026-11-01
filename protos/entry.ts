@@ -5,10 +5,11 @@ import { PROTOS, PLAYTEST_ORDER, type Proto } from './protos.ts';
 import { VERDICTS, countsLine, read, sittingLine, sittings, type Saved, type VariantSaved } from './store.ts';
 
 const PLACEHOLDER = /<(\w+)>/;
-const stepLabel = (p: Proto) => (p.step === 'depth' ? 'Depth track' : `Step ${p.step}`);
+export const stepLabel = (p: Proto) => (p.step === 'depth' ? 'Depth track' : `Step ${p.step}`);
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
 const oneLine = (s: string) => s.trim().replace(/\s*\n\s*/g, ' ');
-const label = (v: Saved['verdict']) => VERDICTS.find((x) => x.id === v)?.label ?? '';
+/** A verdict's button label ('' for none). */
+export const label = (v: Saved['verdict']) => VERDICTS.find((x) => x.id === v)?.label ?? '';
 
 /** Whether anything was written or recorded for a card. */
 export function hasNotes(p: Proto): boolean {

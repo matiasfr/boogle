@@ -104,12 +104,6 @@ export function chooseVariant(id: string, v: string): boolean {
 /** The prototype bar hands over how it picks a variant (src/proto/bar/). */
 export const setChooser = (fn: (id: string, v: string) => void) => void (chooser = fn);
 
-/** Whether a switch of `id` from its playing variant to `v` would be live. */
-export const isLive = (id: string, v: string) => {
-  const e = live.get(id);
-  return !!e && e.names.has(protoV(id)) && e.names.has(v);
-};
-
 // ---------------------------------------------------------------- the current step
 let step = ON_ISLAND ? playState().step : PROTO;
 const stepFns = new Set<(id: string) => void>();

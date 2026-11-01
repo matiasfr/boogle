@@ -6,8 +6,8 @@
 import './protos.css';
 import { PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
-import { VERDICTS, countsLine, read, vName, write, type Saved } from './store.ts';
-import { allEntries, body, copy, header } from './entry.ts';
+import { countsLine, read, vName, write, type Saved } from './store.ts';
+import { allEntries, body, copy, header, label, stepLabel } from './entry.ts';
 import { heatMap } from './heat.ts';
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
@@ -16,7 +16,6 @@ const touch = matchMedia('(pointer: coarse)').matches;
 // Re-read on every access: the game's prototype bar writes verdicts and counters to the same key from another tab.
 const saved = (id: string): Saved => read(id);
 const save = (id: string, patch: Partial<Omit<Saved, 'counts'>>) => write(id, patch);
-const verdictLabel = (s: Saved) => VERDICTS.find((v) => v.id === s.verdict)?.label ?? '';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -28,7 +27,6 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') 
 const PLACEHOLDER = /<(\w+)>/;
 const href = (p: Proto, name: string) =>
   import.meta.env.BASE_URL + p.url.replace(/^\//, '').replace(PLACEHOLDER, encodeURIComponent(name.trim()));
-const stepLabel = (p: Proto) => (p.step === 'depth' ? 'Depth track' : `Step ${p.step}`);
 
 function field(label: string, value: string, rows: number, onInput: (v: string) => void, placeholder = '') {
   const wrap = el('label', 'field');
@@ -105,13 +103,13 @@ function card(p: Proto): HTMLElement {
     const bits: HTMLElement[] = [];
     const perV = Object.entries(now.byV).filter(([, v]) => v.verdict);
     for (const [name, v] of perV) {
-      const b = el('span', `verdict ${v.verdict}`, VERDICTS.find((x) => x.id === v.verdict)?.label ?? '');
+      const b = el('span', `verdict ${v.verdict}`, label(v.verdict));
       b.append(el('small', '', ` on ${name}`));
       bits.push(b);
       if (v.note.trim()) bits.push(el('span', 'why', v.note));
     }
     if (!perV.length && now.verdict) {
-      const v = el('span', `verdict ${now.verdict}`, verdictLabel(now));
+      const v = el('span', `verdict ${now.verdict}`, label(now.verdict));
       if (now.verdictV) v.append(el('small', '', ` on ${now.verdictV}`));
       bits.push(v);
       if (now.verdictNote.trim()) bits.push(el('span', 'why', now.verdictNote));
