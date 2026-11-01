@@ -27,7 +27,7 @@ and test it.
 
 ## 2. Is riding fun? (the rail spike)
 
-- [ ] **`wagonAt`:** `src/sim/wagon.ts`, the wagon's place on the laid rails as a pure function of the tick, with its
+- [x] **`wagonAt`:** `src/sim/wagon.ts`, the wagon's place on the laid rails as a pure function of the tick, with its
       test. No render.
 - [ ] **Platform carry:** the player stands on a kinematic Rapier body and is carried without jitter; jumping off
       keeps the platform's speed. Proved on a test platform behind `?proto=ride`.
