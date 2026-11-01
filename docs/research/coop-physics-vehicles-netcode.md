@@ -1,5 +1,14 @@
 # Co-op physics: vehicles, riders and carried objects
 
+_Gap-fill pass, 2026-11-01 (later the same day). I searched again for first-party material on the six games listed
+below as second-hand, plus R.E.P.O. and Tears of the Kingdom. New findings carry markers: **[V]** fetched and the wording
+matched; **[S]** from a search summary, wiki, forum, or a modder's notes, not checked against the original; **[K]** well known, not re-checked. Still no
+first-party netcode material for Sea of Thieves, Human Fall Flat, Fall Guys, Deep Rock Galactic or GTA Online. New
+evidence came from Gang Beasts' own patch notes, Semiwork's account of R.E.P.O. on Photon's blog, a R.E.P.O. networking
+mod that documents the stock behaviour, and Nintendo's GDC 2024 talk on Tears of the Kingdom's physics. Changes:
+recommendation 1 is marked shipped (`riding`, `ac0a672`); 5 is sharpened (grab locally, arbitrate after); 14 and 15 are
+new. The rest stand._
+
 _2026-11-01. How shipped games network vehicles, players standing on moving things, and objects that change hands, for
 2–8 friends in a room our server hosts. It builds on [netcode-browser-physics.md](netcode-browser-physics.md),
 [shared-state-at-scale.md](shared-state-at-scale.md) and [deterministic-sim-at-scale.md](deterministic-sim-at-scale.md)
@@ -24,7 +33,8 @@ before a second pass on those. Code read at `8ebb618`._
    timelines"). Seats sidestep this. Standing on a driven deck needs the deck pushed forward to the present.
 6. Grabbed and carried objects: Fiedler's split of **ownership** (a grab: exclusive until release) from **authority**
    (a touch: whoever simulates it) is the clean general form of the ball's epoch rule. With the server relaying
-   everything, the server can arbitrate claims.
+   everything, the server can arbitrate claims. Grabs should still take effect locally at once: R.E.P.O.'s host
+   approves every grab, which adds a round trip to each one.
 7. A held object is not physics on the wire. Send its pose relative to the holder's hand, inside the holder's presence.
 8. For fast remote vehicles, interpolate with velocity (Hermite). Extrapolate only briefly, then blend corrections
    (small errors slowly, big ones fast). Fiedler's rule of thumb puts a 20 Hz buffer near 150 ms; `INTERP_MS` is 120.
@@ -185,22 +195,100 @@ before a second pass on those. Code read at `8ebb618`._
 - What it shows: owner-by-proximity scales co-op without server physics. The price is that the world feels like the
   owner's connection, and mods exist to move ownership onto the dedicated server.
 
-### Second-hand only: Sea of Thieves, Human Fall Flat, Gang Beasts, Fall Guys, Deep Rock Galactic, GTA Online
+### R.E.P.O. (Semiwork, Unity + Photon PUN)
 
-- **Sea of Thieves.** Nothing first-party turned up. A third-party site suggests that player positions are relative to
-  the ship, a server-simulated object, and that timing drift causes the "on a different boat" glitches. That fits the
-  Unreal based-movement model, but it's a hypothesis.
-- **Human Fall Flat.** Online play (8 players, October 2017) came after the developer first thought it impossible with
-  this much physics ([Wikipedia](https://en.wikipedia.org/wiki/Human:_Fall_Flat)); the console netcode was outsourced
-  to Sumo Digital. No technical details.
-- **Gang Beasts.** A developer post says online needed "almost perfect" netcode because of the physics, and that they
-  worked with Unity's network engineers. Players widely report latency jumps
-  ([Steam thread](https://steamcommunity.com/app/285900/discussions/0/483368526577841388/)).
-- **Fall Guys** runs on dedicated servers. A third-party guide says crowd physics runs on the server; unverified.
-- **Deep Rock Galactic** is player-hosted. Players report drop pods and platforms losing collision, which they blame
-  on host desync; no developer statement.
-- **GTA Online** is peer-to-peer with a session host and per-entity network ownership that changes hands (modding
-  tools request control of a car before changing it). Rockstar hasn't documented it.
+[Photon blog on R.E.P.O.](https://blog.photonengine.com/r-e-p-o-multiplayer-success-powered-by-photon/),
+[NetworkingReworked mod](https://github.com/Ian0526/NetworkingReworked),
+[PUN ownership docs](https://doc.photonengine.com/pun/current/gameplay/ownershipandcontrol).
+
+- **The developers' own account [V].** Semiwork: "Making all the physics feel smooth for clients was something we
+  struggled with for a long time." PUN is "not providing much for dealing with multiplayer physics out-of-the-box", and
+  for next time they "would recommend using Fusion". The post is Photon's marketing, but the quotes are Semiwork's. It
+  says nothing about how grabs or the cart are synced.
+- **Stock behaviour, per a modder's reverse-engineering [V for the README's wording, S for the game].** "Only the
+  MasterClient has full authority over physics objects", so a client grabbing, moving or throwing something waits "a
+  full round trip delay while the host approves it". Carts, doors and throwables feel "laggy, stuttery, or even
+  desynced", and a release or throw gives "a brief jitter" as the object realigns with the host. A second mod page
+  describes the game as heavily host-authoritative, with `PhotonView.TransferOwnership` the place where grab fix-ups
+  happen [S].
+- **What the mod tried [V, README].** Each client gets "predictive authority over physics objects as if they were in
+  singleplayer". After a release, a soft sync "gradually reconciles" the object back to the host's state. Unheld,
+  untouched objects are plain interpolation. Two players grabbing at once still make ownership "bounce briefly". The
+  author calls it discontinued and says it "sort of worked".
+- **PUN's rule [V, docs].** An object with no owner is controlled by the master client, and an owner who leaves hands
+  it back to the master client. Ownership can be taken at once or requested, with the current owner answering.
+- **What it shows.** The 2025 co-op physics hit shipped the simplest model: the host simulates every grabbed thing,
+  and clients feel one round trip on every grab. Players bought it anyway, which says the bar for co-op is lower than
+  competitive play. The fixes people reach for are the ones in recommendations 5 and 6 below: simulate your own grab
+  locally, reconcile softly on release, and settle simultaneous grabs with one stable tie-break.
+
+### Gang Beasts (Boneloaf, Unity)
+
+[0.3.3 post and online beta](https://gangbeasts.game/posts/2017/5/30/patch-notes-for-the-gang-beasts-033-unstable-build-and-information-on-the-gang-beasts-online-multiplayer-beta),
+[0.5.7 beta notes](https://gangbeasts.game/posts/2017/6/29/patch-notes-for-the-gang-beasts-057-beta),
+[Steam announcements](https://store.steampowered.com/news/?appids=285900&feed=steam_community_announcements),
+[MCV interview](https://mcvuk.com/business-news/when-we-first-started-we-didnt-really-know-what-we-were-doing-how-gang-beasts-became-an-international-success/).
+
+- **Server-hosted, stage by stage [V].** The online beta was built with Coatsink. Keys went out in batches "as server
+  capacity is scaled", and only the "most optimised stages" were online at first. The 0.5.7 notes cut physics work
+  "to significantly lower the frequency of physics calculations made per frame", and list collider problems on the
+  wheel stage's pier as "online only". Later posts name Multiplay as a partner and promise "more stable network
+  schemes" (2022) [V].
+- **Separately synced parts drift apart [S].** The 1.0.7 notes (search summary) admit the Elevators stage's guide
+  wheels "will often desync and move independently of the elevator cars online", and describe "changes to the way we
+  sync objects online". Update 1.14 shipped a temporary fix for the elevator that "does cause some visual peculiarities
+  when played online", and update 1.13 rebuilt the Wheel stage "to work online" [S].
+- **Why physics.** They had no animator, so they used physics to animate. A later Unity physics upgrade, adopted for
+  speed, broke their physics [S, MCV].
+- **What it shows.** Even a physics-first studio rebuilt stages one by one to make them work online. The specific bug
+  is general: a part that belongs to a moving assembly but is synced as its own object drifts off it. That supports
+  composing attached things from their parent's pose (recommendation 14).
+
+### Tears of the Kingdom (Nintendo, GDC 2024): kinematic bodies against physics
+
+[GDC Vault abstract](https://gdcvault.com/play/1034667/Tunes-of-the-Kingdom-Evolving),
+[Shacknews recap](https://www.shacknews.com/article/139210/zelda-totk-gdc-2024-panel-recap),
+[Zelda Dungeon recap](https://www.zeldadungeon.net/tears-of-the-kingdom-developers-discuss-the-challenges-of-programming-a-physics-based-world/).
+Not netcode, but it is about the body type Boogle's decks use.
+
+- **Non-physics objects broke Ultrahand [V, recap quoting the talk].** Lead physics programmer Takahiro Takayama: the
+  "non-physics driven objects" (moved along scripted paths) "caused daily problems all over the land of Hyrule". Early
+  builds launched things: a stone thrown onto a cart sent the cart and horse into the air, and falling objects sent
+  "poor wagon merchants flying into space".
+- **The fix was to make everything physics-driven [V].** For a Breath of the Wild cog that misbehaved, "We connected
+  the two fixed cog wheels with a constraint to transfer velocity and moved one of them with a motor." Gates, scripted
+  before, became physics objects too, so an Ultrahand box can prop one open.
+- **Why [S].** A secondary write-up frames it as kinematic bodies having effectively infinite mass, so they break
+  when real physics objects (Link, a glued vehicle) hit them. The recaps I could fetch don't use that phrase. It is
+  how Rapier treats kinematic bodies too [K].
+- **What it shows for Boogle.** `platforms.ts` decks are kinematic on purpose, because every tab must compute the
+  wagon from shared time. So Nintendo's fix (motors and constraints) doesn't transfer to timetabled decks. The
+  problem does: a dynamic prop (the ball, a crate, a barrow) caught between a kinematic deck and the ground gets
+  whatever velocity the solver needs. See recommendation 15.
+
+### Still second-hand: Sea of Thieves, Human Fall Flat, Fall Guys, Deep Rock Galactic, GTA Online
+
+- **Sea of Thieves.** Still nothing first-party on netcode. Rare's programmers, in a 2017 engineering Q&A, said
+  "updating physics objects is probably one of the most expensive things we do" and "the ship is one great big physics
+  object containing lots of other little ones!", and that physics for chests trades against "allowing us to support
+  more ships" [V, [Wccftech on the Q&A](https://wccftech.com/rare-big-ambitions-ai-sea-of-thieves/)]. Rare's Jon Holmes
+  gave an Unreal Fest Europe 2019 talk on batching ticks to scale servers
+  ([Unreal page](https://www.unrealengine.com/en-US/events/unreal-fest-europe-2019/aggregating-ticks-to-manage-scale-in-sea-of-thieves));
+  I found no summary that mentions ships. Forum posts say ships are server-controlled, and one recalls Rare running
+  hidden proxy ships for AI to walk on [S, unverified]. "The ship as a parent of many small things" fits deck-relative
+  positions, which is still a hypothesis.
+- **Human Fall Flat.** Wikipedia says Sakalauskas first thought online play impossible and then found a way using
+  Nvidia technology [S]. A Steam workshop guide lists a client desync fix where the truck's steering wheel
+  disappeared [S], and players say a lagging host lags everyone [S], which fits host-run physics. No developer
+  description.
+- **Fall Guys.** The Multiplayer Group says it co-built the prototype with Mediatonic: "client/server model, physics,
+  animation and player character control", for up to 60 players, on a hand-modified UNet [S, search summary of
+  [their case study](https://www.themultiplayergroup.com/case-studies/fall-guys); the page wouldn't load as text]. Where
+  physics runs and what clients predict isn't stated anywhere first-party.
+- **Deep Rock Galactic.** Community threads quote a developer saying host migration isn't supported because the
+  terrain-deformation state would be too much to keep synced [S]. The wiki notes that no part of the drop pod counts
+  as terrain [S]. No developer statement on moving platforms.
+- **GTA Online.** Nothing new. Still undocumented by Rockstar.
 
 ### Rapier determinism
 
@@ -234,6 +322,9 @@ Each recommendation names the smallest prototype or test that would settle it.
    replicates the deck. _Prototype:_ two tabs on `?proto=wagon`, one rider. A two-tab scenario samples the remote
    rider's height above the deck and its offset from the deck over a lap: today vs deck-frame, at the wagon's top speed
    and through the corners. This is the "Remote riders" fix the wagon's header already sketches.
+   _Status (gap-fill pass):_ shipped in `ac0a672` as the `riding` presence key (`src/netplay/net.ts`,
+   `registerPlatform({ id, shared })` in `src/physics/platforms.ts`). The two-tab measurement is still worth adding as
+   a scenario.
 
 2. **Blend when changing frames.** Boarding and leaving switch a remote's samples between world and deck space. Either
    convert the buffered samples to the new space (Unity) or cross-fade over about 0.1–0.2 s (Fusion's transition
@@ -265,6 +356,12 @@ Each recommendation names the smallest prototype or test that would settle it.
    _Test:_ a pure unit test of the claim resolver (simultaneous grabs, grab versus touch, holder leaves), plus a
    two-tab `dev/peer-test` check where both tabs grab one object within 50 ms and both end up agreeing on one holder
    with no teleport.
+   _Revised after R.E.P.O. (gap-fill pass):_ the grab must take effect locally at once, with the server's verdict
+   arriving after. R.E.P.O.'s stock model, where the host approves every grab, costs a round trip per grab and is what
+   players and modders complained about. The mod that grabbed locally still saw ownership "bounce" on simultaneous
+   grabs. So the resolver needs a sticky rule: the first claim the server receives wins, a held object can't be
+   claimed until release, and the loser's tab blends the object back to the holder's hand over about 0.15 s instead of
+   snapping. Add to the unit test: a claim that arrives while another claim is unanswered never flips the holder twice.
 
 6. **Carry held objects as a hand-relative pose in the holder's presence.** Today `hd` sends only which item is held,
    and the receiver draws it in the avatar's hands. Make that the rule for carts, crates and tools too: while held, the
@@ -322,6 +419,22 @@ Each recommendation names the smallest prototype or test that would settle it.
 13. **Later, with chunks: riders follow their vehicle's relevance.** Rust's leaks came from parented entities missing
     their parent's network-group changes. When phase 5 adds interest management, a rider's chunk is the vehicle's
     chunk. _Test:_ a chunk-membership unit test in that phase's plan.
+
+14. **Draw attached parts from their parent; never sync them separately.** _(New, gap-fill pass.)_ Gang Beasts'
+    elevator guide wheels, synced on their own, drifted off the cars online, and Human Fall Flat shipped a fix for a
+    truck's steering wheel vanishing on clients. In Boogle, anything that belongs to a moving assembly (soapbox
+    wheels, a barrow's load, crates on a flatbed, a seat passenger) gets its pose from the parent's pose every frame,
+    with at most a small Local wobble on top. The wagon's crates already work this way. _Check:_ when a vehicle or
+    barrow leaves `?proto=`, list its parts and confirm that only the root has a presence field.
+
+15. **Keep dynamic props from being launched by kinematic decks.** _(New, gap-fill pass.)_ Tears of the Kingdom's
+    scripted, non-physics objects launched carts and merchants until Nintendo made everything physics-driven. Boogle's
+    decks must stay kinematic, because every tab computes the timetabled wagon from shared time. So the guard goes on
+    the props instead: a dynamic body (the ball, a future barrow or loose crate) that touches a moving deck gets its
+    velocity clamped to the deck's speed plus a small margin (start from 2 m/s) for that step. Or, while it rests on a
+    deck, it is carried like the player (`carry`) rather than shoved by contacts. _Scenario:_ park the ball on the
+    wagon's track and on its flatbed, run a lap, and assert the ball's speed never exceeds the wagon's top speed plus
+    the margin.
 
 Not recommended, given what was found: rollback or full client prediction of shared physics (Rocket League's cost, no
 PvP), Valheim-style ownership of whole areas by the first player present (the world would feel like that player's
