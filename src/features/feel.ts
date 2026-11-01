@@ -206,8 +206,11 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
       fxz = 1 + 0.35 * u;
     } else wob = Math.sin(t * 32) * 0.3 * u;
   }
-  const sq = s.sq.x;
-  a.scale.set((1 + sq * 0.5) * fxz, (1 - sq) * fy, (1 + sq * 0.5) * fxz);
+  // Volume-preserving squash: height s, width 1/√s, so the body deforms rather than grows. The flops keep their own
+  // shapes on top.
+  const sy = 1 - s.sq.x,
+    sxz = 1 / Math.sqrt(sy);
+  a.scale.set(sxz * fxz, sy * fy, sxz * fxz);
   a.rotation.x = s.lx;
   a.rotation.z = s.lz + wob;
   // my own: bonk (a sprint stopped dead) and head-stomps from players landing on me
