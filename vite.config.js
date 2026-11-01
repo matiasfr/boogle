@@ -23,7 +23,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
     rollupOptions: {
       // The atlas (/atlas/) is a second page; d3 is imported only from atlas/, so it stays out of the game's chunks.
-      input: { main: resolve('index.html'), atlas: resolve('atlas/index.html') },
+      // The prototype list (/protos/, protos/protos.ts) is a third.
+      input: { main: resolve('index.html'), atlas: resolve('atlas/index.html'), protos: resolve('protos/index.html') },
       output: {
         manualChunks(id) {
           if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)

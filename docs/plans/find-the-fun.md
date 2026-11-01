@@ -14,6 +14,8 @@
   lockstep numbers runs in its own room (`?room=proto-<name>`) so it never touches the real world's save.
 - **Evidence before a playtest.** The builder looks at its own `/look` stills and motion sheets and iterates before
   shipping (AGENTS.md, "See it before you ship"). Tests only for lockstep code; `perf` only for heavy rendering.
+- **On the protos page.** [boogle.club/protos/](https://boogle.club/protos/) lists every prototype with its Play link,
+  questions and a copyable playtest entry; its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
 
 ## How the work is split
