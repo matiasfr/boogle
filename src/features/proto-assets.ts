@@ -11,7 +11,16 @@ import { scene } from '../render/scene.ts';
 import { precompile } from '../render/precompile.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
+import { registerAsset } from '../render/asset-manifest.ts';
 import kitUrl from '../../assets/built/scaffold-kit.glb?url';
+
+const KIT = registerAsset({
+  id: 'scaffold-kit',
+  url: kitUrl,
+  kind: 'model',
+  priority: 'first',
+  when: { proto: 'assets' },
+});
 
 type Piece = 'pole' | 'clamp' | 'plank';
 type Slot = { piece: Piece; x: number; y: number; z: number; yaw: number };
@@ -72,8 +81,8 @@ function codeDrop(o: THREE.Object3D, t: number) {
 
 type Placed = { holder: THREE.Object3D; started: boolean };
 async function build() {
-  const { loadAsset, play } = await import('../render/assets.ts');
-  const kit = await loadAsset(kitUrl);
+  const { loadAssetById, play } = await import('../render/assets.ts');
+  const kit = await loadAssetById(KIT);
   const code = codeKit();
   const y = groundHeight(SPAWN.x, SPAWN.z - 4);
   const roots: THREE.Object3D[] = [];

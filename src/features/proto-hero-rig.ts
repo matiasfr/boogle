@@ -13,6 +13,19 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
+import rigUrl from '../../assets/built/hero-rig.glb?url';
+import castawayUrl from '../../assets/built/hero-outfit-castaway.glb?url';
+import { registerAsset } from '../render/asset-manifest.ts';
+
+// Both load as the prototype starts (the content manifest, src/render/asset-manifest.ts); src/player/hero.ts loads them.
+registerAsset({ id: 'hero-rig', url: rigUrl, kind: 'model', priority: 'first', when: { proto: 'assets' } });
+registerAsset({
+  id: 'hero-outfit-castaway',
+  url: castawayUrl,
+  kind: 'model',
+  priority: 'first',
+  when: { proto: 'assets' },
+});
 
 const AT = { x: SPAWN.x, z: SPAWN.z - 4 }; // between the two scaffold bays
 const REACH = 3; // m from the hero to offer "Change clothes"

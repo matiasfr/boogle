@@ -13,6 +13,8 @@
 // Materials become node materials (the same conversion the renderer would do), so patchNode() and TSL slots work on
 // them; colours stay linear (glTF base colours are linear, colour textures sRGB), per src/render/README.md.
 // Lazy: import this module with import() from the feature that needs it, so the loaders stay out of the first load.
+// Files are registered by id in the content manifest (./asset-manifest.ts, eager and small: priorities, prefetch after
+// the first frame); loadAssetById(id) loads a registered model.
 import * as THREE from 'three/webgpu';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
@@ -20,6 +22,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { renderer, rendererReady } from './scene.ts';
 import { onFrame } from '../loop.ts';
+import { assetUrl } from './asset-manifest.ts';
 
 export type Asset = {
   url: string;
@@ -53,6 +56,9 @@ export function loadAsset(url: string): Promise<Asset> {
   if (!p) cache.set(url, (p = load(url)));
   return p;
 }
+
+/** A model registered in the content manifest (registerAsset), by id. */
+export const loadAssetById = (id: string) => loadAsset(assetUrl(id));
 
 async function load(url: string): Promise<Asset> {
   const gltf = await (await gltfLoader()).loadAsync(url);

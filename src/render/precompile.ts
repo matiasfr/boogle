@@ -11,6 +11,7 @@
 //                         Work that draws off-screen itself (the hotbar's item icons) does it in make() and returns a
 //                         promise of anything else; it is awaited in turn
 import { renderer, scene, camera, rendererReady } from './scene.ts';
+import { bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
 
 import type * as THREE from 'three/webgpu';
 
@@ -88,9 +89,75 @@ rendererReady.then(
   () => {},
 );
 
+// For the boot timeline (src/boot/timeline.ts): how long three spends generating WGSL from node materials (JS on the
+// main thread; a build that yields is timed only while it runs) and creating shader modules, against the warm-up's wall
+// time, most of which is the GPU compiling pipelines (createRenderPipelineAsync, off the main thread). Private three.js
+// r187 API (NodeManager._createNodeBuilder, backend.createProgram): if it moves, the split reads 0 and nothing breaks.
+type Builder = { build(): unknown; buildAsync(y: () => Promise<void>): Promise<unknown> };
+rendererReady.then(
+  () => {
+    const nodes = (renderer as unknown as { _nodes: { _createNodeBuilder?: (...a: unknown[]) => Builder } })._nodes;
+    const make = nodes?._createNodeBuilder?.bind(nodes);
+    if (make)
+      nodes._createNodeBuilder = (...a) => {
+        const b = make(...a);
+        const build = b.build.bind(b),
+          buildAsync = b.buildAsync.bind(b);
+        b.build = () => {
+          const t = performance.now();
+          try {
+            return build();
+          } finally {
+            bootSpan('wgsl', performance.now() - t);
+          }
+        };
+        b.buildAsync = async (y) => {
+          let t = performance.now();
+          const paused = async () => {
+            bootSpan('wgsl', performance.now() - t);
+            await y();
+            t = performance.now();
+          };
+          try {
+            return await buildAsync(paused);
+          } finally {
+            bootSpan('wgsl', performance.now() - t);
+          }
+        };
+        return b;
+      };
+    const backend = renderer.backend as unknown as { createProgram?: (p: unknown) => void };
+    const createProgram = backend.createProgram?.bind(backend);
+    if (createProgram)
+      backend.createProgram = (p) => {
+        const t = performance.now();
+        createProgram(p);
+        bootSpan('shaderModule', performance.now() - t);
+      };
+  },
+  () => {},
+);
+let warmStart = 0;
+/** main.ts, when the boot warm-up is over: the 'shaders' mark, with the programs and pipelines built so far. */
+export function shadersMark() {
+  const p = (
+    renderer as unknown as {
+      _pipelines?: { caches: Map<unknown, unknown>; programs: Record<string, Map<unknown, unknown>> };
+    }
+  )._pipelines;
+  bootMark('shaders', {
+    ms: Math.round(performance.now() - warmStart),
+    programs: p ? p.programs.vertex.size + p.programs.fragment.size + p.programs.compute.size : -1,
+    pipelines: p ? p.caches.size : -1,
+    wgsl: bootSpanMs('wgsl'),
+    shaderModule: bootSpanMs('shaderModule'),
+  });
+}
+
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
+  warmStart = performance.now();
   const parts = warmups.length + 2; // the scene counts as two: it is most of the work
   await compile(scene);
   onProgress(2 / parts);
