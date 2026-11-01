@@ -6,7 +6,7 @@ import { onApplied, submitEdit } from '../world/sync.ts';
 import { cellX, cellZ, groundHeight } from './terrain.js';
 import { me } from '../player/player.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
-import { PLAYER_R } from '../constants.js';
+import { PLAYER_R } from '../constants.ts';
 import type { Pile } from '../sim/piles.ts';
 
 export const piles = rules.piles.piles;

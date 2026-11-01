@@ -8,7 +8,7 @@
 //
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
-import { GRAVITY, BALL_DAMPING } from '../constants.js';
+import { GRAVITY, BALL_DAMPING } from '../constants.ts';
 import { GROUP } from './physics.js';
 import { raycastClosest, rayHit } from './engine.ts';
 import { groundHeight } from '../adapters/terrain.js';

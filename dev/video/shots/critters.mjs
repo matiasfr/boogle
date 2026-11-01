@@ -116,7 +116,7 @@ export default {
     // Fireflies: a full-moon night over the mushroom garden, a crane down from above so the dark soil is the backdrop.
     const garden = await g.eval(`
       const { PATCH } = await import('/src/sim/mushrooms.ts');
-      const { CELL, HALF } = await import('/src/constants.js');
+      const { CELL, HALF } = await import('/src/constants.ts');
       const { groundHeight } = await import('/src/adapters/terrain.js');
       const x = (PATCH.i0 + PATCH.w / 2) * CELL - HALF, z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
       return [x, groundHeight(x, z), z];`);

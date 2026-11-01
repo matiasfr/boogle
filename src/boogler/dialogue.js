@@ -2,7 +2,7 @@
 // the friendship meter, his portrait to pet (pad Y), and a close button (Escape, E, pad B). Not a modal: the game keeps
 // playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.js). It
 // takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
-import { isTouch, reducedMotion } from '../constants.js';
+import { isTouch, reducedMotion } from '../constants.ts';
 import { setPadGrab } from '../player/controls.js';
 import { modalOpen } from '../player/modal.js';
 import { heartsText } from './friendship.js';

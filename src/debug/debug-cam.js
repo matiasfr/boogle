@@ -1,7 +1,7 @@
 // Dev-only: with ?debugcam=1, `window.__debugCam.set([x,y,z],[x,y,z])` freezes the camera at a pose (and
 // `.clear()` gives it back). Used by `npm run look` (dev/look/); src/features/debug-cam.js loads it only with the flag.
 import { camera } from '../render/scene.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 let pose = null;
 window.__debugCam = {

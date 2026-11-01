@@ -31,7 +31,7 @@ import {
   min,
 } from 'three/tsl';
 import { renderer, scene } from './scene.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 const MAX = 720; // slots
 const SPAWN = 256; // particles one frame can emit (more are dropped)

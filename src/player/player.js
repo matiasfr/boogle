@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
-import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.js';
-import { angleLerp, sanitizeName } from '../math.js';
+import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.ts';
+import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
 import { teleport } from '../physics/physics.js';
@@ -9,7 +9,7 @@ import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
 import { sendPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.js';
 import { input } from './input.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 export const me = {
   entered: false,
@@ -140,7 +140,7 @@ function updateCamera(elapsed) {
   sun.position.set(focus.x + SUN_DIR.x * 80, focus.y + SUN_DIR.y * 80, focus.z + SUN_DIR.z * 80);
 }
 
-// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
+// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
 // world -290, after the ball's respawn check (ball.js, -300): falling off the world puts you back at the spawn.
 onFrame(
   () => {

@@ -5,8 +5,8 @@
 // Friendship is personal (src/boogler/friendship.js), saved in localStorage once per browser, shared by every room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.js) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
-import { FIXED } from '../constants.js';
-import { clamp } from '../math.js';
+import { FIXED } from '../constants.ts';
+import { clamp } from '../math.ts';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';

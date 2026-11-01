@@ -4,12 +4,12 @@
 // throw feels the same). The charge state stays in me.charging / me.chargeStart (the HUD, bump, impact and the input
 // code read or reset it), but only startCharge here starts one. This file must not import ball.js (it imports us).
 import * as THREE from 'three/webgpu';
-import { SEA } from '../constants.js';
+import { SEA } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { camera } from '../render/scene.js';
 import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { stepFlight, stepBall } from '../physics/flight.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { me, camForward, handPosition, throwFrom } from './player.js';
 import { heldId } from './inventory.js';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';

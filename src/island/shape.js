@@ -10,7 +10,7 @@
 //
 // Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; ground.js quantizes
 // them to centimetres once, so the shared sim never sees raw floats.
-import { lerp, smoothstep, fbm } from '../math-pure.js';
+import { lerp, smoothstep, fbm } from '../math-pure.ts';
 import { SEABED } from '../world/grid.ts';
 
 const HOME_R = 52;

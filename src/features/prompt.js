@@ -3,7 +3,7 @@
 // itself; see registerInteractable in src/player/hands.js). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { toScreen } from '../render/scene.js';
 import { me } from '../player/player.js';
 import { interactTarget } from '../player/hands.js';

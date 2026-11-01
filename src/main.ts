@@ -13,10 +13,10 @@ import { net, remotes, connectRoom, updateRemotes } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.js';
 import { initInput } from './player/input.js';
 import { createStall } from './adapters/mushroom-garden.js';
-import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.js';
+import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.js';
 
-// Every feature module in src/features/ registers its own hooks (see src/loop.js).
+// Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
 
 createTerrainMesh();
@@ -27,7 +27,7 @@ createStall();
 installStepHooks({ me, ball, remotes });
 
 // Before the step: remote poses, ball ownership, this player's intent, the ball's kinematic pose. Everything after
-// it (gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks; src/loop.js lists their order.
+// it (gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks; src/loop.ts lists their order.
 let last = performance.now();
 let elapsed = 0;
 const ctx = { now: 0, dt: 0, elapsed: 0 }; // one object for every frame's hooks (no per-frame garbage)
@@ -35,7 +35,7 @@ function frame(now = performance.now()) {
   const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); // a first rAF stamp can predate `last` (play())
   last = now;
   elapsed += dt;
-  beginFrame(); // per-section CPU times for ?prof=1 (src/loop.js)
+  beginFrame(); // per-section CPU times for ?prof=1 (src/loop.ts)
   updateRemotes(now);
   resolveBallOwner(now);
   updateIntent(dt);

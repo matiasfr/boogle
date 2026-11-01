@@ -2,11 +2,11 @@
 // is off, so you can still read where you and the ball will land. They shrink as the body rises above the ground.
 // Serves DESIGN.md 10 (slapstick needs readable jumps and catches). Cosmetic, local.
 import * as THREE from 'three';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.js';
 import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.js';
-import { BALL_R, PLAYER_R } from '../constants.js';
+import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';

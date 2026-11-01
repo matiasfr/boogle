@@ -5,7 +5,7 @@
 // the pool only adds real light where you are. Cosmetic and local.
 import * as THREE from 'three';
 import { scene, camera } from './scene.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 const POOL = 2;
 const pool = [];

@@ -27,8 +27,14 @@
 // anything that registers sync ops or state (src/world/sync.ts), the rules modules (src/world/rules/), or anything a
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
 
-const hooks = { world: [], update: [], late: [] };
-const starts = [];
+export type FrameCtx = { now: number; dt: number; elapsed: number };
+export type Phase = 'world' | 'update' | 'late';
+type Hook = { fn: (ctx: FrameCtx) => void; order: number; name: string };
+type Section = { name: string; ring: Float32Array; last: number };
+export type FrameOpts = { phase?: Phase; order?: number; name?: string };
+
+const hooks: Record<Phase, Hook[]> = { world: [], update: [], late: [] };
+const starts: (() => void)[] = [];
 let started = false;
 
 // Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.js's own
@@ -38,13 +44,13 @@ let started = false;
 //   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
 // main.js marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
 const WINDOW = 240;
-const sections = new Map(); // name -> { name, ring: Float32Array(WINDOW), last: ms this frame }
-const list = []; // the same sections, for allocation-free loops
+const sections = new Map<string, Section>(); // name -> { name, ring: Float32Array(WINDOW), last: ms this frame }
+const list: Section[] = []; // the same sections, for allocation-free loops
 let slot = 0;
 let cursor = 0;
 let frameStart = 0;
 const last = { ms: 0, top: '', topMs: 0 };
-function record(name, ms) {
+function record(name: string, ms: number) {
   let s = sections.get(name);
   if (!s) {
     sections.set(name, (s = { name, ring: new Float32Array(WINDOW), last: 0 }));
@@ -61,12 +67,12 @@ export function beginFrame() {
   }
   cursor = frameStart = performance.now();
 }
-export function mark(name) {
+export function mark(name: string) {
   const t = performance.now();
   record(name, t - cursor);
   cursor = t;
 }
-export function endFrame(name) {
+export function endFrame(name: string) {
   mark(name);
   last.ms = cursor - frameStart;
   record('frame', last.ms);
@@ -82,30 +88,30 @@ export function endFrame(name) {
 export const prof = {
   last,
   table(n = 12) {
-    const rows = [];
+    const rows: { name: string; avg: number; p95: number; max: number }[] = [];
     for (const { name, ring } of list) {
       const sorted = Float32Array.from(ring).sort();
       const avg = sorted.reduce((a, b) => a + b, 0) / WINDOW;
-      const r = (x) => Math.round(x * 1000) / 1000;
+      const r = (x: number) => Math.round(x * 1000) / 1000;
       rows.push({ name, avg: r(avg), p95: r(sorted[Math.floor(WINDOW * 0.95)]), max: r(sorted[WINDOW - 1]) });
     }
     return rows.sort((a, b) => b.avg - a.avg).slice(0, n + 1);
   },
 };
 
-export function onFrame(fn, { phase = 'update', order = 0, name } = {}) {
+export function onFrame(fn: (ctx: FrameCtx) => void, { phase = 'update', order = 0, name }: FrameOpts = {}) {
   const list = hooks[phase];
   if (!list) throw new Error(`onFrame: unknown phase ${phase}`);
   list.push({ fn, order, name: name ?? `${phase} ${order}` });
   list.sort((a, b) => a.order - b.order);
 }
 // vite.config.js rewrites `onFrame(` in each module under src/ to `onFrame.in('<path>')(`, so hooks carry their file.
-onFrame.in = (file) => (fn, opts) => onFrame(fn, { name: file, ...opts });
-export function onStart(fn) {
+onFrame.in = (file: string) => (fn: (ctx: FrameCtx) => void, opts?: FrameOpts) => onFrame(fn, { name: file, ...opts });
+export function onStart(fn: () => void) {
   if (started) fn();
   else starts.push(fn);
 }
-export function runFrame(phase, ctx) {
+export function runFrame(phase: Phase, ctx: FrameCtx) {
   const list = hooks[phase];
   for (let k = 0; k < list.length; k++) {
     list[k].fn(ctx);

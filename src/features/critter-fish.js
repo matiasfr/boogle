@@ -15,7 +15,7 @@ import {
   max,
   time,
 } from 'three/tsl';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { scene } from '../render/scene.js';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.js';

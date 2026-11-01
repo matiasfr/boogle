@@ -6,13 +6,13 @@ import { FNV_SEED, fold, foldStr } from './hash.ts';
 
 export const MAX_PLAYERS = 256;
 export const NAME_MAX = 16;
-export const N_COLORS = 8; // src/constants.js COLORS
+export const N_COLORS = 8; // src/constants.ts COLORS
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 
 // A player id (pid, src/player/identity.ts): the one rule, shared by sync, the roster and the pid source.
 export const okPid = (u: unknown): u is string => typeof u === 'string' && /^[a-z0-9]{1,32}$/.test(u);
 
-// The lobby's own name rule (src/math.js sanitizeName): no control or format characters, one space at a time, 16 chars.
+// The lobby's own name rule (src/math.ts sanitizeName): no control or format characters, one space at a time, 16 chars.
 export function cleanName(s: unknown): string {
   return String(s ?? '')
     .replace(/[\p{Cc}\p{Cf}]/gu, '')

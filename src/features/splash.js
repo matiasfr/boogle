@@ -1,5 +1,5 @@
 // Cosmetic splashes and ripple rings (src/render/splash.js).
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { updateSplash } from '../render/splash.js';
 import { ball } from '../physics/ball.js';
 import { me } from '../player/player.js';

@@ -65,7 +65,7 @@ export function checkRegistry(reg) {
   if (reg.padSlots.length && reg.padSlots.every((s) => reg.pads[s])) {
     errors.push('every pad slot is taken: updates.js needs freeSlots()[0] at runtime. Rethink the layout.');
   }
-  // Core hooks (src/loop.js's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
+  // Core hooks (src/loop.ts's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
   // src/features/ use the feature range and may tie (ties run in registration order).
   const core = reg.frames.filter((f) => isCoreHook(f.path, f.order));
   for (const f of reg.frames.filter((x) => isFeature(x.path))) {

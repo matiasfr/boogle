@@ -3,7 +3,7 @@
 // (bodies, wings). Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { scene } from '../render/scene.js';
 import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../adapters/terrain.js';

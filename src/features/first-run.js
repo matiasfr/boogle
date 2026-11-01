@@ -4,7 +4,7 @@
 // menu opens (the menu lists every control). Local only: one flag per input kind
 // in localStorage. Serves DESIGN.md's "drop-in, drop-out": the controls are one glance away, never a manual.
 import './first-run.css';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { me } from '../player/player.js';
 import { input } from '../player/input.js';
 import { modalOpen } from '../player/modal.js';

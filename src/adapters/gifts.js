@@ -2,7 +2,7 @@
 // you carry is your hotbar (src/player/inventory.js).
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
-import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.js';
+import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { me, throwFrom } from '../player/player.js';

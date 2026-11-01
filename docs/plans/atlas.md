@@ -24,11 +24,11 @@ because `/private/tmp` does not survive a reboot.
 ## Adjusted for main at 98c072e
 
 The plan was written before the WebGPU renderer migration landed. Re-read against `AGENTS.md`, `src/README.md`,
-`src/loop.js` and `src/main.js` on that commit:
+`src/loop.ts` and `src/main.ts` on that commit:
 - The render pass is `renderFrame()` (from `src/render/scene.js`), not `renderer.render`; the Frame view's last slice
-  is named `renderFrame`. The pre-step list is no longer a constant: the extractor reads it from `src/main.js` (`facts.loop`).
+  is named `renderFrame`. The pre-step list is no longer a constant: the extractor reads it from `src/main.ts` (`facts.loop`).
 - The Frame view's core hooks come from the extractor (`isCoreHook` in `dev/scan/read.mjs`: outside `src/features/`, with
-  an order below −10 or from 3000 up, the ranges `src/loop.js` reserves), the same predicate the registry check uses.
+  an order below −10 or from 3000 up, the ranges `src/loop.ts` reserves), the same predicate the registry check uses.
 - New folders (`src/boot/`, `src/decomp/`, `src/guest/`, `src/island/`, `src/pois/`) must have a `LAYERS` home in
   `atlas/layout.js` (the unknown-folder fallback to "Game systems" stays as a safety net, not the plan).
 - `npm run registry` (in `check`) and `dev/registry/scan.mjs` scan presence keys, messages and pads. They used a regex
@@ -47,7 +47,7 @@ The plan was written before the WebGPU renderer migration landed. Re-read agains
   in memory, the theme in `localStorage` (`boogle.atlas.theme`), and the URL hash.
 - No controls: no `registerAction`, no pad slot, no guide row. Keys work only on the atlas page (`/` search, arrows to
   step through a story, Esc). `freeSlots()` is unaffected.
-- The game is untouched: `index.html`, `src/main.js` and `src/style.css` are not edited, nothing under `src/` imports
+- The game is untouched: `index.html`, `src/main.ts` and `src/style.css` are not edited, nothing under `src/` imports
   the atlas, and **the game never links to it**. Anyone with the link can open `/atlas/`, and
   `<meta name="robots" content="noindex">` keeps it out of search engines. (A site-wide `robots.txt` is a separate
   decision and is not part of this plan.)
@@ -403,17 +403,17 @@ glance".
     30, 40, 50, 60; `t` becomes `text`; `code` stays as the snippet) and add `cite` to every step. Correct facts
     against `npm run atlas -- --json`, never from memory. Known fixes: the join story's save route is
     `PUT /rooms/:roomId/snapshot`; honk cites `{ "action": "honk" }` and `{ "message": "honk" }`; the ball cites
-    `{ "presence": "b" }` and `{ "file": "src/constants.js", "symbol": "INTERP_MS" }`; the Boogler cites
+    `{ "presence": "b" }` and `{ "file": "src/constants.ts", "symbol": "INTERP_MS" }`; the Boogler cites
     `{ "hostField": "g" }`; mush steps cite `{ "op": "mush.plant" }`, `{ "message": "w:edits" }`,
-    `{ "message": "w:hash" }`, `{ "message": "w:need" }`; the frame story cites `{ "file": "src/main.js", "symbol":
-    "frame" }` and `{ "file": "src/loop.js", "symbol": "onFrame" }`.
+    `{ "message": "w:hash" }`, `{ "message": "w:need" }`; the frame story cites `{ "file": "src/main.ts", "symbol":
+    "frame" }` and `{ "file": "src/loop.ts", "symbol": "onFrame" }`.
   - Create `docs/atlas/changes.md`: `# What changed`, then `## <today>` with two or three plain-language lines
     introducing the atlas and linking `[watch an edit travel](#story/mush)`.
   - Create `docs/atlas/README.md`: what each file is, both schemas, and the editing rules (stable ids; minimal edits;
     every step cites; use only existing boxes and lanes, and a new box means editing `atlas/layout.js` plus a concept;
     preview with `npm run dev` then `/atlas/`; report with `npm run atlas -- --check`, which never fails anything).
   - CLI: add `--check`. It reads `docs/atlas/concepts.json`, `docs/atlas/stories/*.json`, `docs/atlas/changes.md` and
-    `src/main.js`, runs `parseNarrative` then `checkAtlas`, prints the problems grouped by file plus the folder "to
+    `src/main.ts`, runs `parseNarrative` then `checkAtlas`, prints the problems grouped by file plus the folder "to
     do" list, ends with `N problems`, and exits 0.
   - Extend `test/atlas.test.mjs` (fixtures only):
     - `'checkAtlas passes a good narrative'`: a minimal in-memory facts object (two files) and a narrative that covers
@@ -609,7 +609,7 @@ glance".
   The scenario's stills (nightly) show the stale chips.
 - **The build must never fail because of the atlas.** The extractor catches parse errors per file, the Vite plugin
   catches everything, and the narrative is imported as raw text. Step 5's verification exercises all three.
-- **Hotspots:** `index.html`, `src/main.js`, `src/style.css`, `PLAN.md` and `src/world/rules/index.js` are untouched.
+- **Hotspots:** `index.html`, `src/main.ts`, `src/style.css`, `PLAN.md` and `src/world/rules/index.js` are untouched.
   Shared config edits stay small: `vite.config.js` (one import, one plugin, `input`), `deploy.yml` (two lines: `fetch-depth: 0` and `filter: blob:none`),
   `automerge.yml` (one `if`), `scenarios-nightly.yml` (one line), `AGENTS.md` and `README.md` (one line each),
   `DESIGN.md` (one section, its own commit).

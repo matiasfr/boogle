@@ -1,22 +1,22 @@
 // Pure math: no three.js or DOM, so the island's base ground (src/island/) builds the same in Node and the browser.
-// src/math.js re-exports all of it next to the three.js helpers.
+// src/math.ts re-exports all of it next to the three.js helpers.
 
-export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-export const lerp = (a, b, t) => a + (b - a) * t;
-export const smoothstep = (a, b, x) => {
+export const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+export const smoothstep = (a: number, b: number, x: number) => {
   const t = clamp((x - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
 };
 
 // Terrain must be bit-identical on every client, so noise uses integer hashing only.
-export function hash2(ix, iz) {
+export function hash2(ix: number, iz: number) {
   let h = (Math.imul(ix, 374761393) + Math.imul(iz, 668265263) + 1013904223) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
 
-export function valueNoise(x, z) {
+export function valueNoise(x: number, z: number) {
   const ix = Math.floor(x),
     iz = Math.floor(z);
   const fx = x - ix,
@@ -30,7 +30,7 @@ export function valueNoise(x, z) {
   return lerp(lerp(a, b, u), lerp(c, d, u), v) * 2 - 1;
 }
 
-export function fbm(x, z) {
+export function fbm(x: number, z: number) {
   let s = 0,
     amp = 0.5,
     f = 1;

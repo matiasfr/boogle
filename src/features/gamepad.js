@@ -4,10 +4,10 @@
 // Local input only: no sim or network state. Serves "Designed for drop-in, drop-out": pick up whatever you have and
 // play.
 import './gamepad.css';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { input } from '../player/input.js';
 import { me, cam } from '../player/player.js';
-import { clamp } from '../math.js';
+import { clamp } from '../math.ts';
 import { dom } from '../player/hud.js';
 import { canvas } from '../render/scene.js';
 import { PAD, actionForSlot, padModal, padGrab } from '../player/controls.js';

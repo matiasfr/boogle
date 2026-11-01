@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray } from 'three/tsl';
-import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.js';
-import { lerp, smoothstep, valueNoise } from '../math.js';
+import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
+import { lerp, smoothstep, valueNoise } from '../math.ts';
 import { scene } from '../render/scene.js';
 import { PATCH } from '../sim/mushrooms.ts';
 import { island, baseCm } from '../island/index.js';

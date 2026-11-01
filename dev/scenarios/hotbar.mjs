@@ -61,7 +61,7 @@ export default {
     await g.eval(`${INV} H.useUp();`);
     const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`);
     const far = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
+      const { CELL, HALF } = await import('/src/constants.ts');
       const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === ${item.kind});
       const p = window.boogle.me.body.position;
       return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
@@ -126,7 +126,7 @@ export default {
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
     const spot = await g.eval(`${INV}
-      const { CELL, HALF, GRID_RES } = await import('/src/constants.js');
+      const { CELL, HALF, GRID_RES } = await import('/src/constants.ts');
       const G = await import('/src/adapters/mushroom-garden.js');
       const { PATCH } = await import('/src/sim/mushrooms.ts');
       for (let r = 6; r < 60; r += 2)
@@ -211,7 +211,7 @@ export default {
       { timeout: 20000 },
     );
     const dist = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
+      const { CELL, HALF } = await import('/src/constants.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('frisbee'));
       return it ? Math.hypot(it.i * CELL - HALF - 6, HALF - it.j * CELL + 58) : -1;`);

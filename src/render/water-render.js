@@ -26,11 +26,11 @@ import {
   positionWorld,
   cameraPosition,
 } from 'three/tsl';
-import { GRID_RES, HALF, CELL, SUN_DIR } from '../constants.js';
-import { clamp } from '../math.js';
+import { GRID_RES, HALF, CELL, SUN_DIR } from '../constants.ts';
+import { clamp } from '../math.ts';
 import { heights } from '../adapters/terrain.js';
 import { scene } from './scene.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 // Ground height packed into 16 bits (R = high byte, G = low byte), for a smooth shore depth.
 const heightTex = (() => {

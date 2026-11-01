@@ -1,6 +1,6 @@
 ---
 name: new-feature
-description: Scaffold a new plug-in feature in src/features/ (auto-loaded, own CSS and DOM, frame hooks from src/loop.js). Use when adding a self-contained feature to the game.
+description: Scaffold a new plug-in feature in src/features/ (auto-loaded, own CSS and DOM, frame hooks from src/loop.ts). Use when adding a self-contained feature to the game.
 argument-hint: '<name> [what it does]'
 ---
 
@@ -14,12 +14,12 @@ AGENTS.md has the rules; this is the order to apply them in.
 3. Copy the shape of a small plug-in: `src/features/honk.js` (an action + room messages), `src/features/bump.js` (an
    action on Owner state), `src/features/gifts.js` (interactables + a lockstep adapter). Create `src/features/$0.ts` (TypeScript, strict; AGENTS.md)
    with a header comment saying what it does, which sync kind each piece of state uses and the principle it serves;
-   `import './$0.css'` only if it needs styles; DOM built in JS; `onFrame`/`onStart` from `src/loop.js`.
+   `import './$0.css'` only if it needs styles; DOM built in JS; `onFrame`/`onStart` from `src/loop.ts`.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (pick from
    `freeSlots()`), `registerInteractable` for things the interact button acts on, `emit` for particles,
    `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).
 5. Pure logic worth a test goes in `src/sim/$0.ts` with `test/$0.test.ts`. Don't import another feature; move shared
-   code into `src/`. Hotspot files (`src/main.js`, `src/style.css`, `index.html`): a line or two at most. Tick or add
+   code into `src/`. Hotspot files (`src/main.ts`, `src/style.css`, `index.html`): a line or two at most. Tick or add
    a PLAN.md item if it is on the roadmap, and update or add its file in `docs/game-design/` (AGENTS.md).
 6. `npm run check` (`check:full` for lockstep or net changes). For anything visible, `/look` it. Tell the user how to
    try it (`npm run dev`, two tabs with the same `?room=`).

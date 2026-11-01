@@ -5,7 +5,7 @@ import './bump.css';
 import { me, cam } from '../player/player.js';
 import { ball, claimBall } from '../physics/ball.js';
 import { sendPresence } from '../netplay/net.ts';
-import { onStart } from '../loop.js';
+import { onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.js';
 
 const TUNE = {

@@ -3,9 +3,9 @@
 // Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.js';
-import { CELL, HALF } from '../constants.js';
+import { CELL, HALF } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { skyDebug } from '../render/sky.js';
 import { PATCH } from '../sim/mushrooms.ts';

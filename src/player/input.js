@@ -1,5 +1,5 @@
-import { isTouch } from '../constants.js';
-import { clamp } from '../math.js';
+import { isTouch } from '../constants.ts';
+import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.js';
 import { me, cam } from './player.js';
 import { respawnBall, releaseBall } from '../physics/ball.js';

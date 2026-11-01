@@ -7,7 +7,7 @@
 // you can throw) and 10 (slapstick over precision).
 import './hotbar.css';
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { me, ITEM_HAND } from '../player/player.js';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { inv, SLOTS, heldId, select } from '../player/inventory.js';

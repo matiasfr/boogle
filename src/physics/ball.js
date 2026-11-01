@@ -9,8 +9,8 @@ import {
   HALF,
   PLAYER_R,
   HEAD_OFFSET,
-} from '../constants.js';
-import { clamp, lerp, finiteArr, r2, r3 } from '../math.js';
+} from '../constants.ts';
+import { clamp, lerp, finiteArr, r2, r3 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from '../render/scene.js';
 import { ballMat, teleport } from './physics.js';
@@ -19,7 +19,7 @@ import { me, handPosition, carryPosition } from '../player/player.js';
 import { cancelCharge } from '../player/throw.ts';
 import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 function beachBallTexture() {
   const c = document.createElement('canvas');
@@ -248,7 +248,7 @@ export function prepareBall() {
   }
 }
 
-// Frame hooks; the order numbers are listed at the top of src/loop.js.
+// Frame hooks; the order numbers are listed at the top of src/loop.ts.
 // world -300, right after the physics step: an owned ball that left the island respawns, then the display follows it.
 onFrame(
   () => {

@@ -12,7 +12,7 @@ const AIM = (yaw, pitch) =>
 // A can tossed onto the beach west of the court (the same cell the scenarios use).
 const TOSS = `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] })`;
 const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;
-const ITEM = `const { CELL, HALF } = await import('/src/constants.js');
+const ITEM = `const { CELL, HALF } = await import('/src/constants.ts');
   const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
   return { x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;
 const press = (g, fn) => g.eval(`${INV} H.${fn}();`);

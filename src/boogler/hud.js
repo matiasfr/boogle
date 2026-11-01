@@ -5,7 +5,7 @@
 // fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about the garden anyway.
 import { boogler, booglerScreen } from './boogler.js';
 import { me } from '../player/player.js';
-import { clamp } from '../math.js';
+import { clamp } from '../math.ts';
 import { heartsText } from './friendship.js';
 import { replay } from './dialogue.js';
 

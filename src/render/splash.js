@@ -1,7 +1,7 @@
 // Cosmetic splashes: foam droplets (the shared pool, src/render/particles.js) plus a ripple ring in the sea shader.
 // Detected locally on every client from displayed positions, never networked, so floats and Math.random are fine here.
 import * as THREE from 'three';
-import { BALL_R, GRAVITY, reducedMotion } from '../constants.js';
+import { BALL_R, GRAVITY, reducedMotion } from '../constants.ts';
 import { seaRipples } from './water-render.js';
 import { emit } from './particles.js';
 import { groundHeight } from '../adapters/terrain.js';

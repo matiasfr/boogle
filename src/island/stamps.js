@@ -18,7 +18,7 @@
 //   paint: '#rrggbb', strength (0..1, default 1), stripes: metres between darker rows (fields)
 //
 // Pure arithmetic and Math.sqrt only (correctly rounded everywhere), so every client gets the same ground.
-import { smoothstep } from '../math-pure.js';
+import { smoothstep } from '../math-pure.ts';
 import { naturalHeight } from './shape.js';
 
 const hex = (s) => {

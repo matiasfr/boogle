@@ -5,7 +5,7 @@
 //   gfx                                'webgpu' once the renderer is up (null while starting)
 //   tossBall(charge)                   grab the ball wherever it is and throw it (the real grab and throw, no walk)
 // Read-only for the sim: the tick hook only hashes. Serves "Determinism from day one" (a live desync gets caught).
-import { onStart } from '../loop.js';
+import { onStart } from '../loop.ts';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.ts';
 import { gfx } from '../render/scene.js';
 import { grabBall, throwBall } from '../physics/ball.js';

@@ -11,7 +11,7 @@ import { groundMat, GROUP } from '../../physics/physics.js';
 import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { addLightSource } from '../../render/lights.js';
-import { mulberry32 } from '../../math.js';
+import { mulberry32 } from '../../math.ts';
 import { caveSd } from './mesh.js';
 import { ambAt, withCaveAmbient } from './index.js';
 import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT } from './network.js';

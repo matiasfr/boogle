@@ -4,7 +4,7 @@
 // keeps the full ratio so images stay comparable. Serves DESIGN.md 10 (slapstick needs a steady
 // frame rate: on a phone it beats a few extra pixels). Sync kind: Local (this tab's GPU only).
 import { renderer, MAX_DPR, FIXED_DPR } from '../render/scene.js';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 
 const MAX = MAX_DPR;
 const MIN = MAX * 0.6;

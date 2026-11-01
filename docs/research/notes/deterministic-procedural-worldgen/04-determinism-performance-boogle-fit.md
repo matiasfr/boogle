@@ -14,7 +14,7 @@ Integer arithmetic, `Math.imul` hashing and seeded mulberry32 are reproducible e
 - Minecraft derives structure placement from world seed, position and an integer salt per structure set — [Minecraft Wiki, Structure set](https://minecraft.wiki/w/Structure_set)
 
 ### Inferences
-- Boogle's current base terrain (`src/adapters/terrain.js` `naturalHeight`) uses `Math.exp` and `Math.hypot` plus float fbm, then `Math.round(h*100)` in `src/world/terrain-edits.js`. Today all peers compute the same single island, so a 1-ulp difference only matters if a value lands near a .5 cm rounding boundary; with per-room seeds the number of opportunities multiplies. A per-room generator should be integer-only end to end (as `hash2` in `src/math.js` already is, though `valueNoise`/`fbm` interpolate in floats).
+- Boogle's current base terrain (`src/adapters/terrain.js` `naturalHeight`) uses `Math.exp` and `Math.hypot` plus float fbm, then `Math.round(h*100)` in `src/world/terrain-edits.js`. Today all peers compute the same single island, so a 1-ulp difference only matters if a value lands near a .5 cm rounding boundary; with per-room seeds the number of opportunities multiplies. A per-room generator should be integer-only end to end (as `hash2` in `src/math.ts` already is, though `valueNoise`/`fbm` interpolate in floats).
 - Two safe designs: (a) every peer regenerates from `{seed, genVersion}` and the snapshot hash catches mismatches; (b) the host generates and the base heightfield (129² Int16 = ~33 KB raw, compressible) travels in the snapshot. (a) is cheaper on the wire and fits "sync edits, not state"; (b) is robust to generator edits. Recommended: (a) plus storing `genVersion` in the persisted snapshot so old rooms keep their island when the generator changes (keep old versions or fall back to (b) for them).
 
 ### Gaps
@@ -29,7 +29,7 @@ At 129x129 (16,641 cells) a complete integer pipeline — shape + fbm, 50 iterat
 - Olsen 2004: base terrain + 50 iterations of erosion in <2 s at 512² (262k cells) on a 2004 PC; Tribal Trouble did synthesis + erosion for 512² maps in 2 s — [Olsen 2004](https://web.mit.edu/cesium/Public/terrain.pdf)
 - Local prototype (scratchpad file, not committed; Node v24.11.1, Apple M1 Max): per seed — generate 0.8 ms, thermal x50 3.8-4.1 ms, Priority-Flood 0.5-1.8 ms, flow accumulation 2.0-2.3 ms, total 7.2-9.1 ms warm; first seed 21 ms including JIT warm-up; same seed twice produced identical hashes. (Own measurement; no URL.)
 - An earlier naive version (re-sorting priority keys each pop, allocating neighbour arrays per cell) took 37-60 ms — data-structure choice matters more than algorithm choice at this size. (Own measurement.)
-- Boogle grid facts: `GRID_RES = 129`, `GRID_SIZE = 160` m, so CELL = 1.25 m; heights stored in cm as Int16; water sim region is derived from base terrain below -150 cm — `src/constants.js`, `src/world/water-world.js`, `src/world/terrain-edits.js` (local code)
+- Boogle grid facts: `GRID_RES = 129`, `GRID_SIZE = 160` m, so CELL = 1.25 m; heights stored in cm as Int16; water sim region is derived from base terrain below -150 cm — `src/constants.ts`, `src/world/water-world.js`, `src/world/terrain-edits.js` (local code)
 
 ### Inferences
 - Phones: no external benchmark found; assume a 4-10x slowdown versus an M1 Max for scalar JS, giving ~30-90 ms. Acceptable once per room join.

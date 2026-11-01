@@ -5,14 +5,14 @@
 import './ping.css';
 import * as THREE from 'three';
 import { scene, camera, toScreen } from '../render/scene.js';
-import { COLORS, HALF, SEA, reducedMotion } from '../constants.js';
+import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { clamp } from '../math.js';
+import { clamp } from '../math.ts';
 import { me, camForward } from '../player/player.js';
 import { ball } from '../physics/ball.js';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.js';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.js';
 import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.ts';
 

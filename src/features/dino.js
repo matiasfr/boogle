@@ -9,7 +9,7 @@
 // Small and eager: the dino, the controls, presence. The engine, the guest and the models load on first use.
 import './dino.css';
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.js';
+import { onFrame, onStart } from '../loop.ts';
 import { camera } from '../render/scene.js';
 import { emit } from '../render/particles.js';
 import { me } from '../player/player.js';
