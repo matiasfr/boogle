@@ -21,6 +21,9 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   last frame's counts until the next one starts. A lost GPU device
   reloads the page once it is visible, at most once a minute.
 - Every frame goes through one `RenderPipeline`: `scenePass` (`pass(scene, camera)`, a linear HDR target with MSAA)
+  whose 4x samples are stored (the default). Discarding them (`storeMultisampled*Buffer: false`, which makes three use a
+  `TRANSIENT_ATTACHMENT` memoryless texture on Safari 27) blanked the scene on iPad Safari 27 (1 Nov 2026: only the clear
+  colour; Safari 27 on an M1 Mac was fine), so it stays off until tested on an iPad;
   then one output pass that tone maps (`NeutralToneMapping`; exposure is one base value in `scene.js`, which `sky.js` raises a little at night, like eyes
   adapting) and encodes sRGB. Draw with
   `renderFrame()`. It renders the scene once per animation frame; a second call in the same frame only redraws the
