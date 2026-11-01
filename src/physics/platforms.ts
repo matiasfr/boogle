@@ -53,6 +53,7 @@ export const carry = {
   spin: 0,
   on: null as Platform | null,
   tumbles: 0, // counts landings at speed off a deck (src/features/feel.ts flops on a change)
+  bonks: 0, // counts running into the end of a moving deck (the ?proto=wagon&grind=1 rail meeting the wagon): a bonk
 };
 let boardT = 0,
   fromX = 0,
