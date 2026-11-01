@@ -54,3 +54,8 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Who: Matias, solo.
 - Felt off: a "Porter" tag shows next to his character at the bottom (contribution tier on the haul chip).
 - Felt off: every visit asks for name and colour again; with persistent progress coming, returning players should go straight in.
+
+## 2026-11-01 (hero prototypes)
+- Who: Matias, solo.
+- `?proto=hero`, does running and jumping as this character feel good enough to keep it? Not yet: the walk/run animation isn't up to par, and the lean doesn't suit the character. Needs another pass on how it moves.
+- `?proto=assets`, can you tell the Blender-made scaffold from the code-built one? Barely: really close; the plank's texture was the one giveaway. The hero's wave still looked off (likely the old wave: the new one deployed minutes earlier).
