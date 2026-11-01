@@ -334,7 +334,7 @@ onFrame(
     if (swapAt < 0) mix = shown === 2 ? 1 : 0;
     if (shown === 2 && (swapAt < 0 || sec - swapAt > 1.5)) chimneySmoke(dt);
     updateAtmosphere(mix);
-    updateAmbience(mix);
+    updateAmbience();
     if (snapNow) {
       snapNow = false;
       snapAfter(ERAS[2].name);

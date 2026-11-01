@@ -1,22 +1,20 @@
-// The era's ambience bed (docs/research/era-progression.md, recs 1, 4 and 7; docs/research/audio-and-music.md,
-// "Ambience"): two synthesized beds that crossfade at the swap, judged with the screen off. Called each frame by
-// ./index.ts with the crossfade (0 era 1 .. 1 era 2). Local, quiet, built on the shared audio context
-// (src/render/audio.ts) once it is running.
+// The island's ambience bed (docs/research/era-progression.md, recs 1, 4 and 7; docs/research/audio-and-music.md,
+// "Ambience"): synthesized, judged with the screen off. Called each frame by ./index.ts. Local, quiet, built on the
+// shared audio context (src/render/audio.ts) once it is running. The wood bed simply carries on through the era swap:
+// the owner cut the steam bed and the crossfade into it (docs/playtests.md, 2026-11-02).
 //
 // Wood age (v2, after the owner's sound audit: "less white noise, and more chill"). Mostly tonal, mostly quiet:
 // - surf: brown noise (no hiss), low-passed, swelling in slow waves, left and right on their own unrelated periods;
 // - a breeze far under it, a band of brown noise that wanders;
 // - a soft pad in F (Fmaj9, Dm9, Bbmaj9), one chord every 20 s or so, sometimes resting for a whole chord;
 // - now and then a phrase of one to three marimba-like notes on the F pentatonic, through a dotted-eighth echo;
-// - far off and rare: a gull, a mallet on wood, a rope creaking; all through one dark reverb, panned.
-// Steam: a low works rumble, a chuffing rhythm and a distant whistle. Over both, the same island motif comes round
-// every so often, re-arranged per era rather than replaced: marimba in the wood age, brass with an oompah bass in
-// steam.
+// - far off and rare: a gull, a mallet on wood, a rope creaking; all through one dark reverb, panned;
+// - every minute or so the island motif, on the marimba.
 import { getAudio } from '../../render/audio.ts';
 
 const LEVEL = 0.5; // the whole bed, under the game's own sounds
 const MOTIF = [0, 2, 4, 7, 4]; // semitones over the root: the island motif
-const ROOT = 349.23; // F4: the wood bed's key, and the steam brass's
+const ROOT = 349.23; // F4: the bed's key
 const BEAT = 60 / 84; // the bed's slow pulse (84 BPM): note spacing and the echo
 const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 const CHORDS = [
@@ -31,20 +29,16 @@ const pick = <T>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
 type Surf = { filter: BiquadFilterNode; gain: GainNode; foam: GainNode; next: number };
 type Beds = {
   ctx: AudioContext;
-  noise: AudioBuffer; // white: the steam bed's chuffs and the wood knock's click
+  noise: AudioBuffer; // white: the knock's click and the surf's foam
   out: GainNode;
-  wood: GainNode; // everything of the wood age, faded by the crossfade
-  dry: GainNode; // wood one-shots and the pad, into `wood`
+  dry: GainNode; // one-shots and the pad, into `out`
   echo: GainNode; // send: the dotted-eighth echo, which feeds the reverb
   verb: GainNode; // send: the reverb
   surf: Surf[];
   breeze: { filter: BiquadFilterNode; gain: GainNode };
-  wind: GainNode; // steam: a thin white wind
-  rumble: GainNode;
 };
 let beds: Beds | null = null;
-let next = { pad: 0, pluck: 0, gull: 0, knock: 0, creak: 0, breeze: 0, chuff: 0, whistle: 0, motif: 0 },
-  chuffs = 0,
+let next = { pad: 0, pluck: 0, gull: 0, knock: 0, creak: 0, breeze: 0, motif: 0 },
   chord = 0;
 
 function setup(): Beds | null {
@@ -61,8 +55,7 @@ function setup(): Beds | null {
     g.connect(to);
     return g;
   };
-  const wood = gain(0, out),
-    dry = gain(1, wood);
+  const dry = gain(1, out);
 
   // The reverb: a dark, 3.5 s tail of decaying noise, low-passed as it fades (air soaks up the highs first).
   const len = Math.round(sr * 3.5),
@@ -80,7 +73,7 @@ function setup(): Beds | null {
   const conv = ctx.createConvolver();
   conv.buffer = ir;
   const verb = gain(1, conv);
-  conv.connect(gain(0.55, wood));
+  conv.connect(gain(0.55, out));
   // The echo: dotted eighths, each repeat duller and thinner, into the reverb.
   const echo = ctx.createGain(),
     delay = ctx.createDelay(2);
@@ -93,10 +86,10 @@ function setup(): Beds | null {
   hi.frequency.value = 350;
   echo.connect(delay).connect(lo).connect(hi);
   hi.connect(gain(0.32, delay)); // feedback
-  hi.connect(gain(0.5, wood));
+  hi.connect(gain(0.5, out));
   hi.connect(gain(0.6, verb));
 
-  // Noise: white for the steam bed and clicks; brown (integrated white) for surf and breeze, so there is no hiss.
+  // Noise: white for clicks and foam; brown (integrated white) for surf and breeze, so there is no hiss.
   const noise = ctx.createBuffer(1, sr * 2, sr);
   const w = noise.getChannelData(0);
   for (let k = 0; k < w.length; k++) w[k] = Math.random() * 2 - 1;
@@ -130,15 +123,12 @@ function setup(): Beds | null {
     knock: t + 14,
     creak: t + 21,
     breeze: t,
-    chuff: t,
-    whistle: t + 6,
     motif: t + 16,
   };
   return {
     ctx,
     noise,
     out,
-    wood,
     dry,
     echo,
     verb,
@@ -148,12 +138,10 @@ function setup(): Beds | null {
       next: t + rand(0, 4),
     })),
     breeze: loop(brown, 'bandpass', 450, 0.9, dry),
-    wind: loop(noise, 'bandpass', 500, 0.5, out).gain,
-    rumble: loop(noise, 'lowpass', 110, 0.7, out).gain,
   };
 }
 
-// Routes a one-shot through a panner into the wood bed: `dry` straight, `wet` into the reverb, `echo` into the echo.
+// Routes a one-shot through a panner into the bed: `dry` straight, `wet` into the reverb, `echo` into the echo.
 function sendTo(b: Beds, node: AudioNode, pan: number, dry: number, wet: number, echo = 0): void {
   const p = b.ctx.createStereoPanner();
   p.pan.value = pan;
@@ -185,7 +173,7 @@ function osc(b: Beds, at: number, type: OscillatorType, f: number, len: number):
   return o;
 }
 
-// ---------------------------------------------------------------- wood age
+// ---------------------------------------------------------------- the bed
 // One chord of the pad: two slightly detuned soft voices per note, a slow swell in and a long fade out, under a
 // low-pass, so it reads as warmth rather than a synth.
 function pad(b: Beds, at: number, notes: number[], len: number): void {
@@ -279,7 +267,7 @@ function creak(b: Beds, at: number, pan: number, vol: number): void {
   sendTo(b, g, pan, 0.4, 0.7);
 }
 
-function wood(b: Beds, t: number, ahead: number, on: boolean): void {
+function bed(b: Beds, t: number, ahead: number): void {
   // Surf: each side swells in its own slow waves (a rise, a longer wash back), opening the low-pass as it comes in.
   for (const s of b.surf)
     if (s.next < ahead) {
@@ -304,7 +292,6 @@ function wood(b: Beds, t: number, ahead: number, on: boolean): void {
     b.breeze.gain.gain.setTargetAtTime(rand(0.004, 0.012), t, 2.5);
     next.breeze += rand(3, 7);
   }
-  if (!on) return; // the steam bed has taken over: no new wood-age events
   if (next.pad < ahead) {
     const len = rand(18, 26);
     // Rest for a whole chord now and then: silence is part of the bed (Breath of the Wild, Minecraft).
@@ -343,76 +330,22 @@ function wood(b: Beds, t: number, ahead: number, on: boolean): void {
   }
 }
 
-// ---------------------------------------------------------------- steam
-// A short note: an oscillator through an envelope, optionally through a lowpass (brass).
-function note(b: Beds, at: number, f: number, vol: number, len: number, type: OscillatorType, cut = 0): void {
-  const g = env(b, at, vol, cut ? 0.04 : 0.005, len);
-  let node: AudioNode = osc(b, at, type, f, len);
-  if (cut) {
-    const f2 = b.ctx.createBiquadFilter();
-    f2.type = 'lowpass';
-    f2.frequency.value = cut;
-    node = node.connect(f2);
-  }
-  node.connect(g).connect(b.out);
-}
-// A burst of filtered noise (a chuff).
-function burst(b: Beds, at: number, f: number, q: number, vol: number, len: number): void {
-  const src = b.ctx.createBufferSource();
-  src.buffer = b.noise;
-  const filter = b.ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.value = f;
-  filter.Q.value = q;
-  const g = env(b, at, vol, 0.01, len);
-  src.connect(filter).connect(g).connect(b.out);
-  src.start(at, Math.random() * 1.5);
-  src.stop(at + len + 0.05);
+// The island motif: unhurried marimba into the echo.
+function motif(b: Beds, at: number): void {
+  MOTIF.forEach((n, k) => mallet(b, at + k * BEAT * 0.75, ROOT * 2 ** (n / 12), 0.05, 0.15, 0.25));
 }
 
-function steam(b: Beds, ahead: number, steam: number): void {
-  // A chuff on every beat (accented every fourth), and a whistle now and then.
-  if (next.chuff < ahead) {
-    if (steam > 0.05) burst(b, next.chuff, 700, 1.2, (chuffs % 4 === 0 ? 0.2 : 0.11) * steam, 0.16);
-    chuffs++;
-    next.chuff += 0.42;
-  }
-  if (next.whistle < ahead) {
-    if (steam > 0.05) {
-      note(b, next.whistle, 880, 0.035 * steam, 1.1, 'sine');
-      note(b, next.whistle, 1108, 0.03 * steam, 1.1, 'sine');
-    }
-    next.whistle += 12 + Math.random() * 10;
-  }
-}
-
-// The island motif, re-arranged: unhurried marimba into the echo (wood), brass with an oompah bass (steam).
-function motif(b: Beds, at: number, steam: number): void {
-  MOTIF.forEach((n, k) => {
-    const f = ROOT * 2 ** (n / 12);
-    if (steam < 0.95) mallet(b, at + k * BEAT * 0.75, f, 0.05, 0.15, 0.25);
-    if (steam > 0.05) {
-      note(b, at + k * 0.3, f, 0.05 * steam, 0.32, 'sawtooth', 1400);
-      if (k % 2 === 0) note(b, at + k * 0.3, f / 4, 0.07 * steam, 0.22, 'sawtooth', 500);
-    }
-  });
-}
-
-export function updateAmbience(mix: number): void {
+export function updateAmbience(): void {
   if (!beds) beds = setup();
   const b = beds;
   if (!b) return;
   const t = b.ctx.currentTime;
-  b.wood.gain.setTargetAtTime(1 - mix, t, 0.3);
-  b.wind.gain.setTargetAtTime(0.015 * mix, t, 0.3);
-  b.rumble.gain.setTargetAtTime(0.16 * mix, t, 0.3);
   const ahead = t + 0.15; // schedule a little ahead of the clock
   for (const k of Object.keys(next) as (keyof typeof next)[]) if (next[k] < t - 0.5) next[k] = t; // back from a hidden tab
   for (const s of b.surf) if (s.next < t - 0.5) s.next = t;
-  steam(b, ahead, mix);
-  wood(b, t, ahead, mix < 0.95);
+  bed(b, t, ahead);
   if (next.motif < ahead) {
-    motif(b, next.motif, mix);
-    next.motif += mix < 0.5 ? rand(45, 75) : rand(14, 20);
+    motif(b, next.motif);
+    next.motif += rand(45, 75);
   }
 }

@@ -218,10 +218,10 @@ Then the era turns to 2 (steam wagons), on several channels at once: the huts si
 smoking chimneys, a town hall with a clock tower and a chimney, a works stack and shed, a water tower (the landmark,
 the tallest thing on the island, left of the court), bunting lines and yellow posts where the wagon will run pop up,
 rippling out from the court in about two seconds; over 4 s the sky and fog cross to an amber haze with the fog much
-closer in (era 1 is clear), and the ambience bed crosses from wood (a breeze, mallet knocks, gulls) to steam (a works
-rumble, a chuffing beat, a whistle), with the same five-note island motif coming round in each (plucked, then brass
-with an oompah bass). One era-1 hut (east of the court) and the first site's helper hut (built, as in
-`?proto=build`) stay standing in era 2: the heritage test, "history or leftovers?". After the swap a paper postcard
+closer in (era 1 is clear), while the wood-age ambience bed (surf, a soft pad, marimba phrases, the odd gull, mallet
+knock and creak, and the five-note island motif) simply carries on: the steam bed and its crossfade were cut after the
+sound audit (docs/playtests.md, 2026-11-02). One era-1 hut (east of the court) and the first site's helper hut
+(built, as in `?proto=build`) stay standing in era 2: the heritage test, "history or leftovers?". After the swap a paper postcard
 shows the court before (taken when opening day started) and after, side by side, for 14 s (click to put it away);
 each tab takes its own, so a late joiner gets none. The era is derived (age, sections laid, whether opening day has
 run out), so a late joiner or a reload sees the same island, landing in the same phase of the call or the bell. In a
@@ -231,7 +231,7 @@ and the sky is untouched; the state and ops exist but nothing submits them.
 
 Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
 [src/features/era-swap.ts](../../src/features/era-swap.ts), [src/proto/era/](../../src/proto/era/index.ts) (each era's
-kit, blocks, sky tint and ambience bed, is one table, [blocks.ts](../../src/proto/era/blocks.ts); the call, sky,
+kit, blocks and sky tint, is one table, [blocks.ts](../../src/proto/era/blocks.ts); the call, sky,
 ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
 (`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,
 `open.lay` (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
