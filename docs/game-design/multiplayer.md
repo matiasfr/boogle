@@ -99,7 +99,7 @@ The server ([server/README.md](../../server/README.md)) is one Node service: the
 
 [src/player/identity.ts](../../src/player/identity.ts), [src/features/identity.ts](../../src/features/identity.ts).
 No sign-up. Each browser gets a random player id (pid) on its first visit, kept in `boogle.pid`, plus the name and
-colour you pick at Jump in. A reload, a new room or a new day is the same player; clearing site data, another browser
+colour you pick on your first visit's card (and change on the pause view's Room page). A reload, a new room or a new day is the same player; clearing site data, another browser
 or another device is a new one (old plaque lines stay under the old name). The tab sends its pid when it connects
 (`/room/:id?self=&pid=&key=`); the server binds it to that socket and stamps it on each of the tab's edits, ignoring
 any pid an edit claims, and refuses a pid that is in the room under another browser's key (`taken`), so copying a pid

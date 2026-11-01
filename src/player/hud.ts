@@ -7,6 +7,7 @@ import { canvas } from '../render/scene.ts';
 import { interactTarget, useVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
 import { onFrame } from '../loop.ts';
+import { showCard, friendlyName } from './arrival.ts';
 
 // Elements of index.html, always there.
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -16,7 +17,6 @@ export const dom = {
   nameInput: $<HTMLInputElement>('name-input'),
   swatchesEl: $('swatches'),
   enterBtn: $<HTMLButtonElement>('enter'),
-  hereEl: $('here'),
   rosterEl: $('roster'),
   netEl: $('net'),
   netLabel: $('net-label'),
@@ -94,7 +94,6 @@ export function renderPeople() {
   for (const r of on) addRow(r.name, r.colorIdx, false);
 
   const count = on.length + (me.entered ? 1 : 0);
-  const cap = typeof net.full === 'number' ? ` (${net.full} players)` : '';
   if (net.state === 'solo')
     dom.netLabel.textContent = net.full
       ? `Solo · island full${net.retryAt ? ' · waiting for a spot' : ''}`
@@ -103,22 +102,12 @@ export function renderPeople() {
         : `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
-
-  if (net.state === 'solo') {
-    dom.hereEl.textContent = net.full
-      ? `The island is full${cap}. You'll join when someone leaves.`
-      : "Couldn't reach the island's room, so it's yours alone. Reload the page to try again.";
-  } else if (!on.length) dom.hereEl.textContent = 'Nobody else is on the island yet. Share this page to bring friends.';
-  else {
-    const names = on.map((r) => r.name);
-    dom.hereEl.textContent =
-      names.length === 1
-        ? `${names[0]} is on the island.`
-        : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are on the island.`;
-  }
 }
 
 // ---------------------------------------------------------------- lobby
+// The name-and-colour card shows on a first visit only (src/player/arrival.ts): a returning player skips it and goes
+// straight in with the saved name and colour as soon as the island can be drawn.
+const direct = !showCard();
 function renderSwatches() {
   dom.swatchesEl.replaceChildren();
   COLORS.forEach((col, k) => {
@@ -142,6 +131,7 @@ function renderSwatches() {
 export function lobbyReady() {
   dom.enterBtn.disabled = false;
   dom.enterBtn.textContent = 'Jump in';
+  if (direct) enterIsland();
 }
 
 export function initLobby() {
@@ -153,7 +143,8 @@ export function initLobby() {
   } catch {
     // storage unavailable; start with defaults
   }
-  if (storedName) dom.nameInput.value = storedName;
+  dom.nameInput.value = storedName || friendlyName();
+  if (direct) dom.lobbyEl.hidden = true; // the loading screen covers the wait
   me.colorIdx =
     Number.isInteger(storedColor) && storedColor >= 0 && storedColor < COLORS.length
       ? storedColor

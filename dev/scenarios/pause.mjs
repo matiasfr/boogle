@@ -1,6 +1,6 @@
 // The pause view: a local overlay (the island keeps running, only this player's input is taken). H opens it on the
 // controls, every control with keys is in the guide there; Resume is focused; held keys do nothing behind it; the room
-// page shows the room and an invite button; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
+// page shows the room and an invite button and renames you; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
 // input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
@@ -74,6 +74,20 @@ export default {
       rm.title === room && rm.copy && rm.people.includes('pauser'),
       `${JSON.stringify(rm)}; ${roomShot}`,
     );
+    // 3b. You: rename and recolour from the room page, saved for next time.
+    await g.page.fill('.pause-you-edit input', 'Renamed');
+    await g.eval(`document.querySelector('.pause-you-edit [data-color="3"]').click();`);
+    await g.wait(0.3);
+    const you = await g.eval(`return { name: window.boogle.me.name, color: window.boogle.me.colorIdx,
+      saved: [localStorage.getItem('boogle.name'), localStorage.getItem('boogle.color')],
+      listed: [...document.querySelectorAll('.pause-name')].map((e) => e.textContent) };`);
+    t.check(
+      'the room page renames and recolours you, saved for next time',
+      you.name === 'Renamed' && you.color === 3 && you.saved[0] === 'Renamed' && you.saved[1] === '3',
+      JSON.stringify(you),
+    );
+    await g.page.fill('.pause-you-edit input', 'pauser');
+    await g.eval(`document.activeElement?.blur(); document.querySelector('[data-act=back]').focus();`);
     await g.key('Escape');
     await g.wait(0.3);
     t.check(

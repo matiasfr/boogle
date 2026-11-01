@@ -43,19 +43,17 @@
     <div class="lobby" id="lobby">
       <form class="card" id="join" autocomplete="off">
         <h1>B<span class="o">oo</span>gle</h1>
-        <p class="sub" id="lobby-sub">
-          One island, one beach ball, and everyone who has this page open. Pick a name and jump in.
-        </p>
-        <div class="field">
-          <label for="name-input">Your name</label>
-          <input id="name-input" name="name" maxlength="16" placeholder="Dat Frinco" spellcheck="false" />
-        </div>
-        <div class="field">
-          <span class="label" id="color-label">Color</span>
-          <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="color-label"></div>
-        </div>
+        <p class="sub" id="lobby-sub"></p>
+        <input
+          id="name-input"
+          name="name"
+          maxlength="16"
+          placeholder="Your name"
+          aria-label="Your name"
+          spellcheck="false"
+        />
+        <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
         <button class="enter" id="enter" type="submit" disabled>Loading island</button>
-        <p class="here" id="here">Looking for friends on the island</p>
       </form>
     </div>
 

@@ -68,7 +68,7 @@ tick of 100 ms (10 per second).
 - [6.11 Day and night](game-design/day-night.md)
 - [6.12 Caves](game-design/caves.md)
 - [6.13 Pause view and controls guide](game-design/pause.md)
-- [6.14 First-run card](game-design/first-run.md)
+- [6.14 Arrival and the first-run card](game-design/first-run.md)
 - [6.15 Telemetry and updates](game-design/telemetry-and-updates.md)
 - [6.16 Talking to NPCs](game-design/npcs.md)
 - [6.17 The dino and the guest](game-design/dino-and-guest.md)
@@ -78,6 +78,7 @@ tick of 100 ms (10 per second).
 - [6.21 Prototype: mini-game toys (`?proto=minis`)](game-design/minis.md)
 - [6.22 Prototype: departures board (`?proto=board`)](game-design/board.md)
 - [6.23 Prototype: the groove (retired: cut)](game-design/groove.md)
+- [6.24 Identity: name and colour](game-design/identity.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
