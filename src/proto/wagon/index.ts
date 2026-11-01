@@ -37,6 +37,7 @@ import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from
 import { paceIn } from '../../sim/tune.ts';
 import { lengthOf } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
+import { wagonFreight } from './freight.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
@@ -472,6 +473,13 @@ onFrame(
   },
   { phase: 'update', order: 7 },
 );
+
+// Helper-hut freight arrives on the rear flatbed and hops off into the open Track ring (./freight.ts).
+wagonFreight({
+  rear: cars[cars.length - 1],
+  laid: laidCount,
+  standing: (ahead) => (clock === clock ? (wagonNow(clock + ahead)?.stop ?? -1) : -1),
+});
 
 // ---------------------------------------------------------------- rails for a faked count (?laid=N): PROTOTYPE
 const ghostMat = new THREE.MeshStandardNodeMaterial({ color: '#7a6f66', roughness: 0.6, metalness: 0.4 });

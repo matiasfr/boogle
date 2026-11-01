@@ -11,6 +11,7 @@ declare global {
     __ride?: unknown; // src/features/proto-ride.ts (?proto=ride) tuning and state
     __soapbox?: unknown; // src/proto/soapbox/index.ts: tuning and state, for ?proto=soapbox evals
     __wagon?: unknown; // src/proto/wagon/index.ts (?proto=wagon) state and the look evals' shortcuts
+    __freight?: unknown; // src/proto/wagon/freight.ts: its tunables and drop log, for the look evals
     __debugCam?: { set(pos: number[], look: number[], fov?: number): void; clear(): void }; // src/debug/debug-cam.ts
   }
 }

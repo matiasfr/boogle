@@ -233,8 +233,16 @@ starts and stops (src/proto/wagon/look.ts). `&v=lively` (rockier, bouncier, more
 camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
 6.5 m/s, through two room tunables (`wagonCruise` cm per tick, `wagonAccel` ticks to reach it; default 30 and 30, so
 other rooms are unchanged) that the page sets for the whole proto- room on load (calm and lively put the defaults back).
-Jumping off a moving car keeps its speed and slides it away on landing in a dust trail (longer at the fast pace); the
-crates on the rear flatbed are solid.
+Jumping off a moving car keeps its speed and slides it away on landing in a dust trail (longer at the fast pace),
+opening on the tumble flop's held beat (docs/game-design/player.md); the crates on the rear flatbed are solid.
+
+**The rail takes over** (src/proto/wagon/freight.ts, Local). With a helper hut built and the wagon running, helper freight
+arrives by wagon: crates hop off the rear flatbed in an arc into the open site's Track ring and land with a thump and
+a ring of dust, then sink into the pile, at the stop nearest that ring. When the wagon stands there on the freight tick
+(one piece per hut every 27 s), the crates are thrown early so they land on that tick, as the ring's count goes up;
+freight that lands while the wagon is elsewhere rides along and hops off 0.8 s after it next stands there (the count
+went up already: only the show waits). Nothing changes when or how much freight counts; with no wagon running (nothing
+laid yet) the pile just grows as before. Look eval: `wt=freight` in dev/look/evals/wagon.js.
 
 Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`, which records the tick and the first
 section it laid in the `opening` state, so a late joiner's wagon runs the same timetable) and Reset the route
