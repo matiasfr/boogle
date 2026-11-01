@@ -5,8 +5,9 @@
 // is set, their avatar is hidden instead (and shown again when it clears).
 import { onFrame } from '../loop.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
+import { protoOn } from '../proto/flags.ts';
 
-if (new URLSearchParams(location.search).get('proto') === 'soapbox') import('../proto/soapbox/index.ts');
+if (protoOn('soapbox')) import('../proto/soapbox/index.ts');
 else {
   const driving = new Set<string>();
   onRemotePresence((r, pr) => {

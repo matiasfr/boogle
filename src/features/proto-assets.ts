@@ -12,6 +12,7 @@ import { precompile } from '../render/precompile.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
 import kitUrl from '../../assets/built/scaffold-kit.glb?url';
+import { protoOn } from '../proto/flags.ts';
 
 type Piece = 'pole' | 'clamp' | 'plank';
 type Slot = { piece: Piece; x: number; y: number; z: number; yaw: number };
@@ -122,4 +123,4 @@ async function build() {
   (window as unknown as { __assets?: unknown }).__assets = { kit, t: () => t, seek: (s: number) => (t = s) };
 }
 
-if (new URLSearchParams(location.search).get('proto') === 'assets') build();
+if (protoOn('assets')) build();

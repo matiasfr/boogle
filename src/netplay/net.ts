@@ -84,11 +84,13 @@ export const net = {
 };
 export const remotes = new Map<string, Remote>();
 
-// Room comes from the URL (?room=beach); anything outside [a-z0-9-]{1,32} is stripped.
+// Room comes from the URL (?room=beach); anything outside [a-z0-9-]{1,32} is stripped. The playtest playlist (`?play`,
+// src/proto/flags.ts) has its own room unless the address names one.
 export function getRoomId() {
   let raw = '';
   try {
-    raw = new URLSearchParams(location.search).get('room') ?? '';
+    const q = new URLSearchParams(location.search);
+    raw = q.get('room') ?? (q.has('play') ? 'proto-play' : '');
   } catch {
     // no URL available; use the default room
   }

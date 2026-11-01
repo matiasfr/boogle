@@ -13,6 +13,7 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
+import { protoOn } from '../proto/flags.ts';
 
 const AT = { x: SPAWN.x, z: SPAWN.z - 4 }; // between the two scaffold bays
 const REACH = 3; // m from the hero to offer "Change clothes"
@@ -116,4 +117,4 @@ async function build() {
 }
 
 // Also in the look lab (?proto=look&hero=<outfit>), to see it under the scene's render presets.
-if (q.get('proto') === 'assets' || q.has('hero')) build();
+if (protoOn('assets') || q.has('hero')) build();

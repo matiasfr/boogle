@@ -19,7 +19,7 @@ import { pieceMesh, pieceColor, commitPieces, onFly } from '../../render/haul-pi
 import { me } from '../../player/player.ts';
 import { identity } from '../../player/identity.ts';
 import { registerInteractable, type Interactable } from '../../player/hands.ts';
-import { haulHooks } from '../../player/haul-variant.ts';
+import { haulHooks, BARROW_CAP } from '../../player/haul-variant.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
 import { submitEdit } from '../../world/sync.ts';
@@ -330,7 +330,7 @@ function scoop(now: number) {
 // A barrow is worth fetching only if it holds clearly more than your back (rec 6 (a): 120-180 logs, 2-3 sections).
 // The tray is your stack, so in a `proto-` room the barrow raises the room's hard cap to CAPACITY (a tune.set, as the
 // haul kit's slider would); elsewhere it keeps the room's cap.
-const CAPACITY = 150;
+const CAPACITY = BARROW_CAP;
 let capAsked = 0;
 function askCapacity(now: number) {
   if (!isProtoRoom(getRoomId()) || !identity.pid || rules.tune.tune.v.hard >= CAPACITY || now - capAsked < 4000) return;

@@ -12,9 +12,11 @@ import { getRoomId } from '../../netplay/net.ts';
 import { isProtoRoom } from '../../sim/tune.ts';
 import { RUN_KINDS } from '../../sim/scripted-run.ts';
 import { ROUTE, TRACK } from '../../sim/route.ts';
+import { chooseVariant, onVariant, playPanel, protoV } from '../flags.ts';
 
 const params = new URLSearchParams(location.search);
-const want = Math.max(0, RUN_KINDS.indexOf(params.get('v') as (typeof RUN_KINDS)[number]));
+const kindOf = (v: string) => Math.max(0, RUN_KINDS.indexOf(v as (typeof RUN_KINDS)[number]));
+let want = kindOf(protoV('lay'));
 const proto = isProtoRoom(getRoomId());
 const { sites } = rules.sites;
 const HELP = [
@@ -27,15 +29,23 @@ const box = document.createElement('div');
 box.className = 'lay-proto';
 const kinds = document.createElement('div');
 kinds.className = 'lay-kinds';
-RUN_KINDS.forEach((name, k) => {
+// The run kinds switch live: the room's `run` key follows `want` (below), on this panel and from the prototype bar.
+const kindLinks = RUN_KINDS.map((name) => {
   const a = document.createElement('a');
   const p = new URLSearchParams(params);
   p.set('v', name);
   a.href = `?${p}`;
   a.textContent = name;
-  a.classList.toggle('on', k === want);
+  a.addEventListener('click', (e) => chooseVariant('lay', name) && e.preventDefault());
   kinds.append(a);
+  return a;
 });
+const pick = (v: string) => {
+  want = kindOf(v);
+  kindLinks.forEach((a, k) => a.classList.toggle('on', k === want));
+  asked = -1e9;
+};
+onVariant('lay', ['', ...RUN_KINDS], pick);
 const fill = document.createElement('button');
 fill.type = 'button';
 fill.textContent = 'Fill the Track ring';
@@ -46,11 +56,13 @@ const note = document.createElement('span');
 note.className = 'lay-note';
 box.append(kinds, fill, reset, note);
 (document.querySelector('.hud') ?? document.body).append(box);
+playPanel('lay', box);
 fill.addEventListener('click', () => submitEdit({ op: 'tune.fill', i: 0, j: 0 }));
 reset.addEventListener('click', () => submitEdit({ op: 'tune.reset', i: 0, j: 0 }));
 
 // Ask for the variant until the room plays it (a run in progress refuses the change until it ends).
 let asked = -1e9;
+pick(protoV('lay'));
 onFrame(
   ({ now }: { now: number }) => {
     const open = sites.open;

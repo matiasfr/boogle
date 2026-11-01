@@ -28,6 +28,7 @@ import { identity } from '../../player/identity.ts';
 import { ROUTE, HELPER, RING_R, ringAt } from '../../sim/route.ts';
 import { materialOf } from '../../sim/materials.ts';
 import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows, type Piece } from './blueprint.ts';
+import { playPanel } from '../flags.ts';
 
 const OFFSET = RING_R + 1.9; // the hut's middle, metres to the +x of its Helper ring's centre
 // Pacing (construction rec 1): pieces go up at their own beat, not as fast as logs pour in. The gap shrinks a little
@@ -490,6 +491,7 @@ export function shortcutButtons(protoRoom: boolean): void {
   const note = document.createElement('span');
   box.append(pour, reset, note);
   (document.querySelector('.hud') ?? document.body).append(box);
+  playPanel('build', box);
   pour.addEventListener('click', () => (want += POUR));
   reset.addEventListener('click', () => {
     want = 0;
