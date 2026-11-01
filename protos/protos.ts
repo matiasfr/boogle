@@ -22,6 +22,8 @@ export type Proto = {
   note?: string;
   /** The prototype has a "Copy values" button whose line belongs in the playtest entry. */
   values?: boolean;
+  /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. */
+  variants?: { name: string; url: string; what: string }[];
 };
 
 export const PROTOS: Proto[] = [

@@ -17,6 +17,8 @@
 - **On the protos page.** [boogle.club/protos/](https://boogle.club/protos/) lists every prototype with its Play link,
   one gut question and a copyable playtest entry (no checklists: the owner is an experienced player and judges feel
   fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
+- **Options, not one guess.** Where the feel is uncertain, a prototype carries 2–3 variants (`&v=<name>`) the owner
+  compares in one sitting.
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
 
 ## How the work is split
