@@ -51,7 +51,7 @@ and test it.
 
 - [x] **`wagonAt`:** `src/sim/wagon.ts`, the wagon's place on the laid rails as a pure function of the tick, with its
       test. No render.
-- [ ] **Platform carry:** the player stands on a kinematic Rapier body and is carried without jitter; jumping off
+- [x] **Platform carry:** the player stands on a kinematic Rapier body and is carried without jitter; jumping off
       keeps the platform's speed. Proved on a test platform behind `?proto=ride`.
 - [ ] **Placeholder wagon:** a greybox wagon on `wagonAt` you can ride, behind `?proto=ride`.
 - [ ] **Playtest 2.**
