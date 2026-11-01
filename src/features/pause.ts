@@ -100,24 +100,26 @@ async function toggleFullscreen(b: HTMLElement) {
     setTimeout(() => b.isConnected && (b.textContent = fsLabel()), 2500);
   }
 }
-// WebKit bug 311151: on iPadOS a gamepad's shoulders and triggers (LB, RB, LT, RT) stop reporting in fullscreen, and
-// Boogle uses all four. With a pad connected on iPad the first press explains and offers the Home Screen web app, which
-// opens standalone without the Fullscreen API; a second press goes fullscreen anyway (research/cross-device-input.md
-// rec 5). The iPad's Safari says it is a Mac, so it is told apart by its touch points; this names a bug, not a feature
-// to detect.
+// Safari on iPad goes fullscreen without the keyboard: WebKit grants element fullscreen there only with keyboard access
+// off (WebFullScreenManager::supportsFullScreenForElement, `!withKeyboard` off the desktop idiom), and then drops every key
+// but Space, the arrows, Tab, Enter and the modifiers before the page sees it (EventHandler::isKeyEventAllowedInFullScreen).
+// W A S D, E, R, H, the digits and Esc all go dead, which is what a Magic Keyboard player met. WebKit bug 311151 also stops
+// a pad's shoulders and triggers (LB, RB, LT, RT) in fullscreen. So on iPad the first press explains and offers the Home
+// Screen web app, which opens standalone without the Fullscreen API; a second press goes fullscreen anyway, for touch
+// (research/cross-device-input.md rec 5). The iPad's Safari says it is a Mac, so it is told apart by its touch points;
+// this names a platform limit, not a feature to detect.
 const iPadOS = () => /Macintosh|iPad/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
-const padConnected = () => [...(navigator.getGamepads?.() ?? [])].some((p) => p?.connected);
-const FS_PAD_NOTE =
-  'On iPad, fullscreen stops a controller’s shoulder buttons and triggers. For a full screen that keeps them, use Share → Add to Home Screen and play from there.';
+const FS_IPAD_NOTE =
+  'Safari’s fullscreen on iPad turns off the keyboard’s letter keys and a controller’s shoulder buttons. For a full screen that keeps every control, use Share → Add to Home Screen and play from there.';
 function fullscreenButton() {
   let warned = false;
   const fs = button(fsLabel(), () => {
-    if (!fsElement() && !warned && iPadOS() && padConnected()) {
+    if (!fsElement() && !warned && iPadOS()) {
       warned = true;
-      const note = el('p', 'pause-note', FS_PAD_NOTE);
+      const note = el('p', 'pause-note', FS_IPAD_NOTE);
       note.setAttribute('role', 'status');
       fs.after(note);
-      fs.textContent = 'Fullscreen anyway';
+      fs.textContent = 'Fullscreen anyway (touch only)';
       return;
     }
     toggleFullscreen(fs);
