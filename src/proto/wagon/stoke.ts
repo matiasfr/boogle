@@ -4,13 +4,12 @@
 // one at walking pace. Serves DESIGN.md 1 (Toys before chores) and 4 (Cooperation is automatic: anyone's log counts).
 //
 // The steam is lockstep (src/world/rules/wagon.ts); everything here is Local and cosmetic: the logs' flight, the
-// fire's glow and embers, the gauge, the whoosh. ./index.ts reads `heat()` for the chimney's smoke and chuffs.
+// fire's glow and embers, the gauge. ./index.ts reads `heat()` for the chimney's smoke.
 import * as THREE from 'three/webgpu';
 import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
-import { scene, camera } from '../../render/scene.ts';
+import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { getAudio } from '../../render/audio.ts';
 import { submitEdit, onApplied } from '../../world/sync.ts';
 import { reducedMotion } from '../../constants.ts';
 import { me } from '../../player/player.ts';
@@ -30,7 +29,7 @@ const logMat = new THREE.MeshStandardNodeMaterial({ color: '#8a5a32', roughness:
 const logGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.42, 8).rotateZ(Math.PI / 2);
 const ember = new THREE.Color('#ffb04a'),
   spark = new THREE.Color('#ffe08a');
-type Flying = { mesh: THREE.Mesh; t: number; from: THREE.Vector3; spin: number; mine: boolean };
+type Flying = { mesh: THREE.Mesh; t: number; from: THREE.Vector3; spin: number };
 const flying: Flying[] = [];
 const pool: THREE.Mesh[] = [];
 
@@ -78,7 +77,7 @@ export function wagonStoke(fire: Firebox, shown: () => boolean): void {
       mesh.castShadow = true;
       mesh.visible = false;
       scene.add(mesh);
-      flying.push({ mesh, t: -k * FLY.stagger, from: from.clone(), spin: (Math.random() - 0.5) * 14, mine });
+      flying.push({ mesh, t: -k * FLY.stagger, from: from.clone(), spin: (Math.random() - 0.5) * 14 });
     }
   });
 
@@ -105,7 +104,6 @@ export function wagonStoke(fire: Firebox, shown: () => boolean): void {
           if (!on) continue;
           flare = Math.min(1.5, flare + 0.6);
           burst(10);
-          whoosh(f.mine);
           continue;
         }
         f.mesh.visible = true;
@@ -151,58 +149,5 @@ function burst(n: number) {
     });
 }
 
-// The fire catching: a short roar of filtered noise, louder for your own logs, quieter with distance.
-let noise: AudioBuffer | null = null;
-function noiseOf(ctx: AudioContext): AudioBuffer {
-  if (noise) return noise;
-  noise = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
-  const d = noise.getChannelData(0);
-  for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-  return noise;
-}
-export function whoosh(mine: boolean) {
-  const a = getAudio();
-  if (!a) return;
-  const near = Math.hypot(mouthAt.x - camera.position.x, mouthAt.z - camera.position.z);
-  const vol = (mine ? 0.22 : 0.14) / (1 + near / 6);
-  if (vol < 0.01) return;
-  const { ctx, out } = a;
-  const t = ctx.currentTime + 0.005;
-  const src = ctx.createBufferSource();
-  src.buffer = noiseOf(ctx);
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(300, t);
-  lp.frequency.exponentialRampToValueAtTime(1400, t + 0.12);
-  lp.frequency.exponentialRampToValueAtTime(250, t + 0.55);
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.08);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-  src.connect(lp).connect(g).connect(out);
-  src.start(t);
-  src.stop(t + 0.6);
-}
-
-// A soft chuff for each puff from the chimney, louder with a hotter fire (./index.ts).
-export function chuffSound(at: THREE.Vector3, hot: number) {
-  const a = getAudio();
-  if (!a) return;
-  const near = Math.hypot(at.x - camera.position.x, at.z - camera.position.z);
-  const vol = (0.03 + 0.07 * hot) / (1 + near / 6);
-  if (vol < 0.006) return;
-  const { ctx, out } = a;
-  const t = ctx.currentTime + 0.005;
-  const src = ctx.createBufferSource();
-  src.buffer = noiseOf(ctx);
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 500 + 500 * hot;
-  bp.Q.value = 0.8;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-  src.connect(bp).connect(g).connect(out);
-  src.start(t, Math.random() * 0.3);
-  src.stop(t + 0.18);
-}
+// The fire's roar and the chimney's chuffs are silent for now (cut in the sound audit, 2026-11-02); better ones
+// come later.

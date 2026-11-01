@@ -27,7 +27,6 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { getAudio, onBeat } from '../../render/audio.ts';
 import { world, submitEdit, onApplied, worldStatus, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
@@ -43,7 +42,7 @@ import { paceIn } from '../../sim/tune.ts';
 import { lengthOf } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
-import { wagonStoke, fireHeat, chuffSound } from './stoke.ts';
+import { wagonStoke, fireHeat } from './stoke.ts';
 import { RATE_ONE, FAST, STEAM_FULL } from '../../sim/wagon-steam.ts';
 
 const TPS = 1000 / TICK_MS;
@@ -51,8 +50,8 @@ const TPS = 1000 / TICK_MS;
 // is lively's feel at about double the speed, through the room's tuning (`wagonCruise`, `wagonAccel`: a proto- room
 // only, set for the whole room when the page loads; calm and lively put the default pace back).
 const VARIANTS = {
-  calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, clack: 0.6, shake: 0 },
-  lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, clack: 1.4, shake: 1 },
+  calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, shake: 0 },
+  lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, shake: 1 },
 };
 const V = params.get('v');
 export const VARIANT = V === 'fast' ? 'fast' : V === 'lively' ? 'lively' : V === 'stoke' ? 'stoke' : 'calm';
@@ -65,10 +64,10 @@ const PACES: Record<typeof VARIANT, WagonPace> = {
 };
 const FEEL = {
   bogie: 1.1, // m from a car's centre to each bogie (the heading is the chord between them)
-  joint: 4.5, // m between rail joints: each bogie clacks and the car rocks as it crosses one
-  whistleS: 1.2, // s before leaving a stop the whistle blows
+  joint: 4.5, // m between rail joints: the car rocks as each bogie crosses one
+  whistleS: 1.2, // s before leaving a stop the steam bursts (the whistle, silent for now)
   // rock: rad of roll kicked per joint at 3 m/s; bounce: m the car drops at a joint; puffs: chuffs per metre (plus a
-  // slow idle chuff standing), puffSize their size; clack: its loudness; shake: the camera's jolt per joint, riding
+  // slow idle chuff standing), puffSize their size; shake: the camera's jolt per joint, riding
   ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT === 'stoke' ? 'calm' : VARIANT],
 };
 // Train order from the outbound end; offsets of car centres along the line from the timetable's point, metres.
@@ -328,7 +327,7 @@ function move(c: Car, k: number, dt: number) {
   b.angularVelocity.set(0, (angleLerp(c.prevYaw, c.yaw, 1) - c.prevYaw) / dt, 0);
 }
 
-// ---------------------------------------------------------------- feel: chuffs, clacks, rocking, the whistle
+// ---------------------------------------------------------------- feel: chuffs, rocking, the steam burst
 const smoke = new THREE.Color('#e8e4dc'),
   steamWhite = new THREE.Color('#ffffff'),
   sooty = new THREE.Color('#8f8a84'),
@@ -340,54 +339,12 @@ let jolt = 0, // the riding camera's jolt, decaying
   lastDist = NaN,
   whistled = -1;
 
-function sound(kind: 'clack' | 'whistle', at: { x: number; z: number }) {
-  const a = getAudio();
-  if (!a) return;
-  const near = Math.hypot(at.x - camera.position.x, at.z - camera.position.z);
-  const vol = 1 / (1 + near / 6);
-  if (vol < 0.04) return;
-  const { ctx, out } = a;
-  // Clacks lock to the next 8th note under ?proto=groove.
-  const t = kind === 'clack' ? onBeat(ctx.currentTime + 0.005, 0, 8).t : ctx.currentTime + 0.005;
-  const g = ctx.createGain();
-  g.connect(out);
-  if (kind === 'clack') {
-    const o = ctx.createOscillator();
-    o.type = 'square';
-    o.frequency.setValueAtTime(190 + Math.random() * 40, t);
-    o.frequency.exponentialRampToValueAtTime(70, t + 0.05);
-    g.gain.setValueAtTime(0.12 * FEEL.clack * vol, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-    o.connect(g);
-    o.start(t);
-    o.stop(t + 0.08);
-    return;
-  }
-  // The whistle: two reedy tones a sixth apart, a short toot then a long one.
-  g.gain.setValueAtTime(0, t);
-  for (const [on, off] of [
-    [0, 0.25],
-    [0.35, 1.2],
-  ]) {
-    g.gain.linearRampToValueAtTime(0.16 * vol, t + on + 0.04);
-    g.gain.setValueAtTime(0.16 * vol, t + off - 0.08);
-    g.gain.linearRampToValueAtTime(0, t + off);
-  }
-  for (const f of [587, 880]) {
-    const o = ctx.createOscillator();
-    o.type = 'triangle';
-    o.frequency.value = f;
-    o.connect(g);
-    o.start(t);
-    o.stop(t + 1.25);
-  }
-}
+// The whistle and the rail clacks are silent for now (cut in the sound audit, 2026-11-02); better ones come later.
 function puff(big: number, vx: number, vz: number) {
   look.chimneyTop.getWorldPosition(chimney);
-  // stoked: a hot fire puffs big and sooty and chuffs out loud, a cold one breathes thin wisps
+  // stoked: a hot fire puffs big and sooty, a cold one breathes thin wisps
   const hot = STOKE ? fireHeat() : 1;
   const size = STOKE ? 0.55 + 0.75 * hot : 1;
-  if (STOKE && !big) chuffSound(chimney, hot);
   for (let n = 0; n < (2 + big * 4) * FEEL.puffSize * size; n++)
     emit({
       x: chimney.x + (Math.random() - 0.5) * 0.2,
@@ -438,7 +395,6 @@ onFrame(
           c.rollV += (b ? -1 : 1) * Math.sign(w.speed) * FEEL.rock * k * 30;
           c.dipV -= FEEL.bounce * k * 25;
           if (carry.on === c.platform && !reducedMotion) jolt = Math.max(jolt, FEEL.shake * k);
-          sound('clack', c.mesh.position);
         }
         c.joints[b] = j;
       }
@@ -450,14 +406,13 @@ onFrame(
       chuff = Math.min(chuff - 1, 1);
       puff(0, w.vx, w.vz);
     }
-    // The whistle and a burst of steam, a moment before it leaves a stop.
+    // A burst of steam, a moment before it leaves a stop.
     if (w.stop >= 0) {
       const leaving = wagonNow(clock + FEEL.whistleS * TPS);
       const id = Math.floor(clock - w.phase) * 10 + w.stop; // this dwell
       if (leaving && leaving.stop < 0 && whistled !== id) {
         whistled = id;
         puff(1, 0, 0);
-        sound('whistle', cars[0].mesh.position);
       }
     }
   },
