@@ -255,7 +255,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=assets',
     question: 'Can you tell the Blender-made scaffold from the code-built one?',
-    what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code.',
+    what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code. Between them a jointed hero rigged by a Blender script: walk up and press Interact, and it waves.',
     since: '2026-11-01',
     note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
   },
