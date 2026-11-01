@@ -186,6 +186,33 @@ export const PROTOS: Proto[] = [
     note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
   },
   {
+    id: 'minis',
+    title: 'Mini-game toys',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=minis',
+    question: 'Which of these would you play again unprompted?',
+    what: 'Three places with a prop around the court: a crate stack on a stump (east), one hole of ball golf (tee at the court’s west edge), a mushroom hop line (south-west). Bests stay in this browser.',
+    since: '2026-11-01',
+    variants: [
+      {
+        name: 'topple',
+        url: '/?proto=minis&v=topple',
+        what: 'Knock six crates off the stump with the ball or your body; it rebuilds itself 4 s after the last falls.',
+      },
+      {
+        name: 'golf',
+        url: '/?proto=minis&v=golf',
+        what: 'E at the tee, then throws and bumps into the striped bucket past the palms. Par 3; carrying costs a stroke per 3 m.',
+      },
+      {
+        name: 'hop',
+        url: '/?proto=minis&v=hop',
+        what: 'Bounce down five mushrooms to the flag without touching the sand. E to go again.',
+      },
+    ],
+  },
+  {
     id: 'layout',
     title: 'Island layout',
     step: 'depth',
