@@ -6,3 +6,4 @@ import './pickup-feel.ts'; // every variant, the back bundle too
 
 if (haulVariant === 'barrow') import('./barrow.ts');
 if (haulVariant === 'toss') import('./toss.ts');
+if (haulVariant === 'wave') import('./wave.ts');

@@ -42,7 +42,7 @@ const REACH_LOGS = 2.2; // metres from a bundle
 const pending = new Map<number, number>(); // source id -> when you pressed, so a double press sends one edit
 onApplied((e: { op: string; p: string; id: number }, tick: number, r: { n?: number } | null) => {
   if (e.op === 'src.take') pending.delete(e.id);
-  if (e.op === 'src.take' && r?.n && e.p === (net.room?.selfId ?? 'local')) {
+  if (e.op === 'src.take' && r?.n && e.p === (net.room?.selfId ?? 'local') && !haulHooks.moved(e.id)) {
     const p = rules.sources.list()[e.id];
     if (p) fly(spot(p, at), r.n);
   }
@@ -57,6 +57,7 @@ registerInteractable(() => {
   const list = rules.sources.list();
   let out: Interactable[] | null = null; // made only when a bundle is in reach: asked every frame
   for (let id = 0; id < list.length; id++) {
+    if (haulHooks.moved(id)) continue; // a haul variant draws and takes this one elsewhere (the wave's sandbar)
     const p = list[id];
     const dx = cellX(p.i) + 0.9 - pos.x, // spot()'s x, z: the ground height only for a bundle in reach
       dz = cellZ(p.j) + 0.4 - pos.z;
@@ -87,6 +88,7 @@ onFrame(
     const k = materialOf(rules.sites.age());
     let c = 0;
     rules.sources.list().forEach((p, id) => {
+      if (haulHooks.moved(id)) return;
       spot(p, at);
       for (let m = 0; m < rules.sources.charges(id) * PER_CHARGE && c < mesh.instanceMatrix.count; m++) {
         mesh.setMatrixAt(c, heapMatrix(m, id, at.x, at.y, at.z, m4));

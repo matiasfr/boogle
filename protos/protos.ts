@@ -60,6 +60,12 @@ export const PROTOS: Proto[] = [
         url: '/?room=proto-haul-toss&proto=haul&v=toss',
         what: 'Hold click near the site: your logs fly into the ring by handfuls.',
       },
+      {
+        name: 'wave',
+        url: '/?room=proto-haul-wave&proto=haul&v=wave',
+        what: 'The best bundles sit on a sandbar a wave sweeps every minute or so. Get back above the stakes in time.',
+        spawn: { x: 2, z: 33, yaw: 3.142 }, // on the home beach behind the high-water stakes, looking out at the sandbar
+      },
     ],
   },
   {
