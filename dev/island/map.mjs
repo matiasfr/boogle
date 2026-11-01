@@ -14,8 +14,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const islandDir = new URL('../../src/island/', import.meta.url); // the glob's keys are relative to index.js
 const keys = fs
   .readdirSync(path.join(root, 'src/pois'), { withFileTypes: true })
-  .filter((d) => d.isDirectory() && fs.existsSync(path.join(root, 'src/pois', d.name, 'site.js')))
-  .map((d) => '../pois/' + d.name + '/site.js')
+  .filter((d) => d.isDirectory() && fs.existsSync(path.join(root, 'src/pois', d.name, 'site.ts')))
+  .map((d) => '../pois/' + d.name + '/site.ts')
   .sort();
 const sites = await Promise.all(
   keys.map(async (key) => ({ id: key.split('/').at(-2), ...(await import(new URL(key, islandDir))).default })),

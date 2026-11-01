@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "name": "west-cove",
+  "title": "B. West cove line",
+  "pois": [
+    {
+      "id": "lighthouse",
+      "x": -94,
+      "z": -22,
+      "dir": [1, 0.4]
+    },
+    {
+      "id": "windmills",
+      "x": 82,
+      "z": -46,
+      "dir": [-1, 0.2]
+    }
+  ],
+  "route": [
+    {
+      "age": 0,
+      "x": 6,
+      "z": 12,
+      "to": [-12, 10]
+    },
+    {
+      "age": 0,
+      "x": -12,
+      "z": 10,
+      "to": [-28, 0]
+    },
+    {
+      "age": 0,
+      "x": -28,
+      "z": 0,
+      "to": [-42, -10]
+    },
+    {
+      "age": 1,
+      "x": -42,
+      "z": -10,
+      "to": [-64, -14]
+    },
+    {
+      "age": 1,
+      "x": -64,
+      "z": -14,
+      "to": [-80, -12]
+    }
+  ],
+  "archipelago": {
+    "islands": [
+      {
+        "id": "mine",
+        "name": "Mine Isle",
+        "era": 3,
+        "x": -330,
+        "z": -20,
+        "r": 55,
+        "link": "iron trestle",
+        "from": "home"
+      },
+      {
+        "id": "gary",
+        "name": "Gary's Yard",
+        "era": 4,
+        "x": -380,
+        "z": -300,
+        "r": 80,
+        "link": "steel bridge",
+        "from": "mine"
+      },
+      {
+        "id": "melon",
+        "name": "Melon Isle",
+        "era": 5,
+        "x": 60,
+        "z": -420,
+        "r": 95,
+        "link": "concrete causeway",
+        "from": "home"
+      },
+      {
+        "id": "outer",
+        "name": "Outer Isles",
+        "era": 6,
+        "x": 420,
+        "z": -120,
+        "r": 70,
+        "link": "electric viaduct",
+        "from": "home"
+      },
+      {
+        "id": "flats",
+        "name": "The Flats",
+        "era": 7,
+        "x": -160,
+        "z": -680,
+        "r": 150,
+        "link": "reclaimed land",
+        "from": "gary"
+      },
+      {
+        "id": "port",
+        "name": "Mainland port city",
+        "era": 8,
+        "x": 0,
+        "z": -1600,
+        "r": 650,
+        "link": "maglev bridge",
+        "from": "flats"
+      }
+    ]
+  }
+}

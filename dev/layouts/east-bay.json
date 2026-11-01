@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "name": "east-bay",
+  "title": "C. East bay line",
+  "pois": [
+    {
+      "id": "lighthouse",
+      "x": 6,
+      "z": -58,
+      "dir": [0, 1]
+    },
+    {
+      "id": "windmills",
+      "x": 88,
+      "z": -40,
+      "dir": [-1, 0.2]
+    }
+  ],
+  "route": [
+    {
+      "age": 0,
+      "x": 22,
+      "z": 16,
+      "to": [40, 16]
+    },
+    {
+      "age": 0,
+      "x": 40,
+      "z": 16,
+      "to": [46, 0]
+    },
+    {
+      "age": 0,
+      "x": 46,
+      "z": 0,
+      "to": [44, -12]
+    },
+    {
+      "age": 1,
+      "x": 44,
+      "z": -12,
+      "to": [56, -22]
+    },
+    {
+      "age": 1,
+      "x": 56,
+      "z": -22,
+      "to": [70, -26]
+    },
+    {
+      "age": 1,
+      "x": 70,
+      "z": -26,
+      "to": [82, -22]
+    }
+  ],
+  "archipelago": {
+    "islands": [
+      {
+        "id": "mine",
+        "name": "Mine Isle",
+        "era": 3,
+        "x": 320,
+        "z": -20,
+        "r": 55,
+        "link": "iron trestle",
+        "from": "home"
+      },
+      {
+        "id": "gary",
+        "name": "Gary's Yard",
+        "era": 4,
+        "x": 330,
+        "z": -300,
+        "r": 80,
+        "link": "steel bridge",
+        "from": "mine"
+      },
+      {
+        "id": "melon",
+        "name": "Melon Isle",
+        "era": 5,
+        "x": -60,
+        "z": -420,
+        "r": 95,
+        "link": "concrete causeway",
+        "from": "home"
+      },
+      {
+        "id": "outer",
+        "name": "Outer Isles",
+        "era": 6,
+        "x": -420,
+        "z": -180,
+        "r": 70,
+        "link": "electric viaduct",
+        "from": "home"
+      },
+      {
+        "id": "flats",
+        "name": "The Flats",
+        "era": 7,
+        "x": 140,
+        "z": -680,
+        "r": 150,
+        "link": "reclaimed land",
+        "from": "gary"
+      },
+      {
+        "id": "port",
+        "name": "Mainland port city",
+        "era": 8,
+        "x": 0,
+        "z": -1600,
+        "r": 650,
+        "link": "maglev bridge",
+        "from": "flats"
+      }
+    ]
+  }
+}

@@ -56,14 +56,19 @@ type Section = { ax: number; az: number; bx: number; bz: number; len: number; at
 // accelerating for `accel` ticks to `peak` cm per tick.
 type Step = { start: number; len: number; stop: number; section: number; dir: 1 | -1; accel: number; peak: number };
 
+// Built on first use, not at import: `?layout=` (src/island/layout.ts) may move ROUTE's positions before anything asks.
 const SECTIONS: Section[] = [];
-for (let s = 0, at = 0; s < ROUTE.length; s++) {
-  const r = ROUTE[s];
-  const ex = r.to[0] - r.x;
-  const ez = r.to[1] - r.z;
-  const len = Math.round(Math.sqrt(ex * ex + ez * ez) * 100);
-  SECTIONS.push({ ax: r.x, az: r.z, bx: r.to[0], bz: r.to[1], len, at });
-  at += len;
+function sections(): Section[] {
+  if (SECTIONS.length) return SECTIONS;
+  for (let s = 0, at = 0; s < ROUTE.length; s++) {
+    const r = ROUTE[s];
+    const ex = r.to[0] - r.x;
+    const ez = r.to[1] - r.z;
+    const len = Math.round(Math.sqrt(ex * ex + ez * ez) * 100);
+    SECTIONS.push({ ax: r.x, az: r.z, bx: r.to[0], bz: r.to[1], len, at });
+    at += len;
+  }
+  return SECTIONS;
 }
 
 // Smallest integer n with n * n >= num / den (num, den positive integers), without trusting float rounding.
@@ -91,8 +96,9 @@ function timetable(laid: number): Step[] {
   const add = (stop: number, section: number, dir: 1 | -1): void => {
     steps.push({ start: t, len: WAGON_DWELL, stop, section, dir, accel: 0, peak: 0 });
     t += WAGON_DWELL;
-    const { ticks, accel } = runTicks(SECTIONS[section].len);
-    steps.push({ start: t, len: ticks, stop: -1, section, dir, accel, peak: SECTIONS[section].len / (ticks - accel) });
+    const { len } = sections()[section];
+    const { ticks, accel } = runTicks(len);
+    steps.push({ start: t, len: ticks, stop: -1, section, dir, accel, peak: len / (ticks - accel) });
     t += ticks;
   };
   for (let k = 0; k < laid; k++) add(k, k, 1); // out: dwell at stop k, run section k
@@ -126,7 +132,7 @@ export function wagonAt(laid: number, tick: number, t0 = 0): WagonState | null {
   let k = 0;
   while (k < steps.length - 1 && phase >= steps[k + 1].start) k++;
   const st = steps[k];
-  const sec = SECTIONS[st.section];
+  const sec = sections()[st.section];
 
   let along = 0; // cm along the section in the run's direction
   let rate = 0; // cm per tick, >= 0
