@@ -11,7 +11,7 @@
 ## What uses physics today (2026-10-31)
 
 About 15 modules. The heaviest are `src/physics/physics.ts` (world, ground, player controller, fall net),
-`src/physics/ball.ts`, `src/adapters/mushroom-garden.js` (growing colliders, bounce), `src/player/player.js`,
+`src/physics/ball.ts`, `src/adapters/mushroom-garden.js` (growing colliders, bounce), `src/player/player.ts`,
 `src/pois/windmills/`, `src/pois/caves/`, `src/pois/lighthouse/`, `src/guest/`, `src/boogler/` and
 `src/physics/flight.ts`. They use spheres, boxes, cylinders, a heightfield, two trimeshes and one convex polyhedron;
 dynamic, kinematic and static bodies; collision groups and masks (`GROUP` in `physics.js`); non-colliding bodies

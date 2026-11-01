@@ -13,7 +13,7 @@ briefs 7–9, the code wins, and the corrections are flagged **(correction)**.
 |---|---|---|---|
 | `selfId` | `rand(10)` once per page load, `src/net/peer-room.ts:79` (`SELF_ID`). It is deliberately not the PeerJS id. | One page load. A reload is a new player. | The host takes it from the DataConnection's `metadata.selfId` (`peer-room.js:435`) and checks only its format, `okId` = `^[a-z0-9]{1,32}$` (`:82`). |
 | PeerJS id | The host is `boogle-<room>-host` (`:184`); clients are `boogle-<room>-c<rand>` (`:728`). | One connection. | Transport only. Never in game messages. |
-| Name, colour | localStorage `boogle.name` / `boogle.color`, read in `src/player/hud.js:136-137` and written on Jump in (`src/player/player.js:96-97`). | Global per browser. | Owner presence `n`, `c` (game-design `multiplayer.md` 8.3). Not in any Lockstep state. |
+| Name, colour | localStorage `boogle.name` / `boogle.color`, read in `src/player/hud.ts:136-137` and written on Jump in (`src/player/player.ts:96-97`). | Global per browser. | Owner presence `n`, `c` (game-design `multiplayer.md` 8.3). Not in any Lockstep state. |
 | Edit author | `submitEdit` adds `p: selfId` (`src/world/sync.ts:199`). The host overwrites it with the real sender: `{ ...edit, p: from }` "never trust a client-supplied p" (`sync.js:174`). | Per edit. | Adapters check `edit.p === room.selfId` in `onApplied` to give effects (such as an item into the hotbar) to the submitter only (`src/world/README.md`, onApplied). |
 
 **Nothing identifies a person across reloads.** No Lockstep state holds a player id. The `p` field lives only in
@@ -23,7 +23,7 @@ edits in flight and is never stored.
 
 | Data | Key | Scope | Code |
 |---|---|---|---|
-| Hotbar | `boogle.hotbar` (migrated once from `boogle.pocket`) | global, every room | `src/player/inventory.js:11-45` |
+| Hotbar | `boogle.hotbar` (migrated once from `boogle.pocket`) | global, every room | `src/player/inventory.ts:11-45` |
 | Boogler friendship | `boogle.boogler.<room>` | per room | `src/boogler/play.js:35-47`; published as presence `bg` |
 | First-run card seen | `boogle.firstRun.<kind>` | global | `src/features/first-run.js:20` |
 
@@ -217,7 +217,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Owner presence** `st` for the sway phase, only if remote stacks need to wobble in sync. Remote counts come from
   Lockstep.
 - **No control slot.** Pickup is walk-over or the existing Interact button (`registerInteractable`, AGENTS.md). Pouring
-  is walking into a ring. Neither needs a `registerAction` (`src/player/controls.js:1-40`).
+  is walking into a ring. Neither needs a `registerAction` (`src/player/controls.ts:1-40`).
 - **Tests:** add, spill and conservation; the soft cap is a visual and spill rule, never a reject.
 - **Risk:** latency feel. Keep the Local fly-in animation as the instant feedback.
 

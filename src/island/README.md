@@ -67,7 +67,7 @@ a few hooks anyone can reuse:
 - `groundProbe.under` (`src/physics/physics.ts`): the floor under a point, for code that would otherwise read the terrain.
 - `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
   (which puts bodies under the terrain back on top) leaves that area to your own safety net.
-- `camConstraints` (`src/player/player.js`): keep the camera somewhere special (inside the tunnels).
+- `camConstraints` (`src/player/player.ts`): keep the camera somewhere special (inside the tunnels).
 - `atmosphere.underground` (`src/render/sky.js`): 0..1, dims the sky light and closes the fog in.
 
 `npm run scenario -- caves` walks through them, throws the ball about and floats it on the pond.

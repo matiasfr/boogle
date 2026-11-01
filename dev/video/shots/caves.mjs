@@ -10,7 +10,7 @@ const AT = (x, y, z) => `
   teleport(b, ${x}, ${y} + 1, ${z}); b.velocity.set(0, 0, 0);`;
 // Walk towards (x, z) with the play camera behind: aim the camera that way, the move key does the rest.
 const AIM = (x, z) => `
-  const { cam } = await import('/src/player/player.js');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   const yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z));
   let d = yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -40,7 +40,7 @@ export default {
       const { teleport } = await import('/src/physics/physics.ts');
       const { groundHeight } = await import('/src/adapters/terrain.js');
       const b = window.boogle.me.body; teleport(b, ${sx}, groundHeight(${sx}, ${sz}) + 0.6, ${sz}); b.velocity.set(0, 0, 0);
-      const { cam } = await import('/src/player/player.js'); cam.yaw = Math.atan2(${south.ox}, ${south.oz}); cam.pitch = -0.12;`);
+      const { cam } = await import('/src/player/player.ts'); cam.yaw = Math.atan2(${south.ox}, ${south.oz}); cam.pitch = -0.12;`);
     await g.wait(1.5);
     let w = 0,
       walking = false;

@@ -6,7 +6,7 @@
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
 const AIM = (yaw, pitch = 0) =>
-  `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
+  `const { cam } = await import('/src/player/player.ts'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // Page-side helpers for the touch checks: shown(sel) (laid out, so hidden ancestors count), rect(sel), the main
 // button's label, and whether it throws. when(cond) wraps them into an expression for waitFor.
 const DOM = `

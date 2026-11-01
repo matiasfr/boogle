@@ -1,16 +1,16 @@
 // The first-run card: the first time a player enters with a keyboard, a gamepad or a touch screen, a small paper card
-// lists the basics (generated from the control registry, src/player/guide.js) and points at the menu. Only its close
+// lists the basics (generated from the control registry, src/player/guide.ts) and points at the menu. Only its close
 // button takes clicks; it goes away once the player has walked about for a few seconds, after 15, when closed, or when the
 // menu opens (the menu lists every control). Local only: one flag per input kind
 // in localStorage. Serves DESIGN.md's "drop-in, drop-out": the controls are one glance away, never a manual.
 import './first-run.css';
 import { onFrame } from '../loop.ts';
-import { me } from '../player/player.js';
-import { input } from '../player/input.js';
-import { modalOpen } from '../player/modal.js';
+import { me } from '../player/player.ts';
+import { input } from '../player/input.ts';
+import { modalOpen } from '../player/modal.ts';
 import { dialogue } from '../boogler/dialogue.js';
-import { renderGuide } from '../player/guide.js';
-import { glyph, inputKind } from '../player/glyphs.js';
+import { renderGuide } from '../player/guide.ts';
+import { glyph, inputKind } from '../player/glyphs.ts';
 
 const MOVE_S = 3; // seconds of walking that teach enough
 const MAX_S = 15;

@@ -16,7 +16,7 @@ import { GROUP } from '../physics/physics.ts';
 import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)

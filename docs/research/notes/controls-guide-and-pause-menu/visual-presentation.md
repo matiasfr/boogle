@@ -3,7 +3,7 @@
 Research date: 2026-10-29. Scope: how a plain DOM + CSS pause overlay and controls guide should look and behave on desktop (keyboard + mouse), gamepad at couch distance, and phone touch. Where this repo already does something relevant, the file path is cited as local evidence so recommendations can build on it.
 
 **What Boogle already has (local evidence, read 2026-10-29):**
-- `src/player/glyphs.js` + `src/player/glyphs.css`: glyphs drawn for the active input. Keyboard keys are styled `<kbd class="g g-key">` (paper keycap, 2px ink border, 4px bottom border, 13px/800 Figtree text, 24px tall). The mouse is an inline SVG with the pressed button filled `var(--sun)`, with `role="img"` and an `aria-label`. Gamepad buttons are `<span class="g g-pad" data-b="…">` coloured circles (25px) in Xbox colours (A green, B red, X blue, Y yellow; LT a rounded grey tab). Touch shows no glyphs: on-screen buttons carry their own labels. `inputKind()` reads `body.gamepad` / `body.touch` classes.
+- `src/player/glyphs.ts` + `src/player/glyphs.css`: glyphs drawn for the active input. Keyboard keys are styled `<kbd class="g g-key">` (paper keycap, 2px ink border, 4px bottom border, 13px/800 Figtree text, 24px tall). The mouse is an inline SVG with the pressed button filled `var(--sun)`, with `role="img"` and an `aria-label`. Gamepad buttons are `<span class="g g-pad" data-b="…">` coloured circles (25px) in Xbox colours (A green, B red, X blue, Y yellow; LT a rounded grey tab). Touch shows no glyphs: on-screen buttons carry their own labels. `inputKind()` reads `body.gamepad` / `body.touch` classes.
 - `src/style.css` `:root` tokens: `--ink #13243f`, `--ink-soft #4b5d7a`, `--paper #fff`, `--sun #ffc93d`, `--sea #0f9fc0`, `--sky #bfe6f5`, `--glass rgba(12,28,52,0.58)`, `--glass-line rgba(255,255,255,0.24)`, `--on-glass #f3f8ff`, `--font-display 'Lilita One'`, `--font-body 'Figtree'`.
 - `index.html` loads Figtree (500–800) and Lilita One from Google Fonts and already sets `<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`.
 - `src/features/prompt.css`: the "paper sticker" look (white pill, 3px ink border, `box-shadow: 0 3px 0 var(--ink)`, 18px Lilita One) with a pop-in animation.
@@ -162,7 +162,7 @@ A modal `<dialog>` opened with `showModal()` provides most of the semantics for 
 - Contrast numbers: see section 3 ([XAG 102](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/102)). Text size, spacing, scaling and glyph scaling: see sections 1–2 ([XAG 101](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/101)).
 - `env(preferred-text-scale)` and `<meta name="text-scale" content="scale">` respect the OS/browser text-size preference. — [MDN env()](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/env)
 - WCAG 2.5.8 targets ≥ 24×24 CSS px (AA). — [W3C](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
-- Local: `src/player/glyphs.js` already gives SVG and pad glyphs `role="img"` + `aria-label`; keys are `<kbd>` text.
+- Local: `src/player/glyphs.ts` already gives SVG and pad glyphs `role="img"` + `aria-label`; keys are `<kbd>` text.
 
 ### Inferences
 - Use `<dialog>` + `showModal()` for the pause menu rather than a `div` with a hand-written focus trap. The HUD and canvas become inert automatically, so `inert` doesn't need to be toggled by hand. Give the dialog an accessible name (`aria-labelledby` pointing at the "Paused" heading).

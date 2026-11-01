@@ -1,7 +1,7 @@
 # 4. Player
 
-Files: [src/player/player.js](../../src/player/player.js), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.js](../../src/player/avatars.js),
-[src/player/hud.js](../../src/player/hud.js), [src/features/feel.js](../../src/features/feel.js).
+Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
+[src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.js](../../src/features/feel.js).
 
 ## Movement and jump
 
@@ -50,7 +50,7 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.js)).
+- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.ts)).
 - Eight colours ([constants.js](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your honk note.
 - Name: up to 16 characters, control and format characters stripped, default "Dat Frinco". Name and colour are kept

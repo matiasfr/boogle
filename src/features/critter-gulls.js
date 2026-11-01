@@ -9,7 +9,7 @@ import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.ts';
 import { ball } from '../physics/ball.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 
 const GULLS = {

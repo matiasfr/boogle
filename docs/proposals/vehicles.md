@@ -9,7 +9,7 @@
    - a clamped roll rate;
    - an automatic flip-back after about 1.5 s upside down.
    Crashes stay funny but never stall the fun (principle 10).
-2. **Simple input, no new buttons** ("good controls are key"). Pad slots are close to full on `main`; check `freeSlots()` in `src/player/controls.js`.
+2. **Simple input, no new buttons** ("good controls are key"). Pad slots are close to full on `main`; check `freeSlots()` in `src/player/controls.ts`.
    - **Board and leave** with the existing interact button and its glyph prompt. Every interaction already goes through that one button.
    - **While seated,** a context layer re-points existing actions: the left stick steers, the jump button brakes or drifts, and throw does a hop or the Puff Boost. Use `wrapAction`, the way `src/features/feel.js` turns pile into a dive while swimming.
    - Describe the seated rows with `describeControl(..., { context: 'driving' })` so the pause view's controls page shows them.

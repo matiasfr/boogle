@@ -7,7 +7,7 @@
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
 const FACE = (x, z) => `
-  const { cam } = await import('/src/player/player.js');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z)); cam.pitch = -0.25;`;
 const text = (sel) => `(document.querySelector('${sel}')?.textContent ?? '')`;
@@ -189,7 +189,7 @@ export default {
       const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.js');
       const { teleport } = await import('/src/physics/physics.ts');
       const { camera } = await import('/src/render/scene.js');
-      const { cam } = await import('/src/player/player.js');
+      const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.ts');
       const b = window.boogle.me.body, can = giftIndex('can');
@@ -263,7 +263,7 @@ export default {
 
     // Before the pointer is captured, the hint is a mouse glyph and a verb.
     const look = await g.eval(`
-      const { inputState } = await import('/src/player/input.js');
+      const { inputState } = await import('/src/player/input.ts');
       const was = { ...inputState };
       Object.assign(inputState, { locked: false, lockFailed: false });
       await new Promise((r) => setTimeout(r, 400));

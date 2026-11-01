@@ -77,8 +77,8 @@ const TOUR = `
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const THREE = window.boogle.THREE;
   const dbg = window.__debugCam;
-  const I = await import('/src/player/inventory.js');
-  const H = await import('/src/player/hands.js');
+  const I = await import('/src/player/inventory.ts');
+  const H = await import('/src/player/hands.ts');
   const { NODES } = await import('/src/pois/caves/network.js');
   const { emit } = await import('/src/render/particles.js');
   const sky = window.boogle.sky;

@@ -27,7 +27,7 @@ Until 2026-10-31 Boogle ran on PeerJS with one player's browser as the host. Now
 
 ## Phase 0: Repo hygiene (small)
 
-- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/adapters/terrain.js`, `src/render/water-render.js`, `src/physics/physics.ts`, `src/physics/ball.ts`, `src/player/player.js`, `src/net/`, `src/player/hud.js`, `src/player/input.js`, `src/main.ts`.
+- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/adapters/terrain.js`, `src/render/water-render.js`, `src/physics/physics.ts`, `src/physics/ball.ts`, `src/player/player.ts`, `src/net/`, `src/player/hud.ts`, `src/player/input.ts`, `src/main.ts`.
 - [x] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
 - [x] Add Prettier + a minimal ESLint config.
 
@@ -135,8 +135,8 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 ## Later / stretch
 
 - **Honk variation:** more honk voices and patterns (per player, per mood, chords beyond three), building on `honk.js`; no new verbs needed.
-- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.js`; touch overlay hides while a pad is in use.
-- [x] Controls guide and pause view: every control described once in src/player/controls.js; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
+- [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.ts`; touch overlay hides while a pad is in use.
+- [x] Controls guide and pause view: every control described once in src/player/controls.ts; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.

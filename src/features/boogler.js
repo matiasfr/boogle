@@ -5,10 +5,10 @@ import { onFrame, onStart } from '../loop.ts';
 import { boogler, createBoogler, updateBoogler } from '../boogler/boogler.js';
 import { updateBooglerHud } from '../boogler/hud.js';
 import { setupBooglerPlay, updateBooglerPlay, talkTargets } from '../boogler/play.js';
-import { registerInteractable } from '../player/hands.js';
+import { registerInteractable } from '../player/hands.ts';
 import { updateBooglerFx } from '../boogler/fx.js';
 import { updateDialogue } from '../boogler/dialogue.js';
-import { describeControl } from '../player/controls.js';
+import { describeControl } from '../player/controls.ts';
 
 // Created at start, after the props exist, so he knows where the trees and rocks are.
 onStart(() => {

@@ -10,7 +10,7 @@ import './haul-stack.css';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { submitEdit } from '../world/sync.ts';
 import { okPid } from '../sim/roster.ts';

@@ -7,9 +7,9 @@
   which is already fullscreen; a gamepad press is refused by the browser, so the button asks for a click or tap) and
   Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button.
-- **Sync kind.** Local, through [src/player/modal.js](../../src/player/modal.js) (one modal at a time; it takes keys and pad).
-- **Files.** [src/features/pause.js](../../src/features/pause.js), [src/player/guide.js](../../src/player/guide.js),
-  [src/player/glyphs.js](../../src/player/glyphs.js), [src/player/controls.js](../../src/player/controls.js).
+- **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
+- **Files.** [src/features/pause.js](../../src/features/pause.js), [src/player/guide.ts](../../src/player/guide.ts),
+  [src/player/glyphs.ts](../../src/player/glyphs.ts), [src/player/controls.ts](../../src/player/controls.ts).
 - **Related research.** [research/controls-guide-and-pause-menu.md](../research/controls-guide-and-pause-menu.md).
 
 ---

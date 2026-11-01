@@ -6,11 +6,11 @@ import './honk.css';
 import * as THREE from 'three';
 import { scene, camera } from '../render/scene.js';
 import { COLORS } from '../constants.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.js';
 import { onFrame, onStart } from '../loop.ts';
-import { registerAction } from '../player/controls.js';
+import { registerAction } from '../player/controls.ts';
 import { createLimiter, createChordDetector, honkFreq } from '../sim/social.ts';
 
 const TUNE = {

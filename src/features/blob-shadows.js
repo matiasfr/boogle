@@ -9,7 +9,7 @@ import { skyNow } from '../render/sky.js';
 import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { ball } from '../physics/ball.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 
 const OPACITY = 0.4;

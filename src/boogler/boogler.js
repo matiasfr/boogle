@@ -21,7 +21,7 @@ import { blockedAt } from '../render/props.js';
 import { island } from '../island/index.js';
 import { MAINLAND } from '../island/shape.js';
 import { PATCH } from '../sim/mushrooms.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
 

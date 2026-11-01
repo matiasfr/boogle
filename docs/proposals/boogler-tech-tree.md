@@ -28,7 +28,7 @@ The device does several jobs at once:
 - **Together moments use the honk chord.** `src/sim/social.ts` already detects 3+ *different* players acting within about a second. The bell (3.4), the sumalak stirring (6.4) and any "ring it together" page use that detector. Once it changes shared state, the host detects it and stamps an op. Each gate also has a slower solo path (`min(3, players online)`).
 - **The storm tide is the clock.** The ambitious-mechanics report recommends a telegraphed tide and a king-tide crate that needs two pushers. Here, the sandbar (8.2) uses the same tide function, Gary's boat parts arrive in king-tide crates (8.1), and that report calls rafts (4.6) "the best next bundle".
 - **No goal asks for a shape of sand.** The communal report: "keep sand as a toy and stop asking it to carry progression", and simplify the shovel to one dig verb. Chapter 7's stitch-the-sand idea broke that rule, so it now offers a coarse version (7.2).
-- **Controls are tight.** Every interaction now goes through one button with a glyph prompt, and pad slots are close to full (check `freeSlots()` in `src/player/controls.js`). Vehicles board with the interact button and drive through a context layer (`wrapAction`, the way `feel.js` turns pile into a dive while swimming), not new buttons. See [vehicles.md](vehicles.md).
+- **Controls are tight.** Every interaction now goes through one button with a glyph prompt, and pad slots are close to full (check `freeSlots()` in `src/player/controls.ts`). Vehicles board with the interact button and drive through a context layer (`wrapAction`, the way `feel.js` turns pile into a dive while swimming), not new buttons. See [vehicles.md](vehicles.md).
 
 ## Rules every page follows
 

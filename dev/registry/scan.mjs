@@ -11,7 +11,7 @@
 //   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
 //   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
-//   padSlots: [slot]                 PAD in src/player/controls.js
+//   padSlots: [slot]                 PAD in src/player/controls.ts
 //   frames:   [{ path, phase, order }]  onFrame hooks with a literal order (path is file:line)
 //   parseErrors: [string]            only when a file could not be parsed
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)

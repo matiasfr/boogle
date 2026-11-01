@@ -10,8 +10,8 @@ import { camera } from '../render/scene.js';
 import { dynAttr, instancedSprite } from '../render/sprites.js';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { onFrame } from '../loop.ts';
-import { me, camForward, handPosition, throwFrom } from './player.js';
-import { heldId } from './inventory.js';
+import { me, camForward, handPosition, throwFrom } from './player.ts';
+import { heldId } from './inventory.ts';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';
 
 export function startCharge() {

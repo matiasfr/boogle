@@ -41,7 +41,7 @@ import { createBody, addBody, onPreStep, getMask, setMask } from '../../physics/
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.ts';
 import { atmosphere } from '../../render/sky.js';
-import { camConstraints, me } from '../../player/player.js';
+import { camConstraints, me } from '../../player/player.ts';
 import { ball } from '../../physics/ball.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.js';

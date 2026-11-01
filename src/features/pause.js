@@ -1,21 +1,21 @@
-// The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.js), Room (who is here, an
+// The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts), Room (who is here, an
 // invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
-// it only takes this player's input through src/player/modal.js. Opens on Esc (the pointer lock ends), H (on the controls),
+// it only takes this player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.js.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
 import { onFrame, onStart } from '../loop.ts';
 import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
-import { requestLock } from '../player/input.js';
+import { requestLock } from '../player/input.ts';
 import { canvas } from '../render/scene.js';
-import { openModal, closeModal, modalOpen } from '../player/modal.js';
+import { openModal, closeModal, modalOpen } from '../player/modal.ts';
 import { dialogue } from '../boogler/dialogue.js';
-import { registerAction, isTyping } from '../player/controls.js';
-import { renderGuide } from '../player/guide.js';
-import { glyph, inputKind } from '../player/glyphs.js';
+import { registerAction, isTyping } from '../player/controls.ts';
+import { renderGuide } from '../player/guide.ts';
+import { glyph, inputKind } from '../player/glyphs.ts';
 
 const TABS = [
   ['kbm', 'Keyboard'],
@@ -308,7 +308,7 @@ registerAction('pause', {
   down: () => openPause(),
 });
 
-// Capture phase on window, registered after src/player/modal.js: H opens the controls, Esc (when the browser sends it, the
+// Capture phase on window, registered after src/player/modal.ts: H opens the controls, Esc (when the browser sends it, the
 // pointer is not locked) the menu. The game's own key handlers never see these keys.
 addEventListener(
   'keydown',

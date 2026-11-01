@@ -28,7 +28,7 @@ Already shared or generic:
 
 - `src/decomp/files-dialog.js`: the dialog, with a checklist of what is needed. The caller passes the text.
 - `src/decomp/store.js`: IndexedDB `loadFile(key)` / `saveFile(key, data)`.
-- `triggerAction(id, edge)` (`src/player/controls.js`): mouse clicks go through the `use` action, so a character's
+- `triggerAction(id, edge)` (`src/player/controls.ts`): mouse clicks go through the `use` action, so a character's
   `wrapAction('use', ...)` covers them. Touch and pad already did.
 - The pose wire format is defined in one place, `src/guest/engine.js` (`POSE_LEN`, `isPose`, `quantisePose`).
 

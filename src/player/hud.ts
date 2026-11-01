@@ -1,20 +1,21 @@
 import { COLORS, isTouch } from '../constants.ts';
-import { me, enterIsland } from './player.js';
+import { me, enterIsland } from './player.ts';
 import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
 import { net, remotes } from '../netplay/net.ts';
-import { inputState, requestLock } from './input.js';
+import { inputState, requestLock } from './input.ts';
 import { canvas } from '../render/scene.js';
-import { interactTarget, useVerb } from './hands.js';
-import { glyph, inputKind } from './glyphs.js';
+import { interactTarget, useVerb } from './hands.ts';
+import { glyph, inputKind } from './glyphs.ts';
 import { onFrame } from '../loop.ts';
 
-const $ = (id) => document.getElementById(id);
+// Elements of index.html, always there.
+const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 export const dom = {
   lobbyEl: $('lobby'),
-  joinForm: $('join'),
-  nameInput: $('name-input'),
+  joinForm: $<HTMLFormElement>('join'),
+  nameInput: $<HTMLInputElement>('name-input'),
   swatchesEl: $('swatches'),
-  enterBtn: $('enter'),
+  enterBtn: $<HTMLButtonElement>('enter'),
   hereEl: $('here'),
   rosterEl: $('roster'),
   netEl: $('net'),
@@ -29,7 +30,7 @@ export const dom = {
   knobEl: $('knob'),
 };
 
-let lastHint = null;
+let lastHint: boolean | null = null;
 function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
@@ -62,7 +63,7 @@ export function renderPeople() {
   if (key === peopleKey) return;
   peopleKey = key;
   dom.rosterEl.replaceChildren();
-  const addRow = (name, colorIdx, isYou) => {
+  const addRow = (name: string, colorIdx: number, isYou: boolean) => {
     const li = document.createElement('li');
     const dot = document.createElement('span');
     dot.className = 'dot';
@@ -149,7 +150,7 @@ export function initLobby() {
     e.preventDefault();
     if (dom.enterBtn.disabled) return; // the graphics are still starting
     enterIsland();
-    canvas.focus();
+    canvas!.focus();
     requestLock();
   });
 }

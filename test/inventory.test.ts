@@ -22,7 +22,7 @@ store.set(
     { id: 'seeds', n: 2 },
   ]),
 );
-const { inv, SLOTS, cycle, select } = await import('../src/player/inventory.js');
+const { inv, SLOTS, cycle, select } = await import('../src/player/inventory.ts');
 
 test('a longer save compacts to the first five filled known items', () => {
   assert.equal(SLOTS, 5);
@@ -31,8 +31,8 @@ test('a longer save compacts to the first five filled known items', () => {
     inv.slots.map((s) => s && s.id),
     ['seeds', 'can', 'frisbee', 'seeds', 'seeds'],
   );
-  assert.equal(inv.slots[0].n, 20, 'seeds are clamped to 20');
-  assert.equal(inv.slots[3].n, 3);
+  assert.equal(inv.slots[0]?.n, 20, 'seeds are clamped to 20');
+  assert.equal(inv.slots[3]?.n, 3);
 });
 
 test('cycling wraps and select outside the bar does nothing', () => {

@@ -174,7 +174,7 @@ come from it.
   `boogler-answer` keeps `Digit1-8`: those keys pick dialogue answers, not slots.
 - **Step 3a (logs).** No new key: "Take logs" is an interactable on the existing interact button (E, pad B, the touch
   main button).
-- **Step 3 (interact label).** The `interact` label in `src/player/input.js` drops "shake a palm" and becomes "Talk,
+- **Step 3 (interact label).** The `interact` label in `src/player/input.ts` drops "shake a palm" and becomes "Talk,
   pick up, take". "Take" covers logs. The guide, first-run card and `controls.md` follow.
 
 ### Throw module (step 5)
@@ -187,7 +187,7 @@ come from it.
   `profileFor(id)` ('ball' gives ball, 'frisbee' gives frisbee, anything else gives item), and
   `launchVelocity(profile, c, dir, bodyV)`. That last one adds `aimUp` to `dir.y`, renormalizes (`Math.sqrt`), scales
   by `power`, and adds `bodyV.x * inherit`, `lift` and `bodyV.z * inherit`. It works on plain `{ x, y, z }`, so the
-  numbers match `throwVelocity` in `src/player/player.js` exactly.
+  numbers match `throwVelocity` in `src/player/player.ts` exactly.
 - `src/player/throw.ts` (three.js side): `startCharge()`, `cancelCharge()`, `chargeAmount()`, `aimPoint(out)`,
   `launch(id, c)` (returns `{ p, v, profile }`), and the one aim preview, moved from `player.js` with the same
   `onFrame(updatePreview, { phase: 'late', order: -200 })`. The charge state stays in `me.charging` and
@@ -199,7 +199,7 @@ come from it.
   ball flies. `BALL_DAMPING = 0.12` moves to `src/constants.ts`, and `ball.js` uses it for `linearDamping`.
 - Items keep the scripted `flyPath` and the lockstep `gift.toss` landing. The ball keeps physics. The frisbee keeps
   its `GLIDE` table in `flight.js` and its profile.
-- `src/player/hud.js` computes the charge meter with `chargeOf(performance.now() - me.chargeStart)` from
+- `src/player/hud.ts` computes the charge meter with `chargeOf(performance.now() - me.chargeStart)` from
   `throw-curve.ts`. It must not import `throw.ts`: `player.js` imports `hud.js`, and `throw.ts` imports `player.js`,
   so that would be an import cycle.
 
@@ -238,7 +238,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   edit.
 
 - [x] **2. Hotbar: 5 slots.** Serves 1 and "Small and readable". Files:
-  - `src/player/inventory.js`: `SLOTS = 5`. In `load()`, keep the first five filled known items:
+  - `src/player/inventory.ts`: `SLOTS = 5`. In `load()`, keep the first five filled known items:
     `saved.filter((s) => s && known(s.id)).slice(0, SLOTS).forEach((s, k) => ...)`. This compacts 8-slot saves for
     free. Delete the `boogle.pocket` branch, its `localStorage.getItem('boogle.pocket')` and the
     `removeItem('boogle.pocket')` in `save()`. If `saved` is not an array, start empty and do not save.
@@ -249,7 +249,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     `--slot: clamp(...)` lines.
   - `dev/scenarios/hotbar.mjs`: change the check message "not eight" to "not five" (nightly only).
   - New `test/inventory.test.ts`: set `globalThis.localStorage` to a Map-backed stub before
-    `await import('../src/player/inventory.js')`. Seed `boogle.hotbar` with an 8-entry array holding nulls, an unknown
+    `await import('../src/player/inventory.ts')`. Seed `boogle.hotbar` with an 8-entry array holding nulls, an unknown
     id, `'ball'`, `{ id: 'seeds', n: 99 }` and enough known items (`can`, `frisbee`, more `seeds` entries) to overflow
     five. Use only ids that survive step 3 (`seeds`, `can`, `frisbee`) so this test needs no edit later. Assert there
     are 5 slots, they hold the first five filled known items in order, seeds are clamped to 20, `cycle(1)` wraps from
@@ -293,7 +293,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     the `retired` concept: `carryable = (g) => !!g && g.src !== 'ball'`. The new order is seeds 0, can 1,
     frisbee 2, ball 3. Rewrite the header: there are no `'tree'` or `'sea'` sources, and "the index is on the wire
     (`gifts` items, `gift.toss`, presence `hd`): reorder only with a `WORLD_NS` bump."
-  - **Item models.** In `src/player/item-models.js`, delete the five fruit model builders (lines 28-45) and fix the
+  - **Item models.** In `src/player/item-models.ts`, delete the five fruit model builders (lines 28-45) and fix the
     header ("palm fruit", "retired").
   - **Gifts sim.** `src/sim/gifts.ts`:
     - Delete `MAX_TREES`, `REGROW_TICKS`, `NEVER`, `FRUIT_CYCLE`, `DROP_OFFSETS`, `treeFruit`, `isRipe`, `canDrop`,
@@ -329,7 +329,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   - **Palms.** `src/render/props.js`: **do not remove `t.hang` or any `rng()` call.** The three draws feed the seeded
     layout, and removing them would move later props and change `layout.trees`. Change the comment "Fruit palms" to
     "Home palms (their cells are the wood age's log spots, src/features/log-sources.ts)".
-  - **Interact label.** `src/player/input.js` line 223: the `interact` label becomes `'Talk, pick up, take'`.
+  - **Interact label.** `src/player/input.ts` line 223: the `interact` label becomes `'Talk, pick up, take'`.
   - **Removed Boogler copy.** These lines go from `src/boogler/lines.js` and the catalog. Every node keeps at least
     two answers and no answer points at a deleted node (checked by `test/boogler-talk.test.mjs` "every message offers
     at least two answers and every link resolves").
@@ -492,10 +492,10 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       `profileFor('ball').flight === 'ball'`;
     - `launchVelocity` matches the old formula, copied into the test, for c in {0, 0.5, 1}, for the ball and the
       frisbee, with a body velocity of `{ x: 2, y: 0, z: -1 }`, to 1e-9.
-  - `src/player/player.js`: delete `aimDirection`, `chargeAmount`, `throwVelocity`, the preview block, its `onFrame`
+  - `src/player/player.ts`: delete `aimDirection`, `chargeAmount`, `throwVelocity`, the preview block, its `onFrame`
     and the now-unused imports (`stepFlight`, sprites, `heldId` if unused). Keep `handPosition`, `throwFrom`,
     `carryPosition` and `camForward`.
-  - `src/player/hands.js`: `windUp()` becomes `canThrow() && startCharge()`. `releaseThrow()` calls `cancelCharge()`
+  - `src/player/hands.ts`: `windUp()` becomes `canThrow() && startCharge()`. `releaseThrow()` calls `cancelCharge()`
     and then `throwHeld(chargeAmount())`. `throwHeld(c)` calls `const { p, v } = launch(id, c)`, then
     `throwBall(p, v)` for the ball, or `useOne()` and `throwItem(kind, p, v)` for items (with `take(id)` on failure,
     as now). Update the header (no "fruit") and the imports.
@@ -506,7 +506,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     throwBall(p, v);`, importing `launch` from `../player/throw.ts`. The nightly and live `smoke` use it, so check it.
   - `src/physics/flight.ts`: add `stepBall(p, v, dt = STEP)` (and list it in the header).
   - `src/constants.ts`: `export const BALL_DAMPING = 0.12`.
-  - `src/player/hud.js`: the charge meter uses `chargeOf` from `throw-curve.ts` (Design explains why not `throw.ts`).
+  - `src/player/hud.ts`: the charge meter uses `chargeOf` from `throw-curve.ts` (Design explains why not `throw.ts`).
   - `src/loop.ts`: the order comment "late -200 player.js: throw preview" names `throw.ts`.
   - Docs: `docs/game-design/throwing.md` (one module; files; the ball's preview now follows the ball's damping) and
     the Tuning line of `docs/game-design/ball.md` ("Throw: see 6.7").

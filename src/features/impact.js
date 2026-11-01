@@ -12,7 +12,7 @@ import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.
 import { groundHeight } from '../adapters/terrain.js';
 import { clamp, lerp } from '../math.ts';
 import { ball } from '../physics/ball.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { onFrame } from '../loop.ts';
 import { getAudio } from '../render/audio.js';

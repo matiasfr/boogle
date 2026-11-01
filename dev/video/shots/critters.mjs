@@ -5,8 +5,8 @@ import { STAND } from './_stand.mjs';
 const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
 const RUN = (x, z, on) => `
-  const { input } = await import('/src/player/input.js');
-  const { cam } = await import('/src/player/player.js');
+  const { input } = await import('/src/player/input.ts');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z));
   for (const k of ['KeyW', 'ShiftLeft']) ${on} ? input.keys.add(k) : input.keys.delete(k);`;

@@ -121,7 +121,7 @@ Use layered disclosure. First, **context-sensitive prompts** at the moment of ne
 ### Inferences
 - For this game, structure the full controls reference as **activity groups**: Move (move, jump, sprint), Camera (look, zoom), Interact (the one interact button and what it does), Build/Tools (if applicable), Social/Room (chat, emotes, menu). Each row reads action verb, then the glyph for the **current** device. Add a small device switcher or tabs (Keyboard / Gamepad / Touch) for players who want to look up another device, but default to the active one.
 - A gamepad diagram helps when the pad is active, since buttons are positional. A two-column list suits keyboard. Touch is best explained by labelling the on-screen buttons themselves, or a one-time annotated overlay.
-- Keep the pause-menu controls page and the in-world prompts generated from one action registry (Boogle's `registerAction` in `src/player/controls.js` already centralizes actions and pad slots), so labels can't drift. This follows XAG 107's "hints must reflect mapping".
+- Keep the pause-menu controls page and the in-world prompts generated from one action registry (Boogle's `registerAction` in `src/player/controls.ts` already centralizes actions and pad slots), so labels can't drift. This follows XAG 107's "hints must reflect mapping".
 - First-time onboarding should be the **same content as the reference**, shown once (three.js "Click to play" pattern), then reachable from pause any time.
 
 ### Gaps

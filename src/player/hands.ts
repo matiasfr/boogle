@@ -1,4 +1,4 @@
-// What your hands do with the hotbar (src/player/inventory.js), and the one interact button.
+// What your hands do with the hotbar (src/player/inventory.ts), and the one interact button.
 //
 //   useDown/useUp            click, pad X: use what is in your hand. A thing (ball, frisbee, ...) winds up a throw and
 //                            flies on release; the can pours, seeds go in at your feet. Empty hands
@@ -12,7 +12,7 @@
 //   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //
-// Interactables plug in, like actions in src/player/controls.js:
+// Interactables plug in, like actions in src/player/controls.ts:
 //
 //   registerInteractable(fn)   fn() returns an array of targets in reach right now ([] for none). It is asked every
 //                              frame (for the prompt, src/features/prompt.js) and on every press, so keep it cheap and
@@ -33,16 +33,19 @@
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.js; the ball keeps its own physics.
 import * as THREE from 'three';
-import { me, cam } from './player.js';
+import { me, cam } from './player.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.ts';
-import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.js';
+import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.js';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.js';
 import { giftIndex } from '../sim/gift-catalog.ts';
-import { pickInteract } from '../sim/interact-pick.ts';
+import { pickInteract, type InteractTarget } from '../sim/interact-pick.ts';
 
-const USE_VERB = { can: 'Water', seeds: 'Plant' };
+/** Something the interact button can act on: a verb shown in the prompt, and run (or why it is blocked). */
+export type Interactable = InteractTarget & { id: string; verb: string };
+
+const USE_VERB: Record<string, string> = { can: 'Water', seeds: 'Plant' };
 export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
@@ -64,8 +67,8 @@ function grabTheBall() {
   me.suppressUp = true;
 }
 
-const providers = [];
-export function registerInteractable(fn) {
+const providers: (() => Interactable[])[] = [];
+export function registerInteractable(fn: () => Interactable[]) {
   providers.push(fn);
 }
 
@@ -92,7 +95,7 @@ function interact(t = interactTarget()) {
 }
 
 export const handsNote = { text: '', until: 0 };
-function deny(text) {
+function deny(text: string) {
   handsNote.text = text;
   handsNote.until = performance.now() + 1400;
   return false;
@@ -104,7 +107,7 @@ function windUp() {
   return startCharge();
 }
 
-function throwHeld(c) {
+function throwHeld(c: number) {
   const id = heldId();
   if (!id || !me.body) return;
   const { p, v } = launch(id, c);

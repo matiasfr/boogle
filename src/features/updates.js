@@ -10,7 +10,7 @@
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import './updates.css';
 import { onStart } from '../loop.ts';
-import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.js';
+import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
 import { BUILD } from '../netplay/builds.ts';
 
 const CHECK_MS = 5 * 60 * 1000;

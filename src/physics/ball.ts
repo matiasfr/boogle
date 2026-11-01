@@ -15,7 +15,7 @@ import { groundHeight } from '../adapters/terrain.js';
 import { scene } from '../render/scene.js';
 import { ballMat, teleport } from './physics.ts';
 import { createBody, addBody, setMotion } from './engine.ts';
-import { me, handPosition, carryPosition } from '../player/player.js';
+import { me, handPosition, carryPosition } from '../player/player.ts';
 import { cancelCharge } from '../player/throw.ts';
 import {
   net,

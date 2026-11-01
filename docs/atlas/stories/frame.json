@@ -7,13 +7,13 @@
     {
       "go": [["you.input", "you.loop"]],
       "text": "Your keys, pad and touch are read into named actions.",
-      "code": "src/player/input.js · registerAction",
+      "code": "src/player/input.ts · registerAction",
       "cite": [
         {
-          "file": "src/player/input.js"
+          "file": "src/player/input.ts"
         },
         {
-          "file": "src/player/controls.js"
+          "file": "src/player/controls.ts"
         }
       ]
     },
