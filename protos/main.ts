@@ -4,7 +4,7 @@ import './protos.css';
 import { PROTOS } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
 
-type Saved = { notes: string; values: string; name: string };
+type Saved = { notes: string; values: string; name: string; variant: string };
 
 const KEY = 'boogle-protos-v1';
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
@@ -24,6 +24,7 @@ const saved = (id: string): Saved => {
     notes: s.notes ?? '',
     values: s.values ?? '',
     name: s.name ?? '',
+    variant: s.variant ?? '',
   };
 };
 function save(id: string, patch: Partial<Saved>) {
@@ -51,7 +52,7 @@ const oneLine = (s: string) => s.trim().replace(/\s*\n\s*/g, ' ');
 
 const hasNotes = (p: Proto) => {
   const s = saved(p.id);
-  return s.notes.trim() !== '' || s.values.trim() !== '';
+  return s.notes.trim() !== '' || s.values.trim() !== '' || s.variant.trim() !== '';
 };
 
 // The prototype's part of an entry in docs/playtests.md (one bullet list, like the entries there).
@@ -60,6 +61,7 @@ function body(p: Proto): string {
   const flag = p.url.replace(PLACEHOLDER, s.name.trim() || `<${p.url.match(PLACEHOLDER)?.[1]}>`);
   const lines = [`- Prototype: ${p.title} (\`${flag}\`, find the fun ${stepLabel(p).toLowerCase()})`];
   lines.push(`- ${p.question} ${oneLine(s.notes) || '(no answer)'}`);
+  if (p.variants?.length) lines.push(`- Variant preferred: ${oneLine(s.variant) || '___'}`);
   if (s.values.trim()) lines.push(`- Values: \`${oneLine(s.values)}\``);
   return lines.join('\n');
 }
@@ -128,8 +130,30 @@ function card(p: Proto): HTMLElement {
   } else c.append(play);
   setHref(s.name);
   c.append(el('p', 'url', p.url));
+  if (p.variants?.length) {
+    const row = el('div', 'variants');
+    for (const v of p.variants) {
+      const a = el('a', 'btn variant');
+      a.href = import.meta.env.BASE_URL + v.url.replace(/^\//, '');
+      if (!touch) a.target = '_blank';
+      a.title = v.url;
+      a.append(el('strong', '', v.name), el('span', '', v.what));
+      row.append(a);
+    }
+    c.append(row);
+  }
 
   c.append(field(p.question, s.notes, 3, (v) => save(p.id, { notes: v }), 'Your take: what felt good, what felt off'));
+  if (p.variants?.length) {
+    const wrap = el('label', 'field');
+    wrap.append(el('span', 'q', 'Variant preferred'));
+    const input = el('input', 'name pick');
+    input.value = s.variant;
+    input.placeholder = p.variants.map((v) => v.name).join(' / ');
+    input.addEventListener('input', () => save(p.id, { variant: input.value }));
+    wrap.append(input);
+    c.append(wrap);
+  }
   if (p.values)
     c.append(
       field('Copy values line (paste from the kit)', s.values, 2, (v) => save(p.id, { values: v }), 'haul-kit room=…'),
