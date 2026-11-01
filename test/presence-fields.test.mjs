@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeFields, hostField } from '../src/netplay/presence-fields.ts';
+import { addField, mergeFields, hostField } from '../src/netplay/presence-fields.ts';
 
 // The room's presence(patch) rule (src/net/ws-room.ts): merge onto what we sent before, null deletes the key.
 function applyPatch(mine, patch) {
@@ -39,14 +39,39 @@ test('a field that stops is gone from the published presence, not repeated forev
   assert.equal(mine.t, 2);
 });
 
-test('fields never overwrite core keys or an earlier field', () => {
-  const pr = mergeFields({ v: 1, p: [1, 2, 3] }, [
-    ['p', () => 'feature'],
-    ['v', () => null],
-    ['x', () => 'first'],
-    ['x', () => 'second'],
-  ]);
-  assert.deepEqual(pr, { v: 1, p: [1, 2, 3], x: 'first' });
+test('fields never take core keys or an earlier field', () => {
+  const fields = [];
+  const core = ['v', 'p'];
+  assert.equal(
+    addField(fields, 'p', () => 'feature', core),
+    false,
+  );
+  assert.equal(
+    addField(fields, 'x', () => 'first', core),
+    true,
+  );
+  assert.equal(
+    addField(fields, 'x', () => 'second', core),
+    false,
+  );
+  assert.deepEqual(mergeFields({ v: 1, p: [1, 2, 3] }, fields), { v: 1, p: [1, 2, 3], x: 'first' });
+});
+
+test("a reused presence object keeps its keys in order and takes each send's values", () => {
+  let kd = 30;
+  const fields = [
+    ['a', () => 1],
+    ['kd', () => kd],
+  ];
+  const pr = { t: 0 };
+  pr.t = 1;
+  let mine = applyPatch({}, mergeFields(pr, fields));
+  assert.deepEqual(Object.keys(pr), ['t', 'a', 'kd']);
+  kd = null;
+  pr.t = 2;
+  mine = applyPatch(mine, mergeFields(pr, fields));
+  assert.deepEqual(Object.keys(pr), ['t', 'a', 'kd']);
+  assert.deepEqual(mine, { t: 2, a: 1 });
 });
 
 test('a host field publishes only while host, and hears only real values', () => {

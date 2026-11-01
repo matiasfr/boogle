@@ -57,7 +57,8 @@ export async function createWsRoom(opts: WsRoomOptions) {
     pausedUntil = 0, // pause(): no reconnect before this
     openedAt = 0,
     lead: string | null = null,
-    mine: Msg = {},
+    mine: Msg = {}, // my presence, patched in place (no copy per send)
+    mineJson = '{}', // JSON.stringify(mine), made once per presence() and reused by every push of it
     mySeq = 0,
     presenceHeld = false,
     heard = 0,
@@ -85,8 +86,10 @@ export async function createWsRoom(opts: WsRoomOptions) {
       return;
     }
     presenceHeld = false;
-    raw({ t: 'p', s: mySeq, d: mine });
+    // encode({ t: 'p', s: mySeq, d: mine }) byte for byte, without a second stringify of mine
+    if (ws.readyState === WebSocket.OPEN) ws.send('{"t":"p","s":' + mySeq + ',"d":' + mineJson + '}');
   }
+  const undoMine = () => (mine = JSON.parse(mineJson) as Msg); // back to the last good presence (a rare refusal)
   function setLead(id: string | null) {
     const was = lead === SELF_ID;
     lead = id;
@@ -233,13 +236,22 @@ export async function createWsRoom(opts: WsRoomOptions) {
     transport: 'server' as const,
     presence(patch: unknown) {
       if (!isObj(patch)) return Promise.reject(new TypeError('presence patch must be an object'));
-      const next: Msg = { ...mine };
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null) delete next[k];
-        else next[k] = v;
+      // Patched in place and stringified once: presence goes out at 20 Hz, so no copy or entry arrays per send.
+      // Key order (so the JSON) is what a fresh copy would give: kept keys stay put, new ones go last.
+      for (const k in patch) {
+        const v = patch[k];
+        if (v === null) delete mine[k];
+        else mine[k] = v;
       }
-      if (tooBig(next)) return Promise.reject(err('too_big', 'presence is too large'));
-      mine = next;
+      let json: string;
+      try {
+        json = JSON.stringify(mine);
+      } catch (e) {
+        undoMine(); // a value JSON can't take (a cycle, a BigInt): throws, as the copy did, and leaves mine as it was
+        throw e;
+      }
+      if (json.length > MAX_MSG) return (undoMine(), Promise.reject(err('too_big', 'presence is too large')));
+      mineJson = json;
       mySeq++;
       table.setSelf(mine);
       pushPresence();

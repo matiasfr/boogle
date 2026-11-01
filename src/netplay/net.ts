@@ -13,9 +13,9 @@ import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
-import { mergeFields, hostField } from './presence-fields.ts';
+import { addField, mergeFields, hostField } from './presence-fields.ts';
 import { onFrame } from '../loop.ts';
-import type { Presence } from './presence-fields.ts';
+import type { Field, Presence } from './presence-fields.ts';
 import type { Body } from '../physics/engine.ts';
 
 /** A peer as the room reports it (src/net/README.md). */
@@ -120,7 +120,12 @@ function peerColor(peer: string) {
 //                                  Details are on net (error, retries, room). Local only; never sends anything.
 //   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (ball.js: this tab
 //                                  owns the ball). Checked after `me.entered`, in registration order, before hosting.
-const presenceFields: [string, () => unknown][] = [];
+const presenceFields: Field[] = [];
+// The keys buildPresence sets itself; a field can't take one (nor an earlier field's key).
+const CORE_KEYS = ['v', 't', 'n', 'c', 'p', 'r', 's'];
+function addFieldOrWarn(key: string, getter: () => unknown) {
+  if (!addField(presenceFields, key, getter, CORE_KEYS)) console.warn('[boogle] presence key taken:', key);
+}
 const presenceReasons: (() => boolean)[] = [];
 export function keepPresenceWhile(fn: () => boolean) {
   presenceReasons.push(fn);
@@ -129,7 +134,7 @@ const remoteHooks: RemoteHook[] = [];
 const roomHooks: ((room: Room) => void)[] = [];
 const stateHooks: ((state: string, prev: string) => void)[] = [];
 export function addPresenceField(key: string, getter: () => unknown) {
-  presenceFields.push([key, getter]);
+  addFieldOrWarn(key, getter);
 }
 export function onRemotePresence(fn: RemoteHook) {
   remoteHooks.push(fn);
@@ -143,7 +148,7 @@ export function addHostField(
   onValue: (v: unknown, time: number, peer: string) => void,
 ) {
   const h = hostField(getter, onValue, isLead);
-  presenceFields.push([key, h.get]);
+  addFieldOrWarn(key, h.get);
   remoteHooks.push((r, pr, time) => h.hear(pr[key], time, r.peer));
 }
 export function onRoomReady(fn: (room: Room) => void) {
@@ -240,25 +245,22 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   return w === 1;
 }
 
+// One presence object, refilled every send (the room copies what it sends): same keys in the same order each time, so
+// no new object growing a field at a time 20 times a second.
+const out: Presence = { v: 0, t: 0, n: null, c: null, p: null, r: null, s: null };
 function buildPresence() {
-  const pr: Presence = {
-    v: document.hidden ? 0 : 1,
-    t: Math.round(performance.now()),
-    n: null,
-    c: null,
-    p: null,
-    r: null,
-    s: null,
-  };
+  out.v = document.hidden ? 0 : 1;
+  out.t = Math.round(performance.now());
+  out.n = out.c = out.p = out.r = out.s = null;
   if (me.entered && me.body) {
     const p = me.body.position;
-    pr.n = me.name;
-    pr.c = me.colorIdx;
-    pr.p = [r2(p.x), r2(p.y), r2(p.z)];
-    pr.r = r2(me.yaw);
-    pr.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
+    out.n = me.name;
+    out.c = me.colorIdx;
+    out.p = [r2(p.x), r2(p.y), r2(p.z)];
+    out.r = r2(me.yaw);
+    out.s = me.swimming ? 2 : me.coyote > 0 ? 0 : 1;
   }
-  return mergeFields(pr, presenceFields); // a null field deletes its key (src/netplay/presence-fields.ts)
+  return mergeFields(out, presenceFields); // a null field deletes its key (src/netplay/presence-fields.ts)
 }
 
 export function sendPresence() {
