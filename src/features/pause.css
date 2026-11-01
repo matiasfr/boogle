@@ -100,6 +100,12 @@ dialog.pause::backdrop {
 .pause-btn.primary {
   background: var(--sun);
 }
+.pause-note {
+  margin: -4px 4px 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
 .pause-btn.sure {
   background: #ff8a6b;
 }

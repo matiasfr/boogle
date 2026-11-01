@@ -1,0 +1,25 @@
+/* Tablets (both sides at least 700 CSS px: an iPad either way up, never a phone): the touch buttons grow toward the
+   24 mm target of XAG 107 (research/cross-device-input.md rec 8; about 125 CSS px on the M4 iPad Pro), and the stick
+   ring follows its larger travel (60 px, src/player/input.ts). zoom scales each button's size, label and offsets
+   together, so the hand-placed cluster (style.css, bump, ping, honk, toss) keeps its shape. */
+@media (min-width: 700px) and (min-height: 700px) {
+  .touch .tbtn {
+    zoom: 1.45;
+  }
+  .stick {
+    width: 148px;
+    height: 148px;
+    margin: -74px 0 0 -74px;
+  }
+  .knob {
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+  }
+}
+/* The 13-inch iPad Pro (1376 x 1032): about 122 px, the full 24 mm. */
+@media (min-width: 1000px) and (min-height: 1000px) {
+  .touch .tbtn {
+    zoom: 1.6;
+  }
+}

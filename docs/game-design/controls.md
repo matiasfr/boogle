@@ -11,10 +11,10 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
 |---|---|---|---|---|---|---|
-| Move (`move`) | described | WASD, arrows | Left stick | Drag on the left | Getting around | |
+| Move (`move`) | described | WASD, ↑ ↓ (← → too while the mouse is locked) | Left stick | Drag on the left | Getting around | |
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
-| Look around (`look`) | described | Mouse | Right stick | Drag on the right | Camera | |
+| Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Camera distance (`zoom`) | action | none | R3 (4 / 6.5 / 10 m) | none | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Bump the ball up (`bump`) | action | V | RT | Bump | The ball | |
@@ -47,9 +47,14 @@ Notes:
   ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4.
 - Touch mode (the stick and buttons overlay, no reticle or pointer lock) follows the input in use, not the device: a
   touch screen starts in it, a key press (outside a text field) or a mouse or trackpad click switches to keyboard and
-  mouse, and the next finger switches back ([src/player/input.ts](../../src/player/input.ts)). So an iPad with a Magic
-  Keyboard plays with the keyboard, trackpad look (pointer lock where Safari grants it, drag to look where it does not)
-  and the keyboard guide. HUD buttons sit above the touch overlay in both modes.
+  mouse, and so does a wheel or two-finger scroll; the next finger switches back
+  ([src/player/input.ts](../../src/player/input.ts)). Hovering never switches. A trackpad click on the touch overlay
+  never starts the stick or a touch look. So an iPad with a Magic Keyboard plays with the keyboard, trackpad look
+  (Safari on iPad has no Pointer Lock: click-drag or two-finger scroll, and the hint says so until you have looked) and
+  the keyboard guide. HUD buttons sit above the touch overlay in both modes.
+- On tablets (both sides at least 700 CSS px) the touch buttons are 1.45 times their phone size (about 110 px on the
+  11-inch iPad), 1.6 times on the 13-inch (about 122 px, XAG's 24 mm), and the stick ring grows with its travel
+  ([src/player/touch.css](../../src/player/touch.css)).
 
 ---
 

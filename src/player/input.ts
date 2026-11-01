@@ -1,3 +1,4 @@
+import './touch.css';
 import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.ts';
@@ -10,7 +11,21 @@ import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
 
 export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
-export const inputState = { locked: false, lockFailed: false };
+// canLock: the browser has Pointer Lock at all (Safari on iPadOS has none, research/cross-device-input.md rec 3), so
+// mouse look there is a click-drag or a two-finger trackpad scroll. looked: one of those has turned the camera (the
+// hint in hud.ts then goes).
+export const inputState = {
+  locked: false,
+  lockFailed: false,
+  canLock: 'requestPointerLock' in Element.prototype,
+  looked: false,
+};
+// Radians per pixel of a two-finger trackpad scroll (wheel deltas; a mouse wheel's lines are scaled to pixels).
+const WHEEL_YAW = 0.0035;
+const WHEEL_PITCH = 0.0028;
+// Touch stick: travel radius in CSS px (larger on tablets, rec 7) and a scaled radial dead zone as a share of it.
+const tablet = matchMedia('(min-width: 700px) and (min-height: 700px)');
+const STICK_DEAD = 0.12;
 const pressJump = () => {
   me.jumpQueued = 0.15;
   me.jumpHeld = true;
@@ -32,7 +47,7 @@ function setTouchMode(on: boolean) {
 }
 
 export function requestLock() {
-  if (touchMode() || inputState.locked || !canvas.requestPointerLock) return;
+  if (touchMode() || inputState.locked || !inputState.canLock) return;
   try {
     const p = canvas.requestPointerLock();
     if (p && p.catch) p.catch(lockRefused);
@@ -47,9 +62,11 @@ export const releaseInput = () => releaseInputFn?.();
 export function initInput() {
   if (isTouch) document.body.classList.add('touch');
   // Capture phase, so the switch happens before the press is handled. A key aimed at a text field may come from the
-  // on-screen keyboard, so it does not count.
+  // on-screen keyboard, so it does not count. Only deliberate input switches (a key, a press, a scroll): never a
+  // hover, which a trackpad (and maybe a Pencil) sends all the time (research/cross-device-input.md rec 1).
   addEventListener('keydown', (e) => !isTyping(e) && setTouchMode(false), { capture: true });
   addEventListener('pointerdown', (e) => e.pointerType && setTouchMode(e.pointerType !== 'mouse'), { capture: true });
+  addEventListener('wheel', () => setTouchMode(false), { capture: true, passive: true });
   document.addEventListener('pointerlockchange', () => {
     inputState.locked = document.pointerLockElement === canvas;
     if (inputState.locked) everLocked = true;
@@ -99,6 +116,7 @@ export function initInput() {
         me.charging = false;
       }
       if (drag.moved) {
+        inputState.looked = true;
         cam.yaw -= e.movementX * 0.005;
         cam.pitch = clamp(cam.pitch - e.movementY * 0.004, -1.25, 0.9);
       }
@@ -117,8 +135,21 @@ export function initInput() {
     drag = null;
     triggerAction('use', 'up');
   });
-  // The wheel (and a trackpad's two-finger scroll or pinch) does nothing yet; swallowing it keeps the page from zooming.
-  canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+  // A two-finger trackpad scroll turns the camera while the mouse is not locked: the iPad's mouse look (iPadOS sends
+  // wheel events since 14.5; rec 3). Fingers right look right, as a drag does, with natural scrolling (the default).
+  // Ctrl (a pinch, in Chromium) and a locked mouse's wheel do nothing yet. Either way the page must not scroll or zoom.
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      if (!me.entered || inputState.locked || e.ctrlKey) return;
+      const px = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
+      cam.yaw += e.deltaX * px * WHEEL_YAW;
+      cam.pitch = clamp(cam.pitch + e.deltaY * px * WHEEL_PITCH, -1.25, 0.9);
+      inputState.looked = true;
+    },
+    { passive: false },
+  );
   // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it.
   for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
@@ -127,6 +158,8 @@ export function initInput() {
   const stick = { id: null as number | null, ox: 0, oy: 0 };
   const look = { id: null as number | null, x: 0, y: 0 };
   touchEl.addEventListener('pointerdown', (e) => {
+    // A trackpad click never spawns the stick or a touch look, whatever mode shows (rec 2).
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
     if ((e.target as Element | null)?.closest('.tbtn')) return;
     if (e.clientX < innerWidth * 0.45 && stick.id === null) {
       stick.id = e.pointerId;
@@ -145,15 +178,19 @@ export function initInput() {
   });
   touchEl.addEventListener('pointermove', (e) => {
     if (e.pointerId === stick.id) {
+      const r = tablet.matches ? 60 : 50;
       let dx = e.clientX - stick.ox,
         dy = e.clientY - stick.oy;
       const len = Math.hypot(dx, dy);
-      if (len > 50) {
-        dx *= 50 / len;
-        dy *= 50 / len;
+      if (len > r) {
+        dx *= r / len;
+        dy *= r / len;
       }
-      input.stickX = dx / 50;
-      input.stickY = dy / 50;
+      // Scaled radial dead zone (rec 7): nothing inside it, then 0..1 over the rest of the travel, same direction.
+      const mag = Math.min(len, r) / r;
+      const out = mag < STICK_DEAD ? 0 : (mag - STICK_DEAD) / (1 - STICK_DEAD) / mag;
+      input.stickX = (dx / r) * out;
+      input.stickY = (dy / r) * out;
       knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
     } else if (e.pointerId === look.id) {
       cam.yaw -= (e.clientX - look.x) * 0.006;
@@ -197,9 +234,10 @@ export function initInput() {
   const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
   describeControl('move', {
     label: 'Move',
+    detail: { kbm: 'The arrow keys walk too; ← → step sideways while the mouse is locked' },
     keys: [
       ['KeyW', 'KeyA', 'KeyS', 'KeyD'],
-      ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'],
+      ['ArrowUp', 'ArrowDown'],
     ],
     pad: 'ls',
     touch: 'Drag on the left',
@@ -208,7 +246,12 @@ export function initInput() {
   });
   describeControl('look', {
     label: 'Look around',
-    keys: ['MouseMove'],
+    detail: {
+      kbm: inputState.canLock
+        ? 'Click to lock the mouse. Unlocked: drag, two-finger scroll, or ← →'
+        : 'Drag, scroll with two fingers, or hold ← →',
+    },
+    keys: ['MouseMove', 'Wheel', ['ArrowLeft', 'ArrowRight']],
     pad: 'rs',
     touch: 'Drag on the right',
     group: 'camera',
