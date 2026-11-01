@@ -9,4 +9,4 @@ onStart(() => {
 });
 registerInteractable(giftTargets); // Pick up
 // The item the interact prompt is on gets the highlight.
-onFrame(({ dt, now }) => updateGifts(dt, now, interactTarget()?.item ?? null));
+onFrame(({ dt, now }) => updateGifts(dt, now, (interactTarget() as { item?: number } | null)?.item ?? null));

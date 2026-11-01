@@ -20,10 +20,10 @@
     {
       "go": [["you.registries", "you.features"]],
       "text": "The honk feature plays your horn right away, on your screen.",
-      "code": "src/features/honk.js",
+      "code": "src/features/honk.ts",
       "cite": [
         {
-          "file": "src/features/honk.js"
+          "file": "src/features/honk.ts"
         }
       ]
     },
@@ -43,7 +43,7 @@
       "code": "room.onMessage((msg, from) => …)",
       "cite": [
         {
-          "file": "src/features/honk.js"
+          "file": "src/features/honk.ts"
         }
       ]
     }

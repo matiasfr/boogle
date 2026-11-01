@@ -136,7 +136,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 - **Honk variation:** more honk voices and patterns (per player, per mood, chords beyond three), building on `honk.js`; no new verbs needed.
 - [x] Gamepad play (Backbone on iPhone/iPad): every control registers a pad slot in `src/player/controls.ts`; touch overlay hides while a pad is in use.
-- [x] Controls guide and pause view: every control described once in src/player/controls.ts; the guide, first-run card and pause view (src/features/pause.js) are generated from it.
+- [x] Controls guide and pause view: every control described once in src/player/controls.ts; the guide, first-run card and pause view (src/features/pause.ts) are generated from it.
 - Weather cycle: rain refills ponds, droughts dry them out, so building reservoirs matters (Timberborn).
 - Water polo in a dug pond with sand-gate goals (light competition).
 - A ball-powered water wheel lifting water to a terrace.

@@ -129,7 +129,7 @@ function dom(): Dom {
   });
   d.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
   // On a desktop, Escape with the pointer locked only ends the lock (the page never sees the key): that ends the talk.
-  // Added on first use, after src/features/pause.js's own listener, which skips the pause view while a talk is open.
+  // Added on first use, after src/features/pause.ts's own listener, which skips the pause view while a talk is open.
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && !isTouch) cur?.onClose?.();
   });

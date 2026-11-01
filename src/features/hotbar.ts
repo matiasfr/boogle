@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
 import { me, ITEM_HAND } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
-import { inv, SLOTS, heldId, select } from '../player/inventory.ts';
+import { inv, SLOTS, heldId, select, type Slot } from '../player/inventory.ts';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.ts';
 import { pouring } from '../adapters/mushroom-garden.ts';
 import { itemModel } from '../player/item-models.ts';
@@ -22,14 +22,15 @@ import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
-const GRIP = {
+type Grip = { p: [number, number, number]; r?: [number, number, number] };
+const GRIP: Record<string, Grip> = {
   can: { p: [0, -0.33, 0.05] },
   seeds: { p: [0, -0.3, 0] },
   frisbee: { p: [0, -0.02, 0], r: [0.25, 0, -0.5] },
 };
-const DEFAULT_GRIP = { p: [0, -0.12, 0] };
+const DEFAULT_GRIP: Grip = { p: [0, -0.12, 0] };
 
-function heldModel(id) {
+function heldModel(id: string) {
   const g = GRIP[id] ?? DEFAULT_GRIP;
   const hand = new THREE.Group();
   const model = itemModel(id);
@@ -40,8 +41,8 @@ function heldModel(id) {
   return hand;
 }
 
-function setHeld(avatar, id) {
-  const u = avatar.userData;
+function setHeld(avatar: THREE.Object3D, id: string | null | undefined): THREE.Group | null {
+  const u = avatar.userData as { heldId?: string | null; held?: THREE.Group | null };
   const want = id && id !== 'ball' ? id : null;
   if (u.heldId !== want) {
     if (u.held) avatar.remove(u.held);
@@ -49,7 +50,7 @@ function setHeld(avatar, id) {
     u.held = want ? heldModel(want) : null;
     if (u.held) avatar.add(u.held);
   }
-  return u.held;
+  return u.held ?? null;
 }
 
 function updateInHand() {
@@ -65,24 +66,25 @@ function updateInHand() {
   for (const r of remotes.values()) {
     if (!r.avatar) continue;
     const hand = setHeld(r.avatar, r.hd);
-    if (hand) hand.rotation.set(...hand.userData.tilt);
+    if (hand) hand.rotation.set(...(hand.userData.tilt as [number, number, number]));
   }
 }
 
 // ---------------------------------------------------------------- HUD
 const NAME_MS = 2400;
+// The HUD's elements: made in buildHud, before the first render.
 const ui = {
-  root: null,
-  name: null,
-  note: null,
-  slots: [],
-  toss: null,
+  root: null as unknown as HTMLElement,
+  name: null as unknown as HTMLElement,
+  note: null as unknown as HTMLElement,
+  slots: [] as HTMLButtonElement[],
+  toss: null as HTMLButtonElement | null,
   version: -1,
   kind: '',
   nameUntil: 0,
   noteAt: 0,
 };
-const label = (s) => {
+const label = (s: Slot | null | undefined) => {
   if (!s) return '';
   const name = s.id === 'ball' ? 'Beach ball' : GIFTS[giftIndex(s.id)].name;
   const cap = name[0].toUpperCase() + name.slice(1);
@@ -129,32 +131,32 @@ function buildHud() {
 
   const touch = document.getElementById('touch');
   if (touch) {
-    ui.toss = document.createElement('button');
-    ui.toss.className = 'tbtn toss';
-    ui.toss.type = 'button';
-    ui.toss.textContent = 'Toss';
-    ui.toss.addEventListener('pointerdown', (e) => {
+    const toss = (ui.toss = document.createElement('button'));
+    toss.className = 'tbtn toss';
+    toss.type = 'button';
+    toss.textContent = 'Toss';
+    toss.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
       throwDown();
     });
-    ui.toss.addEventListener('pointerup', (e) => {
+    toss.addEventListener('pointerup', (e) => {
       e.stopPropagation();
       releaseThrow();
     });
-    ui.toss.addEventListener('pointercancel', () => (me.charging = false));
-    touch.append(ui.toss);
+    toss.addEventListener('pointercancel', () => (me.charging = false));
+    touch.append(toss);
   }
 }
 
 // The held thing's name, and on a computer or gamepad what its buttons do.
-function nameTag(s, kind) {
+function nameTag(s: Slot | null | undefined, kind: string) {
   if (!s) return '';
   const verb = useVerb();
   if (!verb || kind === 'touch') return `<span>${label(s)}</span>`;
   return `<span>${label(s)}</span><span class="hotbar-use">${glyph('use')}${verb}</span>`;
 }
 
-function renderHud(now) {
+function renderHud(now: number) {
   ui.root.hidden = !me.entered;
   document.body.classList.toggle('holding-throwable', canThrow());
   const kind = inputKind();
@@ -164,13 +166,13 @@ function renderHud(now) {
     ui.kind = kind;
     inv.slots.forEach((s, k) => {
       const b = ui.slots[k];
-      const img = b.querySelector('img');
+      const img = b.querySelector('img')!;
       b.classList.toggle('on', k === inv.sel);
       b.hidden = !s && kind === 'touch';
       b.title = label(s);
       img.hidden = !s;
       if (s) setIcon(img, s.id);
-      b.querySelector('.hotbar-n').textContent = s?.id === 'seeds' ? String(s.n) : '';
+      b.querySelector('.hotbar-n')!.textContent = s?.id === 'seeds' ? String(s.n) : '';
     });
     ui.name.innerHTML = nameTag(inv.slots[inv.sel], kind);
   }
@@ -227,7 +229,8 @@ addPresenceField('hd', () => {
 });
 onRemotePresence((r, pr) => {
   // An unknown or uncarryable index shows as empty hands.
-  r.hd = Number.isInteger(pr.hd) && carryable(GIFTS[pr.hd]) ? GIFTS[pr.hd].id : null;
+  const hd = pr.hd as number;
+  r.hd = Number.isInteger(hd) && carryable(GIFTS[hd]) ? GIFTS[hd].id : null;
 });
 
 onFrame(({ now }) => {

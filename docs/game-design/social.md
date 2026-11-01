@@ -10,7 +10,7 @@
   one per 800 ms per sender.
 - **Sync kind.** Neither is state: reliable room messages `{ t: 'honk' }` and `{ t: 'ping', x, y, z, k }`, validated
   and rate limited on receipt ([src/sim/social.ts](../../src/sim/social.ts)).
-- **Files.** [src/features/honk.js](../../src/features/honk.js), [src/features/ping.js](../../src/features/ping.js),
+- **Files.** [src/features/honk.ts](../../src/features/honk.ts), [src/features/ping.ts](../../src/features/ping.ts),
   [src/sim/social.ts](../../src/sim/social.ts).
 - **Related ideas.** [research/communal-progression.md](../research/communal-progression.md) uses the honk chord as the
   template for together moments.

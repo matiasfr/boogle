@@ -30,7 +30,7 @@ onFrame(
     blobs.visible = night;
     if (!night) return;
     pool.begin();
-    const put = (p, r) => {
+    const put = (p: { x: number; y: number; z: number }, r: number) => {
       const g = groundHeight(p.x, p.z);
       const s = r * Math.max(0.3, 1 - (p.y - g) * 0.15);
       pool.push(p.x, g + 0.04, p.z, 0, 0, 0, 1, s, 1, s);

@@ -63,7 +63,7 @@ export const VERT_FLOATS = 13;
 export const MAX_VERTS = 2048 * 3; // render.c's vertex buffer
 
 // A pose (struct ShimPose, native/guest/include/shim.h) is POSE_INTS ints (animation, angles, states), then an offset
-// and a scale, 3 floats each. As plain numbers it is also the presence wire format (src/features/dino.js).
+// and a scale, 3 floats each. As plain numbers it is also the presence wire format (src/features/dino.ts).
 const POSE_INTS = 18,
   SCALE_AT = POSE_INTS + 3;
 export const POSE_LEN = POSE_INTS + 6;

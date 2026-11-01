@@ -32,7 +32,7 @@ Already shared or generic:
   `wrapAction('use', ...)` covers them. Touch and pad already did.
 - The pose wire format is defined in one place, `src/guest/engine.js` (`POSE_LEN`, `isPose`, `quantisePose`).
 
-Still guest-shaped (all in `src/guest/` and `src/features/dino.js`):
+Still guest-shaped (all in `src/guest/` and `src/features/dino.ts`):
 
 | Piece | Today | Generic part |
 | --- | --- | --- |

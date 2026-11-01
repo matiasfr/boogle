@@ -1,5 +1,5 @@
 // Control actions, so every control can live on a Backbone-style gamepad (standard mapping) as well as the
-// keyboard and touch. Each action claims one pad slot; src/features/gamepad.js dispatches pad presses here. The sticks
+// keyboard and touch. Each action claims one pad slot; src/features/gamepad.ts dispatches pad presses here. The sticks
 // are fixed: left moves, right looks. This registry is also the one description of every control: the pause view's
 // controls page and the first-run card are generated from it (src/player/guide.ts), so they cannot drift from the code.
 //
@@ -19,7 +19,7 @@
 //     the same id again replaces it.
 //   listControls()     every action (guide !== false) and described control as plain rows, sorted by GROUPS index,
 //                      then order (default 0), then registration order
-//   controlProblems()  human-readable gaps in that list (dev-time check, see src/features/controls-check.js)
+//   controlProblems()  human-readable gaps in that list (dev-time check, see src/features/controls-check.ts)
 //
 // Fields of a guide row:
 //   label    short, sentence case ("Bring the ball back"); device-specific wording goes in detail
@@ -388,7 +388,7 @@ export const triggerAction = (id: string, edge: 'down' | 'up') => actionById(id,
 
 export const actionForSlot = (pad: string) => bySlot.get(pad) || null;
 export const slotFor = (id: string) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to
-// While a modal (the pause view) takes the pad, src/features/gamepad.js sends it each new press by slot and runs no
+// While a modal (the pause view) takes the pad, src/features/gamepad.ts sends it each new press by slot and runs no
 // action. setPadModal(null) hands the pad back.
 let modal: ((slot: string) => void) | null = null;
 export const setPadModal = (fn: ((slot: string) => void) | null) => (modal = fn);

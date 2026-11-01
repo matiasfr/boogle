@@ -27,11 +27,11 @@ const SETTLE_MS = 3000; // a successful join reports after this, once peers' pre
 if (SERVER) {
   const url = new URL('/report', SERVER);
   const ua = coarseUa(navigator.userAgent || '');
-  const queue = [];
+  const queue: Record<string, unknown>[] = [];
   const counts = new Map();
   let total = 0;
 
-  const report = (kind, detail) => {
+  const report = (kind: string, detail: unknown) => {
     const key = kind + JSON.stringify(detail);
     const n = counts.get(key) || 0;
     if (total >= MAX_REPORTS || n >= MAX_SAME) return;
@@ -78,7 +78,7 @@ if (SERVER) {
   let failed = 0; // failed attempts before the first good join
   let okSent = false;
   let stuckSent = false;
-  let stuckTimer = 0;
+  let stuckTimer: ReturnType<typeof setTimeout> | undefined;
   const base = () => ({
     role: net.room ? (net.room.isLead() ? 'lead' : 'client') : '?', // the lead can move without a state change
     transport: net.room?.transport ?? null,

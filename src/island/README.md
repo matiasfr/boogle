@@ -8,7 +8,7 @@ without touching anything else on the island.
 | Natural shape | `shape.js` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
 | Stamps | `stamps.js` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
 | Sites | `src/pois/<name>/site.js` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
-| Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.js`. |
+| Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.ts`. |
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled

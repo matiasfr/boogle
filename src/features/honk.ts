@@ -25,9 +25,9 @@ const incoming = createLimiter(3, 1000);
 const chord = createChordDetector({ windowMs: TUNE.chordWindowMs, min: TUNE.chordMin });
 
 // ---------------------------------------------------------------- sound
-const farGain = (x, z) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
+const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
 
-function honkSound(freq, vol) {
+function honkSound(freq: number, vol: number) {
   const a = getAudio();
   if (!a || vol < 0.02) return;
   const { ctx, out } = a;
@@ -45,7 +45,7 @@ function honkSound(freq, vol) {
   for (const [type, mul, gain] of [
     ['sawtooth', 1, 0.5],
     ['triangle', 0.5, 0.7],
-  ]) {
+  ] as [OscillatorType, number, number][]) {
     const o = ctx.createOscillator();
     o.type = type;
     o.frequency.setValueAtTime(freq * mul * 1.14, t);
@@ -59,7 +59,7 @@ function honkSound(freq, vol) {
   }
 }
 
-function chordSound(freqs, vol) {
+function chordSound(freqs: number[], vol: number) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
@@ -78,7 +78,7 @@ function chordSound(freqs, vol) {
       ['sawtooth', 1, 0.35],
       ['sine', 2, 0.25],
       ['triangle', 0.5, 0.5],
-    ]) {
+    ] as [OscillatorType, number, number][]) {
       const o = ctx.createOscillator();
       o.type = type;
       o.frequency.value = f * mul;
@@ -107,10 +107,10 @@ function chordSound(freqs, vol) {
 }
 
 // ---------------------------------------------------------------- note icons and sparkles
-function drawNote(color) {
+function drawNote(color: string) {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.lineJoin = g.lineCap = 'round';
   g.strokeStyle = '#13243f';
   g.fillStyle = color;
@@ -142,7 +142,7 @@ const noteTex = COLORS.map(drawNote);
 const sparkleTex = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.translate(32, 32);
   g.fillStyle = '#fff6c2';
   g.strokeStyle = '#ffb81f';
@@ -159,8 +159,8 @@ const sparkleTex = (() => {
   return new THREE.CanvasTexture(c);
 })();
 
-const notes = []; // { sprite, avatar, age }
-function popNote(avatar, colorIdx) {
+const notes: { sprite: THREE.Sprite; avatar: THREE.Object3D; age: number }[] = [];
+function popNote(avatar: THREE.Object3D | null | undefined, colorIdx: number) {
   if (!avatar) return;
   const sprite = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: noteTex[colorIdx] ?? noteTex[0], transparent: true, depthWrite: false }),
@@ -171,8 +171,8 @@ function popNote(avatar, colorIdx) {
   notes.push({ sprite, avatar, age: 0 });
 }
 
-const sparks = []; // { sprite, vx, vy, vz, age, life }
-function sparkleOver(avatar) {
+const sparks: { sprite: THREE.Sprite; vx: number; vy: number; vz: number; age: number; life: number; s: number }[] = [];
+function sparkleOver(avatar: THREE.Object3D | null | undefined) {
   if (!avatar) return;
   const base = avatar.position;
   for (let k = 0; k < TUNE.sparkles; k++) {
@@ -197,13 +197,13 @@ function sparkleOver(avatar) {
     });
   }
   while (sparks.length > 160) {
-    const o = sparks.shift();
+    const o = sparks.shift()!;
     scene.remove(o.sprite);
     o.sprite.material.dispose();
   }
 }
 
-function update(dt) {
+function update(dt: number) {
   for (let k = notes.length - 1; k >= 0; k--) {
     const n = notes[k];
     n.age += dt;
@@ -245,7 +245,7 @@ onFrame(({ dt }) => update(dt), { phase: 'late' });
 
 // ---------------------------------------------------------------- honks
 // who: 'me' or a remote's peer id.
-function onHonk(who, now) {
+function onHonk(who: string, now: number) {
   const own = who === 'me';
   const r = own ? null : remotes.get(who);
   const colorIdx = own ? me.colorIdx : (r?.colorIdx ?? 0);
@@ -276,7 +276,7 @@ function honkNow() {
 
 onRoomReady((room) =>
   room.onMessage((msg, from) => {
-    if (msg?.t !== 'honk' || typeof from !== 'string') return;
+    if ((msg as { t?: unknown } | null)?.t !== 'honk' || typeof from !== 'string') return;
     const now = performance.now();
     if (!incoming.allow(from, now)) return;
     onHonk(from, now);

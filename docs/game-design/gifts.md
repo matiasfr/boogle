@@ -11,7 +11,7 @@
   expire; a perch refills 600 ticks (60 s) after its item is taken; at most 48 items. When full, a new throw sweeps
   away the oldest thrown item.
 - **Files.** [src/sim/gifts.ts](../../src/sim/gifts.ts), [src/sim/gift-catalog.ts](../../src/sim/gift-catalog.ts),
-  [src/world/rules/gifts.ts](../../src/world/rules/gifts.ts), [src/adapters/gifts.ts](../../src/adapters/gifts.ts), [src/features/gifts.js](../../src/features/gifts.js).
+  [src/world/rules/gifts.ts](../../src/world/rules/gifts.ts), [src/adapters/gifts.ts](../../src/adapters/gifts.ts), [src/features/gifts.ts](../../src/features/gifts.ts).
 - **Known issues and limits.** None known.
 
 ---

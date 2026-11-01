@@ -89,7 +89,7 @@ export function setTagBond(level: number, wary: boolean) {
 }
 
 // The interact prompt in the tag: his target's show() (see talkTargets in src/boogler/play.ts), called by
-// src/features/prompt.js with the markup, '' for none. Drawn right away, so it changes on the same frame as the
+// src/features/prompt.ts with the markup, '' for none. Drawn right away, so it changes on the same frame as the
 // floating prompt whichever of the two hooks runs first.
 let promptShown = '';
 export function setTagPrompt(html: string) {

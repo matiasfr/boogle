@@ -1,7 +1,7 @@
 # 4. Player
 
 Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
-[src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.js](../../src/features/feel.js).
+[src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.ts](../../src/features/feel.ts).
 
 ## Movement and jump
 
@@ -38,7 +38,7 @@ lean toward acceleration (max 0.35 rad). Your own client starts flops and publis
 | bonk | Losing 6.5 m/s in one frame while sprinting over 7 m/s | 650 ms |
 
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
-([src/features/impact.js](../../src/features/impact.js), presence `kd`). While down you cannot move or jump.
+([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
 
 ## Camera
 

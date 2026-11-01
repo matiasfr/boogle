@@ -40,7 +40,7 @@ const PROBES = [
   [0, 1.5],
   [0, -1.5],
 ];
-const depthAt = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
+const depthAt = (x: number, z: number) => waterField.surfaceAt(x, z) - groundHeight(x, z);
 const geo = new THREE.ConeGeometry(0.11, 0.48, 5).rotateX(Math.PI / 2); // points along +z
 const mat = new THREE.MeshStandardNodeMaterial({
   color: '#ff6a1a',
@@ -52,7 +52,10 @@ const pool = createPool(geo, mat, FISH.count);
 const fish = pool.mesh;
 // positionNode runs after the instance matrix, so the sway goes along each fish's own side axis in world space: column
 // 0 of its instance matrix, read through a view on the same GPU buffer (how three reads the matrix itself).
-const side = instancedDynamicBufferAttribute(new THREE.InterleavedBufferAttribute(fish.instanceMatrix, 3, 0));
+// (three's types: instanceMatrix is no InterleavedBuffer, and the view's size isn't known; both hold at runtime.)
+const side = instancedDynamicBufferAttribute(
+  new THREE.InterleavedBufferAttribute(fish.instanceMatrix as unknown as THREE.InterleavedBuffer, 3, 0),
+) as unknown as THREE.Node<'vec3'>;
 patchNode(mat, 'positionNode', (prev) =>
   (prev ?? positionLocal).add(
     side.mul(
@@ -66,7 +69,7 @@ fish.visible = false;
 scene.add(fish);
 
 const P = Array.from({ length: FISH.count }, () => ({ x: 0, y: 0, z: 0, vx: 0, vz: 0, scare: 0 }));
-let home = null;
+let home: { x: number; z: number } | null = null;
 function findHome() {
   for (let tries = 0; tries < 60; tries++) {
     const a = Math.random() * Math.PI * 2,
@@ -78,9 +81,11 @@ function findHome() {
   }
   return { x: 60, z: 0 };
 }
-function respawn(f) {
-  f.x = home.x + (Math.random() - 0.5) * 4;
-  f.z = home.z + (Math.random() - 0.5) * 4;
+type Fish = (typeof P)[number];
+function respawn(f: Fish) {
+  const h = home!; // set in onStart, before any respawn
+  f.x = h.x + (Math.random() - 0.5) * 4;
+  f.z = h.z + (Math.random() - 0.5) * 4;
   f.vx = (Math.random() - 0.5) * FISH.speed;
   f.vz = (Math.random() - 0.5) * FISH.speed;
 }
@@ -90,7 +95,7 @@ onStart(() => {
 });
 
 let lastBallY = 0;
-const scares = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
+const scares: { x: number; z: number }[] = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
 onFrame(
   ({ dt }) => {
@@ -171,7 +176,7 @@ onFrame(
       f.z += f.vz * dt;
       const g = groundHeight(f.x, f.z),
         surf = waterField.surfaceAt(f.x, f.z);
-      if (surf - g < 0.12 || Math.hypot(f.x - home.x, f.z - home.z) > 80) respawn(f); // stranded or lost
+      if (surf - g < 0.12 || Math.hypot(f.x - home!.x, f.z - home!.z) > 80) respawn(f); // stranded or lost
       f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
     }
     pool.begin();

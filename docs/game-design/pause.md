@@ -8,7 +8,7 @@
   Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button.
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
-- **Files.** [src/features/pause.js](../../src/features/pause.js), [src/player/guide.ts](../../src/player/guide.ts),
+- **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/glyphs.ts](../../src/player/glyphs.ts), [src/player/controls.ts](../../src/player/controls.ts).
 - **Related research.** [research/controls-guide-and-pause-menu.md](../research/controls-guide-and-pause-menu.md).
 

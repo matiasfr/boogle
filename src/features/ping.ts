@@ -14,7 +14,7 @@ import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
 import { onFrame, onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
-import { PING_KINDS, validatePing, createLimiter, honkFreq } from '../sim/social.ts';
+import { PING_KINDS, validatePing, createLimiter, honkFreq, type Ping } from '../sim/social.ts';
 
 const TUNE = {
   lifeMs: 4000,
@@ -80,7 +80,7 @@ function pingNow() {
     x: Math.round(a.x * 10) / 10,
     y: Math.round(a.y * 10) / 10,
     z: Math.round(a.z * 10) / 10,
-    k: a.k,
+    k: a.k as Ping['k'],
   };
   try {
     net.room?.send(msg);
@@ -93,11 +93,19 @@ function pingNow() {
 // ---------------------------------------------------------------- markers
 const layer = document.createElement('div');
 layer.className = 'ping-layer';
-const pings = new Map(); // sender -> { x,y,z,k, born, el, arrow, dist, ring }
+type Shown = Ping & {
+  born: number;
+  el: HTMLElement;
+  arrow: HTMLElement;
+  dist: HTMLElement;
+  ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  lastDist: string;
+};
+const pings = new Map<string, Shown>(); // sender -> what is drawn
 
 const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 
-function addPing(from, p, name, colorIdx, own) {
+function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boolean) {
   const old = pings.get(from);
   if (old) removePing(from, old);
   const color = COLORS[colorIdx] ?? COLORS[0];
@@ -127,14 +135,14 @@ function addPing(from, p, name, colorIdx, own) {
   pings.set(from, { ...p, born: performance.now(), el, arrow, dist, ring, lastDist: '' });
   chime(colorIdx, p.k, own);
 }
-function removePing(from, p) {
+function removePing(from: string, p: Shown) {
   p.el.remove();
   scene.remove(p.ring);
   p.ring.material.dispose();
   pings.delete(from);
 }
 
-function chime(colorIdx, kind, own) {
+function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
@@ -160,7 +168,7 @@ const EDGE_X = 100,
   EDGE_Y = 84;
 const over = new THREE.Vector3(),
   onScreen = { x: 0, y: 0, behind: false };
-function updatePings(now) {
+function updatePings(now: number) {
   const w = innerWidth,
     h = innerHeight;
   for (const [from, p] of pings) {
@@ -208,7 +216,7 @@ function updatePings(now) {
 // ---------------------------------------------------------------- wiring
 onRoomReady((room) =>
   room.onMessage((msg, from) => {
-    if (msg?.t !== 'ping') return;
+    if ((msg as { t?: unknown } | null)?.t !== 'ping') return;
     const p = validatePing(msg);
     if (!p || typeof from !== 'string' || !incoming.allow(from, performance.now())) return;
     const r = remotes.get(from);

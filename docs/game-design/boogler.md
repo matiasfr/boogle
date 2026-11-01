@@ -20,7 +20,7 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
   obstacles and the garden patch. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
 - **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
-  [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.js](../../src/features/boogler.js).
+  [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).
 
 ## Friendship
 

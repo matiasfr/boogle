@@ -22,7 +22,7 @@ let ratio = MAX,
   sinceChange = 0,
   age = 0;
 
-function apply(r) {
+function apply(r: number) {
   ratio = Math.min(MAX, Math.max(MIN, r));
   renderer.setPixelRatio(ratio); // resizes the drawing buffer and leaves the canvas's CSS size alone
   slow = fast = 0;
