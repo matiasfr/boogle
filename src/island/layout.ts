@@ -5,7 +5,8 @@
 // How it stays safe with lockstep:
 // 1. POI sites are read once, before the terrain is built (./index.ts applies `layout.pois` to them).
 // 2. ROUTE positions are moved in place here. The rules read only a section's age and how many there are, never where
-//    it is, so hashes and saves don't change; the wagon (src/sim/wagon.ts) builds its line on first use, after this.
+//    it is (the wagon's steam clock reads HOME_ROUTE, the shipped positions), so hashes and saves don't change; the
+//    drawn wagon (src/sim/wagon.ts) builds its line on first use, after this.
 // 3. The land the rules run on (palm cells, the frisbee perch) is pinned to src/world/home-land.json, as the server
 //    has it (src/features/walk-layout.ts), so a moved POI can't move a log source or a perch.
 // 4. Spawn, court and garden never move (HOME_KEEP, src/island/README.md). Only the first ROUTE.length sections apply;
