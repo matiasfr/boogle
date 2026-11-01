@@ -1,6 +1,8 @@
 # Audio and music: identity for a goofy co-op island in the browser
 
-*Research report, 1 November 2026. How shipped games use adaptive music, beat sync, sparse and diegetic music, procedural sound, gibberish voices and comedy timing, plus the Web Audio facts (clocks, memory, formats, loudness) that decide what fits in a browser on an M4 iPad Pro. Written for an owner who produces house and UK garage. Sources were found with web search and, where marked, fetched and read. The search budget ran out before Civilization VI, Tetris Effect, GTA radio and Breath of the Wild's score could be checked further, so those rest on thinner evidence. No design decisions here; recommendations only.*
+*Research report, 1 November 2026. How shipped games use adaptive music, beat sync, sparse and diegetic music, procedural sound, gibberish voices and comedy timing, plus the Web Audio facts (clocks, memory, formats, loudness) that decide what fits in a browser on an M4 iPad Pro. Written for an owner who produces house and UK garage. Sources were found with web search and, where marked, fetched and read. A gap-fill pass on the same day checked the first pass's open items (see the update note below). No design decisions here; recommendations only.*
+
+> **Update, 1 November 2026 (gap-fill pass).** The "Not checked" list was worked through. Changed: Civilization VI's per-era scheme now rests on a co-composer's own words (Roland Rizzo), plus a note that Civilization VII dropped evolving themes; Breath of the Wild's sparse field music and piano are now fetched quotes from Hajime Wakai and Manaka Kataoka, including the "environmental BGM" idea; Super Mario Galaxy's beat-synced effects are now fetched from Iwata Asks; Tetris Effect's quantization is still unconfirmed, with what the composers do say; new short sections on GTA radio and on Nintendo's gentle feedback sounds (Wii Fit, since the Wii Sports interview says nothing about sound); measured iPad Pro (M4) speaker figures; Safari codec support from WebKit's own release notes. Recommendations 10 and 11 were adjusted to match. What is still open is under "Not checked".
 
 **Markers.** *Fetched*: I loaded the page and read the claim there. *Secondary*: seen only in a search summary or a third-party write-up, not the primary source. *Reasoning*: my own inference or arithmetic, not from a source.
 
@@ -54,13 +56,18 @@
 
 **Rez (United Game Artists, sound by Keiichi Sugiyama's team).** *Secondary* ([Giant Bomb](https://giantbomb.com/wiki/Games/Rez), [GameSpot](https://www.gamespot.com/reviews/rez-review/1900-2838815/)): every lock-on and shot makes a sound "tonally aligned with the music and synched up with the beat". Shots release on time, so you can't play off the beat. I didn't confirm the grid resolution.
 
-**Super Mario Galaxy (Masafumi Kawamura, Nintendo).** *Secondary* ([Iwata Asks, Galaxy sound team](https://iwataasks.nintendo.com/interviews/wii/super_mario_galaxy/2/0/), seen through a search summary because the page's certificate failed to load; [Wikipedia](https://en.wikipedia.org/wiki/Super_Mario_Galaxy_Original_Soundtrack)):
-- The team synced effects to the music by reading MIDI data alongside the streamed track, a technique built up on Wind Waker and Jungle Beat.
-- The Star Ring harp lands on the beat, and effects take their notes from the track's key.
+**Super Mario Galaxy (Masafumi Kawamura, Mahito Yokota, Nintendo).** *Fetched* ([Iwata Asks, Galaxy sound team, page 1](https://iwataasks.nintendo.com/interviews/wii/super_mario_galaxy/2/0/)):
+- Kawamura had already been making effects play in sync with the music automatically: in Wind Waker a hit on an enemy rings in time, and in Jungle Beat every jump does. Galaxy extended this to streamed orchestral music by syncing MIDI data with the stream.
+- The Star Ring harp is his example: it plays "in perfect timing with the background music", a technique he says "rarely gets noticed".
+- Yokota had the orchestra play to a metronome-like device ticking at the game's tempo, because studio tempo is "just a little off from the tempo of Mario running".
+- *Secondary* ([Wikipedia](https://en.wikipedia.org/wiki/Super_Mario_Galaxy_Original_Soundtrack)): effects take their notes from the track's key. The interview doesn't say this.
 - A [Game Audio Lookout article](https://medium.com/game-audio-lookout/musical-sound-effects-in-the-super-mario-series-b14872fb2d94) says later Mario games go further and follow tempo and chord changes. It returned 403, so this is secondary too.
 - **Lesson:** a **chord-per-bar table** published alongside the music lets every sound effect pick a note that fits.
 
-**Tetris Effect (Tetsuya Mizuguchi, Enhance).** *Secondary* ([PC Gamer](https://www.pcgamer.com/japan-week-mizuguchi-on-the-magic-of-tetris-effect/), [Wccftech](https://wccftech.com/interview-tetsuya-mizuguchi-synesthesia-tetris-effect-rez-lumines/)): music is core to the design. Mizuguchi counts it as a failure if players think it's "Tetris with good music". I couldn't verify that piece sounds are quantized, because the search budget ran out.
+**Tetris Effect (Tetsuya Mizuguchi, Enhance).** *Secondary* ([PC Gamer](https://www.pcgamer.com/japan-week-mizuguchi-on-the-magic-of-tetris-effect/), [Wccftech](https://wccftech.com/interview-tetsuya-mizuguchi-synesthesia-tetris-effect-rez-lumines/)): music is core to the design. Mizuguchi counts it as a failure if players think it's "Tetris with good music".
+- *Fetched* ([Hydelic Q&A, Splice](https://splice.com/blog/hydelic-q-and-a/)): the composers say the visuals switch at timings tied to the number of lines cleared, and "we change the music's tempo in time with this". For one track they describe "blending background music and sound effects". Excitement stages sit in 4/4 at about 135 BPM; calmer ones in 6/4 at roughly 100–120 BPM.
+- *Secondary* ([Steam soundtrack page](https://store.steampowered.com/app/1766880/Tetris_Effect_Connected_Original_Soundtrack/)): the in-game soundtrack is "essentially composed in real time" from the player's actions.
+- **Still unconfirmed:** no developer source found says that move and rotate sounds are quantized to the grid. The composers talk about tempo following line clears and effects blended into the mix, not about snapping. Treat "quantized" as a player impression.
 
 **Sayonara Wild Hearts (Daniel Olsén, Jonathan Eng, Simogo).**
 - *Fetched* ([Simogo](https://simogo.com/work/sayonara-wild-hearts/daniel-about-sayonara-wild-hearts/)):
@@ -84,13 +91,22 @@
   - Fan analyses say each hour also has rain and snow variants.
 - **Lesson:** a theme tied to the clock and the weather tells returning players "time passed here" (principle 9). One recurring melody gives the whole game an identity.
 
-**Breath of the Wild (Hajime Wakai, sound director).**
-- *Secondary* ([GoNintendo](https://gonintendo.com/archives/300029-zelda-breath-of-the-wild-sound-designer-on-finding-the-right-music-for-the-game-and), [Nintendo Everything](https://nintendoeverything.com/breath-of-the-wild-composers-on-changing-up-zeldas-music-formula-and-more/), search summaries): the open field has almost no music by design, leaving it to ambience and scenery. The piano was chosen as an instrument you couldn't carry.
+**Breath of the Wild (Hajime Wakai, sound director; Manaka Kataoka, composer).**
+- *Fetched* ([Nintendo Everything translation](https://nintendoeverything.com/breath-of-the-wild-composers-on-changing-up-zeldas-music-formula-and-more/) of the interview in the 2018 Japanese soundtrack booklet; also [GoNintendo](https://gonintendo.com/archives/300029-zelda-breath-of-the-wild-sound-designer-on-finding-the-right-music-for-the-game-and)):
+  - Wakai tried Twilight Princess's field music in the new world and dropped it: the world is "open on a much grander scale", and added music "wouldn't be able to match that sense of inspiration the player already finds in that world". Music that insists too strongly "can have an effect on the actual game".
+  - Kataoka: "we sacrificed some of the music so that the player could really experience the environment", aiming for music that "allows them to hear the environmental noise and footsteps".
+  - The team renamed "World BGM" to "Environmental BGM": "the environmental noise becoming the BGM".
+  - The piano: earlier games used portable instruments (harp, ocarina) as key items. To suggest a big open world Wakai wanted a big instrument you can't carry: "In the end I decided on a piano, which hasn't been used much in the series to date."
 - *Fetched* ([Zelda Universe](https://zeldauniverse.net/2017/03/15/part-two-of-the-making-of-breath-of-the-wild-discusses-open-air-game-scale-and-sound-design/)): "The sound of Link's steps is a constant for the player". The team even made a sound for a Bokoblin picking its nose.
-- **Lesson:** in an exploration game, footsteps and ambience carry most of the sound. Sparse music makes the moments it does play count.
+- **Lesson:** in an exploration game, footsteps and ambience carry most of the sound. Sparse music makes the moments it does play count. Treating ambience as the score ("environmental BGM") means the ambience beds deserve a composer's ear, not just a sound designer's; for Boogle, the per-era ambience bed is part of the music.
 
 **Death Stranding (licensed Low Roar and Silent Poets songs).** *Secondary* ([Line of Best Fit](https://www.thelineofbestfit.com/features/articles/death-stranding-hideo-kojima-soundscapes), [48 Hills](https://48hills.org/2019/12/meet-low-roar-hideo-kojimas-favorite-bay-bred-indie-rocker/)): full songs score set-pieces and quiet stretches of travel, coming in when the coast is clear. I found no source for the exact trigger rules.
 - **Lesson:** a *whole song* that arrives rarely, during travel, is a memorable reward. For Boogle that could be the first ride after an opening day.
+
+**GTA radio (Ivan Pavlovich, Rockstar music supervisor).**
+- *Fetched* ([Globe and Mail, 2013](https://www.theglobeandmail.com/technology/gaming/the-best-part-of-gta-v-will-be-the-radio-again/article14307396/)): for GTA V the goal was to "capture that feeling of L.A. and California"; "We approached the radio stations as the musical soundscape [you experience] as you fly into L.A." A pop station was new to the series because it suited the city.
+- *Secondary* ([Red Bull interview](https://www.redbull.com/my-en/gta-after-hours-music-director-ivan-pavlovich-interview), page didn't load; [Wikipedia](https://en.wikipedia.org/wiki/Music_of_Grand_Theft_Auto_V)): stations are curated "to paint a musical picture of the time and place" of each game; GTA V had 15 music stations, two talk stations and about 240 licensed songs, hosted by DJ characters.
+- **Lesson:** in-world radio makes music part of the setting: it plays in vehicles, the player picks the station, and the station's era and DJ tell you where and when you are. For Boogle this suggests a cheap, diegetic way to carry era identity: a wagon or loco radio (or a gramophone in era 1) whose station is that era's arrangement, which a player can switch off. It sits outside the coarse-state score and doesn't conflict with it.
 
 ## 4. Systems that sing what you built
 
@@ -113,7 +129,13 @@
 
 ## 5. Music across eras
 
-**Civilization VI (Geoff Knorr).** *Fetched* ([Wikipedia](https://en.wikipedia.org/wiki/Civilization_VI)): each civilization has a "core melody" in four variations that change with the era the player is in. The instrumentation per era wasn't on the page, and the search budget ran out before I could check further.
+**Civilization VI (Geoff Knorr, with Roland Rizzo and Phill Boucher).**
+- *Fetched* ([Wikipedia](https://en.wikipedia.org/wiki/Civilization_VI)): each civilization has a "core melody" in four variations that change with the era the player is in (Ancient, Medieval, Industrial, Atomic).
+- *Fetched* ([Laced Records, Civilization VII music team](https://www.lacedrecords.co/blogs/blog/how-the-civilization-vii-music-team-created-a-world-music-masterpiece)): co-composer Roland Rizzo describes Civ VI's scheme: the theme was first "presented in its most basic form — usually three instruments or fewer", then "more instruments were added to the ensembles and the styles changed".
+- *Secondary* (a [Knorr interview](https://harryalexandermusic.org/geoff-knorr-questions-answered/) seen only in search summaries, the site no longer resolves; [LadiesGamers review](https://ladiesgamers.com/paulas-game-ramblings-music-of-civilization-vi/), fetched but not a developer): the Medieval arrangement is a small ensemble with light percussion and strings; the Industrial one brings in the symphony orchestra with the civ's own instruments as soloists, "similar to a concerto grosso"; the Atomic one takes the Industrial as its basis and adds electronic and percussive elements. A [2023 Denver thesis](https://digitalcommons.du.edu/etd/2293) (abstract fetched) studies this "four-stage progression" as a story of progress.
+- *Fetched* (same Laced Records piece): **Civilization VII dropped evolving themes.** Each civ now lives in one Age, so its theme doesn't change; Knorr says this led to "an increased use of full ensembles specific to each tradition".
+- *Secondary* ([CivFanatics forum](https://forums.civfanatics.com/threads/music-of-civ-vi.570444/page-44)): players complained that some era switches were abrupt and loud, not smoothed.
+- **Lesson:** the per-era recipe is "same melody, bigger band, newer style", and it works because the civ, and so the melody, persists across eras. Boogle's island persists the same way, so the Civ VI recipe fits better than Civ VII's. Switch arrangements at a bar line with a short crossfade, not a hard cut.
 
 **Animal Crossing** (above): one melody across all the hourly music.
 
@@ -162,6 +184,12 @@ The owner can make that arc credibly. It is an option, not a decision.
 - Impacts follow velocity curves, which Boogle's ball "boing" already does (`src/features/impact.ts`).
 - Ape Out (section 4) adds the musical version: stop for a beat.
 
+**Nintendo's gentle feedback sounds (Wii Fit).** The Wii Sports [Iwata Asks](https://iwataasks.nintendo.com/interviews/wii/wii_sports/0/0/) (fetched) doesn't discuss sound at all, so its jingles remain unexplained. The Wii Fit sound team's volume covers the same territory. *Fetched* ([Iwata Asks, Wii Fit vol. 4, page 2](https://iwataasks.nintendo.com/interviews/wii/wii_fit/3/1/)):
+- Sound programmer Yohei Miyagawa spent most care on the "too bad!" sounds, not the congratulations: players hear them daily, so he avoided anything like a quiz-show buzzer and wanted players to "feel that they were being treated gently even if they made a mistake".
+- Music reacts to play: in Hula Hoop the music "becomes livelier with every hoop that you catch", and its pitch rises as rotations get faster, so players learn "swing faster" by ear.
+- The talking Balance Board speaks only at certain points, because reading every line aloud would irritate; composer Toru Minegishi says they "adjusted the funny noises to give them a more conversational rhythm".
+- **Lesson:** design the failure sound first, and make it kind. In Boogle that's the dropped bundle, the face-plant and a rejected edit: funny, never a buzzer. And a voice that speaks on every line wears out; The Boogler's voice (rec 6) should play on some lines, not all.
+
 ## 9. Procedural versus samples
 
 **Andy Farnell.** *Fetched* ([Designing Sound interview, 2012](https://designingsound.org/2012/01/18/procedural-audio-interview-with-andy-farnell/)):
@@ -200,8 +228,14 @@ The owner can make that arc credibly. It is an option, not a decision.
 **Formats on Safari.** *Secondary* (WebKit bugs [238546](https://bugs.webkit.org/show_bug.cgi?id=238546) and [226922](https://bugs.webkit.org/show_bug.cgi?id=226922), [AppleInsider](https://appleinsider.com/articles/21/08/10/apple-adds-webm-web-audio-support-to-safari-in-latest-ios-15-beta), a project doc):
 - WebM Opus in `decodeAudioData` has been inconsistent across Safari versions. It is reported consistent from about 17.4 and works for stereo on recent iOS.
 - `canPlayType` has disagreed with what actually decodes.
-- Safari 18.4 added the Ogg container for Opus and Vorbis.
 - AAC in `.m4a` is the long-standing safe choice. Test on the device rather than trusting `canPlayType`.
+
+*Fetched*, Apple's own WebKit release notes:
+- [Safari 17.0](https://webkit.org/blog/14445/webkit-features-in-safari-17-0/): "Safari 17.0 on macOS Sonoma adds support for one or two channel Opus audio in WebM and MPEG-4 containers." The line names macOS only.
+- [Safari 17.4](https://webkit.org/blog/15063/webkit-features-in-safari-17-4/): WebM comes to iOS and iPadOS ("Now, WebM is fully supported everywhere"; before, iOS only had VP8 in WebRTC), and "The Vorbis audio codec is also now supported in WebKit on iOS 17.4, iPadOS 17.4".
+- [Safari 18.4](https://webkit.org/blog/16574/webkit-features-in-safari-18-4/): "Ogg container support for both Opus and Vorbis audio on macOS Sequoia 15.4, iOS 18.4, iPadOS 18.4".
+- None of the three notes mentions `decodeAudioData`, which is the path stems use. WebKit [bug 226922](https://bugs.webkit.org/show_bug.cgi?id=226922) shows the two have disagreed before.
+- So on the M4 iPad Pro with iPadOS 18.4 or later, Opus in Ogg, WebM or MP4 is officially supported for playback; decoding it into an `AudioBuffer` still needs a device test.
 
 **Autoplay.** *Fetched* (MDN): create or resume the context inside a user gesture. Boogle already does this. Players should get a mute control and a volume control.
 
@@ -209,6 +243,12 @@ The owner can make that arc credibly. It is an option, not a decision.
 - Portable target is −18 LKFS (±2), true peak −1 dBTP, measured over the full mix across about 30 minutes or more.
 - Some phones lack the gain for quieter targets.
 - The skill adds: −24 LUFS for TV and speaker play, and streaming-music targets like −14 LUFS are not game targets.
+
+**iPad Pro (M4) speakers.** Apple publishes no frequency response for them. *Fetched* ([Notebookcheck, iPad Pro 13 (2024) review](https://www.notebookcheck.net/Apple-iPad-Pro-13-2024-review-A-tablet-that-knows-almost-only-superlatives.863481.0.html), pink-noise measurement):
+- Measured range "100 - 16.000 Hz"; nothing below 100 Hz is charted.
+- Bass (100–315 Hz) is "reduced", on average 5.4% below the median; mids (400–2000 Hz) slightly raised; highs balanced. Overall "linear (10% difference to median)".
+- Maximum level 85.3 dB.
+- *Secondary* ([What Hi-Fi?](https://www.whathifi.com/reviews/apple-ipad-pro-13-inch-m4), page didn't load; [MacRumors forum](https://forums.macrumors.com/threads/ipad-pro-m4-speakers.2426515/)): good tonal balance with limited deep bass; owners find the 11-inch has noticeably less bass than the 13-inch.
 
 ## 11. A producer's workflow, mapped to a web game (reasoning)
 
@@ -267,27 +307,24 @@ Each recommendation names the source idea and the smallest prototype that would 
    - Shared synth presets (in the spirit of ZzFX, written in our own code) so sounds share a character.
    - This is plumbing, not a prototype; the first one that needs music should bring it.
 10. **Delivery and memory.**
-    - Music as 8–16-bar stems in AAC (`.m4a`) by default; add Opus only if a device test on the target iPad passes.
+    - Music as 8–16-bar stems in AAC (`.m4a`) by default. Apple's notes now list Opus (Ogg, WebM, MP4) on iPadOS 18.4+, so Opus is a likely size win, but switch only after a `decodeAudioData` test on the target iPad passes (section 10).
     - Load each era's stems lazily.
     - Budget about 40 MB of decoded audio, checked on the M4 iPad Pro.
     - Use `<audio>` only for the rare whole-song moments, which don't need sample-exact sync.
 11. **Mix for the iPad.**
     - Integrated around −18 LUFS, peaks ≤ −1 dBTP.
     - Check the mix on the iPad's speakers and in mono.
-    - *Reasoning:* sub-bass doesn't carry on small speakers, so basslines need harmonics that still read without it (standard production practice, not sourced here).
+    - Measured (section 10): the iPad Pro's speakers chart from 100 Hz up, with bass below the median. A house or garage sub-bass at 40–60 Hz is effectively absent, so every bassline needs harmonics or a mid-bass layer in roughly 100–300 Hz that carries the line on its own. Check on the 11-inch, which owners report as the bass-lighter model.
 12. **The producer workflow** (section 11).
     - A stems-plus-manifest format, an encode script and a hot-reload dev page, so a DAW bounce is audible in the game within a minute.
     - This is what turns the owner's main skill into iteration speed. Build it alongside recommendation 3.
 
 ## Not checked
 
-The search budget ran out before these could be checked:
-- Civilization VI's instrumentation per era.
-- Whether Tetris Effect quantizes piece sounds.
-- GTA-style radio as diegetic music.
-- Breath of the Wild's piano (Manaka Kataoka) beyond search summaries.
-- Nintendo's jingle practice in Wii Sports.
-- iPad speaker frequency response.
-- Current Safari codec behaviour from an Apple source.
-
-A follow-up pass should start there.
+The first pass left seven items; the gap-fill pass (1 November) covered them. What is still open:
+- **Civilization VI per-era instrumentation** rests on a co-composer's general description (fetched) plus a Knorr interview seen only in search summaries; the interview's site no longer resolves. A primary Knorr source (the [Kitsune Hawk video interview](https://forums.civfanatics.com/threads/interview-with-geoff-knorr-composer.614239/) or TheCivShow podcast) wasn't transcribed.
+- **Tetris Effect quantization**: no developer source found either way.
+- **Wii Sports jingles**: its Iwata Asks says nothing about sound; Wii Fit's sound volume was used instead.
+- **iPad speakers**: only Notebookcheck's 13-inch measurement; no 11-inch measurement and no low-frequency cutoff below 100 Hz.
+- **Safari `decodeAudioData` with Opus on iPadOS**: Apple's notes cover playback, not decoding; only a device test settles it.
+- **GTA**: no developer source on how stations are triggered, mixed or ducked in play.
