@@ -305,7 +305,8 @@ function noteError(e: NetError, fallback: string) {
   net.full = e?.code === 'room_full' ? e.max || true : 0;
 }
 function scheduleRetry(e: NetError) {
-  if (e?.code === 'browser-incompatible' || retryTimer) return;
+  // elsewhere: a newer tab of this player took over; coming back would only take it back (src/features/identity.ts)
+  if (e?.code === 'browser-incompatible' || e?.code === 'elsewhere' || retryTimer) return;
   net.retries += 1;
   const wait = net.full ? FULL_RETRY_MS : Math.min(5000 * net.retries, 30000);
   net.retryAt = Date.now() + wait;
@@ -332,7 +333,7 @@ export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSaves();
   const roomId = worldRoomId(getRoomId());
-  setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
+  setPid(identity.pid); // for anything this tab stamps itself while solo
   let room: Room;
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (2: every reconnect)
@@ -343,6 +344,8 @@ export async function connectRoom() {
     room = await createWsRoom({
       roomId,
       server,
+      pid: identity.pid,
+      key: identity.key,
       debug,
       build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12),
     });

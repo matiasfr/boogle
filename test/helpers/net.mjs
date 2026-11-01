@@ -1,5 +1,7 @@
 // A fake in-memory room for world sync tests: one host + clients, a deterministic frame driver. Peers are
 // { s: createSync(), p: net.add(...) } (plus whatever state the test keeps); `run` steps every live peer's world.
+// net.add(id, host, pid) binds the session to a player as the server does (pid defaults to the id; null: none), and
+// every room's pidOf reads those bindings.
 import { setImmediate } from 'node:timers';
 
 export function makeNet() {
@@ -7,8 +9,8 @@ export function makeNet() {
   const net = {
     queue: [],
     peers,
-    add(id, host) {
-      const p = { id, host, msg: new Set(), connCb: new Set(), alive: true, up: true };
+    add(id, host, pid = id) {
+      const p = { id, host, pid, msg: new Set(), connCb: new Set(), alive: true, up: true };
       p.room = {
         selfId: id,
         send(m) {
@@ -16,6 +18,7 @@ export function makeNet() {
         },
         onMessage: (h) => (p.msg.add(h), () => p.msg.delete(h)),
         onConnection: (h) => (p.connCb.add(h), () => p.connCb.delete(h)),
+        pidOf: (sid) => peers.find((x) => x.id === sid)?.pid ?? null,
       };
       peers.push(p);
       return p;

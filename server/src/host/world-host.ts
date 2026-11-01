@@ -2,7 +2,7 @@
 // rules module, attached as host to an in-process room adapter, ticking with or without clients and saving through the
 // store (the same file and shape GET /rooms/:id/snapshot serves).
 //
-//   const wh = createWorldHost({ roomId, store, saveMs })
+//   const wh = createWorldHost({ roomId, store, saveMs, pidOf })   pidOf(selfId): that session's player id, or null
 //   wh.onSend((msg) => ...)       the sync's outgoing messages, for the hosted room to fan out (a w:snap only to msg.to)
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
 //   wh.step(dt)                   advance dt seconds by hand (tests pass tick: false; otherwise a 50 ms timer does it)
@@ -30,6 +30,7 @@ export type WorldHostOptions = {
   saveMs?: number;
   home?: HomeLand;
   tick?: boolean; // run the 50 ms timer (default true)
+  pidOf?: (sid: string) => string | null; // the hosted room's binding of each session to its player
   log?: (...a: unknown[]) => void;
 };
 
@@ -39,6 +40,7 @@ export function createWorldHost({
   saveMs = 2000,
   home = loadHomeLand(),
   tick = true,
+  pidOf = () => null,
   log = () => {},
 }: WorldHostOptions) {
   const sync = createSync({ env: { canPlantAt: home.canPlantAt } });
@@ -76,6 +78,7 @@ export function createWorldHost({
       },
       onMessage: (h) => (msgFns.add(h), () => msgFns.delete(h)),
       onConnection: (h) => (h(true), () => {}),
+      pidOf,
     },
     { roomId, host: true, storage, now: Date.now, saveMs },
   );

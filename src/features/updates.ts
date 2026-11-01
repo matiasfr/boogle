@@ -12,6 +12,7 @@ import './updates.css';
 import { onStart } from '../loop.ts';
 import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
 import { BUILD } from '../netplay/builds.ts';
+import { net } from '../netplay/net.ts';
 
 const CHECK_MS = 5 * 60 * 1000;
 const RELOADED_FOR = 'boogle-update-reloaded-for'; // sessionStorage: the build we last reloaded to reach
@@ -43,8 +44,9 @@ function reload() {
 }
 
 // A hidden tab reloads unless it already reloaded for this very build (a stale cached page would otherwise loop).
+// Not a tab that a newer tab of this player replaced: reloaded, it would take the player back from the tab in use.
 function reloadIfHidden() {
-  if (served && document.hidden && session.get() !== served) reload();
+  if (served && document.hidden && session.get() !== served && net.error !== 'elsewhere') reload();
 }
 
 function showToast() {
