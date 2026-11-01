@@ -106,6 +106,29 @@ export const PROTOS: Proto[] = [
         url: '/?room=proto-wagon&proto=wagon&v=fast',
         what: 'Lively at about double the speed (6.5 m/s, sets the room’s pace); jumping off slides you in a dust trail.',
       },
+      {
+        name: 'grind',
+        url: '/?room=proto-wagon&proto=wagon&grind=1&laid=3',
+        what: 'Jump onto the laid rails to grind them: sparks, a rising hiss, pull back to reverse, fly off the end. Mind the wagon.',
+      },
+    ],
+  },
+  {
+    id: 'moves',
+    title: 'Double jump and glide',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=moves&jump2=1&glide=1',
+    question: 'Do you jump twice just because you can, and does the glide make the island feel smaller?',
+    what: 'Press jump again in the air for a second jump; hold it to glide down slowly.',
+    since: '2026-11-01',
+    note: 'Works on any ?proto= page: add &jump2=1 and/or &glide=1 to its address.',
+    variants: [
+      {
+        name: 'jump2',
+        url: '/?proto=moves&jump2=1',
+        what: 'The second jump alone, no glide.',
+      },
     ],
   },
   {

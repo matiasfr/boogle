@@ -59,6 +59,27 @@ the deck point under you, the deck's turn turns you and the camera, and you stay
 moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
 ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
+## Prototype: grinding the laid rails (?proto=wagon&grind=1)
+
+Behind the flag only ([src/proto/grind/](../../src/proto/grind/index.ts); docs/research/ratchet-and-clank-feel.md,
+rec 5). Land on a laid section while falling, within 0.7 m of its centreline and heading within 50° of it (either
+way), and you lock onto the track, sliding onto it over 0.08 s. You keep your speed along it, at least 6 m/s; it eases
+toward 9 m/s at 4 m/s² plus gravity along the grade (a steep climb can stop you and roll you back), capped at 13.
+Pulling the stick back reverses at once (again only after letting go). Jump leaves at any time with the rail's speed
+plus the normal jump; running off the railhead flings you off with 3 m/s of lift; either way, landing on the ground
+above 3 m/s is the tumble flop. Running into the wagon, the track machine or another player on the line is a bonk:
+knocked back 4 m/s and up 4.5 m/s, with the bonk flop. While grinding you stand sideways to the rail, 20 to 40 orange
+sparks a second fly from your feet (more with speed), a band-passed hiss rises with speed, each rail joint (every
+4.5 m) clacks, and the camera drops 0.5 m, swings behind your travel and looks 3 m ahead along the rail. The rail
+counts as ground (jump works, a double jump comes back). Others see you through your normal presence.
+
+## Prototype: double jump and glide (&jump2=1, &glide=1)
+
+On any `?proto=` page ([src/proto/moves/](../../src/proto/moves/index.ts); rec 6 of the same research). With
+`&jump2=1` a jump press in the air sets your upward speed to max(current, 0) + 6.0 m/s, once per airtime (landing, or
+a grind rail, gives it back), with a puff ring and a rising whoop. With `&glide=1`, holding jump after an air press
+(the double jump's, or a fresh one) caps your fall at 4 m/s, trailing two contrails. Same button; no new controls.
+
 ## Camera
 
 Third-person orbit, looking past your right shoulder. Distance 6.5 m by default; pad R3 cycles 4, 6.5 and
