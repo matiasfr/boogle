@@ -10,10 +10,13 @@
   in 10 % steps to 0.6x after 2 s of slow frames and climbs back after 5 s at the display's cadence. Slow is over
   18.5 ms, or over 1.15x the cadence the browser delivers frames at (Safari's 30 Hz in Low Power Mode is a cap, not a
   slow GPU); a step up that turns slow again within 10 s doubles the wait before the next one (up to a minute).
-  If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
+  While the game is open and visible, a Screen Wake Lock (taken on the first input) keeps the screen from dimming
+  and locking where the browser offers one (Safari, Home Screen apps from iOS 18.4, Chrome); hiding the tab lets
+  it go. If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
-- **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts);
+- **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts),
+  [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
 - **Limits.** No quality setting yet; post effects (bloom, ambient occlusion, reflections) are planned as tiers.
 
