@@ -1,16 +1,14 @@
 // Haul stacks: what each player carries on their back, one material at a time (brief 7, loop A). Keyed by roster
 // index (src/sim/roster.ts). Lockstep, so a pour can be checked against what you really hold, two tabs can't carry the
-// same logs, and a stack belongs to its room (and age). Past SOFT_CAP the stack wobbles and a jump spills the top
-// (a visual and spill rule, never a reject); HARD_CAP is where pickups stop and the rest stays on the ground.
+// same logs, and a stack belongs to its room (and age). HARD_CAP is where pickups stop and the rest stays on the
+// ground.
 // Pure and deterministic (lockstep).
 import { okKind } from './materials.ts';
 import { FNV_SEED, foldAll } from './hash.ts';
 
-export const SOFT_CAP = 20;
 export const HARD_CAP = 60;
-export const SPILL = 3; // pieces a jump past SOFT_CAP knocks off (never below SOFT_CAP)
-// The most a stack can ever hold: the ceiling of a playtest's tuned hard cap (./tune.ts). The caps above are today's
-// defaults; the rules pass a room's tuned ones in.
+// The most a stack can ever hold: the ceiling of a playtest's tuned hard cap (./tune.ts). HARD_CAP is today's
+// default; the rules pass a room's tuned one in.
 export const HARD_MAX = 200;
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 
@@ -31,8 +29,6 @@ export function roomFor(s: Stacks, idx: number, k: number, hard = HARD_CAP): num
   const n = countOf(s, idx);
   return n > 0 && s.k[idx] !== k ? 0 : Math.max(0, hard - n);
 }
-export const spillOf = (n: number, soft = SOFT_CAP, spill = SPILL): number =>
-  n > soft ? Math.min(spill, n - soft) : 0;
 
 function grow(s: Stacks, idx: number): void {
   while (s.n.length <= idx) {

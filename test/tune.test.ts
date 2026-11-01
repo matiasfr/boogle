@@ -51,6 +51,13 @@ test('round-trip keeps the hash; bad saves throw', () => {
   assert.throws(() => loadTune(u, []));
 });
 
+test('a save with retired keys (soft cap, spill) still loads, without them', () => {
+  const u = createTune();
+  loadTune(u, { soft: 12, spill: 5, hard: 40 });
+  assert.equal(u.v.hard, 40);
+  assert.deepEqual(serializeTune(u), { hard: 40 });
+});
+
 test('wood costs follow the tuning', () => {
   const t = createTune();
   setTune(t, 'cost0', 24);

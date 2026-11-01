@@ -13,9 +13,6 @@ import {
   hashStacks,
   HARD_CAP,
   HARD_MAX,
-  SOFT_CAP,
-  SPILL,
-  spillOf,
 } from '../../sim/stacks.ts';
 import { MAX_PLAYERS } from '../../sim/roster.ts';
 
@@ -50,10 +47,7 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
       if (idx >= 0) return roomFor(stacks, idx, k, hard());
       return roster.size() < MAX_PLAYERS ? hard() : 0;
     },
-    // The room's caps and how many of a stack of n a jump spills.
-    soft: () => rules.tune?.get('soft') ?? SOFT_CAP,
-    hard,
-    spill: (n: number) => spillOf(n, rules.tune?.get('soft') ?? SOFT_CAP, rules.tune?.get('spill') ?? SPILL),
+    hard, // the room's (tuned) hard cap
     // Apply only. Adds up to n of kind k to pid's stack (meeting them in the roster); returns how many fitted.
     add(pid: string, k: number, n: number) {
       const idx = roster.ensure(pid);
