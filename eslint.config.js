@@ -2,10 +2,11 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const rapierBan = {
-  name: '@dimforge/rapier3d',
+// Rapier's plain and SIMD builds (src/physics/backend-rapier.ts loads one).
+const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) => ({
+  name,
   message: 'Physics goes through src/physics/engine.ts (docs/plans/rapier.md).',
-};
+}));
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage = 'src/world/rules/ is lockstep only: src/sim/, ../grid.js and sibling rules (see its README).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
@@ -56,11 +57,11 @@ export default [
   {
     files: ['src/**/*.{js,ts}'],
     ignores: ['src/net/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: [rapierBan], patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan] }] },
   },
   {
     files: ['src/world/game-world.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: [rapierBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans }] },
   },
   {
     files: ['src/world/rules/**/*.{js,ts}'],
@@ -68,7 +69,12 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: rulesMessage }))],
+          paths: [
+            ...['three', '@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) => ({
+              name,
+              message: rulesMessage,
+            })),
+          ],
           patterns: [
             {
               // three/*, and any ../ path except ../grid and ../../sim/<file> (.js or .ts)
@@ -87,7 +93,7 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [rapierBan],
+          paths: rapierBans,
           patterns: [
             {
               group: ['./*', '!./*.css'],
@@ -105,7 +111,12 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [...['three', '@dimforge/rapier3d'].map((name) => ({ name, message: simMessage }))],
+          paths: [
+            ...['three', '@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) => ({
+              name,
+              message: simMessage,
+            })),
+          ],
           patterns: [{ group: ['../*', 'three/*'], message: simMessage }, syncBan],
         },
       ],
