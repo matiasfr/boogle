@@ -56,7 +56,7 @@ export const PROTOS: Proto[] = [
     id: 'ride',
     title: 'Ride: platform carry',
     step: 2,
-    status: 'building',
+    status: 'live',
     url: '/?proto=ride',
     questions: [
       'Does riding feel smooth?',
@@ -64,11 +64,13 @@ export const PROTOS: Proto[] = [
       'Does jumping off at speed feel good?',
     ],
     tryThis: [
-      'Stand on the test flatbed for a full lap.',
-      'Walk around on it while it moves.',
-      'Jump off at full speed, then get back on.',
+      'Hop on at a stop.',
+      'Stand through the corners.',
+      'Walk around on the deck while it moves.',
+      'Jump off sideways at speed.',
     ],
     since: '2026-11-01',
+    note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
   },
   {
     id: 'era',
