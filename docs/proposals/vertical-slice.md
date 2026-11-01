@@ -2,7 +2,8 @@
 
 *Proposal and build spec, 31 October 2026. Round 7 decisions folded in, 1 November 2026.*
 
-- **Design source.** The design direction comes from the Boogle 2.0 design thread: the eras, the mayor, opening days, feel-first venues, rides, story gags, and the [story-and-finale](story-and-finale.md) proposal. That thread is authoritative on design.
+- **Design source.** [boogle-2.md](boogle-2.md), the Boogle 2.0 design record (the owner's decisions from the design thread), is authoritative on design. Story detail is in [story-and-finale](story-and-finale.md).
+- **Order of work (1 November).** Mechanics first: the five find-the-fun questions in [boogle-2.md](boogle-2.md), "Next", come before the mayor, props, hats and gags (S4, S6).
 - **What it builds on.** The **0.1 groundwork already on `main`**: identity, roster, piles, the haul stack, work sites, palm log sources, machine runs and the offline helper bank ([docs/game-design/haul.md](../game-design/haul.md), [docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md)).
 - **Status.** Nothing in this spec is built yet. It is written so that `/feature` can turn each milestone into a plan.
 
