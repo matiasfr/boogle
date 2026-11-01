@@ -19,19 +19,19 @@
   "route": [
     {
       "age": 0,
-      "x": 22,
-      "z": 16,
-      "to": [40, 16]
+      "x": 32,
+      "z": 20,
+      "to": [44, 12]
     },
     {
       "age": 0,
-      "x": 40,
-      "z": 16,
-      "to": [46, 0]
+      "x": 44,
+      "z": 12,
+      "to": [45, 0]
     },
     {
       "age": 0,
-      "x": 46,
+      "x": 45,
       "z": 0,
       "to": [44, -12]
     },
@@ -60,7 +60,7 @@
         "id": "mine",
         "name": "Mine Isle",
         "era": 3,
-        "x": 320,
+        "x": 340,
         "z": -20,
         "r": 55,
         "link": "iron trestle",
@@ -80,8 +80,8 @@
         "id": "melon",
         "name": "Melon Isle",
         "era": 5,
-        "x": -60,
-        "z": -420,
+        "x": -100,
+        "z": -640,
         "r": 95,
         "link": "concrete causeway",
         "from": "home"
@@ -90,8 +90,8 @@
         "id": "outer",
         "name": "Outer Isles",
         "era": 6,
-        "x": -420,
-        "z": -180,
+        "x": -560,
+        "z": -220,
         "r": 70,
         "link": "electric viaduct",
         "from": "home"
