@@ -25,8 +25,11 @@ permissions:
   issues: write
   actions: write
 
+# One group per branch: GitHub keeps only one *pending* run per group and cancels the rest, so a single shared group
+# silently dropped ships when many landed at once (1 Nov 2026: 13 green ship branches never got a PR). Merges into main
+# still serialize on GitHub's side, and a branch that falls behind is handed to ci-autofix.yml as before.
 concurrency:
-  group: automerge
+  group: automerge-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
