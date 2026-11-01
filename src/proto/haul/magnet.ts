@@ -143,7 +143,6 @@ onFly((from, n, spill) => {
         from.y + PIECE.r + Math.floor(m / 4) * PIECE.r * 1.8,
         from.z + Math.sin(a) * r,
       );
-      p.rate *= 0.15; // still until it notices you
     }
     pieces.push(p);
   }
