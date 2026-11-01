@@ -14,7 +14,9 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
   screen). Behind it, [`precompile.js`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
   `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
-  `precompile(object)` as it builds its meshes. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
+  `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
+  "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
+  create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
   last frame's counts until the next one starts. A lost GPU device
   reloads the page once it is visible, at most once a minute.
@@ -81,7 +83,11 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
 - `?prof=1` (any build, live site included) overlays the frame's main-thread CPU per section: each `onFrame` hook by
-  module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows.
+  module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows. Its
+  top row is the GPU's time per frame (every render pass, from WebGPU timestamp queries: `?prof=1` turns three's
+  `trackTimestamp` on, so the numbers include its small cost), the only GPU timer on an iPad. It also logs the
+  adapter's features and limits to the console once; `?gpuinfo=1` shows them in a panel, to read on a device without
+  Web Inspector ([gpu-info.ts](../debug/gpu-info.ts)).
   `npm run perf` prints them, and `npm run hitches` names the slowest section of each hitch frame. `npm run hitches -- --allocs` adds JS heap
   allocated per frame and the functions that allocate most (library allocations charged to the game code calling them).
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and

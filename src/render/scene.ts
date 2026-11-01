@@ -8,7 +8,12 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.js starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
-export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+export const renderer = new THREE.WebGPURenderer({
+  canvas,
+  antialias: true,
+  powerPreference: 'high-performance',
+  trackTimestamp: Number(params.get('prof')) > 0, // GPU ms per frame in the ?prof=1 overlay (src/debug/prof-overlay.ts)
+});
 (renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
 export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
 export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
@@ -76,7 +81,15 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 
 // Scene -> linear HDR target (MSAA from the renderer) -> one output pass (tone map + sRGB). Post effects (bloom,
 // TRAA, GTAO...) extend this chain: set pipeline.outputNode from scenePass and pipeline.needsUpdate = true.
-export const scenePass = pass(scene, camera);
+// The 4x MSAA samples resolve into the target and are then discarded, not written back (storeOp 'discard'; a
+// memoryless tile attachment where the browser offers TRANSIENT_ATTACHMENT): on a tile GPU (iPad) that saves the
+// bandwidth of writing a 4x colour and depth target every frame (docs/research/webgpu-on-ipad.md, recommendation 2).
+// The resolved colour is all the output pass reads. A post effect that reads scene depth (GTAO, DoF, SSR) needs the
+// depth stored again: drop storeMultisampledDepthBuffer here when one lands.
+export const scenePass = pass(scene, camera, {
+  storeMultisampledColorBuffer: false,
+  storeMultisampledDepthBuffer: false,
+});
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
 

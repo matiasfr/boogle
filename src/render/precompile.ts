@@ -60,6 +60,34 @@ async function compileNow(root: THREE.Object3D) {
   }
 }
 
+// three.js #35069 (iOS 27 Safari, not macOS): in about half of page loads a compileAsync after the first frames throws
+// "Texture already initialized" for the shadow map's depth texture, which is this module's pattern (lazy parts compile
+// after play starts, and the sun casts shadows). Closed upstream as a WebKit bug. three only throws there when it is
+// asked to create a texture it already holds, so skipping the second create is the reporter's workaround and changes
+// nothing on a browser without the bug; it warns once so Web Inspector on the iPad shows whether it happens
+// (docs/research/webgpu-on-ipad.md, recommendation 8). Remove once WebKit fixes it.
+rendererReady.then(
+  () => {
+    type Backend = {
+      get(o: object): { initialized?: boolean; externalTexture?: boolean };
+      createTexture(t: THREE.Texture, o?: object): void;
+    };
+    const backend = renderer.backend as unknown as Backend;
+    const create = backend.createTexture.bind(backend);
+    let warned = false;
+    backend.createTexture = (t, o) => {
+      const data = backend.get(t);
+      if (data.initialized && !data.externalTexture) {
+        if (!warned) console.warn(`[precompile] three.js #35069: skipped re-creating texture "${t.name}"`);
+        warned = true;
+        return;
+      }
+      create(t, o);
+    };
+  },
+  () => {},
+);
+
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
