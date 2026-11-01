@@ -176,6 +176,28 @@ export const PROTOS: Proto[] = [
     note: 'Press “Lay the whole route” first. Swap &v=hop for &v=ride; &laid=1 or 2 tries a shorter line.',
   },
   {
+    id: 'groove',
+    title: 'The groove',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-groove&proto=groove',
+    question: 'Does the island feel more alive and fun with the groove?',
+    what: 'A placeholder house loop on one shared beat: quiet when idle, grooving when you move, full on the wagon, a one-beat drop when you wipe out. Honks and clacks land on the beat and in key. The chip top centre mutes it.',
+    since: '2026-11-01',
+    variants: [
+      {
+        name: 'silent-first',
+        url: '/?room=proto-groove&proto=groove&v=silent-first',
+        what: 'Silence until you first move; never silent after.',
+      },
+      {
+        name: 'always',
+        url: '/?room=proto-groove&proto=groove&v=always',
+        what: 'Always some music, even standing at spawn.',
+      },
+    ],
+  },
+  {
     id: 'look',
     title: 'Graphics ceiling',
     step: 'depth',

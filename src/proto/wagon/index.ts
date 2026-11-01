@@ -22,7 +22,7 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { getAudio } from '../../render/audio.ts';
+import { getAudio, onBeat } from '../../render/audio.ts';
 import { world, submitEdit, onApplied, worldStatus, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
@@ -322,7 +322,8 @@ function sound(kind: 'clack' | 'whistle', at: { x: number; z: number }) {
   const vol = 1 / (1 + near / 6);
   if (vol < 0.04) return;
   const { ctx, out } = a;
-  const t = ctx.currentTime + 0.005;
+  // Clacks lock to the next 8th note under ?proto=groove.
+  const t = kind === 'clack' ? onBeat(ctx.currentTime + 0.005, 0, 8).t : ctx.currentTime + 0.005;
   const g = ctx.createGain();
   g.connect(out);
   if (kind === 'clack') {
