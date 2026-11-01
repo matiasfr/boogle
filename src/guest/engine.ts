@@ -1,10 +1,10 @@
 // The guest engine: the guest's simulation and the guest and dino models, a wasm built by native/guest/build.mjs.
 // Never bundled: it comes from the owner's hosted build (ENGINE_URL, fetched quietly the first time a player talks to
 // the dino), a file the player picked, or on a local dev build VITE_DINO_ENGINE_URL; this browser keeps it
-// (src/decomp/store.js). Without one the feature stays dormant.
+// (src/decomp/store.ts). Without one the feature stays dormant.
 // Distances are engine units (100 to the metre), angles engine shorts (65536 to the turn). One shared instance draws
 // the dino, runs this player's guest and draws everyone else's; the guest needs the ROM's animations first (setAnims).
-import { loadFile, saveFile } from '../decomp/store.js';
+import { loadFile, saveFile } from '../decomp/store.ts';
 
 const DEV_URL = import.meta.env.VITE_DINO_ENGINE_URL; // a local build only (native/guest/README.md)
 // The owner's build, hosted by the owner (an owner decision: the engine is fetched, the ROM never is).
@@ -15,10 +15,10 @@ const STORE_KEY = 'guest-engine';
 const NEEDS = ['guest_init', 'guest_tick', 'guest_state', 'guest_render_pose', 'guest_render_dino', 'guest_anim_bank'];
 export const ENGINE_EXT = ['.wasm'];
 
-let compiled = null; // WebAssembly.Module once known
+let compiled: WebAssembly.Module | null = null; // once known
 export const hasEngine = () => !!compiled;
 
-async function compile(bytes) {
+async function compile(bytes: ArrayBuffer) {
   try {
     const mod = await WebAssembly.compile(bytes);
     const names = new Set(WebAssembly.Module.exports(mod).map((x) => x.name));
@@ -28,7 +28,7 @@ async function compile(bytes) {
   }
 }
 
-const get = (url) =>
+const get = (url: string): Promise<ArrayBuffer | null> =>
   fetch(url).then(
     (r) => (r.ok ? r.arrayBuffer() : null),
     () => null,
@@ -38,7 +38,7 @@ const get = (url) =>
 // is none and keeps it. True if found.
 export async function findEngine(hosted = false) {
   if (compiled) return true;
-  const bytes = DEV_URL ? await get(DEV_URL) : await loadFile(STORE_KEY);
+  const bytes = DEV_URL ? await get(DEV_URL) : await loadFile<ArrayBuffer>(STORE_KEY);
   compiled ??= bytes && (await compile(bytes));
   if (!compiled && hosted && !DEV_URL) {
     const fetched = await get(ENGINE_URL);
@@ -49,7 +49,7 @@ export async function findEngine(hosted = false) {
 }
 
 // A picked or dropped engine file: kept if it is one. True if it was.
-export async function takeEngineFile(file) {
+export async function takeEngineFile(file: Blob) {
   const bytes = await file.arrayBuffer();
   const mod = await compile(bytes);
   if (!mod) return false;
@@ -68,18 +68,23 @@ const POSE_INTS = 18,
   SCALE_AT = POSE_INTS + 3;
 export const POSE_LEN = POSE_INTS + 6;
 const STATE_LEN = 12; // struct ShimState's fields before its pose
-export const isPose = (p) => Array.isArray(p) && p.length === POSE_LEN && p.every(Number.isFinite);
+export const isPose = (p: unknown): p is number[] =>
+  Array.isArray(p) && p.length === POSE_LEN && p.every(Number.isFinite);
 // Rounded for the wire: offsets to 0.1 units, scales to 0.01.
-export const quantisePose = (p) =>
+export const quantisePose = (p: number[]) =>
   p.map((v, i) => (i < POSE_INTS ? v : i < SCALE_AT ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100));
 
-let pending = null;
+// The wasm's exports (native/guest/include/shim.h); every entry takes and returns plain numbers.
+type Exports = { memory: WebAssembly.Memory } & Record<string, (...args: number[]) => number>;
+export type Sim = Awaited<ReturnType<typeof createSim>>;
+
+let pending: Promise<Sim> | null = null;
 export const getSim = () => (pending ??= createSim());
 
 // Needs an engine first (findEngine, takeEngineFile).
 async function createSim() {
-  const instance = await WebAssembly.instantiate(compiled, {});
-  const e = instance.exports;
+  const instance = await WebAssembly.instantiate(compiled!, {});
+  const e = instance.exports as unknown as Exports;
   const buffer = e.memory.buffer;
   e.guest_init();
   let animsSet = false;
@@ -92,18 +97,19 @@ async function createSim() {
   const poseInF = new Float32Array(buffer, e.guest_pose_buffer(), POSE_LEN);
 
   return {
-    setAnims(anims) {
+    setAnims(anims: Uint8Array) {
       if (animsSet) return;
       new Uint8Array(buffer).set(anims, e.guest_anim_bank());
       animsSet = true;
     },
     surfaces,
     capacity: e.guest_surface_capacity(),
-    loadSurfaces: (count, waterLevel) => e.guest_load_surfaces(count, waterLevel),
-    spawn: (x, y, z, yaw) => e.guest_spawn(x, y, z, yaw),
-    teleport: (x, y, z) => e.guest_teleport(x, y, z),
-    shift: (dx, dz) => e.guest_shift(dx, dz),
-    input: (stickX, stickY, buttons, camYaw) => e.guest_input(stickX, stickY, buttons, camYaw),
+    loadSurfaces: (count: number, waterLevel: number) => e.guest_load_surfaces(count, waterLevel),
+    spawn: (x: number, y: number, z: number, yaw: number) => e.guest_spawn(x, y, z, yaw),
+    teleport: (x: number, y: number, z: number) => e.guest_teleport(x, y, z),
+    shift: (dx: number, dz: number) => e.guest_shift(dx, dz),
+    input: (stickX: number, stickY: number, buttons: number, camYaw: number) =>
+      e.guest_input(stickX, stickY, buttons, camYaw),
     tick: () => e.guest_tick(),
     state: () => ({
       x: stateF[0],
@@ -123,13 +129,13 @@ async function createSim() {
         Array.from(stateF.subarray(STATE_LEN + POSE_INTS, STATE_LEN + POSE_LEN)),
       ),
     // Draws another player's pose (from pose()); then verts holds it.
-    renderPose(p) {
+    renderPose(p: number[]) {
       for (let i = 0; i < POSE_INTS; i++) poseIn[i] = p[i] | 0;
       for (let i = POSE_INTS; i < POSE_LEN; i++) poseInF[i] = +p[i] || (i >= SCALE_AT ? 1 : 0); // no zero scales
       e.guest_render_pose();
     },
     // Draws the dino: animation 0 idle, 1 walk, 2 jump; frame wraps at the animation's length.
-    renderDino(anim, frame, blink) {
+    renderDino(anim: number, frame: number, blink: boolean) {
       e.guest_render_dino(anim, frame % e.guest_dino_anim_length(anim), blink ? 1 : 0);
     },
     verts,

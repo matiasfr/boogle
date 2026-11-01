@@ -19,7 +19,7 @@
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
 //   physicsTime()                  seconds of simulated time
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
-//                                  built from (src/guest/collision.js triangulates them; heightfields included)
+//                                  built from (src/guest/collision.ts triangulates them; heightfields included)
 import * as rapier from './backend-rapier.ts';
 
 export type V3 = { x: number; y: number; z: number };

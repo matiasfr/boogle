@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { directLink } from '../src/decomp/link.js';
+import { directLink } from '../src/decomp/link.ts';
 
 test('directLink: a Dropbox share page becomes its direct download, keeping the key', () => {
   assert.equal(

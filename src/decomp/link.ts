@@ -3,7 +3,7 @@
 
 // A Dropbox share page (www.dropbox.com/scl/fi/...?rlkey=...&dl=0) as the direct download, which also allows a fetch
 // from another site. Other links are left as they are.
-export function directLink(text) {
+export function directLink(text: string) {
   let url;
   try {
     url = new URL(text.trim());
@@ -21,7 +21,7 @@ export function directLink(text) {
 
 // The file named after the last part of the link's path, or null if it can't be fetched (offline, no such file, or a
 // host that doesn't let other sites download).
-export async function fetchLinkedFile(href) {
+export async function fetchLinkedFile(href: string) {
   try {
     const res = await fetch(href);
     if (!res.ok) return null;

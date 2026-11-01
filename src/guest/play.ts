@@ -1,4 +1,4 @@
-// Playing as the guest. While it is on, the engine's guest (src/guest/engine.js) runs at his own 30 Hz inside the physics
+// Playing as the guest. While it is on, the engine's guest (src/guest/engine.ts) runs at his own 30 Hz inside the physics
 // step and this player's physics body becomes kinematic and follows him, so everything that reads the body (the ball,
 // the camera, interact targets, the hotbar, presence) keeps working. Other players' guests are drawn from the pose they
 // publish. Loaded on first use by src/features/dino.ts.
@@ -12,10 +12,14 @@ import { emit } from '../render/particles.ts';
 import { me, cam } from '../player/player.ts';
 import { input } from '../player/input.ts';
 import { onFrame } from '../loop.ts';
-import { getSim, BUTTON } from './engine.js';
-import { gatherSurfaces, UNITS } from './collision.js';
-import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
-import { guest } from './state.js';
+import { getSim, BUTTON } from './engine.ts';
+import type { Sim } from './engine.ts';
+import type { RomPieces } from './rom.ts';
+import type { ModelMesh } from './model.ts';
+import type { Remote } from '../netplay/net.ts';
+import { gatherSurfaces, UNITS } from './collision.ts';
+import { getAtlas, createModelMesh, updateModelMesh } from './model.ts';
+import { guest } from './state.ts';
 
 const RECENTRE = 40; // metres from the frame origin before the origin moves to the guest
 const PER_S = 30 / 100; // engine units per frame (30 Hz) to metres per second
@@ -28,44 +32,46 @@ const PARTICLE_DUST = 1 << 0,
 const ATTACKING = 0x100000 | 0x200000 | 0x400000; // the engine's punching, kicking and tripping flags
 const DUST = new THREE.Color('#e9dcc0');
 
-let sim = null,
-  mesh = null;
+let sim: Sim | null = null,
+  mesh: ModelMesh | null = null;
 // The guest's collision lives in a frame centred near him (the engine keeps everything within ±8192 units).
 const origin = { x: 0, z: 0 };
 let phase = 0,
-  last = null,
+  last: State = null as unknown as State, // set by startGuest before anything reads it
   hitAt = 0;
 const target = { x: 0, y: 0, z: 0 },
   expected = { x: 0, y: 0, z: 0 };
-const put = (v, p) => ((v.x = p.x), (v.y = p.y), (v.z = p.z));
+type State = ReturnType<Sim['state']>;
+type XYZ = { x: number; y: number; z: number };
+const put = (v: XYZ, p: XYZ) => ((v.x = p.x), (v.y = p.y), (v.z = p.z));
 
-export async function loadSim(data) {
-  if (sim) return;
+export async function loadSim(data: RomPieces) {
+  if (sim) return sim;
   const s = await getSim();
   s.setAnims(data.anims);
   getAtlas(data.textures);
-  sim = s;
+  return (sim = s);
 }
 
-const toShort = (rad) => ((((Math.round(rad * TURN) % 65536) + 98304) % 65536) - 32768) | 0;
+const toShort = (rad: number) => ((((Math.round(rad * TURN) % 65536) + 98304) % 65536) - 32768) | 0;
 
-function moveOrigin(x, z) {
+function moveOrigin(x: number, z: number) {
   origin.x = Math.round(x);
   origin.z = Math.round(z);
 }
 
 // Loads the triangles around world point (x, z) and the water there.
-function loadSurfaces(x, z) {
-  const n = gatherSurfaces(sim, x, z, origin.x, origin.z, getMask(me.body));
+function loadSurfaces(sim: Sim, x: number, z: number) {
+  const n = gatherSurfaces(sim, x, z, origin.x, origin.z, getMask(me.body!));
   sim.loadSurfaces(n, waterField.surfaceAt(x, z) * UNITS);
 }
 
-export async function startGuest(data) {
-  await loadSim(data);
-  const b = me.body;
-  mesh ??= createModelMesh();
+export async function startGuest(data: RomPieces) {
+  const sim = await loadSim(data);
+  const b = me.body!;
+  const m = (mesh ??= createModelMesh());
   moveOrigin(b.position.x, b.position.z);
-  loadSurfaces(b.position.x, b.position.z);
+  loadSurfaces(sim, b.position.x, b.position.z);
   sim.spawn(
     (b.position.x - origin.x) * UNITS,
     (b.position.y - PLAYER_R) * UNITS,
@@ -77,8 +83,8 @@ export async function startGuest(data) {
   put(target, b.position);
   put(expected, b.position);
   phase = 0;
-  scene.add(mesh);
-  me.avatar.userData.inner.visible = false;
+  scene.add(m);
+  me.avatar!.userData.inner.visible = false;
   guest.active = true;
 }
 
@@ -86,11 +92,11 @@ export function stopGuest() {
   if (!guest.active) return;
   guest.active = false;
   guest.pose = null;
-  const b = me.body;
+  const b = me.body!;
   setMotion(b, 'dynamic', true, PLAYER_MASS);
   b.velocity.set(last.vx * PER_S, last.vy * PER_S, last.vz * PER_S);
-  scene.remove(mesh);
-  me.avatar.userData.inner.visible = true;
+  scene.remove(mesh!);
+  me.avatar!.userData.inner.visible = true;
 }
 
 function readStick() {
@@ -117,7 +123,7 @@ function readButtons() {
 }
 
 // A punch, kick or trip that reaches the beach ball knocks it away.
-function hitBall(now) {
+function hitBall(now: number) {
   if (!(last.flags & ATTACKING) || ball.held || now - hitAt < 350) return;
   const yaw = last.faceYaw / TURN;
   const fx = Math.sin(yaw),
@@ -133,7 +139,7 @@ function hitBall(now) {
   ball.body.velocity.set(fx * kick + last.vx * PER_S, 5.5, fz * kick + last.vz * PER_S);
 }
 
-function puffs(st) {
+function puffs(st: State) {
   if (reducedMotion || !(st.particles & (PARTICLE_DUST | PARTICLE_MIST_CIRCLE))) return;
   const feetY = st.y / UNITS;
   const ring = st.particles & PARTICLE_MIST_CIRCLE;
@@ -158,10 +164,10 @@ function puffs(st) {
   }
 }
 
-function tick(now) {
+function tick(sim: Sim, now: number) {
   const wx = origin.x + last.x / UNITS,
     wz = origin.z + last.z / UNITS;
-  loadSurfaces(wx, wz);
+  loadSurfaces(sim, wx, wz);
   const [sx, sy] = readStick();
   sim.input(sx, sy, readButtons(), toShort(cam.yaw));
   sim.tick();
@@ -174,7 +180,7 @@ function tick(now) {
   me.coyote = group === ACT_GROUP_AIRBORNE || group === ACT_GROUP_SUBMERGED ? 0 : 0.1;
   me.swimming = group === ACT_GROUP_SUBMERGED;
   guest.pose = sim.pose();
-  updateModelMesh(mesh, sim.verts, sim.vertexCount());
+  updateModelMesh(mesh!, sim.verts, sim.vertexCount());
   puffs(st);
   hitBall(now);
   if (Math.abs(st.x) > RECENTRE * UNITS || Math.abs(st.z) > RECENTRE * UNITS) {
@@ -190,7 +196,7 @@ function tick(now) {
 // The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
 // respawn, the caves' safety net), the guest goes there.
 onPreStep(() => {
-  if (!guest.active || !me.body) return;
+  if (!guest.active || !me.body || !sim) return;
   const b = me.body;
   const p = b.position;
   if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
@@ -203,7 +209,7 @@ onPreStep(() => {
     last = sim.state();
     put(target, b.position);
   }
-  if (phase === 0) tick(performance.now());
+  if (phase === 0) tick(sim, performance.now());
   const left = (2 - phase) * FIXED;
   b.velocity.set((target.x - b.position.x) / left, (target.y - b.position.y) / left, (target.z - b.position.z) / left);
   expected.x = b.position.x + b.velocity.x * FIXED;
@@ -215,7 +221,7 @@ onPreStep(() => {
 // The guest's feet are a ball radius under the body's centre.
 onFrame(
   () => {
-    if (!guest.active || !me.body) return;
+    if (!guest.active || !me.body || !mesh || !me.avatar) return;
     const ip = me.body.interpolatedPosition;
     mesh.position.set(ip.x, ip.y - PLAYER_R, ip.z);
     me.avatar.userData.inner.visible = false;
@@ -225,10 +231,10 @@ onFrame(
 
 // ---------------------------------------------------------------- other players' guests
 
-const remoteMeshes = new Map(); // remote -> { mesh, pose }
+const remoteMeshes = new Map<Remote, { mesh: ModelMesh; pose: number[] | null }>();
 
 // Draws every remote who is the guest (r.guest holds their pose) and lets their usual avatar show again when they stop.
-export function updateRemoteGuests(remotes) {
+export function updateRemoteGuests(remotes: Map<string, Remote>) {
   if (!sim) return;
   for (const [r, entry] of remoteMeshes) {
     if (remotes.get(r.peer) === r && r.guest && r.avatar) continue;

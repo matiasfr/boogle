@@ -12,8 +12,8 @@
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
   mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)
-  loads [src/debug/netdebug.js](../../src/debug/netdebug.js) only with the flag; `?debugcam=1` likewise loads
-  [src/debug/debug-cam.js](../../src/debug/debug-cam.js).
+  loads [src/debug/netdebug.ts](../../src/debug/netdebug.ts) only with the flag; `?debugcam=1` likewise loads
+  [src/debug/debug-cam.ts](../../src/debug/debug-cam.ts).
 
 ---
 

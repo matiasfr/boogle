@@ -3,9 +3,10 @@
 import { camera } from '../render/scene.ts';
 import { onFrame } from '../loop.ts';
 
-let pose = null;
+type V3t = [number, number, number];
+let pose: { pos: V3t; look: V3t } | null = null;
 window.__debugCam = {
-  set(pos, look, fov) {
+  set(pos: V3t, look: V3t, fov?: number) {
     pose = { pos, look };
     if (fov) {
       camera.fov = fov;

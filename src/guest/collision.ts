@@ -6,14 +6,21 @@ import { CELL, HALF, GRID_RES } from '../constants.ts';
 import { heights } from '../adapters/terrain.ts';
 import { GROUP } from '../physics/physics.ts';
 import { forEachStatic } from '../physics/engine.ts';
+import type { Body, Quat, Shape } from '../physics/engine.ts';
+import type { Sim } from './engine.ts';
 
 export const UNITS = 100; // engine units per metre
 const REACH = 5; // metres around the guest, every height
 const BUCKET = 4; // metres per side of the grid big bodies' triangles are filed in
 
-const cache = new WeakMap(); // body -> { shapes, tris: Float32Array (9 per triangle, world metres), buckets, bounds }
+type P3 = number[]; // [x, y, z]
+type Poly = { vertices: P3[]; faces: number[][] };
+// tris: 9 per triangle, world metres; buckets: triangle offsets per BUCKET cell, for big bodies
+type Entry = { shapes: Shape[]; tris: Float32Array; buckets: Map<number, number[]> | null; bounds: Bounds };
+type Bounds = { x0: number; x1: number; z0: number; z1: number };
+const cache = new WeakMap<Body, Entry>();
 
-function sphereMesh(r) {
+function sphereMesh(r: number): Poly {
   const t = (1 + Math.sqrt(5)) / 2;
   const v = [
     [-1, t, 0],
@@ -56,8 +63,8 @@ function sphereMesh(r) {
   ];
   return { vertices: v, faces: f };
 }
-function boxMesh(hx, hy, hz) {
-  const vertices = [];
+function boxMesh(hx: number, hy: number, hz: number): Poly {
+  const vertices: P3[] = [];
   for (const x of [-hx, hx]) for (const y of [-hy, hy]) for (const z of [-hz, hz]) vertices.push([x, y, z]);
   // vertex index = 4*xi + 2*yi + zi
   const faces = [
@@ -71,8 +78,8 @@ function boxMesh(hx, hy, hz) {
   return { vertices, faces };
 }
 // Along y, like the physics cylinders: n sides, a top and a bottom.
-function cylinderMesh(rTop, rBottom, h, n) {
-  const vertices = [];
+function cylinderMesh(rTop: number, rBottom: number, h: number, n: number): Poly {
+  const vertices: P3[] = [];
   for (let k = 0; k < n; k++) {
     const a = (k / n) * Math.PI * 2;
     vertices.push(
@@ -80,7 +87,7 @@ function cylinderMesh(rTop, rBottom, h, n) {
       [Math.cos(a) * rTop, h / 2, Math.sin(a) * rTop],
     );
   }
-  const faces = [];
+  const faces: number[][] = [];
   for (let k = 0; k < n; k++) faces.push([2 * k, 2 * ((k + 1) % n), 2 * ((k + 1) % n) + 1, 2 * k + 1]);
   faces.push(Array.from({ length: n }, (_, k) => 2 * k + 1));
   faces.push(Array.from({ length: n }, (_, k) => 2 * (n - 1 - k)));
@@ -88,7 +95,7 @@ function cylinderMesh(rTop, rBottom, h, n) {
 }
 
 // Rotates [x, y, z] by quaternion q ({ x, y, z, w }), in place.
-function rotate(q, p) {
+function rotate(q: Quat, p: P3) {
   const [x, y, z] = p;
   const tx = 2 * (q.y * z - q.z * y),
     ty = 2 * (q.z * x - q.x * z),
@@ -98,12 +105,12 @@ function rotate(q, p) {
   p[2] = z + q.w * tz + (q.x * ty - q.y * tx);
   return p;
 }
-const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const sub = (a: P3, b: P3) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a: P3, b: P3) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const dot = (a: P3, b: P3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 // Convex shapes are fanned and wound to face outwards; trimeshes keep their own winding.
-function shapeTriangles(shape, out, place) {
+function shapeTriangles(shape: Shape, out: number[], place: (p: P3) => P3) {
   if (shape.kind === 'trimesh') {
     const v = shape.vertices,
       idx = shape.indices;
@@ -132,13 +139,13 @@ function shapeTriangles(shape, out, place) {
   }
 }
 
-function bodyTriangles(body, shapes) {
+function bodyTriangles(body: Body, shapes: Shape[]): Entry {
   let entry = cache.get(body);
   if (entry && entry.shapes === shapes) return entry; // a growing mushroom gets new shapes: rebuild
-  const out = [];
+  const out: number[] = [];
   for (const shape of shapes) {
     const off = shape.offset ?? { x: 0, y: 0, z: 0 };
-    const place = (p) => {
+    const place = (p: P3) => {
       if (shape.rotation) rotate(shape.rotation, p);
       p[0] += off.x;
       p[1] += off.y;
@@ -156,7 +163,7 @@ function bodyTriangles(body, shapes) {
     bounds.z0 = Math.min(bounds.z0, tris[t + 2]);
     bounds.z1 = Math.max(bounds.z1, tris[t + 2]);
   }
-  let buckets = null;
+  let buckets: Map<number, number[]> | null = null;
   if (tris.length > 9 * 64) {
     buckets = new Map();
     for (let t = 0; t < tris.length; t += 9) {
@@ -165,8 +172,9 @@ function bodyTriangles(body, shapes) {
       for (let bx = Math.floor(Math.min(...xs) / BUCKET); bx <= Math.floor(Math.max(...xs) / BUCKET); bx++)
         for (let bz = Math.floor(Math.min(...zs) / BUCKET); bz <= Math.floor(Math.max(...zs) / BUCKET); bz++) {
           const key = (bx + 512) * 1024 + bz + 512;
-          if (!buckets.has(key)) buckets.set(key, []);
-          buckets.get(key).push(t);
+          let list = buckets.get(key);
+          if (!list) buckets.set(key, (list = []));
+          list.push(t);
         }
     }
   }
@@ -177,11 +185,21 @@ function bodyTriangles(body, shapes) {
 
 // Fills sim.surfaces with the triangles within REACH of (x, z) in metres, relative to the frame origin (ox, oz), and
 // returns how many there are.
-export function gatherSurfaces(sim, x, z, ox, oz, mask) {
+export function gatherSurfaces(sim: Sim, x: number, z: number, ox: number, oz: number, mask: number) {
   const out = sim.surfaces;
   const max = sim.capacity;
   let n = 0;
-  const add = (ax, ay, az, bx, by, bz, cx, cy, cz) => {
+  const add = (
+    ax: number,
+    ay: number,
+    az: number,
+    bx: number,
+    by: number,
+    bz: number,
+    cx: number,
+    cy: number,
+    cz: number,
+  ) => {
     if (n >= max) return;
     const o = n++ * 10;
     out[o] = (ax - ox) * UNITS;
@@ -226,7 +244,7 @@ export function gatherSurfaces(sim, x, z, ox, oz, mask) {
     if (shapes.some((sh) => sh.kind === 'heightfield')) return; // the terrain, done above from the height grid
     const { tris, buckets, bounds: bb } = bodyTriangles(body, shapes);
     if (bb.x1 < x0 || bb.x0 > x1 || bb.z1 < z0 || bb.z0 > z1) return;
-    const take = (t) => {
+    const take = (t: number) => {
       const ax = tris[t],
         bx = tris[t + 3],
         cx = tris[t + 6],
@@ -241,7 +259,7 @@ export function gatherSurfaces(sim, x, z, ox, oz, mask) {
       for (let t = 0; t < tris.length; t += 9) take(t);
       return;
     }
-    const seen = new Set();
+    const seen = new Set<number>();
     for (let bx = Math.floor(x0 / BUCKET); bx <= Math.floor(x1 / BUCKET); bx++)
       for (let bz = Math.floor(z0 / BUCKET); bz <= Math.floor(z1 / BUCKET); bz++)
         for (const t of buckets.get((bx + 512) * 1024 + bz + 512) ?? []) {

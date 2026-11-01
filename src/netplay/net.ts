@@ -48,7 +48,7 @@ export type Remote = {
   flLast?: number; // its last fl time left, so a repeat isn't a new flop
   kdLast?: number; // their last kd (src/features/impact.ts)
   kdUntil?: number; // knocked down until (ms)
-  guest?: unknown; // the guest's pose (src/features/dino.ts; src/guest/)
+  guest?: number[] | null; // the guest's pose (src/features/dino.ts; src/guest/)
 };
 type RemoteHook = (r: Remote, pr: Presence, time: number) => void;
 

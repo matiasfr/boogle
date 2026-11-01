@@ -93,7 +93,7 @@ test('feature onFrame orders stay in the feature range and off core orders', () 
       'src/player/player.ts',
       "onFrame(cam, { phase: 'update', order: -200 });\nonFrame(send, { phase: 'late', order: 3000 });",
     ),
-    file('src/guest/play.js', 'onFrame(g, { order: -5 });'),
+    file('src/guest/play.ts', 'onFrame(g, { order: -5 });'),
     file('src/features/a.js', "onFrame(a, { order: -5 });\nonFrame(b, { phase: 'late', order: 3000 });"),
     file('src/features/b.js', "onFrame(c, {\n  phase: 'world',\n  order: -50,\n});"),
   ]);

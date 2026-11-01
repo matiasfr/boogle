@@ -5,7 +5,7 @@ const DB = 'boogle-decomp';
 const STORE = 'files';
 
 function openDb() {
-  return new Promise((resolve, reject) => {
+  return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB, 1);
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
     req.onsuccess = () => resolve(req.result);
@@ -13,10 +13,10 @@ function openDb() {
   });
 }
 
-function request(mode, fn) {
+function request<T = unknown>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>) {
   return openDb().then(
     (db) =>
-      new Promise((resolve, reject) => {
+      new Promise<T>((resolve, reject) => {
         const req = fn(db.transaction(STORE, mode).objectStore(STORE));
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -24,15 +24,16 @@ function request(mode, fn) {
   );
 }
 
-export async function loadFile(key) {
+// T is what was saved under key; nothing checks it.
+export async function loadFile<T = unknown>(key: string): Promise<T | null> {
   try {
-    return (await request('readonly', (s) => s.get(key))) ?? null;
+    return (await request<T>('readonly', (s) => s.get(key))) ?? null;
   } catch {
     return null;
   }
 }
 
-export async function saveFile(key, data) {
+export async function saveFile(key: string, data: unknown) {
   try {
     await request('readwrite', (s) => s.put(data, key));
   } catch {

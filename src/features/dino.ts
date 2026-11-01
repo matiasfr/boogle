@@ -1,7 +1,7 @@
 // The dino waits outside the wine cellar's cave. Talk to him and you play as the guest, a character with its own full
 // move set and controller run by the guest engine (src/guest/); talk to him again to be yourself. The player brings
-// their own ROM for the guest's animations and textures (src/guest/rom.js), asked for the first time; the engine
-// (src/guest/engine.js) is fetched quietly then, and only asked for too if that fails. Without both the dino is just
+// their own ROM for the guest's animations and textures (src/guest/rom.ts), asked for the first time; the engine
+// (src/guest/engine.ts) is fetched quietly then, and only asked for too if that fails. Without both the dino is just
 // a dino.
 // Serves DESIGN.md 1 (toys before chores): a second way to move around the island, and everything else (hands, hotbar,
 // ball, friends) still works.
@@ -18,18 +18,18 @@ import { registerInteractable, interactTarget } from '../player/hands.ts';
 import { heldId } from '../player/inventory.ts';
 import { registerAction, describeControl, wrapAction } from '../player/controls.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.ts';
-import { dino, dinoSays, updateDino, showRealDino } from '../guest/dino.js';
-import { guest } from '../guest/state.js';
-import { isPose, quantisePose, hasEngine, findEngine, takeEngineFile, ENGINE_EXT } from '../guest/engine.js';
-import { readRom, ROM_EXT, ROM_SHA1 } from '../guest/rom.js';
-import { loadFile, saveFile } from '../decomp/store.js';
+import { dino, dinoSays, updateDino, showRealDino } from '../guest/dino.ts';
+import { guest } from '../guest/state.ts';
+import { isPose, quantisePose, hasEngine, findEngine, takeEngineFile, ENGINE_EXT } from '../guest/engine.ts';
+import { readRom, ROM_EXT, ROM_SHA1, type RomPieces } from '../guest/rom.ts';
+import { loadFile, saveFile } from '../decomp/store.ts';
 import {
   openFilesDialog,
   filesDialogAccepts,
   filesDialogNeeds,
   filesDialogOpen,
   filesDialogSays,
-} from '../decomp/files-dialog.js';
+} from '../decomp/files-dialog.ts';
 
 const TALK_R = 2.2;
 const SPARK = new THREE.Color('#fff4b8');
@@ -38,8 +38,8 @@ const ROM_KEY = 'guest-rom';
 
 let rom: Awaited<ReturnType<typeof readRom>> | null = null; // { anims, textures } once known
 const ready = () => !!rom && hasEngine();
-let module: typeof import('../guest/play.js') | null = null;
-const load = async () => (module ??= await import('../guest/play.js'));
+let module: typeof import('../guest/play.ts') | null = null;
+const load = async () => (module ??= await import('../guest/play.ts'));
 let switching = false; // becoming the guest takes a moment: the module, the engine
 let preloading: Promise<unknown> | null = null; // loading the engine to draw other players' guests
 
@@ -67,7 +67,7 @@ async function becomeGuest() {
   switching = true;
   try {
     const m = await load();
-    await m.startGuest(rom);
+    await m.startGuest(rom!); // only offered once ready()
     puff();
     dinoSays(WORD);
   } finally {
@@ -99,7 +99,7 @@ async function useFile(file: File) {
   filesDialogSays('');
   filesDialogNeeds(needs());
   if (!ready()) return;
-  showRealDino(rom);
+  showRealDino(rom!);
   await filesDialogAccepts(WORD);
   if (!guest.active && me.body) becomeGuest();
 }
@@ -160,9 +160,9 @@ dom.grabBtn.addEventListener('pointerup', releaseB);
 
 // Files this browser already has; the hosted engine is fetched only once someone talks to the dino.
 onStart(() => {
-  Promise.all([findEngine(), loadFile(ROM_KEY)]).then(([, data]) => {
+  Promise.all([findEngine(), loadFile<RomPieces>(ROM_KEY)]).then(([, data]) => {
     rom ??= data;
-    if (ready()) showRealDino(rom);
+    if (ready()) showRealDino(rom!);
   });
   wrapAction('use', {
     down: (next) => (punches() ? pressB() : next()),
@@ -209,6 +209,6 @@ onFrame(({ now }) => {
   if (module) module.updateRemoteGuests(remotes);
   else if (ready() && !preloading && anyRemoteGuest())
     preloading = load()
-      .then((m) => m.loadSim(rom))
+      .then((m) => m.loadSim(rom!))
       .catch(() => (preloading = null));
 });

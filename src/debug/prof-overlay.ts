@@ -9,7 +9,7 @@ onStart(() => {
     'position:fixed;right:8px;top:72px;margin:0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.6);' +
     'color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;pointer-events:none;z-index:50;white-space:pre';
   document.body.append(el);
-  const ms = (x) => x.toFixed(2).padStart(6);
+  const ms = (x: number) => x.toFixed(2).padStart(6);
   setInterval(() => {
     const rows = prof.table(14);
     el.textContent = '   avg    p95  ms CPU\n' + rows.map((r) => `${ms(r.avg)} ${ms(r.p95)}  ${r.name}`).join('\n');

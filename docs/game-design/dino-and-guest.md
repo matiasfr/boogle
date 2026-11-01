@@ -1,7 +1,7 @@
 # 6.17 The dino and the guest
 
 - **What.** A dino stands just outside the wine cellar's cave mouth on the north cliff, facing out along the trench
-  ([src/guest/dino.js](../../src/guest/dino.js)). Talk to him (E, pad B) and you become the guest: a character with its
+  ([src/guest/dino.ts](../../src/guest/dino.ts)). Talk to him (E, pad B) and you become the guest: a character with its
   own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
   run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
   hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).

@@ -12,8 +12,8 @@ const ROM = process.env.GUEST_ROM;
 const ENGINE = process.env.GUEST_ENGINE || path.join(root, 'native/guest/out/engine.wasm');
 
 const MODS = `
-  const { dino } = await import('/src/guest/dino.js');
-  const { guest } = await import('/src/guest/state.js');`;
+  const { dino } = await import('/src/guest/dino.ts');
+  const { guest } = await import('/src/guest/state.ts');`;
 const goToDino = `(async () => {
   ${MODS}
   ${TP('dino.pos.x + 1.4', 'dino.pos.z')}
