@@ -4,6 +4,7 @@ import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.ts';
 import { scene } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
 import { addBody, removeBody } from '../physics/engine.ts';
+import { carry, platformById, toPlatform, fromPlatform, type Local } from '../physics/platforms.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.ts';
 import { me } from '../player/player.ts';
 import { renderPeople, dom } from '../player/hud.ts';
@@ -20,6 +21,10 @@ import type { Body } from '../physics/engine.ts';
 /** A peer as the room reports it (src/net/README.md). */
 type PeerEntry = { peer: string; sameTab?: boolean; presence?: Presence };
 type PoseSample = { p: number[]; r: number; s: unknown };
+type RideSample = { l: number[]; r: number };
+/** A remote standing on a shared platform: their pose in its frame (presence key `riding`). on: drawn on our copy of
+ * it this frame (false: the platform is missing here, or our copy is somewhere else, so world presence it is). */
+type Ride = { id: string; snaps: ReturnType<typeof createSnaps<RideSample>>; on: boolean; l: Local; prev: Local };
 /** Everything this tab knows about another player: identity, their pose buffer and the meshes and body drawn for
  * them. Features may add fields (r.build: src/netplay/builds.ts). */
 export type Remote = {
@@ -49,6 +54,7 @@ export type Remote = {
   kdLast?: number; // their last kd (src/features/impact.ts)
   kdUntil?: number; // knocked down until (ms)
   guest?: number[] | null; // the guest's pose (src/features/dino.ts; src/guest/)
+  ride?: Ride | null; // standing on a shared platform (riding, below)
 };
 type RemoteHook = (r: Remote, pr: Presence, time: number) => void;
 
@@ -136,6 +142,61 @@ export function onRoomReady(fn: (room: Room) => void) {
 }
 export function onNetState(fn: (state: string, prev: string) => void) {
   stateHooks.push(fn);
+}
+
+// ---------------------------------------------------------------- riding a shared platform (Owner)
+// World presence trails a moving deck by the interpolation delay (0.3 m at the wagon's 3 m/s, more on a stop or a
+// corner), so a rider on another tab would slide about on it. While you stand on a shared platform
+// (src/physics/platforms.ts) you also send `riding`: [platform id, x, y, z, yaw] in its frame; other tabs smooth that
+// and draw you on their own copy of the platform. Missing key: not riding. Old tabs ignore it. Serves DESIGN.md 4.
+const RIDE_TRUST = 3; // m: farther than this from the rider's world presence, our copy disagrees; use presence
+const mine: Local = { x: 0, y: 0, z: 0, yaw: 0 };
+addPresenceField('riding', () => {
+  const p = carry.on;
+  if (!p?.shared || !p.id || !me.entered || !me.body) return null;
+  const l = toPlatform(p, me.body.position, me.yaw, mine);
+  return [p.id, r2(l.x), r2(l.y), r2(l.z), r2(l.yaw)];
+});
+onRemotePresence((r, pr, time) => {
+  const v = pr.riding as unknown[] | undefined;
+  const ok = r.entered && Array.isArray(v) && v.length === 5 && typeof v[0] === 'string' && finiteArr(v.slice(1), 4);
+  if (!ok) {
+    r.ride = null;
+    return;
+  }
+  const id = v[0] as string,
+    [x, y, z, yaw] = v.slice(1) as number[];
+  if (r.ride?.id !== id)
+    r.ride = {
+      id,
+      snaps: createSnaps<RideSample>(),
+      on: false,
+      l: { x: 0, y: 0, z: 0, yaw: 0 },
+      prev: { x: 0, y: 0, z: 0, yaw: NaN },
+    };
+  r.ride.snaps.push(time, { l: [x, y, z], r: yaw });
+});
+const rideAt: Local = { x: 0, y: 0, z: 0, yaw: 0 },
+  rideV = new THREE.Vector3();
+// Puts r.target and r.yaw on our copy of the platform r rides (interpolated: where its mesh is drawn this frame).
+// Before the step (updateRemotes) it also decides whether to trust our copy; returns whether r is drawn riding.
+function placeRider(r: Remote, rt: number, interpolated: boolean) {
+  const ride = r.ride;
+  if (!ride) return false;
+  const p = platformById(ride.id);
+  const s = p && ride.snaps.sample(rt);
+  if (!p || !s) return (ride.on = false);
+  const { a, b, u } = s;
+  ride.l.x = lerp(a.l[0], b.l[0], u);
+  ride.l.y = lerp(a.l[1], b.l[1], u);
+  ride.l.z = lerp(a.l[2], b.l[2], u);
+  ride.l.yaw = angleLerp(a.r, b.r, u);
+  fromPlatform(p, ride.l, interpolated, rideAt);
+  if (!interpolated) ride.on = r.target.distanceTo(rideV.set(rideAt.x, rideAt.y, rideAt.z)) < RIDE_TRUST;
+  if (!ride.on) return false;
+  r.target.set(rideAt.x, rideAt.y, rideAt.z);
+  r.yaw = rideAt.yaw;
+  return true;
 }
 
 function buildPresence() {
@@ -399,6 +460,7 @@ export function updateRemotes(now: number) {
       r.target.set(lerp(s.a.p[0], s.b.p[0], s.u), lerp(s.a.p[1], s.b.p[1], s.u), lerp(s.a.p[2], s.b.p[2], s.u));
       r.yaw = angleLerp(s.a.r, s.b.r, s.u);
       r.state = s.b.s;
+      placeRider(r, rt, false);
       if (!r.avatar) {
         r.avatar = makeAvatar(r.colorIdx);
         r.avatar.position.copy(r.target);
@@ -427,12 +489,20 @@ export function updateRemotes(now: number) {
 // interpolated pose and walk at the speed they moved since last frame.
 const tmpV = new THREE.Vector3();
 onFrame(
-  ({ dt }: { dt: number }) => {
+  ({ dt, now }: { dt: number; now: number }) => {
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
+      // Riding: drawn on the deck as our copy of it is drawn, and walking only as fast as they move on it.
+      const riding = placeRider(r, now - INTERP_MS, true),
+        l = r.ride?.l,
+        was = r.ride?.prev;
       r.avatar.position.copy(r.target);
       r.avatar.rotation.y = r.yaw;
-      const speed = dt > 0 ? tmpV.copy(r.target).sub(r.prevPos).setY(0).length() / dt : 0;
+      let speed = dt > 0 ? tmpV.copy(r.target).sub(r.prevPos).setY(0).length() / dt : 0;
+      if (riding && l && was) {
+        speed = was.yaw === was.yaw && dt > 0 ? Math.hypot(l.x - was.x, l.z - was.z) / dt : 0;
+        Object.assign(was, l);
+      } else if (was) was.yaw = NaN;
       r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
       r.prevPos.copy(r.target);
       animateAvatar(r.avatar, r.speed, r.state === 1, dt);

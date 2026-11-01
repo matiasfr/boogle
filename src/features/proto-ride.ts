@@ -1,7 +1,8 @@
 // Prototype: riding (?proto=ride). A greybox flatbed on a kinematic body shuttles along a route beside the court
 // (straights, two gentle corners, a grade that follows the ground), stopping at each end so you can hop on. It proves
 // platform carry (src/physics/platforms.ts) before the real wagon (docs/plans/find-the-fun.md, step 2). Serves
-// DESIGN.md 1 (Toys before chores): a ride with nothing to achieve. Local: each tab runs its own flatbed.
+// DESIGN.md 1 (Toys before chores): a ride with nothing to achieve. Local: each tab runs its own flatbed, so it is not a
+// shared platform (no `id`): a rider on it shows on other tabs at their world presence, a little behind the deck.
 // Tune live: window.__ride.RIDE.cruise = 6 (or ?ridespeed=6).
 import * as THREE from 'three';
 import { onFrame } from '../loop.ts';
