@@ -11,21 +11,32 @@ shared = open(src).read().split('# =============================================
 exec(compile(shared, src, 'exec'))
 
 # head: a wide straw hat, one closed piece: a profile (brim edge in to the crown, up the crown, across the top) spun
-# round the head, so brim and crown share their joining edge and nothing can show between them. The brim droops a
-# little towards its edge; a red band sits on the crown.
-HAT_BASE = BEAN['z1'] + BEAN['rz'] - 0.12  # where the crown meets the brim, a little below the top of the head
+# round the head, so brim and crown share their joining edge and nothing can show between them. Its inside follows
+# the head: at each angle the profile is measured out from where the bean's surface is at HAT_BASE (the bean is an
+# ellipse, wider than deep), and that ring sits just inside the surface, so the hat rests on the head with no gap. The
+# brim droops a little towards its edge; a red band sits on the crown.
+HAT_BASE = CROWN_CUT - 0.03  # where the hat meets the head: below the cut, so no bare crown shows
 
 
 def straw_hat(bm):
-    # (radius, height above HAT_BASE) round the outside, then back along the underside.
-    top = [(0.72, -0.06), (0.6, -0.015), (0.42, 0.0), (0.4, 0.12), (0.36, 0.2), (0.0, 0.21)]
-    under = [(0.0, 0.17), (0.33, 0.16), (0.37, -0.035), (0.6, -0.05), (0.72, -0.09)]
+    # (metres out from the head's surface, height above HAT_BASE): round the outside, then back along the underside.
+    top = [(0.36, -0.06), (0.25, -0.015), (0.06, 0.0), (0.05, 0.12), (0.02, 0.2), (None, 0.215)]
+    under = [(None, 0.17), (-0.03, 0.16), (-0.012, 0.0), (0.25, -0.035), (0.36, -0.09)]
     prof = top + under
-    segs = 32
+    segs = 40
     rings = []
     for i in range(segs):
         a = 2 * math.pi * i / segs
-        rings.append([bm.verts.new((r * math.cos(a), r * math.sin(a), HAT_BASE + z)) for r, z in prof])
+        dz = HAT_BASE - BEAN['z1']
+        rx = BEAN['rx'] * widths(HAT_BASE)[0] * math.sqrt(1 - (dz / BEAN['rz']) ** 2)
+        ry = BEAN['ry'] * widths(HAT_BASE, math.sin(a) > 0)[1] * math.sqrt(1 - (dz / BEAN['rz']) ** 2)
+        c, sn = math.cos(a), math.sin(a)
+        rh = 1 / math.sqrt((c / rx) ** 2 + (sn / ry) ** 2)  # the head's radius in this direction
+        ring_ = []
+        for out, z in prof:
+            r = 0.0 if out is None else rh + out
+            ring_.append(bm.verts.new((r * c, r * sn, HAT_BASE + z)))
+        rings.append(ring_)
     for i in range(segs):
         r0, r1 = rings[i], rings[(i + 1) % segs]
         for j in range(len(prof) - 1):
@@ -35,8 +46,16 @@ def straw_hat(bm):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
 
+def band(bm):
+    # A ribbon round the crown just above the brim, following the crown's outside.
+    straw_hat(bm)
+    cut(bm, [((0, 0, HAT_BASE + 0.01), (0, 0, 1)), ((0, 0, HAT_BASE + 0.08), (0, 0, 1))], lambda c: HAT_BASE + 0.01 < c.z < HAT_BASE + 0.08 and c.to_2d().length > 0.2 and c.z > HAT_BASE + 0.005)
+    for v in bm.verts:
+        v.co += Vector((v.co.x, v.co.y, 0)).normalized() * 0.012
+
+
 part('wear_head_strawhat', 'body', 'straw', straw_hat)
-part('wear_head_strawhat_band', 'body', 'cloth_red', lambda bm: ring(bm, (0, 0, HAT_BASE + 0.045), 0.43, 0.075, segs=32, r2=0.418))
+part('wear_head_strawhat_band', 'body', 'cloth_red', band)
 
 # body: shorts. Cut from a slightly larger bean below the waist, with a rope belt and short legs to mid-thigh.
 SHORTS_TOP = 0.74

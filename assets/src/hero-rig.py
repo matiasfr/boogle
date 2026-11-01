@@ -31,6 +31,7 @@
 #
 # Materials by role: "body" (the player's colour; code recolours it), "eye", "pupil", "tongue", then the clothes':
 # "cream", "leather", "sole", "brass", "straw", "cloth_red", "rope".
+import os
 import sys
 import math
 import bpy
@@ -38,6 +39,16 @@ import bmesh
 from mathutils import Matrix, Vector
 
 out = sys.argv[sys.argv.index('--') + 1]
+
+# Proportion knobs, for exploring in Blender without touching the numbers below: HERO_PROPS="legs=-0.06,wide=1.05"
+# (unset, the shipped proportions). legs: metres added to the leg length (the body rides up or down on them); tall:
+# metres added to the pill's straight middle; wide: the pill's width and depth, as a factor; eyes: the eyes' size, as
+# a factor.
+PROPS = {'legs': 0.0, 'tall': 0.0, 'wide': 1.0, 'eyes': 1.0}
+for kv in filter(None, os.environ.get('HERO_PROPS', '').split(',')):
+    k, v = kv.split('=')
+    PROPS[k] = float(v)
+LIFT = PROPS['legs']
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -64,6 +75,7 @@ MAT = {
     'eye': material('eye', 'ffffff', 0.25),
     'pupil': material('pupil', '13243f', 0.25),
     'tongue': material('tongue', 'e8606e', 0.5),
+    'blush': material('blush', 'ff8fa3', 0.6),
     'straw': material('straw', 'e2c27c', 0.95),
     'cloth_red': material('cloth_red', 'd2543f', 0.9),
     'rope': material('rope', 'b8925a', 0.95),
@@ -72,16 +84,17 @@ MAT = {
 # ---------------------------------------------------------------- armature
 # Joint positions (Blender coordinates, metres). The figure is about 1.8 m to the cap, like today's capsule: a tall
 # pill that is head and body in one, short legs, big hands and feet.
+W = PROPS['wide']
 JOINTS = {
     'root': ((0, 0, 0), None),
-    'hips': ((0, 0, 0.42), 'root'),
-    'body': ((0, 0, 0.58), 'hips'),
-    'arm_l': ((0.41, 0, 1.0), 'body'),
-    'forearm_l': ((0.5, 0, 0.85), 'arm_l'),
-    'hand_l': ((0.54, 0.02, 0.7), 'forearm_l'),
-    'thigh_l': ((0.2, 0, 0.42), 'hips'),
-    'shin_l': ((0.21, 0, 0.3), 'thigh_l'),
-    'foot_l': ((0.21, 0, 0.18), 'shin_l'),
+    'hips': ((0, 0, 0.42 + LIFT), 'root'),
+    'body': ((0, 0, 0.58 + LIFT), 'hips'),
+    'arm_l': ((0.41 * W, 0, 1.0 + LIFT), 'body'),
+    'forearm_l': ((0.5 * W, 0, 0.85 + LIFT), 'arm_l'),
+    'hand_l': ((0.54 * W, 0.02, 0.7 + LIFT), 'forearm_l'),
+    'thigh_l': ((0.2 * W, 0, 0.42 + LIFT), 'hips'),
+    'shin_l': ((0.21 * W, 0, 0.3 + LIFT / 2), 'thigh_l'),
+    'foot_l': ((0.21 * W, 0, 0.18), 'shin_l'),
 }
 for k in [k for k in JOINTS if k.endswith('_l')]:
     (x, y, z), parent = JOINTS[k]
@@ -178,7 +191,7 @@ J = {k: Vector(v[0]) for k, v in JOINTS.items()}
 # ---------------------------------------------------------------- the base figure
 # The bean: head and body in one. A pill (round top and bottom) softened like a jellybean (Fall Guys) or a vinyl toy:
 # a belly that bulges, most of all at the front, a top a touch narrower than the hips, no straight sides anywhere.
-BEAN = {'z0': 0.8, 'z1': 1.34, 'rx': 0.42, 'ry': 0.38, 'rz': 0.38}  # lower and upper cap centres, radii
+BEAN = {'z0': 0.8 + LIFT, 'z1': 1.34 + LIFT + PROPS['tall'], 'rx': 0.42 * W, 'ry': 0.38 * W, 'rz': 0.38}  # lower and upper cap centres, radii
 
 
 def bump(z, at, width):
@@ -212,12 +225,15 @@ def on_bean(x, z, out=0.0):
     return Vector((x, BEAN['ry'] * ky * math.sqrt(max(t, 0)) + out, z))
 
 
+# A head item hides the bean above CROWN_CUT, so it must cover all of it (and sit on the head no higher than this).
+CROWN_CUT = BEAN['z1'] + 0.24
+
+
 # ================================================================ end of the shared part
 # Outfit scripts (assets/src/hero-outfit-*.py) run everything above this line, for the same armature, materials and
 # helpers, then build only their own clothes. Keep anything an outfit needs above it, and nothing that exports.
 
 # Cut into regions (above). Each region takes its normals from the whole bean, so the cut shades as one surface.
-CROWN_CUT = BEAN['z1'] + 0.24
 _whole = bmesh.new()
 bean(_whole)
 _whole.normal_update()
@@ -244,30 +260,61 @@ def bean_region(above):
 part('body', 'body', 'body', bean_region(False), normal=bean_normal)
 part('crown', 'body', 'body', bean_region(True), normal=bean_normal)
 
-# Face: big googly eyes close together high on the bean (right under a cap's brim), big pupils with a glint, an open
-# D-shaped smile with a tongue. Eyes ride the body bone, so they follow its lean; code moves the pupils.
-EYE_Z, EYE_X = 1.3, 0.15
+# Face: three eye styles to compare (code shows one, &eyes=<style>; googly by default). Parts are named
+# eyes_<style>_<what>_<side>; code moves each style's pupils to look at things. All ride the body bone, so they
+# follow its lean.
+# - googly: big white balls standing out of the bean, big pupils with a glint (today's).
+# - flat: Fall Guys: wide white ovals set into the surface, so only a low dome shows, and big pupils.
+# - bead: Kirby, Astro Bot's cousins: tall glossy dark ovals with two glints and no white, and blush on the cheeks.
+EYE_Z, EYE_X = 1.3 + LIFT, 0.15
+ES = PROPS['eyes']
 
 
-def eye(sx, side):
+def eyes(sx, side):
     c = on_bean(sx * EYE_X, EYE_Z, -0.06)
-    part(f'eye_{side}', 'body', 'eye', lambda bm: sphere(bm, c, (0.14, 0.12, 0.155), 20))
-    part(f'pupil_{side}', 'body', 'pupil', lambda bm: sphere(bm, c + Vector((-sx * 0.012, 0.115, -0.012)), (0.085, 0.035, 0.095), 16))
-    part(f'glint_{side}', 'body', 'eye', lambda bm: sphere(bm, c + Vector((sx * 0.02, 0.145, 0.03)), (0.026, 0.012, 0.026), 8))
+    part(f'eyes_googly_white_{side}', 'body', 'eye', lambda bm: sphere(bm, c, (0.14 * ES, 0.12 * ES, 0.155 * ES), 20))
+    part(f'eyes_googly_pupil_{side}', 'body', 'pupil', lambda bm: sphere(bm, c + Vector((-sx * 0.012, 0.115 * ES, -0.012)), (0.085 * ES, 0.035, 0.095 * ES), 16))
+    part(f'eyes_googly_glint_{side}', 'body', 'eye', lambda bm: sphere(bm, c + Vector((sx * 0.02, 0.145 * ES, 0.03 * ES)), (0.026 * ES, 0.012, 0.026 * ES), 8))
+
+    f = on_bean(sx * (EYE_X + 0.02), EYE_Z - 0.01)
+    n = Vector((f.x / BEAN['rx'] ** 2, f.y / BEAN['ry'] ** 2, 0)).normalized()
+    rot = n.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+
+    def on_face(bm, size, out, at=Vector((0, 0, 0))):
+        verts = sphere(bm, (0, 0, 0), size, 22)
+        bmesh.ops.transform(bm, verts=verts, matrix=Matrix.Translation(f + n * out + at) @ rot)
+
+    part(f'eyes_flat_white_{side}', 'body', 'eye', lambda bm: on_face(bm, (0.15 * ES, 0.17 * ES, 0.03), 0.0))
+    part(f'eyes_flat_pupil_{side}', 'body', 'pupil', lambda bm: on_face(bm, (0.105 * ES, 0.12 * ES, 0.02), 0.018, Vector((-sx * 0.012, 0, -0.01))))
+    part(f'eyes_flat_glint_{side}', 'body', 'eye', lambda bm: on_face(bm, (0.028 * ES, 0.028 * ES, 0.01), 0.034, Vector((sx * 0.02, 0, 0.04 * ES))))
+
+    b = on_bean(sx * 0.13, EYE_Z - 0.02)
+    nb = Vector((b.x / BEAN['rx'] ** 2, b.y / BEAN['ry'] ** 2, 0)).normalized()
+    rb = nb.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+
+    def on_cheek(bm, at, size, out):
+        verts = sphere(bm, (0, 0, 0), size, 18)
+        bmesh.ops.transform(bm, verts=verts, matrix=Matrix.Translation(at + nb * out) @ rb)
+
+    part(f'eyes_bead_pupil_{side}', 'body', 'pupil', lambda bm: on_cheek(bm, b, (0.065 * ES, 0.115 * ES, 0.03), 0.0))
+    part(f'eyes_bead_glint_{side}', 'body', 'eye', lambda bm: on_cheek(bm, b + Vector((sx * 0.015, 0, 0.05 * ES)), (0.025 * ES, 0.03 * ES, 0.01), 0.022))
+    part(f'eyes_bead_glint2_{side}', 'body', 'eye', lambda bm: on_cheek(bm, b + Vector((-sx * 0.02, 0, -0.05 * ES)), (0.012 * ES, 0.012 * ES, 0.008), 0.022))
+    k = on_bean(sx * 0.24, EYE_Z - 0.17)
+    part(f'eyes_bead_blush_{side}', 'body', 'blush', lambda bm: on_cheek(bm, k, (0.07, 0.04, 0.012), 0.0))
 
 
-sides(eye)
+sides(eyes)
 
 
 def mouth(bm):
     # The lower half of a flat dark ellipsoid set into the bean: a wide open D.
-    c = on_bean(0, 1.11, -0.014)
+    c = on_bean(0, 1.11 + LIFT, -0.014)
     verts = sphere(bm, c, (0.115, 0.032, 0.075), 18)
     bmesh.ops.delete(bm, geom=[v for v in verts if v.co.z > c.z + 0.001], context='VERTS')
 
 
 part('mouth', 'body', 'pupil', mouth)
-part('tongue', 'body', 'tongue', lambda bm: sphere(bm, on_bean(0.012, 1.06, 0.002), (0.055, 0.02, 0.026), 12))
+part('tongue', 'body', 'tongue', lambda bm: sphere(bm, on_bean(0.012, 1.06 + LIFT, 0.002), (0.055, 0.02, 0.026), 12))
 
 
 def limbs(sx, side):
@@ -332,7 +379,7 @@ part('wear_head_cap', 'body', 'cream', cap)
 # body: overalls. Cut from a slightly larger bean: shorts round the bottom up to WAIST, a bib up the front with a
 # straight top edge; wide straps from the bib's corners over the shoulders and straight down the back; brass buttons
 # where strap meets bib; short legs to mid-thigh with a turned-up hem. (The pocket and stitching are texture work.)
-WAIST, BIB_TOP, BIB_HALF = 0.78, 0.98, 0.24
+WAIST, BIB_TOP, BIB_HALF = 0.78 + LIFT, 0.98 + LIFT, 0.24
 
 
 def overalls(bm):

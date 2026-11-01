@@ -1,21 +1,21 @@
 {
   "hero-outfit-castaway": {
     "source": "hero-outfit-castaway.py",
-    "sourceHash": "fc68c641c957e54a",
-    "outHash": "fe746eb03dc94afa",
-    "rawBytes": 48468,
-    "bytes": 20264,
-    "triangles": 2180,
+    "sourceHash": "8b36ad0402ea17c9",
+    "outHash": "eab6cbd2588edb7b",
+    "rawBytes": 50596,
+    "bytes": 18280,
+    "triangles": 2360,
     "animations": [],
     "textures": []
   },
   "hero-rig": {
     "source": "hero-rig.py",
-    "sourceHash": "c3fdd9b9e2fdfd70",
-    "outHash": "50fbb48b1675da9a",
-    "rawBytes": 317852,
-    "bytes": 114156,
-    "triangles": 16154,
+    "sourceHash": "89477b1ab102c615",
+    "outHash": "cf14b8da24e5b96c",
+    "rawBytes": 408376,
+    "bytes": 157040,
+    "triangles": 22202,
     "animations": [
       "wave"
     ],
