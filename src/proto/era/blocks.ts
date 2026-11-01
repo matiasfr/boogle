@@ -5,7 +5,8 @@
 //
 // Each era changes several channels at once (era-progression rec 1 and 3): a signature silhouette (era 1's steep
 // A-frame roofs, era 2's smoking chimneys), one landmark seen from the court (rec 2: era 2's water tower, the tallest
-// thing on the island), a sky and fog tint and an ambience bed (./atmosphere.ts, ./ambience.ts).
+// thing on the island) and a sky and fog tint (./atmosphere.ts). The ambience bed (./ambience.ts) is the same in
+// both: the steam bed was cut (docs/playtests.md, 2026-11-02).
 //
 // A row is a box on the ground: centre x, z (world metres), size w (x), h (up), d (z), yaw (radians), colour. `kind`
 // names what it stands in for. Bunting is a line of little flags between two poles, `from` and `to` at height `h`.
@@ -40,8 +41,6 @@ export type EraSet = {
   /** Sky and fog (./atmosphere.ts): dome top and horizon tints, how far toward them (0..1), and scales on the fog's
    * near and far distances (1: the game's own; smaller is hazier). */
   sky: { top: string; horizon: string; amount: number; near: number; far: number };
-  /** The ambience bed that plays in this era (./ambience.ts). */
-  bed: 'wood' | 'steam';
 };
 
 const hut = (x: number, z: number, yaw = 0, keep = false): Block => ({
@@ -125,7 +124,6 @@ export const ERAS: Record<number, EraSet> = {
     ],
     bunting: [],
     sky: { top: '#3d9de3', horizon: '#cfeee0', amount: 0.25, near: 1, far: 1 },
-    bed: 'wood',
   },
   2: {
     name: 'Steam wagons',
@@ -162,7 +160,6 @@ export const ERAS: Record<number, EraSet> = {
       { from: [9, 6], to: [9, -10], h: 3.2 },
     ],
     sky: { top: '#8c9aa6', horizon: '#e8c08a', amount: 0.85, near: 0.15, far: 0.42 },
-    bed: 'steam',
   },
 };
 
