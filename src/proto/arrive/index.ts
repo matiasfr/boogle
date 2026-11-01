@@ -7,6 +7,7 @@
 // (src/features/first-run.ts). `v=lobby` is today's flow, timed, for comparison. Local: nothing here is synced except
 // the ball's push, which goes out like any owner's ball. Serves DESIGN.md 7 (Telegraph everything) and 8 (Designed
 // for drop-in).
+import './rename.ts';
 import { onFrame } from '../../loop.ts';
 import { me, cam } from '../../player/player.ts';
 import { enterIsland } from '../../player/player.ts';
