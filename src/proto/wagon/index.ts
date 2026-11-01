@@ -44,6 +44,7 @@ import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
 import { wagonStoke, fireHeat } from './stoke.ts';
 import { RATE_ONE, FAST, STEAM_FULL } from '../../sim/wagon-steam.ts';
+import { ON_ISLAND, onStep, onVariant, playPanel, protoV } from '../flags.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
@@ -53,10 +54,12 @@ const VARIANTS = {
   calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, shake: 0 },
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, shake: 1 },
 };
-const V = params.get('v');
-export const VARIANT = V === 'fast' ? 'fast' : V === 'lively' ? 'lively' : V === 'stoke' ? 'stoke' : 'calm';
+type WagonVariant = 'calm' | 'lively' | 'fast' | 'stoke';
+const variantOf = (v: string): WagonVariant => (v === 'fast' || v === 'lively' || v === 'stoke' ? v : 'calm');
+const V = protoV('wagon');
+export let VARIANT = variantOf(V);
 const STOKE = VARIANT === 'stoke';
-const PACES: Record<typeof VARIANT, WagonPace> = {
+const PACES: Record<WagonVariant, WagonPace> = {
   calm: WAGON_PACE,
   lively: WAGON_PACE,
   fast: { cruise: 65, accel: 20 },
@@ -70,6 +73,16 @@ const FEEL = {
   // slow idle chuff standing), puffSize their size; shake: the camera's jolt per joint, riding
   ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT === 'stoke' ? 'calm' : VARIANT],
 };
+// Calm, lively and fast switch live (the bar, src/proto/flags.ts): the feel here, the skid and the room's pace below.
+// Stoke (another loco and clock) and grind (its own module) reload.
+const SKID = CARRY.skid;
+let paced = false; // the room's pace matches the variant (the panel asks for it)
+onVariant('wagon', ['', 'calm', 'lively', 'fast'], (v) => {
+  VARIANT = variantOf(v);
+  Object.assign(FEEL, VARIANTS[VARIANT === 'fast' ? 'lively' : 'calm']);
+  CARRY.skid = VARIANT === 'fast' ? 5 : SKID;
+  paced = false;
+});
 // Train order from the outbound end; offsets of car centres along the line from the timetable's point, metres.
 const CARS: { spec: CarSpec; off: number }[] = [
   { spec: LOCO, off: 3.7 },
@@ -98,7 +111,13 @@ function lineAt(d: number, out: { x: number; z: number }) {
 
 // ---------------------------------------------------------------- how many sections the wagon runs on, and when
 // `?laid=N` (or the panel's +/-) fakes the count for this tab only: render and riding, never the world. PROTOTYPE.
-let fake = params.has('laid') ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0)) : -1;
+// On the `?play` island the whole line is faked in from the start (ghost rails where it isn't laid yet), so the wagon
+// is there to ride at once without laying anything for real: the laying run (?proto=lay) still has its sections to lay.
+let fake = params.has('laid')
+  ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0))
+  : ON_ISLAND
+    ? ROUTE.length
+    : -1;
 const seen = new Map<number, number>(); // section -> the tick it was faked in (this tab only)
 const { sites } = rules.sites;
 onApplied((e: { op: string }) => e.op === 'tune.reset' && seen.clear());
@@ -436,7 +455,7 @@ if (VARIANT === 'fast') CARRY.skid = 5;
 const dust = new THREE.Color('#c9b48a');
 // &grind=1: grind the laid rails (src/proto/grind/, its own module; the rail carries you, so no dust while on it).
 let grinding = () => false;
-if (params.get('grind') === '1')
+if (params.get('grind') === '1' || V === 'grind')
   void import('../grind/index.ts').then((m) => {
     grinding = m.grind({
       laid: laidCount,
@@ -523,13 +542,13 @@ export function wagonPanel(protoRoom: boolean): void {
   const note = document.createElement('span');
   box.append(lay, reset, fakeRow, note);
   (document.querySelector('.hud') ?? document.body).append(box);
+  playPanel('wagon', box);
   // The variant's pace, once the room's state is here: set for the whole room (proto- rooms only).
-  let paced = !protoRoom;
-  const want = PACES[VARIANT];
   onFrame(
     () => {
-      if (!paced && worldStatus().ready && world.tick > 0) {
+      if (protoRoom && !paced && worldStatus().ready && world.tick > 0) {
         paced = true;
+        const want = PACES[VARIANT];
         if (tune.v.wagonCruise !== want.cruise)
           submitEdit({ op: 'tune.set', i: 0, j: 0, key: 'wagonCruise', v: want.cruise });
         if (tune.v.wagonAccel !== want.accel)
@@ -550,10 +569,16 @@ export function wagonPanel(protoRoom: boolean): void {
   );
 }
 
+// While the playlist is at the laying run, the wagon runs only what is really laid, so it never drives through the
+// machine at work; it takes the whole line back at the next step (a change takes over at the wagon's next stop).
+if (ON_ISLAND && !params.has('laid')) onStep((step) => (step === 'lay' ? (fake = -1) : fakeLaid(ROUTE.length)));
+
 // For the look evals (dev/look/evals/wagon.js).
 window.__wagon = {
   FEEL,
-  VARIANT,
+  get VARIANT() {
+    return VARIANT;
+  },
   cars,
   get state() {
     return w;

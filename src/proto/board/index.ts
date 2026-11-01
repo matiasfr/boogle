@@ -34,9 +34,11 @@ import { ROUTE } from '../../sim/route.ts';
 import { wagonAt } from '../../sim/wagon.ts';
 import { isProtoRoom } from '../../sim/tune.ts';
 import { stationAt, nextCall, towards } from './departures.ts';
+import { onVariant, protoV } from '../flags.ts';
 
 const params = new URLSearchParams(location.search);
-const VARIANT = params.get('v') === 'ride' ? 'ride' : 'hop';
+let VARIANT = protoV('board') === 'ride' ? 'ride' : 'hop';
+onVariant('board', ['', 'hop', 'ride'], (v) => (VARIANT = v === 'ride' ? 'ride' : 'hop')); // live, from the bar
 const LAID_OVERRIDE = params.has('laid') ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0)) : -1;
 const STATIONS = ROUTE.length + 1;
 const NAMES = ['Court', 'Palm Walk', 'Ridge', 'Lighthouse'];

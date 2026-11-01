@@ -1,6 +1,9 @@
-// Every prototype the owner can playtest, for boogle.club/protos/ (docs/plans/find-the-fun.md). A new `?proto=`
-// prototype adds or updates its entry here in the same PR, and flips it to 'live' when it ships (AGENTS.md, "Shipping").
-// Live first on the page, then building, then retired; order within a status is the order below.
+// Every prototype the owner can playtest, for boogle.club/protos/ and the playlist on the `?play` island
+// (docs/plans/find-the-fun.md, "One path"). A new `?proto=` prototype adds or updates its entry here in the same PR,
+// flips it to 'live' when it ships (AGENTS.md, "Shipping"), and either joins the island (ISLAND in src/proto/flags.ts,
+// its loader asking `protoOn`) or says why it is a `chapter`. Live first on the page, then building, then retired;
+// order within a status is the order below.
+import { ISLAND } from '../src/proto/flags.ts';
 
 export type ProtoStatus = 'live' | 'building' | 'retired';
 
@@ -35,6 +38,9 @@ export type Proto = {
   verb?: string;
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
+  /** Why a live prototype can't share the `?play` island (it reshapes the world or clashes with another toy): the
+   * playlist opens its own address for it, a chapter. Every live card is either in ISLAND or has this. */
+  chapter?: string;
 };
 
 export const PROTOS: Proto[] = [
@@ -84,6 +90,7 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
     spawn: { x: 3, z: 37, yaw: 0.79 }, // beside the flatbed at its first stop, looking at it
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
+    chapter: 'its flatbed’s route crosses the mushroom hop line and the golf hole',
   },
   {
     id: 'wagon',
@@ -94,7 +101,7 @@ export const PROTOS: Proto[] = [
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed.',
     since: '2026-11-01',
-    spawn: { x: 7, z: 9, yaw: -0.52 }, // by the first work site, looking down the line
+    spawn: { x: 13, z: -9, yaw: 3.0 }, // at the second station (Palm Walk), the wagon coming up the line towards you
     variants: [
       {
         name: 'lively',
@@ -107,8 +114,13 @@ export const PROTOS: Proto[] = [
         what: 'Lively at about double the speed (6.5 m/s, sets the room’s pace); jumping off slides you in a dust trail.',
       },
       {
+        name: 'stoke',
+        url: '/?room=proto-wagon&proto=wagon&v=stoke',
+        what: 'Feed the firebox logs (E at the loco): steam is speed, about 6.5 m/s fed, walking pace cold.',
+      },
+      {
         name: 'grind',
-        url: '/?room=proto-wagon&proto=wagon&grind=1&laid=3',
+        url: '/?room=proto-wagon&proto=wagon&v=grind&grind=1&laid=3',
         what: 'Jump onto the laid rails to grind them: sparks, a rising hiss, pull back to reverse, fly off the end. Mind the wagon.',
       },
     ],
@@ -122,11 +134,11 @@ export const PROTOS: Proto[] = [
     question: 'Do you jump twice just because you can, and does the glide make the island feel smaller?',
     what: 'Press jump again in the air for a second jump; hold it to glide down slowly.',
     since: '2026-11-01',
-    note: 'Works on any ?proto= page: add &jump2=1 and/or &glide=1 to its address.',
+    note: 'Works on any ?proto= page: add &jump2=1 and/or &glide=1 to its address. On the island: on at this step only.',
     variants: [
       {
         name: 'jump2',
-        url: '/?proto=moves&jump2=1',
+        url: '/?proto=moves&jump2=1&v=jump2',
         what: 'The second jump alone, no glide.',
       },
     ],
@@ -164,6 +176,7 @@ export const PROTOS: Proto[] = [
     what: 'Lay all sections, start opening day at the lighthouse platform: a gathering call (smoke, a tolling bell, a ring that burns down) until everyone is there, the 10 s bell, then blocks, sky, fog and sound change together, two old huts stay, and a before/after postcard comes up.',
     since: '2026-11-01',
     spawn: { x: 6, z: -40, yaw: 0 }, // south of the lighthouse platform, looking at it
+    chapter: 'it swaps the whole island’s blocks, sky, fog and sound',
   },
   {
     id: 'soapbox',
@@ -204,6 +217,7 @@ export const PROTOS: Proto[] = [
     question: 'Does the UI feel alive and satisfying without getting in the way?',
     what: 'HUD sounds (hotbar tick, prompt pop, take thunk, full deny, haul count), presses that squash, a haul count that ticks up, bigger text on darker glass. Compare with plain /.',
     since: '2026-11-01',
+    chapter: 'it changes every HUD sound and press, so it is judged against the plain island',
   },
   {
     id: 'board',
@@ -215,6 +229,8 @@ export const PROTOS: Proto[] = [
     what: 'A flap-display sign at each station; E picks a station. v=hop travels at once, v=ride tells you which wagon to catch.',
     since: '2026-11-01',
     note: 'Press “Lay the whole route” first. Swap &v=hop for &v=ride; &laid=1 or 2 tries a shorter line.',
+    chapter: 'it runs its own wagon on the wagon’s line',
+    variants: [{ name: 'ride', url: '/?room=proto-board&proto=board&v=ride', what: 'Tells you which wagon to catch.' }],
   },
   {
     id: 'groove',
@@ -232,20 +248,29 @@ export const PROTOS: Proto[] = [
     title: 'Graphics ceiling',
     step: 'depth',
     status: 'live',
-    url: '/?proto=look&look=ipad',
+    url: '/?proto=look&look=ipad&v=ipad',
     question: 'Which look should Boogle aim for?',
     what: 'Code-only graphics on the real island: presets and layers top right, Y for the steam palette, Measure frame for ms.',
     since: '2026-11-01',
     note: 'Write-up and numbers: docs/proposals/visual-target.md.',
+    chapter: 'it changes how the whole island is drawn',
     variants: [
-      { name: 'today', url: '/?proto=look&look=today', what: 'The shipped look, for comparison.' },
+      { name: 'today', url: '/?proto=look&look=today&v=today', what: 'The shipped look, for comparison.' },
       {
         name: 'diorama',
-        url: '/?proto=look&look=diorama',
+        url: '/?proto=look&look=diorama&v=diorama',
         what: 'Painted: sky-coloured fog, violet shade, soft lines.',
       },
-      { name: 'toybox', url: '/?proto=look&look=toybox', what: 'Toys: rim-lit plastic characters, contact shadows.' },
-      { name: 'high', url: '/?proto=look&look=high', what: 'Cascaded shadows, AO and TRAA too: the desktop ceiling.' },
+      {
+        name: 'toybox',
+        url: '/?proto=look&look=toybox&v=toybox',
+        what: 'Toys: rim-lit plastic characters, contact shadows.',
+      },
+      {
+        name: 'high',
+        url: '/?proto=look&look=high&v=high',
+        what: 'Cascaded shadows, AO and TRAA too: the desktop ceiling.',
+      },
     ],
   },
   {
@@ -258,6 +283,7 @@ export const PROTOS: Proto[] = [
     what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code. Between them a jointed hero rigged by a Blender script: walk up and press Interact to change its outfit (work, castaway, bare), and it waves. &hero=castaway or &hero=bare starts in one; &eyes=googly|flat|bead and &shade=matte|plastic|clay try looks. ?proto=look&look=toybox&hero=bare shows it under the look lab’s presets.',
     since: '2026-11-01',
     note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
+    spawn: { x: 14, z: 27, yaw: 0 }, // the usual spawn, the two bays and the hero in front of you
   },
   {
     id: 'hero',
@@ -268,6 +294,7 @@ export const PROTOS: Proto[] = [
     question: 'Does running and jumping as this character feel good enough to keep it?',
     what: 'Every player is the jointed hero in their colour: a run cycle, arms up in the air, the old squash and flops on top, a blink. &hero=work or castaway dresses it.',
     since: '2026-11-01',
+    chapter: 'it swaps your body for every toy, so it is judged on its own',
   },
   {
     id: 'minis',
@@ -278,6 +305,7 @@ export const PROTOS: Proto[] = [
     question: 'Which of these would you play again unprompted?',
     what: 'Three places with a prop around the court: a crate stack on a stump (east), one hole of ball golf (tee at the court’s west edge), a mushroom hop line (south-west). Bests stay in this browser.',
     since: '2026-11-01',
+    spawn: { x: 15.9, z: 26.2, yaw: -2.28 }, // the topple stump first; each variant takes you to its own toy
     variants: [
       {
         name: 'topple',
@@ -304,10 +332,23 @@ export const PROTOS: Proto[] = [
     title: 'Island layout',
     step: 'depth',
     status: 'live',
-    url: '/?room=proto-layout&layout=<name>',
+    url: '/?room=proto-layout&proto=layout&v=lighthouse-line&layout=lighthouse-line',
     question: 'Which layout feels best to walk?',
     what: 'Walk a layout option in greybox: lighthouse-line (recommended), east-bay or west-cove. Compare them on the map at claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT.',
     since: '2026-11-01',
+    chapter: 'it moves the railway and the places on the island',
+    variants: [
+      {
+        name: 'east-bay',
+        url: '/?room=proto-layout&proto=layout&v=east-bay&layout=east-bay',
+        what: 'The line along the east bay.',
+      },
+      {
+        name: 'west-cove',
+        url: '/?room=proto-layout&proto=layout&v=west-cove&layout=west-cove',
+        what: 'The line round the west cove.',
+      },
+    ],
   },
   {
     id: 'arrive',
@@ -358,4 +399,31 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'layout', why: 'Which layout feels best to walk?', later: true },
   { id: 'board', why: 'Does the island feel connected and quick to cross?', later: true },
   { id: 'assets', why: 'Can you tell the Blender scaffold from the code one?', later: true },
+  { id: 'hero', why: 'Does running as the hero feel good enough to keep?', later: true },
+  { id: 'moves', why: 'Do you jump twice just because you can?', later: true },
+  { id: 'ride', why: 'Would you ride the flatbed twice for no reason?', later: true },
 ];
+
+/** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
+export const onIsland = (p: Proto) => (ISLAND as readonly string[]).includes(p.id);
+
+/** One step of the playlist: a card, its variants in the order to try them ('' is the card's own url), and why. */
+export type PlayStep = { card: Proto; legs: string[]; why: string; later: boolean };
+
+/** The playlist on the `?play` island and the protos page's Start here: PLAYTEST_ORDER with consecutive entries for
+ * one card as one step (its legs), skipping cards or variants that don't exist (yet, or any more). */
+export function playlist(): PlayStep[] {
+  const steps: PlayStep[] = [];
+  for (const o of PLAYTEST_ORDER) {
+    const card = PROTOS.find((p) => p.id === o.id && p.status === 'live');
+    if (!card || (o.variant && !card.variants?.some((v) => v.name === o.variant))) continue;
+    const leg = o.variant ?? '';
+    const last = steps.at(-1);
+    if (last?.card === card) last.legs.push(leg);
+    else steps.push({ card, legs: [leg], why: o.why, later: !!o.later });
+  }
+  return steps;
+}
+
+/** A variant's address ('' for the card's own), from the site root. */
+export const variantUrl = (p: Proto, v: string) => p.variants?.find((x) => x.name === v)?.url ?? p.url;

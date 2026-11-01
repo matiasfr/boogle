@@ -15,6 +15,7 @@ import { getRoomId, net } from '../netplay/net.ts';
 import { me } from '../player/player.ts';
 import { TUNABLES, isProtoRoom, type TuneKey } from '../sim/tune.ts';
 import { haulFeel, HAUL_FEEL_DEFAULTS, type HaulFeel } from '../player/haul-feel.ts';
+import { playPanel } from '../proto/flags.ts';
 
 const QUESTIONS = [
   'Does carrying a load of wood feel good with no goal?',
@@ -49,6 +50,7 @@ head.type = 'button';
 const body = el('div', 'hk-body');
 panel.append(head, body);
 document.body.append(panel);
+playPanel('haul', panel);
 function setOpen(v: boolean): void {
   open = v;
   panel.classList.toggle('open', v);

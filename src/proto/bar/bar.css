@@ -110,6 +110,51 @@
 .proto-bar .pb-counts:empty {
   display: none;
 }
+/* The playlist (?play): the step number, the transient line after a switch, Prev / Copy all / Next. */
+.proto-bar .pb-n {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+.proto-bar .pb-say {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sun);
+}
+.proto-bar .pb-say:empty,
+.proto-bar .pb-copied:empty {
+  display: none;
+}
+.proto-bar .pb-copied {
+  font-size: 12px;
+}
+.proto-bar .pb-copied .fallback {
+  width: 100%;
+  height: 80px;
+  font: 500 12px var(--font-body);
+}
+.proto-bar .pb-nav {
+  padding-top: 2px;
+  border-top: 1px solid var(--glass-line);
+}
+.proto-bar .pb-nav .pb-copy {
+  flex: 0 1 auto;
+}
+/* A variant with a verdict already: a small tick, so the comparison shows what's left to judge. */
+.proto-bar .pb-variants .done::after {
+  content: ' ✓';
+  font-size: 11px;
+}
+/* Under the pad (./pad.ts): a clear ring on the control the D-pad is on. */
+.proto-bar.pad {
+  box-shadow: 0 0 0 2px var(--sun);
+}
+.proto-bar [data-focus] {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+}
 .proto-bar.folded {
   width: auto;
   max-width: calc(100vw - 32px);
@@ -135,4 +180,9 @@ body.seated .proto-bar {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-leave, 160ms) ease-out;
+}
+
+/* On a prototype page "Welcome back" would sit under this bar at every chapter hop of the playlist: leave it out. */
+body:has(.proto-bar) .welcome-back {
+  display: none;
 }

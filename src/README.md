@@ -28,5 +28,6 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
   IndexedDB store); the plan for more is [docs/plans/decomp-characters.md](../docs/plans/decomp-characters.md).
 - `guest/`: playing as the guest (engine glue in `native/guest/`), and the dino who offers it; the eager glue is
   `features/dino.js`. Working on it: [guest/README.md](guest/README.md).
-- `proto/`: find-the-fun prototypes too big for one feature file, loaded only behind their `?proto=` flag by a stub
-  in `features/` (`proto/soapbox/`: the soapbox cart; docs/plans/find-the-fun.md).
+- `proto/`: find-the-fun prototypes too big for one feature file, loaded only behind their `?proto=` flag (or the
+  `?play` island) by a stub in `features/` that asks `proto/flags.ts` (`protoOn`, `protoV`, `onVariant`); the
+  prototype bar and playlist in `proto/bar/` (`proto/soapbox/`: the soapbox cart; docs/plans/find-the-fun.md).

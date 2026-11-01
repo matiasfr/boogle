@@ -23,6 +23,21 @@ export type Saved = {
   verdictV: string;
   /** Behaviour counters (`protoCount`): rides, runs, variant switches, seconds in the prototype. */
   counts: Record<string, number>;
+  /** The same per variant, by name (`vName`): its verdict, its line on why, its counters. */
+  byV: Record<string, VariantSaved>;
+};
+export type VariantSaved = { verdict: Verdict | ''; note: string; counts: Record<string, number> };
+
+/** A variant's name for the store and the entry: `v`, else the card's own url's `v`, else 'default'. */
+export const vName = (p: Proto, v: string) => v || urlParam(p, 'v') || 'default';
+const obj = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' ? (x as Record<string, unknown>) : {});
+const readV = (x: unknown): VariantSaved => {
+  const o = obj(x);
+  return {
+    verdict: VERDICTS.some((v) => v.id === o.verdict) ? (o.verdict as Verdict) : '',
+    note: typeof o.note === 'string' ? o.note : '',
+    counts: obj(o.counts) as Record<string, number>,
+  };
 };
 
 export const KEY = 'boogle-protos-v1';
@@ -47,16 +62,31 @@ export function read(id: string, all = loadAll()): Saved {
     verdictNote: s.verdictNote ?? '',
     verdictV: s.verdictV ?? '',
     counts: s.counts && typeof s.counts === 'object' ? s.counts : {},
+    byV: Object.fromEntries(Object.entries(obj(s.byV)).map(([k, v]) => [k, readV(v)])),
   };
 }
 
-/** Merges `patch` into the prototype's entry; `counts` add to what is stored. Returns the saved entry. */
-export function write(id: string, patch: Partial<Omit<Saved, 'counts'>>, addCounts?: Record<string, number>): Saved {
+/** Merges `patch` into the prototype's entry; `counts` add to what is stored, and to variant `v`'s too when given (a
+ * `vName`). Returns the saved entry. */
+export function write(
+  id: string,
+  patch: Partial<Omit<Saved, 'counts'>>,
+  addCounts?: Record<string, number>,
+  v?: string,
+): Saved {
   const all = loadAll();
   const s = { ...read(id, all), ...patch };
+  const add = (to: Record<string, number>) => {
+    const out = { ...to };
+    for (const [k, n] of Object.entries(addCounts ?? {})) out[k] = (out[k] ?? 0) + n;
+    return out;
+  };
   if (addCounts) {
-    s.counts = { ...s.counts };
-    for (const [k, v] of Object.entries(addCounts)) s.counts[k] = (s.counts[k] ?? 0) + v;
+    s.counts = add(s.counts);
+    if (v !== undefined) {
+      const was = s.byV[v] ?? readV(null);
+      s.byV = { ...s.byV, [v]: { ...was, counts: add(was.counts) } };
+    }
   }
   all[id] = s;
   try {
@@ -65,6 +95,19 @@ export function write(id: string, patch: Partial<Omit<Saved, 'counts'>>, addCoun
     // Private mode or full storage: nothing is kept past this page.
   }
   return s;
+}
+
+/** Sets variant `v`'s (a `vName`) verdict or note; the card's latest verdict follows it (verdict, verdictV, verdictNote). */
+export function writeV(id: string, v: string, patch: { verdict?: Verdict | ''; note?: string }): Saved {
+  const s = read(id);
+  const was = s.byV[v] ?? readV(null);
+  const now = { ...was, ...patch };
+  return write(id, {
+    byV: { ...s.byV, [v]: now },
+    verdict: now.verdict,
+    verdictV: v,
+    verdictNote: now.note,
+  });
 }
 
 /** The value of `name` in a prototype's url (`proto`, `room`, ...), or null. */

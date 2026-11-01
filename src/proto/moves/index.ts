@@ -13,6 +13,7 @@ import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
+import { ON_ISLAND, PROTO, currentStep, onStep, onVariant, protoV } from '../flags.ts';
 
 const q = new URLSearchParams(location.search);
 export const MOVES = {
@@ -22,6 +23,16 @@ export const MOVES = {
   glideFall: 4, // m/s: the fastest you fall while gliding
   glideEase: 0.12, // s: the time constant a faster fall slows to it with
 };
+// The moves card (`?proto=moves`, or the island while the playlist is at it) switches them by variant, live: the
+// default is both, `jump2` the second jump alone. Any other prototype's page keeps its &jump2=1 / &glide=1.
+function apply(v = protoV('moves')) {
+  if (!ON_ISLAND && PROTO !== 'moves') return;
+  const on = !ON_ISLAND || currentStep() === 'moves';
+  MOVES.jump2 = on;
+  MOVES.glide = on && v !== 'jump2';
+}
+onVariant('moves', ['', 'jump2'], apply);
+onStep(() => apply());
 
 const st = {
   used: false, // the second jump, this airtime

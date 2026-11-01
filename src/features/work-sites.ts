@@ -27,12 +27,13 @@ import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { uiSound, UI_KIT } from '../render/ui-sound.ts';
 import { emit } from '../render/particles.ts';
+import { protoOn } from '../proto/flags.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
 const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest rooms)
 // The build prototype (?proto=build, src/proto/build/) draws the hut going up instead of this box.
-const BUILD_PROTO = new URLSearchParams(location.search).get('proto') === 'build';
+const BUILD_PROTO = protoOn('build');
 
 // Colour is the second signal, so each ring also has a shape (docs/research/ui-patterns.md, rec 4): Track is dashed
 // like a row of sleepers, Helper is a double line.

@@ -1,6 +1,6 @@
 // The in-game prototype bar (src/proto/bar/, ?proto=...) on an iPad-sized touch screen over the soapbox prototype:
 // it shows the card's title and question, drops you at the card's spawn, saves a one-tap verdict to the protos page's
-// store, and a variant switch reloads into the same spot with the switch counted. Serves DESIGN.md "How we work".
+// store, and a variant switch is live (soapbox handling: no reload) and keeps your spot, with the switch counted. Serves DESIGN.md "How we work".
 
 type Game = {
   page: { waitForURL: (u: RegExp, o?: { timeout?: number }) => Promise<void>; click: (sel: string) => Promise<void> };
@@ -58,20 +58,21 @@ export default {
     const s = (await g.eval(STORE)) as { verdict?: string; verdictNote?: string };
     t.check('the verdict is saved for the protos page', s.verdict === 'yes' && s.verdictNote === 'drifts feel great');
 
-    // Move off the spawn, switch to drifty: the reload lands where you stood.
+    // Move off the spawn, switch to drifty: the handling changes live, no reload, and you stay where you stood.
     await g.eval(`const { teleport } = await import('/src/physics/physics.ts');
       const s = ${SPAWN}; const b = window.boogle.me.body; teleport(b, s.x + 3, b.position.y, s.z + 2);`);
     await t.sleep(300);
     await g.eval(
-      `[...document.querySelectorAll('.pb-variants button')].find((b) => b.textContent === 'drifty').click();`,
+      `window.__barMark = 1; [...document.querySelectorAll('.pb-variants button')].find((b) => b.textContent === 'drifty').click();`,
     );
     await g.page.waitForURL(/v=drifty/, { timeout: 30000 });
-    await g.waitFor(`!document.querySelector('#enter[disabled]') && !!document.querySelector('#enter')`, {
-      timeout: 90000,
-    });
-    await g.page.click('#enter');
-    await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
     await t.sleep(1000);
+    const grip = await g.eval(`return [window.__barMark === 1, window.__soapbox.T.grip];`);
+    t.check(
+      'drifty switches live (no reload), with its handling',
+      JSON.stringify(grip) === '[true,32]',
+      JSON.stringify(grip),
+    );
     const back = Number(
       await g.eval(`const s = ${SPAWN}; const p = window.boogle.me.body.position;
       return Math.hypot(p.x - (s.x + 3), p.z - (s.z + 2));`),
