@@ -2,7 +2,8 @@
 // src/features/proto-bar.ts on any `?proto=` page: the prototype's title and gut question from protos/protos.ts,
 // a button per variant (switching rewrites `v=` and reloads in the same room and spot), a one-tap verdict with a
 // one-line note, and the behaviour counters. Verdict and counters go to the protos page's store (protos/store.ts),
-// so its "Copy playtest entry" carries them. On load it drops you at the card's `spawn`, next to the verb, once.
+// so its "Copy playtest entry" carries them. On load it drops you at the playing variant's `spawn` (else the card's),
+// next to the verb, once.
 // Local: nothing here is synced. Serves DESIGN.md "How we work".
 import './bar.css';
 import { onFrame } from '../../loop.ts';
@@ -31,11 +32,12 @@ function takeHint(): Hint | null {
 }
 
 // The variant's own address (its room may differ: the haul's variants each have one), plus whatever else this page's
-// address carries (another room you chose, `ridespeed`, `dpr`): only `v` and the variant's own params change.
-function switchTo(v: string, url: string) {
+// address carries (another room you chose, `ridespeed`, `dpr`): only `v` and the variant's own params change. A
+// variant with its own spawn (a different toy) starts there; otherwise you keep your spot.
+function switchTo(v: string, url: string, ownSpawn: boolean) {
   const b = me.body?.position;
   try {
-    if (b) {
+    if (b && !ownSpawn) {
       const h: Hint = {
         proto: params.get('proto') ?? '',
         x: b.x,
@@ -105,7 +107,8 @@ if (card) {
     const row = el('div', 'pb-row pb-variants');
     // A card whose own url names a variant (`&v=crawl`) shows that name on its first button.
     for (const v of [{ name: urlParam(card, 'v') ?? '', url: card.url, what: 'The default take.' }, ...card.variants]) {
-      const b = button('pb-btn', v.name || 'default', () => v.name !== current && switchTo(v.name, v.url));
+      const own = 'spawn' in v && !!v.spawn;
+      const b = button('pb-btn', v.name || 'default', () => v.name !== current && switchTo(v.name, v.url, own));
       b.title = v.what;
       b.setAttribute('aria-pressed', String(v.name === current));
       row.append(b);
@@ -156,7 +159,9 @@ if (card) {
   (document.querySelector('.hud') ?? document.body).append(bar);
 
   // Time in the prototype (visible and entered), and the drop next to the verb, once per load.
-  const spawn: { x: number; z: number; yaw: number; pitch?: number } | null = takeHint() ?? card.spawn ?? null;
+  const variantSpawn = card.variants?.find((v) => v.name === current)?.spawn;
+  const spawn: { x: number; z: number; yaw: number; pitch?: number } | null =
+    takeHint() ?? variantSpawn ?? card.spawn ?? null;
   let placed = !spawn;
   onFrame(
     ({ dt }) => {

@@ -21,7 +21,7 @@ import { chuff, thump, clank, whistle } from '../render/machine-sfx.ts';
 import { angleLerp } from '../math.ts';
 import { BODY, addBody, createBody, physicsReady, stepAlpha, type Body } from '../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../physics/physics.ts';
-import { registerPlatform, carry, yawOf, type Platform } from '../physics/platforms.ts';
+import { registerPlatform, platformById, carry, yawOf, type Platform } from '../physics/platforms.ts';
 
 const { sites } = rules.sites;
 const TUNE = {
@@ -237,11 +237,26 @@ const sign = (() => {
 })();
 
 // Where the machine should be (`at`: its centre, metres along the section): parked a little way up the open section,
-// clear of the laid line (the ?proto=wagon wagon stops at its end); warming up, it backs onto the railhead; laying, its
-// front is just behind the laid head (d). Once the whole route is laid it sinks out of sight. Push runs read whole
-// ticks (their clock stands still between pushes); the others the smooth shared time.
+// clear of the laid line; warming up, it backs onto the railhead; laying, its front is just behind the laid head (d).
+// Once the whole route is laid it sinks out of sight. Push runs read whole ticks (their clock stands still between
+// pushes); the others the smooth shared time. Where the ?proto=wagon train stands at the end of the line its loco
+// overhangs the railhead by about 5 m, so the drawn machine keeps its back bar CLEAR m ahead of the loco's nose
+// (`clearOfWagon`) and drops back to its spot as the train pulls away: Local, the run's timing is unchanged.
 const PARK = M.hz + 1.6,
-  START = M.front - M.hz;
+  START = M.front - M.hz,
+  CLEAR = 0.5;
+let loco: Platform | null = null;
+function clearOfWagon(s: number, at: number): number {
+  loco ??= platformById('wagon:car0'); // src/proto/wagon/: car 0 is the loco, at the train's outbound end
+  if (!loco || loco.body.position.y < -20) return at; // no wagon, or none on the line yet (parked under the island)
+  const { fx, fz } = LINES[s];
+  const rx = loco.body.position.x - ROUTE[s].x,
+    rz = loco.body.position.z - ROUTE[s].z;
+  if (Math.abs(rx * fz - rz * fx) > 4) return at; // off this line
+  const nose = rx * fx + rz * fz + loco.hz + 0.2; // its buffer beam
+  if (nose > 6.5) return at; // a faked laid count (the wagon panel's +) runs it over the open section: let it by
+  return Math.max(at, nose + CLEAR + M.hz + 0.12); // the push bar sits 0.12 m behind the deck
+}
 const goal = { s: 0, d: 0, at: PARK, x: 0, y: 0, z: 0, yaw: 0, running: false, name: '', gone: false };
 function laidAt(s: number, tick: number): number {
   const x = sites.list[s];
@@ -264,6 +279,7 @@ function aim(tick: number): void {
   goal.name = r?.name ?? '';
   goal.gone = open >= ROUTE.length;
   goal.at = !r ? PARK : r.name === 'warm' ? PARK + ((START - PARK) * r.progress) / 1000 : goal.d + START;
+  if (!goal.gone) goal.at = clearOfWagon(s, goal.at);
   const c = along(s, goal.at);
   goal.x = c.x;
   goal.z = c.z;

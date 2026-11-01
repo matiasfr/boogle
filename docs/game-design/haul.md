@@ -53,6 +53,9 @@ hut (right, green, a double line). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
 section). Sleepers pile up in the Track ring as it fills; a full Helper ring builds the hut (one per site) and closes.
+The rings' signs and the plaque shrink and fade as the camera comes within about 14 m (to about half size and a third
+opacity at 4 m; src/render/near-fade.ts), so standing at a site or riding the machine past one keeps the view clear,
+while signs further off read at full size.
 
 Every pour is credited on that site's plaque: 1 point per 1% of the age's section cost (a log is 1.67 points), with
 the remainder kept per player so rounding never loses anything. The plaque lists the top four by points, names from
@@ -82,7 +85,9 @@ Started, it backs onto the railhead while warming up (fast chuffs, a shudder), t
 sleepers off its chute one by one: each thumps down with a ring of dust and the machine bumps, every other one a rail
 clanks down with sparks, the funnel chuffs as it goes and the Track ring's pile shrinks. It whistles and steams at the
 end, then rolls up to park on the next section. Its deck is a platform: hop on and ride it. Once the whole route is
-laid it sinks away.
+laid it sinks away. With the ?proto=wagon train standing at the end of the line (its loco overhangs the railhead by
+about 5 m), the machine waits just ahead of the loco's nose instead of backing into it, and drops back to the head
+as the train pulls away (drawn only: the run's timing is the same).
 
 **Run variants** (`?room=proto-lay&proto=lay&v=crawl|quick|push`, docs/plans/find-the-fun.md step 3). The room's run
 is the `run` tune key (proto- rooms; never changed mid-run): crawl (0, the default above), quick (1: 1.5 s warm, 11 s
