@@ -4,11 +4,11 @@
 // Harness and debug flags that never carry over to the next launch.
 const DROP = ['dpr', 'debugcam', 'netdebug', 'prof', 'look'];
 
-// The part of a URL's query worth reopening: '' when it names neither a room nor a prototype (the default island),
-// else the query without debug flags, prototype parameters (?v=, ?hero=, ...) included.
+// The part of a URL's query worth reopening: '' when it names neither a room, a prototype nor the playtest playlist
+// (`?play`) (the default island), else the query without debug flags, prototype parameters (?v=, ?hero=, ...) included.
 export function launchQuery(search: string): string {
   const q = new URLSearchParams(search);
-  if (!q.get('room') && !q.get('proto')) return '';
+  if (!q.get('room') && !q.get('proto') && !q.has('play')) return '';
   for (const k of DROP) q.delete(k);
   return q.toString();
 }
@@ -20,6 +20,7 @@ export function describeLaunch(query: string): string {
     proto = q.get('proto'),
     v = q.get('v');
   const parts: string[] = [];
+  if (q.has('play')) parts.push('the playtest playlist');
   if (room) parts.push(`room ${room}`);
   if (proto) parts.push(`prototype ${proto}${v ? ` (${v})` : ''}`);
   return parts.join(' · ');
