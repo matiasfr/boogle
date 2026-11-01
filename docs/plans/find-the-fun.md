@@ -14,12 +14,15 @@
   lockstep numbers runs in its own room (`?room=proto-<name>`) so it never touches the real world's save.
 - **Evidence before a playtest.** The builder looks at its own `/look` stills and motion sheets and iterates before
   shipping (AGENTS.md, "See it before you ship"). Tests only for lockstep code; `perf` only for heavy rendering.
-- **On the protos page.** [boogle.club/protos/](https://boogle.club/protos/) lists every prototype with its Play link,
-  one gut question and a copyable playtest entry (no checklists: the owner is an experienced player and judges feel
-  fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
+- **On the protos page and in the playlist.** [boogle.club/protos/](https://boogle.club/protos/) lists every
+  prototype with its Play link, one gut question and a copyable playtest entry (no checklists: the owner is an
+  experienced player and judges feel fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping"), and a live
+  card goes in `PLAYTEST_ORDER` and either joins the `?play` island (`ISLAND` in `src/proto/flags.ts`, its loader
+  asking `protoOn`, a `spawn` of its own) or says why it is a `chapter` ("One path", below).
 - **Into the verb in seconds.** On any `?proto=` page the prototype bar (`src/proto/bar/`) shows the card's question,
-  its variants (switching keeps your spot) and a one-tap verdict, and drops you at the card's `spawn`, next to the
-  thing to try: give every live card one. A variant that is a different place (minis) has its own `spawn`, and
+  its variants (a variant that only changes feel, look or sound switches live through `onVariant`; any other reloads
+  into your spot) and a one-tap verdict, and drops you at the card's `spawn`, next to the thing to try: give every
+  live card one. A variant that is a different place (minis) has its own `spawn`, and
   switching to it takes you there. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
   time in the prototype and variant switches are counted already; the counts go into the copied playtest entry.
 - **A trace of every sitting.** Each `?proto=` page load records where the owner went (1 Hz, 1 m), idled, failed
@@ -35,6 +38,38 @@
   (no walk to reach it). A card goes `live` only after its builder has played it at iPad size. No feel or art pass until
   its question gets a "yes".
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
+
+## One path: the playtest playlist (`/?play`)
+
+Designed 1 November, after the owner's first round: testing went page → Play (a reload) → lobby → walk to the toy →
+switch variant (another reload) → back to the page to copy notes. Research recs 5–7, 9 and 10.
+
+1. **One link.** `/?play` opens the island in its own room (`proto-play`) with every prototype that fits on it at once
+   (`ISLAND`, `src/proto/flags.ts`: haul, wagon, lay, soapbox, build, minis, assets, moves), each at its own spot;
+   returning players skip the lobby (`src/player/arrival.ts`), and the Home Screen app reopens it.
+2. **Chapters.** A card that reshapes the world or clashes with a toy (era, look, layout, uisfx, board with its own
+   wagon, ride whose flatbed crosses the minis) says why in `chapter`; the playlist opens its own address with
+   `&play`, and Next leads back to the island.
+3. **The playlist** is `PLAYTEST_ORDER`, one step per card: the bar shows "3/14", the title, the gut question, the
+   variant buttons (ticked once judged), Yes / No / Can't tell with a one-line note (a plain text box: iOS dictation
+   works) and ◀ Prev · Copy all · Next ▶. Next teleports you to the next toy's spawn, facing it.
+4. **Pad and touch.** Everything is a button on the bar; on the Backbone, D-pad ↓ opens the bar as a modal (D-pad
+   between buttons, A presses, LB / RB previous / next toy, B closes); P and arrows on a keyboard.
+5. **Variants switch live** where the prototype registers `onVariant(id, names, fn)`: Local feel (wagon calm, lively
+   and fast, soapbox grip and drifty, minis, moves, board) and room-wide tune ops (lay's run kinds, the wagon's pace).
+   The rest (the haul's five ways, wagon stoke and grind, look, layout) reload into the same spot.
+6. **Where you are is remembered** in this browser (`boogle-play-v1`: the step and each card's variant);
+   `/?play=<card>:<variant>` jumps to a step (the protos page's Start here buttons).
+7. **Feedback per variant:** verdict, note, counters and trace sittings are kept per card and variant
+   (`protos/store.ts`); one Copy all, in the bar and on the page, writes the whole playtests.md entry (`protos/entry.ts`).
+8. **Only the current toy's panel shows** on the island (`playPanel`); counters and the trace follow the current step,
+   and the wagon runs only the really laid line while the laying run is up.
+9. **No server.** Option, needing the owner's OK: a small endpoint that takes Copy all's text, so the entry lands in
+   the repo without copy and paste.
+10. Standalone `?proto=<name>` pages work as before, for builders and their scenarios (`dev/scenarios/play-playlist.ts`
+    walks the playlist).
+
+- [x] **The playlist:** `/?play`, chapters, live variants, the bar's playlist and pad, feedback per variant.
 
 ## How the work is split
 
