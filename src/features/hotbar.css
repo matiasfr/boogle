@@ -198,3 +198,34 @@ body.touch .hotbar-key {
 body.holding-throwable:not(.main-throws) .tbtn.toss {
   display: block;
 }
+
+/* ?proto=uisfx (src/render/ui-kit.css): play-size text for the iPad at laptop distance, the shared tokens. */
+.ui-kit .hotbar-name,
+.ui-kit .hotbar-note {
+  font-size: var(--text-play);
+  padding: 6px 8px 6px 15px;
+}
+.ui-kit .hotbar-name:not(:has(.hotbar-use)) {
+  padding-right: 15px;
+}
+.ui-kit .hotbar-note {
+  padding: 7px 16px;
+  background: var(--coral);
+}
+.ui-kit .hotbar-use {
+  font-size: 18px;
+}
+.ui-kit .hotbar-name,
+.ui-kit .hotbar-note,
+.ui-kit .hotbar-slot {
+  transition-duration: var(--dur-leave);
+  transition-timing-function: var(--ease-out);
+}
+.ui-kit .hotbar-name.shown,
+.ui-kit .hotbar-note.shown {
+  transition-duration: var(--dur-pop);
+}
+.ui-kit .hotbar-key,
+.ui-kit .hotbar-n {
+  font-size: 13px;
+}

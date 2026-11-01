@@ -4,7 +4,9 @@
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
 // (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy
-// you can throw) and 10 (slapstick over precision).
+// you can throw) and 10 (slapstick over precision). With ?proto=uisfx (docs/research/ui-patterns.md, recs 1, 2 and 4) a
+// select ticks (one pitch step per slot) and the slot bounces, a note denies, and the text is larger.
+import '../render/ui-kit.css';
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
@@ -19,6 +21,7 @@ import { setIcon, warmIcons } from '../player/item-icons.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 import { describeControl, onKey } from '../player/controls.ts';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
+import { uiSound, replay } from '../render/ui-sound.ts';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
@@ -80,6 +83,7 @@ const ui = {
   slots: [] as HTMLButtonElement[],
   toss: null as HTMLButtonElement | null,
   version: -1,
+  sel: inv.sel,
   kind: '',
   nameUntil: 0,
   noteAt: 0,
@@ -175,6 +179,11 @@ function renderHud(now: number) {
       b.querySelector('.hotbar-n')!.textContent = s?.id === 'seeds' ? String(s.n) : '';
     });
     ui.name.innerHTML = nameTag(inv.slots[inv.sel], kind);
+    if (ui.sel !== inv.sel) {
+      replay(ui.slots[inv.sel < 0 ? ui.sel : inv.sel], 'ui-press');
+      ui.sel = inv.sel;
+      uiSound('tick', inv.sel);
+    }
   }
   const noting = now < handsNote.until && !!handsNote.text;
   if (noting && ui.noteAt !== handsNote.until) {
@@ -183,6 +192,7 @@ function renderHud(now: number) {
     ui.note.classList.remove('shake');
     void ui.note.offsetWidth; // restart the shake
     ui.note.classList.add('shake');
+    uiSound('deny');
   }
   ui.note.classList.toggle('shown', noting);
   ui.name.classList.toggle('shown', !noting && !!ui.name.innerHTML && now < ui.nameUntil);

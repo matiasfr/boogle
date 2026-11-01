@@ -1,0 +1,86 @@
+/* The shared UI kit (docs/research/ui-patterns.md, "A small UI style guide"): motion and colour tokens, imported by
+   the HUD features that use them. The rules that change today's look sit under `.ui-kit` (on <html> with
+   ?proto=uisfx, src/render/ui-sound.ts) so the prototype can be compared with and without. */
+:root {
+  --dur-press: 80ms; /* press-in on key, pad or tap */
+  --dur-pop: 240ms; /* something arriving */
+  --dur-leave: 160ms; /* anything leaving: always shorter than arriving */
+  --dur-panel: 220ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* A sampled spring: about 8% overshoot, settled by 70%. Arrivals and presses only, never panels or text. */
+  --ease-pop: linear(
+    0,
+    0.147,
+    0.436,
+    0.717,
+    0.921,
+    1.036,
+    1.08,
+    1.079,
+    1.059,
+    1.034,
+    1.013,
+    1.001,
+    0.994,
+    0.993,
+    0.994,
+    0.996,
+    0.998,
+    1
+  );
+  --wood: #5a3a1c;
+  --leaf: #4fb36a;
+  --coral: #d8432f;
+  --text-play: 18px; /* anything read during play (rec 4) */
+}
+/* Rec 4: a little more opaque glass, so white text stays above 4.5:1 over clouds and foam. */
+:root.ui-kit {
+  --glass: rgba(12, 28, 52, 0.72);
+}
+
+/* Press feedback: squash in fast, spring back. Uses `scale`, so it composes with each element's own transform. */
+@keyframes ui-squash {
+  0% {
+    scale: 1;
+    animation-timing-function: var(--ease-out);
+  }
+  25% {
+    scale: 1.07 0.9;
+    animation-timing-function: var(--ease-pop);
+  }
+  100% {
+    scale: 1;
+  }
+}
+/* A refusal: a quick head-shake. */
+@keyframes ui-nope {
+  20%,
+  60% {
+    translate: -4px 0;
+  }
+  40%,
+  80% {
+    translate: 4px 0;
+  }
+}
+/* A number that just changed. */
+@keyframes ui-tick {
+  0% {
+    scale: 1.18;
+  }
+  100% {
+    scale: 1;
+  }
+}
+.ui-kit .ui-press {
+  animation: ui-squash calc(var(--dur-press) * 4) both;
+}
+.ui-kit .ui-nope {
+  animation: ui-nope 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-kit .ui-press,
+  .ui-kit .ui-nope {
+    animation: none;
+  }
+}

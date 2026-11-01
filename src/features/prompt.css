@@ -86,3 +86,18 @@ body.touch .prompt-chip {
     animation: none;
   }
 }
+
+/* ?proto=uisfx (src/render/ui-kit.css): the shared spring, a slightly bigger verb, and the sticker's shadow pressed in
+   while it squashes. */
+.ui-kit .prompt-in.pop,
+.ui-kit .boogler-tag-prompt.pop {
+  animation: prompt-pop var(--dur-pop) var(--ease-pop);
+}
+.ui-kit .prompt-chip {
+  font-size: 20px;
+  transform-origin: 50% 100%;
+}
+.ui-kit .prompt-why {
+  font-size: 15px;
+  background: var(--coral);
+}
