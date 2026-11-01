@@ -1,11 +1,11 @@
 {
   "hero-rig": {
     "source": "hero-rig.py",
-    "sourceHash": "14af02e5f9253af4",
-    "outHash": "103177aab5a9abe9",
-    "rawBytes": 200952,
-    "bytes": 88528,
-    "triangles": 9120,
+    "sourceHash": "2ae276e138de44e2",
+    "outHash": "03090938322b82ac",
+    "rawBytes": 287388,
+    "bytes": 104236,
+    "triangles": 15014,
     "animations": [
       "wave"
     ],

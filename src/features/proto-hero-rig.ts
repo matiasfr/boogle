@@ -37,6 +37,14 @@ async function build() {
     patched.add(m);
     patchNode(m, 'emissiveNode', (prev) => (prev ?? vec3(0)).add(rim));
   });
+  // Clothes are separate parts (`wear_<slot>_<item>_...`, assets/src/hero-rig.py) over a complete bare figure; boots
+  // hide the bare feet they cover. &hero=bare shows the base alone.
+  const dress = (on: boolean) =>
+    holder.traverse((o) => {
+      if (o.name.startsWith('wear_')) o.visible = on;
+      else if (o.name.startsWith('foot_') && o.name.endsWith('_part')) o.visible = !on;
+    });
+  dress(new URLSearchParams(location.search).get('hero') !== 'bare');
   scene.add(holder);
   await precompile(holder);
 
@@ -116,6 +124,7 @@ async function build() {
     { phase: 'update', order: 41 },
   );
   (window as unknown as { __heroRig?: unknown }).__heroRig = {
+    dress,
     wave: () => {
       waveT = 0;
       wave.reset().play();
