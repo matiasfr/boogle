@@ -96,6 +96,25 @@ Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/hau
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
 
+## Prototype: era swap (?proto=era)
+
+Asks "does the island change enough at an era's end?" with blocks only (no ceremony, no mayor). With `?proto=era`,
+low brown huts and a campfire stand around the court and along the route (era 1), and a platform with a bell post
+stands at the far end of the route. Once the age's last section is laid, anyone on the platform gets "Start opening
+day" (E, the Interact button; before that it shows greyed with "Lay the whole route first"). The first start wins: a
+10 s bell countdown (one constant, `BELL_S` in [src/sim/era.ts](../../src/sim/era.ts)) shows a big number on
+everyone's screen with a bell each second, then the era turns to 2: the huts sink and tall striped stalls, a town hall
+with a clock tower, bunting lines and yellow posts where the wagon will run pop up, rippling out from the court in
+about two seconds. The era is derived (age, sections laid, whether opening day's bell has run out), so a late joiner or
+a reload sees the same island. In a `proto-` room a "Lay the whole route" button (top left) lays every remaining
+section at once, so a solo tester reaches opening day in seconds; Reset haul (the haul kit) also undoes opening day.
+Without the flag nothing is drawn; the state and ops exist but nothing submits them.
+
+Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
+[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/pois/era/](../../src/pois/era/index.ts) (the block
+sets are one table, [blocks.ts](../../src/pois/era/blocks.ts)). Lockstep state `opening`; ops `open.start`, `open.lay`
+(`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
+
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

@@ -1,0 +1,53 @@
+/* The era swap prototype (?proto=era): the opening-day countdown, big in the middle of the screen, and the solo
+   tester's shortcut button. */
+.era-count {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 96px;
+  line-height: 1;
+  color: var(--paper);
+  -webkit-text-stroke: 4px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 var(--ink);
+  pointer-events: none;
+}
+.era-count small {
+  font-size: 28px;
+  -webkit-text-stroke: 3px var(--ink);
+  text-shadow: 0 3px 0 var(--ink);
+}
+.era-count.era-done {
+  font-size: 64px;
+  color: #ffd23f;
+}
+.era-proto {
+  position: absolute;
+  left: 12px;
+  top: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  pointer-events: auto;
+}
+.era-proto button {
+  font: inherit;
+  padding: 6px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+}
+.era-proto button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

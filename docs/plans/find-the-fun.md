@@ -63,7 +63,7 @@ and test it.
 
 ## 4. Does the island change enough at an era's end?
 
-- [ ] **Greybox era swap:** an opening-day trigger any player can start; blocks swap and the wagon starts running. No
+- [x] **Greybox era swap:** an opening-day trigger any player can start; blocks swap and the wagon starts running. No
       ceremony (`?proto=era`).
 - [ ] **Playtest 4.**
 
