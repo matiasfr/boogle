@@ -14,6 +14,8 @@
 | Progression without mini-games | [progression-paths.md](progression-paths.md) |
 | Venues and the hub | [hub-and-minigames.md](hub-and-minigames.md) |
 | Does the engine fit? | [docs/plans/boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md) |
+| Build plan for "find the fun", one checkbox per PR | [docs/plans/find-the-fun.md](../plans/find-the-fun.md) |
+| The game as built; playtest findings | [docs/game-design.md](../game-design.md); [docs/playtests.md](../playtests.md) |
 | Research behind it | [docs/research/README.md](../research/README.md) (rail-as-play, progression-models, discovery-progression, system-cohesion, big-walk-and-communal-endings) |
 
 ## How the owner works
@@ -104,7 +106,7 @@ These are standing preferences from the thread.
 
 ## Next: find the fun (agreed direction, 1 November)
 
-Prototype mechanics only, in this order. Each step goes behind a `?proto=` flag, gets a `/look` motion sheet, and asks one playtest question. If the answer is no twice, change it or cut it instead of adding rewards.
+Prototype mechanics only, in this order. Build order and PRs: [find-the-fun.md](../plans/find-the-fun.md). Each step goes behind a `?proto=` flag, gets a `/look` motion sheet, and asks one playtest question. If the answer is no twice, change it or cut it instead of adding rewards.
 
 1. **Is hauling fun as a toy?**
    - This is already built, so it needs a playtest before any code.
