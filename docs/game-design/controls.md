@@ -36,7 +36,7 @@ Notes:
   (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
-- The talk box is not a modal ([src/boogler/dialogue.js](../../src/boogler/dialogue.js)): the game keeps playing, and it
+- The talk box is not a modal ([src/boogler/dialogue.ts](../../src/boogler/dialogue.ts)): the game keeps playing, and it
   takes only the keys and pad buttons it answers with. Number keys 1-9 answer (not the hotbar while it is open), Enter
   skips the typing, E or Esc walks away (Esc with the pointer locked just ends the lock, which also ends the talk); the
   move keys, mouse look and Space still work. On the pad (`setPadGrab` in

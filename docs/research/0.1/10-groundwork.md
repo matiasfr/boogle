@@ -24,7 +24,7 @@ edits in flight and is never stored.
 | Data | Key | Scope | Code |
 |---|---|---|---|
 | Hotbar | `boogle.hotbar` (migrated once from `boogle.pocket`) | global, every room | `src/player/inventory.ts:11-45` |
-| Boogler friendship | `boogle.boogler.<room>` | per room | `src/boogler/play.js:35-47`; published as presence `bg` |
+| Boogler friendship | `boogle.boogler.<room>` | per room | `src/boogler/play.ts:35-47`; published as presence `bg` |
 | First-run card seen | `boogle.firstRun.<kind>` | global | `src/features/first-run.js:20` |
 
 The hotbar is filled in `onApplied` of `gift.take` for the submitter. Nothing on the host knows what anyone carries,

@@ -7,10 +7,10 @@
     {
       "hl": ["fr.systems"],
       "text": "Only the host runs the Boogler’s brain. Your friend’s tab is the host here.",
-      "code": "src/boogler/boogler.js",
+      "code": "src/boogler/boogler.ts",
       "cite": [
         {
-          "file": "src/boogler/boogler.js"
+          "file": "src/boogler/boogler.ts"
         }
       ]
     },
@@ -40,7 +40,7 @@
       "code": "Host state restarts with the next host",
       "cite": [
         {
-          "file": "src/boogler/boogler.js"
+          "file": "src/boogler/boogler.ts"
         }
       ]
     }

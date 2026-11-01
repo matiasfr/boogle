@@ -1,4 +1,4 @@
-// Everything The Boogler says. Pure data, read by src/boogler/talk.js.
+// Everything The Boogler says. Pure data, read by src/boogler/talk.ts.
 //
 // A chapter is a small tree of nodes starting at `a`. Node: { say, mood?, opts }. Option: { say, to?, pts?, nosy?,
 // set?, trust?, else? }. No `to` ends the chapter. `trust: L` sends players below level L to `else` instead of `to`

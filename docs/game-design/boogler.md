@@ -19,14 +19,14 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
   stop. Walks 1.5 m/s, turns 3.2 rad/s, stays on land between 0.45 and 30 m high, avoids slopes over 0.55 per metre,
   obstacles and the garden patch. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
-- **Files.** [src/boogler/boogler.js](../../src/boogler/boogler.js), [src/boogler/hud.js](../../src/boogler/hud.js),
-  [src/boogler/fx.js](../../src/boogler/fx.js), [src/features/boogler.js](../../src/features/boogler.js).
+- **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
+  [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.js](../../src/features/boogler.js).
 
 ## Friendship
 
 - **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
   so the lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
-- **Levels** ([src/boogler/friendship.js](../../src/boogler/friendship.js)):
+- **Levels** ([src/boogler/friendship.ts](../../src/boogler/friendship.ts)):
 
 | Level | Name | Points |
 |---|---|---|
@@ -70,8 +70,8 @@ frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
   is a bubble). Greetings and farewells change with your level.
 - **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
   opened before it arrives waits for it. What he says outside a talk (level-ups, pats, ride complaints, "Nope!") is in
-  the small eager [src/boogler/barks.js](../../src/boogler/barks.js) ([src/boogler/play.js](../../src/boogler/play.js)).
-- **Story threads** ([src/boogler/lines.js](../../src/boogler/lines.js), [src/boogler/talk.js](../../src/boogler/talk.js)):
+  the small eager [src/boogler/barks.ts](../../src/boogler/barks.ts) ([src/boogler/play.ts](../../src/boogler/play.ts)).
+- **Story threads** ([src/boogler/lines.ts](../../src/boogler/lines.ts), [src/boogler/talk.ts](../../src/boogler/talk.ts)):
   `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows
   from level 1 or once `home` has started.
 - **Nosiness.** Asking for a chapter above your level deflects (+1 nosy); pushing ("Oh, come on, tell me!") is +2

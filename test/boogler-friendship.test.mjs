@@ -17,7 +17,7 @@ import {
   apologize,
   serializeFriend,
   loadFriend,
-} from '../src/boogler/friendship.js';
+} from '../src/boogler/friendship.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 
 const MIN = 60000;

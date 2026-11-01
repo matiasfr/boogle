@@ -3,12 +3,12 @@
 import * as THREE from 'three';
 import { scene } from '../render/scene.ts';
 import { reducedMotion } from '../constants.ts';
-import { boogler, booglerReact, PUFF_MS } from './boogler.js';
+import { boogler, booglerReact, PUFF_MS } from './boogler.ts';
 
 function heartTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   const heart = () => {
     g.beginPath();
     g.moveTo(32, 54);
@@ -36,7 +36,18 @@ function heartTexture() {
 
 const MAX_HEARTS = 64;
 const heartTex = heartTexture();
-const hearts = [];
+type Heart = {
+  s: THREE.Sprite;
+  life: number;
+  max: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  size: number;
+  sway: number;
+  delay: number;
+};
+const hearts: Heart[] = [];
 for (let k = 0; k < MAX_HEARTS; k++) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false }));
   s.visible = false;
@@ -45,7 +56,7 @@ for (let k = 0; k < MAX_HEARTS; k++) {
   hearts.push({ s, life: 0, max: 1, vx: 0, vy: 0, vz: 0, size: 0.3, sway: 0, delay: 0 });
 }
 
-function spawnHeart(size, spread, speed, delay) {
+function spawnHeart(size: number, spread: number, speed: number, delay: number) {
   const h = hearts.find((x) => x.life <= 0 && x.delay <= 0);
   if (!h) return;
   const a = Math.random() * Math.PI * 2;
@@ -62,7 +73,7 @@ function spawnHeart(size, spread, speed, delay) {
 }
 
 // 'pet': a couple of small hearts. 'level': a big fountain for reaching a new friendship level.
-export function booglerHearts(kind) {
+export function booglerHearts(kind: 'pet' | 'level') {
   if (kind === 'level') {
     const n = reducedMotion ? 8 : 30;
     for (let k = 0; k < n; k++) spawnHeart(0.42, 0.9, 2.4, (k / n) * 1.1);
@@ -100,7 +111,7 @@ const pops = Array.from({ length: POP_N }, () => {
 let puffAt = -1e9;
 let popped = true;
 
-// He swells, an orb grows on his head, and at PUFF_MS it pops. The rider's launch is in src/boogler/play.js.
+// He swells, an orb grows on his head, and at PUFF_MS it pops. The rider's launch is in src/boogler/play.ts.
 export function booglerPuff(now = performance.now()) {
   puffAt = now;
   popped = false;
@@ -120,7 +131,7 @@ function pop() {
   }
 }
 
-export function updateBooglerFx(dt, now) {
+export function updateBooglerFx(dt: number, now: number) {
   for (const h of hearts) {
     if (h.delay > 0) {
       h.delay -= dt;

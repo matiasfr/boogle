@@ -528,7 +528,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `npm --prefix server ci` before `npm run test:net` (add `server/package-lock.json` to the npm cache paths).
   - Verify: `npm run check:full`.
 
-- [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
+- [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
   `src/features/telemetry.js`, `src/debug/netdebug.js`).
   - `room.js` as in Design, with every transition of the table.
   - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =
@@ -561,7 +561,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
     (server answers `peer`).
 
-- [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
+- [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
   `src/features/telemetry.js`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.

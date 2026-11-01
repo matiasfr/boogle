@@ -4,7 +4,7 @@
 
 ## 1. Where it comes from: it's already in the game
 
-The fourth melon isn't new. It's one line in The Boogler's family chapter ([src/boogler/lines.js](../../src/boogler/lines.js), chapter `mom0`), which players unlock at friendship level 1:
+The fourth melon isn't new. It's one line in The Boogler's family chapter ([src/boogler/lines.ts](../../src/boogler/lines.ts), chapter `mom0`), which players unlock at friendship level 1:
 
 > **Boogler:** Family? I have Oyijon. My mother. She is small and loud and she can carry four melons at once.
 > **You:** Four melons?!

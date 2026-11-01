@@ -83,7 +83,7 @@ on LT, the punch row). A new character needs a free pad slot like any feature.
 
 The guest's `preStep` listener flips the body to kinematic, interpolates it toward the engine's position at 30 Hz,
 writes `me.coyote`, `me.swimming` and `me.yaw`, hides the avatar every frame, and guesses at teleports (the body is
-more than 0.75 m from where it was sent). The Boogler's ride (`src/boogler/play.js`) also moves the body. A second
+more than 0.75 m from where it was sent). The Boogler's ride (`src/boogler/play.ts`) also moves the body. A second
 character would copy all of this.
 
 `src/player/drive.js` would own it once: `driveBody({ rate, step })` takes over the body, calls `step` at `rate`, moves

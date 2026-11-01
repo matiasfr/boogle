@@ -3,11 +3,11 @@
 // interact prompt when he is what you would interact with). His speech bubbles show at any range. While he's off
 // screen and nearby, the same mark sits on the nearest screen edge, aimed at him, with his distance. Past FIND_NEAR it
 // fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about the garden anyway.
-import { boogler, booglerScreen } from './boogler.js';
+import { boogler, booglerScreen } from './boogler.ts';
 import { me } from '../player/player.ts';
 import { clamp } from '../math.ts';
-import { heartsText } from './friendship.js';
-import { replay } from './dialogue.js';
+import { heartsText } from './friendship.ts';
+import { replay } from './dialogue.ts';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
 const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
@@ -40,14 +40,24 @@ const MARKUP = `
   </div>`;
 
 // Built here rather than in index.html, so this feature stays out of the shared HUD markup.
-let el = null;
+type TagDom = {
+  tag: HTMLElement;
+  bond: HTMLElement;
+  prompt: HTMLElement;
+  say: HTMLElement;
+  sayText: HTMLElement;
+  find: HTMLElement;
+  arrow: HTMLElement;
+  dist: HTMLElement;
+};
+let el: TagDom | null = null;
 function dom() {
   if (el) return el;
   const hud = document.querySelector('.hud');
   if (!hud) return null;
   const wrap = document.createElement('div');
   wrap.innerHTML = MARKUP;
-  const q = (c) => wrap.querySelector(c);
+  const q = (c: string) => wrap.querySelector(c) as HTMLElement; // in MARKUP
   el = {
     tag: q('.boogler-tag'),
     bond: q('.boogler-tag-bond'),
@@ -63,14 +73,14 @@ function dom() {
 }
 
 const bubble = { text: '', until: 0, shown: '' };
-export function booglerSay(text, ms = 1600) {
+export function booglerSay(text: string, ms = 1600) {
   bubble.text = text;
   bubble.until = performance.now() + ms;
 }
 
-// Your friendship hearts in the tag (blank until you are in), set every frame by src/boogler/play.js.
+// Your friendship hearts in the tag (blank until you are in), set every frame by src/boogler/play.ts.
 let bondShown = '';
-export function setTagBond(level, wary) {
+export function setTagBond(level: number, wary: boolean) {
   const d = dom();
   const text = !me.entered ? '' : wary ? 'avoiding you' : heartsText(level);
   if (!d || text === bondShown) return;
@@ -78,11 +88,11 @@ export function setTagBond(level, wary) {
   d.bond.classList.toggle('wary', wary);
 }
 
-// The interact prompt in the tag: his target's show() (see talkTargets in src/boogler/play.js), called by
+// The interact prompt in the tag: his target's show() (see talkTargets in src/boogler/play.ts), called by
 // src/features/prompt.js with the markup, '' for none. Drawn right away, so it changes on the same frame as the
 // floating prompt whichever of the two hooks runs first.
 let promptShown = '';
-export function setTagPrompt(html) {
+export function setTagPrompt(html: string) {
   const d = dom();
   if (!d || html === promptShown) return;
   const fresh = !promptShown;

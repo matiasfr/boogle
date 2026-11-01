@@ -83,8 +83,8 @@ For lockstep systems, clients send small **edit events** (plant, water, toss, ha
 | Your player's movement | You (client) |
 | The beach ball | Its current owner (epoch rule in [`src/physics/ball.ts`](src/physics/ball.ts)) |
 | Garden, gifts, weather | The server |
-| The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.js`](src/boogler/boogler.js)) |
-| Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler/play.js`](src/boogler/play.js), [`src/player/inventory.ts`](src/player/inventory.ts)) |
+| The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.ts`](src/boogler/boogler.ts)) |
+| Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler/play.ts`](src/boogler/play.ts), [`src/player/inventory.ts`](src/player/inventory.ts)) |
 | Persistence (snapshots) | The server writes each room to its disk (every 2 s when it changed, every 30 s and on shutdown regardless) and starts a room from that save; tabs keep no copy |
 
 ### Server hosts every room

@@ -13,7 +13,7 @@
 Townsend "knew which phases I wanted to include but not the narrative that would go with them". Each phase should zoom the world out ("Chinese box").
 
 - Write a phase as a one-line change in what a session *feels* like. For example: "the island has a shop", "you can leave the island", "the island talks back".
-- Write The Boogler's lines for it last, once the toy works. Keep them as data in `src/boogler/lines.js` style.
+- Write The Boogler's lines for it last, once the toy works. Keep them as data in `src/boogler/lines.ts` style.
 - Don't fix the ending early. The [tech tree's](boogler-tech-tree.md) back cover offers three.
 
 ## 2. Toy test, then reveal

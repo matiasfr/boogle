@@ -7,7 +7,7 @@ import { onFrame } from '../loop.ts';
 import { toScreen } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget } from '../player/hands.ts';
-import { dialogue } from '../boogler/dialogue.js';
+import { dialogue } from '../boogler/dialogue.ts';
 import { glyph } from '../player/glyphs.ts';
 
 const onScreen = { x: 0, y: 0, behind: false };

@@ -4,7 +4,7 @@
 // input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.js');`;
-const TALK = `const D = await import('/src/boogler/dialogue.js');
+const TALK = `const D = await import('/src/boogler/dialogue.ts');
   const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] }, { level: 1, name: 'Stranger', frac: 0.3 },
     () => {}, () => D.closeDialogue(), () => {});`;
 const isOpen = `document.querySelector('dialog.pause')?.open === true`;
@@ -138,7 +138,7 @@ export default {
     t.check(
       'with the pause view open, the talk box does not open',
       (await g.eval(`return ${isOpen};`)) &&
-        (await g.eval(`const D = await import('/src/boogler/dialogue.js'); return D.dialogue.open;`)) === false,
+        (await g.eval(`const D = await import('/src/boogler/dialogue.ts'); return D.dialogue.open;`)) === false,
     );
     await g.eval(`${PAUSE} closePause();`);
 

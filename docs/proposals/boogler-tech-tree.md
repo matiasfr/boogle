@@ -16,7 +16,7 @@ The device does several jobs at once:
 
 - **It's diegetic and readable.** The book is a real object you can open. Stuck pages show a corner and a smudged title, so you can guess at them but not read them. Shouldice wanted Tunic's manual to feel like it "was made for someone else", where "getting to study a mysterious page feels like mystery-solving." Unread pages are the telegraph (principle 7), and the reveal is a surprise (Candy Box: "this surprise aspect is what I'm trying to achieve").
 - **It gives every page a narrator.** The Boogler misreads business advice the way Olimar misnames Pikmin treasures ("ridiculous names and descriptions by the clueless Captain Olimar"). The lore lives in his marginal notes, not in tutorials ("A full-screen tutorial popup feels deeply invasive", Shouldice).
-- **The arc is already written.** In `src/boogler/lines.js` the Emporium earns enough to buy a boat, and he goes to Samarqand to tell Oyijon "I did it". She told him to "Come back fed". The book's last chapter is that trip, so the tree zooms out from a beach stall to the whole sea. That is A Dark Room's "Chinese box": "the scope of the game 'zooms out' to reveal more and more of the world."
+- **The arc is already written.** In `src/boogler/lines.ts` the Emporium earns enough to buy a boat, and he goes to Samarqand to tell Oyijon "I did it". She told him to "Come back fed". The book's last chapter is that trip, so the tree zooms out from a beach stall to the whole sea. That is A Dark Room's "Chinese box": "the scope of the game 'zooms out' to reveal more and more of the world."
 
 ## What changed on main, and what it means for the book
 
@@ -219,7 +219,7 @@ Today's APIs (DESIGN.md, "In code"): Owner is `addPresenceField` + `onRemotePres
 | --- | --- | --- |
 | Open pages, page progress, regulars, Boat Fund coins, contributor names | Lockstep | `src/sim/ledger.js` (pure, integer; it joins the ESLint lockstep list), `registerState('ledger')` |
 | Catch-up growth while nobody hosted | Lockstep op | `world.catchup(n)` from the communal report, a capped integer advance |
-| Partner card, cosmetics, known patterns, last-seen tick | Local (localStorage) | like `src/boogler/friendship.js` |
+| Partner card, cosmetics, known patterns, last-seen tick | Local (localStorage) | like `src/boogler/friendship.ts` |
 | Carts, buggies, yachts, rafts, the qozon while carried | Owner | `addPresenceField`, epoch rule as in `src/physics/ball.ts` |
 | The Seagull Courier, the king-tide crate | Host | `addHostField`, like The Boogler |
 | Wind, tide, Oyijon's letter schedule, sumalak night | Lockstep without state | functions of tick + seed (`src/sim/sky-clock.ts` style; the tide is the storm-tide `tideAt`) |

@@ -1,12 +1,12 @@
 // The pace of the friendship, as a model of play: a 15-minute visit once a day (a pet every 2.5 min, a talk at 0, 5 and
 // 10 min), always taking a story chapter that is unlocked, else small talk, and always answering with the first answer.
-// RULES.petPts and RULES.chapterPts (src/boogler/friendship.js) are tuned against it: Best friend in about five visits
+// RULES.petPts and RULES.chapterPts (src/boogler/friendship.ts) are tuned against it: Best friend in about five visits
 // with no presents, and presents (a seed, the frisbee) never slow it down.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { THREADS } from '../src/boogler/lines.js';
-import { openTalk, talkView, pickTalk, threadState } from '../src/boogler/talk.js';
-import { LEVELS, createFriend, giveGift, levelOf, pet } from '../src/boogler/friendship.js';
+import { THREADS } from '../src/boogler/lines.ts';
+import { openTalk, talkView, pickTalk, threadState } from '../src/boogler/talk.ts';
+import { LEVELS, createFriend, giveGift, levelOf, pet } from '../src/boogler/friendship.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 

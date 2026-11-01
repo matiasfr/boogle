@@ -46,10 +46,10 @@ writes this into AGENTS.md.
 
 **Where to implement.** Use a separate worktree off `origin/main`, for example
 `git worktree add ../boogle-refocus origin/main -b refocus/<step>`. Never touch, stage or commit the main checkout's
-uncommitted owner work: `src/boogler/hud.js`, `src/boogler/dialogue.js`, `src/features/boogler.css`,
+uncommitted owner work: `src/boogler/hud.ts`, `src/boogler/dialogue.ts`, `src/features/boogler.css`,
 `dev/concepts/*`, `dev/scenarios/boogler-tag.mjs`, `test/chroma.test.mjs`, `DESIGN.md`, `package.json`,
 `package-lock.json` and `.claude/skills/concept-art/SKILL.md`. No step edits any of those files except step 8
-(`DESIGN.md`, see its note). Step 3 edits `src/boogler/lines.js`, which the owner has not touched. This plan file sits
+(`DESIGN.md`, see its note). Step 3 edits `src/boogler/lines.ts`, which the owner has not touched. This plan file sits
 untracked in the main checkout: copy it into the worktree's `docs/plans/` and commit it with step 1.
 
 ## Design
@@ -330,7 +330,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     layout, and removing them would move later props and change `layout.trees`. Change the comment "Fruit palms" to
     "Home palms (their cells are the wood age's log spots, src/features/log-sources.ts)".
   - **Interact label.** `src/player/input.ts` line 223: the `interact` label becomes `'Talk, pick up, take'`.
-  - **Removed Boogler copy.** These lines go from `src/boogler/lines.js` and the catalog. Every node keeps at least
+  - **Removed Boogler copy.** These lines go from `src/boogler/lines.ts` and the catalog. Every node keeps at least
     two answers and no answer points at a deleted node (checked by `test/boogler-talk.test.mjs` "every message offers
     at least two answers and every link resolves").
     1. Catalog `coconut`: "A coconut. I have eaten four hundred coconuts on this island. This one is four hundred
@@ -447,10 +447,10 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
 - [x] **4. Boogler: one global friendship; presents optional.** Serves 1 ("toys before chores"), 6 and 3 (nothing is
   gated on gifts). After step 3 (they share Boogler tests and `boogler.md`). It never touches `hud.js` or
   `dialogue.js`, and its only copy change is the pace sentence in the docs.
-  - `src/boogler/play.js`: `storeKey` is the constant `'boogle.boogler'`. Drop `getRoomId` from the import if nothing
+  - `src/boogler/play.ts`: `storeKey` is the constant `'boogle.boogler'`. Drop `getRoomId` from the import if nothing
     else uses it. The header says "saved in localStorage once per browser, shared by every room". **No migration**:
     everyone restarts at Stranger, and the old `boogle.boogler.<room>` keys are ignored.
-  - `src/boogler/friendship.js`: `RULES.petPts` 3 to **4**, `RULES.chapterPts` 6 to **8**. The gift window stores
+  - `src/boogler/friendship.ts`: `RULES.petPts` 3 to **4**, `RULES.chapterPts` 6 to **8**. The gift window stores
     catalog ids, not indices: `giveGift` pushes `{ id: g.id, at }` and counts repeats by `id`, and `loadFriend` keeps
     entries with `typeof g.id === 'string' && GIFTS.some((x) => x.id === g.id)`. A future renumber then can't misread
     a saved window. `giveGift(f, kind, now)` keeps its signature.
