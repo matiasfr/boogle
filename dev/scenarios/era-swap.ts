@@ -33,9 +33,11 @@ export default {
     const up = await g.waitFor(`!!document.querySelector('.era-proto button')`, { timeout: 90000 });
     t.check('the proto shortcut button is up', up >= 0);
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
-    // Out of the picture: the first-run card, and the player (behind the camera).
+    // Out of the picture: the first-run card, the prototype bar (folded) and the player (behind the camera).
     const away = TP(12, 38);
-    await g.eval(`document.querySelector('.first-run-close')?.click(); ${away}`);
+    await g.eval(
+      `document.querySelector('.first-run-close')?.click(); document.querySelector('.proto-bar')?.classList.add('folded'); ${away}`,
+    );
     await g.view(COURT_VIEW);
     await t.sleep(1500);
     t.check('the island starts in era 1', (await g.eval(`${R} return rules.opening.era(world.tick);`)) === 1);

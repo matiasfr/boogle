@@ -3,7 +3,7 @@
 .era-count {
   position: absolute;
   left: 50%;
-  top: 22%;
+  top: 30%; /* under the prototype bar (src/proto/bar/) */
   translate: -50% 0;
   display: flex;
   flex-direction: column;
