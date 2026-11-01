@@ -342,12 +342,6 @@ const PAGES: Page[] = [
   {
     key: 'groove',
     query: 'proto=groove',
-    // A layer's gain node is made on its first note, after the bar line that sets the layers' levels, so a layer
-    // stays at 0 until the next state change. Two bars of full make every layer, then silent, so each take's state
-    // change sets them all.
-    setup: `const G = window.__groove, BAR = (60 / G.song.bpm) * 4;
-      G.force('full'); await until(() => G.state().playing === 'full', 20000); await sleep(BAR * 2000);
-      G.force('silent'); await until(() => G.state().playing === 'silent', 20000);`,
     takes: [
       {
         id: 'groove-sparse',
@@ -765,8 +759,6 @@ try {
     try {
       await g.eval(
         `${PRE} await until(() => R.ready && R.node && R.ctx.state === 'running', 20000);
-        // The era's ambience bed plays on every page (src/pois/ loads it); only the era's own takes keep it.
-        const A = await import('/src/pois/era/ambience.ts'); A.setAmbienceLevel(${page.key === 'era' ? 0.5 : 0});
         ${page.setup ?? ''}`,
       );
       // What the page plays by itself (beds, the music), for reading the takes' levels against.

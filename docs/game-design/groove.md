@@ -13,7 +13,7 @@ at `/?room=proto-groove&proto=groove`.*
   the same downbeat (two tabs agree within about 6 ms once settled; a joining tab settles in about two seconds).
 - **Four layers by what you're doing**, changing on bar lines:
   - standing idle: *silent* near spawn (within 22 m), *sparse* elsewhere (offbeat open hats, a soft stab every two
-    bars);
+    bars; its layers 15 dB up, so it sits about 5 LU under the groove instead of 8);
   - moving (over 1.2 m/s, or holding a move input; kept 3 s after you stop): *groove* (kick, hats, offbeat bass);
   - standing on a moving deck (the wagon, any platform): *full* (adds chord stabs through a dotted-8th delay).
 - **Wipeouts** (a hard landing, being knocked flat by the ball, a tumble off a deck) cut the music for one beat with a
