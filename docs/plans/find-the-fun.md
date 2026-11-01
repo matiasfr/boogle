@@ -17,6 +17,10 @@
 - **On the protos page.** [boogle.club/protos/](https://boogle.club/protos/) lists every prototype with its Play link,
   one gut question and a copyable playtest entry (no checklists: the owner is an experienced player and judges feel
   fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
+- **Into the verb in seconds.** On any `?proto=` page the prototype bar (`src/proto/bar/`) shows the card's question,
+  its variants (switching keeps your spot) and a one-tap verdict, and drops you at the card's `spawn`, next to the
+  thing to try: give every live card one. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
+  time in the prototype and variant switches are counted already; the counts go into the copied playtest entry.
 - **Options, not one guess.** Where the feel is uncertain, a prototype carries 2–3 variants (`&v=<name>`) the owner
   compares in one sitting.
 - **From [finding-the-fun.md](../research/finding-the-fun.md):** each question is about a feeling; every "no" is

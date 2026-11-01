@@ -24,6 +24,11 @@ export type Proto = {
   values?: boolean;
   /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. */
   variants?: { name: string; url: string; what: string }[];
+  /** Where the in-game prototype bar drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
+   * toward -z, forward = (-sin, -cos)). Leave it out to start at the usual spawn. */
+  spawn?: { x: number; z: number; yaw: number };
+  /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
+  retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
 };
 
 export const PROTOS: Proto[] = [
@@ -36,6 +41,7 @@ export const PROTOS: Proto[] = [
     question: 'Which way of moving logs is the most fun?',
     what: "Logs on your back from the palm bundles, poured into the rail's work site. Tuning panel top right.",
     since: '2026-11-01',
+    spawn: { x: 4, z: 10, yaw: -0.67 }, // by the palm nearest the first work site, looking past it to the site
     values: true,
     variants: [
       {
@@ -59,6 +65,7 @@ export const PROTOS: Proto[] = [
     question: 'Does riding feel good enough to ride twice for no reason?',
     what: 'Stand on a moving flatbed; jump off at speed.',
     since: '2026-11-01',
+    spawn: { x: 3, z: 37, yaw: 0.79 }, // beside the flatbed at its first stop, looking at it
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
   },
   {
@@ -70,6 +77,7 @@ export const PROTOS: Proto[] = [
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed.',
     since: '2026-11-01',
+    spawn: { x: 7, z: 9, yaw: -0.52 }, // by the first work site, looking down the line
     variants: [
       {
         name: 'lively',
@@ -92,6 +100,7 @@ export const PROTOS: Proto[] = [
     question: "Does the island change enough at an era's end?",
     what: 'Lay all sections, start opening day at the lighthouse platform, watch the court.',
     since: '2026-11-01',
+    spawn: { x: 6, z: -40, yaw: 0 }, // south of the lighthouse platform, looking at it
   },
   {
     id: 'soapbox',
@@ -102,6 +111,7 @@ export const PROTOS: Proto[] = [
     question: 'Is driving fun?',
     what: 'A ~20 s run off the rocky massif’s summit (north-west): the ridge, a drop down the face, a palm slalom and the bay shore. E to get in, hold Jump to drift.',
     since: '2026-11-01',
+    spawn: { x: -61.5, z: -95, yaw: -1.571 }, // behind the cart on the summit, looking down the ridge
     variants: [
       { name: 'grip', url: '/?proto=soapbox&v=grip', what: 'Planted and precise: short, tidy drifts.' },
       {
@@ -120,6 +130,7 @@ export const PROTOS: Proto[] = [
     question: 'Is watching it go up satisfying?',
     what: 'Press Pour 10 logs (top left) four times and watch the helper hut by the first work site go up.',
     since: '2026-11-01',
+    spawn: { x: 11, z: 12.5, yaw: -0.36 }, // looking at the Helper ring and the hut's plot
   },
   {
     id: 'look',

@@ -1,0 +1,120 @@
+/* The in-game prototype bar (?proto=...): top centre, glass, foldable to one line. Thumb-sized buttons for the iPad. */
+.proto-bar {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  color: var(--on-glass);
+  font: 600 13px/1.3 var(--font-body);
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.proto-bar button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.proto-bar .pb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.proto-bar .pb-fold::before {
+  content: '▾';
+  display: inline-block;
+  width: 16px;
+  font-size: 16px;
+  opacity: 0.8;
+}
+.proto-bar.folded .pb-fold::before {
+  content: '▸';
+}
+.proto-bar .pb-title {
+  flex: 1;
+  font: 15px var(--font-display);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proto-bar:not(.folded) .pb-chip {
+  display: none;
+}
+.proto-bar .pb-chip:not(:empty) {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 12px;
+}
+.proto-bar .pb-q {
+  margin: 0;
+  font-weight: 500;
+  opacity: 0.92;
+}
+.proto-bar .pb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.proto-bar .pb-btn {
+  flex: 1;
+  min-height: 36px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.1);
+}
+.proto-bar .pb-btn[aria-pressed='true'] {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+.proto-bar .pb-yes[aria-pressed='true'] {
+  background: #7ed67a;
+  border-color: #7ed67a;
+}
+.proto-bar .pb-no[aria-pressed='true'] {
+  background: #ff9b85;
+  border-color: #ff9b85;
+}
+.proto-bar .pb-note {
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font: 500 16px var(--font-body); /* 16px: iPad Safari zooms into smaller inputs */
+}
+.proto-bar .pb-counts {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+.proto-bar .pb-counts:empty {
+  display: none;
+}
+.proto-bar.folded {
+  width: auto;
+  max-width: calc(100vw - 32px);
+  padding: 2px 12px;
+}
+.proto-bar.folded > :not(.pb-head) {
+  display: none;
+}

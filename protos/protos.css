@@ -271,3 +271,38 @@ textarea:focus,
   font-size: 13px;
   min-height: 140px;
 }
+/* What the in-game prototype bar recorded: the verdict, its line, and the behaviour counters. */
+.played {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--sunk);
+  font-size: 14px;
+}
+.played[hidden] {
+  display: none;
+}
+.played .verdict {
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: var(--line);
+}
+.played .verdict.yes {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.played .verdict.no {
+  background: var(--badge);
+  color: var(--card);
+}
+.played .verdict small {
+  font-weight: 500;
+}
+.played .did {
+  color: var(--mute);
+}
