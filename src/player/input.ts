@@ -1,15 +1,17 @@
 import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
-import { canvas } from '../render/scene.js';
-import { me, cam } from './player.js';
-import { respawnBall, releaseBall } from '../physics/ball.js';
+import { canvas as view } from '../render/scene.js';
+import { me, cam } from './player.ts';
+import { respawnBall, releaseBall } from '../physics/ball.ts';
 import { sendPresence } from '../netplay/net.ts';
-import { dom } from './hud.js';
-import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.js';
-import { cycle } from './inventory.js';
-import { registerAction, describeControl, isTyping, triggerAction } from './controls.js';
+import { dom } from './hud.ts';
+import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
+import { cycle } from './inventory.ts';
+import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
 
-export const input = { keys: new Set(), stickX: 0, stickY: 0, sprint: false };
+const canvas = view as HTMLCanvasElement; // #view, always there
+
+export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };
 const pressJump = () => {
   me.jumpQueued = 0.15;
@@ -29,8 +31,8 @@ export function requestLock() {
     lockRefused();
   }
 }
-// Lets go of every held key, button, stick (a modal takes the input: src/player/modal.js).
-let releaseInputFn = null;
+// Lets go of every held key, button, stick (a modal takes the input: src/player/modal.ts).
+let releaseInputFn: (() => void) | null = null;
 export const releaseInput = () => releaseInputFn?.();
 // Wired from main.js after every module has loaded (hud.js and input.js import each other).
 export function initInput() {
@@ -42,7 +44,7 @@ export function initInput() {
   document.addEventListener('pointerlockerror', lockRefused);
 
   // Held keys (move, sprint) are tracked here; one-press keys bind through their
-  // action (registerAction's key) or onKey (src/player/controls.js). Both skip key presses aimed at a text field.
+  // action (registerAction's key) or onKey (src/player/controls.ts). Both skip key presses aimed at a text field.
   addEventListener('keydown', (e) => {
     if (!me.entered || isTyping(e)) return;
     input.keys.add(e.code);
@@ -62,7 +64,7 @@ export function initInput() {
     if (e.code === 'Space') me.jumpHeld = false;
     if (e.code === 'KeyE' && me.entered) interactUp();
   });
-  let drag = null;
+  let drag: { x: number; y: number; moved: boolean } | null = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('mousedown', (e) => {
     if (!me.entered) return;
@@ -109,10 +111,10 @@ export function initInput() {
   document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 
   const { touchEl, stickEl, knobEl, jumpBtn, grabBtn } = dom;
-  const stick = { id: null, ox: 0, oy: 0 };
-  const look = { id: null, x: 0, y: 0 };
+  const stick = { id: null as number | null, ox: 0, oy: 0 };
+  const look = { id: null as number | null, x: 0, y: 0 };
   touchEl.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.tbtn')) return;
+    if ((e.target as Element | null)?.closest('.tbtn')) return;
     if (e.clientX < innerWidth * 0.45 && stick.id === null) {
       stick.id = e.pointerId;
       stick.ox = e.clientX;
@@ -153,11 +155,12 @@ export function initInput() {
     stickEl.style.display = 'none';
   }
   // pointerup is not guaranteed (system gestures, backgrounding), so any of these ends the touch.
-  function endTouch(e) {
+  function endTouch(e: PointerEvent) {
     if (e.pointerId === stick.id) releaseStick();
     if (e.pointerId === look.id) look.id = null;
   }
-  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) touchEl.addEventListener(ev, endTouch);
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const)
+    touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     pressJump();
@@ -176,7 +179,7 @@ export function initInput() {
     me.suppressUp = false;
   });
 
-  // Gamepad layout for the built-in controls (src/player/controls.js; features register their own).
+  // Gamepad layout for the built-in controls (src/player/controls.ts; features register their own).
   const ZOOMS = [4, 6.5, 10];
   const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
   describeControl('move', {
@@ -238,7 +241,7 @@ export function initInput() {
   // The hotbar row (src/features/hotbar.js) covers both.
   registerAction('slot-prev', { pad: 'lb', label: 'Previous slot', guide: false, down: () => cycle(-1) });
   registerAction('slot-next', { pad: 'rb', label: 'Next slot', guide: false, down: () => cycle(1) });
-  // Click once to sprint, like most console games: it stays on until the stick is let go (src/player/player.js).
+  // Click once to sprint, like most console games: it stays on until the stick is let go (src/player/player.ts).
   registerAction('sprint', {
     pad: 'l3',
     label: 'Sprint',

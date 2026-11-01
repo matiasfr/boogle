@@ -385,7 +385,7 @@ glance".
   types, actions, hooks, routes, parse errors). `--json` prints the facts to stdout. Add
   `"atlas": "node dev/atlas/cli.mjs"` to `package.json` scripts. Every mode exits 0 unless the CLI itself crashes.
   Verify: `npm run atlas` prints the summary; `.look/atlas/facts.json` contains `mush.plant` under
-  `src/world/rules/mushrooms.js` and frames for `src/physics/ball.js` at world −300 and −280.
+  `src/world/rules/mushrooms.js` and frames for `src/physics/ball.ts` at world −300 and −280.
 
 - [x] **4. Pure atlas core, narrative content, citation report.**
   - Create `atlas/layout.js`, `atlas/model.js`, `atlas/narrative.js`, `atlas/check.js` and `atlas/changes.js` as

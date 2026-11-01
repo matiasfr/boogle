@@ -32,7 +32,7 @@ Run `npm run check:full`. Notes:
   the state, never a per-peer one.
 - Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
   `GIFTS` in `src/sim/gift-catalog.ts` (ground items store its index: reorder only with a `WORLD_NS` bump; it also needs The Boogler's `taste` and `line`), and what using it does is a case
-  in `useDown` in `src/player/hands.js`.
+  in `useDown` in `src/player/hands.ts`.
 
 ## Contract
 

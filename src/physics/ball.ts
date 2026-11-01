@@ -13,19 +13,34 @@ import {
 import { clamp, lerp, finiteArr, r2, r3 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene } from '../render/scene.js';
-import { ballMat, teleport } from './physics.js';
+import { ballMat, teleport } from './physics.ts';
 import { createBody, addBody, setMotion } from './engine.ts';
-import { me, handPosition, carryPosition } from '../player/player.js';
+import { me, handPosition, carryPosition } from '../player/player.ts';
 import { cancelCharge } from '../player/throw.ts';
-import { net, remotes, sendPresence, addPresenceField, onRemotePresence, keepPresenceWhile } from '../netplay/net.ts';
+import {
+  net,
+  remotes,
+  sendPresence,
+  addPresenceField,
+  onRemotePresence,
+  keepPresenceWhile,
+  type Remote,
+} from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
 import { onFrame } from '../loop.ts';
+
+/** The ball as its owner publishes it (presence `b`). */
+export type BallWire = { e: number; p: number[]; v: number[]; q: number[]; h: number };
+type BallSample = { p: number[]; v: number[]; q: number[]; h: number };
+/** A remote player as this module sees them: their last ball claim and its snapshots. */
+type BallRemote = Remote & { ball?: BallWire | null; ballSnaps?: ReturnType<typeof createSnaps<BallSample>> };
+type Owner = { peer: string; e: number; remote: BallRemote | null };
 
 function beachBallTexture() {
   const c = document.createElement('canvas');
   c.width = 512;
   c.height = 256;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   ['#ff4f4f', '#ffffff', '#2f8cff', '#ffffff', '#ffcf33', '#ffffff'].forEach((col, k) => {
     g.fillStyle = col;
     g.fillRect((k * 512) / 6, 0, 512 / 6 + 1, 256);
@@ -55,7 +70,7 @@ export const ball = {
   myE: 0, // epoch of this tab's current claim
   mine: false, // this tab simulates the ball and publishes it
   held: false,
-  owner: null, // { peer, e, remote } of whoever currently simulates the ball
+  owner: null as Owner | null, // whoever currently simulates the ball
   orphanSince: 0,
   disp: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
 };
@@ -65,7 +80,7 @@ addBody(ball.body);
 ball.disp.p.set(BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + BALL_R + 0.4, BALL_SPAWN.z);
 
 // sim: dynamic and collides. ghost: kinematic, positioned by hand or by the network, no collision response.
-export const setBallMode = (mode) => setMotion(ball.body, mode === 'sim' ? 'dynamic' : 'kinematic');
+export const setBallMode = (mode: 'sim' | 'ghost') => setMotion(ball.body, mode === 'sim' ? 'dynamic' : 'kinematic');
 setBallMode('ghost');
 teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
 ball.mesh.position.copy(ball.disp.p);
@@ -78,7 +93,7 @@ export function remoteHoldsBall() {
   return !ball.mine && !!ball.owner?.remote && ball.held;
 }
 
-export function claimBall(held) {
+export function claimBall(held: boolean) {
   ball.myE = ball.e + 1;
   ball.e = ball.myE;
   ball.mine = true;
@@ -120,7 +135,7 @@ export function grabBall() {
 }
 
 // Throws the held ball from p with velocity vel (src/player/throw.ts launch('ball', charge) gives both).
-export function throwBall(p, vel) {
+export function throwBall(p: { x: number; y: number; z: number }, vel: { x: number; y: number; z: number }) {
   if (!ball.mine || !me.holding) return;
   me.holding = false;
   ball.held = false;
@@ -134,7 +149,7 @@ export function throwBall(p, vel) {
 
 // Puts the ball down at a saved spot (src/features/ball-rest.ts). A live ball elsewhere, or one in someone's hands,
 // wins: then nothing moves and this returns false.
-export function placeBall(x, y, z) {
+export function placeBall(x: number, y: number, z: number) {
   if (ball.owner?.remote || ball.held) return false;
   ball.disp.p.set(x, y, z);
   ball.disp.v.set(0, 0, 0);
@@ -174,9 +189,10 @@ addPresenceField('b', () => {
     h: ball.held ? 1 : 0,
   };
 });
-onRemotePresence((r, pr, time) => {
-  const b = pr.b;
-  r.ballSnaps ??= createSnaps();
+onRemotePresence((rr, pr, time) => {
+  const r = rr as BallRemote;
+  const b = pr.b as BallWire | undefined;
+  r.ballSnaps ??= createSnaps<BallSample>();
   if (b && Number.isFinite(b.e) && finiteArr(b.p, 3) && finiteArr(b.v, 3) && finiteArr(b.q, 4)) {
     r.ball = b;
     r.ballSnaps.push(time, { p: b.p, v: b.v, q: b.q, h: b.h });
@@ -190,9 +206,9 @@ onRemotePresence((r, pr, time) => {
 keepPresenceWhile(() => ball.mine);
 
 // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner.
-export function resolveBallOwner(now) {
-  let best = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
-  for (const r of remotes.values()) {
+export function resolveBallOwner(now: number) {
+  let best: Owner | null = ball.mine ? { peer: net.myPeer ?? '', e: ball.myE, remote: null } : null;
+  for (const r of remotes.values() as Iterable<BallRemote>) {
     const b = r.ball;
     if (!b) continue;
     if (!best || b.e > best.e || (b.e === best.e && r.peer > best.peer)) best = { peer: r.peer, e: b.e, remote: r };
@@ -200,7 +216,7 @@ export function resolveBallOwner(now) {
   }
   if (ball.mine && best?.remote) releaseBall();
   ball.owner = best;
-  if (best?.remote) ball.held = !!best.remote.ball.h;
+  if (best?.remote) ball.held = !!best.remote.ball?.h;
   if (best) {
     ball.orphanSince = 0;
     return;

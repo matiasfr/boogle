@@ -7,7 +7,7 @@
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
 const FACE = (x, z) => `
-  const { cam } = await import('/src/player/player.js');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z)); cam.pitch = -0.25;`;
 const text = (sel) => `(document.querySelector('${sel}')?.textContent ?? '')`;
@@ -24,8 +24,8 @@ const beside = (check) => `(async () => {
 // onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check) => `(async () => {
   const { boogler, ACT } = await import('/src/boogler/boogler.js');
-  const { ball } = await import('/src/physics/ball.js');
-  const { teleport } = await import('/src/physics/physics.js');
+  const { ball } = await import('/src/physics/ball.ts');
+  const { teleport } = await import('/src/physics/physics.ts');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
   const dropping = Math.hypot(p.x - c.x, p.z - c.z) < 1 && p.y > c.y + 0.3;
   if (boogler.me.act !== ACT.RIDE && !dropping) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
@@ -187,9 +187,9 @@ export default {
       const G = await import('/src/adapters/gifts.js');
       const { rules } = await import('/src/world/game-world.ts');
       const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.js');
-      const { teleport } = await import('/src/physics/physics.js');
+      const { teleport } = await import('/src/physics/physics.ts');
       const { camera } = await import('/src/render/scene.js');
-      const { cam } = await import('/src/player/player.js');
+      const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.ts');
       const b = window.boogle.me.body, can = giftIndex('can');
@@ -263,7 +263,7 @@ export default {
 
     // Before the pointer is captured, the hint is a mouse glyph and a verb.
     const look = await g.eval(`
-      const { inputState } = await import('/src/player/input.js');
+      const { inputState } = await import('/src/player/input.ts');
       const was = { ...inputState };
       Object.assign(inputState, { locked: false, lockFailed: false });
       await new Promise((r) => setTimeout(r, 400));

@@ -7,7 +7,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import './identity.css';
 import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { sanitizeName } from '../math.ts';
 import { addPresenceField } from '../netplay/net.ts';
 import { setPid, submitEdit, worldStatus } from '../world/sync.ts';

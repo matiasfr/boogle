@@ -7,7 +7,7 @@
 // hang from the real ceiling even if the network changes. Colliders are in the CAVE group: only bodies underground
 // touch them.
 import * as THREE from 'three/webgpu';
-import { groundMat, GROUP } from '../../physics/physics.js';
+import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { addLightSource } from '../../render/lights.js';

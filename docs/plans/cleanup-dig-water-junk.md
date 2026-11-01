@@ -11,7 +11,7 @@ core loop and principle examples were rewritten to match.
 sea currents on players and the ball, wash-ups and their Boogler small talk, the `clump` particle pool. **What stayed:**
 the sea (shader and `SEA` level), swimming, buoyancy, the ball floating, splashes, critters, the cave pond, palm fruit,
 the frisbee, seeds, the can, mushrooms and tossing. Readers of the water surface go through `surfaceAt` in
-`src/physics/water-field.js`.
+`src/physics/water-field.ts`.
 
 **Key decisions.**
 - **Stubs keep the state keys.** `terrain` and `water` stay in `RULES` (`src/world/rules/index.ts` was not edited, so

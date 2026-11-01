@@ -8,16 +8,16 @@
 import { FIXED } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
 import { booglerHearts, booglerPuff } from './fx.js';
 import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
 import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.js';
-import { modalOpen } from '../player/modal.js';
+import { modalOpen } from '../player/modal.ts';
 import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
-import { heldId, useOne } from '../player/inventory.js';
+import { heldId, useOne } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { guest } from '../guest/state.js';
 
@@ -211,7 +211,7 @@ function giftList() {
 }
 
 function converse(start) {
-  if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/player/modal.js)
+  if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/player/modal.ts)
   if (!talkApi) {
     loadTalk().then(() => converse(start));
     return true;
@@ -277,7 +277,7 @@ export function booglerTalk() {
   return converse('menu');
 }
 
-// His interactable (see registerInteractable in src/player/hands.js; src/features/boogler.js registers it). Range is to his
+// His interactable (see registerInteractable in src/player/hands.ts; src/features/boogler.js registers it). Range is to his
 // middle; `r` makes the pick measure to his edge, so a ball at his feet does not win over him. Not while you ride him:
 // on his back he is always nearest, and would hide the ball and everything else behind a Talk that only says "Get off
 // me first!". The prompt shows in his name tag. While you talk it is Leave, so the touch main button walks away too

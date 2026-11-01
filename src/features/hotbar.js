@@ -1,4 +1,4 @@
-// The hotbar (src/player/inventory.js) on screen and in hand: five slots along the bottom (on touch at the top, or down the
+// The hotbar (src/player/inventory.ts) on screen and in hand: five slots along the bottom (on touch at the top, or down the
 // right edge in portrait), keys 1-5 (pad LB/RB, or tap a slot) to change what you hold, and whatever you hold drawn in
 // your hand. Everyone sees what everyone holds through the presence field `hd` (a catalog index, -1 for empty hands;
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
@@ -8,16 +8,16 @@
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
-import { me, ITEM_HAND } from '../player/player.js';
+import { me, ITEM_HAND } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
-import { inv, SLOTS, heldId, select } from '../player/inventory.js';
-import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.js';
+import { inv, SLOTS, heldId, select } from '../player/inventory.ts';
+import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.ts';
 import { pouring } from '../adapters/mushroom-garden.js';
-import { itemModel } from '../player/item-models.js';
+import { itemModel } from '../player/item-models.ts';
 import { warmUp } from '../render/precompile.js';
-import { setIcon, warmIcons } from '../player/item-icons.js';
-import { glyph, inputKind } from '../player/glyphs.js';
-import { describeControl, onKey } from '../player/controls.js';
+import { setIcon, warmIcons } from '../player/item-icons.ts';
+import { glyph, inputKind } from '../player/glyphs.ts';
+import { describeControl, onKey } from '../player/controls.ts';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
 
 // ---------------------------------------------------------------- in hand

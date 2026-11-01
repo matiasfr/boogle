@@ -1,6 +1,6 @@
 // Mushroom garden in the game: the seed stall, planting and watering, mushroom meshes and their bouncy colliders.
 // Shared state lives in src/world/rules/mushrooms.ts and changes only through world/sync edits. Seeds and the watering can are
-// hotbar items (src/player/inventory.js); src/player/hands.js calls plantFront and pour when you use them.
+// hotbar items (src/player/inventory.ts); src/player/hands.ts calls plantFront and pour when you use them.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -8,15 +8,15 @@ import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '..
 import { heights, groundHeight, cellX, cellZ } from './terrain.js';
 import { scene } from '../render/scene.js';
 import { obstacles } from '../render/props.js';
-import { groundMat, GROUP } from '../physics/physics.js';
+import { groundMat, GROUP } from '../physics/physics.ts';
 import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
-import { me } from '../player/player.js';
+import { me } from '../player/player.ts';
 import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
-import { waterField } from '../physics/water-field.js';
-import { dropPoint } from '../physics/flight.js';
+import { waterField } from '../physics/water-field.ts';
+import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.js';
-import { itemModel } from '../player/item-models.js';
-import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.js';
+import { itemModel } from '../player/item-models.ts';
+import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/inventory.ts';
 import { GROW_TICKS } from '../sim/mushrooms.ts';
 
 const SEEDS_PER_VISIT = 5;
@@ -322,7 +322,7 @@ export function createStall() {
 }
 
 // ---------------------------------------------------------------- actions
-// What interacting at the stall could do (see interactTarget in src/player/hands.js): for each pickup in reach
+// What interacting at the stall could do (see interactTarget in src/player/hands.ts): for each pickup in reach
 // { id, verb, at, run }, or { id, verb, at, blocked } when there is no room. The can is left out while you hold one, and
 // the seeds while your stack is full; the other pickup stays on offer.
 export function stallTargets() {

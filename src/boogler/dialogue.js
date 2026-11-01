@@ -3,13 +3,13 @@
 // playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.js). It
 // takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
 import { isTouch, reducedMotion } from '../constants.ts';
-import { setPadGrab } from '../player/controls.js';
-import { modalOpen } from '../player/modal.js';
+import { setPadGrab } from '../player/controls.ts';
+import { modalOpen } from '../player/modal.ts';
 import { heartsText } from './friendship.js';
 import { boogler } from './boogler.js';
 import { GIFTS } from '../sim/gift-catalog.ts';
-import { setIcon } from '../player/item-icons.js';
-import { glyph } from '../player/glyphs.js';
+import { setIcon } from '../player/item-icons.ts';
+import { glyph } from '../player/glyphs.ts';
 
 const CHARS_PER_S = 48;
 const REACT_MS = 1500;

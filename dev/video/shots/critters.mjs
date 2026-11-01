@@ -5,8 +5,8 @@ import { STAND } from './_stand.mjs';
 const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
 const RUN = (x, z, on) => `
-  const { input } = await import('/src/player/input.js');
-  const { cam } = await import('/src/player/player.js');
+  const { input } = await import('/src/player/input.ts');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z));
   for (const k of ['KeyW', 'ShiftLeft']) ${on} ? input.keys.add(k) : input.keys.delete(k);`;
@@ -41,7 +41,7 @@ const SEEDED = `(() => { let a = 20261029; Math.random = () => { a = (a + 0x6d2b
 // Fish in deep water vanish into the blue: move the school to clear water 0.7-1.5 m deep near its home.
 const SHALLOWS = `
   const { groundHeight } = await import('/src/adapters/terrain.js');
-  const { waterField } = await import('/src/physics/water-field.js');
+  const { waterField } = await import('/src/physics/water-field.ts');
   const { P, home } = window.__fish;
   const depth = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
   for (let r = 0; r < 40; r += 1.5)
@@ -101,8 +101,8 @@ export default {
           if (k <= 40) [cx, cy, cz] = await g.eval(SCHOOL); // follow the school until the drop, then hold still
           if (k === 40)
             await g.eval(`
-              const { ball, claimBall, setBallMode } = await import('/src/physics/ball.js');
-              const { teleport } = await import('/src/physics/physics.js');
+              const { ball, claimBall, setBallMode } = await import('/src/physics/ball.ts');
+              const { teleport } = await import('/src/physics/physics.ts');
               if (!ball.mine) claimBall(false);
               setBallMode('sim');
               teleport(ball.body, ${cx}, 3, ${cz});

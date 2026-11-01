@@ -1,7 +1,7 @@
 // Mushroom seed stall, watering can and bouncy mushrooms (src/adapters/mushroom-garden.js). The stall is built in main.js.
 import { onFrame } from '../loop.ts';
 import { updateGarden, stallTargets } from '../adapters/mushroom-garden.js';
-import { registerInteractable } from '../player/hands.js';
+import { registerInteractable } from '../player/hands.ts';
 
 registerInteractable(stallTargets); // Take seeds or the can
 

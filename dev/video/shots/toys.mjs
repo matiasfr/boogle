@@ -1,14 +1,14 @@
 // The hotbar and the one interact button (89ce0dd, b22fa8b): walk up to a can, its Pick up prompt, into the hand and
 // the hotbar, thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
-const INV = `const I = await import('/src/player/inventory.js'); const H = await import('/src/player/hands.js');`;
+const INV = `const I = await import('/src/player/inventory.ts'); const H = await import('/src/player/hands.ts');`;
 const TP = (x, z, y) => `
-  const { teleport } = await import('/src/physics/physics.js');
+  const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
   b.velocity.set(0, 0, 0);`;
 const AIM = (yaw, pitch) =>
-  `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
+  `const { cam } = await import('/src/player/player.ts'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // A can tossed onto the beach west of the court (the same cell the scenarios use).
 const TOSS = `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] })`;
 const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;

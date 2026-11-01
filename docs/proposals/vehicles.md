@@ -9,7 +9,7 @@
    - a clamped roll rate;
    - an automatic flip-back after about 1.5 s upside down.
    Crashes stay funny but never stall the fun (principle 10).
-2. **Simple input, no new buttons** ("good controls are key"). Pad slots are close to full on `main`; check `freeSlots()` in `src/player/controls.js`.
+2. **Simple input, no new buttons** ("good controls are key"). Pad slots are close to full on `main`; check `freeSlots()` in `src/player/controls.ts`.
    - **Board and leave** with the existing interact button and its glyph prompt. Every interaction already goes through that one button.
    - **While seated,** a context layer re-points existing actions: the left stick steers, the jump button brakes or drifts, and throw does a hop or the Puff Boost. Use `wrapAction`, the way `src/features/feel.js` turns pile into a dive while swimming.
    - Describe the seated rows with `describeControl(..., { context: 'driving' })` so the pause view's controls page shows them.
@@ -99,7 +99,7 @@ A box with two wheels (cylinders on hinge constraints are fine; there is no susp
 
 ## Sync for every vehicle
 
-- **Owner kind**, with the same epoch rule as the ball (`src/physics/ball.js`). The driver or main pusher owns it and publishes its pose with `addPresenceField`; everyone else smooths it with `createSnaps` (`src/netplay/snaps.ts`). Physics is never Lockstep.
+- **Owner kind**, with the same epoch rule as the ball (`src/physics/ball.ts`). The driver or main pusher owns it and publishes its pose with `addPresenceField`; everyone else smooths it with `createSnaps` (`src/netplay/snaps.ts`). Physics is never Lockstep.
 - **Host kind, for seated multi-rider rafts.** The ambitious-mechanics report suggests a host-owned raft with paddle inputs, published with `addHostField`, like its king-tide crate. That avoids ownership hand-offs while three friends paddle. It costs a little input latency for non-host paddlers; slapstick hides that.
 - **Riders** are attached to the vehicle in their own pose stream, so remote players see them seated, not falling.
 - **The ball touching a vehicle** is the hard case, and it is Rocket League's whole problem. The simplest rule: the vehicle's owner takes ownership of the ball on contact. The epoch rule already handles a touch by a player. If it feels bad for the non-owner, look at Rocket League's GDC talk first.

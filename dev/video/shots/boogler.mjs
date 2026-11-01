@@ -81,7 +81,7 @@ export default {
     await g.wait(1);
     // Walk off mid-story (adc2396): the game keeps playing while you talk, and stepping away ends it with his farewell.
     await g.eval(STAND(2, a0));
-    await g.eval(`const { cam } = await import('/src/player/player.js');
+    await g.eval(`const { cam } = await import('/src/player/player.ts');
       cam.yaw = Math.atan2(Math.cos(${a0}), Math.sin(${a0})); cam.pitch = -0.2;`); // facing him: S walks away
     out.push(
       await g.record('boogler-walkoff', {

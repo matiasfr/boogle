@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, vec4, pow, uv } from 'three/tsl';
 import { scene, camera } from '../../render/scene.js';
-import { groundMat, GROUP } from '../../physics/physics.js';
+import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.ts';

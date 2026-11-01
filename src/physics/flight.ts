@@ -9,10 +9,10 @@
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
 import { GRAVITY, BALL_DAMPING } from '../constants.ts';
-import { GROUP } from './physics.js';
-import { raycastClosest, rayHit } from './engine.ts';
+import { GROUP } from './physics.ts';
+import { raycastClosest, rayHit, type V3 } from './engine.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { waterField } from './water-field.js';
+import { waterField } from './water-field.ts';
 
 export const STEP = 1 / 60;
 const MAX_STEPS = 8 * 60;
@@ -29,7 +29,7 @@ const BOUNCE = { plain: 0.3, glide: 0.12 }; // share of the speed into a surface
 const SLIDE = { plain: 0.55, glide: 0.8 }; // share of the speed along a surface kept on a bounce
 const REST_SPEED = 2;
 
-export function stepFlight(p, v, glide, dt = STEP) {
+export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, dt = STEP) {
   v.y -= GRAVITY * dt;
   const sp = Math.hypot(v.x, v.y, v.z);
   if (glide) {
@@ -49,7 +49,7 @@ export function stepFlight(p, v, glide, dt = STEP) {
 
 // The beach ball flies on its own physics body; this is the same arc for the aim preview (gravity, then the body's
 // linear damping, which the physics engine applies as v / (1 + dt * damping)).
-export function stepBall(p, v, dt = STEP) {
+export function stepBall(p: THREE.Vector3, v: THREE.Vector3, dt = STEP) {
   v.y -= GRAVITY * dt;
   v.multiplyScalar(1 / (1 + dt * BALL_DAMPING));
   p.addScaledVector(v, dt);
@@ -57,19 +57,19 @@ export function stepBall(p, v, dt = STEP) {
 
 const hit = rayHit(),
   RAY = { mask: GROUP.SCENERY, skipBackfaces: true };
-const cast = (a, b) => (raycastClosest(a, b, RAY, hit) ? hit : null);
+const cast = (a: V3, b: V3) => (raycastClosest(a, b, RAY, hit) ? hit : null);
 
-const underwater = (p) => waterField.surfaceAt(p.x, p.z) > p.y + 0.05;
+const underwater = (p: V3) => waterField.surfaceAt(p.x, p.z) > p.y + 0.05;
 const normal = new THREE.Vector3(),
   vBefore = new THREE.Vector3();
 
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
-export function dropPoint(p) {
+export function dropPoint(p: V3) {
   const h = cast(p, { x: p.x, y: groundHeight(p.x, p.z) - 0.5, z: p.z });
   return new THREE.Vector3(p.x, h ? h.hitPointWorld.y : groundHeight(p.x, p.z), p.z);
 }
 
-export function flyPath(p0, v0, glide) {
+export function flyPath(p0: THREE.Vector3, v0: THREE.Vector3, glide: boolean) {
   const p = p0.clone(),
     v = v0.clone(),
     next = new THREE.Vector3();
@@ -102,7 +102,7 @@ export function flyPath(p0, v0, glide) {
   return land(points, p);
 }
 
-function land(points, p) {
+function land(points: THREE.Vector3[], p: THREE.Vector3) {
   const rest = dropPoint(p.clone().setY(p.y + 0.2));
   if (rest.y < p.y - 0.05) points.push(rest.clone());
   return { points, rest, lost: underwater(rest) };

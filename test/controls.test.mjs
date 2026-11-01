@@ -18,7 +18,7 @@ import {
   onKey,
   isTyping,
   GROUPS,
-} from '../src/player/controls.js';
+} from '../src/player/controls.ts';
 
 const quiet = (fn) => {
   const warn = console.warn;
@@ -104,7 +104,7 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
   const owners = new Map(); // slot -> 'file:id'
   let n = 0;
   for (const f of readdirSync(src, { recursive: true })) {
-    if (!f.endsWith('.js')) continue;
+    if (!/\.[jt]s$/.test(f)) continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     // pad: may sit anywhere in the options object, also after a nested { } such as a touch button spec
     for (const [, id, pad] of text.matchAll(
@@ -176,7 +176,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
   const owners = new Map(); // code -> 'file:id'
   let n = 0;
   for (const f of readdirSync(src, { recursive: true })) {
-    if (!f.endsWith('.js') || f === 'player/controls.js') continue;
+    if (!/\.[jt]s$/.test(f) || f === 'player/controls.ts') continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     const found = [
       ...[

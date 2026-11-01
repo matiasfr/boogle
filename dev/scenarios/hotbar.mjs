@@ -6,7 +6,7 @@
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
 const AIM = (yaw, pitch = 0) =>
-  `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
+  `const { cam } = await import('/src/player/player.ts'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // Page-side helpers for the touch checks: shown(sel) (laid out, so hidden ancestors count), rect(sel), the main
 // button's label, and whether it throws. when(cond) wraps them into an expression for waitFor.
 const DOM = `
@@ -69,8 +69,8 @@ export default {
 
     // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
     const ball = await g.eval(`${INV}
-      const { ball } = await import('/src/physics/ball.js');
-      const { teleport } = await import('/src/physics/physics.js');
+      const { ball } = await import('/src/physics/ball.ts');
+      const { teleport } = await import('/src/physics/physics.ts');
       const { boogler } = await import('/src/boogler/boogler.js');
       const { groundHeight } = await import('/src/adapters/terrain.js');
       const p = window.boogle.me.body.position;

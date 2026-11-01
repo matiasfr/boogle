@@ -1,21 +1,21 @@
 // Island gifts in the game: things players threw, and the frisbee on the lighthouse deck. Shared state lives in src/world/rules/gifts.ts and changes only through world/sync edits; what
-// you carry is your hotbar (src/player/inventory.js).
+// you carry is your hotbar (src/player/inventory.ts).
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
 import { scene } from '../render/scene.js';
-import { me, throwFrom } from '../player/player.js';
+import { me, throwFrom } from '../player/player.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';
 import { plantOk } from './mushroom-garden.js'; // the thrower's own landing check for seeds
-import { waterField } from '../physics/water-field.js';
+import { waterField } from '../physics/water-field.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../sim/gifts.ts';
-import { itemModel } from '../player/item-models.js';
-import { STEP, flyPath, dropPoint } from '../physics/flight.js';
-import { inv, take, roomFor } from '../player/inventory.js';
+import { itemModel } from '../player/item-models.ts';
+import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
+import { inv, take, roomFor } from '../player/inventory.ts';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
 import { splash } from '../render/splash.js';
 
@@ -237,7 +237,7 @@ function playerAt() {
   return me.entered && me.body ? me.body.interpolatedPosition : null;
 }
 
-// What interacting could do here (see interactTarget in src/player/hands.js): for each item in reach { id, verb, at, item, run }
+// What interacting could do here (see interactTarget in src/player/hands.ts): for each item in reach { id, verb, at, item, run }
 // to pick it up, or { id, verb, at, item, blocked } when your hotbar has no room for it.
 const reachAt = new THREE.Vector3();
 export function giftTargets() {

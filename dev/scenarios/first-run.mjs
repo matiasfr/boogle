@@ -29,7 +29,7 @@ export default {
       const g = await t.open({ name: s.id, hud: true, touch: s.touch, size: s.size });
       await g.wait(0.8);
       // Holding something brings up the held-item buttons (Toss) on a phone.
-      if (s.touch) await g.eval(`const I = await import('/src/player/inventory.js'); I.take('frisbee');`);
+      if (s.touch) await g.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee');`);
       await g.wait(0.4);
       const lay = await g.eval(LAYOUT);
       const shot = await g.still(s.id);

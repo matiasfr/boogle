@@ -1,4 +1,4 @@
-// The controls guide, generated from the control registry (src/player/controls.js) so it cannot drift from the code.
+// The controls guide, generated from the control registry (src/player/controls.ts) so it cannot drift from the code.
 //
 //   renderGuide(kind, { groups })   an element with one section per group that has rows for `kind`: 'kbm' (rows with
 //                                   keys), 'pad' (rows with a pad binding) or 'touch' (rows with a touch label).
@@ -8,26 +8,32 @@
 // A pad row that only applies in some situation (context) and shares its slot with an earlier row of the same group is
 // left out of the pad guide: it is the same button doing the same thing (Toss is X, like Use).
 import './guide.css';
-import { GROUPS, listControls } from './controls.js';
-import { keyGlyph, padGlyph } from './glyphs.js';
+import { GROUPS, listControls, type ControlRow } from './controls.ts';
 
-const slotsOf = (c) => [c.pad].flat().filter(Boolean);
+export type GuideKind = 'kbm' | 'pad' | 'touch';
+import { keyGlyph, padGlyph } from './glyphs.ts';
+
+const slotsOf = (c: ControlRow) => [c.pad].flat().filter((p): p is string => !!p);
 const has = {
-  kbm: (c) => Array.isArray(c.keys) && c.keys.length > 0,
-  pad: (c) => slotsOf(c).length > 0,
-  touch: (c) => !!c.touch,
+  kbm: (c: ControlRow) => Array.isArray(c.keys) && c.keys.length > 0,
+  pad: (c: ControlRow) => slotsOf(c).length > 0,
+  touch: (c: ControlRow) => !!c.touch,
 };
 const SEP = '<span class="guide-or">/</span>';
 
-function glyphCell(kind, c) {
-  if (kind === 'kbm') return c.keys.map(keyGlyph).join(SEP);
-  if (kind === 'pad') return slotsOf(c).map(padGlyph).join(SEP);
-  return `<span class="g-touch">${c.touch.replace(/[&<]/g, '')}</span>`;
+function glyphCell(kind: GuideKind, c: ControlRow) {
+  if (kind === 'kbm') return c.keys!.map((k) => keyGlyph(k)).join(SEP);
+  if (kind === 'pad')
+    return slotsOf(c)
+      .map((p) => padGlyph(p))
+      .join(SEP);
+  return `<span class="g-touch">${c.touch!.replace(/[&<]/g, '')}</span>`;
 }
 
-const detailFor = (c, kind) => (typeof c.detail === 'object' && c.detail ? c.detail[kind] : c.detail) ?? '';
+const detailFor = (c: ControlRow, kind: GuideKind) =>
+  (typeof c.detail === 'object' && c.detail ? c.detail[kind] : c.detail) ?? '';
 
-function rowFor(kind, c) {
+function rowFor(kind: GuideKind, c: ControlRow) {
   const row = document.createElement('div');
   row.className = 'guide-row';
   row.dataset.id = c.id;
@@ -52,7 +58,7 @@ function rowFor(kind, c) {
   return row;
 }
 
-export function renderGuide(kind, { groups } = {}) {
+export function renderGuide(kind: GuideKind, { groups }: { groups?: string[] } = {}) {
   const root = document.createElement('div');
   root.className = `guide guide-${kind}`;
   const list = listControls().filter((c) => has[kind](c));

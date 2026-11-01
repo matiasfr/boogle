@@ -18,7 +18,7 @@ test('each held thing picks its flight', () => {
   assert.equal(PROFILES.item.power0, PROFILES.ball.power0, 'the ball and items throw alike');
 });
 
-// The formula this module replaced (throwVelocity and aimDirection in src/player/player.js), for a unit aim `d`.
+// The formula this module replaced (throwVelocity and aimDirection in src/player/player.ts), for a unit aim `d`.
 function oldVelocity(c: number, d: { x: number; y: number; z: number }, body: { x: number; z: number }, flat: boolean) {
   const y = d.y + (flat ? 0.03 : 0.12);
   const len = Math.sqrt(d.x * d.x + y * y + d.z * d.z);

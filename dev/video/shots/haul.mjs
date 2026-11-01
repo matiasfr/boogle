@@ -7,7 +7,7 @@ const R = `const { rules } = await import('/src/world/game-world.ts');
   const { identity } = await import('/src/player/identity.ts');`;
 // Put the player on the ground at (x, z), still, facing yaw.
 const TP = (x, z, yaw) => `
-  const { teleport } = await import('/src/physics/physics.js');
+  const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
@@ -32,7 +32,7 @@ const FILL = (n) => `${R}
     if (rules.sources.charges(id)) { window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id }); k++; }
   return k;`;
 const COUNT = `${R} return rules.stacks.count(identity.pid);`;
-const ACT = `const a = (await import('/src/player/controls.js')).actionById('interact'); a.down(); a.up();`;
+const ACT = `const a = (await import('/src/player/controls.ts')).actionById('interact'); a.down(); a.up();`;
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 
 export default {
@@ -84,7 +84,7 @@ export default {
       cz = 14;
     await g.eval(TP(cx, cz, Math.PI / 2));
     // W walks along the camera's heading: point it at -x
-    await g.eval(`const { cam } = await import('/src/player/player.js'); cam.yaw = Math.PI / 2; cam.pitch = -0.2;`);
+    await g.eval(`const { cam } = await import('/src/player/player.ts'); cam.yaw = Math.PI / 2; cam.pitch = -0.2;`);
     out.push(
       await g.record('haul-carry', {
         seconds: 7,

@@ -8,7 +8,7 @@
 //     onFile  (file) for each dropped or picked file; filesDialogSays shows why it was refused, filesDialogAccepts
 //             that everything is there
 import './files-dialog.css';
-import { openModal, closeModal } from '../player/modal.js';
+import { openModal, closeModal } from '../player/modal.ts';
 import { directLink, fetchLinkedFile } from './link.js';
 
 let dlg = null,

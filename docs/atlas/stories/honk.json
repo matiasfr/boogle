@@ -13,7 +13,7 @@
           "action": "honk"
         },
         {
-          "file": "src/player/controls.js"
+          "file": "src/player/controls.ts"
         }
       ]
     },

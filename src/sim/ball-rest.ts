@@ -1,5 +1,5 @@
 // Where the beach ball last came to rest, saved with the room's world so the next visitor finds it there. The ball's
-// physics is Owner state (src/physics/ball.js); only this resting spot crosses into the world, as an edit, the way a
+// physics is Owner state (src/physics/ball.ts); only this resting spot crosses into the world, as an edit, the way a
 // thrown item reports its landing. Integer centimetres, one accepted rest per REST_GAP ticks. Pure and deterministic
 // (lockstep): no tick work, so it costs nothing until the ball settles.
 import { FNV_SEED, fold } from './hash.ts';

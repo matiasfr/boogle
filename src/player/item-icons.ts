@@ -1,4 +1,4 @@
-// Item icons for the HUD: each item's own model (src/player/item-models.js), rendered once to a small image and cached.
+// Item icons for the HUD: each item's own model (src/player/item-models.ts), rendered once to a small image and cached.
 // The scene renders linear HDR into a render target; a full-screen pass then applies the game's tone mapping and sRGB
 // (the same renderOutput the main view ends with) into an 8-bit target, which is read back. A CanvasTarget can't do
 // this: the WebGPU canvas is opaque.
@@ -9,11 +9,11 @@
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv, vec4 } from 'three/tsl';
 import { renderer } from '../render/scene.js';
-import { ball } from '../physics/ball.js';
-import { itemModel } from './item-models.js';
+import { ball } from '../physics/ball.ts';
+import { itemModel } from './item-models.ts';
 
 const ICON = 96;
-const icons = new Map();
+const icons = new Map<string, Promise<string | null>>();
 const iconScene = new THREE.Scene();
 iconScene.add(new THREE.HemisphereLight('#ffffff', '#8a7a66', 2.2));
 const keyLight = new THREE.DirectionalLight('#ffffff', 2.2);
@@ -22,19 +22,20 @@ iconScene.add(keyLight);
 const iconCam = new THREE.PerspectiveCamera(28, 1, 0.01, 50);
 
 // Built on first use: the scene target (linear HDR, MSAA), the 8-bit output target, and the tone-mapping quad.
-let hdr = null,
-  out = null,
-  quad = null,
-  topDown = null;
-const bytes = (size) => new THREE.RenderTarget(size, size, { type: THREE.UnsignedByteType, depthBuffer: false });
+let hdr: THREE.RenderTarget | null = null,
+  out: THREE.RenderTarget | null = null,
+  quad: THREE.QuadMesh | null = null,
+  topDown: boolean | null = null;
+const bytes = (size: number) =>
+  new THREE.RenderTarget(size, size, { type: THREE.UnsignedByteType, depthBuffer: false });
 function setup() {
-  hdr = new THREE.RenderTarget(ICON, ICON, { type: THREE.HalfFloatType, samples: 4 });
+  const h = (hdr = new THREE.RenderTarget(ICON, ICON, { type: THREE.HalfFloatType, samples: 4 }));
   out = bytes(ICON);
   const mat = new THREE.NodeMaterial();
   mat.blending = THREE.NoBlending;
   mat.depthTest = mat.depthWrite = false;
   // renderOutput un-premultiplies, tone maps (renderer.toneMapping), encodes sRGB and premultiplies again.
-  mat.fragmentNode = renderOutput(texture(hdr.texture, uv()), renderer.toneMapping, renderer.outputColorSpace);
+  mat.fragmentNode = renderOutput(texture(h.texture, uv()), renderer.toneMapping, renderer.outputColorSpace);
   quad = new THREE.QuadMesh(mat);
 }
 
@@ -49,7 +50,7 @@ async function readRows() {
     renderer.setRenderTarget(probe);
     new THREE.QuadMesh(m).render(renderer);
     renderer.setRenderTarget(before);
-    const px = await renderer.readRenderTargetPixelsAsync(probe, 0, 0, 4, 4);
+    const px = (await renderer.readRenderTargetPixelsAsync(probe, 0, 0, 4, 4)) as Uint8Array;
     topDown = px[0] > 127;
     probe.dispose();
     m.dispose();
@@ -58,11 +59,11 @@ async function readRows() {
 }
 
 // Renders run one at a time (they share the render targets and read back asynchronously).
-let queue = Promise.resolve();
+let queue: Promise<unknown> = Promise.resolve();
 
 // The icon for `id`: a promise of its data URL (null if the render failed). icons caches each id's promise; a failed
 // render is dropped so the next call tries again.
-function iconUrl(id) {
+function iconUrl(id: string) {
   if (!icons.has(id))
     icons.set(
       id,
@@ -72,22 +73,22 @@ function iconUrl(id) {
           console.warn('[icons]', id, e);
           icons.delete(id);
           return null;
-        })),
+        })) as Promise<string | null>,
     );
-  return icons.get(id);
+  return icons.get(id)!;
 }
 
 // Fills `img` with the icon for `id` once its render finishes (unless the image has been given another id by then).
-export function setIcon(img, id) {
+export function setIcon(img: HTMLImageElement, id: string) {
   img.dataset.icon = id;
   iconUrl(id).then((url) => {
     if (img.dataset.icon === id && url) img.src = url;
   });
 }
 
-export const warmIcons = (ids) => Promise.all(ids.map(iconUrl));
+export const warmIcons = (ids: string[]) => Promise.all(ids.map(iconUrl));
 
-async function draw(id) {
+async function draw(id: string) {
   if (!hdr) setup();
   const model = id === 'ball' ? new THREE.Mesh(ball.mesh.geometry, ball.mesh.material) : itemModel(id);
   model.updateMatrixWorld(true);
@@ -105,18 +106,18 @@ async function draw(id) {
     renderer.clear();
     renderer.render(iconScene, iconCam);
     renderer.setRenderTarget(out);
-    quad.render(renderer);
+    quad!.render(renderer);
   } finally {
     renderer.setRenderTarget(prev.target);
     renderer.setClearColor(prev.color, prevAlpha);
     iconScene.remove(model);
   }
   const flip = !(await readRows());
-  const px = await renderer.readRenderTargetPixelsAsync(out, 0, 0, ICON, ICON);
+  const px = (await renderer.readRenderTargetPixelsAsync(out!, 0, 0, ICON, ICON)) as Uint8Array;
   // Bytes are sRGB and premultiplied; a canvas wants straight alpha.
   const c = document.createElement('canvas');
   c.width = c.height = ICON;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   const img = g.createImageData(ICON, ICON);
   const stride = ICON * 4;
   for (let y = 0; y < ICON; y++) {

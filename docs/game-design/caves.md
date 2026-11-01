@@ -11,7 +11,7 @@
   60 % from 14 m in). Cave rock casts shadows so the sun no longer lights the tunnels.
 - **Sync kind.** Local and cosmetic, apart from collisions, which only affect bodies this client simulates.
 - **Files.** [src/pois/caves/](../../src/pois/caves/) (`network.js`, `mesh.js`, `decor.js`, `index.js`, `site.js`),
-  [src/physics/physics.js](../../src/physics/physics.js) (`GROUP`, `groundProbe`).
+  [src/physics/physics.ts](../../src/physics/physics.ts) (`GROUP`, `groundProbe`).
 - **Known issues.** The phone playtest asked for an audit of the caves' look and the walk in and out; the owner keeps
   the caves but wants that audit before more is added ([tech-plan.md](../tech-plan.md), "Decided").
 

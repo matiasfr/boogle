@@ -1,7 +1,7 @@
 # Data-driven action registry: controls guide, button prompts and touch buttons from one place
 
-Context for the report writer: Boogle already has a small registry in `src/player/controls.js`:
-`registerAction(id, { pad, label, down, up, held })`, one action per standard-mapping pad slot, clashes logged, `listActions()` / `freeSlots()`. `src/features/gamepad.js` builds its help card from `listActions()` (`[PAD_LABEL[a.pad], a.label]`), and `src/features/updates.js` copies `PAD_LABEL[pad]` into its own button text. Keyboard keys and touch buttons are bound elsewhere (`src/player/input.js`), not in the registry. The findings below are about growing that registry, not replacing it.
+Context for the report writer: Boogle already has a small registry in `src/player/controls.ts`:
+`registerAction(id, { pad, label, down, up, held })`, one action per standard-mapping pad slot, clashes logged, `listActions()` / `freeSlots()`. `src/features/gamepad.js` builds its help card from `listActions()` (`[PAD_LABEL[a.pad], a.label]`), and `src/features/updates.js` copies `PAD_LABEL[pad]` into its own button text. Keyboard keys and touch buttons are bound elsewhere (`src/player/input.ts`), not in the registry. The findings below are about growing that registry, not replacing it.
 
 ## 1. How engines and input middleware model actions, bindings, display strings, contexts and "last used device"
 
@@ -118,7 +118,7 @@ Engines model context as named sets of actions that are switched or stacked: Uni
 - Unity: one active action map per `PlayerInput`, switched with `SwitchCurrentActionMap("name")`. — [Unity manual, PlayerInput](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.14/manual/PlayerInput.html)
 - Unreal: mapping contexts are "a certain context that the player can be in", added/removed at runtime with priority; the highest-priority context wins when two map the same action. — [Unreal docs, Enhanced Input](https://dev.epicgames.com/documentation/en-us/unreal-engine/enhanced-input-in-unreal-engine)
 - Steam: action sets ("Menu", "Walk", "Drive") plus stackable layers; activating a set every frame from a state loop is explicitly fine; origins (and so glyphs) are queried per action set. — [Steamworks ISteamInput](https://partner.steamgames.com/doc/api/ISteamInput)
-- Boogle already has a modal concept: `setPadModal(fn)` hands every pad press to a talk box instead of actions. — `src/player/controls.js` (local code)
+- Boogle already has a modal concept: `setPadModal(fn)` hands every pad press to a talk box instead of actions. — `src/player/controls.ts` (local code)
 
 ### Inferences
 - Suggested shape: `context: 'play' | 'swim' | 'build' | 'menu' | ...` (or an array) on each action, `setContexts(['play', 'swim'])` driven by game state, an implicit `always` context (pause, help). The guide groups visible actions by `category`, and the bottom-of-screen prompt bar shows only the actions valid right now. Steam's "set + layers" is a good mental model: base set (on foot / menu) plus layers (swimming, holding an item).
@@ -137,7 +137,7 @@ The engines' metadata fields (Unreal `Name`/`DisplayName`/`DisplayCategory`/`Met
 - Unreal mappable key metadata: unique `Name` used to save the mapping, localized `DisplayName`, `DisplayCategory` for grouping, `Metadata` for icons etc. — [Unreal API, UPlayerMappableKeySettings](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/EnhancedInput/UPlayerMappableKeySettings)
 - Godot exposes the registry for enumeration: `get_actions()`, `has_action()`, `action_get_events()`. — [Godot docs, InputMap](https://docs.godotengine.org/en/stable/classes/class_inputmap.html)
 - KAPLAY's `getButton(name)` returns the binding object per device, so UI can be generated from it. — [KAPLAY input guide](https://kaplayjs.com/docs/guides/input/)
-- Boogle today: `registerAction` refuses an unknown slot or a taken slot with a `console.warn` naming free slots; `gamepad.js` generates its help card from `listActions()`. Actions are registered from `src/player/input.js`, `honk.js`, `ping.js`, `updates.js`, `gamepad.js`. — local code (`src/player/controls.js`, `src/features/gamepad.js`)
+- Boogle today: `registerAction` refuses an unknown slot or a taken slot with a `console.warn` naming free slots; `gamepad.js` generates its help card from `listActions()`. Actions are registered from `src/player/input.ts`, `honk.js`, `ping.js`, `updates.js`, `gamepad.js`. — local code (`src/player/controls.ts`, `src/features/gamepad.js`)
 
 ### Inferences
 - Rebind-ready data shape (bindings stored as data keyed by device kind, never closed over by UI), extending today's call rather than replacing it:

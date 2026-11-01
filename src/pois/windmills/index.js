@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { groundHeight } from '../../adapters/terrain.js';
 import { scene } from '../../render/scene.js';
-import { groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.js';
+import { groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.ts';
 import { createBody, addBody, onPreStep, BODY } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.js';
 import { onStart, onFrame } from '../../loop.ts';

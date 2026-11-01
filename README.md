@@ -48,7 +48,7 @@ Our server hosts every room: each tab opens one WebSocket to it, and it runs the
 
 ## Controls
 
-WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/player/controls.js`, so a new control describes itself there.
+WASD move · Space jump · Mouse look · Click use what you hold (hold to charge a throw) · E interact. H, Esc or the menu button: menu and all controls; Menu on a gamepad. Touch devices get a stick and buttons. It is generated from the control registry in `src/player/controls.ts`, so a new control describes itself there.
 
 ## Deploying
 

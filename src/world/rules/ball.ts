@@ -1,5 +1,5 @@
 // Ball rules: the ball.rest op and the `ball` state, the beach ball's last resting spot (../../sim/ball-rest.ts). The
-// ball's physics stays Owner state (src/physics/ball.js); when it settles, its owner submits ball.rest and apply only
+// ball's physics stays Owner state (src/physics/ball.ts); when it settles, its owner submits ball.rest and apply only
 // records the spot. Putting the ball back there on load is the adapter's job (src/features/ball-rest.ts), not apply's.
 // Lockstep: everything here runs the same on every peer (see ./README.md).
 import {

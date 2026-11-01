@@ -11,7 +11,10 @@ import {
 } from './engine.ts';
 import { clamp } from '../math.ts';
 import { groundHeight, heights } from '../adapters/terrain.js';
-import { waterField } from './water-field.js';
+import { waterField } from './water-field.ts';
+import type { Body } from './engine.ts';
+import type { Remote } from '../netplay/net.ts';
+import type * as THREE from 'three';
 
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
@@ -30,14 +33,17 @@ export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies mov
 // Height of the ground below a point. The terrain, unless a feature with ground under the terrain (the caves) says
 // the point is underground. `netted(x, z)`: false where a feature owns what is below the terrain (the caves have their
 // own safety net), so the fall-through net in installStepHooks leaves bodies there alone.
-export const groundProbe = { under: (x, y, z) => groundHeight(x, z), netted: () => true };
+export const groundProbe = {
+  under: (x: number, _y: number, z: number) => groundHeight(x, z),
+  netted: (_x: number, _z: number) => true, // eslint-disable-line @typescript-eslint/no-unused-vars -- the caves replace it
+};
 
 // The physics engine has no continuous collision: a sphere that moves more than its radius in one step can end up with its
 // centre under the heightfield, and the contact then pushes it out the bottom. Falls are capped below that speed
 // (0.33 m a step against a 0.45 m radius), and anything that still gets through is put back on top.
 const MAX_FALL = 20; // m/s
 const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
-function catchFallThrough(body, r) {
+function catchFallThrough(body: Body, r: number) {
   const p = body.position;
   if (!groundProbe.netted(p.x, p.z)) return;
   const g = groundProbe.under(p.x, p.y, p.z);
@@ -55,7 +61,7 @@ addBody(
   }),
 );
 
-export function addStaticSpheres(spheres) {
+export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: number }[]) {
   // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.
   let cx = 0,
     cy = 0,
@@ -76,7 +82,25 @@ export function addStaticSpheres(spheres) {
 }
 
 // Registered from main.js with the game state so this module stays free of import cycles.
-export function installStepHooks({ me, ball, remotes }) {
+/** What the step hooks read and write on this player and the ball (src/player/player.ts, ./ball.ts). */
+type StepPlayer = {
+  body: Body | null;
+  coyote: number;
+  swimming: boolean;
+  sprint: boolean;
+  jumpQueued: number;
+  wish: THREE.Vector3;
+};
+type StepBall = { mine: boolean; held: boolean; body: Body };
+export function installStepHooks({
+  me,
+  ball,
+  remotes,
+}: {
+  me: StepPlayer;
+  ball: StepBall;
+  remotes: Map<string, Remote>;
+}) {
   onPreStep(() => {
     for (const r of remotes.values()) {
       if (!r.body) continue;
@@ -126,7 +150,7 @@ export function installStepHooks({ me, ball, remotes }) {
         b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
       // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
       const lim = HALF - 18;
-      for (const ax of ['x', 'z']) {
+      for (const ax of ['x', 'z'] as const) {
         const p = b.position[ax];
         if (Math.abs(p) > lim) {
           const out = Math.sign(p) * b.velocity[ax];
@@ -155,7 +179,7 @@ export function installStepHooks({ me, ball, remotes }) {
       if (sub > 0) {
         let cx = 0,
           cz = 0,
-          grip;
+          grip: number;
         if (still) {
           // pulled to a stop, more firmly the deeper the water
           grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);

@@ -9,8 +9,8 @@
   a catalog index or −1). Items cross into the world only through `gift.take` and `gift.toss`.
 - **On touch.** Only filled slots show; in portrait they make a column on the right. Toss appears only when the main
   button would do something other than throw.
-- **Files.** [src/player/inventory.js](../../src/player/inventory.js), [src/player/hands.js](../../src/player/hands.js), [src/features/hotbar.js](../../src/features/hotbar.js),
-  [src/player/item-models.js](../../src/player/item-models.js), [src/player/item-icons.js](../../src/player/item-icons.js), [src/features/prompt.js](../../src/features/prompt.js),
+- **Files.** [src/player/inventory.ts](../../src/player/inventory.ts), [src/player/hands.ts](../../src/player/hands.ts), [src/features/hotbar.js](../../src/features/hotbar.js),
+  [src/player/item-models.ts](../../src/player/item-models.ts), [src/player/item-icons.ts](../../src/player/item-icons.ts), [src/features/prompt.js](../../src/features/prompt.js),
   [src/sim/interact-pick.ts](../../src/sim/interact-pick.ts).
 - **The interact pick.** Every provider (ball, gifts and palms, stall, Boogler) lists targets in reach each frame;
   something that would act beats something blocked, then the nearest wins with a nudge toward where you look.

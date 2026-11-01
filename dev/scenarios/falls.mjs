@@ -2,9 +2,9 @@
 // fall speed), balls from 80 m at 40 m/s (no cap, the net catches them), and a player pushed under the ground is put
 // back on top. Points are spread over all the land, so new ground is covered as the island grows.
 const DROPS = `
-  const { groundProbe } = await import('/src/physics/physics.js');
+  const { groundProbe } = await import('/src/physics/physics.ts');
   const { stepFixed } = await import('/src/physics/engine.ts');
-  const { ball, claimBall } = await import('/src/physics/ball.js');
+  const { ball, claimBall } = await import('/src/physics/ball.ts');
   const { groundHeight } = await import('/src/adapters/terrain.js');
   const { HALF, SEA } = await import('/src/constants.ts');
   const { me } = window.boogle;

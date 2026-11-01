@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
-import { playerMat, NOT_SCENERY } from '../physics/physics.js';
+import { playerMat, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, BODY } from '../physics/engine.ts';
 import { warmUp } from '../render/precompile.js';
 
@@ -11,8 +11,12 @@ const eyeMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.3
 const pupilMat = new THREE.MeshStandardMaterial({ color: '#13243f', roughness: 0.3 });
 const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
 
+/** What animateAvatar keeps on an avatar (group.userData). */
+export type AvatarData = { inner: THREE.Group; mat: THREE.MeshStandardMaterial; phase: number };
+export type Avatar = THREE.Group & { userData: AvatarData };
+
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.
-export function makeAvatar(colorIdx) {
+export function makeAvatar(colorIdx: number): Avatar {
   const group = new THREE.Group();
   const inner = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: COLORS[colorIdx], roughness: 0.55 });
@@ -28,11 +32,11 @@ export function makeAvatar(colorIdx) {
     inner.add(eye, pupil);
   }
   group.add(inner);
-  group.userData = { inner, mat, phase: 0 };
-  return group;
+  group.userData = { inner, mat, phase: 0 } satisfies AvatarData;
+  return group as Avatar;
 }
 
-export function animateAvatar(avatar, speed, airborne, dt) {
+export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, dt: number) {
   const u = avatar.userData;
   const moving = clamp(speed / 5, 0, 1.6);
   u.phase += dt * (4 + speed * 1.6);
@@ -42,17 +46,17 @@ export function animateAvatar(avatar, speed, airborne, dt) {
   u.inner.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
 }
 
-export function makeLabel(text) {
+export function makeLabel(text: string) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 64;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.font = '700 30px Figtree, system-ui, sans-serif';
   const w = Math.min(248, g.measureText(text).width + 30);
   g.fillStyle = 'rgba(12, 28, 52, 0.62)';
   g.beginPath();
   if (g.roundRect) g.roundRect((256 - w) / 2, 10, w, 44, 22);
-  else g.rect((256 - w) / 2, 10, w, 44);
+  else (g as CanvasRenderingContext2D).rect((256 - w) / 2, 10, w, 44);
   g.fill();
   g.fillStyle = '#ffffff';
   g.textAlign = 'center';
@@ -67,7 +71,7 @@ export function makeLabel(text) {
   return sprite;
 }
 
-export function makePlayerBody(kinematic) {
+export function makePlayerBody(kinematic: boolean) {
   return createBody({
     mass: kinematic ? 0 : PLAYER_MASS,
     type: kinematic ? BODY.KINEMATIC : BODY.DYNAMIC,

@@ -3,22 +3,20 @@ import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion 
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { scene, camera, sun, sky } from '../render/scene.js';
-import { teleport } from '../physics/physics.js';
-import { addBody } from '../physics/engine.ts';
-import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.js';
+import { teleport } from '../physics/physics.ts';
+import { addBody, type Body } from '../physics/engine.ts';
+import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';
 import { sendPresence } from '../netplay/net.ts';
-import { dom, renderPeople } from './hud.js';
-import { input } from './input.js';
+import { dom, renderPeople } from './hud.ts';
+import { input } from './input.ts';
 import { onFrame } from '../loop.ts';
 
 export const me = {
   entered: false,
   name: '',
   colorIdx: 0,
-  /** @type {import('../physics/engine.ts').Body | null} */
-  body: null,
-  /** @type {import('three').Group | null} */
-  avatar: null,
+  body: null as Body | null,
+  avatar: null as Avatar | null,
   yaw: 0,
   coyote: 0,
   jumpQueued: 0,
@@ -43,7 +41,7 @@ function playerPos() {
   return me.body ? me.body.interpolatedPosition : { x: SPAWN.x, y: 2, z: SPAWN.z };
 }
 // A point beside the player in their own frame (x right, y up, z back; the avatar faces -z), in world space.
-function fromBody(out, x, y, z) {
+function fromBody(out: THREE.Vector3, x: number, y: number, z: number) {
   const p = playerPos();
   const s = Math.sin(me.yaw),
     c = Math.cos(me.yaw);
@@ -85,7 +83,7 @@ export function enterIsland() {
   renderPeople();
 }
 
-export function updateIntent(dt) {
+export function updateIntent(dt: number) {
   const k = input.keys;
   if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests
   me.sprint = input.sprint || k.has('ShiftLeft') || k.has('ShiftRight');
@@ -110,12 +108,12 @@ export function updateIntent(dt) {
 
 // Features that need the third-person camera somewhere special (the caves keep it inside the tunnel) push
 // fn(look, pos) -> true when they placed `pos` themselves; then the usual "stay above the ground" rule is skipped.
-export const camConstraints = [];
+export const camConstraints: ((look: THREE.Vector3, pos: THREE.Vector3) => boolean)[] = [];
 
 const camPos = new THREE.Vector3(),
   camLook = new THREE.Vector3(),
   fwd = new THREE.Vector3();
-function updateCamera(elapsed) {
+function updateCamera(elapsed: number) {
   if (!me.entered || !me.body) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
     camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);

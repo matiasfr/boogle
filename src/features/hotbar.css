@@ -186,7 +186,7 @@ body.touch .hotbar-key {
     padding-top: 8px;
   }
 }
-/* Toss throws what you hold when the main button would not (src/player/hud.js sets main-throws) */
+/* Toss throws what you hold when the main button would not (src/player/hud.ts sets main-throws) */
 .tbtn.toss {
   display: none;
   right: calc(108px + env(safe-area-inset-right, 0px));

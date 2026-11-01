@@ -9,8 +9,8 @@ import { onFrame, onStart } from '../loop.ts';
 import { trees } from '../render/props.js';
 import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
-import { registerInteractable } from '../player/hands.js';
-import { me } from '../player/player.js';
+import { registerInteractable, type Interactable } from '../player/hands.ts';
+import { me } from '../player/player.ts';
 import { net } from '../netplay/net.ts';
 import { cellX, cellZ, groundHeight } from '../adapters/terrain.js';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
@@ -53,7 +53,7 @@ registerInteractable(() => {
   if (!me.body) return [];
   const pos = me.body.interpolatedPosition;
   const now = performance.now();
-  const out: object[] = [];
+  const out: Interactable[] = [];
   rules.sources.list().forEach((p: Cell, id: number) => {
     if (rules.sources.charges(id) <= 0 || now - (pending.get(id) ?? -1e9) < 1500) return;
     spot(p, bundleAt);

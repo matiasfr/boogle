@@ -36,14 +36,14 @@ import {
 import { patchNode } from '../../render/material-patch.js';
 import { scene, camera } from '../../render/scene.js';
 import { precompile } from '../../render/precompile.js';
-import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.js';
+import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.ts';
 import { createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.ts';
 import { atmosphere } from '../../render/sky.js';
-import { camConstraints, me } from '../../player/player.js';
-import { ball } from '../../physics/ball.js';
-import { waterField } from '../../physics/water-field.js';
+import { camConstraints, me } from '../../player/player.ts';
+import { ball } from '../../physics/ball.ts';
+import { waterField } from '../../physics/water-field.ts';
 import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.js';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.js';
 import { buildDecor, mouthFrame } from './decor.js';
