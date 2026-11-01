@@ -18,7 +18,7 @@
     "load": "WS_LOAD=1 node dev/peer-test/ws-run.ts",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p .",
-    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run assets -- --check && npm run build",
     "test:unit": "node --test --test-timeout=5000 'test/**/*.test.mjs' 'test/**/*.test.ts'",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "check:gpu": "node dev/scenarios/run.mjs smoke",
@@ -38,7 +38,8 @@
     "clip": "node dev/video/clip.mjs",
     "reel": "node dev/video/reel.mjs",
     "video:changes": "node dev/video/changes.mjs",
-    "video:publish": "node dev/video/publish.mjs"
+    "video:publish": "node dev/video/publish.mjs",
+    "assets": "node dev/assets/build.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
@@ -52,6 +53,9 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/d3-interpolate": "^3.0.4",
     "@types/d3-sankey": "^0.12.5",
@@ -64,6 +68,7 @@
     "esbuild": "0.28.2",
     "eslint": "10.13.0",
     "globals": "17.13.0",
+    "meshoptimizer": "1.1.1",
     "playwright": "1.64.1",
     "prettier": "3.9.10",
     "typescript": "^5.9.3",
