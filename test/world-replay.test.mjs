@@ -70,7 +70,8 @@ async function replay(seed) {
   const master = stream(seed);
   const ops = peers[0].s.registry().ops;
   // Opening day closes the route for good, so its ops play on their own near the end rather than in the random mix.
-  const mixed = ops.filter((op) => !op.startsWith('open.'));
+  // The push run's ops (a push lands only on a push run that is laying) play in their own leg too.
+  const mixed = ops.filter((op) => !op.startsWith('open.') && op !== 'site.push' && op !== 'tune.fill');
   for (const op of ops)
     assert.ok(generators[op], `op ${op} has no edit generator (export const edits in its rules module)`);
   for (const op of Object.keys(generators)) assert.ok(ops.includes(op), `generator for unregistered op ${op}`);
@@ -100,6 +101,22 @@ async function replay(seed) {
   );
   peers.push(makePeer(seed, net, 'late', false));
   await play(30);
+  // The push run (?proto=lay), scripted by the host so the seeded stream stays as it was: reset the haul, pick the push
+  // script, fill the ring, start the machine, and once it lays (warm is 20 ticks, two frames each) push twice.
+  const h0 = live(peers).find((x) => x.p.host);
+  for (const e of [
+    { op: 'tune.reset' },
+    { op: 'tune.set', key: 'run', v: 2 },
+    { op: 'tune.fill' },
+    { op: 'site.run', s: 0 },
+    { op: 'site.push', s: 0, wait: 44 },
+    { op: 'site.push', s: 0 },
+  ]) {
+    const { wait, ...edit } = e;
+    if (wait) await run(net, peers, wait);
+    assert.ok(h0.s.submitEdit({ i: 0, j: 0, ...edit }), `push leg: ${e.op} refused`);
+    await run(net, peers, 10);
+  }
   // Opening day needs the whole route laid: the playtest shortcut, then a start (later ones are rejected).
   await play(4, 'open.lay');
   await play(4, 'open.start');

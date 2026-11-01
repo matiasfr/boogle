@@ -1,6 +1,7 @@
 // Playtest tuning rules: the `tune` state (../../sim/tune.ts), the tune.set op that changes one of the haul loop's
-// lockstep numbers for the whole room at once, and tune.reset, which puts the haul (stacks, piles, sites, bundles) back
-// to fresh. Both only in `proto-` rooms: the host knows the room id (env.protoRoom), the rules don't. The earlier haul
+// lockstep numbers for the whole room at once (including which machine run plays), tune.fill (fills the open Track
+// ring), and tune.reset, which puts the haul (stacks, piles, sites, bundles) back
+// to fresh. All only in `proto-` rooms: the host knows the room id (env.protoRoom), the rules don't. The earlier haul
 // rules (stacks, sites, sources) read the tuned numbers through `rules.tune`, filled once every module is installed.
 // Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
@@ -45,6 +46,7 @@ export function install(
       const x = sites.list[sites.open];
       return !x || ROUTE[sites.open].age !== 0 || (x.t0 < 0 && v >= x.stock[TRACK]);
     }
+    if (key === 'run') return !(sites.list[sites.open]?.t0 >= 0); // never mid-run: the script decides when it ends
     if (key === 'helper0')
       return sites.list.every((x, s) => {
         if (ROUTE[s].age !== 0) return true;
@@ -59,6 +61,15 @@ export function install(
       if (!ok(e.key, e.v)) return null; // the world moved on between stamp and apply
       setTune(tune, e.key, e.v);
       return { key: e.key, v: e.v };
+    },
+  });
+  // The solo tester's shortcut (?proto=lay): fill the open site's Track ring at once, as freight (no plaque credit), so
+  // the machine can start now.
+  sync.registerOp('tune.fill', {
+    validate: (e, ctx) => allowed(ctx) && rules.sites.room(sites.open, TRACK) > 0,
+    apply: () => {
+      const n = rules.sites.addFreight(rules.sites.room(sites.open, TRACK));
+      return n ? { s: sites.open, n } : null;
     },
   });
   // Back to a fresh haul: nobody carries anything, no piles, no work done at any site, every bundle full. The tuning,
@@ -93,6 +104,8 @@ export const edits = {
     const v = r.chance(0.5) ? t.def + r.int(-t.def + t.min, t.def) : r.int(t.min, t.max);
     return { op: 'tune.set', i: 0, j: 0, key: t.key, v: Math.min(t.max, Math.max(t.min, v)) };
   },
+  'tune.fill': (r: Stream) =>
+    r.chance(JUNK) ? bad(r, 'tune.fill') : r.chance(0.3) ? { op: 'tune.fill', i: 0, j: 0 } : null,
   'tune.reset': (r: Stream) =>
     r.chance(JUNK) ? bad(r, 'tune.reset') : r.chance(0.5) ? { op: 'tune.reset', i: 0, j: 0 } : null,
 };

@@ -1,7 +1,7 @@
 // Scripted runs (src/sim/scripted-run.ts): phases in order, integer progress, done at t0 + length, nothing before t0.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runAt, lengthOf, MACHINE_RUN } from '../src/sim/scripted-run.ts';
+import { runAt, lengthOf, MACHINE_RUN, RUNS, RUN_KINDS, QUICK_RUN } from '../src/sim/scripted-run.ts';
 
 const S = [
   { name: 'a', len: 10 },
@@ -26,4 +26,17 @@ test('phases play in order with integer progress, and the run is done at t0 + le
 test('the machine run is integer ticks', () => {
   assert.ok(MACHINE_RUN.every((p) => Number.isInteger(p.len) && p.len > 0));
   assert.equal(lengthOf(MACHINE_RUN), 500);
+});
+
+test("every run variant is warm, lay, whistle in integer ticks; crawl is today's run", () => {
+  assert.equal(RUNS.length, RUN_KINDS.length);
+  assert.equal(RUNS[0], MACHINE_RUN);
+  for (const r of RUNS) {
+    assert.deepEqual(
+      r.map((p) => p.name),
+      ['warm', 'lay', 'whistle'],
+    );
+    assert.ok(r.every((p) => Number.isInteger(p.len) && p.len > 0));
+  }
+  assert.ok(lengthOf(QUICK_RUN) >= 120 && lengthOf(QUICK_RUN) <= 150, 'quick: 12-15 s');
 });

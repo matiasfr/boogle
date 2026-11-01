@@ -30,3 +30,22 @@ export const MACHINE_RUN: readonly Phase[] = [
   { name: 'lay', len: 450 },
   { name: 'whistle', len: 20 },
 ];
+// Laying-run variants (docs/game-design/haul.md, "Machine runs"), chosen per room by the `run` tune key (./tune.ts) so
+// every peer and the server play the same script. APPEND ONLY: a variant's index is the tuned value.
+//   crawl  today's run (MACHINE_RUN)
+//   quick  the same three phases in 14 s
+//   push   its lay phase only advances while players push (./sites.ts stallRun / pushRun): ~25 s for one pusher
+export const QUICK_RUN: readonly Phase[] = [
+  { name: 'warm', len: 15 },
+  { name: 'lay', len: 110 },
+  { name: 'whistle', len: 15 },
+];
+export const PUSH_RUN: readonly Phase[] = [
+  { name: 'warm', len: 20 },
+  { name: 'lay', len: 250 },
+  { name: 'whistle', len: 20 },
+];
+export const RUNS = [MACHINE_RUN, QUICK_RUN, PUSH_RUN] as const;
+export const RUN_KINDS = ['crawl', 'quick', 'push'] as const;
+export const PUSH_RUN_KIND = 2;
+export const PUSH_TICKS = 5; // lay ticks one push (site.push) buys: a pusher sends one every 5 ticks, so solo runs at 1x

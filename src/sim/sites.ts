@@ -4,7 +4,7 @@
 // player so integer rounding never loses credit. Pure and deterministic (lockstep); the rules (src/world/rules/sites.ts)
 // check that a pour comes from the pourer's own stack.
 import { ROUTE, AGES, TRACK, HELPER, costOf } from './route.ts';
-import { runAt, MACHINE_RUN, type RunState } from './scripted-run.ts';
+import { runAt, lengthOf, MACHINE_RUN, PUSH_TICKS, type Phase, type RunState } from './scripted-run.ts';
 import { FNV_SEED, fold, foldAll } from './hash.ts';
 
 // A ring's cost (route.ts costOf by default; a playtest room passes its tuned one, ./tune.ts). Plaque credit always uses
@@ -116,14 +116,45 @@ export function startRun(st: Sites, s: number, idx: number, tick: number): void 
   st.list[s].t0 = tick;
   st.list[s].starter = idx;
 }
-export const runOf = (st: Sites, s: number, tick: number): RunState => runAt(MACHINE_RUN, st.list[s]?.t0 ?? -1, tick);
+// script: the room's run (MACHINE_RUN unless a playtest room tunes another, ./tune.ts `run`).
+export const runOf = (st: Sites, s: number, tick: number, script: readonly Phase[] = MACHINE_RUN): RunState =>
+  runAt(script, st.list[s]?.t0 ?? -1, tick);
+
+// The push variant (./scripted-run.ts PUSH_RUN): while the open site's run is laying, its clock stands still unless
+// pushed. stallRun (every tick, after ops) moves t0 on by one once the lay phase has begun, so tick - t0 stays put;
+// pushRun (site.push) moves t0 back by PUSH_TICKS, as far as the end of the lay phase, never below 0 (t0 < 0 means no
+// run). Scripts are warm, lay, whistle. Integer only.
+export function stallRun(st: Sites, tick: number, script: readonly Phase[]): boolean {
+  const site = st.list[st.open];
+  if (!site || site.t0 < 0 || runOf(st, st.open, tick, script).name !== 'lay') return false;
+  if (tick - site.t0 <= script[0].len) return false; // the first lay tick stays: the run waits laying, not warming
+  site.t0++;
+  return true;
+}
+export const canPush = (st: Sites, s: unknown, tick: number, script: readonly Phase[]): boolean =>
+  siteOpen(st, s) && st.list[s].t0 >= 0 && runOf(st, s, tick, script).name === 'lay';
+export function pushRun(st: Sites, s: number, tick: number, script: readonly Phase[]): number {
+  if (!canPush(st, s, tick, script)) return 0;
+  const site = st.list[s];
+  const layEnd = lengthOf(script) - script[script.length - 1].len; // warm + lay
+  const n = Math.min(PUSH_TICKS, layEnd - (tick - site.t0), site.t0);
+  if (n <= 0) return 0;
+  st.rev++;
+  site.t0 -= n;
+  return n;
+}
 
 // Ends the open site's run once its script is done: the section is laid, the starter gets RUN_BONUS, the next site
 // opens. Returns the laid section's index, or -1.
-export function finishRun(st: Sites, tick: number, cost: CostFn = costOf): number {
+export function finishRun(
+  st: Sites,
+  tick: number,
+  cost: CostFn = costOf,
+  script: readonly Phase[] = MACHINE_RUN,
+): number {
   const s = st.open;
   const site = st.list[s];
-  if (!site || site.t0 < 0 || !runOf(st, s, tick).done) return -1;
+  if (!site || site.t0 < 0 || !runOf(st, s, tick, script).done) return -1;
   const n = cost(s, TRACK);
   st.rev++;
   site.stock[TRACK] -= n;
