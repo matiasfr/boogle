@@ -47,8 +47,9 @@ Code: [src/sim/sources.ts](../../src/sim/sources.ts), [src/world/rules/sources.t
 ## Work sites, plaques and tiers
 
 The railway is preset ([src/sim/route.ts](../../src/sim/route.ts)). The 0.1 testbed has three wood sections from the
-court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a sign with the section's plaque
-and two rings on the ground, Track (left, gold) and Helper hut (right, green). Only the open site (the first section
+court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a sign with the section's
+plaque (beside the Helper ring, off the line) and two rings on the ground, Track (left, gold) and Helper hut (right,
+green). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
 section). Sleepers pile up in the Track ring as it fills; a full Helper ring builds the hut (one per site) and closes.
@@ -149,9 +150,15 @@ reaches (no teleport). It stops 6 s at each site, cruises at 3 m/s, and shuttles
 stays at the lighthouse end). Every car is a kinematic platform (src/physics/platforms.ts): stand on a flatbed, or
 jump onto the boiler, and you're carried; jump off and you keep its speed. It chuffs with speed, rocks and clacks over
 rail joints every 4.5 m, and whistles just before leaving a stop. `&v=lively` (rockier, bouncier, more smoke, a
-camera jolt per joint while riding) against the default `&v=calm`, render and feel only.
+camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
+6.5 m/s, through two room tunables (`wagonCruise` cm per tick, `wagonAccel` ticks to reach it; default 30 and 30, so
+other rooms are unchanged) that the page sets for the whole proto- room on load (calm and lively put the defaults back).
+Jumping off a moving car keeps its speed and slides it away on landing in a dust trail (longer at the fast pace); the
+crates on the rear flatbed are solid.
 
-Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`) and Reset the route (`tune.reset`);
+Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`, which records the tick and the first
+section it laid in the `opening` state, so a late joiner's wagon runs the same timetable) and Reset the route
+(`tune.reset`);
 anywhere, its −/+ (or `&laid=N`) fake the laid count for your tab only, drawing plain rails for faked sections
 (prototype only). Each tab drives its own bodies from the shared tick, so every tab sees the same wagon with no
 messages; a rider on another tab shows at their presence position, a little behind the deck.
