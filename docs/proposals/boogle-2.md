@@ -108,6 +108,9 @@ These are standing preferences from the thread.
 
 - **2026-11-02, no petting The Boogler** (owner: "not in the nature of the Boogler"). The △ pat added in the controller pass is rolled back. Talk hints: ✕ Next while text plays, ✕ Answer only when there are choices, ○ Leave; □ does nothing in a talk.
 
+- **2026-11-02, no contribution-tier labels on the player** (owner: the "Porter" tag under his character "shouldn't be the case"). Tiers stay as data; nothing shows them until rewards are designed.
+- **2026-11-02, first visit and returning visit are different** (owner): the name-and-colour card shows on a player's first visit only; a returning player goes straight in, with their identity kept and editable from the pause view, and a light welcome back that shows what changed. Built for persistent progress and more UI later.
+
 ### Process
 
 - **2026-11-01, start the asset pipeline now** (owner), ahead of the first authored model: glTF with meshopt or Draco geometry and KTX2 (Basis Universal) textures, ready for Blender (and Blender MCP) to feed it, including animated construction (scaffolding, pieces). Code stays the default where code is quicker or better; the split is written in [asset-pipeline.md](../plans/asset-pipeline.md). Was "when the first authored model lands" (architecture-fit, phase 5), see Changed.

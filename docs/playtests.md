@@ -49,3 +49,8 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Broke: the D-pad doesn't move between answers in a Boogler talk.
 - Broke: launched from the Home Screen web app, touch works but the Backbone controller doesn't; an unrendered bar sits along the bottom of the screen.
 - Felt off: the △ pat isn't in The Boogler's nature (roll back); the "✕ Say" hint was unclear.
+
+## 2026-11-02 (iPad, HUD and arrival)
+- Who: Matias, solo.
+- Felt off: a "Porter" tag shows next to his character at the bottom (contribution tier on the haul chip).
+- Felt off: every visit asks for name and colour again; with persistent progress coming, returning players should go straight in.
