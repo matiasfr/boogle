@@ -43,3 +43,9 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Who: Matias, solo.
 - Broke: the watering can icon is upside down.
 - Felt off: Interact is on B; he expects X / Square, and B prompts everywhere confused him. Dialogue with The Boogler needs a controller pass that scales to other NPCs.
+
+## 2026-11-02 (iPad + Backbone controller)
+- Who: Matias, solo, Backbone controller.
+- Broke: the D-pad doesn't move between answers in a Boogler talk.
+- Broke: launched from the Home Screen web app, touch works but the Backbone controller doesn't; an unrendered bar sits along the bottom of the screen.
+- Felt off: the △ pat isn't in The Boogler's nature (roll back); the "✕ Say" hint was unclear.

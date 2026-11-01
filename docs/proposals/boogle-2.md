@@ -106,6 +106,8 @@ These are standing preferences from the thread.
 
 - **2026-11-02, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
 
+- **2026-11-02, no petting The Boogler** (owner: "not in the nature of the Boogler"). The △ pat added in the controller pass is rolled back. Talk hints: ✕ Next while text plays, ✕ Answer only when there are choices, ○ Leave; □ does nothing in a talk.
+
 ### Process
 
 - **2026-11-01, start the asset pipeline now** (owner), ahead of the first authored model: glTF with meshopt or Draco geometry and KTX2 (Basis Universal) textures, ready for Blender (and Blender MCP) to feed it, including animated construction (scaffolding, pieces). Code stays the default where code is quicker or better; the split is written in [asset-pipeline.md](../plans/asset-pipeline.md). Was "when the first authored model lands" (architecture-fit, phase 5), see Changed.
