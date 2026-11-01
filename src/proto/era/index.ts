@@ -1,13 +1,13 @@
 // The greybox era swap (docs/plans/find-the-fun.md step 4; loaded by src/features/era-swap.ts behind ?proto=era).
 // A Local render of the lockstep era (src/world/rules/opening.ts): era-1 blocks (low A-frame huts, a campfire) stand
 // around the court and along the route; once the route is laid, anyone at the platform at its far end can start
-// opening day. A gathering call (./call.ts: signal smoke, a carrying bell, a ring that shows the time left) runs until
+// opening day. A gathering call (./call.ts: signal smoke and a ring that shows the time left) runs until
 // everyone is at the platform or it runs out, then the bell counts down on everyone's screen, then the huts sink and
 // the era-2 blocks (tall stalls with smoking chimneys, a town hall with a clock tower, the water tower, bunting, a
 // marker where the wagon will run) pop up, rippling out from the court, while the sky, fog (./atmosphere.ts) and
 // ambience (./ambience.ts) cross over. One hut and the helper hut stay (heritage), and a before/after postcard of the
 // court comes up (./postcard.ts). Blocks only: the kits are one data table (./blocks.ts) for the art pass to replace.
-// Serves DESIGN.md 7 (Telegraph everything: a call you see and hear from anywhere, a countdown, then a change you read
+// Serves DESIGN.md 7 (Telegraph everything: a call you see from anywhere, a countdown, then a change you read
 // from the court in one glance) and 9 (Leave something for the next visitor: the island stays changed, and keeps some
 // of what came before).
 import './era.css';
@@ -26,7 +26,7 @@ import { BELL_TICKS, bellTick } from '../../sim/era.ts';
 import { COURT } from '../../world/grid.ts';
 import { HUT_BUILD } from '../../proto/build/blueprint.ts';
 import { ERAS, PLATFORM, BELL_POST, WAGON_MARK, type Block, type Bunting } from './blocks.ts';
-import { updateCall, bell } from './call.ts';
+import { updateCall } from './call.ts';
 import { updateAtmosphere } from './atmosphere.ts';
 import { updateAmbience } from './ambience.ts';
 import { snapBefore, snapAfter, forgetPostcard } from './postcard.ts';
@@ -308,7 +308,6 @@ onFrame(
         draw(era2!, () => (era === 2 ? 1 : 0));
         forgetPostcard();
       } else {
-        bell(true);
         hud.innerHTML = `Opening day!<small>Era 2: ${ERAS[2].name}</small>`;
         hud.className = 'era-count era-done';
         hud.hidden = false;
@@ -348,7 +347,7 @@ onFrame(
       snapBefore();
     }
     updateCall(r, sec);
-    // The bell: a big number on everyone's screen and a ring each second.
+    // The bell: a big number on everyone's screen (silent for now: its rings were cut in the sound audit, 2026-11-02).
     if (running && r.name === 'bell') {
       const left = Math.max(1, Math.ceil((bellTick(opening) + BELL_TICKS - sharedSeconds() * 10) / 10));
       if (left !== lastCount) {
@@ -356,7 +355,6 @@ onFrame(
         hud.innerHTML = `<small>Opening day in</small>${left}`;
         hud.className = 'era-count';
         hud.hidden = false;
-        bell(false);
       }
     } else if (!hud.className.includes('era-done') || sec - saidAt > 3) hud.hidden = true;
   },

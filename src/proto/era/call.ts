@@ -1,14 +1,13 @@
 // The gathering call (docs/research/shared-moments-and-events.md, recs 1 to 3, 5 and 9): opening day's first phase,
 // up to CALL_S (src/sim/era.ts), before the 10 s bell. A column of signal smoke over the platform that you can see
-// from anywhere on the island, a slow bell toll that carries (louder the closer you are), and a ring on the ground
-// round the platform whose lit segments burn down with the time left (Destiny's rally flag). It ends early once every
+// from anywhere on the island, and a ring on the ground round the platform whose lit segments burn down with the time
+// left (Destiny's rally flag). It ends early once every
 // online player is inside the ring: any tab that sees that submits `open.here`, and the first one stamps the tick, so
 // alone at the platform it is straight to the bell. It never waits for a head count, and nothing resets or cancels
 // it. Local view of lockstep state; the early end is the only thing it submits.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { getAudio } from '../../render/audio.ts';
 import { submitEdit } from '../../world/sync.ts';
 import { remotes } from '../../netplay/net.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
@@ -20,38 +19,10 @@ import { GATHER } from './blocks.ts';
 
 const END = ROUTE[ROUTE.length - 1].to;
 const SEGMENTS = 40;
-const TOLL_S = 3.2; // seconds between the call's tolls
 const SMOKE_PER_S = 14;
-const HEAR_M = 140; // the toll fades to its floor this far away (the island is about this wide)
 
-// ---------------------------------------------------------------- the bell's sound
-/** One strike of the platform bell. `loud`: the swap's big ring; otherwise a countdown tick, or a toll (`toll`, 0..1
- * for how far it carries to this tab) during the call. */
-export function bell(loud: boolean, toll = -1): void {
-  const a = getAudio();
-  if (!a) return;
-  const { ctx, out } = a;
-  const t = ctx.currentTime + 0.01;
-  const vol = toll >= 0 ? 0.08 + 0.32 * toll : loud ? 0.5 : 0.28;
-  const base = toll >= 0 ? 392 : loud ? 523 : 784; // the call tolls low and slow
-  const long = toll >= 0 ? 2.6 : loud ? 2 : 1;
-  for (const [mul, gain, decay] of [
-    [1, 1, 1.6],
-    [2.76, 0.4, 0.9],
-    [5.4, 0.2, 0.5],
-  ]) {
-    const o = ctx.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = base * mul;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(vol * gain, t + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + decay * long);
-    o.connect(g).connect(out);
-    o.start(t);
-    o.stop(t + decay * long + 0.1);
-  }
-}
+// The bell (the call's tolls, the countdown's rings, the swap's big ring) is silent for now: cut in the sound audit
+// (2026-11-02); a better one comes later.
 
 // ---------------------------------------------------------------- the ring
 const ring = new THREE.InstancedMesh(
@@ -114,7 +85,6 @@ function everyoneHere(): boolean {
 const smokeCol = new THREE.Color(GATHER.smoke);
 let smokeAcc = 0,
   lastSec = 0,
-  nextToll = 0,
   sentAt = -1;
 
 export function updateCall(r: RunState, sec: number): void {
@@ -155,13 +125,6 @@ export function updateCall(r: RunState, sec: number): void {
   if (r.name !== 'call') {
     banner.hidden = true;
     return;
-  }
-  // The call: a toll every few seconds, louder the closer you are.
-  if (sec >= nextToll) {
-    nextToll = sec + TOLL_S;
-    const p = me.body?.position;
-    const d = p ? Math.hypot(p.x - END[0], p.z - END[1]) : HEAR_M;
-    bell(false, Math.max(0, 1 - d / HEAR_M));
   }
   const here = everyoneHere();
   const s = Math.ceil(left * CALL_S); // an upper bound: the call may end sooner
