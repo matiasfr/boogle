@@ -53,6 +53,9 @@ hut (right, green, a double line). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
 section). Sleepers pile up in the Track ring as it fills; a full Helper ring builds the hut (one per site) and closes.
+The rings' signs and the plaque shrink and fade as the camera comes within about 14 m (to about half size and a third
+opacity at 4 m; src/render/near-fade.ts), so standing at a site or riding the machine past one keeps the view clear,
+while signs further off read at full size.
 
 Every pour is credited on that site's plaque: 1 point per 1% of the age's section cost (a log is 1.67 points), with
 the remainder kept per player so rounding never loses anything. The plaque lists the top four by points, names from

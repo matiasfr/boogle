@@ -5,11 +5,14 @@
 // Serves DESIGN.md 4 (cooperation is automatic: everyone's pours land in the same ring) and 6 (communal world,
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
 // With ?proto=uisfx (docs/research/ui-patterns.md, rec 5: shared news in the world first) a credited pour turns the
-// plaque's changed rows over like a departures board, with a little puff and a soft clack you hear near it.
+// plaque's changed rows over like a departures board, with a little puff and a soft clack you hear near it. Signs and
+// plaques shrink and fade as the camera comes within a few metres (src/render/near-fade.ts), so standing at a site or
+// riding the machine past one keeps the view clear.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { scene, camera } from '../render/scene.ts';
+import { fadeNear } from '../render/near-fade.ts';
 import { onApplied, submitEdit, world } from '../world/sync.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
 import { groundHeight } from '../adapters/terrain.ts';
@@ -157,8 +160,10 @@ const views = ROUTE.map((sec, s) => {
 let names = 0; // bumped by who.set: the plaques print roster names
 onApplied((e: { op: string }) => e.op === 'who.set' && names++);
 
-// ?proto=uisfx: sites whose plaque just gained points (a credited pour), and each plaque's rows mid-flip.
+// ?proto=uisfx: sites whose plaque just gained points (a credited pour), each plaque's rows mid-flip, and how much each
+// plaque swells while they turn.
 const credited = new Set<number>();
+const swell = views.map(() => 1);
 const flaps = views.map(() => new Map<number, Flap>());
 const plaqueLines: string[][] = views.map(() => []);
 const PUFF = new THREE.Color('#ffe7a8');
@@ -292,16 +297,25 @@ onFrame(
     // plaque rows mid-flip, and the board's little swell while they turn
     if (UI_KIT) {
       flaps.forEach((f, s) => {
-        const sprite = views[s].plaque.sprite;
-        if (!f.size && sprite.scale.x === 2.6) return;
+        if (!f.size && swell[s] === 1) return;
         paint(views[s].plaque, plaqueLines[s], undefined, f, now);
         let k = 0;
         for (const x of f.values())
           k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
-        sprite.scale.set(2.6 * (1 + 0.05 * k), 1.3 * (1 + 0.05 * k), 1);
+        swell[s] = 1 + 0.05 * k;
       });
     }
     pour(now);
   },
   { phase: 'update', order: 34 },
+);
+// Signs and plaques make way for a close camera (placed by now this frame).
+onFrame(
+  () => {
+    views.forEach((v, s) => {
+      for (const l of v.ringLabels) fadeNear(l.sprite, camera, 2.4, 0.6);
+      fadeNear(v.plaque.sprite, camera, 2.6, 1.3, swell[s]);
+    });
+  },
+  { phase: 'late', order: 34 },
 );
