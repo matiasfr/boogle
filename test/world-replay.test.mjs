@@ -71,7 +71,11 @@ async function replay(seed) {
   const ops = peers[0].s.registry().ops;
   // Opening day closes the route for good, so its ops play on their own near the end rather than in the random mix.
   // The push run's ops (a push lands only on a push run that is laying) play in their own leg too.
-  const mixed = ops.filter((op) => !op.startsWith('open.') && op !== 'site.push' && op !== 'tune.fill');
+  // The wagon's stoke plays in its own leg at the end too, so the seeded stream of the older ops stays as it was (its
+  // clock ticks through every leg, the late joiner and the reload all the same).
+  const mixed = ops.filter(
+    (op) => !op.startsWith('open.') && op !== 'site.push' && op !== 'tune.fill' && op !== 'wagon.stoke',
+  );
   for (const op of ops)
     assert.ok(generators[op], `op ${op} has no edit generator (export const edits in its rules module)`);
   for (const op of Object.keys(generators)) assert.ok(ops.includes(op), `generator for unregistered op ${op}`);
@@ -117,6 +121,9 @@ async function replay(seed) {
     assert.ok(h0.s.submitEdit({ i: 0, j: 0, ...edit }), `push leg: ${e.op} refused`);
     await run(net, peers, 10);
   }
+  // Logs on everyone's back, then into the wagon's firebox (a section is laid now, so it runs and stands by steam).
+  await play(12, 'src.take');
+  await play(10, 'wagon.stoke');
   // Opening day needs the whole route laid: the playtest shortcut, then a start (later ones are rejected).
   await play(4, 'open.lay');
   await play(4, 'open.start');

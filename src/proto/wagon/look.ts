@@ -26,10 +26,21 @@ export const CRATES = [
   { x: -0.4, z: -0.7, sz: 0.5, yaw: 0.4, base: 0.7 }, // stacked on the first
 ];
 
-export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
+/** The stoke variant's firebox (./stoke.ts): the door's mouth (a point at its centre, facing out of the cab's back),
+ *  the glow's material, the hatch (swung on its hinge), and the steam gauge's needle (rotation.z: its angle). */
+export type Firebox = {
+  mouth: THREE.Object3D;
+  glow: THREE.MeshStandardNodeMaterial;
+  hatch: THREE.Object3D;
+  needle: THREE.Object3D;
+};
+export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D; firebox: Firebox | null };
+/** Where the firebox's door and the gauge sit on the cab's back wall (loco frame), and the gauge's sweep, rad. */
+export const FIREBOX = { y: 1.05, z: -1.5, gaugeY: 1.62, gaugeR: 0.17, sweep: 2.4 };
 
-/** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
-export function wagonLook(trailers: number): WagonLook {
+/** Builds one loco and `trailers` flatbeds, in train order from the outbound end; with `stoke`, a firebox door and a
+ *  steam gauge on the back of the cab (?proto=wagon&v=stoke). */
+export function wagonLook(trailers: number, stoke = false): WagonLook {
   const mat = (color: string, metal = 0) =>
     new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });
   const brass = mat('#c9a24a', 0.6),
@@ -86,6 +97,7 @@ export function wagonLook(trailers: number): WagonLook {
   const chimneyTop = new THREE.Object3D();
   chimneyTop.position.set(0, 2.5, 1.05);
   loco.add(chimneyTop);
+  const firebox = stoke ? fireboxLook(loco, black, brass, iron) : null;
   // The motion work, on each side: a cylinder ahead of the front wheel, a piston rod and crosshead sliding out of it, a
   // connecting rod from the crosshead to the front wheel's crank pin, and a side rod joining the two wheels' pins.
   const gear = [-1, 1].map((side) => {
@@ -125,7 +137,58 @@ export function wagonLook(trailers: number): WagonLook {
     return outer;
   });
   animate(cars, bodies, [locoWheels, ...trailerWheels], gear);
-  return { cars, chimneyTop };
+  return { cars, chimneyTop, firebox };
+}
+
+// The firebox on the cab's back wall, facing the flatbed: an iron frame round a glowing mouth, its hatch swung open on
+// the right-hand hinge, and above it a round steam gauge (white face, brass bezel, red needle, a red mark at full).
+function fireboxLook(
+  loco: THREE.Object3D,
+  black: THREE.Material,
+  brass: THREE.Material,
+  iron: THREE.Material,
+): Firebox {
+  const { y, z, gaugeY, gaugeR, sweep } = FIREBOX;
+  const add = (geo: THREE.BufferGeometry, m: THREE.Material, px: number, py: number, pz: number, to = loco) => {
+    const mesh = new THREE.Mesh(geo, m);
+    mesh.position.set(px, py, pz);
+    to.add(mesh);
+    return mesh;
+  };
+  add(new THREE.BoxGeometry(0.62, 0.5, 0.06), black, 0, y, z - 0.02); // the frame
+  const glow = new THREE.MeshStandardNodeMaterial({
+    color: '#3a1606',
+    emissive: '#ff6a1c',
+    emissiveIntensity: 0.4,
+    roughness: 1,
+  });
+  add(new THREE.BoxGeometry(0.44, 0.3, 0.02), glow, 0, y, z - 0.05); // the mouth, lit by the fire
+  const hatch = new THREE.Group();
+  hatch.position.set(0.25, y, z - 0.06); // the hinge
+  add(new THREE.BoxGeometry(0.46, 0.34, 0.04), iron, -0.23, 0, -0.02, hatch);
+  hatch.rotation.y = -1.9; // swung open, out of the way
+  loco.add(hatch);
+  const mouth = new THREE.Object3D();
+  mouth.position.set(0, y, z - 0.1);
+  loco.add(mouth);
+  // The gauge: a disc on the wall (cylinders lie along y: turned to face -z), a red mark at full, the needle on a pivot.
+  const face = new THREE.MeshStandardNodeMaterial({ color: '#f2ece0', roughness: 0.6 });
+  const red = new THREE.MeshStandardNodeMaterial({ color: '#c8302a', roughness: 0.6 });
+  const disc = (r: number, d: number) => new THREE.CylinderGeometry(r, r, d, 24).rotateX(Math.PI / 2);
+  add(disc(gaugeR + 0.03, 0.04), brass, 0, gaugeY, z - 0.02);
+  add(disc(gaugeR, 0.02), face, 0, gaugeY, z - 0.04);
+  for (let k = 0; k <= 4; k++) {
+    const a = -sweep / 2 + (sweep * k) / 4; // ticks at empty, quarters and full (seen by the stoker, +a is to the right)
+    const tick = add(new THREE.BoxGeometry(0.018, 0.05, 0.01), k === 4 ? red : black, 0, 0, 0);
+    tick.position.set(-Math.sin(a) * (gaugeR - 0.04), gaugeY + Math.cos(a) * (gaugeR - 0.04), z - 0.055);
+    tick.rotation.z = a;
+  }
+  const needle = new THREE.Group();
+  needle.position.set(0, gaugeY, z - 0.06);
+  add(new THREE.BoxGeometry(0.02, gaugeR * 0.9, 0.01), red, 0, gaugeR * 0.4, 0, needle);
+  add(disc(0.025, 0.02), black, 0, 0, -0.005, needle);
+  loco.add(needle);
+  return { mouth, glow, hatch, needle };
 }
 
 // ---------------------------------------------------------------- motion

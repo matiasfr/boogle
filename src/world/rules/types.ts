@@ -41,6 +41,7 @@ export type Rules = {
   ball: import('./ball.ts').BallApi;
   tune: import('./tune.ts').TuneApi;
   opening: import('./opening.ts').OpeningApi;
+  wagon: import('./wagon.ts').WagonApi;
 };
 /** The replay test's seeded stream (./edit-gen.js). */
 export type Stream = {

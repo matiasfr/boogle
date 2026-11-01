@@ -57,7 +57,10 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
       if (ms >= MIN_GAP_MS) s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms });
     });
     s.attachWorld((p as unknown as { room: WorldRoom }).room, { roomId: 'bank', host, storage, now: () => now });
-    return { s, rules, p };
+    // state hashes by tick: the wagon's clock moves every tick, so peers compare at a tick they both ran
+    const hashes = new Map<number, string>();
+    s.onAfterTick((t) => hashes.set(t, JSON.stringify(s.stateHashes())));
+    return { s, rules, p, hashes };
   };
   const host = mk('h', true);
   const client = mk('c', false);
@@ -71,5 +74,7 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
   client.s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms: 3_600_000 });
   await run(net, all, 20);
   assert.equal(host.rules.bank.ms(), 3_600_000, 'a replayed wake is refused');
-  assert.deepEqual(client.s.stateHashes(), host.s.stateHashes());
+  const t = Math.min(client.s.world.tick, host.s.world.tick);
+  assert.ok(client.hashes.has(t) && host.hashes.has(t));
+  assert.equal(client.hashes.get(t), host.hashes.get(t));
 });

@@ -1,6 +1,6 @@
 {
   "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
-  "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources", "bank", "ball", "tune", "opening"],
+  "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources", "bank", "ball", "tune", "opening", "wagon"],
   "ops": [
     "mush.plant",
     "mush.water",
@@ -20,6 +20,7 @@
     "tune.reset",
     "open.start",
     "open.lay",
-    "open.here"
+    "open.here",
+    "wagon.stoke"
   ]
 }
