@@ -76,7 +76,15 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 
 // Scene -> linear HDR target (MSAA from the renderer) -> one output pass (tone map + sRGB). Post effects (bloom,
 // TRAA, GTAO...) extend this chain: set pipeline.outputNode from scenePass and pipeline.needsUpdate = true.
-export const scenePass = pass(scene, camera);
+// The 4x MSAA samples resolve into the target and are then discarded, not written back (storeOp 'discard'; a
+// memoryless tile attachment where the browser offers TRANSIENT_ATTACHMENT): on a tile GPU (iPad) that saves the
+// bandwidth of writing a 4x colour and depth target every frame (docs/research/webgpu-on-ipad.md, recommendation 2).
+// The resolved colour is all the output pass reads. A post effect that reads scene depth (GTAO, DoF, SSR) needs the
+// depth stored again: drop storeMultisampledDepthBuffer here when one lands.
+export const scenePass = pass(scene, camera, {
+  storeMultisampledColorBuffer: false,
+  storeMultisampledDepthBuffer: false,
+});
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
 
