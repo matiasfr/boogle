@@ -60,9 +60,9 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   const r = stream(0x5e7);
   for (let f = 0; f < 600 && accepted.size < ops.length; f++) {
     // The haul reset empties the head start and opening day's shortcut closes the route, so they go last: the
-    // shortcut, then opening day, then the reset.
+    // shortcut, then opening day and its early end, then the reset.
     const left = ops.filter((o) => !accepted.has(o));
-    const late = ['open.lay', 'open.start', 'tune.reset', 'tune.fill']; // a fill needs an empty ring: after the reset
+    const late = ['open.lay', 'open.start', 'open.here', 'tune.reset', 'tune.fill']; // a fill needs an empty ring: after the reset
     const early = left.filter((o) => !late.includes(o));
     const op = early.length ? r.pick(early) : late.find((o) => left.includes(o))!;
     const e = generators[op](r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
