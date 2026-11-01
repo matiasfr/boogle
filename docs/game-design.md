@@ -74,6 +74,7 @@ tick of 100 ms (10 per second).
 - [6.18 Graphics and devices](game-design/graphics.md)
 - [6.19 Haul: piles, the stack, sources and work sites](game-design/haul.md)
 - [6.20 Prototype: soapbox (`?proto=soapbox`)](game-design/soapbox.md)
+- [6.21 Prototype: mini-game toys (`?proto=minis`)](game-design/minis.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
