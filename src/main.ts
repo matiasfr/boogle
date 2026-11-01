@@ -16,6 +16,7 @@ import { createStall } from './adapters/mushroom-garden.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
+import { prefetchAssets } from './render/asset-manifest.ts';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
@@ -83,6 +84,7 @@ async function play() {
   lobbyReady();
   splashDone();
   bootMark('interactive');
+  prefetchAssets(); // the content manifest's `soon` files, in idle time (src/render/asset-manifest.ts)
 }
 
 // Debug handle for poking at the game from the console (before start(): features' onStart hooks add to it).
