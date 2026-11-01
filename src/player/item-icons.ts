@@ -7,7 +7,7 @@
 //   warmIcons(ids)     draws those icons now (behind the loading screen): the icon scene's lights, targets and
 //                      tone-mapping quad build pipelines of their own, and the first icon drawn mid-game hitched
 import * as THREE from 'three/webgpu';
-import { renderOutput, texture, uv, vec4 } from 'three/tsl';
+import { renderOutput, texture, uv } from 'three/tsl';
 import { renderer } from '../render/scene.ts';
 import { ball } from '../physics/ball.ts';
 import { itemModel } from './item-models.ts';
@@ -24,8 +24,7 @@ const iconCam = new THREE.PerspectiveCamera(28, 1, 0.01, 50);
 // Built on first use: the scene target (linear HDR, MSAA), the 8-bit output target, and the tone-mapping quad.
 let hdr: THREE.RenderTarget | null = null,
   out: THREE.RenderTarget | null = null,
-  quad: THREE.QuadMesh | null = null,
-  topDown: boolean | null = null;
+  quad: THREE.QuadMesh | null = null;
 const bytes = (size: number) =>
   new THREE.RenderTarget(size, size, { type: THREE.UnsignedByteType, depthBuffer: false });
 function setup() {
@@ -37,25 +36,6 @@ function setup() {
   // renderOutput un-premultiplies, tone maps (renderer.toneMapping), encodes sRGB and premultiplies again.
   mat.fragmentNode = renderOutput(texture(h.texture, uv()), renderer.toneMapping, renderer.outputColorSpace);
   quad = new THREE.QuadMesh(mat);
-}
-
-// Reads back an 8-bit target. Which row comes first differs by backend, so find out with a gradient (uv.y is 1 at the
-// top) instead of asking which backend this is.
-async function readRows() {
-  if (topDown === null) {
-    const probe = bytes(4);
-    const m = new THREE.NodeMaterial();
-    m.fragmentNode = vec4(uv().y, 0, 0, 1);
-    const before = renderer.getRenderTarget();
-    renderer.setRenderTarget(probe);
-    new THREE.QuadMesh(m).render(renderer);
-    renderer.setRenderTarget(before);
-    const px = (await renderer.readRenderTargetPixelsAsync(probe, 0, 0, 4, 4)) as Uint8Array;
-    topDown = px[0] > 127;
-    probe.dispose();
-    m.dispose();
-  }
-  return topDown;
 }
 
 // Renders run one at a time (they share the render targets and read back asynchronously).
@@ -112,7 +92,8 @@ async function draw(id: string) {
     renderer.setClearColor(prev.color, prevAlpha);
     iconScene.remove(model);
   }
-  const flip = !(await readRows());
+  // WebGPU (the only backend) puts row 0 at the top of a render target and reads it back first, which is also the
+  // canvas's order. (A uv.y gradient probe used to guess this and guessed wrong, so every icon came out upside down.)
   const px = (await renderer.readRenderTargetPixelsAsync(out!, 0, 0, ICON, ICON)) as Uint8Array;
   // Bytes are sRGB and premultiplied; a canvas wants straight alpha.
   const c = document.createElement('canvas');
@@ -121,7 +102,7 @@ async function draw(id: string) {
   const img = g.createImageData(ICON, ICON);
   const stride = ICON * 4;
   for (let y = 0; y < ICON; y++) {
-    const from = (flip ? ICON - 1 - y : y) * stride;
+    const from = y * stride;
     for (let x = 0; x < ICON; x++) {
       const i = from + x * 4,
         to = (y * ICON + x) * 4,
