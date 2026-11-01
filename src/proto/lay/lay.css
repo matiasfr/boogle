@@ -2,7 +2,7 @@
 .lay-proto {
   position: absolute;
   left: 12px;
-  top: 64px;
+  top: calc(82px + env(safe-area-inset-top, 0px)); /* under the roster pill */
   display: flex;
   flex-direction: column;
   align-items: flex-start;

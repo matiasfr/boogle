@@ -1,7 +1,9 @@
 .walk-layout {
   position: fixed;
-  left: calc(10px + env(safe-area-inset-left, 0px));
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  /* top centre, under the touch hotbar: bottom left is the controls card (keyboard) and the stick (touch) */
+  left: 50%;
+  top: calc(70px + env(safe-area-inset-top, 0px));
+  transform: translateX(-50%);
   padding: 3px 8px;
   border-radius: 4px;
   background: rgb(20 30 40 / 0.6);

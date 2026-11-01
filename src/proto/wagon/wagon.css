@@ -30,3 +30,9 @@
   opacity: 0.5;
   cursor: default;
 }
+/* The laid count and speed lines: a paper backing so they read over palms and sky (as the lay panel's note). */
+.wagon-proto span {
+  padding: 3px 8px;
+  background: color-mix(in srgb, var(--paper) 85%, transparent);
+  border-radius: 8px;
+}
