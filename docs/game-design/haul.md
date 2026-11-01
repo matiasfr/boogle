@@ -120,12 +120,13 @@ Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/hau
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
 
-## Prototype: haul variants (?proto=haul&v=barrow | toss | wave)
+## Prototype: haul variants (?proto=haul&v=barrow | toss | wave | magnet)
 
 Other ways to get logs from the palms to the work site, so the owner can compare them with the back bundle in one
 sitting (find the fun, step 1: "if hauling is a chore, test a different core loop"). Each variant has its own room on
-the protos page (`proto-haul-barrow`, `proto-haul-toss`, `proto-haul-wave`), so their saves never mix. With barrow or
-toss on, walking into a ring no longer pours; without `v` the loop above is unchanged. Starting numbers from
+the protos page (`proto-haul-barrow`, `proto-haul-toss`, `proto-haul-wave`), so their saves never mix (magnet
+shares the default `proto-haul`: it changes only the look and sound). With barrow or toss on, walking into a ring no
+longer pours; without `v` the loop above is unchanged. Starting numbers from
 [docs/research/carrying-and-logistics-play.md](../research/carrying-and-logistics-play.md) (recs 1, 3, 5, 6).
 
 - **`v=barrow`:** a wheelbarrow stands beside the first work site, and stays wherever you leave it. E grabs its
@@ -159,6 +160,23 @@ toss on, walking into a ring no longer pours; without `v` the loop above is unch
   your own tab's call. The sandbar is a Local overlay (a static heightfield body and a sand mesh; the island's terrain
   is untouched). Tuning in `window.__wave.TUNE`; `__wave.next(s)` brings the next crest s seconds away in your tab
   (the look evals' shortcut).
+
+- **`v=magnet`** (`?room=proto-haul&proto=haul&v=magnet`): today's back bundle with Ratchet & Clank bolt pickups
+  ([docs/research/ratchet-and-clank-feel.md](../research/ratchet-and-clank-feel.md), recs 1, 2 and 3). Asks: does
+  collecting logs feel like collecting bolts? Walking pours as usual. A pile notices you from 3 m instead of 1.3
+  (`&reach=2.2` or `&reach=4` to compare; the host never checks reach). Each piece pauses 50-70 ms and lifts
+  0.3-0.5 m, then homes on the top of your bundle as you move (2 m/s, +60 m/s², up to 16 m/s, so it always catches a
+  sprint), bowing 0.6 m to alternate sides, spinning 2-3 turns a second until it settles into the bundle's lie, and
+  shrinking to the bundle's size; pieces leave 40 ms apart, at most 8 drawn. Each one that lands ticks: a short
+  wooden note a major pentatonic step higher each time from C5 for 10 steps (then the top two alternate), starting
+  over after 0.7 s with nothing landing, ±2% detune, panned to alternate sides; every 5th adds the low thock and a
+  pickup of 4 or more closes on a root-and-fifth chord. Undrawn pieces tick in 45 ms apart up to 12 ticks a pickup;
+  the rest are counted with the last. At most 6 tick voices; with `?proto=groove` they land on the beat and in the
+  chord. The chip's number and the logs on your back go up with each landing, then follow the host's count. Take
+  logs spills the bundle's 4 logs out in a fan toward you (up 4-4.5 m/s, out 1.5-2.5 m/s, tumbling), one bounce,
+  a puff of dust, 120-160 ms lying there, then the magnet takes them: about a second from E to the last tick. Same
+  ops as ever (`pile.take`, `src.take`); everything new is Local. Tuning: `window.__magnet.T`. Look evals:
+  `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
 
 Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
 then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`

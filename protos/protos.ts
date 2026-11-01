@@ -66,6 +66,11 @@ export const PROTOS: Proto[] = [
         what: 'The best bundles sit on a sandbar a wave sweeps every minute or so. Get back above the stakes in time.',
         spawn: { x: 2, z: 33, yaw: 3.142 }, // on the home beach behind the high-water stakes, looking out at the sandbar
       },
+      {
+        name: 'magnet',
+        url: '/?room=proto-haul&proto=haul&v=magnet',
+        what: 'Piles notice you from 3 m and logs fly in one by one, ticking up a scale; Take logs spills them out first. &reach=2.2 or 4 to compare.',
+      },
     ],
   },
   {
