@@ -1,40 +1,18 @@
 // boogle.club/protos/: a card per prototype (protos.ts) with a Play button, its one question and a box for your take
-// saved in this browser that copy out as a docs/playtests.md entry. Nothing here talks to a server.
+// saved in this browser (store.ts) that copy out as a docs/playtests.md entry, with the verdict and behaviour counters
+// the in-game prototype bar (src/proto/bar/) recorded. Nothing here talks to a server.
 import './protos.css';
 import { PROTOS } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
+import { VERDICTS, countsLine, read, write, type Saved } from './store.ts';
 
-type Saved = { notes: string; values: string; name: string; variant: string };
-
-const KEY = 'boogle-protos-v1';
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
 const touch = matchMedia('(pointer: coarse)').matches;
 
-function loadAll(): Record<string, Partial<Saved>> {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || '{}') ?? {};
-  } catch {
-    return {};
-  }
-}
-const store = loadAll();
-const saved = (id: string): Saved => {
-  const s = store[id] ?? {};
-  return {
-    notes: s.notes ?? '',
-    values: s.values ?? '',
-    name: s.name ?? '',
-    variant: s.variant ?? '',
-  };
-};
-function save(id: string, patch: Partial<Saved>) {
-  store[id] = { ...saved(id), ...patch };
-  try {
-    localStorage.setItem(KEY, JSON.stringify(store));
-  } catch {
-    // Private mode or full storage: the notes still live in the page until it closes.
-  }
-}
+// Re-read on every access: the game's prototype bar writes verdicts and counters to the same key from another tab.
+const saved = (id: string): Saved => read(id);
+const save = (id: string, patch: Partial<Omit<Saved, 'counts'>>) => write(id, patch);
+const verdictLabel = (s: Saved) => VERDICTS.find((v) => v.id === s.verdict)?.label ?? '';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -52,7 +30,13 @@ const oneLine = (s: string) => s.trim().replace(/\s*\n\s*/g, ' ');
 
 const hasNotes = (p: Proto) => {
   const s = saved(p.id);
-  return s.notes.trim() !== '' || s.values.trim() !== '' || s.variant.trim() !== '';
+  return (
+    s.notes.trim() !== '' ||
+    s.values.trim() !== '' ||
+    s.variant.trim() !== '' ||
+    s.verdict !== '' ||
+    Object.keys(s.counts).length > 0
+  );
 };
 
 // The prototype's part of an entry in docs/playtests.md (one bullet list, like the entries there).
@@ -60,7 +44,12 @@ function body(p: Proto): string {
   const s = saved(p.id);
   const flag = p.url.replace(PLACEHOLDER, s.name.trim() || `<${p.url.match(PLACEHOLDER)?.[1]}>`);
   const lines = [`- Prototype: ${p.title} (\`${flag}\`, find the fun ${stepLabel(p).toLowerCase()})`];
-  lines.push(`- ${p.question} ${oneLine(s.notes) || '(no answer)'}`);
+  const quick = s.verdict
+    ? `${verdictLabel(s)}${s.verdictV ? ` (on ${s.verdictV})` : ''}${s.verdictNote.trim() ? `: ${oneLine(s.verdictNote)}` : ''}.`
+    : '';
+  lines.push(`- ${p.question} ${[quick, oneLine(s.notes)].filter(Boolean).join(' ') || '(no answer)'}`);
+  const did = countsLine(s.counts);
+  if (did) lines.push(`- Did: ${did}`);
   if (p.variants?.length) lines.push(`- Variant preferred: ${oneLine(s.variant) || '___'}`);
   if (s.values.trim()) lines.push(`- Values: \`${oneLine(s.values)}\``);
   return lines.join('\n');
@@ -103,9 +92,17 @@ function card(p: Proto): HTMLElement {
   const head = el('div', 'head');
   const meta = el('p', 'meta', `${stepLabel(p)} · since ${p.since}`);
   if (p.status !== 'live')
-    meta.append(' · ', el('strong', 'badge', p.status === 'building' ? 'not live yet' : 'retired'));
+    meta.append(
+      ' · ',
+      el(
+        'strong',
+        'badge',
+        p.status === 'building' ? 'not live yet' : `retired${p.retired ? `: ${p.retired.why}` : ''}`,
+      ),
+    );
   head.append(meta, el('h2', '', p.title), el('p', 'what', p.what));
   if (p.note) head.append(el('p', 'note', p.note));
+  if (p.retired?.note) head.append(el('p', 'note', p.retired.note));
   c.append(head);
 
   const play = el('a', 'btn play', 'Play');
@@ -143,6 +140,26 @@ function card(p: Proto): HTMLElement {
     c.append(row);
   }
 
+  const played = el('p', 'played');
+  played.setAttribute('aria-live', 'polite');
+  const drawPlayed = () => {
+    const now = saved(p.id);
+    const bits: HTMLElement[] = [];
+    if (now.verdict) {
+      const v = el('span', `verdict ${now.verdict}`, verdictLabel(now));
+      if (now.verdictV) v.append(el('small', '', ` on ${now.verdictV}`));
+      bits.push(v);
+      if (now.verdictNote.trim()) bits.push(el('span', 'why', now.verdictNote));
+    }
+    const did = countsLine(now.counts);
+    if (did) bits.push(el('span', 'did', did));
+    played.replaceChildren(...bits);
+    played.hidden = !bits.length;
+  };
+  drawPlayed();
+  redraws.push(drawPlayed);
+  c.append(played);
+
   c.append(field(p.question, s.notes, 3, (v) => save(p.id, { notes: v }), 'Your take: what felt good, what felt off'));
   if (p.variants?.length) {
     const wrap = el('label', 'field');
@@ -169,6 +186,11 @@ function card(p: Proto): HTMLElement {
   c.append(foot, said);
   return c;
 }
+
+const redraws: (() => void)[] = [];
+// The game tab saved a verdict or counters: show them without a reload.
+addEventListener('storage', () => redraws.forEach((fn) => fn()));
+addEventListener('focus', () => redraws.forEach((fn) => fn()));
 
 const sorted = PROTOS.map((p, i) => ({ p, i }))
   .sort((a, b) => ORDER[a.p.status] - ORDER[b.p.status] || a.i - b.i)
