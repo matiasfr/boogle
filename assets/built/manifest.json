@@ -1,0 +1,14 @@
+{
+  "scaffold-kit": {
+    "source": "scaffold-kit.py",
+    "sourceHash": "4a239fc3e45106f9",
+    "outHash": "6f30ed4188e9b8d5",
+    "rawBytes": 12320,
+    "bytes": 8828,
+    "triangles": 152,
+    "animations": [
+      "drop"
+    ],
+    "textures": []
+  }
+}
