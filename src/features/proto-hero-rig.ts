@@ -5,6 +5,8 @@
 // question it answers: can an agent-built rig and clip sit on top of code-driven motion without a seam?
 // Local: decoration only, each tab runs its own.
 import * as THREE from 'three/webgpu';
+import { color, float, normalView, positionViewDirection, vec3 } from 'three/tsl';
+import { patchNode } from '../render/material-patch.ts';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
 import { precompile } from '../render/precompile.ts';
@@ -25,6 +27,16 @@ async function build() {
   const holder = rig.instance('hero');
   const y = groundHeight(AT.x, AT.z);
   holder.position.set(AT.x, y, AT.z);
+  // A cool rim of sky light on every part, the soft edge the previz renders have and the game's lighting lacks:
+  // (1 - N.V)^3, so it shows only where a surface turns away from the camera.
+  const rim = float(1).sub(normalView.dot(positionViewDirection).saturate()).pow(3).mul(color('#cfe6ff')).mul(0.45);
+  const patched = new Set<THREE.Material>();
+  holder.traverse((o) => {
+    const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+    if (!m || patched.has(m)) return;
+    patched.add(m);
+    patchNode(m, 'emissiveNode', (prev) => (prev ?? vec3(0)).add(rim));
+  });
   scene.add(holder);
   await precompile(holder);
 
