@@ -114,6 +114,24 @@ export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternio
   return true;
 }
 
+// One stack of n pieces of kind k on avatar a, into the bundle and band meshes from slot c and b on.
+let c = 0,
+  b = 0;
+function draw(a: THREE.Object3D | null, pid: string | null | undefined, n: number, k: number): void {
+  if (!a || !n || (pid && elsewhere.has(pid))) return;
+  a.updateMatrixWorld();
+  const f = frameOf(a);
+  const len = lenOf(n),
+    shown = shownOf(n);
+  for (let m = 0; m < shown; m++) {
+    mesh.setMatrixAt(c, pieceAt(f, m, len, m4));
+    mesh.setColorAt(c++, pieceColor(k));
+  }
+  if (shown < 3 || b + 2 > bands.instanceMatrix.count) return;
+  bands.setMatrixAt(b++, bandAt(f, shown, len, -1, m4));
+  bands.setMatrixAt(b++, bandAt(f, shown, len, 1, m4));
+}
+
 // Pieces flying from a pile to your back: { from, n, t0 }.
 const flights: { from: THREE.Vector3; n: number; t0: number }[] = [];
 onFly((from, n) => backSeam.flyIns && flights.push({ from: from.clone(), n: Math.min(n, 6), t0: performance.now() }));
@@ -126,24 +144,13 @@ let chipText = '';
 onFrame(
   ({ now }: { now: number }) => {
     const mine = myStack();
-    let c = 0,
-      b = 0;
-    const draw = (a: THREE.Object3D | null, pid: string | null | undefined, n = stackOf(pid).n) => {
-      const { k } = stackOf(pid);
-      if (!a || !n || (pid && elsewhere.has(pid))) return;
-      a.updateMatrixWorld();
-      const f = frameOf(a);
-      const len = lenOf(n),
-        shown = shownOf(n);
-      for (let m = 0; m < shown; m++) {
-        mesh.setMatrixAt(c, pieceAt(f, m, len, m4));
-        mesh.setColorAt(c++, pieceColor(k));
-      }
-      if (shown >= 3 && b + 2 <= bands.instanceMatrix.count)
-        for (const side of [-1, 1]) bands.setMatrixAt(b++, bandAt(f, shown, len, side, m4));
-    };
-    draw(me.entered ? me.avatar : null, identity.pid, backSeam.count(mine.n));
-    for (const r of remotes.values()) draw(r.visible ? r.avatar : null, r.pid);
+    c = b = 0;
+    draw(me.entered ? me.avatar : null, identity.pid, backSeam.count(mine.n), mine.k);
+    for (const r of remotes.values()) {
+      if (!r.visible || !r.avatar) continue;
+      const st = stackOf(r.pid);
+      draw(r.avatar, r.pid, st.n, st.k);
+    }
     // fly-ins: a short hop from the pile to the top of your bundle
     for (let f = flights.length - 1; f >= 0; f--) {
       const fl = flights[f];
