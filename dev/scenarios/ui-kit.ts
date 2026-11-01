@@ -1,6 +1,7 @@
 // The UI kit prototype (?proto=uisfx, docs/research/ui-patterns.md recs 1-4) beside today's HUD, at an iPad Pro 11"
-// viewport: the interact prompt over a log bundle, the hotbar with a name tag, the haul chip, a hotbar note, and the
-// work-site rings. Each leg writes stills (`plain-*`, `kit-*`) for a before/after; the kit leg also checks the haul
+// viewport: the interact prompt over a log bundle, the hotbar with a name tag, the haul chip, a hotbar note (in the kit,
+// the notification lane, rec 5, plus the update notice), the work-site rings, and the plaque after a pour (in the kit,
+// mid-flip). Each leg writes stills (`plain-*`, `kit-*`) for a before/after; the kit leg also checks the haul
 // chip ticks up to the confirmed count and the prompt answers a press. Serves DESIGN.md "Understandable at a glance".
 import { TP, INV } from './lib/world.mjs';
 
@@ -69,6 +70,34 @@ export default {
       await g.view({ cam: [11, 7, 12.5], look: [11, 0, 6] }, 55);
       await g.wait(0.6);
       t.check(`${tag}: work-site rings`, true, await g.still(`${tag}-rings`));
+      if (kit) {
+        await g.eval(`const { notify } = await import('/src/render/notify.ts');
+          notify('Boogle was updated – reload to stay in sync with friends', { kind: 'news', ttl: 0, key: 'update', action: { label: 'Reload', run() {} } });`);
+        // it waits under the note until that has had its time
+        await g.waitFor(`document.querySelector('.notify.shown')?.textContent.includes('updated')`, { timeout: 12000 });
+        await g.wait(0.5);
+        t.check('kit: update notice in the lane', true, await g.still('kit-update'));
+      }
+      // Site 0's plaque (beside the Helper ring, at (13.6, 3.6)), then a pour credited on it: in the kit its row turns
+      // over (slowed down here so the still catches it mid-flip).
+      await g.eval(`${TP(12.5, 9.5)}`);
+      const py = (await g.eval(
+        `const { groundHeight } = await import('/src/adapters/terrain.ts'); return groundHeight(13.6, 3.6);`,
+      )) as number;
+      await g.view({ cam: [18, py + 2.8, 8.5], look: [13.6, py + 1.8, 3.6] }, 50);
+      if (kit) await g.eval(`const w = await import('/src/features/work-sites.ts'); w.flapFeel.ms = 2400;`);
+      await g.eval(`window.boogle.sync.submitEdit({ op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 10 });`);
+      if (kit) {
+        const flipping = await g.waitFor(
+          `(async () => { const w = await import('/src/features/work-sites.ts'); return w.flapping(0); })()`,
+          { timeout: 5000 },
+        );
+        t.check('kit: a credited pour flips the plaque', flipping >= 0);
+        await g.wait(1.6);
+        t.check('kit: plaque mid-flip', true, await g.still('kit-plaque-flip'));
+      }
+      await g.wait(2.6);
+      t.check(`${tag}: plaque after a pour`, true, await g.still(`${tag}-plaque`));
       t.check(`${tag}: no page errors`, !g.errors.length, g.errors.slice(0, 2).join(' | '));
       await g.close();
     }

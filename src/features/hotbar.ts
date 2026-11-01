@@ -5,7 +5,8 @@
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
 // (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy
 // you can throw) and 10 (slapstick over precision). With ?proto=uisfx (docs/research/ui-patterns.md, recs 1, 2 and 4) a
-// select ticks (one pitch step per slot) and the slot bounces, a note denies, and the text is larger.
+// select ticks (one pitch step per slot) and the slot bounces, the text is larger, and a note goes to the shared
+// notification lane (src/render/notify.ts, rec 5) instead of the pill here.
 import '../render/ui-kit.css';
 import './hotbar.css';
 import * as THREE from 'three';
@@ -21,7 +22,8 @@ import { setIcon, warmIcons } from '../player/item-icons.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 import { describeControl, onKey } from '../player/controls.ts';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
-import { uiSound, replay } from '../render/ui-sound.ts';
+import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
+import { notify } from '../render/notify.ts';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
@@ -188,13 +190,15 @@ function renderHud(now: number) {
   const noting = now < handsNote.until && !!handsNote.text;
   if (noting && ui.noteAt !== handsNote.until) {
     ui.noteAt = handsNote.until;
-    ui.note.textContent = handsNote.text;
-    ui.note.classList.remove('shake');
-    void ui.note.offsetWidth; // restart the shake
-    ui.note.classList.add('shake');
-    uiSound('deny');
+    if (UI_KIT) notify(handsNote.text, { kind: 'deny', ttl: handsNote.until - now, key: 'hands' });
+    else {
+      ui.note.textContent = handsNote.text;
+      ui.note.classList.remove('shake');
+      void ui.note.offsetWidth; // restart the shake
+      ui.note.classList.add('shake');
+    }
   }
-  ui.note.classList.toggle('shown', noting);
+  ui.note.classList.toggle('shown', noting && !UI_KIT);
   ui.name.classList.toggle('shown', !noting && !!ui.name.innerHTML && now < ui.nameUntil);
 }
 

@@ -229,3 +229,7 @@ body.holding-throwable:not(.main-throws) .tbtn.toss {
 .ui-kit .hotbar-n {
   font-size: 13px;
 }
+/* The notification lane (src/render/notify.ts) takes the note's place, so the name tag gives way to it. */
+.ui-kit:has(.notify.shown) .hotbar-name {
+  opacity: 0;
+}

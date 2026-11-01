@@ -1,0 +1,100 @@
+/* The notification lane (src/render/notify.ts): one glass pill where the hotbar's note was, just past the hotbar (above
+   it on a keyboard, below it on touch, beside it in portrait), clear of the crosshair and the prompt. Read-only status,
+   so glass with no drop shadow; its button is a sticker (pressable). Shared tokens from ./ui-kit.css. */
+.notify {
+  position: fixed;
+  left: 50%;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--on-glass);
+  font: 700 var(--text-play) / 1.2 var(--font-body);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px) scale(0.96);
+  transition:
+    opacity var(--dur-leave) var(--ease-out),
+    transform var(--dur-leave) var(--ease-out);
+}
+.notify.shown {
+  opacity: 1;
+  transform: translateX(-50%);
+  transition:
+    opacity var(--dur-pop) var(--ease-out),
+    transform var(--dur-pop) var(--ease-pop);
+}
+.notify-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notify[data-kind='deny'] {
+  background: var(--coral);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+.notify[data-kind='news'] {
+  border: 2px solid var(--sun);
+}
+.notify:has(.notify-btn:not([hidden])) {
+  padding-right: 6px;
+}
+.notify-btn {
+  flex: none;
+  padding: 4px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--sun);
+  box-shadow: 0 3px 0 var(--ink);
+  color: var(--ink);
+  font: 400 17px/1 var(--font-display);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.notify.shown .notify-btn {
+  pointer-events: auto;
+}
+.notify-btn:active {
+  translate: 0 2px;
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+/* Touch: the hotbar is along the top, so the lane sits under it; in portrait it is a column on the right. */
+body.touch .notify {
+  top: calc(66px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+  transform: translateX(-50%) translateY(-6px) scale(0.96);
+}
+body.touch .notify.shown {
+  transform: translateX(-50%);
+}
+@media (orientation: portrait) {
+  body.touch .notify {
+    top: calc(72px + env(safe-area-inset-top, 0px));
+    left: auto;
+    right: calc(72px + env(safe-area-inset-right, 0px));
+    max-width: calc(100vw - 104px);
+    transform: translateY(-6px) scale(0.96);
+  }
+  body.touch .notify.shown {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notify,
+  .notify.shown,
+  body.touch .notify,
+  body.touch .notify.shown {
+    transition: opacity 120ms linear;
+  }
+}

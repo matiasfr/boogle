@@ -5,7 +5,7 @@
 //   - a visible tab shows a small toast with a Reload button, and reloads the next time it is hidden.
 // The dev server has no version.json and a dev build skips the check, so this is inert in development.
 // Each player's build also rides in presence (src/netplay/builds.ts), so the net debug overlay and connection reports can
-// tell a mixed room.
+// tell a mixed room. With ?proto=uisfx the toast is a sticky notice in the shared lane (src/render/notify.ts).
 // Serves DESIGN.md "Designed for drop-in, drop-out" (a tab left open for hours still plays with the friends who just
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import './updates.css';
@@ -13,6 +13,8 @@ import { onStart } from '../loop.ts';
 import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
 import { BUILD } from '../netplay/builds.ts';
 import { net } from '../netplay/net.ts';
+import { UI_KIT } from '../render/ui-sound.ts';
+import { notify } from '../render/notify.ts';
 
 const CHECK_MS = 5 * 60 * 1000;
 const RELOADED_FOR = 'boogle-update-reloaded-for'; // sessionStorage: the build we last reloaded to reach
@@ -35,7 +37,7 @@ const session = {
 };
 
 let served: string | null = null; // the newer build the server has, once seen
-let toast: HTMLElement | null = null;
+let toast: { remove(): void } | null = null;
 
 function reload() {
   if (!served) return; // the toast's pad action outlives a mismatch that went away
@@ -49,27 +51,32 @@ function reloadIfHidden() {
   if (served && document.hidden && session.get() !== served && net.error !== 'elsewhere') reload();
 }
 
+const TEXT = 'Boogle was updated – reload to stay in sync with friends';
 function showToast() {
   if (toast) return;
-  toast = document.createElement('div');
-  toast.className = 'update-toast';
-  toast.setAttribute('role', 'status');
-  const text = document.createElement('span');
-  text.textContent = 'Boogle was updated – reload to stay in sync with friends';
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.textContent = 'Reload';
-  btn.addEventListener('click', reload);
   // A pad slot only if one is free (AGENTS.md); otherwise the click and the reload-when-hidden cover it.
   const pad = freeSlots()[0];
-  if (
-    pad &&
-    registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
-  ) {
-    btn.textContent = `Reload (${PAD_LABEL[pad]})`;
+  const label =
+    pad && registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
+      ? `Reload (${PAD_LABEL[pad]})`
+      : 'Reload';
+  if (UI_KIT) {
+    const dismiss = notify(TEXT, { kind: 'news', ttl: 0, key: 'update', action: { label, run: reload } });
+    toast = { remove: dismiss };
+    return;
   }
-  toast.append(text, btn);
-  document.body.append(toast);
+  const el = document.createElement('div');
+  el.className = 'update-toast';
+  el.setAttribute('role', 'status');
+  const text = document.createElement('span');
+  text.textContent = TEXT;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = label;
+  btn.addEventListener('click', reload);
+  el.append(text, btn);
+  document.body.append(el);
+  toast = el;
 }
 
 async function check() {
