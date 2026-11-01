@@ -12,7 +12,8 @@
 //   world   -300 ball.js: an owned ball off the island respawns; ball.disp follows the body
 //           -290 player.js: fall respawn         -280 ball.js: walking into a slow ball claims it
 //   update  -300 ball.js: ball mesh              -290 player.js: own avatar       -280 net.js: remote avatars
-//           -200 player.js: camera               -190 props.js: clouds            (features: -10 and up)
+//           -200 player.js: camera               -190 props.js: clouds            -150 assets.ts: glTF clips
+//           (features: -10 and up)
 //   late    -200 throw.ts: throw preview        -190 hud.js: HUD                 -20 particles.js: particles
 //           (features: -10 to 2000)
 //           3000 net.js: presence send           3010 water-render.js: sea uTime  (then main.js renders)
