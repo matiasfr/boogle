@@ -19,6 +19,11 @@
   fast); its entry lives in `protos/protos.ts` (AGENTS.md, "Shipping").
 - **Options, not one guess.** Where the feel is uncertain, a prototype carries 2–3 variants (`&v=<name>`) the owner
   compares in one sitting.
+- **From [finding-the-fun.md](../research/finding-the-fun.md):** each question is about a feeling; every "no" is
+  logged with one line on what felt wrong, and the card goes `retired` with that reason (most prototypes should). Variants
+  differ in one thing; "can't tell" means that setting doesn't matter. The prototype drops you straight into its verb
+  (no walk to reach it). A card goes `live` only after its builder has played it at iPad size. No feel or art pass until
+  its question gets a "yes".
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
 
 ## How the work is split
