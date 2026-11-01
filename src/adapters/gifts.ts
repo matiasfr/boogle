@@ -22,6 +22,7 @@ import type { Item } from '../sim/gifts.ts';
 import type { Edit } from '../world/rules/types.ts';
 import type { TakeFields, TossFields } from '../world/rules/gifts.ts';
 import type { Interactable } from '../player/hands.ts';
+import { NO_TARGETS } from '../sim/interact-pick.ts';
 
 /** A thrown thing in the air (flyPath's path plus its mesh). */
 type Flight = ReturnType<typeof flyPath> & {
@@ -41,6 +42,7 @@ type Visual = {
   flight: Flight | null;
   slide: number;
   from?: THREE.Vector3;
+  seen: number; // the updateItems pass that last found its item, to sweep the ones gone
 };
 
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
@@ -195,15 +197,23 @@ function makeVisual(it: Item): Visual {
   scene.add(root);
   const flight = fx.arriving.get(it.id) ?? null;
   fx.arriving.delete(it.id);
-  return { root, sparkle, phase: it.id * 1.7, y: null, vy: 0, flight, slide: 1 };
+  return { root, sparkle, phase: it.id * 1.7, y: null, vy: 0, flight, slide: 1, seen: 0 };
 }
 
+let pass = 0;
+// A visual whose item is gone leaves (sweepGone runs from visuals.forEach: no closure or Set per frame).
+function sweepGone(v: Visual, id: number) {
+  if (v.seen === pass) return;
+  visuals.delete(id);
+  fx.leaving.push({ v, t: 0 });
+}
 function updateItems(dt: number, now: number, target: number | null) {
-  const live = new Set<number>();
-  for (const it of gifts.items) {
-    live.add(it.id);
+  pass++;
+  for (let k = 0; k < gifts.items.length; k++) {
+    const it = gifts.items[k];
     let v = visuals.get(it.id);
     if (!v) visuals.set(it.id, (v = makeVisual(it)));
+    v.seen = pass;
     // A thrown thing stays hidden until its flight comes down, then slides from there onto its cell.
     v.root.visible = !v.flight || v.flight.done;
     if (!v.root.visible) continue;
@@ -236,11 +246,7 @@ function updateItems(dt: number, now: number, target: number | null) {
       v.sparkle.scale.setScalar(reducedMotion ? 0.35 : 0.15 + tw * 0.4);
     }
   }
-  for (const [id, v] of visuals) {
-    if (live.has(id)) continue;
-    visuals.delete(id);
-    fx.leaving.push({ v, t: 0 });
-  }
+  visuals.forEach(sweepGone);
   for (let k = fx.leaving.length - 1; k >= 0; k--) {
     const l = fx.leaving[k];
     l.t += dt / 0.22;
@@ -266,15 +272,19 @@ function playerAt() {
 const reachAt = new THREE.Vector3();
 export function giftTargets() {
   const p = playerAt();
-  if (!p) return [];
-  const out: (Interactable & { item: number })[] = [];
+  if (!p) return NO_TARGETS;
+  let out: (Interactable & { item: number })[] | null = null; // made only when something is in reach
   const now = performance.now();
-  const full = inv.slots.filter((s) => !s).length <= pending.size;
-  for (const it of gifts.items) {
+  for (let k = 0; k < gifts.items.length; k++) {
+    const it = gifts.items[k];
     // Not one you already asked to take, nor a thrown one still in the air.
     if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
     const pos = itemPos(it, reachAt);
-    if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || Math.hypot(pos.x - p.x, pos.z - p.z) >= REACH) continue;
+    const dx = pos.x - p.x,
+      dz = pos.z - p.z;
+    if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || dx * dx + dz * dz >= REACH * REACH) continue;
+    out ??= [];
+    const full = inv.slots.filter((s) => !s).length <= pending.size;
     const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
     const t = { id: `item${it.id}`, verb: 'Pick up', at, item: it.id };
     if (full || roomFor(GIFTS[it.kind].id) < 0) out.push({ ...t, blocked: 'Hotbar full' });
@@ -286,7 +296,7 @@ export function giftTargets() {
         },
       });
   }
-  return out;
+  return out ?? NO_TARGETS;
 }
 
 // `target` is the item id the interact prompt is on (see giftTargets), highlighted; null for none.

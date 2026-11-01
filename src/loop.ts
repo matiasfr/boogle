@@ -50,6 +50,10 @@ const list: Section[] = []; // the same sections, for allocation-free loops
 let slot = 0;
 let cursor = 0;
 let frameStart = 0;
+let frames = 0;
+let frameId = 0; // frames counted from 1 while one runs, 0 between frames (input events, timers)
+/** The frame running now (1, 2, ...), or 0 outside one: a key for caches that hold for one frame's hooks. */
+export const currentFrame = () => frameId;
 const last = { ms: 0, top: '', topMs: 0 };
 function record(name: string, ms: number) {
   let s = sections.get(name);
@@ -67,6 +71,7 @@ export function beginFrame() {
     list[k].last = 0;
   }
   cursor = frameStart = performance.now();
+  frameId = ++frames;
 }
 export function mark(name: string) {
   const t = performance.now();
@@ -75,6 +80,7 @@ export function mark(name: string) {
 }
 export function endFrame(name: string) {
   mark(name);
+  frameId = 0;
   last.ms = cursor - frameStart;
   record('frame', last.ms);
   last.topMs = 0;

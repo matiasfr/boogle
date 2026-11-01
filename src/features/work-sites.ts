@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
 import { onApplied, submitEdit, world } from '../world/sync.ts';
-import { registerInteractable } from '../player/hands.ts';
+import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
@@ -182,10 +182,10 @@ function redraw() {
 // Start the machine: an Interact target at the open site's sign once its Track ring holds a whole section.
 registerInteractable(() => {
   const s = sites.open;
-  if (!me.entered || !me.body || s >= ROUTE.length || !rules.sites.canRun(s)) return [];
+  if (!me.entered || !me.body || s >= ROUTE.length || !rules.sites.canRun(s)) return NO_TARGETS;
   const p = ringAt(s, TRACK);
   const pos = me.body.position;
-  if (Math.hypot(pos.x - p.x, pos.z - p.z) > RING_R + 1.2) return [];
+  if (Math.hypot(pos.x - p.x, pos.z - p.z) > RING_R + 1.2) return NO_TARGETS;
   const where = new THREE.Vector3(p.x, groundHeight(p.x, p.z) + 1.2, p.z);
   return [
     { id: `run${s}`, verb: 'Start the machine', at: where, run: () => submitEdit({ op: 'site.run', i: 0, j: 0, s }) },

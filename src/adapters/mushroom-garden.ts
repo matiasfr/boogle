@@ -20,6 +20,7 @@ import { inv, take, has, roomFor, slotOf, useOne, MAX_SEEDS } from '../player/in
 import { GROW_TICKS } from '../sim/mushrooms.ts';
 import type { Body } from '../physics/engine.ts';
 import type { Interactable } from '../player/hands.ts';
+import { NO_TARGETS } from '../sim/interact-pick.ts';
 
 /** The meshes and collider drawn for one garden plot. */
 type Visual = {
@@ -341,19 +342,24 @@ export function createStall() {
 // { id, verb, at, run }, or { id, verb, at, blocked } when there is no room. The can is left out while you hold one, and
 // the seeds while your stack is full; the other pickup stays on offer.
 export function stallTargets() {
-  if (!me.entered || !me.body) return [];
+  if (!me.entered || !me.body) return NO_TARGETS;
   const p = me.body.interpolatedPosition;
-  const out: Interactable[] = [];
-  for (const pick of pickups) {
-    if (!pick.world || Math.hypot(pick.world.x - p.x, pick.world.z - p.z) >= REACH + 0.6) continue;
+  let out: Interactable[] | null = null; // made only when something is in reach
+  for (let k = 0; k < pickups.length; k++) {
+    const pick = pickups[k];
+    if (!pick.world) continue;
+    const dx = pick.world.x - p.x,
+      dz = pick.world.z - p.z;
+    if (dx * dx + dz * dz >= (REACH + 0.6) * (REACH + 0.6)) continue;
     if (pick.kind === 'can' && has('can')) continue;
     if (pick.kind === 'seeds' && (inv.slots[slotOf('seeds')]?.n ?? 0) >= MAX_SEEDS) continue;
     const at = pick.world.clone().setY(pick.world.y + 0.35);
     const t = { id: `stall-${pick.kind}`, verb: 'Take', at };
+    out ??= [];
     if (roomFor(pick.kind) < 0) out.push({ ...t, blocked: 'Hotbar full' });
     else out.push({ ...t, run: () => (pick.kind === 'seeds' ? take('seeds', SEEDS_PER_VISIT) : take('can')) });
   }
-  return out;
+  return out ?? NO_TARGETS;
 }
 
 function plantCell() {
