@@ -169,6 +169,25 @@ Also worth a look later: the pause view as a toy (the island keeps running behin
 - **Many labels, or labels that should hide behind things, go in the scene.** Name tags for 8 players, plaques, signs, the departures board and timetables belong in WebGPU as sprites or meshes with a `CanvasTexture` (as the plaques already are), redrawn only when their text changes, so they get depth, fog and occlusion for free and cost no DOM work. Size the canvas for the closest reading distance to avoid blur. For many dynamic labels, an SDF text atlas in TSL is the step after that.
 - **Measure on the device.** Safari's responsive mode does not reproduce compositing. A `/look` run or `npm run perf` with the HUD visible, and a real iPad session with Web Inspector's layers and timeline, settle each of the above.
 
+## Sound (2 November 2026)
+
+*Added after the owner's listening-pack audit (docs/playtests.md, 2026-11-02): hotbar tick, "it worked" thunk, plaque flap, ping, ball boing, double jump and honk. Short pass; no Epic or Nintendo audio talk on these exact sounds was found.*
+
+- **Fortnite.** Its audio designers say UI sound is among the hardest, most subjective work and that it shouldn't stand out from the game [S] ([Game Rant interview with Gary Miranda](https://gamerant.com/fortnite-spider-man-2-interview-good-sound-design-how/)). As played: the item-slot select is one short, soft, unpitched-feeling tick, the same for every slot; jumps and glider deploys are cloth and air (a filtered puff or flutter), not pitched voices [S, from play, not a source].
+- **Nintendo Switch.** The HOME menu uses a small named set (select, tick, enter and back, error) that stays consistent everywhere [S] ([The Sounds Resource listing](https://sounds.spriters-resource.com/nintendo_switch/systembios/asset/411814/)); the clicks are crisp, very short and quiet [S].
+- **Apple.** WWDC19's audio-haptic session argues a confirmation should sound like the physical object it stands for (the Apple Pay chime as the worked example), and a sound and a haptic belong together only when their shapes match [S] ([WWDC19 session 810](https://developer.apple.com/videos/play/wwdc2019/810/)).
+- **General UI sound guides.** 80–300 ms; finish before the next action; 6–12 dB under the music's peaks; a little pitch or timbre variation to avoid fatigue [S] ([sfxengine guide](https://sfxengine.com/blog/best-practices-for-game-ui-sounds)).
+- **Journey.** Four singing types by press (coo, chirp, call, shout); the sounds are re-pitched birds plus composer-written musical parts per type, written to complement each level's score; a companion nearby gets rising variations while you get falling ones [V] ([Steve Johnson, The Sound Design of Journey](https://www.gamedeveloper.com/audio/the-sound-design-of-i-journey-i-)). Pitch sets were chosen per section so they harmonise with the score [S] ([MCV/Develop](https://mcvuk.com/development-news/heard-about-journey/)).
+- **Sky: Children of the Light.** Its developers keep sound effects and the music's key in step in real time so the result is consonant, and call that harder in an MMO than single-player [S] ([Automaton interview](https://automaton-media.com/en/interviews/20200307-631/)); the calls change key as you travel, so players can play along [S] ([Pocket Tactics](https://www.pockettactics.com/sky-children-of-the-light/music)); each call has regular, deep and partial-press versions [S].
+- **Animal Crossing.** Animalese varies by personality, mood and species (size), not by the music's key [S] ([Nookipedia](https://nookipedia.com/wiki/Animalese)): a voice is identity, variation keeps it alive.
+
+**For Boogle [C].**
+1. Hotbar tick: one fixed soft tone (no pitch per slot), about 40 ms, well under the world; or none. The slot's pop animation already says which slot.
+2. "It worked": a short pitched wooden knock (a marimba-like tok with a soft low body), the physical object it stands for; no noise burst.
+3. Double jump: an air puff (band-passed noise, rising slightly), no pitched whoop.
+4. Ping and ball boing: same identities, lower levels, softer attacks, shorter tails.
+5. Honks: like Sky and Journey, pick the pitch from a set that changes slowly over shared time, so every honk is in the same chord as everyone else's; vary the shape per press (Sky's call variants), keep the voice per player (Animal Crossing).
+
 ## Not checked
 
 - No designer interview was found for Fall Guys' menus, Fortnite's HUD redesigns, Sea of Thieves' map table, Animal Crossing's NookPhone, Death Stranding's notifications or the Switch's system sounds; those findings rest on critiques and fan sources.

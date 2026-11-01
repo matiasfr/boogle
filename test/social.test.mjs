@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validatePing, createLimiter, createChordDetector, honkFreq } from '../src/sim/social.ts';
+import {
+  validatePing,
+  createLimiter,
+  createChordDetector,
+  honkFreq,
+  honkNotes,
+  honkChord,
+  honkShape,
+  HONK_CHORD_S,
+} from '../src/sim/social.ts';
 
 test('validatePing accepts good pings and rejects junk', () => {
   assert.deepEqual(validatePing({ t: 'ping', x: 1.234, y: 2, z: -3, k: 'ball' }), { x: 1.2, y: 2, z: -3, k: 'ball' });
@@ -47,4 +56,25 @@ test('honk pitch is stable per colour', () => {
     assert.ok(Math.abs(honkFreq(k) - want) <= 0.01, `honkFreq(${k}) = ${honkFreq(k)}, want ${want}`);
     assert.equal(honkFreq(k + 8), honkFreq(k));
   }
+});
+
+test('honks take tones from one shared chord', () => {
+  for (const t of [0, HONK_CHORD_S * 1.5, HONK_CHORD_S * 2.2, HONK_CHORD_S * 3.9, HONK_CHORD_S * 7]) {
+    const chord = honkChord(t);
+    for (let c = 0; c < 8; c++)
+      for (let v = 0; v < 4; v++) {
+        const [f, f2] = honkNotes(c, t, v);
+        assert.ok(chord.includes(f) && chord.includes(f2), `colour ${c} shape ${v} at ${t}s is in the chord`);
+      }
+    // no two voices a semitone (or major seventh) apart: any set of honks is consonant
+    for (const a of chord)
+      for (const b of chord) {
+        const st = ((Math.round(Math.log2(a / b) * 12) % 12) + 12) % 12;
+        assert.ok(st !== 1 && st !== 11, `${a} and ${b} clash`);
+      }
+  }
+  assert.notDeepEqual(honkChord(0), honkChord(HONK_CHORD_S));
+  assert.notEqual(honkNotes(0, 0, 0)[0], honkNotes(0, 0, 1)[0]); // a honk isn't always the same note
+  assert.equal(honkShape({ t: 'honk', v: 2 }), 2);
+  for (const bad of [{ t: 'honk' }, { v: 9 }, { v: 1.5 }, { v: '1' }, null]) assert.equal(honkShape(bad), 0);
 });

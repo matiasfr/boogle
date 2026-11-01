@@ -54,25 +54,46 @@ onPreStep(() => {
     b.force.y = PLAYER_MASS * GRAVITY + (PLAYER_MASS * (-MOVES.glideFall - b.velocity.y)) / MOVES.glideEase;
 });
 
-// ---------------------------------------------------------------- feel: a puff and a whoop; a wisp trail gliding
+// ---------------------------------------------------------------- feel: a puff of air (seen and heard); a wisp trail gliding
 const PUFF = new THREE.Color('#f4efe4');
+// The second jump's sound: an air puff (Fortnite-style), not a pitched whoop. Band-passed noise whose centre rises a
+// little, a soft swell and a short fade, with a faint low thump for the push; quiet, under the world.
+let air: AudioBuffer | null = null;
 export function whoop() {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
+  if (air?.sampleRate !== ctx.sampleRate) {
+    air = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.25), ctx.sampleRate);
+    const d = air.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
   const t = ctx.currentTime + 0.005;
+  const j = 0.94 + Math.random() * 0.12;
+  const n = ctx.createBufferSource();
+  n.buffer = air;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.Q.value = 1.1;
+  bp.frequency.setValueAtTime(700 * j, t);
+  bp.frequency.exponentialRampToValueAtTime(1500 * j, t + 0.12);
   const g = ctx.createGain();
-  g.connect(out);
-  const o = ctx.createOscillator();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(330, t);
-  o.frequency.exponentialRampToValueAtTime(880, t + 0.12);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-  o.connect(g);
+  g.gain.exponentialRampToValueAtTime(0.11, t + 0.025);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+  n.connect(bp).connect(g).connect(out);
+  n.start(t);
+  n.stop(t + 0.2);
+  const o = ctx.createOscillator();
+  o.frequency.setValueAtTime(140 * j, t);
+  o.frequency.exponentialRampToValueAtTime(90 * j, t + 0.08);
+  const og = ctx.createGain();
+  og.gain.setValueAtTime(0.0001, t);
+  og.gain.exponentialRampToValueAtTime(0.06, t + 0.006);
+  og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  o.connect(og).connect(out);
   o.start(t);
-  o.stop(t + 0.2);
+  o.stop(t + 0.1);
 }
 let wisp = 0;
 onFrame(

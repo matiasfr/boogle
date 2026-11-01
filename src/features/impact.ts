@@ -76,12 +76,17 @@ export function boing(speed: number, vol: number, low: boolean) {
   const { ctx, out } = a;
   const t = ctx.currentTime + 0.003;
   const f0 = (low ? 110 : 160) + clamp(speed, 0, 24) * 13 * (0.96 + Math.random() * 0.08);
-  const dur = 0.16 + clamp(speed / 24, 0, 1) * 0.22;
+  // a bit subtler (2026-11-02 audit): about 4 dB down, an 8 ms onset, shorter tails, a gentler wobble and the
+  // triangle's top rounded off
+  const dur = 0.13 + clamp(speed / 24, 0, 1) * 0.14;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(vol, t + 0.004);
+  g.gain.linearRampToValueAtTime(vol * 0.62, t + 0.008);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  g.connect(out);
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 1800;
+  g.connect(lp).connect(out);
   const o = ctx.createOscillator();
   o.type = 'triangle';
   o.frequency.setValueAtTime(f0 * 0.75, t);
@@ -90,7 +95,7 @@ export function boing(speed: number, vol: number, low: boolean) {
   const lfo = ctx.createOscillator(); // the wobble that makes it a boing
   lfo.frequency.value = 24;
   const lg = ctx.createGain();
-  lg.gain.setValueAtTime(f0 * 0.07, t);
+  lg.gain.setValueAtTime(f0 * 0.045, t);
   lg.gain.exponentialRampToValueAtTime(0.01, t + dur);
   lfo.connect(lg).connect(o.frequency);
   const o2 = ctx.createOscillator();
