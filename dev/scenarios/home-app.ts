@@ -34,7 +34,7 @@ function homeScreenIpad() {
   w.__padEvents = 0;
   addEventListener('gamepadconnected', () => w.__padEvents++);
   const pad = {
-    id: 'Backbone One (Vendor: 358a Product: 0003)',
+    id: 'Wireless Controller Extended Gamepad', // what the owner's Backbone reports in Safari on his iPad
     index: 0,
     connected: true,
     mapping: 'standard',
@@ -64,7 +64,7 @@ export default {
     };`)) as { brand: string; events: number; hint: boolean; hintHidden: boolean | null };
     t.check(
       'a pad connected before load is found with no gamepadconnected event; the lobby hint is hidden',
-      found.brand === 'xbox' && found.events === 0 && found.hint && found.hintHidden === true,
+      found.brand === 'ps' && found.events === 0 && found.hint && found.hintHidden === true,
       JSON.stringify(found),
     );
 
