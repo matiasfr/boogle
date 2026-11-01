@@ -82,6 +82,7 @@ const SCRIPTS = {
   opening: () => [
     { op: 'open.lay', i: 0, j: 0 }, // the proto shortcut lays the rest of the route (env protoRoom)
     { op: 'open.start', i: 0, j: 0 },
+    { op: 'open.here', i: 0, j: 0 }, // everyone at the platform: the call ends early
   ],
 };
 
