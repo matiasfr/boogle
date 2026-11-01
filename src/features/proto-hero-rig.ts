@@ -1,8 +1,9 @@
 // Prototype: the rig path end to end (?proto=assets, beside the scaffold bays; docs/research/procedural-animation.md,
-// recommendation 3). A jointed hero built by a Blender script (assets/src/hero-rig.py: rigid parts on 13 bones, no
+// recommendation 3). A jointed hero built by a Blender script (assets/src/hero-rig.py: rigid parts on 15 bones, no
 // skin weights) stands between the bays. Code poses it every frame (breathing, a slight sway, turning and looking at
-// you); press Interact near it and it plays the authored "wave" clip, faded in over the code pose and back out. The
-// question it answers: can an agent-built rig and clip sit on top of code-driven motion without a seam?
+// you); press Interact near it and it changes outfit, then plays the authored "wave" clip, faded in over the code pose
+// and back out. The questions it answers: can an agent-built rig and clip sit on top of code-driven motion without a
+// seam, and do outfits from other files swap onto the same body?
 // Local: decoration only, each tab runs its own.
 import * as THREE from 'three/webgpu';
 import { color, float, normalView, positionViewDirection, vec3 } from 'three/tsl';
@@ -15,16 +16,56 @@ import { SPAWN } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
 import rigUrl from '../../assets/built/hero-rig.glb?url';
+import castawayUrl from '../../assets/built/hero-outfit-castaway.glb?url';
 
 const AT = { x: SPAWN.x, z: SPAWN.z - 4 }; // between the two scaffold bays
-const REACH = 3; // m from the hero to offer "Wave"
+const REACH = 3; // m from the hero to offer "Change clothes"
+const OUTFITS = ['work', 'castaway', 'bare'] as const;
+type Outfit = (typeof OUTFITS)[number];
 const FADE_IN = 0.12; // s: the clip takes over quickly (its first keys are an anticipation dip)
 const FADE_OUT = 0.3; // s: and hands back to the code pose softly
 
 async function build() {
   const { loadAsset } = await import('../render/assets.ts');
-  const rig = await loadAsset(rigUrl);
+  const [rig, castaway] = await Promise.all([loadAsset(rigUrl), loadAsset(castawayUrl)]);
   const holder = rig.instance('hero');
+  const root = holder.children[0];
+  const bone = (n: string) => {
+    const b = root.getObjectByName(n);
+    if (!b) throw new Error('hero-rig: no bone ' + n);
+    return b;
+  };
+
+  // Outfits. Clothes are separate parts (`wear_<slot>_<item>_...`, assets/src/hero-rig.py) over a complete bare
+  // figure. The work outfit comes in the hero's own file; another outfit's file has the same armature, so each of its
+  // wear_ parts moves onto the hero's bone of the same name, keeping its transform (the rest poses match). Clothes win
+  // over the body: a head item hides the top of the head, a feet item the bare feet, so nothing pokes through.
+  const wear = (from: THREE.Object3D) => {
+    const parts: THREE.Object3D[] = [];
+    from.traverse((o) => {
+      if (o.name.startsWith('wear_')) parts.push(o);
+    });
+    return parts;
+  };
+  const outfits: Record<Outfit, THREE.Object3D[]> = { work: wear(root), castaway: [], bare: [] };
+  for (const part of wear(castaway.instance())) {
+    bone(part.parent!.name).add(part);
+    outfits.castaway.push(part);
+  }
+  const covers = { head: [bone('crown_part')], feet: ['foot_l_part', 'foot_r_part'].map(bone) };
+  let outfit: Outfit = 'work';
+  const dress = (name: Outfit) => {
+    outfit = name;
+    for (const parts of Object.values(outfits)) for (const p of parts) p.visible = false;
+    for (const p of outfits[name]) p.visible = true;
+    for (const [slot, regions] of Object.entries(covers)) {
+      const worn = outfits[name].some((p) => p.name.startsWith(`wear_${slot}_`));
+      for (const r of regions) r.visible = !worn;
+    }
+  };
+  const asked = new URLSearchParams(location.search).get('hero') as Outfit | null;
+  dress(asked && OUTFITS.includes(asked) ? asked : 'work');
+
   const y = groundHeight(AT.x, AT.z);
   holder.position.set(AT.x, y, AT.z);
   // A cool rim of sky light on every part, the soft edge the previz renders have and the game's lighting lacks:
@@ -37,23 +78,9 @@ async function build() {
     patched.add(m);
     patchNode(m, 'emissiveNode', (prev) => (prev ?? vec3(0)).add(rim));
   });
-  // Clothes are separate parts (`wear_<slot>_<item>_...`, assets/src/hero-rig.py) over a complete bare figure; boots
-  // hide the bare feet they cover. &hero=bare shows the base alone.
-  const dress = (on: boolean) =>
-    holder.traverse((o) => {
-      if (o.name.startsWith('wear_')) o.visible = on;
-      else if (o.name.startsWith('foot_') && o.name.endsWith('_part')) o.visible = !on;
-    });
-  dress(new URLSearchParams(location.search).get('hero') !== 'bare');
   scene.add(holder);
   await precompile(holder);
 
-  const root = holder.children[0];
-  const bone = (n: string) => {
-    const b = root.getObjectByName(n);
-    if (!b) throw new Error('hero-rig: no bone ' + n);
-    return b;
-  };
   const bones = ['root', 'hips', 'body', 'arm_l', 'arm_r', 'forearm_l', 'forearm_r', 'hand_l', 'hand_r'].map(bone);
   const [, hips, body, armL, armR, forearmL, forearmR] = bones;
   const pupils = ['pupil_l_part', 'pupil_r_part'].map(bone);
@@ -74,9 +101,10 @@ async function build() {
     return [
       {
         id: 'hero-rig',
-        verb: 'Wave',
+        verb: 'Change clothes',
         at,
         run: () => {
+          dress(OUTFITS[(OUTFITS.indexOf(outfit) + 1) % OUTFITS.length]);
           waveT = 0;
           wave.reset().play();
         },
