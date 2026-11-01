@@ -7,13 +7,31 @@
 
 ## Rules for every prototype
 
+- **Solo first.** One person can run every prototype and answer its question alone; multiplayer comes after.
 - **Mechanics only.** No mayor, era props, hats, gags, story, authored art, multi-island or chunk work until the
   playtests say the loop is fun.
 - **Behind a flag.** `?proto=<name>` turns it on; without the flag the game is unchanged. A prototype that changes
   lockstep numbers runs in its own room (`?room=proto-<name>`) so it never touches the real world's save.
-- **Evidence before a playtest.** A `/look` motion sheet for anything that moves, `npm run perf` before and after for
-  anything rendered, `npm run check:full` for `src/sim`, `src/world`, `src/net*` or `server/`.
+- **Evidence before a playtest.** The builder looks at its own `/look` stills and motion sheets and iterates before
+  shipping (AGENTS.md, "See it before you ship"). Tests only for lockstep code; `perf` only for heavy rendering.
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
+
+## How the work is split
+
+- **Build in parallel, playtest in order.** Steps 2b (platform carry), 4 (era swap) and 5 (soapbox) don't depend on
+  each other or on step 1's code, so they're built at once; step 3 waits for `wagonAt` and platform carry.
+- **Greybox first, with a seam for depth.** Each prototype is boxes and code-built shapes, but keeps the thing that
+  will later get depth behind one module (the wagon's look, the cart's body, the avatar), so an art or feel pass
+  swaps that module without touching the mechanic.
+
+## Depth tracks (off the critical path)
+
+Work that can run beside the prototypes when there's attention or agents to spare. None of it ships into the game
+until a look is picked; none of it blocks a playtest.
+
+- **Characters (proposed, waiting on the owner):** concept sheets of the player and The Boogler (`/concept-art`),
+  then modelling and rigging in Blender, then a glTF swap behind the avatar module once the asset pipeline exists.
+- **Feel passes** on whatever a playtest says is close: one facet per agent (the stack's sway, the wagon's clack).
 
 ## 1. Is hauling fun as a toy? (the haul playtest kit)
 
@@ -23,7 +41,7 @@ and test it.
 - [ ] **Haul kit:** `?proto=haul` opens a live tuning panel (sway, spill, pour speed, section cost, caps, bundle
       yield and refill) and a playtest checklist ([docs/playtest-kits/haul.md](../playtest-kits/haul.md)). Room-wide
       numbers change for everyone in the room at once.
-- [ ] **Playtest 1** with 2–4 people; findings in playtests.md, answer in boogle-2.md.
+- [ ] **Playtest 1** (solo); findings in playtests.md, answer in boogle-2.md.
 
 ## 2. Is riding fun? (the rail spike)
 
