@@ -15,6 +15,7 @@ import {
   hashStacks,
   SOFT_CAP,
   HARD_CAP,
+  HARD_MAX,
   SPILL,
 } from '../src/sim/stacks.ts';
 
@@ -53,7 +54,7 @@ test('serialize/load round-trips with the same hash; bad rows throw', () => {
   assert.equal(hashStacks(t), hashStacks(s));
   assert.equal(countOf(t, 3), 9);
   assert.throws(() => loadStacks(t, [[3, 2, 9]], 3), /bad row/, 'a player past the roster');
-  assert.throws(() => loadStacks(t, [[0, 0, HARD_CAP + 1]], 4), /bad row/);
+  assert.throws(() => loadStacks(t, [[0, 0, HARD_MAX + 1]], 4), /bad row/);
   assert.throws(
     () =>
       loadStacks(

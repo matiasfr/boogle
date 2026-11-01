@@ -13,6 +13,7 @@ import {
   loadSources,
   hashSources,
   FULL,
+  FULL_MAX,
   YIELD,
   TRICKLE_EVERY,
 } from '../src/sim/sources.ts';
@@ -59,6 +60,6 @@ test('serialize/load round-trips with the same hash; bad data throws', () => {
   loadSources(t, JSON.parse(JSON.stringify(serializeSources(s))));
   assert.equal(hashSources(t), hashSources(s));
   assert.notEqual(hashSources(createSources()), hashSources(s));
-  assert.throws(() => loadSources(t, { a: 0, s: [1, FULL + 1] }));
+  assert.throws(() => loadSources(t, { a: 0, s: [1, FULL_MAX + 1] }));
   assert.throws(() => loadSources(t, { a: -1, s: [] }));
 });

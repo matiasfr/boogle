@@ -7,7 +7,7 @@
 import { offlineFreight } from '../../sim/bank.ts';
 import { FNV_SEED, fold } from '../../sim/hash.ts';
 import { HELPER_EVERY } from '../../sim/sites.ts';
-import { costOf, TRACK, ROUTE } from '../../sim/route.ts';
+import { TRACK, ROUTE } from '../../sim/route.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream } from './types.ts';
@@ -28,7 +28,7 @@ export function install(sync: SyncView, land: Land, rules: { sites: SitesApi }) 
       bank.ms += e.ms;
       const s = sites.sites.open;
       if (s >= ROUTE.length) return { n: 0 };
-      return { n: sites.addFreight(offlineFreight(sites.helpers(), e.ms, HELPER_EVERY, costOf(s, TRACK))) };
+      return { n: sites.addFreight(offlineFreight(sites.helpers(), e.ms, HELPER_EVERY, sites.cost(s, TRACK))) };
     },
   });
   sync.registerState('bank', {

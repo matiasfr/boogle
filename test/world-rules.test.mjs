@@ -10,13 +10,13 @@ import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.ts';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
-  const s = createSync({ env: { canPlantAt: () => true } });
+  const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
-  return { s, rules };
+  return { s, rules, after: {} };
 }
 const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
 
@@ -46,6 +46,11 @@ const SCRIPTS = {
   sources: () => [{ op: 'src.take', i: 175, j: 200, id: 0 }],
   bank: () => [{ op: 'bank.wake', i: 0, j: 0, ms: 3600000 }], // what a host that loaded an hour-old save measures
   ball: () => [{ op: 'ball.rest', i: 0, j: 0, x: 1200, y: 150, z: 2000 }],
+  // the reset empties the haul states again; each module's change is checked right after its own script (play)
+  tune: () => [
+    { op: 'tune.reset', i: 0, j: 0 },
+    { op: 'tune.set', i: 0, j: 0, key: 'hard', v: 30 },
+  ],
   sites: () => [
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
@@ -56,16 +61,19 @@ const SCRIPTS = {
   ],
 };
 
-// Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits.
+// Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits;
+// x.after holds each module's state hash right after its own script.
 function play(x) {
   const edits = [];
-  for (const m of RULES)
+  for (const m of RULES) {
     for (const step of SCRIPTS[m.name]?.(x) ?? []) {
       const e = typeof step === 'function' ? step(x) : step;
       assert.equal(x.s.submitEdit(e), true, `${m.name}: ${JSON.stringify(e)} was rejected`);
       edits.push(e);
       tick(x, 3);
     }
+    x.after[m.name] = x.s.stateHashes()[m.name];
+  }
   return edits;
 }
 
@@ -89,7 +97,7 @@ test('every op has an accepted edit, and the same edits give the same state on t
   for (const e of play(b)) assert.ok(ops.has(e.op));
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   for (const m of RULES)
-    if (SCRIPTS[m.name]) assert.notEqual(a.s.stateHashes()[m.name], fresh[m.name], `${m.name} did not change`);
+    if (SCRIPTS[m.name]) assert.notEqual(a.after[m.name], fresh[m.name], `${m.name} did not change`);
 });
 
 test('a snapshot round-trips through JSON and stays in step for 50 ticks', () => {

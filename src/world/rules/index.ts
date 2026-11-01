@@ -10,10 +10,11 @@ import * as sites from './sites.ts';
 import * as sources from './sources.ts';
 import * as bank from './bank.ts';
 import * as ball from './ball.ts';
+import * as tune from './tune.ts';
 
 import type { SyncView, Land, Rules } from './types.ts';
 
-export const RULES = [mushrooms, gifts, roster, stacks, piles, sites, sources, bank, ball];
+export const RULES = [mushrooms, gifts, roster, stacks, piles, sites, sources, bank, ball, tune];
 
 // Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.

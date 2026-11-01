@@ -15,6 +15,8 @@ import {
   hashSources,
   YIELD,
   FULL,
+  FULL_MAX,
+  TRICKLE_EVERY,
 } from '../../sim/sources.ts';
 import { materialOf } from '../../sim/materials.ts';
 import { JUNK, bad } from './edit-gen.ts';
@@ -23,25 +25,34 @@ import type { SyncView, Land, Stream } from './types.ts';
 import type { StacksApi } from './stacks.ts';
 import type { PilesApi } from './piles.ts';
 import type { SitesApi } from './sites.ts';
+import type { TuneApi } from './tune.ts';
 
 export const name = 'sources';
 export type SourcesApi = ReturnType<typeof install>;
 
-export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi; piles: PilesApi; sites: SitesApi }) {
+export function install(
+  sync: SyncView,
+  land: Land,
+  rules: { stacks: StacksApi; piles: PilesApi; sites: SitesApi; tune?: TuneApi },
+) {
   const sources = createSources();
   const { stacks, piles, sites } = rules;
+  // The room's numbers: rules.tune (a later module, ./tune.ts) is read at run time, once everything is installed.
+  const full = () => rules.tune?.get('full') ?? FULL;
+  const yieldN = () => rules.tune?.get('yield') ?? YIELD;
   const list = () => sourcesOf(sites.age(), land.layout); // the layout is filled before tick 1
-  const charges = (id: unknown) => chargesOf(sources, sites.age(), list().length, id);
+  const charges = (id: unknown) => chargesOf(sources, sites.age(), list().length, id, full());
   sync.registerOp<{ id: number }>('src.take', {
     validate: (e) => {
       if (charges(e.id) <= 0) return false;
       const k = materialOf(sites.age());
-      const over = YIELD - Math.min(YIELD, stacks.room(e.u, k));
+      const y = yieldN();
+      const over = y - Math.min(y, stacks.room(e.u, k));
       const p = list()[e.id];
       return over === 0 || piles.room(p.i + 1, p.j, k, over) === over;
     },
     apply: (e) => {
-      const n = take(sources, sites.age(), list().length, e.id);
+      const n = take(sources, sites.age(), list().length, e.id, full(), yieldN());
       if (!n) return null;
       const k = materialOf(sites.age());
       const p = list()[e.id];
@@ -60,7 +71,7 @@ export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi; 
   sites.onSectionDone(() => refillAll(sources)); // R1: the island breathes out
   sync.onTick((t) => {
     matchAge(sources, sites.age());
-    trickle(sources, t, sync.world.seed); // R2
+    trickle(sources, t, sync.world.seed, rules.tune?.get('trickle') ?? TRICKLE_EVERY, full()); // R2
   }, 'sources');
   return { sources, charges, list };
 }
@@ -76,6 +87,6 @@ export const edits = {
 };
 
 export function invariants({ sources }: SourcesApi): string | null {
-  for (const [id, n] of sources.spent) if (n < 1 || n > FULL || id < 0) return `source ${id} spent ${n}`;
+  for (const [id, n] of sources.spent) if (n < 1 || n > FULL_MAX || id < 0) return `source ${id} spent ${n}`;
   return null;
 }

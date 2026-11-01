@@ -100,6 +100,7 @@ op names.
 | Key | Set by | Server | Used by |
 |---|---|---|---|
 | `canPlantAt(i, j)` | `src/adapters/mushroom-garden.ts` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+| `protoRoom` | `src/features/haul-kit.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.reset` validate |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
 `server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.
@@ -142,6 +143,7 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the log bundles at the palm cells in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
 | `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
 | `ball.ts` | `ball.rest` | `ball` | `{ ball, rest() }`: the beach ball's last resting spot in cm (`../../sim/ball-rest.ts`); no tick; the adapter `src/features/ball-rest.ts` saves it and puts the ball back |
+| `tune.ts` | `tune.set`, `tune.reset` (`proto-` rooms only, env `protoRoom`) | `tune` | `{ tune, cost(s, ring), get(key) }`: playtest tuning of the haul's lockstep numbers (`../../sim/tune.ts`; defaults are today's constants, only overrides saved); `tune.reset` empties stacks, piles, sites and bundles. `stacks`, `sites` and `sources` read `rules.tune` at run time (it installs after them) |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 
 The land (`{ n, layout }`) comes from `../home-land.json` outside the game (server, tests); see `../README.md`.
