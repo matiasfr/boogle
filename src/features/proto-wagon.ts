@@ -3,6 +3,6 @@
 // is unchanged. Its Lay and Reset buttons need a `proto-` room. Serves DESIGN.md 1 (Toys before chores).
 import { getRoomId } from '../netplay/net.ts';
 import { isProtoRoom } from '../sim/tune.ts';
+import { protoOn } from '../proto/flags.ts';
 
-if (new URLSearchParams(location.search).get('proto') === 'wagon')
-  void import('../proto/wagon/index.ts').then((m) => m.wagonPanel(isProtoRoom(getRoomId())));
+if (protoOn('wagon')) void import('../proto/wagon/index.ts').then((m) => m.wagonPanel(isProtoRoom(getRoomId())));

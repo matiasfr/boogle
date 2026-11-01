@@ -13,6 +13,7 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
+import { protoOn } from '../proto/flags.ts';
 import rigUrl from '../../assets/built/hero-rig.glb?url';
 import castawayUrl from '../../assets/built/hero-outfit-castaway.glb?url';
 import { registerAsset } from '../render/asset-manifest.ts';
@@ -129,4 +130,4 @@ async function build() {
 }
 
 // Also in the look lab (?proto=look&hero=<outfit>), to see it under the scene's render presets.
-if (q.get('proto') === 'assets' || q.has('hero')) build();
+if (protoOn('assets') || q.has('hero')) build();

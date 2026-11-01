@@ -13,6 +13,7 @@ import { groundHeight } from '../adapters/terrain.ts';
 import { SPAWN } from '../constants.ts';
 import { registerAsset } from '../render/asset-manifest.ts';
 import kitUrl from '../../assets/built/scaffold-kit.glb?url';
+import { protoOn } from '../proto/flags.ts';
 
 const KIT = registerAsset({
   id: 'scaffold-kit',
@@ -131,4 +132,4 @@ async function build() {
   (window as unknown as { __assets?: unknown }).__assets = { kit, t: () => t, seek: (s: number) => (t = s) };
 }
 
-if (new URLSearchParams(location.search).get('proto') === 'assets') build();
+if (protoOn('assets')) build();

@@ -5,6 +5,6 @@
 // next visitor).
 import { getRoomId } from '../netplay/net.ts';
 import { isProtoRoom } from '../sim/tune.ts';
+import { protoOn } from '../proto/flags.ts';
 
-if (new URLSearchParams(location.search).get('proto') === 'build')
-  void import('../proto/build/index.ts').then((m) => m.shortcutButtons(isProtoRoom(getRoomId())));
+if (protoOn('build')) void import('../proto/build/index.ts').then((m) => m.shortcutButtons(isProtoRoom(getRoomId())));
