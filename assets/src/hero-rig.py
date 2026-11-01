@@ -16,17 +16,21 @@
 # - The base figure is complete on its own (the bare toy: body, face, arms, hands, legs, feet). Its parts are named
 #   `<part>_part`.
 # - Each piece of clothing is named `wear_<slot>_<item>_<part>`; slots: head, body, hands, feet. Code shows one item
-#   per slot and hides the rest. An item in the feet slot hides the bare feet (`foot_l/r_part`) it covers.
-# - Clothes sit a few cm proud of the base and hang off the same bones, so any item fits any colour of hero. Later
-#   items can live in their own .glb with the same bone names.
+#   per slot and hides the rest.
+# - Clothes win over the body where they overlap: the base is cut into regions, and an item hides the regions under
+#   it, so no body pokes through. A head item hides the top of the head (`crown_part`, above CROWN_CUT), a feet item
+#   the bare feet (`foot_l/r_part`). A head item must cover everything above CROWN_CUT.
+# - Clothes sit a few cm proud of the base and hang off the same bones, so any item fits any colour of hero. This
+#   file carries the work outfit; other outfits are their own .glb (assets/src/hero-outfit-*.py) with the same bones,
+#   and code moves each wear_ part onto the hero's bone of the same name.
 #
 # Model or texture: geometry for what changes the silhouette at play distance (7 m) or moves (eyes, hands, cap and
 # brim, the overalls' edges and straps, cuffs, boots and soles); a texture, later, for flat surface detail that
 # doesn't (stitching, a pocket, canvas weave, cap panel seams, sole tread, leather grain). Expressions would be
 # texture decals too; the eyes stay geometry because they're googly and code moves the pupils.
 #
-# Materials by role: "body" (the player's colour; code recolours it), "cream", "leather", "sole", "brass", "eye",
-# "pupil", "tongue".
+# Materials by role: "body" (the player's colour; code recolours it), "eye", "pupil", "tongue", then the clothes':
+# "cream", "leather", "sole", "brass", "straw", "cloth_red", "rope".
 import sys
 import math
 import bpy
@@ -60,6 +64,9 @@ MAT = {
     'eye': material('eye', 'ffffff', 0.25),
     'pupil': material('pupil', '13243f', 0.25),
     'tongue': material('tongue', 'e8606e', 0.5),
+    'straw': material('straw', 'e2c27c', 0.95),
+    'cloth_red': material('cloth_red', 'd2543f', 0.9),
+    'rope': material('rope', 'b8925a', 0.95),
 }
 
 # ---------------------------------------------------------------- armature
@@ -97,8 +104,9 @@ bpy.ops.object.mode_set(mode='OBJECT')
 # ---------------------------------------------------------------- building blocks
 
 
-def part(name, bone, mat, build, smooth=True):
-    """A rigid mesh built at its place in the rest pose, then parented to one bone without moving."""
+def part(name, bone, mat, build, smooth=True, normal=None):
+    """A rigid mesh built at its place in the rest pose, then parented to one bone without moving. `normal(co)`, if
+    given, sets each vertex's normal exactly (a shape cut into regions then shades as one piece across the cut)."""
     me = bpy.data.meshes.new(name)
     bm = bmesh.new()
     build(bm)
@@ -106,6 +114,8 @@ def part(name, bone, mat, build, smooth=True):
     bm.free()
     for p in me.polygons:
         p.use_smooth = smooth
+    if normal:
+        me.normals_split_custom_set_from_vertices([normal(v.co) for v in me.vertices])
     me.materials.append(MAT[mat])
     # Base parts end in `_part`, clothes start with `wear_`: never the bone's own name, since clips bind by name.
     ob = bpy.data.objects.new(name if name.startswith('wear_') else name + '_part', me)
@@ -193,7 +203,30 @@ def on_bean(x, z, out=0.0):
     return Vector((x, BEAN['ry'] * k * math.sqrt(max(t, 0)) + out, z))
 
 
-part('body', 'body', 'body', bean)
+# ================================================================ end of the shared part
+# Outfit scripts (assets/src/hero-outfit-*.py) run everything above this line, for the same armature, materials and
+# helpers, then build only their own clothes. Keep anything an outfit needs above it, and nothing that exports.
+
+# Cut into regions (above); the cut is shaded as one surface by setting the bean's exact normals.
+CROWN_CUT = BEAN['z1'] + 0.24
+
+
+def bean_normal(co):
+    dz = co.z - BEAN['z1'] if co.z > BEAN['z1'] else co.z - BEAN['z0'] if co.z < BEAN['z0'] else 0.0
+    k = flare(co.z)
+    return Vector((co.x / (BEAN['rx'] * k) ** 2, co.y / (BEAN['ry'] * k) ** 2, dz / BEAN['rz'] ** 2)).normalized()
+
+
+def bean_region(above):
+    def build(bm):
+        bean(bm)
+        cut(bm, [((0, 0, CROWN_CUT), (0, 0, 1))], lambda c: (c.z > CROWN_CUT) == above)
+
+    return build
+
+
+part('body', 'body', 'body', bean_region(False), normal=bean_normal)
+part('crown', 'body', 'body', bean_region(True), normal=bean_normal)
 
 # Face: big googly eyes close together high on the bean (right under a cap's brim), big pupils with a glint, an open
 # D-shaped smile with a tongue. Eyes ride the body bone, so they follow its lean; code moves the pupils.
