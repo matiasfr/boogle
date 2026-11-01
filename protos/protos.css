@@ -306,3 +306,97 @@ textarea:focus,
 .played .did {
   color: var(--mute);
 }
+
+/* "Start here": the playtest order, numbered steps of big Play buttons (main.ts, startHere). */
+.start {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 16px 16px;
+}
+.start h2 {
+  margin: 0 0 2px;
+  font-size: 22px;
+}
+.start h3 {
+  margin: 18px 0 8px;
+  font-size: 17px;
+  color: var(--mute);
+}
+.start .lede {
+  margin: 0 0 12px;
+  color: var(--mute);
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.step .n {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 700;
+  font-size: 20px;
+}
+.step .text {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: grid;
+}
+.step .why {
+  color: var(--mute);
+  font-size: 15px;
+}
+.step .legs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.leg {
+  min-height: 56px;
+  min-width: 112px;
+  font-size: 18px;
+  gap: 8px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+ul.steps .leg {
+  background: var(--sunk);
+  border-color: var(--line);
+  color: var(--fg);
+}
+.leg .tick {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-fg);
+  color: var(--accent);
+  font-size: 14px;
+}
+ul.steps .leg .tick {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.leg .tick[hidden] {
+  display: none;
+}
