@@ -227,8 +227,8 @@ reaches opening day in seconds; Reset haul (the haul kit) also undoes opening da
 and the sky is untouched; the state and ops exist but nothing submits them.
 
 Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
-[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/pois/era/](../../src/pois/era/index.ts) (each era's
-kit, blocks, sky tint and ambience bed, is one table, [blocks.ts](../../src/pois/era/blocks.ts); the call, sky,
+[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/proto/era/](../../src/proto/era/index.ts) (each era's
+kit, blocks, sky tint and ambience bed, is one table, [blocks.ts](../../src/proto/era/blocks.ts); the call, sky,
 ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
 (`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,
 `open.lay` (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.

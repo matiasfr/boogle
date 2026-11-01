@@ -25,9 +25,10 @@ const LIMIT = Number(val('--limit', 33));
 const allocs = argv.includes('--allocs');
 const jsonOut = val('--json', null);
 const heapOut = val('--heap-profile', null);
-// KB/frame of objects, all onFrame hooks together: a ratchet just over today's ~3.1 (2026-11-01, after presence sends
-// went 1.0 -> 0.25), on the way to the plan's 1 KB. Lower it as hooks stop allocating.
-const ALLOC_BUDGET = Number(val('--alloc-budget', 3.6));
+// KB/frame of objects, all onFrame hooks together: a ratchet just over today's ~2.7 (2026-11-01, after presence sends
+// went 1.0 -> 0.25 and the idle railway stopped redrawing), on the way to the plan's 1 KB. Lower it as hooks stop
+// allocating.
+const ALLOC_BUDGET = Number(val('--alloc-budget', 3.2));
 
 // Runs in the page. Frames are timed from a requestAnimationFrame loop of its own (it sees the same vsync the game
 // does), counters are read right after the game's frame, tagged with window.__step / the sky time.

@@ -75,11 +75,23 @@ const dropAt: number[][] = ROUTE.map(() => []);
 const landed: boolean[][] = ROUTE.map(() => []);
 let squash = 0; // the machine's bump when a sleeper lands, decays
 
-function drawRailway(laidTo: (s: number) => number, now: number, live: boolean): void {
+// Redrawn only while something changes: a laid length moves, or a sleeper is still falling or bouncing (until settled,
+// performance.now ms). An idle railway costs a comparison per section a frame.
+const SETTLE_MS = (TUNE.fall + 0.15) * 1000 + 50;
+const laidWas = ROUTE.map(() => -1);
+let settled = 0;
+function drawRailway(tick: number, now: number, live: boolean): void {
+  let moved = false;
+  for (let s = 0; s < ROUTE.length; s++) {
+    const d = s === goal.s && goal.running ? goal.d : laidAt(s, tick);
+    if (d !== laidWas[s]) moved = true;
+    laidWas[s] = d;
+  }
+  if (!moved && now > settled) return;
   let c = 0;
-  ROUTE.forEach((_, s) => {
+  for (let s = 0; s < ROUTE.length; s++) {
     const { len, yaw, n } = LINES[s];
-    const d = Math.min(len, laidTo(s));
+    const d = Math.min(len, laidWas[s]);
     const shown = Math.max(0, Math.min(n, Math.floor(d / TUNE.step + 0.5)));
     const drops = dropAt[s];
     // new sleepers: a few at once are the machine laying them (animate); many are a load or a late join (just there)
@@ -87,6 +99,7 @@ function drawRailway(laidTo: (s: number) => number, now: number, live: boolean):
     for (let k = drops.length; k < shown; k++) {
       drops.push(live && fresh <= 3 ? now : 0);
       landed[s].push(!(live && fresh <= 3));
+      if (live && fresh <= 3) settled = now + SETTLE_MS;
     }
     if (drops.length > shown) drops.length = landed[s].length = shown;
     for (let k = 0; k < shown; k++) {
@@ -122,7 +135,7 @@ function drawRailway(laidTo: (s: number) => number, now: number, live: boolean):
       m.rotation.set(0, yaw, 0);
       m.scale.set(1, 1, Math.max(0.01, railTo));
     }
-  });
+  }
   commitPieces(sleepers, c);
 }
 
@@ -396,7 +409,7 @@ onFrame(
     const tick = sharedSeconds() * 10; // shared time in ticks (TICK_MS = 100)
     aim(tick);
     const live = goal.running && goal.name === 'lay';
-    drawRailway((s) => (s === goal.s && goal.running ? goal.d : laidAt(s, tick)), now, live);
+    drawRailway(tick, now, live);
     if (!pose.ready) return;
     // chase the goal; a big jump (a load, a reset) snaps
     const k = 1 - Math.exp(-dt * TUNE.follow);
