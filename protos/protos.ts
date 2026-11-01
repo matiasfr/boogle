@@ -291,3 +291,39 @@ export const PROTOS: Proto[] = [
     ],
   },
 ];
+
+export type PlaytestStep = {
+  /** A card's id in PROTOS. */
+  id: string;
+  /** One of the card's `variants` by name; leave it out for the card's own url. */
+  variant?: string;
+  /** One short line: what to find out. */
+  why: string;
+  /** Under "When you have time" instead of the numbered run. */
+  later?: true;
+};
+
+// The "Start here" strip at the top of boogle.club/protos/: the order to play in. Consecutive entries for one card are
+// one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
+// listed before it lands.
+export const PLAYTEST_ORDER: PlaytestStep[] = [
+  { id: 'haul', why: 'Is moving logs fun with no goal, and which way?' },
+  { id: 'haul', variant: 'barrow', why: 'Is moving logs fun with no goal, and which way?' },
+  { id: 'haul', variant: 'toss', why: 'Is moving logs fun with no goal, and which way?' },
+  { id: 'haul', variant: 'wave', why: 'Is moving logs fun with no goal, and which way?' },
+  { id: 'wagon', variant: 'fast', why: 'Would you ride it twice for no reason?' },
+  { id: 'wagon', variant: 'stoke', why: 'Would you ride it twice for no reason?' },
+  { id: 'soapbox', variant: 'drifty', why: 'Would you do another run?' },
+  { id: 'era', why: 'Does the island change enough?' },
+  { id: 'lay', variant: 'quick', why: 'Is laying a section satisfying or dead time?' },
+  { id: 'lay', variant: 'push', why: 'Is laying a section satisfying or dead time?' },
+  { id: 'build', why: 'Is watching it go up satisfying?' },
+  { id: 'minis', why: 'Which would you play again unprompted?' },
+  { id: 'arrive', why: 'Open the link cold: were you playing within 10 seconds?' },
+  { id: 'look', why: 'Which look should Boogle aim for?', later: true },
+  { id: 'groove', why: 'Does the island feel more alive with it?', later: true },
+  { id: 'uisfx', why: 'Does the UI feel alive without getting in the way?', later: true },
+  { id: 'layout', why: 'Which layout feels best to walk?', later: true },
+  { id: 'board', why: 'Does the island feel connected and quick to cross?', later: true },
+  { id: 'assets', why: 'Can you tell the Blender scaffold from the code one?', later: true },
+];

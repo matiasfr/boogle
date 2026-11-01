@@ -2,9 +2,9 @@
 // saved in this browser (store.ts) that copy out as a docs/playtests.md entry, with the verdict and behaviour counters
 // the in-game prototype bar (src/proto/bar/) recorded. Nothing here talks to a server.
 import './protos.css';
-import { PROTOS } from './protos.ts';
+import { PLAYTEST_ORDER, PROTOS } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
-import { VERDICTS, countsLine, read, write, type Saved } from './store.ts';
+import { VERDICTS, countsLine, read, urlParam, write, type Saved } from './store.ts';
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -191,6 +191,73 @@ const redraws: (() => void)[] = [];
 // The game tab saved a verdict or counters: show them without a reload.
 addEventListener('storage', () => redraws.forEach((fn) => fn()));
 addEventListener('focus', () => redraws.forEach((fn) => fn()));
+
+// "Start here": PLAYTEST_ORDER as numbered steps of big Play buttons, one per variant, ticked once the game's bar has a
+// verdict for that variant. Entries whose card or variant is missing are skipped.
+function startHere(): HTMLElement {
+  type Run = { p: Proto; why: string; later: boolean; legs: { label: string; url: string; v: string }[] };
+  const runs: Run[] = [];
+  for (const step of PLAYTEST_ORDER) {
+    const p = PROTOS.find((x) => x.id === step.id && x.status !== 'retired');
+    const variant = step.variant ? p?.variants?.find((v) => v.name === step.variant) : undefined;
+    if (!p || (step.variant && !variant)) continue;
+    const leg = variant
+      ? { label: variant.name, url: import.meta.env.BASE_URL + variant.url.replace(/^\//, ''), v: variant.name }
+      : {
+          label: 'default',
+          url: PLACEHOLDER.test(p.url) && !saved(p.id).name.trim() ? `#${p.id}` : href(p, saved(p.id).name),
+          v: urlParam(p, 'v') ?? '',
+        };
+    const last = runs.at(-1);
+    if (last?.p === p) last.legs.push(leg);
+    else runs.push({ p, why: step.why, later: !!step.later, legs: [leg] });
+  }
+
+  const wrap = el('section', 'start');
+  wrap.append(
+    el('h2', '', 'Start here'),
+    el('p', 'lede', 'Solo, iPad, about 20 minutes for 1–3. Copy each entry back to the director.'),
+  );
+  const list = (rs: Run[], numbered: boolean) => {
+    const ol = el(numbered ? 'ol' : 'ul', 'steps');
+    rs.forEach((r, i) => {
+      const li = el('li', 'step');
+      if (numbered) li.append(el('span', 'n', String(i + 1)));
+      const text = el('div', 'text');
+      text.append(el('strong', '', r.p.title), el('span', 'why', r.why));
+      const legs = el('div', 'legs');
+      for (const leg of r.legs) {
+        // A lone default is just "Play"; "default" only beside the variants it's compared with.
+        const a = el('a', 'btn leg', r.legs.length === 1 && leg.label === 'default' ? 'Play' : leg.label);
+        a.href = leg.url;
+        if (!touch && !leg.url.startsWith('#')) a.target = '_blank';
+        const tick = el('span', 'tick', '✓');
+        tick.setAttribute('aria-label', 'verdict saved');
+        a.append(tick);
+        const draw = () => {
+          const s = saved(r.p.id);
+          tick.hidden = !(s.verdict && s.verdictV === leg.v);
+        };
+        draw();
+        redraws.push(draw);
+        legs.append(a);
+      }
+      li.append(text, legs);
+      ol.append(li);
+    });
+    return ol;
+  };
+  wrap.append(
+    list(
+      runs.filter((r) => !r.later),
+      true,
+    ),
+  );
+  const later = runs.filter((r) => r.later);
+  if (later.length) wrap.append(el('h3', '', 'When you have time'), list(later, false));
+  return wrap;
+}
+document.getElementById('list')!.before(startHere());
 
 const sorted = PROTOS.map((p, i) => ({ p, i }))
   .sort((a, b) => ORDER[a.p.status] - ORDER[b.p.status] || a.i - b.i)
