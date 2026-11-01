@@ -53,7 +53,7 @@ part('wear_body_shorts_belt', 'body', 'rope', lambda bm: ring(bm, (0, 0, SHORTS_
 
 def shorts_legs(sx, side):
     hip = J[f'thigh_{side}']
-    part(f'wear_body_shorts_leg_{side}', f'thigh_{side}', 'cloth_red', lambda bm: capsule(bm, hip + Vector((0, 0, 0.1)), hip - Vector((0, 0, 0.03)), 0.165, 0.17, 14))
+    part(f'wear_body_shorts_leg_{side}', f'thigh_{side}', 'cloth_red', lambda bm: capsule(bm, hip + Vector((0, 0, 0.1)), hip - Vector((0, 0, 0.03)), 0.19, 0.195, 14))
 
 
 sides(shorts_legs)

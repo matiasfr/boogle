@@ -76,8 +76,8 @@ JOINTS = {
     'root': ((0, 0, 0), None),
     'hips': ((0, 0, 0.42), 'root'),
     'body': ((0, 0, 0.58), 'hips'),
-    'arm_l': ((0.39, 0, 1.06), 'body'),
-    'forearm_l': ((0.5, 0, 0.88), 'arm_l'),
+    'arm_l': ((0.41, 0, 1.0), 'body'),
+    'forearm_l': ((0.5, 0, 0.85), 'arm_l'),
     'hand_l': ((0.54, 0.02, 0.7), 'forearm_l'),
     'thigh_l': ((0.2, 0, 0.42), 'hips'),
     'shin_l': ((0.21, 0, 0.3), 'thigh_l'),
@@ -176,45 +176,61 @@ def sides(fn):
 J = {k: Vector(v[0]) for k, v in JOINTS.items()}
 
 # ---------------------------------------------------------------- the base figure
-# The bean: head and body in one, a pill (straight sides, round top and bottom), a touch wider at the bottom.
+# The bean: head and body in one. A pill (round top and bottom) softened like a jellybean (Fall Guys) or a vinyl toy:
+# a belly that bulges, most of all at the front, a top a touch narrower than the hips, no straight sides anywhere.
 BEAN = {'z0': 0.8, 'z1': 1.34, 'rx': 0.42, 'ry': 0.38, 'rz': 0.38}  # lower and upper cap centres, radii
 
 
-def flare(z):
-    """How much wider the bean is at height z: 1.04 at the bottom, 1 from the middle up."""
-    return 1 + 0.04 * max(0.0, min(1.0, (BEAN['z0'] + 0.2 - z) / 0.58))
+def bump(z, at, width):
+    return math.exp(-(((z - at) / width) ** 2))
+
+
+def widths(z, front=True):
+    """How much wider (x, y) the bean is at height z than the plain pill; `front` for its front half."""
+    belly = 0.075 * bump(z, 0.9, 0.3)
+    narrow = 0.04 * max(0.0, min(1.0, (z - 1.0) / 0.5))  # tapering up into the head
+    kx = 1 + belly - narrow
+    ky = kx + (0.06 * bump(z, 0.92, 0.26) if front else 0.0)
+    return kx, ky
 
 
 def bean(bm, grow=0.0, segs=28):
     verts = sphere(bm, (0, 0, 0), (BEAN['rx'] + grow, BEAN['ry'] + grow, BEAN['rz'] + grow), segs)
     for v in verts:
         v.co.z += BEAN['z1'] if v.co.z > 0 else BEAN['z0']
-        k = flare(v.co.z)
-        v.co.x *= k
-        v.co.y *= k
+        kx, ky = widths(v.co.z, v.co.y > 0)
+        v.co.x *= kx
+        v.co.y *= ky
     return verts
 
 
 def on_bean(x, z, out=0.0):
     """The front surface point of the bean at (x, z), pushed `out` along +Y: where the face and buttons sit."""
     dz = z - BEAN['z1'] if z > BEAN['z1'] else z - BEAN['z0'] if z < BEAN['z0'] else 0.0
-    k = flare(z)
-    t = 1 - (x / (BEAN['rx'] * k)) ** 2 - (dz / BEAN['rz']) ** 2
-    return Vector((x, BEAN['ry'] * k * math.sqrt(max(t, 0)) + out, z))
+    kx, ky = widths(z)
+    t = 1 - (x / (BEAN['rx'] * kx)) ** 2 - (dz / BEAN['rz']) ** 2
+    return Vector((x, BEAN['ry'] * ky * math.sqrt(max(t, 0)) + out, z))
 
 
 # ================================================================ end of the shared part
 # Outfit scripts (assets/src/hero-outfit-*.py) run everything above this line, for the same armature, materials and
 # helpers, then build only their own clothes. Keep anything an outfit needs above it, and nothing that exports.
 
-# Cut into regions (above); the cut is shaded as one surface by setting the bean's exact normals.
+# Cut into regions (above). Each region takes its normals from the whole bean, so the cut shades as one surface.
 CROWN_CUT = BEAN['z1'] + 0.24
+_whole = bmesh.new()
+bean(_whole)
+_whole.normal_update()
+_normals = {tuple(round(c, 5) for c in v.co): v.normal.copy() for v in _whole.verts}
+_whole.free()
 
 
 def bean_normal(co):
-    dz = co.z - BEAN['z1'] if co.z > BEAN['z1'] else co.z - BEAN['z0'] if co.z < BEAN['z0'] else 0.0
-    k = flare(co.z)
-    return Vector((co.x / (BEAN['rx'] * k) ** 2, co.y / (BEAN['ry'] * k) ** 2, dz / BEAN['rz'] ** 2)).normalized()
+    """The whole bean's smooth normal at a vertex; a vertex the cut made gets the nearest one's."""
+    key = tuple(round(c, 5) for c in co)
+    if key in _normals:
+        return _normals[key]
+    return min(_normals.items(), key=lambda kv: (Vector(kv[0]) - co).length_squared)[1]
 
 
 def bean_region(above):
@@ -256,9 +272,12 @@ part('tongue', 'body', 'tongue', lambda bm: sphere(bm, on_bean(0.012, 1.06, 0.00
 
 def limbs(sx, side):
     s = side
-    # Arms: thick and short, tapering a little to the wrist; the shoulder sinks into the bean so no gap shows.
-    part(f'arm_{s}', f'arm_{s}', 'body', lambda bm: capsule(bm, J[f'arm_{s}'] - Vector((sx * 0.05, 0, 0)), J[f'forearm_{s}'], 0.1, 0.105))
-    part(f'forearm_{s}', f'forearm_{s}', 'body', lambda bm: capsule(bm, J[f'forearm_{s}'], J[f'hand_{s}'], 0.105, 0.115))
+    # Arms grow out of the body (Astro Bot): a soft shoulder mound on the body that the arm's ball sinks into, so the
+    # joint reads as a lump, not a tube stuck in a side. The arm is slim at the shoulder and thickens to the wrist.
+    sh = J[f'arm_{s}']
+    part(f'shoulder_{s}', 'body', 'body', lambda bm: sphere(bm, sh - Vector((sx * 0.04, 0, -0.01)), (0.12, 0.13, 0.14), 18))
+    part(f'arm_{s}', f'arm_{s}', 'body', lambda bm: capsule(bm, sh, J[f'forearm_{s}'], 0.1, 0.1))
+    part(f'forearm_{s}', f'forearm_{s}', 'body', lambda bm: capsule(bm, J[f'forearm_{s}'], J[f'hand_{s}'], 0.1, 0.115))
 
     def mitt(bm):
         # A big round mitten hand, a little flattened front to back, with a thumb towards the front.
@@ -268,10 +287,20 @@ def limbs(sx, side):
 
     part(f'hand_{s}', f'hand_{s}', 'body', mitt)
     # Legs: short and stout; the thigh tucks up into the bean.
-    part(f'thigh_{s}', f'thigh_{s}', 'body', lambda bm: capsule(bm, J[f'thigh_{s}'] + Vector((0, 0, 0.06)), J[f'shin_{s}'], 0.15, 0.145))
-    part(f'shin_{s}', f'shin_{s}', 'body', lambda bm: capsule(bm, J[f'shin_{s}'], J[f'foot_{s}'], 0.145, 0.14))
-    # A bare foot: a round chunky foot with the toe forward (boots cover it, and hide it).
-    part(f'foot_{s}', f'foot_{s}', 'body', lambda bm: sphere(bm, (J[f'foot_{s}'].x * 1.05, 0.07, 0.11), (0.18, 0.24, 0.12), 20))
+    part(f'thigh_{s}', f'thigh_{s}', 'body', lambda bm: capsule(bm, J[f'thigh_{s}'] + Vector((0, 0, 0.06)), J[f'shin_{s}'], 0.165, 0.16))
+    part(f'shin_{s}', f'shin_{s}', 'body', lambda bm: capsule(bm, J[f'shin_{s}'], J[f'foot_{s}'], 0.16, 0.155))
+
+    def foot(bm):
+        # A big planted foot (Astro Bot, vinyl toys): a round top, a flat sole, and a toe that bulges out in front.
+        f = J[f'foot_{s}']
+        c = Vector((f.x * 1.05, 0.09, 0.13))
+        for v in sphere(bm, c, (0.195, 0.28, 0.15), 24):
+            front = max(0.0, (v.co.y - c.y) / 0.28)  # 0 at the middle, 1 at the toe
+            v.co.x = c.x + (v.co.x - c.x) * (1 + 0.12 * front)  # the toe swells into a bulb
+            if v.co.z < c.z:
+                v.co.z = max(0.0, c.z - (c.z - v.co.z) * 0.9)  # a flat sole, planted on the ground
+
+    part(f'foot_{s}', f'foot_{s}', 'body', foot)
 
 
 sides(limbs)
@@ -325,8 +354,8 @@ def overall_sides(sx, side):
             u = i / 10
             t = t0 + u * (math.pi - 2 * t0)
             z = BIB_TOP - 0.03 + (WAIST + 0.04 - BIB_TOP + 0.03) * u + 0.2 * math.sin(math.pi * u)
-            k = flare(z) + 0.075
-            pts.append(Vector((sx * BEAN['rx'] * k * math.sin(t), BEAN['ry'] * k * math.cos(t), z)))
+            kx, ky = widths(z, math.cos(t) > 0)
+            pts.append(Vector((sx * BEAN['rx'] * (kx + 0.075) * math.sin(t), BEAN['ry'] * (ky + 0.075) * math.cos(t), z)))
         for a, b in zip(pts, pts[1:]):
             capsule(bm, a, b, 0.045, segs=8)
 
@@ -334,8 +363,8 @@ def overall_sides(sx, side):
     part(f'wear_body_overalls_button_{side}', 'body', 'brass', lambda bm: ring(bm, on_bean(sx * 0.19, BIB_TOP - 0.035, 0.055), 0.045, 0.035, 'Y'))
     # Short trouser legs to mid-thigh, flaring a little, with a turned-up hem.
     hip = J[f'thigh_{side}']
-    part(f'wear_body_overalls_leg_{side}', f'thigh_{side}', 'cream', lambda bm: capsule(bm, hip + Vector((0, 0, 0.1)), hip - Vector((0, 0, 0.04)), 0.16, 0.165, 14))
-    part(f'wear_body_overalls_hem_{side}', f'thigh_{side}', 'cream', lambda bm: ring(bm, hip - Vector((0, 0, 0.1)), 0.172, 0.05, segs=18))
+    part(f'wear_body_overalls_leg_{side}', f'thigh_{side}', 'cream', lambda bm: capsule(bm, hip + Vector((0, 0, 0.1)), hip - Vector((0, 0, 0.04)), 0.185, 0.19, 14))
+    part(f'wear_body_overalls_hem_{side}', f'thigh_{side}', 'cream', lambda bm: ring(bm, hip - Vector((0, 0, 0.1)), 0.198, 0.05, segs=18))
 
 
 sides(overall_sides)
@@ -351,18 +380,18 @@ def boots(sx, side):
     f = J[f'foot_{side}']
 
     def upper(bm):
-        sphere(bm, (f.x, 0.07, 0.14), (0.175, 0.255, 0.135), 20)
-        ring(bm, (f.x, 0.0, 0.25), 0.14, 0.12, segs=18, r2=0.13)
+        sphere(bm, (f.x * 1.05, 0.09, 0.15), (0.21, 0.29, 0.155), 20)
+        ring(bm, (f.x, 0.0, 0.26), 0.18, 0.12, segs=18, r2=0.172)
 
     part(f'wear_feet_boots_{side}', f'foot_{side}', 'cream', upper)
 
     def sole(bm):
         ring(bm, (0, 0, 0), 1.0, 0.07, segs=24)
-        bmesh.ops.transform(bm, verts=bm.verts[:], matrix=Matrix.Translation((f.x, 0.07, 0.035)) @ Matrix.Diagonal((0.185, 0.27, 1, 1)))
+        bmesh.ops.transform(bm, verts=bm.verts[:], matrix=Matrix.Translation((f.x * 1.05, 0.09, 0.035)) @ Matrix.Diagonal((0.215, 0.3, 1, 1)))
 
     part(f'wear_feet_boots_sole_{side}', f'foot_{side}', 'sole', sole)
-    part(f'wear_feet_boots_strap_{side}', f'foot_{side}', 'leather', lambda bm: ring(bm, (f.x, 0.0, 0.26), 0.15, 0.06, segs=18))
-    part(f'wear_feet_boots_button_{side}', f'foot_{side}', 'brass', lambda bm: ring(bm, (f.x + sx * 0.1, 0.11, 0.26), 0.03, 0.03, 'Y'))
+    part(f'wear_feet_boots_strap_{side}', f'foot_{side}', 'leather', lambda bm: ring(bm, (f.x, 0.0, 0.29), 0.19, 0.06, segs=18))
+    part(f'wear_feet_boots_button_{side}', f'foot_{side}', 'brass', lambda bm: ring(bm, (f.x + sx * 0.12, 0.15, 0.29), 0.03, 0.03, 'Y'))
 
 
 sides(boots)
