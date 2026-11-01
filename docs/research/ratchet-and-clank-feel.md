@@ -121,6 +121,6 @@ Numbers are starting values for a playtest. Where Boogle's code sets the context
 
 ## Not found
 
-- Insomniac's bolt magnet parameters (radius, pull curve, speeds, stagger), crate spill tuning, and the bolt pickup sound's design. No developer talk, blog or sound-design interview covering them turned up.
+- Insomniac's bolt magnet parameters (radius, pull curve, speeds, stagger), crate spill tuning, and the bolt pickup sound's design. No developer talk, blog or sound-design interview covering them turned up. A second, sound-only search (2026-11-02) found none either; what is known about the bolt sound and the collect-sound recipe Boogle uses are in [collect-sounds.md](collect-sounds.md).
 - Ratchet's run, jump, glide and grind numbers, camera parameters and animation blend times. The GDC 2022 animation talk may cover some of it but has no written summary.
 - A primary source on Rift Apart's grind controls (rail switching, speed control).

@@ -1,11 +1,12 @@
 // Pickup feel for the haul prototype (?proto=haul, every variant): each pickup (Take logs, a pile walked or scooped
-// up) gives your avatar a small squash and a wooden "thock", its pitch rising with what you carry
+// up) gives your avatar a small squash and a wooden "thock" with a clink on top, rising with what you carry
 // (docs/research/carrying-and-logistics-play.md rec 3: 5-8% vertical over 80-120 ms, a sound per pickup, about +-8%
 // pitch variation). Local only. Serves DESIGN.md 1 (toys before chores: the pickup itself should feel like something).
 import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
 import { onFly } from '../../render/haul-pieces.ts';
 import { getAudio } from '../../render/audio.ts';
+import { clink, pentatonic } from '../../render/clink.ts';
 import { me } from '../../player/player.ts';
 import { identity } from '../../player/identity.ts';
 import { haulVariant } from '../../player/haul-variant.ts';
@@ -17,38 +18,36 @@ const ARRIVE_MS = 300; // about when the flying pieces reach you (haul-feel flyM
 let squashAt = -1e9;
 const pending: number[] = []; // ms a pickup's pieces arrive
 
+// v2 (2026-11-02 audit: "juice it better"; docs/research/collect-sounds.md): the low wooden knock stays, tuned two
+// octaves under a clink, half wood and half metal, that steps up the pentatonic scale every 6 logs you carry (in key,
+// where v1 slid ±8 % off it), with its bounce two steps higher: "tok-ting".
 export function thock(count: number) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
   const t = ctx.currentTime + 0.005;
-  const pitch = (1 + Math.min(count, 60) / 120) * (1 + (Math.random() - 0.5) * 0.16); // rises with the load, +-8%
-  // a knock: a short sine drop for the body, a filtered noise tick for the wood
+  const deg = Math.min(9, Math.floor(Math.min(count, 60) / 6));
+  const f = pentatonic(deg);
+  // the knock: a sine falling into the root two octaves down
   const o = ctx.createOscillator();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(240 * pitch, t);
-  o.frequency.exponentialRampToValueAtTime(110 * pitch, t + 0.09);
+  o.frequency.setValueAtTime((f / 4) * 1.8, t);
+  o.frequency.exponentialRampToValueAtTime(f / 4, t + 0.06);
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(0.32, t + 0.006);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.26, t + 0.004);
+  g.gain.setTargetAtTime(0, t + 0.004, 0.03);
   o.connect(g).connect(out);
   o.start(t);
-  o.stop(t + 0.15);
-  const len = Math.floor(ctx.sampleRate * 0.04);
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * (1 - k / len) ** 2;
-  const n = ctx.createBufferSource();
-  n.buffer = buf;
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 1400 * pitch;
-  bp.Q.value = 3;
-  const ng = ctx.createGain();
-  ng.gain.value = 0.25;
-  n.connect(bp).connect(ng).connect(out);
-  n.start(t);
+  o.stop(t + 0.2);
+  clink(ctx, out, {
+    at: t,
+    freq: f,
+    level: 0.13,
+    metal: 0.5,
+    ring: 0.16,
+    strike: 1.2,
+    bounceFreq: pentatonic(deg + 2),
+  });
 }
 
 // The magnet variant (magnet.ts) sounds each piece as it lands and calls squash() itself.

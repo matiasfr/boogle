@@ -429,18 +429,16 @@ const PAGES: Page[] = [
       {
         id: 'magnet-burst',
         group: 'Haul (?proto=haul)',
-        title: 'Magnet: 12 pickups in a burst',
-        when: 'The magnet variant (&v=magnet): a tick per piece landing on your back, climbing the scale, closing on a chord; then a short burst after the run resets.',
-        body: seq(
-          `const { arrivalTick, burstChord } = await import('/src/proto/haul/magnet-sound.ts');`,
-          [
-            ...Array(12).fill(`arrivalTick();`),
-            `burstChord(); await sleep(1200);`,
-            ...Array(5).fill(`arrivalTick();`),
-            `burstChord();`,
-          ],
-          55,
-        ),
+        title: 'Magnet: a 5-piece and a 12-piece burst',
+        when: 'The magnet variant (&v=magnet): a swell as pieces leave the pile, a bolt clink per piece landing on your back (climbing, then a payout shimmer), a cha-ching to close each burst.',
+        body: `const { arrivalTick, burstChord, whooshIn } = await import('/src/proto/haul/magnet-sound.ts');
+          return R.run(null, async () => {
+            for (const n of [5, 12]) {
+              whooshIn(n); await sleep(200);
+              for (let k = 0; k < n; k++) { arrivalTick(); await sleep(k < 8 ? 40 : 45); }
+              burstChord(); await sleep(1100);
+            }
+          });`,
       },
     ],
   },

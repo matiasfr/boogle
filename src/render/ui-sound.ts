@@ -13,6 +13,7 @@
 //   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a quiet split-flap flutter (four
 //                           tiny card clicks, no pitched pip), at vol (0-1, by distance from the plaque)
 import { getAudio } from './audio.ts';
+import { clink } from './clink.ts';
 
 export const UI_KIT = new URLSearchParams(location.search).get('proto') === 'uisfx';
 if (UI_KIT) document.documentElement.classList.add('ui-kit');
@@ -119,9 +120,8 @@ export function uiSound(kind: UiSound, arg = 0): void {
       blip(ctx, out, { type: 'square', f0: note(2) * j, at, dur: 0.09, peak: 0.12, lp: 1600 });
       blip(ctx, out, { type: 'square', f0: note(-1) * j, at: at + 0.1, dur: 0.11, peak: 0.12, lp: 1400 });
       break;
-    case 'count':
-      blip(ctx, out, { type: 'sine', f0: note(5 + run) * j, at, dur: 0.06, peak: 0.28 });
-      blip(ctx, out, { type: 'triangle', f0: note(10 + run) * j, at, dur: 0.03, peak: 0.06 });
+    case 'count': // v2: a small bright clink (clink.ts), in tune (its own ±6 cents, not j), the same climb
+      clink(ctx, out, { at, freq: note(5 + run), level: 0.16, metal: 0.65, ring: 0.14, bounce: 0.25, strike: 0.5 });
       break;
     case 'flap': {
       // a split-flap board settling: four tiny card clicks, each softer and a little lower; news, not an alarm
