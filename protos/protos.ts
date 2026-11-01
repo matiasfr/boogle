@@ -294,6 +294,7 @@ export const PROTOS: Proto[] = [
     question: 'Does running and jumping as this character feel good enough to keep it?',
     what: 'Every player is the jointed hero in their colour: a run cycle, arms up in the air, the old squash and flops on top, a blink. &hero=work or castaway dresses it.',
     since: '2026-11-01',
+    chapter: 'it swaps your body for every toy, so it is judged on its own',
   },
   {
     id: 'minis',
@@ -398,6 +399,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'layout', why: 'Which layout feels best to walk?', later: true },
   { id: 'board', why: 'Does the island feel connected and quick to cross?', later: true },
   { id: 'assets', why: 'Can you tell the Blender scaffold from the code one?', later: true },
+  { id: 'hero', why: 'Does running as the hero feel good enough to keep?', later: true },
   { id: 'moves', why: 'Do you jump twice just because you can?', later: true },
   { id: 'ride', why: 'Would you ride the flatbed twice for no reason?', later: true },
 ];
