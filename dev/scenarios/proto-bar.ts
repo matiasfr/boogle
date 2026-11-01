@@ -57,6 +57,8 @@ export default {
     t.check('still: the bar at iPad size', true, shot);
     const s = (await g.eval(STORE)) as { verdict?: string; verdictNote?: string };
     t.check('the verdict is saved for the protos page', s.verdict === 'yes' && s.verdictNote === 'drifts feel great');
+    const sent = await g.eval(`return !document.querySelector('.pb-sent')?.hidden;`);
+    t.check('the verdict went to the server (the sent tick shows)', sent === true);
 
     // Move off the spawn, switch to drifty: the handling changes live, no reload, and you stay where you stood.
     await g.eval(`const { teleport } = await import('/src/physics/physics.ts');
