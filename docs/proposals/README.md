@@ -15,3 +15,4 @@ Directions and ideas that aren't decided yet. Unlike [PLAN.md](../../PLAN.md), n
 =======
 - [vertical-slice.md](vertical-slice.md): the build spec for eras 1–2 (castaway camp → steam wagons) on top of the 0.1 haul loop: era props, the timetabled steam wagon (riding feel first), opening day (triggered together, then watched), the mayor, two feel-first venues, the era hat, and four open decisions.
 >>>>>>> origin/main
+- [island-layout.md](island-layout.md): three layout options for eras 1–2 on home (lighthouse line, west cove, east bay; east bay recommended), a rough archipelago plan, the interactive layout lab and `?layout=` to walk an option in greybox.
