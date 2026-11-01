@@ -34,9 +34,9 @@ import {
 } from 'three/tsl';
 import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.ts';
 import { lerp, smoothstep } from '../math.ts';
-import { renderer, scene, camera, sun, sky } from './scene.js';
-import { seaU } from './water-render.js';
-import { clouds } from './props.js';
+import { renderer, scene, camera, sun, sky } from './scene.ts';
+import { seaU } from './water-render.ts';
+import { clouds } from './props.ts';
 import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
 
@@ -49,7 +49,8 @@ const FACE_HEX = '#1d1640'; // same ink as The Boogler's face
 const NOON = SUN_DIR.clone().normalize();
 const EAST = new THREE.Vector3().crossVectors(NOON, new THREE.Vector3(0, 1, 0)).normalize();
 const AXIS = new THREE.Vector3().crossVectors(EAST, NOON).normalize();
-const arcDir = (angle, out) => out.copy(EAST).multiplyScalar(Math.cos(angle)).addScaledVector(NOON, Math.sin(angle));
+const arcDir = (angle: number, out: THREE.Vector3) =>
+  out.copy(EAST).multiplyScalar(Math.cos(angle)).addScaledVector(NOON, Math.sin(angle));
 
 // ---------------------------------------------------------------- palette (THREE.Color: hex in sRGB, held in linear)
 const C = {
@@ -91,14 +92,15 @@ const SUN_I = 2.5,
   HEMI_NIGHT = 0.5;
 
 // ---------------------------------------------------------------- textures
-function faceCanvas(size, draw) {
+type G2 = CanvasRenderingContext2D;
+function faceCanvas(size: number, draw: (g: G2, half: number) => void) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
-  draw(c.getContext('2d'), size / 2);
+  draw(c.getContext('2d')!, size / 2);
   return c;
 }
 
-function drawSmile(g, cx, cy, r, w) {
+function drawSmile(g: G2, cx: number, cy: number, r: number, w: number) {
   g.strokeStyle = FACE_HEX;
   g.lineWidth = w;
   g.lineCap = 'round';
@@ -107,7 +109,7 @@ function drawSmile(g, cx, cy, r, w) {
   g.stroke();
 }
 
-function drawCheeks(g, cx, cy, dx, rx, ry, color) {
+function drawCheeks(g: G2, cx: number, cy: number, dx: number, rx: number, ry: number, color: string) {
   g.fillStyle = color;
   for (const sx of [-1, 1]) {
     g.beginPath();
@@ -219,8 +221,10 @@ const skyU = {
   uStarRot: uniform(new THREE.Matrix3()),
 };
 
-const hash = Fn(([p0]) => {
-  const p = fract(p0.mul(0.3183099).add(0.1)).mul(17);
+// TSL's typings can't follow a vec3 through fract and back to .x/.y/.z: the node is typed loosely here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const hash = Fn(([p0]: [any]) => {
+  const p = vec3(fract(p0.mul(0.3183099).add(0.1)).mul(17));
   return fract(p.x.mul(p.y).mul(p.z).mul(p.x.add(p.y).add(p.z)));
 });
 
@@ -264,7 +268,7 @@ const moonU = {
   uFade: uniform(1),
 };
 
-function makeMoonMat(map) {
+function makeMoonMat(map: THREE.Texture) {
   const mat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, fog: false });
   mat.colorNode = Fn(() => {
     const tex = texture(map, uv()).rgb; // sampled before the discard
@@ -281,18 +285,19 @@ function makeMoonMat(map) {
   return mat;
 }
 
-let sunGroup = null,
-  sunFace = null,
-  sunRays = null,
-  moonGroup = null,
-  hemi = null;
+type Billboard = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+let sunGroup: THREE.Group | null = null,
+  sunFace: Billboard | null = null,
+  sunRays: Billboard | null = null,
+  moonGroup: THREE.Group | null = null,
+  hemi: THREE.HemisphereLight | null = null;
 
-const plainMat = (map) =>
+const plainMat = (map: THREE.Texture) =>
   new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, fog: false, toneMapped: false });
 
 export function createSky() {
   sky.material.dispose();
-  sky.material = skyMat;
+  (sky as THREE.Mesh).material = skyMat;
 
   sunGroup = new THREE.Group();
   sunRays = new THREE.Mesh(new THREE.PlaneGeometry(SUN_R * 3.3, SUN_R * 3.3), plainMat(sunRaysTexture()));
@@ -309,7 +314,7 @@ export function createSky() {
       o.renderOrder = -0.5; // before the sea, so the water draws over a setting sun
     });
   scene.add(sunGroup, moonGroup);
-  hemi = scene.children.find((o) => o.isHemisphereLight) || null;
+  hemi = (scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight) || null;
 }
 
 // ---------------------------------------------------------------- per frame
@@ -320,18 +325,18 @@ const sunDir = new THREE.Vector3(),
   horizon = new THREE.Color(),
   starQ = new THREE.Quaternion(),
   starM = new THREE.Matrix4();
-let clockMs = null;
-const debug = { frac: null, phase: null, noShadowPass: false };
+let clockMs: number | null = null;
+const debug = { frac: null as number | null, phase: null as number | null, noShadowPass: false };
 
 // Smooth the 10 Hz world tick into a continuous clock (and jump if it moves a lot, e.g. after loading a snapshot).
-function worldMs(dt) {
+function worldMs(dt: number) {
   const target = world.tick * TICK_MS;
   if (clockMs === null || Math.abs(target - clockMs) > 3000) clockMs = target;
   else clockMs += dt * 1000 + (target - clockMs) * Math.min(1, dt * 2);
   return clockMs;
 }
 
-function placeBillboard(group, dir) {
+function placeBillboard(group: THREE.Group, dir: THREE.Vector3) {
   group.position.copy(camera.position).addScaledVector(dir, DIST);
   group.lookAt(camera.position);
 }
@@ -342,8 +347,9 @@ function placeBillboard(group, dir) {
 export const atmosphere = { underground: 0 };
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
-export function updateSky(dt, elapsed) {
-  if (!sunGroup) return;
+export function updateSky(dt: number, elapsed: number) {
+  if (!sunGroup || !moonGroup || !sunFace || !sunRays) return;
+  const fog = scene.fog as THREE.Fog; // scene.ts sets a linear Fog
   let s = skyAt(worldMs(dt));
   if (debug.frac !== null || debug.phase !== null) s = skyState(debug.frac ?? s.frac, debug.phase ?? s.phase);
   arcDir(s.sunAngle, sunDir);
@@ -367,7 +373,7 @@ export function updateSky(dt, elapsed) {
   skyU.uStars.value = smoothstep(0.35, 0.95, night);
   starQ.setFromAxisAngle(AXIS, -s.sunAngle); // stars turn with the sky
   skyU.uStarRot.value.setFromMatrix4(starM.makeRotationFromQuaternion(starQ));
-  scene.fog.color.copy(horizon);
+  fog.color.copy(horizon);
 
   // Key light: the sun by day, the moon by night (brighter the fuller it is). It also casts the shadows.
   const sunI = SUN_I * (1 + SUN_SET_BOOST * warm) * smoothstep(-0.02, 0.16, sunY);
@@ -387,10 +393,10 @@ export function updateSky(dt, elapsed) {
   }
   renderer.toneMappingExposure = BASE_EXPOSURE * lerp(NIGHT_EXPOSURE, 1, day);
   const ug = atmosphere.underground;
-  scene.fog.near = lerp(FOG_NEAR, 6, ug);
-  scene.fog.far = lerp(FOG_FAR, 80, ug);
+  fog.near = lerp(FOG_NEAR, 6, ug);
+  fog.far = lerp(FOG_FAR, 80, ug);
   if (ug > 0) {
-    scene.fog.color.lerp(CAVE.fog, ug);
+    fog.color.lerp(CAVE.fog, ug);
     if (hemi) {
       hemi.color.lerp(CAVE.sky, ug);
       hemi.groundColor.lerp(CAVE.ground, ug);
@@ -436,12 +442,12 @@ const state = { frac: 0, phase: 0, illum: 0, day: 1, keyLight: true, sunDir, moo
 export const skyNow = state;
 export const skyDebug = {
   state,
-  preview(frac, phase = null) {
+  preview(frac: number | null, phase: number | null = null) {
     debug.frac = frac;
     debug.phase = frac === null ? null : phase;
   },
   // Turn the sun's shadow pass off without changing the light (npm run perf counts its draw calls this way).
-  shadowPass(on) {
+  shadowPass(on: boolean) {
     debug.noShadowPass = !on;
   },
 };

@@ -7,14 +7,14 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, vec4, pow, uv } from 'three/tsl';
-import { scene, camera } from '../../render/scene.js';
+import { scene, camera } from '../../render/scene.ts';
 import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
-import { addPart, mergeParts } from '../../render/props.js';
+import { addPart, mergeParts } from '../../render/props.ts';
 import { onStart, onFrame } from '../../loop.ts';
-import { skyNow } from '../../render/sky.js';
+import { skyNow } from '../../render/sky.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
-import { addLightSource } from '../../render/lights.js';
+import { addLightSource } from '../../render/lights.ts';
 import { reducedMotion } from '../../constants.ts';
 import site, { PAD_Y } from './site.js';
 import { freezeStatic } from '../../render/instances.ts';

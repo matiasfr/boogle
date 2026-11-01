@@ -9,8 +9,8 @@
 import * as THREE from 'three/webgpu';
 import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
-import { addPart, mergeParts } from '../../render/props.js';
-import { addLightSource } from '../../render/lights.js';
+import { addPart, mergeParts } from '../../render/props.ts';
+import { addLightSource } from '../../render/lights.ts';
 import { mulberry32 } from '../../math.ts';
 import { caveSd } from './mesh.js';
 import { ambAt, withCaveAmbient } from './index.js';

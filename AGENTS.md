@@ -12,7 +12,7 @@ Every new file is `.ts` (`src/`, `server/`, `dev/`, `test/`); never add a `.js` 
 
 ## Rendering
 `WebGPURenderer`, WebGPU only (no WebGL 2 fallback), one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](src/render/README.md).
-- Custom looks go in node slots (`colorNode`, `positionNode`, `maskNode`, ...) of a `*NodeMaterial` from `three/webgpu`; extend someone else's material with `patchNode` (`src/render/material-patch.js`). No GLSL, `ShaderMaterial`, `onBeforeCompile` or `THREE.Points` (lint fails them).
+- Custom looks go in node slots (`colorNode`, `positionNode`, `maskNode`, ...) of a `*NodeMaterial` from `three/webgpu`; extend someone else's material with `patchNode` (`src/render/material-patch.ts`). No GLSL, `ShaderMaterial`, `onBeforeCompile` or `THREE.Points` (lint fails them).
 - Colours are linear; draw through `renderFrame()`; post effects extend `pipeline.outputNode`. Compute shaders, storage buffers and the rest of WebGPU are fair game, with no fallback path.
 
 ## Pick a sync kind for each piece of state
@@ -29,7 +29,7 @@ Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Ph
 `npm run registry` (in `check` and CI) fails on a presence key, message type or pad slot taken twice, or a feature `onFrame` order equal to a core one; and, against `main`, on a reordered `RULES`, a removed op or state, or a state whose saved shape changed without a `version` bump. `-- --json` lists what's taken.
 - **Controls** (`src/player/controls.ts`, contract at its top): every key or touch button is a `registerAction(id, { pad, key, touch, label, detail, group, down, up, held })` on a free pad slot; it also generates the guide row (pause view, first-run card). Taken slots: `npm run registry -- --json`; at least one must stay unclaimed in `src/`, since `updates.js` takes `freeSlots()[0]` at runtime. `group` is an id from `GROUPS`. `src/player/input.ts` binds Space, E, R and the move keys by hand. No slot left: rethink the layout, no key-only controls. A key with no pad action of its own (hotbar digits) is `onKey` plus a `describeControl` row. To change another module's action: `wrapAction(id, { down, up })` from `onStart`.
 - **Interact button** (E, pad B, touch action): `registerInteractable(fn)` (`src/player/hands.ts`); `fn()` returns targets in reach `{ id, verb, at, run | blocked }`, `[]` for none. Never a new key.
-- **Particles**: `emit({ x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.js`; don't build your own pool.
+- **Particles**: `emit({ x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.ts`; don't build your own pool.
 
 ## Lint boundaries (`eslint.config.js`)
 - Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.

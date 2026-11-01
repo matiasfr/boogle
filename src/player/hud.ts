@@ -3,7 +3,7 @@ import { me, enterIsland } from './player.ts';
 import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
 import { net, remotes } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.ts';
-import { canvas } from '../render/scene.js';
+import { canvas } from '../render/scene.ts';
 import { interactTarget, useVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
 import { onFrame } from '../loop.ts';
@@ -150,7 +150,7 @@ export function initLobby() {
     e.preventDefault();
     if (dom.enterBtn.disabled) return; // the graphics are still starting
     enterIsland();
-    canvas!.focus();
+    canvas.focus();
     requestLock();
   });
 }

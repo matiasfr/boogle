@@ -7,7 +7,7 @@
 // Read-only for the sim: the tick hook only hashes. Serves "Determinism from day one" (a live desync gets caught).
 import { onStart } from '../loop.ts';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.ts';
-import { gfx } from '../render/scene.js';
+import { gfx } from '../render/scene.ts';
 import { grabBall, throwBall } from '../physics/ball.ts';
 import { launch } from '../player/throw.ts';
 

@@ -4,7 +4,7 @@
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.ts';

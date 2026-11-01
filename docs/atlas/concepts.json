@@ -120,7 +120,7 @@
       "code": [
         { "file": "src/player/controls.ts" },
         { "file": "src/player/hands.ts" },
-        { "file": "src/render/particles.js" }
+        { "file": "src/render/particles.ts" }
       ]
     },
     {

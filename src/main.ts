@@ -1,12 +1,12 @@
 import './style.css';
 import * as THREE from 'three/webgpu';
-import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.js';
-import { precompile } from './render/precompile.js';
+import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
+import { precompile } from './render/precompile.ts';
 import { createTerrainMesh } from './adapters/terrain.js';
-import { createWaterMesh } from './render/water-render.js';
+import { createWaterMesh } from './render/water-render.ts';
 import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
-import { createProps, createClouds } from './render/props.js';
+import { createProps, createClouds } from './render/props.ts';
 import { ball, resolveBallOwner, prepareBall } from './physics/ball.ts';
 import { me, updateIntent } from './player/player.ts';
 import { net, remotes, connectRoom, updateRemotes } from './netplay/net.ts';

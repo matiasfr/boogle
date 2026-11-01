@@ -58,10 +58,10 @@
     {
       "go": [["you.systems", "you.screen"]],
       "text": "Finally three.js draws the frame. Then it all happens again.",
-      "code": "renderFrame() · src/render/scene.js",
+      "code": "renderFrame() · src/render/scene.ts",
       "cite": [
         {
-          "file": "src/render/scene.js",
+          "file": "src/render/scene.ts",
           "symbol": "renderFrame"
         }
       ]

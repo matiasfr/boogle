@@ -8,8 +8,8 @@
 - **Sync kind.** Lockstep without state: a pure function of `world.tick` ([src/sim/sky-clock.ts](../../src/sim/sky-clock.ts)),
   so everyone sees the same sky. Lighting is Local. Windmill sails and the lighthouse beam use
   [src/netplay/shared-time.ts](../../src/netplay/shared-time.ts) (ticks filled in with local time).
-- **Files.** [src/render/sky.js](../../src/render/sky.js), [src/features/day-night.js](../../src/features/day-night.js),
-  [src/render/lights.js](../../src/render/lights.js) (a small pool of point lights handed to the glowing sources nearest the camera),
+- **Files.** [src/render/sky.ts](../../src/render/sky.ts), [src/features/day-night.js](../../src/features/day-night.js),
+  [src/render/lights.ts](../../src/render/lights.ts) (a small pool of point lights handed to the glowing sources nearest the camera),
   [src/features/blob-shadows.js](../../src/features/blob-shadows.js).
 - **Limits.** The clock only advances while someone hosts, so on a peer-hosted room the time of day stops while the
   island is empty (a room the server hosts keeps ticking, 8.1).

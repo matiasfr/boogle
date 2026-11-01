@@ -3,9 +3,9 @@
 // Serves DESIGN.md 10 (slapstick needs readable jumps and catches). Cosmetic, local.
 import * as THREE from 'three';
 import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { createPool } from '../render/instances.ts';
-import { skyNow } from '../render/sky.js';
+import { skyNow } from '../render/sky.ts';
 import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { ball } from '../physics/ball.ts';

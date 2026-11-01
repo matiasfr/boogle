@@ -8,7 +8,7 @@
 //                      tone-mapping quad build pipelines of their own, and the first icon drawn mid-game hitched
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv, vec4 } from 'three/tsl';
-import { renderer } from '../render/scene.js';
+import { renderer } from '../render/scene.ts';
 import { ball } from '../physics/ball.ts';
 import { itemModel } from './item-models.ts';
 

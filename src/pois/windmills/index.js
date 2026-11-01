@@ -2,10 +2,10 @@
 // plus hay bales and a fence along the track. The sails are solid: they bonk players and bat the ball about.
 import * as THREE from 'three';
 import { groundHeight } from '../../adapters/terrain.js';
-import { scene } from '../../render/scene.js';
+import { scene } from '../../render/scene.ts';
 import { groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.ts';
 import { createBody, addBody, onPreStep, BODY } from '../../physics/engine.ts';
-import { addPart, mergeParts } from '../../render/props.js';
+import { addPart, mergeParts } from '../../render/props.ts';
 import { onStart, onFrame } from '../../loop.ts';
 import { siteFrame } from '../../island/stamps.js';
 import { mulberry32 } from '../../math.ts';

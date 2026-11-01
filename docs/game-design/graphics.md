@@ -11,7 +11,7 @@
   If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
-- **Files.** [src/render/scene.js](../../src/render/scene.js), [src/features/adaptive-res.js](../../src/features/adaptive-res.js);
+- **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.js](../../src/features/adaptive-res.js);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
 - **Limits.** No quality setting yet; post effects (bloom, ambient occlusion, reflections) are planned as tiers.
 

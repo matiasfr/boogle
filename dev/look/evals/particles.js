@@ -1,5 +1,5 @@
 // 200 long-lived soft particles beside the court, for checking particle size and softness.
-const { emit } = await import('/src/render/particles.js');
+const { emit } = await import('/src/render/particles.ts');
 const C = window.boogle.THREE.Color;
 for (let k = 0; k < 200; k++)
   emit({

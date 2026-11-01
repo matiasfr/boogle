@@ -4,10 +4,10 @@
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import { onFrame, onStart } from '../loop.ts';
-import { dynAttr, instancedSprite } from '../render/sprites.js';
+import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { CELL, HALF } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { skyDebug } from '../render/sky.js';
+import { skyDebug } from '../render/sky.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 
 const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };

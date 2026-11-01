@@ -29,7 +29,7 @@ import {
 import { GRID_RES, HALF, CELL, SUN_DIR } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { heights } from '../adapters/terrain.js';
-import { scene } from './scene.js';
+import { scene } from './scene.ts';
 import { onFrame } from '../loop.ts';
 
 // Ground height packed into 16 bits (R = high byte, G = low byte), for a smooth shore depth.
@@ -50,19 +50,19 @@ const heightTex = (() => {
 })();
 
 // Uniform handles (TSL nodes): the sea's clock is the frame's `elapsed` (splash.js stamps ripple starts with it), the
-// ripple slots are written by src/render/splash.js, and src/render/sky.js tints the sea through uLight, uSky and uSpecCol.
+// ripple slots are written by src/render/splash.ts, and src/render/sky.ts tints the sea through uLight, uSky and uSpecCol.
 export const seaRipples = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); // x, z, start time, strength
 export const seaU = {
   uTime: uniform(0),
   uSun: uniform(SUN_DIR), // the key light's direction (constants.js), mutated in place by sky.js
   uSky: uniform(new THREE.Color('#a9dcf3')),
-  uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.js)
+  uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.ts)
   uSpecCol: uniform(new THREE.Color(1.0, 0.97, 0.88)), // glint colour of the key light (sun or moon)
 };
 const uRip = uniformArray(seaRipples, 'vec4');
 
 // Shader constants were authored as display (sRGB) values; the maths now runs in linear light.
-const lin = (r, g, b) => {
+const lin = (r: number, g: number, b: number) => {
   const c = new THREE.Color().setRGB(r, g, b, THREE.SRGBColorSpace);
   return vec3(c.r, c.g, c.b);
 };
@@ -106,7 +106,7 @@ const color = Fn(() => {
   const foam = band.mul(smoothstep(0.45, 0.85, ripple.mul(0.7).add(band.mul(0.5)))).toVar();
   const ring = float(0).toVar();
   for (let i = 0; i < seaRipples.length; i++) {
-    const rp = uRip.element(i);
+    const rp = uRip.element(i) as unknown as ReturnType<typeof vec4>; // a vec4 element (three's types say string)
     // Unused slots (strength 0) skip the maths; the branch is on a uniform, so every pixel takes the same path.
     If(rp.w.greaterThan(0), () => {
       const age = t.sub(rp.z);
@@ -124,7 +124,7 @@ const color = Fn(() => {
   col.addAssign(vec3(0.25, 0.3, 0.3).mul(ring));
   foam.assign(max(foam, tslClamp(ring, 0, 1)));
   col.assign(mix(col, vec3(1), foam.mul(0.9)));
-  col.mulAssign(seaU.uLight);
+  col.mulAssign(seaU.uLight as unknown as typeof col); // a color uniform; three's TSL types want a float
   col.addAssign(seaU.uSpecCol.mul(spec).mul(0.9));
   const alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5, depth)), foam.mul(0.95));
   return vec4(col, alpha);

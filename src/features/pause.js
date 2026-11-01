@@ -10,7 +10,7 @@ import { COLORS, DEFAULT_ROOM, isTouch } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
-import { canvas } from '../render/scene.js';
+import { canvas } from '../render/scene.ts';
 import { openModal, closeModal, modalOpen } from '../player/modal.ts';
 import { dialogue } from '../boogler/dialogue.js';
 import { registerAction, isTyping } from '../player/controls.ts';

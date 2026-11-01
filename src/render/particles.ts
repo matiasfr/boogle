@@ -1,6 +1,6 @@
 // One cosmetic particle pool for dust, sand and spray. Local only: never networked and never read by the simulation,
 // so floats and Math.random are fine. One look: round soft dots (an instanced Sprite), used by splash foam
-// (src/render/splash.js), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
+// (src/render/splash.ts), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
 //
 //   emit(p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
 //                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),
@@ -30,7 +30,7 @@ import {
   max,
   min,
 } from 'three/tsl';
-import { renderer, scene } from './scene.js';
+import { renderer, scene } from './scene.ts';
 import { onFrame } from '../loop.ts';
 
 const MAX = 720; // slots
@@ -111,7 +111,26 @@ let queued = 0,
   liveUntil = 0; // when the last particle dies (an estimate: floors can end them sooner)
 const deathAt = new Float64Array(MAX); // CPU estimate of when each slot dies, for particleCounts()
 
-export function emit(p) {
+/** One particle (see the header). */
+export type Particle = {
+  x: number;
+  y: number;
+  z: number;
+  vx?: number;
+  vy?: number;
+  vz?: number;
+  life: number;
+  size: number;
+  color: THREE.Color;
+  alpha?: number;
+  gravity?: number;
+  drag?: number;
+  floor?: number | null;
+  grow?: [number, number];
+  shrink?: number;
+  fade?: number;
+};
+export function emit(p: Particle) {
   if (queued >= SPAWN) return;
   const k = queued++,
     o = k * Q * 4,

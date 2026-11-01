@@ -188,7 +188,7 @@ export default {
       const { rules } = await import('/src/world/game-world.ts');
       const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.js');
       const { teleport } = await import('/src/physics/physics.ts');
-      const { camera } = await import('/src/render/scene.js');
+      const { camera } = await import('/src/render/scene.ts');
       const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.ts');

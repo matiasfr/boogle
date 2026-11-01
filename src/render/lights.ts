@@ -4,16 +4,25 @@
 // each frame they go to the active sources nearest the camera. Sources still draw their own glow (emissive meshes);
 // the pool only adds real light where you are. Cosmetic and local.
 import * as THREE from 'three';
-import { scene, camera } from './scene.js';
+import { scene, camera } from './scene.ts';
 import { onFrame } from '../loop.ts';
 
 const POOL = 2;
-const pool = [];
-const sources = [];
+/** Something that glows: the pool lights the nearest few. on() scales it, 0..1. */
+export type LightSource = {
+  position: THREE.Vector3;
+  color: THREE.Color;
+  intensity: number;
+  distance: number;
+  on?: () => number;
+};
+const pool: THREE.PointLight[] = [];
+const sources: LightSource[] = [];
 
 // source: { position: Vector3, color, intensity, distance, on?: () => 0..1 }. Returns it (change fields freely).
-export function addLightSource(src) {
-  src.color = new THREE.Color(src.color ?? '#ffcf8a');
+export function addLightSource(spec: Omit<LightSource, 'color'> & { color?: THREE.ColorRepresentation }) {
+  const src = spec as LightSource; // the caller's own object: it may change its fields later
+  src.color = new THREE.Color(spec.color ?? '#ffcf8a');
   sources.push(src);
   return src;
 }
@@ -24,7 +33,7 @@ for (let k = 0; k < POOL; k++) {
   scene.add(l);
 }
 
-const picks = [];
+const picks: { s: LightSource; on: number; score: number }[] = [];
 onFrame(
   () => {
     picks.length = 0;
