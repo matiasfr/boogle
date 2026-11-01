@@ -66,6 +66,8 @@ These are standing preferences from the thread.
 
 ### Progress and rewards
 
+- **2026-11-01, carrying is a simple back bundle** (haul playtest, solo). Logs sit on the character's back in a compact bundle that fills out rather than towering; no sway, and so no jump spill (nothing would warn you of it). Don't over-index on Death Stranding's carrying. Replaces the wobbly stack, see Changed.
+
 - **"Play is the material"** is the long-term direction (round 2): playing produces what builds the island.
   - **For the slice:** no prize piles; venues give personal rewards only (round 7).
   - **Open:** how play feeds progress is left to the mini-games pass (below).
@@ -104,6 +106,7 @@ These are standing preferences from the thread.
 ## Changed
 
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
+- **2026-11-01:** the haul stack's sway and jump spill (0.1 groundwork) were cut after the first solo haul playtest: the owner wants a plain back bundle.
 - **2026-11-01:** implementers moved from Sonnet to Opus at medium effort.
 
 ## Parked by the owner
