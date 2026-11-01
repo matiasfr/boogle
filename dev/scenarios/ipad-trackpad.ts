@@ -2,7 +2,7 @@
 // 15): no Pointer Lock (removed before the page loads), wheel events from a two-finger scroll, a touch screen. Checks
 // that hover never flips the input mode, a trackpad click never starts the touch stick, a scroll turns the camera,
 // the touch stick has a dead zone, the buttons are tablet-sized, ← → turn without mouse look, and the pause view's
-// Fullscreen explains the shoulder-button bug when a pad is connected. Serves DESIGN.md "Designed for drop-in,
+// Fullscreen explains first that Safari's iPad fullscreen drops the letter keys and a pad's shoulders. Serves DESIGN.md "Designed for drop-in,
 // drop-out".
 type Page = {
   touchscreen: { tap: (x: number, y: number) => Promise<void> };
@@ -153,10 +153,8 @@ export default {
     await page.mouse.wheel(30, 0);
     t.check('a scroll switches to keyboard mode', (await g.waitFor(`!${touchMode}`, { timeout: 3000 })) >= 0);
 
-    // Fullscreen with a pad on iPad explains WebKit 311151 first (rec 5).
-    const opened = await g.eval(
-      `window.__pad = true; const P = await import('/src/features/pause.ts'); return P.openPause();`,
-    );
+    // Fullscreen on iPad explains first: no letter keys (WebKit's keyboard-less iPad fullscreen) and WebKit 311151 (rec 5).
+    const opened = await g.eval(`const P = await import('/src/features/pause.ts'); return P.openPause();`);
     t.check(
       'the pause view opens',
       opened === true && (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0,
@@ -170,8 +168,11 @@ export default {
         `return [document.querySelector('.pause-note')?.textContent ?? '', document.querySelector('[data-act="fullscreen"]').textContent, !!document.fullscreenElement];`,
       )) as [string, string, boolean];
       t.check(
-        'with a pad, Fullscreen explains and suggests Add to Home Screen',
-        /Add to Home Screen/.test(note[0]) && note[1] === 'Fullscreen anyway' && !note[2],
+        'on iPad, Fullscreen explains the dead keys and suggests Add to Home Screen',
+        /letter keys/.test(note[0]) &&
+          /Add to Home Screen/.test(note[0]) &&
+          note[1] === 'Fullscreen anyway (touch only)' &&
+          !note[2],
         JSON.stringify(note),
       );
       await t.sleep(400);

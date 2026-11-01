@@ -5,8 +5,10 @@
   the default room), Fullscreen (toggles the whole page, so the HUD stays; it reads Exit fullscreen while on, and is
   hidden where the page can't go fullscreen, such as iPhone Safari or a frame without it, and in the installed app,
   which is already fullscreen; a gamepad press is refused by the browser, so the button asks for a click or tap; on
-  iPad with a pad connected the first press explains that fullscreen loses the shoulder buttons and triggers, WebKit
-  bug 311151, and suggests Add to Home Screen, and the button then reads Fullscreen anyway) and
+  iPad the first press explains that Safari's fullscreen there turns off the keyboard's letter keys (WebKit grants
+  iPad fullscreen without keyboard access: only Space, the arrows, Tab, Enter and the modifiers reach the page, so
+  W A S D, E, R, H, the digits and Esc go dead) and a controller's shoulder buttons and triggers (WebKit bug 311151),
+  and suggests Add to Home Screen; the button then reads Fullscreen anyway (touch only)) and
   Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button. Behind `?proto=arrive` (no lobby) the
   Room page also has a You section: a name box and the colour swatches, saved as you type or tap.
