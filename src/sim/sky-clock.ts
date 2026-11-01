@@ -26,20 +26,23 @@ function litFraction(phase: number) {
   return 1 - d * d * (3 - 2 * d);
 }
 
-// frac: time of day in [0, 1) (0 = sunrise). phase: moon phase in [0, 1) (0 = new, 0.5 = full).
-export function skyState(frac: number, phase: number) {
+export type SkyState = { frac: number; phase: number; sunAngle: number; moonAngle: number; illum: number };
+const blank = (): SkyState => ({ frac: 0, phase: 0, sunAngle: 0, moonAngle: 0, illum: 0 });
+
+// frac: time of day in [0, 1) (0 = sunrise). phase: moon phase in [0, 1) (0 = new, 0.5 = full). Fills `out` when given
+// (a caller that asks every frame reuses one), else a new object.
+export function skyState(frac: number, phase: number, out: SkyState = blank()) {
   frac = wrap(frac);
   phase = wrap(phase);
-  return {
-    frac,
-    phase,
-    sunAngle: arcAngle(frac),
-    moonAngle: arcAngle(frac - phase),
-    illum: litFraction(phase),
-  };
+  out.frac = frac;
+  out.phase = phase;
+  out.sunAngle = arcAngle(frac);
+  out.moonAngle = arcAngle(frac - phase);
+  out.illum = litFraction(phase);
+  return out;
 }
 
-export function skyAt(ms: number) {
+export function skyAt(ms: number, out?: SkyState) {
   const days = ms / DAY_MS + START_FRAC;
-  return skyState(days, days / LUNAR_DAYS + START_PHASE);
+  return skyState(days, days / LUNAR_DAYS + START_PHASE, out);
 }

@@ -350,11 +350,12 @@ function placeBillboard(group: THREE.Group, dir: THREE.Vector3) {
 export const atmosphere = { underground: 0 };
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
+const skyScratch = skyState(0, 0); // this frame's sky, refilled every frame
 export function updateSky(dt: number, elapsed: number) {
   if (!sunGroup || !moonGroup || !sunFace || !sunRays) return;
   const fog = scene.fog as THREE.Fog; // scene.ts sets a linear Fog
-  let s = skyAt(worldMs(dt));
-  if (debug.frac !== null || debug.phase !== null) s = skyState(debug.frac ?? s.frac, debug.phase ?? s.phase);
+  const s = skyAt(worldMs(dt), skyScratch);
+  if (debug.frac !== null || debug.phase !== null) skyState(debug.frac ?? s.frac, debug.phase ?? s.phase, s);
   arcDir(s.sunAngle, sunDir);
   arcDir(s.moonAngle, moonDir);
 

@@ -83,11 +83,15 @@ export function blockedAt(x: number, z: number, pad = 0) {
   const bx = Math.floor(x / BUCKET),
     bz = Math.floor(z / BUCKET);
   for (let a = bx - 1; a <= bx + 1; a++)
-    for (let b = bz - 1; b <= bz + 1; b++)
-      for (const o of buckets.get(bkey(a, b)) ?? []) {
+    for (let b = bz - 1; b <= bz + 1; b++) {
+      const near = buckets.get(bkey(a, b));
+      if (!near) continue;
+      for (let k = 0; k < near.length; k++) {
+        const o = near[k];
         const r = o.r + pad;
         if ((o.x - x) ** 2 + (o.z - z) ** 2 < r * r) return true;
       }
+    }
   return false;
 }
 
@@ -344,7 +348,8 @@ export function createClouds() {
 }
 
 function updateClouds(dt: number) {
-  for (const c of clouds) {
+  for (let k = 0; k < clouds.length; k++) {
+    const c = clouds[k];
     c.position.x += dt * 1.2;
     if (c.position.x > 340) c.position.x = -340;
   }
