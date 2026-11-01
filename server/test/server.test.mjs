@@ -86,6 +86,31 @@ test('report: invalid kind/room/body 400, oversize 413', async () => {
   }
 });
 
+test('report: playtest verdicts keep their own shape and a longer note', async () => {
+  const s = await start();
+  try {
+    const ok = {
+      proto: 'hero',
+      variant: 'crawl',
+      verdict: 'no',
+      note: 'n'.repeat(1500),
+      counts: { runs: 3, seconds: 90, x: 'no' },
+      trace: 'verb in 4 s',
+      build: 'abc123',
+    };
+    assert.equal((await report(s.base, { room: 'proto-hero', kind: 'playtest', detail: ok })).status, 204);
+    for (const bad of [{ ...ok, verdict: 'maybe' }, { ...ok, proto: '' }, 'just text'])
+      assert.equal((await report(s.base, { room: 'a', kind: 'playtest', detail: bad })).status, 400);
+    const line = JSON.parse(await fs.readFile(path.join(s.dataDir, 'reports', `${today()}.jsonl`), 'utf8'));
+    assert.equal(line.detail.note.length, 1000);
+    assert.deepEqual(line.detail.counts, { runs: 3, seconds: 90 });
+    assert.equal(line.detail.verdict, 'no');
+    assert.equal(line.detail.variant, 'crawl');
+  } finally {
+    await s.stop();
+  }
+});
+
 test('report: per-IP rate limit and daily size cap', async () => {
   let s = await start({ REPORT_RATE_PER_MIN: '2' });
   try {

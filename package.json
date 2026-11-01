@@ -39,7 +39,8 @@
     "reel": "node dev/video/reel.mjs",
     "video:changes": "node dev/video/changes.mjs",
     "video:publish": "node dev/video/publish.mjs",
-    "assets": "node dev/assets/build.ts"
+    "assets": "node dev/assets/build.ts",
+    "verdicts": "node scripts/verdicts.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",

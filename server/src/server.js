@@ -9,7 +9,7 @@ import { createRoomHost } from './host/rooms.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect']);
+const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect', 'playtest']);
 const REPORT_BATCH = 10; // reports per POST
 const REPORT_KEEP_DAYS = 30;
 
@@ -85,7 +85,10 @@ function cleanReport(r) {
   if (!r || typeof r !== 'object' || Array.isArray(r) || !REPORT_KINDS.has(r.kind)) return null;
   if (typeof r.room !== 'string' || !ROOM_ID_RE.test(r.room)) return null;
   let detail = cut(r.detail, 500);
-  if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
+  if (r.kind === 'playtest') {
+    detail = cleanPlaytest(r.detail);
+    if (!detail) return null;
+  } else if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
     detail = {};
     for (const [k, v] of Object.entries(r.detail).slice(0, 12)) {
       if (typeof v === 'string') detail[k.slice(0, 32)] = v.slice(0, 200);
@@ -97,6 +100,26 @@ function cleanReport(r) {
   if (Number.isSafeInteger(r.tick)) out.tick = r.tick;
   if (typeof r.build === 'string') out.build = cut(r.build, 40);
   if (typeof r.ua === 'string') out.ua = cut(r.ua, 60);
+  return out;
+}
+
+// A playtest verdict from the prototype bar (src/proto/bar/), read back by `npm run verdicts`. Its own shape: the
+// verdict is one of the bar's three, the note may run to 1000 chars, and `counts` is the one nested object (the bar's
+// behaviour counters, name -> number). `proto` (the card id in protos/protos.ts) and `verdict` are required.
+const PLAYTEST_VERDICTS = new Set(['yes', 'no', 'cant']);
+function cleanPlaytest(d) {
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+  if (typeof d.proto !== 'string' || !/^[a-z0-9-]{1,40}$/.test(d.proto) || !PLAYTEST_VERDICTS.has(d.verdict))
+    return null;
+  const out = { proto: d.proto, verdict: d.verdict, variant: cut(d.variant, 40) ?? '', note: cut(d.note, 1000) ?? '' };
+  if (typeof d.trace === 'string') out.trace = cut(d.trace, 300);
+  if (typeof d.values === 'string') out.values = cut(d.values, 300);
+  if (typeof d.build === 'string') out.build = cut(d.build, 40);
+  if (d.counts && typeof d.counts === 'object' && !Array.isArray(d.counts)) {
+    out.counts = {};
+    for (const [k, v] of Object.entries(d.counts).slice(0, 12))
+      if (typeof v === 'number' && Number.isFinite(v)) out.counts[k.slice(0, 32)] = v;
+  }
   return out;
 }
 
