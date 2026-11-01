@@ -27,10 +27,10 @@ it (and otherwise only hides a remote driver; see Sync).*
   **Drift / Brake**, and Bump, Toss, Honk and Ping hide.
 - **Drift boost** (all three variants): holding the handbrake on the ground charges a drift, faster with the stick
   held hard (0.7 or more) into the slide (Mario Kart's counter: 5 a step, 2 otherwise, at 60 steps a second). The rear
-  wheels' sparks tell the charge: yellow, then **blue** at 120 (0.4 s at best: "ready", with a tick), then **pink** at
-  240 (0.8 s: "big", a higher tick). Let go of the handbrake whenever you like (no timing window): ready pushes you
+  wheels' sparks tell the charge: yellow, then **blue** at 120 (0.4 s at best: "ready"), then **pink** at
+  240 (0.8 s: "big"). Let go of the handbrake whenever you like (no timing window): ready pushes you
   +3 m/s forward over 0.35 s, big +5 m/s over 0.6 s, as acceleration that drag takes back; a burst and a jet of sparks
-  in the tier's colour, a whoosh, and a field-of-view kick (+5° or +9°). The default and grip get 0.75x those speeds,
+  in the tier's colour and a field-of-view kick (+5° or +9°). The default and grip get 0.75x those speeds,
   drifty the full. A bump in the middle of a drift keeps the charge (it just stops growing in the air). An empty-handed click does nothing while seated (it would
   otherwise get you out); holding something, the click still throws it from the cart.
 - **The run:** seated on the start, the HUD shows "Ready". The clock starts once you have rolled 3 m and stops on the
@@ -45,16 +45,14 @@ it (and otherwise only hides a remote driver; see Sync).*
   rotation, front-wheel angle) is recorded at 20 Hz while the clock runs and kept in localStorage
   (`boogle.soapbox.ghost`) whenever a run beats the saved ghost. Local only: nobody else sees it, it has no collider.
 - **Crashes are a show:** a hard hit (a palm trunk, a rock) freezes the cart, you and the camera for 70 ms (hit-stop;
-  the physics runs on), shakes the camera, pops a rear wheel off to bounce away, splinters planks, and thumps; then you
+  the physics runs on), shakes the camera, pops a rear wheel off to bounce away and splinters planks; then you
   are thrown out: up 11 m/s, keeping 55% of the cart's speed and a sideways shove, flipping as you go. For 2.4 s the
   camera stays back and turns after you, so you see the flight and the landing. The empty cart rolls to a stop and goes
   back to the start, wheel back on, after 2 s. Once you have landed, Interact reads **Back to the top** for 20 s,
   wherever you are: you are put in the cart on the start, Ready. No walk back up the massif, no cost per crash.
 - **Feel:** dust from the rear wheels growing with speed (more, bigger, longer-lived, trailing behind you from 12 m/s),
   sparks while the rear slides, a dust burst and sparks on a crash; the cart tilts to the ground, rolls out of turns
-  and bounces on landings. **Sound** (synthesized, quiet, local; `src/proto/soapbox/sound.ts`): the wheels roll in two
-  crossfaded layers (a low rumble up to 8 m/s, a wooden rattle above it, each pitched only 0.8-1.3), wind from 10 m/s,
-  silent in the air; ticks for the charge, a whoosh for a boost, a thump and clatter for a crash.
+  and bounces on landings. **No sound for now:** the rolling rumble and rattle, the wind, the charge ticks, the boost whoosh and the crash were cut in the sound audit (2026-11-02); better ones come later, from references.
 - **Camera:** it aims ahead of the cart along its velocity (0.3 s of it, at most 4 m: where the cart will be), turns
   with your steering (up to 0.25 rad, faded in over 0.3 s), swings in behind where the cart is going (so a drift shows
   from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); it pulls in short of any

@@ -6,7 +6,15 @@ everyone hears the same downbeat) and 10 (Slapstick over precision). Without the
 `src/features/proto-groove.ts` imports `src/proto/groove/` (and the wagon, `src/proto/wagon/`) only with it. Play it
 at `/?room=proto-groove&proto=groove`.*
 
-## What you hear
+**Retired 2026-11-02 (cut).** The owner's listening-pack audit cut the synthesized loop (all takes): no placeholder
+music plays anywhere ([boogle-2.md](../proposals/boogle-2.md), "Sound"). `?proto=groove` no longer does anything; the
+engine and synth voices are gone. What stays for the owner's own music later, imported by nothing today: the music
+clock (`src/proto/groove/clock.ts`), the grid and harmony (`grid.ts`), the mixer (`mixer.ts`) and the stems loader
+(`stems.ts`, format in [assets/audio/README.md](../../assets/audio/README.md)); the `installMixer` and `onBeat` seams in
+`src/render/audio.ts` stay too, and with nothing installed `onBeat` plays a sound effect exactly when asked (no added
+latency). What it was:
+
+## What you heard
 
 - **One shared beat.** An 8-bar house loop at 122 BPM in A minor (Am7, Fmaj7, Dm7, Em7, two bars each), with a
   garage shuffle (off 16ths at 56%). Bars are counted from shared world time (`sharedSeconds()`), so every tab hears

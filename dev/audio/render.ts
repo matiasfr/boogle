@@ -3,16 +3,16 @@
 // harness (dev/look/lib.mjs: Vite, a local server, Chromium), opens one page per prototype, and records the real
 // Web Audio graph while each sound plays: a tap on everything that reaches the context's destination, recorded
 // sample-exact on the audio thread (an AudioWorklet). Each sound is either called through its module's export or
-// played by the game itself (the wave's telegraph, a grind, a soapbox run, a laying run, opening day), so what you hear
-// is what a player hears, levels included.
+// played by the game itself (the wave's telegraph, a laying run, the era's bed), so what you hear is what a player hears,
+// levels included. Sounds the owner cut are left out; the silence checks play their moments and fail on any sound.
 //
 //   node dev/audio/render.ts                       every take into .look/audio/ (WAV + MP3 + manifest.json)
-//   node dev/audio/render.ts --only groove,ui      just the takes whose id or page starts with one of these
+//   node dev/audio/render.ts --only haul,ui        just the takes whose id or page starts with one of these
 //   node dev/audio/render.ts --out <dir>
 //
 // Files are peak-normalized to -1 dBFS so they audition at the same loudness on a phone; manifest.json keeps each
 // one's in-game peak and RMS (dBFS at the game's master), so relative loudness is still on record. One-shots are
-// trimmed of leading and trailing silence; the groove's loops are cut on bar lines, sample-exact, so they loop.
+// trimmed of leading and trailing silence.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -23,6 +23,7 @@ type Take = {
   group: string; // the prototype, for the index page
   title: string;
   when: string; // when it plays in the game, one line
+  silent?: true; // a silence check: a cut sound's moment, which must stay silent (no file is written)
   body: string; // page code (may await); ends with `return R.run(...)`
 };
 type Page = {
@@ -185,16 +186,6 @@ const PRE = `const R = window.__rec, { sleep, until } = R;`;
 // A take that calls `calls` (page code) in order, `gap` ms apart; each entry is one statement.
 const seq = (imports: string, calls: string[], gap: number) => `${imports}
   return R.run(null, async () => { for (const f of [${calls.map((c) => `async () => { ${c} }`).join(', ')}]) { await f(); await sleep(${gap}); } });`;
-// Groove: hold a state, then record `bars` from the next clean bar line (a whole bar after the state took over).
-const groove = (state: string, bars: number, during = '') => `
-  const G = window.__groove;
-  G.force('${state}');
-  await until(() => G.state().playing === '${state}', 20000);
-  const BAR = (60 / G.song.bpm) * 4, off = G.state().off;
-  const at = (Math.ceil((R.ctx.currentTime - off) / BAR + 0.15) + 1) * BAR + off;
-  return R.run(${bars} * BAR, async () => { ${during} }, { at, trim: false });`;
-const followWagon = `const W = window.__wagon;
-  const follow = setInterval(() => { const p = W.cars[0].mesh.position; window.__debugCam.set([p.x + 4, p.y + 2.5, p.z + 4], [p.x, p.y, p.z]); }, 50);`;
 const grindShot = (shot: string, seconds: number) => `
   const q = new URLSearchParams(location.search); q.set('gt', '${shot}');
   history.replaceState(null, '', location.pathname + '?' + q);
@@ -355,55 +346,6 @@ const PAGES: Page[] = [
     ],
   },
   {
-    key: 'groove',
-    query: 'proto=groove',
-    takes: [
-      {
-        id: 'groove-sparse',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, sparse (8 bars)',
-        when: 'Standing still away from spawn: hats and soft stabs. Cut on bar lines, so it loops.',
-        body: groove('sparse', 8),
-      },
-      {
-        id: 'groove-groove',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, groove (8 bars)',
-        when: 'Moving around (and for 3 s after you stop): kick, hats and bass. Loops.',
-        body: groove('groove', 8),
-      },
-      {
-        id: 'groove-full',
-        group: 'Groove (?proto=groove)',
-        title: 'Loop, full (8 bars)',
-        when: 'Riding something (the wagon, a deck): all four layers. Loops.',
-        body: groove('full', 8),
-      },
-      {
-        id: 'groove-drop',
-        group: 'Groove (?proto=groove)',
-        title: 'Wipeout drop (4 bars of full)',
-        when: 'A hard landing, being knocked flat or a tumble: one beat of silence with a slide down through it.',
-        body: groove('full', 4, `await sleep(((60 / G.song.bpm) * 4 * 1.6) * 1000); G.wipeout();`),
-      },
-      {
-        id: 'groove-snap',
-        group: 'Groove (?proto=groove)',
-        title: 'Sound effects on the grid (4 bars of full)',
-        when: 'Honks and a magnet burst over the music: they land on the next 16th and in the current chord, and duck the music.',
-        body: groove(
-          'full',
-          4,
-          `const { honkSound } = await import('/src/features/honk.ts'); const { honkFreq } = await import('/src/sim/social.ts');
-          const { arrivalTick, burstChord } = await import('/src/proto/haul/magnet-sound.ts');
-          await sleep(900); honkSound(honkFreq(0), 0.16); await sleep(700); honkSound(honkFreq(3), 0.16);
-          await sleep(1300); for (let k = 0; k < 10; k++) { arrivalTick(); await sleep(55); } burstChord();
-          await sleep(1400); honkSound(honkFreq(5), 0.16);`,
-        ),
-      },
-    ],
-  },
-  {
     key: 'haul',
     query: 'proto=haul&v=wave',
     setup: `const H = await import('/dev/look/evals/haul-pilot.ts'); H.stand(2, 38, Math.PI); await until(() => window.__wave);`,
@@ -442,88 +384,20 @@ const PAGES: Page[] = [
       },
     ],
   },
+  // Silence checks: the sounds the owner's audit cut (docs/proposals/boogle-2.md, "Sound", 2026-11-02) must stay cut
+  // until better ones come. These takes play the moment and fail if anything is heard; they write no files.
   {
-    key: 'wagon',
+    key: 'grind',
     query: 'proto=wagon&grind=1&laid=3',
     setup: `await until(() => window.__wagon && window.boogle.me.body);`,
     takes: [
       {
-        id: 'wagon-ride',
-        group: 'Wagon (?proto=wagon)',
-        title: 'Wagon: whistle and clacks',
-        when: 'The wagon leaving a stop: the whistle a moment before, then the rail-joint clacks as it rolls (heard from beside the loco).',
-        body: `${followWagon}
-          const { wagonAt, wagonCycle } = await import('/src/sim/wagon.ts');
-          const pace = W.pace, C = wagonCycle(3, pace);
-          let ph = 0;
-          while (ph < C && !((wagonAt(3, ph, 0, pace)?.stop ?? -1) >= 0 && (wagonAt(3, ph + 1, 0, pace)?.stop ?? 0) < 0)) ph++;
-          W.seekPhase(ph - 45);
-          try { return await R.run(20, null); } finally { clearInterval(follow); }`,
-      },
-      {
-        id: 'grind-full',
-        group: 'Grind (?proto=wagon&grind=1)',
-        title: 'Grind the whole line',
-        when: 'Landing on a laid rail: the land, a hiss rising with speed, a clack per rail joint, hopping the parked track machine, flying off the railhead.',
+        id: 'grind-silent',
+        group: 'Silence checks',
+        title: 'Grind the whole line (cut: wagon and grind sounds)',
+        when: 'Landing on a laid rail and grinding it end to end, beside the running wagon: no hiss, clacks or whistle.',
+        silent: true,
         body: grindShot('full', 16),
-      },
-      {
-        id: 'grind-reverse',
-        group: 'Grind (?proto=wagon&grind=1)',
-        title: 'Grind reverse screech',
-        when: 'Pulling back while grinding: the screech as you reverse.',
-        body: grindShot('reverse', 4.5),
-      },
-      {
-        id: 'grind-bonk',
-        group: 'Grind (?proto=wagon&grind=1)',
-        title: 'Grind into the wagon',
-        when: 'Meeting the wagon on the line while grinding: the bonk.',
-        body: grindShot('bonk', 5),
-      },
-      {
-        id: 'freight-thump',
-        group: 'Wagon (?proto=wagon)',
-        title: 'Freight crates',
-        when: 'Helper-hut freight: crates hopping off the rear flatbed into the Track ring.',
-        body: seq(
-          `const { thump } = await import('/src/proto/wagon/freight.ts'); const { camera } = await import('/src/render/scene.ts');
-          const at = () => { const v = camera.position.clone(); v.x += 2; return v; };`,
-          [0, 1, 2, 3].map((k) => `thump(at(), ${k});`),
-          320,
-        ),
-      },
-    ],
-  },
-  {
-    key: 'stoke',
-    query: 'proto=wagon&v=stoke&laid=3',
-    setup: `await until(() => window.__wagon && window.__wagon.cars[0]);
-      const p = window.__wagon.cars[0].mesh.position;
-      window.__debugCam.set([p.x + 2, p.y + 2, p.z + 2], [p.x, p.y, p.z]);
-      await sleep(500);`,
-    takes: [
-      {
-        id: 'stoke-roar',
-        group: 'Wagon (?proto=wagon)',
-        title: 'Stoke roar',
-        when: "The stoke variant (&v=stoke): logs into the firebox catch with a roar; yours twice, then a friend's (quieter).",
-        body: seq(
-          `const { whoosh } = await import('/src/proto/wagon/stoke.ts');`,
-          [`whoosh(true);`, `whoosh(true);`, `whoosh(false);`],
-          900,
-        ),
-      },
-      {
-        id: 'stoke-chuffs',
-        group: 'Wagon (?proto=wagon)',
-        title: 'Chimney chuffs, cold to hot',
-        when: 'The stoke variant: a chuff per chimney puff, louder and brighter as the fire gets hotter (cold, warm, hot).',
-        body: seq(
-          `const { chuffSound } = await import('/src/proto/wagon/stoke.ts'); const p = window.__wagon.cars[0].mesh.position.clone();`,
-          [0, 0.5, 1].flatMap((h) => [...Array(8).fill(`chuffSound(p, ${h});`)]),
-          330,
-        ),
       },
     ],
   },
@@ -533,36 +407,12 @@ const PAGES: Page[] = [
     setup: `await until(() => window.__soapbox && window.boogle.me.body);`,
     takes: [
       {
-        id: 'soapbox-run',
-        group: 'Soapbox (?proto=soapbox)',
-        title: 'A whole run',
-        when: 'Riding the soapbox down the course: rumble at low speed, the wooden rattle above 8 m/s, wind from 10 m/s.',
-        body: `const P = await import('/dev/look/evals/soapbox-pilot.ts'); return R.run(14, async () => { await P.drive({}); }); // drive() starts the run and returns`,
-      },
-      {
-        id: 'soapbox-drift',
-        group: 'Soapbox (?proto=soapbox)',
-        title: 'Drift charge and boost',
-        when: 'A handbrake drift through the long right: charge ticks (ready, big), then the big boost when you let go.',
-        body: `const P = await import('/dev/look/evals/soapbox-pilot.ts');
-          const run = P.drive({ drift: [9.1, 10.0], driftSteer: 1 });
-          await sleep(7800);
-          const r = await R.run(5, null);
-          await run;
-          return r;`,
-      },
-      {
-        id: 'soapbox-crash',
-        group: 'Soapbox (?proto=soapbox)',
-        title: 'Crash',
-        when: 'Hitting a palm at speed: a low thump and a clatter.',
-        body: `const P = await import('/dev/look/evals/soapbox-pilot.ts');
-          const palm = P.obstacle(-50, -56) ?? [-52.3, -53.3];
-          const run = P.drive({ path: [[-40, -95], [-34.5, -94], [-41, -85], [-42, -75], [-41.5, -68], [-40, -61.5], [-46, -56], palm, [-60, -50]] });
-          await sleep(7600);
-          const r = await R.run(4.5, null);
-          await run;
-          return r;`,
+        id: 'soapbox-silent',
+        group: 'Silence checks',
+        title: 'A whole soapbox run (cut: all soapbox sounds)',
+        when: 'Riding the course start to finish: no rumble, rattle or wind.',
+        silent: true,
+        body: `const P = await import('/dev/look/evals/soapbox-pilot.ts'); return R.run(14, async () => { await P.drive({}); });`,
       },
     ],
   },
@@ -672,8 +522,8 @@ const PAGES: Page[] = [
       {
         id: 'era-opening-day',
         group: 'Era (?proto=era)',
-        title: 'Opening day: call, bell, swap to steam',
-        when: 'The gathering call tolls, everyone arrives, the 10 s bell counts down, the big bell, then the wood bed crossfades into the steam bed (rumble, chuffs, whistle, the motif on brass).',
+        title: 'Opening day: the wood bed through the swap',
+        when: 'The gathering call, everyone arrives, the countdown and the swap to era 2, all silent now: the wood bed plays on unchanged through it (the tolls, bell and steam bed are cut).',
         body: `const { rules } = await import('/src/world/game-world.ts');
           const { world, submitEdit } = await import('/src/world/sync.ts');
           document.querySelector('.era-proto button').click();
@@ -781,7 +631,7 @@ try {
         `${PRE} await until(() => R.ready && R.node && R.ctx.state === 'running', 20000);
         ${page.setup ?? ''}`,
       );
-      // What the page plays by itself (beds, the music), for reading the takes' levels against.
+      // What the page plays by itself (beds), for reading the takes' levels against.
       const floor = (await g.eval(
         `${PRE} await sleep(1500); const r = await R.run(1, null, { trim: false }); return r.peakDb;`,
       )) as number;
@@ -789,6 +639,14 @@ try {
       for (const t of takes) {
         try {
           const r = (await g.eval(`${PRE} ${t.body}`)) as Result;
+          if (t.silent) {
+            const loud = r.peakDb >= -60;
+            console.log(
+              `  ${loud ? 'FAIL' : 'ok  '} ${t.id.padEnd(16)} peak ${r.peakDb.toFixed(1).padStart(6)} dBFS (must be silent)`,
+            );
+            if (loud) failed.push(`${t.id}: not silent (peak ${r.peakDb.toFixed(1)} dBFS)`);
+            continue;
+          }
           const wav = path.join(out, `${t.id}.wav`);
           fs.writeFileSync(wav, Buffer.from(r.b64, 'base64'));
           const problem =

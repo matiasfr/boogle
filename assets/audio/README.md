@@ -1,7 +1,8 @@
 # Music stems
 
-Drop a manifest (`<name>.json`) and its stems here and `?proto=groove` plays them instead of the synthesized
-placeholder (`src/proto/groove/stems.ts`). Reload the page to hear a new bounce.
+For the owner's own music, later. The groove prototype that played these was cut (2026-11-02, no placeholder music);
+its stems loader (`src/proto/groove/stems.ts`), clock, grid and mixer stay for when real music lands. Nothing plays
+them today.
 
 - **Stems**: same start, same length (`bars` bars at `bpm`), one file per layer. Tails may ring past the loop end: each
   pass starts on the shared downbeat and its tail overlaps the next. `.m4a` (AAC) plays everywhere; check Opus or Ogg
@@ -29,7 +30,7 @@ placeholder (`src/proto/groove/stems.ts`). Reload the page to hear a new bounce.
 ```
 
 - `chords` (one per bar) puts the honks in key; `swing` (0.5 = straight) is where honks land on the off 16ths.
-- Layer names are yours. `states` says which layers play when: `silent` or `sparse` standing idle, `groove` moving,
-  `full` riding the wagon. Changes land on bar lines; a wipeout drops everything for one beat.
+- Layer names are yours. `states` says which layers play when (the cut prototype used `silent` or `sparse` standing
+  idle, `groove` moving, `full` riding the wagon).
 - Several manifests: `&stems=<name>` picks one (default: the first by name).
 - Encode from WAV: `ffmpeg -i island-kick.wav -c:a aac -b:a 160k island-kick.m4a`.

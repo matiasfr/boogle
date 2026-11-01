@@ -220,23 +220,12 @@ export const PROTOS: Proto[] = [
     id: 'groove',
     title: 'The groove',
     step: 'depth',
-    status: 'live',
+    status: 'retired',
     url: '/?room=proto-groove&proto=groove',
     question: 'Does the island feel more alive and fun with the groove?',
     what: 'A placeholder house loop on one shared beat: quiet when idle, grooving when you move, full on the wagon, a one-beat drop when you wipe out. Honks and clacks land on the beat and in key. The chip top right mutes it.',
     since: '2026-11-01',
-    variants: [
-      {
-        name: 'silent-first',
-        url: '/?room=proto-groove&proto=groove&v=silent-first',
-        what: 'Silence until you first move; never silent after.',
-      },
-      {
-        name: 'always',
-        url: '/?room=proto-groove&proto=groove&v=always',
-        what: 'Always some music, even standing at spawn.',
-      },
-    ],
+    retired: { why: 'cut', note: 'Owner: no placeholder music (sound audit, 2 Nov); his own music comes later.' },
   },
   {
     id: 'look',
@@ -359,7 +348,6 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'minis', why: 'Which would you play again unprompted?' },
   { id: 'arrive', why: 'Open the link cold: were you playing within 10 seconds?' },
   { id: 'look', why: 'Which look should Boogle aim for?', later: true },
-  { id: 'groove', why: 'Does the island feel more alive with it?', later: true },
   { id: 'uisfx', why: 'Does the UI feel alive without getting in the way?', later: true },
   { id: 'layout', why: 'Which layout feels best to walk?', later: true },
   { id: 'board', why: 'Does the island feel connected and quick to cross?', later: true },

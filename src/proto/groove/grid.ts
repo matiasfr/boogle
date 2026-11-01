@@ -1,5 +1,6 @@
-// The groove's musical grid and harmony, as plain numbers (no audio, no three.js): steps are 16th notes counted from
-// shared time zero, so every tab numbers the same bar the same way. Cosmetic (Local); never read by the simulation.
+// The musical grid and harmony, as plain numbers (no audio, no three.js), kept from the cut groove prototype for the
+// owner's own music later: steps are 16th notes counted from shared time zero, so every tab numbers the same bar the
+// same way. Cosmetic (Local); never read by the simulation.
 
 export type Song = {
   bpm: number;

@@ -1,6 +1,6 @@
-// A small mixer (research rec 9): four buses with gains in dB into the master compressor, and the music ducked under
-// big sound effects like a sidechain: the sfx bus is metered, and while it peaks over a threshold the music dips, then
-// eases back. Installed through installMixer (src/render/audio.ts), so every existing sound lands on the sfx bus.
+// A small mixer (research rec 9; kept from the cut groove prototype for the owner's own music later): four buses with
+// gains in dB into the master compressor, and the music ducked under big sound effects like a sidechain: the sfx bus is metered, and while it peaks over a threshold the music dips, then
+// eases back. Install it with installMixer (src/render/audio.ts) and every existing sound lands on the sfx bus.
 import type { Bus } from '../../render/audio.ts';
 
 export const MIX = {
