@@ -118,3 +118,13 @@
 .proto-bar.folded > :not(.pb-head) {
   display: none;
 }
+/* A tablet held sideways in touch mode: the hotbar's usual top-centre spot is under this bar, so it sits at the
+   bottom instead, a little left of centre to clear Honk (src/features/hotbar.css, src/player/touch.css). */
+@media (orientation: landscape) and (min-width: 700px) and (min-height: 700px) {
+  body.touch:has(.proto-bar) .hotbar {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: calc(50% - 40px);
+    flex-direction: column;
+  }
+}
