@@ -29,6 +29,8 @@ These are standing preferences from the thread.
 - **Wary of:** material grinds.
 - **Collaborators may write the narrative.** Don't lock story details in alone. Draft options for them to react to.
 - **Decides through HTML pages with pick buttons.** The concept page ends with a round of questions and a copyable summary. Keep its localStorage key `boogle-2-v5`: changing it wipes the owner's picks.
+- **Solo first** (1 November). Every prototype must work and be fun for one person playing alone; multiplayer builds on top.
+- **Fast iteration over test coverage** (1 November). Agents run many tasks in parallel, see their own results and ship by themselves; tests only where lockstep needs them.
 - **Painted concepts** come from `npm run concepts` (the `concept-art` skill). They run through Codex CLI on the owner's Mac, using a session started on that Mac. They're references, not game art.
 
 ## Decided
@@ -87,8 +89,18 @@ These are standing preferences from the thread.
 
 ### Process
 
+- **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
+- **2026-11-01, a lighter test load.** `npm run ship` no longer runs smoke on the Mac by default (`-- --gpu` opts in); smoke runs against the live site after each deploy and nightly. New tests only for lockstep code; features and feel get looked at, not tested. `perf` only for heavy rendering changes.
+- **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
+- **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
+
 - **Next deliverable:** the vertical slice for eras 1–2, built on the 0.1 haul loop.
 - **Mini-games get their own design pass later.** Court ball and the other venues wait for it.
+
+## Changed
+
+- **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
+- **2026-11-01:** implementers moved from Sonnet to Opus at medium effort.
 
 ## Parked by the owner
 
@@ -103,6 +115,7 @@ These are standing preferences from the thread.
 3. Apply the proposed re-ordering of [architecture.md](../plans/architecture.md) from [boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md)?
 4. Who runs the baseline on a 2021 iPad and a mid-range Android phone?
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
+6. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
 
 ## Next: find the fun (agreed direction, 1 November)
 

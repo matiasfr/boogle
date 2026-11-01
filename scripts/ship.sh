@@ -2,10 +2,10 @@
 # npm run ship: rebase your commits onto the latest main, run the checks, push them to a ship/<you>-<sha> branch.
 # CI runs on that branch. Green: automerge.yml opens a PR, merges it into main and deploys. Red: ci-autofix.yml has
 # Claude push a fix to the branch. main itself only takes PRs.
-# Runs the fast checks (check) and, on a Mac, the WebGPU checks (check:gpu: smoke on the real GPU) here; CI runs the
-# heavy ones (server tests, headless network test, the scenarios that fit software WebGPU) on the branch.
-# Off a Mac there is no real-GPU WebGPU to run them on: SHIP_NO_GPU=1 skips them, on purpose and visibly.
-# `npm run ship -- --wait` waits until your commits are on main.
+# Runs the fast checks (check) here; CI runs the heavy ones (server tests, headless network test, the scenarios that
+# fit software WebGPU) on the branch, and smoke.yml runs smoke against the live site after every deploy and nightly.
+# `npm run ship -- --gpu` also runs smoke on this Mac's GPU first (check:gpu): worth it for networking or render
+# pipeline changes, not for every ship (several agents share one GPU). `-- --wait` waits until your commits are on main.
 set -euo pipefail
 
 # On a rebase conflict, ship asks Claude Code (if installed) to resolve it, keeping both sides' changes.
@@ -32,8 +32,13 @@ resolve_with_claude() {
 }
 
 ship() {
-  local wait=0
-  [ "${1:-}" = "--wait" ] && wait=1
+  local wait=0 gpu=0 a
+  for a in "$@"; do
+    case "$a" in
+      --wait) wait=1 ;;
+      --gpu) gpu=1 ;;
+    esac
+  done
 
   cd "$(git rev-parse --show-toplevel)"
   if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
@@ -60,14 +65,12 @@ EOF
   fi
 
   npm run --silent check
-  if [ -n "${SHIP_NO_GPU:-}" ]; then
-    echo "ship: SHIP_NO_GPU set: skipping the WebGPU checks (smoke runs on the live site after the deploy)."
-  elif [ "$(uname)" = Darwin ]; then
+  if [ "$gpu" = 1 ]; then
+    if [ "$(uname)" != Darwin ]; then
+      echo "ship: --gpu needs a Mac's GPU; smoke still runs against the live site after the deploy." >&2
+      exit 1
+    fi
     npm run --silent check:gpu
-  else
-    echo "ship: the WebGPU checks (npm run check:gpu) need a Mac's GPU. Ship from a Mac, or set SHIP_NO_GPU=1 to" >&2
-    echo "  skip them (smoke still runs against the live site after the deploy)." >&2
-    exit 1
   fi
 
   # A new branch per ship. Shipping again before the last one merged opens a second PR that also carries the

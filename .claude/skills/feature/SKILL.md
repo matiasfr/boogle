@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Build a feature in two stages, planned by the planner agent (Opus, high effort) and implemented by the implementer agent (Sonnet, medium effort). Use when the user asks for a feature that spans several files or touches shared state.
+description: Build a feature in two stages, planned by the planner agent (Opus, high effort) and implemented by the implementer agent (Opus, medium effort). Use when the user asks for a feature that spans several files or touches shared state.
 argument-hint: '<name> <what it does>'
 ---
 

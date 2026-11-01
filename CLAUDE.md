@@ -16,6 +16,12 @@
 - `/video`: clips, GIFs, trailers and patch-notes videos. `/playtest-notes`: log a play session to `docs/playtests.md`.
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`. The `threejs-*` skills cover WebGL and WebGPU; Boogle is WebGPU + TSL only, so use their WebGPU/TSL parts and [src/render/README.md](src/render/README.md).
 
+### Working in parallel
+- One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
+- Split work so tracks don't touch the same files; `npm run inflight` shows what's in flight. Owner-gated paths go in their own small PRs.
+- Each worker sees its own result before shipping (AGENTS.md, "See it before you ship") and ships itself. The director reads the diff and the stills afterwards.
+- One Mac GPU is shared: `/look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
+
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
 - `npm ci && npm run check` before committing (`check:full` per AGENTS.md, "Tests"). The runner has no GPU, so `check:gpu` (smoke) can't run there; for networking or rendering changes say so in the PR, and the live smoke after the deploy (`smoke.yml`) is the check.
 - Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENTS.md, "Shipping"): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.

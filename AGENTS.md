@@ -56,13 +56,21 @@ Tabs reload onto new deploys (`src/features/updates.ts`), but a visible tab wait
 ## Tests
 - Unit tests (`test/*.test.ts`, older ones `.test.mjs`; `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
 - `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.
-- `npm run check:full` (+ server tests, headless network test, ~30 s): when you touch `src/net*`, `src/world/sync.ts`, `src/world/rules/`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
+- `npm run check:full` (+ server tests, headless network test, ~30 s): CI runs it on every PR anyway; run it locally only when you touch `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
 - Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): PR CI runs single-player scenarios only (`world-inputs`; must pass): it can't run two rendering tabs reliably, and `SCENARIO_GATE=pr` makes the runner refuse a second one. Multiplayer scenarios run on a device (`check:gpu`, below) or nightly (never block). Other local runs are optional, for iterating on visuals and feel; a failed leg's images and Playwright traces (`npx playwright show-trace <zip>`) are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
 - `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
-- `npm run perf`: before/after anything adding meshes, lights, post passes or per-tick sim work.
+- `npm run perf`: before/after adding many meshes, lights or post passes. Not for UI, tuning or a single prop. Its numbers mean something only while no other agent is rendering on the same machine.
 - Every harness run is WebGPU (SwiftShader over Vulkan on Linux and CI, Metal on a Mac; `?dpr=fixed`). A `gfx errors` line with entries is a bug.
-- `smoke` is the backbone, but two tabs on CI's software WebGPU are too slow for it, so it runs where there is a GPU: `npm run check:gpu` (smoke on the Mac's GPU, a minute or so) runs in `npm run ship` on a Mac, and `smoke.yml` runs it against the live site after every deploy and nightly (a failure opens a `smoke` issue). Off a Mac, `SHIP_NO_GPU=1 npm run ship` skips the local run on purpose; the live run still catches it after the deploy.
+- `smoke` is the backbone, but two tabs on CI's software WebGPU are too slow for it, so it runs against the live site after every deploy and nightly (`smoke.yml`; a failure opens a `smoke` issue, and fixing it beats new work). `npm run ship -- --gpu` (or `npm run check:gpu`) also runs it on a Mac before shipping: do that for networking or render-pipeline changes, not every ship.
+- **Test diet.** Iteration speed matters more than coverage this early. Write new tests only for lockstep code (`src/sim/`, `src/world/rules/`: determinism, conservation, validation). Features, UI, tuning and feel get no unit tests and no new scenario; they get looked at ("See it before you ship"). A new scenario only when a sync contract needs one.
 - **Atlas** (internal, boogle.club/atlas; docs/atlas/README.md): shipping a new sync system or a big feature, add or update a story in docs/atlas/stories/. `npm run atlas -- --check` lists citations your change broke; fixing them is welcome but never blocks (the daily agent fixes what's left).
+
+## See it before you ship
+For anything a player can see or feel, close the loop yourself before shipping; don't hand it to a human to check.
+1. Run it: `/look` stills and a motion sheet at a pose that frames your change (`--eval` to set it up, behind its `?proto=` flag if it has one). Read every PNG.
+2. Gut check against the brief's feel target: does it read at a glance, does it move smoothly (no jitter or popping), would a player want to do it again? Say in one line what you see.
+3. Fix what's off and look again, up to three rounds. Still unsure after that: ship it behind its flag and say what you're unsure of in your report.
+4. Ship it yourself (`npm run ship`) with a still in the commit body.
 
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too). Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.
