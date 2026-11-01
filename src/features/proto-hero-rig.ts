@@ -1,7 +1,7 @@
 // Prototype: the rig path end to end (?proto=assets, beside the scaffold bays; docs/research/procedural-animation.md,
 // recommendation 3). A jointed hero built by a Blender script (assets/src/hero-rig.py: rigid parts on 15 bones, no
 // skin weights) stands between the bays. Code poses it every frame (breathing, a slight sway, turning and looking at
-// you); press Interact near it and it changes outfit, then plays the authored "wave" clip, faded in over the code pose
+// you); &eyes= and &shade= pick its eye style and shading. Press Interact near it and it changes outfit, then plays the authored "wave" clip, faded in over the code pose
 // and back out. The questions it answers: can an agent-built rig and clip sit on top of code-driven motion without a
 // seam, and do outfits from other files swap onto the same body?
 // Local: decoration only, each tab runs its own.
@@ -22,6 +22,13 @@ const AT = { x: SPAWN.x, z: SPAWN.z - 4 }; // between the two scaffold bays
 const REACH = 3; // m from the hero to offer "Change clothes"
 const OUTFITS = ['work', 'castaway', 'bare'] as const;
 type Outfit = (typeof OUTFITS)[number];
+const EYES = ['googly', 'flat', 'bead'] as const; // assets/src/hero-rig.py, "Face"
+const SHADES = ['matte', 'plastic', 'clay'] as const;
+const q = new URLSearchParams(location.search);
+const pick = <T extends string>(list: readonly T[], key: string) => {
+  const v = q.get(key) as T | null;
+  return v && list.includes(v) ? v : list[0];
+};
 const FADE_IN = 0.12; // s: the clip takes over quickly (its first keys are an anticipation dip)
 const FADE_OUT = 0.3; // s: and hands back to the code pose softly
 
@@ -63,14 +70,33 @@ async function build() {
       for (const r of regions) r.visible = !worn;
     }
   };
-  const asked = new URLSearchParams(location.search).get('hero') as Outfit | null;
-  dress(asked && OUTFITS.includes(asked) ? asked : 'work');
+  dress(pick(OUTFITS, 'hero'));
+
+  // Eye styles: one shows (&eyes=<style>), and its pupils are the ones that look at you.
+  const eyes = pick(EYES, 'eyes');
+  const pupils: THREE.Object3D[] = [];
+  root.traverse((o) => {
+    if (!o.name.startsWith('eyes_')) return;
+    o.visible = o.name.startsWith(`eyes_${eyes}_`);
+    if (o.visible && o.name.includes('_pupil_')) pupils.push(o);
+  });
 
   const y = groundHeight(AT.x, AT.z);
   holder.position.set(AT.x, y, AT.z);
-  // A cool rim of sky light on every part, the soft edge the previz renders have and the game's lighting lacks:
-  // (1 - N.V)^3, so it shows only where a surface turns away from the camera.
-  const rim = float(1).sub(normalView.dot(positionViewDirection).saturate()).pow(3).mul(color('#cfe6ff')).mul(0.45);
+  // Shading (&shade=<name>). Every one adds a cool rim of sky light, the soft edge the previz renders have and the
+  // game's lighting lacks: (1 - N.V)^p, so it shows only where a surface turns away from the camera. The body's own
+  // material (the player's colour) then differs:
+  // - matte: as exported (roughness 0.5).
+  // - plastic: glossy vinyl (Astro Bot): roughness 0.22 for a tight highlight, a stronger, sharper rim.
+  // - clay: soft and chalky (Fall Guys' fuzzy jelly): roughness 0.9, shade lifted by a little of its own colour, and a
+  //   warm edge, as if light scattered through it.
+  const shade = pick(SHADES, 'shade');
+  const edge = float(1).sub(normalView.dot(positionViewDirection).saturate());
+  const rim = edge
+    .pow(shade === 'plastic' ? 2.5 : 3)
+    .mul(color('#cfe6ff'))
+    .mul(shade === 'plastic' ? 0.6 : 0.45);
+  const bodyMat = (bone('body_part') as THREE.Mesh).material as THREE.MeshStandardNodeMaterial;
   const patched = new Set<THREE.Material>();
   holder.traverse((o) => {
     const m = (o as THREE.Mesh).material as THREE.Material | undefined;
@@ -78,12 +104,22 @@ async function build() {
     patched.add(m);
     patchNode(m, 'emissiveNode', (prev) => (prev ?? vec3(0)).add(rim));
   });
+  // Eye whites stay white: warm sun and grading tint them peach (eggs, not eyes), so they glow a little on their own.
+  const whites = (bone('eyes_googly_white_l_part') as THREE.Mesh).material as THREE.MeshStandardNodeMaterial;
+  patchNode(whites, 'emissiveNode', (prev) => prev.add(vec3(0.35)));
+  if (shade === 'plastic') bodyMat.roughness = 0.22;
+  if (shade === 'clay') {
+    bodyMat.roughness = 0.9;
+    const own = color(bodyMat.color.clone());
+    patchNode(bodyMat, 'emissiveNode', (prev) =>
+      prev.add(own.mul(0.12)).add(edge.pow(2).mul(color('#ffb48a')).mul(0.22)),
+    );
+  }
   scene.add(holder);
   await precompile(holder);
 
   const bones = ['root', 'hips', 'body', 'arm_l', 'arm_r', 'forearm_l', 'forearm_r', 'hand_l', 'hand_r'].map(bone);
   const [, hips, body, armL, armR, forearmL, forearmR] = bones;
-  const pupils = ['pupil_l_part', 'pupil_r_part'].map(bone);
   const pupilRest = pupils.map((p) => p.position.clone());
   const codeQ = bones.map(() => new THREE.Quaternion());
   const clipQ = new THREE.Quaternion();
@@ -167,4 +203,5 @@ async function build() {
   };
 }
 
-if (new URLSearchParams(location.search).get('proto') === 'assets') build();
+// Also in the look lab (?proto=look&hero=<outfit>), to see it under the scene's render presets.
+if (q.get('proto') === 'assets' || q.has('hero')) build();
