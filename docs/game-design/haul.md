@@ -199,7 +199,9 @@ section it laid in the `opening` state, so a late joiner's wagon runs the same t
 (`tune.reset`);
 anywhere, its −/+ (or `&laid=N`) fake the laid count for your tab only, drawing plain rails for faked sections
 (prototype only). Each tab drives its own bodies from the shared tick, so every tab sees the same wagon with no
-messages; a rider on another tab shows at their presence position, a little behind the deck.
+messages. A rider on another tab is drawn on your copy of their car: while you stand on a car you send your place in
+its frame (presence `riding`), so riders stay put on the deck through stops and corners instead of trailing it.
+Scenario: `npm run scenario -- wagon-riders` (two tabs; on a Mac, not in PR CI).
 
 Code: [src/features/proto-wagon.ts](../../src/features/proto-wagon.ts), [src/proto/wagon/](../../src/proto/wagon/)
 (the look is one function, `wagonLook` in look.ts).

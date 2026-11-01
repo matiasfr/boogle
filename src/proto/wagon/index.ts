@@ -13,8 +13,8 @@
 // so tabs that watched it happen agree; a tab that joins later after a `open.lay` shortcut may run a different phase
 // (prototype; the real timetable will want its own lockstep start tick).
 //
-// Remote riders (out of scope here): another player standing on the deck shows at their presence position, ~100 ms
-// behind the deck. A fix: send a rider's position in the deck's frame plus the car index, and draw it on the car.
+// Remote riders: each car is a shared platform (`wagon:car<k>`), so another player standing on a deck is sent and drawn
+// in its frame (presence `riding`, src/netplay/net.ts) and stays put on it here.
 import './wagon.css';
 const params = new URLSearchParams(location.search);
 import { rules } from '../../world/game-world.ts';
@@ -251,7 +251,16 @@ const cars: Car[] = CARS.map(({ spec, off }, k) => {
     dip: 0,
     dipV: 0,
     ground,
-    platform: { body, hx: spec.hx, hz: spec.hz, top: hy, move: (dt) => move(car, k, dt) },
+    // Shared: every tab drives this car from shared time, so riders on it are drawn in its frame (platforms.ts).
+    platform: {
+      body,
+      hx: spec.hx,
+      hz: spec.hz,
+      top: hy,
+      move: (dt) => move(car, k, dt),
+      id: `wagon:car${k}`,
+      shared: true,
+    },
   };
   registerPlatform(car.platform);
   return car;

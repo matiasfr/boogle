@@ -1,11 +1,17 @@
 // Platforms: kinematic bodies the local player stands on and is carried by (a wagon, the ?proto=ride flatbed).
 // docs/plans/find-the-fun.md, step 2; docs/plans/boogle-2-architecture-fit.md, "The slice's one risk: riding".
 //
-//   registerPlatform({ body, hx, hz, top, move })   -> unregister()
+//   registerPlatform({ body, hx, hz, top, move, id?, shared? })   -> unregister()
 //     body   a BODY.KINEMATIC body, level (yaw only)
 //     hx, hz the deck's half size in the body's own x and z; top: deck height above body.position
 //     move(dt)  sets body.velocity and body.angularVelocity.y for the coming fixed step (called first in every step,
 //               so the carry below reads this step's motion, never last step's)
+//     id, shared  shared: true when every tab computes this platform's pose identically (the wagon's cars, from
+//               shared time), with a stable id ('wagon:car1'). A rider on one sends their offset in its frame
+//               (presence key `riding`, src/netplay/net.ts) and other tabs draw them on their own copy, so they stay
+//               put on the deck instead of trailing it by the presence delay. The ?proto=ride flatbed is per tab: not
+//               shared.
+//   platformById(id), toPlatform(p, pos, yaw, out), fromPlatform(p, local, interpolated, out): that frame's maths
 //   carry       the velocity the player's steering is relative to (src/physics/physics.ts adds it to the target):
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and
 //               bled away once you land on plain ground or water (a short skid; landing fast counts a tumble)
@@ -14,9 +20,20 @@
 // Riding works in the deck's frame: the player's velocity is the deck point's velocity plus the steered part, so
 // Rapier moves body and deck together (zero friction, no sliding) and jumping off keeps the deck's speed for free.
 import { FIXED, PLAYER_R } from '../constants.ts';
-import { onPreStep, type Body } from './engine.ts';
+import { angleLerp } from '../math.ts';
+import { onPreStep, stepAlpha, type Body } from './engine.ts';
 
-export type Platform = { body: Body; hx: number; hz: number; top: number; move: (dt: number) => void };
+export type Platform = {
+  body: Body;
+  hx: number;
+  hz: number;
+  top: number;
+  move: (dt: number) => void;
+  id?: string;
+  shared?: boolean;
+};
+/** A pose in a platform's frame (x, y, z from the body's centre, along its own axes; yaw relative to its yaw). */
+export type Local = { x: number; y: number; z: number; yaw: number };
 
 export const CARRY = {
   boardS: 0.12, // s: the carry blends from what you had to the deck's speed (no snap when you land on a moving deck)
@@ -42,13 +59,45 @@ let boardT = 0,
   fromZ = 0,
   airborne = false;
 
+const prevYaw = new Map<Platform, number>(); // each platform's yaw before the last fixed step, for drawing between
 export function registerPlatform(p: Platform) {
   platforms.push(p);
+  prevYaw.set(p, yawOf(p.body.quaternion));
   return () => {
     const k = platforms.indexOf(p);
     if (k >= 0) platforms.splice(k, 1);
+    prevYaw.delete(p);
     if (carry.on === p) carry.on = null;
   };
+}
+export const platformById = (id: string) => platforms.find((p) => p.id === id) ?? null;
+
+// A world pose (position, yaw) in p's frame, at the body's current (fixed-step) pose.
+export function toPlatform(p: Platform, at: { x: number; y: number; z: number }, yaw: number, out: Local) {
+  const q = p.body.position,
+    py = yawOf(p.body.quaternion);
+  const rx = at.x - q.x,
+    rz = at.z - q.z,
+    c = Math.cos(py),
+    s = Math.sin(py);
+  out.x = rx * c - rz * s;
+  out.y = at.y - q.y;
+  out.z = rx * s + rz * c;
+  out.yaw = yaw - py;
+  return out;
+}
+// The world pose of a point in p's frame: at the body's fixed-step pose, or interpolated the way meshes draw it.
+export function fromPlatform(p: Platform, l: Local, interpolated: boolean, out: Local) {
+  const q = interpolated ? p.body.interpolatedPosition : p.body.position;
+  const yaw = yawOf(p.body.quaternion),
+    py = interpolated ? angleLerp(prevYaw.get(p) ?? yaw, yaw, stepAlpha()) : yaw;
+  const c = Math.cos(py),
+    s = Math.sin(py);
+  out.x = q.x + l.x * c + l.z * s;
+  out.y = q.y + l.y;
+  out.z = q.z - l.x * s + l.z * c;
+  out.yaw = py + l.yaw;
+  return out;
 }
 
 export const yawOf = (q: { x: number; y: number; z: number; w: number }) =>
@@ -56,7 +105,10 @@ export const yawOf = (q: { x: number; y: number; z: number; w: number }) =>
 
 // Module-level, so it runs before the player's controller hook (installed later, from main.ts).
 onPreStep(() => {
-  for (const p of platforms) p.move(FIXED);
+  for (const p of platforms) {
+    prevYaw.set(p, yawOf(p.body.quaternion));
+    p.move(FIXED);
+  }
 });
 
 // The deck the body stands on, with its feet gap (m, + = air below), or null.
