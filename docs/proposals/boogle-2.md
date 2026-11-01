@@ -55,6 +55,8 @@ These are standing preferences from the thread.
 
 ### Trains and the world
 
+- **2026-11-01, an archipelago, not one big open map.** Islands vary in size (home small and dense, later islands several times larger, the mainland port the one big walkable place). Reaching a new island is an era's payoff, telegraphed by seeing it across the water. Connections are physical (reclaimed land, bridges, causeways you can walk and drive), so late game reads as one connected place. Why: the 29 October playtest found a big island empty; the sea gives natural loading boundaries (architecture-fit, "A world bigger than one island").
+
 - **Trains are ride-only and timetabled.** Their position is a pure function of the world tick, so they cost nothing on the network. You don't drive them.
 - **Crates visibly ride the trains** to construction sites.
 - **Construction shows both scaffolding and pieces appearing.**
@@ -89,6 +91,8 @@ These are standing preferences from the thread.
 
 ### Process
 
+- **2026-11-01, the lowest target device is an M4 iPad Pro** (owner: "likely"). Replaces the 2021 iPad and mid-range Android phone in [architecture.md](../plans/architecture.md)'s assumptions. The visual quality target is set by a code-only graphics spike measured against it (find-the-fun.md, "Depth tracks").
+
 - **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
 - **2026-11-01, a lighter test load.** `npm run ship` no longer runs smoke on the Mac by default (`-- --gpu` opts in); smoke runs against the live site after each deploy and nightly. New tests only for lockstep code; features and feel get looked at, not tested. `perf` only for heavy rendering changes.
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
@@ -113,9 +117,10 @@ These are standing preferences from the thread.
 1. Keep the short bell countdown before opening day (about 10 s)?
 2. When does the mini-games design pass happen?
 3. Apply the proposed re-ordering of [architecture.md](../plans/architecture.md) from [boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md)?
-4. Who runs the baseline on a 2021 iPad and a mid-range Android phone?
+4. ~~Who runs the baseline on a 2021 iPad and a mid-range Android phone?~~ Now the M4 iPad Pro (Decided, 1 November). Do phones stay supported at a lower quality, or drop?
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
-6. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
+6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
+7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
 
 ## Next: find the fun (agreed direction, 1 November)
 

@@ -31,6 +31,10 @@ until a look is picked; none of it blocks a playtest.
 
 - **Characters (proposed, waiting on the owner):** concept sheets of the player and The Boogler (`/concept-art`),
   then modelling and rigging in Blender, then a glTF swap behind the avatar module once the asset pipeline exists.
+- **Island layout lab (started 1 November):** an interactive map artifact on the real island data, at two scales
+  (home in detail for eras 1–2; a rough archipelago), with `?layout=<name>` to walk an option in greybox.
+- **Graphics ceiling spike (started 1 November):** a code-only scene behind `?proto=look` using what WebGPU and TSL
+  offer, measured per effect, to set the visual quality target on an M4 iPad Pro.
 - **Feel passes** on whatever a playtest says is close: one facet per agent (the stack's sway, the wagon's clack).
 
 ## 1. Is hauling fun as a toy? (the haul playtest kit)
