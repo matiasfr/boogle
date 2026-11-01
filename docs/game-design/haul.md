@@ -121,3 +121,22 @@ sets are one table, [blocks.ts](../../src/pois/era/blocks.ts)). Lockstep state `
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.
+
+## Prototype: wagon (?proto=wagon)
+
+A greybox steam wagon (a loco and two flatbeds, the rear one loaded with crates) runs the timetable of
+[src/sim/wagon.ts](../../src/sim/wagon.ts) along the **laid** sections only: nothing laid, no wagon; the first laid
+section brings it out standing at the first site; each newly laid section extends its run from the next stop it
+reaches (no teleport). It stops 6 s at each site, cruises at 3 m/s, and shuttles back and forth push-pull (the loco
+stays at the lighthouse end). Every car is a kinematic platform (src/physics/platforms.ts): stand on a flatbed, or
+jump onto the boiler, and you're carried; jump off and you keep its speed. It chuffs with speed, rocks and clacks over
+rail joints every 4.5 m, and whistles just before leaving a stop. `&v=lively` (rockier, bouncier, more smoke, a
+camera jolt per joint while riding) against the default `&v=calm`, render and feel only.
+
+Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`) and Reset the route (`tune.reset`);
+anywhere, its −/+ (or `&laid=N`) fake the laid count for your tab only, drawing plain rails for faked sections
+(prototype only). Each tab drives its own bodies from the shared tick, so every tab sees the same wagon with no
+messages; a rider on another tab shows at their presence position, a little behind the deck.
+
+Code: [src/features/proto-wagon.ts](../../src/features/proto-wagon.ts), [src/proto/wagon/](../../src/proto/wagon/)
+(the look is one function, `wagonLook` in look.ts).

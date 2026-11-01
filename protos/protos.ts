@@ -50,6 +50,23 @@ export const PROTOS: Proto[] = [
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
   },
   {
+    id: 'wagon',
+    title: 'Ride: the wagon',
+    step: 3,
+    status: 'live',
+    url: '/?room=proto-wagon&proto=wagon',
+    question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
+    what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed.',
+    since: '2026-11-01',
+    variants: [
+      {
+        name: 'lively',
+        url: '/?room=proto-wagon&proto=wagon&v=lively',
+        what: 'Rockier and bouncier over the joints, more smoke, a camera jolt per joint while riding.',
+      },
+    ],
+  },
+  {
     id: 'era',
     title: 'Era swap (greybox)',
     step: 4,
