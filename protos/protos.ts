@@ -132,6 +132,17 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
   },
   {
+    id: 'assets',
+    title: 'Blender kit vs code',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=assets',
+    question: 'Can you tell the Blender-made scaffold from the code-built one?',
+    what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code.',
+    since: '2026-11-01',
+    note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
+  },
+  {
     id: 'layout',
     title: 'Island layout',
     step: 'depth',

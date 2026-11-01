@@ -1,7 +1,7 @@
-// Authored models at runtime (docs/plans/asset-pipeline.md). Load an optimized .glb from assets/out/ (built by
+// Authored models at runtime (docs/plans/asset-pipeline.md). Load an optimized .glb from assets/built/ (built by
 // `npm run assets`), clone pieces of it, and play its glTF animation clips.
 //
-//   import url from '../../assets/out/scaffold-kit.glb?url';   // Vite hashes the file name on build
+//   import url from '../../assets/built/scaffold-kit.glb?url';   // Vite hashes the file name on build
 //   const kit = await loadAsset(url);                             // cached per url; decoders set up once
 //   const plank = kit.instance('plank');                          // a Group at the origin holding a clone of node 'plank'
 //   scene.add(plank); play(plank, kit.clip('drop', 'plank'));     // the clip's tracks for that node only
