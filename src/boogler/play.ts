@@ -19,6 +19,7 @@ import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.ts';
 import { heldId, useOne } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
+import { NO_TARGETS } from '../sim/interact-pick.ts';
 import { guest } from '../guest/state.ts';
 import type { BgRemote } from './boogler.ts';
 import type { Friend } from './friendship.ts';
@@ -295,10 +296,10 @@ export function booglerTalk() {
 // me first!". The prompt shows in his name tag. While you talk it is Leave, so the touch main button walks away too
 // (E and pad B already do, through the talk box) rather than throwing what you hold.
 export function talkTargets() {
-  if (!me.entered || riding()) return [];
+  if (!me.entered || riding() || (!dialogue.open && dist() > TALK_RANGE)) return NO_TARGETS;
   const target = { id: 'boogler', at: boogler.center, r: W_R, show: setTagPrompt };
   if (dialogue.open) return [{ ...target, verb: 'Leave', run: leave }];
-  return dist() > TALK_RANGE ? [] : [{ ...target, verb: 'Talk', run: booglerTalk }];
+  return [{ ...target, verb: 'Talk', run: booglerTalk }];
 }
 
 function petInTalk() {

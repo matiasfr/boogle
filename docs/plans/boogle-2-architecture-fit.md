@@ -131,10 +131,11 @@ This keeps everything already done, replaces phases 3–4 with the order below, 
 says yes.
 
 **Phase 3: the slice's needs (now)**
-- [ ] Tick "Dedicated server" (done in #144) and update its wording.
+- [x] Tick "Dedicated server" (done in #144) and update its wording.
 - [ ] Baseline on the target devices (moved up from phase 1).
 - [ ] Platform carry for the player on kinematic bodies (the rail spike's first step).
-- [ ] Allocation-free hot path: our hooks under 1 KB/frame (carried over from phase 1).
+- [ ] Allocation-free hot path: our hooks under 1 KB/frame (carried over from phase 1; 3.3 KB/frame of objects on
+  2026-11-01, see game-loop.md step 2).
 
 **Phase 4: a world of islands (after the slice playtest, before era 3)**
 - [ ] The world as data: per-island heightfields and static colliders that the server and the renderer both load

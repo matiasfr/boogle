@@ -33,9 +33,10 @@ The open questions in the two plans have working answers so work can start; chan
       (game-loop.md, step 1).
 - [x] TypeScript everywhere: the policy, strict `tsconfig.json`, `npm run typecheck` in `check`, `.ts`-aware lint,
       registry and loaders, Node 24 (step 8a).
-- [ ] Allocation-free hot path (step 2). Heap tracking and `hitches --allocs` are in; our hooks still allocate ~15
-      KB/frame, cannon-es ~60 KB/frame (decided 2026-10-31: move to Rapier, [rapier.md](rapier.md)). Remaining: our own hooks
-      under 1 KB/frame.
+- [ ] Allocation-free hot path (step 2). `hitches` measures each hook warm and splits objects from V8's boxed
+      numbers (Safari has none); 2026-11-01 took our hooks from 6.6 to 3.3 KB/frame of objects and from ~19 to ~11 of
+      boxed numbers, with a 4 KB budget that fails `hitches`. Physics moved to Rapier ([rapier.md](rapier.md)).
+      Remaining: under 1 KB/frame of objects (the biggest left: presence sends, 0.9).
 - [ ] Baseline on the target devices (skipped for now, 2026-10-31: needs the devices in hand): `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
 - [x] Unreliable presence channel (native `RTCDataChannel`, `maxRetransmits: 0`), before/after `npm run load`
@@ -63,9 +64,8 @@ The open questions in the two plans have working answers so work can start; chan
 Decided 2026-10-31 ([shared-state-at-scale.md](../research/shared-state-at-scale.md)): no client-side sim worker. The
 server becomes the only simulator of shared state and, after it lands, sends each client only the state near it.
 
-- [ ] Dedicated server ([server-host.md](server-host.md), steps 1-10): the server hosts the main room's lockstep
-      world, PeerJS stays the fallback. DESIGN.md "PeerJS only" is rewritten in step 1 (approved 2026-10-31); the
-      plan's open questions take its recommended answers.
+- [x] Dedicated server ([server-host.md](server-host.md)): the server hosts every room's lockstep world, with no
+      PeerJS fallback (the switch, #144; DESIGN.md's "PeerJS only" was rewritten for it).
 - [ ] Interest-managed state: rules states serialize by chunk, the server sends each client the dirty chunks near it
       against an acknowledged baseline, and clients keep a read-only mirror instead of running ticks.
 - [ ] Edits predicted on the client (a cosmetic preview until the server's delta arrives).

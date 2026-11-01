@@ -77,7 +77,8 @@ onFrame(
       pos[k * 3] = x;
       pos[k * 3 + 1] = groundHeight(x, z) + f.h + Math.sin(t * 1.3) * 0.25;
       pos[k * 3 + 2] = z;
-      const blink = Math.max(0, Math.sin(t * 2.2)) ** 3 * shown;
+      const up = Math.max(0, Math.sin(t * 2.2)),
+        blink = up * up * up * shown;
       col[k * 3] = 0.85 * blink;
       col[k * 3 + 1] = 1.0 * blink;
       col[k * 3 + 2] = 0.35 * blink;

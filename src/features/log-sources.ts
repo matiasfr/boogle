@@ -9,7 +9,7 @@ import { onFrame, onStart } from '../loop.ts';
 import { trees } from '../render/props.ts';
 import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
-import { registerInteractable, type Interactable } from '../player/hands.ts';
+import { registerInteractable, NO_TARGETS, type Interactable } from '../player/hands.ts';
 import { me } from '../player/player.ts';
 import { haulHooks } from '../player/haul-variant.ts';
 import { net } from '../netplay/net.ts';
@@ -51,17 +51,21 @@ onApplied((e: { op: string; p: string; id: number }, tick: number, r: { n?: numb
 // "Take logs": one target per bundle in reach that still holds a charge (the interact button, no new key).
 const bundleAt = new THREE.Vector3();
 registerInteractable(() => {
-  if (!me.body) return [];
+  if (!me.body) return NO_TARGETS;
   const pos = me.body.interpolatedPosition;
   const now = performance.now();
-  const out: Interactable[] = [];
-  rules.sources.list().forEach((p: Cell, id: number) => {
-    if (rules.sources.charges(id) <= 0 || now - (pending.get(id) ?? -1e9) < 1500) return;
+  const list = rules.sources.list();
+  let out: Interactable[] | null = null; // made only when a bundle is in reach: asked every frame
+  for (let id = 0; id < list.length; id++) {
+    const p = list[id];
+    const dx = cellX(p.i) + 0.9 - pos.x, // spot()'s x, z: the ground height only for a bundle in reach
+      dz = cellZ(p.j) + 0.4 - pos.z;
+    if (dx * dx + dz * dz >= REACH_LOGS * REACH_LOGS) continue;
+    if (rules.sources.charges(id) <= 0 || now - (pending.get(id) ?? -1e9) < 1500) continue;
     spot(p, bundleAt);
-    if (Math.hypot(bundleAt.x - pos.x, bundleAt.z - pos.z) >= REACH_LOGS) return;
     const t = { id: `logs${id}`, verb: 'Take logs', at: new THREE.Vector3(bundleAt.x, bundleAt.y + 0.5, bundleAt.z) };
     const blocked = haulHooks.takeBlocked(bundleAt.x, bundleAt.z); // a haul variant's rule (the barrow must be near)
-    out.push(
+    (out ??= []).push(
       blocked
         ? { ...t, blocked }
         : {
@@ -71,8 +75,8 @@ registerInteractable(() => {
             },
           },
     );
-  });
-  return out;
+  }
+  return out ?? NO_TARGETS;
 });
 
 let drawn = -1; // sources.rev last drawn (it changes on takes, refills, the trickle and loads)

@@ -44,16 +44,23 @@ interact targets 2 KB, gulls and fireflies under 1 KB each).
 - Done: `hitches` reports heap per frame and GCs per tour step; `--allocs` lists allocation sites, charging library
   allocations to the game code that called them. The profiler and the frame context allocate nothing; the fish hook lost its per-frame array and
   iterators (still ~6 KB/frame, see the open lead below).
-- Next, ours: module-scope scratch objects and index loops in the remaining hooks above, and interact targets
-  (`registerInteractable`) that reuse their objects.
-- Open lead (2026-10-31): the fish hook still allocates ~6 KB/frame with no object, array or iterator left in it, and
-  starting its fields as doubles changed nothing. That pattern is V8 boxing numbers in a function it never optimizes;
-  check with `--js-flags=--trace-opt --trace-deopt` (Chrome's stderr) before rewriting it. Minor GCs cause no hitch on
-  the Mac today, so this waits for a device baseline that shows they matter.
+- Solved lead (2026-11-01): the fish hook's ~6 KB/frame was V8 boxing doubles (HeapNumbers), not objects: `Math.hypot`
+  and `Math.random` return boxed results, and so does every double passed to or returned from a call TurboFan did not
+  inline (its inlining budget runs out in a big hook). Safari and Firefox keep doubles unboxed, so this garbage is V8's
+  alone. `Math.sqrt(dx * dx + dz * dz)` instead of `Math.hypot` in hot loops halved the fish.
+- Done (2026-11-01): `hitches` ends with a warm measurement of every hook (six seconds of day and night after the
+  tour, CDP's sampling heap profiler), objects and V8 numbers apart, and fails over a budget of objects (4 KB/frame, a
+  ratchet). Objects 6.6 -> 3.3 KB/frame, V8 numbers ~19 -> ~11, the whole JS heap 85 -> 72 KB/frame. The fixes:
+  interact providers run once a frame (`interactTarget()` is shared by a frame's hooks) and return `NO_TARGETS` when
+  nothing is in reach; gulls, lights, the Boogler's visitors and limbs, gift visuals, piles, the sky state and the
+  Boogler's screen position reuse their objects; `blockedAt` lost its `?? []`.
+- Left (objects, KB/frame): presence sends 0.9 (a spread copy, `Object.entries` and two `JSON.stringify` per send,
+  `src/net/ws-room.ts`), then a long tail under 0.3 each: `remotes.values()` iterators, `worldStatus()` objects, HUD
+  transform strings, `navigator.getGamepads()`.
 - The physics engine is the real cost: cannon-es can't be made allocation-free from outside. Decided 2026-10-31:
   move to Rapier ([rapier.md](rapier.md)), which also fits the physics worker of step 7.
 
-**Done when** our own hooks allocate under 1 KB per frame (physics: rapier.md).
+**Done when** our own hooks allocate under 1 KB of objects per frame, warm (`npm run hitches`; physics: rapier.md).
 
 ### 3. Instance pools: the `emit()` of meshes
 

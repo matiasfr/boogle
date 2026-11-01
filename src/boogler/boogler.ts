@@ -191,13 +191,22 @@ function findStart() {
 }
 
 // ---------------------------------------------------------------- brain (authority only)
+// The players near him this frame, refilled into reused entries (think() runs every frame and allocates nothing).
+const seen: Visitor[] = [];
+let seenCount = 0;
+function visitor(x: number, z: number, act: number, wary: boolean) {
+  const v = seen[seenCount] ?? (seen[seenCount] = { x, z, act, wary });
+  v.x = x;
+  v.z = z;
+  v.act = act;
+  v.wary = wary;
+  seenCount++;
+}
 function visitors() {
-  const out: Visitor[] = [];
-  if (me.entered && me.body)
-    out.push({ x: me.body.position.x, z: me.body.position.z, act: boogler.me.act, wary: boogler.me.wary });
+  seenCount = 0;
+  if (me.entered && me.body) visitor(me.body.position.x, me.body.position.z, boogler.me.act, boogler.me.wary);
   for (const r of remotes.values() as Iterable<BgRemote>)
-    if (r.entered && r.avatar) out.push({ x: r.target.x, z: r.target.z, act: r.bg?.[0] ?? 0, wary: r.bg?.[1] === 1 });
-  return out;
+    if (r.entered && r.avatar) visitor(r.target.x, r.target.z, r.bg?.[0] ?? 0, r.bg?.[1] === 1);
 }
 
 function fleeFrom(t: Visitor) {
@@ -225,13 +234,24 @@ function think(dt: number) {
     nearest: Visitor | null = null, // whoever he turns to look at while idle
     nearestD = FACE_RANGE,
     ridden = false;
-  for (const v of visitors()) {
-    const d = Math.hypot(v.x - sim.x, v.z - sim.z);
-    if (d < nearestD && d > 0.5) [nearest, nearestD] = [v, d];
+  visitors();
+  for (let k = 0; k < seenCount; k++) {
+    const v = seen[k];
+    const d = Math.sqrt((v.x - sim.x) * (v.x - sim.x) + (v.z - sim.z) * (v.z - sim.z));
+    if (d < nearestD && d > 0.5) {
+      nearest = v;
+      nearestD = d;
+    }
     if (v.act === ACT.RIDE && d < W_R + 0.8) ridden = true;
     else if (v.act === ACT.TALK) {
-      if (d < focusD) [focus, focusD] = [v, d];
-    } else if (v.wary && d < threatD) [threat, threatD] = [v, d];
+      if (d < focusD) {
+        focus = v;
+        focusD = d;
+      }
+    } else if (v.wary && d < threatD) {
+      threat = v;
+      threatD = d;
+    }
   }
   sim.mode = threat ? MODE.FLEE : ridden ? MODE.RIDDEN : MODE.CALM;
 
@@ -587,22 +607,24 @@ function animate(dt: number, now: number) {
   parts.inner.scale.set(swell / Math.sqrt(squash), squash * swell, swell / Math.sqrt(squash));
   parts.inner.rotation.z = s * 0.06 * w;
 
-  parts.feet.forEach((f, k) => {
+  for (let k = 0; k < parts.feet.length; k++) {
+    const f = parts.feet[k];
     const ph = k ? -s : s;
     f.position.set(
       f.userData.base.x,
       f.userData.base.y + Math.max(0, ph) * 0.08 * w + hopY * 0.75,
       f.userData.base.z - ph * 0.16 * w,
     );
-  });
-  parts.hands.forEach((h, k) => {
+  }
+  for (let k = 0; k < parts.hands.length; k++) {
+    const h = parts.hands[k];
     const ph = k ? s : -s;
     h.position.set(
       h.userData.base.x + (hopY > 0 ? Math.sign(h.userData.base.x) * hopY * 0.25 : 0),
       h.userData.base.y + Math.abs(ph) * 0.05 * w + hopY * 0.6 + Math.abs(pet) * 0.8,
       h.userData.base.z - ph * 0.14 * w,
     );
-  });
+  }
   const face = faceTexture(expression(now));
   if (parts.bodyMesh.material.map !== face) parts.bodyMesh.material.map = face;
   animateHat(dt);
@@ -683,6 +705,7 @@ export function updateBoogler(dt: number, now: number) {
 const vp = new THREE.Vector3();
 const centerOn = { x: 0, y: 0, behind: false },
   labelOn = { x: 0, y: 0, behind: false };
+const onScreenOut = { onScreen: false, dirX: 0, dirY: 0, labelX: 0, labelY: 0 }; // refilled by every call
 export function booglerScreen(width: number, height: number) {
   camera.updateMatrixWorld();
   vp.copy(boogler.center).applyMatrix4(camera.matrixWorldInverse);
@@ -694,5 +717,10 @@ export function booglerScreen(width: number, height: number) {
   const c = toScreen(boogler.center, centerOn, width, height);
   const onScreen = inFront && Math.abs((c.x / width) * 2 - 1) < 0.96 && Math.abs((c.y / height) * 2 - 1) < 0.96;
   const label = toScreen(boogler.labelPos, labelOn, width, height);
-  return { onScreen, dirX: dx, dirY: dy, labelX: label.x, labelY: label.y };
+  onScreenOut.onScreen = onScreen;
+  onScreenOut.dirX = dx;
+  onScreenOut.dirY = dy;
+  onScreenOut.labelX = label.x;
+  onScreenOut.labelY = label.y;
+  return onScreenOut;
 }

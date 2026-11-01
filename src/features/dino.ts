@@ -14,7 +14,7 @@ import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { me } from '../player/player.ts';
 import { dom } from '../player/hud.ts';
-import { registerInteractable, interactTarget } from '../player/hands.ts';
+import { registerInteractable, interactTarget, NO_TARGETS } from '../player/hands.ts';
 import { heldId } from '../player/inventory.ts';
 import { registerAction, describeControl, wrapAction } from '../player/controls.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.ts';
@@ -136,9 +136,9 @@ addEventListener('drop', (e) => {
 });
 
 registerInteractable(() => {
-  if (!me.entered || !me.body) return [];
+  if (!me.entered || !me.body) return NO_TARGETS;
   const p = me.body.position;
-  if (Math.abs(p.y - dino.pos.y) > 2 || Math.hypot(p.x - dino.pos.x, p.z - dino.pos.z) > TALK_R) return [];
+  if (Math.abs(p.y - dino.pos.y) > 2 || Math.hypot(p.x - dino.pos.x, p.z - dino.pos.z) > TALK_R) return NO_TARGETS;
   return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: talk }];
 });
 

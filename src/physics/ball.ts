@@ -85,9 +85,10 @@ setBallMode('ghost');
 teleport(ball.body, ball.disp.p.x, ball.disp.p.y, ball.disp.p.z);
 ball.mesh.position.copy(ball.disp.p);
 
+const hand = new THREE.Vector3();
 export function ballInReach() {
   if (!me.entered) return false;
-  return handPosition().distanceTo(ball.disp.p) < REACH;
+  return handPosition(hand).distanceTo(ball.disp.p) < REACH;
 }
 export function remoteHoldsBall() {
   return !ball.mine && !!ball.owner?.remote && ball.held;

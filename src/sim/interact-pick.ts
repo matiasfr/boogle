@@ -13,6 +13,10 @@
 
 export type InteractTarget = { at: { x: number; z: number }; r?: number; run?: () => void; blocked?: string };
 
+/** What a provider returns when nothing is in reach: one shared empty array (never push into it), so the per-frame ask
+ * allocates nothing. */
+export const NO_TARGETS: never[] = [];
+
 export const FACING = 0.6; // metres closer a target straight ahead counts as, against one beside you
 
 function interactScore(t: InteractTarget, px: number, pz: number, fx: number, fz: number) {

@@ -18,9 +18,10 @@
 //
 // Interactables plug in, like actions in src/player/controls.ts:
 //
-//   registerInteractable(fn)   fn() returns an array of targets in reach right now ([] for none). It is asked every
-//                              frame (for the prompt, src/features/prompt.ts) and on every press, so keep it cheap and
-//                              do not cache. Register once, from your feature file in src/features/ (a module this
+//   registerInteractable(fn)   fn() returns an array of targets in reach right now (NO_TARGETS, a shared empty array,
+//                              for none). It is asked once a frame (the hooks asking interactTarget() share one pick) and
+//                              on every press, so keep it cheap, allocate only when something is in reach, and do not
+//                              cache. Register once, from your feature file in src/features/ (a module this
 //                              file imports, like gifts.js, would make an import cycle).
 //   target                     { id, verb, at, r?, run | blocked, show? }
 //     id       a stable string per thing; the prompt pops in again when it changes
@@ -44,7 +45,10 @@ import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inve
 import { throwItem } from '../adapters/gifts.ts';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
-import { pickInteract, type InteractTarget } from '../sim/interact-pick.ts';
+import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
+import { currentFrame } from '../loop.ts';
+
+export { NO_TARGETS };
 
 /** Something the interact button can act on: a verb shown in the prompt, and run (or why it is blocked). */
 export type Interactable = InteractTarget & {
@@ -83,17 +87,36 @@ export function registerInteractable(fn: () => Interactable[]) {
 
 // The beach ball is the hands' own interactable.
 registerInteractable(() => {
-  if (!ballInReach() || (ball.mine && ball.held)) return [];
+  if (!ballInReach() || (ball.mine && ball.held)) return NO_TARGETS;
   const at = ballAt.copy(ball.disp.p).setY(ball.disp.p.y + 0.5);
   const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
   return [roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
 });
 
-export function interactTarget() {
+const targets: Interactable[] = []; // reused by every pick
+function pickNow() {
   if (!me.entered || !me.body) return null;
   const p = me.body.interpolatedPosition;
-  const targets = providers.flatMap((fn) => fn());
-  return pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+  targets.length = 0; // (a provider that threw last time left some)
+  for (let k = 0; k < providers.length; k++) {
+    const some = providers[k]();
+    for (let m = 0; m < some.length; m++) targets.push(some[m]);
+  }
+  const t = pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
+  targets.length = 0;
+  return t;
+}
+// Asked by several hooks each frame (the gift highlight, the prompt, the touch button): within a frame they share one
+// pick, so the providers run once per frame. Outside a frame (a key press) it picks afresh.
+let pickFrame = 0;
+let picked: Interactable | null = null;
+export function interactTarget() {
+  const f = currentFrame();
+  if (!f || f !== pickFrame) {
+    picked = pickNow();
+    pickFrame = f;
+  }
+  return picked;
 }
 
 // Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
@@ -104,6 +127,7 @@ function interact(t = interactTarget()) {
   for (const fn of pressed) fn(t, !!t?.run);
   if (!t?.run) return false;
   t.run();
+  pickFrame = 0; // what is in reach may have changed
   return true;
 }
 

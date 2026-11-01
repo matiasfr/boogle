@@ -30,8 +30,13 @@ const spotOf = (p: Pile) => {
 const pending = new Map(); // pile id -> ms submitted
 let shown = 0; // bumped whenever `pending` changes
 const unpend = (id: number) => pending.delete(id) && shown++;
+let expireAt = 0; // updatePiles' now, for expire (a pending.forEach callback, so no closure per frame)
+const expire = (t: number, id: number) => {
+  if (expireAt - t > 1500) unpend(id);
+};
 onApplied((e: { op: string; id: number }) => e.op === 'pile.take' && unpend(e.id));
-let drawn = ''; // the piles.rev and `shown` last drawn
+let drawnRev = -1, // the piles.rev and `shown` last drawn
+  drawnShown = -1;
 function redraw() {
   let n = 0;
   for (const p of piles.list) {
@@ -50,7 +55,8 @@ function redraw() {
 // says how many to ask for (0: leave it), so you never ask for a kind you can't carry. The pieces fly to your back as
 // the take is sent, before the host answers.
 export function updatePiles(now: number, want = (p: Pile) => p.n): void {
-  for (const [id, t] of pending) if (now - t > 1500) unpend(id);
+  expireAt = now;
+  pending.forEach(expire);
   if (me.entered && me.body) {
     const pos = me.body.position;
     for (const p of piles.list) {
@@ -67,9 +73,9 @@ export function updatePiles(now: number, want = (p: Pile) => p.n): void {
       }
     }
   }
-  const key = `${piles.rev}/${shown}`;
-  if (key !== drawn) {
-    drawn = key;
+  if (piles.rev !== drawnRev || shown !== drawnShown) {
+    drawnRev = piles.rev;
+    drawnShown = shown;
     redraw();
   }
 }
