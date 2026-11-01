@@ -3,10 +3,15 @@
 // with what was happening: the tour step, the sky time, and whether three's resource counters (programs, geometries,
 // textures) moved that frame, which means a shader compile or an upload landed in it.
 // Run it on a Mac (real GPU, WebGPU on Metal); CI's software WebGPU is too slow to say anything about hitches. Options: `--url http://...` (a running game), `--limit 33` (ms),
-// `--json file` (write every hitch as JSON), `--root dir` (serve another checkout).
+// `--json file` (write every hitch as JSON), `--root dir` (serve another checkout), `--heap-profile file.heapprofile`
+// (with --allocs: save the tour's sampled heap profile; DevTools, Memory tab, Load).
 // Every run also reports JS heap allocated per frame and GCs per tour step (performance.memory: a GC shows as the heap
 // dropping). `--allocs` adds Chrome's sampling heap profiler over the tour and lists the functions that allocate the
 // most, garbage included: the starting point for an allocation-free hot path (docs/plans/game-loop.md, step 2).
+// After the tour (the JIT warm), six seconds of day and night measure what each onFrame hook allocates (sampled, the
+// libraries it calls included), split into objects (arrays, closures, strings, ...: garbage on every engine) and V8's
+// boxed numbers (none on Safari). The objects are the allocation-free hot path's budget (docs/plans/game-loop.md,
+// step 2): ALLOC_BUDGET KB/frame for all hooks together (`--alloc-budget n`); over it, the run fails.
 // The 'enter' step includes the harness's own click (pointer lock in headless Chromium costs ~200 ms there).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +24,10 @@ const root = val('--root', undefined); // another checkout to serve (before/afte
 const LIMIT = Number(val('--limit', 33));
 const allocs = argv.includes('--allocs');
 const jsonOut = val('--json', null);
+const heapOut = val('--heap-profile', null);
+// KB/frame of objects, all onFrame hooks together: a ratchet just over today's 3.3 (2026-11-01; 0.9 of it presence
+// sends), on the way to the plan's 1 KB. Lower it as hooks stop allocating.
+const ALLOC_BUDGET = Number(val('--alloc-budget', 4));
 
 // Runs in the page. Frames are timed from a requestAnimationFrame loop of its own (it sees the same vsync the game
 // does), counters are read right after the game's frame, tagged with window.__step / the sky time.
@@ -121,6 +130,72 @@ const TOUR = `
   window.__step = 'done';
   return window.__frames;`;
 
+// The hooks' steady-state allocation: CDP's sampling heap profiler over a few seconds at day and night views, everything
+// under each callee of src/loop.ts runFrame charged to that hook.
+async function measureHooks(g) {
+  const cdp = await g.page.context().newCDPSession(g.page);
+  await cdp.send('HeapProfiler.enable');
+  await cdp.send('HeapProfiler.startSampling', {
+    samplingInterval: 1024,
+    includeObjectsCollectedByMajorGC: true, // garbage is the point
+    includeObjectsCollectedByMinorGC: true,
+  });
+  const frames = await g.eval(`
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const VIEWS = ${JSON.stringify(VIEWS)};
+    let n = 0, on = true;
+    const count = () => { n++; if (on) requestAnimationFrame(count); };
+    requestAnimationFrame(count);
+    window.__step = 'allocs';
+    for (const [v, sky] of [['court', 0.3], ['garden', 0.3], ['shore', 0.8], ['garden', 0.8]]) {
+      window.boogle.sky.preview(sky, sky > 0.5 ? 0.5 : undefined);
+      window.__debugCam.set(VIEWS[v].cam, VIEWS[v].look, null);
+      await sleep(1500);
+    }
+    on = false;
+    window.boogle.sky.preview(null);
+    return n;`);
+  const { profile } = await cdp.send('HeapProfiler.stopSampling');
+  await cdp.detach();
+  // Each sample is one object (its size scaled up by the sampling odds: s / (1 - e^(-s / interval))). Objects of 16
+  // bytes or less are V8's boxed doubles (HeapNumbers), mostly: numbers crossing a call or a field it could not keep
+  // unboxed. Safari (the iPad) and Firefox keep doubles unboxed, so these cost only on V8; the budget is the rest.
+  const owner = new Map(); // profile node id -> hook
+  const hookOf = (ch) =>
+    `${ch.callFrame.url.replace(/^.*?\/src\//, '').replace(/\?.*$/, '')}:${ch.callFrame.lineNumber + 1}`;
+  const mark = (n, hook) => {
+    owner.set(n.id, hook);
+    n.children.forEach((ch) => mark(ch, hook));
+  };
+  const find = (n) => {
+    const c = n.callFrame;
+    if (c.functionName === 'runFrame' && c.url.includes('/src/loop.ts'))
+      n.children.forEach((ch) => mark(ch, hookOf(ch)));
+    else n.children.forEach(find);
+  };
+  find(profile.head);
+  const SMALL = 16 / (1 - Math.exp(-16 / 1024)) + 1; // the scaled size of a 16-byte object, and a little
+  const hooks = new Map();
+  for (const { nodeId, size } of profile.samples) {
+    const hook = owner.get(nodeId);
+    if (!hook) continue;
+    const h = hooks.get(hook) ?? { objects: 0, numbers: 0 };
+    if (size <= SMALL) h.numbers += size;
+    else h.objects += size;
+    hooks.set(hook, h);
+  }
+  const kb = (b) => b / 1024 / frames;
+  const rows = [...hooks]
+    .sort((a, b) => b[1].objects - a[1].objects)
+    .map(([hook, h]) => ({
+      hook,
+      'objects KB/frame': +kb(h.objects).toFixed(2),
+      'V8 numbers KB/frame': +kb(h.numbers).toFixed(2),
+    }));
+  const sum = (k) => kb([...hooks.values()].reduce((a, h) => a + h[k], 0));
+  return { frames, rows, objects: sum('objects'), numbers: sum('numbers') };
+}
+
 let stack, browser;
 try {
   stack = await startStack({ url, root });
@@ -143,6 +218,8 @@ try {
   }
   const frames = await g.eval(`const VIEWS = ${JSON.stringify(VIEWS)};` + TOUR);
   const sampled = cdp ? (await cdp.send('HeapProfiler.stopSampling')).profile : null;
+  if (sampled && heapOut) fs.writeFileSync(path.resolve(heapOut), JSON.stringify(sampled));
+  const hookAllocs = await measureHooks(g);
   const lobby = await g.eval('return window.__lobby;');
   console.log(
     `lobby: Jump in enabled ${lobby.enterAt} ms after page start; ${lobby.slow.length} frames over 33 ms before it (worst ${Math.max(0, ...lobby.slow)} ms)`,
@@ -161,7 +238,7 @@ try {
   const dts = frames.map((f) => f.dt).sort((a, b) => a - b);
   const q = (p) => dts[Math.floor(p * (dts.length - 1))];
   console.log(
-    `\n${frames.length} frames, median ${q(0.5)} ms, p99 ${q(0.99)} ms, max ${dts.at(-1)} ms; ` +
+    `\n${frames.length} frames, median ${q(0.5)} ms, p95 ${q(0.95)} ms, p99 ${q(0.99)} ms, max ${dts.at(-1)} ms; ` +
       `${hitches.length} over ${LIMIT} ms, ${hitches.filter((f) => f.dt > 100).length} over 100 ms`,
   );
   // Allocation: the heap only grows between GCs, so the positive deltas add up to what was allocated.
@@ -249,6 +326,14 @@ try {
   if (hitches.length > 60) console.log(`... and ${hitches.length - 60} more (--json file for all)`);
   const withNew = hitches.filter((f) => f.dp > 0 || f.dg > 0 || f.dt2 > 0).length;
   console.log(`hitches with a program, geometry or texture change in the same frame: ${withNew} of ${hitches.length}`);
+  console.log('\nallocated per frame by each onFrame hook, warm (sampled; the libraries it calls included)');
+  console.table(hookAllocs.rows.slice(0, 15));
+  const overBudget = hookAllocs.objects > ALLOC_BUDGET;
+  console.log(
+    `onFrame hooks: ${hookAllocs.objects.toFixed(2)} KB/frame of objects (budget ${ALLOC_BUDGET}${overBudget ? ': OVER' : ''}), ` +
+      `${hookAllocs.numbers.toFixed(2)} KB/frame of V8 boxed numbers, over ${hookAllocs.frames} frames`,
+  );
+  if (overBudget) process.exitCode = 1;
   if (jsonOut)
     fs.writeFileSync(path.resolve(jsonOut), JSON.stringify({ gfx, frames: frames.length, hitches }, null, 1));
   reportGfxErrors([g]);
