@@ -7,7 +7,9 @@
   nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../../src/boot/)). `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
   with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
-  in 10 % steps to 0.6x after 2 s of slow frames (over 18.5 ms) and climbs back after 5 s of fast ones (under 14 ms).
+  in 10 % steps to 0.6x after 2 s of slow frames and climbs back after 5 s at the display's cadence. Slow is over
+  18.5 ms, or over 1.15x the cadence the browser delivers frames at (Safari's 30 Hz in Low Power Mode is a cap, not a
+  slow GPU); a step up that turns slow again within 10 s doubles the wait before the next one (up to a minute).
   If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
