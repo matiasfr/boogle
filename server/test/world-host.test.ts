@@ -57,9 +57,12 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   const hostOnly = new Set(['bank.wake']);
   const r = stream(0x5e7);
   for (let f = 0; f < 600 && accepted.size < ops.length; f++) {
-    // the haul reset empties the head start, so it goes last
+    // The haul reset empties the head start and opening day's shortcut closes the route, so they go last: the
+    // shortcut, then opening day, then the reset.
     const left = ops.filter((o) => !accepted.has(o));
-    const op = r.pick(left.length > 1 ? left.filter((o) => o !== 'tune.reset') : left);
+    const late = ['open.lay', 'open.start', 'tune.reset'];
+    const early = left.filter((o) => !late.includes(o));
+    const op = early.length ? r.pick(early) : late.find((o) => left.includes(o))!;
     const e = generators[op](r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
     if (e) {
       if (hostOnly.has(op)) wh.sync.submitEdit(e);

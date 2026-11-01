@@ -26,7 +26,7 @@ function stream(seed) {
 const generators = Object.assign({}, ...RULES.map((m) => m.edits ?? {}));
 
 // One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state. protoRoom: a playtest
-// room, so the tune ops run too.
+// room, so the tune ops and the open.lay shortcut run too.
 function makePeer(seed, net, id, host) {
   const salt = strHash(id);
   const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0, protoRoom: true } });
@@ -69,6 +69,8 @@ async function replay(seed) {
   }
   const master = stream(seed);
   const ops = peers[0].s.registry().ops;
+  // Opening day closes the route for good, so its ops play on their own near the end rather than in the random mix.
+  const mixed = ops.filter((op) => !op.startsWith('open.'));
   for (const op of ops)
     assert.ok(generators[op], `op ${op} has no edit generator (export const edits in its rules module)`);
   for (const op of Object.keys(generators)) assert.ok(ops.includes(op), `generator for unregistered op ${op}`);
@@ -78,7 +80,7 @@ async function replay(seed) {
   async function play(frames, only) {
     for (let f = 0; f < frames; f++) {
       const x = master.pick(live(peers));
-      const op = only ?? master.pick(ops);
+      const op = only ?? master.pick(mixed);
       const e = generators[op](x.r, { rules: x.rules, land: homeLand(), tick: x.s.world.tick });
       if (e) {
         x.s.submitEdit(e);
@@ -98,6 +100,9 @@ async function replay(seed) {
   );
   peers.push(makePeer(seed, net, 'late', false));
   await play(30);
+  // Opening day needs the whole route laid: the playtest shortcut, then a start (later ones are rejected).
+  await play(4, 'open.lay');
+  await play(4, 'open.start');
   await run(net, peers, 10); // settle: every stamped edit applied everywhere
 
   // A fresh tab reloads the new host's snapshot through JSON and ticks alone, in step with the room.

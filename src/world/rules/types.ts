@@ -40,6 +40,7 @@ export type Rules = {
   bank: import('./bank.ts').BankApi;
   ball: import('./ball.ts').BallApi;
   tune: import('./tune.ts').TuneApi;
+  opening: import('./opening.ts').OpeningApi;
 };
 /** The replay test's seeded stream (./edit-gen.js). */
 export type Stream = {

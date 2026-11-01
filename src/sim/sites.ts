@@ -133,6 +133,17 @@ export function finishRun(st: Sites, tick: number, cost: CostFn = costOf): numbe
   return s;
 }
 
+// Prototype shortcut (`open.lay`, proto- rooms only; src/world/rules/opening.ts): every section from the open one on
+// counts as laid at once, with no run, credit or freight. Units stay where they are, so conservation holds. Returns
+// how many sections it laid.
+export function layRest(st: Sites): number {
+  const n = st.list.length - st.open;
+  if (n <= 0) return 0;
+  st.rev++;
+  st.open = st.list.length;
+  return n;
+}
+
 // The age the route has reached: the age of the open section, or one past the last once the route is laid.
 export const ageAt = (st: Sites): number =>
   st.open < ROUTE.length ? ROUTE[st.open].age : ROUTE[ROUTE.length - 1].age + 1;

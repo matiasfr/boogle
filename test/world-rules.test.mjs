@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.ts';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune', 'opening']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
@@ -58,6 +58,10 @@ const SCRIPTS = {
       rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
       return { op: 'site.run', i: 0, j: 0, s: 0 };
     },
+  ],
+  opening: () => [
+    { op: 'open.lay', i: 0, j: 0 }, // the proto shortcut lays the rest of the route (env protoRoom)
+    { op: 'open.start', i: 0, j: 0 },
   ],
 };
 
