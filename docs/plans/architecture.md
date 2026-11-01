@@ -77,8 +77,9 @@ server becomes the only simulator of shared state and, after it lands, sends eac
 ## Phase 4: a world bigger than the camera
 
 - [ ] Convert `test/`, `dev/`, `server/` and the config files to `.ts`; turn `allowJs` off (step 8b).
-- [ ] Asset pipeline: `npm run assets` (glTF + meshopt, KTX2), hashed outputs, a size budget in CI (open-world.md,
-      section 2). Start with the first authored model.
+- [x] Asset pipeline: `npm run assets` (glTF + meshopt, KTX2), hashed outputs, a size budget in CI (open-world.md,
+      section 2), proved with a Blender-scripted scaffold kit behind `?proto=assets`
+      ([asset-pipeline.md](asset-pipeline.md); its KTX2 step runs once KTX-Software is installed).
 - [ ] Chunk grid (`src/world/chunks.js`), chunk-aware hooks and pools (step 6).
 - [ ] `THREE.LOD` levels and impostors for authored models; GPU culling with indirect draws for large pools.
 - [ ] Chunk streaming of shared state from the server (open-world.md, section 3).

@@ -18,7 +18,7 @@
     "load": "WS_LOAD=1 node dev/peer-test/ws-run.ts",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p .",
-    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run assets -- --check && npm run build",
     "test:unit": "node --test --test-timeout=5000 'test/**/*.test.mjs' 'test/**/*.test.ts'",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "check:gpu": "node dev/scenarios/run.mjs smoke",
@@ -38,7 +38,8 @@
     "clip": "node dev/video/clip.mjs",
     "reel": "node dev/video/reel.mjs",
     "video:changes": "node dev/video/changes.mjs",
-    "video:publish": "node dev/video/publish.mjs"
+    "video:publish": "node dev/video/publish.mjs",
+    "assets": "node dev/assets/build.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
