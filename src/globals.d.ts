@@ -10,6 +10,7 @@ declare global {
     __carry?: unknown; // src/physics/platforms.ts tuning and state
     __ride?: unknown; // src/features/proto-ride.ts (?proto=ride) tuning and state
     __soapbox?: unknown; // src/proto/soapbox/index.ts: tuning and state, for ?proto=soapbox evals
+    __wagon?: unknown; // src/proto/wagon/index.ts (?proto=wagon) state and the look evals' shortcuts
     __debugCam?: { set(pos: number[], look: number[], fov?: number): void; clear(): void }; // src/debug/debug-cam.ts
   }
 }
