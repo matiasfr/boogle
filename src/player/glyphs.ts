@@ -34,7 +34,7 @@ const pad = (b: string, text = b.toUpperCase()) =>
   `<span class="g g-pad" data-b="${b}" role="img" aria-label="${text}">${text}</span>`;
 
 const KBM: Record<string, string> = { interact: key('E'), use: MOUSE('l'), close: key('Esc'), pet: '' };
-// Not actions: the talk box reads these buttons itself (padPress in src/boogler/dialogue.js); keep them in step.
+// Not actions: the talk box reads these buttons itself (padPress in src/boogler/dialogue.ts); keep them in step.
 const PAD_FIXED: Record<string, string> = { close: pad('b'), pet: pad('y') };
 
 const KEY_TEXT: Record<string, string> = {

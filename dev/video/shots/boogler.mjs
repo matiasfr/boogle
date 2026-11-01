@@ -51,7 +51,7 @@ export default {
         seconds: 5.5,
         each: async (t, k) => {
           if (k % 2 === 0) await g.eval(STAND(1.9, a0));
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           // Pet once the caption is up, so the hearts land under it.
           if (k === 36) await g.eval(`document.querySelector('.bd-face')?.click()`);
           // The Boogler high in frame so the talk box (bottom centre) doesn't cover him.
@@ -68,7 +68,7 @@ export default {
       await g.record('boogler-talk', {
         seconds: 7,
         each: async (t, k) => {
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           if (k === 50) await pick(g, /brought/);
           if (k === 80) await pick(g, /seed/);
           if (k === 190) await pick(g, /.*/);
@@ -87,7 +87,7 @@ export default {
       await g.record('boogler-walkoff', {
         seconds: 7.5,
         each: async (t, k) => {
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           if (k === 60) await pick(g, /Where are you from/);
           if (k === 135) await g.down('KeyS');
           if (k === 190) await g.up('KeyS');

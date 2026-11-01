@@ -23,7 +23,7 @@ const beside = (check) => `(async () => {
 // On his back: climb on (again only once you've slid off or landed beside him: a headless tab steps slowly, so the drop
 // onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check) => `(async () => {
-  const { boogler, ACT } = await import('/src/boogler/boogler.js');
+  const { boogler, ACT } = await import('/src/boogler/boogler.ts');
   const { ball } = await import('/src/physics/ball.ts');
   const { teleport } = await import('/src/physics/physics.ts');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
@@ -129,7 +129,7 @@ export default {
     await openTalk();
     await answer(await g.eval(ASK));
     const resumed = await g.eval(SAY);
-    const { RESUME } = await g.eval(`const { RESUME } = await import('/src/boogler/lines.js'); return { RESUME };`);
+    const { RESUME } = await g.eval(`const { RESUME } = await import('/src/boogler/lines.ts'); return { RESUME };`);
     const resumeShot = await g.still('resume');
     t.check(
       'leaving mid-chapter (E) closes the talk, and asking again resumes where you stopped',

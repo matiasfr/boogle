@@ -2,24 +2,27 @@
 // you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
 // Get launched too often and he runs when you come near.
 //
-// Friendship is personal (src/boogler/friendship.js), saved in localStorage once per browser, shared by every room. Each player publishes
-// bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.js) reads act and wary, and every client plays
+// Friendship is personal (src/boogler/friendship.ts), saved in localStorage once per browser, shared by every room. Each player publishes
+// bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.ts) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the pets, hearts and launches too.
 import { FIXED } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
-import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.js';
-import { booglerHearts, booglerPuff } from './fx.js';
-import { booglerSay, setTagBond, setTagPrompt } from './hud.js';
-import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.js';
+import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.ts';
+import { booglerHearts, booglerPuff } from './fx.ts';
+import { booglerSay, setTagBond, setTagPrompt } from './hud.ts';
+import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.ts';
 import { modalOpen } from '../player/modal.ts';
-import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.js';
-import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.js';
+import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
+import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.ts';
 import { heldId, useOne } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { guest } from '../guest/state.js';
+import type { BgRemote } from './boogler.ts';
+import type { Friend } from './friendship.ts';
+import type { Talk } from './talk.ts';
 
 const TALK_RANGE = 3.6; // metres from his centre
 const LEAVE_RANGE = TALK_RANGE + 1;
@@ -28,11 +31,11 @@ const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
 const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
 
-let friend = null;
+let friend: Friend | null = null;
 const storeKey = 'boogle.boogler'; // global: you are yours in every room (the old per-room keys are ignored)
 function f() {
   if (friend) return friend;
-  let saved = null;
+  let saved: string | null = null;
   try {
     saved = localStorage.getItem(storeKey);
   } catch {
@@ -48,14 +51,14 @@ function save() {
     // storage unavailable; the friendship lasts until reload
   }
 }
-const pick = (list) => list[Math.floor(Math.random() * list.length)];
-const named = (s) => s.replaceAll('{name}', me.name || 'friend');
+const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)];
+const named = (s: string) => s.replaceAll('{name}', me.name || 'friend');
 
 // ---------------------------------------------------------------- presence and shared reactions
 let ev = EV.NONE,
   evN = 0;
 
-function play(kind) {
+function play(kind: number) {
   if (kind === EV.PET) {
     booglerReact('pet');
     booglerHearts('pet');
@@ -70,15 +73,15 @@ function play(kind) {
   } else if (kind === EV.YUCK) booglerReact('grump');
 }
 
-function emit(kind) {
+function emit(kind: number) {
   ev = kind;
   evN = (evN + 1) % 1000000;
   play(kind);
 }
 
-const seen = new Map(); // peer -> last evN played
+const seen = new Map<string, number>(); // peer -> last evN played
 function playRemoteEvents() {
-  for (const r of remotes.values()) {
+  for (const r of remotes.values() as Iterable<BgRemote>) {
     if (!r.bg) continue;
     const prev = seen.get(r.peer);
     seen.set(r.peer, r.bg[3]);
@@ -86,7 +89,7 @@ function playRemoteEvents() {
   }
 }
 
-function celebrate(level) {
+function celebrate(level: number) {
   emit(EV.LEVEL);
   const line = named(LEVEL_UP[level]);
   if (dialogue.open) dialogueReact({ line, mood: 'joy', hearts: true, bond: bond(f()) });
@@ -101,7 +104,15 @@ function dist() {
 }
 
 // ---------------------------------------------------------------- riding
-const ride = { lastOn: -1, t: 0, warned: 0, puffAt: 0, immuneUntil: 0, kickAt: 0, fly: null };
+const ride = {
+  lastOn: -1,
+  t: 0,
+  warned: 0,
+  puffAt: 0,
+  immuneUntil: 0,
+  kickAt: 0,
+  fly: null as { vx: number; vz: number; from: number; until: number } | null,
+};
 const riding = () => physicsTime() - ride.lastOn < 0.15 && performance.now() > ride.immuneUntil;
 
 function installRidePhysics() {
@@ -135,7 +146,7 @@ function installRidePhysics() {
   });
 }
 
-function launch(now) {
+function launch(now: number) {
   const b = me.body;
   if (!b) return;
   let dx = b.position.x - boogler.disp.x,
@@ -159,7 +170,7 @@ function launch(now) {
   ride.kickAt = now;
 }
 
-function updateRide(dt, now) {
+function updateRide(dt: number, now: number) {
   const on = riding();
   const limit = rideLimit(f(), Date.now());
   if (on && !ride.puffAt) {
@@ -199,10 +210,10 @@ function updateRide(dt, now) {
 // pause view and the talk ends (a kick-off telling-off waits for your answer, however far you flew).
 // The conversations (talk.js and its ~1,100 lines, lines.js) are their own chunk: fetched right after start
 // (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
-let talk = null;
-let talkMod = null;
-let talkApi = null;
-const loadTalk = () => (talkMod ??= import('./talk.js').then((m) => (talkApi = m)));
+let talk: Talk | null = null;
+let talkMod: Promise<typeof import('./talk.ts')> | null = null;
+let talkApi: typeof import('./talk.ts') | null = null;
+const loadTalk = () => (talkMod ??= import('./talk.ts').then((m) => (talkApi = m)));
 
 // He is offered whatever is in your hand, and takes it from there (one seed off a stack).
 function giftList() {
@@ -210,7 +221,7 @@ function giftList() {
   return id ? [{ kind: giftIndex(id), label: GIFTS[giftIndex(id)].name }] : [];
 }
 
-function converse(start) {
+function converse(start: 'menu' | 'kick'): boolean {
   if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/player/modal.ts)
   if (!talkApi) {
     loadTalk().then(() => converse(start));
@@ -223,23 +234,24 @@ function converse(start) {
     start,
     mario: guest.active,
     gifts: giftList,
-    give: (kind) => heldId() === GIFTS[kind].id && !!useOne(),
+    give: (kind: number) => heldId() === GIFTS[kind].id && !!useOne(),
   });
   render();
   return true;
 }
 
 function render() {
-  const v = talk && talkApi.talkView(talk);
+  const v = talk && talkApi!.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
   showDialogue(v, bond(f()), answer, leave, petInTalk);
 }
 
 // A line over his head, up long enough to read.
-const sayFor = (line) => booglerSay(line, clamp(900 + line.length * 45, 1600, 4200));
+const sayFor = (line: string) => booglerSay(line, clamp(900 + line.length * 45, 1600, 4200));
 
-function answer(i) {
+function answer(i: number) {
+  if (!talk || !talkApi) return;
   talk.ctx.now = Date.now();
   const out = talkApi.pickTalk(talk, i);
   save();
@@ -256,7 +268,7 @@ function answer(i) {
 // Walked off, or closed it (Escape, E, pad B, the close button): he bookmarks a story you left halfway and says bye.
 function leave() {
   if (!talk) return hangUp();
-  const line = talkApi.leaveTalk(talk);
+  const line = talkApi!.leaveTalk(talk);
   save();
   hangUp();
   if (line) sayFor(line);
@@ -310,12 +322,13 @@ export function setupBooglerPlay() {
   loadTalk();
   installRidePhysics();
   addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
-  onRemotePresence((r, pr) => {
-    r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? pr.bg : null;
+  onRemotePresence((rr, pr) => {
+    const r = rr as BgRemote;
+    r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? (pr.bg as number[]) : null;
   });
 }
 
-export function updateBooglerPlay(dt, now) {
+export function updateBooglerPlay(dt: number, now: number) {
   if (now >= waryCheckAt) {
     waryCheckAt = now + 1000;
     boogler.me.wary = isWary(f(), Date.now());

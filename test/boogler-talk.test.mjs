@@ -9,8 +9,8 @@ import {
   MARIO_TALK,
   MARIO_SAYS,
   MARIO_AFTER,
-} from '../src/boogler/lines.js';
-import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.js';
+} from '../src/boogler/lines.ts';
+import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.ts';
 import {
   LEVELS,
   RULES,
@@ -21,7 +21,7 @@ import {
   isWary,
   loadFriend,
   serializeFriend,
-} from '../src/boogler/friendship.js';
+} from '../src/boogler/friendship.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 

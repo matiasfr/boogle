@@ -71,7 +71,7 @@ export default {
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/physics/ball.ts');
       const { teleport } = await import('/src/physics/physics.ts');
-      const { boogler } = await import('/src/boogler/boogler.js');
+      const { boogler } = await import('/src/boogler/boogler.ts');
       const { groundHeight } = await import('/src/adapters/terrain.ts');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
@@ -101,8 +101,8 @@ export default {
     await g.wait(0.3);
     // Answers only show once his line has finished typing; wait for them, then for his reply.
     const talk = await g.eval(`${INV}
-      const play = await import('/src/boogler/play.js');
-      const { closeDialogue } = await import('/src/boogler/dialogue.js');
+      const play = await import('/src/boogler/play.ts');
+      const { closeDialogue } = await import('/src/boogler/dialogue.ts');
       const nap = () => new Promise((r) => setTimeout(r, 100));
       const pick = async (text) => {
         for (let k = 0; k < 100; k++) {
@@ -122,7 +122,7 @@ export default {
       await says('monopoly');
       return { offeredFrisbee, frisbeeGone: !I.has('frisbee') };`);
     t.check('The Boogler takes the frisbee from your hand', talk.offeredFrisbee && talk.frisbeeGone, JSON.stringify(talk));
-    await g.eval(`(await import('/src/boogler/dialogue.js')).closeDialogue();`);
+    await g.eval(`(await import('/src/boogler/dialogue.ts')).closeDialogue();`);
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
     const spot = await g.eval(`${INV}

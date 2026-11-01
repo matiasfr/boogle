@@ -1,12 +1,12 @@
 // The talk box: The Boogler's line typed out, your answers as buttons (or number keys; a gift answer shows the gift),
 // the friendship meter, his portrait to pet (pad Y), and a close button (Escape, E, pad B). Not a modal: the game keeps
-// playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.js). It
+// playing while it is open (move keys, stick, mouse look, jump), so walking off ends the talk (src/boogler/play.ts). It
 // takes only the keys and pad buttons it answers with, and leaves the pointer lock alone.
 import { isTouch, reducedMotion } from '../constants.ts';
 import { setPadGrab } from '../player/controls.ts';
 import { modalOpen } from '../player/modal.ts';
-import { heartsText } from './friendship.js';
-import { boogler } from './boogler.js';
+import { heartsText } from './friendship.ts';
+import { boogler } from './boogler.ts';
 import { GIFTS } from '../sim/gift-catalog.ts';
 import { setIcon } from '../player/item-icons.ts';
 import { glyph } from '../player/glyphs.ts';
@@ -23,7 +23,7 @@ const MOUTHS = {
     '<path d="M17.4 23 Q18.6 22.2 19.6 23 Q20.6 23.8 21.6 23 Q22.4 22.4 22.8 23" stroke="#1d1640" stroke-width="1" fill="none" stroke-linecap="round"/>',
 };
 // His portrait, in the talk box with the mood's mouth.
-export const portrait = (mood) => `
+export const portrait = (mood: string) => `
   <svg viewBox="0 0 40 40" aria-hidden="true">
     <ellipse cx="11" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
     <ellipse cx="29" cy="28.5" rx="5" ry="3" fill="#6c4fd1"/>
@@ -32,7 +32,7 @@ export const portrait = (mood) => `
     <ellipse cx="20" cy="21" rx="15" ry="6.5" fill="#b99cff"/>
     <ellipse cx="15.5" cy="19.6" rx="1.4" ry="1.9" fill="#1d1640"/>
     <ellipse cx="24.5" cy="19.6" rx="1.4" ry="1.9" fill="#1d1640"/>
-    ${MOUTHS[mood] ?? MOUTHS.smile}
+    ${(MOUTHS as Record<string, string>)[mood] ?? MOUTHS.smile}
   </svg>`;
 
 const HAND = `
@@ -63,20 +63,50 @@ const MARKUP = `
     </div>
   </div>`;
 
+/** What the talk box shows (src/boogler/talk.ts talkView). */
+export type DialogueView = { say: string; mood: string; opts: string[]; gifts?: number[] };
+export type Bond = { level: number; name: string; frac: number };
+type Dom = Record<
+  | 'wrap'
+  | 'faceBtn'
+  | 'face'
+  | 'pet'
+  | 'close'
+  | 'pop'
+  | 'popText'
+  | 'hearts'
+  | 'level'
+  | 'bond'
+  | 'bar'
+  | 'say'
+  | 'opts',
+  HTMLElement
+> & { root: HTMLElement };
+type Current = {
+  text: string;
+  shown: number;
+  at: number;
+  mood: string;
+  onPick: (i: number) => void;
+  onClose?: () => void;
+  onPet?: () => void;
+  opts: string[];
+  typing: boolean;
+};
 export const dialogue = { open: false };
-let el = null;
-let cur = null; // { text, shown, at, mood, onPick, onClose, onPet, opts, typing }
+let el: Dom | null = null;
+let cur: Current | null = null;
 const react = { until: 0 };
 
-function dom() {
+function dom(): Dom {
   if (el) return el;
   const root = document.createElement('div');
   root.className = 'bd';
   root.hidden = true;
   root.innerHTML = MARKUP;
   document.body.append(root);
-  const q = (c) => root.querySelector(c);
-  el = {
+  const q = (c: string) => root.querySelector(c) as HTMLElement; // in MARKUP
+  const d: Dom = (el = {
     root,
     wrap: q('.bd-wrap'),
     faceBtn: q('.bd-face'),
@@ -91,41 +121,42 @@ function dom() {
     bar: q('.bd-bar i'),
     say: q('.bd-say'),
     opts: q('.bd-opts'),
-  };
-  // Only the card takes taps and clicks (boogler.css); the joystick and the canvas work around it.
-  el.wrap.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    if (cur?.typing && !e.target.closest('button')) finishTyping();
   });
-  el.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
+  // Only the card takes taps and clicks (boogler.css); the joystick and the canvas work around it.
+  d.wrap.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    if (cur?.typing && !(e.target as Element | null)?.closest('button')) finishTyping();
+  });
+  d.wrap.addEventListener('contextmenu', (e) => e.preventDefault());
   // On a desktop, Escape with the pointer locked only ends the lock (the page never sees the key): that ends the talk.
   // Added on first use, after src/features/pause.js's own listener, which skips the pause view while a talk is open.
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && !isTouch) cur?.onClose?.();
   });
-  el.faceBtn.addEventListener('click', () => cur?.onPet?.());
-  el.close.addEventListener('click', () => cur?.onClose?.());
-  return el;
+  d.faceBtn.addEventListener('click', () => cur?.onPet?.());
+  d.close.addEventListener('click', () => cur?.onClose?.());
+  return d;
 }
 
 function finishTyping() {
   if (!cur) return;
   cur.typing = false;
   cur.shown = cur.text.length;
-  el.say.textContent = cur.text;
+  const d = dom();
+  d.say.textContent = cur.text;
   boogler.me.speaking = false;
-  el.opts.hidden = false;
+  d.opts.hidden = false;
 }
 
-function choose(i) {
+function choose(i: number) {
   if (!cur || cur.typing || i < 0 || i >= cur.opts.length) return;
   cur.onPick(i);
 }
 
-const focusedBtn = () => document.activeElement?.closest?.('.bd button') ?? null;
-function moveFocus(dir) {
-  const btns = [...el.opts.querySelectorAll('button')];
-  const k = btns.indexOf(document.activeElement);
+const focusedBtn = () => (document.activeElement?.closest?.('.bd button') as HTMLButtonElement | null) ?? null;
+function moveFocus(dir: number) {
+  const btns = [...dom().opts.querySelectorAll('button')];
+  const k = btns.indexOf(document.activeElement as HTMLButtonElement);
   const next = k < 0 ? (dir > 0 ? 0 : btns.length - 1) : (k + dir + btns.length) % btns.length;
   btns[next]?.focus({ preventScroll: true });
 }
@@ -133,21 +164,27 @@ function moveFocus(dir) {
 // D-pad picks an answer, A or X skips the typing and then says it, Y pets him, B walks away. With no answer picked
 // yet, A picks the first one rather than saying it. The stick and the other buttons stay with the game.
 const PAD_SLOTS = ['a', 'b', 'x', 'y', 'up', 'down'];
-function padPress(slot) {
+function padPress(slot: string) {
   if (!cur) return;
   if (slot === 'b') cur.onClose?.();
   else if (slot === 'y') cur.onPet?.();
   else if (slot === 'up' || slot === 'down') moveFocus(slot === 'down' ? 1 : -1);
   else if (slot === 'a' || slot === 'x') {
     if (cur.typing) finishTyping();
-    else if (focusedBtn()) focusedBtn().click();
+    else if (focusedBtn()) focusedBtn()!.click();
     else moveFocus(1);
   }
 }
 
 // view: { say, mood, opts, gifts? } (gifts[i]: the catalog index answer i hands over); bond: { level, name, frac };
 // onPick(i) answers; onClose() runs on Escape and the close button; onPet() on the portrait.
-export function showDialogue(view, bond, onPick, onClose, onPet) {
+export function showDialogue(
+  view: DialogueView,
+  bond: Bond,
+  onPick: (i: number) => void,
+  onClose?: () => void,
+  onPet?: () => void,
+) {
   const d = dom();
   const opening = !dialogue.open;
   if (opening && modalOpen()) return; // the pause view is up
@@ -180,7 +217,7 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
       const n = document.createElement('kbd');
       n.textContent = String(i + 1);
       b.append(n, text);
-      const gift = GIFTS[view.gifts?.[i]];
+      const gift = GIFTS[view.gifts?.[i] ?? -1];
       if (gift) {
         const img = document.createElement('img');
         img.className = 'bd-gift';
@@ -198,14 +235,14 @@ export function showDialogue(view, bond, onPick, onClose, onPet) {
 }
 
 // Plays a one-shot CSS animation (class `cls`) again from the start.
-export function replay(node, cls) {
+export function replay(node: HTMLElement, cls: string) {
   node.classList.remove(cls);
   void node.offsetWidth;
   node.classList.add(cls);
 }
 
 let bondLevel = -1;
-function setBond(b) {
+function setBond(b: Bond) {
   const d = dom();
   d.hearts.textContent = heartsText(b.level);
   d.level.textContent = b.name;
@@ -215,7 +252,17 @@ function setBond(b) {
 }
 
 // His reaction while the box is open (a pet, a level up): a speech bubble over the card, a face for a moment, hearts.
-export function dialogueReact({ line, mood, hearts = false, bond = null }) {
+export function dialogueReact({
+  line,
+  mood,
+  hearts = false,
+  bond = null,
+}: {
+  line: string;
+  mood: string;
+  hearts?: boolean;
+  bond?: Bond | null;
+}) {
   if (!dialogue.open) return;
   const d = dom();
   react.until = performance.now() + REACT_MS;
@@ -247,23 +294,24 @@ export function closeDialogue() {
   dialogue.open = false;
   cur = null;
   react.until = 0;
-  el.pop.hidden = true;
+  const d = dom();
+  d.pop.hidden = true;
   setPadGrab(null);
   boogler.me.speaking = false;
-  el.root.hidden = true;
+  d.root.hidden = true;
 }
 
-export function updateDialogue(now) {
+export function updateDialogue(now: number) {
   if (react.until && now >= react.until) {
     react.until = 0;
-    el.pop.hidden = true;
-    if (cur) el.face.innerHTML = portrait(cur.mood);
+    dom().pop.hidden = true;
+    if (cur) dom().face.innerHTML = portrait(cur.mood);
   }
   if (!cur?.typing) return;
   const n = Math.min(cur.text.length, Math.floor(((now - cur.at) / 1000) * CHARS_PER_S));
   if (n !== cur.shown) {
     cur.shown = n;
-    el.say.textContent = cur.text.slice(0, n);
+    dom().say.textContent = cur.text.slice(0, n);
   }
   if (n >= cur.text.length) finishTyping();
 }

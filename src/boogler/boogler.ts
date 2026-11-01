@@ -8,7 +8,7 @@
 // is cosmetic and local.
 //
 // He has a kinematic physics body, so the ball bounces off him and players can bump into him or hop on his head.
-// Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.js): the host stops for
+// Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the host stops for
 // players who talk to or pet him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
@@ -24,6 +24,16 @@ import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
+import type { Remote } from '../netplay/net.ts';
+import type { Body } from '../physics/engine.ts';
+
+/** A remote player as he sees them: their bg presence (src/boogler/play.ts: act, wary, ev, evN). */
+export type BgRemote = Remote & { bg?: number[] | null };
+/** His pose as the lead publishes it (presence g). */
+type Wire = { p: number[]; r: number; w: number; m: number };
+type Pose = { x: number; z: number; r: number; w: boolean; m: number };
+type Visitor = { x: number; z: number; act: number; wary: boolean };
+export type Mood = 'smile' | 'joy' | 'grump' | 'worry' | 'puff' | 'talk';
 
 // Shape: about three times as wide as he is tall.
 export const W_R = 0.8; // half width
@@ -67,33 +77,32 @@ export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 
 const rng = mulberry32((Date.now() ^ 0x5eed) | 0);
-const range = (a, b) => a + rng() * (b - a);
+const range = (a: number, b: number) => a + rng() * (b - a);
 
 const sim = { x: 0, z: 0, yaw: 0, walking: false, tx: 0, tz: 0, wait: 1, mode: MODE.CALM, fleeCheck: 0 };
 const disp = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
 const target = { x: 0, z: 0, yaw: 0, walking: false, mode: MODE.CALM };
-const snaps = createSnaps();
-let src = null;
+const snaps = createSnaps<Pose>();
+let src: string | null = null;
 let lastSnapAt = 0;
 let simulating = false;
 const bootAt = performance.now();
 
-let group = null;
-let parts = null;
-let body = null;
+let group: THREE.Group | null = null;
+let modelParts: Parts | null = null;
 
-// `me` is this player's side of things, written by src/boogler/play.js: act (ACT; petting is part of TALK), wary (he
+// `me` is this player's side of things, written by src/boogler/play.ts: act (ACT; petting is part of TALK), wary (he
 // runs from us), and the face to pull while we talk (mood, speaking).
 export const boogler = {
   disp,
   labelPos: new THREE.Vector3(),
   center: new THREE.Vector3(),
-  body: null,
-  me: { act: ACT.NONE, wary: false, mood: null, speaking: false },
+  body: null as Body | null,
+  me: { act: ACT.NONE, wary: false, mood: null as Mood | null, speaking: false },
 };
 
 // ---------------------------------------------------------------- terrain checks
-function blocked(x, z, pad = 0) {
+function blocked(x: number, z: number, pad = 0) {
   if (Math.abs(x) > MAP_LIMIT || Math.abs(z) > MAP_LIMIT) return true;
   const h = groundHeight(x, z);
   if (h < MIN_H || h > MAX_H) return true;
@@ -106,7 +115,7 @@ function blocked(x, z, pad = 0) {
   return false;
 }
 
-function pathClear(x0, z0, x1, z1) {
+function pathClear(x0: number, z0: number, x1: number, z1: number) {
   const len = Math.hypot(x1 - x0, z1 - z0);
   const n = Math.max(1, Math.ceil(len));
   let prev = groundHeight(x0, z0);
@@ -122,17 +131,17 @@ function pathClear(x0, z0, x1, z1) {
 }
 
 // Where he's heading on a trip away from home (a POI or a random far spot), or null while pottering about.
-let trip = null;
+let trip: { x: number; z: number } | null = null;
 
 // Sets his next walk target if the way there is clear.
-function headFor(x, z) {
+function headFor(x: number, z: number) {
   if (!pathClear(sim.x, sim.z, x, z)) return false;
   sim.tx = x;
   sim.tz = z;
   return true;
 }
 
-function tryStep(a, dmin, dmax) {
+function tryStep(a: number, dmin: number, dmax: number) {
   for (let tries = 0; tries < 12; tries++) {
     const aa = a + (rng() - 0.5) * (tries < 6 ? 0.9 : 2.6),
       d = range(dmin, dmax);
@@ -183,15 +192,15 @@ function findStart() {
 
 // ---------------------------------------------------------------- brain (authority only)
 function visitors() {
-  const out = [];
+  const out: Visitor[] = [];
   if (me.entered && me.body)
     out.push({ x: me.body.position.x, z: me.body.position.z, act: boogler.me.act, wary: boogler.me.wary });
-  for (const r of remotes.values())
+  for (const r of remotes.values() as Iterable<BgRemote>)
     if (r.entered && r.avatar) out.push({ x: r.target.x, z: r.target.z, act: r.bg?.[0] ?? 0, wary: r.bg?.[1] === 1 });
   return out;
 }
 
-function fleeFrom(t) {
+function fleeFrom(t: Visitor) {
   const away = Math.atan2(sim.z - t.z, sim.x - t.x);
   for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
     const d = range(7, 12);
@@ -200,20 +209,20 @@ function fleeFrom(t) {
   return false;
 }
 
-function turnToward(yaw, dt) {
+function turnToward(yaw: number, dt: number) {
   const d = angleLerp(sim.yaw, yaw, 1) - sim.yaw;
   sim.yaw += clamp(d, -TURN * dt, TURN * dt);
   return Math.abs(d);
 }
 
-const facing = (p) => Math.atan2(-(p.x - sim.x), -(p.z - sim.z));
+const facing = (p: Visitor) => Math.atan2(-(p.x - sim.x), -(p.z - sim.z));
 
-function think(dt) {
-  let focus = null,
+function think(dt: number) {
+  let focus: Visitor | null = null,
     focusD = ATTEND_RANGE,
-    threat = null,
+    threat: Visitor | null = null,
     threatD = FLEE_RANGE,
-    nearest = null, // whoever he turns to look at while idle
+    nearest: Visitor | null = null, // whoever he turns to look at while idle
     nearestD = FACE_RANGE,
     ridden = false;
   for (const v of visitors()) {
@@ -276,7 +285,8 @@ function publish() {
   return simulating ? { p: [r2(sim.x), r2(sim.z)], r: r2(sim.yaw), w: sim.walking ? 1 : 0, m: sim.mode } : null;
 }
 
-function hear(g, time, peer) {
+function hear(v: unknown, time: number, peer: string) {
+  const g = v as Wire | null;
   if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
   if (Math.abs(g.p[0]) > HALF || Math.abs(g.p[1]) > HALF) return;
   if (peer !== src) {
@@ -287,8 +297,10 @@ function hear(g, time, peer) {
   lastSnapAt = performance.now();
 }
 
-function sampleSnaps(t) {
-  const { a, b, u } = snaps.sample(t);
+function sampleSnaps(t: number) {
+  const s = snaps.sample(t);
+  if (!s) return;
+  const { a, b, u } = s;
   target.x = lerp(a.x, b.x, u);
   target.z = lerp(a.z, b.z, u);
   target.yaw = angleLerp(a.r, b.r, u);
@@ -298,15 +310,15 @@ function sampleSnaps(t) {
 
 // ---------------------------------------------------------------- model
 // Faces he can pull: smile, joy, grump, worry, puff (cheeks full, about to launch someone), talk (mouth open).
-function drawFace(g, m, expr) {
+function drawFace(g: CanvasRenderingContext2D, m: (v: number) => number, expr: string) {
   const TAU = Math.PI * 2;
-  const blob = (x, y, rx, ry, color = FACE_HEX) => {
+  const blob = (x: number, y: number, rx: number, ry: number, color = FACE_HEX) => {
     g.fillStyle = color;
     g.beginPath();
     g.ellipse(m(x), m(y), m(rx), m(ry), 0, 0, TAU);
     g.fill();
   };
-  const stroke = (draw, w = 0.022) => {
+  const stroke = (draw: () => void, w = 0.022) => {
     g.strokeStyle = FACE_HEX;
     g.lineWidth = m(w);
     g.lineCap = g.lineJoin = 'round';
@@ -314,7 +326,7 @@ function drawFace(g, m, expr) {
     draw();
     g.stroke();
   };
-  const line = (pts, w) =>
+  const line = (pts: [number, number][], w?: number) =>
     stroke(() => pts.forEach(([x, y], k) => (k ? g.lineTo(m(x), m(y)) : g.moveTo(m(x), m(y)))), w);
   const eyes = (ry = 0.064, y = -0.075) => {
     for (const sx of [-1, 1]) blob(0.145 * sx, y, 0.046, ry);
@@ -324,7 +336,7 @@ function drawFace(g, m, expr) {
     for (const sx of [-1, 1]) blob(0.25 * sx, -0.005, 0.055 * r, 0.032 * r, `rgba(255, 110, 150, ${a})`);
   };
   const smile = () => stroke(() => g.arc(0, m(-0.03), m(0.095), Math.PI * 0.18, Math.PI * 0.82));
-  const openMouth = (rx, ry) => {
+  const openMouth = (rx: number, ry: number) => {
     blob(0, 0.02, rx, ry);
     blob(0, 0.02 + ry * 0.45, rx * 0.6, ry * 0.45, '#ff7a9a');
   };
@@ -380,13 +392,13 @@ function drawFace(g, m, expr) {
 // Equirectangular texture for a unit sphere scaled to (W_R, H_R, W_R). The face sits at u = 0.75 (the -Z side, which
 // is "forward" like the player avatars). Drawing is stretched vertically by W_R / H_R so the features look round once
 // the sphere is squished. Built on first use per expression.
-const faces = new Map();
+const faces = new Map<string, THREE.CanvasTexture>();
 function faceTexture(expr = 'smile') {
-  if (faces.has(expr)) return faces.get(expr);
+  if (faces.has(expr)) return faces.get(expr)!;
   const c = document.createElement('canvas');
   c.width = 1024;
   c.height = 512;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   g.fillStyle = BODY_HEX;
   g.fillRect(0, 0, 1024, 512);
   const pxPerM = 1024 / (Math.PI * 2) / W_R; // horizontal pixels per metre of surface at the equator
@@ -443,26 +455,28 @@ function buildModel() {
   crown.position.y = BRIM_H + crownH / 2;
   hat.add(brim, crown);
   root.add(hat);
-  root.traverse((o) => {
+  root.traverse((obj) => {
+    const o = obj as THREE.Mesh;
     if (!o.isMesh) return;
     // Only parts big enough to show in the shadow map: eyes, buttons and hat trims would each cost a shadow draw call.
     o.geometry.computeBoundingSphere();
-    o.castShadow = o.geometry.boundingSphere.radius >= 0.3;
+    o.castShadow = o.geometry.boundingSphere!.radius >= 0.3;
   });
   return { root, inner, bodyMesh, hands, feet, hat };
 }
+type Parts = ReturnType<typeof buildModel>;
 
 // ---------------------------------------------------------------- lifecycle
 export function createBoogler() {
   const s = findStart();
   sim.x = disp.x = target.x = s.x;
   sim.z = disp.z = target.z = s.z;
-  parts = buildModel();
-  group = parts.root;
+  modelParts = buildModel();
+  group = modelParts.root;
   scene.add(group);
   addHostField('g', publish, hear);
 
-  body = createBody({
+  const b = createBody({
     type: BODY.KINEMATIC,
     material: playerMat,
     mask: NOT_SCENERY,
@@ -470,11 +484,11 @@ export function createBoogler() {
       { kind: 'cylinder', rTop: W_R, rBottom: W_R, h: H_R * 2, segments: 14, offset: { x: 0, y: BODY_Y, z: 0 } },
     ],
   });
-  teleport(body, s.x, groundHeight(s.x, s.z), s.z);
-  addBody(body);
-  boogler.body = body;
+  teleport(b, s.x, groundHeight(s.x, s.z), s.z);
+  addBody(b);
+  boogler.body = b;
   onPreStep(() => {
-    const p = body.position;
+    const p = b.position;
     const tx = disp.x,
       tz = disp.z,
       ty = groundHeight(tx, tz);
@@ -482,18 +496,27 @@ export function createBoogler() {
       dy = ty - p.y,
       dz = tz - p.z;
     if (dx * dx + dy * dy + dz * dz > 36) {
-      teleport(body, tx, ty, tz);
-      body.velocity.set(0, 0, 0);
-    } else body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+      teleport(b, tx, ty, tz);
+      b.velocity.set(0, 0, 0);
+    } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
   });
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };
 // The hat's springs (cosmetic): height above his head, lean (x forward/back, z sideways) and squash (crushed flat like an
 // opera hat while someone rides him, popping back up after).
-const hatSpring = { y: 0, vy: 0, lx: 0, vlx: 0, lz: 0, vlz: 0, s: 1, vs: 0, top: null };
+const hatSpring = { y: 0, vy: 0, lx: 0, vlx: 0, lz: 0, vlz: 0, s: 1, vs: 0, top: null as number | null };
+type SpringKey = 'y' | 'vy' | 'lx' | 'vlx' | 'lz' | 'vlz' | 's' | 'vs';
 // Steps the damped spring h[x] (velocity h[v]) toward `to` in place: no allocation per frame.
-const spring = (h, x, v, to, k, d, dt) => {
+const spring = (
+  h: Record<SpringKey, number>,
+  x: SpringKey,
+  v: SpringKey,
+  to: number,
+  k: number,
+  d: number,
+  dt: number,
+) => {
   h[v] += ((to - h[x]) * k - h[v] * d) * dt;
   h[x] += h[v] * dt;
 };
@@ -501,7 +524,7 @@ const react = { petAt: -1e9, puffAt: -1e9, joyUntil: 0, grumpUntil: 0 };
 
 // Cosmetic reactions, played on every client: 'pet' (squish and a happy face), 'joy', 'grump', 'puff' (inflate for
 // PUFF_MS, then pop).
-export function booglerReact(kind, now = performance.now()) {
+export function booglerReact(kind: 'pet' | 'joy' | 'grump' | 'puff', now = performance.now()) {
   if (kind === 'pet') {
     react.petAt = now;
     react.joyUntil = now + 1100;
@@ -511,13 +534,13 @@ export function booglerReact(kind, now = performance.now()) {
 }
 
 // 0..1: swells over PUFF_MS, then deflates fast after the pop.
-function puffAmount(now) {
+function puffAmount(now: number) {
   const u = (now - react.puffAt) / PUFF_MS;
   if (u < 0 || u > 1.3) return 0;
   return u < 1 ? u * u : 1 - (u - 1) / 0.3;
 }
 
-function expression(now) {
+function expression(now: number): Mood {
   if (puffAmount(now) > 0) return 'puff';
   if (now < react.joyUntil) return 'joy';
   if (now < react.grumpUntil || disp.mode === MODE.RIDDEN) return 'grump';
@@ -526,7 +549,8 @@ function expression(now) {
   return boogler.me.mood ?? 'smile';
 }
 
-function animate(dt, now) {
+function animate(dt: number, now: number) {
+  const parts = modelParts!; // built in createBoogler, before the first frame
   anim.t += dt;
   anim.walk = lerp(anim.walk, disp.walking ? 1 : 0, 1 - Math.exp(-dt * 8));
   anim.phase += dt * (disp.mode === MODE.FLEE ? 15 : disp.mode === MODE.RIDDEN ? 12 : 9) * anim.walk;
@@ -584,7 +608,8 @@ function animate(dt, now) {
   animateHat(dt);
 }
 
-function animateHat(dt) {
+function animateHat(dt: number) {
+  const parts = modelParts!;
   const h = hatSpring;
   const top = parts.inner.position.y + BODY_Y + H_R * parts.inner.scale.y - HAT_SINK;
   dt = Math.min(dt, 1 / 30); // keep the springs stable through a slow frame
@@ -611,8 +636,8 @@ function animateHat(dt) {
   parts.hat.scale.set(1 + (1 - h.s) * 0.25, h.s, 1 + (1 - h.s) * 0.25);
 }
 
-export function updateBoogler(dt, now) {
-  if (!group) return;
+export function updateBoogler(dt: number, now: number) {
+  if (!group || !modelParts) return;
   const isHost = isLead(); // the tab that runs him for everyone
   const solo = !net.room || net.state === 'solo';
   const stale = now - Math.max(lastSnapAt, bootAt) > STALE_MS;
@@ -650,7 +675,7 @@ export function updateBoogler(dt, now) {
   group.position.set(disp.x, gy, disp.z);
   group.rotation.y = disp.yaw;
   animate(dt, now);
-  boogler.center.set(disp.x, gy + BODY_Y + parts.inner.position.y, disp.z);
+  boogler.center.set(disp.x, gy + BODY_Y + modelParts.inner.position.y, disp.z);
   boogler.labelPos.set(disp.x, gy + hatSpring.y + HAT_H + LABEL_GAP, disp.z);
 }
 
@@ -658,13 +683,13 @@ export function updateBoogler(dt, now) {
 const vp = new THREE.Vector3();
 const centerOn = { x: 0, y: 0, behind: false },
   labelOn = { x: 0, y: 0, behind: false };
-export function booglerScreen(width, height) {
+export function booglerScreen(width: number, height: number) {
   camera.updateMatrixWorld();
   vp.copy(boogler.center).applyMatrix4(camera.matrixWorldInverse);
   const inFront = vp.z < -0.2;
   // Direction from the screen centre toward him, in pixels (y down). Works in front of and behind the camera.
-  let dx = vp.x,
-    dy = -vp.y;
+  const dx = vp.x;
+  let dy = -vp.y;
   if (Math.hypot(dx, dy) < 1e-4) dy = 1;
   const c = toScreen(boogler.center, centerOn, width, height);
   const onScreen = inFront && Math.abs((c.x / width) * 2 - 1) < 0.96 && Math.abs((c.y / height) * 2 - 1) < 0.96;

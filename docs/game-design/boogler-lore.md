@@ -11,7 +11,7 @@
 | The Registon | A square with three huge blue-tiled buildings. | `home1` |
 | The bazaar | Where he learned business. | `home1` |
 
-**Lore facts** (from [src/boogler/lines.js](../../src/boogler/lines.js)): he started a melon export business without
+**Lore facts** (from [src/boogler/lines.ts](../../src/boogler/lines.ts)): he started a melon export business without
 knowing Uzbekistan is doubly landlocked; four trucks, two trains, one very small boat and seven hundred golden melons,
 then a storm; he floated for three days holding one melon and ate it on the first night. He promised Oyijon to come
 back "a big success" (she said "Come back fed"); there are no boats on the island. Every week he writes her a letter in

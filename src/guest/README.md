@@ -17,7 +17,7 @@ For agents changing this feature or adding another character like it. The player
   (`ENGINE_URL` in `src/guest/engine.js`, an owner decision) the first time a player talks to the dino, and asks for it in the dialog only if that fails. This browser keeps both in IndexedDB.
   Before that first talk the feature requests nothing. The `dino` scenario checks this.
 - **Only our glue in `native/guest/`.** Upstream code is compiled from a local checkout the build points at.
-- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.js`, `talk.js`) name Mario on
+- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.ts`, `talk.js`) name Mario on
   purpose. Don't reword them unless the owner asks.
 
 ## Map

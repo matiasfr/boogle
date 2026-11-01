@@ -8,7 +8,7 @@ import { onFrame } from '../loop.ts';
 import { me } from '../player/player.ts';
 import { input } from '../player/input.ts';
 import { modalOpen } from '../player/modal.ts';
-import { dialogue } from '../boogler/dialogue.js';
+import { dialogue } from '../boogler/dialogue.ts';
 import { renderGuide } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 

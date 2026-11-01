@@ -12,7 +12,7 @@ export const LEVELS = [
 ];
 const MAX_LEVEL = LEVELS.length - 1;
 // The friendship meter as text: a full heart per level reached, an empty one per level to go.
-export const heartsText = (level) => '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
+export const heartsText = (level: number) => '♥'.repeat(level) + '♡'.repeat(MAX_LEVEL - level);
 
 const MIN = 60000;
 export const RULES = {
@@ -37,9 +37,26 @@ export const RULES = {
   ridePerLevel: 1.2,
   rideWary: 1.5,
 };
-export const TASTE_PTS = { love: 12, like: 7, meh: 3, dislike: -3 };
+export const TASTE_PTS: Record<string, number> = { love: 12, like: 7, meh: 3, dislike: -3 };
 
-export function createFriend() {
+/** Your friendship with him, kept in localStorage. */
+export type Friend = {
+  pts: number;
+  kicks: number;
+  kickAt: number;
+  nosy: number;
+  nosyAt: number;
+  quietUntil: number;
+  sorryAt: number;
+  chatAt: number;
+  learned: string[];
+  pets: number[];
+  gifts: { id: string; at: number }[];
+  flags: Record<string, string | number>;
+};
+type NumKey = 'pts' | 'kicks' | 'kickAt' | 'nosy' | 'nosyAt' | 'quietUntil' | 'sorryAt' | 'chatAt';
+
+export function createFriend(): Friend {
   return {
     pts: 0,
     kicks: 0,
@@ -56,14 +73,14 @@ export function createFriend() {
   };
 }
 
-export function levelOf(pts) {
+export function levelOf(pts: number) {
   let l = 0;
   while (l < MAX_LEVEL && pts >= LEVELS[l + 1].at) l++;
   return l;
 }
 
 // frac: progress from this level's threshold toward the next (1 at the top level).
-export function bond(f) {
+export function bond(f: Friend) {
   const level = levelOf(f.pts);
   if (level === MAX_LEVEL) return { level, name: LEVELS[level].name, frac: 1 };
   const lo = LEVELS[level].at,
@@ -72,7 +89,7 @@ export function bond(f) {
 }
 
 // Adds points (never below zero). Returns the new level when it went up, else 0.
-export function addPts(f, n) {
+export function addPts(f: Friend, n: number) {
   const before = levelOf(f.pts);
   f.pts = Math.max(0, f.pts + Math.round(n));
   const after = levelOf(f.pts);
@@ -80,7 +97,7 @@ export function addPts(f, n) {
 }
 
 // Applies time-based forgiveness: kick-offs and nosiness wear off.
-export function settle(f, now) {
+export function settle(f: Friend, now: number) {
   if (f.kicks > 0) {
     const k = Math.floor((now - f.kickAt) / RULES.kickDecay);
     if (k > 0) {
@@ -99,11 +116,11 @@ export function settle(f, now) {
   f.gifts = f.gifts.filter((g) => now - g.at < RULES.giftWindow);
 }
 
-export const isWary = (f, now) => (settle(f, now), f.kicks >= RULES.waryAt);
-export const isQuiet = (f, now) => now < f.quietUntil;
+export const isWary = (f: Friend, now: number) => (settle(f, now), f.kicks >= RULES.waryAt);
+export const isQuiet = (f: Friend, now: number) => now < f.quietUntil;
 
 // kind: 'happy' (scored), 'again' (too soon or too many, no points), 'wary' (still sore about rides).
-export function pet(f, now) {
+export function pet(f: Friend, now: number): { kind: 'happy' | 'again' | 'wary'; pts: number; levelUp: number } {
   if (isWary(f, now)) return { kind: 'wary', pts: 0, levelUp: 0 };
   const last = f.pets.length ? f.pets[f.pets.length - 1] : -Infinity;
   if (now - last < RULES.petGap || f.pets.length >= RULES.petMax) return { kind: 'again', pts: 0, levelUp: 0 };
@@ -114,13 +131,13 @@ export function pet(f, now) {
 // kind: index into GIFTS. Repeats of the same thing within the window are worth half each time; past giftMax in the
 // window he still takes it (and still forgives) but it scores nothing. The window stores catalog ids, not indices, so
 // a renumbered catalog can never misread a saved window.
-export function giveGift(f, kind, now) {
+export function giveGift(f: Friend, kind: number, now: number) {
   const g = GIFTS[kind];
   if (!g) return null;
   const wasWary = isWary(f, now);
   const capped = f.gifts.length >= RULES.giftMax;
   const repeats = f.gifts.filter((x) => x.id === g.id).length;
-  let pts = (TASTE_PTS[g.taste] ?? 0) + (g.bonus ?? 0);
+  let pts = (TASTE_PTS[g.taste ?? ''] ?? 0) + ((g as { bonus?: number }).bonus ?? 0);
   if (pts > 0) pts = Math.round(pts / 2 ** repeats);
   if (capped) pts = 0;
   f.gifts.push({ id: g.id, at: now });
@@ -129,23 +146,23 @@ export function giveGift(f, kind, now) {
   return { taste: g.taste, pts, capped, repeat: repeats > 0, forgave: wasWary && !isWary(f, now), levelUp };
 }
 
-export function kickedOff(f, now) {
+export function kickedOff(f: Friend, now: number) {
   settle(f, now);
   const wasWary = f.kicks >= RULES.waryAt;
   f.kicks++;
   f.kickAt = now;
   addPts(f, RULES.kickPts);
-  f.flags.kicked = (f.flags.kicked ?? 0) + 1;
+  f.flags.kicked = Number(f.flags.kicked ?? 0) + 1;
   return { kicks: f.kicks, wary: f.kicks >= RULES.waryAt, nowWary: !wasWary && f.kicks >= RULES.waryAt };
 }
 
-export function rideLimit(f, now) {
+export function rideLimit(f: Friend, now: number) {
   if (isWary(f, now)) return RULES.rideWary;
   return RULES.rideBase + RULES.ridePerLevel * levelOf(f.pts);
 }
 
 // Returns true when this pushed him over the edge: he stops talking for a while and the friendship takes a hit.
-export function addNosy(f, n, now) {
+export function addNosy(f: Friend, n: number, now: number) {
   settle(f, now);
   f.nosy += n;
   if (f.nosy < RULES.nosyLimit) return false;
@@ -155,7 +172,7 @@ export function addNosy(f, n, now) {
   return true;
 }
 
-export function apologize(f, now) {
+export function apologize(f: Friend, now: number) {
   settle(f, now);
   if (f.kicks === 0 || now - f.sorryAt < RULES.sorryGap) return false;
   f.sorryAt = now;
@@ -164,17 +181,17 @@ export function apologize(f, now) {
 }
 
 // Small talk scores at most once per chatGap.
-export function chatScores(f, now) {
+export function chatScores(f: Friend, now: number) {
   if (now - f.chatAt < RULES.chatGap) return false;
   f.chatAt = now;
   return true;
 }
 
-export function serializeFriend(f) {
+export function serializeFriend(f: Friend) {
   return JSON.stringify(f);
 }
 
-export function loadFriend(text) {
+export function loadFriend(text: string) {
   const f = createFriend();
   let j;
   try {
@@ -183,18 +200,23 @@ export function loadFriend(text) {
     return f;
   }
   if (!j || typeof j !== 'object') return f;
-  const num = (v, lo = 0) => (Number.isFinite(v) && v >= lo ? v : 0);
-  for (const k of ['pts', 'kicks', 'kickAt', 'nosy', 'nosyAt', 'quietUntil', 'sorryAt', 'chatAt']) f[k] = num(j[k]);
+  const num = (v: unknown, lo = 0) => (Number.isFinite(v) && (v as number) >= lo ? (v as number) : 0);
+  for (const k of ['pts', 'kicks', 'kickAt', 'nosy', 'nosyAt', 'quietUntil', 'sorryAt', 'chatAt'] as NumKey[])
+    f[k] = num(j[k]);
   f.pts = Math.round(f.pts);
-  if (Array.isArray(j.learned)) f.learned = j.learned.filter((s) => typeof s === 'string').slice(0, 100);
-  if (Array.isArray(j.pets)) f.pets = j.pets.filter(Number.isFinite).slice(-RULES.petMax);
+  if (Array.isArray(j.learned)) f.learned = j.learned.filter((s: unknown) => typeof s === 'string').slice(0, 100);
+  if (Array.isArray(j.pets)) f.pets = j.pets.filter((t: unknown) => Number.isFinite(t)).slice(-RULES.petMax);
   if (Array.isArray(j.gifts))
     f.gifts = j.gifts
-      .filter((g) => g && typeof g.id === 'string' && GIFTS.some((x) => x.id === g.id) && Number.isFinite(g.at))
+      .filter(
+        (g: { id?: unknown; at?: unknown } | null) =>
+          g && typeof g.id === 'string' && GIFTS.some((x) => x.id === g.id) && Number.isFinite(g.at),
+      )
       .slice(-20)
-      .map((g) => ({ id: g.id, at: g.at }));
+      .map((g: { id: string; at: number }) => ({ id: g.id, at: g.at }));
   if (j.flags && typeof j.flags === 'object' && !Array.isArray(j.flags))
     for (const [k, v] of Object.entries(j.flags))
-      if (typeof v === 'string' || Number.isFinite(v)) f.flags[k] = typeof v === 'string' ? v.slice(0, 60) : v;
+      if (typeof v === 'string' || Number.isFinite(v))
+        f.flags[k] = typeof v === 'string' ? v.slice(0, 60) : (v as number);
   return f;
 }
