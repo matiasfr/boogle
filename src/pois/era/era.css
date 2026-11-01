@@ -51,3 +51,83 @@
   opacity: 0.5;
   cursor: default;
 }
+.era-count.era-done small {
+  font-size: 26px;
+  color: var(--paper);
+}
+/* The gathering call: a banner above the hotbar while it runs, with the time left (the sky stays clear for the smoke). */
+.era-call {
+  position: absolute;
+  left: 50%;
+  bottom: 84px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 16px;
+  font: 600 16px var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--ink);
+  pointer-events: none;
+}
+.era-call b,
+.era-call span {
+  white-space: nowrap;
+}
+.era-call b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: #e05a4f;
+}
+.era-call span {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+/* The before/after postcard after the swap (click to put it away). */
+.era-postcard {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  translate: -50% 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px 12px 8px;
+  background: #f7efdc;
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 0 6px 0 var(--ink);
+  rotate: -1.5deg;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.era-postcard figure {
+  margin: 0;
+}
+.era-postcard img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 2px solid var(--ink);
+}
+.era-postcard figcaption {
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  text-align: center;
+  margin-top: 4px;
+}
+.era-postcard p {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink);
+}
