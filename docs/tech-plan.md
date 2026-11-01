@@ -97,7 +97,8 @@ Reviews and cut lists respect these until the owner changes them.
   actions instead of importing game internals).
 - **Remove unused legacy code:** the 129-cell save migration (`src/world/legacy-grid.js` and its call sites), the dead
   water spring API (`setSource`/`srcMap` in `src/sim/water.js`) and `dev/water-lab/`, unused exports. After B1 lands. *Done: #28, #31; sim/world/net exports swept 2026-10-30.*
-- **Server stack:** Deployed on Fly with Cloudflare TURN (#55–#57).
+- **Server stack:** Deployed on Fly (#55–#57). Since 9579d93 the server hosts every room over WebSocket; PeerJS and
+  TURN are gone ([docs/plans/server-host.md](plans/server-host.md)).
 - **ROMs only** (e0f9410): names of characters, games and companies are fine in copy, docs, code and commits. The
   hard line is ROM data: never commit, bundle, deploy or fetch anything from a ROM
   ([src/guest/README.md](../src/guest/README.md)).

@@ -57,7 +57,7 @@ cd .. && fly deploy . --config server/fly.toml --dockerfile server/Dockerfile
 curl https://<app>.fly.dev/healthz
 ```
 
-Keep it on a single machine: the volume is per-machine and signaling state is in memory. `fly.toml` sets `min_machines_running = 1` and disables auto-stop so WebSockets stay up. Render/Railway work too (Dockerfile, mount a disk at `/data`, set `DATA_DIR=/data`).
+Keep it on a single machine: the volume is per-machine and the hosted rooms live in memory. `fly.toml` sets `min_machines_running = 1` and disables auto-stop so WebSockets stay up. Render/Railway work too (Dockerfile, mount a disk at `/data`, set `DATA_DIR=/data`).
 
 ## Continuous deploy
 

@@ -93,16 +93,19 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       upgrades.set(ip, u);
       if (++u.n > UPGRADES_PER_MIN) return refuse(socket, '429 Too Many Requests');
 
-      const url = new URL(req.url ?? '/', 'http://localhost');
+      // Split, never `new URL(req.url)`: a target like `//[` throws, and a throw in the upgrade listener crashes the
+      // server. URLSearchParams and the guarded decode below don't throw.
+      const [path = '', query = ''] = (req.url ?? '/').split('?', 2);
       let id = '';
       try {
-        id = decodeURIComponent(url.pathname.slice('/room/'.length));
+        id = decodeURIComponent(path.slice('/room/'.length));
       } catch {
-        // a malformed escape: refused as a bad id below (this runs in the upgrade listener, so a throw would crash)
+        // a malformed escape: refused as a bad id below
       }
-      const self = url.searchParams.get('self');
-      const pid = url.searchParams.get('pid');
-      const key = url.searchParams.get('key');
+      const params = new URLSearchParams(query);
+      const self = params.get('self');
+      const pid = params.get('pid');
+      const key = params.get('key');
       wss.handleUpgrade(req, socket, head, (ws) => {
         if (
           ws.protocol !== WS_PROTOCOL ||

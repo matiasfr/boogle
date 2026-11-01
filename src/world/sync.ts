@@ -122,6 +122,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
   };
   let newerSave = false;
+  // The host's own save failed to load (corrupt, or a state's load/migrate threw): it runs on a fresh fallback and must
+  // never write that over the real save, which stays on disk for a fix. Cleared only by a restart.
+  let badSave = false;
   const skipped = new Set<string>(); // states a snapshot held from a newer build: left out of hash checks // a loaded snapshot held a state from a newer build: never persist over it
   let subsystems: Record<string, 'ok' | 'bad'> = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad: Desync | null = null; // { tick, keys } of the latest mismatch
@@ -602,7 +605,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   // force: write even if no state changed (the tick still moved on: the server's 30 s and shutdown saves).
   // Returns true when it wrote.
   function persist(force = false) {
-    if (mode !== 'host' || !ready || newerSave) return false;
+    if (mode !== 'host' || !ready || newerSave || badSave) return false;
     const hsh = combine(0);
     if (hsh === lastSavedHash && !force) return false;
     const text = JSON.stringify(snapshot());
@@ -626,6 +629,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     } catch {
       snapFail('local', 'parse'); // a corrupt save
     }
+    badSave = true;
     return null;
   }
   // The host starts from its saved world (or a fresh one) and then stamps, ticks, hashes and serves snapshots.
@@ -635,7 +639,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     out = [];
     lastSavedHash = null;
     const snap = loadPersisted();
+    const errs = stats.loadErrors;
     if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
+    if (stats.loadErrors > errs) badSave = true;
+    if (badSave) console.warn('[world] the saved world did not load cleanly: not saving over it');
     ready = true;
     nextHashTick = world.tick + HASH_EVERY;
     for (const fn of snapFns) fn(world.tick);
@@ -713,7 +720,17 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     worldHash,
     attachWorld,
     detachWorld,
-    worldStatus: () => ({ mode, ready, hostId, queued: queue.length, ...stats, newerSave, subsystems, lastBad }),
+    worldStatus: () => ({
+      mode,
+      ready,
+      hostId,
+      queued: queue.length,
+      ...stats,
+      newerSave,
+      badSave,
+      subsystems,
+      lastBad,
+    }),
     profileTicks,
   };
 }
