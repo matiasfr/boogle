@@ -30,6 +30,7 @@ export const GROOVE = {
   holdS: 3, // s the groove keeps going after you stop
   spawnR: 22, // m around spawn that counts as "near spawn" (silent when idle, base variant)
   splatSpeed: 13.5, // m/s fall speed that counts as a wipeout (the same as feel.ts's splat)
+  sparseDb: 15, // the placeholder's sparse state (hats and soft stabs, no kick or bass) up this much: about 5 LU under groove
 };
 
 const song = pickManifest();
@@ -78,12 +79,15 @@ let state: GrooveState = 'silent',
   forced: GrooveState | null = null; // __groove.force(s): hold a state (the listening pack, dev/audio/render.ts)
 
 const layerOn = (s: GrooveState, l: string) => song.states[s].includes(l);
-const layerGain = (l: string) => dbToGain(song.gainDb?.[l] ?? 0);
+// A layer's level in the state now playing.
+const layerGain = (l: string) =>
+  dbToGain((song.gainDb?.[l] ?? 0) + (isSynth(song) && playing === 'sparse' ? GROOVE.sparseDb : 0));
 
 function layer(ctx: AudioContext, music: AudioNode, l: string) {
   if (!layers[l]) {
     layers[l] = ctx.createGain();
-    layers[l].gain.value = 0;
+    // At the playing state's level: made on its first note, after the bar line that set the others.
+    layers[l].gain.value = layerOn(playing, l) ? layerGain(l) : 0;
     layers[l].connect(music);
   }
   return layers[l];
