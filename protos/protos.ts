@@ -30,6 +30,9 @@ export type Proto = {
   /** Where the in-game prototype bar drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
    * toward -z, forward = (-sin, -cos)). Leave it out to start at the usual spawn. */
   spawn?: Spawn;
+  /** The counter (`protoCount`) whose first bump is the prototype's verb, for the trace's time-to-verb. Leave it out
+   * when the verb is a ride, a drive or a carry: the trace sees those on its own. */
+  verb?: string;
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
 };
@@ -280,6 +283,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-arrive&proto=arrive&v=direct',
     question: 'Opening the link cold, were you playing within 10 seconds without reading anything?',
+    verb: 'first moves',
     what: 'No lobby: you land facing the court with the ball rolling toward you, a two-line controls card, and timings on the bar. Rename in the menu’s Room page.',
     since: '2026-11-01',
     variants: [

@@ -30,6 +30,7 @@ import { cellX, cellZ } from '../../adapters/terrain.ts';
 import { launchLog, myLogs, openRingNear } from './loose-logs.ts';
 import { makeBarrow, type BarrowMesh } from './barrow-mesh.ts';
 import { setBackBundleHidden } from '../../features/haul-stack.ts';
+import { protoMark } from '../mark.ts';
 
 // ---------------------------------------------------------------- tuning (window.__barrow.T in the console)
 const T = {
@@ -185,6 +186,7 @@ function puff(x: number, y: number, z: number, count: number, spread: number) {
 const trayAt = new THREE.Vector3();
 function tipOver(side: number, why = 'console') {
   if (S.mode === 'tipped') return;
+  protoMark('spill');
   S.why = why;
   const v = body.velocity;
   const vx = pre.x,

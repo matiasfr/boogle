@@ -13,6 +13,7 @@ import { groundHeight } from '../../adapters/terrain.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { VERDICTS, cardFor, countsLine, read, urlParam, write, type Verdict } from '../../../protos/store.ts';
 import { protoCount, flushCounts, onCounts, readoutLine } from '../count.ts';
+import '../trace/record.ts';
 
 const card = cardFor(location.search);
 const params = new URLSearchParams(location.search);

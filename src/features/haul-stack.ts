@@ -22,6 +22,7 @@ import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { TIERS, tierOf } from '../sim/tiers.ts';
 import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
+import { protoActivity } from '../proto/mark.ts';
 
 // The bundle: logs lying crosswise, stacked up and out from the back on a hex lattice (slots filled nearest-first, so
 // it fills out rather than up), with two rope bands round it. At most SHOWN pieces drawn, growing more slowly than the
@@ -73,6 +74,7 @@ const stackOf = (pid: string | null | undefined): Stack => {
   return k < 0 ? { n: 0, k: -1 } : { n: rules.stacks.countAt(k), k: rules.stacks.kindAt(k) };
 };
 export const myStack = () => stackOf(identity.pid);
+protoActivity(() => (myStack().n ? 'carrying' : null)); // for the playtest trace (src/proto/trace/)
 // A player whose stack is drawn somewhere else (the haul prototype's wheelbarrow tray): no bundle on their back and no
 // fly-ins to it. Local.
 const elsewhere = new Set<string>();

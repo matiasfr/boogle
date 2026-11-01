@@ -4,6 +4,7 @@
 // prototype bar and goes into the protos page's copied playtest entry ("3 rides, 2 variant switches, 6 min in
 // prototype"). Name counters as plural nouns a person reads. Local only: never synced, never read by the sim.
 import { cardFor, write } from '../../protos/store.ts';
+import { protoMark } from './mark.ts';
 
 const card = cardFor(location.search);
 let pending: Record<string, number> = {};
@@ -25,6 +26,7 @@ export function flushCounts() {
  * writes are batched. */
 export function protoCount(name: string, by = 1) {
   if (!card || !Number.isFinite(by)) return;
+  if (name === card.verb) protoMark('verb');
   pending[name] = (pending[name] ?? 0) + by;
   if (!timer) timer = window.setTimeout(flushCounts, 2000);
 }
