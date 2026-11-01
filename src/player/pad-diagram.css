@@ -1,0 +1,221 @@
+/* The gamepad diagram (src/player/pad-diagram.ts): callout columns either side of a drawn controller, leader lines
+   on top. Colours are the UI tokens (src/style.css), so it follows the card it sits on; sizes are in em of the guide
+   font and --gu (src/player/guide.css), so it scales with the pause view's text. */
+.pad-diagram {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 1.5fr) minmax(0, 1fr);
+  align-items: stretch;
+  column-gap: 1.4em;
+  color: var(--ink);
+  font: 600 0.9em/1.2 var(--font-body);
+}
+.pd-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 0.45em;
+  min-width: 0;
+}
+.pd-mid-col {
+  align-self: center;
+  min-width: 0;
+}
+.pd-call {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  min-width: 0;
+}
+.pd-left .pd-call {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.pd-glyph {
+  flex: none;
+  display: inline-flex;
+  min-width: calc(32 * var(--gu, 1px));
+  justify-content: center;
+}
+.pd-text {
+  display: grid;
+  min-width: 0;
+}
+.pd-label {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.pd-detail {
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* What this situation changes: a sun sticker behind the label. */
+.pd-hot .pd-label {
+  justify-self: start;
+  padding: 0 0.3em;
+  border-radius: 0.4em;
+  background: var(--sun);
+}
+.pd-left .pd-hot .pd-label {
+  justify-self: end;
+}
+.pd-free {
+  opacity: 0.45;
+}
+.pd-free .pd-label {
+  font-weight: 600;
+  font-style: italic;
+}
+/* Generic face button: four dots, the meant one filled. */
+.pd-dots {
+  width: calc(25 * var(--gu, 1px));
+  height: calc(25 * var(--gu, 1px));
+}
+.pd-dots circle {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.pd-dots circle.on {
+  fill: var(--ink);
+}
+
+/* The controller. */
+.pd-pad {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.pd-body {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.pd-shadow {
+  fill: var(--ink);
+}
+.pd-ctl rect,
+.pd-ctl circle,
+.pd-hub {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.pd-sh rect {
+  fill: #c9d3e2;
+}
+.pd-ctl text {
+  font: 400 15px/1 var(--font-display);
+  text-anchor: middle;
+  fill: var(--ink);
+}
+.pd-sh text {
+  font-size: 13px;
+}
+/* PlayStation shapes are small glyphs in any font: drawn larger, in the body font. */
+.pad-diagram[data-brand='ps'] .pd-ctl:not(.pd-sh) text {
+  font: 800 19px/1 var(--font-body);
+}
+.pd-well circle {
+  fill: #dfe6f0;
+}
+.pd-cap circle {
+  fill: #2c3446;
+}
+.pd-cap .pd-grip {
+  fill: none;
+  stroke: #56627a;
+  stroke-width: 2;
+}
+.pd-dir rect,
+.pd-mid rect,
+.pd-hub {
+  fill: #4b5d7a;
+}
+.pd-ctl.free {
+  opacity: 0.32;
+}
+.pd-ctl.free rect,
+.pd-ctl.free circle {
+  stroke-dasharray: 4 3;
+}
+.pd-ctl.hot rect,
+.pd-ctl.hot circle:not(.pd-grip) {
+  stroke: var(--sea);
+  stroke-width: 4;
+}
+
+/* Leader lines: an ink line on a paper halo, so it reads over the drawing. */
+.pd-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+.pd-lines path {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.pd-halo {
+  stroke: var(--paper);
+  stroke-width: 5;
+}
+.pd-line {
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.pd-line.hot,
+.pd-end.hot {
+  stroke: var(--sea);
+  stroke-width: 2.4;
+}
+.pd-line.free {
+  stroke: var(--ink-soft);
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+.pd-end {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+.pd-end.hot {
+  fill: var(--sea);
+}
+.pd-end.free {
+  fill: var(--ink-soft);
+  opacity: 0.5;
+}
+
+/* Narrow: the controller on top, the callouts in two columns under it, no lines. */
+@media (max-width: 700px) {
+  .pad-diagram {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 0.8em;
+  }
+  .pd-mid-col {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    width: min(100%, 360px);
+  }
+  .pd-left .pd-call {
+    flex-direction: row;
+    text-align: left;
+  }
+  .pd-left .pd-hot .pd-label {
+    justify-self: start;
+  }
+  .pd-lines {
+    display: none;
+  }
+}

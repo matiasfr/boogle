@@ -1,4 +1,5 @@
-// The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts), Room (who is here, an
+// The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts; on the Gamepad tab a
+// drawn controller with a set per situation, src/player/pad-diagram.ts, or the list), Room (who is here, an
 // invite link) and Leave. The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop);
 // it only takes this player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.
@@ -15,7 +16,8 @@ import { openModal, closeModal, modalOpen } from '../player/modal.ts';
 import { conversation } from '../player/conversation.ts';
 import { registerAction, isTyping, menuSlot } from '../player/controls.ts';
 import { renderGuide, type GuideKind } from '../player/guide.ts';
-import { glyph, inputKind } from '../player/glyphs.ts';
+import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
+import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -34,6 +36,9 @@ let open = false;
 type Page = 'main' | 'controls' | 'room';
 let page: Page = 'main';
 let tab: GuideKind = 'kbm';
+// The Gamepad tab: the drawn controller (src/player/pad-diagram.ts) for one situation, or the list.
+let padView: 'diagram' | 'list' = 'diagram';
+let padCtx = 'foot';
 let leaveTimer: ReturnType<typeof setTimeout> | 0 = 0;
 let peopleKey = '';
 
@@ -171,13 +176,59 @@ function renderControls() {
     tabs.append(b);
   }
   const body = el('div', 'pause-guide');
-  body.append(renderGuide(tab));
+  const diagram = tab === 'pad' && padView === 'diagram';
+  body.append(diagram ? renderPadDiagram(padCtx) : renderGuide(tab));
   const back = button('Back', () => show('main'), 'pause-back');
   back.dataset.act = 'back';
   const bar = el('div', 'pause-bar');
   bar.append(back, tabs);
-  wrap.append(bar, body);
+  wrap.append(bar);
+  if (tab === 'pad') wrap.append(padBar(diagram));
+  wrap.append(body);
   return wrap;
+}
+
+// Above the gamepad diagram: one chip per situation (LB and RB cycle them on the pad) and the list toggle.
+function padBar(diagram: boolean) {
+  const bar = el('div', 'pause-padbar');
+  if (diagram) {
+    const ctx = el('div', 'pause-ctxs');
+    ctx.setAttribute('role', 'tablist');
+    for (const [id, title] of padContexts()) {
+      const b = button(title, () => setCtx(id), 'pause-ctx');
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(id === padCtx));
+      b.dataset.ctx = id;
+      ctx.append(b);
+    }
+    if (inputKind() === 'pad') {
+      const hint = el('span', 'pause-ctx-hint');
+      hint.innerHTML = `${padGlyph('lb')}${padGlyph('rb')}`;
+      ctx.prepend(hint);
+    }
+    bar.append(ctx);
+  }
+  const view = button(diagram ? 'Show as a list' : 'Show the controller', () => {
+    padView = diagram ? 'list' : 'diagram';
+    rerender('[data-act="pad-view"]');
+  });
+  view.dataset.act = 'pad-view';
+  bar.append(view);
+  return bar;
+}
+function setCtx(id: string) {
+  padCtx = id;
+  rerender(`[data-ctx="${id}"]`);
+}
+function cycleCtx(dir: number) {
+  if (page !== 'controls' || tab !== 'pad' || padView !== 'diagram') return;
+  const ids = padContexts().map(([id]) => id);
+  setCtx(ids[(ids.indexOf(padCtx) + dir + ids.length) % ids.length]);
+}
+function rerender(focus: string) {
+  const fresh = renderControls();
+  card.querySelector('.pause-page')!.replaceWith(fresh);
+  fresh.querySelector<HTMLElement>(focus)?.focus({ preventScroll: true });
 }
 
 function renderRoom() {
@@ -228,17 +279,14 @@ function show(next: Page) {
 
 function setTab(kind: GuideKind) {
   tab = kind;
-  const old = card.querySelector('.pause-page')!;
-  const fresh = renderControls();
-  old.replaceWith(fresh);
-  fresh.querySelector<HTMLElement>(`[data-tab="${kind}"]`)!.focus({ preventScroll: true });
+  rerender(`[data-tab="${kind}"]`);
 }
 
 const stops = () => {
   const all = [...card.querySelectorAll<HTMLElement>('.pause-body button, .pause-body input')];
-  // The tabs are one stop (left and right pick one), so up and down go to Back.
+  // The tabs are one stop (left and right pick one; LB and RB the situation), so up and down go to Back.
   return page === 'controls'
-    ? all.filter((b) => !b.matches('.pause-tab') || b.getAttribute('aria-selected') === 'true')
+    ? all.filter((b) => !b.matches('.pause-tab, .pause-ctx') || b.getAttribute('aria-selected') === 'true')
     : all;
 };
 function focusFirst() {
@@ -287,6 +335,7 @@ function onPad(slot: string) {
   else if (slot === 'down') move(1);
   else if (slot === 'left') moveTab(-1);
   else if (slot === 'right') moveTab(1);
+  else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
   else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();
   else if (slot === menuSlot('back')) {
     if (page === 'main') closePause();
@@ -323,6 +372,7 @@ export function openPause(start: Page = 'main') {
   if (!openModal({ onKey, onPad })) return false;
   open = true;
   tab = inputKind();
+  padCtx = 'foot';
   card.querySelector('.pause-title')!.textContent = getRoomId();
   dlg.showModal(); // after openModal: its setPadModal keeps gamepad.js from pulling focus off the buttons
   show(start);

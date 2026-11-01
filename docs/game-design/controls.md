@@ -3,7 +3,7 @@
 The registry in [src/player/controls.ts](../../src/player/controls.ts) is the source of truth: `registerAction` binds a pad
 slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
-binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page and the first-run card are generated
+binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) and the first-run card are generated
 from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
 in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.js](../../src/features/feel.ts),
 [hotbar.js](../../src/features/hotbar.ts), [bump.js](../../src/features/bump.ts), [honk.js](../../src/features/honk.ts),
@@ -32,6 +32,20 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Reload for the new version (`update-reload`) | action, hidden | (toast button) | first free slot, only while the update toast shows | toast button | none | |
 
 Notes:
+
+- **Gamepad diagram** ([src/player/pad-diagram.ts](../../src/player/pad-diagram.ts), 2026-11-01): the pause view's
+  Gamepad tab draws a generic controller (two sticks, D-pad, four face buttons, bumpers, triggers, View / Menu, stick
+  clicks) between two columns of callouts, one per slot and stick, each with a leader line to its button. The callouts
+  come from the registry (`listControls`, plus hidden actions such as `slot-prev` / `slot-next` as the detail of the
+  shared hotbar row), so a rebound action moves its callout. A slot nobody claims is dimmed and reads Free (today
+  D-pad ↑ and ↓). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
+  letters; with no pad yet the face buttons are a diamond of four dots with the meant one filled. Situations sit
+  above it as chips (LB / RB cycle them on the pad): On foot; Driving when a `driving` row exists (the soapbox,
+  `?proto=soapbox`); Talking (A or X says the picked answer, A also skips the typing, B leaves, the D-pad and left
+  stick pick; confirm and back swap on a Switch pad). A situation's own buttons get a sun label and a sea line; the
+  rest keep their on-foot callout, since they still work there. Another context (`as the guest`) shows on foot only
+  on a slot nothing else uses, with the context in brackets. Keyboard and touch players see the diagram on the Gamepad
+  tab; Show as a list gives the generated list back. Under 700 px wide the callouts stack under the controller.
 
 - **Face buttons** (2026-11-02, owner's iPad + controller playtest; research in
   [cross-device-input.md](../research/cross-device-input.md), section 8): A jumps and confirms, **X / □ is the one
