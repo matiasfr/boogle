@@ -44,7 +44,7 @@ onApplied((e: { op: string; p: string; id: number }, tick: number, r: { n?: numb
   if (e.op === 'src.take') pending.delete(e.id);
   if (e.op === 'src.take' && r?.n && e.p === (net.room?.selfId ?? 'local') && !haulHooks.moved(e.id)) {
     const p = rules.sources.list()[e.id];
-    if (p) fly(spot(p, at), r.n);
+    if (p) fly(spot(p, at), r.n, true);
   }
 });
 

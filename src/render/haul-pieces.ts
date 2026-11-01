@@ -31,11 +31,12 @@ export function commitPieces(mesh: THREE.InstancedMesh, n: number): void {
 }
 
 // Pieces flying to your stack (a pickup, a shake): anyone can ask, the haul stack (src/features/haul-stack.ts) draws
-// them. fly(from: Vector3, n).
-type FlyFn = (from: THREE.Vector3, n: number) => void;
+// them. fly(from: Vector3, n, spill): `spill` when they come out of a bundle (Take logs) rather than off a ground pile,
+// for a look that tells the two apart (the haul magnet variant spills them out first).
+type FlyFn = (from: THREE.Vector3, n: number, spill?: boolean) => void;
 const flyFns: FlyFn[] = [];
 export const onFly = (fn: FlyFn): void => void flyFns.push(fn);
-export const fly: FlyFn = (from, n) => flyFns.forEach((fn) => fn(from, n));
+export const fly: FlyFn = (from, n, spill = false) => flyFns.forEach((fn) => fn(from, n, spill));
 
 const colors = TINT.map((h) => new THREE.Color(h));
 export const pieceColor = (k: number): THREE.Color => colors[k] ?? colors[0];

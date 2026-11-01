@@ -11,7 +11,7 @@ import type { Pile } from '../sim/piles.ts';
 
 export const piles = rules.piles.piles;
 const SHOWN = 12; // pieces drawn per pile, whatever its count
-const PICK_R = 1.3; // metres from a pile's centre that walk over it
+const PICK_R = 1.3; // metres from a pile's centre that walk over it (the default; the host doesn't check reach)
 const PICK_DY = 1.6;
 const mesh = pieceMesh(160 * SHOWN);
 const m4 = new THREE.Matrix4();
@@ -52,9 +52,9 @@ function redraw() {
 }
 
 // Walk-over pickup: one pile.take per pile you touch, retried after a while if the host never applied it. `want(p)`
-// says how many to ask for (0: leave it), so you never ask for a kind you can't carry. The pieces fly to your back as
-// the take is sent, before the host answers.
-export function updatePiles(now: number, want = (p: Pile) => p.n): void {
+// says how many to ask for (0: leave it), so you never ask for a kind you can't carry; `reach` how far from a pile's
+// centre counts (a Local dial). The pieces fly to your back as the take is sent, before the host answers.
+export function updatePiles(now: number, want = (p: Pile) => p.n, reach = PICK_R): void {
   expireAt = now;
   pending.forEach(expire);
   if (me.entered && me.body) {
@@ -64,7 +64,7 @@ export function updatePiles(now: number, want = (p: Pile) => p.n): void {
       const at = spotOf(p);
       const dx = at.x - pos.x,
         dz = at.z - pos.z;
-      if (Math.abs(pos.y - PLAYER_R - at.y) > PICK_DY || dx * dx + dz * dz > PICK_R * PICK_R) continue;
+      if (Math.abs(pos.y - PLAYER_R - at.y) > PICK_DY || dx * dx + dz * dz > reach * reach) continue;
       const n = want(p);
       if (n > 0 && submitEdit({ op: 'pile.take', i: p.i, j: p.j, id: p.id, n })) {
         pending.set(p.id, now);

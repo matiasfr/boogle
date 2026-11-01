@@ -5,7 +5,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import { onFrame, onStart } from '../loop.ts';
 import { updatePiles, piles } from '../adapters/piles.ts';
 import { identity } from '../player/identity.ts';
-import { haulVariant } from '../player/haul-variant.ts';
+import { haulVariant, pickReach } from '../player/haul-variant.ts';
 import type { Pile } from '../sim/piles.ts';
 
 // Ask for the whole pile, as much as your stack has room for; nothing of a kind you can't carry. With the barrow
@@ -15,4 +15,4 @@ const want = (p: Pile) =>
 
 const handle = window as unknown as { boogle?: Record<string, unknown> };
 onStart(() => handle.boogle && (handle.boogle.piles = piles)); // debug handle (scenarios)
-onFrame(({ now }: { now: number }) => updatePiles(now, want), { phase: 'update', order: 30 });
+onFrame(({ now }: { now: number }) => updatePiles(now, want, pickReach), { phase: 'update', order: 30 });
