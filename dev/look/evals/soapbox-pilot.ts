@@ -7,7 +7,7 @@ import { forEachStatic } from '../../../src/physics/engine.ts';
 import { GROUP } from '../../../src/physics/physics.ts';
 
 type Box = {
-  S: { heading: number; seated: boolean; slip: number; drifting: boolean; grounded: boolean };
+  S: { heading: number; seated: boolean; slip: number; drifting: boolean; grounded: boolean; boostLeft: number };
   LINE: [number, number][];
   body: { position: { x: number; y: number; z: number }; velocity: { x: number; y: number; z: number } };
   board: () => void;
@@ -93,7 +93,7 @@ export async function drive(plan: Plan) {
     me.jumpHeld = drifting;
     input.stickX = steer;
     const bend = turn > 0.6 && dist < 6 + speed * 0.6 && speed > 9;
-    const brake = !drifting && ((sharp && speed > 8) || bend || (Math.abs(err) > 1 && speed > 6));
+    const brake = !drifting && !box.S.boostLeft && ((sharp && speed > 8) || bend || (Math.abs(err) > 1 && speed > 6));
     input.stickY = brake ? 1 : speed < 4.5 ? -1 : 0; // kick along when slow
     stats.top = Math.max(stats.top, speed);
     stats.slip = Math.max(stats.slip, Math.abs(box.S.slip));

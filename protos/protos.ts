@@ -131,7 +131,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=soapbox',
     question: 'Is driving fun?',
-    what: 'A ~20 s run off the rocky massif’s summit (north-west): the ridge, a drop down the face, a palm slalom and the bay shore. E to get in, hold Jump to drift.',
+    what: 'A ~10 s run off the rocky massif’s summit (north-west): the ridge, a drop down the face, a long right across the lowland. E to get in; hold Jump to drift, let go on blue or pink sparks for a boost. New: the grip lets go when you’re sideways, a camera that looks ahead and shakes, crashes that throw a wheel, rolling and wind sounds, and Back to the top straight after a wipeout.',
     since: '2026-11-01',
     spawn: { x: -61.5, z: -95, yaw: -1.571 }, // behind the cart on the summit, looking down the ridge
     variants: [
@@ -139,7 +139,7 @@ export const PROTOS: Proto[] = [
       {
         name: 'drifty',
         url: '/?proto=soapbox&v=drifty',
-        what: 'Loose rear, long drifts; let go of a long one (hot sparks) for a little boost.',
+        what: 'Loose rear, long drifts and the full drift boost (the others get 0.75x).',
       },
     ],
   },

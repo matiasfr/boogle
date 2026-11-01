@@ -29,7 +29,7 @@ import {
 } from '../../physics/engine.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { me, cam, camConstraints } from '../../player/player.ts';
+import { me, cam, camConstraints, camForward } from '../../player/player.ts';
 import { input } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { heldId } from '../../player/inventory.ts';
@@ -39,6 +39,7 @@ import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
 import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
+import { rollSound, chargeTick, boostSound, crashSound } from './sound.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
 // ---------------------------------------------------------------- tuning (window.__soapbox.T in the console)
@@ -69,23 +70,56 @@ const T = {
   crashMin: 6, // m/s: slower than this nothing throws you
   throwUp: 11, // m/s up when thrown
   throwKeep: 0.55, // share of the cart's speed you keep when thrown (over whatever you hit, not into it)
-  returnAfter: 3.5, // s an empty cart waits before it rolls itself back to the top
-  boostAfter: 0, // s of drifting that charges a boost on release (0: no boost)
-  boost: 0, // m/s added forward on release once charged, scaled up to x1.5 for a long drift
+  returnAfter: 2, // s an empty cart waits before it rolls itself back to the top
+  // grip as a curve of slip ratio |vl| / (|vl| + |vf|) (vehicle-feel.md 2, Rocket League): full up to slipFull, down
+  // to slipLoose x grip at slipLet and flat after; times a slope term, slopeGrip x at n.y 0.8 (1 from 0.95). The
+  // research's first guesses (0.15, 0.55, 0.7) let a landing on the massif's face snowball into a slide you could not
+  // steer out of (braking raised the ratio further); these let go later and less.
+  slipFull: 0.25,
+  slipLet: 0.5,
+  slipLoose: 0.65,
+  slopeGrip: 0.85,
+  // drift charge (vehicle-feel.md 3, Mario Kart's counter scaled to a short run): per fixed step drifting, chargeInto
+  // with the stick held hard into the slide, chargeOut otherwise. Tiers: sparks, ready (a boost), big (a bigger one).
+  // Released by letting go of the handbrake, whenever: no timing window.
+  chargeInto: 5,
+  chargeOut: 2,
+  chargeSparks: 60, // 0.2 s at best
+  chargeReady: 120, // 0.4 s
+  chargeBig: 240, // 0.8 s
+  boostReady: 3, // m/s forward, spread over boostReadyS (as acceleration: drag takes it back)
+  boostReadyS: 0.35,
+  boostBig: 5, // m/s over boostBigS
+  boostBigS: 0.6,
+  boostScale: 0.75, // x both boosts: the default and grip get a milder one, drifty the full
+  // the chase camera (vehicle-feel.md 4)
+  camDist: 8.5, // m behind, nearly fixed
+  camPull: 0.5, // m more at speed, at most
+  lookAhead: 0.3, // s of velocity the camera aims ahead of the cart
+  lookAheadMax: 4, // m
+  camLead: 0.25, // rad of yaw toward the way you steer
+  camLeadS: 0.3, // s to fade it in
+  fovPerMs: 0.6, // degrees per m/s over 6 m/s
+  fovMax: 12, // degrees over the base, speed and boost kick together
+  // trauma shake (vehicle-feel.md 4, Eiserloh): shake = trauma², rotational only, from smooth noise
+  traumaLand: 0.25, // a landing from over 6 m/s of fall
+  traumaCrash: 0.6,
+  traumaDecay: 1.5, // per second
+  hitStop: 70, // ms the crash frame holds before you fly (vehicle-feel.md 6)
 };
 // Handling variants for comparing in one sitting: &v=grip (planted, precise, short drifts) and &v=drifty (loose rear,
-// long drifts, a small boost when you let go of a long one). No &v: the tuning above.
+// long drifts, the full drift boost). No &v: the tuning above. All three charge drifts the same way.
 const VARIANTS: Record<string, Partial<typeof T>> = {
   grip: { grip: 48, driftGrip: 14, driftYaw: 1.15, driftAngle: 0.55, keepSlide: 0.5, handbrake: 2.2 },
   drifty: {
-    grip: 26,
+    grip: 32,
     driftGrip: 3,
     driftYaw: 1.7,
     driftAngle: 1.35,
     keepSlide: 0.75,
     handbrake: 1.0,
-    boostAfter: 0.6,
-    boost: 3,
+    slipLoose: 0.8, // loose under the handbrake, not on the face: its grip lets go less than the default's
+    boostScale: 1,
   },
 };
 const variant = new URLSearchParams(location.search).get('v') ?? '';
@@ -122,14 +156,24 @@ const S = {
   vf: 0, // m/s forward
   yawRate: 0,
   looseAt: 0,
-  charge: 0, // s drifting so far
-  boostKick: 0, // m/s to add on the next grounded step
-  boosted: 0, // the last boost, for its sparks (cleared by the frame hook)
+  charge: 0, // drift charge (T.chargeInto / chargeOut per step)
+  driftDir: 0, // the side this drift slides to (-1 left, 1 right), set by the first steer in it; 0 until then
+  tier: 0, // 0 none, 1 sparks, 2 ready, 3 big: what letting go would give now
+  boostLeft: 0, // s left of the boost's push
+  boostAcc: 0, // m/s² of it
+  boosted: 0, // the boost just fired (2 ready, 3 big), for its burst and FOV kick (cleared by the frame hook)
+  boostTier: 2, // the boost running now, for its jet's colour
+  fall: 0, // m/s: fastest fall since leaving the ground
+  hold: 0, // performance.now() a crash's hit-stop ends (0: none)
+  watchUntil: 0, // thrown: the camera stays on you until then
+  againUntil: 0, // after a wipeout, Interact takes you back to the top until then
   tumble: 0, // s left of the thrown-out spin
   tumbleAngle: 0,
   landKick: 0, // m/s of fall speed at the last landing, for the mesh bounce
   camDist: 0, // the zoom you had before you got in
 };
+let trauma = 0; // camera shake, 0..1 (shake = trauma²)
+const addTrauma = (t: number) => (trauma = Math.min(1, trauma + t));
 const n = new THREE.Vector3(0, 1, 0); // ground normal under the cart
 const pre = new THREE.Vector3(); // velocity after this module's own push each step (the solver's change is a hit)
 const fast = new THREE.Vector3(); // the velocity at the recent top speed: what a crash throws you with
@@ -156,7 +200,13 @@ onPreStep(() => {
     raycastClosest(p, ray.to, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, ray.hit) &&
     ray.hit.distance < T.r + 0.12;
   if (S.grounded) n.set(ray.hit.hitNormalWorld.x, ray.hit.hitNormalWorld.y, ray.hit.hitNormalWorld.z);
-  if (S.grounded && !S.wasGrounded) S.landKick = Math.max(S.landKick, -v.y);
+  if (!S.grounded) S.fall = Math.max(S.fall, -v.y);
+  else if (!S.wasGrounded) {
+    const fall = Math.max(S.fall, -v.y);
+    S.landKick = Math.max(S.landKick, fall);
+    if (fall > 6 && S.seated) addTrauma(T.traumaLand);
+    S.fall = 0;
+  }
   if (v.y < -MAX_FALL) v.y = -MAX_FALL;
 
   const ctl = S.seated ? readInput() : { steer: 0, throttle: 0 };
@@ -165,14 +215,25 @@ onPreStep(() => {
     fz = -Math.cos(S.heading);
   let vf = v.x * fx + v.z * fz;
   const speed = Math.abs(vf);
-  const wasDrifting = S.drifting;
-  S.drifting = S.seated && me.jumpHeld && S.grounded && speed > 4;
-  if (S.drifting) S.charge += FIXED;
-  else if (wasDrifting) {
-    // drifty: letting go of a long drift kicks you forward (vehicles.md's miniturbo, as seconds)
-    if (T.boostAfter > 0 && S.charge >= T.boostAfter) S.boostKick = T.boost * Math.min(1.5, S.charge / T.boostAfter);
-    S.charge = 0;
-  } else S.charge = 0;
+  // The handbrake held: a drift on the ground, kept (not charging) over a bump. Letting go fires what it charged.
+  const held = S.seated && me.jumpHeld && Math.hypot(v.x, v.z) > 4 && !S.hold;
+  S.drifting = held && S.grounded;
+  if (S.drifting) {
+    if (!S.driftDir && Math.abs(S.steer) > 0.2) S.driftDir = Math.sign(S.steer);
+    S.charge += S.driftDir && S.steer * S.driftDir >= 0.7 ? T.chargeInto : T.chargeOut;
+    const tier = S.charge >= T.chargeBig ? 3 : S.charge >= T.chargeReady ? 2 : S.charge >= T.chargeSparks ? 1 : 0;
+    if (tier > S.tier) chargeTick(tier);
+    S.tier = tier;
+  } else if (!held && S.charge > 0) {
+    if (S.tier >= 2) {
+      const big = S.tier === 3;
+      const dur = big ? T.boostBigS : T.boostReadyS;
+      S.boostLeft = dur;
+      S.boostAcc = ((big ? T.boostBig : T.boostReady) * T.boostScale) / dur;
+      S.boosted = S.tier;
+    }
+    S.charge = S.tier = S.driftDir = 0;
+  }
   const angle = S.steer * lerp(T.steerLow, T.steerHigh, clamp((speed - 4) / (T.steerFade - 4), 0, 1));
   S.wheel = -angle;
 
@@ -198,7 +259,11 @@ onPreStep(() => {
     const vl = v.x * rx + v.z * rz;
     // grip: the wheels cancel sideways speed up to a limit; past it you slide. Part of what they cancel carries on
     // forward (energy-wise), so turning keeps your speed.
-    const lim = (S.drifting ? T.driftGrip : T.grip) * FIXED;
+    // ... and the limit falls once you are properly sideways (not under the handbrake), and on a steep slope
+    const ratio = Math.abs(vl) / (Math.abs(vl) + Math.abs(vf) + 1e-6);
+    const slide = lerp(1, T.slipLoose, clamp((ratio - T.slipFull) / (T.slipLet - T.slipFull), 0, 1));
+    const slope = lerp(T.slopeGrip, 1, clamp((n.y - 0.8) / 0.15, 0, 1));
+    const lim = (S.drifting ? T.driftGrip : T.grip * slide) * slope * FIXED; // the handbrake has its own grip
     const vl2 = vl + clamp(-vl, -lim, lim);
     const keep = T.keepSlide * (vl * vl - vl2 * vl2);
     vf = Math.sign(vf || 1) * Math.sqrt(vf * vf + keep);
@@ -212,11 +277,7 @@ onPreStep(() => {
     if (ctl.throttle < 0) a += vf > 0.3 ? T.brake * ctl.throttle : vf > -2 ? T.push * 0.5 * ctl.throttle : 0;
     const nvf = vf + a * FIXED;
     vf = ctl.throttle === 0 && Math.sign(nvf) !== sgn ? 0 : nvf; // friction stops you, never reverses you
-    if (S.boostKick > 0) {
-      vf += S.boostKick * sgn;
-      S.boosted = S.boostKick;
-      S.boostKick = 0;
-    }
+    if (S.boostLeft > 0) vf += S.boostAcc * FIXED * (sgn || 1);
     v.x = fx * vf + rx * vl2;
     v.z = fz * vf + rz * vl2;
   } else {
@@ -228,6 +289,7 @@ onPreStep(() => {
     v.x *= k;
     v.z *= k;
   }
+  S.boostLeft = Math.max(0, S.boostLeft - FIXED);
   S.vf = vf;
   pre.set(v.x, v.y, v.z);
 });
@@ -241,7 +303,7 @@ onPostStep(() => {
     teleport(body, p.x, g + T.r, p.z); // through the heightfield: back on top (physics.ts, catchFallThrough)
     if (v.y < 0) v.y = 0;
   }
-  if (!S.seated) return;
+  if (!S.seated || S.hold) return;
   // What the solver took off this step is a hit (this module's own changes are in `pre`). Summed with a leak, so a
   // hit spread over a few steps (a glancing trunk) counts; judged against the speed you had just before.
   const was = Math.hypot(pre.x, pre.z);
@@ -266,8 +328,9 @@ function board() {
   }
   S.mode = 'driving';
   S.tumble = 0;
-  S.camDist = cam.dist;
-  cam.dist = 8.5;
+  if (!S.watchUntil) S.camDist = cam.dist; // still watching your own wipeout: keep the zoom from before it
+  S.watchUntil = S.againUntil = 0;
+  cam.dist = T.camDist;
   if (flat(body.position.x, body.position.z, START.x, START.z) < 4) runHud.ready();
   else runHud.off();
   sendPresence();
@@ -284,7 +347,7 @@ function getOut(thrown: boolean) {
   left.set(-Math.cos(S.heading), 0, Math.sin(S.heading));
   const b = me.body;
   if (thrown) {
-    teleport(b, p.x, p.y + 1.6, p.z);
+    teleport(b, pose.p.x, pose.p.y + 1.6, pose.p.z); // from where the hit-stop held you
     const side = (Math.random() < 0.5 ? -1 : 1) * 2.5; // tumble off to one side
     b.velocity.set(
       fast.x * T.throwKeep + left.x * side,
@@ -293,6 +356,8 @@ function getOut(thrown: boolean) {
     );
     impact.hit = impact.top = 0;
     S.tumble = 1.3;
+    S.watchUntil = performance.now() + 2400;
+    S.againUntil = performance.now() + 20000;
   } else {
     const x = p.x + left.x * 1.2,
       z = p.z + left.z * 1.2;
@@ -300,19 +365,27 @@ function getOut(thrown: boolean) {
     b.velocity.set(v.x * 0.5, 2, v.z * 0.5);
   }
   addBody(b);
-  cam.dist = S.camDist || 6.5;
+  if (!thrown) cam.dist = S.camDist || 6.5; // thrown: after the camera has watched you land
   runHud.leave(thrown);
   sendPresence();
 }
 
+// A crash is a show (vehicle-feel.md 6): the frame holds for T.hitStop ms (the cart, you on it and the camera; the
+// physics runs on), a wheel pops off, planks splinter, then you fly. The frame hook throws you when the hold ends.
 function crash() {
-  const p = body.position;
-  puff(p.x, p.y - T.r * 0.5, p.z, 26, 6, DUST, 0.2);
-  for (let k = 0; k < 10; k++) spark(p.x, p.y, p.z, 7);
-  getOut(true);
+  if (S.hold) return;
+  S.hold = performance.now() + T.hitStop;
+  addTrauma(T.traumaCrash);
+  crashSound();
+  const p = pose.p;
+  puff(p.x, p.y, p.z, 26, 6, DUST, 0.2);
+  for (let k = 0; k < 10; k++) spark(p.x, p.y + 0.3, p.z, 7);
+  for (let k = 0; k < 14; k++) splinter(p.x, p.y + 0.4, p.z);
+  popWheel();
 }
 
 function park() {
+  fixWheel();
   teleport(body, START.x, startY(), START.z);
   body.velocity.set(0, 0, 0);
   S.heading = START.h;
@@ -332,6 +405,13 @@ function backToTop() {
     setMotion(body, 'kinematic', true);
     S.mode = 'parked';
   }
+}
+
+function again() {
+  if (!me.body || S.seated) return;
+  backToTop();
+  teleport(me.body, START.x + 1.5, startY() + 0.5, START.z);
+  board();
 }
 
 // One button: get in near the cart; seated, get out, or (stopped away from the top) ride back up.
@@ -354,6 +434,11 @@ registerInteractable(() => {
     ];
   }
   const mp = me.body.interpolatedPosition;
+  // after a wipeout, once you have landed: straight back to the top in the cart, no walk up the hill
+  if (S.againUntil > performance.now() && S.tumble <= 0 && !S.hold) {
+    promptAt.set(mp.x, mp.y + 1.9, mp.z);
+    return [{ id: 'soapbox-again', verb: 'Back to the top', at: promptAt, run: again }];
+  }
   if (Math.hypot(mp.x - p.x, mp.y - p.y, mp.z - p.z) > 2.6) return [];
   promptAt.set(p.x, p.y + 1.2, p.z);
   return [{ id: 'soapbox-in', verb: 'Get in', at: promptAt, r: 0.8, run: board }];
@@ -395,6 +480,7 @@ const qa = new THREE.Quaternion(),
 const spring = { y: 0, vy: 0, roll: 0, pitch: 0 };
 let lastVf = 0;
 function updatePose(dt: number) {
+  if (S.hold) return; // a crash's hit-stop: the cart (and you on it) hold the frame of the hit
   const ip = body.interpolatedPosition;
   nView.lerp(S.grounded || S.mode === 'parked' ? n : UP, 1 - Math.exp(-dt * 10)).normalize();
   // suspension: a spring kicked by landings, so bumps read
@@ -421,10 +507,14 @@ function updatePose(dt: number) {
 const toWorld = (out: THREE.Vector3, x: number, y: number, z: number) =>
   out.set(x, y, z).applyQuaternion(pose.q).add(pose.p);
 
-// ---------------------------------------------------------------- dust and sparks (the shared particle pool)
+// ---------------------------------------------------------------- dust, sparks and debris (the shared particle pool)
 const DUST = new THREE.Color(0xd9c49a);
 const SPARK = new THREE.Color(0xffb02e);
 const HOT = new THREE.Color(0xfff1a8);
+const PLANK = new THREE.Color(0xd9a35b);
+// the drift charge's tiers by spark colour (Mario Kart's blue, then a hotter pink): sparks, ready, big
+const TIER = [SPARK, SPARK, new THREE.Color(0x45b6ff), new THREE.Color(0xff4fcf)];
+const WHITE = new THREE.Color(0xffffff);
 function puff(x: number, y: number, z: number, count: number, spread: number, color: THREE.Color, size: number) {
   if (reducedMotion) return;
   for (let k = 0; k < count; k++)
@@ -445,7 +535,7 @@ function puff(x: number, y: number, z: number, count: number, spread: number, co
       fade: 0.5,
     });
 }
-function spark(x: number, y: number, z: number, speed: number, hot = false) {
+function spark(x: number, y: number, z: number, speed: number, hot = false, color?: THREE.Color, size = 0.07) {
   if (reducedMotion) return;
   emit({
     x,
@@ -455,10 +545,26 @@ function spark(x: number, y: number, z: number, speed: number, hot = false) {
     vy: 1.5 + Math.random() * speed * 0.5,
     vz: (Math.random() - 0.5) * speed,
     life: 0.2 + Math.random() * 0.25,
-    size: 0.07,
-    color: hot || Math.random() < 0.4 ? HOT : SPARK,
+    size,
+    color: color ? (Math.random() < 0.25 ? WHITE : color) : hot || Math.random() < 0.4 ? HOT : SPARK,
     gravity: 14,
     shrink: 0.5,
+  });
+}
+function splinter(x: number, y: number, z: number) {
+  if (reducedMotion) return;
+  emit({
+    x,
+    y,
+    z,
+    vx: fast.x * 0.3 + (Math.random() - 0.5) * 7,
+    vy: 3 + Math.random() * 5,
+    vz: fast.z * 0.3 + (Math.random() - 0.5) * 7,
+    life: 0.8 + Math.random() * 0.6,
+    size: 0.09 + Math.random() * 0.07,
+    color: PLANK,
+    gravity: 16,
+    drag: 0.4,
   });
 }
 const wp = new THREE.Vector3();
@@ -466,31 +572,108 @@ function wheelFx(dt: number) {
   const v = body.velocity;
   const speed = Math.hypot(v.x, v.z);
   if (!S.grounded) return;
+  // dust from the rear wheels: more, bigger and longer-lived with speed, trailing behind you from 12 m/s
+  const streak = clamp((speed - 12) / 6, 0, 1);
   for (const side of [-1, 1]) {
     toWorld(wp, side * TRACK, -WHEEL_R * 0.8, AXLE_Z);
-    if (speed > 3 && Math.random() < dt * speed * 1.6)
+    if (speed > 3 && Math.random() < dt * speed * (1.2 + speed * 0.12))
       emit({
         x: wp.x,
         y: wp.y,
         z: wp.z,
-        vx: -v.x * 0.15 + (Math.random() - 0.5),
+        vx: -v.x * (0.15 + 0.2 * streak) + (Math.random() - 0.5),
         vy: 0.4 + Math.random() * 0.8,
-        vz: -v.z * 0.15 + (Math.random() - 0.5),
-        life: 0.5 + Math.random() * 0.4,
-        size: 0.14,
+        vz: -v.z * (0.15 + 0.2 * streak) + (Math.random() - 0.5),
+        life: 0.5 + speed * 0.025 + Math.random() * 0.4,
+        size: 0.1 + speed * 0.012,
         alpha: 0.7,
         color: DUST,
         gravity: 2,
         drag: 2,
-        grow: [1, 2.5],
+        grow: [1, 2.5 + streak],
         fade: 0.6,
       });
-    // a charged drift (drifty) telegraphs with hot, thicker sparks: let go now (vehicles.md rule 4)
-    const charged = T.boostAfter > 0 && S.charge >= T.boostAfter;
-    if ((S.drifting || Math.abs(S.slip) > 3) && Math.abs(S.slip) > 1.5)
-      for (let k = 0; k < (charged ? 4 : 2); k++)
-        if (Math.random() < dt * 40) spark(wp.x, wp.y + 0.05, wp.z, 4, charged);
+    // sparks while the rear slides; drifting, their colour and count tell the charge: let go for a boost
+    if ((S.drifting || Math.abs(S.slip) > 3) && Math.abs(S.slip) > 1.5) {
+      const tier = S.drifting ? S.tier : 0;
+      for (let k = 0; k < [2, 2, 4, 6][tier]; k++)
+        if (Math.random() < dt * 40)
+          spark(wp.x, wp.y + 0.05, wp.z, 4, false, tier ? TIER[tier] : undefined, [0.07, 0.08, 0.14, 0.19][tier]);
+    }
+    // boosting: a jet of sparks out of the back
+    if (S.boostLeft > 0 && Math.random() < dt * 80) {
+      toWorld(wp, side * 0.4, 0.2, AXLE_Z + 0.5);
+      spark(wp.x, wp.y, wp.z, 3, false, TIER[S.boostTier], S.boostTier === 3 ? 0.22 : 0.16);
+    }
   }
+}
+
+// A wheel pops off in a crash and bounces away (cosmetic; back on when the cart goes back to the top).
+const loose = { wheel: null as THREE.Object3D | null, from: null as THREE.Object3D | null, v: new THREE.Vector3() };
+const out = new THREE.Vector3();
+function popWheel() {
+  fixWheel();
+  if (reducedMotion) return;
+  const from = mine.userData.wheels[2 + (Math.random() < 0.5 ? 0 : 1)]; // a rear one
+  mine.updateMatrixWorld(true);
+  const w = from.clone();
+  from.getWorldPosition(w.position);
+  from.getWorldQuaternion(w.quaternion);
+  from.visible = false;
+  scene.add(w);
+  out.set(from.position.x > 0 ? 1 : -1, 0, 0).applyQuaternion(pose.q); // away from the cart, sideways
+  loose.wheel = w;
+  loose.from = from;
+  loose.v.set(fast.x * 0.5 + out.x * 3, 5 + Math.random() * 2, fast.z * 0.5 + out.z * 3);
+}
+function fixWheel() {
+  if (loose.wheel) scene.remove(loose.wheel);
+  if (loose.from) loose.from.visible = true;
+  loose.wheel = loose.from = null;
+}
+function stepWheel(dt: number) {
+  const w = loose.wheel;
+  if (!w) return;
+  loose.v.y -= 20 * dt;
+  w.position.addScaledVector(loose.v, dt);
+  const g = groundHeight(w.position.x, w.position.z) + WHEEL_R * 0.8;
+  if (w.position.y < g) {
+    w.position.y = g;
+    if (loose.v.y < -1.5) {
+      loose.v.y *= -0.45;
+      loose.v.x *= 0.75;
+      loose.v.z *= 0.75;
+      puff(w.position.x, g - 0.2, w.position.z, 4, 2, DUST, 0.14);
+    } else {
+      loose.v.y = 0;
+      loose.v.x *= Math.exp(-dt * 2);
+      loose.v.z *= Math.exp(-dt * 2);
+    }
+  }
+  w.rotateX((-Math.hypot(loose.v.x, loose.v.z) / WHEEL_R) * dt);
+}
+
+// Camera shake from trauma (vehicle-feel.md 4): smooth value noise, one stream per axis, rotation only.
+const hash = (i: number) => {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1;
+};
+function noise(t: number, seed: number) {
+  const i = Math.floor(t),
+    f = t - i,
+    u = f * f * (3 - 2 * f);
+  return lerp(hash(i + seed * 101), hash(i + 1 + seed * 101), u);
+}
+const SHAKE = { yaw: 0.035, pitch: 0.035, roll: 0.0175, hz: 12 }; // 2°, 2°, 1° at full trauma
+function shakeCamera(dt: number, now: number) {
+  if (trauma <= 0) return;
+  trauma = Math.max(0, trauma - T.traumaDecay * dt);
+  if (reducedMotion || !me.entered) return;
+  const k = trauma * trauma,
+    t = (now / 1000) * SHAKE.hz;
+  camera.rotateY(SHAKE.yaw * k * noise(t, 1));
+  camera.rotateX(SHAKE.pitch * k * noise(t, 2));
+  camera.rotateZ(SHAKE.roll * k * noise(t, 3));
 }
 
 // ---------------------------------------------------------------- frame: seat, run, camera
@@ -535,21 +718,42 @@ onFrame(
   { phase: 'late', order: 1500 },
 );
 
-// The chase camera stays on this side of rocks and trunks: pulled in to just short of whatever is in the way.
+// The chase camera (vehicle-feel.md 4): aims ahead of the cart along its velocity (where it will be, Lonely Mountains),
+// leads its yaw into the steering (Nesky: turn where the player turns), keeps its distance nearly fixed (distance lag
+// is what hurts) and stays on this side of rocks and trunks, pulled in short of whatever is in the way.
 const camRay = { hit: rayHit() };
+const ahead = new THREE.Vector3(); // the smoothed look-ahead offset
+const aheadWant = new THREE.Vector3();
+const camFwd = new THREE.Vector3();
+const camFrom = new THREE.Vector3();
+let camLead = 0;
 camConstraints.push((look, pos) => {
   if (!S.seated) return false;
-  if (raycastClosest(look, pos, { mask: GROUP.SCENERY }, camRay.hit)) {
-    const d = look.distanceTo(pos);
-    pos.lerp(look, Math.min(1, (d - Math.max(1.2, camRay.hit.distance - 0.4)) / d));
+  camFrom.copy(look);
+  look.add(ahead);
+  const v = body.velocity;
+  const dist = T.camDist + T.camPull * clamp((Math.hypot(v.x, v.z) - 6) / 10, 0, 1);
+  pos.copy(look).addScaledVector(camForward(camFwd), -dist);
+  if (raycastClosest(camFrom, pos, { mask: GROUP.SCENERY }, camRay.hit)) {
+    const d = camFrom.distanceTo(pos);
+    pos.lerp(camFrom, Math.min(1, (d - Math.max(1.2, camRay.hit.distance - 0.4)) / d));
   }
-  return false;
+  pos.y = Math.max(pos.y, groundHeight(pos.x, pos.z) + 0.45);
+  return true;
 });
 onFrame(
   ({ dt, now }) => {
     if (S.seated && (!me.entered || !me.body)) S.seated = false;
+    if (S.hold && now >= S.hold) {
+      S.hold = 0;
+      getOut(true); // the hit-stop is over: fly
+    }
     if (S.mode === 'loose' && now - S.looseAt > T.returnAfter * 1000) backToTop();
     updatePose(dt);
+    stepWheel(dt);
+    const v = body.velocity;
+    const speed = Math.hypot(v.x, v.z);
+    rollSound(speed, S.grounded, S.seated && !S.hold);
     if (S.seated && me.body) {
       toWorld(seat, 0, SEAT.y, SEAT.z);
       teleport(me.body, seat.x, seat.y, seat.z);
@@ -557,26 +761,49 @@ onFrame(
       me.yaw = S.heading;
       me.coyote = 0.1;
       // hop out once stopped; moving, the same button is the handbrake
-      const v = body.velocity;
-      const speed = Math.hypot(v.x, v.z);
       if (me.jumpQueued > 0 && speed < 1) {
         me.jumpQueued = 0;
         getOut(false);
       }
-      if (S.seated) {
-        // the camera swings in behind where the cart is going (velocity when fast, so a drift shows from outside)
+      if (S.seated && !S.hold) {
+        // behind where the cart is going (velocity when fast, so a drift shows from outside), plus the lead
         const travel = speed > 3 ? Math.atan2(-v.x, -v.z) : S.heading;
-        cam.yaw = angleLerp(cam.yaw, travel, 1 - Math.exp(-dt * 3.2));
+        const base = angleLerp(cam.yaw - camLead, travel, 1 - Math.exp(-dt * 3.2));
+        const lead = speed > 3 && S.grounded ? -S.steer * T.camLead : 0;
+        camLead += (lead - camLead) * (1 - Math.exp(-dt / T.camLeadS));
+        cam.yaw = base + camLead;
         cam.pitch = lerp(cam.pitch, -0.33, 1 - Math.exp(-dt * 2));
+        const la = speed > 0.1 ? Math.min(T.lookAhead, T.lookAheadMax / speed) : 0;
+        aheadWant.set(v.x * la, 0, v.z * la);
+        ahead.lerp(aheadWant, 1 - Math.exp(-dt * 4));
         runHud.tick(body.position.x, body.position.z, physicsTime());
       }
       wheelFx(dt);
       if (S.boosted > 0) {
-        toWorld(wp, 0, 0, AXLE_Z + 0.4);
-        for (let k = 0; k < 18; k++) spark(wp.x, wp.y, wp.z, 6, true);
-        puff(wp.x, wp.y, wp.z, 8, 3, DUST, 0.18);
-        fovKick = 6;
+        const big = S.boosted === 3;
+        S.boostTier = S.boosted;
+        toWorld(wp, 0, 0.1, AXLE_Z + 0.4);
+        for (let k = 0; k < (big ? 40 : 24); k++)
+          spark(wp.x, wp.y, wp.z, big ? 9 : 7, false, TIER[S.boosted], big ? 0.2 : 0.15);
+        puff(wp.x, wp.y, wp.z, big ? 14 : 8, 4, TIER[S.boosted], big ? 0.4 : 0.3);
+        boostSound(big);
+        fovKick = big ? 9 : 5;
         S.boosted = 0;
+      }
+    } else {
+      ahead.set(0, 0, 0);
+      camLead = 0;
+      // thrown: the camera stays back and turns after you, so you see the flight and the landing
+      if (S.watchUntil && me.body) {
+        if (now < S.watchUntil) {
+          const bv = me.body.velocity;
+          if (Math.hypot(bv.x, bv.z) > 2)
+            cam.yaw = angleLerp(cam.yaw, Math.atan2(-bv.x, -bv.z), 1 - Math.exp(-dt * 2.5));
+          cam.pitch = lerp(cam.pitch, -0.4, 1 - Math.exp(-dt * 2));
+        } else {
+          cam.dist = S.camDist || 6.5;
+          S.watchUntil = 0;
+        }
       }
     }
     if (S.tumble > 0) S.tumble -= dt;
@@ -595,7 +822,7 @@ const mine = makeCart();
 scene.add(mine);
 const lastP = new THREE.Vector3().copy(body.position);
 onFrame(
-  ({ dt }) => {
+  ({ dt, now }) => {
     mine.position.copy(pose.p);
     mine.quaternion.copy(pose.q);
     const ip = body.interpolatedPosition;
@@ -609,14 +836,16 @@ onFrame(
       S.tumbleAngle += dt * 13;
       me.avatar.rotation.x += S.tumbleAngle;
     } else S.tumbleAngle = 0;
-    // a little more field of view with speed
+    // more field of view with speed and a kick for a boost, capped; it opens faster (4/s) than it closes (2/s)
     const v = body.velocity;
-    fovKick *= Math.exp(-dt * 3);
-    const want = S.seated ? baseFov + clamp((Math.hypot(v.x, v.z) - 6) * 0.6, 0, 9) + fovKick : baseFov;
+    if (S.boostLeft <= 0) fovKick *= Math.exp(-dt * 2);
+    const widen = clamp((Math.hypot(v.x, v.z) - 6) * T.fovPerMs, 0, T.fovMax);
+    const want = S.seated ? baseFov + Math.min(T.fovMax, widen + fovKick) : baseFov;
     if (Math.abs(camera.fov - want) > 0.05) {
-      camera.fov = lerp(camera.fov, want, 1 - Math.exp(-dt * 4));
+      camera.fov = lerp(camera.fov, want, 1 - Math.exp(-dt * (want > camera.fov ? 4 : 2)));
       camera.updateProjectionMatrix();
     }
+    shakeCamera(dt, now);
   },
   { phase: 'update', order: 25 },
 );
