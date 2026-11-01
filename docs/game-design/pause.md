@@ -8,7 +8,8 @@
   iPad with a pad connected the first press explains that fullscreen loses the shoulder buttons and triggers, WebKit
   bug 311151, and suggests Add to Home Screen, and the button then reads Fullscreen anyway) and
   Leave (press twice within 3 s; it reloads the page). The title is the room id. It opens on Esc (when the pointer
-  lock ends), H (on the Controls page), pad Menu and the corner menu button.
+  lock ends), H (on the Controls page), pad Menu and the corner menu button. Behind `?proto=arrive` (no lobby) the
+  Room page also has a You section: a name box and the colour swatches, saved as you type or tap.
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/glyphs.ts](../../src/player/glyphs.ts), [src/player/controls.ts](../../src/player/controls.ts).
