@@ -40,6 +40,10 @@ keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, wh
 
 Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its site.
 
+To try a different place without editing sites, `?layout=<name>` loads `dev/layouts/<name>.json` and moves POIs and
+the railway for that tab only (`layout.ts`; options and the layout lab: [docs/proposals/island-layout.md](../../docs/proposals/island-layout.md)).
+`node dev/layout/export.ts` writes the island as JSON for the lab.
+
 ## Rules
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
