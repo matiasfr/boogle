@@ -36,7 +36,14 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **The run:** seated on the start, the HUD shows "Ready". The clock starts once you have rolled 3 m and stops on the
   finish line, after which the cart brakes itself to a stop; your best time is kept in localStorage (`boogle.soapbox.best`) and shown
   beside it, with "New best!" when you beat it. A wipeout ends the run ("Wipeout!"); getting out ends it quietly. No
-  prize, no hat.
+  prize, no hat. Each finished run counts once on the prototype bar (`runs`).
+- **The ghost** (`src/proto/soapbox/ghost.ts`): your best run, replayed as a see-through pale blue cart on the next one
+  (Trackmania's ghost; [minigames research](../research/minigames-and-physics-minigames.md), shortlist #1). It waits on
+  the spot where the clock starts while you are Ready and goes when your clock does, so it is exactly where you were at
+  that time on your best run; it is gone once you finish (or a second after its own finish). At the finish a small
+  split under the time says how you did against it: green "−0.40 s" ahead, red "+0.40 s" behind. The pose (position,
+  rotation, front-wheel angle) is recorded at 20 Hz while the clock runs and kept in localStorage
+  (`boogle.soapbox.ghost`) whenever a run beats the saved ghost. Local only: nobody else sees it, it has no collider.
 - **Crashes are a show:** a hard hit (a palm trunk, a rock) freezes the cart, you and the camera for 70 ms (hit-stop;
   the physics runs on), shakes the camera, pops a rear wheel off to bounce away, splinters planks, and thumps; then you
   are thrown out: up 11 m/s, keeping 55% of the cart's speed and a sideways shove, flipping as you go. For 2.4 s the
@@ -51,7 +58,11 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **Camera:** it aims ahead of the cart along its velocity (0.3 s of it, at most 4 m: where the cart will be), turns
   with your steering (up to 0.25 rad, faded in over 0.3 s), swings in behind where the cart is going (so a drift shows
   from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); it pulls in short of any
-  rock or trunk between it and you. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
+  rock or trunk between it and you. Leafy crowns (palm fronds, broadleaf blobs) have no colliders, so the camera checks
+  the course's canopies as spheres (`canopies` in `src/render/props.ts`, kept 0.9 m clear): with one in the way it
+  first ducks down toward your head height (crowns are overhead, a lower camera often passes under them), then pulls
+  in short of what is still in the way, never closer than 3 m; it goes in at 8/s and back out at 3.5/s (ducking out
+  2.5/s), so a tree passing glides instead of popping. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
   +12° together; it opens at 4/s and closes at 2/s. **Shake** is trauma²: a landing from over 6 m/s of fall adds 0.25,
   a crash 0.6, and it decays 1.5 a second; rotation only (2° yaw and pitch, 1° roll at full trauma) from smooth noise
   at 12 Hz. Nothing shakes with reduced motion on.
@@ -101,7 +112,8 @@ their `soapbox` presence is set (`src/features/soapbox.ts`, the only part that r
 ## Look at it
 
 `BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.js --hud --warm 0.2 --seconds 13 --frames 16`
-(also `soapbox-drift.js` and `soapbox-crash.js`; each eval's header has its timing; add `&v=drifty` to the query for a
+(also `soapbox-drift.js`, `soapbox-crash.js` and `soapbox-ghost.js`, a first run that sets the ghost and a second
+beside it; each eval's header has its timing; add `&v=drifty` to the query for a
 variant). The pilot,
 `dev/look/evals/soapbox-pilot.ts`, drives through the real input.
 

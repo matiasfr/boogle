@@ -36,3 +36,18 @@
 .soapbox-run.is-best .soapbox-time {
   color: #ffe66b;
 }
+.soapbox-split {
+  margin-top: 2px;
+  font:
+    800 15px/1.2 Figtree,
+    system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #ffb3a8;
+}
+.soapbox-split.is-ahead {
+  color: #9dffb0;
+}
+.soapbox-split:empty {
+  display: none;
+}

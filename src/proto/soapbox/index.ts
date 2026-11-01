@@ -29,6 +29,7 @@ import {
 } from '../../physics/engine.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
+import { canopies, type Sphere } from '../../render/props.ts';
 import { me, cam, camConstraints, camForward } from '../../player/player.ts';
 import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
@@ -39,6 +40,7 @@ import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
 import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
+import { createGhost } from './ghost.ts';
 import { rollSound, chargeTick, boostSound, crashSound } from './sound.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
 
@@ -733,6 +735,53 @@ const aheadWant = new THREE.Vector3();
 const camFwd = new THREE.Vector3();
 const camFrom = new THREE.Vector3();
 let camLead = 0;
+let canopyD = 99, // the camera distance the canopies allow, eased (in fast, back out slowly)
+  canopyAt = 0,
+  duck = 0; // 0..1: how far the camera has dropped to pass under a crown
+const low = new THREE.Vector3();
+// The canopy spheres near the course (src/render/props.ts), gathered once the props exist.
+let nearCanopies: Sphere[] | null = null;
+function courseCanopies() {
+  if (nearCanopies || !canopies.length) return nearCanopies ?? [];
+  const off = (c: Sphere) => {
+    let best = Infinity;
+    for (let k = 0; k < LINE.length - 1; k++) {
+      const [ax, az] = LINE[k],
+        [bx, bz] = LINE[k + 1];
+      const lx = bx - ax,
+        lz = bz - az;
+      const u = clamp(((c.x - ax) * lx + (c.z - az) * lz) / (lx * lx + lz * lz), 0, 1);
+      best = Math.min(best, Math.hypot(c.x - ax - lx * u, c.z - az - lz * u) - c.r);
+    }
+    return best;
+  };
+  return (nearCanopies = canopies.filter((c) => off(c) < 16));
+}
+const CANOPY_PAD = 0.9; // m around each crown: the lens keeps this clear of leaves
+const CANOPY_MIN = 3; // m: never closer than this for a crown (a close-up hurts more than a leaf at the edge)
+// How far from `a` toward `b` (length `len`) the camera can go before a canopy; `len` (or more) when clear. A cart
+// under a crown's rim (`a` inside it) cannot be helped by pulling in, so that crown is skipped.
+function canopyGap(a: THREE.Vector3, b: THREE.Vector3, len: number) {
+  let gap = 99;
+  if (len < 1e-3) return gap;
+  const dx = (b.x - a.x) / len,
+    dy = (b.y - a.y) / len,
+    dz = (b.z - a.z) / len;
+  for (const c of courseCanopies()) {
+    const ox = a.x - c.x,
+      oy = a.y - c.y,
+      oz = a.z - c.z;
+    const r = c.r + CANOPY_PAD;
+    const cc = ox * ox + oy * oy + oz * oz - r * r;
+    if (cc < 0) continue;
+    const bb = ox * dx + oy * dy + oz * dz;
+    const disc = bb * bb - cc;
+    if (disc < 0 || bb > 0) continue;
+    const t = -bb - Math.sqrt(disc);
+    if (t < len) gap = Math.min(gap, Math.max(CANOPY_MIN, t));
+  }
+  return gap;
+}
 camConstraints.push((look, pos) => {
   if (!S.seated) return false;
   camFrom.copy(look);
@@ -744,6 +793,25 @@ camConstraints.push((look, pos) => {
     const d = camFrom.distanceTo(pos);
     pos.lerp(camFrom, Math.min(1, (d - Math.max(1.2, camRay.hit.distance - 0.4)) / d));
   }
+  // Leafy crowns have no colliders. With one in the way, the camera first ducks under it (crowns are overhead: a
+  // lower camera often clears them), then pulls in short of whatever is still in the way; both eased, so it glides as
+  // a tree passes instead of popping.
+  const t = performance.now();
+  const dt = Math.min(0.1, (t - canopyAt) / 1000);
+  canopyAt = t;
+  let d = camFrom.distanceTo(pos);
+  const high = canopyGap(camFrom, pos, d);
+  low.copy(pos);
+  low.y = Math.max(groundHeight(low.x, low.z) + 0.9, camFrom.y + 0.1);
+  let duckWant = 0;
+  if (high < d && low.y < pos.y - 0.3) duckWant = canopyGap(camFrom, low, camFrom.distanceTo(low)) > high + 0.5 ? 1 : 0;
+  duck = lerp(duck, duckWant, 1 - Math.exp(-dt * (duckWant > duck ? 8 : 2.5)));
+  pos.lerp(low, duck);
+  d = camFrom.distanceTo(pos);
+  const goal = Math.min(canopyGap(camFrom, pos, d), d);
+  canopyD = Math.min(canopyD, d);
+  canopyD = lerp(canopyD, goal, 1 - Math.exp(-dt * (goal < canopyD ? 8 : 3.5)));
+  if (canopyD < d) pos.lerp(camFrom, (d - canopyD) / d);
   pos.y = Math.max(pos.y, groundHeight(pos.x, pos.z) + 0.45);
   return true;
 });
@@ -821,9 +889,12 @@ onFrame(
 );
 
 // The run: from the start circle to the line at the path's foot. Lives in run-hud.ts; told where the cart is here.
+const ghost = createGhost();
 runHud.configure({
   started: (x, z) => flat(x, z, START.x, START.z) > START_GO,
   finished: crossedFinish,
+  begun: () => ghost.begin(),
+  done: (t) => ghost.finish(t),
 });
 
 // ---------------------------------------------------------------- meshes: my cart, gates, remote carts
@@ -839,6 +910,10 @@ onFrame(
     lastP.set(ip.x, ip.y, ip.z);
     S.wheel = S.mode === 'parked' ? 0 : S.wheel;
     poseCart(mine, S.wheel, d);
+    // your best run, on the run clock (recorded while it runs; shown seated, from Ready to a second past its finish)
+    const clock = S.seated ? runHud.clock(physicsTime()) : null;
+    if (clock !== null && runHud.state.state === 'running') ghost.record(clock, pose.p, pose.q, S.wheel);
+    ghost.show(clock, dt);
     if (S.seated && me.avatar) sit(me.avatar, pose.q);
     // thrown out: a flip on the way, after feel.ts's spring (order 20) has set the lean
     if (S.tumble > 0 && me.avatar) {
@@ -933,6 +1008,7 @@ window.__soapbox = {
   START,
   FINISH,
   LINE,
+  ghost,
   board,
   getOut,
   backToTop,
