@@ -7,6 +7,7 @@
 // Lockstep sites (read only, plus site.push), Local view, sounds and platform.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
+import { attribute, positionLocal, uniform } from 'three/tsl';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
 import { submitEdit } from '../world/sync.ts';
@@ -17,6 +18,7 @@ import { ROUTE } from '../sim/route.ts';
 import { PUSH_RUN_KIND, PUSH_TICKS } from '../sim/scripted-run.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { emit } from '../render/particles.ts';
+import { addPart, mergeParts } from '../render/props.ts';
 import { chuff, thump, clank, whistle } from '../render/machine-sfx.ts';
 import { angleLerp } from '../math.ts';
 import { BODY, addBody, createBody, physicsReady, stepAlpha, type Body } from '../physics/engine.ts';
@@ -46,20 +48,19 @@ const LINES = ROUTE.map((sec) => {
 });
 const sleepers = pieceMesh(LINES.reduce((t, l) => t + l.n, 0));
 const railMat = new THREE.MeshStandardNodeMaterial({ color: '#5c5f66', roughness: 0.45, metalness: 0.7 });
-const railGeo = new THREE.BoxGeometry(0.08, 0.08, 1);
-const railMeshes = ROUTE.map(() =>
-  [-0.45, 0.45].map((off) => {
-    const m = new THREE.Mesh(railGeo, railMat);
-    m.visible = false;
-    m.castShadow = true;
-    scene.add(m);
-    return { m, off };
-  }),
-);
+// Every section's two rails in one instanced draw (and one shadow draw), only the laid ones shown.
+const RAIL_OFF = [-0.45, 0.45];
+const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 1), railMat, ROUTE.length * 2);
+rails.count = 0;
+rails.visible = false;
+rails.frustumCulled = false;
+rails.castShadow = true;
+scene.add(rails);
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e3 = new THREE.Euler(),
   at = new THREE.Vector3(),
+  railScale = new THREE.Vector3(),
   sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4);
 // A point d metres along section s (past either end: straight on), on the ground.
 function along(s: number, d: number, out = at): THREE.Vector3 {
@@ -73,7 +74,18 @@ function along(s: number, d: number, out = at): THREE.Vector3 {
 // When each sleeper of the running section dropped (performance.now ms); 0 = it was down before we looked.
 const dropAt: number[][] = ROUTE.map(() => []);
 const landed: boolean[][] = ROUTE.map(() => []);
-let squash = 0; // the machine's bump when a sleeper lands, decays
+// The frame's changing numbers live on one object, not in module `let`s: V8 boxes a double stored in a module
+// variable (a fresh HeapNumber each write) but updates an object's double field in place.
+const st = {
+  squash: 0, // the machine's bump when a sleeper lands, decays
+  spin: 0, // the wheels' turn
+  prevYaw: 0, // the body's yaw before this physics step
+  travelled: 0, // m since the last chuff
+  sinceChuff: 0, // s since the last chuff
+  stillFor: 0, // s the laid length has stood still (the push run's sign)
+  lastD: 0,
+  lastNow: 0,
+};
 
 // Redrawn only while something changes: a laid length moves, or a sleeper is still falling or bouncing (until settled,
 // performance.now ms). An idle railway costs a comparison per section a frame.
@@ -88,7 +100,8 @@ function drawRailway(tick: number, now: number, live: boolean): void {
     laidWas[s] = d;
   }
   if (!moved && now > settled) return;
-  let c = 0;
+  let c = 0,
+    r = 0;
   for (let s = 0; s < ROUTE.length; s++) {
     const { len, yaw, n } = LINES[s];
     const d = Math.min(len, laidWas[s]);
@@ -127,16 +140,20 @@ function drawRailway(tick: number, now: number, live: boolean): void {
         break;
       }
     railTo = Math.min(len, d >= len - 0.01 ? len : railTo);
-    for (const { m, off } of railMeshes[s]) {
-      m.visible = railTo > 0.05;
-      if (!m.visible) continue;
+    if (railTo <= 0.05) continue;
+    q.setFromEuler(e3.set(0, yaw, 0));
+    railScale.set(1, 1, railTo);
+    for (let k = 0; k < 2; k++) {
+      const off = RAIL_OFF[k];
       along(s, railTo / 2);
-      m.position.set(at.x + Math.cos(yaw) * off, at.y + 0.16, at.z - Math.sin(yaw) * off);
-      m.rotation.set(0, yaw, 0);
-      m.scale.set(1, 1, Math.max(0.01, railTo));
+      at.set(at.x + Math.cos(yaw) * off, at.y + 0.16, at.z - Math.sin(yaw) * off);
+      rails.setMatrixAt(r++, m4.compose(at, q, railScale));
     }
   }
   commitPieces(sleepers, c);
+  rails.count = r;
+  rails.visible = r > 0;
+  rails.instanceMatrix.needsUpdate = true;
 }
 
 const DUST = new THREE.Color('#cdb48c'),
@@ -148,7 +165,7 @@ const DUST = new THREE.Color('#cdb48c'),
 function land(s: number, k: number): void {
   const p = along(s, (k + 0.5) * TUNE.step);
   thump(p.x, p.z);
-  squash = 1;
+  st.squash = 1;
   const { fx, fz } = LINES[s];
   for (let j = 0; j < 14; j++) {
     const a = (j / 14) * Math.PI * 2 + Math.random() * 0.3;
@@ -193,34 +210,96 @@ function land(s: number, k: number): void {
 }
 
 // ---------------------------------------------------------------- the machine
-const wood = new THREE.MeshStandardNodeMaterial({ color: '#9a6b3f', roughness: 0.9, flatShading: true });
-const paint = new THREE.MeshStandardNodeMaterial({ color: '#c8473a', roughness: 0.6, flatShading: true });
-const iron = new THREE.MeshStandardNodeMaterial({ color: '#34353b', roughness: 0.5, metalness: 0.5 });
-const brass = new THREE.MeshStandardNodeMaterial({ color: '#d9a441', roughness: 0.35, metalness: 0.8 });
+// Three draws (and three shadow draws): every part that doesn't move is one mesh, its finishes (colour, roughness,
+// metalness) per vertex and the boiler's and funnel's squash in its vertex shader; the six wheels are one instanced
+// mesh; the sleepers waiting on the deck another (the shared piece mesh).
+type Finish = { color: string; rough: number; metal: number; flat: boolean };
+const WOOD: Finish = { color: '#9a6b3f', rough: 0.9, metal: 0, flat: true };
+const PAINT: Finish = { color: '#c8473a', rough: 0.6, metal: 0, flat: true };
+const IRON: Finish = { color: '#34353b', rough: 0.5, metal: 0.5, flat: false };
+const BRASS: Finish = { color: '#d9a441', rough: 0.35, metal: 0.8, flat: false };
 const root = new THREE.Group(); // placed at the body
 const look = new THREE.Group(); // shudders and squashes inside it
 root.add(look);
 scene.add(root);
-function part(geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, parent = look) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(x, y, z);
-  m.castShadow = m.receiveShadow = true;
-  parent.add(m);
-  return m;
+
+const squashU = uniform(0); // the bump when a sleeper lands; the boiler and funnel swell with it
+const parts: THREE.BufferGeometry[] = [],
+  extras: { n: number; f: Finish; x: number; y: number; z: number; gain: number[] }[] = [];
+const NO_SQUASH = [0, 0, 0];
+// A part at (x, y, z), tipped rx about x; `gain`: how much it swells about its centre per unit of squash.
+function part(geo: THREE.BufferGeometry, f: Finish, x: number, y: number, z: number, rx = 0, gain = NO_SQUASH) {
+  let g = geo;
+  if (f.flat) {
+    g = geo.index ? geo.toNonIndexed() : geo;
+    g.computeVertexNormals(); // non-indexed: face normals, the flat-shaded look
+  }
+  addPart(parts, g, m4.makeRotationX(rx).setPosition(x, y, z), f.color);
+  extras.push({ n: parts[parts.length - 1].attributes.position.count, f, x, y, z, gain });
 }
-part(new THREE.BoxGeometry(M.hx * 2, M.hy * 2, M.hz * 2), wood, 0, 0, 0); // deck
-const wheels: THREE.Mesh[] = [];
-const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.14, 12).rotateZ(Math.PI / 2);
-for (const z of [-1.05, 0, 1.05]) for (const x of [-0.86, 0.86]) wheels.push(part(wheelGeo, iron, x, -0.25, z));
-const boiler = part(new THREE.CylinderGeometry(0.45, 0.45, 1.3, 14).rotateX(Math.PI / 2), paint, 0, 0.6, -0.75);
-part(new THREE.CylinderGeometry(0.47, 0.47, 0.08, 14).rotateX(Math.PI / 2), brass, 0, 0.6, -0.15); // a brass band
-const funnel = part(new THREE.CylinderGeometry(0.2, 0.13, 0.65, 10), iron, 0, 1.3, -1.05);
-part(new THREE.CylinderGeometry(0.27, 0.2, 0.12, 10), iron, 0, 1.66, -1.05); // its flared lip
-part(new THREE.BoxGeometry(1.5, 0.08, 0.08), brass, 0, 0.45, -M.hz - 0.12); // the push bar, across the back
-for (const x of [-0.6, 0.6]) part(new THREE.BoxGeometry(0.06, 0.3, 0.16), iron, x, 0.3, -M.hz - 0.04);
-const chute = part(new THREE.BoxGeometry(1.2, 0.05, 0.6), wood, 0, -0.05, M.hz + 0.22); // the sleeper chute, in front
-chute.rotation.x = 0.5;
-const load = pieceMesh(4); // sleepers waiting on the deck by the chute
+part(new THREE.BoxGeometry(M.hx * 2, M.hy * 2, M.hz * 2), WOOD, 0, 0, 0); // deck
+part(new THREE.CylinderGeometry(0.45, 0.45, 1.3, 14).rotateX(Math.PI / 2), PAINT, 0, 0.6, -0.75, 0, [0.03, 0.03, 0]); // boiler
+part(new THREE.CylinderGeometry(0.47, 0.47, 0.08, 14).rotateX(Math.PI / 2), BRASS, 0, 0.6, -0.15); // a brass band
+part(new THREE.CylinderGeometry(0.2, 0.13, 0.65, 10), IRON, 0, 1.3, -1.05, 0, [0.1, 0.15, 0.1]); // funnel
+part(new THREE.CylinderGeometry(0.27, 0.2, 0.12, 10), IRON, 0, 1.66, -1.05); // its flared lip
+part(new THREE.BoxGeometry(1.5, 0.08, 0.08), BRASS, 0, 0.45, -M.hz - 0.12); // the push bar, across the back
+for (const x of [-0.6, 0.6]) part(new THREE.BoxGeometry(0.06, 0.3, 0.16), IRON, x, 0.3, -M.hz - 0.04);
+part(new THREE.BoxGeometry(1.2, 0.05, 0.6), WOOD, 0, -0.05, M.hz + 0.22, 0.5); // the sleeper chute, in front
+const bodyGeo = mergeParts(parts);
+{
+  const total = bodyGeo.attributes.position.count;
+  const rm = new Float32Array(total * 2),
+    pivot = new Float32Array(total * 3),
+    gain = new Float32Array(total * 3);
+  let v = 0;
+  for (const { n, f, x, y, z, gain: g } of extras)
+    for (let k = 0; k < n; k++, v++) {
+      rm.set([f.rough, f.metal], v * 2);
+      pivot.set([x, y, z], v * 3);
+      gain.set(g, v * 3);
+    }
+  bodyGeo.setAttribute('rm', new THREE.BufferAttribute(rm, 2));
+  bodyGeo.setAttribute('pivot', new THREE.BufferAttribute(pivot, 3));
+  bodyGeo.setAttribute('gain', new THREE.BufferAttribute(gain, 3));
+  bodyGeo.computeBoundingSphere();
+}
+const bodyMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true });
+const rmA = attribute('rm', 'vec2'),
+  pivotA = attribute('pivot', 'vec3');
+bodyMat.roughnessNode = rmA.x;
+bodyMat.metalnessNode = rmA.y;
+bodyMat.positionNode = pivotA.add(positionLocal.sub(pivotA).mul(attribute('gain', 'vec3').mul(squashU).add(1)));
+const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+bodyMesh.castShadow = bodyMesh.receiveShadow = true;
+look.add(bodyMesh);
+
+const WHEELS = [-1.05, 0, 1.05].flatMap((z) => [-0.86, 0.86].map((x) => new THREE.Vector3(x, -0.25, z)));
+const iron = new THREE.MeshStandardNodeMaterial({ color: IRON.color, roughness: IRON.rough, metalness: IRON.metal });
+const wheels = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(0.25, 0.25, 0.14, 12).rotateZ(Math.PI / 2),
+  iron,
+  WHEELS.length,
+);
+wheels.castShadow = wheels.receiveShadow = true;
+look.add(wheels);
+const ONE = new THREE.Vector3(1, 1, 1);
+function spinWheels(): void {
+  q.setFromEuler(e3.set(st.spin, 0, 0));
+  for (let k = 0; k < WHEELS.length; k++) wheels.setMatrixAt(k, m4.compose(WHEELS[k], q, ONE));
+  wheels.instanceMatrix.needsUpdate = true;
+}
+spinWheels();
+wheels.computeBoundingSphere(); // spinning in place keeps it
+
+// Sleepers waiting on the deck by the chute, in the machine's frame: fewer as the section fills.
+const load = pieceMesh(4);
+look.add(load);
+for (let j = 0; j < 4; j++) {
+  q.setFromEuler(e3.set(0, Math.PI / 2, 0));
+  load.setMatrixAt(j, m4.compose(at.set(0, M.hy + 0.08 + j * 0.13, M.hz - 0.35), q, sleeperScale));
+  load.setColorAt(j, pieceColor(0));
+}
+let loadShown = -1;
 const FUNNEL_TOP = new THREE.Vector3(0, 1.75, -1.05);
 
 // The push prompt: a sign over the machine while the push run waits for a shove.
@@ -258,9 +337,11 @@ const sign = (() => {
 const PARK = M.hz + 1.6,
   START = M.front - M.hz,
   CLEAR = 0.5;
-let loco: Platform | null = null;
+let loco: Platform | null = null,
+  lookups = 0;
 function clearOfWagon(s: number, at: number): number {
-  loco ??= platformById('wagon:car0'); // src/proto/wagon/: car 0 is the loco, at the train's outbound end
+  // src/proto/wagon/: car 0 is the loco, at the train's outbound end (looked for twice a second until it turns up)
+  if (!loco && lookups++ % 30 === 0) loco = platformById('wagon:car0');
   if (!loco || loco.body.position.y < -20) return at; // no wagon, or none on the line yet (parked under the island)
   const { fx, fz } = LINES[s];
   const rx = loco.body.position.x - ROUTE[s].x,
@@ -303,13 +384,12 @@ function aim(tick: number): void {
 // The drawn pose chases the goal; the body follows the drawn pose (a kinematic platform, so riders are carried).
 const pose = { x: 0, y: 0, z: 0, yaw: 0, ready: false };
 let body: Body | null = null,
-  platform: Platform | null = null,
-  prevYaw = 0;
+  platform: Platform | null = null;
 function move(dt: number) {
   const b = body!;
-  prevYaw = yawOf(b.quaternion);
+  st.prevYaw = yawOf(b.quaternion);
   b.velocity.set((pose.x - b.position.x) / dt, (pose.y - b.position.y) / dt, (pose.z - b.position.z) / dt);
-  b.angularVelocity.set(0, (angleLerp(prevYaw, pose.yaw, 1) - prevYaw) / dt, 0);
+  b.angularVelocity.set(0, (angleLerp(st.prevYaw, pose.yaw, 1) - st.prevYaw) / dt, 0);
 }
 void physicsReady.then(() => {
   aim(sharedSeconds() * 10);
@@ -328,7 +408,7 @@ void physicsReady.then(() => {
     ],
   });
   addBody(body);
-  prevYaw = pose.yaw;
+  st.prevYaw = pose.yaw;
   platform = { body, hx: M.hx, hz: M.hz, top: M.hy, move };
   registerPlatform(platform);
 });
@@ -353,7 +433,7 @@ function push(now: number): void {
   if (now - lastPush < TUNE.pushMs) return;
   lastPush = now;
   submitEdit({ op: 'site.push', i: 0, j: 0, s: sites.open });
-  squash = Math.max(squash, 0.6); // a heave
+  st.squash = Math.max(st.squash, 0.6); // a heave
   for (let j = 0; j < 4; j++)
     emit({
       x: b.position.x + (Math.random() - 0.5) * 0.4,
@@ -374,12 +454,7 @@ function push(now: number): void {
 }
 
 // ---------------------------------------------------------------- the frame
-let lastName = '',
-  travelled = 0,
-  sinceChuff = 0,
-  stillFor = 0,
-  lastD = 0,
-  lastNow = 0;
+let lastName = '';
 const puffAt = new THREE.Vector3();
 function puff(heavy: number): void {
   puffAt.copy(FUNNEL_TOP);
@@ -413,7 +488,11 @@ onFrame(
     if (!pose.ready) return;
     // chase the goal; a big jump (a load, a reset) snaps
     const k = 1 - Math.exp(-dt * TUNE.follow);
-    if (Math.hypot(goal.x - pose.x, goal.z - pose.z) > 6) Object.assign(pose, { x: goal.x, y: goal.y, z: goal.z });
+    if (Math.hypot(goal.x - pose.x, goal.z - pose.z) > 6) {
+      pose.x = goal.x;
+      pose.y = goal.y;
+      pose.z = goal.z;
+    }
     const px = pose.x,
       pz = pose.z;
     pose.x += (goal.x - pose.x) * k;
@@ -424,9 +503,12 @@ onFrame(
     if (body) {
       const ip = body.interpolatedPosition;
       root.position.set(ip.x, ip.y, ip.z);
-      root.rotation.y = angleLerp(prevYaw, yawOf(body.quaternion), stepAlpha());
+      root.rotation.y = angleLerp(st.prevYaw, yawOf(body.quaternion), stepAlpha());
     }
-    for (const w of wheels) w.rotation.x += moved / 0.25;
+    if (moved > 0) {
+      st.spin = (st.spin + moved / 0.25) % (Math.PI * 2);
+      spinWheels();
+    }
     root.visible = !goal.gone;
 
     // phases: warm shudders and chuffs fast; lay chuffs by distance (a push run waiting puffs idly); whistle steams
@@ -439,21 +521,22 @@ onFrame(
       }
       lastName = goal.name;
     }
-    sinceChuff += dt;
-    travelled += moved;
+    st.sinceChuff += dt;
+    st.travelled += moved;
     const shudder = goal.name === 'warm' ? 0.035 : goal.name === 'lay' ? 0.01 : 0;
-    look.position.set((Math.random() - 0.5) * shudder, (Math.random() - 0.5) * shudder, 0);
+    if (shudder) look.position.set((Math.random() - 0.5) * shudder, (Math.random() - 0.5) * shudder, 0);
+    else if (look.position.x || look.position.y) look.position.set(0, 0, 0);
     let heavy = -1;
-    if (goal.name === 'warm' && sinceChuff > 0.22) heavy = 0.8;
-    else if (goal.name === 'lay' && travelled > TUNE.chuffEvery)
+    if (goal.name === 'warm' && st.sinceChuff > 0.22) heavy = 0.8;
+    else if (goal.name === 'lay' && st.travelled > TUNE.chuffEvery)
       heavy = rules.sites.kind() === PUSH_RUN_KIND ? 0.6 : 0.2;
-    else if (goal.name === 'lay' && sinceChuff > 1.6) heavy = 0;
+    else if (goal.name === 'lay' && st.sinceChuff > 1.6) heavy = 0;
     if (heavy >= 0) {
       puff(heavy);
-      sinceChuff = travelled = 0;
+      st.sinceChuff = st.travelled = 0;
     }
-    if (goal.name === 'whistle' && sinceChuff > 0.05) {
-      sinceChuff = 0;
+    if (goal.name === 'whistle' && st.sinceChuff > 0.05) {
+      st.sinceChuff = 0;
       puffAt.copy(FUNNEL_TOP);
       look.localToWorld(puffAt);
       emit({
@@ -472,29 +555,23 @@ onFrame(
         fade: 0.6,
       });
     }
-    squash = Math.max(0, squash - dt * 7);
-    look.scale.set(1 + squash * 0.04, 1 - squash * 0.07, 1 + squash * 0.03);
-    funnel.scale.set(1 + squash * 0.1, 1 + squash * 0.15, 1 + squash * 0.1);
-    boiler.scale.set(1 + squash * 0.03, 1 + squash * 0.03, 1);
+    if (st.squash > 0 || squashU.value !== 0) {
+      st.squash = Math.max(0, st.squash - dt * 7);
+      look.scale.set(1 + st.squash * 0.04, 1 - st.squash * 0.07, 1 + st.squash * 0.03);
+      squashU.value = st.squash; // a uniform's value is a boxed field: written only while it bumps
+    }
 
     // the sleepers waiting by the chute: fewer as the section fills
     const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s].len)) : 4;
-    for (let j = 0; j < left; j++) {
-      at.set(0, M.hy + 0.08 + j * 0.13, M.hz - 0.35);
-      look.localToWorld(at);
-      q.setFromEuler(e3.set(0, root.rotation.y + Math.PI / 2, 0));
-      load.setMatrixAt(j, m4.compose(at, q, sleeperScale));
-      load.setColorAt(j, pieceColor(0));
-    }
-    commitPieces(load, left);
+    if (left !== loadShown) commitPieces(load, (loadShown = left));
 
     // the push run: the sign while it waits, and this tab's pushes
     push(now);
     const d = goal.d;
-    stillFor = Math.abs(d - lastD) > 1e-4 ? 0 : stillFor + (now - lastNow) / 1000;
-    lastD = d;
-    lastNow = now;
-    sign.visible = rules.sites.kind() === PUSH_RUN_KIND && goal.name === 'lay' && stillFor > 0.8 && !pushing;
+    st.stillFor = Math.abs(d - st.lastD) > 1e-4 ? 0 : st.stillFor + (now - st.lastNow) / 1000;
+    st.lastD = d;
+    st.lastNow = now;
+    sign.visible = rules.sites.kind() === PUSH_RUN_KIND && goal.name === 'lay' && st.stillFor > 0.8 && !pushing;
     sign.position.y = 2.4 + Math.sin(now / 180) * 0.06;
   },
   { phase: 'update', order: 35 },

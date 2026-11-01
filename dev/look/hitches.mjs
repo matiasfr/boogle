@@ -336,7 +336,7 @@ try {
   );
   if (overBudget) process.exitCode = 1;
   if (jsonOut)
-    fs.writeFileSync(path.resolve(jsonOut), JSON.stringify({ gfx, frames: frames.length, hitches }, null, 1));
+    fs.writeFileSync(path.resolve(jsonOut), JSON.stringify({ gfx, frames: frames.length, hitches, hookAllocs }, null, 1));
   reportGfxErrors([g]);
 } catch (e) {
   console.error(e);

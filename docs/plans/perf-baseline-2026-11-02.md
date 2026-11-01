@@ -126,7 +126,9 @@ which matters on every device, not only the iPad:
    (wood, paint, iron, brass: 4 calls) or the wheels as one `InstancedMesh`, and consider `castShadow` on the deck and
    boiler only. That takes back most of the +35 draw calls. Its frame hook is also the largest allocator now
    (0.4 KB/frame of objects: the closure passed to `drawRailway` each frame, among others), worth a look in the
-   allocation-free hot path (`docs/plans/game-loop.md`, step 2).
+   allocation-free hot path (`docs/plans/game-loop.md`, step 2). **Done** (the follow-up PR): the static parts are one
+   mesh (finishes per vertex, the boiler and funnel squash in its vertex shader), the wheels and the rails one
+   `InstancedMesh` each; `perf` 164 -> 137 draw calls (shadow 59 -> 45), the hook 0.16 -> 0 KB/frame of objects.
 2. **Keep prototypes out of eager globs.** The era leak came from `src/features/pois.ts` loading every folder under
    `src/pois/`; a prototype that is a point of interest needs an exclusion there (done for `era`). A cheap guard: the
    `npm run perf` draw-call count on the normal game in the PR description of any prototype that touches `src/pois/`,
