@@ -103,12 +103,15 @@ const views = ROUTE.map((sec, s) => {
     scene.add(l.sprite);
     v.ringLabels.push(l);
   }
-  const y = groundHeight(sec.x, sec.z);
+  // The plaque stands off the line (beside the Helper ring, just past it), so the wagon runs clear of it.
+  const px = sec.x + 2.6,
+    pz = sec.z - 2.4;
+  const y = groundHeight(px, pz);
   const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.6, 0.14), postMat);
-  post.position.set(sec.x, y + 0.8, sec.z - 1.2);
+  post.position.set(px, y + 0.8, pz);
   scene.add(post);
   v.plaque.sprite.scale.set(2.6, 1.3, 1);
-  v.plaque.sprite.position.set(sec.x, y + 2.2, sec.z - 1.2);
+  v.plaque.sprite.position.set(px, y + 2.2, pz);
   scene.add(v.plaque.sprite);
   const h = ringAt(s, HELPER);
   v.hut.position.set(h.x + 1.9, groundHeight(h.x + 1.9, h.z) + 0.6, h.z);

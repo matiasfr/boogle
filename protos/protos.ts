@@ -64,6 +64,11 @@ export const PROTOS: Proto[] = [
         url: '/?room=proto-wagon&proto=wagon&v=lively',
         what: 'Rockier and bouncier over the joints, more smoke, a camera jolt per joint while riding.',
       },
+      {
+        name: 'fast',
+        url: '/?room=proto-wagon&proto=wagon&v=fast',
+        what: 'Lively at about double the speed (6.5 m/s, sets the room’s pace); jumping off slides you in a dust trail.',
+      },
     ],
   },
   {

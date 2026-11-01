@@ -9,6 +9,8 @@ import {
   createOpening,
   canOpen,
   startOpening,
+  resetOpening,
+  noteLaid,
   openingAt,
   openedAt,
   serializeOpening,
@@ -61,4 +63,21 @@ test('opening state round-trips with the same hash and rejects junk', () => {
   assert.equal(hashOpening(back), hashOpening(o));
   assert.notEqual(hashOpening(o), fresh);
   for (const junk of [null, {}, { t0: 1.5 }, { t0: -2 }, { t0: '3' }]) assert.throws(() => loadOpening(back, junk));
+});
+
+test("open.lay's note is saved only once used, round-trips, and resets with opening day", () => {
+  const o = createOpening();
+  const plain = { ...serializeOpening(o) };
+  assert.deepEqual(plain, { t0: -1 }, 'an untouched room saves as before');
+  const fresh = hashOpening(o);
+  noteLaid(o, 1, 900);
+  const back = createOpening();
+  loadOpening(back, JSON.parse(JSON.stringify(serializeOpening(o))));
+  assert.deepEqual(back.laid, [1, 900]);
+  assert.equal(hashOpening(back), hashOpening(o));
+  assert.notEqual(hashOpening(o), fresh);
+  resetOpening(o);
+  assert.equal(o.laid, null);
+  assert.equal(hashOpening(o), fresh);
+  for (const la of [[1], [1, -1], [1, 2.5], 'x']) assert.throws(() => loadOpening(back, { t0: -1, la }));
 });

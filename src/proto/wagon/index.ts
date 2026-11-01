@@ -23,34 +23,43 @@ import { onFrame } from '../../loop.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
-import { world, submitEdit, onApplied, TICK_MS } from '../../world/sync.ts';
+import { world, submitEdit, onApplied, worldStatus, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
-import { registerPlatform, yawOf, carry, type Platform } from '../../physics/platforms.ts';
-import { reducedMotion } from '../../constants.ts';
+import { registerPlatform, yawOf, carry, CARRY, type Platform } from '../../physics/platforms.ts';
+import { reducedMotion, PLAYER_R } from '../../constants.ts';
+import { me } from '../../player/player.ts';
 import { ROUTE } from '../../sim/route.ts';
-import { wagonAt, wagonCycle, type WagonState } from '../../sim/wagon.ts';
+import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
+import { paceIn } from '../../sim/tune.ts';
 import { MACHINE_RUN, lengthOf } from '../../sim/scripted-run.ts';
-import { wagonLook, LOCO, TRAILER, type CarSpec } from './look.ts';
+import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 
 const TPS = 1000 / TICK_MS;
-// Feel variants, `&v=calm` (default) or `&v=lively`, to compare in one sitting. Render and feel only: the timetable
-// (speed, stops) is wagonAt's and the same in both.
+// Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
+// is lively's feel at about double the speed, through the room's tuning (`wagonCruise`, `wagonAccel`: a proto- room
+// only, set for the whole room when the page loads; calm and lively put the default pace back).
 const VARIANTS = {
   calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, clack: 0.6, shake: 0 },
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, clack: 1.4, shake: 1 },
 };
-export const VARIANT = params.get('v') === 'lively' ? 'lively' : 'calm';
+const V = params.get('v');
+export const VARIANT = V === 'fast' ? 'fast' : V === 'lively' ? 'lively' : 'calm';
+const PACES: Record<typeof VARIANT, WagonPace> = {
+  calm: WAGON_PACE,
+  lively: WAGON_PACE,
+  fast: { cruise: 65, accel: 20 },
+};
 const FEEL = {
   bogie: 1.1, // m from a car's centre to each bogie (the heading is the chord between them)
   joint: 4.5, // m between rail joints: each bogie clacks and the car rocks as it crosses one
   whistleS: 1.2, // s before leaving a stop the whistle blows
   // rock: rad of roll kicked per joint at 3 m/s; bounce: m the car drops at a joint; puffs: chuffs per metre (plus a
   // slow idle chuff standing), puffSize their size; clack: its loudness; shake: the camera's jolt per joint, riding
-  ...VARIANTS[VARIANT],
+  ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT],
 };
 // Train order from the outbound end; offsets of car centres along the line from the timetable's point, metres.
 const CARS: { spec: CarSpec; off: number }[] = [
@@ -81,13 +90,16 @@ function lineAt(d: number, out: { x: number; z: number }) {
 // ---------------------------------------------------------------- how many sections the wagon runs on, and when
 // `?laid=N` (or the panel's +/-) fakes the count for this tab only: render and riding, never the world. PROTOTYPE.
 let fake = params.has('laid') ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0)) : -1;
-const seen = new Map<number, number>(); // section -> the tick this tab saw it laid without a machine run
+const seen = new Map<number, number>(); // section -> the tick it was faked in (this tab only)
 const RUN_TICKS = lengthOf(MACHINE_RUN);
 const { sites } = rules.sites;
-onApplied((e: { op: string }, tick: number) => {
-  if (e.op === 'tune.reset') seen.clear();
-  if (e.op === 'open.lay') for (let k = 0; k < ROUTE.length; k++) if (!seen.has(k)) seen.set(k, tick);
-});
+onApplied((e: { op: string }) => e.op === 'tune.reset' && seen.clear());
+const { opening } = rules.opening;
+const { tune } = rules.tune;
+// The room's pace (tuned in proto- rooms), and the timetable calls at it.
+let pace = WAGON_PACE;
+const at = (laid: number, tick: number, t0 = 0) => wagonAt(laid, tick, t0, pace);
+const cyc = (laid: number) => wagonCycle(laid, pace);
 // Fakes `n` laid sections from now on, in this tab only (a section faked in counts as laid at this tick).
 function fakeLaid(n: number) {
   const from = laidCount();
@@ -97,7 +109,9 @@ function fakeLaid(n: number) {
 const laidCount = () => (fake >= 0 ? fake : sites.open);
 const layTick = (k: number) => {
   const t0 = k < sites.open ? sites.list[k].t0 : -1;
-  return t0 >= 0 ? t0 + RUN_TICKS : (seen.get(k) ?? 0);
+  if (t0 >= 0) return t0 + RUN_TICKS; // laid by a machine run
+  if (opening.laid && k >= opening.laid[0] && k < sites.open) return opening.laid[1]; // by the open.lay shortcut
+  return seen.get(k) ?? 0; // faked in this tab, or laid before the shortcut kept its tick
 };
 
 type Seg = { from: number; laid: number; t0: number };
@@ -105,19 +119,19 @@ let segs: Seg[] = [],
   segsKey = '';
 // The start of the stop the wagon is standing at at tick t, or of the next one it reaches.
 function stopStart(laid: number, t0: number, t: number): number {
-  const cycle = wagonCycle(laid);
+  const cycle = cyc(laid);
   let a = Math.ceil(t);
-  if (wagonAt(laid, a, t0)!.stop >= 0) {
-    for (let n = 0; n < cycle && wagonAt(laid, a - 1, t0)!.stop >= 0; n++) a--;
-  } else for (let n = 0; n < cycle && wagonAt(laid, a, t0)!.stop < 0; n++) a++;
+  if (at(laid, a, t0)!.stop >= 0) {
+    for (let n = 0; n < cycle && at(laid, a - 1, t0)!.stop >= 0; n++) a--;
+  } else for (let n = 0; n < cycle && at(laid, a, t0)!.stop < 0; n++) a++;
   return a;
 }
 // The timetable phase in `laid` where the wagon stands at `stop`, having arrived going `arrived` (1 out, -1 back).
 function phaseOfStop(laid: number, stop: number, arrived: number): number {
   const leaves = arrived > 0 ? 1 : stop > 0 ? -1 : 1;
-  const cycle = wagonCycle(laid);
+  const cycle = cyc(laid);
   for (let p = 0; p < cycle; p++) {
-    const w = wagonAt(laid, p)!;
+    const w = at(laid, p)!;
     if (w.stop === stop && w.dir === leaves) return p;
   }
   return 0;
@@ -126,7 +140,8 @@ function phaseOfStop(laid: number, stop: number, arrived: number): number {
 function timeline(): Seg[] {
   const n = laidCount();
   const ticks = Array.from({ length: n }, (_, k) => layTick(k));
-  const key = n + ':' + ticks.join(',');
+  pace = paceIn(tune);
+  const key = n + ':' + ticks.join(',') + ':' + pace.cruise + ':' + pace.accel;
   if (key === segsKey) return segs;
   segsKey = key;
   segs = [];
@@ -138,16 +153,16 @@ function timeline(): Seg[] {
       segs.push({ from, laid: k + 1, t0: from }); // the first section: it starts standing at the first site
       continue;
     }
-    const at = stopStart(prev.laid, prev.t0, from);
-    const here = wagonAt(prev.laid, at, prev.t0)!;
-    const came = wagonAt(prev.laid, at - 1, prev.t0)!;
-    segs.push({ from: at, laid: k + 1, t0: at - phaseOfStop(k + 1, here.stop, came.dir) });
+    const t = stopStart(prev.laid, prev.t0, from);
+    const here = at(prev.laid, t, prev.t0)!;
+    const came = at(prev.laid, t - 1, prev.t0)!;
+    segs.push({ from: t, laid: k + 1, t0: t - phaseOfStop(k + 1, here.stop, came.dir) });
   }
   return segs;
 }
 function wagonNow(tick: number): WagonState | null {
   const list = timeline();
-  for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k].from) return wagonAt(list[k].laid, tick, list[k].t0);
+  for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k].from) return at(list[k].laid, tick, list[k].t0);
   return null;
 }
 
@@ -196,7 +211,17 @@ const cars: Car[] = CARS.map(({ spec, off }, k) => {
     material: groundMat,
     mask: NOT_SCENERY,
     position: { x: 0, y: -50, z: 0 },
-    shapes: [{ kind: 'box', hx: spec.hx, hy, hz: spec.hz }],
+    shapes: [
+      { kind: 'box', hx: spec.hx, hy, hz: spec.hz },
+      // The crates on the last flatbed (axis-aligned: close enough for a greybox); their tops are not a deck.
+      ...(k === CARS.length - 1 ? CRATES : []).map(({ x, z, sz, base }) => ({
+        kind: 'box' as const,
+        hx: sz / 2,
+        hy: sz / 2,
+        hz: sz / 2,
+        offset: { x, y: spec.top + base + sz / 2 - (BOTTOM + hy), z },
+      })),
+    ],
   });
   addBody(body);
   const mesh = new THREE.Group(),
@@ -411,6 +436,35 @@ onFrame(
   { phase: 'late', order: 122 },
 );
 
+// Jumping off at speed: the kept speed bleeds away in a slide with a dust trail, longer at the fast pace (a 6.5 m/s
+// landing slides about 4 m instead of 2), so leaving the wagon reads as a stunt rather than a stop.
+if (VARIANT === 'fast') CARRY.skid = 5;
+const dust = new THREE.Color('#c9b48a');
+onFrame(
+  ({ dt }) => {
+    const h = Math.hypot(carry.x, carry.z);
+    if (carry.on || !me.body || me.coyote <= 0 || h < 1.2) return;
+    const p = me.body.position;
+    for (let n = Math.random() < h * dt * 6 ? 1 + (h > 4 ? 1 : 0) : 0; n > 0; n--)
+      emit({
+        x: p.x + (Math.random() - 0.5) * 0.4,
+        y: p.y - PLAYER_R + 0.05,
+        z: p.z + (Math.random() - 0.5) * 0.4,
+        vx: -carry.x * 0.15 + (Math.random() - 0.5) * 0.6,
+        vy: 0.6 + Math.random() * 0.6,
+        vz: -carry.z * 0.15 + (Math.random() - 0.5) * 0.6,
+        life: 0.7 + Math.random() * 0.4,
+        size: 0.3,
+        color: dust,
+        alpha: 0.8,
+        drag: 2,
+        grow: [1, 2.4],
+        fade: 0.5,
+      });
+  },
+  { phase: 'update', order: 7 },
+);
+
 // ---------------------------------------------------------------- rails for a faked count (?laid=N): PROTOTYPE
 const ghostMat = new THREE.MeshStandardNodeMaterial({ color: '#7a6f66', roughness: 0.6, metalness: 0.4 });
 const RAIL_PIECE = 2; // m: ghost rails are short pieces, so they follow the ground
@@ -457,11 +511,22 @@ export function wagonPanel(protoRoom: boolean): void {
   const note = document.createElement('span');
   box.append(lay, reset, fakeRow, note);
   (document.querySelector('.hud') ?? document.body).append(box);
+  // The variant's pace, once the room's state is here: set for the whole room (proto- rooms only).
+  let paced = !protoRoom;
+  const want = PACES[VARIANT];
   onFrame(
     () => {
+      if (!paced && worldStatus().ready && world.tick > 0) {
+        paced = true;
+        if (tune.v.wagonCruise !== want.cruise)
+          submitEdit({ op: 'tune.set', i: 0, j: 0, key: 'wagonCruise', v: want.cruise });
+        if (tune.v.wagonAccel !== want.accel)
+          submitEdit({ op: 'tune.set', i: 0, j: 0, key: 'wagonAccel', v: want.accel });
+      }
       lay.disabled = !protoRoom || sites.open >= ROUTE.length;
       reset.disabled = !protoRoom;
-      note.textContent = protoRoom ? '' : 'Lay and Reset need ?room=proto-wagon';
+      const speed = `${VARIANT} · ${(tune.v.wagonCruise / 10).toFixed(1)} m/s`;
+      note.textContent = protoRoom ? speed : `${speed} · Lay, Reset and v=fast need ?room=proto-wagon`;
       fakeNote.textContent = fake >= 0 ? `fake laid: ${fake} (this tab only)` : `laid: ${sites.open}`;
       ghosts.forEach((g, k) => g.forEach((m) => (m.visible = fake > sites.open && k >= sites.open && k < fake)));
     },
@@ -479,6 +544,10 @@ window.__wagon = {
   },
   get clock() {
     return clock;
+  },
+  get pace() {
+    timeline();
+    return pace;
   },
   timeline,
   // Jump the shared clock so the timetable reads `phase` ticks into the current timetable now.
