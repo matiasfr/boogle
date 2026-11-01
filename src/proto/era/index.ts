@@ -4,8 +4,8 @@
 // opening day. A gathering call (./call.ts: signal smoke and a ring that shows the time left) runs until
 // everyone is at the platform or it runs out, then the bell counts down on everyone's screen, then the huts sink and
 // the era-2 blocks (tall stalls with smoking chimneys, a town hall with a clock tower, the water tower, bunting, a
-// marker where the wagon will run) pop up, rippling out from the court, while the sky, fog (./atmosphere.ts) and
-// ambience (./ambience.ts) cross over. One hut and the helper hut stay (heritage), and a before/after postcard of the
+// marker where the wagon will run) pop up, rippling out from the court, while the sky and fog (./atmosphere.ts) cross
+// over; the wood-age ambience (./ambience.ts) plays on. One hut and the helper hut stay (heritage), and a before/after postcard of the
 // court comes up (./postcard.ts). Blocks only: the kits are one data table (./blocks.ts) for the art pass to replace.
 // Serves DESIGN.md 7 (Telegraph everything: a call you see from anywhere, a countdown, then a change you read
 // from the court in one glance) and 9 (Leave something for the next visitor: the island stays changed, and keeps some
@@ -34,8 +34,8 @@ import { snapBefore, snapAfter, forgetPostcard } from './postcard.ts';
 const POP_S = 0.7; // one block's rise
 const RIPPLE_MPS = 28; // how fast the swap spreads out from the court (metres per second)
 const REACH = 4.5; // metres from the platform's centre where Start opening day is offered
-const CROSS_S = 4; // seconds the sky, fog and ambience take to cross over to the new era
-const AFTER_S = 4.5; // seconds after the swap starts that the "after" still is taken (the ripple and crossfade are done)
+const CROSS_S = 4; // seconds the sky and fog take to cross over to the new era
+const AFTER_S = 4.5; // seconds after the swap starts that the "after" still is taken (the ripple and sky change are done)
 const PUFFS_PER_S = 5; // per chimney
 
 const END = ROUTE[ROUTE.length - 1].to; // the platform: the far end of the route
