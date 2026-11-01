@@ -22,7 +22,7 @@ import { net } from '../../netplay/net.ts';
 import { outQuad, inOutSine } from '../../render/motion.ts';
 import { backSeam, myBundleNext, BUNDLE_SCALE } from '../../features/haul-stack.ts';
 import { squash } from './pickup-feel.ts';
-import { arrivalTick, burstChord } from './magnet-sound.ts';
+import { arrivalTick, burstChord, whooshIn } from './magnet-sound.ts';
 
 // ---------------------------------------------------------------- tuning (window.__magnet.T in the console)
 const T = {
@@ -105,6 +105,7 @@ onFly((from, n, spill) => {
   if (spill) behind += n;
   else waiting.push(burst);
   if (!drawn) return landRest(burst, n, 0, now);
+  if (!spill) whooshIn(drawn);
   const toMe = me.body ? Math.atan2(me.body.position.x - from.x, me.body.position.z - from.z) : 0;
   for (let m = 0; m < drawn; m++) {
     const p: Piece = {

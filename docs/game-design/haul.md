@@ -164,19 +164,20 @@ longer pours; without `v` the loop above is unchanged. Starting numbers from
 - **`v=magnet`** (`?room=proto-haul&proto=haul&v=magnet`): today's back bundle with Ratchet & Clank bolt pickups
   ([docs/research/ratchet-and-clank-feel.md](../research/ratchet-and-clank-feel.md), recs 1, 2 and 3). Asks: does
   collecting logs feel like collecting bolts? Walking pours as usual. A pile notices you from 3 m instead of 1.3
-  (`&reach=2.2` or `&reach=4` to compare; the host never checks reach). Each piece pauses 50-70 ms and lifts
-  0.3-0.5 m, then homes on the top of your bundle as you move (2 m/s, +60 m/s², up to 16 m/s, so it always catches a
-  sprint), bowing 0.6 m to alternate sides, spinning 2-3 turns a second until it settles into the bundle's lie, and
-  shrinking to the bundle's size; pieces leave 40 ms apart, at most 8 drawn. Each one that lands ticks: a short
-  wooden note a major pentatonic step higher each time from C5 for 10 steps (then the top two alternate), starting
-  over after 0.7 s with nothing landing, ±2% detune, panned to alternate sides; every 5th adds the low thock and a
-  pickup of 4 or more closes on a root-and-fifth chord. Undrawn pieces tick in 45 ms apart up to 12 ticks a pickup;
-  the rest are counted with the last. At most 6 tick voices; with `?proto=groove` they land on the beat and in the
-  chord. The chip's number and the logs on your back go up with each landing, then follow the host's count. Take
-  logs spills the bundle's 4 logs out in a fan toward you (up 4-4.5 m/s, out 1.5-2.5 m/s, tumbling), one bounce,
-  a puff of dust, 120-160 ms lying there, then the magnet takes them: about a second from E to the last tick. Same
-  ops as ever (`pile.take`, `src.take`); everything new is Local. Tuning: `window.__magnet.T`. Look evals:
-  `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
+  (`&reach=2.2` or `&reach=4` to compare; the host never checks reach). Each piece pauses 50-70 ms and lifts 0.3-0.5
+  m, then homes on the top of your bundle as you move (2 m/s, +60 m/s², up to 16 m/s, so it always catches a sprint),
+  bowing 0.6 m to alternate sides, spinning 2-3 turns a second until it settles into the bundle's lie, and shrinking
+  to the bundle's size; pieces leave 40 ms apart, at most 8 drawn, with a soft swell as they set off. Each one that
+  lands clinks like a bolt (mostly metal, a little wood; [collect-sounds.md](../research/collect-sounds.md)): a major
+  pentatonic step higher each time from C6 to C7, then a payout shimmer among the top three notes, starting over after
+  0.7 s with nothing landing, ±6 cents, panned to alternate sides; every 4th is accented and a pickup of 4 or more
+  closes on a cha-ching (C6, G6, C7 clinks 40 ms apart, E7 too after 10, a shimmer and a low knock). Undrawn pieces
+  tick in 45 ms apart up to 12 ticks a pickup; the rest are counted with the last. At most 8 tick voices; with
+  `?proto=groove` they land on the beat and in the chord. The chip's number and the logs on your back go up with each
+  landing, then follow the host's count. Take logs spills the bundle's 4 logs out in a fan toward you (up 4-4.5 m/s,
+  out 1.5-2.5 m/s, tumbling), one bounce, a puff of dust, 120-160 ms lying there, then the magnet takes them: about a
+  second from E to the last tick. Same ops as ever (`pile.take`, `src.take`); everything new is Local. Tuning:
+  `window.__magnet.T`. Look evals: `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
 
 Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
 then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`
@@ -184,10 +185,10 @@ from your stack, one that comes to rest anywhere else a `pile.drop` where it lie
 it). Until the host applies that, the logs are still on your stack, so a refused edit loses nothing. Tuning lives in
 `window.__barrow.T` and `window.__toss.TOSS`.
 
-With `?proto=haul` (any variant) every pickup also squashes your avatar 7% for 110 ms and knocks a wooden "thock" whose
-pitch rises with your load (rec 3), and the haul kit counts the chores of the open section in this tab: Take-logs
-presses, palms used, metres walked and seconds from your first take to the machine's start (rec 1: is the chore the
-gathering?). Copy values includes that line.
+With `?proto=haul` (any variant) every pickup also squashes your avatar 7% for 110 ms and knocks a wooden "thock" with
+a clink on top, a pentatonic step higher every 6 logs you carry (rec 3), and the haul kit counts the chores of the
+open section in this tab: Take-logs presses, palms used, metres walked and seconds from your first take to the
+machine's start (rec 1: is the chore the gathering?). Copy values includes that line.
 
 Code: [src/player/haul-variant.ts](../../src/player/haul-variant.ts) (the flag), [src/proto/haul/](../../src/proto/haul/index.ts)
 (`loose-logs.ts`, `barrow.ts`, `barrow-mesh.ts`, `toss.ts`, `pickup-feel.ts`, `wave.ts`, `wave-look.ts`, `wave-time.ts`), the chore counter in
