@@ -11,7 +11,7 @@ import { onFrame } from '../loop.ts';
 import { freezeStatic } from './instances.ts';
 import type { Body } from '../physics/engine.ts';
 
-type Sphere = { x: number; y: number; z: number; r: number };
+export type Sphere = { x: number; y: number; z: number; r: number };
 type Merge = (spheres: Sphere[]) => void;
 /** A footprint on the ground plane. */
 export type Obstacle = { x: number; z: number; r: number };
@@ -64,6 +64,9 @@ export const obstacles: Obstacle[] = [];
 // Home palms in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles], body }. Their
 // cells are the wood age's log spots (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
 export const trees: Tree[] = [];
+// Leafy crowns (palm fronds, broadleaf blobs) as rough spheres. They have no colliders (you walk under them), so a
+// chase camera that must not end up inside one reads this list (the soapbox prototype does).
+export const canopies: Sphere[] = [];
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
 let indexed = -1;
@@ -169,6 +172,7 @@ function addPalm(parts: THREE.BufferGeometry[], t: Tree, rng: () => number, merg
     addPart(parts, frondGeo, mm, k % 2 ? '#3f9b3a' : '#57b845');
   }
   t.top = top;
+  canopies.push({ x: top.x, y: top.y - 0.6, z: top.z, r: 2.3 }); // the fronds, out and drooping from the crown
   // `hang` is unused now, but its three draws stay: they feed the seeded layout, and later props would move without them.
   t.hang = [rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2];
   if (merge) merge(colliders);
@@ -193,6 +197,7 @@ function addBroadleaf(parts: THREE.BufferGeometry[], x: number, h: number, z: nu
       sc.set(r, r * 0.85, r),
     );
     addPart(parts, blobGeo, m, greens[k]);
+    canopies.push({ x: m.elements[12], y: m.elements[13], z: m.elements[14], r });
   }
   merge([
     { x, y: h + 0.4, z, r: 0.3 },

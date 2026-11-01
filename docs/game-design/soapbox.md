@@ -51,7 +51,11 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **Camera:** it aims ahead of the cart along its velocity (0.3 s of it, at most 4 m: where the cart will be), turns
   with your steering (up to 0.25 rad, faded in over 0.3 s), swings in behind where the cart is going (so a drift shows
   from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); it pulls in short of any
-  rock or trunk between it and you. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
+  rock or trunk between it and you. Leafy crowns (palm fronds, broadleaf blobs) have no colliders, so the camera checks
+  the course's canopies as spheres (`canopies` in `src/render/props.ts`, kept 0.9 m clear): with one in the way it
+  first ducks down toward your head height (crowns are overhead, a lower camera often passes under them), then pulls
+  in short of what is still in the way, never closer than 3 m; it goes in at 8/s and back out at 3.5/s (ducking out
+  2.5/s), so a tree passing glides instead of popping. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
   +12° together; it opens at 4/s and closes at 2/s. **Shake** is trauma²: a landing from over 6 m/s of fall adds 0.25,
   a crash 0.6, and it decays 1.5 a second; rotation only (2° yaw and pitch, 1° roll at full trauma) from smooth noise
   at 12 Hz. Nothing shakes with reduced motion on.
