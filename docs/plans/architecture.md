@@ -2,8 +2,10 @@
 
 > **Status: active (2026-10-31).** The one ordered checklist for moving Boogle toward a large, open world. Detail lives
 > in [game-loop.md](game-loop.md) (loop, pools, compute, workers, TypeScript) and [open-world.md](open-world.md)
-> (server, assets, chunks and LOD, the frame-loop baseline). Tick a box in the PR that finishes it. Every item is one or
-> a few PRs that each leave `main` green and ship with `npm run ship`.
+> (server, assets, chunks and LOD, the frame-loop baseline). A proposed re-ordering of phases 3-4 for Boogle 2.0
+> (multi-island world first) is in [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md), awaiting the owner.
+> Tick a box in the PR that finishes it. Every item is one or a few PRs that each leave `main` green and ship with
+> `npm run ship`.
 
 ## Assumptions until answered
 
