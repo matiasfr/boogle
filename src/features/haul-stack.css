@@ -2,7 +2,7 @@
 .haul-chip {
   position: fixed;
   left: 50%;
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(106px + env(safe-area-inset-bottom, 0px)); /* clear of the hotbar's name and note */
   transform: translateX(-50%);
   padding: 4px 12px;
   border-radius: 999px;
@@ -18,4 +18,70 @@
 }
 .haul-chip.on {
   opacity: 1;
+}
+
+/* ?proto=uisfx (src/render/ui-kit.css, docs/research/ui-patterns.md rec 3): a read-only status pill, so glass-shaped
+   with no drop shadow, in the wood token, play-size text and tabular numbers so the tick-up doesn't wobble. */
+.haul-chip.kit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  bottom: calc(122px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 15px 6px 9px;
+  background: color-mix(in srgb, var(--wood) 90%, transparent);
+  border: 1px solid var(--glass-line);
+  color: #fff3e0;
+  font: 700 var(--text-play) / 1.1 var(--font-body);
+  transform: translateX(-50%) translateY(6px);
+  transition:
+    opacity var(--dur-leave) var(--ease-out),
+    transform var(--dur-leave) var(--ease-out);
+}
+.haul-chip.kit.on {
+  transform: translateX(-50%);
+  transition:
+    opacity var(--dur-pop) var(--ease-out),
+    transform var(--dur-pop) var(--ease-pop);
+}
+.haul-chip.kit:not(.carrying) {
+  padding-left: 15px;
+}
+.haul-chip.kit:not(.carrying) .haul-ico {
+  display: none;
+}
+.haul-ico {
+  width: 24px;
+  height: 24px;
+  fill: #c98a4b;
+  stroke: #3a2210;
+  stroke-width: 1.4;
+}
+.haul-n {
+  display: inline-block;
+  min-width: 1.2em;
+  text-align: right;
+  font: 400 22px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.haul-n.ui-tick {
+  animation: ui-tick var(--dur-pop) var(--ease-pop);
+}
+.haul-tier:not(:empty) {
+  padding: 2px 9px;
+  margin-left: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 15px;
+}
+.haul-chip.kit.full {
+  background: color-mix(in srgb, var(--sun) 92%, transparent);
+  color: var(--ink);
+}
+.haul-chip.kit.full .haul-what::after {
+  content: ' · full';
+}
+@media (prefers-reduced-motion: reduce) {
+  .haul-n.ui-tick {
+    animation: none;
+  }
 }
