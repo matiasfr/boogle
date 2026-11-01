@@ -118,7 +118,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-build&proto=build',
     question: 'Is watching it go up satisfying?',
-    what: 'Press Pour 10 logs (top left) four times and watch the helper hut by the first work site go up.',
+    what: 'Press Pour 10 logs (top left) four times and watch the helper hut go up. New: a ghost of the hut, pieces flying in to a beat with a rising tune, and a scaffold you can kick over.',
     since: '2026-11-01',
   },
   {

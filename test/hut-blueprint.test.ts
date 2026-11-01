@@ -2,7 +2,7 @@
 // one only when the hut is built, and the stage follows the ring's stock.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HUT_BUILD, buildFraction, shows } from '../src/proto/build/blueprint.ts';
+import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows } from '../src/proto/build/blueprint.ts';
 
 test('pieces are listed in the order they appear, scaffold first, the last at completion', () => {
   HUT_BUILD.forEach((p, k) => k && assert.ok(p.at >= HUT_BUILD[k - 1].at, `piece ${k} out of order`));
@@ -18,4 +18,10 @@ test('the stage follows the stock: nothing when empty, more as it fills, everyth
   assert.ok(count(buildFraction(10, 36, false)) < count(buildFraction(30, 36, false)));
   assert.ok(count(buildFraction(35, 36, false)) < HUT_BUILD.length);
   assert.equal(count(buildFraction(0, 36, true)), HUT_BUILD.length);
+});
+
+test('the phases come in order: no piece goes back a phase', () => {
+  const ix = HUT_BUILD.map((p) => PHASES.indexOf(PHASE_OF[p.kind]));
+  ix.forEach((n, k) => assert.ok(n >= 0 && (k === 0 || n >= ix[k - 1]), `piece ${k} goes back a phase`));
+  assert.equal(ix.at(-1), PHASES.length - 1, 'the last piece tops out');
 });
