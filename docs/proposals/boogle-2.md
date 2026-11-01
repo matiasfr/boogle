@@ -7,6 +7,7 @@
 | What | Where |
 | --- | --- |
 | The interactive concept page: map by era, deep dive, venue paintings, the current round of questions | Boogle 2.0 artifact, https://claude.ai/artifact/JvHs1aHAiGyvZ61PF6ZgoG (private to the owner) |
+| Island layout lab: home and archipelago maps, layout options with pick buttons | https://claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT (private to the owner); options in [island-layout.md](island-layout.md) |
 | Earlier concept pages | "Boogle Grows Up" https://claude.ai/artifact/9iQwPsUqWHxzy5TLENNZwK, "Boogle Crossroads" https://claude.ai/artifact/DMWtrTw6N8vBjKREKYwLcC |
 | Painted concepts: 8 eras, the era-2 opening day, the mainland port, 13 venue close-ups | Branch `claude/concept-images`, `concepts/` (a scratch branch, never merged to `main`); prompts in `dev/concepts/` |
 | Build spec for eras 1–2 | [vertical-slice.md](vertical-slice.md) |
