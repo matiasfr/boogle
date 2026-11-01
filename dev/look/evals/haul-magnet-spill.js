@@ -11,8 +11,14 @@ const list = rules.sources.list();
 let id = -1,
   best = 1e9;
 list.forEach((p, k) => {
-  const d = Math.hypot(cellX(p.i) + 0.9 - 4, cellZ(p.j) + 0.4 - 10);
-  if (rules.sources.charges(k) > 0 && d < best) ((best = d), (id = k));
+  const x = cellX(p.i) + 0.9,
+    z = cellZ(p.j) + 0.4;
+  // the palm nearest the spawn that is clear of the first work site's rings (standing in one pours)
+  const clear = Math.hypot(x - 11, z - 6) > 7;
+  if (rules.sources.charges(k) > 0 && clear && Math.hypot(x - 4, z - 10) < best) {
+    best = Math.hypot(x - 4, z - 10);
+    id = k;
+  }
 });
 const p = list[id];
 const bx = cellX(p.i) + 0.9,
