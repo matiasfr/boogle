@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { onFrame } from '../loop.ts';
 import { clamp } from '../math.ts';
 import { emit } from '../render/particles.ts';
+import { springStep, damp, dampK, halfLifeOf, type Spring } from '../render/motion.ts';
 import { GROUP } from '../physics/physics.ts';
 import { onPreStep, raycastClosest, rayHit, getMask, type Body } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
@@ -32,14 +33,16 @@ const MOVE = {
   skidSpeed: 4, // m/s: braking faster than this kicks up dust
 };
 const SPRING = {
-  k: 260, // stiffness of the squash spring (1/s²)
-  damp: 14, // damping (1/s)
-  landK: 0.45, // squash-spring velocity per m/s of fall speed (a normal landing squashes ~15%)
-  takeoffK: 3, // stretch kick on takeoff
+  // The squash spring is integrated exactly (src/render/motion.ts), so it bounces the same at 20 fps as at 120. These
+  // four numbers reproduce the old Euler-stepped spring (k 260, damping 14, kicks 0.45 and 3) at 60 fps.
+  k: 298, // stiffness (1/s²): about 2.75 Hz
+  damp: 16, // damping (1/s): a damping ratio of about 0.46, so a landing bounces once
+  landK: 0.4, // squash-spring velocity per m/s of fall speed (a normal landing squashes ~15%)
+  takeoffK: 2.67, // stretch kick on takeoff
   maxSquash: 0.45,
   leanK: 0.022, // radians per m/s² of acceleration
   maxLean: 0.35,
-  leanEase: 12, // 1/s
+  leanEase: 12, // 1/s (a half-life of ln 2 / 12, about 58 ms)
 };
 const FLOP = {
   splatSpeed: 13.5, // m/s fall speed for a hard-landing splat
@@ -137,8 +140,7 @@ type SpringState = {
   vx: number;
   vy: number;
   vz: number;
-  sq: number;
-  sqv: number;
+  sq: Spring; // squash: x > 0 squashed, < 0 stretched
   lx: number;
   lz: number;
 };
@@ -146,7 +148,7 @@ const states = new WeakMap<THREE.Object3D, SpringState>();
 function stateOf(a: THREE.Object3D) {
   let s = states.get(a);
   if (!s) {
-    s = { px: a.position.x, py: a.position.y, pz: a.position.z, vx: 0, vy: 0, vz: 0, sq: 0, sqv: 0, lx: 0, lz: 0 };
+    s = { px: a.position.x, py: a.position.y, pz: a.position.z, vx: 0, vy: 0, vz: 0, sq: { x: 0, v: 0 }, lx: 0, lz: 0 };
     a.rotation.order = 'YXZ';
     states.set(a, s);
   }
@@ -155,7 +157,7 @@ function stateOf(a: THREE.Object3D) {
 
 function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | null | undefined, isMe: boolean) {
   const s = stateOf(a);
-  const k = 1 - Math.exp(-dt * 20); // smooth the velocity estimate (remote positions are interpolated)
+  const k = dampK(halfLifeOf(20), dt); // smooth the velocity estimate (remote positions are interpolated)
   const nvx = (a.position.x - s.px) / dt,
     nvy = (a.position.y - s.py) / dt,
     nvz = (a.position.z - s.pz) / dt;
@@ -171,23 +173,23 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
   s.pz = a.position.z;
   // landing and takeoff kicks
   if (prevVy < -3 && s.vy > -1) {
-    s.sqv += -prevVy * SPRING.landK;
+    s.sq.v += -prevVy * SPRING.landK;
     if (isMe && -prevVy > FLOP.splatSpeed) {
       startFlop('splat', FLOP.splatMs);
       puff(a.position.x, a.position.y - PLAYER_R, a.position.z, 14, 3);
     }
-  } else if (prevVy < 2 && s.vy > 4) s.sqv -= SPRING.takeoffK;
-  s.sqv += (-SPRING.k * s.sq - SPRING.damp * s.sqv) * dt;
-  s.sq = clamp(s.sq + s.sqv * dt, -SPRING.maxSquash, SPRING.maxSquash);
+  } else if (prevVy < 2 && s.vy > 4) s.sq.v -= SPRING.takeoffK;
+  springStep(s.sq, 0, SPRING.k, SPRING.damp, dt); // exact: the same bounce at any frame rate
+  s.sq.x = clamp(s.sq.x, -SPRING.maxSquash, SPRING.maxSquash);
   // lean toward acceleration, in the avatar's own frame (it faces -Z at yaw 0)
   const yaw = a.rotation.y;
   const fx = -Math.sin(yaw),
     fz = -Math.cos(yaw);
   const aF = ax * fx + az * fz,
     aS = ax * -fz + az * fx;
-  const e = 1 - Math.exp(-dt * SPRING.leanEase);
-  s.lx += (clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lx) * e;
-  s.lz += (clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean) - s.lz) * e;
+  const hl = halfLifeOf(SPRING.leanEase);
+  s.lx = damp(s.lx, clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean), hl, dt);
+  s.lz = damp(s.lz, clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean), hl, dt);
   // flops
   let fy = 1,
     fxz = 1,
@@ -204,8 +206,11 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
       fxz = 1 + 0.35 * u;
     } else wob = Math.sin(t * 32) * 0.3 * u;
   }
-  const sq = s.sq;
-  a.scale.set((1 + sq * 0.5) * fxz, (1 - sq) * fy, (1 + sq * 0.5) * fxz);
+  // Volume-preserving squash: height s, width 1/√s, so the body deforms rather than grows. The flops keep their own
+  // shapes on top.
+  const sy = 1 - s.sq.x,
+    sxz = 1 / Math.sqrt(sy);
+  a.scale.set(sxz * fxz, sy * fy, sxz * fxz);
   a.rotation.x = s.lx;
   a.rotation.z = s.lz + wob;
   // my own: bonk (a sprint stopped dead) and head-stomps from players landing on me

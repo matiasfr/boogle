@@ -160,12 +160,18 @@ sets are one table, [blocks.ts](../../src/pois/era/blocks.ts)). Lockstep state `
 ## Prototype: construction you can watch (?proto=build)
 
 Asks "is watching it go up satisfying?" with greybox boxes only. With `?proto=build` each site's helper hut builds
-up as its Helper ring fills, instead of appearing whole when the ring is full: scaffolding poles rise with the first
-logs, then sills, posts, top plates, wall planks (a doorway facing the ring), the ridge, four roof boards and the
-station sign's posts drop into place one after another, each with a thump and a puff of dust, as far as the ring's
-stock has reached. When the ring fills, the sign's board goes up last and the scaffolding tips over and goes. The
-stage is derived from the ring's lockstep stock, so every player sees the same pieces; the drops are drawn by each
-tab, and a late joiner or a reload sees the stage as it is, without the drops. The build is one data table (every
+up as its Helper ring fills, instead of appearing whole when the ring is full: a faint ghost of the whole hut shows
+from the first log, scaffolding poles rise, then sills, posts, top plates, wall planks (a doorway facing the ring), the
+ridge, four roof boards and the station sign go up one after another, as far as the ring's stock has reached. Pieces
+keep their own beat (0.38 s apart, down to 0.24 s while a long queue catches up) whatever the pour's speed, in five
+phases (ground, frame, walls, roof, topping out) with a 0.45 s pause between them. Most pieces fly in on an arc from
+the ring and settle with a springy overshoot (planks bounce, roof boards flap, the sign's board swings); posts drop
+in with a thud. Each landing puffs dust and plays a thump with a wooden knock that steps up a pentatonic scale
+through its phase (at most three sounds per site per 0.3 s); a phase's last piece resolves it with a chord and a
+wider ring of dust. When the ring fills, the sign's board goes up last and the scaffolding falls over as loose poles
+(Local physics) you can kick about for 6 s before they puff away. The stage is derived from the ring's lockstep
+stock, so every player sees the same pieces; the motion is drawn by each tab, and a late joiner or a reload sees the
+stage as it is, without the drops. Reduced motion places pieces without the flight or settle. The build is one data table (every
 piece with the stock fraction it appears at), shaped for a later "projects as data" system. In a `proto-` room
 (`?room=proto-build&proto=build`) a **Pour 10 logs** button (top left) takes logs from the bundles and pours ten
 into the open site's Helper ring with the usual ops (`src.take`, `site.stock`), so one tester builds a hut in four
@@ -187,7 +193,9 @@ section brings it out standing at the first site; each newly laid section extend
 reaches (no teleport). It stops 6 s at each site, cruises at 3 m/s, and shuttles back and forth push-pull (the loco
 stays at the lighthouse end). Every car is a kinematic platform (src/physics/platforms.ts): stand on a flatbed, or
 jump onto the boiler, and you're carried; jump off and you keep its speed. It chuffs with speed, rocks and clacks over
-rail joints every 4.5 m, and whistles just before leaving a stop. `&v=lively` (rockier, bouncier, more smoke, a
+rail joints every 4.5 m, and whistles just before leaving a stop. Its wheels turn with the distance covered, the
+loco's side rods, connecting rods and pistons follow its wheels, and the cars shuffle on a little buffer slack as it
+starts and stops (src/proto/wagon/look.ts). `&v=lively` (rockier, bouncier, more smoke, a
 camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
 6.5 m/s, through two room tunables (`wagonCruise` cm per tick, `wagonAccel` ticks to reach it; default 30 and 30, so
 other rooms are unchanged) that the page sets for the whole proto- room on load (calm and lively put the defaults back).

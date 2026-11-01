@@ -40,16 +40,18 @@ export default {
     // One pour up close: scaffold rises, the first pieces drop in.
     await g.eval(POUR);
     await g.waitFor(`${FILL}.then((n) => n >= 10)`, { timeout: 20000 });
-    const one = await g.motion('first-pour', { frames: 8, seconds: 2.4 });
+    const one = await g.motion('first-pour', { frames: 12, seconds: 3.6 });
     t.check('motion: the first pour', true, one.sheet);
 
     // The rest, three more presses, all queued at once.
     await g.eval(POUR + POUR + POUR);
-    const m = await g.motion('whole-build', { frames: 16, seconds: 14 });
+    const m = await g.motion('whole-build', { frames: 20, seconds: 19 });
     t.check('motion: the rest of the build', true, m.sheet);
     const built = await g.waitFor(`${FILL}.then((n) => n === 'built')`, { timeout: 30000 });
     t.check('four pours build the hut', built >= 0);
-    await t.sleep(2500); // the scaffold comes down
+    const fall = await g.motion('scaffold-falls', { frames: 8, seconds: 4 });
+    t.check('motion: the scaffold falls', true, fall.sheet);
+    await t.sleep(4000); // the loose poles go
     const after = await g.still('built');
     t.check('still: the built hut', true, after);
     t.check('no page errors', !g.errors.length, g.errors.slice(0, 3).join(' | '));

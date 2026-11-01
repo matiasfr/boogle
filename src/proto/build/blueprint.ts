@@ -119,6 +119,21 @@ export const HUT_BUILD: Piece[] = [
   { ...signBoard, at: 1 },
 ];
 
+/** The build's named phases, in order (construction research rec 4): each boundary gets a beat in the view. */
+export const PHASES = ['ground', 'frame', 'walls', 'roof', 'topping out'] as const;
+export type Phase = (typeof PHASES)[number];
+export const PHASE_OF: Record<Piece['kind'], Phase> = {
+  scaffold: 'ground',
+  sill: 'ground',
+  post: 'frame',
+  plate: 'frame',
+  plank: 'walls',
+  ridge: 'roof',
+  roof: 'roof',
+  sign: 'topping out',
+  board: 'topping out',
+};
+
 /** How far along a build is: the ring's stock over its cost, or 1 once it is built. */
 export const buildFraction = (stock: number, cost: number, built: boolean): number =>
   built ? 1 : cost > 0 ? Math.min(1, Math.max(0, stock / cost)) : 0;
