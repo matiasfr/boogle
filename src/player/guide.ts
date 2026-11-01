@@ -11,7 +11,7 @@ import './guide.css';
 import { GROUPS, listControls, type ControlRow } from './controls.ts';
 
 export type GuideKind = 'kbm' | 'pad' | 'touch';
-import { keyGlyph, padGlyph } from './glyphs.ts';
+import { keyGlyph, padGlyph, padDetail } from './glyphs.ts';
 
 const slotsOf = (c: ControlRow) => [c.pad].flat().filter((p): p is string => !!p);
 const has = {
@@ -30,8 +30,11 @@ function glyphCell(kind: GuideKind, c: ControlRow) {
   return `<span class="g-touch">${c.touch!.replace(/[&<]/g, '')}</span>`;
 }
 
-const detailFor = (c: ControlRow, kind: GuideKind) =>
-  (typeof c.detail === 'object' && c.detail ? c.detail[kind] : c.detail) ?? '';
+// A pad detail may name buttons as {x} or {confirm}: they print as the pad in use calls them.
+const detailFor = (c: ControlRow, kind: GuideKind) => {
+  const d = (typeof c.detail === 'object' && c.detail ? c.detail[kind] : c.detail) ?? '';
+  return kind === 'pad' ? padDetail(d) : d;
+};
 
 function rowFor(kind: GuideKind, c: ControlRow) {
   const row = document.createElement('div');

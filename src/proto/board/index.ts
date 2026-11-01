@@ -22,6 +22,7 @@ import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { registerInteractable, type Interactable } from '../../player/hands.ts';
 import { openModal, closeModal } from '../../player/modal.ts';
+import { menuSlot } from '../../player/controls.ts';
 import { requestLock } from '../../player/input.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { me, cam } from '../../player/player.ts';
@@ -619,8 +620,8 @@ function onKey(e: KeyboardEvent) {
 function onPad(slot: string) {
   if (slot === 'up') move(-1);
   else if (slot === 'down') move(1);
-  else if (slot === 'a') (document.activeElement as HTMLElement | null)?.click();
-  else if (slot === 'b') closePicker();
+  else if (slot === menuSlot('confirm')) (document.activeElement as HTMLElement | null)?.click();
+  else if (slot === menuSlot('back')) closePicker();
 }
 
 // ---------------------------------------------------------------- interact on a sign

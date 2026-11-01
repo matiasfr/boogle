@@ -9,6 +9,7 @@
 //             that everything is there
 import './files-dialog.css';
 import { openModal, closeModal } from '../player/modal.ts';
+import { menuSlot } from '../player/controls.ts';
 import { directLink, fetchLinkedFile } from './link.ts';
 
 export type Need = { label: string; done?: boolean };
@@ -149,6 +150,6 @@ function onKey(e: KeyboardEvent) {
 }
 
 function onPad(slot: string) {
-  if (slot === 'b') closeFilesDialog();
-  else if (slot === 'a') pick();
+  if (slot === menuSlot('back')) closeFilesDialog();
+  else if (slot === menuSlot('confirm')) pick();
 }
