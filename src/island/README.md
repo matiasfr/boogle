@@ -8,11 +8,11 @@ without touching anything else on the island.
 | Natural shape | `shape.js` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
 | Stamps | `stamps.js` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
 | Sites | `src/pois/<name>/site.js` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
-| Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.js`. |
+| Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.ts`. |
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
-(`ground.js`). `src/adapters/terrain.js` builds the heightfield and the mesh from it; `src/render/props.js`
+(`ground.js`). `src/adapters/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
@@ -34,7 +34,7 @@ keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, wh
 
 2. `src/pois/<name>/index.js` builds the content in `onStart` (after the terrain and props exist), using
    `groundHeight`, `siteFrame(site)` from `stamps.js` for local-to-world placement, and `addPart`/`mergeParts` from
-   `src/render/props.js` to merge small parts into one draw call.
+   `src/render/props.ts` to merge small parts into one draw call.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 
@@ -59,15 +59,15 @@ Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its
 The heightfield has no holes or overhangs, so `src/pois/caves/` is its own little world below it, plugged in through
 a few hooks anyone can reuse:
 
-- `setTerrainHoles` (`src/adapters/terrain.js`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
+- `setTerrainHoles` (`src/adapters/terrain.ts`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
   hillside. Visual only.
-- Collision groups (`GROUP` in `src/physics/physics.js`): the ground and surface scenery are `SCENERY`, the cave's colliders
+- Collision groups (`GROUP` in `src/physics/physics.ts`): the ground and surface scenery are `SCENERY`, the cave's colliders
   `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.
   Bodies moved by code (remote players, the Boogler, windmill sails) use `NOT_SCENERY` and skip static stuff entirely.
-- `groundProbe.under` (`src/physics/physics.js`): the floor under a point, for code that would otherwise read the terrain.
+- `groundProbe.under` (`src/physics/physics.ts`): the floor under a point, for code that would otherwise read the terrain.
 - `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
   (which puts bodies under the terrain back on top) leaves that area to your own safety net.
-- `camConstraints` (`src/player/player.js`): keep the camera somewhere special (inside the tunnels).
-- `atmosphere.underground` (`src/render/sky.js`): 0..1, dims the sky light and closes the fog in.
+- `camConstraints` (`src/player/player.ts`): keep the camera somewhere special (inside the tunnels).
+- `atmosphere.underground` (`src/render/sky.ts`): 0..1, dims the sky light and closes the fog in.
 
 `npm run scenario -- caves` walks through them, throws the ball about and floats it on the pond.

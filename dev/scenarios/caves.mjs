@@ -1,11 +1,11 @@
 // The caves: walk in at the south mouth, through the hub and the mine, out of the east mouth; balls thrown hard stay
 // inside; the ball floats on the underground pond. Physics is stepped directly in the page (fast and repeatable).
 const STEP_ROUTE = `
-  const { GROUP } = await import('/src/physics/physics.js');
+  const { GROUP } = await import('/src/physics/physics.ts');
   const { stepFixed, getMask } = await import('/src/physics/engine.ts');
-  const { SEGMENTS } = await import('/src/pois/caves/network.js');
-  const { caveSd } = await import('/src/pois/caves/mesh.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { SEGMENTS } = await import('/src/pois/caves/network.ts');
+  const { caveSd } = await import('/src/pois/caves/mesh.ts');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { me } = window.boogle;
   const seg = (a, b) => SEGMENTS.find((s) => s.from === a && s.to === b).pts.map((p) => [p.x, p.z]);
   const route = [[-31.5, -70.6], ...seg('south', 'hub').slice(0, -1), [-49, -89.5], ...seg('hub', 'mine').slice(1, -1),
@@ -34,10 +34,10 @@ const STEP_ROUTE = `
 
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const { ball, claimBall } = await import('/src/physics/ball.js');
-  const { caveSd } = await import('/src/pois/caves/mesh.js');
-  const { NODES, POND } = await import('/src/pois/caves/network.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { ball, claimBall } = await import('/src/physics/ball.ts');
+  const { caveSd } = await import('/src/pois/caves/mesh.ts');
+  const { NODES, POND } = await import('/src/pois/caves/network.ts');
   claimBall(false);
   const bb = ball.body, ends = [];
   for (let n = 0; n < 8; n++) {
@@ -66,13 +66,13 @@ export default {
   about: 'walk through the caves; thrown balls stay inside; the ball floats on the pond',
   async run(t) {
     const g = await t.open({ name: 'caver', size: [480, 300] });
-    const ready = await g.waitFor(`(async () => (await import('/src/pois/caves/index.js')).cavesReady())()`, {
+    const ready = await g.waitFor(`(async () => (await import('/src/pois/caves/index.ts')).cavesReady())()`, {
       timeout: 60000,
     });
     t.check('the caves are built in the background', ready >= 0, ready + ' ms');
     const rooms = await g.eval(`
-      const { inCave } = await import('/src/pois/caves/index.js');
-      const { NODES } = await import('/src/pois/caves/network.js');
+      const { inCave } = await import('/src/pois/caves/index.ts');
+      const { NODES } = await import('/src/pois/caves/network.ts');
       const out = [];
       for (const [id, n] of Object.entries(NODES)) {
         if (n.kind === 'mouth') continue;

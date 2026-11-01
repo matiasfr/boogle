@@ -11,7 +11,7 @@
 WebGPU where the browser has it, three's own WebGL 2 backend elsewhere. Every custom shader (sea, sky, moon, lighthouse
 beam, terrain cave-mouth holes, cave ambient and bricks, fish wiggle, guest atlas) is a node material written in TSL.
 Sized points (particles, fireflies, the throw preview) are instanced sprites, since WebGPU has no point size. Item icons
-read back with `readRenderTargetPixelsAsync`. Adaptive resolution (`src/features/adaptive-res.js`) and the backend in
+read back with `readRenderTargetPixelsAsync`. Adaptive resolution (`src/features/adaptive-res.ts`) and the backend in
 the telemetry connect report came with it. Lint bans the WebGL-only APIs in `src/` (`eslint.config.js`, `GL_ONLY`).
 
 **Key decisions** (the owner's, 30 October 2026):

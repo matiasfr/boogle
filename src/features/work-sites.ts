@@ -6,13 +6,13 @@
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.js';
-import { scene } from '../render/scene.js';
+import { onFrame } from '../loop.ts';
+import { scene } from '../render/scene.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
-import { registerInteractable } from '../player/hands.js';
-import { groundHeight } from '../adapters/terrain.js';
-import { me } from '../player/player.js';
+import { registerInteractable } from '../player/hands.ts';
+import { groundHeight } from '../adapters/terrain.ts';
+import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt, costOf } from '../sim/route.ts';
 import { materialOf, MATERIALS } from '../sim/materials.ts';
@@ -55,7 +55,7 @@ function label(w = 512, h = 128): Label {
   tex.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
   sprite.renderOrder = 10;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d')!;
   if (!g) throw new Error('work-sites: no 2D canvas');
   return { c, g, tex, sprite, text: '' };
 }

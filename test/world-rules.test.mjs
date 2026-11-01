@@ -10,7 +10,7 @@ import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.ts';
 
-const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank']; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['mushrooms', 'gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -28,12 +28,11 @@ const SCRIPTS = {
     { op: 'mush.water', i: 228, j: 200 },
   ],
   gifts: () => [
-    { op: 'fruit.drop', i: 175, j: 200, t: 0, d: 2 },
+    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('can'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     ({ rules }) => {
-      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.FRUIT);
+      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS);
       return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
     },
-    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('mango'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
@@ -46,6 +45,7 @@ const SCRIPTS = {
   ],
   sources: () => [{ op: 'src.take', i: 175, j: 200, id: 0 }],
   bank: () => [{ op: 'bank.wake', i: 0, j: 0, ms: 3600000 }], // what a host that loaded an hour-old save measures
+  ball: () => [{ op: 'ball.rest', i: 0, j: 0, x: 1200, y: 150, z: 2000 }],
   sites: () => [
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 0, n: 2 },
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },

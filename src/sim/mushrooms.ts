@@ -1,6 +1,6 @@
 // Mushroom garden: buried seeds that grow into bouncy mushrooms once watered. Pure and integer-only (see
 // src/world/README.md), so it runs the same on every client and in Node tests. Seeds go in anywhere; the game layer
-// (src/adapters/mushroom-garden.js) refuses water, rocks and trees before an edit reaches this state.
+// (src/adapters/mushroom-garden.ts) refuses water, rocks and trees before an edit reaches this state.
 
 // The seed stall's dirt patch in heightfield cells: i in [I0, I0 + W), j in [J0, J0 + H). Kept clear of trees;
 // mushrooms grow there or anywhere else.
@@ -63,8 +63,7 @@ export function serializeGarden(garden: Garden): GardenJSON {
   return { v: 2, p: garden.plots.flatMap((p) => [p.i, p.j, p.g]) };
 }
 
-// Reads the { v: 2, p } form; anything else (such as the bare arrays saved on the 129-cell island before 2026-10-29)
-// loads as an empty garden.
+// Reads the { v: 2, p } form; anything else loads as an empty garden.
 export function loadGarden(garden: Garden, json: unknown) {
   garden.plots = [];
   const j2 = json as Partial<GardenJSON> | null | undefined;

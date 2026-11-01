@@ -14,7 +14,7 @@ export default {
     const [host, client] = hostA ? [A, B] : [B, A];
 
     // Distance between what the latest presence from the other tab says and where this tab draws it.
-    const gap = `const { boogler } = await import('/src/boogler/boogler.js');
+    const gap = `const { boogler } = await import('/src/boogler/boogler.ts');
       const b = window.boogle;
       const other = b.net.room.peers().find((p) => !p.sameTab);
       const pr = other?.presence || {};

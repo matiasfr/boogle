@@ -19,7 +19,7 @@ Four files, nothing else edited:
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
    If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
-   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.js`.
+   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.ts`.
 
 Run `npm run check:full`. Notes:
 
@@ -31,8 +31,8 @@ Run `npm run check:full`. Notes:
 - An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
   the state, never a per-peer one.
 - Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
-  `GIFTS` in `src/sim/gift-catalog.ts` (append only: ground items store its index; it also needs The Boogler's `taste` and `line`), and what using it does is a case
-  in `useDown` in `src/player/hands.js`.
+  `GIFTS` in `src/sim/gift-catalog.ts` (ground items store its index: reorder only with a `WORLD_NS` bump; it also needs The Boogler's `taste` and `line`), and what using it does is a case
+  in `useDown` in `src/player/hands.ts`.
 
 ## Contract
 
@@ -61,7 +61,7 @@ Rules:
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
   `migrate[v]` step for older saves
-  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v01.json` is one, checked by
+  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v02.json` is one, checked by
   `test/world-snapshots.test.mjs`).
 
 ## Edit generators and invariants
@@ -99,7 +99,7 @@ op names.
 
 | Key | Set by | Server | Used by |
 |---|---|---|---|
-| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.js` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
+| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.ts` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
 `server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.
@@ -134,13 +134,14 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | Module | Ops | State | API |
 |---|---|---|---|
 | `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
-| `gifts.js` | `fruit.drop`, `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: palms, thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
+| `gifts.js` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
 | `roster.ts` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.ts` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.ts`); `drop` returns `{ placed, ids }` |
 | `stacks.ts` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.ts`), by roster index; later rules call `add`/`take` in their apply |
 | `sites.ts` | `site.stock`, `site.run` | `sites` | `{ sites, onSectionDone(fn), age(), isDone(s), points(pid), room(s, ring), canRun(s), run(s, tick), helpers(), addFreight(n) }`: work sites on the preset route (`../../sim/sites.ts`, `../../sim/route.ts`), plaques, machine runs (`../../sim/scripted-run.ts`), helper freight and the age change (derived from `open`); later rules subscribe to `onSectionDone` at install |
-| `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the palms in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
+| `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the log bundles at the palm cells in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
 | `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
+| `ball.ts` | `ball.rest` | `ball` | `{ ball, rest() }`: the beach ball's last resting spot in cm (`../../sim/ball-rest.ts`); no tick; the adapter `src/features/ball-rest.ts` saves it and puts the ball back |
 | `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 
 The land (`{ n, layout }`) comes from `../home-land.json` outside the game (server, tests); see `../README.md`.

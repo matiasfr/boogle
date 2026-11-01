@@ -3,7 +3,7 @@
 // step pushes those into Rapier, steps, and pulls the result back. A position or rotation that differs from what Rapier
 // last reported was set by the game (a teleport, a ride) and is written through.
 import type * as RAPIER from '@dimforge/rapier3d';
-import { FIXED, GRAVITY } from '../constants.js';
+import { FIXED, GRAVITY } from '../constants.ts';
 import type { Body, BodyKind, BodyOptions, Material, MaterialProps, RayHit, Shape, V3 } from './engine.ts';
 
 type R = typeof RAPIER;

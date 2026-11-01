@@ -176,7 +176,7 @@ Read from [`RaycastVehicle.ts`](https://raw.githubusercontent.com/pmndrs/cannon-
 - `rollInfluence` scales the height at which side forces act. Near 0 means hard to roll.
 - The example car: chassis mass 150, box half-extents (2, 0.5, 1), wheel radius 0.5, `suspensionStiffness` 30, `suspensionRestLength` 0.3, `frictionSlip` 1.4, `dampingRelaxation` 2.3, `dampingCompression` 4.4, `maxSuspensionForce` 100000, `rollInfluence` 0.01, `maxSuspensionTravel` 0.3, `customSlidingRotationalSpeed` -30 (enabled), engine force 1000, brake 1000000, steering 0.5.
 
-*For Boogle* (derived, not sourced): `GRAVITY` is 18 (`src/constants.js`). With four wheels the static sag is g / (4k): at k = 30 that is 0.15 m, half of a 0.3 m rest length. See [vehicles.md](../proposals/vehicles.md) for starting values.
+*For Boogle* (derived, not sourced): `GRAVITY` is 18 (`src/constants.ts`). With four wheels the static sag is g / (4k): at k = 30 that is 0.15 m, half of a 0.3 m rest length. See [vehicles.md](../proposals/vehicles.md) for starting values.
 
 ### 3.7 Not verified this round
 

@@ -8,7 +8,7 @@ const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
 // VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
 // import.meta.env.VITE_BUILD, and a build writes it to dist/version.json so open tabs notice a newer deploy
-// (src/features/updates.js).
+// (src/features/updates.ts).
 const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 
 let localServer = null; // the dev server's own game server (boogle-local-server below)
@@ -17,7 +17,7 @@ export default defineConfig({
   base: process.env.BASE || '/',
   define: { 'import.meta.env.VITE_BUILD': JSON.stringify(build) },
   // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
-  // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.js).
+  // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.ts).
   build: {
     target: 'es2022', // top-level await: Rapier's WASM module (src/physics/backend-rapier.ts); every WebGPU browser has it
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
@@ -27,7 +27,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
-          const m = id.match(/node_modules\/(three|peerjs)\//);
+          const m = id.match(/node_modules\/(three)\//);
           return m ? m[1] : undefined;
         },
       },
@@ -36,7 +36,7 @@ export default defineConfig({
   plugins: [
     wasm(), // Rapier ships its WASM as an ES module import
     {
-      // Names each onFrame hook after its module, for the profiler (src/loop.js): `onFrame(` becomes
+      // Names each onFrame hook after its module, for the profiler (src/loop.ts): `onFrame(` becomes
       // `onFrame.in('features/foo.js')(`, in dev and build alike.
       name: 'boogle-hook-names',
       transform(code, id) {

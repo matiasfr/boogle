@@ -1,6 +1,6 @@
 // Builds the guest engine, native/guest/out/engine.wasm: the guest's simulation and the guest and dino models, compiled
 // from a local checkout of the upstream decompilation (README.md says which) with the shim in this folder. Nothing it
-// builds is committed or deployed; the player brings it (src/guest/engine.js).
+// builds is committed or deployed; the player brings it (src/guest/engine.ts).
 //
 //   GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
 import { execFileSync } from 'node:child_process';
@@ -8,7 +8,7 @@ import { mkdirSync, writeFileSync, rmSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { TEXTURES } from '../../src/guest/textures.js';
+import { TEXTURES } from '../../src/guest/textures.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const decomp = process.env.GUEST_DECOMP;
@@ -42,7 +42,7 @@ const DECOMP_SOURCES = [
 const SHIM_SOURCES = ['shim.c', 'stubs.c', 'surfaces.c', 'render.c', 'model.c'];
 
 // The upstream models #include textures that its build extracts from a ROM. Each stub holds the texture's index in
-// TEXTURES (src/guest/textures.js, same order) instead, so render.c can name the texture a display list loads; the
+// TEXTURES (src/guest/textures.ts, same order) instead, so render.c can name the texture a display list loads; the
 // pixels come from the player's ROM.
 const TEXTURE_FILES = [
   'mario/mario_metal',
@@ -68,7 +68,7 @@ const TEXTURE_FILES = [
   'yoshi/yoshi_eye_blink',
   'yoshi/yoshi_nostril',
 ];
-if (TEXTURE_FILES.length !== TEXTURES.length) throw new Error('TEXTURE_FILES and src/guest/textures.js disagree');
+if (TEXTURE_FILES.length !== TEXTURES.length) throw new Error('TEXTURE_FILES and src/guest/textures.ts disagree');
 const work = join(tmpdir(), 'boogle-guest-build');
 rmSync(work, { recursive: true, force: true });
 mkdirSync(dirname(out), { recursive: true });

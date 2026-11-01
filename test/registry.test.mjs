@@ -8,7 +8,7 @@ const NET = file(
   'src/netplay/net.ts',
   'function buildPresence() {\n  const pr = {\n    v: 1,\n    p: null,\n  };\n}\n',
 );
-const CONTROLS = file('src/player/controls.js', "export const PAD = [\n  'a',\n  'b',\n  'x',\n];\n");
+const CONTROLS = file('src/player/controls.ts', "export const PAD = [\n  'a',\n  'b',\n  'x',\n];\n");
 
 test('the scan ignores calls in strings and comments, and definitions', () => {
   const reg = scanSources([
@@ -61,7 +61,7 @@ test('a presence key taken twice (core or field) fails', () => {
 test('a message type sent from two files fails; a receiver-only file does not count', () => {
   const reg = scanSources([
     file(
-      'src/features/honk.js',
+      'src/features/honk.ts',
       "room.send({ t: 'honk' });\nexport function on(m) {\n  if (m.t !== 'honk') return;\n}",
     ),
     file('src/sim/honk-check.js', "export const ok = (m) => m.t === 'honk';"),
@@ -76,10 +76,10 @@ test('a message type sent from two files fails; a receiver-only file does not co
 test('pad slots: registerAction claims, describeControl does not, one slot must stay free', () => {
   const reg = scanSources([
     CONTROLS,
-    file('src/player/input.js', "registerAction('use', { pad: 'x', down() { go({ pad: 'a' }); } });"),
-    file('src/features/hotbar.js', "describeControl('toss', { pad: 'x' });\nregisterAction('jump', { pad: 'a' });"),
+    file('src/player/input.ts', "registerAction('use', { pad: 'x', down() { go({ pad: 'a' }); } });"),
+    file('src/features/hotbar.ts', "describeControl('toss', { pad: 'x' });\nregisterAction('jump', { pad: 'a' });"),
   ]);
-  assert.deepEqual(reg.pads, { x: ['src/player/input.js:use'], a: ['src/features/hotbar.js:jump'] });
+  assert.deepEqual(reg.pads, { x: ['src/player/input.ts:use'], a: ['src/features/hotbar.ts:jump'] });
   assert.deepEqual(checkRegistry(reg), []);
   reg.pads.b = ['src/features/c.js:c'];
   assert.match(checkRegistry(reg).join('\n'), /every pad slot is taken/);
@@ -90,10 +90,10 @@ test('pad slots: registerAction claims, describeControl does not, one slot must 
 test('feature onFrame orders stay in the feature range and off core orders', () => {
   const reg = scanSources([
     file(
-      'src/player/player.js',
+      'src/player/player.ts',
       "onFrame(cam, { phase: 'update', order: -200 });\nonFrame(send, { phase: 'late', order: 3000 });",
     ),
-    file('src/guest/play.js', 'onFrame(g, { order: -5 });'),
+    file('src/guest/play.ts', 'onFrame(g, { order: -5 });'),
     file('src/features/a.js', "onFrame(a, { order: -5 });\nonFrame(b, { phase: 'late', order: 3000 });"),
     file('src/features/b.js', "onFrame(c, {\n  phase: 'world',\n  order: -50,\n});"),
   ]);

@@ -1,12 +1,9 @@
-// Gift rules: the fruit.drop, gift.take and gift.toss ops, the `gifts` state (fruit on the palms, things players
-// threw, the frisbee on its perch; ../../sim/gifts.ts) and its tick. Lockstep: everything
-// here runs the same on every peer (see ./README.md).
+// Gift rules: the gift.take and gift.toss ops, the `gifts` state (things players threw, the frisbee on its perch;
+// ../../sim/gifts.ts) and its tick. Lockstep: everything here runs the same on every peer (see ./README.md).
 import { GIFTS, giftIndex, carryable } from '../../sim/gift-catalog.ts';
 import {
   createGifts,
-  canDrop,
   canToss,
-  dropFruit,
   findItem,
   takeItem,
   tossItem,
@@ -15,7 +12,6 @@ import {
   loadGifts,
   hashGifts,
   MAX_ITEMS,
-  NEVER,
   ON_GROUND,
 } from '../../sim/gifts.ts';
 import { JUNK, bad } from './edit-gen.ts';
@@ -23,9 +19,8 @@ import type { SyncView, Land, Stream, Rules } from './types.ts';
 import type { Gifts } from '../../sim/gifts.ts';
 import type { install as installMushrooms } from './mushrooms.ts';
 
-// Wire fields of each op (on top of op, i, j): the palm and fall direction, the item, and a throw's kind, resting
-// height, sequence and launch (six integers).
-export type DropFields = { t: number; d: number };
+// Wire fields of each op (on top of op, i, j): the item, and a throw's kind, resting height, sequence and launch (six
+// integers).
 export type TakeFields = { id: number };
 export type TossFields = { k: number; y: number; n: number; l: number[] };
 
@@ -39,10 +34,6 @@ const launchOk = (l: unknown) => Array.isArray(l) && l.length === 6 && l.every((
 export function install(sync: SyncView, land: Land, rules: { mushrooms: ReturnType<typeof installMushrooms> }) {
   const { n } = land;
   const gifts = createGifts(land.layout); // holds the layout by reference: the game fills it before tick 1
-  sync.registerOp<DropFields>('fruit.drop', {
-    validate: (e, ctx) => canDrop(gifts, e.t, ctx.tick, e.d),
-    apply: (e, tick) => dropFruit(gifts, e.t, tick, e.d),
-  });
   sync.registerOp<TakeFields>('gift.take', {
     validate: (e) => isInt(e.id) && !!findItem(gifts, e.id),
     apply: (e, tick) => takeItem(gifts, e.id, tick),
@@ -71,17 +62,9 @@ export function install(sync: SyncView, land: Land, rules: { mushrooms: ReturnTy
   return { gifts };
 }
 
-// Replay-test generators (./README.md): shake a palm, pick up a lying item, throw something
-// (seeds plant where they land), or junk.
+// Replay-test generators (./README.md): pick up a lying item, throw something (seeds plant where they land), or junk.
 const THROWABLE = GIFTS.flatMap((g, k) => (carryable(g) ? [k] : []));
 export const edits = {
-  'fruit.drop': (r: Stream, view: { land: Land }) => {
-    if (r.chance(JUNK)) return bad(r, 'fruit.drop');
-    const { trees } = view.land.layout;
-    if (!trees.length) return null;
-    const t = r.int(0, trees.length - 1);
-    return { op: 'fruit.drop', i: trees[t].i, j: trees[t].j, t, d: r.int(0, 7) };
-  },
   'gift.take': (r: Stream, view: { rules: Rules }) => {
     if (r.chance(JUNK)) return bad(r, 'gift.take');
     const { items } = view.rules.gifts.gifts;
@@ -108,6 +91,5 @@ export function invariants({ gifts }: { gifts: Gifts }): string | null {
   if (ids.length > MAX_ITEMS) return `${ids.length} items`;
   if (new Set(ids).size !== ids.length) return 'duplicate item ids';
   if (ids.some((id) => id >= gifts.nextId)) return 'an item id at or past nextId';
-  if (gifts.nextWash !== NEVER) return 'wash schedule unpinned';
   return null;
 }

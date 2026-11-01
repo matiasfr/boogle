@@ -169,7 +169,7 @@ A lane is a posture, not a class, in Sea of Thieves' sense. Players drift betwee
 
 **Mobility flag.**
 - **No upgrade adds a key.** "Call the handcar" is an Interact target at station boards (`registerInteractable`). Spill protection and the magnet are passive.
-- **Any mobility or input perk touches `src/player/controls.js`,** the registry and its contract. Movement itself lives in `src/player/input.js` and `src/player/player.js`.
+- **Any mobility or input perk touches `src/player/controls.ts`,** the registry and its contract. Movement itself lives in `src/player/input.ts` and `src/player/player.ts`.
 - If a walk or sprint speed perk is ever wanted:
   - keep it **≤ 10 %** and make it a passive multiplier in Local physics (Owner, so it needs no sync);
   - change any input through `wrapAction`, never a new slot;

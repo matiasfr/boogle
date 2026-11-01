@@ -90,9 +90,9 @@
         "No key-only controls: if there is no slot left, rethink the layout."
       ],
       "code": [
-        { "file": "src/player/input.js" },
-        { "file": "src/player/controls.js" },
-        { "file": "src/features/gamepad.js" }
+        { "file": "src/player/input.ts" },
+        { "file": "src/player/controls.ts" },
+        { "file": "src/features/gamepad.ts" }
       ]
     },
     {
@@ -118,9 +118,9 @@
         "Particles: one shared pool; never build your own."
       ],
       "code": [
-        { "file": "src/player/controls.js" },
-        { "file": "src/player/hands.js" },
-        { "file": "src/render/particles.js" }
+        { "file": "src/player/controls.ts" },
+        { "file": "src/player/hands.ts" },
+        { "file": "src/render/particles.ts" }
       ]
     },
     {
@@ -133,7 +133,7 @@
         "Features use order −10 and up; the core owns the lower numbers.",
         "See the Frame tab for every hook."
       ],
-      "code": [{ "file": "src/loop.js" }, { "file": "src/main.js" }],
+      "code": [{ "file": "src/loop.ts" }, { "file": "src/main.ts" }],
       "view": "frame"
     },
     {

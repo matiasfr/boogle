@@ -1,6 +1,6 @@
 // The pause view (7491721): H opens it over a world that keeps running; Controls with the Keyboard, Gamepad and Touch
 // tabs (generated from the control registry), then the Room page.
-const PAUSE = `const { openPause } = await import('/src/features/pause.js'); openPause();`;
+const PAUSE = `const { openPause } = await import('/src/features/pause.ts'); openPause();`;
 const click = (sel) => `document.querySelector('dialog.pause ${sel}')?.click();`;
 
 export default {

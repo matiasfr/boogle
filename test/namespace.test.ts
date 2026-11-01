@@ -1,4 +1,4 @@
-// The world namespace (src/world/namespace.ts): every room id it makes fits the server's and peer-room's rules.
+// The world namespace (src/world/namespace.ts): every room id it makes fits the server's rules.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WORLD_NS, worldRoomId } from '../src/world/namespace.ts';

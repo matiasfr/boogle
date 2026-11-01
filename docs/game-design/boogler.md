@@ -19,14 +19,14 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
   stop. Walks 1.5 m/s, turns 3.2 rad/s, stays on land between 0.45 and 30 m high, avoids slopes over 0.55 per metre,
   obstacles and the garden patch. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
-- **Files.** [src/boogler/boogler.js](../../src/boogler/boogler.js), [src/boogler/hud.js](../../src/boogler/hud.js),
-  [src/boogler/fx.js](../../src/boogler/fx.js), [src/features/boogler.js](../../src/features/boogler.js).
+- **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
+  [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).
 
 ## Friendship
 
-- **Sync kind.** Local (localStorage `boogle.boogler.<room>`); each player publishes `bg: [act, wary, ev, evN]` so the
-  lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
-- **Levels** ([src/boogler/friendship.js](../../src/boogler/friendship.js)):
+- **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
+  so the lead's brain knows who is talking, riding or wary, and every client plays the pets, hearts and launches.
+- **Levels** ([src/boogler/friendship.ts](../../src/boogler/friendship.ts)):
 
 | Level | Name | Points |
 |---|---|---|
@@ -41,15 +41,16 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 
 | Action | Points | Limits |
 |---|---|---|
-| Pet (inside the talk) | +3 | 2.5 s apart, 8 scoring pets per 10 min |
-| Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is disliked since the seashore finds were retired) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
-| New story chapter | +6, plus answer points | once per chapter |
+| Pet (inside the talk) | +4 | 2.5 s apart, 8 scoring pets per 10 min |
+| Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is loved or disliked) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
+| New story chapter | +8, plus answer points | once per chapter |
 | Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
 | Kicked off (launched) | −6 | |
 | Too nosy | −4 | goes quiet for 90 s |
 
-Points never drop below 0. Each new level bursts hearts and plays a level-up line. A typical 15-minute visit (a pet
-every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in about four visits.
+Points never drop below 0. Each new level bursts hearts and plays a level-up line. A 15-minute visit (a pet
+every 2.5 min, a talk every 5) reaches Best friend in about five visits with no presents; presents (a seed, the
+frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.)
 
 ## Talk
 
@@ -69,8 +70,8 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
   is a bubble). Greetings and farewells change with your level.
 - **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
   opened before it arrives waits for it. What he says outside a talk (level-ups, pats, ride complaints, "Nope!") is in
-  the small eager [src/boogler/barks.js](../../src/boogler/barks.js) ([src/boogler/play.js](../../src/boogler/play.js)).
-- **Story threads** ([src/boogler/lines.js](../../src/boogler/lines.js), [src/boogler/talk.js](../../src/boogler/talk.js)):
+  the small eager [src/boogler/barks.ts](../../src/boogler/barks.ts) ([src/boogler/play.ts](../../src/boogler/play.ts)).
+- **Story threads** ([src/boogler/lines.ts](../../src/boogler/lines.ts), [src/boogler/talk.ts](../../src/boogler/talk.ts)):
   `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows
   from level 1 or once `home` has started.
 - **Nosiness.** Asking for a chapter above your level deflects (+1 nosy); pushing ("Oh, come on, tell me!") is +2
@@ -98,7 +99,7 @@ every 2.5 min, a talk every 5, a mango and a coconut) reaches Best friend in abo
 
 ## Known issues and limits
 
-His position restarts with whoever leads next. Friendship is per room and per browser. The `ACT` value 3 (old PET)
+His position restarts with whoever leads next. Friendship is per browser, shared by every room. The `ACT` value 3 (old PET)
 must never be reused. Related ideas: [proposals/boogler-tech-tree.md](../proposals/boogler-tech-tree.md).
 
 ---

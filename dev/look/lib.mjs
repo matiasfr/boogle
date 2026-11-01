@@ -41,9 +41,7 @@ export const freePort = () =>
 export async function startStack({ url = null, root: dir = root } = {}) {
   if (url) return { base: url, close: async () => {} };
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
-  const server = createService(
-    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {}, unrefTimers: true }),
-  );
+  const server = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {} }));
   const sigPort = await server.listen(0);
   const port = await freePort();
   const vite = spawn(
@@ -126,7 +124,7 @@ export class Game {
     if (opts.clock) await g.ctx.clock.install();
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });
-    // src/constants.js reads isTouch once at load, so this must run before the page's code.
+    // src/constants.ts reads isTouch once at load, so this must run before the page's code.
     if (opts.touch)
       await g.ctx.addInitScript(() => {
         const mm = window.matchMedia.bind(window);

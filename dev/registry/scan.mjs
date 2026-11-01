@@ -11,7 +11,7 @@
 //   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
 //   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
-//   padSlots: [slot]                 PAD in src/player/controls.js
+//   padSlots: [slot]                 PAD in src/player/controls.ts
 //   frames:   [{ path, phase, order }]  onFrame hooks with a literal order (path is file:line)
 //   parseErrors: [string]            only when a file could not be parsed
 //   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
@@ -65,7 +65,7 @@ export function checkRegistry(reg) {
   if (reg.padSlots.length && reg.padSlots.every((s) => reg.pads[s])) {
     errors.push('every pad slot is taken: updates.js needs freeSlots()[0] at runtime. Rethink the layout.');
   }
-  // Core hooks (src/loop.js's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
+  // Core hooks (src/loop.ts's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
   // src/features/ use the feature range and may tie (ties run in registration order).
   const core = reg.frames.filter((f) => isCoreHook(f.path, f.order));
   for (const f of reg.frames.filter((x) => isFeature(x.path))) {

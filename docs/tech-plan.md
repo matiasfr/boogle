@@ -14,7 +14,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       and the rules modules from B1). Cosmetic helpers that live in `src/sim/` today
       (`honkFreq`, the moon's `illum`) move out or are marked cosmetic. A tiny test proves the rule fires.
 - [x] **A2. Reports to the server.** `POST /report` on `server/` (small JSON, rate-limited, appended to a daily JSONL
-      file) and `GET /reports` behind a token. A plug-in feature (`src/features/telemetry.js`) sends JS errors, desyncs
+      file) and `GET /reports` behind a token. A plug-in feature (`src/features/telemetry.ts`) sends JS errors, desyncs
       (which state key, which tick), snapshot load failures and connection failures, only when `VITE_BOOGLE_SERVER` is
       set. Nothing personal: room, kind, short detail, build, coarse browser.
 - [x] **A3. Nightly live smoke test.** (historical: digging removed 2026-10-30) A scheduled GitHub Actions job opens two headless tabs on the deployed site, digs
@@ -72,7 +72,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
 
 - [x] **C1. Thin `main.js`.** Ball and player frame logic (respawn, auto-claim, visual sync) move onto `onFrame`
       hooks so `main.js` only wires modules together.
-      *Done:* 130 to 65 lines; the core hooks' orders, which keep the old frame sequence, are listed in `src/loop.js`.
+      *Done:* 130 to 65 lines; the core hooks' orders, which keep the old frame sequence, are listed in `src/loop.ts`.
 - [x] **C2. Folders.** Move-only commit: `src/boogler/`, `src/terrain/`, `src/water/`, `src/items/`, ... (no code
       changes), done in one quiet window and merged fast.
       *2026-10-30:* `src/boogler/`, `player/`, `render/`, `netplay/`, `physics/`, `adapters/`; map in `src/README.md`.

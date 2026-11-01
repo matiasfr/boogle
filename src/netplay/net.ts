@@ -1,19 +1,19 @@
 import * as THREE from 'three';
-import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.js';
-import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.js';
-import { scene } from '../render/scene.js';
-import { teleport } from '../physics/physics.js';
+import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.ts';
+import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.ts';
+import { scene } from '../render/scene.ts';
+import { teleport } from '../physics/physics.ts';
 import { addBody, removeBody } from '../physics/engine.ts';
-import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.js';
-import { me } from '../player/player.js';
-import { renderPeople, dom } from '../player/hud.js';
+import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.ts';
+import { me } from '../player/player.ts';
+import { renderPeople, dom } from '../player/hud.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
 import { mergeFields, hostField } from './presence-fields.ts';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import type { Presence } from './presence-fields.ts';
 import type { Body } from '../physics/engine.ts';
 
@@ -42,12 +42,18 @@ export type Remote = {
   prevPos: THREE.Vector3;
   build?: string | null;
   pid?: string | null; // their player id (src/features/haul-stack.ts)
+  // Fields features keep per remote (their presence, decoded):
+  hd?: string | null; // what they hold (src/features/hotbar.ts)
+  flop?: { kind: string; until: number } | null; // a flop playing (src/features/feel.ts)
+  flLast?: number; // its last fl time left, so a repeat isn't a new flop
+  kdLast?: number; // their last kd (src/features/impact.ts)
+  kdUntil?: number; // knocked down until (ms)
+  guest?: number[] | null; // the guest's pose (src/features/dino.ts; src/guest/)
 };
 type RemoteHook = (r: Remote, pr: Presence, time: number) => void;
 
 // Presence carries each player's pose, plus the fields features add through the hooks below (the ball, the Boogler).
-// state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); turn: our ICE config includes a TURN server
-// (for connection reports); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
+// state: 'connecting' | 'live' | 'solo' (changes reach onNetState below); retries: failed joins in a row, reset once a room exists; retryAt: Date.now() of the next
 // attempt while solo (0: none scheduled); full: the last join was turned away ('room_full'): the cap, or true.
 export const net = {
   room: null as Room | null, // the room interface (src/net/README.md) once joined
@@ -57,7 +63,6 @@ export const net = {
   state: 'connecting',
   error: null as string | null,
   full: 0 as number | true,
-  turn: false,
   retries: 0,
   retryAt: 0,
 };
@@ -290,8 +295,8 @@ function setNet(state: string) {
   }
 }
 
-// Keep trying while solo (a host that was unreachable, a flaky network, the signaling server blipping),
-// unless the browser can't do WebRTC at all. A full room is retried every few seconds, so a spot that opens is taken.
+// Keep trying while solo (the server unreachable or restarting, a flaky network), unless the browser can't open a
+// WebSocket at all. A full room is retried every few seconds, so a spot that opens is taken.
 let retryTimer: ReturnType<typeof setTimeout> | 0 = 0;
 const FULL_RETRY_MS = 4000;
 type NetError = { code?: string; type?: string; max?: number } | null | undefined;
@@ -310,10 +315,14 @@ function scheduleRetry(e: NetError) {
   }, wait);
 }
 
-// Saves from before the 0.1 clean break, under the plain room name: nothing loads them any more (src/world/namespace.ts).
-function dropOldSave(room: string) {
+// World copies tabs kept before the server hosted every room (boogle.world.<room>): nothing loads them any more, so
+// the first connect of a page load clears them all.
+let swept = false;
+function dropOldSaves() {
+  if (swept) return;
+  swept = true;
   try {
-    localStorage.removeItem(`boogle.world.${room}`);
+    for (const k of Object.keys(localStorage)) if (k.startsWith('boogle.world.')) localStorage.removeItem(k);
   } catch {
     // storage unavailable: nothing to drop
   }
@@ -321,7 +330,7 @@ function dropOldSave(room: string) {
 
 export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
-  dropOldSave(getRoomId());
+  dropOldSaves();
   const roomId = worldRoomId(getRoomId());
   setPid((await identity.ready).pid); // before attachWorld: its first message says who we are
   let room: Room;
@@ -352,7 +361,7 @@ export async function connectRoom() {
   setNet('connecting');
   setSelfId(room.selfId);
   for (const fn of roomHooks.splice(0)) fn(room);
-  attachWorld(room, { roomId, serverUrl: import.meta.env.VITE_BOOGLE_SERVER });
+  attachWorld(room, { roomId });
   const fail = (e: NetError) => {
     if (net.state === 'solo') return;
     noteError(e, 'unknown');
@@ -371,7 +380,7 @@ export async function connectRoom() {
     if (net.state !== 'solo') setNet(connected ? 'live' : 'connecting');
   }, fail);
   room.onPeers(onPeersChange, fail);
-  // Host fields follow the lead at once (on a peer room, the host): a demoted lead (even one still on the title
+  // Host fields follow the lead at once: a demoted lead (even one still on the title
   // screen, which sends no presence otherwise) clears them before it rejoins, and a new lead publishes them without
   // waiting for its next send.
   room.onLeadChange(() => sendPresence());
@@ -410,7 +419,7 @@ export function updateRemotes(now: number) {
   }
 }
 
-// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.js)
+// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
 // update -280, after this player's avatar (player.js, -290), before the camera (-200): remote avatars take their
 // interpolated pose and walk at the speed they moved since last frame.
 const tmpV = new THREE.Vector3();

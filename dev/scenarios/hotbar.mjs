@@ -6,7 +6,7 @@
 import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.mjs';
 
 const AIM = (yaw, pitch = 0) =>
-  `const { cam } = await import('/src/player/player.js'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
+  `const { cam } = await import('/src/player/player.ts'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // Page-side helpers for the touch checks: shown(sel) (laid out, so hidden ancestors count), rect(sel), the main
 // button's label, and whether it throws. when(cond) wraps them into an expression for waitFor.
 const DOM = `
@@ -39,7 +39,7 @@ export default {
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
-    await g.eval(`${toss(1, 5)};`); // a mango
+    await g.eval(`${toss(2, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: 30000 });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));
@@ -59,20 +59,20 @@ export default {
     await g.eval(`${INV} H.useDown();`);
     await g.wait(1.5); // a full charge: a short one can land in the pit by the court
     await g.eval(`${INV} H.useUp();`);
-    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === ${item.kind})`);
+    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`);
     const far = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.kind === ${item.kind});
+      const { CELL, HALF } = await import('/src/constants.ts');
+      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === ${item.kind});
       const p = window.boogle.me.body.position;
       return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
     t.check('a thrown thing lands as a shared item, metres away', landed >= 0 && far > 4, `${far.toFixed(1)} m`);
 
-    // The ball: grab it, put it on your back by switching to a mango, take it back out.
+    // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
     const ball = await g.eval(`${INV}
-      const { ball } = await import('/src/physics/ball.js');
-      const { teleport } = await import('/src/physics/physics.js');
-      const { boogler } = await import('/src/boogler/boogler.js');
-      const { groundHeight } = await import('/src/adapters/terrain.js');
+      const { ball } = await import('/src/physics/ball.ts');
+      const { teleport } = await import('/src/physics/physics.ts');
+      const { boogler } = await import('/src/boogler/boogler.ts');
+      const { groundHeight } = await import('/src/adapters/terrain.ts');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
       // The Boogler wanders: if he is close, E would pick Talk over the ball. Step 8 m away from him first.
@@ -84,10 +84,10 @@ export default {
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
-      I.take('mango');
+      I.take('frisbee');
       const onBack = ball.held && !window.boogle.me.holding && I.has('ball');
       I.select(I.slotOf('ball'));
-      I.drop('mango');
+      I.drop('frisbee');
       return { inHand, onBack, back: window.boogle.me.holding };`);
     t.check(
       'the ball takes a slot, rides on your back, and comes back to hand',
@@ -95,14 +95,14 @@ export default {
       JSON.stringify(ball),
     );
 
-    // The Boogler takes a mango from your hand.
+    // The Boogler takes a frisbee from your hand.
     const bog = await g.eval(`return { x: window.boogle.boogler.disp.x, z: window.boogle.boogler.disp.z };`);
     await g.eval(TP(bog.x + 1.5, bog.z));
     await g.wait(0.3);
     // Answers only show once his line has finished typing; wait for them, then for his reply.
     const talk = await g.eval(`${INV}
-      const play = await import('/src/boogler/play.js');
-      const { closeDialogue } = await import('/src/boogler/dialogue.js');
+      const play = await import('/src/boogler/play.ts');
+      const { closeDialogue } = await import('/src/boogler/dialogue.ts');
       const nap = () => new Promise((r) => setTimeout(r, 100));
       const pick = async (text) => {
         for (let k = 0; k < 100; k++) {
@@ -116,18 +116,18 @@ export default {
         for (let k = 0; k < 100 && !document.querySelector('.bd')?.textContent.includes(text); k++) await nap();
         return document.querySelector('.bd')?.textContent.includes(text);
       };
-      I.take('mango');
+      I.take('frisbee');
       play.booglerTalk();
-      const offeredMango = await pick('a mango');
+      const offeredFrisbee = await pick('a frisbee');
       await says('monopoly');
-      return { offeredMango, mangoGone: !I.has('mango') };`);
-    t.check('The Boogler takes the mango from your hand', talk.offeredMango && talk.mangoGone, JSON.stringify(talk));
-    await g.eval(`(await import('/src/boogler/dialogue.js')).closeDialogue();`);
+      return { offeredFrisbee, frisbeeGone: !I.has('frisbee') };`);
+    t.check('The Boogler takes the frisbee from your hand', talk.offeredFrisbee && talk.frisbeeGone, JSON.stringify(talk));
+    await g.eval(`(await import('/src/boogler/dialogue.ts')).closeDialogue();`);
 
     // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
     const spot = await g.eval(`${INV}
-      const { CELL, HALF, GRID_RES } = await import('/src/constants.js');
-      const G = await import('/src/adapters/mushroom-garden.js');
+      const { CELL, HALF, GRID_RES } = await import('/src/constants.ts');
+      const G = await import('/src/adapters/mushroom-garden.ts');
       const { PATCH } = await import('/src/sim/mushrooms.ts');
       for (let r = 6; r < 60; r += 2)
         for (let a = 0; a < 24; a++) {
@@ -142,14 +142,14 @@ export default {
     await g.wait(0.4);
     await g.eval(`${INV} H.useDown(); H.useUp();`);
     const hasPlot = await g.waitFor(`(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.js');
+      const { garden } = await import('/src/adapters/mushroom-garden.ts');
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
     t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
     await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
     // Stand on the seed as soon as it starts growing, before it has a collider: later, on a fast machine, the cap is
     // already above your feet and you land on top and ride it up instead (that is intended, but not this check).
     await g.waitFor(`(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.js');
+      const { garden } = await import('/src/adapters/mushroom-garden.ts');
       return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`);
     await g.eval(TP(spot.x + 0.3, spot.z));
     const before = await g.eval(
@@ -178,12 +178,12 @@ export default {
 
     // The frisbee waits on the lighthouse deck; throw it off and it glides far.
     const { FRISBEE } = await g.eval(
-      `const L = await import('/src/pois/lighthouse/index.js'); return { FRISBEE: L.FRISBEE_SPOT };`,
+      `const L = await import('/src/pois/lighthouse/index.ts'); return { FRISBEE: L.FRISBEE_SPOT };`,
     );
     await g.eval(`window.__debugCam.clear();`);
     await g.eval(TP(FRISBEE.x, FRISBEE.z, FRISBEE.y + 0.8));
     await g.wait(0.6);
-    const perched = await g.eval(`return window.boogle.gifts.items.some((it) => it.src === 3);`);
+    const perched = await g.eval(`return window.boogle.gifts.items.some((it) => it.src === 1);`);
     await g.view({
       cam: [FRISBEE.x + 4, FRISBEE.y + 2.5, FRISBEE.z + 4],
       look: [FRISBEE.x, FRISBEE.y + 0.5, FRISBEE.z],
@@ -207,13 +207,13 @@ export default {
     const flight = await g.motion('frisbee', { frames: 8, seconds: 3 });
     const fris = await g.waitFor(
       `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-        return window.boogle.gifts.items.some((it) => it.src === 2 && it.kind === giftIndex('frisbee')); })()`,
+        return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('frisbee')); })()`,
       { timeout: 20000 },
     );
     const dist = await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.js');
+      const { CELL, HALF } = await import('/src/constants.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const it = window.boogle.gifts.items.find((it) => it.src === 2 && it.kind === giftIndex('frisbee'));
+      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('frisbee'));
       return it ? Math.hypot(it.i * CELL - HALF - 6, HALF - it.j * CELL + 58) : -1;`);
     t.check(
       'the frisbee glides far from the lighthouse',
@@ -230,13 +230,13 @@ export default {
           [...document.querySelectorAll('.hotbar-slot')].filter((b) => b.getClientRects().length).length === 0`,
       ),
     );
-    t.check('on touch a new player sees no slots, not eight', one >= 0, `${one} ms`);
+    t.check('on touch a new player sees no slots, not five', one >= 0, `${one} ms`);
 
     await thumb.eval(`${INV} ${TP(14, 24)}`);
-    await thumb.eval(`${INV} I.take('mango');`);
-    const mango = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
+    await thumb.eval(`${INV} I.take('frisbee');`);
+    const frisbee = await thumb.waitFor(when(`label() === 'Throw' && throws() && !shown('.tbtn.toss')`));
     const away = await thumb.eval(`${INV} return H.interactTarget()?.id ?? null;`);
-    t.check('holding a mango: the main button throws and Toss hides', mango >= 0, `${mango} ms; in reach: ${away}`);
+    t.check('holding a frisbee: the main button throws and Toss hides', frisbee >= 0, `${frisbee} ms; in reach: ${away}`);
 
     await thumb.wait(0.4);
     const portrait = await thumb.eval(LAYOUT);

@@ -1,6 +1,6 @@
 // The controls guide is generated from the control registry: no gaps in the registry, and the pause view's keyboard and
 // gamepad tabs and the touch list each show every control that has a binding for that input.
-const LIST = `const { listControls, controlProblems } = await import('/src/player/controls.js');`;
+const LIST = `const { listControls, controlProblems } = await import('/src/player/controls.ts');`;
 
 export default {
   about:
@@ -12,9 +12,9 @@ export default {
     const problems = await g.eval(`${LIST} return controlProblems();`);
     t.check('the control registry has no gaps', problems.length === 0, JSON.stringify(problems));
 
-    // The guide lives in the pause view (src/features/pause.js): the keyboard tab, then the gamepad tab.
+    // The guide lives in the pause view (src/features/pause.ts): the keyboard tab, then the gamepad tab.
     const SHOWN = `${LIST}
-      const { openPause, closePause } = await import('/src/features/pause.js');`;
+      const { openPause, closePause } = await import('/src/features/pause.ts');`;
     const kbm = await g.eval(`${SHOWN} openPause('controls');
       const dlg = document.querySelector('dialog.pause');
       const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
@@ -47,7 +47,7 @@ export default {
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.6);
     const touch = await phone.eval(`${LIST}
-      const { renderGuide } = await import('/src/player/guide.js');
+      const { renderGuide } = await import('/src/player/guide.ts');
       const el = renderGuide('touch');
       el.style.cssText = 'position:fixed;left:12px;top:90px;z-index:99;background:#fff;padding:12px;border-radius:14px;width:300px';
       document.body.append(el);

@@ -7,13 +7,13 @@
     {
       "go": [["you.input", "you.loop"]],
       "text": "Your keys, pad and touch are read into named actions.",
-      "code": "src/player/input.js · registerAction",
+      "code": "src/player/input.ts · registerAction",
       "cite": [
         {
-          "file": "src/player/input.js"
+          "file": "src/player/input.ts"
         },
         {
-          "file": "src/player/controls.js"
+          "file": "src/player/controls.ts"
         }
       ]
     },
@@ -23,11 +23,11 @@
       "code": "main → stepPhysics (Rapier)",
       "cite": [
         {
-          "file": "src/main.js",
+          "file": "src/main.ts",
           "symbol": "frame"
         },
         {
-          "file": "src/physics/physics.js"
+          "file": "src/physics/physics.ts"
         }
       ]
     },
@@ -37,7 +37,7 @@
       "code": "onFrame(fn, { phase, order })",
       "cite": [
         {
-          "file": "src/loop.js",
+          "file": "src/loop.ts",
           "symbol": "onFrame"
         },
         {
@@ -58,10 +58,10 @@
     {
       "go": [["you.systems", "you.screen"]],
       "text": "Finally three.js draws the frame. Then it all happens again.",
-      "code": "renderFrame() · src/render/scene.js",
+      "code": "renderFrame() · src/render/scene.ts",
       "cite": [
         {
-          "file": "src/render/scene.js",
+          "file": "src/render/scene.ts",
           "symbol": "renderFrame"
         }
       ]

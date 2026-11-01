@@ -43,9 +43,9 @@ console, network and errors) are its `scenario-<name>` artifact. `--no-trace` sk
 are optional; on a slow sandbox, push and read CI.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
-`src/features/debug-handle.js`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
+`src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
 `reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly run: run it
-after changing held edits in `src/world/sync.js`, reconnects in `src/net/peer-room.js` or `src/netplay/net.js` attach/fail.
+after changing held edits in `src/world/sync.js`, reconnects in `src/net/ws-room.ts` or `src/netplay/net.js` attach/fail.
 
 ```js
 export default {
@@ -65,7 +65,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.eval(fn | 'async body with return')` runs in the page; game modules via `await import('/src/...')`; state handles
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
-- `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.js`).
+- `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.ts`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (throw is click-hold).
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.

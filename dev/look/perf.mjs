@@ -20,8 +20,8 @@ const IDLE_TICKS = 100;
 // calling pipeline.render again would count only the output pass). `frame` waits for the next frame to finish and
 // copies them. The second sample turns the shadow pass off through the sky's debug handle.
 const STATS = `
-  const { renderer, sun } = await import('/src/render/scene.js');
-  const { skyDebug } = await import('/src/render/sky.js');
+  const { renderer, sun } = await import('/src/render/scene.ts');
+  const { skyDebug } = await import('/src/render/sky.ts');
   const frame = () => new Promise((res) => {
     const at = renderer.info.frame;
     const t = setInterval(() => renderer.info.frame > at && (clearInterval(t), res({ ...renderer.info.render })), 20);
@@ -113,7 +113,7 @@ try {
     rows[`island, ${n} grown mushrooms`] = await g.eval(STATS);
     console.log('render');
     console.table(rows);
-    // CPU per frame section (src/loop.js), averaged over the last 240 frames. Headless: compare before/after only.
+    // CPU per frame section (src/loop.ts), averaged over the last 240 frames. Headless: compare before/after only.
     console.log(
       '\nmain-thread CPU per frame section (ms over the last 240 frames; headless, so compare, do not trust)',
     );

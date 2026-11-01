@@ -1,13 +1,13 @@
 // The Boogler friendship (ea29f9f): open the talk and pet his portrait to a new level (hearts), talk and give a
 // present, ride him until he launches you.
 const ROOM = 'clipboog';
-const seed = (room) => {
-  localStorage.setItem(`boogle.boogler.${room}`, JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
-  localStorage.setItem('boogle.pocket', JSON.stringify([3, 1])); // pomegranate, mango
+const seed = () => {
+  localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
+  localStorage.setItem('boogle.hotbar', JSON.stringify([{ id: 'seeds', n: 3 }, { id: 'frisbee', n: 1 }]));
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d, a) => `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { boogler } = window.boogle, b = window.boogle.me.body, p = boogler.disp;
   const x = p.x + Math.cos(${a}) * ${d}, z = p.z + Math.sin(${a}) * ${d};
   b.position.set(x, ${d} ? groundHeight(x, z) + 1 : boogler.center.y + 1.6, z);
@@ -51,7 +51,7 @@ export default {
         seconds: 5.5,
         each: async (t, k) => {
           if (k % 2 === 0) await g.eval(STAND(1.9, a0));
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           // Pet once the caption is up, so the hearts land under it.
           if (k === 36) await g.eval(`document.querySelector('.bd-face')?.click()`);
           // The Boogler high in frame so the talk box (bottom centre) doesn't cover him.
@@ -62,15 +62,15 @@ export default {
     // Close the box, or the talk clip's booglerTalk() finds it open and does nothing.
     await g.eval(`document.querySelector('.bd-close')?.click()`);
     await g.wait(0.3);
-    // Talk and give a present (he loves pomegranates).
+    // Talk and give a present (he likes seeds).
     await g.eval(STAND(2, a0));
     out.push(
       await g.record('boogler-talk', {
         seconds: 7,
         each: async (t, k) => {
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           if (k === 50) await pick(g, /brought/);
-          if (k === 80) await pick(g, /pomegranate/);
+          if (k === 80) await pick(g, /seed/);
           if (k === 190) await pick(g, /.*/);
           // Side-on two-shot, The Boogler high in frame so the dialogue box (bottom centre) doesn't cover him.
           await orbit(g, a0 + 1.9 - t * 0.04, 5, 1.6, -0.2)();
@@ -81,13 +81,13 @@ export default {
     await g.wait(1);
     // Walk off mid-story (adc2396): the game keeps playing while you talk, and stepping away ends it with his farewell.
     await g.eval(STAND(2, a0));
-    await g.eval(`const { cam } = await import('/src/player/player.js');
+    await g.eval(`const { cam } = await import('/src/player/player.ts');
       cam.yaw = Math.atan2(Math.cos(${a0}), Math.sin(${a0})); cam.pitch = -0.2;`); // facing him: S walks away
     out.push(
       await g.record('boogler-walkoff', {
         seconds: 7.5,
         each: async (t, k) => {
-          if (k === 6) await g.eval(`(await import('/src/boogler/play.js')).booglerTalk()`);
+          if (k === 6) await g.eval(`(await import('/src/boogler/play.ts')).booglerTalk()`);
           if (k === 60) await pick(g, /Where are you from/);
           if (k === 135) await g.down('KeyS');
           if (k === 190) await g.up('KeyS');

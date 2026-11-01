@@ -7,8 +7,8 @@ const R = `const { rules } = await import('/src/world/game-world.ts');
   const { identity } = await import('/src/player/identity.ts');`;
 // Put the player on the ground at (x, z), still, facing yaw.
 const TP = (x, z, yaw) => `
-  const { teleport } = await import('/src/physics/physics.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { teleport } = await import('/src/physics/physics.ts');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
   b.velocity.set(0, 0, 0);
@@ -16,7 +16,7 @@ const TP = (x, z, yaw) => `
   return groundHeight(${x}, ${z});`;
 // The palm with logs nearest (x, z): its index and trunk position.
 const PALM = (x, z) => `${R}
-  const { trees } = await import('/src/render/props.js');
+  const { trees } = await import('/src/render/props.ts');
   let best = null;
   rules.sources.list().forEach((_, t) => {
     if (!rules.sources.charges(t) || !trees[t]) return;
@@ -32,7 +32,7 @@ const FILL = (n) => `${R}
     if (rules.sources.charges(id)) { window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id }); k++; }
   return k;`;
 const COUNT = `${R} return rules.stacks.count(identity.pid);`;
-const ACT = `const a = (await import('/src/player/controls.js')).actionById('interact'); a.down(); a.up();`;
+const ACT = `const a = (await import('/src/player/controls.ts')).actionById('interact'); a.down(); a.up();`;
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 
 export default {
@@ -63,8 +63,8 @@ export default {
         seconds: 6,
         each: async (t, k) => {
           if (k < 20 && k % 4 === 0) await g.eval(TP(px, pz, yaw));
-          if (k === 30) await g.eval(ACT); // shake: fruit and the first 4 logs
-          // the palm's second charge (a second E here would pick up the fruit instead)
+          if (k === 30) await g.eval(ACT); // E on the bundle: the first 4 logs
+          // the bundle's second charge
           if (k === 95) await g.eval(`window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id: ${palm.t} });`);
           const d = 5 - t * 0.15,
             back = 1.6 - t * 0.1;
@@ -84,7 +84,7 @@ export default {
       cz = 14;
     await g.eval(TP(cx, cz, Math.PI / 2));
     // W walks along the camera's heading: point it at -x
-    await g.eval(`const { cam } = await import('/src/player/player.js'); cam.yaw = Math.PI / 2; cam.pitch = -0.2;`);
+    await g.eval(`const { cam } = await import('/src/player/player.ts'); cam.yaw = Math.PI / 2; cam.pitch = -0.2;`);
     out.push(
       await g.record('haul-carry', {
         seconds: 7,

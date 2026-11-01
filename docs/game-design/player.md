@@ -1,7 +1,7 @@
 # 4. Player
 
-Files: [src/player/player.js](../../src/player/player.js), [src/physics/physics.js](../../src/physics/physics.js), [src/player/avatars.js](../../src/player/avatars.js),
-[src/player/hud.js](../../src/player/hud.js), [src/features/feel.js](../../src/features/feel.js).
+Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
+[src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.ts](../../src/features/feel.ts).
 
 ## Movement and jump
 
@@ -11,7 +11,7 @@ Files: [src/player/player.js](../../src/player/player.js), [src/physics/physics.
   air, 18 swimming. Braking against your velocity uses 115 m/s².
 - Falls top out at 20 m/s (about an 11 m drop), so a step never moves the body further than its radius and long falls
   can't tunnel through the ground. A player or ball whose centre still ends up under the terrain is put back on top
-  (`catchFallThrough`, [src/physics/physics.js](../../src/physics/physics.js); `npm run scenario -- falls`).
+  (`catchFallThrough`, [src/physics/physics.ts](../../src/physics/physics.ts); `npm run scenario -- falls`).
 - Jump: 7.6 m/s up, with 0.1 s of ledge grace (coyote) and a 0.15 s jump buffer. Jumps add to an upward
   bounce (capped at 6 m/s before adding), so mushroom bounces chain.
 - Jump shape: 1.7× gravity falling, 2.5× rising after letting go (short hop), 0.5× near the apex (under
@@ -38,7 +38,7 @@ lean toward acceleration (max 0.35 rad). Your own client starts flops and publis
 | bonk | Losing 6.5 m/s in one frame while sprinting over 7 m/s | 650 ms |
 
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
-([src/features/impact.js](../../src/features/impact.js), presence `kd`). While down you cannot move or jump.
+([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
 
 ## Camera
 
@@ -50,8 +50,8 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.js)).
-- Eight colours ([constants.js](../../src/constants.js) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
+- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.ts)).
+- Eight colours ([constants.js](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your honk note.
 - Name: up to 16 characters, control and format characters stripped, default "Dat Frinco". Name and colour are kept
   in localStorage (`boogle.name`, `boogle.color`); a first visit gets a random colour.

@@ -1,4 +1,4 @@
-// The 0.1 haul loop with two players (docs/plans/0.1-groundwork.md): Bob shakes palms for logs, walks into the first
+// The 0.1 haul loop with two players (docs/plans/0.1-groundwork.md): Bob takes logs from the bundles, walks into the first
 // work site's Track ring so his stack pours itself in, and starts the machine; Alice sees the logs on his back, the
 // plaque and the machine laying track, and both worlds agree. Serves DESIGN.md 4 and 6.
 import { roles, hashesAtOneTick, MET, TP } from './lib/world.mjs';
@@ -20,7 +20,7 @@ type Run = {
 const R = `const { rules } = await import('/src/world/game-world.ts'); const { identity } = await import('/src/player/identity.ts');`;
 
 export default {
-  about: 'shake, carry, pour, run: one section of the railway gets laid and both players see it',
+  about: 'take logs, carry, pour, run: one section of the railway gets laid and both players see it',
   timeout: 300000,
   async run(t: Run) {
     const room = 'hl' + Math.random().toString(36).slice(2, 8);
@@ -30,14 +30,14 @@ export default {
     const r = await roles(A, B);
     t.check("both tabs hold the server's world", r.ok, r.modes.join());
 
-    // Shake 15 palms: 4 logs each onto Bob's stack.
+    // Takes logs from 15 bundles: 4 each onto Bob's stack.
     const got = await B.eval(`${R}
       for (let id = 0; id < 15; id++) window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id });
       return identity.pid;`);
     const full = await B.waitFor(`(async () => { ${R} return rules.stacks.count(identity.pid) >= 60; })()`, {
       timeout: 30000,
     });
-    t.check('shaking palms fills the stack', full >= 0, `pid ${got}, ${full} ms`);
+    t.check('taking logs fills the stack', full >= 0, `pid ${got}, ${full} ms`);
     await B.eval(`${TP(13, 10)} window.boogle.me.yaw = Math.PI;`);
     await A.view({ cam: [19, 4, 12], look: [13, 2, 10] });
     const seen = await A.waitFor(

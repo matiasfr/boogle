@@ -2,8 +2,8 @@
 // lamp and its beams at night.
 const CLIMB = `
   const { stepFixed } = await import('/src/physics/engine.ts');
-  const { DECK_Y } = await import('/src/pois/lighthouse/index.js');
-  const { default: site, PAD_Y } = await import('/src/pois/lighthouse/site.js');
+  const { DECK_Y } = await import('/src/pois/lighthouse/index.ts');
+  const { default: site, PAD_Y } = await import('/src/pois/lighthouse/site.ts');
   const { me } = window.boogle;
   const CX = site.x, CZ = site.z, b = me.body;
   const BASE = DECK_Y - 18; // tower foot = stair start

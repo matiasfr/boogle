@@ -79,7 +79,7 @@ test('extractFile survives a syntax error', () => {
 });
 
 test('extractFile reads names', () => {
-  const r = extractFile('src/main.js', `const o = { go() {}, n: 1 };\nclass K {}\n`);
+  const r = extractFile('src/main.ts', `const o = { go() {}, n: 1 };\nclass K {}\n`);
   assert.deepEqual(r.names, ['o', 'go', 'K']);
 });
 
@@ -161,13 +161,13 @@ function good() {
   const facts = extractFacts({
     git: false,
     sources: [
-      { path: 'src/main.js', text: MAIN },
+      { path: 'src/main.ts', text: MAIN },
       {
         path: 'src/world/rules/mushrooms.js',
         text: "sync.registerOp('mush.plant', {});\nsync.registerState('mushrooms', {});\nexport function apply() {}\n",
       },
       {
-        path: 'src/features/honk.js',
+        path: 'src/features/honk.ts',
         text: "registerAction('honk', { pad: 'y', key: 'KeyT' });\nnet.room.send({ t: 'honk' });\nexport function honkNow() {}\n",
       },
     ],
@@ -231,7 +231,7 @@ test('checkAtlas names each problem once', () => {
   };
   const cite = (g: Good, c: Cite) => (g.stories[0].steps[0].cite = [c]);
   run((g) => cite(g, { file: 'src/nope.js' }), /mush\.json step 1: .*src\/nope\.js does not exist/);
-  run((g) => cite(g, { file: 'src/features/honk.js', symbol: 'zzz' }), /has no symbol zzz/);
+  run((g) => cite(g, { file: 'src/features/honk.ts', symbol: 'zzz' }), /has no symbol zzz/);
   run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
   run((g) => cite(g, { op: 'mush.plant', state: 'mushrooms' }), /exactly one of/);
   run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box or lane "nowhere" in go/);
@@ -285,7 +285,7 @@ test('resolveCite never throws', () => {
     assert.equal(typeof r.error, 'string', JSON.stringify(c));
     assert.deepEqual(r.files, []);
   }
-  assert.deepEqual(resolveCite({ dir: 'src/features' }, model), { files: ['src/features/honk.js'], error: null });
+  assert.deepEqual(resolveCite({ dir: 'src/features' }, model), { files: ['src/features/honk.ts'], error: null });
 });
 
 test('kindOf classifies', () => {
@@ -307,7 +307,7 @@ test('kindOf classifies', () => {
   assert.equal(kindOf(rec('src/netplay/net.js', { owner: ['v', 'p'] })), 'owner');
   assert.equal(kindOf(rec('src/world/grid.js', { lockstep: true })), 'lock');
   assert.equal(kindOf(rec('src/netplay/snaps.js')), 'local');
-  assert.equal(kindOf(rec('src/features/ping.js', { onMessage: true })), 'msg');
+  assert.equal(kindOf(rec('src/features/ping.ts', { onMessage: true })), 'msg');
   assert.equal(kindOf(rec('src/features/g.js', { submits: true })), 'adapter');
   assert.equal(kindOf(rec('src/features/plain.js')), 'local');
 });
@@ -358,10 +358,10 @@ test('the reader tells senders from receivers, and keeps core presence keys and 
   assert.deepEqual(net.owner, ['v', 'p']);
   const main = extractFacts({
     git: false,
-    sources: [{ path: 'src/main.js', text: MAIN }],
+    sources: [{ path: 'src/main.ts', text: MAIN }],
   });
   assert.deepEqual(main.loop, { pre: ['updateRemotes', 'world.step'], render: 'renderFrame' });
-  assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.js', text: 'const a = 1;' }] }).loop, null);
+  assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.ts', text: 'const a = 1;' }] }).loop, null);
 });
 
 test('hooks are core by reserved order, and lockstep comes from the lint globs', () => {
@@ -370,7 +370,7 @@ test('hooks are core by reserved order, and lockstep comes from the lint globs',
   assert.equal(extractFile('src/world/grid.js', '', globs).lockstep, true);
   assert.equal(extractFile('src/world/other.js', '', globs).lockstep, false);
   const frames = extractFile(
-    'src/guest/play.js',
+    'src/guest/play.ts',
     "onFrame(a, { order: -5 });\nonFrame(b, { order: -200 });\nonFrame(c, { phase: 'late', order: 3000 });",
   ).frames;
   assert.deepEqual(

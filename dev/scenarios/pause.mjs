@@ -3,8 +3,8 @@
 // page shows the room and an invite button; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
 // input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
-const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.js');`;
-const TALK = `const D = await import('/src/boogler/dialogue.js');
+const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
+const TALK = `const D = await import('/src/boogler/dialogue.ts');
   const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] }, { level: 1, name: 'Stranger', frac: 0.3 },
     () => {}, () => D.closeDialogue(), () => {});`;
 const isOpen = `document.querySelector('dialog.pause')?.open === true`;
@@ -20,7 +20,7 @@ export default {
     // 1. H opens it on the controls page; every keyed control is in it. H again closes.
     await g.key('KeyH');
     await g.wait(0.5);
-    const kbm = await g.eval(`const { listControls } = await import('/src/player/controls.js');
+    const kbm = await g.eval(`const { listControls } = await import('/src/player/controls.ts');
       const dlg = document.querySelector('dialog.pause');
       const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
       const want = listControls().filter((c) => c.keys?.length).map((c) => c.id);
@@ -47,7 +47,7 @@ export default {
     const p0 = await g.eval(`const p = window.boogle.me.body.position; return [p.x, p.z];`);
     await g.down('KeyW');
     await g.wait(0.5);
-    const mid = await g.eval(`const { input } = await import('/src/player/input.js'); return [...input.keys];`);
+    const mid = await g.eval(`const { input } = await import('/src/player/input.ts'); return [...input.keys];`);
     await g.up('KeyW');
     await g.key('KeyT');
     await g.wait(0.2);
@@ -109,7 +109,7 @@ export default {
     await g.eval(`document.querySelector('[data-act=resume]').click();`);
     await g.wait(0.3);
     t.check('Resume closes it', !(await g.eval(`return ${isOpen};`)));
-    const keysAfter = await g.eval(`const { modalOpen } = await import('/src/player/modal.js'); return modalOpen();`);
+    const keysAfter = await g.eval(`const { modalOpen } = await import('/src/player/modal.ts'); return modalOpen();`);
     t.check('and hands the input back', keysAfter === false);
 
     // 5. The talk box is not a modal: the pause view opens over it and ends the talk; it never opens over the pause view.
@@ -138,17 +138,17 @@ export default {
     t.check(
       'with the pause view open, the talk box does not open',
       (await g.eval(`return ${isOpen};`)) &&
-        (await g.eval(`const D = await import('/src/boogler/dialogue.js'); return D.dialogue.open;`)) === false,
+        (await g.eval(`const D = await import('/src/boogler/dialogue.ts'); return D.dialogue.open;`)) === false,
     );
     await g.eval(`${PAUSE} closePause();`);
 
     // 6. A gamepad in use: the controls tab defaults to Gamepad, the pad drives the view.
     await g.eval(`document.body.classList.add('gamepad');`);
-    await g.eval(`const { actionById } = await import('/src/player/controls.js'); actionById('pause').down();`);
+    await g.eval(`const { actionById } = await import('/src/player/controls.ts'); actionById('pause').down();`);
     await g.wait(0.4);
     await g.eval(`document.querySelector('[data-act=controls]').click();`);
     await g.wait(0.3);
-    const pad = await g.eval(`const { listControls } = await import('/src/player/controls.js');
+    const pad = await g.eval(`const { listControls } = await import('/src/player/controls.ts');
       const dlg = document.querySelector('dialog.pause');
       const shown = [...dlg.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
       return { tab: dlg.querySelector('[aria-selected=true]')?.dataset.tab, n: shown.length,
@@ -159,7 +159,7 @@ export default {
       pad.tab === 'pad' && pad.n > 10,
       `${JSON.stringify(pad)}; ${padShot}`,
     );
-    const padNav = await g.eval(`const { padModal } = await import('/src/player/controls.js');
+    const padNav = await g.eval(`const { padModal } = await import('/src/player/controls.ts');
       const press = padModal(); press('right'); const tab = document.querySelector('[aria-selected=true]').dataset.tab;
       press('b'); const page = document.querySelector('.pause-card').dataset.page;
       press('menu'); return { tab, page, open: document.querySelector('dialog.pause').open };`);
@@ -207,7 +207,7 @@ export default {
     // 7. A phone: the menu button clears the hotbar and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.8);
-    await phone.eval(`const I = await import('/src/player/inventory.js'); I.take('mango'); I.take('mango');`);
+    await phone.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee'); I.take('frisbee');`);
     await phone.wait(0.5);
     const lay = await phone.eval(`
       const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };

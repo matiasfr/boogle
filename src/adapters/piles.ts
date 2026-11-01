@@ -3,10 +3,10 @@
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onApplied, submitEdit } from '../world/sync.ts';
-import { cellX, cellZ, groundHeight } from './terrain.js';
-import { me } from '../player/player.js';
+import { cellX, cellZ, groundHeight } from './terrain.ts';
+import { me } from '../player/player.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
-import { PLAYER_R } from '../constants.js';
+import { PLAYER_R } from '../constants.ts';
 import type { Pile } from '../sim/piles.ts';
 
 export const piles = rules.piles.piles;

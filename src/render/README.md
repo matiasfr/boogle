@@ -9,10 +9,10 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
 
 ## The frame
 
-- [`scene.js`](scene.js) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
+- [`scene.js`](scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
   `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
-  screen). Behind it, [`precompile.js`](precompile.js) builds every pipeline (hidden and off-screen objects too, plus
+  screen). Behind it, [`precompile.js`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
   `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
   `precompile(object)` as it builds its meshes. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
@@ -27,7 +27,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   node from `scenePass` (`scenePass.getTextureNode()`, MRT outputs), assign `pipeline.outputNode`, and set
   `pipeline.needsUpdate = true`. Each full-screen effect costs fill on phones: measure it on a real device, and plan
   for a quality setting rather than turning it on for everyone.
-- [`features/adaptive-res.js`](../features/adaptive-res.js) moves the pixel ratio between 0.6x and 1x of
+- [`features/adaptive-res.js`](../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
   `min(devicePixelRatio, 2)` from the frame time. Don't call `setPixelRatio` elsewhere.
 
 ## Colour
@@ -35,7 +35,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
 Everything is linear. Lights, materials and palettes are physical-ish linear values; the output pass does tone
 mapping and sRGB. `THREE.Color` set from a hex string converts sRGB to linear for you; a raw `vec3` literal in TSL
 is linear. three's own fog (`scene.fog`) applies to node materials; set `fog: false` on a material that does its own.
-The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
+The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 
 ## Materials
 
@@ -46,7 +46,7 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
   `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `adapters/terrain.js`),
   `opacityNode`. Use `colorNode`, not `fragmentNode`: `fragmentNode` skips lighting, fog and the output transform.
 - **Extending a material another module owns** (sway, wiggle, tint): `patchNode(mat, slot, prev => node)` from
-  [`material-patch.js`](material-patch.js). It wraps what is in the slot, so several patches compose.
+  [`material-patch.js`](material-patch.ts). It wraps what is in the slot, so several patches compose.
 - **Uniforms** are TSL `uniform(value)` nodes. A module that others drive exports them as a plain object of handles
   (`seaU` and `seaRipples` in `water-render.js`); consumers set `.value` and never reach into a material.
   Per-instance data is an `InstancedBufferAttribute` read with `instancedDynamicBufferAttribute` or `attribute()`.
@@ -76,7 +76,7 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
 - `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI (a few fps with two tabs, so
   PR CI runs only the single-tab or light scenarios), Metal on a Mac. `npm run check:gpu` (smoke on the GPU) runs in
   `npm run ship` on a Mac, and `smoke.yml` runs smoke against the live site after every deploy. The harness
-  passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.js) off so images stay comparable, and a
+  passes `?dpr=fixed`, which keeps [adaptive-res](../features/adaptive-res.ts) off so images stay comparable, and a
   scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.

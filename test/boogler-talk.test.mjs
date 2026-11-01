@@ -9,8 +9,8 @@ import {
   MARIO_TALK,
   MARIO_SAYS,
   MARIO_AFTER,
-} from '../src/boogler/lines.js';
-import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.js';
+} from '../src/boogler/lines.ts';
+import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.ts';
 import {
   LEVELS,
   RULES,
@@ -21,7 +21,7 @@ import {
   isWary,
   loadFriend,
   serializeFriend,
-} from '../src/boogler/friendship.js';
+} from '../src/boogler/friendship.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 
@@ -64,7 +64,7 @@ test('every message in a talk offers at least two answers', () => {
     const f = createFriend();
     addPts(f, Math.floor(rng() * 400));
     if (seed % 4 === 0) for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
-    const t = openTalk(f, ctx({ rng, pocket: [giftIndex('mango'), giftIndex('coconut')] }));
+    const t = openTalk(f, ctx({ rng, pocket: [giftIndex('seeds'), giftIndex('can')] }));
     for (let step = 0; step < 30 && talkView(t); step++) {
       const v = talkView(t);
       assert.ok(v.opts.length >= 2, `"${v.say}" has ${v.opts.length} answers`);
@@ -186,20 +186,20 @@ test('asking ahead of the friendship gets deflected, and pushing makes him go qu
 test('he takes what is in your hand and it can forgive a wary Boogler', () => {
   const f = createFriend();
   for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
-  const mango = giftIndex('mango');
-  const pocket = [mango];
+  const seeds = giftIndex('seeds');
+  const pocket = [seeds];
   const t = openTalk(f, ctx({ pocket }));
   assert.equal(talkView(t).mood, 'grump');
-  const out = pickTalk(t, optIndex(t, `I brought you a gift ${mango}`));
-  assert.deepEqual(out.gave, { kind: mango, taste: 'like' });
+  const out = pickTalk(t, optIndex(t, `I brought you a gift ${seeds}`));
+  assert.deepEqual(out.gave, { kind: seeds, taste: 'like' });
   assert.equal(pocket.length, 0);
   assert.equal(isWary(f, 1e6), false);
   assert.match(talkView(t).say, /forgiven/);
 });
 
 test('each gift answer carries its item for the icon, every other answer -1', () => {
-  // The coconut is catalog index 0, so `o.gift || -1` would hide its icon; `??` must keep it.
-  const kinds = [giftIndex('coconut'), giftIndex('mango')];
+  // The seeds are catalog index 0, so `o.gift || -1` would hide its icon; `??` must keep it.
+  const kinds = [giftIndex('seeds'), giftIndex('can')];
   assert.equal(kinds[0], 0);
   const check = (t) => {
     const v = talkView(t);
@@ -221,7 +221,7 @@ test('each gift answer carries its item for the icon, every other answer -1', ()
 });
 
 test('he turns down key items and leaves them in your hand', () => {
-  for (const id of ['shovel', 'ball']) {
+  for (const id of ['ball']) {
     const kind = giftIndex(id);
     const pocket = [kind];
     const t = openTalk(createFriend(), ctx({ pocket }));
@@ -286,7 +286,7 @@ test('as Mario he is starstruck even when wary, and every answer is something Ma
     const f = createFriend();
     for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
     const pts = f.pts;
-    const t = openTalk(f, ctx({ rng, mario: true, pocket: [giftIndex('mango')] }));
+    const t = openTalk(f, ctx({ rng, mario: true, pocket: [giftIndex('seeds')] }));
     for (let step = 0; step < 10 && talkView(t); step++) {
       const v = talkView(t);
       for (const o of v.opts) assert.ok(MARIO_SAYS.includes(o), `Mario would not say "${o}"`);

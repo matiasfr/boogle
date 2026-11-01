@@ -1,11 +1,11 @@
-// Cosmetic dust and spray from the shared pool (src/render/particles.js): a ball landing on sand, a
+// Cosmetic dust and spray from the shared pool (src/render/particles.ts): a ball landing on sand, a
 // hard-landing splat and a splash, fired together beside the seed stall so their looks can be compared in one still.
 const HEAD = `
-  const { teleport } = await import('/src/physics/physics.js');
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const { claimBall } = await import('/src/physics/ball.js');
-  const { splash } = await import('/src/render/splash.js');
-  const { particleCounts } = await import('/src/render/particles.js');
+  const { teleport } = await import('/src/physics/physics.ts');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { claimBall } = await import('/src/physics/ball.ts');
+  const { splash } = await import('/src/render/splash.ts');
+  const { particleCounts } = await import('/src/render/particles.ts');
   const { me, ball } = window.boogle;`;
 const FX = `${HEAD}
   teleport(me.body, 14.5, groundHeight(14.5, 22.5) + 14, 22.5);

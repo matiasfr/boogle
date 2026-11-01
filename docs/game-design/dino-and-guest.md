@@ -1,7 +1,7 @@
 # 6.17 The dino and the guest
 
 - **What.** A dino stands just outside the wine cellar's cave mouth on the north cliff, facing out along the trench
-  ([src/guest/dino.js](../../src/guest/dino.js)). Talk to him (E, pad B) and you become the guest: a character with its
+  ([src/guest/dino.ts](../../src/guest/dino.ts)). Talk to him (E, pad B) and you become the guest: a character with its
   own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
   run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
   hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
@@ -19,7 +19,7 @@
   crouch, ground pound, long jump and backflip use Shift or LT.
 - **Sync kind.** Owner: presence `mr` carries your guest's pose (24 numbers). Other players with both files see your
   guest; without them they see your usual avatar.
-- **Files.** [src/features/dino.js](../../src/features/dino.js) (eager: the dino, the files flow, controls, presence),
+- **Files.** [src/features/dino.ts](../../src/features/dino.ts) (eager: the dino, the files flow, controls, presence),
   [src/guest/](../../src/guest/) (lazy: `play.js`, `engine.js`, `model.js`, `collision.js`, `rom.js`), the shared
   [src/decomp/](../../src/decomp/) (files dialog, IndexedDB store), [native/guest/](../../native/guest/README.md).
 - **Known issues.** Not yet tried with two players, on the lighthouse stair, in the caves, on a gamepad or on touch.

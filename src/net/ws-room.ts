@@ -2,8 +2,7 @@
 // its world; this is the room interface over one WebSocket to it, plus the lead the server picks (the tab that
 // publishes Host fields: addHostField in src/netplay/net.ts). Wire shapes: ./ws-wire.ts.
 //
-// Never the lockstep host: isHost() is always false and the server's sync is the host (messages from SERVER_ID). The
-// first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
+// The server's sync is the lockstep host (its messages come from SERVER_ID). The first connect resolves after `welcome` and the last `list` chunk, or rejects with room_full (+ max), peer_hosted (a
 // server that doesn't host this room), unreachable or browser-incompatible. After that the room reconnects by itself
 // (backoff 250 ms to 3 s, +-30%; 500-1500 ms after a graceful `bye`; through a deploy that briefly doesn't host the
 // room too), reports onConnection(false/true), re-sends its presence with a new seq, flushes what send() held
@@ -12,7 +11,10 @@
 import { SELF_ID, SERVER_ID } from './ids.ts';
 import { WS_PROTOCOL, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
-import type { PeersChange, RoomError } from './peer-room.ts';
+import type { PeersChange } from './peer-table.ts';
+
+/** A room failure: code is 'room_full' (max: the cap), 'peer_hosted', 'unreachable', 'bad' or 'browser-incompatible'. */
+export type RoomError = Error & { code?: string; fatal?: boolean; max?: number };
 
 type Msg = Record<string, unknown>;
 export type WsRoomOptions = {
@@ -269,8 +271,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
       msgHandlers.add(h);
       return () => msgHandlers.delete(h);
     },
-    isHost: () => false, // the server's sync is the lockstep host
-    onHostChange: (() => () => {}) as (h: (isHost: boolean) => void) => () => void, // never fires
     isLead: () => lead === SELF_ID,
     onLeadChange(h: (isLead: boolean) => void) {
       leadHandlers.add(h);
@@ -282,7 +282,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
       ws?.close();
     },
     async linkStats() {
-      return connected ? [{ peer: SERVER_ID, fast: false, relay: false, local: 'ws', remote: 'ws', rttMs }] : [];
+      return connected ? [{ peer: SERVER_ID, rttMs }] : [];
     },
     close() {
       removeEventListener('pagehide', onHide);

@@ -14,17 +14,17 @@ For agents changing this feature or adding another character like it. The player
   so never bundle it into the build. Fetching a ROM from somewhere else may be allowed later; that is the owner's
   call. Today the player brings it through the files dialog.
 - **The engine is the owner's hosted build.** It is never committed or bundled either, but the game fetches it
-  (`ENGINE_URL` in `src/guest/engine.js`, an owner decision) the first time a player talks to the dino, and asks for it in the dialog only if that fails. This browser keeps both in IndexedDB.
+  (`ENGINE_URL` in `src/guest/engine.ts`, an owner decision) the first time a player talks to the dino, and asks for it in the dialog only if that fails. This browser keeps both in IndexedDB.
   Before that first talk the feature requests nothing. The `dino` scenario checks this.
 - **Only our glue in `native/guest/`.** Upstream code is compiled from a local checkout the build points at.
-- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.js`, `talk.js`) name Mario on
+- **The Boogler's copy is the owner's.** The starstruck lines (`src/boogler/lines.ts`, `talk.js`) name Mario on
   purpose. Don't reword them unless the owner asks.
 
 ## Map
 
 | File | Loads | What it does |
 | --- | --- | --- |
-| `src/features/dino.js` | eager | The dino's interactable, the files flow, controls (`guest-crouch` on LT, `guest-punch` row, a `use` wrap), presence `mr`, drawing remote guests |
+| `src/features/dino.ts` | eager | The dino's interactable, the files flow, controls (`guest-crouch` on LT, `guest-punch` row, a `use` wrap), presence `mr`, drawing remote guests |
 | `dino.js` | eager | The dino: the primitive model, the word bubble, and the swap to the engine's model (`showRealDino`) |
 | `state.js` | eager | `guest`: `active`, `pose`, and B/Z presses shared by the eager and lazy halves |
 | `engine.js` | eager (small) | Finds, checks and instantiates the engine (`findEngine`, `takeEngineFile`, `getSim`), defines the pose wire format |

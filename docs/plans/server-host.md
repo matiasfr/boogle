@@ -334,7 +334,7 @@ does not host, handoff is PUT (stored if not older). Same per-IP rate limit as P
 
 ### Land on the server
 
-`src/world/game-world.ts` cannot run in Node (`land.layout` is filled from `src/render/props.js`, and `src/island/`
+`src/world/game-world.ts` cannot run in Node (`land.layout` is filled from `src/render/props.ts`, and `src/island/`
 uses `import.meta.glob`). The rules need only `land = { n, layout }` (the README says so), and Node tests already run
 them on the layout pinned in `test/fixtures/world-inputs.json`. Step 2 moves `n` and `layout` to
 `src/world/home-land.json` and adds `plant`, a run-length mask of `canPlantAt(i, j)` over `g = i * n + j` (runs
@@ -384,9 +384,9 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `npm run check`. Commit body names "Designed for drop-in, drop-out".
 
 - [x] **2. The land as data (`src/world/home-land.json`).**
-  - `src/adapters/mushroom-garden.js`: rename `spotOk` to an exported `canPlantAt(i, j)` (same body); keep
+  - `src/adapters/mushroom-garden.ts`: rename `spotOk` to an exported `canPlantAt(i, j)` (same body); keep
     `const env = { canPlantAt }` and `setEnv(env)`.
-  - `dev/scenarios/world-inputs.mjs`: in `READ`, also import `/src/adapters/mushroom-garden.js`, fail the check
+  - `dev/scenarios/world-inputs.mjs`: in `READ`, also import `/src/adapters/mushroom-garden.ts`, fail the check
     "the plant mask needs an empty garden" if `garden.plots.length`, and build `plant` (the run-length encoding above,
     ~10 lines in the page). With `UPDATE_FIXTURE=1` write `src/world/home-land.json` = `{ about, n, layout, plant }`
     (Prettier-formatted, as today) and the fixture `test/fixtures/world-inputs.json` = `{ about, states, ops }`.
@@ -528,8 +528,8 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `npm --prefix server ci` before `npm run test:net` (add `server/package-lock.json` to the npm cache paths).
   - Verify: `npm run check:full`.
 
-- [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
-  `src/features/telemetry.js`, `src/debug/netdebug.js`).
+- [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
+  `src/features/telemetry.ts`, `src/debug/netdebug.ts`).
   - `room.js` as in Design, with every transition of the table.
   - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =
     import.meta.env.VITE_BOOGLE_SERVER; const p2p = new URLSearchParams(location.search).has('p2p');` and
@@ -561,8 +561,8 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `/look` session on two tabs (both say live, the Boogler walks the same on both). Production is still peer-hosted
     (server answers `peer`).
 
-- [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.js`,
-  `src/features/telemetry.js`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
+- [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
+  `src/features/telemetry.ts`, `src/debug/netdebug.ts`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
   - Done. Deviations: the loaded-room cap is `MAX_HOSTED_ROOMS` (default 20), since `MAX_ROOMS` already caps saved
@@ -602,8 +602,14 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
 
 - [x] **10. (merged into 9.)** The old "turn it on" step ships with the switch.
 
-- [ ] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
+- [x] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
   Owner-gated. Ships once step 9 has been live a day with clean `/reports`.
+  - Done the same evening (the user waived the day's wait). `sync.ts` takes the role from `attachWorld(room, { host })`
+    (the server passes `host: true`) instead of the room's `isHost`/`onHostChange`, which left the room interface;
+    `adoptSnapshot`, `serverUrl`, client saves and migration are gone. `npm run load` is ws-run's 8-page run: 7.4% of
+    one core, all presence delivered. Root `@types/ws` replaces the types `peer` used to bring in.
+  - [ ] To do (by hand, a human: agents can't write secrets): `flyctl secrets unset CF_TURN_API_TOKEN CF_TURN_KEY_ID
+    --stage -a boogle-server`. Nothing reads them since this step; `--stage` applies it on the next deploy, no restart.
   - Delete `src/net/peer-room.ts`, the `peer` dependency (root and `server/`), PeerJS signaling, `upgrade.ts`'s
     PeerJS route and ID-TAKEN guard, `/ice` and the TURN secrets (`fly secrets unset`), `PUT /rooms/:id/snapshot`,
     `POST /rooms/:id/handoff` and the handoff adopt path, `dev/peer-test/run.mjs` and `page.js`.

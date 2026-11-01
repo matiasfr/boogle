@@ -36,6 +36,8 @@ test('a world filled to every cap serializes under 60 KB', () => {
   for (let k = 0; k < MAX_PLOTS; k++)
     plant(rules.mushrooms.garden, PATCH.i0 + (k % 7) * 3, PATCH.j0 + Math.floor(k / 7) * 3);
   rules.bank.bank.ms = 9_999_999_999;
+  rules.ball.ball.p = [-25500, 19999, 25500];
+  rules.ball.ball.at = 99_999_999;
   s.world.tick = 99_999_999;
   const json = JSON.stringify(s.snapshot());
   const sizes = Object.fromEntries(Object.entries(s.snapshot().data).map(([k, v]) => [k, JSON.stringify(v).length]));

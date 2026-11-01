@@ -3,7 +3,7 @@
 import { TP } from './lib/world.mjs';
 
 const FACE = (x, z) => `
-  const { cam } = await import('/src/player/player.js');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z)); cam.pitch = -0.15;`;
 // He wanders: step to `d` metres from him on every poll until `check` holds.

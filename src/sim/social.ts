@@ -2,7 +2,7 @@
 // pitch table and the "three honks within a second make a chord" detector. No DOM, no randomness, runs in Node tests.
 
 export const PING_KINDS = { ball: 'Ball!', look: 'Look!' };
-const BOUND = 255; // map half-size in metres (HALF in src/constants.js)
+const BOUND = 255; // map half-size in metres (HALF in src/constants.ts)
 
 // Returns a clean { x, y, z, k } or null. Anything unexpected is rejected, never trusted.
 export type Ping = { x: number; y: number; z: number; k: keyof typeof PING_KINDS };

@@ -17,7 +17,7 @@ new work on the guest keeps to the boundaries below so the split stays cheap.
 - **No ROM in the public repo.** No ROM data, or anything cut from it, in the repo or the build made from it. Fetching
   one from elsewhere may be allowed later (the owner's call).
 - **Bring your own engine and ROM, for now.** No engine build in the repo or the build. The player drops or picks
-  them once (`src/decomp/files-dialog.js`) and this browser keeps them (`src/decomp/store.js`); a local dev build may
+  them once (`src/decomp/files-dialog.ts`) and this browser keeps them (`src/decomp/store.ts`); a local dev build may
   name the engine with a `VITE_..._ENGINE_URL`. Without both files the feature is dormant and fetches nothing.
 - **Only our glue in `native/`.** Upstream source is compiled from a local checkout the build script points at.
 - Heavy parts load lazily; controls through `registerAction` with at least one pad slot left free.
@@ -26,13 +26,13 @@ new work on the guest keeps to the boundaries below so the split stays cheap.
 
 Already shared or generic:
 
-- `src/decomp/files-dialog.js`: the dialog, with a checklist of what is needed. The caller passes the text.
-- `src/decomp/store.js`: IndexedDB `loadFile(key)` / `saveFile(key, data)`.
-- `triggerAction(id, edge)` (`src/player/controls.js`): mouse clicks go through the `use` action, so a character's
+- `src/decomp/files-dialog.ts`: the dialog, with a checklist of what is needed. The caller passes the text.
+- `src/decomp/store.ts`: IndexedDB `loadFile(key)` / `saveFile(key, data)`.
+- `triggerAction(id, edge)` (`src/player/controls.ts`): mouse clicks go through the `use` action, so a character's
   `wrapAction('use', ...)` covers them. Touch and pad already did.
-- The pose wire format is defined in one place, `src/guest/engine.js` (`POSE_LEN`, `isPose`, `quantisePose`).
+- The pose wire format is defined in one place, `src/guest/engine.ts` (`POSE_LEN`, `isPose`, `quantisePose`).
 
-Still guest-shaped (all in `src/guest/` and `src/features/dino.js`):
+Still guest-shaped (all in `src/guest/` and `src/features/dino.ts`):
 
 | Piece | Today | Generic part |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ on LT, the punch row). A new character needs a free pad slot like any feature.
 
 The guest's `preStep` listener flips the body to kinematic, interpolates it toward the engine's position at 30 Hz,
 writes `me.coyote`, `me.swimming` and `me.yaw`, hides the avatar every frame, and guesses at teleports (the body is
-more than 0.75 m from where it was sent). The Boogler's ride (`src/boogler/play.js`) also moves the body. A second
+more than 0.75 m from where it was sent). The Boogler's ride (`src/boogler/play.ts`) also moves the body. A second
 character would copy all of this.
 
 `src/player/drive.js` would own it once: `driveBody({ rate, step })` takes over the body, calls `step` at `rate`, moves
@@ -101,8 +101,8 @@ so older builds still draw the guest, then drop it.
 
 1. `src/decomp/rom.js` and `src/decomp/engine.js` out of `src/guest/`. Keep the store keys so saved files survive.
    Extend `test/guest-rom.test.mjs`.
-2. `src/decomp/triangles.js` out of `src/guest/collision.js`.
-3. `src/player/drive.js` out of `src/guest/play.js`; the guest becomes a `step` function.
+2. `src/decomp/triangles.js` out of `src/guest/collision.ts`.
+3. `src/player/drive.js` out of `src/guest/play.ts`; the guest becomes a `step` function.
 4. Registry + `src/features/decomp.js`.
 5. `dc` presence key alongside `mr`.
 6. The new character.

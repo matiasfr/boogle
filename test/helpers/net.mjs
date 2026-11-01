@@ -8,21 +8,19 @@ export function makeNet() {
     queue: [],
     peers,
     add(id, host) {
-      const p = { id, host, msg: new Set(), hostCb: new Set(), connCb: new Set(), alive: true, up: true };
+      const p = { id, host, msg: new Set(), connCb: new Set(), alive: true, up: true };
       p.room = {
         selfId: id,
-        isHost: () => p.host,
         send(m) {
           if (p.up) net.queue.push({ from: p, m: JSON.parse(JSON.stringify(m)) });
         },
         onMessage: (h) => (p.msg.add(h), () => p.msg.delete(h)),
         onConnection: (h) => (p.connCb.add(h), () => p.connCb.delete(h)),
-        onHostChange: (h) => (p.hostCb.add(h), () => p.hostCb.delete(h)),
       };
       peers.push(p);
       return p;
     },
-    // host's message -> all clients; a client's -> host and the other clients (like peer-room's relay)
+    // host's message -> all clients; a client's -> host and the other clients (as the server relays)
     flush() {
       const q = net.queue;
       net.queue = [];
@@ -31,22 +29,10 @@ export function makeNet() {
         for (const p of peers) if (p !== from && p.alive && p.up) for (const h of p.msg) h(m, from.id);
       }
     },
-    // A peer's room drops and later comes back (peer-room's reconnect after a stall): nothing in or out meanwhile.
+    // A peer's room drops and later comes back (a tab's socket reconnecting): nothing in or out meanwhile.
     setUp(p, up) {
       p.up = up;
       for (const h of p.connCb) h(up);
-    },
-    // The host steps down while staying in the room (the server took over): it hears isHost = false.
-    demote(p) {
-      p.host = false;
-      for (const h of p.hostCb) h(false);
-    },
-    killHost() {
-      const old = peers.find((p) => p.host && p.alive);
-      old.alive = false;
-      const next = peers.find((p) => p.alive);
-      next.host = true;
-      for (const h of next.hostCb) h(true);
     },
   };
   return net;

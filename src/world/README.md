@@ -6,7 +6,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 
 | File | Owns |
 |---|---|
-| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration (the browser-host model, until docs/plans/server-host.md step 11) and persistence; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
+| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
@@ -43,7 +43,7 @@ onTick(fn, label?)           // fn(tick) every sim tick, in registration order, 
 onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
 onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
                              // result is what apply returned. Runs on every peer: effects for the submitter only check
-                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.js). Not replayed after
+                             // edit.p === room.selfId ('local' with no room; src/adapters/gifts.ts). Not replayed after
                              // a snapshot load, so onSnapshot rebuilds the view. A throwing listener is logged.
                              // label: the handler's name in `npm run perf -- --sim` (ms per tick)
 
@@ -62,7 +62,7 @@ registry()                   // { ops, states }: registered keys in order
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
 
-Grid cells use the heightfield indexing from `src/adapters/terrain.js`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
+Grid cells use the heightfield indexing from `src/adapters/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
 Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 
@@ -75,18 +75,15 @@ Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-cloc
 
 ## Other exports
 
-Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.ts`); without a room it
-runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
-them.
+Networked through `attachWorld(room, { roomId })` (called from `src/netplay/net.ts`); the server attaches its world
+with `{ host: true, storage }` (`server/src/host/world-host.ts`). Without a room it runs locally (edits apply next
+tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamps them.
 
-- `saveNow(force?)`: save now (localStorage, and the server's snapshot for a host), with `force` even if no state changed
-  since the last save (the tick moved on); `attachWorld(room, { saveMs })` sets how
-  often saves happen (default 30 s; the server host uses 2 s).
-- `adoptSnapshot(snap)`: host only; replace the world with a handed-over snapshot (clients follow by resync). A host
-  that is demoted POSTs its world to the server's `/rooms/:id/handoff` first.
+- `saveNow(force?)`: the host saves now to its storage, with `force` even if no state changed since the last save (the
+  tick moved on); `attachWorld(room, { saveMs })` sets how often saves happen (default 30 s; the server uses 2 s).
 - `onSnapshot(fn)`: state was replaced from a snapshot; rebuild meshes.
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
-- `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
+- `onSnapFail(fn)`: a snapshot from the host (`from: 'peer'`) or the host's own save (`'local'`) could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
 - `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
   at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
@@ -96,7 +93,7 @@ them.
 
 ## The land as data
 
-`home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm and perch cells) and
+`home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm cells, the log spots, and perch cells) and
 `plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
 and Node tests read it (`test/helpers/land.mjs`); `dev/scenarios/world-inputs.mjs` checks it against the running game
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI

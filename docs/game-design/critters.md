@@ -8,8 +8,8 @@ All are Local cosmetics (Math.random allowed).
 | Gulls | Idle and peck on the sand, burst up when a player runs at them (3 m/s or more within 4.5 m) or the ball lands within 5 m, circle 6 to 12 s, resettle. | 7 gulls, 7 m/s, circle radius 8 to 14 m, 6 to 10 m up. |
 | Fireflies | Blinking lights around the garden and over grass at night. | 60, shown when daylight is under 0.35. |
 
-Files: [critter-fish.js](../../src/features/critter-fish.js), [critter-gulls.js](../../src/features/critter-gulls.js),
-[critter-fireflies.js](../../src/features/critter-fireflies.js). Related research:
+Files: [critter-fish.js](../../src/features/critter-fish.ts), [critter-gulls.js](../../src/features/critter-gulls.ts),
+[critter-fireflies.js](../../src/features/critter-fireflies.ts). Related research:
 [research/creature-ai-and-ecosystems.md](../research/creature-ai-and-ecosystems.md).
 
 ---

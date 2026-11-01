@@ -6,7 +6,7 @@
   the hotbar on screens under 1180 px wide; mid-left on touch). On short screens (under 520 px tall) and upright phones
   it drops the hands group and sits higher, clear of the held-item buttons.
 - **Sync kind.** Local (localStorage `boogle.firstRun.<kind>`).
-- **Files.** [src/features/first-run.js](../../src/features/first-run.js).
+- **Files.** [src/features/first-run.ts](../../src/features/first-run.ts).
 
 ---
 

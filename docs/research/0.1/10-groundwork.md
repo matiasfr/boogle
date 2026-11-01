@@ -13,7 +13,7 @@ briefs 7–9, the code wins, and the corrections are flagged **(correction)**.
 |---|---|---|---|
 | `selfId` | `rand(10)` once per page load, `src/net/peer-room.ts:79` (`SELF_ID`). It is deliberately not the PeerJS id. | One page load. A reload is a new player. | The host takes it from the DataConnection's `metadata.selfId` (`peer-room.js:435`) and checks only its format, `okId` = `^[a-z0-9]{1,32}$` (`:82`). |
 | PeerJS id | The host is `boogle-<room>-host` (`:184`); clients are `boogle-<room>-c<rand>` (`:728`). | One connection. | Transport only. Never in game messages. |
-| Name, colour | localStorage `boogle.name` / `boogle.color`, read in `src/player/hud.js:136-137` and written on Jump in (`src/player/player.js:96-97`). | Global per browser. | Owner presence `n`, `c` (game-design `multiplayer.md` 8.3). Not in any Lockstep state. |
+| Name, colour | localStorage `boogle.name` / `boogle.color`, read in `src/player/hud.ts:136-137` and written on Jump in (`src/player/player.ts:96-97`). | Global per browser. | Owner presence `n`, `c` (game-design `multiplayer.md` 8.3). Not in any Lockstep state. |
 | Edit author | `submitEdit` adds `p: selfId` (`src/world/sync.ts:199`). The host overwrites it with the real sender: `{ ...edit, p: from }` "never trust a client-supplied p" (`sync.js:174`). | Per edit. | Adapters check `edit.p === room.selfId` in `onApplied` to give effects (such as an item into the hotbar) to the submitter only (`src/world/README.md`, onApplied). |
 
 **Nothing identifies a person across reloads.** No Lockstep state holds a player id. The `p` field lives only in
@@ -23,9 +23,9 @@ edits in flight and is never stored.
 
 | Data | Key | Scope | Code |
 |---|---|---|---|
-| Hotbar | `boogle.hotbar` (migrated once from `boogle.pocket`) | global, every room | `src/player/inventory.js:11-45` |
-| Boogler friendship | `boogle.boogler.<room>` | per room | `src/boogler/play.js:35-47`; published as presence `bg` |
-| First-run card seen | `boogle.firstRun.<kind>` | global | `src/features/first-run.js:20` |
+| Hotbar | `boogle.hotbar` (migrated once from `boogle.pocket`) | global, every room | `src/player/inventory.ts:11-45` |
+| Boogler friendship | `boogle.boogler.<room>` | per room | `src/boogler/play.ts:35-47`; published as presence `bg` |
+| First-run card seen | `boogle.firstRun.<kind>` | global | `src/features/first-run.ts:20` |
 
 The hotbar is filled in `onApplied` of `gift.take` for the submitter. Nothing on the host knows what anyone carries,
 so a tab can throw items it never picked up. That is fine among friends (`multiplayer.md` 8.6, "Trust").
@@ -94,7 +94,7 @@ outlive a reload, so it can't be `selfId`, and it is the first per-person value 
     presence as `u` so renderers can map avatars to pids.
 - **Names must enter Lockstep.** **(correction)** A plaque `[[pid, pts]]` can't print "Ana" once Ana has gone home,
   and names live only in presence today. Add a small `roster` state, `pid → {name, colorIdx}`, set by `who.set {n, c}`.
-  Sanitize with the lobby's own `sanitizeName` (`src/math.js:13`), keep the last value, rate-limit it, and fire it on
+  Sanitize with the lobby's own `sanitizeName` (`src/math.ts:13`), keep the last value, rate-limit it, and fire it on
   Jump in and on rename. Pids get a dense index in order of first sight (Uint16). Every other table stores the index,
   never the string, so hashes stay integer folds.
 - **Two tabs in one browser** share `boogle.pid`, and with it the stack (section 3). The fix is S: the
@@ -217,7 +217,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Owner presence** `st` for the sway phase, only if remote stacks need to wobble in sync. Remote counts come from
   Lockstep.
 - **No control slot.** Pickup is walk-over or the existing Interact button (`registerInteractable`, AGENTS.md). Pouring
-  is walking into a ring. Neither needs a `registerAction` (`src/player/controls.js:1-40`).
+  is walking into a ring. Neither needs a `registerAction` (`src/player/controls.ts:1-40`).
 - **Tests:** add, spill and conservation; the soft cap is a visual and spill rule, never a reject.
 - **Risk:** latency feel. Keep the Local fly-in animation as the instant feedback.
 
@@ -288,7 +288,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
   (`sync.js:324`) but not in the hash: `combine` folds only state hashes (`:367-370`).
 - **Risks:**
   - Host clock skew. Clamp at 0, and the cap absorbs the rest.
-  - The sky clock is a function of `tick`, not `epochMs`, so it doesn't jump. Check `src/render/sky.js:328`.
+  - The sky clock is a function of `tick`, not `epochMs`, so it doesn't jump. Check `src/render/sky.ts:328`.
   - Hidden-host gaps (background catch-up is capped at 5 s) count as offline. That's fine.
   - This finally meets principle 9 (DESIGN.md:43) and PLAN Phase 5, "Growth from timestamps" (`PLAN.md:116`).
 

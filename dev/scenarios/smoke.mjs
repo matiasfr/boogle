@@ -1,6 +1,6 @@
 // The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room, see
 // each other, the client tosses an item, the client throws the ball, and both tabs end the same tick with the same per-state
-// hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.js), so it runs
+// hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.ts), so it runs
 // on the built site too: `npm run scenario -- smoke --url https://boogle.club/`.
 // Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
 // else a fresh smoke-<random> one; never a friend's room.
@@ -31,10 +31,10 @@ export default {
     const { modes, ok, host, client } = await roles(A, B);
     if (!t.check("both tabs hold the server's world", ok, modes.join())) return;
 
-    // One tab tosses a coconut at a beach cell west of the court; the other sees the item.
+    // One tab tosses a watering can at a beach cell west of the court; the other sees the item.
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
-    const item = `window.boogle.gifts.items.some((it) => it.src === 2 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
-    const sent = await client.eval(`return ${toss(0, 'Date.now() % 1000')};`);
+    const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
+    const sent = await client.eval(`return ${toss(1, 'Date.now() % 1000')};`);
     const landed = await host.waitFor(item, { timeout: 60000 });
     t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 

@@ -5,10 +5,10 @@
 // reload) and 6 (personal rewards need a person to belong to).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import './identity.css';
-import { onFrame } from '../loop.js';
+import { onFrame } from '../loop.ts';
 import { identity } from '../player/identity.ts';
-import { me } from '../player/player.js';
-import { sanitizeName } from '../math.js';
+import { me } from '../player/player.ts';
+import { sanitizeName } from '../math.ts';
 import { addPresenceField } from '../netplay/net.ts';
 import { setPid, submitEdit, worldStatus } from '../world/sync.ts';
 

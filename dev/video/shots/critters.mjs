@@ -5,15 +5,15 @@ import { STAND } from './_stand.mjs';
 const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
 const RUN = (x, z, on) => `
-  const { input } = await import('/src/player/input.js');
-  const { cam } = await import('/src/player/player.js');
+  const { input } = await import('/src/player/input.ts');
+  const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   cam.yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z));
   for (const k of ['KeyW', 'ShiftLeft']) ${on} ? input.keys.add(k) : input.keys.delete(k);`;
 // The gulls start strung along 30 m of beach: gather them around the first one so the flock fits the frame, and
 // return the spot plus the direction (from it) with the flattest dry run-up.
 const FLOCK = `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
   const G = window.__gulls, c = G[0];
   const dry = (x, z) => { const h = groundHeight(x, z); return h > 0.4 && h < 2.4; };
   G.forEach((g, k) => {
@@ -40,8 +40,8 @@ const SEEDED = `(() => { let a = 20261029; Math.random = () => { a = (a + 0x6d2b
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })()`;
 // Fish in deep water vanish into the blue: move the school to clear water 0.7-1.5 m deep near its home.
 const SHALLOWS = `
-  const { groundHeight } = await import('/src/adapters/terrain.js');
-  const { waterField } = await import('/src/physics/water-field.js');
+  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { waterField } = await import('/src/physics/water-field.ts');
   const { P, home } = window.__fish;
   const depth = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
   for (let r = 0; r < 40; r += 1.5)
@@ -101,8 +101,8 @@ export default {
           if (k <= 40) [cx, cy, cz] = await g.eval(SCHOOL); // follow the school until the drop, then hold still
           if (k === 40)
             await g.eval(`
-              const { ball, claimBall, setBallMode } = await import('/src/physics/ball.js');
-              const { teleport } = await import('/src/physics/physics.js');
+              const { ball, claimBall, setBallMode } = await import('/src/physics/ball.ts');
+              const { teleport } = await import('/src/physics/physics.ts');
               if (!ball.mine) claimBall(false);
               setBallMode('sim');
               teleport(ball.body, ${cx}, 3, ${cz});
@@ -116,8 +116,8 @@ export default {
     // Fireflies: a full-moon night over the mushroom garden, a crane down from above so the dark soil is the backdrop.
     const garden = await g.eval(`
       const { PATCH } = await import('/src/sim/mushrooms.ts');
-      const { CELL, HALF } = await import('/src/constants.js');
-      const { groundHeight } = await import('/src/adapters/terrain.js');
+      const { CELL, HALF } = await import('/src/constants.ts');
+      const { groundHeight } = await import('/src/adapters/terrain.ts');
       const x = (PATCH.i0 + PATCH.w / 2) * CELL - HALF, z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
       return [x, groundHeight(x, z), z];`);
     const [gx, , gz] = garden;

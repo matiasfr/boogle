@@ -1,22 +1,19 @@
 // The server-hosted rooms (cfg.serverRooms; docs/plans/server-host.md, "The server host" and "Revision: full
 // switchover"). `*` hosts every valid room id: a room loads (from its save) on its first join, ticks with or without
 // players, and is saved and unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at
-// once. A listed room loads with the process and stays. While a room is hosted here its PeerJS host id is held
-// (upgrade.ts answers ID-TAKEN), so no browser can host it too.
+// once. A listed room loads with the process and stays.
 //
 //   const roomHost = createRoomHost(cfg, store)
 //   roomHost.upgrade(req, socket, head)   a /room/:id upgrade: checks, then the room's join (or a refusal)
-//   roomHost.holdsPeerId(id)              a PeerJS id this server holds
 //   roomHost.room(id)                     the hosted room, or undefined
-//   roomHost.status(id)                   GET /rooms/:id/host: { mode: 'server', ... } or { mode: 'peer' }
-//   await roomHost.handoff(id, doc)       POST /rooms/:id/handoff for a hosted room ({ status, body }), else null
+//   roomHost.hosts(id), status(id)       whether it hosts that room; GET /rooms/:id/host
 //   await roomHost.close({ save })
 import crypto from 'node:crypto';
 import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { WS_PROTOCOL, CLOSE, encode } from '../../../src/net/ws-wire.ts';
-import { SERVER_ID, okId, peerHostId } from '../../../src/net/ids.ts';
+import { SERVER_ID, okId } from '../../../src/net/ids.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 
@@ -27,7 +24,6 @@ export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
   roomIdleMs: number;
   maxHostedRooms: number;
-  adoptWindowMs: number;
   allowedOrigins: string[];
   trustProxy: unknown;
   log: (...a: unknown[]) => void;
@@ -35,7 +31,6 @@ export type RoomHostCfg = HostCfg & {
 
 export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const boot = crypto.randomBytes(4).toString('hex');
-  const startedAt = performance.now();
   const rooms = new Map<string, HostedRoom>();
   const all = cfg.serverRooms.includes('*');
   const listed = new Set(cfg.serverRooms.filter((id) => ROOM_ID_RE.test(id)));
@@ -57,7 +52,6 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       }
   }, 1000);
   idle.unref();
-  const peerHostRe = /^boogle-(.+)-host$/;
   const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 64 * 1024,
@@ -81,36 +75,11 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     room: (id: string) => rooms.get(id),
     hosts,
     rooms: () => rooms.size,
-    holdsPeerId(peerId: string) {
-      const m = peerHostRe.exec(peerId);
-      if (!m) return false;
-      if (all) return true; // every room is ours (safeRoom escapes; a valid room id maps to itself)
-      return [...listed].some((id) => peerHostId(id) === peerId);
-    },
     status(id: string) {
-      if (!hosts(id)) return { mode: 'peer' };
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
       const { boot: b, tick, players, max, noSave } = room.status();
       return { mode: 'server', boot: b, tick, players, max, noSave };
-    },
-    // The newest-by-tick rule (docs/plans/server-host.md, "Adopting a handoff"): a world that loads cleanly, is newer
-    // than the hosted one, and arrives while this process is young (a peer host the server just took over from).
-    async handoff(id: string, doc: { tick: number; data: unknown }) {
-      if (!hosts(id)) return null;
-      const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
-      if (!room) return { status: 503, body: { error: 'too many rooms loaded' } };
-      const tick = room.status().tick;
-      const at = (doc.data as { tick?: unknown } | null)?.tick;
-      if (typeof at !== 'number') return { status: 400, body: { error: 'bad snapshot' } };
-      // The cheap checks first: validating loads a whole scratch world on the thread every room ticks on.
-      if (at <= tick || performance.now() - startedAt > cfg.adoptWindowMs)
-        return { status: 409, body: { adopted: false, tick } };
-      if (!room.world.validate(doc.data)) return { status: 400, body: { error: 'bad snapshot' } };
-      const adopted = await room.adopt(doc.data);
-      return adopted
-        ? { status: 200, body: { adopted: true, tick: room.status().tick } }
-        : { status: 400, body: { error: 'bad snapshot' } };
     },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
       const origin = req.headers.origin;

@@ -86,7 +86,6 @@ const T = (window.T = {
     const r = T.room!;
     return {
       self: r.selfId,
-      host: r.isHost(),
       lead: r.isLead(),
       transport: r.transport,
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
@@ -102,7 +101,7 @@ function startWorld(room: Room) {
   w.onAfterTick((t) => {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
   });
-  w.attachWorld(room, { roomId: q.get('room') ?? 'test', storage: null, serverUrl: q.get('server') ?? '' });
+  w.attachWorld(room, { roomId: q.get('room') ?? 'test' });
   let last = performance.now();
   setInterval(() => {
     const now = performance.now();

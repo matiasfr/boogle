@@ -1,7 +1,7 @@
 // The island: a pull-back reveal from home, the windmill farm, the lighthouse lighting up at dusk.
 // Places come from the POI site files, so the shot follows them when they move.
-import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.js';
-import windmills, { FARM_Y } from '../../../src/pois/windmills/site.js';
+import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.ts';
+import windmills, { FARM_Y } from '../../../src/pois/windmills/site.ts';
 import { STAND } from './_stand.mjs';
 
 const SKY = (frac) => `window.boogle.sky.preview(${frac})`;

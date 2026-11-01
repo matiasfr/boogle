@@ -67,7 +67,7 @@ server becomes the only simulator of shared state and, after it lands, sends eac
 - [ ] Interest-managed state: rules states serialize by chunk, the server sends each client the dirty chunks near it
       against an acknowledged baseline, and clients keep a read-only mirror instead of running ticks.
 - [ ] Edits predicted on the client (a cosmetic preview until the server's delta arrives).
-- [ ] Convert the rest of `src/` to `.ts` (step 8b order).
+- [x] Convert the rest of `src/` to `.ts` (step 8b order).
 - [ ] Client-side prediction and reconciliation for your own player, once the server checks movement.
 
 **Done when** the main room is server-hosted and a client's bandwidth depends on what is near it, not the world size.

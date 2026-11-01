@@ -479,7 +479,7 @@ body.touch .bd-opt kbd,
 body.gamepad .bd-opt kbd {
   display: none;
 }
-/* On a phone the left 45% of the screen is the move stick (src/player/input.js): keep the card off it, so you can walk
+/* On a phone the left 45% of the screen is the move stick (src/player/input.ts): keep the card off it, so you can walk
    away mid-talk. Landscape: to the right. Portrait: up top, under the hotbar. */
 @media (orientation: landscape) {
   body.touch .bd {

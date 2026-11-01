@@ -13,8 +13,9 @@ different systems don't touch the same file. A new system adds its file and one 
 ## 1. Overview
 
 Boogle is a drop-in browser island for up to 8 friends. You pick a name and a colour, press "Jump in", and land next to a
-sand volleyball court with one shared beach ball. Today the loop as actually played is: throw, bump and chase the ball;
-pick up fruit and throw it at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
+sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
+and The Boogler. Today the loop as actually played is: throw, bump and chase the ball;
+throw things at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; shake logs from the palms and
 carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals). There are no
@@ -32,7 +33,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | # | Principle | What it means in practice today |
 |---|---|---|
 | 1 | Toys before chores | Ball, throwing and the Boogler have no score. |
-| 2 | The ball stays the star | Ball floats, knocks fruit off palms, bounces on mushrooms. |
+| 2 | Physics toys first | One physics toy among several: floats, bounces on mushrooms, is thrown like everything else. |
 | 3 | Farming is never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
 | 5 | Only the world is the antagonist | No PvP state damage. |
@@ -57,8 +58,6 @@ Sync kinds are defined in [DESIGN.md](../DESIGN.md), "Pick how each feature shar
 tick of 100 ms (10 per second).
 
 - [6.1 Beach ball](game-design/ball.md)
-- [6.2 Sand digging and the shovel](game-design/digging.md)
-- [6.3 Water sim](game-design/water-sim.md)
 - [6.4 Mushrooms and the stall](game-design/mushrooms.md)
 - [6.5 Gifts](game-design/gifts.md)
 - [6.6 Hotbar and items](game-design/hotbar.md)
