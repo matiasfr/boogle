@@ -80,7 +80,7 @@ comes back). Others see you through your normal presence.
 
 On any `?proto=` page ([src/proto/moves/](../../src/proto/moves/index.ts); rec 6 of the same research). With
 `&jump2=1` a jump press in the air sets your upward speed to max(current, 0) + 6.0 m/s, once per airtime (landing, or
-a grind rail, gives it back), with a puff ring and a rising whoop. With `&glide=1`, holding jump after an air press
+a grind rail, gives it back), with a puff ring and a quiet puff of air (band-passed noise, no pitch). With `&glide=1`, holding jump after an air press
 (the double jump's, or a fresh one) caps your fall at 4 m/s, trailing two contrails. Same button; no new controls.
 
 ## Camera
@@ -98,7 +98,7 @@ you enter, it slowly circles the island.
 
 - Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.ts)).
 - Eight colours ([constants.js](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
-  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your honk note.
+  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
 - Name: up to 16 characters, control and format characters stripped, default "Dat Frinco". Name and colour are kept
   in localStorage (`boogle.name`, `boogle.color`); a first visit gets a random colour.
 - Remote players show a floating name label; the HUD roster lists everyone, and the net chip says "Live · N on the

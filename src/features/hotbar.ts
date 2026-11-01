@@ -5,7 +5,7 @@
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
 // (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy
 // you can throw) and 10 (slapstick over precision). With ?proto=uisfx (docs/research/ui-patterns.md, recs 1, 2 and 4) a
-// select ticks (one pitch step per slot) and the slot bounces, the text is larger, and a note goes to the shared
+// select ticks (one soft tone) and the slot bounces, the text is larger, and a note goes to the shared
 // notification lane (src/render/notify.ts, rec 5) instead of the pill here.
 import '../render/ui-kit.css';
 import './hotbar.css';
@@ -184,7 +184,7 @@ function renderHud(now: number) {
     if (ui.sel !== inv.sel) {
       replay(ui.slots[inv.sel < 0 ? ui.sel : inv.sel], 'ui-press');
       ui.sel = inv.sel;
-      uiSound('tick', inv.sel);
+      uiSound('tick');
     }
   }
   const noting = now < handsNote.until && !!handsNote.text;

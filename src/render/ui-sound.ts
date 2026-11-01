@@ -2,14 +2,16 @@
 // (C major pentatonic from C5), quiet (a bus about 8 dB under the master) and short. Behind ?proto=uisfx for now, which
 // also puts `ui-kit` on <html> for the motion and legibility rules (src/render/ui-kit.css). Local and cosmetic.
 //
-//   uiSound('tick', slot)   hotbar select: a short blip, one pentatonic step per slot (-1: empty hands, lower)
+//   uiSound('tick')         hotbar select: one soft, short tone, the same for every slot (Fortnite-style; TICK = false
+//                           silences it, the slot's bounce still shows the choice)
 //   uiSound('pop')          the interact prompt appears (rate-limited, so walking past palms doesn't chatter)
-//   uiSound('thunk')        a press that did something (Take logs, Pick up): low and woody
+//   uiSound('thunk')        a press that did something (Take logs, Pick up): a marimba-like wooden tok on G4 over a
+//                           soft low knock
 //   uiSound('deny')         a press that couldn't ("Hotbar full"): a falling two-note
 //   uiSound('count', dir)   the haul count moved by one: the pitch climbs with the run (falls when dir < 0) and resets
 //                           after a pause
-//   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a soft papery clack and a
-//                           rising pip, at vol (0-1, by distance from the plaque)
+//   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a quiet split-flap flutter (four
+//                           tiny card clicks, no pitched pip), at vol (0-1, by distance from the plaque)
 import { getAudio } from './audio.ts';
 
 export const UI_KIT = new URLSearchParams(location.search).get('proto') === 'uisfx';
@@ -17,6 +19,7 @@ if (UI_KIT) document.documentElement.classList.add('ui-kit');
 
 export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count' | 'flap';
 
+const TICK = true; // false: the hotbar select is silent
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 // Pentatonic step n above (or below) the root.
@@ -39,7 +42,16 @@ function busFor(ctx: AudioContext, out: AudioNode): GainNode {
   return bus;
 }
 
-type Blip = { type: OscillatorType; f0: number; f1?: number; at: number; dur: number; peak: number; lp?: number };
+type Blip = {
+  type: OscillatorType;
+  f0: number;
+  f1?: number;
+  at: number;
+  dur: number;
+  peak: number;
+  lp?: number;
+  attack?: number;
+};
 function blip(ctx: AudioContext, dest: AudioNode, b: Blip): void {
   const o = ctx.createOscillator();
   o.type = b.type;
@@ -47,7 +59,7 @@ function blip(ctx: AudioContext, dest: AudioNode, b: Blip): void {
   if (b.f1) o.frequency.exponentialRampToValueAtTime(b.f1, b.at + b.dur);
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, b.at);
-  g.gain.exponentialRampToValueAtTime(b.peak, b.at + 0.004);
+  g.gain.exponentialRampToValueAtTime(b.peak, b.at + (b.attack ?? 0.004));
   g.gain.exponentialRampToValueAtTime(0.0001, b.at + b.dur);
   let src: AudioNode = o;
   if (b.lp) {
@@ -67,7 +79,8 @@ export function uiSound(kind: UiSound, arg = 0): void {
   if (kind === 'count') {
     run = now - (last.count ?? -1e9) > 600 ? 0 : Math.max(-5, Math.min(9, run + Math.sign(arg || 1)));
   }
-  if (!a || now - (last[kind] ?? -1e9) < GAP[kind] || (kind === 'flap' && arg <= 0.02)) return;
+  if (!a || now - (last[kind] ?? -1e9) < GAP[kind] || (kind === 'flap' && arg <= 0.02) || (kind === 'tick' && !TICK))
+    return;
   last[kind] = now;
   const { ctx } = a;
   const out = busFor(ctx, a.out);
@@ -75,25 +88,31 @@ export function uiSound(kind: UiSound, arg = 0): void {
   const j = 1 + (Math.random() * 2 - 1) * 0.04; // ±4%: never the same twice
   switch (kind) {
     case 'tick':
-      blip(ctx, out, { type: 'triangle', f0: note(arg < 0 ? 3 : 5 + arg) * j, at, dur: 0.05, peak: 0.35 });
+      // one pitch (E5) whatever the slot, a pure sine with a 3 ms fade-in so it never clicks; barely varies
+      blip(ctx, out, { type: 'sine', f0: note(2) * (1 + (j - 1) * 0.25), at, dur: 0.045, peak: 0.13, attack: 0.003 });
       break;
     case 'pop':
       blip(ctx, out, { type: 'sine', f0: note(3) * j, f1: note(8) * j, at, dur: 0.1, peak: 0.3 });
       break;
     case 'thunk': {
-      blip(ctx, out, { type: 'sine', f0: 210 * j, f1: 120 * j, at, dur: 0.16, peak: 0.7 });
-      blip(ctx, out, { type: 'triangle', f0: note(-5) * j, at, dur: 0.07, peak: 0.25 });
+      // A mallet on a wooden bar: the fundamental rings briefly, its 4th partial (a marimba's) and a soft click give
+      // the strike, and a low knock under it gives weight. Round, short, in the kit's key.
+      const f = note(-2) * j; // G4
+      blip(ctx, out, { type: 'sine', f0: f, at, dur: 0.22, peak: 0.42, attack: 0.002 });
+      blip(ctx, out, { type: 'sine', f0: f * 4, at, dur: 0.035, peak: 0.1, attack: 0.001 });
+      blip(ctx, out, { type: 'sine', f0: 170 * j, f1: 85 * j, at, dur: 0.09, peak: 0.38, attack: 0.002 });
       const n = ctx.createBufferSource();
       n.buffer = noise;
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = 900 * j;
-      bp.Q.value = 2;
+      bp.frequency.value = 2600 * j;
+      bp.Q.value = 1.2;
       const g = ctx.createGain();
-      g.gain.setValueAtTime(0.5, at);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.04);
+      g.gain.setValueAtTime(0.12, at);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.008);
       n.connect(bp).connect(g).connect(out);
       n.start(at);
+      n.stop(at + 0.02);
       break;
     }
     case 'deny':
@@ -105,24 +124,23 @@ export function uiSound(kind: UiSound, arg = 0): void {
       blip(ctx, out, { type: 'triangle', f0: note(10 + run) * j, at, dur: 0.03, peak: 0.06 });
       break;
     case 'flap': {
-      // two quick card clacks (filtered noise), then a quiet pip a fifth up: news, not an alarm
-      for (const [dt, f] of [
-        [0, 2400],
-        [0.045, 1900],
-      ]) {
+      // a split-flap board settling: four tiny card clicks, each softer and a little lower; news, not an alarm
+      for (let k = 0; k < 4; k++) {
+        const t0 = at + k * 0.024 + (Math.random() - 0.5) * 0.004;
         const n = ctx.createBufferSource();
         n.buffer = noise;
         const bp = ctx.createBiquadFilter();
         bp.type = 'bandpass';
-        bp.frequency.value = f * j;
-        bp.Q.value = 1.4;
+        bp.frequency.value = (2200 - k * 180) * j;
+        bp.Q.value = 2.2;
         const g = ctx.createGain();
-        g.gain.setValueAtTime(0.35 * arg, at + dt);
-        g.gain.exponentialRampToValueAtTime(0.0001, at + dt + 0.025);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.2 * arg * (1 - k * 0.2), t0 + 0.001);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.014);
         n.connect(bp).connect(g).connect(out);
-        n.start(at + dt);
+        n.start(t0);
+        n.stop(t0 + 0.03);
       }
-      blip(ctx, out, { type: 'sine', f0: note(2) * j, f1: note(4) * j, at: at + 0.06, dur: 0.12, peak: 0.16 * arg });
       break;
     }
   }

@@ -154,13 +154,15 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
     o.type = 'sine';
     o.frequency.value = hz;
     const g = ctx.createGain();
-    const t0 = t + k * 0.085;
+    // subtle (2026-11-02 audit): about 5 dB quieter, a soft 18 ms swell instead of a strike, a short tail, and the
+    // second note under the first
+    const t0 = t + k * 0.075;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime((own ? 0.16 : 0.12) * (k ? 0.9 : 1), t0 + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    g.gain.linearRampToValueAtTime((own ? 0.09 : 0.065) * (k ? 0.75 : 1), t0 + 0.018);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.17);
     o.connect(g).connect(out);
     o.start(t0);
-    o.stop(t0 + 0.3);
+    o.stop(t0 + 0.2);
   });
 }
 

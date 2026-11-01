@@ -1,7 +1,10 @@
-// Honk (T, or the touch Honk button): a short cartoon honk with a note popping over your head. Everyone has a stable
-// pitch from their colour. When honks from 3 or more different players land within about a second they play as a
-// chord with a sparkle burst over everyone involved. Each client detects that locally from the honks it receives
-// (plus its own), so there is no shared state. Sent as a reliable room message { t:'honk' }, rate limited on receipt.
+// Honk (T, or the touch Honk button): a short cartoon honk with a note popping over your head. Every honk takes a tone
+// from a shared chord that changes every 10 s of shared time (honkNotes in src/sim/social.ts), so honks heard together
+// always form a chord; your colour sets your home tone and flavour, and each press a different shape (honk, toot,
+// double, low). When honks from 3 or more different players land within about a second they also play as a held chord
+// with a sparkle burst over everyone involved. Each client detects that locally from the honks it receives (plus its
+// own), so there is no shared state. Sent as a reliable room message { t:'honk', v } (v: the shape; older tabs send
+// none, heard as 0), rate limited on receipt.
 import './honk.css';
 import * as THREE from 'three';
 import { scene, camera } from '../render/scene.ts';
@@ -11,7 +14,8 @@ import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio, onBeat } from '../render/audio.ts';
 import { onFrame, onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
-import { createLimiter, createChordDetector, honkFreq } from '../sim/social.ts';
+import { createLimiter, createChordDetector, honkNotes, honkShape, HONK_SHAPES } from '../sim/social.ts';
+import { sharedSeconds } from '../netplay/shared-time.ts';
 
 const TUNE = {
   ownGapMs: 300, // our own cap, ~3 per second
@@ -27,36 +31,52 @@ const chord = createChordDetector({ windowMs: TUNE.chordWindowMs, min: TUNE.chor
 // ---------------------------------------------------------------- sound
 const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 500);
 
-export function honkSound(note: number, vol: number) {
-  const a = getAudio();
-  if (!a || vol < 0.02) return;
-  const { ctx, out } = a;
-  const { t, freq } = onBeat(ctx.currentTime + 0.004, note); // on the beat and in key under ?proto=groove
+// One horn voice: the bwAH (a quick bend down onto the note), a slight sag at the end. `wave` is the player's flavour.
+type Voice = { f: number; at: number; dur: number; bend: number; lp: number; vol: number; wave: OscillatorType };
+function horn(ctx: AudioContext, out: AudioNode, { f, at, dur, bend, lp: lpHz, vol, wave }: Voice) {
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.value = 1700;
+  lp.frequency.value = lpHz;
   lp.Q.value = 2.5;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(vol, t + 0.015);
-  g.gain.setValueAtTime(vol * 0.85, t + 0.11);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.27);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.linearRampToValueAtTime(vol, at + 0.012);
+  g.gain.setValueAtTime(vol * 0.85, at + dur * 0.4);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
   lp.connect(g).connect(out);
   for (const [type, mul, gain] of [
-    ['sawtooth', 1, 0.5],
+    [wave, 1, wave === 'square' ? 0.32 : 0.5],
     ['triangle', 0.5, 0.7],
   ] as [OscillatorType, number, number][]) {
     const o = ctx.createOscillator();
     o.type = type;
-    o.frequency.setValueAtTime(freq * mul * 1.14, t);
-    o.frequency.exponentialRampToValueAtTime(freq * mul, t + 0.05); // the bwAH
-    o.frequency.exponentialRampToValueAtTime(freq * mul * 0.96, t + 0.27);
+    o.frequency.setValueAtTime(f * mul * bend, at);
+    o.frequency.exponentialRampToValueAtTime(f * mul, at + 0.05);
+    o.frequency.exponentialRampToValueAtTime(f * mul * 0.96, at + dur);
     const og = ctx.createGain();
     og.gain.value = gain;
     o.connect(og).connect(lp);
-    o.start(t);
-    o.stop(t + 0.3);
+    o.start(at);
+    o.stop(at + dur + 0.03);
   }
+}
+
+// A honk on note f (f2: the next chord tone, for the double) in shape v: 0 the honk, 1 a short toot, 2 a honk-honk
+// up a chord tone, 3 a low bwomp an octave down. colorIdx picks the player's flavour (reedier on odd colours).
+// Plays at once: no waiting for a beat (onBeat only snaps under the old ?proto=groove).
+export function honkSound(f: number, vol: number, v = 0, colorIdx = 0, f2 = f * 1.5) {
+  const a = getAudio();
+  if (!a || vol < 0.02) return;
+  const { ctx, out } = a;
+  const { t, freq } = onBeat(ctx.currentTime + 0.004, f);
+  const wave: OscillatorType = colorIdx % 2 ? 'square' : 'sawtooth';
+  const lp = 1500 + (colorIdx % 4) * 120;
+  if (v === 1) horn(ctx, out, { f: freq, at: t, dur: 0.15, bend: 1.06, lp: lp + 400, vol: vol * 0.9, wave });
+  else if (v === 2) {
+    horn(ctx, out, { f: freq, at: t, dur: 0.11, bend: 1.1, lp, vol: vol * 0.85, wave });
+    horn(ctx, out, { f: onBeat(t, f2).freq, at: t + 0.125, dur: 0.2, bend: 1.1, lp, vol, wave });
+  } else if (v === 3) horn(ctx, out, { f: freq / 2, at: t, dur: 0.34, bend: 1.2, lp: lp - 400, vol: vol * 1.15, wave });
+  else horn(ctx, out, { f: freq, at: t, dur: 0.27, bend: 1.14, lp, vol, wave });
 }
 
 export function chordSound(notes: number[], vol: number) {
@@ -245,34 +265,42 @@ function update(dt: number) {
 onFrame(({ dt }) => update(dt), { phase: 'late' });
 
 // ---------------------------------------------------------------- honks
-// who: 'me' or a remote's peer id.
-function onHonk(who: string, now: number) {
+// who: 'me' or a remote's peer id; v: the honk's shape (HONK_SHAPES).
+const lastNote = new Map<string, number>(); // what each player honked last, for the chord gag
+function onHonk(who: string, now: number, v: number) {
   const own = who === 'me';
   const r = own ? null : remotes.get(who);
   const colorIdx = own ? me.colorIdx : (r?.colorIdx ?? 0);
   const avatar = own ? me.avatar : r?.avatar;
   const pos = own ? me.body?.position : r?.target;
   const vol = own ? 0.16 : 0.14 * (pos ? farGain(pos.x, pos.z) : 0.3);
-  honkSound(honkFreq(colorIdx), vol);
+  const [f, f2] = honkNotes(colorIdx, sharedSeconds(), v);
+  honkSound(f, vol, v, colorIdx, f2);
+  lastNote.set(who, v === 2 ? f2 : f);
   popNote(avatar, colorIdx);
   const ids = chord.add(who, now);
   if (!ids) return;
-  const freqs = ids.map((id) => honkFreq(id === 'me' ? me.colorIdx : (remotes.get(id)?.colorIdx ?? 0)));
-  chordSound(freqs, 0.17);
+  chordSound(
+    ids.map((id) => lastNote.get(id) ?? f),
+    0.17,
+  );
   for (const id of ids) sparkleOver(id === 'me' ? me.avatar : remotes.get(id)?.avatar);
 }
 
-let lastOwn = -1e9;
+let lastOwn = -1e9,
+  lastShape = 0;
 function honkNow() {
   const now = performance.now();
   if (!me.entered || !me.body || me.down || now - lastOwn < TUNE.ownGapMs) return;
   lastOwn = now;
+  // a different shape from the last press, so a honk is never the same twice in a row
+  const v = (lastShape = (lastShape + 1 + Math.floor(Math.random() * (HONK_SHAPES - 1))) % HONK_SHAPES);
   try {
-    net.room?.send({ t: 'honk' });
+    net.room?.send({ t: 'honk', v });
   } catch (e) {
     console.warn('[honk] send failed', e);
   }
-  onHonk('me', now);
+  onHonk('me', now, v);
 }
 
 onRoomReady((room) =>
@@ -280,7 +308,7 @@ onRoomReady((room) =>
     if ((msg as { t?: unknown } | null)?.t !== 'honk' || typeof from !== 'string') return;
     const now = performance.now();
     if (!incoming.allow(from, now)) return;
-    onHonk(from, now);
+    onHonk(from, now, honkShape(msg));
   }),
 );
 

@@ -210,7 +210,7 @@ const PAGES: Page[] = [
         id: 'ui-tick',
         group: 'UI kit (?proto=uisfx)',
         title: 'Hotbar tick',
-        when: 'Selecting a hotbar slot: one pentatonic step per slot; empty hands is the low one (here: empty, then slots 0 to 8).',
+        when: 'Selecting a hotbar slot: one soft tone, the same for every slot (here: ten selects in a row).',
         body: seq(
           `const { uiSound } = await import('/src/render/ui-sound.ts');`,
           [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) => `uiSound('tick', ${k});`),
@@ -232,7 +232,7 @@ const PAGES: Page[] = [
         id: 'ui-thunk',
         group: 'UI kit (?proto=uisfx)',
         title: 'Thunk (it worked)',
-        when: 'A press that did something: Take logs, Pick up.',
+        when: 'A press that did something (Take logs, Pick up): a wooden tok on G4 over a soft low knock.',
         body: seq(
           `const { uiSound } = await import('/src/render/ui-sound.ts');`,
           Array(3).fill(`uiSound('thunk');`),
@@ -265,7 +265,7 @@ const PAGES: Page[] = [
         id: 'ui-flap',
         group: 'UI kit (?proto=uisfx)',
         title: 'Plaque flap',
-        when: 'A work-site plaque turns a row over (a pour was credited): near, mid and far from the plaque.',
+        when: 'A work-site plaque turns a row over (a pour was credited): a split-flap flutter, near, mid and far.',
         body: seq(
           `const { uiSound } = await import('/src/render/ui-sound.ts');`,
           [`uiSound('flap', 1);`, `uiSound('flap', 0.55);`, `uiSound('flap', 0.25);`],
@@ -275,11 +275,11 @@ const PAGES: Page[] = [
       {
         id: 'honk',
         group: 'Base game',
-        title: 'Honk (six player colours)',
-        when: 'T, pad Y or the Honk button: everyone has a stable pitch from their colour.',
+        title: 'Honk',
+        when: 'T, pad Y or the Honk button: one player pressing four times (honk, toot, honk-honk, low bwomp), then four other colours, all in the current chord.',
         body: seq(
-          `const { honkSound } = await import('/src/features/honk.ts'); const { honkFreq } = await import('/src/sim/social.ts');`,
-          [0, 1, 2, 3, 4, 5].map((c) => `honkSound(honkFreq(${c}), 0.16);`),
+          `const { honkSound, chordSound } = await import('/src/features/honk.ts'); const { honkNotes } = await import('/src/sim/social.ts'); const H = (c, s, v, vol = 0.16) => { const [f, f2] = honkNotes(c, s, v); honkSound(f, vol, v, c, f2); return v === 2 ? f2 : f; };`,
+          [0, 1, 2, 3].map((v) => `H(0, 0, ${v});`).concat([1, 2, 3, 4].map((c) => `H(${c}, 0, 0);`)),
           450,
         ),
       },
@@ -287,26 +287,41 @@ const PAGES: Page[] = [
         id: 'honk-chord',
         group: 'Base game',
         title: 'Honk chord',
-        when: 'Three or more players honk within about a second: their honks then a chord with a sparkle (twice).',
+        when: 'Three or more players honk within about a second: their honks, then their notes held as a chord with a sparkle (in Am7, then in Dm7).',
         body: seq(
-          `const { honkSound, chordSound } = await import('/src/features/honk.ts'); const { honkFreq } = await import('/src/sim/social.ts');`,
+          `const { honkSound, chordSound } = await import('/src/features/honk.ts'); const { honkNotes } = await import('/src/sim/social.ts'); const H = (c, s, v, vol = 0.16) => { const [f, f2] = honkNotes(c, s, v); honkSound(f, vol, v, c, f2); return v === 2 ? f2 : f; }; let n = [];`,
           [
-            `honkSound(honkFreq(0), 0.16);`,
-            `honkSound(honkFreq(2), 0.14);`,
-            `honkSound(honkFreq(4), 0.14); chordSound([0, 2, 4].map(honkFreq), 0.17);`,
+            `n = [H(0, 0, 0)];`,
+            `n.push(H(1, 0, 1, 0.14));`,
+            `n.push(H(2, 0, 3, 0.14)); chordSound(n, 0.17);`,
             `await sleep(900);`,
-            `honkSound(honkFreq(1), 0.16);`,
-            `honkSound(honkFreq(3), 0.14);`,
-            `honkSound(honkFreq(5), 0.14); chordSound([1, 3, 5].map(honkFreq), 0.17);`,
+            `n = [H(3, 20, 2)];`,
+            `n.push(H(4, 20, 0, 0.14));`,
+            `n.push(H(5, 20, 1, 0.14)); chordSound(n, 0.17);`,
           ],
           260,
         ),
       },
       {
+        id: 'honk-jam',
+        group: 'Base game',
+        title: 'Honk jam (four players)',
+        when: 'Four friends honking at random through all four chords (Am7, Em7, Dm7, C6/9; 10 s each in the game, 3 s each here): whatever they press, it stays in one chord.',
+        body: `const { honkSound, chordSound } = await import('/src/features/honk.ts'); const { honkNotes } = await import('/src/sim/social.ts'); const H = (c, s, v, vol = 0.16) => { const [f, f2] = honkNotes(c, s, v); honkSound(f, vol, v, c, f2); return v === 2 ? f2 : f; };
+          let x = 7; const rnd = () => ((x = (x * 16807) % 2147483647) / 2147483647);
+          return R.run(null, async () => {
+            for (let k = 0; k < 40; k++) {
+              const c = Math.floor(rnd() * 4), v = Math.floor(rnd() * 4), s = Math.floor(k / 10) * 10;
+              H(c * 2 + (k % 2), s, v, 0.12 + rnd() * 0.04);
+              await sleep(120 + rnd() * 280);
+            }
+          });`,
+      },
+      {
         id: 'ping',
         group: 'Base game',
         title: 'Ping chime',
-        when: 'G, middle click or Ping: "Ball!" (a fifth up), then "Look!" (a third up), then a friend\'s quieter ping.',
+        when: 'G, middle click or Ping: "Ball!" (a fifth up), then "Look!" (a third up), then a friend\'s quieter ping. Subtler: lower, softer onset, shorter tail.',
         body: seq(
           `const { chime } = await import('/src/features/ping.ts');`,
           [`chime(0, 'ball', true);`, `chime(0, 'look', true);`, `chime(3, 'ball', false);`],
@@ -317,7 +332,7 @@ const PAGES: Page[] = [
         id: 'ball-boing',
         group: 'Base game',
         title: 'Ball boing',
-        when: 'The ball hitting things, by impact speed: a soft bounce, a medium and a hard hit, a splash-down, then a face-plant.',
+        when: 'The ball hitting things, by impact speed: a soft bounce, a medium and a hard hit, a splash-down, then a face-plant. A bit subtler: lower, softer onset, shorter tails, gentler wobble.',
         body: seq(
           `const { boing } = await import('/src/features/impact.ts');`,
           [
@@ -333,8 +348,8 @@ const PAGES: Page[] = [
       {
         id: 'double-jump',
         group: 'Moves (&jump2=1)',
-        title: 'Double-jump whoop',
-        when: 'The second jump in the air (any ?proto= page with &jump2=1): three of them.',
+        title: 'Double jump',
+        when: 'The second jump in the air (any ?proto= page with &jump2=1): a quiet puff of air, three of them.',
         body: seq(`const { whoop } = await import('/src/proto/moves/index.ts');`, Array(3).fill(`whoop();`), 550),
       },
     ],
