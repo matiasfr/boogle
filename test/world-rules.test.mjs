@@ -24,6 +24,7 @@ const CANONICAL = [
   'ball',
   'tune',
   'opening',
+  'wagon',
 ]; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
@@ -83,6 +84,12 @@ const SCRIPTS = {
     { op: 'open.lay', i: 0, j: 0 }, // the proto shortcut lays the rest of the route (env protoRoom)
     { op: 'open.start', i: 0, j: 0 },
     { op: 'open.here', i: 0, j: 0 }, // everyone at the platform: the call ends early
+  ],
+  wagon: () => [
+    ({ rules }) => {
+      rules.stacks.add('a', 0, 5); // logs on this player's back, the same on both peers (tune.reset emptied them)
+      return { op: 'wagon.stoke', i: 0, j: 0, n: 3 };
+    },
   ],
 };
 
