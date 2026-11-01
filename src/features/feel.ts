@@ -16,6 +16,7 @@ import { GROUP } from '../physics/physics.ts';
 import { onPreStep, raycastClosest, rayHit, getMask, type Body } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
+import { carry } from '../physics/platforms.ts';
 import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
@@ -88,6 +89,7 @@ onPreStep(() => {
 // ---------------------------------------------------------------- my flops
 type Flop = { kind: string; until: number };
 let flop: Flop | null = null;
+let seenTumbles = 0;
 const startFlop = (kind: string, ms: number) => {
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
 };
@@ -223,10 +225,19 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
       )
         startFlop('stomp', FLOP.stompMs);
     }
-    // skid dust: braking hard on the ground
+    // skid dust: braking hard on the ground (on a deck, against your speed on the deck)
     const w = me.wish;
-    if (me.coyote > 0 && h > MOVE.skidSpeed && w.x * s.vx + w.z * s.vz < -0.3 * h && Math.random() < dt * 30)
+    const rx = s.vx - carry.x,
+      rz = s.vz - carry.z,
+      rh = Math.hypot(rx, rz);
+    if (me.coyote > 0 && rh > MOVE.skidSpeed && w.x * rx + w.z * rz < -0.3 * rh && Math.random() < dt * 30)
       puff(a.position.x, a.position.y - PLAYER_R + 0.05, a.position.z, 2, 1.2);
+    // tumble: landing fast after jumping off a moving deck (src/physics/platforms.ts)
+    if (carry.tumbles !== seenTumbles) {
+      seenTumbles = carry.tumbles;
+      startFlop('bonk', FLOP.bonkMs);
+      puff(a.position.x, a.position.y - PLAYER_R, a.position.z, 10, 2.5);
+    }
   }
 }
 

@@ -18,6 +18,8 @@
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
 //   physicsTime()                  seconds of simulated time
+//   stepAlpha()                    how far the drawn frame is between the last two fixed steps (0..1), for poses
+//                                  interpolatedPosition does not cover (a platform's yaw)
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
 //                                  built from (src/guest/collision.ts triangulates them; heightfields included)
 import * as rapier from './backend-rapier.ts';
@@ -81,6 +83,7 @@ export const onPostStep: (fn: () => void) => void = backend.onPostStep;
 export const stepPhysics: (dt: number) => void = backend.stepPhysics;
 export const stepFixed: () => void = backend.stepFixed;
 export const physicsTime: () => number = backend.physicsTime;
+export const stepAlpha: () => number = backend.stepAlpha;
 export const forEachStatic: (mask: number, fn: (body: Body, shapes: Shape[]) => void) => void = backend.forEachStatic;
 export const forEachContact: (
   body: Body,

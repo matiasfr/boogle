@@ -283,7 +283,9 @@ function step() {
   time += FIXED;
   for (const fn of post) fn();
 }
+let lastAlpha = 1;
 function interpolate(alpha: number) {
+  lastAlpha = alpha;
   for (const b of bodies) {
     const a = b.previousPosition,
       p = b.position;
@@ -306,6 +308,7 @@ export function stepFixed() {
   interpolate(1);
 }
 export const physicsTime = () => time;
+export const stepAlpha = () => lastAlpha;
 export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) => void) {
   for (const b of bodies) if (b.kind === 'static' && b.group & mask) fn(b as unknown as Body, b.shapes);
 }
