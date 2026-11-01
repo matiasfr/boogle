@@ -1,5 +1,25 @@
 {
   "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
   "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources", "bank", "ball", "tune", "opening"],
-  "ops": ["mush.plant", "mush.water", "gift.take", "gift.toss", "who.set", "pile.drop", "pile.take", "site.stock", "site.run", "site.push", "src.take", "bank.wake", "ball.rest", "tune.set", "tune.fill", "tune.reset", "open.start", "open.lay"]
+  "ops": [
+    "mush.plant",
+    "mush.water",
+    "gift.take",
+    "gift.toss",
+    "who.set",
+    "pile.drop",
+    "pile.take",
+    "site.stock",
+    "site.run",
+    "site.push",
+    "src.take",
+    "bank.wake",
+    "ball.rest",
+    "tune.set",
+    "tune.fill",
+    "tune.reset",
+    "open.start",
+    "open.lay",
+    "open.here"
+  ]
 }

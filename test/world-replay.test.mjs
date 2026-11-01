@@ -120,6 +120,7 @@ async function replay(seed) {
   // Opening day needs the whole route laid: the playtest shortcut, then a start (later ones are rejected).
   await play(4, 'open.lay');
   await play(4, 'open.start');
+  await play(4, 'open.here'); // everyone at the platform: the call ends early (later ones are rejected)
   await run(net, peers, 10); // settle: every stamped edit applied everywhere
 
   // A fresh tab reloads the new host's snapshot through JSON and ticks alone, in step with the room.

@@ -155,22 +155,41 @@ Local. Look evals: `dev/look/evals/haul-barrow-push.js`, `haul-barrow-tip.js`, `
 
 ## Prototype: era swap (?proto=era)
 
-Asks "does the island change enough at an era's end?" with blocks only (no ceremony, no mayor). With `?proto=era`,
-low brown huts and a campfire stand around the court and along the route (era 1), and a platform with a bell post
-stands at the far end of the route. Once the age's last section is laid, anyone on the platform gets "Start opening
-day" (E, the Interact button; before that it shows greyed with "Lay the whole route first"). The first start wins: a
-10 s bell countdown (one constant, `BELL_S` in [src/sim/era.ts](../../src/sim/era.ts)) shows a big number on
-everyone's screen with a bell each second, then the era turns to 2: the huts sink and tall striped stalls, a town hall
-with a clock tower, bunting lines and yellow posts where the wagon will run pop up, rippling out from the court in
-about two seconds. The era is derived (age, sections laid, whether opening day's bell has run out), so a late joiner or
-a reload sees the same island. In a `proto-` room a "Lay the whole route" button (top left) lays every remaining
-section at once, so a solo tester reaches opening day in seconds; Reset haul (the haul kit) also undoes opening day.
-Without the flag nothing is drawn; the state and ops exist but nothing submits them.
+Asks "from the court, can you tell at a glance which era it is?" with greybox blocks (no ceremony, no mayor, no
+story). With `?proto=era`, low brown huts with steep A-frame roofs and a campfire stand around the court and along the
+route (era 1, the wood age), and a platform with a bell post stands at the far end of the route, by the lighthouse.
+Once the age's last section is laid, anyone on the platform gets "Start opening day" (E, the Interact button; before
+that it shows greyed with "Lay the whole route first"). The first start wins, and opening day runs in two phases:
+
+- **The gathering call**, up to 45 s (`CALL_S` in [src/sim/era.ts](../../src/sim/era.ts)): a yellow column of signal
+  smoke rises over the platform, visible from anywhere on the island; a low bell tolls every 3 s, louder the closer
+  you are; a ring of yellow segments 9 m round the platform burns down with the time left; a banner above the hotbar
+  says "Gather at the platform". The call ends early once every online player is inside the ring (any tab that sees
+  it submits `open.here`; the first one stamps the tick), so alone at the platform it is straight to the bell. It
+  never waits for a head count, and nobody can reset or cancel it.
+- **The bell**, 10 s (`BELL_S`): a big number on everyone's screen with a bell each second; the ring turns red.
+
+Then the era turns to 2 (steam wagons), on several channels at once: the huts sink and tall striped stalls with
+smoking chimneys, a town hall with a clock tower and a chimney, a works stack and shed, a water tower (the landmark,
+the tallest thing on the island, left of the court), bunting lines and yellow posts where the wagon will run pop up,
+rippling out from the court in about two seconds; over 4 s the sky and fog cross to an amber haze with the fog much
+closer in (era 1 is clear), and the ambience bed crosses from wood (a breeze, mallet knocks, gulls) to steam (a works
+rumble, a chuffing beat, a whistle), with the same five-note island motif coming round in each (plucked, then brass
+with an oompah bass). One era-1 hut (east of the court) and the first site's helper hut (built, as in
+`?proto=build`) stay standing in era 2: the heritage test, "history or leftovers?". After the swap a paper postcard
+shows the court before (taken when opening day started) and after, side by side, for 14 s (click to put it away);
+each tab takes its own, so a late joiner gets none. The era is derived (age, sections laid, whether opening day has
+run out), so a late joiner or a reload sees the same island, landing in the same phase of the call or the bell. In a
+`proto-` room a "Lay the whole route" button (top left) lays every remaining section at once, so a solo tester
+reaches opening day in seconds; Reset haul (the haul kit) also undoes opening day. Without the flag nothing is drawn
+and the sky is untouched; the state and ops exist but nothing submits them.
 
 Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
-[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/pois/era/](../../src/pois/era/index.ts) (the block
-sets are one table, [blocks.ts](../../src/pois/era/blocks.ts)). Lockstep state `opening`; ops `open.start`, `open.lay`
-(`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
+[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/pois/era/](../../src/pois/era/index.ts) (each era's
+kit, blocks, sky tint and ambience bed, is one table, [blocks.ts](../../src/pois/era/blocks.ts); the call, sky,
+ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
+(`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,
+`open.lay` (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
 
 ## Prototype: construction you can watch (?proto=build)
 

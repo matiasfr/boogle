@@ -119,8 +119,8 @@ export const PROTOS: Proto[] = [
     step: 4,
     status: 'live',
     url: '/?room=proto-era&proto=era',
-    question: "Does the island change enough at an era's end?",
-    what: 'Lay all sections, start opening day at the lighthouse platform, watch the court.',
+    question: 'From the court, can you tell at a glance which era it is?',
+    what: 'Lay all sections, start opening day at the lighthouse platform: a gathering call (smoke, a tolling bell, a ring that burns down) until everyone is there, the 10 s bell, then blocks, sky, fog and sound change together, two old huts stay, and a before/after postcard comes up.',
     since: '2026-11-01',
     spawn: { x: 6, z: -40, yaw: 0 }, // south of the lighthouse platform, looking at it
   },
