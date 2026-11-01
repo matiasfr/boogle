@@ -195,6 +195,32 @@ test('snapshot: GET serves a room the server saved, 404 for none, 400 for a bad 
   }
 });
 
+test('an upgrade with an unparseable target does not crash the server', async () => {
+  const net = await import('node:net');
+  const s = await start();
+  try {
+    const { port } = new URL(s.base);
+    for (const target of ['//[', 'http://[']) {
+      const reply = await new Promise((resolve) => {
+        const sock = net.connect(Number(port), '127.0.0.1', () =>
+          sock.write(
+            `GET ${target} HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n` +
+              'Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n',
+          ),
+        );
+        let got = '';
+        sock.on('data', (d) => (got += d));
+        sock.on('close', () => resolve(got));
+        sock.on('error', () => resolve(got));
+      });
+      assert.match(reply.split('\r\n')[0], /^HTTP\/1\.1 4\d\d/, `${target}: ${reply.split('\r\n')[0]}`);
+    }
+    assert.equal((await fetch(`${s.base}/healthz`)).status, 200, 'still serving');
+  } finally {
+    await s.stop();
+  }
+});
+
 test('an upgrade outside /room/ is refused', async () => {
   const { WebSocket } = await import('ws');
   const s = await start();

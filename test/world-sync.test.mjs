@@ -464,6 +464,29 @@ test('a state saved by a newer build is skipped, and the tab stops saving so it 
   assert.equal(JSON.parse(store.getItem('boogle.world.test')).vers.grid, 1);
 });
 
+test('a host whose save fails to load never writes its fresh fallback over that save', async () => {
+  // A corrupt file, and a valid file whose grid this build's load rejects.
+  for (const [saved, failLoad] of [
+    ['{not json', undefined],
+    [JSON.stringify(snapOf({ grid: Array(16).fill(4) })), { on: true }],
+  ]) {
+    const store = mem();
+    store.setItem('boogle.world.test', saved);
+    const writes = store.writes;
+    const net = makeNet();
+    const host = makePeer(net, 'h', true, { storage: store, failLoad });
+    await run(net, [host], 1);
+    if (failLoad) failLoad.on = false;
+    assert.equal(host.s.worldStatus().ready, true, 'the room still runs, on a fresh world');
+    assert.equal(host.s.worldStatus().badSave, true);
+    host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
+    await run(net, [host], 620); // past the 30 s save interval
+    assert.equal(host.s.saveNow(true), false, 'a forced save (shutdown) is refused too');
+    assert.equal(store.writes, writes, 'nothing saved');
+    assert.equal(store.getItem('boogle.world.test'), saved, 'the bad save is left for a fix');
+  }
+});
+
 test("a state only the host has does not fail the client's hash check", async () => {
   const net = makeNet();
   let n = 0;
