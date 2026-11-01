@@ -87,6 +87,16 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
   },
   {
+    id: 'build',
+    title: 'Construction you can watch',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-build&proto=build',
+    question: 'Is watching it go up satisfying?',
+    what: 'Press Pour 10 logs (top left) four times and watch the helper hut by the first work site go up.',
+    since: '2026-11-01',
+  },
+  {
     id: 'look',
     title: 'Graphics ceiling',
     step: 'depth',
