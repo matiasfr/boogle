@@ -120,12 +120,12 @@ Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/hau
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
 
-## Prototype: haul variants (?proto=haul&v=barrow | toss)
+## Prototype: haul variants (?proto=haul&v=barrow | toss | wave)
 
-Two other ways to get logs from the palms to the work site, so the owner can compare them with the back bundle in one
+Other ways to get logs from the palms to the work site, so the owner can compare them with the back bundle in one
 sitting (find the fun, step 1: "if hauling is a chore, test a different core loop"). Each variant has its own room on
-the protos page (`proto-haul-barrow`, `proto-haul-toss`), so their saves never mix. With a variant on, walking into a
-ring no longer pours; without `v` the loop above is unchanged. Starting numbers from
+the protos page (`proto-haul-barrow`, `proto-haul-toss`, `proto-haul-wave`), so their saves never mix. With barrow or
+toss on, walking into a ring no longer pours; without `v` the loop above is unchanged. Starting numbers from
 [docs/research/carrying-and-logistics-play.md](../research/carrying-and-logistics-play.md) (recs 1, 3, 5, 6).
 
 - **`v=barrow`:** a wheelbarrow stands beside the first work site, and stays wherever you leave it. E grabs its
@@ -142,6 +142,24 @@ ring no longer pours; without `v` the loop above is unchanged. Starting numbers 
   otherwise the handful lands 8 m ahead. A log that lands within the ring's radius plus 1 m counts there ("+1" and a
   gold burst); a miss settles as a pile.
 
+- **`v=wave`** (docs/research/roblox-patterns.md, pattern 1: a trip home under a world threat, the kind version; asks
+  whether tension makes hauling fun without rewards): a sandbar lies off the home beach south of the court, at the end
+  of an awash spit you wade out along (60% of your pace; the bar's dry top and the beach are full speed). Its three
+  big bundles (yellow pennants) are nine of the palms' bundles moved out there (the ones farthest from the first site,
+  so they vanish from their palms): Take logs on one spends three charges at once, 12 logs where a palm gives 4,
+  refilled like any palm. Walk-in pouring and pile pickup work as usual. Every 60-90 s a wave comes. 25 s before it
+  reaches the bar a horn sounds and a swell line rises on the horizon and comes on, a rumble grows (with a little
+  camera shake in the last seconds), and a countdown pill says "Wave! 18 get above the stakes"; at 10 s two short
+  horn blasts and the pill turns red. Then the surge runs over the bar and the beach in 5 s, up to a line of red-banded
+  stakes behind the beach, and drains back in 4. Seaward of the stakes when the front passes you: you tumble (the
+  tumble flop, src/features/feel.ts), the surge carries you a few metres shoreward, and half your load flies up the
+  beach as physics logs that settle as piles on the dry sand (`pile.drop` from your stack): nothing is lost, only
+  moved, and you pick it up again by walking over it. The wave is a function of shared time and the room seed
+  (src/proto/haul/wave-time.ts), so every tab sees the same wave with nothing on the wire; whether it caught you is
+  your own tab's call. The sandbar is a Local overlay (a static heightfield body and a sand mesh; the island's terrain
+  is untouched). Tuning in `window.__wave.TUNE`; `__wave.next(s)` brings the next crest s seconds away in your tab
+  (the look evals' shortcut).
+
 Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
 then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`
 from your stack, one that comes to rest anywhere else a `pile.drop` where it lies (a full ring piles the rest beside
@@ -154,9 +172,10 @@ presses, palms used, metres walked and seconds from your first take to the machi
 gathering?). Copy values includes that line.
 
 Code: [src/player/haul-variant.ts](../../src/player/haul-variant.ts) (the flag), [src/proto/haul/](../../src/proto/haul/index.ts)
-(`loose-logs.ts`, `barrow.ts`, `barrow-mesh.ts`, `toss.ts`, `pickup-feel.ts`), the chore counter in
+(`loose-logs.ts`, `barrow.ts`, `barrow-mesh.ts`, `toss.ts`, `pickup-feel.ts`, `wave.ts`, `wave-look.ts`, `wave-time.ts`), the chore counter in
 [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts). The barrow is Owner kind (presence `barrow`); loose logs are
-Local. Look evals: `dev/look/evals/haul-barrow-push.js`, `haul-barrow-tip.js`, `haul-toss-ring.js`.
+Local. Look evals: `dev/look/evals/haul-barrow-push.js`, `haul-barrow-tip.js`, `haul-toss-ring.js`, `haul-wave-warn.js`,
+`haul-wave-caught.js`, `haul-wave-dash.js`.
 
 ## Prototype: era swap (?proto=era)
 

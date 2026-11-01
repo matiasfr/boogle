@@ -1,0 +1,50 @@
+/* The haul wave's countdown (src/proto/haul/wave.ts): a pill over the hotbar, like the era call's banner. */
+.wave-chip {
+  position: absolute;
+  left: 50%;
+  bottom: 128px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 16px;
+  font: 600 16px var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.wave-chip b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: #1d8fb0;
+}
+.wave-chip span {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.4em;
+  text-align: center;
+}
+.wave-chip.urgent {
+  background: #e05a4f;
+  color: #fff;
+  animation: wave-chip-pulse 0.5s ease-in-out infinite alternate;
+}
+.wave-chip.urgent b {
+  color: #fff;
+}
+@keyframes wave-chip-pulse {
+  to {
+    scale: 1.08;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave-chip.urgent {
+    animation: none;
+  }
+}

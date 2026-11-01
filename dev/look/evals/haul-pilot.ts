@@ -49,9 +49,10 @@ export async function fill(n: number) {
   return myCount();
 }
 
-export function stand(x: number, z: number, yaw = 0) {
+/** Puts you at (x, z) facing yaw, on the ground there (or on `floor`, for something standing over it: a sandbar). */
+export function stand(x: number, z: number, yaw = 0, floor = groundHeight(x, z)) {
   if (!me.body) return;
-  teleport(me.body, x, groundHeight(x, z) + 1, z);
+  teleport(me.body, x, floor + 1, z);
   me.body.velocity.set(0, 0, 0);
   me.yaw = cam.yaw = yaw;
 }
