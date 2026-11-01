@@ -60,8 +60,8 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
   particles, call `emit()` from `particles.js`; don't build a pool.
 - **Lint bans the WebGL-only APIs** in `src/`: `ShaderMaterial`, `RawShaderMaterial`, `ShaderChunk`, `ShaderLib`,
   `UniformsLib`, `UniformsUtils`, `WebGLRenderer`, `THREE.Points`, `onBeforeCompile`, `customProgramCacheKey` and
-  `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; `player/item-icons.js` shows a readback that goes
-  through the game's tone mapping and probes the row order once).
+  `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; `player/item-icons.ts` shows a readback that goes
+  through the game's tone mapping; WebGPU reads rows top first).
 
 ## TSL pitfalls (each cost us time)
 
