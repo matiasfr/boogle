@@ -34,7 +34,15 @@ const COLORS = ['#e8453c', '#f28a2e', '#f2c53a', '#4fbf6a', '#3a86e8'];
 const stemMat = new THREE.MeshStandardNodeMaterial({ color: '#f3e6cf', roughness: 0.8 });
 const spotMat = new THREE.MeshStandardNodeMaterial({ color: '#fffaf0', roughness: 0.7 });
 const woodMat = new THREE.MeshStandardNodeMaterial({ color: '#b08454', roughness: 0.9, flatShading: true });
-type Shroom = { cap: THREE.Group; body: Body; top: number; squishAt: number; x: number; z: number };
+type Shroom = {
+  cap: THREE.Group;
+  body: Body;
+  top: number;
+  squishAt: number;
+  x: number;
+  z: number;
+  color: THREE.Color;
+};
 const caps = new Map<Body, Shroom>();
 const shrooms: Shroom[] = SHROOMS.map((s, k) => {
   const g = groundHeight(s.x, s.z) - 0.1;
@@ -78,7 +86,7 @@ const shrooms: Shroom[] = SHROOMS.map((s, k) => {
     ],
   });
   addBody(body);
-  const m = { cap, body, top: g + s.h, squishAt: -1e9, x: s.x, z: s.z };
+  const m = { cap, body, top: g + s.h, squishAt: -1e9, x: s.x, z: s.z, color: new THREE.Color(COLORS[k]) };
   caps.set(body, m);
   return m;
 });
@@ -181,7 +189,7 @@ onPostStep(() => {
     me.coyote = 0;
     s.squishAt = performance.now();
     boing(Math.min(1, st.hops / 5), near(s.x, s.z));
-    puff(b.position.x, s.top, b.position.z, 6, 1.5, new THREE.Color(COLORS[shrooms.indexOf(s)]), 0.16);
+    puff(b.position.x, s.top, b.position.z, 6, 1.5, s.color, 0.16);
     if (st.mode === 'ready') {
       st.mode = 'run';
       st.t0 = performance.now();

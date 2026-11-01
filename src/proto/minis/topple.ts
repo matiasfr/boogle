@@ -63,6 +63,8 @@ addBody(
   }),
 );
 
+const DUST = new THREE.Color('#f1dca8');
+const WOOD = new THREE.Color('#c99a5e');
 const crateMat = material('crate', { friction: 0.7, restitution: 0.2 });
 const PAINT = ['#e8453c', '#f2b33a', '#3a86e8', '#e8453c', '#3a86e8', '#f2b33a'];
 const crateGeo = new THREE.BoxGeometry(S, S, S);
@@ -119,9 +121,9 @@ const paint = () => {
 };
 paint();
 
-const near2 = () => !!me.body && flat(me.body.position.x, me.body.position.z, STUMP.x, STUMP.z) < REACH;
+const inReach = () => !!me.body && flat(me.body.position.x, me.body.position.z, STUMP.x, STUMP.z) < REACH;
 function shot() {
-  if (st.mode === 'rebuild' || !near2()) return;
+  if (st.mode === 'rebuild' || !inReach()) return;
   st.shots++;
   if (st.mode === 'set') st.mode = 'live';
   st.lastMove = performance.now();
@@ -185,8 +187,6 @@ function finish() {
   st.mode = 'rebuild';
   st.rebuildAt = performance.now() + (isBest ? 1600 : 700);
 }
-const DUST = new THREE.Color('#f1dca8');
-const WOOD = new THREE.Color('#c99a5e');
 function rebuildStep(now: number) {
   const k = Math.floor((now - st.rebuildAt) / 110);
   for (let i = 0; i < crates.length && i <= k; i++) {
