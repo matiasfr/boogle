@@ -8,8 +8,9 @@
 //                  jitter. The run starts over after 700 ms with nothing landing.
 //   burstChord()   a burst of 4 or more closes with a "cha-ching" 60 ms after its last tick: C6, G6, C7 clinks 40 ms
 //                  apart (E7 too after 10 or more), a detuned octave-and-fifth shimmer, and a low wooden knock under it.
-// About −18 dBFS a tick on the ui bus, at most 8 voices (the oldest is cut). Through `onBeat`, so with ?proto=groove
-// the ladder lands on the beat and in the current chord, as Peggle's pegs do. Local and cosmetic.
+// About −18 dBFS a tick on the ui bus, at most 8 voices (the oldest is cut). Through `onBeat`, so once music installs
+// a snap the ladder lands on the beat and in the current chord, as Peggle's pegs do (none does today). Local and
+// cosmetic.
 import { getAudio, onBeat } from '../../render/audio.ts';
 import { clink, pentatonic } from '../../render/clink.ts';
 

@@ -63,7 +63,7 @@ function horn(ctx: AudioContext, out: AudioNode, { f, at, dur, bend, lp: lpHz, v
 
 // A honk on note f (f2: the next chord tone, for the double) in shape v: 0 the honk, 1 a short toot, 2 a honk-honk
 // up a chord tone, 3 a low bwomp an octave down. colorIdx picks the player's flavour (reedier on odd colours).
-// Plays at once: no waiting for a beat (onBeat only snaps under the old ?proto=groove).
+// Plays at once: no waiting for a beat (`onBeat` would snap it only if music installed a snap; none does today).
 export function honkSound(f: number, vol: number, v = 0, colorIdx = 0, f2 = f * 1.5) {
   const a = getAudio();
   if (!a || vol < 0.02) return;
