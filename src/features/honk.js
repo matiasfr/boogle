@@ -4,11 +4,11 @@
 // (plus its own), so there is no shared state. Sent as a reliable room message { t:'honk' }, rate limited on receipt.
 import './honk.css';
 import * as THREE from 'three';
-import { scene, camera } from '../render/scene.js';
+import { scene, camera } from '../render/scene.ts';
 import { COLORS } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
-import { getAudio } from '../render/audio.js';
+import { getAudio } from '../render/audio.ts';
 import { onFrame, onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
 import { createLimiter, createChordDetector, honkFreq } from '../sim/social.ts';

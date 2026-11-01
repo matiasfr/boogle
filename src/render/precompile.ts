@@ -10,16 +10,19 @@
 //                         returns a throwaway Object3D with the same materials; it is compiled at start, never drawn.
 //                         Work that draws off-screen itself (the hotbar's item icons) does it in make() and returns a
 //                         promise of anything else; it is awaited in turn
-import { renderer, scene, camera, rendererReady } from './scene.js';
+import { renderer, scene, camera, rendererReady } from './scene.ts';
 
-const warmups = [];
-export const warmUp = (make) => warmups.push(make);
+import type * as THREE from 'three/webgpu';
+
+type Warmup = () => THREE.Object3D | Promise<unknown> | unknown;
+const warmups: Warmup[] = [];
+export const warmUp = (make: Warmup) => warmups.push(make);
 
 // three keeps one precompilation state per renderer, so two compileAsync calls must never overlap: one at a time.
-let queue = Promise.resolve();
-const compile = (root) => (queue = queue.then(() => compileNow(root)));
+let queue: Promise<unknown> = Promise.resolve();
+const compile = (root: THREE.Object3D) => (queue = queue.then(() => compileNow(root)));
 
-async function compileNow(root) {
+async function compileNow(root: THREE.Object3D) {
   // compileAsync would await init itself, but the flags below must be undone without a gap
   if (
     !(await rendererReady.then(
@@ -28,8 +31,8 @@ async function compileNow(root) {
     ))
   )
     return;
-  const undo = [];
-  const open = (o) => {
+  const undo: (() => void)[] = [];
+  const open = (o: THREE.Object3D) => {
     if (!o.visible) {
       o.visible = true;
       undo.push(() => (o.visible = false));
@@ -58,14 +61,14 @@ async function compileNow(root) {
 }
 
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
-export async function precompile(root = null, onProgress = () => {}) {
+export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
   const parts = warmups.length + 2; // the scene counts as two: it is most of the work
   await compile(scene);
   onProgress(2 / parts);
   for (let i = 0; i < warmups.length; i++) {
     const made = await warmups[i]();
-    if (made?.isObject3D) await compile(made);
+    if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
     onProgress((i + 3) / parts);
   }
 }

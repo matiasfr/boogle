@@ -7,7 +7,7 @@
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
 import { registerInteractable } from '../player/hands.ts';

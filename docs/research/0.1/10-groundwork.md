@@ -288,7 +288,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
   (`sync.js:324`) but not in the hash: `combine` folds only state hashes (`:367-370`).
 - **Risks:**
   - Host clock skew. Clamp at 0, and the cap absorbs the rest.
-  - The sky clock is a function of `tick`, not `epochMs`, so it doesn't jump. Check `src/render/sky.js:328`.
+  - The sky clock is a function of `tick`, not `epochMs`, so it doesn't jump. Check `src/render/sky.ts:328`.
   - Hidden-host gaps (background catch-up is capped at 5 s) count as offline. That's fine.
   - This finally meets principle 9 (DESIGN.md:43) and PLAN Phase 5, "Growth from timestamps" (`PLAN.md:116`).
 

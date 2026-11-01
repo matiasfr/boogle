@@ -13,7 +13,7 @@ import { net, getRoomId, onNetState } from '../netplay/net.ts';
 import { world, onDesync, onSnapFail } from '../world/sync.ts';
 import { mixedBuilds } from '../netplay/builds.ts';
 import { coarseUa, firstFrame, scrub } from '../netplay/report-format.ts';
-import { gfx } from '../render/scene.js';
+import { gfx } from '../render/scene.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;

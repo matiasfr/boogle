@@ -1,7 +1,7 @@
 // Cosmetic Boogler effects: hearts floating off his head and the orb he puffs up to launch riders. Local only, so
 // Math.random is fine here.
 import * as THREE from 'three';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { reducedMotion } from '../constants.ts';
 import { boogler, booglerReact, PUFF_MS } from './boogler.js';
 

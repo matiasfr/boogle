@@ -2,7 +2,7 @@ import * as THREE from 'three/webgpu';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { scene, camera, sun, sky } from '../render/scene.js';
+import { scene, camera, sun, sky } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
 import { addBody, type Body } from '../physics/engine.ts';
 import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';

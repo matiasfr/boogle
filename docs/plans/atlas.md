@@ -25,7 +25,7 @@ because `/private/tmp` does not survive a reboot.
 
 The plan was written before the WebGPU renderer migration landed. Re-read against `AGENTS.md`, `src/README.md`,
 `src/loop.ts` and `src/main.ts` on that commit:
-- The render pass is `renderFrame()` (from `src/render/scene.js`), not `renderer.render`; the Frame view's last slice
+- The render pass is `renderFrame()` (from `src/render/scene.ts`), not `renderer.render`; the Frame view's last slice
   is named `renderFrame`. The pre-step list is no longer a constant: the extractor reads it from `src/main.ts` (`facts.loop`).
 - The Frame view's core hooks come from the extractor (`isCoreHook` in `dev/scan/read.mjs`: outside `src/features/`, with
   an order below −10 or from 3000 up, the ranges `src/loop.ts` reserves), the same predicate the registry check uses.
@@ -490,7 +490,7 @@ glance".
   and `atlas/views/frame.js` (port `frameView` over `hooks(M)`, removing `CORE`; slices are grey when `core`,
   `data-hook` is the hook id, and the inspector looks the hook up by id). Remove the "Coming" placeholder. Verify
   against `v3-focus.png`, `v3-flow.png` and `v3-frame.png`: the Frame view now shows multi-line hooks the prototype
-  missed (for example `src/features/impact.js`, `src/render/particles.js`). `npm run check`.
+  missed (for example `src/features/impact.js`, `src/render/particles.ts`). `npm run check`.
 
 - [x] **8. What changed + hash links.** In `atlas/main.js`: `[data-changes]` sets `S.sel = { t: 'changes' }`, and the
   inspector renders `renderChanges(parseChanges(changesMd).slice(0, 8), known)`. Hash routes are read on load and on

@@ -10,8 +10,8 @@
 import './dino.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
-import { camera } from '../render/scene.js';
-import { emit } from '../render/particles.js';
+import { camera } from '../render/scene.ts';
+import { emit } from '../render/particles.ts';
 import { me } from '../player/player.ts';
 import { dom } from '../player/hud.ts';
 import { registerInteractable, interactTarget } from '../player/hands.ts';

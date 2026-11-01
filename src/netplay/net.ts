@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, INTERP_MS, SEND_MS } from '../constants.ts';
 import { lerp, angleLerp, finiteArr, r2, sanitizeName } from '../math.ts';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
 import { addBody, removeBody } from '../physics/engine.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../player/avatars.ts';

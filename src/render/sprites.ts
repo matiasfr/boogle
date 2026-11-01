@@ -3,16 +3,20 @@
 // throw preview.
 import * as THREE from 'three/webgpu';
 import { instancedDynamicBufferAttribute } from 'three/tsl';
-import { scene } from './scene.js';
+import { scene } from './scene.ts';
 
 // A per-instance buffer that is rewritten every frame.
-export const dynAttr = (array, itemSize) =>
+export const dynAttr = (array: Float32Array, itemSize: number) =>
   new THREE.InstancedBufferAttribute(array, itemSize).setUsage(THREE.DynamicDrawUsage);
 
 // Adds a hidden instanced Sprite to the scene, centred per instance on posAttr. mat is a SpriteNodeMaterial (sized in
 // world units through scaleNode) or a PointsNodeMaterial (sized like PointsMaterial). alphaToCoverage is turned off, or
 // MSAA dithers the soft dot edges.
-export function instancedSprite(mat, posAttr, count = 0) {
+export function instancedSprite(
+  mat: THREE.SpriteNodeMaterial | THREE.PointsNodeMaterial,
+  posAttr: THREE.InstancedBufferAttribute,
+  count = 0,
+) {
   mat.alphaToCoverage = false;
   mat.positionNode = instancedDynamicBufferAttribute(posAttr);
   const sprite = new THREE.Sprite(mat);

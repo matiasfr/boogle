@@ -3,7 +3,7 @@ import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
 import { playerMat, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, BODY } from '../physics/engine.ts';
-import { warmUp } from '../render/precompile.js';
+import { warmUp } from '../render/precompile.ts';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
 const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);

@@ -6,7 +6,7 @@
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame, onStart } from '../loop.ts';
-import { trees } from '../render/props.js';
+import { trees } from '../render/props.ts';
 import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { registerInteractable, type Interactable } from '../player/hands.ts';

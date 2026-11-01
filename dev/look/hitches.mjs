@@ -23,8 +23,8 @@ const jsonOut = val('--json', null);
 // Runs in the page. Frames are timed from a requestAnimationFrame loop of its own (it sees the same vsync the game
 // does), counters are read right after the game's frame, tagged with window.__step / the sky time.
 const INSTALL = `
-  const { renderer, sun } = await import('/src/render/scene.js');
-  const { skyNow } = await import('/src/render/sky.js');
+  const { renderer, sun } = await import('/src/render/scene.ts');
+  const { skyNow } = await import('/src/render/sky.ts');
   const m = renderer.info.memory;
   const frames = (window.__frames = []);
   let prev = performance.now(), p = m.programs ?? 0, g = m.geometries ?? 0, t = m.textures ?? 0;
@@ -80,7 +80,7 @@ const TOUR = `
   const I = await import('/src/player/inventory.ts');
   const H = await import('/src/player/hands.ts');
   const { NODES } = await import('/src/pois/caves/network.js');
-  const { emit } = await import('/src/render/particles.js');
+  const { emit } = await import('/src/render/particles.ts');
   const sky = window.boogle.sky;
   const step = async (name, ms, fn) => { window.__step = name; if (fn) await fn(); await sleep(ms); };
   const view = (v) => () => dbg.set(v.cam, v.look, null);

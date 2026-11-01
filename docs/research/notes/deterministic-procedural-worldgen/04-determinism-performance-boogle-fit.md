@@ -55,4 +55,4 @@ The island is baked at module import from constants, and several systems hard-co
 - The seed should be derived from the room name with an integer string hash (FNV-1a like `hashStr` in terrain-logic.js) so `?room=beach` always yields the same island and needs no lobby (principle 8). Keep `beach` mapped to today's hand-built island for continuity.
 
 ### Gaps
-- Did not check `src/render/props.js` and `src/boogler/boogler.js` in detail for every hard-coded coordinate.
+- Did not check `src/render/props.ts` and `src/boogler/boogler.js` in detail for every hard-coded coordinate.

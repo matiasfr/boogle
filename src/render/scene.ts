@@ -2,14 +2,14 @@ import * as THREE from 'three/webgpu';
 import { pass } from 'three/tsl';
 import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
 
-export const canvas = document.getElementById('view');
+export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
 // WebGPU only: no WebGL 2 fallback, so every feature may use compute, storage buffers and the rest of WebGPU without a
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.js starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
 export const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
+(renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
 export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
 export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
 renderer.setPixelRatio(MAX_DPR);
@@ -20,7 +20,7 @@ renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.0; // the one base exposure; sky.js eases it up at night (eyes adapting), lights stay physical
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-const lobbyNote = (text) => {
+const lobbyNote = (text: string) => {
   const sub = document.getElementById('lobby-sub');
   if (sub) sub.textContent = text;
 };
@@ -35,7 +35,7 @@ export const rendererReady = renderer.init().then(
   },
   (e) => {
     lobbyNote(
-      navigator.gpu
+      'gpu' in navigator
         ? "This device's graphics can't start WebGPU, which Boogle needs to draw the island."
         : 'Boogle needs WebGPU: open it in Chrome, Edge or Safari 26 (iPhone, iPad and Mac), or Firefox on Windows or a Mac.',
     );
@@ -91,12 +91,17 @@ resize();
 // Where world point v lands on a w x h screen, in pixels (y down): out.x, out.y, and out.behind when it is behind the
 // camera (x and y then come out mirrored through the centre). Uses the camera's matrices as they are. Returns out.
 const ndc = new THREE.Vector3();
-export function toScreen(v, out, w = innerWidth, h = innerHeight) {
+export function toScreen<T extends { x: number; y: number; behind?: boolean }>(
+  v: THREE.Vector3,
+  out: T,
+  w = innerWidth,
+  h = innerHeight,
+): T & { behind: boolean } {
   ndc.copy(v).project(camera);
   out.x = (ndc.x * 0.5 + 0.5) * w;
   out.y = (-ndc.y * 0.5 + 0.5) * h;
   out.behind = ndc.z > 1;
-  return out;
+  return out as T & { behind: boolean };
 }
 
 scene.add(new THREE.HemisphereLight('#d4f0ff', '#e6d3a0', 1.2));
@@ -108,7 +113,7 @@ sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;
 scene.add(sun, sun.target);
 
-// Placeholder until createSky (src/render/sky.js) swaps in the real dome.
+// Placeholder until createSky (src/render/sky.ts) swaps in the real dome.
 export const sky = new THREE.Mesh(
   new THREE.SphereGeometry(700, 32, 16),
   new THREE.MeshBasicMaterial({ color: FOG_HEX, side: THREE.BackSide, depthWrite: false, fog: false }),

@@ -54,7 +54,7 @@ export default {
     await g.eval(`${TP(F.x, F.z, F.y + 0.8)} ${AIM(3.0, -0.35)}`);
     await g.wait(1.2);
     // The thrown frisbee is the newest thing in the scene (src/adapters/gifts.js startFlight); follow it till it lands.
-    const GRAB = `const { scene } = await import('/src/render/scene.js'); window.__fris = scene.children.at(-1);`;
+    const GRAB = `const { scene } = await import('/src/render/scene.ts'); window.__fris = scene.children.at(-1);`;
     const POS = `const m = window.__fris; return m?.parent ? [m.position.x, m.position.y, m.position.z] : null;`;
     let cam = null,
       at = null;

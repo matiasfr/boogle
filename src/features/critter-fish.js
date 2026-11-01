@@ -16,13 +16,13 @@ import {
   time,
 } from 'three/tsl';
 import { onFrame, onStart } from '../loop.ts';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { waterField } from '../physics/water-field.ts';
 import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
-import { patchNode } from '../render/material-patch.js';
+import { patchNode } from '../render/material-patch.ts';
 import { createPool } from '../render/instances.ts';
 
 const FISH = {

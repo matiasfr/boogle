@@ -3,8 +3,8 @@
 // engine and the ROM he is built from primitives in the island's flat-shaded style; with both he is the engine's model,
 // idling// and blinking (showRealDino).
 import * as THREE from 'three';
-import { addPart, mergeParts } from '../render/props.js';
-import { scene, toScreen } from '../render/scene.js';
+import { addPart, mergeParts } from '../render/props.ts';
+import { scene, toScreen } from '../render/scene.ts';
 import { groundHeight } from '../adapters/terrain.js';
 import { NODES } from '../pois/caves/network.js';
 import { getSim } from './engine.js';

@@ -12,7 +12,7 @@ without touching anything else on the island.
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
-(`ground.js`). `src/adapters/terrain.js` builds the heightfield and the mesh from it; `src/render/props.js`
+(`ground.js`). `src/adapters/terrain.js` builds the heightfield and the mesh from it; `src/render/props.ts`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
@@ -34,7 +34,7 @@ keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, wh
 
 2. `src/pois/<name>/index.js` builds the content in `onStart` (after the terrain and props exist), using
    `groundHeight`, `siteFrame(site)` from `stamps.js` for local-to-world placement, and `addPart`/`mergeParts` from
-   `src/render/props.js` to merge small parts into one draw call.
+   `src/render/props.ts` to merge small parts into one draw call.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 
@@ -68,6 +68,6 @@ a few hooks anyone can reuse:
 - `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
   (which puts bodies under the terrain back on top) leaves that area to your own safety net.
 - `camConstraints` (`src/player/player.ts`): keep the camera somewhere special (inside the tunnels).
-- `atmosphere.underground` (`src/render/sky.js`): 0..1, dims the sky light and closes the fog in.
+- `atmosphere.underground` (`src/render/sky.ts`): 0..1, dims the sky light and closes the fog in.
 
 `npm run scenario -- caves` walks through them, throws the ball about and floats it on the pond.

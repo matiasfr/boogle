@@ -14,7 +14,7 @@ import { inv, SLOTS, heldId, select } from '../player/inventory.ts';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.ts';
 import { pouring } from '../adapters/mushroom-garden.js';
 import { itemModel } from '../player/item-models.ts';
-import { warmUp } from '../render/precompile.js';
+import { warmUp } from '../render/precompile.ts';
 import { setIcon, warmIcons } from '../player/item-icons.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 import { describeControl, onKey } from '../player/controls.ts';

@@ -9,7 +9,7 @@ import { input } from '../player/input.ts';
 import { me, cam } from '../player/player.ts';
 import { clamp } from '../math.ts';
 import { dom } from '../player/hud.ts';
-import { canvas } from '../render/scene.js';
+import { canvas } from '../render/scene.ts';
 import { PAD, actionForSlot, padModal, padGrab } from '../player/controls.ts';
 
 const DEAD = 0.15; // stick deadzone

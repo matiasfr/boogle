@@ -4,7 +4,7 @@ import { land, rules } from '../world/game-world.ts'; // first: the lockstep rul
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from './terrain.js';
-import { scene } from '../render/scene.js';
+import { scene } from '../render/scene.ts';
 import { me, throwFrom } from '../player/player.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
@@ -17,7 +17,7 @@ import { itemModel } from '../player/item-models.ts';
 import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
 import { inv, take, roomFor } from '../player/inventory.ts';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.js';
-import { splash } from '../render/splash.js';
+import { splash } from '../render/splash.ts';
 
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 

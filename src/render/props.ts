@@ -5,13 +5,26 @@ import { MASSIF } from '../island/shape.js';
 import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { scene } from './scene.js';
+import { scene } from './scene.ts';
 import { addStaticSpheres } from '../physics/physics.ts';
 import { onFrame } from '../loop.ts';
 import { freezeStatic } from './instances.ts';
+import type { Body } from '../physics/engine.ts';
+
+type Sphere = { x: number; y: number; z: number; r: number };
+type Merge = (spheres: Sphere[]) => void;
+/** A footprint on the ground plane. */
+export type Obstacle = { x: number; z: number; r: number };
+/** A home palm: where it stands, and once built its crown, frond angles and collider body. */
+export type Tree = { x: number; z: number; h: number; top?: THREE.Vector3; hang?: number[]; body?: Body };
 
 // Concatenate many small vertex-colored geometries into one draw call (POIs use these too).
-export function addPart(parts, geo, matrix, color) {
+export function addPart(
+  parts: THREE.BufferGeometry[],
+  geo: THREE.BufferGeometry,
+  matrix: THREE.Matrix4,
+  color: THREE.ColorRepresentation,
+) {
   const g = geo.index ? geo.toNonIndexed() : geo.clone();
   g.applyMatrix4(matrix);
   const c = new THREE.Color(color);
@@ -25,7 +38,7 @@ export function addPart(parts, geo, matrix, color) {
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   parts.push(g);
 }
-export function mergeParts(parts) {
+export function mergeParts(parts: THREE.BufferGeometry[]) {
   let total = 0;
   for (const g of parts) total += g.attributes.position.count;
   const pos = new Float32Array(total * 3),
@@ -47,23 +60,23 @@ export function mergeParts(parts) {
 
 // Footprints of trees, rocks and POIs ({ x, z, r } on the ground plane), for things that walk around them.
 // Push freely; blockedAt() re-indexes when the list grows.
-export const obstacles = [];
+export const obstacles: Obstacle[] = [];
 // Home palms in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles], body }. Their
 // cells are the wood age's log spots (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
-export const trees = [];
+export const trees: Tree[] = [];
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
 let indexed = -1;
-const buckets = new Map();
-const bkey = (bx, bz) => bx * 4096 + bz;
+const buckets = new Map<number, Obstacle[]>();
+const bkey = (bx: number, bz: number) => bx * 4096 + bz;
 // True when (x, z) is within r + pad of an obstacle.
-export function blockedAt(x, z, pad = 0) {
+export function blockedAt(x: number, z: number, pad = 0) {
   if (indexed !== obstacles.length) {
     buckets.clear();
     for (const o of obstacles) {
       const k = bkey(Math.floor(o.x / BUCKET), Math.floor(o.z / BUCKET));
       if (!buckets.has(k)) buckets.set(k, []);
-      buckets.get(k).push(o);
+      buckets.get(k)!.push(o);
     }
     indexed = obstacles.length;
   }
@@ -81,22 +94,22 @@ export function blockedAt(x, z, pad = 0) {
 // Merged meshes are split into TILE-metre tiles so the camera and the shadow pass skip the ones out of view.
 const TILE = 64;
 function tiledParts() {
-  const map = new Map(),
-    shapes = new Map();
-  const key = (x, z) => bkey(Math.floor((x + HALF) / TILE), Math.floor((z + HALF) / TILE));
+  const map = new Map<number, THREE.BufferGeometry[]>(),
+    shapes = new Map<number, Sphere[]>();
+  const key = (x: number, z: number) => bkey(Math.floor((x + HALF) / TILE), Math.floor((z + HALF) / TILE));
   return {
-    at(x, z) {
+    at(x: number, z: number) {
       const k = key(x, z);
       if (!map.has(k)) map.set(k, []);
-      return map.get(k);
+      return map.get(k)!;
     },
     // Static collider spheres, merged into one physics body per tile (the physics step pays per body).
-    collide(x, z, spheres) {
+    collide(x: number, z: number, spheres: Sphere[]) {
       const k = key(x, z);
       if (!shapes.has(k)) shapes.set(k, []);
-      shapes.get(k).push(...spheres);
+      shapes.get(k)!.push(...spheres);
     },
-    addTo(parent, material) {
+    addTo(parent: THREE.Object3D, material: THREE.Material) {
       for (const list of shapes.values()) addStaticSpheres(list);
       for (const parts of map.values()) {
         const mesh = new THREE.Mesh(mergeParts(parts), material);
@@ -119,11 +132,11 @@ const m = new THREE.Matrix4(),
   sc = new THREE.Vector3(1, 1, 1);
 
 // A leaning palm: trunk segments, fronds, colliders (its own body, or merged into `merge` when given).
-function addPalm(parts, t, rng, merge = null) {
+function addPalm(parts: THREE.BufferGeometry[], t: Tree, rng: () => number, merge: Merge | null = null) {
   const lean = rng() * Math.PI * 2,
     leanAmt = 0.18 + rng() * 0.3,
     height = 4.4 + rng() * 2.2;
-  const colliders = [];
+  const colliders: Sphere[] = [];
   let prev = new THREE.Vector3(t.x, t.h - 0.3, t.z);
   const segs = 7;
   for (let k = 0; k < segs; k++) {
@@ -159,7 +172,7 @@ function addPalm(parts, t, rng, merge = null) {
 }
 
 // A round-crowned meadow tree: short trunk, a few leafy blobs.
-function addBroadleaf(parts, x, h, z, rng, merge) {
+function addBroadleaf(parts: THREE.BufferGeometry[], x: number, h: number, z: number, rng: () => number, merge: Merge) {
   const height = 2.2 + rng() * 1.6,
     crown = 1.6 + rng() * 1.1;
   m.compose(new THREE.Vector3(x, h + height / 2 - 0.2, z), q.identity(), sc.set(0.22, height + 0.4, 0.22));
@@ -184,7 +197,15 @@ function addBroadleaf(parts, x, h, z, rng, merge) {
   obstacles.push({ x, z, r: 0.45 });
 }
 
-function addRock(parts, x, h, z, r, rng, merge) {
+function addRock(
+  parts: THREE.BufferGeometry[],
+  x: number,
+  h: number,
+  z: number,
+  r: number,
+  rng: () => number,
+  merge: Merge,
+) {
   q.setFromEuler(new THREE.Euler(rng() * 3, rng() * 3, rng() * 3));
   m.compose(new THREE.Vector3(x, h + r * 0.15, z), q, sc.set(r * 1.1, r * 0.75, r));
   addPart(parts, blobGeo, m, rng() < 0.5 ? '#a19b90' : '#8a857c');
@@ -192,7 +213,7 @@ function addRock(parts, x, h, z, r, rng, merge) {
   obstacles.push({ x, z, r: r * 0.95 });
 }
 
-const flatEnough = (x, z, h, max) =>
+const flatEnough = (x: number, z: number, h: number, max: number) =>
   Math.abs(groundHeight(x + 1, z) - h) <= max && Math.abs(groundHeight(x, z + 1) - h) <= max;
 
 export function createProps() {
@@ -206,7 +227,7 @@ export function createProps() {
     gx1 = (PATCH.i0 + PATCH.w) * CELL - HALF + 3,
     gz0 = HALF - (PATCH.j0 + PATCH.h) * CELL - 3,
     gz1 = HALF - PATCH.j0 * CELL + 4;
-  const clear = (x, z, r) =>
+  const clear = (x: number, z: number, r: number) =>
     Math.hypot(x - SPAWN.x, z - SPAWN.z) > r &&
     Math.hypot(x - COURT.x, z - COURT.z) > COURT.r + 3 &&
     !(x > gx0 && x < gx1 && z > gz0 && z < gz1) &&
@@ -237,12 +258,18 @@ export function createProps() {
   // Mainland: palms along the coasts, round trees in the meadows, boulders (more of them up on the massif).
   const wild = mulberry32(20261029);
   // Beyond the home island's shore, clear of spawn, the court, the garden and home's own palms.
-  const outsideHome = (x, z) =>
+  const outsideHome = (x: number, z: number) =>
     x * x + z * z > 48 * 48 && clear(x, z, 9) && !trees.some((t) => (t.x - x) ** 2 + (t.z - z) ** 2 < 16);
-  const onMassif = (x, z) => ((x - MASSIF.x) / MASSIF.rx) ** 2 + ((z - MASSIF.z) / MASSIF.rz) ** 2 < 1.5;
-  const spots = [];
-  const spaced = (x, z, d) => !spots.some((p) => (p.x - x) ** 2 + (p.z - z) ** 2 < d * d);
-  const place = (count, tries, test, add) => {
+  const onMassif = (x: number, z: number) =>
+    ((x - MASSIF.x) / MASSIF.rx) ** 2 + ((z - MASSIF.z) / MASSIF.rz) ** 2 < 1.5;
+  const spots: { x: number; z: number }[] = [];
+  const spaced = (x: number, z: number, d: number) => !spots.some((p) => (p.x - x) ** 2 + (p.z - z) ** 2 < d * d);
+  const place = (
+    count: number,
+    tries: number,
+    test: (x: number, z: number, h: number) => boolean,
+    add: (x: number, z: number, h: number) => void,
+  ) => {
     for (let n = 0, k = 0; k < tries && n < count; k++) {
       const x = (wild() * 2 - 1) * 140,
         z = -40 + (wild() * 2 - 1) * 110;
@@ -285,7 +312,7 @@ export function createProps() {
   freezeStatic(group); // never moves: no per-frame matrix work
 }
 
-export const clouds = [];
+export const clouds: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
 export function createClouds() {
   const rng = mulberry32(77);
   const puff = new THREE.IcosahedronGeometry(1, 1);
@@ -296,7 +323,7 @@ export function createClouds() {
     flatShading: true,
   });
   for (let c = 0; c < 9; c++) {
-    const parts = [];
+    const parts: THREE.BufferGeometry[] = [];
     const m = new THREE.Matrix4();
     for (let k = 0; k < 5; k++) {
       const r = 5 + rng() * 6;
@@ -316,7 +343,7 @@ export function createClouds() {
   }
 }
 
-function updateClouds(dt) {
+function updateClouds(dt: number) {
   for (const c of clouds) {
     c.position.x += dt * 1.2;
     if (c.position.x > 340) c.position.x = -340;

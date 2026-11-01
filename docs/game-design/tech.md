@@ -17,7 +17,7 @@ folder map in [src/README.md](../../src/README.md).
   rarely used parts load with a dynamic `import()` ("Lazy parts" in `loop.js`): today the caves, the Boogler's
   conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared
   registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit(...)` in
-  [src/render/particles.js](../../src/render/particles.js)).
+  [src/render/particles.ts](../../src/render/particles.ts)).
 - **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
   `registerState`/`onTick` only in `world/rules/`), `tsc` typecheck, unit tests (`node:test`, pure logic only), the
   registry check (`npm run registry`: wire shapes against `main`, for mixed builds) and build.

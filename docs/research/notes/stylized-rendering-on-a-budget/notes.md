@@ -38,7 +38,7 @@ Stylized water across the references is a depth-to-color ramp plus a foam mask d
 - Cheap caustics: sample a black-and-white caustics texture twice at different scales, scroll over time, multiply with ground albedo — [godotshaders: cheap caustics](https://godotshaders.com/shader/chaep-caustics-unshade/); UE4 version costs 49 instructions and 1 texture sample, fading by depth — [Medium: Cheap water caustics in UE4](https://medium.com/hri-tech/cheap-water-caustics-in-ue4-ee1d3ac0cae1); Voronoi-based patterns are the common source — [lesterbanks / Polyfjord](https://lesterbanks.com/2021/09/an-easy-way-to-fake-caustics-in-blender/)
 
 ### Codebase findings (Boogle)
-- Sea: one 1300 m plane, 100×100 segments, transparent `ShaderMaterial`; depth = water y minus ground decoded from a 16-bit heightmap `DataTexture`; two-stage depth color ramp, sine normals, specular, Fresnel to sky tint, shoreline foam band `1 - smoothstep(0, 0.6, depth)` with a sine ripple, 8 splash rings, linear fog, alpha 0.5→0.97 by depth — `src/render/water-render.js`
+- Sea: one 1300 m plane, 100×100 segments, transparent `ShaderMaterial`; depth = water y minus ground decoded from a 16-bit heightmap `DataTexture`; two-stage depth color ramp, sine normals, specular, Fresnel to sky tint, shoreline foam band `1 - smoothstep(0, 0.6, depth)` with a sine ripple, 8 splash rings, linear fog, alpha 0.5→0.97 by depth — `src/render/water-render.ts`
 - Sim water (streams/ponds): separate mesh on the sim grid, per-vertex depth+flow attribute, flow streaks, edge foam, shares uniforms with the sea — `src/render/water-surface.js`
 - No depth texture or postprocessing anywhere in `src/` (grep for EffectComposer/RenderPass found none).
 
@@ -65,7 +65,7 @@ Wind is a cheap vertex-shader sine plus noise; the cost on mobile is vertex thro
 - Elysium has wind-swayed foliage and player-reactive grass, with graphics presets (Extreme = fluffiest grass) — [Elysium thread](https://discourse.threejs.org/t/elysium-the-most-beautiful-stylized-world-on-the-web/55541)
 
 ### Codebase findings (Boogle)
-- Terrain is vertex-colored with grass above ~1.35 m (`src/adapters/terrain.js` `paintVertex`); palms are merged into a single props mesh, fronds are 4-sided cones, `MeshStandardMaterial` flat shaded, cast/receive shadow — `src/render/props.js`.
+- Terrain is vertex-colored with grass above ~1.35 m (`src/adapters/terrain.js` `paintVertex`); palms are merged into a single props mesh, fronds are 4-sided cones, `MeshStandardMaterial` flat shaded, cast/receive shadow — `src/render/props.ts`.
 
 ### Inferences
 - Palm-frond sway can be added to the existing merged props mesh with a per-vertex sway-weight attribute and `onBeforeCompile` — zero new draw calls (also affects the shadow pass if the depth material is patched too, or leave shadows static).
@@ -86,7 +86,7 @@ Fog is the single most cited readability tool in stylized games (Sable), and it 
 - BotW is described (community analysis) as having full volumetric lighting, Rayleigh/Mie scattering and fog inscatter — [ResetEra BotW technical analysis](https://www.resetera.com/threads/zelda-breath-of-the-wild-the-technical-analysis.8197)
 
 ### Codebase findings
-- Linear `THREE.Fog` 110–520 m; the water shaders reimplement fog with shared `uFog` uniforms; day/night drives fog color (`src/render/scene.js`, `src/render/sky.js`).
+- Linear `THREE.Fog` 110–520 m; the water shaders reimplement fog with shared `uFog` uniforms; day/night drives fog color (`src/render/scene.ts`, `src/render/sky.ts`).
 
 ### Inferences
 - Height fog / sun-direction-tinted fog (fog color shifts toward the sun glow color when looking toward the sun) is an in-shader change; three.js built-in fog chunk can be overridden globally via `ShaderChunk.fog_fragment` replacement so all materials pick it up — no new draws.
@@ -129,7 +129,7 @@ Stylized day/night is usually palette-driven: a sky gradient lerped by sun heigh
 - Sable uses fog as the framework for day-night tone and added moonlight shadows so players cast shadows as often as possible — [Game Developer](https://gamedeveloper.com/gdc2022/how-shedworks-refined-the-art-of-sable-in-pursuit-of-readability)
 
 ### Codebase findings
-- `src/render/sky.js` already has day/set/night palettes for sky top/horizon, glow, water tint, sun/moon light colors, hemisphere colors and cloud emissive; sky is a gradient sphere with sun disk/halo; sun/moon are face-billboards; clouds are merged icosahedron puffs (`src/render/props.js`).
+- `src/render/sky.ts` already has day/set/night palettes for sky top/horizon, glow, water tint, sun/moon light colors, hemisphere colors and cloud emissive; sky is a gradient sphere with sun disk/halo; sun/moon are face-billboards; clouds are merged icosahedron puffs (`src/render/props.ts`).
 
 ### Inferences
 - Boogle already has the palette-driven cycle; the cheap upgrades are: stars (one Points draw, faded at night), a tighter horizon band, cloud underside tint, and a global "grade" uniform (lift/tint/saturation) injected into all materials' output via a `ShaderChunk` patch — a LUT pass equivalent without the render target.

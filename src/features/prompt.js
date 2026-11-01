@@ -4,7 +4,7 @@
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 import './prompt.css';
 import { onFrame } from '../loop.ts';
-import { toScreen } from '../render/scene.js';
+import { toScreen } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget } from '../player/hands.ts';
 import { dialogue } from '../boogler/dialogue.js';

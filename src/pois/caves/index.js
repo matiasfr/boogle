@@ -33,14 +33,14 @@ import {
   If,
   rand,
 } from 'three/tsl';
-import { patchNode } from '../../render/material-patch.js';
-import { scene, camera } from '../../render/scene.js';
-import { precompile } from '../../render/precompile.js';
+import { patchNode } from '../../render/material-patch.ts';
+import { scene, camera } from '../../render/scene.ts';
+import { precompile } from '../../render/precompile.ts';
 import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.ts';
 import { createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../adapters/terrain.js';
 import { onStart, onFrame } from '../../loop.ts';
-import { atmosphere } from '../../render/sky.js';
+import { atmosphere } from '../../render/sky.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { ball } from '../../physics/ball.ts';
 import { waterField } from '../../physics/water-field.ts';

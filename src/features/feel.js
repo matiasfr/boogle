@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { onFrame } from '../loop.ts';
 import { clamp } from '../math.ts';
-import { emit } from '../render/particles.js';
+import { emit } from '../render/particles.ts';
 import { GROUP } from '../physics/physics.ts';
 import { onPreStep, raycastClosest, rayHit, getMask } from '../physics/engine.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
@@ -106,7 +106,7 @@ onRemotePresence((r, pr) => {
     r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
 });
 
-// ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.js)
+// ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.ts)
 const DUST = new THREE.Color(0xe8d6a6);
 function puff(x, y, z, n, spread) {
   if (reducedMotion) return;

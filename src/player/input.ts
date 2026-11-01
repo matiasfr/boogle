@@ -1,6 +1,6 @@
 import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
-import { canvas as view } from '../render/scene.js';
+import { canvas } from '../render/scene.ts';
 import { me, cam } from './player.ts';
 import { respawnBall, releaseBall } from '../physics/ball.ts';
 import { sendPresence } from '../netplay/net.ts';
@@ -8,8 +8,6 @@ import { dom } from './hud.ts';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
 import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
-
-const canvas = view as HTMLCanvasElement; // #view, always there
 
 export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
 export const inputState = { locked: false, lockFailed: false };

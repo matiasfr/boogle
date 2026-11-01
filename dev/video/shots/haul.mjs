@@ -16,7 +16,7 @@ const TP = (x, z, yaw) => `
   return groundHeight(${x}, ${z});`;
 // The palm with logs nearest (x, z): its index and trunk position.
 const PALM = (x, z) => `${R}
-  const { trees } = await import('/src/render/props.js');
+  const { trees } = await import('/src/render/props.ts');
   let best = null;
   rules.sources.list().forEach((_, t) => {
     if (!rules.sources.charges(t) || !trees[t]) return;

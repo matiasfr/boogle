@@ -18,7 +18,7 @@
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
 - **Files.** [src/physics/ball.ts](../../src/physics/ball.ts), [src/physics/physics.ts](../../src/physics/physics.ts), (respawn when off the island, auto-claim when you walk into it: `onFrame` hooks at
   orders −300 and −280 in the `world` phase, listed in [src/loop.ts](../../src/loop.ts)), [src/features/bump.js](../../src/features/bump.js), [src/features/impact.js](../../src/features/impact.js)
-  (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.js](../../src/render/splash.js).
+  (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.ts](../../src/render/splash.ts).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;
   join reports carry the slowest link's round trip as `rttMs` (6.15). The ball's resting spot is saved per room: once it has lain under 0.3 m/s for 1.5 s, its
   owner reports it (op `ball.rest`), and the first time a tab loads the world it puts the ball back there, unless

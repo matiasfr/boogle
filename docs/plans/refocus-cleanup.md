@@ -319,14 +319,14 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       `if (!fruitMeshes.size) return;` in `updateGifts`.
     - Drop the "retired find" skip (`carryable` now only rules out the ball).
   - **Palm cells move to their only reader.** `src/features/log-sources.ts` gets an `onStart` that fills
-    `land.layout.trees` from `trees` (`src/render/props.js`) exactly as `createGifts3d` did: `trees.slice(0, 64)`,
+    `land.layout.trees` from `trees` (`src/render/props.ts`) exactly as `createGifts3d` did: `trees.slice(0, 64)`,
     `i = Math.round((t.x + HALF) / CELL)`, `j = Math.round((HALF - t.z) / CELL)`. Import `land` from
     `../world/game-world.ts`, which that file already imports first. Also set
     `if (window.boogle) window.boogle.land = land; // debug handle`. In `dev/scenarios/world-inputs.mjs`, `READ` takes
     the layout from `land.layout` (already imported there) instead of `window.boogle.gifts`, and the ready wait
     becomes `window.boogle?.land?.layout?.trees?.length > 0`. The pinned trees must not change: the scenario fails if
     they do.
-  - **Palms.** `src/render/props.js`: **do not remove `t.hang` or any `rng()` call.** The three draws feed the seeded
+  - **Palms.** `src/render/props.ts`: **do not remove `t.hang` or any `rng()` call.** The three draws feed the seeded
     layout, and removing them would move later props and change `layout.trees`. Change the comment "Fruit palms" to
     "Home palms (their cells are the wood age's log spots, src/features/log-sources.ts)".
   - **Interact label.** `src/player/input.ts` line 223: the `interact` label becomes `'Talk, pick up, take'`.

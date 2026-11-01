@@ -9,10 +9,10 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
 
 ## The frame
 
-- [`scene.js`](scene.js) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
+- [`scene.js`](scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
   `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
-  screen). Behind it, [`precompile.js`](precompile.js) builds every pipeline (hidden and off-screen objects too, plus
+  screen). Behind it, [`precompile.js`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
   `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
   `precompile(object)` as it builds its meshes. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
@@ -35,7 +35,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
 Everything is linear. Lights, materials and palettes are physical-ish linear values; the output pass does tone
 mapping and sRGB. `THREE.Color` set from a hex string converts sRGB to linear for you; a raw `vec3` literal in TSL
 is linear. three's own fog (`scene.fog`) applies to node materials; set `fog: false` on a material that does its own.
-The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
+The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 
 ## Materials
 
@@ -46,7 +46,7 @@ The day/night palettes live in [`sky.js`](sky.js) (`C`, `L`).
   `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `adapters/terrain.js`),
   `opacityNode`. Use `colorNode`, not `fragmentNode`: `fragmentNode` skips lighting, fog and the output transform.
 - **Extending a material another module owns** (sway, wiggle, tint): `patchNode(mat, slot, prev => node)` from
-  [`material-patch.js`](material-patch.js). It wraps what is in the slot, so several patches compose.
+  [`material-patch.js`](material-patch.ts). It wraps what is in the slot, so several patches compose.
 - **Uniforms** are TSL `uniform(value)` nodes. A module that others drive exports them as a plain object of handles
   (`seaU` and `seaRipples` in `water-render.js`); consumers set `.value` and never reach into a material.
   Per-instance data is an `InstancedBufferAttribute` read with `instancedDynamicBufferAttribute` or `attribute()`.

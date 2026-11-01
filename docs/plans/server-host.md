@@ -334,7 +334,7 @@ does not host, handoff is PUT (stored if not older). Same per-IP rate limit as P
 
 ### Land on the server
 
-`src/world/game-world.ts` cannot run in Node (`land.layout` is filled from `src/render/props.js`, and `src/island/`
+`src/world/game-world.ts` cannot run in Node (`land.layout` is filled from `src/render/props.ts`, and `src/island/`
 uses `import.meta.glob`). The rules need only `land = { n, layout }` (the README says so), and Node tests already run
 them on the layout pinned in `test/fixtures/world-inputs.json`. Step 2 moves `n` and `layout` to
 `src/world/home-land.json` and adds `plant`, a run-length mask of `canPlantAt(i, j)` over `g = i * n + j` (runs

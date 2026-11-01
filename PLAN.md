@@ -27,7 +27,7 @@ Until 2026-10-31 Boogle ran on PeerJS with one player's browser as the host. Now
 
 ## Phase 0: Repo hygiene (small)
 
-- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/adapters/terrain.js`, `src/render/water-render.js`, `src/physics/physics.ts`, `src/physics/ball.ts`, `src/player/player.ts`, `src/net/`, `src/player/hud.ts`, `src/player/input.ts`, `src/main.ts`.
+- [x] Split `index.html` into ES modules so friends can work in parallel without merge conflicts: `src/adapters/terrain.js`, `src/render/water-render.ts`, `src/physics/physics.ts`, `src/physics/ball.ts`, `src/player/player.ts`, `src/net/`, `src/player/hud.ts`, `src/player/input.ts`, `src/main.ts`.
 - [x] Add Vite (or keep a no-build setup with an import map). Pin three.js 0.160.0 and cannon-es 0.20.0 as npm deps.
 - [x] Add Prettier + a minimal ESLint config.
 

@@ -6,8 +6,8 @@
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.js';
-import { camera } from '../render/scene.js';
-import { dynAttr, instancedSprite } from '../render/sprites.js';
+import { camera } from '../render/scene.ts';
+import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { onFrame } from '../loop.ts';
 import { me, camForward, handPosition, throwFrom } from './player.ts';
