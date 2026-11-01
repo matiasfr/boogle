@@ -11,6 +11,8 @@
 //   bonk     board heading back toward the first site, where the wagon stands (or wp=2 and d=26: toward the wagon
 //            standing at the third site, heading away from the first)
 //   jump2    on the court (x=, z=), run, jump, a second jump at the apex, then hold it to glide down (a fixed camera)
+//   full     board at the first site (d=0.4) heading out, ride the whole line (hopping the track machine standing on
+//            it) and fly off the far railhead into the tumble; the wagon is parked out of the way (wp= is ignored)
 // side=1 (or -1, the other side) puts a fixed camera 9 m beside the rail, 6 m on (ahead=), instead of the follow camera.
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
@@ -87,7 +89,8 @@ export async function run() {
     pace = win.__wagon!.pace;
   let ph = 0;
   while (ph < wagonCycle(laid, pace) && wagonAt(laid, ph, 0, pace)!.stop !== num('wp', 0)) ph++;
-  win.__wagon!.seekPhase(ph + 5);
+  // The full line has no room for the wagon anywhere on it: park it (its clock before the line was laid).
+  win.__wagon!.seekPhase(shot === 'full' ? -1e9 : ph + 5);
   await sleep(400);
   if (shot === 'jump2') {
     // On the flat court (x=, z=), running toward -z, filmed from the east.
@@ -112,7 +115,7 @@ export async function run() {
   }
   if (!win.__grind) throw new Error('no grind: add grind=1');
   const L = lineLength(laid);
-  const d = shot === 'end' ? L - num('before', 8) : num('d', 14);
+  const d = shot === 'end' ? L - num('before', 8) : num('d', shot === 'full' ? 0.4 : 14);
   const dir = shot === 'bonk' && !q.has('wp') ? -1 : 1;
   if (shot === 'end') sideCam(L, 9 * num('side', -1), 3, -1);
   else if (q.has('side')) sideCam(d + dir * num('ahead', 6), 9 * num('side', 1), 3);

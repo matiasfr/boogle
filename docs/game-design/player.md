@@ -61,17 +61,20 @@ ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles
 
 ## Prototype: grinding the laid rails (?proto=wagon&grind=1)
 
-Behind the flag only ([src/proto/grind/](../../src/proto/grind/index.ts); docs/research/ratchet-and-clank-feel.md,
-rec 5). Land on a laid section while falling, within 0.7 m of its centreline and heading within 50° of it (either
-way), and you lock onto the track, sliding onto it over 0.08 s. You keep your speed along it, at least 6 m/s; it eases
-toward 9 m/s at 4 m/s² plus gravity along the grade (a steep climb can stop you and roll you back), capped at 13.
-Pulling the stick back reverses at once (again only after letting go). Jump leaves at any time with the rail's speed
-plus the normal jump; running off the railhead flings you off with 3 m/s of lift; either way, landing on the ground
-above 3 m/s is the tumble flop. Running into the wagon, the track machine or another player on the line is a bonk:
-knocked back 4 m/s and up 4.5 m/s, with the bonk flop. While grinding you stand sideways to the rail, 20 to 40 orange
-sparks a second fly from your feet (more with speed), a band-passed hiss rises with speed, each rail joint (every
-4.5 m) clacks, and the camera drops 0.5 m, swings behind your travel and looks 3 m ahead along the rail. The rail
-counts as ground (jump works, a double jump comes back). Others see you through your normal presence.
+Behind the flag only ([src/proto/grind/](../../src/proto/grind/index.ts); docs/research/ratchet-and-clank-feel.md, rec
+5). Land on a laid section while falling, within 0.7 m of its centreline and heading within 50° of it (either way),
+and you lock onto the track, sliding onto it over 0.08 s. You keep your speed along it, at least 6 m/s; it eases
+toward 9 m/s (at 4 m/s² from below, 1 on a climb, 1.5 from above) plus part of gravity along the grade (30% uphill,
+80% downhill), never under 4 m/s and capped at 13: the climb to the lighthouse slows you to about 5 m/s but carries
+you over the top. Pulling the stick back reverses at once (again only after letting go). Jump leaves at any time with
+the rail's speed plus the normal jump; running off the railhead flings you off with 3 m/s of lift; either way, landing
+on the ground above 3 m/s is the tumble flop. Running into the wagon, the track machine while it's laying or another
+player on the line is a bonk: knocked back 4 m/s and up 4.5 m/s, with the bonk flop. The track machine standing on the
+line is hopped instead: you're lifted over it (clearing its boiler by 0.2 m, rising and falling over 1.8 m either
+side) with a clack. While grinding you stand sideways to the rail, 20 to 40 orange sparks a second fly from your feet
+(more with speed), a band-passed hiss rises with speed, each rail joint (every 4.5 m) clacks, and the camera drops 0.5
+m, swings behind your travel and looks 3 m ahead along the rail. The rail counts as ground (jump works, a double jump
+comes back). Others see you through your normal presence.
 
 ## Prototype: double jump and glide (&jump2=1, &glide=1)
 

@@ -1,8 +1,9 @@
 // Grind the laid rails (docs/research/ratchet-and-clank-feel.md rec 5; behind ?proto=wagon&grind=1, loaded by the
 // wagon prototype, src/proto/wagon/index.ts). Land on a laid section while falling, near its centreline and heading
-// roughly along it, and you lock onto the track: speed eases toward sprint speed (plus gravity on the grade), pulling
-// back reverses at once, jump leaves at any time with the rail's speed, the railhead flings you off into the existing
-// tumble flop, and meeting the wagon on the line is a bonk. Sideways stance, sparks, a hiss that rises with speed, a
+// roughly along it, and you lock onto the track: speed eases toward sprint speed (plus part of gravity on the grade,
+// never stalling), pulling back reverses at once, jump leaves at any time with the rail's speed, the railhead flings
+// you off into the existing tumble flop, meeting the wagon on the line is a bonk, and the track machine standing on it
+// is hopped. Sideways stance, sparks, a hiss that rises with speed, a
 // clack per rail joint, and a camera that drops a little and looks ahead along the rail.
 // Serves DESIGN.md 1 (moving around is a toy) and 10 (slapstick over precision).
 // Owner kind for your own body (Local otherwise): other tabs see you through your normal presence (position, yaw), and
@@ -14,13 +15,14 @@ import { onPreStep, getMask, setMask, raycastClosest, rayHit, type Body } from '
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { FIXED, GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../../constants.ts';
-import { angleLerp, clamp } from '../../math.ts';
+import { angleLerp, clamp, smoothstep } from '../../math.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { me, cam } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
 import { ROUTE } from '../../sim/route.ts';
+import { trackMachine } from '../../features/track-machine.ts';
 import { protoMark } from '../mark.ts';
 
 export const GRIND = {
@@ -29,7 +31,11 @@ export const GRIND = {
   catchAbove: 0.25, // m: the feet this far over the railhead, falling, lock on (or this far under, mid-step)
   minSpeed: 6, // m/s along the rail on entry, at least
   cruise: 9, // m/s the ride eases toward (sprint speed) ...
-  ease: 4, // ... at this many m/s²
+  ease: 4, // ... at this many m/s² from below on the flat or downhill,
+  climbEase: 1, // ... this many on a climb (so a climb is felt: 0.3 g of a 0.6 grade beats it) ...
+  drag: 1.5, // ... and this many from above (a downhill rush lasts)
+  slope: { up: 0.3, down: 0.8 }, // of gravity along the grade: a climb is a feel, not a wall; downhill rushes
+  floor: 4, // m/s: never slower on the line (no stall, no rolling back)
   cap: 13, // m/s
   snapS: 0.08, // s: the time constant you slide onto the centreline with
   railTop: 0.2, // m over the ground (the rails in src/features/track-machine.ts: 0.16 + half their 0.08)
@@ -38,6 +44,9 @@ export const GRIND = {
   flyUp: 3, // m/s of lift off the railhead, so you fly a little before the tumble
   bonk: { back: 4, up: 4.5 }, // m/s: knocked back off the rail by the wagon
   wagonGap: 1, // m between the rail point under you and a car's end that counts as meeting it (your body is 0.45)
+  // The track machine standing on the line (not laying): you hop it. Lifted over its ends plus `span` m, rising and
+  // falling over `ramp` m, clearing its boiler (1.05 m over its body's centre) by `clear` m.
+  hop: { span: 0.5, ramp: 1.8, boiler: 1.05, clear: 0.2, rise: 15 }, // rise: m/s at most (boarding beside it)
   sparks: [20, 40], // per second at minSpeed and at cap
   camAhead: 3, // m ahead along the rail the camera looks
   camDrop: 0.5, // m the camera drops
@@ -84,6 +93,24 @@ function nearest(x: number, z: number, n: number) {
   return best;
 }
 
+// The track machine (src/features/track-machine.ts) standing on the laid line, not laying: where it is along the line,
+// its half length and the top of its boiler. Null when it's off the line, gone or laying (then it's a bonk).
+function machineOn(n: number) {
+  const pf = trackMachine.platform(),
+    goal = trackMachine.goal;
+  if (!pf || goal.gone || (goal.running && goal.name === 'lay')) return null;
+  const q = pf.body.position;
+  const near = nearest(q.x, q.z, n);
+  if (near.side > 1.5) return null;
+  return { d: near.d, x: q.x, z: q.z, hz: pf.hz, top: q.y + GRIND.hop.boiler };
+}
+// The lift over the rail u m from the machine's centre: up over its ends, flat across it (smoothstep ramps).
+function hopLift(u: number, hz: number, top: number) {
+  const { span, ramp, clear } = GRIND.hop;
+  const a = Math.abs(u) - hz - span;
+  return a >= ramp ? 0 : (top + clear) * smoothstep(ramp, 0, a);
+}
+
 // ---------------------------------------------------------------- state
 const ray = { from: { x: 0, y: 0, z: 0 }, to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
 const g = {
@@ -103,6 +130,9 @@ const g = {
   shown: 0,
   landed: 0, // boardings (a burst of sparks and a clank)
   landShown: 0,
+  lift: 0, // m you're lifted over the rail (hopping the track machine)
+  hops: 0, // machines hopped (a clack and a puff of sparks)
+  hopShown: 0,
   mask: 0, // your body's collision mask before boarding
   left: '', // why you last left: jump, end or bonk
 };
@@ -111,6 +141,7 @@ export function grind(hooks: GrindHooks) {
   function leave(b: Body, why: 'jump' | 'end' | 'bonk') {
     g.on = false;
     g.left = why;
+    g.lift = 0;
     setMask(b, g.mask);
     g.cool = GRIND.reboardS;
     if (why === 'bonk') {
@@ -169,6 +200,7 @@ export function grind(hooks: GrindHooks) {
     g.joints = Math.floor(g.d / GRIND.joint);
     g.clacked = g.joints;
     g.vy = 0;
+    g.lift = 0;
     g.landed++;
     // This step's carry stays 0, so platforms.ts sees an ordinary landing (no tumble) before the rail sets it.
     carry.x = carry.z = 0;
@@ -189,19 +221,22 @@ export function grind(hooks: GrindHooks) {
       g.armed = false;
       g.reversed++;
     }
-    // Speed: ease toward cruise, gravity along the grade, capped; a slope that stops you sends you back down.
+    // Speed: ease toward cruise plus part of gravity along the grade, between the floor and the cap: a climb slows you
+    // a little, a descent rushes you, and nothing on the line stops you.
     const y0 = railY(t.x, t.z);
     const ahead = lineAt(clamp(g.d + 0.5 * g.dir, 0, L), n);
     const grade = (railY(ahead.x, ahead.z) - y0) / 0.5; // rise per metre, in your direction
     const sin = grade / Math.sqrt(1 + grade * grade);
-    g.s += clamp(GRIND.cruise - g.s, -GRIND.ease * FIXED, GRIND.ease * FIXED) - GRAVITY * sin * FIXED;
-    if (g.s < 0) {
-      g.s = -g.s;
-      g.dir = -g.dir;
-    }
-    g.s = Math.min(g.s, GRIND.cap);
+    const push = g.s > GRIND.cruise ? GRIND.drag : grade > 0 ? GRIND.climbEase : GRIND.ease;
+    const pull = sin > 0 ? GRIND.slope.up : GRIND.slope.down;
+    g.s += clamp(GRIND.cruise - g.s, -push * FIXED, push * FIXED) - GRAVITY * pull * sin * FIXED;
+    g.s = clamp(g.s, GRIND.floor, GRIND.cap);
     const dh = (g.s / Math.sqrt(1 + grade * grade)) * FIXED;
     const next = g.d + g.dir * dh;
+    // The track machine standing on the line: hop it (a lift over its length) instead of bonking, unless it's laying.
+    const m = machineOn(n);
+    const lift = Math.min(m ? hopLift(next - m.d, m.hz, m.top - railY(m.x, m.z)) : 0, g.lift + GRIND.hop.rise * FIXED);
+    if (lift > 0 && g.lift <= 0) g.hops++;
     // The wagon on the line: a bonk if you run into a car (or it into you).
     for (const c of hooks.cars()) {
       const gap = Math.abs(next - c.d) - c.hz - GRIND.wagonGap;
@@ -210,10 +245,11 @@ export function grind(hooks: GrindHooks) {
         return leave(b, 'bonk');
       }
     }
-    // Anything else moved by code or a player in the way (the track machine parked on the line, a friend): a bonk too.
+    // Anything else moved by code or a player in the way (the track machine laying, a friend): a bonk too.
     const p0 = b.position,
       mx = t.ux * g.dir,
       mz = t.uz * g.dir;
+    const reach = m ? m.hz + GRIND.hop.span + GRIND.hop.ramp + 0.5 : 0; // hits this near a standing machine are it
     for (const up of [-0.3, 0, 0.5]) {
       ray.from.x = p0.x + mx * (PLAYER_R + 0.05);
       ray.from.y = p0.y + up;
@@ -221,7 +257,10 @@ export function grind(hooks: GrindHooks) {
       ray.to.x = ray.from.x + mx * (dh + 0.3);
       ray.to.y = ray.from.y;
       ray.to.z = ray.from.z + mz * (dh + 0.3);
-      if (raycastClosest(ray.from, ray.to, { mask: GROUP.DEFAULT }, ray.hit)) return leave(b, 'bonk');
+      if (!raycastClosest(ray.from, ray.to, { mask: GROUP.DEFAULT }, ray.hit)) continue;
+      const h = ray.hit.hitPointWorld;
+      if (m && Math.hypot(h.x - m.x, h.z - m.z) < reach) continue;
+      return leave(b, 'bonk');
     }
     if (next < 0 || next > L) {
       g.vx = t.ux * g.dir * (dh / FIXED);
@@ -233,12 +272,13 @@ export function grind(hooks: GrindHooks) {
     const p = b.position;
     const ex = p.x - t.x,
       ez = p.z - t.z,
-      ey = p.y - (y0 + PLAYER_R);
+      ey = p.y - (y0 + PLAYER_R + g.lift);
     t = lineAt(next, n);
     const keep = Math.exp(-FIXED / GRIND.snapS);
     const tx = t.x + ex * keep,
       tz = t.z + ez * keep,
-      ty = railY(t.x, t.z) + PLAYER_R + ey * keep;
+      ty = railY(t.x, t.z) + PLAYER_R + lift + ey * keep;
+    g.lift = lift;
     b.velocity.set((tx - p.x) / FIXED, (ty - p.y) / FIXED, (tz - p.z) / FIXED);
     b.force.set(0, PLAYER_MASS * GRAVITY, 0); // no gravity this step: the rail holds you
     g.vx = t.ux * g.dir * (dh / FIXED);
@@ -383,13 +423,20 @@ export function grind(hooks: GrindHooks) {
         g.clacked = g.joints;
         sfx('clack');
       }
+      if (g.hopShown !== g.hops) {
+        g.hopShown = g.hops;
+        sfx('clack');
+        burst(8);
+      }
       if (g.shown !== g.reversed) {
         g.shown = g.reversed;
         sfx('screech');
         burst(12);
       }
       if (reducedMotion) return;
-      sparkDue += dt * (GRIND.sparks[0] + (GRIND.sparks[1] - GRIND.sparks[0]) * u);
+      if (g.lift > 0.15)
+        sparkDue = 0; // off the rail over the machine: no sparks
+      else sparkDue += dt * (GRIND.sparks[0] + (GRIND.sparks[1] - GRIND.sparks[0]) * u);
       for (; sparkDue >= 1; sparkDue--) spark(Math.random() < 0.5 ? 1 : -1, 1);
       // The camera swings in behind your travel.
       cam.yaw = angleLerp(cam.yaw, Math.atan2(-g.vx, -g.vz), 1 - Math.exp(-dt * GRIND.camYaw));
