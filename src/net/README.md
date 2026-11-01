@@ -8,9 +8,10 @@ its peer table is `peer-table.ts`. Changes must keep this interface; run `npm ru
 (`dev/peer-test/ws-run.ts` runs the real server in-process).
 
 ```js
-const room = await createWsRoom({ roomId, server /* our server's http(s) base */, build /* optional */, debug /* optional */ });
+const room = await createWsRoom({ roomId, server /* our server's http(s) base */, pid /* this player */, build /* optional */, debug /* optional */ });
 // rejects with code 'room_full' (and `max`), 'peer_hosted' (a server not hosting this room), 'unreachable' or
-// 'browser-incompatible'; after joining, a reconnect turned away as full reports a fatal error to onPeers/onConnection
+// 'browser-incompatible'; after joining, a reconnect turned away as full, or 'elsewhere' (a newer tab with the same
+// pid joined), reports a fatal error to onPeers/onConnection
 room.selfId            // string, stable per tab for the life of the page
 room.presence(patch)   // Promise<void>; shallow-merges patch into my presence (value null deletes key) and broadcasts
 room.peers()           // frozen array of entries

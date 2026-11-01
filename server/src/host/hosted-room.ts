@@ -3,7 +3,9 @@
 // Wire shapes: src/net/ws-wire.ts.
 //
 //   const room = createHostedRoom({ roomId, store, cfg, log })
-//   room.join(ws, selfId)        an upgraded socket (rooms.ts has checked the room, id, origin and rate)
+//   room.join(ws, selfId, pid, key)   an upgraded socket (rooms.ts has checked the room, ids, origin and rate). An
+//                                older session of the same player (same pid and key) is closed with ELSEWHERE and
+//                                leaves at once; a pid in the room under another key is refused with TAKEN
 //   room.status()                { boot, tick, players, max, lead, noSave }
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
@@ -28,12 +30,14 @@ const MIN_GAP_MS = 20; // per-source spacing of presence packets to one client
 const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
-const CLIENT_ONLY = new Set(['w:edit', 'w:need', 'w:id']); // for the server's sync alone
+const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
 const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // only the host sends these
 
 type Bucket = { tokens: number; at: number };
 type Client = {
   id: string;
+  pid: string; // the player (src/player/identity.ts), bound at the upgrade; the sync stamps edits with it
+  key: string; // the browser's secret behind that pid: only the same key takes the pid over
   ws: WebSocket;
   joinedAt: number;
   seen: number; // last message
@@ -73,10 +77,17 @@ export function createHostedRoom({
   const graceMs = cfg.reconnectGraceMs ?? 1500;
   const deadMs = cfg.deadMs ?? 5000;
   const leadHiddenMs = cfg.leadHiddenMs ?? 5000;
-  const world = createWorldHost({ roomId, store, saveMs: cfg.serverSaveMs, log });
   const clients = new Map<string, Client>(); // ready clients by selfId
-  const gone = new Map<string, { s: number; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
+  const world = createWorldHost({
+    roomId,
+    store,
+    saveMs: cfg.serverSaveMs,
+    log,
+    pidOf: (sid) => clients.get(sid)?.pid ?? null,
+  });
+  const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   let lead: string | null = null;
+  const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
   let closing = false;
   let emptySince = performance.now(); // when the last client was gone for good (rooms.ts unloads idle rooms)
 
@@ -181,12 +192,50 @@ export function createHostedRoom({
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
       checkLead();
     }, graceMs);
-    gone.set(c.id, { s: c.s, timer });
+    gone.set(c.id, { s: c.s, pid: c.pid, key: c.key, timer });
     if (lead === c.id) checkLead(); // the lead does not wait out the grace period
   }
 
-  function join(ws: WebSocket, id: string) {
+  // Takes c out of the room now, without the grace period (its close is then not a leave).
+  function drop(c: Client, code: number) {
+    clients.delete(c.id);
+    if (c.timer) clearTimeout(c.timer);
+    for (const x of clients.values()) x.pending.delete(c.id);
+    c.ws.close(code);
+  }
+  function retire(id: string, s: number) {
+    retired.add(id);
+    if (retired.size > 256) retired.delete(retired.values().next().value!);
+    toAll(encode({ t: 'left', id, s }));
+  }
+  // Another session of the joining player goes at once: the newer tab wins.
+  function dropOlder(id: string, pid: string) {
+    for (const o of [...clients.values()]) {
+      if (o.pid !== pid || o.id === id) continue;
+      write(o, encode({ t: 'elsewhere' }));
+      drop(o, CLOSE.ELSEWHERE);
+      retire(o.id, o.s);
+    }
+    for (const [gid, g] of gone) {
+      if (g.pid !== pid || gid === id) continue;
+      clearTimeout(g.timer);
+      gone.delete(gid);
+      retire(gid, g.s);
+    }
+    if (lead && !clients.has(lead)) checkLead();
+  }
+  // Whether another session holds pid under a different key: someone else claiming a player who is here.
+  function taken(id: string, pid: string, key: string) {
+    for (const c of clients.values()) if (c.pid === pid && c.id !== id && c.key !== key) return true;
+    for (const [gid, g] of gone) if (g.pid === pid && gid !== id && g.key !== key) return true;
+    return false;
+  }
+
+  function join(ws: WebSocket, id: string, pid: string, key: string) {
     if (closing) return void ws.close(CLOSE.RESTART);
+    if (retired.has(id)) return void (ws.send(encode({ t: 'elsewhere' })), ws.close(CLOSE.ELSEWHERE));
+    if (taken(id, pid, key)) return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
+    dropOlder(id, pid);
     const old = clients.get(id);
     const back = gone.get(id);
     if (!old && !back && clients.size + gone.size >= cfg.maxPlayers) {
@@ -197,6 +246,8 @@ export function createHostedRoom({
     const now = performance.now();
     const c: Client = {
       id,
+      pid,
+      key,
       ws,
       joinedAt: old?.joinedAt ?? now,
       seen: now,
@@ -210,11 +261,7 @@ export function createHostedRoom({
       pres: { tokens: PRESENCE_RATE, at: now },
       dropped: 0,
     };
-    if (old) {
-      clients.delete(id); // so its close below is not a leave
-      if (old.timer) clearTimeout(old.timer);
-      old.ws.close(CLOSE.REPLACED);
-    }
+    if (old) drop(old, CLOSE.REPLACED);
     clients.set(id, c);
     ws.on('message', (data) => onMessage(c, data));
     ws.on('close', () => leave(c));

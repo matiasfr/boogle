@@ -28,7 +28,9 @@ async function serve(env: Record<string, string> = {}) {
 }
 let svc = await serve();
 const web = await startWeb('ws-page.ts');
-const open = (name: string): Promise<Page> => web.open(name, `room=${room}&server=http://127.0.0.1:${port}`);
+// Each page is its own player (pid from its name) unless `pid` says otherwise.
+const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
+  web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
 const world = (p: Page) => ev(p.page, () => window.T.world());
 const plots = async (p: Page) => (await world(p)).plots as [number, number][];
 const hasPlot = async (p: Page, [i, j]: number[]): Promise<boolean> =>
@@ -125,7 +127,7 @@ try {
   check('every page hashes the same at shared ticks', (await waitFor(() => hashesAgree(all), 4000)) >= 0);
 
   // 5. a late joiner gets the plot from a snapshot; past the cap a page is turned away
-  const D = await open('D');
+  let D = await open('D');
   check('late joiner D has the plot', (await waitFor(() => hasPlot(D, cells[0]), 3000)) >= 0);
   const E = await open('E');
   const refusal = E.selfId as { error?: string; max?: number };
@@ -134,6 +136,20 @@ try {
     refusal.error === 'room_full' && refusal.max === 4,
     JSON.stringify(refusal),
   );
+  all = [B, C, D];
+
+  // 5b. a second tab of D's player: the newer one plays on, the older stops and is left at once
+  const D2 = await open('D2', 'pld'); // the same pid and so the same key: D's browser
+  const elsewhereMs = await waitFor(async () => (await ev(D.page, () => window.T.fatal)) === 'elsewhere', 2000);
+  check('an older tab of the same player is told elsewhere', elsewhereMs >= 0, elsewhereMs + ' ms');
+  const goneMs = await waitFor(async () => {
+    const left = await ev(B.page, () => window.T.left);
+    return left.some((l: { peer: string }) => l.peer === D.selfId);
+  }, 1000);
+  check('the older tab is left on the others within 1 s', goneMs >= 0, goneMs + ' ms');
+  check('the newer tab is in the room', typeof D2.selfId === 'string');
+  await D.page.close();
+  D = D2;
   all = [B, C, D];
 
   // 6. the lead leaves: the next page leads, and the others see it leave

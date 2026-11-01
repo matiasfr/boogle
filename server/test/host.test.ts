@@ -19,8 +19,10 @@ async function start(env: Record<string, string> = {}, dataDir?: string) {
   return { svc, dataDir, base: `ws://127.0.0.1:${port}` };
 }
 
-function connect(base: string, room: string, self: string, protocols = ['boogle.1']) {
-  const ws = new WebSocket(`${base}/room/${room}?self=${self}&b=test`, protocols);
+// pid: the player (default one per self; '' leaves it out); key: its browser's secret (default one per pid).
+function connect(base: string, room: string, self: string, pid = self + 'pid', key = pid + 'key0000000000') {
+  const q = (pid ? `&pid=${pid}` : '') + (key ? `&key=${key}` : '');
+  const ws = new WebSocket(`${base}/room/${room}?self=${self}${q}&b=test`, ['boogle.1']);
   const msgs: Msg[] = [];
   const waiters = new Set<() => void>();
   ws.onmessage = (e) => {
@@ -87,13 +89,17 @@ test('refusals: unhosted room, bad ids, a full room (a known id still gets in)',
     const other = connect(base, 'other', 'aaa');
     assert.deepEqual(await other.next(is('peer')), { t: 'peer' });
     assert.equal(await other.closed, 4000);
-    for (const [room, self] of [
+    for (const [room, self, pid, key] of [
       ['beach', 'server'],
       ['beach', 'Bad!'],
       ['Bad!', 'aaa'],
       ['%E0%A4%A', 'aaa'], // a malformed escape: refused, not a crash of the upgrade listener
+      ['beach', 'aaa', ''], // no pid
+      ['beach', 'aaa', 'Bad!'],
+      ['beach', 'aaa', 'aaapid', ''], // no key
+      ['beach', 'aaa', 'aaapid', 'short'],
     ]) {
-      const x = connect(base, room, self);
+      const x = connect(base, room, self, pid, key);
       assert.deepEqual(await x.next(is('bad')), { t: 'bad' });
       assert.equal(await x.closed, 4400);
     }
@@ -115,6 +121,42 @@ test('refusals: unhosted room, bad ids, a full room (a known id still gets in)',
     assert.ok(!a.msgs.some((m) => m.t === 'left' && m.id === 'bbb'), 'bbb came back within the grace period');
     a.ws.close();
     b3.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('one player, two tabs: the newer one wins and the older leaves at once', async () => {
+  const { svc, base } = await start();
+  try {
+    const a = connect(base, 'beach', 'aaa', 'samepid');
+    const b = connect(base, 'beach', 'bbb');
+    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    a.send({ t: 'p', s: 1, d: { v: 1 } });
+    await b.next((m) => m.t === 'p' && m.id === 'aaa');
+    const a2 = connect(base, 'beach', 'ccc', 'samepid'); // a second tab, or a reload's new session
+    await a2.next(is('welcome'));
+    assert.deepEqual(await a.next(is('elsewhere')), { t: 'elsewhere' });
+    assert.equal(await a.closed, 4010);
+    assert.equal((await b.next(is('left'), 300)).id, 'aaa', 'no grace period for the older tab');
+    // A session waiting out its grace period goes too: a reload replaces it at once.
+    a2.ws.close();
+    await sleep(50);
+    const a3 = connect(base, 'beach', 'ddd', 'samepid');
+    await a3.next(is('welcome'));
+    assert.equal((await b.next((m) => m.t === 'left' && m.id === 'ccc', 300)).id, 'ccc');
+    // A replaced session that comes back (a socket that was reconnecting) is turned away; it never takes over.
+    const back = connect(base, 'beach', 'ccc', 'samepid');
+    assert.deepEqual(await back.next(is('elsewhere')), { t: 'elsewhere' });
+    assert.equal(await back.closed, 4010);
+    // Someone else with that pid (copied from presence) but not its key can't take the player over.
+    const thief = connect(base, 'beach', 'eee', 'samepid', 'notthekey000000000');
+    assert.deepEqual(await thief.next(is('taken')), { t: 'taken' });
+    assert.equal(await thief.closed, 4011);
+    await sleep(100);
+    assert.ok(!a3.msgs.some(is('elsewhere')), 'the player keeps playing');
+    a3.ws.close();
+    b.ws.close();
   } finally {
     await svc.close({ save: false });
   }
@@ -158,11 +200,10 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
     assert.equal(first.from, 'server');
     assert.ok(!a.msgs.some((m) => m.d?.t === 'w:snap' && m.d.to === 'bbb'));
 
-    a.send({ t: 'm', d: { t: 'w:id', u: 'apid' } });
-    await sleep(50);
     a.send({ t: 'm', d: { t: 'w:edit', e: { op: 'mush.plant', i: cell[0], j: cell[1] } } });
     const stamped = (m: Msg) =>
-      isWorld('w:edits')(m) && m.d.list.some((x: Msg) => x.e.op === 'mush.plant' && x.e.p === 'aaa');
+      isWorld('w:edits')(m) &&
+      m.d.list.some((x: Msg) => x.e.op === 'mush.plant' && x.e.p === 'aaa' && x.e.u === 'aaapid');
     await Promise.all([a.next(stamped), b.next(stamped)]);
     await sleep(700);
     const doc = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8'));

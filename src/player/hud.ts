@@ -87,7 +87,9 @@ export function renderPeople() {
   if (net.state === 'solo')
     dom.netLabel.textContent = net.full
       ? `Solo · island full${net.retryAt ? ' · waiting for a spot' : ''}`
-      : `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
+      : net.error === 'elsewhere'
+        ? 'Solo · playing in another tab'
+        : `Solo · ${net.error || 'room unavailable'}${net.retryAt ? ' · retrying' : ''}`;
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 

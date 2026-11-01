@@ -6,7 +6,8 @@ export type RoomHost = { upgrade(req: http.IncomingMessage, socket: Duplex, head
 
 export function routeUpgrades(server: http.Server, { roomHost }: { roomHost: () => RoomHost | null }) {
   server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
-    const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+    // Never parse req.url with URL here: a target like `//[` throws, and a throw in this listener exits the process.
+    const pathname = (req.url ?? '/').split('?')[0];
     const host = roomHost();
     if (host && pathname.startsWith('/room/')) return host.upgrade(req, socket, head);
     socket.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');

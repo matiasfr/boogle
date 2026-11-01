@@ -9,7 +9,7 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 - `world/`: shared state, edit sync and snapshots (see [world/README.md](world/README.md)); `world/rules/` holds the
   lockstep rules modules.
 - `sim/`: pure, deterministic logic (no three.js, no DOM), unit-tested in `test/`.
-- `net/`: the room interface over PeerJS (see [net/README.md](net/README.md)).
+- `net/`: the room interface, a WebSocket to our server, which hosts every room (see [net/README.md](net/README.md)).
 - `netplay/`: game networking on top of the room: `net.js` (presence, remote players, interpolation) and its pure
   helpers (snapshot buffer, presence fields, build tags, report scrubbing, smooth shared time).
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...).

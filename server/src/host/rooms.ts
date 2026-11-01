@@ -13,7 +13,8 @@ import type http from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { WS_PROTOCOL, CLOSE, encode } from '../../../src/net/ws-wire.ts';
-import { SERVER_ID, okId } from '../../../src/net/ids.ts';
+import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
+import { okPid } from '../../../src/sim/roster.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 
@@ -92,21 +93,33 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       upgrades.set(ip, u);
       if (++u.n > UPGRADES_PER_MIN) return refuse(socket, '429 Too Many Requests');
 
-      const url = new URL(req.url ?? '/', 'http://localhost');
+      // Split, never `new URL(req.url)`: a target like `//[` throws, and a throw in the upgrade listener crashes the
+      // server. URLSearchParams and the guarded decode below don't throw.
+      const [path = '', query = ''] = (req.url ?? '/').split('?', 2);
       let id = '';
       try {
-        id = decodeURIComponent(url.pathname.slice('/room/'.length));
+        id = decodeURIComponent(path.slice('/room/'.length));
       } catch {
-        // a malformed escape: refused as a bad id below (this runs in the upgrade listener, so a throw would crash)
+        // a malformed escape: refused as a bad id below
       }
-      const self = url.searchParams.get('self');
+      const params = new URLSearchParams(query);
+      const self = params.get('self');
+      const pid = params.get('pid');
+      const key = params.get('key');
       wss.handleUpgrade(req, socket, head, (ws) => {
-        if (ws.protocol !== WS_PROTOCOL || !ROOM_ID_RE.test(id) || !okId(self) || self === SERVER_ID)
+        if (
+          ws.protocol !== WS_PROTOCOL ||
+          !ROOM_ID_RE.test(id) ||
+          !okId(self) ||
+          self === SERVER_ID ||
+          !okPid(pid) ||
+          !okKey(key)
+        )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
         const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
         if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
-        room.join(ws, self);
+        room.join(ws, self, pid, key);
       });
     },
     async close({ save = true } = {}) {

@@ -43,7 +43,7 @@ function makePeer(net, id, host, opts = {}) {
   s.registerOp('mark', { apply: (e) => log.push(`${e.p}=${e.u}`) }); // who sent it, as the host stamped it
   s.registerOp('gate', { validate: (e, ctx) => ctx.env.allow(e.v), apply: (e) => (grid[e.i * 4 + e.j] += e.v) });
   extra?.(s); // more states or ops on this peer only, registered before it attaches
-  const p = net.add(id, host);
+  const p = net.add(id, host, pid ?? id);
   s.attachWorld(p.room, { roomId: 'test', host, storage: null, now: () => 1234, ...attach });
   return { s, grid, log, p };
 }
@@ -97,32 +97,18 @@ test("the host stamps each edit with its sender's pid (u), never one the edit cl
   assert.equal(all[1].s.pidOf('h'), 'pidh');
 });
 
-test('an edit from a tab that never said its pid is rejected', async () => {
+test('an edit from a session the room has no pid for is rejected', async () => {
   const net = makeNet();
   const all = [makePeer(net, 'h', true, { pid: 'pidh' })];
   await run(net, all, 20);
-  const ghost = net.add('ghost', false); // a raw room: no sync, so no w:id
+  const ghost = net.add('ghost', false, null); // a raw room the server bound to no player
   ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
   await run(net, all, 20);
   assert.deepEqual(all[0].log, []);
-  ghost.room.send({ t: 'w:id', u: 'pidg' });
-  ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
+  const known = net.add('known', false, 'pidg');
+  known.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
   await run(net, all, 20);
-  assert.deepEqual(all[0].log, ['ghost=pidg']);
-});
-
-test('a pid already held by a session in the room cannot be claimed by another', async () => {
-  const net = makeNet();
-  const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
-  await run(net, all, 60);
-  const thief = net.add('thief', false); // a raw room claiming c0's pid, then the host's
-  thief.room.send({ t: 'w:id', u: 'pid0' });
-  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
-  thief.room.send({ t: 'w:id', u: 'pidh' });
-  thief.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0 } });
-  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0 });
-  await run(net, all, 20);
-  assert.deepEqual(all[0].log, ['c0=pid0'], 'only the real holder plays as pid0');
+  assert.deepEqual(all[0].log, ['known=pidg']);
 });
 
 test('host rejects invalid edits', async () => {
@@ -241,7 +227,7 @@ test('an edit held past the age limit is dropped and counted', async () => {
   assert.ok(same(all));
 });
 
-test('unloadable snapshots are reported (peer chunk, the host\'s save)', async () => {
+test("unloadable snapshots are reported (peer chunk, the host's save)", async () => {
   const { net, clients, all } = await setup(1);
   const seen = [];
   clients[0].s.onSnapFail(() => {
@@ -478,6 +464,29 @@ test('a state saved by a newer build is skipped, and the tab stops saving so it 
   assert.equal(JSON.parse(store.getItem('boogle.world.test')).vers.grid, 1);
 });
 
+test('a host whose save fails to load never writes its fresh fallback over that save', async () => {
+  // A corrupt file, and a valid file whose grid this build's load rejects.
+  for (const [saved, failLoad] of [
+    ['{not json', undefined],
+    [JSON.stringify(snapOf({ grid: Array(16).fill(4) })), { on: true }],
+  ]) {
+    const store = mem();
+    store.setItem('boogle.world.test', saved);
+    const writes = store.writes;
+    const net = makeNet();
+    const host = makePeer(net, 'h', true, { storage: store, failLoad });
+    await run(net, [host], 1);
+    if (failLoad) failLoad.on = false;
+    assert.equal(host.s.worldStatus().ready, true, 'the room still runs, on a fresh world');
+    assert.equal(host.s.worldStatus().badSave, true);
+    host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
+    await run(net, [host], 620); // past the 30 s save interval
+    assert.equal(host.s.saveNow(true), false, 'a forced save (shutdown) is refused too');
+    assert.equal(store.writes, writes, 'nothing saved');
+    assert.equal(store.getItem('boogle.world.test'), saved, 'the bad save is left for a fix');
+  }
+});
+
 test("a state only the host has does not fail the client's hash check", async () => {
   const net = makeNet();
   let n = 0;
@@ -529,4 +538,3 @@ test('saveNow writes at once and skips an unchanged world', async () => {
   assert.equal(host.s.saveNow(), false, 'nothing changed since');
   assert.equal(storage.writes, w0 + 1);
 });
-
