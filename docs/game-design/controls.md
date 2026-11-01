@@ -36,6 +36,9 @@ Notes:
   (D-pad ↓) while it is up, so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
+- **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
+  steer (no arrow-key camera turn), a two-finger scroll does not look, and `body.seated` shows the driving touch layout:
+  Jump takes the vehicle's label, and Bump, Toss, Honk and Ping hide.
 - The talk box is not a modal ([src/boogler/dialogue.ts](../../src/boogler/dialogue.ts)): the game keeps playing, and it
   takes only the keys and pad buttons it answers with. Number keys 1-9 answer (not the hotbar while it is open), Enter
   skips the typing, E or Esc walks away (Esc with the pointer locked just ends the lock, which also ends the talk); the
