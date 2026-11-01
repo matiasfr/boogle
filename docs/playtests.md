@@ -24,3 +24,10 @@ One short entry per session: date, who (first names), what was new, what was fun
 - New: the haul playtest kit (live tuning, checklist).
 - Felt off: the tall, swaying Death Stranding-style stack. Wood should just sit on the character's back, not built so deliberately high, maybe stacked differently; it doesn't need to sway.
 - After: carry becomes a compact back bundle with no sway; the jump spill goes too, since nothing warns you of it without the sway (boogle-2.md, Decided).
+
+## 2026-11-02 (sound audit, listening pack)
+- Who: Matias, solo, the listening pack (39 recorded game sounds).
+- Kept: prompt pop, deny, haul count, honk, all mini-game sounds, the hut build, board whoosh, track machine.
+- Cut: the groove loop (all takes), the wave (as a mechanic), wagon/freight/stoke/grind/soapbox sounds, the opening-day soundscape.
+- Tweak: hotbar tick (single tone or none, Fortnite), thunk, plaque flap, ping and ball boing (subtler), double-jump (subtler, Fortnite), pickup thock and magnet burst (Ratchet & Clank bolts), wood-age ambience (less white noise, more chill).
+- Idea: honks should form a chord on their own, and a honk doesn't have to be the same note every time.
