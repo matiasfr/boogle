@@ -5,6 +5,8 @@
 // Why exact: `x += (goal - x) * k` changes with the frame rate, and an Euler-stepped spring drifts (and blows up once
 // stiff enough at a long frame). These closed forms give the same curve at 20 fps as at 120 (Holden, "Spring-It-On",
 // theorangeduck.com/page/spring-roll-call).
+// Users: feel.ts (squash, lean), the build prototype's settles, the wagon's look. Still to port: the soapbox's Euler
+// suspension spring and its exp() smoothing (src/proto/soapbox/index.ts), left alone while its feel pass is in flight.
 
 const LN2 = Math.LN2;
 

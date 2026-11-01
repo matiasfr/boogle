@@ -193,7 +193,9 @@ section brings it out standing at the first site; each newly laid section extend
 reaches (no teleport). It stops 6 s at each site, cruises at 3 m/s, and shuttles back and forth push-pull (the loco
 stays at the lighthouse end). Every car is a kinematic platform (src/physics/platforms.ts): stand on a flatbed, or
 jump onto the boiler, and you're carried; jump off and you keep its speed. It chuffs with speed, rocks and clacks over
-rail joints every 4.5 m, and whistles just before leaving a stop. `&v=lively` (rockier, bouncier, more smoke, a
+rail joints every 4.5 m, and whistles just before leaving a stop. Its wheels turn with the distance covered, the
+loco's side rods, connecting rods and pistons follow its wheels, and the cars shuffle on a little buffer slack as it
+starts and stops (src/proto/wagon/look.ts). `&v=lively` (rockier, bouncier, more smoke, a
 camera jolt per joint while riding) against the default `&v=calm`, render and feel only; `&v=fast` is lively at
 6.5 m/s, through two room tunables (`wagonCruise` cm per tick, `wagonAccel` ticks to reach it; default 30 and 30, so
 other rooms are unchanged) that the page sets for the whole proto- room on load (calm and lively put the defaults back).
