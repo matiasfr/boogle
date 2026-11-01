@@ -64,8 +64,9 @@ switch variant (another reload) → back to the page to copy notes. Research rec
    (`protos/store.ts`); one Copy all, in the bar and on the page, writes the whole playtests.md entry (`protos/entry.ts`).
 8. **Only the current toy's panel shows** on the island (`playPanel`); counters and the trace follow the current step,
    and the wagon runs only the really laid line while the laying run is up.
-9. **No server.** Option, needing the owner's OK: a small endpoint that takes Copy all's text, so the entry lands in
-   the repo without copy and paste.
+9. **Verdicts go to the server** (owner's OK, boogle-2.md): each verdict tap and finished note is also a `playtest`
+   report (`src/proto/bar/send.ts`, POST /report), with a small "✓ sent" by the verdict; `npm run verdicts` reads them
+   back (`--md` drafts the playtests.md lines). Copy all stays for the full entry; a failed send is silent.
 10. Standalone `?proto=<name>` pages work as before, for builders and their scenarios (`dev/scenarios/play-playlist.ts`
     walks the playlist).
 

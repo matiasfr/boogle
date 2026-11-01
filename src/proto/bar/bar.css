@@ -147,6 +147,16 @@
   content: ' ✓';
   font-size: 11px;
 }
+/* The verdict reached the server (./send.ts). */
+.proto-bar .pb-sent {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.proto-bar .pb-sent[hidden] {
+  display: none;
+}
 /* Under the pad (./pad.ts): a clear ring on the control the D-pad is on. */
 .proto-bar.pad {
   box-shadow: 0 0 0 2px var(--sun);

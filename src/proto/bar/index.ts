@@ -22,6 +22,7 @@ import { protoCount, flushCounts, onCounts, readoutLine, countFor } from '../cou
 import { startSitting } from '../trace/record.ts';
 import { ON_ISLAND, PLAY, PROTO, playState, protoV, savePlay, setChooser, setStep, switchLive } from '../flags.ts';
 import { padBar } from './pad.ts';
+import { isSent, sendVerdict } from './send.ts';
 
 const params = new URLSearchParams(location.search);
 const HINT = 'boogle-proto-spawn'; // sessionStorage: where you stood when a variant switch reloaded
@@ -246,16 +247,26 @@ if (card) {
       const b = button(`pb-btn pb-v pb-${v.id}`, v.label, () => {
         const was = mine()?.verdict ?? '';
         writeV(p.id, vName(p, playing(p)), { verdict: was === v.id ? '' : v.id });
+        sendVerdict(p.id, vName(p, playing(p)));
         draw();
         if (was !== v.id && !bar.classList.contains('pad')) note.focus({ preventScroll: true });
       });
       vb.set(v.id, b);
       verdictRow.append(b);
     }
-    note.addEventListener('input', () =>
-      writeV(p.id, vName(p, playing(p)), { note: note.value.replace(/\s*\n\s*/g, ' ') }),
-    );
+    // Sent to the server too (./send.ts): the tick shows while what's stored is what went out.
+    const sent = el('span', 'pb-sent', '✓ sent');
+    sent.title = 'Sent to the server: no need to paste it';
+    verdictRow.append(sent);
+    note.addEventListener('input', () => {
+      writeV(p.id, vName(p, playing(p)), { note: note.value.replace(/\s*\n\s*/g, ' ') });
+      draw();
+    });
     note.addEventListener('keydown', (e) => e.key === 'Enter' && note.blur());
+    note.addEventListener('blur', () => {
+      sendVerdict(p.id, vName(p, playing(p)));
+      draw();
+    });
     parts.push(verdictRow, note);
 
     const counts = el('p', 'pb-counts');
@@ -283,6 +294,7 @@ if (card) {
       }
       const m = s.byV[cur];
       for (const [v, b] of vb) b.setAttribute('aria-pressed', String(m?.verdict === v));
+      sent.hidden = !isSent(p.id, cur);
       if (document.activeElement !== note) note.value = m?.note ?? '';
       chip.textContent = m?.verdict ? (VERDICTS.find((v) => v.id === m.verdict)?.label ?? '') : '';
       counts.textContent = countsLine(m?.counts ?? {});
