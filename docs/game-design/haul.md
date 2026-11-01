@@ -249,6 +249,19 @@ freight that lands while the wagon is elsewhere rides along and hops off 0.8 s a
 went up already: only the show waits). Nothing changes when or how much freight counts; with no wagon running (nothing
 laid yet) the pile just grows as before. Look eval: `wt=freight` in dev/look/evals/wagon.js.
 
+**Stoking** (`&v=stoke`, src/proto/wagon/stoke.ts; docs/research/roblox-patterns.md, pattern 2: Dead Rails'
+furnace). The loco has a firebox on the back of its cab, facing the flatbed, with a steam gauge above it. Walk up to it
+with logs on your back and press the interact button (Stoke): up to 3 logs fly off your stack into the fire, which
+flares and throws sparks. Anyone's logs count. Steam is speed: each log burns 10 s, the firebox holds 12 (2 min), and
+from 3 logs' worth up the wagon runs flat out at 6.5 m/s; below that it slows in a straight line to walking pace
+(1.5 m/s) when the fire is out. It never stops for want of steam, and it still stands 6 s at each stop (the fire burns
+on while it stands). Speed eases in and out over about 4 s. The glow, the embers, the gauge's needle and the chimney
+follow the fire: a hot one puffs big sooty clouds with a loud chuff, a cold one thin wisps. The steam is lockstep (the
+`wagon` state, `wagon.stoke {n}` spending logs from your own stack; src/world/rules/wagon.ts): the wagon's place is
+its timetable read at its own clock, which steam runs faster, so every tab sees the same speed. Reset the route
+empties the firebox. The prototype jumps the wagon when the laid count changes (Lay the whole route). Look evals:
+`wt=stoke` and `wt=rundown` in dev/look/evals/wagon.js.
+
 Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`, which records the tick and the first
 section it laid in the `opening` state, so a late joiner's wagon runs the same timetable) and Reset the route
 (`tune.reset`);

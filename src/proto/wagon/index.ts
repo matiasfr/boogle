@@ -13,6 +13,11 @@
 // so tabs that watched it happen agree; a tab that joins later after a `open.lay` shortcut may run a different phase
 // (prototype; the real timetable will want its own lockstep start tick).
 //
+// `&v=stoke` (docs/research/roblox-patterns.md, pattern 2): the loco has a firebox you feed logs (./stoke.ts), and
+// steam is speed: fed, it runs at 6.5 m/s; cold, at walking pace. Its place is then wagonAt read at the wagon's own
+// clock (lockstep, src/world/rules/wagon.ts: steam moves that clock on faster), on the laid sections with t0 0, so a
+// change in the laid count jumps it (prototype: the panel's Lay is the only change in a stoke playtest).
+//
 // Remote riders: each car is a shared platform (`wagon:car<k>`), so another player standing on a deck is sent and drawn
 // in its frame (presence `riding`, src/netplay/net.ts) and stays put on it here.
 import './wagon.css';
@@ -38,6 +43,8 @@ import { paceIn } from '../../sim/tune.ts';
 import { lengthOf } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
+import { wagonStoke, fireHeat, chuffSound } from './stoke.ts';
+import { RATE_ONE, FAST, STEAM_FULL } from '../../sim/wagon-steam.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
@@ -48,11 +55,13 @@ const VARIANTS = {
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, clack: 1.4, shake: 1 },
 };
 const V = params.get('v');
-export const VARIANT = V === 'fast' ? 'fast' : V === 'lively' ? 'lively' : 'calm';
+export const VARIANT = V === 'fast' ? 'fast' : V === 'lively' ? 'lively' : V === 'stoke' ? 'stoke' : 'calm';
+const STOKE = VARIANT === 'stoke';
 const PACES: Record<typeof VARIANT, WagonPace> = {
   calm: WAGON_PACE,
   lively: WAGON_PACE,
   fast: { cruise: 65, accel: 20 },
+  stoke: { cruise: FAST, accel: 20 }, // full steam is the timetable's own pace; less steam runs it slower
 };
 const FEEL = {
   bogie: 1.1, // m from a car's centre to each bogie (the heading is the chord between them)
@@ -60,7 +69,7 @@ const FEEL = {
   whistleS: 1.2, // s before leaving a stop the whistle blows
   // rock: rad of roll kicked per joint at 3 m/s; bounce: m the car drops at a joint; puffs: chuffs per metre (plus a
   // slow idle chuff standing), puffSize their size; clack: its loudness; shake: the camera's jolt per joint, riding
-  ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT],
+  ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT === 'stoke' ? 'calm' : VARIANT],
 };
 // Train order from the outbound end; offsets of car centres along the line from the timetable's point, metres.
 const CARS: { spec: CarSpec; off: number }[] = [
@@ -160,8 +169,21 @@ function timeline(): Seg[] {
   }
   return segs;
 }
+// The stoke variant: the wagon at shared tick `tick`, read at its own clock: the rules' clock at the last tick, run on
+// at its rate (real time while standing at a stop, as the rules do). Its velocities are the timetable's, scaled by the
+// running rate.
+const { steam } = rules.wagon;
+let tauSeek = 0; // ticks added to the clock (the look evals' shortcut)
+function stokedAt(tick: number): WagonState | null {
+  if (!(laidCount() > 0)) return null;
+  const run = steam.rate / RATE_ONE;
+  const s = at(laidCount(), steam.tau / RATE_ONE + (tick - world.tick) * (!w || w.stop >= 0 ? 1 : run) + tauSeek)!;
+  if (s.stop < 0) Object.assign(s, { speed: s.speed * run, vx: s.vx * run, vz: s.vz * run });
+  return s;
+}
 function wagonNow(tick: number): WagonState | null {
   const list = timeline();
+  if (STOKE) return stokedAt(tick);
   for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k].from) return at(list[k].laid, tick, list[k].t0);
   return null;
 }
@@ -176,7 +198,7 @@ function advance(dt: number) {
 }
 
 // ---------------------------------------------------------------- the bodies
-const look = wagonLook(CARS.length - 1);
+const look = wagonLook(CARS.length - 1, STOKE);
 type Car = {
   spec: CarSpec;
   off: number;
@@ -308,8 +330,11 @@ function move(c: Car, k: number, dt: number) {
 
 // ---------------------------------------------------------------- feel: chuffs, clacks, rocking, the whistle
 const smoke = new THREE.Color('#e8e4dc'),
-  steam = new THREE.Color('#ffffff'),
-  chimney = new THREE.Vector3();
+  steamWhite = new THREE.Color('#ffffff'),
+  sooty = new THREE.Color('#8f8a84'),
+  smokeHot = new THREE.Color();
+const smokeOf = (hot: number) => smokeHot.copy(smoke).lerp(sooty, hot * 0.8);
+const chimney = new THREE.Vector3();
 let jolt = 0, // the riding camera's jolt, decaying
   chuff = 0,
   lastDist = NaN,
@@ -359,7 +384,11 @@ function sound(kind: 'clack' | 'whistle', at: { x: number; z: number }) {
 }
 function puff(big: number, vx: number, vz: number) {
   look.chimneyTop.getWorldPosition(chimney);
-  for (let n = 0; n < (2 + big * 4) * FEEL.puffSize; n++)
+  // stoked: a hot fire puffs big and sooty and chuffs out loud, a cold one breathes thin wisps
+  const hot = STOKE ? fireHeat() : 1;
+  const size = STOKE ? 0.55 + 0.75 * hot : 1;
+  if (STOKE && !big) chuffSound(chimney, hot);
+  for (let n = 0; n < (2 + big * 4) * FEEL.puffSize * size; n++)
     emit({
       x: chimney.x + (Math.random() - 0.5) * 0.2,
       y: chimney.y,
@@ -368,8 +397,8 @@ function puff(big: number, vx: number, vz: number) {
       vy: 1.6 + big + Math.random() * 0.6,
       vz: vz * 0.4 + (Math.random() - 0.5) * 0.5,
       life: 1.4 + Math.random() * 0.8 + big,
-      size: (0.35 + big * 0.2) * FEEL.puffSize,
-      color: big ? steam : smoke,
+      size: (0.35 + big * 0.2) * FEEL.puffSize * size,
+      color: big ? steamWhite : STOKE ? smokeOf(hot) : smoke,
       alpha: 0.75,
       drag: 1.2,
       grow: [1, 3.2],
@@ -416,7 +445,7 @@ onFrame(
     // Chuffs: one per 1 / puffs metres moved, and a lazy one every 1.5 s standing.
     const moved = lastDist === lastDist ? Math.abs(d - lastDist) : 0;
     lastDist = d;
-    chuff += moved * FEEL.puffs + (speed < 0.1 ? dt / 1.5 : 0);
+    chuff += moved * FEEL.puffs + (speed < 0.1 ? dt / (STOKE ? 2.6 - 1.6 * fireHeat() : 1.5) : 0);
     if (chuff >= 1) {
       chuff = Math.min(chuff - 1, 1);
       puff(0, w.vx, w.vz);
@@ -482,6 +511,8 @@ wagonFreight({
   standing: (ahead) => (clock === clock ? (wagonNow(clock + ahead)?.stop ?? -1) : -1),
 });
 
+if (STOKE && look.firebox) wagonStoke(look.firebox, () => !parked);
+
 // ---------------------------------------------------------------- rails for a faked count (?laid=N): PROTOTYPE
 const ghostMat = new THREE.MeshStandardNodeMaterial({ color: '#7a6f66', roughness: 0.6, metalness: 0.4 });
 const RAIL_PIECE = 2; // m: ghost rails are short pieces, so they follow the ground
@@ -542,7 +573,11 @@ export function wagonPanel(protoRoom: boolean): void {
       }
       lay.disabled = !protoRoom || sites.open >= ROUTE.length;
       reset.disabled = !protoRoom;
-      const speed = `${VARIANT} · ${(tune.v.wagonCruise / 10).toFixed(1)} m/s`;
+      const pct = Math.round((100 * steam.steam) / STEAM_FULL);
+      const ms = Math.abs(w?.speed ?? 0).toFixed(1);
+      const speed = STOKE
+        ? `stoke · steam ${pct}% · ${ms} m/s · ${steam.fed} logs fed`
+        : `${VARIANT} · ${(tune.v.wagonCruise / 10).toFixed(1)} m/s`;
       note.textContent = protoRoom ? speed : `${speed} · Lay, Reset and v=fast need ?room=proto-wagon`;
       fakeNote.textContent = fake >= 0 ? `fake laid: ${fake} (this tab only)` : `laid: ${sites.open}`;
       ghosts.forEach((g, k) => g.forEach((m) => (m.visible = fake > sites.open && k >= sites.open && k < fake)));
@@ -567,9 +602,16 @@ window.__wagon = {
     return pace;
   },
   timeline,
-  // Jump the shared clock so the timetable reads `phase` ticks into the current timetable now.
+  get steam() {
+    return { steam: steam.steam, rate: steam.rate, tau: steam.tau, fed: steam.fed, heat: fireHeat() };
+  },
+  // Jump the shared clock (stoke: the wagon's own) so the timetable reads `phase` ticks into the current timetable now.
   seekPhase(phase: number) {
     const now = wagonNow(clock);
+    if (STOKE) {
+      if (now) tauSeek += phase - now.phase;
+      return;
+    }
     if (now) seek += phase - now.phase;
     else seek = 0;
     clock = NaN;

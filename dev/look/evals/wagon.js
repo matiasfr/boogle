@@ -8,6 +8,11 @@
 //   jump        you on the middle flatbed, jumping off sideways after jt ms, a fixed camera ahead (js to the east;
 //               js=follow: the game's camera; jdir=west jumps off the other side)
 //   freight     a helper hut, section 0 laid, the wagon standing at site 1 on a freight tick: crates hop into the ring
+//   stoke       (v=stoke) a cold wagon just leaving a stop, you on the front flatbed facing the firebox with logs on
+//               your back; from st ms on you press Stoke `presses` times (the real interact target), 0.7 s apart
+//   rundown     (v=stoke) `logs` logs stoked at a stop, then it runs on down to walking pace (pick a wide --cam)
+//   Both reset the haul and lay the whole route first (needs --room proto-wagon-stoke), and don't seek: the wagon's
+//   clock is the room's (src/world/rules/wagon.ts). They print the steam trace (window.__stokeLog) every 2 s.
 // window.__wagonLog: a trace every 100 ms (see the end of this file).
 // e.g. BOOGLE_QUERY='proto=wagon&lay=1&v=fast&wt=jump&ph=180&jt=1200' \
 //        npm run look -- --room proto-wagon --eval dev/look/evals/wagon.js --warm 0.5 --seconds 4 --cam 0,10,0 --look 10,0,-3
@@ -35,6 +40,85 @@ if (q.get('lay') === '1') {
   if (!(await until(() => W.timeline().length))) throw new Error('open.lay did not lay: needs --room proto-wagon');
 }
 await sleep(300);
+if (test === 'stoke' || test === 'rundown') {
+  // Fresh: reset the haul (an empty firebox), logs on your back, the whole route laid; then wait for the right moment.
+  const { rules } = await import('/src/world/game-world.ts');
+  const { identity } = await import('/src/player/identity.ts');
+  const { interactTarget } = await import('/src/player/hands.ts');
+  const edit = (e) => submitEdit({ i: 0, j: 0, ...e });
+  if (q.get('v') !== 'stoke') throw new Error('wt=stoke needs v=stoke');
+  edit({ op: 'tune.reset' });
+  await until(() => rules.sites.sites.open === 0 && rules.wagon.steam.steam === 0);
+  for (let id = 0; id < 8 && rules.stacks.count(identity.pid) < 12; id++) {
+    edit({ op: 'src.take', id });
+    await until(() => rules.stacks.count(identity.pid) > 0, 2000);
+  }
+  if (!rules.stacks.count(identity.pid)) throw new Error('no logs: needs --room proto-wagon-stoke');
+  edit({ op: 'open.lay' });
+  if (!(await until(() => W.state))) throw new Error('open.lay did not lay: needs --room proto-wagon-stoke');
+  await until(() => W.steam.rate > 200); // the rate settles at walking pace
+  const trace = [];
+  const t0 = performance.now();
+  const iv = setInterval(() => {
+    const s = W.state,
+      st = W.steam;
+    trace.push([Math.round(performance.now() - t0), st.steam, st.rate, s ? +Math.abs(s.speed).toFixed(2) : null]);
+    if (trace.length % 20 === 0) console.log('steam trace [ms, steam, rate, m/s]', JSON.stringify(trace.slice(-20)));
+    if (trace.length > 900) clearInterval(iv);
+  }, 100);
+  window.__stokeLog = trace;
+  if (test === 'rundown') {
+    await until(() => W.state?.stop >= 0, 60000); // at a stop
+    edit({ op: 'wagon.stoke', n: num('logs', 4) });
+    await until(() => W.steam.steam > 0);
+    console.log('rundown: stoked at stop', W.state.stop, JSON.stringify(W.steam));
+    // a wide camera off to the side of the whole line (back: m from its middle, up: m high), after the harness's own
+    const { ROUTE } = await import('/src/sim/route.ts');
+    const a = ROUTE[0],
+      b = ROUTE[ROUTE.length - 1].to;
+    const mx = (a.x + b[0]) / 2,
+      mz = (a.z + b[1]) / 2,
+      len = Math.hypot(b[0] - a.x, b[1] - a.z);
+    const px = -(b[1] - a.z) / len,
+      pz = (b[0] - a.x) / len,
+      back = num('back', 30) * (q.get('side') === 'west' ? -1 : 1),
+      my = groundHeight(mx, mz);
+    setTimeout(() => window.__debugCam.set([mx + px * back, my + num('up', 18), mz + pz * back], [mx, my, mz]), 400);
+  } else {
+    // a moment after it leaves a stop, so the run ahead is long
+    await until(() => W.state?.stop >= 0, 60000);
+    await until(() => W.state?.stop < 0, 60000);
+    await sleep(num('after', 1500));
+    const c1 = W.cars[1];
+    const p = c1.body.position,
+      yaw = Math.atan2(2 * c1.body.quaternion.w * c1.body.quaternion.y, 1 - 2 * c1.body.quaternion.y ** 2);
+    // the flatbed's front end, toward the loco (+z in the car's frame), `side` m to its right (+x)
+    const f = 1.0,
+      sd = num('side', 0.6);
+    teleport(
+      me.body,
+      p.x + f * Math.sin(yaw) + sd * Math.cos(yaw),
+      p.y + c1.hy + 0.5,
+      p.z + f * Math.cos(yaw) - sd * Math.sin(yaw),
+    );
+    me.body.velocity.set(c1.body.velocity.x, 0, c1.body.velocity.z);
+    carry.x = c1.body.velocity.x;
+    carry.z = c1.body.velocity.z;
+    me.yaw = yaw + num('myaw', 0);
+    cam.yaw = yaw + num('cyaw', 0.6);
+    cam.pitch = num('cpitch', -0.25);
+    setTimeout(() => window.__debugCam.clear(), 400);
+    for (let k = 0; k < num('presses', 3); k++)
+      setTimeout(
+        () => {
+          const t = interactTarget();
+          console.log('press', k, t ? t.verb + (t.blocked ? ' (blocked: ' + t.blocked + ')' : '') : 'no target');
+          t?.run?.();
+        },
+        num('st', 1500) + k * 700,
+      );
+  }
+}
 if (test === 'freight') {
   // A helper hut at site 0 (helper0 tuned to 1 log), section 0 laid by a quick run, then the wagon seeked so it stands
   // at site 1 on the next freight tick: the crates hop off the rear flatbed into site 1's Track ring (./freight.ts).
@@ -79,7 +163,7 @@ if (test === 'freight') {
   );
 }
 const c = W.cars[1];
-if (test !== 'freight') {
+if (test !== 'freight' && test !== 'stoke' && test !== 'rundown') {
   W.seekPhase(ph);
   await sleep(200);
   if (test === 'run' || test === 'stop') {
