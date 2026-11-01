@@ -22,7 +22,7 @@ const port = await freePort();
 const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-'));
 async function serve(env: Record<string, string> = {}) {
   const env0 = { DATA_DIR: dataDir, SERVER_ROOMS: '*', MAX_PLAYERS: '4', SERVER_SAVE_MS: '200', ...env };
-  const svc = createService(loadConfig(env0, { log: () => {}, unrefTimers: true }));
+  const svc = createService(loadConfig(env0, { log: () => {} }));
   await svc.listen(port);
   return svc;
 }

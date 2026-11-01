@@ -25,7 +25,7 @@ Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build)
 - `render/`: renderer, camera, lights, sky, sea shader, props (palms/rocks/clouds), particles, splashes and the shared audio context.
 - `physics/`: the physics facade over Rapier (`engine.ts`), materials and step hooks; the ball and its ownership rules; thrown-item flights.
 - `player/`: the local player and camera, avatar meshes, hands and hotbar, input and the control registry, HUD.
-- `netplay/`: `net.js` (presence, remote players and interpolation) and its pure helpers. `net/peer-room.js` is the PeerJS transport (see [src/net/README.md](src/net/README.md)).
+- `netplay/`: `net.js` (presence, remote players and interpolation) and its pure helpers. `net/ws-room.ts` is the room, one WebSocket to our server (see [src/net/README.md](src/net/README.md)).
 - `adapters/`: game-side halves of the lockstep rules (terrain mesh, gifts, mushroom garden). `boogler/`: The Boogler NPC, his talk and friendship.
 - `world/`: shared deterministic state, edit sync and snapshots (see [src/world/README.md](src/world/README.md)). `sim/`: pure simulation logic (mushrooms, gifts, RNG) with unit tests in `test/`.
 - `atlas/`: the internal architecture explainer at /atlas (facts from `dev/atlas/`, narrative in `docs/atlas/`).
@@ -35,11 +35,10 @@ Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build)
 
 ### Playing with friends
 
-- **Quick try:** `npm run dev` uses PeerJS's free public signaling server. Share the same `?room=` name with friends.
-- **Our server:** copy `.env.example` to `.env` and set `VITE_BOOGLE_SERVER` to your deployed `server/` URL (see [server/README.md](server/README.md)). The game then uses our signaling server and fetches TURN settings from `/ice`.
-- **Local two-tab test:** run `cd server && npm run dev`, set `VITE_BOOGLE_SERVER=http://localhost:9000`, run `npm run dev`, and open two tabs. Add `?netdebug=1` to the URL for connection logs.
+- **Local:** `npm run dev` runs our server in-process too (every room, saves in `.boogle-data/`): open two tabs on the same `?room=` to play together. Add `?netdebug=1` to the URL for connection logs.
+- **Online:** the deployed game uses our server (`VITE_BOOGLE_SERVER`, see [server/README.md](server/README.md)), which hosts every room.
 
-Boogle uses [PeerJS](https://peerjs.com) (WebRTC) for networking: one player's browser hosts the island and everyone else connects to it (see PLAN.md, "Key decision"). `npm run test:net` runs a multiplayer test with 3 headless browsers and a local PeerJS server.
+Our server hosts every room: each tab opens one WebSocket to it, and it runs the island's world (see PLAN.md, "Key decision"). `npm run test:net` plays 3 headless browsers against a local server.
 
 ### How sync works
 
@@ -55,7 +54,7 @@ WASD move · Space jump · Mouse look · Click use what you hold (hold to charge
 
 Every merge to `main` builds and deploys to GitHub Pages at https://boogle.club/ (custom domain, set in the repo's Pages settings) via `.github/workflows/deploy.yml`, which runs lint, then `npm run build` (base `/`; a fork without a custom domain sets `BASE: /<repo>/`). You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
 
-To use our own signaling server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
+To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
 
 ## Roadmap
 

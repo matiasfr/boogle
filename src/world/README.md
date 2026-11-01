@@ -6,7 +6,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 
 | File | Owns |
 |---|---|
-| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join, host migration (the browser-host model, until docs/plans/server-host.md step 11) and persistence; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
+| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
@@ -75,18 +75,15 @@ Lockstep math only (AGENTS.md; DESIGN.md, "Determinism from day one"). Wall-cloc
 
 ## Other exports
 
-Networked through `attachWorld(room, { roomId, serverUrl })` (called from `src/netplay/net.ts`); without a room it
-runs locally (edits apply next tick). Clients run ~2-3 ticks behind the host; edits apply 3 ticks after the host stamps
-them.
+Networked through `attachWorld(room, { roomId })` (called from `src/netplay/net.ts`); the server attaches its world
+with `{ host: true, storage }` (`server/src/host/world-host.ts`). Without a room it runs locally (edits apply next
+tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamps them.
 
-- `saveNow(force?)`: save now (localStorage, and the server's snapshot for a host), with `force` even if no state changed
-  since the last save (the tick moved on); `attachWorld(room, { saveMs })` sets how
-  often saves happen (default 30 s; the server host uses 2 s).
-- `adoptSnapshot(snap)`: host only; replace the world with a handed-over snapshot (clients follow by resync). A host
-  that is demoted POSTs its world to the server's `/rooms/:id/handoff` first.
+- `saveNow(force?)`: the host saves now to its storage, with `force` even if no state changed since the last save (the
+  tick moved on); `attachWorld(room, { saveMs })` sets how often saves happen (default 30 s; the server uses 2 s).
 - `onSnapshot(fn)`: state was replaced from a snapshot; rebuild meshes.
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
-- `onSnapFail(fn)`: a snapshot from a peer, localStorage or the server could not be loaded, or one state in it:
+- `onSnapFail(fn)`: a snapshot from the host (`from: 'peer'`) or the host's own save (`'local'`) could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
 - `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
   at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a

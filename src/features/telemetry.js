@@ -4,11 +4,8 @@
 // no peer ids, no URLs beyond the script path. Deduped (the same report at most MAX_SAME times), at most MAX_REPORTS
 // per page load, batched into one POST every FLUSH_MS (and on pagehide) via navigator.sendBeacon.
 //
-// Connection reports carry `hadTurn` (our ICE config from /ice listed a TURN server), `role` (host, client, or server
-// when the server hosts the room) and `transport` (src/net/room.ts). A good join also says how many of its links went
-// through the TURN relay (`relayed` of `links`, from room.linkStats()): a relayed link is one that would have failed
-// without TURN, which answers PLAN Phase 1's "how many fail without TURN". `rttMs` is the
-// slowest link's round trip; a non-owner sees the ball about rtt (owner -> host -> them) + INTERP_MS late. They also
+// Connection reports carry `role` (lead or client) and `transport` ('server'). A good join also says `rttMs`, the round
+// trip to the server; a non-owner sees the ball about rtt (owner -> server -> them) + INTERP_MS late. They also
 // say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
@@ -77,16 +74,14 @@ if (SERVER) {
 
   // ---- connection: net.js reports every change of net.state ('connecting' | 'live' | 'solo') ----
   let since = performance.now(); // when the current attempt started connecting (page load for the first one)
-  let role = '?'; // known once we were in a room
   let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
   let failed = 0; // failed attempts before the first good join
   let okSent = false;
   let stuckSent = false;
   let stuckTimer = 0;
   const base = () => ({
-    role,
+    role: net.room ? (net.room.isLead() ? 'lead' : 'client') : '?', // the lead can move without a state change
     transport: net.room?.transport ?? null,
-    hadTurn: net.turn,
     mixedBuilds: mixedBuilds(),
     gfx: gfx(),
   });
@@ -100,7 +95,6 @@ if (SERVER) {
   };
   if (net.state === 'connecting') armStuck();
   onNetState((s, prev) => {
-    if (net.room) role = net.room.transport === 'server' ? 'server' : net.room.isHost() ? 'host' : 'client';
     if (s !== 'connecting') clearTimeout(stuckTimer);
     if (s === 'connecting' && prev !== 'connecting') {
       since = performance.now();
@@ -113,8 +107,7 @@ if (SERVER) {
         setTimeout(async () => {
           const links = (await net.room?.linkStats?.().catch(() => null)) ?? [];
           const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
-          const path = { links: links.length, relayed: links.filter((l) => l.relay).length };
-          if (rtts.length) path.rttMs = Math.max(...rtts);
+          const path = rtts.length ? { rttMs: Math.max(...rtts) } : {};
           report('connect', { result: 'ok', ...at, ...path, ...base() });
         }, SETTLE_MS);
       }

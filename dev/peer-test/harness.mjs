@@ -1,10 +1,9 @@
-// Shared setup for the headless room tests (run.mjs, load.mjs): a local PeerServer, page.js bundled and served, and
+// Shared setup for the headless room test (ws-run.ts): a test page bundled and served, and
 // headless Chromium pages that each run one room.
 import http from 'node:http';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { PeerServer } from 'peer';
 import * as esbuild from 'esbuild';
 import { freePort, sleep } from '../look/lib.mjs';
 
@@ -89,19 +88,4 @@ export async function startWeb(entry) {
     web.close();
   }
   return { open, close };
-}
-
-export async function startHarness() {
-  const signalPort = await freePort();
-  const server = PeerServer({ port: signalPort, host: '127.0.0.1', path: '/peerjs' });
-  const web = await startWeb('page.js');
-  const room = 'test' + Math.random().toString(36).slice(2, 8);
-  // `in` picks another room; `query` adds params.
-  const open = (name, { in: roomId = room, query = '' } = {}) =>
-    web.open(name, `room=${roomId}&port=${signalPort}${query}${process.env.STUN ? '&stun=1' : ''}`);
-  async function close() {
-    await web.close();
-    server.close?.();
-  }
-  return { room, open, close };
 }

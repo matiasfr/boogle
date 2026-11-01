@@ -3,7 +3,7 @@
 //
 //   mergeFields(pr, fields)             fields: [[key, getter], ...]. Each getter's value joins pr unless pr already
 //                                       has the key (core keys and earlier fields win). null, undefined and a getter
-//                                       that throws all give `key: null`, which makes peer-room delete the key, so a
+//                                       that throws all give `key: null`, which makes the room delete the key, so a
 //                                       field that stops is not repeated forever. Returns pr.
 //   hostField(getter, onValue, isHost)  -> { get, hear } for a Host field: get() publishes getter() only while
 //                                       isHost(), else null; hear(value, time, peer) passes on real values only.

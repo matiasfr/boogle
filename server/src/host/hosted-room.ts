@@ -6,7 +6,6 @@
 //   room.join(ws, selfId)        an upgraded socket (rooms.ts has checked the room, id, origin and rate)
 //   room.status()                { boot, tick, players, max, lead, noSave }
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
-//   await room.adopt(snap)       replace the world with a handed-over one, re-serve every client, save
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
@@ -29,7 +28,7 @@ const MIN_GAP_MS = 20; // per-source spacing of presence packets to one client
 const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
-const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
+const CLIENT_ONLY = new Set(['w:edit', 'w:need', 'w:id']); // for the server's sync alone
 const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // only the host sends these
 
 type Bucket = { tokens: number; at: number };
@@ -265,12 +264,6 @@ export function createHostedRoom({
       noSave: world.status().newerSave, // a state saved by a newer build: deploy the server
     }),
     idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
-    async adopt(snap: unknown) {
-      if (!world.adopt(snap)) return false;
-      for (const id of clients.keys()) world.deliver({ t: 'w:need' }, id);
-      await world.save();
-      return true;
-    },
     async close({ save = true } = {}) {
       closing = true;
       clearInterval(housekeep);

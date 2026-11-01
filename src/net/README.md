@@ -21,16 +21,11 @@ room.onMessage(handler) // handler(msg, fromId). returns unsubscribe
 room.transport         // 'server'
 room.isLead()          // true when this tab publishes Host-kind fields (addHostField)
 room.onLeadChange(h)   // h(isLead); returns unsubscribe
-room.isHost()          // always false: the server is the lockstep host (src/world/sync.ts reads it)
-room.onHostChange(h)   // never fires
-room.linkStats()       // Promise<[{ peer: 'server', rttMs, ... }]>: the heartbeat round trip
+room.linkStats()       // Promise<[{ peer: 'server', rttMs }]>: the heartbeat round trip
 room.pause(ms)         // tests: drop the socket as a network loss would, reconnects held for ms
 room.close()
 // peer entry: Object.freeze({ peer: string /*stable selfId of that tab*/, sameTab: boolean /*true for me*/, presence: object, updatedAt: number })
 ```
-
-`peer-room.ts` (PeerJS, one browser as host) is the old model, kept only until docs/plans/server-host.md step 11
-deletes it; the game no longer uses it.
 
 The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) and `entry.peer` for ball-ownership
 tie-breaks, so `peer` must be the stable `selfId`.

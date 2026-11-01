@@ -602,8 +602,12 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
 
 - [x] **10. (merged into 9.)** The old "turn it on" step ships with the switch.
 
-- [ ] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
+- [x] **11. Delete the peer model** (`src/net/`, `src/world/sync.ts`, `server/`, `package*.json`, `dev/`, docs).
   Owner-gated. Ships once step 9 has been live a day with clean `/reports`.
+  - Done the same evening (the user waived the day's wait). `sync.ts` takes the role from `attachWorld(room, { host })`
+    (the server passes `host: true`) instead of the room's `isHost`/`onHostChange`, which left the room interface;
+    `adoptSnapshot`, `serverUrl`, client saves and migration are gone. `npm run load` is ws-run's 8-page run: 7.4% of
+    one core, all presence delivered. Root `@types/ws` replaces the types `peer` used to bring in.
   - Delete `src/net/peer-room.ts`, the `peer` dependency (root and `server/`), PeerJS signaling, `upgrade.ts`'s
     PeerJS route and ID-TAKEN guard, `/ice` and the TURN secrets (`fly secrets unset`), `PUT /rooms/:id/snapshot`,
     `POST /rooms/:id/handoff` and the handoff adopt path, `dev/peer-test/run.mjs` and `page.js`.
