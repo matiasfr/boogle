@@ -99,9 +99,24 @@ function bandAt(f: THREE.Object3D, k: number, len: number, side: number, out: TH
   return out.compose(v, q.identity(), sc).premultiply(f.matrixWorld);
 }
 
+// Seams for a haul variant that draws pickups its own way (?proto=haul&v=magnet, src/proto/haul/magnet.ts): with
+// `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
+// count is n (the magnet moves it one arrival at a time). Local.
+export const backSeam = { flyIns: true, count: (n: number) => n };
+export const BUNDLE_SCALE = RS;
+/** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
+export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {
+  if (!me.avatar || !me.entered) return false;
+  me.avatar.updateMatrixWorld();
+  const f = frameOf(me.avatar);
+  f.localToWorld(slotAt(Math.min(SHOWN, shownOf(n + 1)) - 1, out));
+  f.getWorldQuaternion(rot);
+  return true;
+}
+
 // Pieces flying from a pile to your back: { from, n, t0 }.
 const flights: { from: THREE.Vector3; n: number; t0: number }[] = [];
-onFly((from, n) => flights.push({ from: from.clone(), n: Math.min(n, 6), t0: performance.now() }));
+onFly((from, n) => backSeam.flyIns && flights.push({ from: from.clone(), n: Math.min(n, 6), t0: performance.now() }));
 
 const chip = document.createElement('div');
 chip.className = 'haul-chip';
@@ -113,8 +128,8 @@ onFrame(
     const mine = myStack();
     let c = 0,
       b = 0;
-    const draw = (a: THREE.Object3D | null, pid: string | null | undefined) => {
-      const { n, k } = stackOf(pid);
+    const draw = (a: THREE.Object3D | null, pid: string | null | undefined, n = stackOf(pid).n) => {
+      const { k } = stackOf(pid);
       if (!a || !n || (pid && elsewhere.has(pid))) return;
       a.updateMatrixWorld();
       const f = frameOf(a);
@@ -127,7 +142,7 @@ onFrame(
       if (shown >= 3 && b + 2 <= bands.instanceMatrix.count)
         for (const side of [-1, 1]) bands.setMatrixAt(b++, bandAt(f, shown, len, side, m4));
     };
-    draw(me.entered ? me.avatar : null, identity.pid);
+    draw(me.entered ? me.avatar : null, identity.pid, backSeam.count(mine.n));
     for (const r of remotes.values()) draw(r.visible ? r.avatar : null, r.pid);
     // fly-ins: a short hop from the pile to the top of your bundle
     for (let f = flights.length - 1; f >= 0; f--) {
@@ -162,7 +177,8 @@ onFrame(
 // The chip: your material and count, and your own tier only (brief 8: no readout on anyone else), derived from the
 // plaques; rebuilt only when your stack or the sites change.
 let chipKey = '';
-function updateChip(mine: Stack): void {
+function updateChip(host: Stack): void {
+  const mine = { n: backSeam.count(host.n), k: host.k };
   const key = `${mine.n}/${mine.k}/${rules.sites.sites.rev}`;
   if (key === chipKey) return;
   chipKey = key;
@@ -186,7 +202,8 @@ if (UI_KIT) {
     '<span class="haul-n"></span><span class="haul-what"></span><span class="haul-tier"></span>';
   [kit.n, kit.what, kit.tier] = [...chip.querySelectorAll('span')] as HTMLElement[];
 }
-function tickChip(mine: Stack, now: number): void {
+function tickChip(host: Stack, now: number): void {
+  const mine = { n: backSeam.count(host.n), k: host.k };
   if (mine.n !== shown.to) {
     // A big jump (a new age, a reload) skips most of the way, so the run stays short.
     if (Math.abs(mine.n - shown.n) > 24) shown.n = mine.n - Math.sign(mine.n - shown.n) * 24;

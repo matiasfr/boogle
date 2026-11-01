@@ -8,6 +8,7 @@ import { onFly } from '../../render/haul-pieces.ts';
 import { getAudio } from '../../render/audio.ts';
 import { me } from '../../player/player.ts';
 import { identity } from '../../player/identity.ts';
+import { haulVariant } from '../../player/haul-variant.ts';
 
 const SQUASH = 0.07; // vertical share (rec 3: 5-8%)
 const SQUASH_MS = 110; // rec 3: 80-120 ms
@@ -50,7 +51,10 @@ function thock(count: number) {
   n.start(t);
 }
 
-onFly(() => pending.push(performance.now() + ARRIVE_MS));
+// The magnet variant (magnet.ts) sounds each piece as it lands and calls squash() itself.
+onFly(() => haulVariant !== 'magnet' && pending.push(performance.now() + ARRIVE_MS));
+/** Squashes your avatar now (a pickup landing on your back). */
+export const squash = (): void => void (squashAt = performance.now());
 
 onFrame(
   ({ now }: { now: number }) => {
