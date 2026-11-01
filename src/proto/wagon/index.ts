@@ -479,10 +479,19 @@ onFrame(
 // landing slides about 4 m instead of 2), so leaving the wagon reads as a stunt rather than a stop.
 if (VARIANT === 'fast') CARRY.skid = 5;
 const dust = new THREE.Color('#c9b48a');
+// &grind=1: grind the laid rails (src/proto/grind/, its own module; the rail carries you, so no dust while on it).
+let grinding = () => false;
+if (params.get('grind') === '1')
+  void import('../grind/index.ts').then((m) => {
+    grinding = m.grind({
+      laid: laidCount,
+      cars: () => (w ? cars.map((c) => ({ d: w!.dist / 100 + c.off, hz: c.spec.hz })) : []),
+    }).active;
+  });
 onFrame(
   ({ dt }) => {
     const h = Math.hypot(carry.x, carry.z);
-    if (carry.on || !me.body || me.coyote <= 0 || h < 1.2) return;
+    if (carry.on || !me.body || me.coyote <= 0 || h < 1.2 || grinding()) return;
     const p = me.body.position;
     for (let n = Math.random() < h * dt * 6 ? 1 + (h > 4 ? 1 : 0) : 0; n > 0; n--)
       emit({

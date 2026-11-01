@@ -98,7 +98,8 @@ onPreStep(() => {
 // ---------------------------------------------------------------- my flops
 type Flop = { kind: string; until: number };
 let flop: Flop | null = null;
-let seenTumbles = 0;
+let seenTumbles = 0,
+  seenBonks = 0;
 const startFlop = (kind: string, ms: number) => {
   protoMark(kind); // a dot on the playtest map (src/proto/trace/)
   if (!flop || flop.until < performance.now()) flop = { kind, until: performance.now() + ms };
@@ -291,6 +292,10 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
       seenTumbles = carry.tumbles;
       startFlop('tumble', FLOP.tumbleMs);
       puff(a.position.x, a.position.y - PLAYER_R, a.position.z, 10, 2.5);
+    }
+    if (carry.bonks !== seenBonks) {
+      seenBonks = carry.bonks;
+      startFlop('bonk', FLOP.bonkMs);
     }
   }
 }
