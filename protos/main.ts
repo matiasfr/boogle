@@ -1,10 +1,10 @@
-// boogle.club/protos/: a card per prototype (protos.ts) with a Play button, its questions and checklist, and notes
+// boogle.club/protos/: a card per prototype (protos.ts) with a Play button, its one question and a box for your take
 // saved in this browser that copy out as a docs/playtests.md entry. Nothing here talks to a server.
 import './protos.css';
 import { PROTOS } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
 
-type Saved = { answers: string[]; notes: string; values: string; done: boolean[]; name: string };
+type Saved = { notes: string; values: string; name: string };
 
 const KEY = 'boogle-protos-v1';
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
@@ -21,10 +21,8 @@ const store = loadAll();
 const saved = (id: string): Saved => {
   const s = store[id] ?? {};
   return {
-    answers: s.answers ?? [],
     notes: s.notes ?? '',
     values: s.values ?? '',
-    done: s.done ?? [],
     name: s.name ?? '',
   };
 };
@@ -53,7 +51,7 @@ const oneLine = (s: string) => s.trim().replace(/\s*\n\s*/g, ' ');
 
 const hasNotes = (p: Proto) => {
   const s = saved(p.id);
-  return s.answers.some((a) => a.trim()) || s.notes.trim() !== '' || s.values.trim() !== '';
+  return s.notes.trim() !== '' || s.values.trim() !== '';
 };
 
 // The prototype's part of an entry in docs/playtests.md (one bullet list, like the entries there).
@@ -61,8 +59,7 @@ function body(p: Proto): string {
   const s = saved(p.id);
   const flag = p.url.replace(PLACEHOLDER, s.name.trim() || `<${p.url.match(PLACEHOLDER)?.[1]}>`);
   const lines = [`- Prototype: ${p.title} (\`${flag}\`, find the fun ${stepLabel(p).toLowerCase()})`];
-  p.questions.forEach((q, i) => lines.push(`- ${q} ${oneLine(s.answers[i] ?? '') || '(no answer)'}`));
-  if (s.notes.trim()) lines.push(`- Notes: ${oneLine(s.notes)}`);
+  lines.push(`- ${p.question} ${oneLine(s.notes) || '(no answer)'}`);
   if (s.values.trim()) lines.push(`- Values: \`${oneLine(s.values)}\``);
   return lines.join('\n');
 }
@@ -105,7 +102,7 @@ function card(p: Proto): HTMLElement {
   const meta = el('p', 'meta', `${stepLabel(p)} · since ${p.since}`);
   if (p.status !== 'live')
     meta.append(' · ', el('strong', 'badge', p.status === 'building' ? 'not live yet' : 'retired'));
-  head.append(meta, el('h2', '', p.title));
+  head.append(meta, el('h2', '', p.title), el('p', 'what', p.what));
   if (p.note) head.append(el('p', 'note', p.note));
   c.append(head);
 
@@ -132,35 +129,7 @@ function card(p: Proto): HTMLElement {
   setHref(s.name);
   c.append(el('p', 'url', p.url));
 
-  const tryList = el('ul', 'try');
-  p.tryThis.forEach((t, i) => {
-    const li = el('li');
-    const lab = el('label');
-    const box = el('input');
-    box.type = 'checkbox';
-    box.checked = !!s.done[i];
-    box.addEventListener('change', () => {
-      const done = saved(p.id).done.slice();
-      done[i] = box.checked;
-      save(p.id, { done });
-    });
-    lab.append(box, el('span', '', t));
-    li.append(lab);
-    tryList.append(li);
-  });
-  c.append(el('h3', '', 'Try this'), tryList);
-
-  c.append(el('h3', '', 'Answer'));
-  p.questions.forEach((q, i) =>
-    c.append(
-      field(q, s.answers[i] ?? '', 2, (v) => {
-        const answers = saved(p.id).answers.slice();
-        answers[i] = v;
-        save(p.id, { answers });
-      }),
-    ),
-  );
-  c.append(field('Notes', s.notes, 3, (v) => save(p.id, { notes: v }), 'What felt off, what broke, ideas'));
+  c.append(field(p.question, s.notes, 3, (v) => save(p.id, { notes: v }), 'Your take: what felt good, what felt off'));
   if (p.values)
     c.append(
       field('Copy values line (paste from the kit)', s.values, 2, (v) => save(p.id, { values: v }), 'haul-kit room=…'),
@@ -173,13 +142,6 @@ function card(p: Proto): HTMLElement {
   said.setAttribute('aria-live', 'polite');
   copyBtn.addEventListener('click', () => copy(`${header()}\n${body(p)}\n`, said));
   foot.append(copyBtn);
-  if (p.kit) {
-    const kit = el('a', 'kit', 'Playtest kit');
-    kit.href = p.kit;
-    kit.target = '_blank';
-    kit.rel = 'noopener';
-    foot.append(kit);
-  }
   c.append(foot, said);
   return c;
 }

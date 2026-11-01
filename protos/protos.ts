@@ -12,12 +12,10 @@ export type Proto = {
   status: ProtoStatus;
   /** Path and query from the site root. A `<name>` placeholder gets a text box on the page. */
   url: string;
-  /** The playtest questions, answered one line each. */
-  questions: string[];
-  /** A short solo checklist. */
-  tryThis: string[];
-  /** Its playtest kit, on GitHub. */
-  kit?: string;
+  /** The one gut question the prototype asks. */
+  question: string;
+  /** One line: what's new to feel. No checklists: the owner plays it and knows. */
+  what: string;
   /** The day it was added (YYYY-MM-DD). */
   since: string;
   /** One extra line under the title. */
@@ -26,8 +24,6 @@ export type Proto = {
   values?: boolean;
 };
 
-const DOCS = 'https://github.com/matiasfr/boogle/blob/main/docs/';
-
 export const PROTOS: Proto[] = [
   {
     id: 'haul',
@@ -35,21 +31,9 @@ export const PROTOS: Proto[] = [
     step: 1,
     status: 'live',
     url: '/?room=proto-haul&proto=haul',
-    questions: [
-      'Does carrying a wobbly stack feel good with no goal?',
-      'Does filling a rail section feel like effort or a chore?',
-      'Which numbers changed how it felt, and to what?',
-    ],
-    tryThis: [
-      'Haul with no goal for 2 minutes: take logs (E), walk, jump. Don’t pour.',
-      'Get past the soft cap (orange chip) and jump; try a few spill and soft-cap values.',
-      'Fill Section 1 from its gold ring; count the trips. Reset haul, change the cost, fill it again.',
-      'Try faster and slower pours, bigger and smaller handfuls.',
-      'Start the machine (E at the sign) and watch the 50 s run to the end.',
-    ],
-    kit: `${DOCS}playtest-kits/haul.md`,
+    question: 'Is hauling fun as a toy, with no goal?',
+    what: "Logs on your back from the palm bundles, poured into the rail's work site. Tuning panel top right.",
     since: '2026-11-01',
-    note: 'Use a fresh room (proto-haul-2) for a clean save. Tap the Haul kit title to fold it.',
     values: true,
   },
   {
@@ -58,17 +42,8 @@ export const PROTOS: Proto[] = [
     step: 2,
     status: 'live',
     url: '/?proto=ride',
-    questions: [
-      'Does riding feel smooth?',
-      'Did you ride twice for no reason?',
-      'Does jumping off at speed feel good?',
-    ],
-    tryThis: [
-      'Hop on at a stop.',
-      'Stand through the corners.',
-      'Walk around on the deck while it moves.',
-      'Jump off sideways at speed.',
-    ],
+    question: 'Does riding feel good enough to ride twice for no reason?',
+    what: 'Stand on a moving flatbed; jump off at speed.',
     since: '2026-11-01',
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
   },
@@ -78,12 +53,8 @@ export const PROTOS: Proto[] = [
     step: 4,
     status: 'live',
     url: '/?room=proto-era&proto=era',
-    questions: ['Does the island change enough at an era’s end?', 'Would a solo player notice from the court?'],
-    tryThis: [
-      'Press “lay all sections”.',
-      'Walk to the lighthouse platform and start opening day.',
-      'Watch the court through the countdown and the swap.',
-    ],
+    question: "Does the island change enough at an era's end?",
+    what: 'Lay all sections, start opening day at the lighthouse platform, watch the court.',
     since: '2026-11-01',
   },
   {
@@ -92,14 +63,8 @@ export const PROTOS: Proto[] = [
     step: 5,
     status: 'live',
     url: '/?proto=soapbox',
-    questions: ['Is driving fun?', 'Would you do another run?', 'Does the drift or the crash make you laugh?'],
-    tryThis: [
-      'Walk up to the cart on the lighthouse hill’s south shoulder and get in (E).',
-      'Drive the path top to bottom: forward kicks off, steer with the move keys or stick.',
-      'Hold Jump in a corner to drift; let go to grip again.',
-      'Hit a palm on purpose.',
-      'Stopped at the bottom, E takes you back to the top: beat your time.',
-    ],
+    question: 'Is driving fun?',
+    what: 'A cart down the lighthouse path from the hill’s south shoulder (E to get in); hold Jump to drift.',
     since: '2026-11-01',
   },
   {
@@ -108,8 +73,8 @@ export const PROTOS: Proto[] = [
     step: 'depth',
     status: 'building',
     url: '/?proto=look',
-    questions: ['Which preset reads best?', 'Does anything look noisy?'],
-    tryThis: ['Flip through every preset from the same spot.', 'Turn the camera slowly and watch edges and shadows.'],
+    question: 'Which look should Boogle aim for?',
+    what: 'Code-only graphics presets on the real island.',
     since: '2026-11-01',
   },
   {
@@ -118,8 +83,8 @@ export const PROTOS: Proto[] = [
     step: 'depth',
     status: 'building',
     url: '/?room=proto-layout&layout=<name>',
-    questions: ['Which layout feels best to walk?', 'Is anything too far or too empty?'],
-    tryThis: ['Walk from home to every landmark.', 'Look out from the highest point.'],
+    question: 'Which layout feels best to walk?',
+    what: 'A layout option from the lab, in greybox.',
     since: '2026-11-01',
     note: 'The layout lab artifact link will be added here.',
   },
