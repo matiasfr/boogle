@@ -4,20 +4,20 @@
 // alpha, decal, modulate).
 import * as THREE from 'three/webgpu';
 import { Fn, If, attribute, clamp, mix, texture, vec4 } from 'three/tsl';
-import { TEXTURES } from './textures.js';
-import { VERT_FLOATS, MAX_VERTS } from './engine.js';
-import { UNITS } from './collision.js';
+import { TEXTURES } from './textures.ts';
+import { VERT_FLOATS, MAX_VERTS } from './engine.ts';
+import { UNITS } from './collision.ts';
 
 const CELL = 64; // atlas cell, texels; every texture fits one
 const COLS = 4;
 const ATLAS_W = CELL * COLS,
   ATLAS_H = CELL * Math.ceil(TEXTURES.length / COLS);
 
-let atlas = null;
-// The one atlas, from src/guest/rom.js's `textures`: every texture back to back, RGBA5551, big-endian, row 0 on top.
-export const getAtlas = (textures) => (atlas ??= buildAtlas(textures));
+let atlas: THREE.DataTexture | null = null;
+// The one atlas, from src/guest/rom.ts's `textures`: every texture back to back, RGBA5551, big-endian, row 0 on top.
+export const getAtlas = (textures: Uint8Array) => (atlas ??= buildAtlas(textures));
 
-function buildAtlas(textures) {
+function buildAtlas(textures: Uint8Array) {
   const px = new Uint8Array(ATLAS_W * ATLAS_H * 4);
   let s = 0;
   TEXTURES.forEach((t, k) => {
@@ -57,7 +57,7 @@ function modelMaterial() {
   const gRect = attribute('guestRect', 'vec4'),
     gMix = attribute('guestMix', 'float');
   mat.colorNode = Fn(() => {
-    const t = texture(atlas, gRect.xy.add(clamp(gUv, 0, 1).mul(gRect.zw))); // sampled first: uniform control flow
+    const t = texture(atlas!, gRect.xy.add(clamp(gUv, 0, 1).mul(gRect.zw))); // sampled first: uniform control flow
     const col = vc.toVar();
     If(gMix.greaterThan(0.5), () => {
       If(gMix.lessThan(1.5), () => col.assign(mix(vc, t.rgb, t.a)))
@@ -70,9 +70,10 @@ function modelMaterial() {
 }
 
 // Needs the atlas (getAtlas) first.
+export type ModelMesh = ReturnType<typeof createModelMesh>;
 export function createModelMesh() {
   const geo = new THREE.BufferGeometry();
-  const attr = (name, size) => {
+  const attr = (name: string, size: number) => {
     const a = new THREE.BufferAttribute(new Float32Array(MAX_VERTS * size), size);
     a.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute(name, a);
@@ -91,10 +92,10 @@ export function createModelMesh() {
   return mesh;
 }
 
-const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 
 // Copies the sim's vertex buffer into the mesh, metres around the model's feet.
-export function updateModelMesh(mesh, verts, count) {
+export function updateModelMesh(mesh: ModelMesh, verts: Float32Array, count: number) {
   const g = mesh.geometry;
   const pos = g.attributes.position.array,
     nor = g.attributes.normal.array,
@@ -120,7 +121,7 @@ export function updateModelMesh(mesh, verts, count) {
     rect.set(r, i * 4);
     mix[i] = verts[s + 11] >= 0 ? verts[s + 12] : 0;
   }
-  for (const a of Object.values(g.attributes)) {
+  for (const a of Object.values(g.attributes) as THREE.BufferAttribute[]) {
     a.clearUpdateRanges();
     a.addUpdateRange(0, n * a.itemSize);
     a.needsUpdate = true;

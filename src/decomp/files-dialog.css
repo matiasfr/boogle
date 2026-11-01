@@ -1,4 +1,4 @@
-/* The ROM dialog (src/decomp/files-dialog.js): a dim layer and a paper card, like the pause view. */
+/* The ROM dialog (src/decomp/files-dialog.ts): a dim layer and a paper card, like the pause view. */
 dialog.files-dlg {
   position: fixed;
   inset: 0;

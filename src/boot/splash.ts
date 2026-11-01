@@ -1,5 +1,5 @@
 // The loading screen: key art, the title and a progress bar, from the first paint until the island can be drawn
-// (shaders compiled, one frame out). The page's entry (./index.js) shows it before it starts downloading the game.
+// (shaders compiled, one frame out). The page's entry (./index.ts) shows it before it starts downloading the game.
 // Local only.
 //
 //   splashStage(from, to, label)   a new step: the bar jumps to `from` and creeps toward `to` until the next call
@@ -28,9 +28,9 @@ root.innerHTML = `
     <div class="splash-bar"><div class="splash-fill"></div></div>
     <div class="splash-label"></div>
   </div>`;
-const img = root.querySelector('.splash-art');
-const fill = root.querySelector('.splash-fill');
-const label = root.querySelector('.splash-label');
+const img = root.querySelector<HTMLImageElement>('.splash-art')!;
+const fill = root.querySelector<HTMLElement>('.splash-fill')!;
+const label = root.querySelector<HTMLElement>('.splash-label')!;
 img.addEventListener('load', () => img.classList.add('in'), { once: true });
 img.src = art;
 document.body.append(root);
@@ -43,7 +43,7 @@ let shown = 0;
 let done = false;
 let last = performance.now();
 
-function draw(now) {
+function draw(now: number) {
   if (done) return;
   const creep = CREEP_MAX * (1 - Math.exp(-(now - since) / 1000 / CREEP_S));
   const target = from + (to - from) * Math.max(at, creep);
@@ -55,12 +55,12 @@ function draw(now) {
 }
 requestAnimationFrame(draw);
 
-function show(f) {
+function show(f: number) {
   fill.style.transform = `scaleX(${f})`;
   root.setAttribute('aria-valuenow', String(Math.round(f * 100)));
 }
 
-export function splashStage(a, b, text) {
+export function splashStage(a: number, b: number, text: string) {
   if (done) return;
   from = Math.max(a, shown);
   to = Math.max(b, from);
@@ -69,7 +69,7 @@ export function splashStage(a, b, text) {
   label.textContent = text;
 }
 
-export function splashProgress(f) {
+export function splashProgress(f: number) {
   at = Math.max(at, Math.min(1, f));
 }
 

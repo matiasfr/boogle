@@ -19,7 +19,7 @@ import { LEVEL_UP, PET, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
 import { bond, createFriend, loadFriend, serializeFriend, pet, kickedOff, rideLimit, isWary } from './friendship.ts';
 import { heldId, useOne } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
-import { guest } from '../guest/state.js';
+import { guest } from '../guest/state.ts';
 import type { BgRemote } from './boogler.ts';
 import type { Friend } from './friendship.ts';
 import type { Talk } from './talk.ts';

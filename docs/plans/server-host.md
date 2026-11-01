@@ -529,7 +529,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Verify: `npm run check:full`.
 
 - [x] **8b. The room picker, used by the game** (the old step 9, shipped before the switch replanned it) (`src/net/room.js`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
-  `src/features/telemetry.ts`, `src/debug/netdebug.js`).
+  `src/features/telemetry.ts`, `src/debug/netdebug.ts`).
   - `room.js` as in Design, with every transition of the table.
   - `net.js`: import `createRoom` instead of `createPeerRoom`; in `connectRoom`: `const base =
     import.meta.env.VITE_BOOGLE_SERVER; const p2p = new URLSearchParams(location.search).has('p2p');` and
@@ -562,7 +562,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     (server answers `peer`).
 
 - [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
-  `src/features/telemetry.ts`, `src/debug/netdebug.js`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
+  `src/features/telemetry.ts`, `src/debug/netdebug.ts`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
   - Done. Deviations: the loaded-room cap is `MAX_HOSTED_ROOMS` (default 20), since `MAX_ROOMS` already caps saved

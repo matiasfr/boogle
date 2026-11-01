@@ -14,7 +14,7 @@ import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
 import { createStall } from './adapters/mushroom-garden.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
-import { splashStage, splashProgress, splashDone } from './boot/splash.js';
+import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
@@ -54,7 +54,7 @@ function frame(now = performance.now()) {
 }
 
 // The network and the lobby do not wait for the GPU. Only the first frame does (renderer.render throws until init), and
-// Enter, so nobody gets in before it can draw. Shaders are compiled behind the loading screen (src/boot/splash.js), not
+// Enter, so nobody gets in before it can draw. Shaders are compiled behind the loading screen (src/boot/splash.ts), not
 // in the first frames.
 function start() {
   initInput();

@@ -375,7 +375,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       `src/constants.ts`.
     - In `src/sim/mushrooms.ts`, the `loadGarden` comment becomes "anything else loads as an empty garden" (no
       129-cell mention, comment only).
-    - In `src/debug/netdebug.js`, the subsystem list in the header no longer names water or terrain.
+    - In `src/debug/netdebug.ts`, the subsystem list in the header no longer names water or terrain.
     - `src/features/gifts.ts`: the header has no fruit, and the `registerInteractable` comment says "Pick up".
     - `src/features/prompt.ts` header example: "over the can" instead of "over a mango".
   - **Indices and fruit ids in tests and scenarios.** `grep -rnE "mango|coconut|banana|pomegranate|apricot" test dev`

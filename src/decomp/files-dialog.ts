@@ -1,6 +1,6 @@
 // The files dialog, for any character that needs files the player brings themselves (an engine build, their own copy
 // of a game: docs/plans/decomp-characters.md). Drop a file on the page (anywhere works), pick one, or paste a link to
-// your own copy (link.js); Esc, pad B or Not now closes it. The text comes from the caller:
+// your own copy (link.ts); Esc, pad B or Not now closes it. The text comes from the caller:
 //   openFilesDialog({ title, needs, ext, onFile })
 //     title   the heading ('...rawr?')
 //     needs   what is asked for, as a checklist: [{ label, done }]; filesDialogNeeds(needs) ticks it off
@@ -9,26 +9,29 @@
 //             that everything is there
 import './files-dialog.css';
 import { openModal, closeModal } from '../player/modal.ts';
-import { directLink, fetchLinkedFile } from './link.js';
+import { directLink, fetchLinkedFile } from './link.ts';
 
-let dlg = null,
-  note = null,
-  list = null,
-  handle = null;
+export type Need = { label: string; done?: boolean };
+type Opts = { title: string; needs: Need[]; ext: string[]; onFile: (file: File) => void };
+
+let dlg: HTMLDialogElement | null = null,
+  list: HTMLElement | null = null,
+  handle: Opts['onFile'] | null = null;
+let note!: HTMLElement; // built with dlg
 
 const IOS =
   /iPhone|iPad|iPod/.test(navigator.userAgent) ||
   (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 const picker = document.createElement('input');
 picker.type = 'file';
-picker.addEventListener('change', () => picker.files[0] && handle?.(picker.files[0]));
+picker.addEventListener('change', () => picker.files?.[0] && handle?.(picker.files[0]));
 function pick() {
   picker.value = '';
   picker.click();
 }
 
 function build() {
-  dlg = document.createElement('dialog');
+  const dlg = document.createElement('dialog');
   dlg.className = 'files-dlg';
   dlg.innerHTML = `
     <div class="files-dim"></div>
@@ -48,14 +51,14 @@ function build() {
       </div>
       <p class="files-small">They stay in this browser. Nothing is uploaded, and links aren't kept.</p>
     </div>`;
-  note = dlg.querySelector('.files-note');
-  list = dlg.querySelector('.files-needs');
-  dlg.querySelector('.files-pick').addEventListener('click', pick);
-  dlg.querySelector('.files-close').addEventListener('click', closeFilesDialog);
-  const form = dlg.querySelector('.files-link');
+  note = dlg.querySelector<HTMLElement>('.files-note')!;
+  list = dlg.querySelector<HTMLElement>('.files-needs')!;
+  dlg.querySelector('.files-pick')!.addEventListener('click', pick);
+  dlg.querySelector('.files-close')!.addEventListener('click', closeFilesDialog);
+  const form = dlg.querySelector<HTMLFormElement>('.files-link')!;
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    fromLink(form.elements[0]);
+    fromLink(form.elements[0] as HTMLInputElement);
   });
   dlg.addEventListener('cancel', (e) => {
     e.preventDefault();
@@ -64,11 +67,13 @@ function build() {
   dlg.addEventListener('dragover', () => dlg.classList.add('files-over'));
   dlg.addEventListener('dragleave', () => dlg.classList.remove('files-over'));
   document.body.append(dlg);
+  return dlg;
 }
 
-export function filesDialogNeeds(needs) {
-  if (!list) return;
-  dlg.querySelector('.files-lead').textContent = needs.length > 1 ? 'Bring these in, one at a time:' : 'Bring this in:';
+export function filesDialogNeeds(needs: Need[]) {
+  if (!dlg || !list) return;
+  dlg.querySelector('.files-lead')!.textContent =
+    needs.length > 1 ? 'Bring these in, one at a time:' : 'Bring this in:';
   list.replaceChildren(
     ...needs.map(({ label, done }) => {
       const li = document.createElement('li');
@@ -79,13 +84,13 @@ export function filesDialogNeeds(needs) {
   );
 }
 
-export function openFilesDialog({ title, needs, ext, onFile }) {
-  if (!dlg) build();
+export function openFilesDialog({ title, needs, ext, onFile }: Opts) {
+  dlg ??= build();
   if (dlg.open || !openModal({ onKey, onPad })) return;
   handle = onFile;
   // iOS greys out any file whose extension it has no type for (.z64, .wasm), so it gets no filter; onFile checks contents.
   picker.accept = IOS ? '' : ext.join(',');
-  dlg.querySelector('.files-title').textContent = title;
+  dlg.querySelector('.files-title')!.textContent = title;
   filesDialogNeeds(needs);
   note.hidden = true;
   dlg.classList.remove('files-over');
@@ -101,12 +106,12 @@ function closeFilesDialog() {
 export const filesDialogOpen = () => !!dlg?.open;
 
 // Everything is there: the heading changes to `title`, then the dialog closes. Resolves once it has.
-export function filesDialogAccepts(title) {
+export function filesDialogAccepts(title: string) {
   if (!dlg?.open) return Promise.resolve();
   dlg.classList.remove('files-over');
-  dlg.querySelector('.files-title').textContent = title;
+  dlg.querySelector('.files-title')!.textContent = title;
   note.hidden = true;
-  return new Promise((resolve) =>
+  return new Promise<void>((resolve) =>
     setTimeout(() => {
       closeFilesDialog();
       resolve();
@@ -115,26 +120,26 @@ export function filesDialogAccepts(title) {
 }
 
 // `text` under the checklist ('' hides it).
-export function filesDialogSays(text) {
+export function filesDialogSays(text: string) {
   if (!dlg?.open) return;
   dlg.classList.remove('files-over');
   note.textContent = text;
   note.hidden = !text;
 }
 
-async function fromLink(input) {
+async function fromLink(input: HTMLInputElement) {
   const href = directLink(input.value);
   if (!href) return filesDialogSays("That doesn't look like a link.");
   filesDialogSays('Getting it...');
   const file = await fetchLinkedFile(href);
-  if (!dlg.open) return;
+  if (!dlg?.open) return;
   if (!file) return filesDialogSays("Couldn't get that link. Download the file and drop it in instead.");
   input.value = '';
   filesDialogSays('');
   handle?.(file);
 }
 
-function onKey(e) {
+function onKey(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement) {
     if (e.code === 'Escape') e.target.blur(); // typing in the link box: only Esc leaves it (Enter submits the form)
     return;
@@ -143,7 +148,7 @@ function onKey(e) {
   else if (e.code === 'Enter' || e.code === 'Space') pick();
 }
 
-function onPad(slot) {
+function onPad(slot: string) {
   if (slot === 'b') closeFilesDialog();
   else if (slot === 'a') pick();
 }

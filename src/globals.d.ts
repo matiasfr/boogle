@@ -7,6 +7,7 @@ declare global {
     __fish?: unknown;
     __gulls?: unknown;
     __feel?: unknown; // src/features/feel.ts tuning, for scenarios
+    __debugCam?: { set(pos: number[], look: number[], fov?: number): void; clear(): void }; // src/debug/debug-cam.ts
   }
 }
 export {};

@@ -1,4 +1,4 @@
-// Desync visibility (dev only, `?netdebug=1`). sync.js already compares one hash per registered state; this shows it:
+// Desync visibility (dev only, `?netdebug=1`). sync.ts already compares one hash per registered state; this shows it:
 //   - an overlay with the role, hash checks, the status of every subsystem (mushrooms, gifts, ...) and
 //     whether everyone in the room runs this tab's build (src/netplay/builds.ts)
 //   - on a mismatch, both sides save the diverging subsystems' serialized state at that tick as JSON, to diff:
@@ -7,11 +7,12 @@
 import { onStart } from '../loop.ts';
 import { net, onRoomReady } from '../netplay/net.ts';
 import { BUILD, otherBuilds } from '../netplay/builds.ts';
+import type { Room } from '../net/ws-room.ts';
 import { onDesync, onHashSent, snapshot, worldStatus, world } from '../world/sync.ts';
 
 const CACHE = 6; // host: states kept for the last few hash ticks
 
-function save(name, data) {
+function save(name: string, data: unknown) {
   console.warn(`[sync] ${name}`, data);
   try {
     const a = document.createElement('a');
@@ -25,20 +26,24 @@ function save(name, data) {
 }
 // Other builds in the room: '<build> x<count>', 'old' for a peer from before builds were published.
 const builds = () => [...otherBuilds()].map(([b, n]) => `${b ?? 'old'} x${n}`).join(', ');
-const pick = (data, keys) => Object.fromEntries(keys.filter((k) => k in data).map((k) => [k, data[k]]));
+const pick = (data: Record<string, unknown>, keys: string[]) =>
+  Object.fromEntries(keys.filter((k) => k in data).map((k) => [k, data[k]]));
 
-const cache = [];
+const cache: { tick: number; data: Record<string, unknown> }[] = [];
 onHashSent((tick) => {
   cache.push({ tick, data: snapshot().data });
   if (cache.length > CACHE) cache.shift();
 });
-let room = null;
+let room: Room | null = null;
+type DumpAsk = { t?: string; tick?: number; keys?: unknown };
 onRoomReady((r) => {
   room = r;
-  r.onMessage((m) => {
+  r.onMessage((msg) => {
+    const m = msg as DumpAsk | null;
     if (m?.t !== 'sd:dump' || worldStatus().mode !== 'host' || !Array.isArray(m.keys)) return;
     const hit = cache.find((c) => c.tick === m.tick);
-    if (hit) save(`desync-${m.tick}-host.json`, { tick: m.tick, side: 'host', states: pick(hit.data, m.keys) });
+    if (hit)
+      save(`desync-${m.tick}-host.json`, { tick: m.tick, side: 'host', states: pick(hit.data, m.keys as string[]) });
     else console.warn(`[sync] desync dump for tick ${m.tick} asked, but it is no longer cached`);
   });
 });
@@ -53,7 +58,7 @@ onStart(() => {
     'position:fixed;right:8px;bottom:8px;margin:0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.6);' +
     'color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;pointer-events:none;z-index:50;white-space:pre';
   document.body.append(el);
-  let rtt = null;
+  let rtt: number | null = null;
   setInterval(() => {
     net.room
       ?.linkStats()

@@ -370,7 +370,7 @@ test('hooks are core by reserved order, and lockstep comes from the lint globs',
   assert.equal(extractFile('src/world/grid.js', '', globs).lockstep, true);
   assert.equal(extractFile('src/world/other.js', '', globs).lockstep, false);
   const frames = extractFile(
-    'src/guest/play.js',
+    'src/guest/play.ts',
     "onFrame(a, { order: -5 });\nonFrame(b, { order: -200 });\nonFrame(c, { phase: 'late', order: 3000 });",
   ).frames;
   assert.deepEqual(

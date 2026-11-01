@@ -7,23 +7,27 @@ import { addPart, mergeParts } from '../render/props.ts';
 import { scene, toScreen } from '../render/scene.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { NODES } from '../pois/caves/network.ts';
-import { getSim } from './engine.js';
-import { getAtlas, createModelMesh, updateModelMesh } from './model.js';
+import { getSim } from './engine.ts';
+import type { Sim } from './engine.ts';
+import type { RomPieces } from './rom.ts';
+import type { ModelMesh } from './model.ts';
+import { getAtlas, createModelMesh, updateModelMesh } from './model.ts';
 
 const MOUTH = NODES.north; // the tunnel into the wine cellar
 const OUT = Math.hypot(...MOUTH.out);
 const [OX, OZ] = [MOUTH.out[0] / OUT, MOUTH.out[1] / OUT];
 const AHEAD = 2.5, // metres out of the mouth, along the trench
   ASIDE = 2.2; // metres to the right (looking out), clear of the doorway
+type Real = { mesh: ModelMesh; sim: Sim; frame: number; drawnAt: number; blinkAt: number };
 export const dino = {
-  group: null,
+  group: null as THREE.Group | null,
   pos: new THREE.Vector3(MOUTH.x + OX * AHEAD - OZ * ASIDE, MOUTH.y, MOUTH.z + OZ * AHEAD + OX * ASIDE),
   head: new THREE.Vector3(),
   hopAt: -1e9,
-  bubble: null,
+  bubble: null as HTMLDivElement | null,
   bubbleUntil: 0,
   height: 1.3, // metres, for his head and word bubble
-  real: null, // { mesh, sim, frame, drawnAt, blinkAt } once he is the game's model
+  real: null as Real | null, // once he is the game's model
 };
 const DRAW_MS = 1000 / 30; // the game's animation rate
 const DRAW_NEAR = 90; // metres from the camera; further off he holds his pose
@@ -35,13 +39,20 @@ const GREEN = '#46b83a',
   DARK = '#16202a';
 
 function build() {
-  const parts = [];
+  const parts: THREE.BufferGeometry[] = [];
   const m = new THREE.Matrix4(),
     q = new THREE.Quaternion(),
     e = new THREE.Euler();
   const ball = new THREE.SphereGeometry(1, 14, 10),
     cone = new THREE.ConeGeometry(1, 1, 8);
-  const put = (geo, color, [x, y, z], [sx, sy, sz], [rx, ry, rz] = [0, 0, 0]) => {
+  type V = [number, number, number];
+  const put = (
+    geo: THREE.BufferGeometry,
+    color: string,
+    [x, y, z]: V,
+    [sx, sy, sz]: V,
+    [rx, ry, rz]: V = [0, 0, 0],
+  ) => {
     m.compose(new THREE.Vector3(x, y, z), q.setFromEuler(e.set(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
     addPart(parts, geo, m, color);
   };
@@ -79,6 +90,7 @@ function build() {
   group.rotation.y = Math.atan2(OX, OZ); // facing out of the cave
   scene.add(group);
   dino.group = group;
+  return group;
 }
 
 function bubble() {
@@ -90,31 +102,30 @@ function bubble() {
 }
 
 // A word over his head for a moment.
-export function dinoSays(text, ms = 2600) {
-  dino.bubble ??= bubble();
-  dino.bubble.textContent = text;
-  dino.bubble.hidden = false;
+export function dinoSays(text: string, ms = 2600) {
+  const b = (dino.bubble ??= bubble());
+  b.textContent = text;
+  b.hidden = false;
   dino.bubbleUntil = performance.now() + ms;
   dino.hopAt = performance.now();
 }
 
-// Swaps in the engine's dino, drawn with the ROM's textures (src/guest/rom.js data).
-export async function showRealDino(rom) {
+// Swaps in the engine's dino, drawn with the ROM's textures (src/guest/rom.ts data).
+export async function showRealDino(rom: RomPieces) {
   if (dino.real) return;
   const sim = await getSim();
   getAtlas(rom.textures);
   if (dino.real) return;
-  if (!dino.group) build();
+  const group = dino.group ?? build();
   const mesh = createModelMesh();
-  dino.group.children[0].visible = false;
-  dino.group.add(mesh);
+  group.children[0].visible = false;
+  group.add(mesh);
   dino.real = { mesh, sim, frame: 0, drawnAt: -1e9, blinkAt: 0 };
   dino.height = 2.1;
   dino.head.y = dino.pos.y + dino.height - 0.2;
 }
 
-function drawReal(camera, now) {
-  const r = dino.real;
+function drawReal(camera: THREE.Camera, now: number, r: Real) {
   if (now - r.drawnAt < DRAW_MS || camera.position.distanceTo(dino.pos) > DRAW_NEAR) return;
   r.drawnAt = now;
   r.frame++;
@@ -125,19 +136,19 @@ function drawReal(camera, now) {
 
 const over = new THREE.Vector3(),
   px = { x: 0, y: 0, behind: false };
-export function updateDino(camera, now) {
-  if (!dino.group) build();
+export function updateDino(camera: THREE.Camera, now: number) {
+  const group = dino.group ?? build();
   const t = (now - dino.hopAt) / 1000;
-  dino.group.position.y = dino.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
-  if (dino.real) drawReal(camera, now);
-  else dino.group.children[0].scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
+  group.position.y = dino.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
+  if (dino.real) drawReal(camera, now, dino.real);
+  else group.children[0].scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
   const b = dino.bubble;
   if (!b || b.hidden) return;
   if (now > dino.bubbleUntil) {
     b.hidden = true;
     return;
   }
-  toScreen(over.copy(dino.head).setY(dino.group.position.y + dino.height + 1.0), px);
+  toScreen(over.copy(dino.head).setY(group.position.y + dino.height + 1.0), px);
   const mx = innerWidth * 0.05,
     my = innerHeight * 0.05;
   const on = !px.behind && px.x > -mx && px.x < innerWidth + mx && px.y > -my && px.y < innerHeight + my;

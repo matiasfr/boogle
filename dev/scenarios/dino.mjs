@@ -4,7 +4,7 @@
 // and Esc closes it.
 import { TP } from './lib/world.mjs';
 
-const DINO = `(await import('/src/guest/dino.js')).dino`;
+const DINO = `(await import('/src/guest/dino.ts')).dino`;
 const near = `(async () => {
   const dino = ${DINO};
   ${TP('dino.pos.x + 1.4', 'dino.pos.z')}
