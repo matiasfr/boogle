@@ -77,12 +77,27 @@ long nobody hosted (wall clock against the save's tick), and the huts' freight f
 27 s) lands in the open Track ring, capped at one section. The machine still waits for a player to start it. Absences
 under a minute bank nothing.
 
-Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
+**The machine.** A little red steam loco with a sleeper chute at the front parks a few metres up the open section.
+Started, it backs onto the railhead while warming up (fast chuffs, a shudder), then crawls the section dropping
+sleepers off its chute one by one: each thumps down with a ring of dust and the machine bumps, every other one a rail
+clanks down with sparks, the funnel chuffs as it goes and the Track ring's pile shrinks. It whistles and steams at the
+end, then rolls up to park on the next section. Its deck is a platform: hop on and ride it. Once the whole route is
+laid it sinks away.
+
+**Run variants** (`?room=proto-lay&proto=lay&v=crawl|quick|push`, docs/plans/find-the-fun.md step 3). The room's run
+is the `run` tune key (proto- rooms; never changed mid-run): crawl (0, the default above), quick (1: 1.5 s warm, 11 s
+lay, 1.5 s whistle) and push (2: 2 s warm, then it lays only while someone walks into its back: each `site.push {s}`
+buys 5 ticks of laying and a pusher sends one every 5 ticks, so solo it takes ~25 s and more pushers go faster; a
+"Push me!" sign shows while it waits). The `?proto=lay` panel switches variant, fills the open Track ring
+(`tune.fill`, as freight with no plaque credit) and starts over (`tune.reset`). Scenario: `npm run scenario -- lay-run`.
+
+Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`, `RUNS`), op `site.run {s}` and the
 `sites` tick; the bank: [src/sim/bank.ts](../../src/sim/bank.ts), [src/world/rules/bank.ts](../../src/world/rules/bank.ts),
 [src/features/helper-bank.ts](../../src/features/helper-bank.ts), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
 
 Code: [src/sim/sites.ts](../../src/sim/sites.ts), [src/sim/tiers.ts](../../src/sim/tiers.ts),
-[src/world/rules/sites.ts](../../src/world/rules/sites.ts), [src/features/work-sites.ts](../../src/features/work-sites.ts).
+[src/world/rules/sites.ts](../../src/world/rules/sites.ts), [src/features/work-sites.ts](../../src/features/work-sites.ts),
+[src/features/track-machine.ts](../../src/features/track-machine.ts) (the machine, the railway, riding and pushing).
 Lockstep state `sites`; op `site.stock {s, ring, n}` (validated against your own stack, the age's material and the open
 site). Ring reach is not checked by the host, like every reach today.
 

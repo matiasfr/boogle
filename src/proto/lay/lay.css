@@ -1,0 +1,42 @@
+/* The laying-run prototype (?proto=lay): the solo tester's panel, top left. */
+.lay-proto {
+  position: absolute;
+  left: 12px;
+  top: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 260px;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  pointer-events: auto;
+}
+.lay-proto .lay-kinds {
+  display: flex;
+  gap: 4px;
+}
+.lay-proto a,
+.lay-proto button {
+  font: inherit;
+  padding: 5px 11px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+.lay-proto a.on {
+  background: #ffd23f;
+}
+.lay-proto button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.lay-proto .lay-note {
+  padding: 3px 8px;
+  background: color-mix(in srgb, var(--paper) 85%, transparent);
+  border-radius: 8px;
+}

@@ -35,7 +35,7 @@ import { me } from '../../player/player.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
-import { MACHINE_RUN, lengthOf } from '../../sim/scripted-run.ts';
+import { lengthOf } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 
 const TPS = 1000 / TICK_MS;
@@ -91,7 +91,6 @@ function lineAt(d: number, out: { x: number; z: number }) {
 // `?laid=N` (or the panel's +/-) fakes the count for this tab only: render and riding, never the world. PROTOTYPE.
 let fake = params.has('laid') ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0)) : -1;
 const seen = new Map<number, number>(); // section -> the tick it was faked in (this tab only)
-const RUN_TICKS = lengthOf(MACHINE_RUN);
 const { sites } = rules.sites;
 onApplied((e: { op: string }) => e.op === 'tune.reset' && seen.clear());
 const { opening } = rules.opening;
@@ -109,7 +108,7 @@ function fakeLaid(n: number) {
 const laidCount = () => (fake >= 0 ? fake : sites.open);
 const layTick = (k: number) => {
   const t0 = k < sites.open ? sites.list[k].t0 : -1;
-  if (t0 >= 0) return t0 + RUN_TICKS; // laid by a machine run
+  if (t0 >= 0) return t0 + lengthOf(rules.sites.script()); // laid by a machine run (the room's run variant)
   if (opening.laid && k >= opening.laid[0] && k < sites.open) return opening.laid[1]; // by the open.lay shortcut
   return seen.get(k) ?? 0; // faked in this tab, or laid before the shortcut kept its tick
 };

@@ -84,6 +84,28 @@ export const PROTOS: Proto[] = [
     ],
   },
   {
+    id: 'lay',
+    title: 'Laying a section',
+    step: 3,
+    status: 'live',
+    url: '/?room=proto-lay&proto=lay&v=crawl',
+    question: 'Is laying a section satisfying or dead time?',
+    what: 'Fill the Track ring (top left), Start the machine (E): today’s 50 s run with thumping sleepers, clanking rails and chuffs. Hop on its deck to ride.',
+    since: '2026-11-01',
+    variants: [
+      {
+        name: 'quick',
+        url: '/?room=proto-lay&proto=lay&v=quick',
+        what: 'The same run in 14 s: the payoff comes fast.',
+      },
+      {
+        name: 'push',
+        url: '/?room=proto-lay&proto=lay&v=push',
+        what: 'It lays only while you walk into its back: about 25 s of shoving solo, faster with friends.',
+      },
+    ],
+  },
+  {
     id: 'era',
     title: 'Era swap (greybox)',
     step: 4,

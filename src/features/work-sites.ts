@@ -8,8 +8,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
-import { onApplied, submitEdit } from '../world/sync.ts';
-import { sharedSeconds } from '../netplay/shared-time.ts';
+import { onApplied, submitEdit, world } from '../world/sync.ts';
 import { registerInteractable } from '../player/hands.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { me } from '../player/player.ts';
@@ -19,7 +18,6 @@ import { haulFeel } from '../player/haul-feel.ts';
 import { haulVariant } from '../player/haul-variant.ts';
 import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
-import { MACHINE_RUN } from '../sim/scripted-run.ts';
 import type { Site } from '../sim/sites.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
@@ -128,7 +126,6 @@ const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   one = new THREE.Vector3(1, 1, 1),
   up = new THREE.Vector3(0, 1, 0),
-  sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4),
   at = new THREE.Vector3();
 
 // A ring's second label line.
@@ -151,7 +148,9 @@ function redraw() {
     v.hut.visible = x.helpers > 0 && !BUILD_PROTO;
     // sleepers stacked in the Track ring as it fills
     const p = ringAt(s, TRACK);
-    const shown = rules.sites.isDone(s) ? 0 : Math.round((SLEEPERS * x.stock[TRACK]) / costOf(s, TRACK));
+    // (the pile goes down as the machine lays the section)
+    const left = x.t0 >= 0 ? 1 - rules.sites.run(s, world.tick).total / 1000 : 1;
+    const shown = rules.sites.isDone(s) ? 0 : Math.round((SLEEPERS * x.stock[TRACK] * left) / costOf(s, TRACK));
     for (let m = 0; m < shown; m++) {
       at.set(p.x + ((m % 3) - 1) * 0.5, groundHeight(p.x, p.z) + 0.12 + Math.floor(m / 3) * 0.2, p.z);
       q.setFromAxisAngle(up, Math.PI / 2 + (Math.floor(m / 3) % 2) * 0.1);
@@ -167,83 +166,6 @@ function redraw() {
     paint(v.plaque, [`Section ${s + 1}`, ...(rows.length ? rows : ['—'])]);
   });
   commitPieces(sleepers, c);
-}
-
-// The railway: two rails and sleepers along each laid section, and along the running one up to the machine.
-const RAIL_STEP = 1.1; // metres between sleepers
-const rails = pieceMesh(ROUTE.length * 40);
-const railMat = new THREE.MeshStandardNodeMaterial({ color: '#5c5f66', roughness: 0.5, metalness: 0.6 });
-const railGeo = new THREE.BoxGeometry(0.08, 0.08, 1);
-const railMeshes = ROUTE.map(() =>
-  [-0.45, 0.45].map((off) => {
-    const m = new THREE.Mesh(railGeo, railMat);
-    m.visible = false;
-    scene.add(m);
-    return { m, off };
-  }),
-);
-// The machine: a placeholder track layer (a box with a funnel) that crawls the section during its run.
-const machine = new THREE.Group();
-machine.add(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2), hutMat));
-const funnel = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.7, 10), postMat);
-funnel.position.set(0, 0.75, -0.6);
-machine.add(funnel);
-machine.visible = false;
-scene.add(machine);
-
-// Each section's length and heading, fixed.
-const LINES = ROUTE.map((sec) => ({
-  len: Math.hypot(sec.to[0] - sec.x, sec.to[1] - sec.z),
-  yaw: Math.atan2(sec.to[0] - sec.x, sec.to[1] - sec.z),
-}));
-const lerp2 = (s: number, u: number) => {
-  const a = ROUTE[s],
-    [bx, bz] = a.to;
-  const x = a.x + (bx - a.x) * u,
-    z = a.z + (bz - a.z) * u;
-  return at.set(x, groundHeight(x, z), z);
-};
-const WARM = MACHINE_RUN[0].len,
-  LAY = MACHINE_RUN[1].len; // 'lay'
-// How far along section s the track is laid, 0..1, at shared time `tick` (fractional).
-function laid(s: number, tick: number): number {
-  const x = sites.list[s];
-  if (rules.sites.isDone(s)) return 1;
-  if (x.t0 < 0) return 0;
-  const r = rules.sites.run(s, Math.floor(tick));
-  if (r.name === 'warm' || r.phase < 0) return 0;
-  if (r.name !== 'lay') return 1;
-  return Math.min(1, (tick - x.t0 - WARM) / LAY); // smoothed between ticks
-}
-function drawRailway(tick: number): void {
-  let c = 0;
-  machine.visible = false;
-  ROUTE.forEach((sec, s) => {
-    const u = laid(s, tick);
-    const { len, yaw } = LINES[s];
-    for (let d = 0; d < len * u && c < rails.instanceMatrix.count; d += RAIL_STEP) {
-      lerp2(s, d / len);
-      at.y += 0.06;
-      q.setFromAxisAngle(up, yaw);
-      rails.setMatrixAt(c, m4.compose(at, q, sleeperScale));
-      rails.setColorAt(c++, pieceColor(0));
-    }
-    for (const { m, off } of railMeshes[s]) {
-      m.visible = u > 0;
-      if (!m.visible) continue;
-      const mid = lerp2(s, u / 2);
-      m.position.set(mid.x + Math.cos(yaw) * off, mid.y + 0.16, mid.z - Math.sin(yaw) * off);
-      m.rotation.set(0, yaw, 0);
-      m.scale.set(1, 1, Math.max(0.01, len * u));
-    }
-    if (s === sites.open && sites.list[s]?.t0 >= 0) {
-      machine.visible = true;
-      lerp2(s, u);
-      machine.position.set(at.x, at.y + 0.5, at.z);
-      machine.rotation.y = yaw;
-    }
-  });
-  commitPieces(rails, c);
 }
 
 // Start the machine: an Interact target at the open site's sign once its Track ring holds a whole section.
@@ -280,11 +202,11 @@ function pour(now: number): void {
 let drawn = '';
 onFrame(
   ({ now }: { now: number }) => {
-    // Redraw on any change to the sites (pours, freight, runs, loads) or a rename; the railway every frame only while
-    // a machine runs.
-    const key = `${sites.rev}/${names}/${rules.tune.tune.rev}`;
-    const running = sites.list[sites.open]?.t0 >= 0;
-    if (key !== drawn || running) drawRailway(sharedSeconds() * 10); // shared time in ticks (TICK_MS = 100)
+    // Redraw on any change to the sites (pours, freight, runs, loads) or a rename. The machine and the railway it lays
+    // are src/features/track-machine.ts.
+    const open = sites.list[sites.open];
+    const run = open?.t0 >= 0 ? rules.sites.run(sites.open, world.tick).total >> 5 : -1; // a running pile shrinks
+    const key = `${sites.rev}/${names}/${rules.tune.tune.rev}/${run}`;
     if (key !== drawn) redraw();
     drawn = key;
     pour(now);
