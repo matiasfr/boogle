@@ -12,6 +12,7 @@
 - `/feature <name> <request>`: for work spanning several files or shared state. The `planner` agent writes `docs/plans/<name>.md`, you wait for approval, then the `implementer` agent builds it.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
 - `/concept-art`: painted concept images from prompts (`npm run concepts`, OpenAI key or Codex CLI) for design exploration.
+- `/codex`: hand a job to Codex (GPT-6-Astra on the owner's subscription): previz of a prototype or effect at its idealized look, a research doc, a second-opinion review, or a self-contained task on its own branch.
 - `/idea <text>`: park an idea for later in `docs/ideas.md`.
 - `/video`: clips, GIFs, trailers and patch-notes videos. `/playtest-notes`: log a play session to `docs/playtests.md`.
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`. The `threejs-*` skills cover WebGL and WebGPU; Boogle is WebGPU + TSL only, so use their WebGPU/TSL parts and [src/render/README.md](src/render/README.md).
