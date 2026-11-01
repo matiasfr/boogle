@@ -1,6 +1,8 @@
 // Top-down map of the island as composed from src/island/shape.ts and every src/pois/*/site.js, with each POI's
 // keep-out discs and name. `npm run island-map` writes .look/island-map.png (and prints the land area).
 // Use it when adding, moving or removing a POI: it runs in a second, no browser needed.
+// `npm run island-map -- --protos` writes the protos page's heat-map backdrop instead (protos/island.png: 1 m/px, no
+// keep-out rings or axes, cropped to the land plus a margin) and prints the bounds protos/heat.ts must match.
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -24,7 +26,8 @@ const { createIsland } = await import('../../src/island/stamps.ts');
 const island = createIsland(sites);
 const { HALF, CELL } = await import('../../src/constants.ts');
 
-const SCALE = Number(process.argv[2]) || 2; // metres per pixel
+const PROTOS = process.argv.includes('--protos');
+const SCALE = PROTOS ? 1 : Number(process.argv[2]) || 2; // metres per pixel
 const N = Math.round((2 * HALF) / SCALE);
 const rgb = Buffer.alloc(N * N * 3);
 let land = 0;
@@ -51,6 +54,13 @@ for (let j = 0; j < N; j++)
       if (p) for (let k = 0; k < 3; k++) c[k] += (p[k] * 255 - c[k]) * p[3];
       const right = i + 1 < N ? h[j * N + i + 1] : v;
       if (Math.floor(v / 3) !== Math.floor(right / 3)) c = c.map((q) => q * 0.72); // 3 m contours
+    }
+    if (PROTOS) {
+      rgb.set(
+        c.map((q) => Math.max(0, Math.min(255, q))),
+        (j * N + i) * 3,
+      );
+      continue;
     }
     for (const k of island.keepOut) {
       const d = Math.hypot(x - k.x, z - k.z);
@@ -87,6 +97,38 @@ function png(w, hgt, data) {
   ]);
 }
 
+if (PROTOS) {
+  // Crop to the land plus MARGIN metres, snapped to 10 m, so the backdrop stays small.
+  const MARGIN = 20;
+  let i0 = N,
+    i1 = 0,
+    j0 = N,
+    j1 = 0;
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++)
+      if (h[j * N + i] > 0) {
+        i0 = Math.min(i0, i);
+        i1 = Math.max(i1, i);
+        j0 = Math.min(j0, j);
+        j1 = Math.max(j1, j);
+      }
+  const snap = (m, f) => f(m / 10) * 10;
+  const x0 = Math.max(-HALF, snap(-HALF + i0 - MARGIN, Math.floor)),
+    x1 = Math.min(HALF, snap(-HALF + i1 + 1 + MARGIN, Math.ceil));
+  const z0 = Math.max(-HALF, snap(-HALF + j0 - MARGIN, Math.floor)),
+    z1 = Math.min(HALF, snap(-HALF + j1 + 1 + MARGIN, Math.ceil));
+  const w = Math.round(x1 - x0),
+    hh = Math.round(z1 - z0),
+    oi = Math.round(x0 + HALF),
+    oj = Math.round(z0 + HALF);
+  const crop = Buffer.alloc(w * hh * 3);
+  for (let y = 0; y < hh; y++) rgb.copy(crop, y * w * 3, ((oj + y) * N + oi) * 3, ((oj + y) * N + oi + w) * 3);
+  const file = path.join(root, 'protos/island.png');
+  fs.writeFileSync(file, png(w, hh, crop));
+  console.log(`${file}  (${w}x${hh} px, ${fs.statSync(file).size} bytes)`);
+  console.log(`bounds for protos/heat.ts: { x0: ${x0}, z0: ${z0}, w: ${w}, h: ${hh} } (1 m/px, +z down)`);
+  process.exit(0);
+}
 const out = path.join(root, '.look/island-map.png');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, png(N, N, rgb));
