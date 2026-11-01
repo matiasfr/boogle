@@ -48,8 +48,8 @@ Code: [src/sim/sources.ts](../../src/sim/sources.ts), [src/world/rules/sources.t
 
 The railway is preset ([src/sim/route.ts](../../src/sim/route.ts)). The 0.1 testbed has three wood sections from the
 court toward the lighthouse, at (11, 6), (10, -12) and (8, -30), each with a work site: a sign with the section's
-plaque (beside the Helper ring, off the line) and two rings on the ground, Track (left, gold) and Helper hut (right,
-green). Only the open site (the first section
+plaque (beside the Helper ring, off the line) and two rings on the ground, Track (left, gold, dashed like sleepers) and Helper
+hut (right, green, a double line). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
 section). Sleepers pile up in the Track ring as it fills; a full Helper ring builds the hut (one per site) and closes.

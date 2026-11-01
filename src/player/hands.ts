@@ -14,6 +14,7 @@
 //   emptyHands               { down, up }: what using empty hands does before it falls back to interacting; a
 //                            prototype sets it (the haul toss, src/proto/haul/toss.ts). down returns true if it acted.
 //                            Mouse, pad and the touch main button all reach it.
+//   onInteractPress(fn)      fn(target, ran) on every interact press (not mid-throw): for press feedback in the HUD
 //
 // Interactables plug in, like actions in src/player/controls.ts:
 //
@@ -96,8 +97,12 @@ export function interactTarget() {
 }
 
 // Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
+const pressed: ((t: Interactable | null, ran: boolean) => void)[] = [];
+export const onInteractPress = (fn: (t: Interactable | null, ran: boolean) => void) => void pressed.push(fn);
 function interact(t = interactTarget()) {
-  if (me.charging || !t?.run) return false;
+  if (me.charging) return false;
+  for (const fn of pressed) fn(t, !!t?.run);
+  if (!t?.run) return false;
   t.run();
   return true;
 }

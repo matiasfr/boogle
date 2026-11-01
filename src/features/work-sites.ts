@@ -21,6 +21,7 @@ import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { MACHINE_RUN } from '../sim/scripted-run.ts';
 import type { Site } from '../sim/sites.ts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
@@ -28,7 +29,17 @@ const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest roo
 // The build prototype (?proto=build, src/proto/build/) draws the hut going up instead of this box.
 const BUILD_PROTO = new URLSearchParams(location.search).get('proto') === 'build';
 
-const ringGeo = new THREE.RingGeometry(RING_R - 0.18, RING_R, 40).rotateX(-Math.PI / 2);
+// Colour is the second signal, so each ring also has a shape (docs/research/ui-patterns.md, rec 4): Track is dashed
+// like a row of sleepers, Helper is a double line.
+const arc = (r0: number, r1: number, a0 = 0, da = Math.PI * 2) => new THREE.RingGeometry(r0, r1, 40, 1, a0, da);
+const DASHES = 14;
+const DASH = (0.6 * Math.PI * 2) / DASHES;
+const ringGeos = [
+  mergeGeometries(
+    Array.from({ length: DASHES }, (_, i) => arc(RING_R - 0.32, RING_R, (i / DASHES) * Math.PI * 2, DASH)),
+  ),
+  mergeGeometries([arc(RING_R - 0.12, RING_R), arc(RING_R - 0.36, RING_R - 0.26)]),
+].map((g) => g.rotateX(-Math.PI / 2));
 const ringMat = [
   new THREE.MeshBasicNodeMaterial({ color: '#f0c070', transparent: true, opacity: 0.85, depthWrite: false }),
   new THREE.MeshBasicNodeMaterial({ color: '#8fe0a0', transparent: true, opacity: 0.85, depthWrite: false }),
@@ -94,7 +105,7 @@ const views = ROUTE.map((sec, s) => {
   for (const ring of [TRACK, HELPER]) {
     const p = ringAt(s, ring);
     const y = groundHeight(p.x, p.z) + 0.06;
-    const mesh = new THREE.Mesh(ringGeo, ringMat[ring]);
+    const mesh = new THREE.Mesh(ringGeos[ring], ringMat[ring]);
     mesh.position.set(p.x, y, p.z);
     scene.add(mesh);
     v.rings.push(mesh);

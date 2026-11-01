@@ -4,8 +4,10 @@
 // (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own: pickup is walking into a pile, pouring is
 // walking into a site's ring (work-sites.ts).
 // Serves DESIGN.md 1 (toys before chores: wood on your back, carried around with nothing to do). Lockstep counts,
-// Local look.
+// Local look. With ?proto=uisfx (docs/research/ui-patterns.md, rec 3) the chip is a play-size wood pill with a log
+// icon, and its number ticks one by one toward the host-confirmed count with a pop and a count sound per step.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import '../render/ui-kit.css';
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
@@ -19,6 +21,7 @@ import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/hau
 import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { TIERS, tierOf } from '../sim/tiers.ts';
+import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
 
 // The bundle: logs lying crosswise, stacked up and out from the back on a hex lattice (slots filled nearest-first, so
 // it fills out rather than up), with two rope bands round it. At most SHOWN pieces drawn, growing more slowly than the
@@ -148,7 +151,8 @@ onFrame(
       bands.count = b;
       bands.instanceMatrix.needsUpdate = true;
     }
-    updateChip(mine);
+    if (UI_KIT) tickChip(mine, now);
+    else updateChip(mine);
   },
   { phase: 'update', order: 32 },
 );
@@ -167,4 +171,41 @@ function updateChip(mine: Stack): void {
     chip.textContent = text;
     chip.classList.toggle('on', !!text);
   }
+}
+
+// ?proto=uisfx: the chip's parts, and the count it shows ticking toward the confirmed one (about 300 ms per change).
+const kit = { n: null as HTMLElement | null, what: null as HTMLElement | null, tier: null as HTMLElement | null };
+const shown = { n: 0, to: 0, step: 0, at: 0, key: '' };
+if (UI_KIT) {
+  chip.classList.add('kit');
+  chip.innerHTML =
+    '<svg class="haul-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="18" height="10" rx="5"/>' +
+    '<ellipse cx="19" cy="12" rx="3.2" ry="5"/><ellipse cx="19" cy="12" rx="1.3" ry="2"/></svg>' +
+    '<span class="haul-n"></span><span class="haul-what"></span><span class="haul-tier"></span>';
+  [kit.n, kit.what, kit.tier] = [...chip.querySelectorAll('span')] as HTMLElement[];
+}
+function tickChip(mine: Stack, now: number): void {
+  if (mine.n !== shown.to) {
+    // A big jump (a new age, a reload) skips most of the way, so the run stays short.
+    if (Math.abs(mine.n - shown.n) > 24) shown.n = mine.n - Math.sign(mine.n - shown.n) * 24;
+    shown.to = mine.n;
+    shown.step = Math.min(90, Math.max(18, 300 / Math.abs(mine.n - shown.n || 1)));
+  }
+  if (shown.n !== shown.to && now - shown.at >= shown.step) {
+    const d = Math.sign(shown.to - shown.n);
+    shown.n += d;
+    shown.at = now;
+    uiSound('count', d);
+    replay(kit.n, 'ui-tick');
+  }
+  const tier = TIERS[tierOf(identity.pid ? rules.sites.points(identity.pid) : 0)]?.name ?? '';
+  const key = `${shown.n}/${mine.k}/${tier}`;
+  if (key === shown.key) return;
+  shown.key = key;
+  kit.n!.textContent = shown.n ? String(shown.n) : '';
+  kit.what!.textContent = shown.n ? MATERIALS[Math.max(0, mine.k)] : '';
+  kit.tier!.textContent = tier;
+  chip.classList.toggle('on', !!(shown.n || tier));
+  chip.classList.toggle('carrying', !!shown.n);
+  chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
 }
