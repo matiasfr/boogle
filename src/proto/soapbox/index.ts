@@ -30,7 +30,7 @@ import {
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { me, cam, camConstraints, camForward } from '../../player/player.ts';
-import { input } from '../../player/input.ts';
+import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { heldId } from '../../player/inventory.ts';
 import { describeControl, wrapAction } from '../../player/controls.ts';
@@ -180,11 +180,15 @@ const fast = new THREE.Vector3(); // the velocity at the recent top speed: what 
 const impact = { hit: 0, top: 0 };
 const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
 
+// A stick pulled back brakes only past this share of its travel (a bowtie dead zone, research/cross-device-input.md
+// rec 7): a thumb that drifts down while steering does not stop the cart. Steering keeps the stick's own small one.
+const BRAKE_DEAD = 0.35;
 function readInput() {
   const k = input.keys;
   const steer = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
   const fwd = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
-  return { steer: clamp(steer + input.stickX, -1, 1), throttle: clamp(fwd - input.stickY, -1, 1) };
+  const sy = input.stickY > 0 ? Math.max(0, input.stickY - BRAKE_DEAD) / (1 - BRAKE_DEAD) : input.stickY;
+  return { steer: clamp(steer + input.stickX, -1, 1), throttle: clamp(fwd - sy, -1, 1) };
 }
 
 // ---------------------------------------------------------------- the vehicle model (every fixed step)
@@ -321,6 +325,7 @@ const runHud: RunHud = createRunHud();
 function board() {
   if (!me.body || S.seated) return;
   S.seated = true;
+  setSeated(true, 'Drift / Brake');
   removeBody(me.body); // put on the seat each frame from now on
   if (S.mode === 'parked') {
     setMotion(body, 'dynamic', true, T.mass);
@@ -340,6 +345,7 @@ const left = new THREE.Vector3();
 function getOut(thrown: boolean) {
   if (!S.seated || !me.body) return;
   S.seated = false;
+  setSeated(false);
   S.mode = 'loose';
   S.looseAt = performance.now();
   const p = body.position,
@@ -463,7 +469,7 @@ onStart(() => {
     label: 'Handbrake drift; stopped, hop out',
     keys: ['Space'],
     pad: 'a',
-    touch: 'Jump',
+    touch: 'Drift / Brake',
     group: 'move',
     order: 11,
     context: 'driving',
@@ -743,7 +749,10 @@ camConstraints.push((look, pos) => {
 });
 onFrame(
   ({ dt, now }) => {
-    if (S.seated && (!me.entered || !me.body)) S.seated = false;
+    if (S.seated && (!me.entered || !me.body)) {
+      S.seated = false;
+      setSeated(false);
+    }
     if (S.hold && now >= S.hold) {
       S.hold = 0;
       getOut(true); // the hit-stop is over: fly

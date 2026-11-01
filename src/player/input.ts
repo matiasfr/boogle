@@ -13,13 +13,23 @@ import { registerAction, describeControl, isTyping, triggerAction } from './cont
 export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
 // canLock: the browser has Pointer Lock at all (Safari on iPadOS has none, research/cross-device-input.md rec 3), so
 // mouse look there is a click-drag or a two-finger trackpad scroll. looked: one of those has turned the camera (the
-// hint in hud.ts then goes).
+// hint in hud.ts then goes). seated: in a vehicle's seat (setSeated), where its chase camera owns the view.
 export const inputState = {
   locked: false,
   lockFailed: false,
   canLock: 'requestPointerLock' in Element.prototype,
   looked: false,
+  seated: false,
 };
+
+// A vehicle calls this when you sit down and stand up (the soapbox). Seated, ← → only steer (no arrow turn) and a
+// two-finger scroll does not look: the chase camera owns the view. body.seated swaps in the driving touch layout
+// (touch.css; research/cross-device-input.md rec 11): Jump gets the vehicle's label, the buttons that do nothing hide.
+export function setSeated(on: boolean, jumpLabel = 'Jump') {
+  inputState.seated = on;
+  document.body.classList.toggle('seated', on);
+  dom.jumpBtn.textContent = on ? jumpLabel : 'Jump';
+}
 // Radians per pixel of a two-finger trackpad scroll (wheel deltas; a mouse wheel's lines are scaled to pixels).
 const WHEEL_YAW = 0.0035;
 const WHEEL_PITCH = 0.0028;
@@ -137,12 +147,12 @@ export function initInput() {
   });
   // A two-finger trackpad scroll turns the camera while the mouse is not locked: the iPad's mouse look (iPadOS sends
   // wheel events since 14.5; rec 3). Fingers right look right, as a drag does, with natural scrolling (the default).
-  // Ctrl (a pinch, in Chromium) and a locked mouse's wheel do nothing yet. Either way the page must not scroll or zoom.
+  // Ctrl (a pinch, in Chromium), a locked mouse's wheel and a seated player's do nothing yet. Either way the page must not scroll or zoom.
   canvas.addEventListener(
     'wheel',
     (e) => {
       e.preventDefault();
-      if (!me.entered || inputState.locked || e.ctrlKey) return;
+      if (!me.entered || inputState.locked || inputState.seated || e.ctrlKey) return;
       const px = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
       cam.yaw += e.deltaX * px * WHEEL_YAW;
       cam.pitch = clamp(cam.pitch + e.deltaY * px * WHEEL_PITCH, -1.25, 0.9);

@@ -92,10 +92,10 @@ export function updateIntent(dt: number) {
   if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests
   me.sprint = input.sprint || k.has('ShiftLeft') || k.has('ShiftRight');
   // With no mouse look (unlocked: keyboard only, or the iPad, which has no Pointer Lock) ← → turn the camera instead of
-  // stepping sideways (research/cross-device-input.md rec 15).
+  // stepping sideways (research/cross-device-input.md rec 15). Seated, they only steer the vehicle (setSeated).
   const arrowsTurn = !inputState.locked;
   const turn = (k.has('ArrowLeft') ? 1 : 0) - (k.has('ArrowRight') ? 1 : 0);
-  if (arrowsTurn && turn && me.entered) cam.yaw += turn * KEY_TURN * dt;
+  if (arrowsTurn && turn && me.entered && !inputState.seated) cam.yaw += turn * KEY_TURN * dt;
   let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
   let s = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
   if (!arrowsTurn) s -= turn;

@@ -20,7 +20,11 @@ it (and otherwise only hides a remote driver; see Sync).*
   than 4 m from the start, Interact reads **Back to the top** instead: you and the cart are put back on the start.
 - **Driving** uses the move input, relative to the cart: left and right steer, forward kicks off (up to 5 m/s, to get
   off the flat shoulder), back brakes (and creeps backwards from a standstill). **Jump** (Space, pad A, touch Jump) is
-  the handbrake while moving, and hops you out once stopped.
+  the handbrake while moving, and hops you out once stopped. The arrow keys only steer here (no arrow-key camera turn)
+  and a two-finger scroll does not look: the chase camera owns the view. A stick pulled back brakes only past 0.35 of
+  its travel (a bowtie dead zone; steering keeps the stick's own 0.12), so a thumb drifting down doesn't stop the cart.
+- **Driving touch layout** while seated: the main button reads **Get out** (or Back to the top), Jump reads
+  **Drift / Brake**, and Bump, Toss, Honk and Ping hide.
 - **Drift boost** (all three variants): holding the handbrake on the ground charges a drift, faster with the stick
   held hard (0.7 or more) into the slide (Mario Kart's counter: 5 a step, 2 otherwise, at 60 steps a second). The rear
   wheels' sparks tell the charge: yellow, then **blue** at 120 (0.4 s at best: "ready", with a tick), then **pink** at

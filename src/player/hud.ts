@@ -34,14 +34,14 @@ let lastHint: boolean | null = null;
 function updateHud() {
   dom.chargeEl.style.display = me.charging ? 'block' : 'none';
   if (me.charging) dom.chargeFill.style.width = `${Math.round(chargeOf(performance.now() - me.chargeStart) * 100)}%`;
-  // No Pointer Lock (the iPad): the hint says how to look instead, until the player has.
+  // No Pointer Lock (the iPad): the hint says how to look instead, until the player has (never in a seat: no looking).
   const { canLock } = inputState;
   const hint =
     me.entered &&
     inputKind() === 'kbm' &&
     !inputState.locked &&
     !inputState.lockFailed &&
-    (canLock || !inputState.looked);
+    (canLock || (!inputState.looked && !inputState.seated));
   if (hint !== lastHint) {
     lastHint = hint;
     dom.hintEl.innerHTML = !hint

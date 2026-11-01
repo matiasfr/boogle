@@ -23,3 +23,12 @@
     zoom: 1.6;
   }
 }
+/* The driving layout (rec 11), while seated in a vehicle (setSeated, src/player/input.ts): the stick steers, Grab is
+   "Get out" (the vehicle's interactable), Jump carries the vehicle's label, and what does nothing seated hides
+   (#touch outranks the features' own show rules, like the toss button's). */
+body.seated #touch .tbtn.bump,
+body.seated #touch .tbtn.toss,
+body.seated #touch .tbtn.honk-btn,
+body.seated #touch .tbtn.ping-btn {
+  display: none;
+}
