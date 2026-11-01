@@ -659,8 +659,15 @@ const PAGES: Page[] = [
         id: 'era-wood-bed',
         group: 'Era (?proto=era)',
         title: 'Wood-age ambience',
-        when: 'Era 1 everywhere on the island: a breeze, mallet knocks, the odd gull, and the island motif plucked.',
+        when: 'Era 1 everywhere on the island (v2): brown-noise surf swells, a soft pad in F, sparse marimba notes through an echo; far off, a gull, a mallet, a creak.',
         body: `return R.run(24, null, { trim: false });`,
+      },
+      {
+        id: 'era-wood-bed-60',
+        group: 'Era (?proto=era)',
+        title: 'Wood-age ambience, a minute',
+        when: 'The same bed over 60 s: long enough to hear the pad change chord, a rest, the motif and the rarer one-shots.',
+        body: `return R.run(60, null, { trim: false });`,
       },
       {
         id: 'era-opening-day',
