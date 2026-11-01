@@ -2,6 +2,14 @@
 
 *Research report, 1 November 2026. How one game serves touch, keyboard with trackpad or mouse, and gamepads, with the M4 iPad Pro and its Magic Keyboard as the lowest target ([boogle-2.md](../proposals/boogle-2.md), Process). It covers iPadOS Safari (pointer lock, trackpad events, Pointer Events, keyboard quirks, the Gamepad API), touch controls in shipped games (Genshin Impact, Fortnite, Sky, Brawl Stars, Roblox, Minecraft Bedrock), virtual sticks, touch camera and gyro, switching input modes mid-session, glyphs, vehicles on touch, and accessibility. It builds on [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md) (the registry, the pause view, last-used-device detection, glyph sets, Kenney prompts, the PlayStation trademark question) and [vehicle-feel.md](vehicle-feel.md) §6 (touch steering, Telfer's "less control is more"); those findings are not repeated. The code was read at 2acec33. The input-mode switch (key or trackpad → keyboard mode, touch → touch mode) was not on `main` yet, so this report describes the code as it is and leaves the switch to its author. Nothing was run on an iPad. Recommendations only: nothing here is a design decision.*
 
+*Update, 1 November 2026 (gap fill, from WebKit source and bugs; nothing run on an iPad yet):*
+
+- **Settled: `cursor: none` does not hide the iPadOS pointer** [V]. WebKit's iOS pointer code only knows the hand and I-beam cursors; anything else gets the system pointer.
+- **Mostly settled: a Magic Keyboard trackpad pinch reaches no DOM event.** The source points to neither `gesturechange` nor ctrl-`wheel`: the pinch goes to UIKit's scroll-view zoom (derived from the source, not yet seen on a device).
+- **Still open: WebKit 311151 and Home Screen web apps.** The bug is unchanged (NEW, no patch, last touched 15 October 2026) and still says nothing about them. The source didn't settle it, so the device test in item 5 remains the only answer.
+
+The pinch and cursor findings are marked **[V]** (the WebKit source or bug page was read and says this) or **[S]** (a secondary report); *derived* means worked out from the source.
+
 **Markers.** *Verified*: fetched and read at the source (a WebKit bug, a spec, a vendor's own docs). *Secondary*: a wiki, guide, forum or third-party write-up. *Derived*: worked out for Boogle from the sources and the code; nobody stated it.
 
 ## Summary
@@ -33,10 +41,21 @@
 ### Wheel, pinch and Pointer Events from the trackpad (verified)
 
 - [WebKit bug 210071](https://bugs.webkit.org/show_bug.cgi?id=210071) (verified, fixed): in iPadOS 13.4, trackpad and mouse scrolling on iPad fired only `pointermove`. Real `wheel` events shipped in iPadOS 14.5 (Tim Horton, April 2021). Follow-ups 226080 (wheel sometimes missing) and 226082 (`pointermove` instead of `mousemove` after a press) were filed. Boogle's canvas `wheel` handler calls `preventDefault` and does nothing else.
-- I found no source on what a trackpad pinch delivers in iPad Safari, whether `gesturechange` (which Boogle blocks) or ctrl-`wheel` as in Chromium. It needs a device log.
+- **A trackpad pinch most likely reaches the page as no DOM event** (derived from [V] source; unconfirmed on a device). The evidence:
+  - **Mac only.** WebKit's trackpad gesture path (`NativeWebGestureEvent`, from `NSEvent` magnify and rotate) is compiled only under `ENABLE(MAC_GESTURE_EVENTS)`.
+  - **No touches, so no `gesturechange`.** On iOS, `gesturestart`/`gesturechange` come from WebCore's touch handling (`IOS_GESTURE_EVENTS`), built from two direct touches. An indirect trackpad pinch produces no `UITouch` for the content view, so there is no touch event and no gesture event.
+  - **UIKit takes the pinch.** It goes to UIKit's `UIScrollView` pinch recognizer, which WKWebView treats as user-triggered page zoom. `scrollViewWillBeginZooming` in `WKWebViewIOS.mm` calls `cancelPointersForGestureRecognizer:` on it, so a drag-look in progress gets a `pointercancel`.
+  - **No ctrl-`wheel`.** No iOS code path synthesizes one.
+
+  So the page can't read the pinch, and Boogle's `gesturestart` `preventDefault` can't stop it. The likely visible result is the whole page zooming, as on a phone before that block was added. `touch-action: none` won't help either, since WebKit's touch-action recognizers see only touches.
 - [Safari 27.0](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/) (verified) fixed `preventDefault()` on `pointerdown` so that it now suppresses `mousedown` and `mouseup` on iOS (174864309). Boogle reads the trackpad's click through `mousedown` on the canvas. Any future `pointerdown` handler that cancels will now also silence that path on iOS 27.
 - Apple Pencil (secondary): the spec's values are `"pen"` for a stylus, `"mouse"` and `"touch"` ([Pointer Events 3](https://www.w3.org/TR/pointerevents3/)). A Flutter report says Pencil *hover* on iPadOS 26 arrives as the mouse kind, so it cannot be told from a trackpad ([flutter #195249](https://github.com/flutter/flutter/issues/195249)). That report is native, not Safari, and is unconfirmed on the web.
-- I found no source on whether `cursor: none` hides the iPadOS pointer over a canvas.
+- **`cursor: none` does not hide the iPadOS pointer** [V]. WebKit's `pointerInteraction:styleForRegion:` (in `WKContentViewInteraction.mm`, the same in the Safari 27 branch `safari-7625.2.8` and on trunk) maps only two CSS cursors:
+  - `pointer` (hand) gets the system pointer, with a region around the element;
+  - `text` (I-beam) gets a beam;
+  - every other value, `none` included, falls through to `[UIPointerStyle systemPointerStyle]`, the grey dot. WebKit never returns UIKit's hidden pointer style.
+
+  iPadOS can hide the pointer on its own after a few seconds without trackpad movement (Settings → Accessibility → Pointer Control → Automatically Hide Pointer; [Apple](https://support.apple.com/guide/ipad/ipad66ce6358/ipados)) [S]. Boogle can't control that. While the camera turns from a two-finger scroll the pointer stays where it was, since a scroll doesn't move it.
 
 ### The hardware keyboard (secondary)
 
@@ -47,7 +66,14 @@
 
 ## 2. The Gamepad API on iPad
 
-- **Shoulders vanish in fullscreen.** [WebKit bug 311151](https://bugs.webkit.org/show_bug.cgi?id=311151) (verified): on iPadOS with the standard mapping, buttons 4–7 (L1, R1, L2, R2) stop reporting once the page is in Fullscreen. It was reported March 2026, confirmed again on Safari 26.5 in May, and is still NEW and assigned (last touched October 2026). There is no workaround. In Boogle those are the hotbar's LB/RB, bump on RT and guest crouch on LT, and the pause view has a Fullscreen button ([src/features/pause.ts](../../src/features/pause.ts)). The bug says nothing about Home Screen web apps, which since Safari 26 open standalone for every site without a manifest ([WebKit, Safari 26.0](https://webkit.org/blog/17333/webkit-features-in-safari-26-0/), verified).
+- **Shoulders vanish in fullscreen.** [WebKit bug 311151](https://bugs.webkit.org/show_bug.cgi?id=311151) (verified): on iPadOS with the standard mapping, buttons 4–7 (L1, R1, L2, R2) stop reporting once the page is in Fullscreen. It was reported March 2026, confirmed again on Safari 26.5 in May, and is still NEW and assigned (last touched October 2026). There is no workaround. In Boogle those are the hotbar's LB/RB, bump on RT and guest crouch on LT, and the pause view has a Fullscreen button ([src/features/pause.ts](../../src/features/pause.ts)). Re-checked 1 November 2026 [V]:
+
+- **The bug.** It is filed against WebKit/UI Events (Safari 26, iOS 26) and is still NEW. Its last comment is from 20 May 2026, and it was last touched on 15 October 2026. It depends on the iOS Fullscreen API meta-bug (206854).
+- **No fix.** No WebKit commit references it, and neither the Safari 27.0 nor the WWDC26 post lists a gamepad fix for iPadOS. The only gamepad fix in Safari 27 is a visionOS one.
+- **Home Screen web apps.** Nothing in the bug mentions them, standalone mode or `display-mode`. WebKit's iOS gamepad code (`GameControllerGamepadProvider`) has nothing fullscreen-specific I could find, so the cause can't be read from the source.
+- **Derived guess.** A Home Screen web app never enters element fullscreen, so it probably avoids whatever the fullscreen view controller does to buttons 4–7. That is a guess until the item 5 test is run.
+
+The bug says nothing about Home Screen web apps, which since Safari 26 open standalone for every site without a manifest ([WebKit, Safari 26.0](https://webkit.org/blog/17333/webkit-features-in-safari-26-0/), verified).
 - **No user gesture from a pad.** [WebKit bug 217675](https://bugs.webkit.org/show_bug.cgi?id=217675) (verified, NEW since 2020, accepted in principle) asks for pad presses to count as user activation, and 235052 asks the same for stick motion. Until they land, fullscreen, audio unlock and permission prompts need a tap, click or key. `pause.ts` already says so in its fallback label.
 - **Layout fixes.** [WebKit bug 314649](https://bugs.webkit.org/show_bug.cgi?id=314649) (verified, fixed May 2026 in WebKit main): extended controllers without a Home button had been given the wrong layout. Which Safari release carries the fix is not stated. [Bug 266293](https://bugs.webkit.org/show_bug.cgi?id=266293) (verified, open, PR in May 2026): the DualSense touchpad click (button 17 in Chrome) is unmapped in WebKit. Bug 288840 says the same of the Xbox Series Share button. Neither is in Boogle's `PAD` list, so this is no loss.
 - **What `id` says.** Safari's `Gamepad.id` is only the product name, which the OS may rewrite, plus "Extended Gamepad" when the pad is a `GCExtendedGamepad`. Example: "DUALSHOCK4 Wireless Controller Extended Gamepad" (Matt Reynolds on [w3c/gamepad #199](https://lists.w3.org/Archives/Public/public-webapps-github/2024Apr/0277.html), verified). Chrome appends vendor and product IDs and Firefox prefixes them, so a cross-browser brand check is a name match first and a vendor-ID match second ([itch.io devlog](https://itch.io/devlog/257921/you-cant-just-query-if-a-controller-is-for-xbox-or-playstation.amp), secondary, which also falls back to generic labels).
@@ -148,9 +174,13 @@ Each item ends with the smallest test that would confirm or refute it. "On the i
    - (a) a two-finger trackpad scroll turns the camera: `wheel` `deltaX` → yaw, `deltaY` → pitch, only when `pointerType` is mouse-like and no Ctrl is held;
    - (b) a click-drag turns it, which already exists for the unlocked case.
 
-   Keep Ctrl-wheel or a pinch for camera distance if the device log (item 4) shows it arrives. *Test:* on the iPad, time a solo player turning 180° and back with each, and note which one they keep using without being told.
-4. **Log what an iPad trackpad pinch sends** (`gesturestart`/`gesturechange` or `wheel` with `ctrlKey`), and whether `cursor: none` on the canvas hides the iPadOS pointer while it turns the camera. *Test:* a 20-line dev page that logs both, run once on the iPad. Record the result in this file.
-5. **Handle the fullscreen shoulder bug.** While WebKit 311151 is open, either hide the pause view's Fullscreen button on iPadOS while a pad is active, or keep it and show a one-line note that shoulders and triggers stop in fullscreen on iPad. Offering "Add to Home Screen" instead is worth checking, since Safari 26 web apps open standalone without the Fullscreen API. *Test:* on the iPad with a pad, press LB, RB, LT and RT (a) in the browser, (b) in fullscreen, (c) from the Home Screen web app, and note which report. Re-check on each iPadOS point release; the bug is assigned.
+   Don't plan on a trackpad pinch for camera distance: the source says it reaches the page as no event (item 4). Ctrl-wheel stays Chromium-only. *Test:* on the iPad, time a solo player turning 180° and back with each, and note which one they keep using without being told.
+4. **Confirm that a trackpad pinch zooms the page, and stop it if it does.** WebKit's source says a Magic Keyboard pinch goes to the scroll view's zoom, not to the page, so Boogle's `gesturestart` block can't stop it. Two fixes to try:
+   - add `maximum-scale=1` to the viewport meta in `index.html`. iOS Safari ignores it for touch pinches by default, but it does limit the scroll view's zoom range;
+   - or accept the zoom and restore the scale on `visualViewport` `resize`.
+
+   Don't build on `cursor: none`: the iPad pointer stays visible over the canvas whatever the CSS says, so a camera turned by scrolling has to live with the dot. *Test:* on the iPad with a Magic Keyboard, pinch over the canvas with and without `maximum-scale=1`. Log `visualViewport.scale` and any `gesture*`, `wheel` or `pointercancel` events, and record the result here.
+5. **Handle the fullscreen shoulder bug.** While WebKit 311151 is open, either hide the pause view's Fullscreen button on iPadOS while a pad is active, or keep it and show a one-line note that shoulders and triggers stop in fullscreen on iPad. Offering "Add to Home Screen" instead is worth checking, since Safari 26 web apps open standalone without the Fullscreen API. The pause view now does this: with a pad on iPad, its first press explains and offers the Home Screen, and a second press goes fullscreen anyway. Neither the bug nor the source confirms that the Home Screen app keeps the shoulders, so the test below is still the only proof. *Test:* on the iPad with a pad, press LB, RB, LT and RT (a) in the browser, (b) in fullscreen, (c) from the Home Screen web app, and note which report. Re-check on each iPadOS point release; the bug is assigned.
 6. **Key pad glyph brands off `Gamepad.id` names.** Match "DualSense" or "DUALSHOCK" for PlayStation shapes, "Xbox" for Xbox, and fall back to the current Xbox letters. Do not parse vendor IDs, which Safari doesn't send. Whether to draw PlayStation shapes at all is still the human decision noted in the earlier report. *Test:* connect a DualSense and an Xbox pad to the iPad and to a Mac in Chrome and Safari, log `id` and `mapping`, and paste the four strings here.
 7. **Add a scaled radial dead zone to the touch stick** (Sutphin's formula, starting at 0.12 of the travel radius), and raise the travel from 50 px to about 60 px on tablets (11.5 mm). On the soapbox, try a larger dead zone on the brake axis than on steering (a bowtie), so a thumb drifting down doesn't brake. *Test:* in a scenario, feed a stick offset of 5 px and assert `input.stickX` is 0. On the iPad, run the soapbox course three times with each variant and count unintended stops.
 8. **Grow the touch buttons on tablets** toward XAG's 24 mm (about 125 CSS px on the M4 iPad Pro), at least for Jump and Grab, sized from the short side of the screen the way Roblox does. Keep phones at the current 76 px. *Test:* a `/look` still at 1376×1032 (13-inch) and 1210×834 (11-inch), with the button boxes measured in the DOM. On the device, play two minutes and count missed presses with each size.
@@ -164,8 +194,8 @@ Each item ends with the smallest test that would confirm or refute it. "On the i
 
 ### Not found
 
-- What iPad Safari sends for a trackpad pinch, and whether `cursor: none` hides the iPadOS pointer (item 4).
-- Which Safari release ships the fix for WebKit 314649, and whether 311151 also affects Home Screen web apps.
+- A device confirmation that a trackpad pinch zooms the page and sends no DOM event (item 4). The source says so, but it hasn't been seen on an iPad. Settled: `cursor: none` doesn't hide the pointer.
+- Which Safari release ships the fix for WebKit 314649, and whether 311151 also affects Home Screen web apps. 311151 has no fix in any Safari through 27.x, and neither the bug nor the source answers the Home Screen question.
 - Safari's current `vibrationActuator` support on iPadOS; the MDN table was not readable.
 - Any developer talk from HoYoverse or Supercell on their touch control reasoning; only guides and wikis were found.
 - Apple's WWDC26 "Make your game great with touch" beyond its summary.
