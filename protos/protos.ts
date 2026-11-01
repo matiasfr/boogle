@@ -165,6 +165,17 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
   },
   {
+    id: 'board',
+    title: 'Departures board',
+    step: 3,
+    status: 'live',
+    url: '/?room=proto-board&proto=board&v=hop',
+    question: 'Does the board make the island feel connected and quick to get around?',
+    what: 'A flap-display sign at each station; E picks a station. v=hop travels at once, v=ride tells you which wagon to catch.',
+    since: '2026-11-01',
+    note: 'Press “Lay the whole route” first. Swap &v=hop for &v=ride; &laid=1 or 2 tries a shorter line.',
+  },
+  {
     id: 'look',
     title: 'Graphics ceiling',
     step: 'depth',

@@ -76,6 +76,9 @@ and test it.
 
 ## 3. Does what you built feel like yours?
 
+- [x] **Departures board:** stations are the fast-travel board; a flap-display sign per laid station off `wagonAt`,
+      with `&v=hop` (instant travel) and `&v=ride` (catch the highlighted wagon) (`?proto=board`;
+      [docs/game-design/board.md](../game-design/board.md)).
 - [x] **Riding only on laid sections:** the wagon's run grows with each laid section (`?proto=wagon`).
 - [x] **Laying-run variants:** is the 50 s laying run satisfying or dead time? Crawl (today's, juicier), quick (14 s)
       and push (lays only while pushed), rideable, compared in one sitting (`?room=proto-lay&proto=lay&v=`).
