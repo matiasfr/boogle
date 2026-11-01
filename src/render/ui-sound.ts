@@ -8,18 +8,20 @@
 //   uiSound('deny')         a press that couldn't ("Hotbar full"): a falling two-note
 //   uiSound('count', dir)   the haul count moved by one: the pitch climbs with the run (falls when dir < 0) and resets
 //                           after a pause
+//   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a soft papery clack and a
+//                           rising pip, at vol (0-1, by distance from the plaque)
 import { getAudio } from './audio.ts';
 
 export const UI_KIT = new URLSearchParams(location.search).get('proto') === 'uisfx';
 if (UI_KIT) document.documentElement.classList.add('ui-kit');
 
-export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count';
+export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count' | 'flap';
 
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 // Pentatonic step n above (or below) the root.
 const note = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 5) + 5) % 5];
-const GAP: Record<UiSound, number> = { tick: 30, pop: 220, thunk: 80, deny: 250, count: 35 }; // ms between plays
+const GAP: Record<UiSound, number> = { tick: 30, pop: 220, thunk: 80, deny: 250, count: 35, flap: 240 }; // ms between plays
 const last: Record<string, number> = {};
 let run = 0;
 
@@ -65,7 +67,7 @@ export function uiSound(kind: UiSound, arg = 0): void {
   if (kind === 'count') {
     run = now - (last.count ?? -1e9) > 600 ? 0 : Math.max(-5, Math.min(9, run + Math.sign(arg || 1)));
   }
-  if (!a || now - (last[kind] ?? -1e9) < GAP[kind]) return;
+  if (!a || now - (last[kind] ?? -1e9) < GAP[kind] || (kind === 'flap' && arg <= 0.02)) return;
   last[kind] = now;
   const { ctx } = a;
   const out = busFor(ctx, a.out);
@@ -102,6 +104,27 @@ export function uiSound(kind: UiSound, arg = 0): void {
       blip(ctx, out, { type: 'sine', f0: note(5 + run) * j, at, dur: 0.06, peak: 0.28 });
       blip(ctx, out, { type: 'triangle', f0: note(10 + run) * j, at, dur: 0.03, peak: 0.06 });
       break;
+    case 'flap': {
+      // two quick card clacks (filtered noise), then a quiet pip a fifth up: news, not an alarm
+      for (const [dt, f] of [
+        [0, 2400],
+        [0.045, 1900],
+      ]) {
+        const n = ctx.createBufferSource();
+        n.buffer = noise;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = f * j;
+        bp.Q.value = 1.4;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.35 * arg, at + dt);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dt + 0.025);
+        n.connect(bp).connect(g).connect(out);
+        n.start(at + dt);
+      }
+      blip(ctx, out, { type: 'sine', f0: note(2) * j, f1: note(4) * j, at: at + 0.06, dur: 0.12, peak: 0.16 * arg });
+      break;
+    }
   }
 }
 

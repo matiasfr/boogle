@@ -4,6 +4,8 @@
 // the plaque lists who brought what (credit only: nobody is listed for not pouring). Placeholder visuals (0.1).
 // Serves DESIGN.md 4 (cooperation is automatic: everyone's pours land in the same ring) and 6 (communal world,
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
+// With ?proto=uisfx (docs/research/ui-patterns.md, rec 5: shared news in the world first) a credited pour turns the
+// plaque's changed rows over like a departures board, with a little puff and a soft clack you hear near it.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
@@ -20,6 +22,8 @@ import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { uiSound, UI_KIT } from '../render/ui-sound.ts';
+import { emit } from '../render/particles.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
@@ -71,9 +75,12 @@ function label(w = 512, h = 128): Label {
   if (!g) throw new Error('work-sites: no 2D canvas');
   return { c, g, tex, sprite, text: '' };
 }
-function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)'): void {
+// A plaque row turning over (?proto=uisfx): what it said before, and when it starts (staggered down the plaque).
+type Flap = { old: string; at: number };
+export const flapFeel = { ms: 320 }; // one row's flip (dev/scenarios/ui-kit.ts slows it for a still)
+function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?: Map<number, Flap>, now = 0): void {
   const text = lines.join('\n');
-  if (text === l.text) return;
+  if (text === l.text && !flaps?.size) return;
   l.text = text;
   const { g, c } = l;
   g.clearRect(0, 0, c.width, c.height);
@@ -82,13 +89,30 @@ function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)'): void {
   if (g.roundRect) g.roundRect(4, 4, c.width - 8, c.height - 8, 18);
   else g.rect(4, 4, c.width - 8, c.height - 8);
   g.fill();
-  g.fillStyle = '#fff7e8';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   const lh = (c.height - 16) / lines.length;
   lines.forEach((t: string, k: number) => {
+    const y = 8 + lh * (k + 0.5);
+    const f = flaps?.get(k);
+    // p: 0 → 1 over the flip; the old text folds away to the row's midline, the new one unfolds from it
+    const p = f ? Math.min(1, Math.max(0, (now - f.at) / flapFeel.ms)) : 1;
+    if (f && p >= 1) flaps!.delete(k);
+    if (f) {
+      g.fillStyle = `rgba(255, 201, 61, ${0.4 * (1 - p * p)})`; // --sun, fading as it settles
+      g.beginPath();
+      if (g.roundRect) g.roundRect(14, y - lh / 2 + 2, c.width - 28, lh - 4, 10);
+      else g.rect(14, y - lh / 2 + 2, c.width - 28, lh - 4);
+      g.fill();
+    }
+    g.fillStyle = '#fff7e8';
     g.font = `${k ? 600 : 800} ${Math.round(lh * 0.62)}px Figtree, system-ui, sans-serif`;
-    g.fillText(t, c.width / 2, 8 + lh * (k + 0.5), c.width - 24);
+    const sy = Math.max(0.04, Math.abs(Math.cos(Math.PI * p)));
+    g.save();
+    g.translate(c.width / 2, y);
+    g.scale(1, sy);
+    g.fillText(f && p < 0.5 ? f.old : t, 0, 0, c.width - 24);
+    g.restore();
   });
   l.tex.needsUpdate = true;
 }
@@ -133,6 +157,48 @@ const views = ROUTE.map((sec, s) => {
 let names = 0; // bumped by who.set: the plaques print roster names
 onApplied((e: { op: string }) => e.op === 'who.set' && names++);
 
+// ?proto=uisfx: sites whose plaque just gained points (a credited pour), and each plaque's rows mid-flip.
+const credited = new Set<number>();
+const flaps = views.map(() => new Map<number, Flap>());
+const plaqueLines: string[][] = views.map(() => []);
+const PUFF = new THREE.Color('#ffe7a8');
+if (UI_KIT) {
+  onApplied((e: { op: string; s: number }, _tick: number, r: { pts?: number } | null) => {
+    if (e.op === 'site.stock' && r?.pts) credited.add(e.s);
+  });
+}
+export const flapping = (s: number): boolean => flaps[s]?.size > 0; // for dev/scenarios/ui-kit.ts
+// Turn over the plaque rows that changed, with a puff over the board and a clack as loud as you are near.
+function flipPlaque(s: number, before: string[], after: string[], now: number): void {
+  let n = 0;
+  for (let k = 1; k < after.length; k++) {
+    if (after[k] !== before[k]) flaps[s].set(k, { old: before[k] ?? '', at: now + 70 * n++ });
+  }
+  if (!n) return;
+  const sp = views[s].plaque.sprite.position;
+  for (let q = 0; q < 8; q++) {
+    const a = (q / 8) * Math.PI * 2 + Math.random() * 0.5;
+    emit({
+      x: sp.x + Math.cos(a) * 0.9,
+      y: sp.y + 0.55,
+      z: sp.z + Math.sin(a) * 0.3,
+      vx: Math.cos(a) * 0.5,
+      vy: 0.6 + Math.random() * 0.5,
+      vz: Math.sin(a) * 0.5,
+      life: 0.5 + Math.random() * 0.3,
+      size: 0.1 + Math.random() * 0.08,
+      color: PUFF,
+      gravity: -0.2,
+      drag: 2.5,
+      grow: [0.6, 1.6],
+      shrink: 1 / 3,
+    });
+  }
+  const p = me.body?.position;
+  const d = p ? Math.hypot(p.x - sp.x, p.z - sp.z) : 99;
+  uiSound('flap', Math.max(0, 1 - d / 28));
+}
+
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   one = new THREE.Vector3(1, 1, 1),
@@ -174,7 +240,10 @@ function redraw() {
       .sort((a, b) => b[1] - a[1] || a[0] - b[0])
       .slice(0, 4)
       .map((r) => `${rules.roster.nameOf(r[0]) || '?'}  ${r[1]}`);
-    paint(v.plaque, [`Section ${s + 1}`, ...(rows.length ? rows : ['—'])]);
+    const lines = [`Section ${s + 1}`, ...(rows.length ? rows : ['—'])];
+    if (credited.delete(s) && plaqueLines[s].length) flipPlaque(s, plaqueLines[s], lines, performance.now());
+    plaqueLines[s] = lines;
+    paint(v.plaque, lines, undefined, flaps[s], performance.now());
   });
   commitPieces(sleepers, c);
 }
@@ -220,6 +289,18 @@ onFrame(
     const key = `${sites.rev}/${names}/${rules.tune.tune.rev}/${run}`;
     if (key !== drawn) redraw();
     drawn = key;
+    // plaque rows mid-flip, and the board's little swell while they turn
+    if (UI_KIT) {
+      flaps.forEach((f, s) => {
+        const sprite = views[s].plaque.sprite;
+        if (!f.size && sprite.scale.x === 2.6) return;
+        paint(views[s].plaque, plaqueLines[s], undefined, f, now);
+        let k = 0;
+        for (const x of f.values())
+          k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
+        sprite.scale.set(2.6 * (1 + 0.05 * k), 1.3 * (1 + 0.05 * k), 1);
+      });
+    }
     pour(now);
   },
   { phase: 'update', order: 34 },
