@@ -294,7 +294,8 @@ from 3 logs' worth up the wagon runs flat out at 6.5 m/s; below that it slows in
 (1.5 m/s) when the fire is out. It never stops for want of steam, and it still stands 6 s at each stop (the fire burns
 on while it stands). Speed eases in and out over about 4 s. The glow, the embers, the gauge's needle and the chimney
 follow the fire: a hot one puffs big sooty clouds with a loud chuff, a cold one thin wisps. The steam is lockstep (the
-`wagon` state, `wagon.stoke {n}` spending logs from your own stack; src/world/rules/wagon.ts): the wagon's place is
+`wagon` state, `wagon.stoke {n}` spending logs from your own stack, in `proto-` rooms only; src/world/rules/wagon.ts):
+the wagon's place is
 its timetable read at its own clock, which steam runs faster, so every tab sees the same speed. Reset the route
 empties the firebox. The prototype jumps the wagon when the laid count changes (Lay the whole route). Look evals:
 `wt=stoke` and `wt=rundown` in dev/look/evals/wagon.js.

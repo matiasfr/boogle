@@ -1,8 +1,10 @@
 // Wagon rules: the `wagon` state (../../sim/wagon-steam.ts), the loco's steam and the wagon's own clock, and the
-// wagon.stoke op that puts logs from your stack into its firebox (anyone's logs count: DESIGN.md 4). Every tick the
-// fire burns down and the clock moves on, faster with more steam; the ?proto=wagon&v=stoke render reads the wagon's
-// place as wagonAt at that clock (sections laid, t0 0, the room's pace), so its speed is the same on every tab.
-// tune.reset empties the firebox. Lockstep: everything here runs the same on every peer (see ./README.md).
+// wagon.stoke op that puts logs from your stack into its firebox (anyone's logs count: DESIGN.md 4; `proto-` rooms
+// only, like tune.set: the host knows the room id, env.protoRoom). Every tick the fire burns down and the clock moves
+// on, faster with more steam, at walking pace while the wagon stands at a stop on the shipped line (wagonStandsAt, so a
+// `?layout=` tab ticks the same as everyone else); the ?proto=wagon&v=stoke render reads the wagon's place as wagonAt
+// at that clock (sections laid, t0 0, the room's pace), so its speed is the same on every tab. tune.reset empties the
+// firebox. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
   createSteam,
   stoke,
@@ -15,7 +17,7 @@ import {
   RATE_ONE,
   STOKE_MAX,
 } from '../../sim/wagon-steam.ts';
-import { wagonAt } from '../../sim/wagon.ts';
+import { wagonStandsAt } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
@@ -37,9 +39,11 @@ export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi; 
   const { tune } = rules.tune;
   // How many of the n logs asked for this player can put in now: their own, and room in the firebox.
   const stokable = (pid: unknown, n: unknown): number =>
-    stacks.kind(pid) === LOGS ? stokeRoom(steam, Math.min(n as number, stacks.count(pid))) : 0;
+    Number.isSafeInteger(n) && stacks.kind(pid) === LOGS
+      ? stokeRoom(steam, Math.min(n as number, stacks.count(pid)))
+      : 0;
   sync.registerOp<StokeFields>('wagon.stoke', {
-    validate: (e) => stokable(e.u, e.n) > 0,
+    validate: (e, ctx) => ctx.env.protoRoom === true && stokable(e.u, e.n) > 0,
     apply: (e) => {
       const n = stacks.take(e.u, stokable(e.u, e.n));
       return n ? { n, steam: stoke(steam, n) } : null;
@@ -47,8 +51,7 @@ export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi; 
   });
   sync.onTick(() => {
     const pace = paceIn(tune);
-    const w = wagonAt(sites.open, steam.tau / RATE_ONE, 0, pace);
-    steamTick(steam, pace.cruise, !w || w.stop >= 0);
+    steamTick(steam, pace.cruise, wagonStandsAt(sites.open, steam.tau / RATE_ONE, pace));
   }, 'wagon');
   sync.onApplied((e) => {
     if (e.op !== 'tune.reset') return;

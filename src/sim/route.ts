@@ -12,6 +12,12 @@ export const ROUTE = [
   { age: 0, x: 10, z: -12, to: [8, -30] },
   { age: 0, x: 8, z: -30, to: [6, -46] },
 ];
+// ROUTE's positions as shipped, copied before `?layout=` (src/island/layout.ts) can move ROUTE in place: lockstep code
+// that needs a section's geometry (the wagon's steam clock, ../world/rules/wagon.ts) reads these, so a tab walking a
+// layout, the other tabs and the server all agree.
+export const HOME_ROUTE: readonly { x: number; z: number; to: readonly [number, number] }[] = ROUTE.map((r) =>
+  Object.freeze({ x: r.x, z: r.z, to: Object.freeze([r.to[0], r.to[1]] as [number, number]) }),
+);
 
 // A site's two rings, beside its sign: Track (lays the section) and Helper (builds the station's helper hut).
 export const TRACK = 0;

@@ -158,6 +158,21 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
   assert.equal(bare.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), false);
 });
 
+test('wagon.stoke is for proto- rooms only, and takes a whole number of logs', () => {
+  const stoker = (env) => {
+    const s = createSync({ env: { canPlantAt: () => true, ...env } });
+    s.setSelfId('a');
+    const rules = installRules(s, homeLand());
+    rules.stacks.add('a', 0, 5); // logs on this player's back
+    return s;
+  };
+  assert.equal(stoker({ protoRoom: false }).submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), false);
+  assert.equal(stoker({}).submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), false);
+  const proto = stoker({ protoRoom: true });
+  assert.equal(proto.submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: '3' }), false);
+  assert.equal(proto.submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), true);
+});
+
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
   const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
   const seen = new Set();

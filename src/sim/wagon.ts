@@ -13,7 +13,7 @@
 // turnarounds). When `laid` changes the timetable changes, so the result can jump: a later PR handles the transition.
 // Corners between sections are sharp polyline joints; the render smooths them.
 
-import { ROUTE } from './route.ts';
+import { ROUTE, HOME_ROUTE } from './route.ts';
 import { MS_PER_TICK } from './bank.ts';
 
 // Tunables. Slow enough to hop on and off.
@@ -61,18 +61,22 @@ type Section = { ax: number; az: number; bx: number; bz: number; len: number; at
 type Step = { start: number; len: number; stop: number; section: number; dir: 1 | -1; accel: number; peak: number };
 
 // Built on first use, not at import: `?layout=` (src/island/layout.ts) may move ROUTE's positions before anything asks.
-const SECTIONS: Section[] = [];
-function sections(): Section[] {
-  if (SECTIONS.length) return SECTIONS;
-  for (let s = 0, at = 0; s < ROUTE.length; s++) {
-    const r = ROUTE[s];
+// `home`: the shipped line (HOME_ROUTE) instead, for lockstep (wagonStandsAt).
+const SECTIONS: Section[] = [],
+  HOME_SECTIONS: Section[] = [];
+function sections(home = false): Section[] {
+  const out = home ? HOME_SECTIONS : SECTIONS;
+  if (out.length) return out;
+  const route = home ? HOME_ROUTE : ROUTE;
+  for (let s = 0, at = 0; s < route.length; s++) {
+    const r = route[s];
     const ex = r.to[0] - r.x;
     const ez = r.to[1] - r.z;
     const len = Math.round(Math.sqrt(ex * ex + ez * ez) * 100);
-    SECTIONS.push({ ax: r.x, az: r.z, bx: r.to[0], bz: r.to[1], len, at });
+    out.push({ ax: r.x, az: r.z, bx: r.to[0], bz: r.to[1], len, at });
     at += len;
   }
-  return SECTIONS;
+  return out;
 }
 
 // Smallest integer n with n * n >= num / den (num, den positive integers), without trusting float rounding.
@@ -93,8 +97,8 @@ export function runTicks(len: number, pace: WagonPace = WAGON_PACE): { ticks: nu
 }
 
 const cache = new Map<string, Step[]>();
-function timetable(laid: number, pace: WagonPace): Step[] {
-  const key = `${laid}:${pace.cruise}:${pace.accel}`;
+function timetable(laid: number, pace: WagonPace, home = false): Step[] {
+  const key = `${laid}:${pace.cruise}:${pace.accel}${home ? ':home' : ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const steps: Step[] = [];
@@ -102,7 +106,7 @@ function timetable(laid: number, pace: WagonPace): Step[] {
   const add = (stop: number, section: number, dir: 1 | -1): void => {
     steps.push({ start: t, len: WAGON_DWELL, stop, section, dir, accel: 0, peak: 0 });
     t += WAGON_DWELL;
-    const { len } = sections()[section];
+    const { len } = sections(home)[section];
     const { ticks, accel } = runTicks(len, pace);
     steps.push({ start: t, len: ticks, stop: -1, section, dir, accel, peak: len / (ticks - accel) });
     t += ticks;
@@ -122,6 +126,23 @@ export function wagonCycle(laid: number, pace: WagonPace = WAGON_PACE): number {
   const steps = timetable(n, pace);
   const last = steps[steps.length - 1];
   return last.start + last.len;
+}
+
+/**
+ * Lockstep: whether the wagon stands at `tick` (none with nothing laid, or dwelling at a stop), as wagonAt(laid, tick,
+ * 0, pace) would say on the shipped line. It reads HOME_ROUTE, never a `?layout=` one (that moves only what tabs draw),
+ * so the steam clock (../world/rules/wagon.ts) ticks the same on every peer and the server. Allocation-free.
+ */
+export function wagonStandsAt(laid: number, tick: number, pace: WagonPace = WAGON_PACE): boolean {
+  const n = clampLaid(laid);
+  if (!(n > 0)) return true;
+  const steps = timetable(n, pace, true);
+  const last = steps[steps.length - 1];
+  let phase = tick % (last.start + last.len);
+  if (phase < 0) phase += last.start + last.len;
+  let k = 0;
+  while (k < steps.length - 1 && phase >= steps[k + 1].start) k++;
+  return steps[k].stop >= 0;
 }
 
 /**
