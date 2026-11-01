@@ -24,10 +24,8 @@ export type PeersChange = {
   updated: readonly PeerEntry[];
 };
 
-type Rec = { presence: Readonly<Record<string, unknown>>; at: number; entry: PeerEntry };
-
 export function createPeerTable(selfId: string) {
-  const table = new Map<string, Rec>();
+  const table = new Map<string, PeerEntry>();
   const seqs = new Map<string, number>();
   const handlers = new Set<(c: PeersChange) => void>();
   let cache: readonly PeerEntry[] | null = null;
@@ -40,17 +38,15 @@ export function createPeerTable(selfId: string) {
     staleTimer: ReturnType<typeof setTimeout> | 0 = 0;
 
   function set(id: string, presence: Record<string, unknown>) {
-    const base = { presence: Object.freeze({ ...presence }), at: Date.now() };
     const entry: PeerEntry = Object.freeze({
       peer: id,
       sameTab: id === selfId,
-      presence: base.presence,
-      updatedAt: base.at,
+      presence: Object.freeze({ ...presence }),
+      updatedAt: Date.now(),
     });
-    const rec = { ...base, entry };
-    table.set(id, rec);
+    table.set(id, entry);
     cache = null;
-    return rec.entry;
+    return entry;
   }
   function note(kind: 'j' | 'u' | 'l', id: string, entry: PeerEntry) {
     if (kind === 'j') {
@@ -68,7 +64,7 @@ export function createPeerTable(selfId: string) {
   }
   function flush() {
     flushTimer = 0;
-    const get = (id: string) => table.get(id)?.entry;
+    const get = (id: string) => table.get(id);
     const change: PeersChange = {
       peers: list(),
       joined: [...pj].map(get).filter((e): e is PeerEntry => !!e),
@@ -90,22 +86,19 @@ export function createPeerTable(selfId: string) {
   function list(): readonly PeerEntry[] {
     if (!cache) {
       for (const id of pj) shown.add(id);
-      cache = Object.freeze([
-        table.get(selfId)!.entry,
-        ...[...table].filter(([id]) => id !== selfId).map(([, r]) => r.entry),
-      ]);
+      cache = Object.freeze([table.get(selfId)!, ...[...table].filter(([id]) => id !== selfId).map(([, e]) => e)]);
     }
     return cache;
   }
   function drop(id: string, seq?: number | null) {
     if (id === selfId) return false;
     if (seq != null) seqs.set(id, Math.max(seqs.get(id) ?? -1, seq));
-    const rec = table.get(id);
-    if (!rec) return false;
+    const entry = table.get(id);
+    if (!entry) return false;
     table.delete(id);
     stale.delete(id);
     cache = null;
-    note('l', id, rec.entry);
+    note('l', id, entry);
     return true;
   }
   set(selfId, {});

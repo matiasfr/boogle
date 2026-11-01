@@ -54,8 +54,11 @@ interact targets 2 KB, gulls and fireflies under 1 KB each).
   interact providers run once a frame (`interactTarget()` is shared by a frame's hooks) and return `NO_TARGETS` when
   nothing is in reach; gulls, lights, the Boogler's visitors and limbs, gift visuals, piles, the sky state and the
   Boogler's screen position reuse their objects; `blockedAt` lost its `?? []`.
-- Left (objects, KB/frame): presence sends 0.9 (a spread copy, `Object.entries` and two `JSON.stringify` per send,
-  `src/net/ws-room.ts`), then a long tail under 0.3 each: `remotes.values()` iterators, `worldStatus()` objects, HUD
+- Done (2026-11-01): presence sends 1.0 -> 0.25 KB/frame of objects (all hooks ~3.9 -> ~3.1, budget now 3.6). The
+  room patches its presence in place and stringifies it once per send, reused for the frame; net.ts refills one
+  presence object; the peer table keeps just the frozen entry. Same bytes on the wire. What's left there is the JSON string itself, the
+  fields' own values and the peer table's frozen copy of my presence (setSelf).
+- Left (objects, KB/frame): a long tail under 0.3 each: `remotes.values()` iterators, `worldStatus()` objects, HUD
   transform strings, `navigator.getGamepads()`.
 - The physics engine is the real cost: cannon-es can't be made allocation-free from outside. Decided 2026-10-31:
   move to Rapier ([rapier.md](rapier.md)), which also fits the physics worker of step 7.
