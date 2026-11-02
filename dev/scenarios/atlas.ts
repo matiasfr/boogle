@@ -21,14 +21,14 @@ export default {
 
       await shot('how');
 
-      await click('[data-story="mush"]');
+      await click('[data-story="opening"]');
       await click('[data-nav="1"]');
       await click('[data-nav="1"]');
       t.check(
-        `${scheme}: mush story at step 3`,
+        `${scheme}: opening story at step 3`,
         (await page.locator('.cap-top span').first().innerText()).includes('Step 3 of'),
       );
-      await shot('how-mush-step3');
+      await shot('how-opening-step3');
 
       const stories = await page
         .locator('[data-story]')
