@@ -36,7 +36,7 @@
   You steer on the way down (the usual air control, inside a funnel that closes on the title, so you can't miss), drop
   through the cloud into the island's daylight, and see BOOGLE in timber hanging 55 m up. You smash through it (a burst, a thump
   and a shake) and the letters tumble in a loose ring around you at your speed. You land flat with stars (1.8 s; any input
-  stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 120 m drop is about 6 s in the air. The controls card waits until you land. Local: only
+  stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 150 m drop is about 7.5 s in the air. The controls card waits until you land. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing.
 - **History.** `?proto=arrive` (1 Nov 2026; wordless-onboarding recs 1, 2, 3, 8) tried skipping the lobby on every
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
