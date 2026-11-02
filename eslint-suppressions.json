@@ -4,11 +4,6 @@
       "count": 3
     }
   },
-  "src/entities/remote-player/index.ts": {
-    "boogle/use-an-entity": {
-      "count": 3
-    }
-  },
   "src/features/dino.ts": {
     "boogle/use-an-entity": {
       "count": 1
@@ -57,11 +52,6 @@
   "src/guest/play.ts": {
     "boogle/use-an-entity": {
       "count": 3
-    }
-  },
-  "src/main.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
     }
   },
   "src/physics/physics.ts": {

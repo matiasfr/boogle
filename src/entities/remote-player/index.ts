@@ -1,18 +1,17 @@
-// Other players as this tab draws them: an avatar, a name label and a kinematic body for each Remote on the island,
-// posed from their presence (src/netplay/net.ts owns the Remote and its network fields; this module adds the display
-// fields). Also the `riding` presence field, which keeps a rider steady on a shared platform. Serves DESIGN.md 4.
+// Other players as this tab draws them: an entity for each Remote on the island, its mesh their avatar with a name label
+// and its body a kinematic one, posed from their presence (src/netplay/net.ts owns the Remote and its network fields; this
+// module adds the display fields, which features read). Also the `riding` presence field, which keeps a rider steady on a
+// shared platform. Serves DESIGN.md 4.
 //
-// Always eager (src/main.ts imports it). It reads the local player through localPresence().
+// It reads the local player through localPresence().
 import * as THREE from 'three';
-import { COLORS, INTERP_MS } from '../../constants.ts';
+import { COLORS, FIXED, INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
-import { scene } from '../../render/scene.ts';
-import { teleport } from '../../physics/physics.ts';
-import { addBody, removeBody, type Body } from '../../physics/engine.ts';
+import { teleport } from '../../physics/engine.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
 import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../../player/avatars.ts';
 import {
-  remotes,
   addPresenceField,
   localPresence,
   onPeerAdded,
@@ -22,7 +21,6 @@ import {
   type Remote,
 } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
-import { onFrame } from '../../loop.ts';
 
 type RideSample = { l: number[]; r: number };
 /** A remote standing on a shared platform: their pose in its frame (presence key `riding`). on: drawn on our copy of
@@ -41,53 +39,38 @@ type Ride = {
 
 declare module '../../netplay/net.ts' {
   interface Remote {
-    avatar: ReturnType<typeof makeAvatar> | null;
-    body: Body | null;
-    label: ReturnType<typeof makeLabel> | null;
-    labelText: string;
+    player: GameEntity | null; // on the island
+    avatar: ReturnType<typeof makeAvatar> | null; // its mesh
     target: THREE.Vector3;
     yaw: number;
     speed: number;
-    prevPos: THREE.Vector3;
     ride?: Ride | null; // standing on a shared platform (riding, below)
   }
 }
 
 // ---------------------------------------------------------------- lifecycle
 onPeerAdded((r) => {
+  r.player = null;
   r.avatar = null;
-  r.body = null;
-  r.label = null;
-  r.labelText = '';
   r.target = new THREE.Vector3();
   r.yaw = 0;
   r.speed = 0;
-  r.prevPos = new THREE.Vector3();
 });
 
-function disposeLabel(label: NonNullable<Remote['label']>) {
+// Goes now: readers see r.avatar null at once, and the entity's mesh and body leave before the next physics step.
+function leave(r: Remote) {
+  if (!r.player) return;
+  despawn(r.player);
+  r.player = null;
+  r.avatar = null;
+}
+onPeerLeftIsland(leave);
+onPeerRemoved(leave);
+
+function disposeLabel(label: ReturnType<typeof makeLabel>) {
   label.material.map?.dispose();
   label.material.dispose();
 }
-
-function dropRemoteBody(r: Remote) {
-  if (r.avatar) {
-    scene.remove(r.avatar);
-    r.avatar.userData.mat.dispose();
-    r.avatar = null;
-  }
-  if (r.label) {
-    disposeLabel(r.label);
-    r.label = null;
-    r.labelText = '';
-  }
-  if (r.body) {
-    removeBody(r.body);
-    r.body = null;
-  }
-}
-onPeerLeftIsland(dropRemoteBody);
-onPeerRemoved(dropRemoteBody);
 
 // ---------------------------------------------------------------- riding a shared platform (Owner)
 // World presence trails a moving deck by the interpolation delay (0.3 m at the wagon's 3 m/s, more on a stop or a
@@ -134,7 +117,7 @@ onRemotePresence((r, pr, time) => {
 });
 const rideAt: Local = { x: 0, y: 0, z: 0, yaw: 0 },
   rideV = new THREE.Vector3();
-// Moves r.target and r.yaw (world presence, from updateRemotes) onto our copy of the platform r rides, by the blend.
+// Moves r.target and r.yaw (world presence, from samplePose) onto our copy of the platform r rides, by the blend.
 // Before the step it keeps the world pose and decides whether our copy is trusted; in the frame hook (interpolated:
 // the deck where its mesh is drawn this frame) it advances the blend. Returns whether r is fully on the deck.
 function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
@@ -176,61 +159,96 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   return w === 1;
 }
 
-// ---------------------------------------------------------------- remote interpolation
-export function updateRemotes(now: number) {
-  const rt = now - INTERP_MS;
-  for (const r of remotes.values()) {
-    if (r.entered && r.snaps.length) {
-      const s = r.snaps.sample(rt)!;
-      r.target.set(lerp(s.a.p[0]!, s.b.p[0]!, s.u), lerp(s.a.p[1]!, s.b.p[1]!, s.u), lerp(s.a.p[2]!, s.b.p[2]!, s.u));
-      r.yaw = angleLerp(s.a.r, s.b.r, s.u);
-      r.state = s.b.s;
-      placeRider(r, rt, false);
-      if (!r.avatar) {
-        r.avatar = makeAvatar(r.colorIdx);
-        r.avatar.position.copy(r.target);
-        r.prevPos.copy(r.target);
-        scene.add(r.avatar);
-        r.body = makePlayerBody(true);
-        teleport(r.body, r.target.x, r.target.y, r.target.z);
-        addBody(r.body);
-      }
-      r.avatar.userData.mat.color.set(COLORS[r.colorIdx]!);
-      if (r.labelText !== r.name) {
-        if (r.label) {
-          r.avatar.remove(r.label);
-          disposeLabel(r.label);
-        }
-        r.label = makeLabel(r.name);
-        r.labelText = r.name;
-        r.avatar.add(r.label);
-      }
-    }
-  }
+// ---------------------------------------------------------------- the entity
+function samplePose(r: Remote, rt: number) {
+  const s = r.snaps.sample(rt)!;
+  r.target.set(lerp(s.a.p[0]!, s.b.p[0]!, s.u), lerp(s.a.p[1]!, s.b.p[1]!, s.u), lerp(s.a.p[2]!, s.b.p[2]!, s.u));
+  r.yaw = angleLerp(s.a.r, s.b.r, s.u);
+  r.state = s.b.s;
 }
 
-// update -280, after this player's avatar (player.ts, -290), before the camera (-200): remote avatars take their
-// interpolated pose and walk at the speed they moved since last frame (orders: top of src/loop.ts).
+// prePhysics -100: remote poses, before the ball's owner (-90) and this player's intent (-80). fixedPre 39: the body
+// heads for the pose, before the player's controller (40). update -280: after this player's avatar (-290), before the
+// camera (-200) (orders: top of src/loop.ts).
+defineKind('remote-player', { prePhysics: -100, fixedPre: 39, update: -280 });
+
 const tmpV = new THREE.Vector3();
-onFrame(
-  ({ dt, now }: { dt: number; now: number }) => {
-    for (const r of remotes.values()) {
-      if (!r.avatar) continue;
+function spawnRemotePlayer(r: Remote, time: number): GameEntity {
+  samplePose(r, time);
+  const avatar = makeAvatar(r.colorIdx);
+  avatar.position.copy(r.target);
+  const body = makePlayerBody(true);
+  teleport(body, r.target.x, r.target.y, r.target.z);
+  const prevPos = r.target.clone();
+  let label: ReturnType<typeof makeLabel> | null = null;
+  let labelText = '';
+  let posed = false; // the first frame puts it at that frame's pose: no walk from where its first presence arrived
+  const entity = spawn({
+    kind: 'remote-player',
+    mesh: avatar,
+    bodies: [body],
+    prePhysics({ now }) {
+      if (!r.snaps.length) return;
+      const rt = now - INTERP_MS;
+      samplePose(r, rt);
+      placeRider(r, rt, false);
+      if (!posed) {
+        posed = true;
+        avatar.position.copy(r.target);
+        prevPos.copy(r.target);
+        teleport(body, r.target.x, r.target.y, r.target.z);
+      }
+      avatar.userData.mat.color.set(COLORS[r.colorIdx]!);
+      if (labelText !== r.name) {
+        if (label) {
+          avatar.remove(label);
+          disposeLabel(label);
+        }
+        label = makeLabel(r.name);
+        labelText = r.name;
+        avatar.add(label);
+      }
+    },
+    fixedPre() {
+      const p = body.position;
+      const dx = r.target.x - p.x,
+        dy = r.target.y - p.y,
+        dz = r.target.z - p.z;
+      if (dx * dx + dy * dy + dz * dz > 36) {
+        teleport(body, r.target.x, r.target.y, r.target.z);
+        body.velocity.set(0, 0, 0);
+      } else {
+        body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+      }
+    },
+    // The avatar takes its interpolated pose and walks at the speed it moved since last frame.
+    update({ dt, now }) {
       // Riding: drawn on the deck as our copy of it is drawn, and walking only as fast as they move on it.
       const riding = placeRider(r, now - INTERP_MS, true, dt),
         l = r.ride?.l,
         was = r.ride?.prev;
-      r.avatar.position.copy(r.target);
-      r.avatar.rotation.y = r.yaw;
-      let speed = dt > 0 ? tmpV.copy(r.target).sub(r.prevPos).setY(0).length() / dt : 0;
+      avatar.position.copy(r.target);
+      avatar.rotation.y = r.yaw;
+      let speed = dt > 0 ? tmpV.copy(r.target).sub(prevPos).setY(0).length() / dt : 0;
       if (riding && l && was) {
         speed = was.yaw === was.yaw && dt > 0 ? Math.hypot(l.x - was.x, l.z - was.z) / dt : 0;
         Object.assign(was, l);
       } else if (was) was.yaw = NaN;
       r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
-      r.prevPos.copy(r.target);
-      animateAvatar(r.avatar, r.speed, r.state === 1, dt, r.state === 2);
-    }
-  },
-  { phase: 'update', order: -280 },
-);
+      prevPos.copy(r.target);
+      animateAvatar(avatar, r.speed, r.state === 1, dt, r.state === 2);
+    },
+    dispose() {
+      avatar.userData.mat.dispose();
+      if (label) disposeLabel(label);
+    },
+  });
+  r.avatar = avatar;
+  return entity;
+}
+
+// They're on the island from their first pose (net.ts has already pushed it), until onPeerLeftIsland or onPeerRemoved. A
+// peer who leaves and comes back gets a new entity, avatar and body.
+onRemotePresence((r, _pr, time) => {
+  if (r.entered && !r.player) r.player = spawnRemotePlayer(r, time);
+});
