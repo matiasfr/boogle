@@ -48,7 +48,7 @@ the railway for that tab only (`layout.ts`; options and the layout lab: [docs/pr
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
   quantized to centimetres once (`ground.ts`), so every client builds the same heightfield (`npm run island-map` composes it the
-  same way in Node, `dev/island/map.mjs`).
+  same way in Node, `dev/island/map.ts`).
 - **Home is special.** `HOME` (`src/world/grid.ts`) is the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
   exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME`; the lighthouse
   hill and the west end of the windmill farm do.

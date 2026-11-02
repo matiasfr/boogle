@@ -26,8 +26,24 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PNG } from 'pngjs';
 import { parseHex, keyOut, check, trimSquare, seamScore, tile2x2 } from './chroma.ts';
+import type { Img } from './chroma.ts';
 
-const KINDS = {
+type Kind = { size: string; chroma?: string; anchor?: 'center' | 'bottom'; spec?: string };
+type Item = { id: string; prompt: string; kind?: string; chroma?: string; refs?: string[]; size?: string };
+type Spec = { style?: string; kind?: string; chroma?: string; refs?: string[]; items: Item[] };
+type Plan = ReturnType<typeof plan>;
+type Image = {
+  id: string;
+  file: string;
+  kind?: string;
+  prompt: string;
+  raw?: string;
+  tiled?: string;
+  seam?: number;
+  warnings?: string[];
+};
+
+const KINDS: Record<string, Kind> = {
   concept: { size: '1536x864' },
   icon: {
     size: '1024x1024',
@@ -69,19 +85,19 @@ const KINDS = {
 };
 
 const args = process.argv.slice(2);
-const opt = (name, def) => {
+const opt = (name: string, def?: string) => {
   const i = args.indexOf('--' + name);
   return i >= 0 ? args[i + 1] : def;
 };
-const flag = (name) => args.includes('--' + name);
-const list = (s) =>
+const flag = (name: string) => args.includes('--' + name);
+const list = (s: string | undefined) =>
   (s || '')
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean);
 
 const promptsFile = opt('prompts', 'dev/concepts/eras.json');
-const out = path.resolve(opt('out', '.look/concepts'));
+const out = path.resolve(opt('out', '.look/concepts')!);
 const only = list(opt('only', ''));
 const model = opt('model', 'gpt-image-2');
 const quality = opt('quality', 'medium');
@@ -89,7 +105,7 @@ const n = Math.max(1, Math.min(10, Number(opt('n', '1')) || 1));
 const hasCodex = spawnSync('codex', ['--version'], { stdio: 'ignore' }).status === 0;
 const via = opt('via', process.env.OPENAI_API_KEY ? 'api' : hasCodex ? 'codex' : 'none');
 
-const spec = JSON.parse(fs.readFileSync(promptsFile, 'utf8'));
+const spec: Spec = JSON.parse(fs.readFileSync(promptsFile!, 'utf8'));
 const items = spec.items.filter((it) => !only.length || only.includes(it.id));
 if (!items.length) {
   console.error(`no prompts matched ${only.join(', ')} in ${promptsFile}`);
@@ -97,11 +113,11 @@ if (!items.length) {
 }
 
 // Everything one image needs: its kind, size, key colour, reference images and the full prompt.
-function plan(it) {
-  const kindName = opt('kind', it.kind || spec.kind || 'concept');
+function plan(it: Item) {
+  const kindName = opt('kind', it.kind || spec.kind || 'concept')!;
   const kind = KINDS[kindName];
   if (!kind) throw new Error(`unknown kind ${kindName}; one of ${Object.keys(KINDS).join(', ')}`);
-  const chroma = opt('chroma', it.chroma || spec.chroma || kind.chroma || 'none');
+  const chroma = opt('chroma', it.chroma || spec.chroma || kind.chroma || 'none')!;
   const key = chroma === 'none' ? null : parseHex(chroma);
   const refs = (opt('ref') ? list(opt('ref')) : it.refs || spec.refs || []).map((r) => path.resolve(r));
   for (const r of refs) if (!fs.existsSync(r)) throw new Error(`no reference image ${r}`);
@@ -118,7 +134,7 @@ function plan(it) {
   ]
     .filter(Boolean)
     .join(' ');
-  return { kindName, kind, chroma, key, refs, prompt, size: opt('size', it.size || kind.size) };
+  return { kindName, kind, chroma, key, refs, prompt, size: opt('size', it.size || kind.size)! };
 }
 
 if (flag('dry')) {
@@ -135,24 +151,31 @@ if (via === 'none' && !flag('recut')) {
   process.exit(2);
 }
 fs.mkdirSync(out, { recursive: true });
-const fileFor = (it, k) => path.join(out, n > 1 ? `${it.id}-${k}.png` : `${it.id}.png`);
+const fileFor = (it: Item, k: number) => path.join(out, n > 1 ? `${it.id}-${k}.png` : `${it.id}.png`);
 
-async function viaApi(it, p) {
-  const headers = { authorization: `Bearer ${process.env.OPENAI_API_KEY}` };
+async function viaApi(it: Item, p: Plan) {
+  const headers: Record<string, string> = { authorization: `Bearer ${process.env.OPENAI_API_KEY}` };
   let url = 'https://api.openai.com/v1/images/generations';
-  let body = JSON.stringify({ model, prompt: p.prompt, size: p.size, quality, n, output_format: 'png' });
+  let body: string | FormData = JSON.stringify({
+    model,
+    prompt: p.prompt,
+    size: p.size,
+    quality,
+    n,
+    output_format: 'png',
+  });
   if (p.refs.length) {
     url = 'https://api.openai.com/v1/images/edits';
     body = new FormData();
     for (const [k, v] of Object.entries({ model, prompt: p.prompt, size: p.size, quality, n: String(n) }))
-      body.append(k, v);
+      body.append(k, v!);
     for (const r of p.refs)
       body.append('image[]', new Blob([fs.readFileSync(r)], { type: 'image/png' }), path.basename(r));
   } else headers['content-type'] = 'application/json';
   const res = await fetch(url, { method: 'POST', headers, body });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`${res.status} ${json.error?.message || res.statusText}`);
-  return json.data.map((d, k) => {
+  return (json.data as { b64_json: string }[]).map((d, k) => {
     const file = fileFor(it, k + 1);
     fs.writeFileSync(file, Buffer.from(d.b64_json, 'base64'));
     return file;
@@ -163,13 +186,13 @@ async function viaApi(it, p) {
 // ignores --quality and makes one image per run, and it picks its own size near the one asked, so ask it not to stretch.
 // Reference images are copied into the output folder so Codex can open them. stdin is closed so `codex exec` doesn't
 // wait for extra input when it isn't a TTY.
-function viaCodex(it, p) {
+function viaCodex(it: Item, p: Plan) {
   const refs = p.refs.map((r) => {
     const name = 'ref-' + path.basename(r);
     fs.copyFileSync(r, path.join(out, name));
     return name;
   });
-  const files = [];
+  const files: string[] = [];
   for (let k = 1; k <= n; k++) {
     const file = fileFor(it, k);
     fs.rmSync(file, { force: true });
@@ -186,15 +209,15 @@ function viaCodex(it, p) {
   return files;
 }
 
-const readPng = (file) => PNG.sync.read(fs.readFileSync(file));
-const writePng = (file, img) =>
+const readPng = (file: string): Img => PNG.sync.read(fs.readFileSync(file));
+const writePng = (file: string, img: Img) =>
   fs.writeFileSync(file, PNG.sync.write(Object.assign(new PNG({ width: img.width, height: img.height }), img)));
 
 // Cut out keyed kinds and check them; score tiles. Returns the manifest fields to add and any warnings. A keyed
 // image is moved to <id>.raw.png first; with `recut` that raw original is already there and is cut again.
-function finish(file, p, recut) {
-  const extra = {};
-  const warnings = [];
+function finish(file: string, p: Plan, recut: boolean) {
+  const extra: Partial<Image> & Record<string, unknown> = {};
+  const warnings: string[] = [];
   if (p.key) {
     const rawFile = file.replace(/\.png$/, '.raw.png');
     if (!recut) fs.renameSync(file, rawFile);
@@ -220,22 +243,24 @@ function finish(file, p, recut) {
   return { extra, warnings };
 }
 
-const manifest = {
-  via,
-  model: via === 'api' ? model : 'codex default',
-  quality: via === 'api' ? quality : 'n/a',
+const manifest: { via: string; model: string; quality: string; at: string; images?: Image[] } = {
+  via: via!,
+  model: via === 'api' ? model! : 'codex default',
+  quality: via === 'api' ? quality! : 'n/a',
   at: new Date().toISOString(),
 };
 // Keep earlier images of ids this run doesn't redo, so an --only run doesn't drop the rest from the contact sheet.
 const manifestFile = path.join(out, 'manifest.json');
-const prev = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')).images || [] : [];
-manifest.images = prev.filter((m) => !items.some((it) => it.id === m.id) && fs.existsSync(path.join(out, m.file)));
+const prev: Image[] = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')).images || [] : [];
+const images = (manifest.images = prev.filter(
+  (m) => !items.some((it) => it.id === m.id) && fs.existsSync(path.join(out, m.file)),
+));
 let failed = 0;
 for (const it of items) {
   process.stdout.write(`${it.id} ... `);
   try {
     const p = plan(it);
-    let files;
+    let files: string[];
     if (flag('recut')) {
       // Redo the cleanup from what's on disk: the raw original for keyed kinds, the image itself otherwise.
       files = Array.from({ length: n }, (_, k) => fileFor(it, k + 1));
@@ -246,7 +271,7 @@ for (const it of items) {
     const notes = [];
     for (const f of files) {
       const { extra, warnings } = finish(f, p, flag('recut'));
-      manifest.images.push({
+      images.push({
         id: it.id,
         file: path.basename(f),
         kind: p.kindName,
@@ -259,20 +284,21 @@ for (const it of items) {
     console.log(notes.join(', '));
   } catch (e) {
     failed++;
-    console.log('failed: ' + e.message);
+    console.log('failed: ' + (e as Error).message);
   }
 }
-const order = (id) => spec.items.findIndex((it) => it.id === id);
-manifest.images.sort((a, b) => order(a.id) - order(b.id) || a.file.localeCompare(b.file));
+const order = (id: string) => spec.items.findIndex((it) => it.id === id);
+images.sort((a, b) => order(a.id) - order(b.id) || a.file.localeCompare(b.file));
 fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
-const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const esc = (s: string) =>
+  s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c as '&']);
 fs.writeFileSync(
   path.join(out, 'index.html'),
   `<!doctype html><meta charset="utf-8"><title>Concepts</title><style>body{font:14px system-ui;margin:16px;background:#f3efe4}
 figure{margin:0 0 20px}img{max-width:100%;max-height:80vh;border-radius:8px;vertical-align:top}
 img.cut{background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/24px 24px}
 figcaption{color:#555;max-width:90ch}.warn{color:#a33}</style>` +
-    manifest.images
+    images
       .map(
         (m) =>
           `<figure><img src="${m.tiled || m.file}"${m.raw ? ' class="cut"' : ''}>` +
@@ -282,5 +308,5 @@ figcaption{color:#555;max-width:90ch}.warn{color:#a33}</style>` +
       )
       .join('\n'),
 );
-console.log(`\n${manifest.images.length} image(s) in ${path.relative(process.cwd(), out)}/ (index.html)`);
+console.log(`\n${images.length} image(s) in ${path.relative(process.cwd(), out)}/ (index.html)`);
 process.exit(failed ? 1 : 0);

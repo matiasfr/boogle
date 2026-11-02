@@ -1,9 +1,9 @@
-// Record short videos of the running game: `npm run clip -- <shot>...` (dev/video/shots/<shot>.mjs, or a path to a
+// Record short videos of the running game: `npm run clip -- <shot>...` (dev/video/shots/<shot>.ts, or a path to a
 // shot file kept elsewhere, e.g. for a prototype branch). See .claude/skills/video/SKILL.md. Uses the real GPU when there is one and steps a fake page clock, so clips play
 // smoothly at --fps however fast the page renders. Output: .look/clips/<label>.mp4 (+ .gif with --gif).
 //
-// A shot is dev/video/shots/<name>.mjs:
-//   export default { about: 'one line', query: 'tidefast=1', async run(c) { ... } };
+// A shot is dev/video/shots/<name>.ts (typed by `Shot` below):
+//   export default { about: 'one line', query: 'tidefast=1', async run(c) { ... } } satisfies Shot;
 // `c` gives you:
 //   c.open({ name, room, query, hud })  a player (Game from lib.mjs) with the clock installed; same room = same island
 //   g.record(label, { seconds, each })  a clip; `each(t)` runs before every frame (camera moves, input)
@@ -12,34 +12,67 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Page } from 'playwright';
 import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.mjs';
+
+// A camera pose: a named view or { cam, look } (optionally fov).
+export type Pose = { cam: number[]; look: number[]; fov?: number };
+// Runs before every recorded frame: t seconds in, frame k, on game g.
+export type Each = (t: number, k: number, g: ClipGame) => unknown;
+export type RecordOpts = { seconds?: number; each?: Each; fps?: number; gif?: boolean };
+// A player page (Game from lib.mjs) whose record() takes an `each` with the game as its third argument.
+export type ClipGame = Omit<Game, 'record'> & { page: Page; record(label: string, r?: RecordOpts): Promise<object> };
+export type Clip = {
+  VIEWS: typeof VIEWS;
+  sleep: typeof sleep;
+  ease: typeof ease;
+  fps: number;
+  gif: boolean;
+  open(o?: {
+    name?: string;
+    room?: string;
+    query?: string;
+    hud?: boolean | string;
+    init?: string | (() => unknown);
+  }): Promise<ClipGame>;
+  move: typeof move;
+};
+// What a shot file exports.
+export type Shot = { about?: string; query?: string; run(c: Clip): Promise<object | object[] | undefined> };
 
 const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'shots');
 const all = fs
   .readdirSync(here)
-  .filter((f) => f.endsWith('.mjs') && !f.startsWith('_'))
-  .map((f) => f.slice(0, -4))
+  .filter((f) => f.endsWith('.ts') && !f.startsWith('_'))
+  .map((f) => f.slice(0, -3))
   .sort();
-const opt = { names: [], root: undefined, gif: false, size: [1280, 720], fps: 30, out: '.look' };
+const opt = {
+  names: [] as string[],
+  root: undefined as string | undefined,
+  gif: false,
+  size: [1280, 720],
+  fps: 30,
+  out: '.look',
+};
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
   const a = argv[k];
-  const v = () => argv[++k];
+  const v = () => argv[++k]!;
   if (a === '--root') opt.root = path.resolve(v());
   else if (a === '--gif') opt.gif = true;
   else if (a === '--size') opt.size = v().split('x').map(Number);
   else if (a === '--fps') opt.fps = Number(v());
   else if (a === '--out') opt.out = v();
   else if (a === '--help' || a === '-h' || a.startsWith('-')) {
-    console.log(`npm run clip -- <shot | path/to/shot.mjs>... [--gif] [--size 1280x720] [--fps 30] [--out .look]
+    console.log(`npm run clip -- <shot | path/to/shot.ts>... [--gif] [--size 1280x720] [--fps 30] [--out .look]
   [--root ../other-checkout (serve a worktree, e.g. a prototype branch)]
 shots: ${all.join(', ')}`);
     process.exit(a.startsWith('--h') || a === '-h' ? 0 : 2);
   } else opt.names.push(a);
 }
-// A bare name is a shot in dev/video/shots/; anything with a slash or .mjs is a path.
-const isPath = (n) => n.includes('/') || n.endsWith('.mjs');
-const shotFile = (n) => (isPath(n) ? path.resolve(n) : path.join(here, n + '.mjs'));
+// A bare name is a shot in dev/video/shots/; anything with a slash or .ts (or .mjs) is a path.
+const isPath = (n: string) => n.includes('/') || n.endsWith('.ts') || n.endsWith('.mjs');
+const shotFile = (n: string) => (isPath(n) ? path.resolve(n) : path.join(here, n + '.ts'));
 const bad = opt.names.filter((n) => !(isPath(n) ? fs.existsSync(shotFile(n)) : all.includes(n)));
 if (!opt.names.length || bad.length) {
   console.error(`${bad.length ? 'unknown shot ' + bad.join(', ') + '. ' : ''}Available: ${all.join(', ')}`);
@@ -47,14 +80,14 @@ if (!opt.names.length || bad.length) {
 }
 
 const ease = {
-  linear: (x) => x,
-  inOut: (x) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2),
-  out: (x) => 1 - (1 - x) ** 3,
+  linear: (x: number) => x,
+  inOut: (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2),
+  out: (x: number) => 1 - (1 - x) ** 3,
 };
-const mix = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
-const pose = (p) => (typeof p === 'string' ? VIEWS[p] : p);
+const mix = (a: number[], b: number[], u: number) => a.map((v, i) => v + (b[i] - v) * u);
+const pose = (p: string | Pose): Pose => (typeof p === 'string' ? (VIEWS as { [k: string]: Pose })[p]! : p);
 const move =
-  (a, b, seconds, e = ease.inOut) =>
+  (a: string | Pose, b: string | Pose | null, seconds: number, e = ease.inOut): Each =>
   (t, k, g) => {
     const u = e(Math.min(1, t / seconds));
     const A = pose(a),
@@ -65,36 +98,41 @@ const move =
     );
   };
 
-let stack, browser;
+let stack: Awaited<ReturnType<typeof startStack>> | undefined, browser: Awaited<ReturnType<typeof launch>> | undefined;
 try {
   stack = await startStack({ root: opt.root });
   browser = await launch();
   for (const name of opt.names) {
-    const shot = (await import(shotFile(name))).default;
+    const shot: Shot = (await import(shotFile(name))).default;
     console.log(`\n== ${name}: ${shot.about || ''}`);
-    const games = [];
+    const games: ClipGame[] = [];
     const out = path.resolve(opt.out);
-    const c = {
+    const c: Clip = {
       VIEWS,
       sleep,
       ease,
       fps: opt.fps,
       gif: opt.gif,
       async open(o = {}) {
-        const g = await Game.open(browser, stack, {
+        const g = (await Game.open(browser, stack, {
           out,
           size: opt.size,
           clock: true,
           ...o,
           query: [shot.query, o.query].filter(Boolean).join('&'),
           name: o.name || 'p' + (games.length + 1),
-        });
+        })) as unknown as ClipGame;
         // Software GL (no GPU, e.g. CI) can take far longer than Playwright's 30 s default for a screenshot.
         g.page.setDefaultTimeout(180000);
         const rec = g.record.bind(g);
         g.record = (label, r = {}) => {
           const each = r.each;
-          return rec(label, { fps: opt.fps, gif: opt.gif, ...r, each: each && ((t, k) => each(t, k, g)) });
+          return rec(label, {
+            fps: opt.fps,
+            gif: opt.gif,
+            ...r,
+            each: each && ((t: number, k: number) => each(t, k, g)),
+          });
         };
         games.push(g);
         return g;
@@ -104,7 +142,8 @@ try {
     const t0 = Date.now();
     try {
       const res = await shot.run(c);
-      for (const f of [res].flat().filter(Boolean)) console.log('  ' + Object.values(f).join('\n  '));
+      for (const f of [res].flat().filter((x): x is object => Boolean(x)))
+        console.log('  ' + Object.values(f).join('\n  '));
     } catch (e) {
       console.error(e);
       process.exitCode = 1;

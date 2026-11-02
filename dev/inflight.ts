@@ -6,15 +6,15 @@
 //                               deletes your wip branches it carries)
 import { execFileSync } from 'node:child_process';
 
-const git = (...a) => execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-const tryGit = (...a) => {
+const git = (...a: string[]) => execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const tryGit = (...a: string[]) => {
   try {
     return git(...a);
   } catch {
     return '';
   }
 };
-const lines = (s) => s.split('\n').filter(Boolean);
+const lines = (s: string) => s.split('\n').filter(Boolean);
 const PREFIXES = ['wip', 'ship', 'claude'];
 const WEEK = 7 * 24 * 3600;
 
@@ -25,7 +25,7 @@ export const who = () =>
     .replace(/^-|-$/g, '')
     .slice(0, 20) || 'someone';
 
-function wip(topic) {
+function wip(topic: string) {
   const slug = (topic || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -63,7 +63,7 @@ function inflight() {
     ),
   );
   const done = settledHeads();
-  const rows = [];
+  const rows: { name: string; author: string; at: number; files: string[]; overlap: string[] }[] = [];
   for (const ref of refs) {
     const [name, at, author] = ref.split('\t');
     if (now - Number(at) > WEEK) continue;
@@ -96,14 +96,16 @@ function inflight() {
 // Head commits of PRs that were merged or closed, from `gh` when it is installed and signed in (else none): a branch
 // still at that commit is finished or abandoned, even when main has its change under other hashes and later edits
 // (a ship/ superseded by a rebased copy). A branch pushed again after its PR closed has a new tip, so it still shows.
-function settledHeads() {
+type Pr = { headRefName: string; headRefOid: string; state: string };
+
+function settledHeads(): Set<string> {
   try {
     const out = execFileSync(
       'gh',
       ['pr', 'list', '--state', 'all', '--limit', '300', '--json', 'headRefName,headRefOid,state'],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 15000 },
     );
-    const prs = JSON.parse(out).filter((p) => PREFIXES.some((x) => p.headRefName.startsWith(x + '/')));
+    const prs = (JSON.parse(out) as Pr[]).filter((p) => PREFIXES.some((x) => p.headRefName.startsWith(x + '/')));
     const open = new Set(prs.filter((p) => p.state === 'OPEN').map((p) => p.headRefOid));
     return new Set(prs.filter((p) => p.state !== 'OPEN' && !open.has(p.headRefOid)).map((p) => p.headRefOid));
   } catch {
@@ -113,7 +115,7 @@ function settledHeads() {
 
 // Already on main under other hashes: every commit has an equal patch there (a rebased ship/), or main has the
 // branch's files exactly as the branch left them (a squash-merged claude/ PR).
-function landed(tip, files) {
+function landed(tip: string, files: string[]) {
   if (!lines(git('cherry', 'origin/main', tip)).some((l) => l.startsWith('+'))) return true;
   try {
     execFileSync('git', ['diff', '--quiet', tip, 'origin/main', '--', ...files], { stdio: 'ignore' });
@@ -123,7 +125,7 @@ function landed(tip, files) {
   }
 }
 
-function isAncestor(a, b) {
+function isAncestor(a: string, b: string) {
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', a, b], { stdio: 'ignore' });
     return true;
@@ -136,6 +138,7 @@ try {
   if (process.argv[2] === 'wip') wip(process.argv.slice(3).join(' '));
   else inflight();
 } catch (e) {
-  console.error(e.stderr?.toString().trim() || e.message);
+  const err = e as Error & { stderr?: Buffer | string };
+  console.error(err.stderr?.toString().trim() || err.message);
   process.exit(1);
 }

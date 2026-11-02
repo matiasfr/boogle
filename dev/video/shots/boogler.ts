@@ -1,4 +1,5 @@
 // The Boogler friendship (ea29f9f): talk and give a present, ride him until he launches you.
+import type { ClipGame, Shot } from '../clip.ts';
 const ROOM = 'clipboog';
 const seed = () => {
   localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
@@ -11,7 +12,7 @@ const seed = () => {
   );
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
-const STAND = (d, a) => `
+const STAND = (d: number, a: number) => `
   const { groundHeight } = await import('/src/adapters/terrain.ts');
   const { boogler } = window.boogle, b = window.boogle.me.body, p = boogler.disp;
   const x = p.x + Math.cos(${a}) * ${d}, z = p.z + Math.sin(${a}) * ${d};
@@ -23,12 +24,12 @@ const MID = `const c = window.boogle.boogler.center, p = window.boogle.me.body.p
   return [(c.x + p.x) / 2, (c.y + p.y) / 2, (c.z + p.z) / 2, Math.hypot(c.x - p.x, c.y - p.y, c.z - p.z)];`;
 const RIDE_A = -1.2; // the side the ride is filmed from (keeps the palms out of the way)
 const orbit =
-  (g, a, d, h, lookUp = 0.3) =>
+  (g: ClipGame, a: number, d: number, h: number, lookUp = 0.3) =>
   async () => {
     const [x, y, z] = await g.eval(AT);
     await g.view({ cam: [x + Math.cos(a) * d, y + h, z + Math.sin(a) * d], look: [x, y + lookUp, z] });
   };
-const pick = (g, re) =>
+const pick = (g: ClipGame, re: RegExp) =>
   g.eval(
     `const b = [...document.querySelectorAll('.bd-opt')].find((b) => ${re}.test(b.textContent)); b?.click(); return !!b;`,
   );
@@ -114,4 +115,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

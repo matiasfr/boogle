@@ -1,22 +1,27 @@
 // The caves (b0b3daf): walk in at the south mouth, the old mine, the ball floating on the underground pond, the wine
 // cellar. Places come from the cave network, so the shot follows it when it moves.
+import type { Shot } from '../clip.ts';
 import { NODES, MOUTHS, POND } from '../../../src/pois/caves/network.ts';
 
 const READY = `(async () => (await import('/src/pois/caves/index.ts')).cavesReady())()`;
 // Put the player at (x, y, z), still (y is the floor: inside the caves groundHeight is the hill above).
-const AT = (x, y, z) => `
+const AT = (x: number, y: number, z: number) => `
   const { teleport } = await import('/src/physics/physics.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y} + 1, ${z}); b.velocity.set(0, 0, 0);`;
 // Walk towards (x, z) with the play camera behind: aim the camera that way, the move key does the rest.
-const AIM = (x, z) => `
+const AIM = (x: number, z: number) => `
   const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
   const yaw = Math.atan2(-(${x} - p.x), -(${z} - p.z));
   let d = yaw - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
   cam.yaw += d * 0.12; cam.pitch = -0.12;
   return Math.hypot(${x} - p.x, ${z} - p.z);`;
-const ring = (c, a, d, h) => [c[0] + Math.cos(a) * d, c[1] + h, c[2] + Math.sin(a) * d];
+const ring = (c: number[], a: number, d: number, h: number) => [
+  c[0] + Math.cos(a) * d,
+  c[1] + h,
+  c[2] + Math.sin(a) * d,
+];
 
 export default {
   about: 'walk into the caves, the old mine, the ball on the underground pond, the wine cellar',
@@ -24,11 +29,11 @@ export default {
     const g = await c.open({ room: 'clipcaves', hud: false });
     await g.waitFor(READY, { timeout: 90000 });
     const out = [];
-    const south = MOUTHS.find((m) => m.id === 'south');
+    const south = MOUTHS.find((m) => m.id === 'south')!;
     const hub = NODES.hub;
 
     // Walk in: from the trench outside the south mouth, through the tunnel, into the hub, on the play camera.
-    const route = [
+    const route: [number, number][] = [
       [south.x + south.ox * 1, south.z + south.oz * 1],
       [south.x - south.ox * 4, south.z - south.oz * 4],
       [hub.x + 2, hub.z + 2],
@@ -48,10 +53,16 @@ export default {
       await g.record('caves-walk-in', {
         seconds: 8,
         each: async (t) => {
-          if (t > 0.6 && !walking && w < route.length) (await g.down('KeyW'), (walking = true));
+          if (t > 0.6 && !walking && w < route.length) {
+            await g.down('KeyW');
+            walking = true;
+          }
           if (!walking) return;
           const d = await g.eval(AIM(...route[w]));
-          if (d < 1.2 && ++w >= route.length) (await g.up('KeyW'), (walking = false));
+          if (d < 1.2 && ++w >= route.length) {
+            await g.up('KeyW');
+            walking = false;
+          }
         },
       }),
     );
@@ -104,4 +115,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

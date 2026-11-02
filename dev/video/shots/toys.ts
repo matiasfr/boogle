@@ -1,13 +1,14 @@
 // The hotbar and the one interact button (89ce0dd, b22fa8b): walk up to a can, its Pick up prompt, into the hand and
 // the hotbar, thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
+import type { ClipGame, Shot } from '../clip.ts';
 const INV = `const I = await import('/src/player/inventory.ts'); const H = await import('/src/player/hands.ts');`;
-const TP = (x, z, y) => `
+const TP = (x: number, z: number, y?: number) => `
   const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/adapters/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
   b.velocity.set(0, 0, 0);`;
-const AIM = (yaw, pitch) =>
+const AIM = (yaw: number, pitch: number) =>
   `const { cam } = await import('/src/player/player.ts'); cam.yaw = ${yaw}; cam.pitch = ${pitch}; window.boogle.me.yaw = ${yaw};`;
 // A can tossed onto the beach west of the court (the same cell the scenarios use).
 const TOSS = `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 5, l: [0, 100, 0, 0, 0, 0] })`;
@@ -15,7 +16,7 @@ const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 
 const ITEM = `const { CELL, HALF } = await import('/src/constants.ts');
   const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.i === 230 && it.j === 205);
   return { x: it.i * CELL - HALF, z: HALF - it.j * CELL };`;
-const press = (g, fn) => g.eval(`${INV} H.${fn}();`);
+const press = (g: ClipGame, fn: string) => g.eval(`${INV} H.${fn}();`);
 
 export default {
   about: 'pick up a can (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
@@ -40,7 +41,10 @@ export default {
         each: async (t, k) => {
           if (k === 6) await g.down('KeyW');
           if (k === 30) await g.up('KeyW');
-          if (k === 66) (await press(g, 'interactDown'), await press(g, 'interactUp'));
+          if (k === 66) {
+            await press(g, 'interactDown');
+            await press(g, 'interactUp');
+          }
           if (k === 110) await g.eval(AIM(yaw + 0.3, 0.1)); // up the hill, so the arc stays in view
           if (k === 125) await press(g, 'useDown');
           if (k === 160) await press(g, 'useUp');
@@ -56,16 +60,22 @@ export default {
     // The thrown frisbee is the newest thing in the scene (src/adapters/gifts.ts startFlight); follow it till it lands.
     const GRAB = `const { scene } = await import('/src/render/scene.ts'); window.__fris = scene.children.at(-1);`;
     const POS = `const m = window.__fris; return m?.parent ? [m.position.x, m.position.y, m.position.z] : null;`;
-    let cam = null,
-      at = null;
+    let cam: number[] | null = null,
+      at: number[] | null = null;
     out.push(
       await g.record('toys-frisbee', {
         seconds: 7,
         each: async (t, k) => {
-          if (k === 20) (await press(g, 'interactDown'), await press(g, 'interactUp'));
+          if (k === 20) {
+            await press(g, 'interactDown');
+            await press(g, 'interactUp');
+          }
           if (k === 45) await g.eval(AIM(3.0, 0.12));
           if (k === 55) await press(g, 'useDown');
-          if (k === 69) (await press(g, 'useUp'), await g.eval(GRAB));
+          if (k === 69) {
+            await press(g, 'useUp');
+            await g.eval(GRAB);
+          }
           if (k < 70) return;
           // Chase from behind and above, easing after it; hold where it lands.
           const p = (await g.eval(POS)) ?? at;
@@ -79,4 +89,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

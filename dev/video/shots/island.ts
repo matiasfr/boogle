@@ -1,11 +1,16 @@
 // The island: a pull-back reveal from home, the windmill farm, the lighthouse lighting up at dusk.
 // Places come from the POI site files, so the shot follows them when they move.
+import type { Shot } from '../clip.ts';
 import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.ts';
 import windmills, { FARM_Y } from '../../../src/pois/windmills/site.ts';
-import { STAND } from './_stand.mjs';
+import { STAND } from './_stand.ts';
 
-const SKY = (frac) => `window.boogle.sky.preview(${frac})`;
-const ring = (c, a, d, h) => [c[0] + Math.cos(a) * d, c[1] + h, c[2] + Math.sin(a) * d];
+const SKY = (frac: number) => `window.boogle.sky.preview(${frac})`;
+const ring = (c: number[], a: number, d: number, h: number) => [
+  c[0] + Math.cos(a) * d,
+  c[1] + h,
+  c[2] + Math.sin(a) * d,
+];
 
 export default {
   about: 'a reveal of the island, the windmill farm, the lighthouse at dusk',
@@ -48,4 +53,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

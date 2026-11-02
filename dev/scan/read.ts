@@ -1,5 +1,5 @@
 // The one reader of src/ and server/src/, shared by the atlas (dev/atlas/extract.ts) and the registry check
-// (dev/registry/scan.mjs), so they can't disagree about who owns a presence key, a message or a frame hook. It parses
+// (dev/registry/scan.ts), so they can't disagree about who owns a presence key, a message or a frame hook. It parses
 // with the TypeScript compiler API, which reads `.js` and `.ts` alike (a module keeps its facts when it moves from
 // one to the other). readFile(path, text) returns what a file registers as a raw record: names with line numbers,
 // `sends` apart from `reads`, literal-order flags. Each caller projects it into its own shape. Pure; never throws:
