@@ -99,3 +99,5 @@ with a timetable. A flatbed with a compound shape lost its deck collider in test
 The land is one height function on a 2 m grid, drawn as one faceted mesh and collided as one heightfield. From the crossing: the
 sea, sky and far plane (`src/proto/crossing/sea.ts`, `sky.ts`), the speed put back past the 237 m soft wall, the player's CCD
 off. Numbers: `TUNE` in `src/proto/place/layout.ts`. Look evals: `dev/look/evals/place.ts`.
+
+`&look=ground,light,contact,kit,mats,gtao` (or `all`, without `gtao`) is a look test on the same run, one layer at a time; without it the page is unchanged (`src/proto/place/look.ts`).

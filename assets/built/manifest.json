@@ -30,6 +30,16 @@
     ],
     "textures": []
   },
+  "place-kit": {
+    "source": "place-kit.py",
+    "sourceHash": "2279ba0daff9b5df",
+    "outHash": "629c72b8964be195",
+    "rawBytes": 141984,
+    "bytes": 64800,
+    "triangles": 5084,
+    "animations": [],
+    "textures": []
+  },
   "scaffold-kit": {
     "source": "scaffold-kit.py",
     "sourceHash": "4a239fc3e45106f9",

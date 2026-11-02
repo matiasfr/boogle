@@ -3,6 +3,7 @@
 // platforms are their own boxes. Trees have no colliders (greybox), and the spire's are a cylinder. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
+import { LOOK, addBlob, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
@@ -220,8 +221,8 @@ function buildMesh() {
     col = new Float32Array(N * N * 3);
   const c = new THREE.Color();
   const SAND = new THREE.Color('#e8d39a'),
-    GRASS = new THREE.Color('#79b84a'),
-    GRASS2 = new THREE.Color('#5ea241'),
+    GRASS = new THREE.Color(LOOK.ground ? '#7ebb2e' : '#79b84a'),
+    GRASS2 = new THREE.Color(LOOK.ground ? '#6fa928' : '#5ea241'),
     ROCK = new THREE.Color('#a08a70'),
     ROCK_LOW = new THREE.Color('#6d6f78'),
     DIRT = new THREE.Color('#e0b271'),
@@ -241,7 +242,7 @@ function buildMesh() {
         0.5 + 0.25 * Math.sin(x * 0.023 + 1) * Math.cos(z * 0.031) + 0.25 * Math.sin(x * 0.071 - z * 0.053),
       );
       if (h < 3.2) c.lerp(gorgeD(x, z) < 18 ? BANK : SAND, smoothstep(3.2, 1.6, h));
-      c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope));
+      if (!LOOK.ground) c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope)); // with it, rock is per pixel
       c.lerp(DIRT, pathMask[k]!);
       col.set([c.r, c.g, c.b], k * 3);
     }
@@ -262,7 +263,9 @@ function buildMesh() {
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(
     geo,
-    new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
+    LOOK.ground
+      ? groundMaterial()
+      : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
@@ -337,8 +340,8 @@ export function plank(
 function buildSpire() {
   const X = SPIRE.x + ORIGIN.x,
     Z = SPIRE.z + ORIGIN.z;
-  const ROCK = '#8c8478',
-    ROCK2 = '#a2978a';
+  const ROCK = spireRock('#8c8478'),
+    ROCK2 = spireRock('#a2978a');
   // Stacked, leaning drums: lopsided on purpose, so it reads as rock and not a tower.
   const drums: [r0: number, r1: number, h: number, dx: number, dz: number, color: string][] = [
     [11, 7, 26, 0, 0, ROCK],
@@ -413,6 +416,7 @@ function buildTrees() {
     const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
     if (grove < 0.15 + rng() * 0.25) continue;
     spots.push({ x, y: h, z, s: 0.8 + rng() * 0.7 });
+    if (LOOK.contact) addBlob(x + ORIGIN.x, h, z + ORIGIN.z, 2.4, 2.4);
   }
   const crown = new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), FLAT('#3f8a3a'), spots.length);
   const crown2 = new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), FLAT('#4f9c44'), spots.length);

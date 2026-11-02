@@ -1,6 +1,6 @@
 // A real place (?proto=place, src/proto/place/): sets the world up at a beat of the run and frames it. Pick with the query:
 //   BOOGLE_QUERY='proto=place&tod=0.07&shot=sign' npm run look -- --room proto-place --eval dev/look/evals/place.ts --size 1180x820 --hud
-// shots: sign, wake, chop, stack, laying, layingm, trestle, crane, lit, line2, far, reload, reset. shot=fall stands on the finished trestle and on
+// shots: sign, wake, chop, stack, laying, target, layingm, trestle, crane, lit, line2, far, reload, reset. shot=fall stands on the finished trestle and on
 // the machine and the train, and logs what holds you. shot=play runs the whole thing with real input (it needs a long
 // --warm) and writes times per beat on the screen.
 const q = new URLSearchParams(location.search);
@@ -143,6 +143,44 @@ if (shot === 'reload') {
   const x = line.xs[s]! + O,
     z = line.zs[s]!;
   putW(x, f.y + 1.2, z, yawTo(x, z, f.x, f.z), -0.14);
+} else if (shot === 'target') {
+  // The look chase's fixed frame (.look/previz/visible-materials/shot-3.png): on the fresh track behind the machine, which
+  // has just left station 2 for the gorge, the frame and feeder beside you. Staged and frozen so every capture matches: the
+  // head stops at the same metre, and the frame gets some logs back, because the real run empties it before laying.
+  // &moving=1 leaves it running, for video.
+  const head = Number(q.get('head') ?? 110);
+  place.wake();
+  place.skipDelivery();
+  await waitMode('idle');
+  place.skipDelivery();
+  await waitMode('laying');
+  const line = L1.spec.line;
+  if (q.get('moving') !== '1') {
+    while (place.run.head > head) await wait(16);
+    (place.run as { mode: string }).mode = 'frozen';
+    (L1.stations[1] as unknown as { drawStock: (n: { logs: number; rails: number }) => void }).drawStock({
+      logs: 11,
+      rails: 0,
+    });
+  }
+  const s = Number(q.get('at') ?? 122);
+  const x = line.xs[s]! + O,
+    z = line.zs[s]!;
+  const f = place.machine.flatbed;
+  putW(x, f.y + 1.2, z, Number(q.get('yaw') ?? 0.6) + yawTo(x, z, f.x, f.z), Number(q.get('pitch') ?? -0.2));
+  (me.avatar?.userData as { mat: { color: { set: (c: string) => void } } }).mat.color.set('#9b6bff'); // the board's purple
+  if (q.get('touch')) {
+    // What an iPad draws: the 1024 shadow map (src/render/scene.ts) and 0.8x (src/features/adaptive-res.ts) of this page's 1x.
+    const { sun, renderer } = (await import('/src/render/scene.ts' as string)) as {
+      sun: { shadow: { mapSize: { setScalar: (n: number) => void }; map: { dispose: () => void } | null } };
+      renderer: { setPixelRatio: (r: number) => void };
+    };
+    sun.shadow.mapSize.setScalar(1024);
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+    renderer.setPixelRatio(0.8);
+  }
+  await wait(1500);
 } else if (shot === 'layingm') {
   // Riding the machine over the gorge: what drops ahead of it, and does the deck carry you.
   place.wake();
