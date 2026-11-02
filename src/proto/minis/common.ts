@@ -142,7 +142,7 @@ export function knock(k: number, vol = 1) {
 const SCALE = [0, 2, 4, 7, 9, 12, 14, 16]; // major pentatonic steps
 /** A bright pop, one step up the scale per count n, for "one more fell". */
 export function pop(n: number, vol = 1) {
-  const f = 523 * 2 ** (SCALE[Math.min(n, SCALE.length - 1)] / 12);
+  const f = 523 * 2 ** (SCALE[Math.min(n, SCALE.length - 1)]! / 12);
   tone('sine', f * 0.7, f * 1.25, 0, 0.14, 0.32 * vol);
   tone('triangle', f * 2, f * 2.2, 0, 0.08, 0.08 * vol);
 }
@@ -215,7 +215,7 @@ export function confetti(x: number, y: number, z: number, n = 90) {
       vz: Math.sin(a) * s,
       life: 1.4 + Math.random() * 1.2,
       size: 0.16 + Math.random() * 0.14,
-      color: CONFETTI[k % CONFETTI.length],
+      color: CONFETTI[k % CONFETTI.length]!,
       gravity: 9,
       drag: 1.6,
       shrink: 0.3,
