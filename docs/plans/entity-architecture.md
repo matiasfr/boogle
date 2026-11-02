@@ -241,6 +241,8 @@ Do this before the entity work: it's what delivers the separation.
         name each kind and phase (`hitches` keys on `url:line`, so kinds would otherwise share a row).
       - Tests (owner's exception to the test diet, 2026-11-02; add it to AGENTS.md): spawn and despawn during a walk, double
         despawn, a throwing method. One Node test imports every `src/entities/*/state.ts`.
+        Each test file opens with a comment marking it as this exception: it exists so agents can catch walker ordering bugs
+        they can't see in a still, and it's no precedent for testing features.
       - No gameplay objects yet. Verify: `npm run check`, then `hitches` and `perf` unchanged.
 - [ ] **11. The ball and `ping`, as the worked examples.**
       - `src/physics/ball.ts` becomes `src/entities/ball/`, as kinds `ball` and `ball-carry`. Surf and friction leave
