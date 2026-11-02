@@ -443,7 +443,7 @@ onStart(() => {
       const k = inputKind();
       if (k !== kind) {
         kind = k;
-        menuBtn.querySelector('.menu-glyph')!.innerHTML = glyph('pause');
+        menuBtn.querySelector('.menu-glyph')!.innerHTML = glyph('pause')!;
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
     },

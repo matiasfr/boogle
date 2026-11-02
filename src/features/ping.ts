@@ -146,7 +146,7 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
-  const f = honkFreq(colorIdx) * 2;
+  const f = honkFreq(colorIdx)! * 2;
   const t = ctx.currentTime + 0.005;
   const notes = kind === 'ball' ? [f, f * 1.5] : [f, f * 1.25];
   notes.forEach((hz, k) => {

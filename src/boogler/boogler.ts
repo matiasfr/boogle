@@ -321,11 +321,11 @@ function sampleSnaps(t: number) {
   const s = snaps.sample(t);
   if (!s) return;
   const { a, b, u } = s;
-  target.x = lerp(a.x, b.x, u);
-  target.z = lerp(a.z, b.z, u);
-  target.yaw = angleLerp(a.r, b.r, u);
-  target.walking = b.w;
-  target.mode = b.m;
+  target.x = lerp(a!.x, b!.x, u);
+  target.z = lerp(a!.z, b!.z, u);
+  target.yaw = angleLerp(a!.r, b!.r, u);
+  target.walking = b!.w;
+  target.mode = b!.m;
 }
 
 // ---------------------------------------------------------------- model
