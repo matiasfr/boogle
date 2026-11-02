@@ -166,4 +166,4 @@ real slice does.
 
 - [x] **`?proto=place`:** a slice of Threefold Reach in greybox: a village, a gorge, two camps smoking across it and a
       spire to steer by. You walk there, plant a stake, haul while the trestle goes up and ride home with the cargo.
-- [ ] **Playtest 8.**
+- [x] **Playtest 8.** Yes, but it wasn't clear what connecting would do ([playtests.md](../playtests.md), 2 November).
