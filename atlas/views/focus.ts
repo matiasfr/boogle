@@ -58,7 +58,7 @@ export function focusView(ctx: Ctx, el: HTMLElement): Update {
   let card = `<rect x="${x0}" y="${cardY}" width="${cardW}" height="${cardH}" rx="10" fill="var(--panel)" stroke="var(--fg)" stroke-width="1.5"/>
     <rect x="${x0}" y="${cardY}" width="${cardW}" height="6" rx="3" fill="${kc(f.kind)}"/>
     <text x="${x0 + 16}" y="${cardY + 34}" style="font:600 17px var(--sans)">${esc(f.name)}</text>
-    <text x="${x0 + 16}" y="${cardY + 54}" style="font:11px var(--mono);fill:var(--faint)">${esc(f.dir)}/ · ${f.loc} lines · ${KINDS[f.kind].name}</text>
+    <text x="${x0 + 16}" y="${cardY + 54}" style="font:11px var(--mono);fill:var(--faint)">${esc(f.dir)}/ · ${f.loc} lines · ${KINDS[f.kind]!.name}</text>
     <line x1="${x0 + 16}" x2="${x0 + cardW - 16}" y1="${cardY + 70}" y2="${cardY + 70}" stroke="var(--line)"/>`;
   regs.forEach(([k, v], i) => {
     card += `<text x="${x0 + 16}" y="${cardY + 92 + i * 22}" style="font:12px var(--sans);fill:var(--mute)">${esc(k)}</text><text x="${x0 + 110}" y="${cardY + 92 + i * 22}" style="font:12px var(--mono)">${esc(v.length > 26 ? v.slice(0, 25) + '…' : v)}</text>`;

@@ -33,9 +33,9 @@ export function mapLayers(ctx: Ctx, el: HTMLElement): Update {
   const sel = S.sel;
   el.innerHTML = `<div class="layers${nb ? ' dim' : ''}">${LAYERS.map((L) => {
     const ds = layerDirs(M, L);
-    return `<section class="band" style="--lc:var(${L.c})"><header><b>${L.name}</b><span>${ds.length} folder${ds.length > 1 ? 's' : ''} · ${sumLoc(ds.flatMap((d) => M.dirs[d])).toLocaleString()} lines</span></header><div class="boxes">${ds
+    return `<section class="band" style="--lc:var(${L.c})"><header><b>${L.name}</b><span>${ds.length} folder${ds.length > 1 ? 's' : ''} · ${sumLoc(ds.flatMap((d) => M.dirs[d]!)).toLocaleString()} lines</span></header><div class="boxes">${ds
       .map((d) => {
-        const list = M.dirs[d];
+        const list = M.dirs[d]!;
         const lit = nb && list.some((f) => role(nb, sel, f.f));
         if (d === S.openDir) {
           return `<div class="box open lit${sel.t === 'dir' && sel.id === d ? ' sel' : ''}" style="--g:1"><b>${esc(d)}/</b><small>${esc(N.folders[d] ?? '')}</small><div class="cells">${list
@@ -72,7 +72,7 @@ function hier(ctx: Ctx): HierarchyNode<TreeNode> {
       children: layerDirs(M, L).map((d) => ({
         name: d,
         dir: d,
-        children: M.dirs[d].map((f) => ({ name: f.name.replace(/\.[jt]s$/, ''), file: f, value: f.loc })),
+        children: M.dirs[d]!.map((f) => ({ name: f.name.replace(/\.[jt]s$/, ''), file: f, value: f.loc })),
       })),
     })),
   };
@@ -91,7 +91,7 @@ const nodeSel = (d: HierarchyNode<TreeNode>): Selection =>
         : { t: 'root' };
 
 function fillFor(d: HierarchyNode<TreeNode>): string {
-  if (d.data.file) return `var(${KINDS[d.data.file.kind].c})`;
+  if (d.data.file) return `var(${KINDS[d.data.file.kind]!.c})`;
   if (d.data.layer) return `var(${d.data.layer.c})`;
   return d.data.dir ? 'var(--panel)' : 'var(--sunk)';
 }

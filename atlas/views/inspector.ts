@@ -48,7 +48,7 @@ export function citeChip({ M, esc }: Pick<Ctx, 'M' | 'esc'>, cite: Cite): string
         ? v + '/'
         : `${key ?? 'cite'} ${v}`;
   if (r.error) return `<span class="chip stale" title="${esc(r.error)}">${esc(base)} <small>stale</small></span>`;
-  const attr = key === 'dir' ? `data-dir="${esc(M.byPath.get(r.files[0])?.dir)}"` : `data-file="${esc(r.files[0])}"`;
+  const attr = key === 'dir' ? `data-dir="${esc(M.byPath.get(r.files[0]!)?.dir)}"` : `data-file="${esc(r.files[0])}"`;
   return `<button class="chip" ${attr} title="${esc(r.files.join(', '))}">${esc(base)}</button>`;
 }
 
@@ -90,7 +90,7 @@ export function inspector(ctx: Ctx): void {
     const uses = [...f.uses].map((p) => M.byPath.get(p)).filter((x): x is ModelFile => !!x);
     const by = f.users.map((p) => M.byPath.get(p)).filter((x): x is ModelFile => !!x);
     el.innerHTML = `<div><h2>${esc(f.name)}</h2><div class="path">${esc(f.f)}</div></div>
-      <div class="pills"><span class="pill" style="--c:${kc(f.kind)}"><i></i>${KINDS[f.kind].name}</span><span class="pill">${f.loc} lines</span></div>
+      <div class="pills"><span class="pill" style="--c:${kc(f.kind)}"><i></i>${KINDS[f.kind]!.name}</span><span class="pill">${f.loc} lines</span></div>
       <p>${esc(sentences(f.head) || N.kinds[f.kind] || '')}</p>
       ${regs.length ? `<div><h3>Registers</h3><dl class="kv">${regs.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl></div>` : ''}
       <div><h3 style="color:var(--usedby)">Used by · ${by.length}</h3>${by.length ? fileList(ctx, by, 6) : '<p>Nothing imports it.' + (f.dir === 'features' ? ' Features are auto-loaded by main.' : '') + '</p>'}</div>
@@ -103,7 +103,7 @@ export function inspector(ctx: Ctx): void {
     el.innerHTML = `<div><h2>${esc(sel.id)}/</h2><div class="path">${esc(layerOf(sel.id).name)}</div></div><p>${esc(N.folders[sel.id] ?? '')}</p>
       <div><h3>Sync kinds</h3>${stackBar(ctx, list)}<div class="pills" style="margin-top:8px">${Object.keys(KINDS)
         .filter((k) => n[k])
-        .map((k) => `<span class="pill" style="--c:${kc(k)}"><i></i>${KINDS[k].name} ${n[k]}</span>`)
+        .map((k) => `<span class="pill" style="--c:${kc(k)}"><i></i>${KINDS[k]!.name} ${n[k]}</span>`)
         .join('')}</div></div>
       <div><h3>Largest files · ${list.length}</h3>${fileList(ctx, list)}</div>`;
   } else if (sel.t === 'layer') {
@@ -112,7 +112,7 @@ export function inspector(ctx: Ctx): void {
     el.innerHTML = `<div><h2>${L.name}</h2></div><p>${L.note}</p><div><h3>Folders</h3><div class="list">${ds
       .map(
         (d) =>
-          `<button data-dir="${esc(d)}" style="--c:var(--faint)"><i></i>${esc(d)}/<span>${M.dirs[d].length} files</span></button>`,
+          `<button data-dir="${esc(d)}" style="--c:var(--faint)"><i></i>${esc(d)}/<span>${M.dirs[d]!.length} files</span></button>`,
       )
       .join('')}</div></div>`;
   } else if (sel.t === 'channel') {
