@@ -16,6 +16,8 @@ export interface Frame {
   explicit: boolean;
   name: string;
   line: number;
+  /** set on a defineKind entry: the entity kind this hook walks */
+  kind?: string;
 }
 export interface Keyed {
   key: string;
@@ -38,7 +40,8 @@ export interface FileRecord {
   lazy: string[];
   exports: string[];
   names: string[];
-  frames: Frame[];
+  frames: Frame[]; // onFrame, onPreStep / onPostStep (phases fixedPre, fixedPost), and each entry of a defineKind
+  badKinds: string[]; // a defineKind the reader can't read, with why: orders must be literals
   owner: Keyed[]; // addPresenceField
   host: Keyed[]; // addHostField
   corePresence: string[]; // keys of the object buildPresence() builds
@@ -174,6 +177,40 @@ function frameOf(call: ts.CallExpression, file: string, lineOf: (n: ts.Node) => 
   };
 }
 
+const DEFAULT_STEP_ORDER = 1000; // an unnumbered onPreStep or onPostStep (src/physics/backend-rapier.ts)
+
+// defineKind's phases, as the hook each one runs on (src/entity/entity.ts).
+const KIND_PHASE: Record<string, string> = {
+  fixedPre: 'fixedPre',
+  fixedPost: 'fixedPost',
+  prePhysics: 'prePhysics',
+  postPhysics: 'world',
+  update: 'update',
+  lateUpdate: 'late',
+};
+
+// defineKind('ball', { update: -300 }): one frame per entry, or a complaint. The kind and every order must be literals, so
+// this reader sees them.
+function kindOf(call: ts.CallExpression, lineOf: (n: ts.Node) => number, rec: FileRecord) {
+  const line = lineOf(call);
+  const kind = strOf(call.arguments[0]);
+  const orders = objectOf(call.arguments[1]);
+  if (kind === undefined || !orders) {
+    rec.badKinds.push(`line ${line}: defineKind takes a literal kind and a literal { phase: order }`);
+    return;
+  }
+  for (const m of orders.properties) {
+    const key = memberKey(m);
+    const phase = key === null ? undefined : KIND_PHASE[key];
+    const order = numberOf(memberValue(m));
+    if (phase === undefined || order === undefined || !Number.isInteger(order)) {
+      rec.badKinds.push(`line ${line}: defineKind('${kind}') needs a known phase and a literal integer order`);
+      continue;
+    }
+    rec.frames.push({ phase, order, explicit: true, name: `${kind} ${key}`, line, kind });
+  }
+}
+
 // An import specifier as a repo path ('src/net/room.ts'), or null for packages, JSON and anything not code. Imports
 // name their file as it is (`.js` or `.ts`), so the path is exact.
 function resolveImport(file: string, spec: string | undefined): string | null {
@@ -236,6 +273,7 @@ function emptyRecord(f: string, loc: number): FileRecord {
     exports: [],
     names: [],
     frames: [],
+    badKinds: [],
     owner: [],
     host: [],
     corePresence: [],
@@ -367,6 +405,11 @@ export function readFile(file: string, text: string): FileRecord {
       if (name === 'onMessage') rec.onMessage = true;
       else if (name === 'submitEdit') rec.submits = true;
       else if (name === 'onFrame') rec.frames.push(frameOf(n, file, lineOf));
+      else if (name === 'onPreStep' || name === 'onPostStep') {
+        const f = frameOf(n, file, lineOf);
+        const phase = name === 'onPreStep' ? 'fixedPre' : 'fixedPost';
+        rec.frames.push({ ...f, phase, order: f.explicit ? f.order : DEFAULT_STEP_ORDER });
+      } else if (name === 'defineKind') kindOf(n, lineOf, rec);
       else if (name === 'addPresenceField' && s0 !== undefined) rec.owner.push({ key: s0, line: lineOf(n) });
       else if (name === 'addHostField' && s0 !== undefined) rec.host.push({ key: s0, line: lineOf(n) });
       else if (name === 'registerOp' && s0 !== undefined) rec.ops.push(s0);

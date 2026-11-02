@@ -23,6 +23,35 @@ test('the scan ignores calls in strings and comments, and definitions', () => {
   assert.deepEqual((reg.presence as Names).z, ['src/features/a.js:3']);
 });
 
+test('defineKind orders are read: clashes and the feature range fail, a non-literal order is an error', () => {
+  const errorsOf = (...files: ReturnType<typeof file>[]) => checkRegistry(scanSources(files));
+  assert.deepEqual(errorsOf(file('src/entities/a.ts', "defineKind('a', { update: -300, postPhysics: -300 });")), []);
+  // against a core hook, another kind, the feature range, and a pinned fixed-step site
+  const core = file('src/player/p.ts', "onFrame(f, { phase: 'update', order: -290 });");
+  assert.match(
+    errorsOf(core, file('src/entities/a.ts', "defineKind('a', { update: -290 });"))[0]!,
+    /equals src\/player/,
+  );
+  const b = file('src/entities/b.ts', "defineKind('b', { lateUpdate: 5 });");
+  assert.match(
+    errorsOf(b, file('src/entities/a.ts', "defineKind('a', { lateUpdate: 5 });"))[0]!,
+    /late order 5 equals/,
+  );
+  assert.match(errorsOf(file('src/features/a.ts', "defineKind('a', { update: -50 });"))[0]!, /order -10 and up/);
+  const site = file('src/physics/s.ts', 'onPreStep(f, { order: 40 });');
+  assert.match(
+    errorsOf(site, file('src/entities/a.ts', "defineKind('a', { fixedPre: 40 });"))[0]!,
+    /fixedPre order 40/,
+  );
+  const twice = file('src/entities/b.ts', "defineKind('a', { update: 7 });");
+  assert.match(errorsOf(twice, file('src/entities/a.ts', "defineKind('a', { update: 8 });"))[0]!, /defined twice/);
+  // unnumbered step hooks and feature-range hooks may tie; a phase or order the reader can't see can't
+  assert.deepEqual(errorsOf(file('src/proto/p.ts', 'onPreStep(f);\nonPreStep(g);')), []);
+  assert.match(errorsOf(file('src/entities/a.ts', "defineKind('a', { update: ORDER });"))[0]!, /literal integer order/);
+  assert.match(errorsOf(file('src/entities/a.ts', "defineKind('a', { tick: 1 });"))[0]!, /known phase/);
+  assert.match(errorsOf(file('src/entities/a.ts', 'defineKind(name, orders);'))[0]!, /literal kind/);
+});
+
 test('TypeScript reads like JavaScript: typed locals, `as const`, generics, a moved file', () => {
   const reg = scanSources([
     file(

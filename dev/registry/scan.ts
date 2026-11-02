@@ -12,7 +12,9 @@
 //   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
 //   padSlots: [slot]                 PAD in src/player/controls.ts
-//   frames:   [{ path, phase, order }]  onFrame hooks with a literal order (path is file:line)
+//   frames:   [{ path, phase, order, kind? }]  onFrame, onPreStep and onPostStep hooks with a literal order, and each
+//                                    entry of a defineKind (path is file:line)
+//   kindErrors: [string]             a defineKind whose kind or orders aren't literals
 //   parseErrors: [string]            only when a file could not be parsed
 //   rules, ops, states               filled in by check.ts from a real install (names, versions, saved shapes)
 //   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
@@ -21,7 +23,7 @@
 import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.ts';
 
 export type Source = { path: string; text: string };
-export type FrameHook = { path: string; phase: string; order: number };
+export type FrameHook = { path: string; phase: string; order: number; kind?: string };
 export type StateInfo = { module: string; version: number; shape?: string };
 export type Registry = {
   presence: Record<string, string[]>;
@@ -29,6 +31,7 @@ export type Registry = {
   pads: Record<string, string[]>;
   padSlots: string[];
   frames: FrameHook[];
+  kindErrors?: string[];
   parseErrors?: string[];
   rules?: string[];
   ops?: Record<string, string>;
@@ -57,9 +60,13 @@ export function scanSources(files: Source[]): Registry {
     for (const a of r.actions) if (a.pad !== null) add(reg.pads, a.pad, `${path}:${a.id ?? '?'}`);
     if (bare(path) === 'src/player/controls') reg.padSlots = r.padSlots;
     for (const f of r.frames) {
-      if (f.explicit)
-        reg.frames.push({ path: `${path}:${f.line}`, phase: f.phase ?? 'update', order: f.order as number });
+      if (f.explicit) {
+        const hook: FrameHook = { path: `${path}:${f.line}`, phase: f.phase ?? 'update', order: f.order as number };
+        if (f.kind) hook.kind = f.kind;
+        reg.frames.push(hook);
+      }
     }
+    for (const e of r.badKinds) (reg.kindErrors ??= []).push(`${path} ${e}`);
   }
   return reg;
 }
@@ -67,7 +74,10 @@ export function scanSources(files: Source[]): Registry {
 const isFeature = (p: string) => p.startsWith('src/features/');
 
 export function checkRegistry(reg: Registry): string[] {
-  const errors = [...(reg.parseErrors ?? []).map((e) => `${e} (the registry cannot read this file)`)];
+  const errors = [
+    ...(reg.parseErrors ?? []).map((e) => `${e} (the registry cannot read this file)`),
+    ...(reg.kindErrors ?? []),
+  ];
   for (const [key, who] of Object.entries(reg.presence)) {
     if (who.length > 1) errors.push(`presence key '${key}' is used twice: ${who.join(', ')}. Pick an untaken key.`);
   }
@@ -90,6 +100,29 @@ export function checkRegistry(reg: Registry): string[] {
     const clash = core.find((c) => c.phase === f.phase && c.order === f.order);
     if (clash) errors.push(`${f.path}: onFrame ${f.phase} order ${f.order} equals core ${clash.path}; pick another`);
   }
+  const kindFiles = new Map<string, string>();
+  for (const f of reg.frames) {
+    if (!f.kind) continue;
+    const file = f.path.replace(/:\d+$/, '');
+    if ((kindFiles.get(f.kind) ?? file) !== file)
+      errors.push(`entity kind '${f.kind}' is defined twice: ${file}, ${kindFiles.get(f.kind)}`);
+    kindFiles.set(f.kind, file);
+  }
+  // An entity kind's order is unique among the kinds and the core hooks of its phase, and a pinned fixed-step order is
+  // unique (src/loop.ts has the table): a tie would run in import order.
+  const FIXED_PHASE = new Set(['fixedPre', 'fixedPost']);
+  reg.frames.forEach((f, i) => {
+    const pinned = FIXED_PHASE.has(f.phase);
+    if (!f.kind && !pinned) return;
+    const clash = reg.frames.find(
+      (o, j) =>
+        o.phase === f.phase &&
+        o.order === f.order &&
+        j !== i &&
+        (pinned || o.kind ? j < i : isCoreHook(o.path, o.order)), // earlier: each pair is reported once
+    );
+    if (clash) errors.push(`${f.path}: ${f.phase} order ${f.order} equals ${clash.path}; pick another`);
+  });
   return errors;
 }
 

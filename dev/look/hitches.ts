@@ -15,7 +15,7 @@
 // The 'enter' step includes the harness's own click (pointer lock in headless Chromium costs ~200 ms there).
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Browser } from 'playwright';
+import type { Browser, CDPSession } from 'playwright';
 import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.ts';
 import type { Stack } from './lib.ts';
 
@@ -37,7 +37,7 @@ type Frame = {
   gc?: number;
 };
 /** A node of CDP's sampling heap profile. */
-type CallFrame = { functionName: string; url: string; lineNumber: number };
+type CallFrame = { functionName: string; scriptId: string; url: string; lineNumber: number; columnNumber: number };
 type HeapNode = { id: number; selfSize: number; callFrame: CallFrame; children: HeapNode[] };
 
 const argv = process.argv.slice(2);
@@ -186,6 +186,7 @@ async function measureHooks(g: Game) {
     window.boogle.sky.preview(null);
     return n;`);
   const { profile } = await cdp.send('HeapProfiler.stopSampling');
+  const kindRows = await entityRows(cdp);
   await cdp.detach();
   // Each sample is one object (its size scaled up by the sampling odds: s / (1 - e^(-s / interval))). Objects of 16
   // bytes or less are V8's boxed doubles (HeapNumbers), mostly: numbers crossing a call or a field it could not keep
@@ -197,10 +198,19 @@ async function measureHooks(g: Game) {
     owner.set(n.id, hook);
     n.children.forEach((ch) => mark(ch, hook));
   };
+  // Every kind shares one walker, so its frame says nothing: an entity's row is the method it calls, named `ball update`.
+  // Fixed-step walks count here too, though they run under the physics step and not under runFrame. A method the JIT
+  // inlined into the walker stays on the walker's own row: the profiler sees physical frames only.
+  const isWalker = (c: CallFrame) => c.url.includes('/src/entity/walker.ts');
+  const hookFrame = (ch: HeapNode) => {
+    if (!isWalker(ch.callFrame)) return mark(ch, hookOf(ch));
+    owner.set(ch.id, hookOf(ch));
+    ch.children.forEach((m) => mark(m, kindRows.get(locationOf(m.callFrame)) ?? hookOf(m)));
+  };
   const find = (n: HeapNode) => {
     const c = n.callFrame;
-    if (c.functionName === 'runFrame' && c.url.includes('/src/loop.ts'))
-      n.children.forEach((ch) => mark(ch, hookOf(ch)));
+    if (c.functionName === 'runFrame' && c.url.includes('/src/loop.ts')) n.children.forEach(hookFrame);
+    else if (isWalker(c)) hookFrame(n);
     else n.children.forEach(find);
   };
   find(profile.head as HeapNode);
@@ -224,6 +234,28 @@ async function measureHooks(g: Game) {
     }));
   const sum = (k: 'objects' | 'numbers') => kb([...hooks.values()].reduce((a, h) => a + h[k], 0));
   return { frames, rows, objects: sum('objects'), numbers: sum('numbers') };
+}
+
+// Function start -> `<kind> <phase>`, for the methods of every live entity: V8 reports where each function starts, in the
+// profile's call frames and in a function object's [[FunctionLocation]] alike. Closures from one line are one row; if two
+// kinds share a factory, that row carries one of their names.
+const locationOf = (c: { scriptId: string; lineNumber: number; columnNumber: number }) =>
+  `${c.scriptId}:${c.lineNumber}:${c.columnNumber}`;
+async function entityRows(cdp: CDPSession) {
+  const rows = new Map<string, string>();
+  const { result } = await cdp.send('Runtime.evaluate', {
+    expression: `import('/src/entity/entity.ts').then((m) => m.entityMethods())`,
+    awaitPromise: true,
+  });
+  if (!result.objectId) return rows;
+  const { result: list } = await cdp.send('Runtime.getProperties', { objectId: result.objectId, ownProperties: true });
+  for (const { name, value } of list) {
+    if (!value?.objectId || !name.includes('|')) continue;
+    const { internalProperties } = await cdp.send('Runtime.getProperties', { objectId: value.objectId });
+    const at = internalProperties?.find((p) => p.name === '[[FunctionLocation]]')?.value?.value;
+    if (at) rows.set(locationOf(at), name.split('|')[0]!);
+  }
+  return rows;
 }
 
 let stack: Stack | undefined, browser: Browser | undefined;
