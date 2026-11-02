@@ -64,6 +64,11 @@ export const TP = (x: number | string, z: number | string, y?: number | string) 
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
   b.velocity.set(0, 0, 0);`;
 export const INV = `const I = await import('/src/player/inventory.ts'); const H = await import('/src/player/hands.ts');`;
+// Below about 4 fps a tab's world clock falls further behind every second (src/world/sync.ts, MAX_STEPS on a 50 ms dt) and
+// its edits land ever later, so a long scenario on a CI runner's software WebGPU never ends. It only reads the HUD and
+// the world's state, so it can draw a sixteenth of the pixels there. Stills stay sharp on a real GPU.
+export const lowResOnCi = (g: Game) =>
+  process.env.CI ? g.eval(`(await import('/src/render/scene.ts')).renderer.setPixelRatio(0.25);`) : undefined;
 // The item `toss()` made: its id, kind and world position.
 export const TOSSED_ITEM = `
   const { CELL, HALF } = await import('/src/constants.ts');

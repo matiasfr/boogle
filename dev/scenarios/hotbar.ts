@@ -3,7 +3,7 @@
 // in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
 // filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
 // bar clears the HUD.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const AIM = (yaw: number | string, pitch: number | string = 0) =>
@@ -25,13 +25,12 @@ const LAYOUT = `${DOM}
   const hit = others.filter((s) => hits(rect(s)));
   return { bar: [bar.left, bar.top, bar.right, bar.bottom].map(Math.round), checked: others.length, hit };`;
 
-const SIZE = [640, 400]; // a smaller frame keeps a software-rendered tab's world clock closer to real time
-
 export default {
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
-    const g = await t.open({ name: 'holder', hud: 'play', size: SIZE });
+    const g = await t.open({ name: 'holder', hud: 'play' });
+    await lowResOnCi(g);
     const consoleErrors: string[] = [];
     g.page.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && consoleErrors.push(m.text()));
     const start = await g.eval(`${INV} return { slots: I.inv.slots, sel: I.inv.sel };`);
@@ -247,6 +246,7 @@ export default {
 
     // ------------------------------------------------------------ on a phone, portrait
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [390, 844] });
+    await lowResOnCi(thumb);
     const one = await thumb.waitFor(
       when(
         `!!document.querySelector('.hotbar') &&

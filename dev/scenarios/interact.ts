@@ -4,7 +4,7 @@
 // left halfway picks up where you stopped. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a can behind you does not hide the log bundle you face, riding him puts the
 // ball first, and a failed planting says why.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const FACE = (x: string, z: string) => `
@@ -44,8 +44,8 @@ export default {
   about: 'one Talk prompt by The Boogler, gifts in the talk, Pick up over items, a reason when planting fails',
   timeout: 600000, // two software-rendered players in a row: the nightly runner was still going at 300 s
   async run(t: T) {
-    // A smaller frame keeps a software-rendered tab's world clock closer to real time.
-    const g = await t.open({ name: 'talker', hud: 'play', size: [640, 400] });
+    const g = await t.open({ name: 'talker', hud: 'play' });
+    await lowResOnCi(g);
 
     // Holding a frisbee next to The Boogler: the prompt in his tag says Talk.
     await g.eval(`${INV} I.take('frisbee');`);
@@ -288,6 +288,7 @@ export default {
 
     // Touch: the action button says Talk, and the prompt has no glyph.
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
+    await lowResOnCi(thumb);
     await thumb.eval(`${INV} I.take('frisbee');`);
     const tapMs = await thumb.waitFor(
       beside(
