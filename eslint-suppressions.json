@@ -139,11 +139,6 @@
       "count": 5
     }
   },
-  "src/player/throw.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/pois/caves/decor.ts": {
     "boogle/use-an-entity": {
       "count": 2
