@@ -30,11 +30,11 @@ export async function roles(A: Game, B: Game) {
 }
 
 // Both tabs hash every state at the end of the same tick. A software-rendered tab (smoke.yml) can take seconds to answer
-// and a resync can skip a tick, so this marks one tick a second for the next 30 s and compares the first both reached.
+// and a resync can skip a tick, so this marks one tick a second for the next 2 minutes and compares the first both reached (run 41430080992: 30 s was not enough).
 export async function hashesAtOneTick(host: Game, client: Game) {
   const now = `return window.boogle.sync.world.tick;`;
   const start = Math.max(await host.eval(now), await client.eval(now)) + 10;
-  const ticks = Array.from({ length: 30 }, (_, k) => start + k * 10);
+  const ticks = Array.from({ length: 120 }, (_, k) => start + k * 10);
   const list = JSON.stringify(ticks);
   for (const g of [host, client]) await g.eval(`for (const t of ${list}) window.boogle.sync.markHashes(t);`);
   const read = `return ${list}.map((t) => window.boogle.sync.hashesAt(t));`;
