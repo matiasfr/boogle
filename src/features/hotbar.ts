@@ -33,6 +33,7 @@ const GRIP: Record<string, Grip> = {
   frisbee: { p: [0, -0.02, 0], r: [0.25, 0, -0.5] },
 };
 const DEFAULT_GRIP: Grip = { p: [0, -0.12, 0] };
+const HANGS = new Set(['can', 'seeds']); // carried by a handle, down at the hip on a body with arms
 
 function heldModel(id: string) {
   const g = GRIP[id] ?? DEFAULT_GRIP;
@@ -50,10 +51,10 @@ function setHeld(avatar: THREE.Object3D, id: string | null | undefined): THREE.G
     heldId?: string | null;
     held?: THREE.Group | null;
     handSocket?: THREE.Object3D;
-    holdKind?: 'item' | 'ball' | null;
+    holdKind?: 'item' | 'hang' | 'ball' | null;
   };
   const want = id && id !== 'ball' ? id : null;
-  u.holdKind = id === 'ball' ? 'ball' : want ? 'item' : null;
+  u.holdKind = id === 'ball' ? 'ball' : !want ? null : HANGS.has(want) ? 'hang' : 'item';
   if (u.heldId !== want) {
     u.held?.removeFromParent();
     u.heldId = want;
@@ -75,6 +76,7 @@ function updateInHand() {
       const pour = heldId() === 'can' && pouring() ? -0.9 : 0;
       const wind = me.charging ? -0.6 : 0;
       hand.rotation.set(x + pour + wind, y, z);
+      if (pour) (me.avatar.userData as { holdKind?: string }).holdKind = 'item'; // lifted to pour
     }
   }
   for (const r of remotes.values()) {
