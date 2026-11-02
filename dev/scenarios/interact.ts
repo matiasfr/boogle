@@ -4,7 +4,7 @@
 // left halfway picks up where you stopped. A tossed item gets a floating Pick up prompt,
 // E does nothing while you wind up a throw, a can behind you does not hide the log bundle you face, riding him puts the
 // ball first, and a failed planting says why.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, TOSS_WAIT_MS } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const FACE = (x: string, z: string) => `
@@ -42,9 +42,10 @@ const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt
 
 export default {
   about: 'one Talk prompt by The Boogler, gifts in the talk, Pick up over items, a reason when planting fails',
-  timeout: 300000, // the nightly runner's software WebGPU took ~140 s; the default is 120 s
+  timeout: 600000, // two software-rendered players in a row: the nightly runner was still going at 300 s
   async run(t: T) {
-    const g = await t.open({ name: 'talker', hud: 'play' });
+    // A smaller frame keeps a software-rendered tab's world clock closer to real time.
+    const g = await t.open({ name: 'talker', hud: 'play', size: [640, 400] });
 
     // Holding a frisbee next to The Boogler: the prompt in his tag says Talk.
     await g.eval(`${INV} I.take('frisbee');`);
@@ -125,7 +126,7 @@ export default {
 
     // A tossed frisbee, empty hands: a floating Pick up prompt over it, and E picks it up.
     await g.eval(`${toss(2, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: TOSS_WAIT_MS });
+    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
@@ -135,8 +136,9 @@ export default {
     await g.key('KeyE');
     const got = await g.waitFor(
       `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
+      { timeout: EDIT_WAIT_MS },
     );
-    await g.wait(0.3);
+    await g.waitFor(`${text('.hotbar-name')}.includes('Throw')`);
     const tag = await g.eval(`return ${text('.hotbar-name')};`);
     const tagShot = await g.still('held');
     t.check(

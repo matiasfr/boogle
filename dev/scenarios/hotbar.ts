@@ -3,7 +3,7 @@
 // in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
 // filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
 // bar clears the HUD.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM, TOSS_WAIT_MS } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const AIM = (yaw: number | string, pitch: number | string = 0) =>
@@ -25,11 +25,13 @@ const LAYOUT = `${DOM}
   const hit = others.filter((s) => hits(rect(s)));
   return { bar: [bar.left, bar.top, bar.right, bar.bottom].map(Math.round), checked: others.length, hit };`;
 
+const SIZE = [640, 400]; // a smaller frame keeps a software-rendered tab's world clock closer to real time
+
 export default {
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
-  timeout: 600000, // two software-rendered players in a row on a busy machine; the nightly runner took ~450 s
+  timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
-    const g = await t.open({ name: 'holder', hud: 'play' });
+    const g = await t.open({ name: 'holder', hud: 'play', size: SIZE });
     const consoleErrors: string[] = [];
     g.page.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && consoleErrors.push(m.text()));
     const start = await g.eval(`${INV} return { slots: I.inv.slots, sel: I.inv.sel };`);
@@ -41,13 +43,14 @@ export default {
 
     // A tossed item: walk up, grab it, and it is in your hand.
     await g.eval(`${toss(2, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: TOSS_WAIT_MS });
+    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));
     await g.wait(0.5);
     await g.eval(`${INV} H.interactDown(); H.interactUp();`);
     const held = await g.waitFor(
       `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
+      { timeout: EDIT_WAIT_MS },
     );
     await g.view({ cam: [item.x + 3.5, 2.2, item.z + 3.5], look: [item.x + 0.6, 0.6, item.z] });
     const s1 = await g.still('in-hand');
@@ -60,7 +63,9 @@ export default {
     await g.eval(`${INV} H.useDown();`);
     await g.wait(1.5); // a full charge: a short one can land in the pit by the court
     await g.eval(`${INV} H.useUp();`);
-    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`);
+    const landed = await g.waitFor(`window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === ${item.kind})`, {
+      timeout: EDIT_WAIT_MS,
+    });
     const far = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.ts');
       const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === ${item.kind});
@@ -146,22 +151,33 @@ export default {
     await g.eval(`${INV} I.take('seeds', 5); ${TP(spot.x, `${spot.z} + 0.9`)} ${AIM(0)}`);
     await g.wait(0.4);
     await g.eval(`${INV} H.useDown(); H.useUp();`);
-    const hasPlot = await g.waitFor(`(async () => {
+    const hasPlot = await g.waitFor(
+      `(async () => {
       const { garden } = await import('/src/adapters/mushroom-garden.ts');
-      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
+      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`,
+      { timeout: EDIT_WAIT_MS },
+    );
     t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
     await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
     // Stand on the seed as soon as it starts growing, before it has a collider: later, on a fast machine, the cap is
     // already above your feet and you land on top and ride it up instead (that is intended, but not this check).
-    await g.waitFor(`(async () => {
+    await g.waitFor(
+      `(async () => {
       const { garden } = await import('/src/adapters/mushroom-garden.ts');
-      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`);
+      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`,
+      { timeout: EDIT_WAIT_MS },
+    );
     await g.eval(TP(spot.x + 0.3, spot.z));
     const before = await g.eval(
       `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${spot.x}, p.z - ${spot.z});`,
     );
     await g.view({ cam: [spot.x + 7, 3.5, spot.z + 7], look: [spot.x, 0.8, spot.z] });
     const grow = await g.motion('growing', { frames: 8, seconds: 6 });
+    // The sheet is six seconds of real time; a slow tab's clock is far behind that.
+    await g.waitFor(
+      `(() => { const p = window.boogle.me.body.position; return Math.hypot(p.x - ${spot.x}, p.z - ${spot.z}) > ${before} + 1; })()`,
+      { timeout: EDIT_WAIT_MS },
+    );
     const after = await g.eval(
       `const p = window.boogle.me.body.position; return { d: Math.hypot(p.x - ${spot.x}, p.z - ${spot.z}), y: p.y };`,
     );
@@ -196,7 +212,9 @@ export default {
     const deck = await g.still('deck');
     t.check('the frisbee waits on the lighthouse deck', perched, deck);
     await g.eval(`${INV} H.interactDown(); H.interactUp();`);
-    const got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`);
+    const got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`, {
+      timeout: EDIT_WAIT_MS,
+    });
     t.check('you can pick the frisbee up', got >= 0);
     await g.eval(`window.__debugCam.clear();`);
     await g.eval(AIM(3.0, 0.12));
@@ -213,7 +231,7 @@ export default {
     const fris = await g.waitFor(
       `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
         return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('frisbee')); })()`,
-      { timeout: 20000 },
+      { timeout: EDIT_WAIT_MS },
     );
     const dist = await g.eval(`
       const { CELL, HALF } = await import('/src/constants.ts');

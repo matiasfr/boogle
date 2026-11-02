@@ -4,7 +4,7 @@
 // on the built site too: `npm run scenario -- smoke --url https://boogle.club/`.
 // Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
 // else a fresh smoke-<random> one; never a friend's room.
-import { toss, MET, TOSS_WAIT_MS, roles, hashesAtOneTick } from './lib/world.ts';
+import { toss, MET, EDIT_WAIT_MS, roles, hashesAtOneTick } from './lib/world.ts';
 import type { T } from './run.ts';
 import type { Game } from '../look/lib.ts';
 
@@ -39,7 +39,7 @@ export default {
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
     const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
     const sent = await client.eval(`return ${toss(1, 'Date.now() % 1000')};`);
-    const landed = await host.waitFor(item, { timeout: TOSS_WAIT_MS });
+    const landed = await host.waitFor(item, { timeout: EDIT_WAIT_MS });
     t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 
     // The client throws the ball: it takes ownership and the host watches it fly.
