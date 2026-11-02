@@ -16,8 +16,8 @@ const sites = Object.keys(found)
   .sort()
   .map((path) => {
     const id = path.split('/').at(-2)!;
-    placeSite(id, found[path].default);
-    return { id, ...found[path].default };
+    placeSite(id, found[path]!.default);
+    return { id, ...found[path]!.default };
   });
 
 export const island = createIsland(sites);

@@ -121,33 +121,33 @@ function compile(stamp: Stamp, frame: Frame, groundY: number) {
     const ext = Math.sqrt(hx * hx + hz * hz);
     bounds = [cx - ext, cz - ext, cx + ext, cz + ext];
   } else if (stamp.shape === 'path') {
-    const pts = stamp.points!.map(([lx, lz, y]) => [...frame.toWorld(lx, lz), y ?? 0]);
+    const pts = stamp.points!.map(([lx, lz, y]) => [...frame.toWorld(lx!, lz!), y ?? 0]);
     const half = stamp.w! / 2;
     sdf = (x, z) => {
       let best = Infinity,
-        y = pts[0][2];
+        y = pts[0]![2];
       for (let k = 0; k + 1 < pts.length; k++) {
-        const a = pts[k],
-          b = pts[k + 1];
-        const s = segDist(x, z, a[0], a[1], b[0], b[1]);
+        const a = pts[k]!,
+          b = pts[k + 1]!;
+        const s = segDist(x, z, a[0]!, a[1]!, b[0]!, b[1]!);
         if (s.d < best) {
           best = s.d;
-          y = a[2] + (b[2] - a[2]) * s.t;
+          y = a[2]! + (b[2]! - a[2]!) * s.t;
         }
       }
       return { sd: best - half, y };
     };
-    const xs = pts.map((p) => p[0]),
-      zs = pts.map((p) => p[1]);
+    const xs = pts.map((p) => p[0]!),
+      zs = pts.map((p) => p[1]!);
     bounds = [Math.min(...xs) - half, Math.min(...zs) - half, Math.max(...xs) + half, Math.max(...zs) + half];
   } else throw new Error(`stamp: unknown shape ${stamp.shape}`);
-  const box = [bounds[0] - fade, bounds[1] - fade, bounds[2] + fade, bounds[3] + fade];
+  const box = [bounds[0]! - fade, bounds[1]! - fade, bounds[2]! + fade, bounds[3]! + fade];
   const op = (['set', 'add', 'min', 'max'] as const).find((k) => stamp[k] !== undefined) ?? null;
   const value = op && stamp[op];
   return {
     op,
     weight(x: number, z: number) {
-      if (x < box[0] || z < box[1] || x > box[2] || z > box[3]) return null;
+      if (x < box[0]! || z < box[1]! || x > box[2]! || z > box[3]!) return null;
       const r = sdf(x, z);
       const w = 1 - smoothstep(0, fade, r.sd);
       if (w <= 0) return null;
@@ -205,15 +205,15 @@ export function createIsland(sites: Site[]) {
           const [lx] = p.frame.toLocal(x, z);
           const row = lx / p.stripes - Math.floor(lx / p.stripes);
           const dark = row < 0.5 ? 0.82 : 1;
-          rgb = [rgb[0] * dark, rgb[1] * dark, rgb[2] * dark];
+          rgb = [rgb[0]! * dark, rgb[1]! * dark, rgb[2]! * dark];
         }
         const a = r.w * p.strength;
-        if (!out) out = [rgb[0], rgb[1], rgb[2], a];
+        if (!out) out = [rgb[0]!, rgb[1]!, rgb[2]!, a];
         else {
-          out[0] += (rgb[0] - out[0]) * a;
-          out[1] += (rgb[1] - out[1]) * a;
-          out[2] += (rgb[2] - out[2]) * a;
-          out[3] = Math.max(out[3], a);
+          out[0]! += (rgb[0]! - out[0]!) * a;
+          out[1]! += (rgb[1]! - out[1]!) * a;
+          out[2]! += (rgb[2]! - out[2]!) * a;
+          out[3] = Math.max(out[3]!, a);
         }
       }
       return out;

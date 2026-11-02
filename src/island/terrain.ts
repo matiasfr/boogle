@@ -14,7 +14,7 @@ import { freezeStatic } from '../render/instances.ts';
 export const heights: number[][] = [];
 for (let i = 0; i < GRID_RES; i++) {
   const col = new Array(GRID_RES);
-  for (let j = 0; j < GRID_RES; j++) col[j] = baseCm[i * GRID_RES + j] / 100;
+  for (let j = 0; j < GRID_RES; j++) col[j] = baseCm[i * GRID_RES + j]! / 100;
   heights.push(col);
 }
 
@@ -34,7 +34,7 @@ export function groundHeight(x: number, z: number) {
     j = Math.floor(fj),
     u = fi - i,
     v = fj - j;
-  return lerp(lerp(heights[i][j], heights[i + 1][j], u), lerp(heights[i][j + 1], heights[i + 1][j + 1], u), v);
+  return lerp(lerp(heights[i]![j]!, heights[i + 1]![j]!, u), lerp(heights[i]![j + 1]!, heights[i + 1]![j + 1]!, u), v);
 }
 
 const WET = new THREE.Color('#c9ad78'),
@@ -75,8 +75,8 @@ function paintVertex(out: Float32Array, o: number, k: number, x: number, h: numb
   c.lerp(ROCK, smoothstep(11, 22, h) * 0.55 * grassy); // the massif turns stony towards the top
   c.lerp(SAND, 1 - smoothstep(COURT.r - 1, COURT.r + 0.5, Math.hypot(x - COURT.x, z - COURT.z)));
   const pp = poiPaint!;
-  const pa = pp[k * 4 + 3];
-  if (pa > 0) c.lerp(tmpP.setRGB(pp[k * 4], pp[k * 4 + 1], pp[k * 4 + 2], THREE.SRGBColorSpace), pa);
+  const pa = pp[k * 4 + 3]!;
+  if (pa > 0) c.lerp(tmpP.setRGB(pp[k * 4]!, pp[k * 4 + 1]!, pp[k * 4 + 2]!, THREE.SRGBColorSpace), pa);
   const i = k % GRID_RES,
     j = (k - i) / GRID_RES;
   if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
@@ -90,10 +90,10 @@ function paintVertex(out: Float32Array, o: number, k: number, x: number, h: numb
 function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number) {
   const n = GRID_RES;
   const k = j * n + i;
-  const pos = geo.attributes.position.array as Float32Array,
-    nrm = geo.attributes.normal.array as Float32Array,
-    col = geo.attributes.color.array as Float32Array;
-  const h = heights[i][j];
+  const pos = geo.attributes.position!.array as Float32Array,
+    nrm = geo.attributes.normal!.array as Float32Array,
+    col = geo.attributes.color!.array as Float32Array;
+  const h = heights[i]![j]!;
   pos[o * 3] = i * CELL - HALF;
   pos[o * 3 + 1] = h;
   pos[o * 3 + 2] = HALF - j * CELL;
@@ -101,13 +101,13 @@ function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number)
     iw = Math.max(0, i - 1),
     jn = Math.max(0, j - 1),
     js = Math.min(n - 1, j + 1);
-  const dx = (heights[ie][j] - heights[iw][j]) / (2 * CELL);
-  const dz = (heights[i][jn] - heights[i][js]) / (2 * CELL);
+  const dx = (heights[ie]![j]! - heights[iw]![j]!) / (2 * CELL);
+  const dz = (heights[i]![jn]! - heights[i]![js]!) / (2 * CELL);
   const il = 1 / Math.hypot(dx, 1, dz);
   nrm[o * 3] = -dx * il;
   nrm[o * 3 + 1] = il;
   nrm[o * 3 + 2] = -dz * il;
-  paintVertex(col, o, k, pos[o * 3], h, pos[o * 3 + 2], il);
+  paintVertex(col, o, k, pos[o * 3]!, h, pos[o * 3 + 2]!, il);
 }
 
 export function createTerrainMesh() {
@@ -119,7 +119,7 @@ export function createTerrainMesh() {
       const w = Math.min(TILE, n - 1 - ti) + 1,
         h = Math.min(TILE, n - 1 - tj) + 1;
       let top = -Infinity;
-      for (let i = ti; i < ti + w; i++) for (let j = tj; j < tj + h; j++) top = Math.max(top, heights[i][j]);
+      for (let i = ti; i < ti + w; i++) for (let j = tj; j < tj + h; j++) top = Math.max(top, heights[i]![j]!);
       if (top < SEABED + 1.2) continue; // open sea floor: the sea draws over it
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
@@ -162,7 +162,7 @@ export function setTerrainHoles(list: TerrainHole[]) {
     const [ax, ay, az] = h ? h.a : [0, 0, 0],
       [bx, by, bz] = h ? h.b : [0, 0, 0];
     v.set(ax, ay, az, h ? h.r : 0);
-    holeB[k].set(bx, by, bz, h ? h.floor : 0);
+    holeB[k]!.set(bx, by, bz, h ? h.floor : 0);
   });
 }
 const uHoleA = uniformArray(holeA, 'vec4'),

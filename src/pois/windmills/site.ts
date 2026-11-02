@@ -57,7 +57,7 @@ export default {
       strength: 0.9,
     },
     // Cart tracks between the mills and off towards the lighthouse.
-    track([MILLS[0], MILLS[1], MILLS[2]].map((m) => [m.x, m.z])),
+    track([MILLS[0]!, MILLS[1]!, MILLS[2]!].map((m) => [m.x, m.z])),
     track(TRACK),
   ],
   keepOut: [{ r: 32 }],

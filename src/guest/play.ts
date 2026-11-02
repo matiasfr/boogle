@@ -99,7 +99,7 @@ export function stopGuest() {
   me.avatar!.userData.inner.visible = true;
 }
 
-function readStick() {
+function readStick(): [number, number] {
   const k = input.keys;
   let f = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - input.stickY;
   let s = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + input.stickX;

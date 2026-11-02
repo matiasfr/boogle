@@ -13,7 +13,7 @@ export const UNITS = 100; // engine units per metre
 const REACH = 5; // metres around the guest, every height
 const BUCKET = 4; // metres per side of the grid big bodies' triangles are filed in
 
-type P3 = number[]; // [x, y, z]
+type P3 = [number, number, number];
 type Poly = { vertices: P3[]; faces: number[][] };
 // tris: 9 per triangle, world metres; buckets: triangle offsets per BUCKET cell, for big bodies
 type Entry = { shapes: Shape[]; tris: Float32Array; buckets: Map<number, number[]> | null; bounds: Bounds };
@@ -22,7 +22,7 @@ const cache = new WeakMap<Body, Entry>();
 
 function sphereMesh(r: number): Poly {
   const t = (1 + Math.sqrt(5)) / 2;
-  const v = [
+  const corners: P3[] = [
     [-1, t, 0],
     [1, t, 0],
     [-1, -t, 0],
@@ -35,7 +35,8 @@ function sphereMesh(r: number): Poly {
     [t, 0, 1],
     [-t, 0, -1],
     [-t, 0, 1],
-  ].map(([x, y, z]) => {
+  ];
+  const v = corners.map(([x, y, z]): P3 => {
     const l = Math.hypot(x, y, z);
     return [(x / l) * r, (y / l) * r, (z / l) * r];
   });
@@ -105,8 +106,8 @@ function rotate(q: Quat, p: P3) {
   p[2] = z + q.w * tz + (q.x * ty - q.y * tx);
   return p;
 }
-const sub = (a: P3, b: P3) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const cross = (a: P3, b: P3) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const sub = (a: P3, b: P3): P3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a: P3, b: P3): P3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const dot = (a: P3, b: P3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 // Convex shapes are fanned and wound to face outwards; trimeshes keep their own winding.
@@ -114,7 +115,8 @@ function shapeTriangles(shape: Shape, out: number[], place: (p: P3) => P3) {
   if (shape.kind === 'trimesh') {
     const v = shape.vertices,
       idx = shape.indices;
-    for (let i = 0; i < idx.length; i++) out.push(...place([v[idx[i] * 3], v[idx[i] * 3 + 1], v[idx[i] * 3 + 2]]));
+    for (let i = 0; i < idx.length; i++)
+      out.push(...place([v[idx[i]! * 3]!, v[idx[i]! * 3 + 1]!, v[idx[i]! * 3 + 2]!]));
     return;
   }
   const poly =
@@ -126,13 +128,13 @@ function shapeTriangles(shape: Shape, out: number[], place: (p: P3) => P3) {
           ? cylinderMesh(shape.rTop, shape.rBottom, shape.h, shape.segments)
           : null;
   if (!poly) return;
-  const c = [0, 0, 0];
-  for (const p of poly.vertices) for (let k = 0; k < 3; k++) c[k] += p[k] / poly.vertices.length;
+  const c: P3 = [0, 0, 0];
+  for (const p of poly.vertices) for (let k = 0; k < 3; k++) c[k]! += p[k]! / poly.vertices.length;
   for (const face of poly.faces) {
-    const a = poly.vertices[face[0]];
+    const a = poly.vertices[face[0]!]!;
     for (let k = 1; k + 1 < face.length; k++) {
-      let b = poly.vertices[face[k]],
-        d = poly.vertices[face[k + 1]];
+      let b = poly.vertices[face[k]!]!,
+        d = poly.vertices[face[k + 1]!]!;
       if (dot(cross(sub(b, a), sub(d, b)), sub(a, c)) < 0) [b, d] = [d, b];
       for (const p of [a, b, d]) out.push(...place([...p]));
     }
@@ -145,7 +147,7 @@ function bodyTriangles(body: Body, shapes: Shape[]): Entry {
   const out: number[] = [];
   for (const shape of shapes) {
     const off = shape.offset ?? { x: 0, y: 0, z: 0 };
-    const place = (p: P3) => {
+    const place = (p: P3): P3 => {
       if (shape.rotation) rotate(shape.rotation, p);
       p[0] += off.x;
       p[1] += off.y;
@@ -158,17 +160,17 @@ function bodyTriangles(body: Body, shapes: Shape[]): Entry {
   const tris = new Float32Array(out);
   const bounds = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
   for (let t = 0; t < tris.length; t += 3) {
-    bounds.x0 = Math.min(bounds.x0, tris[t]);
-    bounds.x1 = Math.max(bounds.x1, tris[t]);
-    bounds.z0 = Math.min(bounds.z0, tris[t + 2]);
-    bounds.z1 = Math.max(bounds.z1, tris[t + 2]);
+    bounds.x0 = Math.min(bounds.x0, tris[t]!);
+    bounds.x1 = Math.max(bounds.x1, tris[t]!);
+    bounds.z0 = Math.min(bounds.z0, tris[t + 2]!);
+    bounds.z1 = Math.max(bounds.z1, tris[t + 2]!);
   }
   let buckets: Map<number, number[]> | null = null;
   if (tris.length > 9 * 64) {
     buckets = new Map();
     for (let t = 0; t < tris.length; t += 9) {
-      const xs = [tris[t], tris[t + 3], tris[t + 6]],
-        zs = [tris[t + 2], tris[t + 5], tris[t + 8]];
+      const xs = [tris[t]!, tris[t + 3]!, tris[t + 6]!],
+        zs = [tris[t + 2]!, tris[t + 5]!, tris[t + 8]!];
       for (let bx = Math.floor(Math.min(...xs) / BUCKET); bx <= Math.floor(Math.max(...xs) / BUCKET); bx++)
         for (let bz = Math.floor(Math.min(...zs) / BUCKET); bz <= Math.floor(Math.max(...zs) / BUCKET); bz++) {
           const key = (bx + 512) * 1024 + bz + 512;
@@ -230,10 +232,10 @@ export function gatherSurfaces(sim: Sim, x: number, z: number, ox: number, oz: n
       for (let j = j0; j <= j1; j++) {
         const za = HALF - j * CELL,
           zb = za - CELL;
-        const h00 = heights[i][j],
-          h10 = heights[i + 1][j],
-          h01 = heights[i][j + 1],
-          h11 = heights[i + 1][j + 1];
+        const h00 = heights[i]![j]!,
+          h10 = heights[i + 1]![j]!,
+          h01 = heights[i]![j + 1]!,
+          h11 = heights[i + 1]![j + 1]!;
         add(xa, h00, za, xb, h10, za, xa, h01, zb);
         add(xb, h10, za, xb, h11, zb, xa, h01, zb);
       }
@@ -245,15 +247,15 @@ export function gatherSurfaces(sim: Sim, x: number, z: number, ox: number, oz: n
     const { tris, buckets, bounds: bb } = bodyTriangles(body, shapes);
     if (bb.x1 < x0 || bb.x0 > x1 || bb.z1 < z0 || bb.z0 > z1) return;
     const take = (t: number) => {
-      const ax = tris[t],
-        bx = tris[t + 3],
-        cx = tris[t + 6],
-        az = tris[t + 2],
-        bz = tris[t + 5],
-        cz = tris[t + 8];
+      const ax = tris[t]!,
+        bx = tris[t + 3]!,
+        cx = tris[t + 6]!,
+        az = tris[t + 2]!,
+        bz = tris[t + 5]!,
+        cz = tris[t + 8]!;
       if (Math.max(ax, bx, cx) < x0 || Math.min(ax, bx, cx) > x1) return;
       if (Math.max(az, bz, cz) < z0 || Math.min(az, bz, cz) > z1) return;
-      add(ax, tris[t + 1], az, bx, tris[t + 4], bz, cx, tris[t + 7], cz);
+      add(ax, tris[t + 1]!, az, bx, tris[t + 4]!, bz, cx, tris[t + 7]!, cz);
     };
     if (!buckets) {
       for (let t = 0; t < tris.length; t += 9) take(t);

@@ -36,7 +36,7 @@ function march(x: number, y: number, z: number, dx: number, dy: number, dz: numb
 const ceilingAbove = (x: number, y: number, z: number) => y + march(x, y, z, 0, 1, 0);
 const floorBelow = (x: number, y: number, z: number) => y - march(x, y, z, 0, -1, 0);
 // The wall in direction (dx, dz) from a point, pulled back by inset: [x, y, z].
-function wallAt(x: number, y: number, z: number, dx: number, dz: number, inset: number) {
+function wallAt(x: number, y: number, z: number, dx: number, dz: number, inset: number): [number, number, number] {
   const l = Math.sqrt(dx * dx + dz * dz);
   const t = march(x, y, z, dx / l, 0, dz / l);
   return [x + (dx / l) * (t - inset), y, z + (dz / l) * (t - inset)];
@@ -47,8 +47,8 @@ function along(pts: P3[], step: number, from = 0) {
   const out: Step[] = [];
   let carry = from;
   for (let k = 0; k + 1 < pts.length; k++) {
-    const a = pts[k],
-      b = pts[k + 1];
+    const a = pts[k]!,
+      b = pts[k + 1]!;
     const dx = b.x - a.x,
       dz = b.z - a.z;
     const len = Math.sqrt(dx * dx + dz * dz);
@@ -65,7 +65,7 @@ const yawOf = (dx: number, dz: number) => Math.atan2(dx, dz);
 
 // Whether (x, z) is inside chamber n's footprint (grown by pad, as a fraction of its radii).
 const inside = (n: { x: number; z: number; r: number[] }, x: number, z: number, pad = 0.15) =>
-  Math.hypot((x - n.x) / n.r[0], (z - n.z) / n.r[2]) < 1 + pad;
+  Math.hypot((x - n.x) / n.r[0]!, (z - n.z) / n.r[2]!) < 1 + pad;
 
 // How close (x, z) is to the centre line of any tunnel leaving chamber `id`: keeps decor out of the doorways.
 function nearTunnel(id: string, x: number, z: number) {
@@ -73,8 +73,8 @@ function nearTunnel(id: string, x: number, z: number) {
   for (const s of SEGMENTS) {
     if (s.from !== id && s.to !== id) continue;
     for (let k = 0; k + 1 < s.pts.length; k++) {
-      const a = s.pts[k],
-        b = s.pts[k + 1];
+      const a = s.pts[k]!,
+        b = s.pts[k + 1]!;
       const ex = b.x - a.x,
         ez = b.z - a.z;
       const t = Math.max(0, Math.min(1, ((x - a.x) * ex + (z - a.z) * ez) / (ex * ex + ez * ez || 1)));
@@ -198,14 +198,14 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     const h = NODES.hub;
     put(box, h.x, h.y + 1.3, h.z, 0.16, 2.6, 0.16, '#6b4a2c');
     solid(h.x, h.y + 1.3, h.z, 0.1, 1.3, 0.1);
-    const targets = [
+    const targets: [string, string][] = [
       ['mine', 'Old mine'],
       ['pond', 'Pond'],
       ['cellar', 'Cellar'],
       ['south', 'Way out'],
     ];
     targets.forEach(([id, label], k) => {
-      const n = (NODES as Record<string, CaveNode>)[id];
+      const n = (NODES as Record<string, CaveNode>)[id]!;
       const dx = n.x - h.x,
         dz = n.z - h.z;
       const l = Math.hypot(dx, dz);
@@ -229,7 +229,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     const y0 = n.y;
     for (let k = 0; k < count; k++) {
       const a = rng() * Math.PI * 2,
-        d = Math.sqrt(rng()) * n.r[0];
+        d = Math.sqrt(rng()) * n.r[0]!;
       const x = n.x + Math.cos(a) * d,
         z = n.z + Math.sin(a) * d;
       if (caveSd(x, y0 + 1.5, z) > -0.3) continue;
@@ -253,7 +253,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       const yaw = yawOf(p.dx, p.dz);
       put(box, p.x, p.y + 0.05, p.z, 1.7, 0.1, 0.24, k % 3 ? '#5a4330' : '#4e3a2a', 0, yaw);
       if (k + 1 < rail.length) {
-        const n = rail[k + 1];
+        const n = rail[k + 1]!;
         for (const sd of [-0.55, 0.55])
           put(
             box,
@@ -296,7 +296,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       [0.5, -0.45],
       [-0.5, 0.45],
       [0.5, 0.45],
-    ]) {
+    ] satisfies [number, number][]) {
       const s = Math.sin(cart.yaw),
         c = Math.cos(cart.yaw);
       put(wheel, cx + wx * c + wz * s, cy + 0.32, cz - wx * s + wz * c, 1, 1, 1, '#2e2c2a', 0, cart.yaw, Math.PI / 2);
@@ -392,7 +392,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
         : [POND.x + Math.cos(a) * POND.rx * 1.02, 0, POND.z + Math.sin(a) * POND.rz * 1.02];
       if (!inside(pond, x, z)) continue; // looked down a tunnel
       const fy = onWall ? y : floorBelow(x, pond.y + 1, z);
-      const col = colors[k % 3];
+      const col = colors[k % 3]!;
       for (let c = 0; c < 5; c++)
         put(
           crystal,
@@ -481,7 +481,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       for (let col = 0; col < 9; col++) {
         const y = c.y + 0.35 + row * 0.42,
           z = c.z - hz * 0.55 + col * ((hz * 1.1) / 8);
-        const glass = ['#1f4d2b', '#3b1d24', '#264a35'][(row + col) % 3];
+        const glass = ['#1f4d2b', '#3b1d24', '#264a35'][(row + col) % 3]!;
         put(bottle, shelfX + 0.2, y, z, 1, 1, 1, glass, 0, 0, Math.PI / 2);
         put(neck, shelfX + 0.4, y, z, 1, 1, 1, glass, 0, 0, Math.PI / 2);
       }
@@ -501,7 +501,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       [1, -0.45],
       [-1, 0.45],
       [1, 0.45],
-    ])
+    ] satisfies [number, number][])
       put(box, tx + lx, c.y + 0.38, c.z + lz, 0.1, 0.76, 0.1, '#5a3f28');
     solid(tx, c.y + 0.42, c.z, 1.1, 0.42, 0.55);
     put(bottle, tx - 0.5, c.y + 0.98, c.z + 0.1, 1, 1, 1, '#1f4d2b');
@@ -512,7 +512,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       [0.2, -0.2],
       [0.45, 0.15],
       [0.65, -0.1],
-    ]) {
+    ] satisfies [number, number][]) {
       put(candle, tx + lx, c.y + 0.93, c.z + lz, 1, 1, 1, '#f3ead6');
       put(flame, tx + lx, c.y + 1.08, c.z + lz, 1, 1, 1, '#ffcc66', 0, 0, 0, glow);
     }
@@ -535,9 +535,9 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
 
   // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.ts).
   const solidGeo = mergeParts(parts);
-  const sp = solidGeo.attributes.position.array;
+  const sp = solidGeo.attributes.position!.array;
   const amb = new Float32Array(sp.length / 3);
-  for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3], sp[v * 3 + 2]);
+  for (let v = 0; v < amb.length; v++) amb[v] = ambAt(sp[v * 3]!, sp[v * 3 + 2]!);
   solidGeo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   const mat = withCaveAmbient(
     new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.85 }),

@@ -66,7 +66,7 @@ const norm = ([x, z]: [number, number]): [number, number] => {
 // the mouth's outward direction (for node.approach metres inside), and on MOUTH_REACH metres into its trench (it is
 // trimmed there; see index.ts). `cover` is the part under the hill, which needs rock over it.
 export const SEGMENTS = TUNNELS.map(([a, b, bend]) => {
-  const ends = [nodeById[a], nodeById[b]].map((n): { inner: P3; mouth: P3 | null; tail: P3[] } => {
+  const ends = [nodeById[a]!, nodeById[b]!].map((n): { inner: P3; mouth: P3 | null; tail: P3[] } => {
     if (n.kind !== 'mouth') return { inner: { x: n.x, z: n.z, y: n.y }, mouth: null, tail: [] };
     const [ox, oz] = norm(n.out);
     return {
@@ -75,14 +75,14 @@ export const SEGMENTS = TUNNELS.map(([a, b, bend]) => {
       tail: [{ x: n.x + ox * MOUTH_REACH, z: n.z + oz * MOUTH_REACH, y: n.y }],
     };
   });
-  const p = ends[0].inner,
-    q = ends[1].inner;
+  const p = ends[0]!.inner,
+    q = ends[1]!.inner;
   const dx = q.x - p.x,
     dz = q.z - p.z;
   const l = Math.sqrt(dx * dx + dz * dz) || 1;
   const mid = { x: (p.x + q.x) / 2 + (-dz / l) * bend, z: (p.z + q.z) / 2 + (dx / l) * bend, y: (p.y + q.y) / 2 };
-  const cover = [ends[0].mouth, p, mid, q, ends[1].mouth].filter((x): x is P3 => !!x);
-  return { from: a, to: b, pts: [...ends[0].tail.reverse(), p, mid, q, ...ends[1].tail], cover };
+  const cover = [ends[0]!.mouth, p, mid, q, ends[1]!.mouth].filter((x): x is P3 => !!x);
+  return { from: a, to: b, pts: [...ends[0]!.tail.reverse(), p, mid, q, ...ends[1]!.tail], cover };
 });
 
 // Mouth frames: where the tunnel meets the hillside (the portal), and the outward direction.
@@ -148,7 +148,7 @@ const KIND_ZONE: Record<string, number> = { hub: ZONE.HUB, mine: ZONE.MINE, pond
 // Each tunnel takes the zone of a chamber at either end (the hub's own tunnels count as plain tunnel, except the one
 // into the mine); the chambers themselves are their own parts.
 const tunnelZone = (s: { from: string; to: string }) =>
-  KIND_ZONE[nodeById[s.from].kind] ?? KIND_ZONE[nodeById[s.to].kind] ?? ZONE.TUNNEL;
+  KIND_ZONE[nodeById[s.from]!.kind] ?? KIND_ZONE[nodeById[s.to]!.kind] ?? ZONE.TUNNEL;
 const SEG_ZONE = SEGMENTS.map((s) => {
   const z = s.from === 'hub' && s.to === 'mine' ? ZONE.MINE : tunnelZone(s);
   return z === ZONE.HUB ? ZONE.TUNNEL : z;
@@ -166,31 +166,31 @@ const partD = new Float64Array(MAX_PARTS),
 export function networkSd(px: number, py: number, pz: number, out = info) {
   let n = 0;
   for (let si = 0; si < SEGMENTS.length; si++) {
-    const s = SEGMENTS[si];
+    const s = SEGMENTS[si]!;
     for (let k = 0; k + 1 < s.pts.length; k++) {
-      partD[n] = segmentSd(px, py, pz, s.pts[k], s.pts[k + 1]);
-      partZ[n] = SEG_ZONE[si];
+      partD[n] = segmentSd(px, py, pz, s.pts[k]!, s.pts[k + 1]!);
+      partZ[n] = SEG_ZONE[si]!;
       partF[n++] = segFloor;
     }
   }
   for (const node of CHAMBERS) {
     const c = node.kind === 'cellar' ? cellarSd(px, py, pz, node) : ellipsoidSd(px, py, pz, node);
     partD[n] = c - 0.3; // chambers win ties near their walls
-    partZ[n] = KIND_ZONE[node.kind];
+    partZ[n] = KIND_ZONE[node.kind]!;
     partF[n++] = node.y;
   }
   let d = Infinity,
     lo = Infinity;
-  for (let k = 0; k < n; k++) lo = Math.min(lo, partD[k]);
+  for (let k = 0; k < n; k++) lo = Math.min(lo, partD[k]!);
   let wSum = 0,
     floor = 0;
   for (let k = 0; k < n; k++) {
-    const c = partD[k];
+    const c = partD[k]!;
     d = smin(d, c, 1.2);
     const w = Math.exp(-3 * (c - lo));
     wSum += w;
-    floor += w * partF[k];
-    if (c === lo) out.zone = partZ[k];
+    floor += w * partF[k]!;
+    if (c === lo) out.zone = partZ[k]!;
   }
   out.floor = floor / wSum;
   d = Math.max(d, out.floor - py);

@@ -75,7 +75,25 @@ export const quantisePose = (p: number[]) =>
   p.map((v, i) => (i < POSE_INTS ? v : i < SCALE_AT ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100));
 
 // The wasm's exports (native/guest/include/shim.h); every entry takes and returns plain numbers.
-type Exports = { memory: WebAssembly.Memory } & Record<string, (...args: number[]) => number>;
+type ExportName =
+  | 'guest_init'
+  | 'guest_state'
+  | 'guest_surface_buffer'
+  | 'guest_surface_capacity'
+  | 'guest_vertex_buffer'
+  | 'guest_pose_buffer'
+  | 'guest_anim_bank'
+  | 'guest_load_surfaces'
+  | 'guest_spawn'
+  | 'guest_teleport'
+  | 'guest_shift'
+  | 'guest_input'
+  | 'guest_tick'
+  | 'guest_render_pose'
+  | 'guest_render_dino'
+  | 'guest_dino_anim_length'
+  | 'guest_vertex_count';
+type Exports = { memory: WebAssembly.Memory } & Record<ExportName, (...args: number[]) => number>;
 export type Sim = Awaited<ReturnType<typeof createSim>>;
 
 let pending: Promise<Sim> | null = null;
@@ -112,16 +130,16 @@ async function createSim() {
       e.guest_input(stickX, stickY, buttons, camYaw),
     tick: () => e.guest_tick(),
     state: () => ({
-      x: stateF[0],
-      y: stateF[1],
-      z: stateF[2],
-      vx: stateF[3],
-      vy: stateF[4],
-      vz: stateF[5],
-      faceYaw: stateI[8],
-      action: stateI[9] >>> 0,
-      particles: stateI[10] >>> 0,
-      flags: stateI[11] >>> 0,
+      x: stateF[0]!,
+      y: stateF[1]!,
+      z: stateF[2]!,
+      vx: stateF[3]!,
+      vy: stateF[4]!,
+      vz: stateF[5]!,
+      faceYaw: stateI[8]!,
+      action: stateI[9]! >>> 0,
+      particles: stateI[10]! >>> 0,
+      flags: stateI[11]! >>> 0,
     }),
     // This player's pose after the last tick, as plain numbers for presence.
     pose: () =>
@@ -130,8 +148,8 @@ async function createSim() {
       ),
     // Draws another player's pose (from pose()); then verts holds it.
     renderPose(p: number[]) {
-      for (let i = 0; i < POSE_INTS; i++) poseIn[i] = p[i] | 0;
-      for (let i = POSE_INTS; i < POSE_LEN; i++) poseInF[i] = +p[i] || (i >= SCALE_AT ? 1 : 0); // no zero scales
+      for (let i = 0; i < POSE_INTS; i++) poseIn[i] = p[i]! | 0;
+      for (let i = POSE_INTS; i < POSE_LEN; i++) poseInF[i] = +p[i]! || (i >= SCALE_AT ? 1 : 0); // no zero scales
       e.guest_render_pose();
     },
     // Draws the dino: animation 0 idle, 1 walk, 2 jump; frame wraps at the animation's length.

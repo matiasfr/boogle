@@ -8,13 +8,13 @@ export const ROM_EXT = ['.z64', '.n64', '.v64']; // big-endian, word-swapped, by
 const ROM_SIZE = 8 * 1024 * 1024;
 const ANIMS_AT = 0x4ec000;
 
-const be32 = (b: Uint8Array, i: number) => ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
+const be32 = (b: Uint8Array, i: number) => ((b[i]! << 24) | (b[i + 1]! << 16) | (b[i + 2]! << 8) | b[i + 3]!) >>> 0;
 
 // .z64 is big-endian; .v64 swaps each 16-bit word and .n64 each 32-bit word.
 export function toBigEndian(rom: Uint8Array) {
   const swap = (size: number) => {
     const out = new Uint8Array(rom.length);
-    for (let i = 0; i < rom.length; i += size) for (let k = 0; k < size; k++) out[i + k] = rom[i + size - 1 - k];
+    for (let i = 0; i < rom.length; i += size) for (let k = 0; k < size; k++) out[i + k] = rom[i + size - 1 - k] ?? 0;
     return out;
   };
   if (rom[0] === 0x37 && rom[1] === 0x80) return swap(2);
@@ -41,12 +41,12 @@ export function mio0(src: Uint8Array, at: number) {
     word = (word << 1) >>> 0;
     bits--;
     if (literal) {
-      out[n++] = src[raw++];
+      out[n++] = src[raw++]!;
     } else {
-      const v = (src[comp] << 8) | src[comp + 1];
+      const v = (src[comp]! << 8) | src[comp + 1]!;
       comp += 2;
       const back = (v & 0xfff) + 1;
-      for (let k = (v >> 12) + 3; k > 0 && n < size; k--, n++) out[n] = out[n - back];
+      for (let k = (v >> 12) + 3; k > 0 && n < size; k--, n++) out[n] = out[n - back]!;
     }
   }
   return out;

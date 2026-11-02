@@ -118,7 +118,7 @@ export async function showRealDino(rom: RomPieces) {
   if (dino.real) return;
   const group = dino.group ?? build();
   const mesh = createModelMesh();
-  group.children[0].visible = false;
+  group.children[0]!.visible = false;
   group.add(mesh);
   dino.real = { mesh, sim, frame: 0, drawnAt: -1e9, blinkAt: 0 };
   dino.height = 2.1;
@@ -141,7 +141,7 @@ export function updateDino(camera: THREE.Camera, now: number) {
   const t = (now - dino.hopAt) / 1000;
   group.position.y = dino.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
   if (dino.real) drawReal(camera, now, dino.real);
-  else group.children[0].scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
+  else group.children[0]!.scale.y = 1 + Math.sin(now / 420) * 0.015; // breathing
   const b = dino.bubble;
   if (!b || b.hidden) return;
   if (now > dino.bubbleUntil) {
