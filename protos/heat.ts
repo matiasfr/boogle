@@ -55,7 +55,7 @@ function view(list: Sitting[]) {
     z1 = Math.max(z1, z);
   };
   for (const s of list) {
-    for (let i = 0; i < s.p.length; i += 4) add(s.p[i + 1], s.p[i + 2]);
+    for (let i = 0; i < s.p.length; i += 4) add(s.p[i + 1]!, s.p[i + 2]!);
     for (const m of s.marks) add(m.x, m.z);
   }
   if (!Number.isFinite(x0)) return { x: MAP.x0, z: MAP.z0, w: MAP.w, h: MAP.w * ASPECT };
@@ -89,7 +89,7 @@ function draw(canvas: HTMLCanvasElement, list: Sitting[], on: Set<Layer>) {
     let max = 0;
     for (const s of list)
       for (let i = 0; i < s.p.length; i += 4) {
-        const key = `${Math.floor(s.p[i + 1] / CELL)},${Math.floor(s.p[i + 2] / CELL)}`;
+        const key = `${Math.floor(s.p[i + 1]! / CELL)},${Math.floor(s.p[i + 2]! / CELL)}`;
         const n = (cells.get(key) ?? 0) + 1;
         cells.set(key, n);
         max = Math.max(max, n);
@@ -98,7 +98,7 @@ function draw(canvas: HTMLCanvasElement, list: Sitting[], on: Set<Layer>) {
       const [cx, cz] = key.split(',').map(Number);
       const t = Math.sqrt(n / max); // a square-root ramp, so a cell passed once still shows
       g.fillStyle = `hsla(${50 - 50 * t}, 100%, ${55 - 10 * t}%, ${0.45 + 0.5 * t})`;
-      g.fillRect(X(cx * CELL), Z(cz * CELL), CELL * k + 0.5, CELL * k + 0.5);
+      g.fillRect(X(cx! * CELL), Z(cz! * CELL), CELL * k + 0.5, CELL * k + 0.5);
     }
     const last = list.at(-1);
     if (last && last.p.length > 4) {
@@ -107,9 +107,9 @@ function draw(canvas: HTMLCanvasElement, list: Sitting[], on: Set<Layer>) {
       g.lineJoin = 'round';
       g.beginPath();
       for (let i = 0; i < last.p.length; i += 4) {
-        const x = X(last.p[i + 1] + 0.5),
-          z = Z(last.p[i + 2] + 0.5);
-        const jump = i > 0 && Math.hypot(last.p[i + 1] - last.p[i - 3], last.p[i + 2] - last.p[i - 2]) > 40;
+        const x = X(last.p[i + 1]! + 0.5),
+          z = Z(last.p[i + 2]! + 0.5);
+        const jump = i > 0 && Math.hypot(last.p[i + 1]! - last.p[i - 3]!, last.p[i + 2]! - last.p[i - 2]!) > 40;
         if (i === 0 || jump) g.moveTo(x, z);
         else g.lineTo(x, z);
       }
@@ -119,9 +119,9 @@ function draw(canvas: HTMLCanvasElement, list: Sitting[], on: Set<Layer>) {
   if (on.has('idled'))
     for (const s of list)
       for (let i = 0; i < s.idle.length; i += 4) {
-        const r = Math.max(4 * u, Math.min(10, 1 + Math.sqrt(s.idle[i + 3]) * 0.8) * k);
+        const r = Math.max(4 * u, Math.min(10, 1 + Math.sqrt(s.idle[i + 3]!) * 0.8) * k);
         g.beginPath();
-        g.arc(X(s.idle[i + 1] + 0.5), Z(s.idle[i + 2] + 0.5), r, 0, Math.PI * 2);
+        g.arc(X(s.idle[i + 1]! + 0.5), Z(s.idle[i + 2]! + 0.5), r, 0, Math.PI * 2);
         g.fillStyle = 'rgba(110,80,200,0.35)';
         g.fill();
         g.strokeStyle = 'rgba(80,50,170,0.9)';

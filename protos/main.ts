@@ -72,7 +72,7 @@ function card(p: Proto): HTMLElement {
     const nameIn = el('input', 'name');
     nameIn.placeholder = `${ph[1]}`;
     nameIn.value = s.name;
-    nameIn.setAttribute('aria-label', ph[1]);
+    nameIn.setAttribute('aria-label', ph[1]!);
     nameIn.addEventListener('input', () => {
       save(p.id, { name: nameIn.value });
       setHref(nameIn.value);
