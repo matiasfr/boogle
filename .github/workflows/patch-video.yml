@@ -5,7 +5,8 @@ name: Patch video
 # list is a working file in .look/, never committed: the release keeps the video. Then this workflow publishes the
 # video as a release with a share page (dev/video/publish.ts) and posts the link in the "Patch videos" issue,
 # mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
-# Run it by hand from the Actions tab; `force` skips the cheap commit-count gate (Claude still judges the features).
+# Run it by hand from the Actions tab; `force` skips the cheap commit-count gate (Claude still judges the features),
+# and `notes` gives that one run the owner's instructions (say, to feature a prototype).
 
 on:
   schedule:
@@ -16,6 +17,10 @@ on:
         description: Skip the commit-count gate
         type: boolean
         default: false
+      notes:
+        description: The owner's instructions for this run (they win over the usual rules)
+        type: string
+        default: ''
 
 permissions:
   contents: write # release
@@ -95,6 +100,9 @@ jobs:
               running. Bash is limited to the allowed commands, one per call (no `&&`, `;` or redirection): use the
               Write and Edit tools to create, change or rename files.
             - End with a short summary: features covered, anything the reviewer flagged but couldn't fix.
+
+            The owner's notes for this run, if any; where they conflict with anything above, they win:
+            ${{ inputs.notes }}
 
       - name: Keep the cut and contact sheets
         if: always() && steps.gate.outputs.go
