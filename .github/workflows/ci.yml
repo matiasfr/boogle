@@ -29,6 +29,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run lint
+      - run: npm run typecheck
       # format:check is not enforced: the repo is Prettier-clean and Claude Code's hook formats each edited file,
       # but a red main for whitespace isn't worth it yet.
       - run: npm run build
