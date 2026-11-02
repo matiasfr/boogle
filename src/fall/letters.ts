@@ -4,11 +4,18 @@
 import * as THREE from 'three/webgpu';
 import { groundHeight } from '../island/heights.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
+import { protoV } from '../proto/flags.ts';
 import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
 import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 import { FWD, RIGHT, TARGET, UP } from './stage.ts';
+
+/** The title hangs in the sky, between the cloud and the ground, and you smash through it (`&v=air`, being compared with
+ * crashing into it on the ground). */
+export const AIR = protoV('fall') === 'air';
+/** How high it hangs: about 1.5 s of reading after you leave the cloud. */
+export const TITLE_Y = TARGET.y + 55;
 
 const H = 3.8, // m tall
   W = 2.7, // m wide
@@ -69,7 +76,7 @@ const p4 = new THREE.Vector3();
 const s4 = new THREE.Vector3();
 const zAxis = new THREE.Vector3(0, 0, 1);
 
-type Letter = { mesh: THREE.Mesh; shapes: Shape[] };
+type Letter = { mesh: THREE.Mesh; shapes: Shape[]; rel: THREE.Vector3; ring: THREE.Vector3; spin: THREE.Quaternion };
 
 defineKind('fall-sign', {});
 defineKind('fall-letter', { update: 20 });
@@ -95,7 +102,8 @@ function letterOf(ch: string): { geo: THREE.BufferGeometry; shapes: Shape[] } {
 }
 
 // The sign's face looks up and back at you: x along the word, y up its lean, z out of its face.
-const LEAN = UP.clone().multiplyScalar(Math.cos(TILT)).addScaledVector(FWD, Math.sin(TILT));
+const tilt = AIR ? (66 * Math.PI) / 180 : TILT; // in the air, faced further up at you falling on it
+const LEAN = UP.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(FWD, Math.sin(tilt));
 const FACE = new THREE.Vector3().crossVectors(RIGHT, LEAN);
 const POSE = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(RIGHT, LEAN, FACE));
 
@@ -105,14 +113,25 @@ const postParts: THREE.BufferGeometry[] = [];
 [...WORD].forEach((ch, k) => {
   const along = (k - (WORD.length - 1) / 2) * (W + GAP);
   const foot = TARGET.clone().addScaledVector(RIGHT, along);
-  foot.y = groundHeight(foot.x, foot.z);
+  foot.y = AIR ? TITLE_Y : groundHeight(foot.x, foot.z);
   const { geo, shapes } = letterOf(ch);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.copy(foot).addScaledVector(LEAN, H / 2 + 0.05);
   mesh.quaternion.copy(POSE);
   mesh.castShadow = true;
   sign.add(mesh);
-  letters.push({ mesh, shapes });
+  // Falling with you: a loose ring, the word's order still roughly left to right, and each turning its own way.
+  const across = (k - (WORD.length - 1) / 2) * 2.3;
+  const ring = RIGHT.clone()
+    .multiplyScalar(across)
+    .addScaledVector(FWD, 2 + Math.random() * 3)
+    .addScaledVector(UP, Math.random() * 3 - 1.5);
+  const spin = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
+    0.8 + Math.random() * 1.4,
+  );
+  letters.push({ mesh, shapes, rel: new THREE.Vector3(), ring, spin });
+  if (AIR) return;
   // A post holding it up from behind.
   const height = H * 0.62 * Math.cos(TILT);
   const post = foot.clone().addScaledVector(FWD, H * 0.62 * Math.sin(TILT) + DEPTH);
@@ -195,15 +214,32 @@ function flyingLetter(l: Letter, body: Body, now: number, k: number): GameEntity
   return entity;
 }
 
+/** `&v=air`: you've gone through the title, at `at`. The letters break loose and fall with you. */
+export function hitTitle(at: THREE.Vector3) {
+  for (const l of letters) l.rel.copy(l.mesh.position).sub(at);
+}
+const turn = new THREE.Quaternion();
+/** Each frame until you land: they drift into a ring around you, tumbling, at your speed. */
+export function fallWithYou(at: { x: number; y: number; z: number }, dt: number) {
+  const pull = 1 - Math.exp(-dt * 1.7);
+  for (const l of letters) {
+    l.rel.lerp(l.ring, pull);
+    l.mesh.position.set(at.x + l.rel.x, at.y + l.rel.y, at.z + l.rel.z);
+    turn.identity().slerp(l.spin, dt);
+    l.mesh.quaternion.premultiply(turn);
+  }
+}
+
 /** You hit it, at `at`: every letter gets a body and leaves. */
 export function blastLetters(at: THREE.Vector3, now: number) {
   letters.forEach((l, k) => {
+    if (AIR) l.mesh.position.y = Math.max(l.mesh.position.y, groundHeight(l.mesh.position.x, l.mesh.position.z) + 1.6);
     const body = createBody({
       mass: MASS,
       group: GROUP.DEFAULT,
       mask: GROUP.SCENERY | GROUP.CAVE, // nothing but the ground for now (HOLD_OFF_S)
       position: { x: l.mesh.position.x, y: l.mesh.position.y, z: l.mesh.position.z },
-      rotation: { x: POSE.x, y: POSE.y, z: POSE.z, w: POSE.w },
+      rotation: { x: l.mesh.quaternion.x, y: l.mesh.quaternion.y, z: l.mesh.quaternion.z, w: l.mesh.quaternion.w },
       shapes: l.shapes,
       linearDamping: 0.08,
       angularDamping: 0.15,
@@ -214,7 +250,8 @@ export function blastLetters(at: THREE.Vector3, now: number) {
     // Out from you, and forward, so they tumble down where you'll see them when you look up.
     const out = 2.5 + Math.random() * 4,
       ahead = 3 + Math.random() * 4;
-    body.velocity.set((dx / d) * out + FWD.x * ahead, 6 + Math.random() * 5, (dz / d) * out + FWD.z * ahead);
+    const up = AIR ? -5 - Math.random() * 5 : 6 + Math.random() * 5; // from the air, they come down on top of you
+    body.velocity.set((dx / d) * out + FWD.x * ahead, up, (dz / d) * out + FWD.z * ahead);
     const spin = () => (Math.random() - 0.5) * 11;
     body.angularVelocity.set(spin(), spin(), spin());
     l.mesh.removeFromParent(); // spawn parents it to the scene; it's posed in the world already, as the sign has no offset
