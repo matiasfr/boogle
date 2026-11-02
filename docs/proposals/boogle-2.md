@@ -57,6 +57,11 @@ These are standing preferences from the thread.
 
 ### Trains and the world
 
+- **2026-11-01, laying a section runs quick** (about 14 s; full run-through: "Yes it's wonderful. Quick feels pretty good"). Fix the jump at the end of the laying animation.
+- **2026-11-01, construction you can watch is how things get built** ("I absolutely love this kind of animation"). The piece-by-piece build leaves the prototype for the game.
+- **2026-11-01, the island and the line get redesigned once activities and locales are clearer** (owner: the current island "is not in line with the overall vision"; the line should be meaningful). The layout lab is parked; lighthouse-line is out. Until then, level work stays greybox.
+- **2026-11-01, riding must be more than standing on a moving platform** (ride: "passably decent … we could one up this"). Research how games make train rides interesting before the next ride pass.
+
 - **2026-11-01, an archipelago, not one big open map.** Islands vary in size (home small and dense, later islands several times larger, the mainland port the one big walkable place). Reaching a new island is an era's payoff, telegraphed by seeing it across the water. Connections are physical (reclaimed land, bridges, causeways you can walk and drive), so late game reads as one connected place. Why: the 29 October playtest found a big island empty; the sea gives natural loading boundaries (architecture-fit, "A world bigger than one island").
 
 - **Trains are ride-only and timetabled.** Their position is a pure function of the world tick, so they cost nothing on the network. You don't drive them.
@@ -67,6 +72,9 @@ These are standing preferences from the thread.
 - **The rail spike comes first,** and its job is to prove that riding feels good.
 
 ### Progress and rewards
+
+- **2026-11-01, the back bundle stays the way to haul** ("Default is quite good"). The magnet he loved moves to pickups elsewhere, later, and pulls without a button.
+- **2026-11-01, double jump and glide are unlocks, not starting moves** ("abilities that should be unlocked later in the game"), for platforming and a sense of expanded movement.
 
 - **2026-11-01, carrying is a simple back bundle** (haul playtest, solo). Logs sit on the character's back in a compact bundle that fills out rather than towering; no sway, and so no jump spill (nothing would warn you of it). Don't over-index on Death Stranding's carrying. Replaces the wobbly stack, see Changed.
 
@@ -104,6 +112,9 @@ These are standing preferences from the thread.
 
 ### Look
 
+- **2026-11-01, the graphics target is the look lab's "high" preset** (he liked it best), to be compared with the toybox look from the owner's other session; the lab's own toybox preset is "just ok".
+- **2026-11-01, the UI that answers leaves the prototype for the game** ("a massive improvement").
+
 - **2026-11-01, night stays light, moonlit** (owner: "night mode feels too dark, it should feel light still maybe moonlit"). A cool, bright moonlight you can play by, not darkness. **The sun and moon lose their faces** (owner: "they can be a bit more real").
 
 ### Controls
@@ -128,6 +139,9 @@ These are standing preferences from the thread.
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
 - **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
 
+- **2026-11-01, the soapbox gets one more try, then is cut** ("no" twice: "needs to feel more like a suspensiony RC car"; bumper or trigger for throttle and brake). If the RC-car version is still a no, driving waits.
+- **2026-11-01, mini-games:** topple is retired ("not particularly engaging"); hop leads (platforming as a mini-game); golf stays wanted (he and his friends love mini golf) but needs a real design in the mini-games pass.
+- **2026-11-01, the era question waits for depth** ("the world should look beautiful at each age … not enough depth to tell meaningfully"). It's asked again once eras 1–2 have real level design.
 - **Next deliverable:** the vertical slice for eras 1–2, built on the 0.1 haul loop.
 - **Mini-games get their own design pass later.** Court ball and the other venues wait for it.
 
@@ -154,6 +168,8 @@ These are standing preferences from the thread.
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
 6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
 7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
+
+8. **Fast travel** (board playtest): is every station a fast-travel point, or is fast travel a macro jump between locations, so trains stay the way to get around nearby? And should the trains be faster? (The board's hop vs ride was unclear.)
 
 ## Next: find the fun (agreed direction, 1 November)
 

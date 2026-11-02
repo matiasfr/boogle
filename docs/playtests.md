@@ -64,3 +64,14 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Who: Matias, solo.
 - Felt off: night is too dark; it should still feel light, moonlit. The sun and moon don't need faces; a bit more real.
 - After: a brighter moonlit night and faceless sun and moon (boogle-2.md, Decided, Look).
+
+## 2026-11-01 (full run-through, `/?play`)
+- Who: Matias, solo, the `?play` playlist. Verdicts reached the server on their own (first use).
+- Yes: haul default ("quite good"; loved the magnet, but for pickups elsewhere and with no button); lay quick ("wonderful"); build ("absolutely love this kind of animation"); UI that answers ("a massive improvement"); board hop (loves the idea; presentation could improve); moves (but as later unlocks); look "high" (liked a toybox look from another session more than this toybox preset); era ("electric age?", but each age should look beautiful and there isn't enough depth yet to judge).
+- Assets: could tell the Blender scaffold by the plank texture and bevel; both great, the animation fantastic.
+- Can't tell: ride ("passably decent"; one-up it; research train riding in games); minis (hop liked most, golf wanted but not in this form, topple not engaging); layout (the island doesn't match the vision; lighthouse-line doesn't make sense for the train; redesign island and map once activities and locales are clearer).
+- No: soapbox, twice ("needs to feel more like a suspensiony RC car"; bumper or trigger for throttle and brake); hero ("not yet", the other session's track).
+- No verdict: the wagon's variants.
+- Broke: a jump at the end of the laying animation.
+- After: decisions in boogle-2.md (Decided, 1 November): quick laying, construction and UI that answers into the game, RC-car soapbox try, topple retired, layout parked, moves as unlocks, train-riding research; fast travel is open question 8.
+
