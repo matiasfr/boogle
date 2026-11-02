@@ -11,6 +11,7 @@
 //   roomMemory(room)        what the welcome items remembered about `room` at the last visit, or null
 //   addWelcomeItem(item)    one more thing a returning player hears about (persistent progress, mail, ... later)
 //   rememberVisit(room)     save { at, room } and every item's save() for `room` (welcome-back.ts, every few seconds)
+//   forgetInRoom(room, key) drop one remembered thing about `room` (Get unstuck, its saved spot)
 //   welcomeLines(then)      each item's line about what changed since `then`, in order, skipping the quiet ones
 //   friendlyName()          a random friendly name for the first-visit card
 //   leaveIsland()           the pause view's Leave: out to the menu page (/menu/), where the game isn't running
@@ -45,6 +46,9 @@ function writeJson(key: string, value: unknown) {
     // full or blocked: the next visit is treated like this one's start
   }
 }
+
+/** Where you last stood, in a room's memory (src/features/return-spot.ts). */
+export const SPOT_KEY = 'spot';
 
 export type LastVisit = { at: number; room: string };
 const okVisit = (v: unknown): v is LastVisit =>
@@ -87,10 +91,12 @@ export function roomMemory(room: string): RoomMemory | null {
   return memories.get(room)!;
 }
 
+// What this visit has remembered so far, per room: an item with nothing new this time keeps its latest value.
+const latest = new Map<string, Record<string, unknown>>();
 export function rememberVisit(room: string, at = Date.now()) {
   if (fresh) return;
   const then = roomMemory(room); // read first, so this visit's welcome still compares with the last one
-  const out: Record<string, unknown> = { ...then?.items };
+  const out: Record<string, unknown> = { ...(latest.get(room) ?? then?.items) };
   for (const it of items) {
     try {
       const v = it.save();
@@ -99,8 +105,17 @@ export function rememberVisit(room: string, at = Date.now()) {
       // the state it reads isn't there yet
     }
   }
+  latest.set(room, out);
   writeJson(ROOM(room), { at, items: out });
   writeJson(LAST, { at, room });
+}
+
+/** Forgets one thing about `room`, now, on disk too: the saved spot, when you asked to get unstuck from it. */
+export function forgetInRoom(room: string, key: string) {
+  const items = { ...(latest.get(room) ?? roomMemory(room)?.items) };
+  delete items[key];
+  latest.set(room, items);
+  writeJson(ROOM(room), { at: Date.now(), items });
 }
 
 export function welcomeLines(then: RoomMemory | null): string[] {

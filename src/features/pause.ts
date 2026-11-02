@@ -11,6 +11,7 @@ import './pause.css';
 import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { COLORS, DEFAULT_ROOM } from '../constants.ts';
+import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
@@ -22,7 +23,9 @@ import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
 import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 import { youEditor } from '../player/you-editor.ts';
-import { leaveIsland } from '../player/arrival.ts';
+import { backToSpawn } from '../entities/player/state.ts';
+import { carry } from '../physics/platforms.ts';
+import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 
@@ -215,7 +218,21 @@ function renderMain() {
   const list = el('div', 'pause-list');
   list.append(resume, controls, room);
   if (canFullscreen()) list.append(fullscreenButton());
-  list.append(soundRow(), leave);
+  list.append(soundRow());
+  // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
+  if (!inputState.seated) {
+    const unstuck = button('Get unstuck', () => {
+      if (me.body) {
+        backToSpawn();
+        carry.x = carry.z = 0;
+        forgetInRoom(getRoomId(), SPOT_KEY);
+      }
+      closePause();
+    });
+    unstuck.dataset.act = 'unstuck';
+    list.append(unstuck);
+  }
+  list.append(leave);
   return list;
 }
 

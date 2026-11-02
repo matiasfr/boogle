@@ -208,10 +208,14 @@ export function groundPlayer() {
 // After the ball's respawn check (src/entities/ball/, -300): falling off the world puts you back at the spawn.
 export function fallRespawn() {
   const b = me.body!;
-  if (b.position.y < -25) {
-    teleport(b, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
-    b.velocity.set(0, 0, 0);
-  }
+  if (b.position.y < -25) backToSpawn();
+}
+
+/** Puts you back at the spawn: falling off the world, or the pause view's Get unstuck. */
+export function backToSpawn() {
+  const b = me.body!;
+  teleport(b, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
+  b.velocity.set(0, 0, 0);
 }
 
 // A deck you ride turns you and the camera with it. Once a frame, as the avatar syncs (./index.ts), so whatever draws

@@ -13,7 +13,7 @@
   and suggests Add to Home Screen; the button then reads Fullscreen anyway (touch only)) and
   Leave (press twice within 3 s). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button. The Room page ends with a You section: a
-  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Under them, Start fresh asks once more, then replays the first visit as someone new. Leave goes to
+  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Get unstuck on the main page puts you back at the usual spawn with one press and forgets your saved spot, and you keep what you carry (it's not there while you're in a vehicle's seat). Under the You section, Start fresh asks once more, then replays the first visit as someone new. Leave goes to
   a small menu page with the game stopped ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
