@@ -25,16 +25,16 @@ it. Its own room, `proto-crossing`, and Local: no ops, states, presence or messa
   silhouette with no colliders.
 - **The sea.** Mostly open: one islet, three rock stacks, one big far islet and a wreck, none of them solid.
 - **Falling off** puts you in the sea. Jumping off the train keeps its speed: you fly alongside it, plunge, and skim on
-  with spray for up to 5 s (about 140 m at 50 m/s). A jump straight up lands you back on your flatbed. In open sea,
+  with spray for about 8 s (one fall from 45 m/s went about 200 m). A jump straight up lands you back on your flatbed. In open sea,
   Interact reads **Back on the line** and puts you on the walkway nearest you.
 
 ## Variants
 
 Each differs in one thing, and all the numbers are in `src/proto/crossing/tuning.ts`.
 
-| | length | cruise | accel | ride (measured) |
+| | length | cruise | accel | ride |
 | --- | --- | --- | --- | --- |
-| default | 1.2 km | 20 m/s | 3 m/s² | 66 s |
+| default | 1.2 km | 20 m/s | 3 m/s² | 64 s |
 | `&v=express` | 1.2 km | 50 m/s | 8 m/s² | 29 s |
 | `&v=vast` | 4 km | 50 m/s | 8 m/s² | 85 s |
 

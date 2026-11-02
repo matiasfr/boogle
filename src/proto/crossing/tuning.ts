@@ -1,6 +1,6 @@
 // The numbers of ?proto=crossing (./index.ts), in one table to change them. Three variants, each differing in one thing:
 // the default against `express` is the same distance with a faster train, `express` against `vast` is the same train
-// with far more sea. Rides: 66 s, 29 s and 85 s. On foot, for comparison: sprint 9.5 m/s (126 s and 7 min), walk 5.6 m/s.
+// with far more sea. Rides: 64 s, 29 s and 85 s. On foot, for comparison: sprint 9.5 m/s (126 s and 7 min), walk 5.6 m/s.
 import { protoV } from '../flags.ts';
 
 export type Crossing = {
