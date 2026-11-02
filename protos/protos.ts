@@ -403,10 +403,10 @@ export const PROTOS: Proto[] = [
     },
     url: '/?proto=assets',
     question: 'Can you tell the Blender-made scaffold from the code-built one?',
-    what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code. Between them a jointed hero rigged by a Blender script: walk up and press Interact to change its outfit (work, castaway, bare), and it waves. &hero=castaway or &hero=bare starts in one; &eyes=googly|flat|bead and &shade=matte|plastic|clay try looks. ?proto=look&look=toybox&hero=bare shows it under the look lab’s presets.',
+    what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code.',
     since: '2026-11-01',
     note: 'The asset pipeline’s first model (docs/plans/asset-pipeline.md).',
-    spawn: { x: 14, z: 27, yaw: 0 }, // the usual spawn, the two bays and the hero in front of you
+    spawn: { x: 14, z: 27, yaw: 0 }, // the usual spawn, the two bays in front of you
   },
   {
     id: 'hero',

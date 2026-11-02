@@ -173,7 +173,7 @@ const RIG = registerAsset({ id: 'hero-rig', url: rigUrl, kind: 'model', priority
 - **Why this scales:** content is never in the first-load graph just because a module imports its URL (today the two
   prototype models are in the bundle graph of the normal game; the worker leaves them out of its precache by
   extension). Adding the hundredth model changes nothing for a player who is not near it.
-- **Registered today:** `scaffold-kit`, `hero-rig`, `hero-outfit-castaway` (all `first` under `?proto=assets`).
+- **Registered today:** `scaffold-kit` (`first` under `?proto=assets`).
   Not yet: the groove prototype's stems (`src/proto/groove/stems.ts`, loaded by its own glob) and the KTX2 transcoder
   (three's `KTX2Loader` resolves it itself; the worker caches it on first use, which is enough).
 - **Next:** a check in `npm run assets -- --check` that every `assets/built/` file is registered once, and sizes from
