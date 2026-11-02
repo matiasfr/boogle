@@ -118,7 +118,12 @@ export const PROTOS: Proto[] = [
     id: 'wagon',
     title: 'Ride: the wagon',
     step: 3,
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-02',
+      verdict: 'I think it’s fine just as a transportation.',
+      next: 'The trackside show and the seat are cut; the wagon stays a ride you stand on. Choosing a single pace comes later.',
+    },
     url: '/?room=proto-wagon&proto=wagon',
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed. On the island the step puts you on its deck.',
@@ -136,16 +141,6 @@ export const PROTOS: Proto[] = [
         name: 'fast',
         url: '/?room=proto-wagon&proto=wagon&v=fast',
         what: 'Lively at double the speed (6.5 m/s): the island rushes past; jump off and you skid in a dust trail.',
-      },
-      {
-        name: 'show',
-        url: '/?room=proto-wagon&proto=wagon&v=show',
-        what: 'Calm, plus three trackside scenes: a crane swings a plank over the line going out, gulls lift both ways, someone at a crossing waves and loses their hat coming back. Notice whether you stay on to see what comes next.',
-      },
-      {
-        name: 'bench',
-        url: '/?room=proto-wagon&proto=wagon&v=bench',
-        what: 'Calm, plus a bench on each flatbed: E sits you, the camera eases side-on and steadies, and the island slides by. Notice whether you just sit and watch.',
       },
     ],
   },
@@ -485,8 +480,6 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'wagon', variant: 'show', why: 'Did you stay on to see what came next?' },
-  { id: 'wagon', variant: 'bench', why: 'Did you sit down and just watch the island go by?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
 ];

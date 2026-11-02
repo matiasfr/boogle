@@ -38,16 +38,12 @@ import { paceIn } from '../../sim/tune.ts';
 import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
-import { wagonShow } from './show.ts';
-import { wagonBench } from './bench.ts';
-import type { WagonCtx } from './ctx.ts';
-import { ON_ISLAND, currentStep, onStep, onVariant, playPanel, protoV } from '../flags.ts';
+import { ON_ISLAND, onStep, onVariant, playPanel, protoV } from '../flags.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
 // is lively's feel at about double the speed, through the room's tuning (`wagonCruise`, `wagonAccel`: a proto- room
-// only, set for the whole room when the page loads; calm and lively put the default pace back). `&v=show` and `&v=bench`
-// are calm's ride plus one thing each (riding extras, below; docs/research/train-riding.md).
+// only, set for the whole room when the page loads; calm and lively put the default pace back).
 const VARIANTS = {
   calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, shake: 0 },
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, shake: 1 },
@@ -71,7 +67,7 @@ const FEEL = {
 // Calm, lively and fast switch live (the bar, src/proto/flags.ts): the feel here, the skid and the room's pace below.
 const SKID = CARRY.skid;
 let paced = false; // the room's pace matches the variant (the panel asks for it)
-const LIVE = ['', 'calm', 'lively', 'fast', 'show', 'bench'];
+const LIVE = ['', 'calm', 'lively', 'fast'];
 onVariant('wagon', LIVE, (v) => {
   VARIANT = variantOf(v);
   Object.assign(FEEL, VARIANTS[VARIANT === 'fast' ? 'lively' : 'calm']);
@@ -454,24 +450,6 @@ onFrame(
   { phase: 'update', order: 7 },
 );
 
-// ---------------------------------------------------------------- riding extras: show, bench
-// Each is calm plus one thing (./show.ts, ./bench.ts), all Local bar the bench's `seat` presence. Both
-// are built with the wagon and switched on with their variant, only while the playlist is on the wagon's step.
-const ctx: WagonCtx = {
-  cars,
-  state: () => w,
-  lineAt,
-};
-const show = wagonShow(ctx),
-  bench = wagonBench(ctx);
-function applyExtras() {
-  const v = currentStep() === 'wagon' ? protoV('wagon') : '';
-  show.setOn(v === 'show');
-  bench.setOn(v === 'bench');
-}
-onStep(applyExtras);
-onVariant('wagon', LIVE, applyExtras);
-
 // Helper-hut freight arrives on the rear flatbed and hops off into the open Track ring (./freight.ts).
 wagonFreight({
   rear: cars[cars.length - 1]!,
@@ -602,6 +580,4 @@ window.__wagon = {
     clock = NaN;
   },
   fakeLaid,
-  show,
-  bench,
 };
