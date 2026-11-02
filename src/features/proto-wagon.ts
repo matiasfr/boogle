@@ -6,3 +6,4 @@ import { isProtoRoom } from '../sim/tune.ts';
 import { protoOn } from '../proto/flags.ts';
 
 if (protoOn('wagon')) void import('../proto/wagon/index.ts').then((m) => m.wagonPanel(isProtoRoom(getRoomId())));
+else if (protoOn('net')) void import('../proto/wagon/index.ts'); // ?proto=net's train: its own timetable, no panel

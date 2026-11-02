@@ -38,7 +38,7 @@ import { paceIn } from '../../sim/tune.ts';
 import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
-import { ON_ISLAND, onStep, onVariant, playPanel, protoV } from '../flags.ts';
+import { ON_ISLAND, onStep, onVariant, playPanel, protoOn, protoV } from '../flags.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
@@ -178,7 +178,10 @@ function timeline(): Seg[] {
   }
   return segs;
 }
+// A prototype that keeps its own timetable (?proto=net: src/proto/net/timetable.ts) replaces all of the above.
+let ownTimetable: ((tick: number) => WagonState | null) | null = null;
 function wagonNow(tick: number): WagonState | null {
+  if (ownTimetable) return ownTimetable(tick);
   const list = timeline();
   for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k]!.from) return at(list[k]!.laid, tick, list[k]!.t0);
   return null;
@@ -194,7 +197,9 @@ function advance(dt: number) {
 }
 
 // ---------------------------------------------------------------- the bodies
-const look = wagonLook(CARS.length - 1);
+// ?proto=net loads the rear flatbed itself (src/proto/net/crates.ts): no fixed crates, drawn or solid.
+const CRATED = !protoOn('net');
+const look = wagonLook(CARS.length - 1, CRATED);
 type Car = {
   spec: CarSpec;
   off: number;
@@ -232,7 +237,7 @@ const cars: Car[] = CARS.map(({ spec, off }, k) => {
     shapes: [
       { kind: 'box', hx: spec.hx, hy, hz: spec.hz },
       // The crates on the last flatbed (axis-aligned: close enough for a greybox); their tops are not a deck.
-      ...(k === CARS.length - 1 ? CRATES : []).map(({ x, z, sz, base }) => ({
+      ...(CRATED && k === CARS.length - 1 ? CRATES : []).map(({ x, z, sz, base }) => ({
         kind: 'box' as const,
         hx: sz / 2,
         hy: sz / 2,
@@ -554,9 +559,10 @@ if (ON_ISLAND) {
   );
 }
 
-// For the look evals (dev/look/evals/wagon.ts).
-window.__wagon = {
+// For the look evals (dev/look/evals/wagon.ts), and for ?proto=net (src/proto/net/).
+export const wagonApi = {
   FEEL,
+  setTimetable: (fn: (tick: number) => WagonState | null) => void (ownTimetable = fn),
   get VARIANT() {
     return VARIANT;
   },
@@ -581,3 +587,4 @@ window.__wagon = {
   },
   fakeLaid,
 };
+window.__wagon = wagonApi;
