@@ -19,7 +19,7 @@ import { getAudio } from '../render/audio.ts';
 import { emit } from '../render/particles.ts';
 import { camera, sky, sun } from '../render/scene.ts';
 import { SUN_DIR } from '../render/sun-dir.ts';
-import { blastLetters, burst } from './letters.ts';
+import { AIR, TITLE_Y, blastLetters, burst, fallWithYou, hitTitle } from './letters.ts';
 import {
   CAR_START,
   DECK_Y,
@@ -44,6 +44,7 @@ const CRUISE = 5, // m/s the cart is already doing behind the card
   LAUNCH_UP = 4, // m/s: a little hop off the end
   BLEND_S = 1, // the camera swinging from your face to behind you
   FALL_PITCH = -1.05, // looking down past your feet
+  TITLE_PITCH = -1.22, // steeper while the title's coming up, so it reads in the middle of the screen
   REST_PITCH = -0.38, // after the landing
   FUNNEL = { base: 1, perMetre: 0.2, firm: 1.5 }, // how far off the sign you can steer, by height, so you can't miss
   DOWN_MS = 1800, // flat with stars. Under 2000: presence `kd` ignores more
@@ -193,7 +194,10 @@ function holdOrSteer() {
     const dx = b.position.x - TARGET.x,
       dz = b.position.z - TARGET.z,
       d = Math.hypot(dx, dz);
-    const r = FUNNEL.base + Math.max(0, b.position.y - TARGET.y) * FUNNEL.perMetre;
+    // `&v=air`: it closes on the title in the sky, and stays loose under it.
+    const r = AIR
+      ? FUNNEL.base + Math.max(0, b.position.y - TITLE_Y) * FUNNEL.perMetre + (titleHit ? 2 : 0)
+      : FUNNEL.base + Math.max(0, b.position.y - TARGET.y) * FUNNEL.perMetre;
     if (d > r) {
       const nx = dx / d,
         nz = dz / d,
@@ -303,6 +307,16 @@ function thump(strength: number) {
 
 const hit = new THREE.Vector3();
 let downSince = 0;
+let titleHit = false;
+function smashTitle() {
+  titleHit = true;
+  const p = me.body!.position;
+  hit.set(p.x, TITLE_Y, p.z);
+  hitTitle(hit);
+  burst(hit, 26, 34);
+  shake = reducedMotion ? 0 : 0.8;
+  thump(0.7);
+}
 let clearProps = 0;
 function land(now: number) {
   state = 'down';
@@ -383,7 +397,10 @@ const director = spawn({
     blendCamera(dt);
 
     if (state === 'fall') {
-      cam.pitch += (FALL_PITCH - cam.pitch) * (1 - Math.exp(-dt * 2.4));
+      if (AIR && !titleHit && b.position.y <= TITLE_Y) smashTitle();
+      if (titleHit) fallWithYou(b.interpolatedPosition, dt);
+      const pitch = AIR && !titleHit ? TITLE_PITCH : FALL_PITCH;
+      cam.pitch += (pitch - cam.pitch) * (1 - Math.exp(-dt * 2.4));
       if (b.position.y - TARGET.y > 8 && !reducedMotion)
         for (let k = 0; k < 3; k++)
           emit({

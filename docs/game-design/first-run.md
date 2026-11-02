@@ -38,6 +38,7 @@
   flies apart, you lie flat with stars (1.8 s; any input stands you up after 0.9 s) and the cart lands next to you 0.8 s
   later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 120 m drop is about 6 s in the air. The controls card waits until you land. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing.
+- **Being compared: the title in the air** (`?proto=fall&v=air`). BOOGLE hangs 55 m up, under the cloud, with nothing on the ground. You smash through it (a burst, a thump and a shake), the letters tumble in a loose ring around you at your speed, and they come down around you after you land, kickable as usual.
 - **History.** `?proto=arrive` (1 Nov 2026; wordless-onboarding recs 1, 2, 3, 8) tried skipping the lobby on every
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
   (merged) on 2 Nov: its direct entry is how returning players arrive now and its rename editor is the pause view's
