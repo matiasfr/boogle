@@ -52,6 +52,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: github-actions # automerge.yml's dispatches; the action refuses a bot actor otherwise
           additional_permissions: |
             actions: read
           claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git checkout -b:*),Bash(git add:*),Bash(git commit:*),Bash(git push -u origin claude/*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
@@ -146,6 +147,7 @@ jobs:
         continue-on-error: true
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: github-actions # automerge.yml's dispatches; the action refuses a bot actor otherwise
           additional_permissions: |
             actions: read
           claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git fetch:*),Bash(git merge:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
