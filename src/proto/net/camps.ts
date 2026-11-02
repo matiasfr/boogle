@@ -24,7 +24,7 @@ const SETTLE = 0.5;
 const FLY_H = 3; // m its arc rises
 
 /** A piece in the camp's frame: x east of its yard's centre, z south. `phase` names when it goes up. */
-type Piece = {
+export type Piece = {
   phase: number;
   x: number;
   y: number;
@@ -36,7 +36,7 @@ type Piece = {
   c: string;
 };
 const SCAFFOLD = 0;
-const poles = (w: number, d: number, h: number): Piece[] =>
+export const poles = (w: number, d: number, h: number): Piece[] =>
   [
     [-1, -1],
     [1, -1],
@@ -52,7 +52,7 @@ const poles = (w: number, d: number, h: number): Piece[] =>
     d: 0.18,
     c: '#c9a86a',
   }));
-const P = (
+export const P = (
   phase: number,
   x: number,
   y: number,
@@ -127,6 +127,8 @@ export type Camp = {
   pile: { x: number; z: number };
   door: { x: number; z: number };
   stack: Smoke | null;
+  from?: { x: number; z: number }; // where its pieces fly in from (default: its stop)
+  flat?: boolean; // every piece level with the yard's centre, not each on the ground under it
 };
 /** Stop k of the line: site k, or the far end of the last section. */
 export const stopAt = (k: number): { x: number; z: number } => {
@@ -165,13 +167,14 @@ export const CAMPS: Camp[] = [
 export const campAt = (stop: number) => CAMPS.find((c) => c.stop === stop);
 
 type View = { set: BoxSet; pieces: Piece[]; at: number[]; t: number; landed: boolean[]; done: boolean; camp: Camp };
-const views = new Map<number, View>();
+const views = new Map<Camp, View>();
 
 function boxesOf(c: Camp): Box[] {
+  if (c.flat) return c.pieces.map((p) => box(c.x, c.z, place(p.x, p.y, p.z, p.w, p.h, p.d, p.yaw ?? 0), p.c));
   return c.pieces.map((p) => box(c.x + p.x, c.z + p.z, place(0, p.y, 0, p.w, p.h, p.d, p.yaw ?? 0), p.c));
 }
 function viewOf(c: Camp): View {
-  let v = views.get(c.stop);
+  let v = views.get(c);
   if (v) return v;
   let t = 0;
   let phase = -1;
@@ -184,7 +187,7 @@ function viewOf(c: Camp): View {
     return t;
   });
   v = { set: makeSet(boxesOf(c)), pieces: c.pieces, at, t: 0, landed: c.pieces.map(() => false), done: false, camp: c };
-  views.set(c.stop, v);
+  views.set(c, v);
   return v;
 }
 
@@ -238,7 +241,7 @@ export function sleepCamps() {
 function updateBuild(v: View, dt: number) {
   if (v.done) return;
   v.t += dt;
-  const { x: sx, z: sz } = stopAt(v.camp.stop);
+  const { x: sx, z: sz } = v.camp.from ?? stopAt(v.camp.stop);
   from.set(sx, groundHeight(sx, sz) + 1, sz);
   const last = v.at[v.at.length - 1]!;
   v.pieces.forEach((p, k) => {
@@ -328,7 +331,7 @@ export function updateCamps(dt: number, open: number) {
   millAcc += dt * 2.4;
   for (; millAcc >= 1; millAcc--)
     for (const c of CAMPS) {
-      const v = views.get(c.stop);
+      const v = views.get(c);
       if (!v?.done || !c.stack || !v.set.mesh.visible) continue;
       const g = groundHeight(c.stack.x, c.stack.z);
       emit({
