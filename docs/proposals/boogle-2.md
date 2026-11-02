@@ -67,12 +67,14 @@ These are standing preferences from the thread.
 - **Trains are ride-only and timetabled.** Their position is a pure function of the world tick, so they cost nothing on the network. You don't drive them.
 - **Crates visibly ride the trains** to construction sites.
 - **Construction shows both scaffolding and pieces appearing.**
-- **Stations are the fast-travel board** (a departures board).
+- **2026-11-01, only hub stations are fast travel** (owner, after the board playtest): fast travel is a jump between locations; other stops are reached by riding. Hubs get the big departures board and more signage; smaller stops get a minimal sign. The train could be faster too. Was "stations are the fast-travel board", see Changed.
 - **Rails from the start.** The wood age lays light rails; there's no plank road.
 - **The rail spike comes first,** and its job is to prove that riding feels good.
 
 ### Progress and rewards
 
+- **2026-11-01, resource management stays light, never survival-craft** (owner). The hotbar stays for now, though he isn't sure about it; it may shrink to the few things that need it.
+- **2026-11-01, resources will be harvested, not picked up** (direction, not built): wood comes from chopping trees and the like; what falls to the ground is collected with the magnet, perhaps differently per resource.
 - **2026-11-01, the back bundle stays the way to haul** ("Default is quite good"). The magnet he loved moves to pickups elsewhere, later, and pulls without a button.
 - **2026-11-01, double jump and glide are unlocks, not starting moves** ("abilities that should be unlocked later in the game"), for platforming and a sense of expanded movement.
 
@@ -112,7 +114,7 @@ These are standing preferences from the thread.
 
 ### Look
 
-- **2026-11-01, the graphics target is the look lab's "high" preset** (he liked it best), to be compared with the toybox look from the owner's other session; the lab's own toybox preset is "just ok".
+- **2026-11-01, the graphics target is the look lab's "high" preset** (he liked it best), to be compared with the toybox look from the owner's character session; the lab's own toybox preset is "just ok".
 - **2026-11-01, the UI that answers leaves the prototype for the game** ("a massive improvement").
 
 - **2026-11-01, night stays light, moonlit** (owner: "night mode feels too dark, it should feel light still maybe moonlit"). A cool, bright moonlight you can play by, not darkness. **The sun and moon lose their faces** (owner: "they can be a bit more real").
@@ -147,6 +149,7 @@ These are standing preferences from the thread.
 
 ## Changed
 
+- **2026-11-01:** "stations are the fast-travel board" became "only hub stations are fast travel", after the board playtest: every stop being a jump would make riding pointless.
 - **2026-11-01:** the synthesized groove loop was cut after the listening pack.
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
 - **2026-11-01:** the haul stack's sway and jump spill (0.1 groundwork) were cut after the first solo haul playtest: the owner wants a plain back bundle.
@@ -168,8 +171,6 @@ These are standing preferences from the thread.
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
 6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
 7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
-
-8. **Fast travel** (board playtest): is every station a fast-travel point, or is fast travel a macro jump between locations, so trains stay the way to get around nearby? And should the trains be faster? (The board's hop vs ride was unclear.)
 
 ## Next: find the fun (agreed direction, 1 November)
 
