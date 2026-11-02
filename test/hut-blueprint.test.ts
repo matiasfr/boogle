@@ -1,8 +1,8 @@
-// The build prototype's hut as data (src/proto/build/blueprint.ts): pieces go up in order, scaffold first, the last
+// The helper hut's build as data (src/render/hut-blueprint.ts): pieces go up in order, scaffold first, the last
 // one only when the hut is built, and the stage follows the ring's stock.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows } from '../src/proto/build/blueprint.ts';
+import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows } from '../src/render/hut-blueprint.ts';
 
 test('pieces are listed in the order they appear, scaffold first, the last at completion', () => {
   HUT_BUILD.forEach((p, k) => k && assert.ok(p.at >= HUT_BUILD[k - 1].at, `piece ${k} out of order`));

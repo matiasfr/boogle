@@ -475,9 +475,8 @@ const PAGES: Page[] = [
   },
   {
     key: 'build',
-    query: 'proto=build',
-    room: 'proto-build',
-    setup: `await until(() => document.querySelector('.build-proto button') && window.boogle.me.entered, 90000);
+    query: '',
+    setup: `await until(() => window.boogle.me.entered, 90000);
       document.querySelector('.first-run-close')?.click();
       ${TP(8, 16)}
       window.__debugCam.set([12, 4.3, 11], [17, 2.4, 5.8]);
@@ -485,13 +484,26 @@ const PAGES: Page[] = [
     takes: [
       {
         id: 'build-hut',
-        group: 'Build (?proto=build)',
+        group: 'Build',
         title: 'The helper hut goes up',
-        when: 'Four pours into the Helper ring: pieces land on wooden notes up a pentatonic scale per phase, each phase resolving on a chord.',
-        body: `const btn = document.querySelector('.build-proto button');
-          // The hut keeps going up for a while after the ring is full: record the whole build.
+        when: 'The Helper ring filled: pieces land on wooden notes up a pentatonic scale per phase, each phase resolving on a chord.',
+        body: `const { rules } = await import('/src/world/game-world.ts');
+          const { submitEdit } = await import('/src/world/sync.ts');
+          const { identity } = await import('/src/player/identity.ts');
+          const { HELPER } = await import('/src/sim/route.ts');
+          // Pour the whole ring (logs from the bundles, the usual ops); the hut keeps going up for a while after the
+          // ring is full: record the whole build.
           return R.run(34, async () => {
-            for (let k = 0; k < 4; k++) btn.click();
+            for (let n = 0; n < 200 && !rules.sites.sites.list[0].helpers; n++) {
+              const mine = rules.stacks.count(identity.pid);
+              if (mine > 0) submitEdit({ op: 'site.stock', i: 0, j: 0, s: 0, ring: HELPER, n: mine });
+              else {
+                const id = rules.sources.list().findIndex((_, i) => rules.sources.charges(i) > 0);
+                const c = rules.sources.list()[id];
+                submitEdit({ op: 'src.take', i: c.i, j: c.j, id });
+              }
+              await sleep(250);
+            }
           });`,
       },
     ],

@@ -1,8 +1,8 @@
-// The helper hut's build, as data (the construction prototype, ?proto=build; docs/game-design/haul.md): every piece
+// The helper hut's build, as data (docs/game-design/haul.md, "Building"): every piece
 // in the order it goes up, with the fraction of the Helper ring's stock at which it appears. Scaffolding first, then
 // sills, posts, top plates, wall planks, the ridge, the roof and the station sign; the scaffolding comes down once
 // the hut is built. A later "projects as data" system can take this shape as it is (a list of pieces per project).
-// Pure data and math, no three.js: the view is ./index.ts. Cosmetic (Local): the stage is derived from lockstep stock.
+// Pure data and math, no three.js: the view is src/features/hut-build.ts. Cosmetic (Local): the stage is derived from lockstep stock.
 
 /** One box, in metres in the hut's frame (x away from the Helper ring, y up, origin on the ground at the hut's middle).
  * (x, y, z) is the middle of the box's base; w, h, d its size along x, y, z; rx, rz tilt it about its base. */

@@ -1,34 +1,31 @@
-// Construction you can watch (the build prototype; loaded by src/features/build-proto.ts behind ?proto=build). Each
-// work site's helper hut goes up as its Helper ring fills: a faint ghost of the whole hut shows from the first log,
-// scaffolding poles rise, then the pieces of ./blueprint.ts go up one after another at their own steady beat (a short
-// pause between phases: ground, frame, walls, roof, topping out), as far as the ring's stock has reached. Most pieces
-// fly in on an arc from the ring and settle with a little overshoot; posts drop in with a thud. Each landing plays a
-// wooden note that steps up a pentatonic scale through its phase, and a phase's last piece resolves it with a chord
-// and a ring of dust. Once the hut is built the sign's board swings up and the scaffolding falls over as loose poles
-// you can kick about for a few seconds.
+// Construction you can watch (docs/game-design/haul.md, "Building"). Each work site's helper hut goes up as its Helper
+// ring fills: a faint ghost of the whole hut shows from the first log, scaffolding poles rise, then the pieces of
+// src/render/hut-blueprint.ts go up one after another at their own steady beat (a short pause between phases: ground,
+// frame, walls, roof, topping out), as far as the ring's stock has reached. Most pieces fly in on an arc from the ring
+// and settle with a little overshoot; posts drop in with a thud. Each landing plays a wooden note that steps up a
+// pentatonic scale through its phase, and a phase's last piece resolves it with a chord and a ring of dust. Once the
+// hut is built the sign's board swings up and the scaffolding falls over as loose poles you can kick about for a few
+// seconds.
 // The stage is derived from lockstep stock (every peer sees the same pieces); the motion, sounds and the fallen
-// scaffold are Local. A late joiner or a reload sees the stage as it is, without the drops. Greybox boxes only.
+// scaffold are Local. A join, a reload or a resync snaps to the stage as it is, without the drops: a hut finished
+// before you came stands finished. Greybox boxes only.
 // Research: docs/research/construction-you-can-watch.md (recs 1, 3-6) and procedural-animation.md (rec 4).
 // Serves DESIGN.md 7 (Telegraph everything: the ghost and scaffold show the hut's size before a plank is up, and every
 // pour visibly moves it on) and 9 (Leave something for the next visitor: a half-built hut says what's left to bring).
-import './build.css';
-import { rules } from '../../world/game-world.ts';
+import { rules } from '../world/game-world.ts';
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../../loop.ts';
-import { scene } from '../../render/scene.ts';
-import { emit } from '../../render/particles.ts';
-import { getAudio } from '../../render/audio.ts';
-import { arc, ring } from '../../render/motion.ts';
-import { addBody, createBody, material, removeBody, type Body } from '../../physics/engine.ts';
-import { onApplied, submitEdit } from '../../world/sync.ts';
-import { groundHeight, heights } from '../../adapters/terrain.ts';
-import { reducedMotion } from '../../constants.ts';
-import { me } from '../../player/player.ts';
-import { identity } from '../../player/identity.ts';
-import { ROUTE, HELPER, RING_R, ringAt } from '../../sim/route.ts';
-import { materialOf } from '../../sim/materials.ts';
-import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows, type Piece } from './blueprint.ts';
-import { playPanel } from '../flags.ts';
+import { onFrame } from '../loop.ts';
+import { scene } from '../render/scene.ts';
+import { emit } from '../render/particles.ts';
+import { getAudio } from '../render/audio.ts';
+import { arc, ring } from '../render/motion.ts';
+import { addBody, createBody, material, removeBody, type Body } from '../physics/engine.ts';
+import { onSnapshot } from '../world/sync.ts';
+import { groundHeight, heights } from '../adapters/terrain.ts';
+import { reducedMotion } from '../constants.ts';
+import { me } from '../player/player.ts';
+import { ROUTE, HELPER, RING_R, ringAt } from '../sim/route.ts';
+import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows, type Piece } from '../render/hut-blueprint.ts';
 
 const OFFSET = RING_R + 1.9; // the hut's middle, metres to the +x of its Helper ring's centre
 // Pacing (construction rec 1): pieces go up at their own beat, not as fast as logs pour in. The gap shrinks a little
@@ -125,6 +122,8 @@ type View = {
   seen: boolean; // drawn once (a site's first look snaps to its stage, no drops)
 };
 let views: View[] | null = null;
+// The world was replaced (a join, a reload, a resync): every site snaps to its stage on its next look, no replay.
+onSnapshot(() => views?.forEach((v) => (v.seen = false)));
 
 function makeViews(): View[] {
   return ROUTE.map((_, s) => {
@@ -442,67 +441,3 @@ onFrame(
   },
   { phase: 'update', order: 38 },
 );
-
-// ---------------------------------------------------------------- the solo shortcut
-// "Pour 10 logs": takes logs from palm bundles onto your stack (src.take) and pours them into the open site's Helper
-// ring (site.stock), ten per press, one edit at a time; the same ops as walking and pouring, minus the walk. "Reset"
-// is the haul kit's tune.reset (empty rings, stacks and piles). The host takes reset only in a proto- room.
-const POUR = 10;
-let want = 0; // logs still to pour from presses so far
-let inflight = 0; // when the last edit went out (0: none waiting)
-onApplied((ed: { op: string; u?: string }) => {
-  if ((ed.op === 'src.take' || ed.op === 'site.stock') && ed.u === identity.pid) inflight = 0;
-});
-onApplied((ed: { op: string; ring?: number; u?: string }, _tick: number, r: { n?: number } | null) => {
-  if (ed.op === 'site.stock' && ed.ring === HELPER && ed.u === identity.pid && r?.n) want = Math.max(0, want - r.n);
-});
-
-function feed(now: number): string {
-  const s = rules.sites.sites.open;
-  if (s >= ROUTE.length) return ((want = 0), 'Route laid: Reset to build again');
-  const room = rules.sites.room(s, HELPER);
-  if (room <= 0) return ((want = 0), 'Hut built: Reset to build again');
-  if (!want || !identity.pid) return '';
-  if (inflight && now - inflight < 3000) return 'pouring…';
-  const k = materialOf(ROUTE[s].age);
-  const mine = rules.stacks.kind(identity.pid) === k ? rules.stacks.count(identity.pid) : 0;
-  const need = Math.min(want, room, POUR);
-  if (mine >= need || (mine > 0 && rules.stacks.count(identity.pid) >= rules.tune.get('hard'))) {
-    submitEdit({ op: 'site.stock', i: 0, j: 0, s, ring: HELPER, n: Math.min(mine, need) });
-  } else {
-    const id = rules.sources.list().findIndex((_, i) => rules.sources.charges(i) > 0);
-    if (id < 0) return ((want = 0), 'No logs left in the bundles');
-    const c = rules.sources.list()[id];
-    submitEdit({ op: 'src.take', i: c.i, j: c.j, id });
-  }
-  inflight = now;
-  return 'pouring…';
-}
-
-export function shortcutButtons(protoRoom: boolean): void {
-  const box = document.createElement('div');
-  box.className = 'build-proto';
-  const pour = document.createElement('button');
-  pour.type = 'button';
-  pour.textContent = `Pour ${POUR} logs`;
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.textContent = 'Reset';
-  const note = document.createElement('span');
-  box.append(pour, reset, note);
-  (document.querySelector('.hud') ?? document.body).append(box);
-  playPanel('build', box);
-  pour.addEventListener('click', () => (want += POUR));
-  reset.addEventListener('click', () => {
-    want = 0;
-    submitEdit({ op: 'tune.reset', i: 0, j: 0 });
-  });
-  onFrame(
-    ({ now }: { now: number }) => {
-      const msg = protoRoom ? feed(now) : 'needs ?room=proto-build';
-      pour.disabled = reset.disabled = !protoRoom;
-      if (note.textContent !== msg) note.textContent = msg;
-    },
-    { phase: 'late', order: 121 },
-  );
-}

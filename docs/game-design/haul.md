@@ -52,7 +52,7 @@ plaque (beside the Helper ring, off the line) and two rings on the ground, Track
 hut (right, green, a double line). Only the open site (the first section
 not yet laid) takes material; the others are grey and say "later". Stand in a ring carrying the age's material and
 your stack pours in, 2 pieces every 0.3 s. A wood section costs 60 logs; a helper hut 36 (brief 7: about 0.6 of a
-section). Sleepers pile up in the Track ring as it fills; a full Helper ring builds the hut (one per site) and closes.
+section). Sleepers pile up in the Track ring as it fills; the helper hut goes up piece by piece as the Helper ring fills (Building, below) and the ring closes once it is full.
 The rings' signs and the plaque shrink and fade as the camera comes within about 14 m (to about half size and a third
 opacity at 4 m; src/render/near-fade.ts), so standing at a site or riding the machine past one keeps the view clear,
 while signs further off read at full size.
@@ -62,6 +62,30 @@ the remainder kept per player so rounding never loses anything. The plaque lists
 the roster; nobody is listed for not pouring. Your contribution tier is derived from your points in this room (Hand
 25, Porter 100, Navvy 300, Ganger 600, Foreman 1,000, Engineer 1,600, Stationmaster 2,500; brief 8). Tiers are data
 only: nothing shows them (the haul chip shows just what you carry) and they give nothing until rewards are designed.
+
+## Building: the helper hut goes up
+
+Construction you can watch (docs/research/construction-you-can-watch.md): a site's helper hut builds up as its Helper
+ring fills, rather than appearing whole when the ring is full. A faint ghost of the whole hut shows from the first log,
+scaffolding poles rise, then sills, posts, top plates, wall planks (a doorway facing the ring), the ridge, four roof
+boards and the station sign go up one after another, as far as the ring's stock has reached. Pieces keep their own
+beat (0.38 s apart, down to 0.24 s while a long queue catches up) whatever the pour's speed, in five phases (ground,
+frame, walls, roof, topping out) with a 0.45 s pause between them. Most pieces fly in on an arc from the ring and
+settle with a springy overshoot (planks bounce, roof boards flap, the sign's board swings); posts drop in with a thud.
+Each landing puffs dust and plays a thump with a wooden knock that steps up a pentatonic scale through its phase (at
+most three sounds per site per 0.3 s, heard within 40 m, so from the court and the spawn); a phase's last piece
+resolves it with a chord and a wider ring of dust. When the ring fills, the sign's board goes up last and the
+scaffolding falls over as loose poles (Local physics) you can kick about for 6 s before they puff away.
+
+The stage is derived from the ring's lockstep stock, so every player sees the same pieces; the motion is drawn by each
+tab. Joining, reloading or resyncing snaps every hut to its stage as it is, without the drops: a hut finished before
+you came stands finished, scaffolding gone. Reduced motion places pieces without the flight or settle. Greybox boxes
+for now. The build is one data table (every piece with the stock fraction it appears at), shaped for a later
+"projects as data" system.
+
+Code: [src/render/hut-blueprint.ts](../../src/render/hut-blueprint.ts) (the pieces),
+[src/features/hut-build.ts](../../src/features/hut-build.ts) (the view and sounds). No state or ops of its own.
+Scenario: `npm run scenario -- hut-build`.
 
 ## Machine runs, helpers and the age change
 
@@ -224,7 +248,7 @@ rippling out from the court in about two seconds; over 4 s the sky and fog cross
 closer in (era 1 is clear), while the wood-age ambience bed (surf, a soft pad, marimba phrases, the odd gull, mallet
 knock and creak, and the five-note island motif) simply carries on: the steam bed and its crossfade were cut after the
 sound audit (docs/playtests.md, 2026-11-02). One era-1 hut (east of the court) and the first site's helper hut
-(built, as in `?proto=build`) stay standing in era 2: the heritage test, "history or leftovers?". After the swap a paper postcard
+(built) stay standing in era 2: the heritage test, "history or leftovers?". After the swap a paper postcard
 shows the court before (taken when opening day started) and after, side by side, for 14 s (click to put it away);
 each tab takes its own, so a late joiner gets none. The era is derived (age, sections laid, whether opening day has
 run out), so a late joiner or a reload sees the same island, landing in the same phase of the call or the bell. In a
@@ -238,30 +262,6 @@ kit, blocks and sky tint, is one table, [blocks.ts](../../src/proto/era/blocks.t
 ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
 (`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,
 `open.lay` (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.
-
-## Prototype: construction you can watch (?proto=build)
-
-Asks "is watching it go up satisfying?" with greybox boxes only. With `?proto=build` each site's helper hut builds
-up as its Helper ring fills, instead of appearing whole when the ring is full: a faint ghost of the whole hut shows
-from the first log, scaffolding poles rise, then sills, posts, top plates, wall planks (a doorway facing the ring), the
-ridge, four roof boards and the station sign go up one after another, as far as the ring's stock has reached. Pieces
-keep their own beat (0.38 s apart, down to 0.24 s while a long queue catches up) whatever the pour's speed, in five
-phases (ground, frame, walls, roof, topping out) with a 0.45 s pause between them. Most pieces fly in on an arc from
-the ring and settle with a springy overshoot (planks bounce, roof boards flap, the sign's board swings); posts drop
-in with a thud. Each landing puffs dust and plays a thump with a wooden knock that steps up a pentatonic scale
-through its phase (at most three sounds per site per 0.3 s); a phase's last piece resolves it with a chord and a
-wider ring of dust. When the ring fills, the sign's board goes up last and the scaffolding falls over as loose poles
-(Local physics) you can kick about for 6 s before they puff away. The stage is derived from the ring's lockstep
-stock, so every player sees the same pieces; the motion is drawn by each tab, and a late joiner or a reload sees the
-stage as it is, without the drops. Reduced motion places pieces without the flight or settle. The build is one data table (every
-piece with the stock fraction it appears at), shaped for a later "projects as data" system. In a `proto-` room
-(`?room=proto-build&proto=build`) a **Pour 10 logs** button (top left) takes logs from the bundles and pours ten
-into the open site's Helper ring with the usual ops (`src.take`, `site.stock`), so one tester builds a hut in four
-presses; **Reset** is the haul kit's reset. Without the flag the hut is the old box.
-
-Code: [src/proto/build/blueprint.ts](../../src/proto/build/blueprint.ts) (the pieces),
-[src/proto/build/index.ts](../../src/proto/build/index.ts), [src/features/build-proto.ts](../../src/features/build-proto.ts).
-No new state or ops. Scenario: `npm run scenario -- build-proto`.
 
 ---
 
