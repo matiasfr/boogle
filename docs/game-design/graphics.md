@@ -3,13 +3,14 @@
 - **What.** The island draws with WebGPU only: Chrome and Edge, Safari 26 on iPhone, iPad and Mac, Firefox on
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
   (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
-  covers the lobby until the graphics device is up and every shader is built (8 s at most), so Jump in is the moment
-  nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../../src/boot/)). `?dpr=fixed`
+  covers the lobby until the graphics device is up, the player's body is on, every shader is built and the GPU has
+  finished the first frame (8 s at most), so Jump in is the moment nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../../src/boot/)). `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
-  with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it drops
-  in 10 % steps to 0.6x after 2 s of slow frames and climbs back after 5 s at the display's cadence. Slow is over
-  18.5 ms, or over 1.15x the cadence the browser delivers frames at (Safari's 30 Hz in Low Power Mode is a cap, not a
-  slow GPU); a step up that turns slow again within 10 s doubles the wait before the next one (up to a minute).
+  with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it starts where this
+  device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back
+  after 5 s at the display's cadence. Slow is over 18.5 ms, or over 1.08x the cadence the browser delivers frames at, a
+  cadence that stops at 34 ms (Safari's 30 Hz in Low Power Mode is a cap, not a slow GPU; anything slower is the
+  device); a step up that turns slow again within 10 s doubles the wait before the next one (up to a minute).
   While the game is open and visible, a Screen Wake Lock (taken on the first input) keeps the screen from dimming
   and locking where the browser offers one (Safari, Home Screen apps from iOS 18.4, Chrome); hiding the tab lets
   it go. In a Home Screen web app (standalone) the canvas, HUD and overlays are sized to the whole screen, since iOS
