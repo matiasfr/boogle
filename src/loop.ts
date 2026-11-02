@@ -30,11 +30,11 @@
 // its own commit. No order means 1000: prototypes and anything unnumbered run after all of these.
 //   onPreStep   10 platforms.ts: decks move    20 mushroom-garden: a growing cap shoves you   30 feel.ts: jump feel
 //               39 physics.ts: remote targets   40 player: its controller   45 ball: friction and surf
-//               50 boogler.ts: his body follows him   60 boogler/play.ts: carry the rider, launches
+//               50 boogler: his body follows him   60 boogler-ride: carry the rider, launches
 //               70 windmills: sails spin       80 caves: the safety net   90 guest/play.ts: the guest's body (lazy)
 //   onPostStep  10 mushroom-garden: the bounce   15 ball: fall-through net
 //               20 player: its fall-through net, ground contact (coyote)
-//               30 boogler/play.ts: standing on him
+//               30 boogler-ride: standing on him
 //
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and spawns entities
 // (src/entity/entity.ts) or, for a service other things call, uses

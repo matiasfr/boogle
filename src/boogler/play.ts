@@ -6,7 +6,7 @@
 // ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
 import { FIXED } from '../constants.ts';
 import { clamp } from '../math.ts';
-import { onPreStep, onPostStep, forEachContact, physicsTime } from '../physics/engine.ts';
+import { forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.ts';
@@ -115,41 +115,33 @@ const ride = {
 };
 const riding = () => physicsTime() - ride.lastOn < 0.15 && performance.now() > ride.immuneUntil;
 
-function installRidePhysics() {
-  onPostStep(
-    () => {
-      const b = me.body,
-        gb = boogler.body;
-      if (!b || !gb) return;
-      forEachContact(b, (nx, ny, nz, other) => {
-        if (other !== gb || ny <= 0.5) return false;
-        ride.lastOn = physicsTime();
-        return true;
-      });
-    },
-    { order: 30 },
-  );
-  // Runs after the player's and The Boogler's own preSteps: move the rider with him, and keep a launch from being
-  // steered to a stop by air control.
-  onPreStep(
-    () => {
-      const b = me.body,
-        gb = boogler.body;
-      if (!b || !gb) return;
-      if (riding()) {
-        b.position.x += gb.velocity.x * FIXED;
-        b.position.z += gb.velocity.z * FIXED;
-      }
-      const fly = ride.fly;
-      if (!fly) return;
-      if (physicsTime() > fly.until || (physicsTime() > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
-      else {
-        b.velocity.x = fly.vx;
-        b.velocity.z = fly.vz;
-      }
-    },
-    { order: 60 },
-  );
+export function checkStandingOnBoogler() {
+  const b = me.body,
+    gb = boogler.body;
+  if (!b || !gb) return;
+  forEachContact(b, (nx, ny, nz, other) => {
+    if (other !== gb || ny <= 0.5) return false;
+    ride.lastOn = physicsTime();
+    return true;
+  });
+}
+// Runs after the player's and The Boogler's own preSteps: move the rider with him, and keep a launch from being
+// steered to a stop by air control.
+export function carryBooglerRider() {
+  const b = me.body,
+    gb = boogler.body;
+  if (!b || !gb) return;
+  if (riding()) {
+    b.position.x += gb.velocity.x * FIXED;
+    b.position.z += gb.velocity.z * FIXED;
+  }
+  const fly = ride.fly;
+  if (!fly) return;
+  if (physicsTime() > fly.until || (physicsTime() > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
+  else {
+    b.velocity.x = fly.vx;
+    b.velocity.z = fly.vz;
+  }
 }
 
 function launch(now: number) {
@@ -217,11 +209,11 @@ function updateRide(dt: number, now: number) {
 // knocks you), hopping on him or the pause view end it (a kick-off telling-off waits for your answer, however far you
 // flew).
 // The conversations (talk.ts and its ~1,100 lines, lines.ts) are their own chunk: fetched right after start
-// (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
+// (loadTalk, at start), so they are there long before anyone reaches him; a talk opened sooner waits for them.
 let talk: Talk | null = null;
 let talkMod: Promise<typeof import('./talk.ts')> | null = null;
 let talkApi: typeof import('./talk.ts') | null = null;
-const loadTalk = () => (talkMod ??= import('./talk.ts').then((m) => (talkApi = m)));
+export const loadTalk = () => (talkMod ??= import('./talk.ts').then((m) => (talkApi = m)));
 
 // He is offered whatever is in your hand, and takes it from there (one seed off a stack).
 function giftList() {
@@ -313,15 +305,11 @@ export function talkTargets() {
 let waryCheckAt = 0;
 let fleeSayAt = 0;
 
-export function setupBooglerPlay() {
-  loadTalk();
-  installRidePhysics();
-  addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
-  onRemotePresence((rr, pr) => {
-    const r = rr as BgRemote;
-    r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? (pr.bg as number[]) : null;
-  });
-}
+addPresenceField('bg', () => (me.entered && me.body ? [boogler.me.act, boogler.me.wary ? 1 : 0, ev, evN] : null));
+onRemotePresence((rr, pr) => {
+  const r = rr as BgRemote;
+  r.bg = Array.isArray(pr.bg) && pr.bg.length === 4 && pr.bg.every(Number.isInteger) ? (pr.bg as number[]) : null;
+});
 
 export function updateBooglerPlay(dt: number, now: number) {
   if (now >= waryCheckAt) {
