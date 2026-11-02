@@ -1,0 +1,73 @@
+{
+  "id": "opening",
+  "title": "Opening day starts",
+  "kind": "lock",
+  "order": 70,
+  "steps": [
+    {
+      "go": [["you.features", "you.world"]],
+      "text": "The last section of line is laid and you press Start at the platform. That submits one edit with no cell in it.",
+      "code": "submitEdit({ op: 'open.start', i: 0, j: 0 })",
+      "cite": [
+        {
+          "op": "open.start"
+        },
+        {
+          "file": "src/proto/era/index.ts"
+        }
+      ]
+    },
+    {
+      "go": [["you.world", "server"]],
+      "text": "The server checks the line is finished. The first valid start wins and stamps its tick; later ones are rejected.",
+      "code": "opening = { t0: tick }",
+      "cite": [
+        {
+          "state": "opening"
+        },
+        {
+          "file": "src/world/rules/opening.ts"
+        }
+      ]
+    },
+    {
+      "go": [
+        ["server", "you.world"],
+        ["server", "fr.world"]
+      ],
+      "text": "Every tab gets that one tick. The gathering call, the bell and the era change are a script played from it, so nothing else needs to travel.",
+      "code": "openingAt(opening, tick)",
+      "cite": [
+        {
+          "file": "src/sim/era.ts",
+          "symbol": "openingAt"
+        }
+      ]
+    },
+    {
+      "go": [["you.netplay", "you.world", "server"]],
+      "text": "A tab that sees every online player inside the ring (positions are presence) submits open.here, and the call ends early, once.",
+      "code": "submitEdit({ op: 'open.here', i: 0, j: 0 })",
+      "cite": [
+        {
+          "op": "open.here"
+        },
+        {
+          "file": "src/proto/era/call.ts",
+          "symbol": "updateCall"
+        }
+      ]
+    },
+    {
+      "hl": ["you.world", "fr.world", "you.screen"],
+      "text": "Each frame the swap reads the script at the current tick, so a late joiner lands in the same moment. The era is worked out, never stored.",
+      "code": "eraOf(age, laid, opened)",
+      "cite": [
+        {
+          "file": "src/sim/era.ts",
+          "symbol": "eraOf"
+        }
+      ]
+    }
+  ]
+}

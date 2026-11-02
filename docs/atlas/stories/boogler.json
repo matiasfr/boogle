@@ -6,7 +6,7 @@
   "steps": [
     {
       "hl": ["fr.systems"],
-      "text": "Only the host runs the Boogler’s brain. Your friend’s tab is the host here.",
+      "text": "Only the host runs the Boogler’s brain: the tab the server picks as lead. Your friend’s tab is the host here.",
       "code": "src/boogler/boogler.ts",
       "cite": [
         {
@@ -36,7 +36,7 @@
     },
     {
       "hl": ["fr.systems", "you.systems"],
-      "text": "If the host leaves, another tab becomes host and the Boogler carries on from there.",
+      "text": "If the host leaves, the server picks another tab as host and the Boogler carries on from there.",
       "code": "Host state restarts with the next host",
       "cite": [
         {
