@@ -8,7 +8,7 @@
 ## Already done (don't redo)
 
 - **WebGPU + TSL.** `WebGPURenderer` WebGPU only (no fallback since 2026-10-31), every shader in TSL
-  ([webgpu-migration.md](webgpu-migration.md), [src/render/README.md](../../src/render/README.md)).
+  ([webgpu-migration.md](done/webgpu-migration.md), [src/render/README.md](../../src/render/README.md)).
 - **WebRTC transport.** PeerJS data channels, one browser as host ([src/net/peer-room.ts](../../src/net/peer-room.ts)).
 - **No prediction needed for your own movement.** Each player owns their own physics, so input never waits on the host.
   Remote players and the ball are interpolated (`createSnaps()`, `INTERP_MS`).

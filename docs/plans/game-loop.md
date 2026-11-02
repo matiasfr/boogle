@@ -61,9 +61,9 @@ interact targets 2 KB, gulls and fireflies under 1 KB each).
 - Left (objects, KB/frame): a long tail under 0.3 each: `remotes.values()` iterators, `worldStatus()` objects, HUD
   transform strings, `navigator.getGamepads()`.
 - The physics engine is the real cost: cannon-es can't be made allocation-free from outside. Decided 2026-10-31:
-  move to Rapier ([rapier.md](rapier.md)), which also fits the physics worker of step 7.
+  move to Rapier ([rapier.md](done/rapier.md)), which also fits the physics worker of step 7.
 
-**Done when** our own hooks allocate under 1 KB of objects per frame, warm (`npm run hitches`; physics: rapier.md).
+**Done when** our own hooks allocate under 1 KB of objects per frame, warm (`npm run hitches`; physics: done/rapier.md).
 
 ### 3. Instance pools: the `emit()` of meshes
 
