@@ -73,4 +73,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 
 - [eight-hour-pacing.md](eight-hour-pacing.md) (2026-11-02): verified and provisional pacing evidence from compact adventures, co-op campaigns and factory openings; completion-data limits, friend evenings and missed sessions; a six-era, twelve-link budget, hour-by-hour curve, hand-checkable solo/group model and eleven recommendations with smallest tests.
 
+- [beautiful-corner-craft.md](beautiful-corner-craft.md) (2026-11-02): finishing one representative gorge station quickly; Nintendo, Firewatch, Tiny Glade, A Short Hike, Journey, Hollow Knight, Astro Bot, Uncharted and Valve on coherent craft and production; polish criteria, agent handoffs, owner review cadence, honest vertical-slice bounds and cost measurement; twelve recommendations and a pass-by-pass plan with separate quality-target and co-op production gates.
+
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
