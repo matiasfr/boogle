@@ -2,15 +2,15 @@
 // verb, "[E] Pick up" floating over the can, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
 // itself; see registerInteractable in src/player/hands.ts). A full hotbar greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
-// With ?proto=uisfx (docs/research/ui-patterns.md, recs 1-2) it pops in with a sound and squashes when pressed (a
-// head-shake and a deny when the press can't act).
-import '../render/ui-kit.css';
+// It pops in with a sound and squashes when pressed (a head-shake and a deny when the press can't act);
+// docs/research/ui-patterns.md, recs 1-2.
+import '../ui/ui-kit.css';
 import './prompt.css';
 import { onFrame } from '../loop.ts';
 import { toScreen, view } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
-import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
+import { uiSound, replay } from '../ui/ui-sound.ts';
 import { conversation } from '../player/conversation.ts';
 import { glyph } from '../player/glyphs.ts';
 
@@ -74,9 +74,8 @@ onFrame(
 );
 
 // A press answers within the frame, before the host does: squash and thunk, or shake and deny.
-if (UI_KIT)
-  onInteractPress((t, ran) => {
-    if (!t) return;
-    uiSound(ran ? 'thunk' : 'deny');
-    if (t.id === ui.id) replay(ui.root?.querySelector('.prompt-chip'), ran ? 'ui-press' : 'ui-nope');
-  });
+onInteractPress((t, ran) => {
+  if (!t) return;
+  uiSound(ran ? 'thunk' : 'deny');
+  if (t.id === ui.id) replay(ui.root?.querySelector('.prompt-chip'), ran ? 'ui-press' : 'ui-nope');
+});

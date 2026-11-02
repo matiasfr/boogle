@@ -30,7 +30,7 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
 | Prototype bar (`proto-bar`) | action, prototype pages only | P (then arrows, Enter, [ ] for previous / next toy, Esc) | D-pad ↓ (then D-pad between buttons, A presses, LB / RB previous / next toy, B closes) | tap the bar | Menu | `?proto=` and `?play` pages |
 | Back (`back`) | action | (Esc, in each menu and talk) | B: closes talks and menus, leaves a text box, puts a wound-up throw away | close buttons | Menu | |
-| Reload for the new version (`update-reload`) | action, hidden | (toast button) | first free slot, only while the update toast shows | toast button | none | |
+| Reload for the new version (`update-reload`) | action, hidden | (notice button) | first free slot, only while the update notice shows | notice button | none | |
 
 Notes:
 
@@ -56,7 +56,7 @@ Notes:
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
 - **Free pad slots** (`npm run registry -- --json`): D-pad ↑ (D-pad ↓ opens the prototype bar, registered only on
-  prototype pages, src/proto/bar/pad.ts). The update toast borrows the first free one (D-pad ↑) while it is up, so
+  prototype pages, src/proto/bar/pad.ts). The update notice borrows the first free one (D-pad ↑) while it is up, so
   AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.

@@ -4,8 +4,9 @@
 // (src/features/hut-build.ts), and the plaque lists who brought what (credit only: nobody is listed for not pouring). Placeholder visuals (0.1).
 // Serves DESIGN.md 4 (cooperation is automatic: everyone's pours land in the same ring) and 6 (communal world,
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
-// With ?proto=uisfx (docs/research/ui-patterns.md, rec 5: shared news in the world first) a credited pour turns the
-// plaque's changed rows over like a departures board, with a little puff and a soft clack you hear near it. Signs and
+// A credited pour turns the plaque's changed rows over like a departures board, with a little puff and a soft clack you
+// hear near it, at most once every FLIP_GAP_MS while you keep pouring (docs/research/ui-patterns.md, rec 5: shared news
+// in the world first). Signs and
 // plaques shrink and fade as the camera comes within a few metres (src/render/near-fade.ts), so standing at a site or
 // riding the machine past one keeps the view clear.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
@@ -25,7 +26,7 @@ import { materialOf, MATERIALS } from '../sim/materials.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { uiSound, UI_KIT } from '../render/ui-sound.ts';
+import { uiSound } from '../ui/ui-sound.ts';
 import { emit } from '../render/particles.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
@@ -75,7 +76,7 @@ function label(w = 512, h = 128): Label {
   if (!g) throw new Error('work-sites: no 2D canvas');
   return { c, g, tex, sprite, text: '' };
 }
-// A plaque row turning over (?proto=uisfx): what it said before, and when it starts (staggered down the plaque).
+// A plaque row turning over: what it said before, and when it starts (staggered down the plaque).
 type Flap = { old: string; at: number };
 export const flapFeel = { ms: 320 }; // one row's flip (dev/scenarios/ui-kit.ts slows it for a still)
 function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?: Map<number, Flap>, now = 0): void {
@@ -152,26 +153,29 @@ const views = ROUTE.map((sec, s) => {
 let names = 0; // bumped by who.set: the plaques print roster names
 onApplied((e: { op: string }) => e.op === 'who.set' && names++);
 
-// ?proto=uisfx: sites whose plaque just gained points (a credited pour), each plaque's rows mid-flip, and how much each
-// plaque swells while they turn.
+// Sites whose plaque just gained points (a credited pour), each plaque's rows mid-flip, how much each plaque swells
+// while they turn, and when each last flipped. A pour lands every haulFeel.pourMs (300 ms), so flipping on every one
+// would clatter: pours in between just repaint the numbers.
+const FLIP_GAP_MS = 1200;
 const credited = new Set<number>();
 const swell = views.map(() => 1);
 const flaps = views.map(() => new Map<number, Flap>());
+const lastFlip = views.map(() => -1e9);
 const plaqueLines: string[][] = views.map(() => []);
 const PUFF = new THREE.Color('#ffe7a8');
-if (UI_KIT) {
-  onApplied((e: { op: string; s: number }, _tick: number, r: { pts?: number } | null) => {
-    if (e.op === 'site.stock' && r?.pts) credited.add(e.s);
-  });
-}
+onApplied((e: { op: string; s: number }, _tick: number, r: { pts?: number } | null) => {
+  if (e.op === 'site.stock' && r?.pts) credited.add(e.s);
+});
 export const flapping = (s: number): boolean => flaps[s]?.size > 0; // for dev/scenarios/ui-kit.ts
 // Turn over the plaque rows that changed, with a puff over the board and a clack as loud as you are near.
 function flipPlaque(s: number, before: string[], after: string[], now: number): void {
+  if (now - lastFlip[s] < FLIP_GAP_MS) return;
   let n = 0;
   for (let k = 1; k < after.length; k++) {
     if (after[k] !== before[k]) flaps[s].set(k, { old: before[k] ?? '', at: now + 70 * n++ });
   }
   if (!n) return;
+  lastFlip[s] = now;
   const sp = views[s].plaque.sprite.position;
   for (let q = 0; q < 8; q++) {
     const a = (q / 8) * Math.PI * 2 + Math.random() * 0.5;
@@ -286,16 +290,14 @@ onFrame(
     if (key !== drawn) redraw();
     drawn = key;
     // plaque rows mid-flip, and the board's little swell while they turn
-    if (UI_KIT) {
-      flaps.forEach((f, s) => {
-        if (!f.size && swell[s] === 1) return;
-        paint(views[s].plaque, plaqueLines[s], undefined, f, now);
-        let k = 0;
-        for (const x of f.values())
-          k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
-        swell[s] = 1 + 0.05 * k;
-      });
-    }
+    flaps.forEach((f, s) => {
+      if (!f.size && swell[s] === 1) return;
+      paint(views[s].plaque, plaqueLines[s], undefined, f, now);
+      let k = 0;
+      for (const x of f.values())
+        k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
+      swell[s] = 1 + 0.05 * k;
+    });
     pour(now);
   },
   { phase: 'update', order: 34 },

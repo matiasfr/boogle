@@ -4,10 +4,10 @@
 // (~0.5 s). Placeholder visuals (0.1 groundwork). No control of its own: pickup is walking into a pile, pouring is
 // walking into a site's ring (work-sites.ts).
 // Serves DESIGN.md 1 (toys before chores: wood on your back, carried around with nothing to do). Lockstep counts,
-// Local look. With ?proto=uisfx (docs/research/ui-patterns.md, rec 3) the chip is a play-size wood pill with a log
-// icon, and its number ticks one by one toward the host-confirmed count with a pop and a count sound per step.
+// Local look. The chip is a play-size wood pill with a log icon, and its number ticks one by one toward the
+// host-confirmed count with a pop and a count sound per step (docs/research/ui-patterns.md, rec 3).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
-import '../render/ui-kit.css';
+import '../ui/ui-kit.css';
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../loop.ts';
@@ -20,7 +20,7 @@ import { scene } from '../render/scene.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
 import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
-import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
+import { uiSound, replay } from '../ui/ui-sound.ts';
 import { protoActivity } from '../proto/mark.ts';
 
 // The bundle: logs lying crosswise, stacked up and out from the back on a hex lattice (slots filled nearest-first, so
@@ -138,7 +138,6 @@ onFly((from, n) => backSeam.flyIns && flights.push({ from: from.clone(), n: Math
 const chip = document.createElement('div');
 chip.className = 'haul-chip';
 document.body.append(chip);
-let chipText = '';
 
 onFrame(
   ({ now }: { now: number }) => {
@@ -174,34 +173,19 @@ onFrame(
       bands.count = b;
       bands.instanceMatrix.needsUpdate = true;
     }
-    if (UI_KIT) tickChip(mine, now);
-    else updateChip(mine);
+    tickChip(mine, now);
   },
   { phase: 'update', order: 32 },
 );
 
-// The chip: your material and count, only while you carry something.
-function updateChip(host: Stack): void {
-  const n = backSeam.count(host.n);
-  const text = n ? `${MATERIALS[host.k]} ${n}` : '';
-  if (text !== chipText) {
-    chipText = text;
-    chip.textContent = text;
-    chip.classList.toggle('on', !!text);
-  }
-}
-
-// ?proto=uisfx: the chip's parts, and the count it shows ticking toward the confirmed one (about 300 ms per change).
-const kit = { n: null as HTMLElement | null, what: null as HTMLElement | null };
+// The chip: your material and count, only while you carry something, the count ticking toward the confirmed one (about
+// 300 ms per change).
+chip.innerHTML =
+  '<svg class="haul-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="18" height="10" rx="5"/>' +
+  '<ellipse cx="19" cy="12" rx="3.2" ry="5"/><ellipse cx="19" cy="12" rx="1.3" ry="2"/></svg>' +
+  '<span class="haul-n"></span><span class="haul-what"></span>';
+const [chipN, chipWhat] = [...chip.querySelectorAll('span')] as HTMLElement[];
 const shown = { n: 0, to: 0, step: 0, at: 0, key: '' };
-if (UI_KIT) {
-  chip.classList.add('kit');
-  chip.innerHTML =
-    '<svg class="haul-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="18" height="10" rx="5"/>' +
-    '<ellipse cx="19" cy="12" rx="3.2" ry="5"/><ellipse cx="19" cy="12" rx="1.3" ry="2"/></svg>' +
-    '<span class="haul-n"></span><span class="haul-what"></span>';
-  [kit.n, kit.what] = [...chip.querySelectorAll('span')] as HTMLElement[];
-}
 function tickChip(host: Stack, now: number): void {
   const mine = { n: backSeam.count(host.n), k: host.k };
   if (mine.n !== shown.to) {
@@ -215,14 +199,13 @@ function tickChip(host: Stack, now: number): void {
     shown.n += d;
     shown.at = now;
     uiSound('count', d);
-    replay(kit.n, 'ui-tick');
+    replay(chipN, 'ui-tick');
   }
   const key = `${shown.n}/${mine.k}`;
   if (key === shown.key) return;
   shown.key = key;
-  kit.n!.textContent = shown.n ? String(shown.n) : '';
-  kit.what!.textContent = shown.n ? MATERIALS[Math.max(0, mine.k)] : '';
+  chipN.textContent = shown.n ? String(shown.n) : '';
+  chipWhat.textContent = shown.n ? MATERIALS[Math.max(0, mine.k)] : '';
   chip.classList.toggle('on', !!shown.n);
-  chip.classList.toggle('carrying', !!shown.n);
   chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
 }

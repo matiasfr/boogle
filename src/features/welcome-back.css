@@ -40,6 +40,10 @@
 body.touch .welcome-back {
   top: calc(70px + env(safe-area-inset-top, 0px));
 }
+/* The notification lane (src/ui/notify.css) sits there too on touch: it steps below the card while the card shows. */
+body.touch:has(.welcome-back.shown) .notify {
+  top: calc(156px + env(safe-area-inset-top, 0px));
+}
 @media (prefers-reduced-motion: reduce) {
   .welcome-back {
     transition: none;

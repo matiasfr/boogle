@@ -22,6 +22,8 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 - `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,
   node-material patching (`patchNode`), and the shared (cosmetic) audio context. How to draw things:
   [render/README.md](render/README.md).
+- `ui/`: the HUD's shared kit (Local, cosmetic): UI sounds (`ui-sound.ts`), motion and colour tokens (`ui-kit.css`),
+  and the one notification lane (`notify.ts`). Features import it; it imports nothing from `features/`.
 - `debug/`: dev-only tools behind URL flags (`?netdebug=1`, `?debugcam=1`), loaded lazily by their stubs in `features/`.
 - `boogler/`: The Boogler NPC: brain and model (`boogler.js`), play, talk, lines, dialogue box, friendship, HUD, fx.
 - `decomp/`: shared pieces for characters run by an engine and files the player brings (the files dialog, the

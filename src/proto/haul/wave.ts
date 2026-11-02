@@ -28,7 +28,7 @@ import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../../rend
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
-import { notify } from '../../render/notify.ts';
+import { notify } from '../../ui/notify.ts';
 import { GRAVITY, reducedMotion } from '../../constants.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { YIELD } from '../../sim/sources.ts';

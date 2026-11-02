@@ -79,6 +79,7 @@ tick of 100 ms (10 per second).
 - [6.22 Prototype: departures board (`?proto=board`)](game-design/board.md)
 - [6.23 Prototype: the groove (retired: cut)](game-design/groove.md)
 - [6.24 Identity: name and colour](game-design/identity.md)
+- [6.25 HUD feedback: sounds, motion, notices](game-design/hud.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
