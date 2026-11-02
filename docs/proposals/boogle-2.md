@@ -208,7 +208,7 @@ These are standing preferences from the thread.
 11. What happens to hauling once the rail delivers? The back bundle got a yes. The director suggests hand hauling in the wood age and at the frontier, with everything behind you automated. `?proto=net&v=haul` tests part of this.
 12. Does "play is the material" still hold? In the rail loop the network produces material and play earns personal rewards, which would also settle how mini-games feed progress. Adopting it reverses round 2.
 13. How do you first reach a far island? "Walk it before the rail does" works on land, but a vast sea needs the line itself to get there first, or a boat.
-14. Which eras remain? The director suggests five, each changing how you build: wood, steam, iron and harbour, electric, monorail and maglev.
+14. Which eras remain? Working list of six, not final: wood, steam, iron and harbour, diesel and concrete (owner: "I did really like the aesthetic there", "I'm not sure"), electric as bullet trains with pantographs and overhead wires, and a last age of "future train, bullet train", which "doesn't have to be actually an exact monorail".
 
 ## Next: find the fun (agreed direction, 1 November)
 
