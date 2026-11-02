@@ -12,7 +12,7 @@ AGENTS.md has the rules; this is the order to apply them in.
 2. Pick a sync kind for each piece of state (AGENTS.md, "Pick a sync kind"). Lockstep: follow the four-file recipe in
    `src/world/rules/README.md` instead of steps 3-4, then come back for 5-6.
 3. Copy the shape of a small plug-in: `src/features/ping.ts` (a thing in the world, an action + room messages),
-   `src/features/honk.ts` (an action + room messages; copy only those, its notes predate entities),
+   `src/features/honk.ts` (an action + room messages),
    `src/features/bump.ts` (an action on Owner state), `src/features/gifts.ts` (interactables + a lockstep adapter). Create `src/features/$0.ts` (TypeScript, strict; AGENTS.md)
    with a header comment saying what it does, which sync kind each piece of state uses and the principle it serves;
    `import './$0.css'` only if it needs styles; DOM built in JS; `onStart` from `src/loop.ts`.

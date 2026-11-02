@@ -1,14 +1,4 @@
 {
-  "src/adapters/gifts.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
-  "src/adapters/mushroom-garden.ts": {
-    "boogle/use-an-entity": {
-      "count": 4
-    }
-  },
   "src/boogler/boogler.ts": {
     "boogle/use-an-entity": {
       "count": 2
@@ -49,16 +39,6 @@
       "count": 1
     }
   },
-  "src/features/gifts.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/honk.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
   "src/features/hotbar.ts": {
     "boogle/use-an-entity": {
       "count": 1
@@ -72,11 +52,6 @@
   "src/features/impact.ts": {
     "boogle/use-an-entity": {
       "count": 2
-    }
-  },
-  "src/features/mushroom-garden.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
     }
   },
   "src/features/pause.ts": {
