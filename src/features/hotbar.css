@@ -1,4 +1,5 @@
-/* Hotbar: eight slots along the bottom, the held item's name fading in above them. */
+/* Hotbar: five slots along the bottom, the held item's name fading in above them. Play-size text and the motion
+   tokens from src/ui/ui-kit.css. */
 .hotbar {
   position: absolute;
   left: 50%;
@@ -13,36 +14,36 @@
   display: grid;
   justify-items: center;
 }
-.hotbar-name,
-.hotbar-note {
+.hotbar-name {
   grid-area: 1 / 1;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 7px 5px 13px;
+  padding: 6px 8px 6px 15px;
   border-radius: 999px;
   background: var(--glass);
   border: 1px solid var(--glass-line);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  font-size: 13px;
+  font-size: var(--text-play);
   font-weight: 700;
   white-space: nowrap;
   opacity: 0;
   transform: translateY(4px);
   transition:
-    opacity 0.25s,
-    transform 0.25s;
+    opacity var(--dur-leave) var(--ease-out),
+    transform var(--dur-leave) var(--ease-out);
 }
 .hotbar-name:not(:has(.hotbar-use)) {
-  padding-right: 13px;
+  padding-right: 15px;
 }
-.hotbar-name.shown,
-.hotbar-note.shown {
+.hotbar-name.shown {
   opacity: 1;
   transform: none;
+  transition-duration: var(--dur-pop);
 }
-.hotbar-tags:has(.hotbar-note.shown) .hotbar-name {
+/* The notification lane (src/ui/notify.ts) sits where the name tag is, so the name gives way to it. */
+body:has(.notify.shown) .hotbar-name {
   transition: none;
   opacity: 0;
 }
@@ -53,36 +54,12 @@
   padding: 2px 9px 2px 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
-  font: 400 14px/1 var(--font-display);
+  font: 400 18px/1 var(--font-display);
   letter-spacing: 0.3px;
 }
 .hotbar-use .g-key,
 .hotbar-use .g-pad {
   transform: scale(0.88);
-}
-.hotbar-note {
-  padding: 6px 14px;
-  background: #d8432f;
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-}
-.hotbar-note.shake {
-  animation: hotbar-shake 0.36s;
-}
-@keyframes hotbar-shake {
-  20%,
-  60% {
-    translate: -5px 0;
-  }
-  40%,
-  80% {
-    translate: 5px 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hotbar-note.shake {
-    animation: none;
-  }
 }
 .hotbar-slots {
   display: flex;
@@ -102,8 +79,8 @@
   color: var(--on-glass);
   touch-action: none;
   transition:
-    transform 0.12s,
-    border-color 0.12s;
+    transform var(--dur-leave) var(--ease-out),
+    border-color var(--dur-leave) var(--ease-out);
 }
 .hotbar-slot.on {
   border-color: var(--sun);
@@ -120,7 +97,7 @@
 .hotbar-key,
 .hotbar-n {
   position: absolute;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
@@ -197,39 +174,4 @@ body.touch .hotbar-key {
 }
 body.holding-throwable:not(.main-throws) .tbtn.toss {
   display: block;
-}
-
-/* ?proto=uisfx (src/render/ui-kit.css): play-size text for the iPad at laptop distance, the shared tokens. */
-.ui-kit .hotbar-name,
-.ui-kit .hotbar-note {
-  font-size: var(--text-play);
-  padding: 6px 8px 6px 15px;
-}
-.ui-kit .hotbar-name:not(:has(.hotbar-use)) {
-  padding-right: 15px;
-}
-.ui-kit .hotbar-note {
-  padding: 7px 16px;
-  background: var(--coral);
-}
-.ui-kit .hotbar-use {
-  font-size: 18px;
-}
-.ui-kit .hotbar-name,
-.ui-kit .hotbar-note,
-.ui-kit .hotbar-slot {
-  transition-duration: var(--dur-leave);
-  transition-timing-function: var(--ease-out);
-}
-.ui-kit .hotbar-name.shown,
-.ui-kit .hotbar-note.shown {
-  transition-duration: var(--dur-pop);
-}
-.ui-kit .hotbar-key,
-.ui-kit .hotbar-n {
-  font-size: 13px;
-}
-/* The notification lane (src/render/notify.ts) takes the note's place, so the name tag gives way to it. */
-.ui-kit:has(.notify.shown) .hotbar-name {
-  opacity: 0;
 }

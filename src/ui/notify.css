@@ -1,4 +1,4 @@
-/* The notification lane (src/render/notify.ts): one glass pill where the hotbar's note was, just past the hotbar (above
+/* The notification lane (src/ui/notify.ts): one glass pill where the hotbar's note was, just past the hotbar (above
    it on a keyboard, below it on touch, beside it in portrait), clear of the crosshair and the prompt. Read-only status,
    so glass with no drop shadow; its button is a sticker (pressable). Shared tokens from ./ui-kit.css. */
 .notify {

@@ -23,7 +23,7 @@ with two rope bands round them. It fills out rather than towers: at most 22 logs
 then about one in five more), and the logs get longer as the count grows (half as long again at 60), so a full load is
 wider than you and only reaches the top of your head. It has no motion of its own (it rides your walk's bob and lean)
 and nothing falls off: jumping with any load is safe. A chip above the hotbar shows the material and count while you
-carry anything. Walking into a pile takes as much of it as fits; its pieces fly to your back at
+carry anything, the count ticking one by one with a clink ([hud.md](hud.md)). Walking into a pile takes as much of it as fits; its pieces fly to your back at
 once, and the count follows when the host confirms (about half a second). Your stack belongs to the room: it waits for
 you after a reload, and other players see it on your avatar. No new control: pickup is walking, pouring is walking
 into a site's ring.
@@ -59,7 +59,8 @@ while signs further off read at full size.
 
 Every pour is credited on that site's plaque: 1 point per 1% of the age's section cost (a log is 1.67 points), with
 the remainder kept per player so rounding never loses anything. The plaque lists the top four by points, names from
-the roster; nobody is listed for not pouring. Your contribution tier is derived from your points in this room (Hand
+the roster; nobody is listed for not pouring. A credited pour turns the changed rows over like a departures board with
+a quiet flutter, at most once every 1.2 s while you keep pouring ([hud.md](hud.md)). Your contribution tier is derived from your points in this room (Hand
 25, Porter 100, Navvy 300, Ganger 600, Foreman 1,000, Engineer 1,600, Stationmaster 2,500; brief 8). Tiers are data
 only: nothing shows them (the haul chip shows just what you carry) and they give nothing until rewards are designed.
 

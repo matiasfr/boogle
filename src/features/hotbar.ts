@@ -4,10 +4,9 @@
 // the beach ball shows itself). On touch the bar shows only filled slots (tap the held one again for empty hands) and
 // a Toss button appears whenever you hold something throwable and the main button would do something other than throw
 // (a tool's verb, or Talk / Pick up near a target). Serves DESIGN.md 1 (toys before chores: anything you carry is a toy
-// you can throw) and 10 (slapstick over precision). With ?proto=uisfx (docs/research/ui-patterns.md, recs 1, 2 and 4) a
-// select ticks (one soft tone) and the slot bounces, the text is larger, and a note goes to the shared
-// notification lane (src/render/notify.ts, rec 5) instead of the pill here.
-import '../render/ui-kit.css';
+// you can throw) and 10 (slapstick over precision). A select ticks (one soft tone) and the slot bounces, and a note ("Hotbar
+// full") goes to the shared notification lane (src/ui/notify.ts); docs/research/ui-patterns.md, recs 1, 2, 4 and 5.
+import '../ui/ui-kit.css';
 import './hotbar.css';
 import * as THREE from 'three';
 import { onFrame, onStart } from '../loop.ts';
@@ -22,8 +21,8 @@ import { setIcon, warmIcons } from '../player/item-icons.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
 import { describeControl, onKey } from '../player/controls.ts';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
-import { uiSound, replay, UI_KIT } from '../render/ui-sound.ts';
-import { notify } from '../render/notify.ts';
+import { uiSound, replay } from '../ui/ui-sound.ts';
+import { notify } from '../ui/notify.ts';
 
 // ---------------------------------------------------------------- in hand
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
@@ -81,7 +80,6 @@ const NAME_MS = 2400;
 const ui = {
   root: null as unknown as HTMLElement,
   name: null as unknown as HTMLElement,
-  note: null as unknown as HTMLElement,
   slots: [] as HTMLButtonElement[],
   toss: null as HTMLButtonElement | null,
   version: -1,
@@ -106,9 +104,7 @@ function buildHud() {
   tags.className = 'hotbar-tags';
   ui.name = document.createElement('div');
   ui.name.className = 'hotbar-name';
-  ui.note = document.createElement('div');
-  ui.note.className = 'hotbar-note';
-  tags.append(ui.name, ui.note);
+  tags.append(ui.name);
   const row = document.createElement('div');
   row.className = 'hotbar-slots';
   for (let k = 0; k < SLOTS; k++) {
@@ -191,15 +187,8 @@ function renderHud(now: number) {
   const noting = now < handsNote.until && !!handsNote.text;
   if (noting && ui.noteAt !== handsNote.until) {
     ui.noteAt = handsNote.until;
-    if (UI_KIT) notify(handsNote.text, { kind: 'deny', ttl: handsNote.until - now, key: 'hands' });
-    else {
-      ui.note.textContent = handsNote.text;
-      ui.note.classList.remove('shake');
-      void ui.note.offsetWidth; // restart the shake
-      ui.note.classList.add('shake');
-    }
+    notify(handsNote.text, { kind: 'deny', ttl: handsNote.until - now, key: 'hands' });
   }
-  ui.note.classList.toggle('shown', noting && !UI_KIT);
   ui.name.classList.toggle('shown', !noting && !!ui.name.innerHTML && now < ui.nameUntil);
 }
 

@@ -8,7 +8,8 @@
   File: [src/features/telemetry.ts](../../src/features/telemetry.ts).
 - **Mixed builds.** Each tab checks `version.json` on start, every 5 min and when it comes back into view. A hidden tab
   reloads onto a newer build at once; a visible one shows "Boogle was updated – reload to stay in sync with friends"
-  with a Reload button and reloads the next time it is hidden. Each player's build rides in presence `bv`.
+  as a sticky notice in the notification lane ([hud.md](hud.md)) with a Reload button, and reloads the next time it is
+  hidden. Each player's build rides in presence `bv`.
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
   mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)

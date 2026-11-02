@@ -195,70 +195,70 @@ const grindShot = (shot: string, seconds: number) => `
 const PAGES: Page[] = [
   {
     key: 'ui',
-    query: 'proto=uisfx&jump2=1',
+    query: 'jump2=1',
     takes: [
       {
         id: 'ui-tick',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Hotbar tick',
         when: 'Selecting a hotbar slot: one soft tone, the same for every slot (here: ten selects in a row).',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) => `uiSound('tick', ${k});`),
           220,
         ),
       },
       {
         id: 'ui-pop',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Prompt pop',
         when: 'The interact prompt appears ("Take logs", "Pick up"): three of them.',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           Array(3).fill(`uiSound('pop');`),
           600,
         ),
       },
       {
         id: 'ui-thunk',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Thunk (it worked)',
         when: 'A press that did something (Take logs, Pick up): a wooden tok on G4 over a soft low knock.',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           Array(3).fill(`uiSound('thunk');`),
           500,
         ),
       },
       {
         id: 'ui-deny',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Deny',
         when: 'A press that could not happen ("Hotbar full"): twice.',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           Array(2).fill(`uiSound('deny');`),
           700,
         ),
       },
       {
         id: 'ui-count',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Haul count run',
         when: 'The haul counter moving by one: climbs with a run of pickups, resets after a pause, falls when you drop logs.',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           [...Array(12).fill(`uiSound('count', 1);`), 'await sleep(900);', ...Array(5).fill(`uiSound('count', -1);`)],
           110,
         ),
       },
       {
         id: 'ui-flap',
-        group: 'UI kit (?proto=uisfx)',
+        group: 'UI kit',
         title: 'Plaque flap',
         when: 'A work-site plaque turns a row over (a pour was credited): a split-flap flutter, near, mid and far.',
         body: seq(
-          `const { uiSound } = await import('/src/render/ui-sound.ts');`,
+          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           [`uiSound('flap', 1);`, `uiSound('flap', 0.55);`, `uiSound('flap', 0.25);`],
           700,
         ),

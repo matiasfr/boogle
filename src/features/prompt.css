@@ -1,4 +1,5 @@
-/* Interact prompt: a paper sticker with the button glyph and the verb, pointing down at the thing it acts on. */
+/* Interact prompt: a paper sticker with the button glyph and the verb, pointing down at the thing it acts on. Motion
+   tokens from src/ui/ui-kit.css. */
 .prompt {
   position: absolute;
   left: 0;
@@ -28,11 +29,12 @@
   border: 3px solid var(--ink);
   border-radius: 999px;
   box-shadow: 0 3px 0 var(--ink);
-  font: 400 18px/1 var(--font-display);
+  font: 400 20px/1 var(--font-display);
   letter-spacing: 0.3px;
   white-space: nowrap;
   -webkit-text-stroke: 0;
   text-shadow: none;
+  transform-origin: 50% 100%; /* squashes on a press (src/ui/ui-kit.css) */
 }
 .prompt-in > .prompt-chip::after {
   content: '';
@@ -58,9 +60,9 @@ body.touch .prompt-chip {
   order: -1;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #d8432f;
+  background: var(--coral);
   color: #fff;
-  font: 800 12px/1 var(--font-body);
+  font: 800 15px/1 var(--font-body);
   white-space: nowrap;
 }
 
@@ -72,7 +74,7 @@ body.touch .prompt-chip {
 }
 .prompt-in.pop,
 .boogler-tag-prompt.pop {
-  animation: prompt-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: prompt-pop var(--dur-pop) var(--ease-pop);
 }
 @keyframes prompt-pop {
   from {
@@ -85,19 +87,4 @@ body.touch .prompt-chip {
   .boogler-tag-prompt.pop {
     animation: none;
   }
-}
-
-/* ?proto=uisfx (src/render/ui-kit.css): the shared spring, a slightly bigger verb, and the sticker's shadow pressed in
-   while it squashes. */
-.ui-kit .prompt-in.pop,
-.ui-kit .boogler-tag-prompt.pop {
-  animation: prompt-pop var(--dur-pop) var(--ease-pop);
-}
-.ui-kit .prompt-chip {
-  font-size: 20px;
-  transform-origin: 50% 100%;
-}
-.ui-kit .prompt-why {
-  font-size: 15px;
-  background: var(--coral);
 }

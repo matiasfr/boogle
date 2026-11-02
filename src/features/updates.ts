@@ -2,19 +2,18 @@
 // what newer tabs send (or send what they no longer expect). This tab checks the deployed build (version.json, written
 // by vite.config.js) on start, every CHECK_MS and when it comes back into view. When a newer one is out:
 //   - a hidden tab (nobody is playing in it) reloads right away;
-//   - a visible tab shows a small toast with a Reload button, and reloads the next time it is hidden.
+//   - a visible tab shows a sticky notice with a Reload button in the shared lane (src/ui/notify.ts), and reloads the
+//     next time it is hidden.
 // The dev server has no version.json and a dev build skips the check, so this is inert in development.
 // Each player's build also rides in presence (src/netplay/builds.ts), so the net debug overlay and connection reports can
-// tell a mixed room. With ?proto=uisfx the toast is a sticky notice in the shared lane (src/render/notify.ts).
+// tell a mixed room.
 // Serves DESIGN.md "Designed for drop-in, drop-out" (a tab left open for hours still plays with the friends who just
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
-import './updates.css';
 import { onStart } from '../loop.ts';
 import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
 import { BUILD } from '../netplay/builds.ts';
 import { net } from '../netplay/net.ts';
-import { UI_KIT } from '../render/ui-sound.ts';
-import { notify } from '../render/notify.ts';
+import { notify } from '../ui/notify.ts';
 
 const CHECK_MS = 5 * 60 * 1000;
 const RELOADED_FOR = 'boogle-update-reloaded-for'; // sessionStorage: the build we last reloaded to reach
@@ -60,23 +59,7 @@ function showToast() {
     pad && registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
       ? `Reload (${PAD_LABEL[pad]})`
       : 'Reload';
-  if (UI_KIT) {
-    const dismiss = notify(TEXT, { kind: 'news', ttl: 0, key: 'update', action: { label, run: reload } });
-    toast = { remove: dismiss };
-    return;
-  }
-  const el = document.createElement('div');
-  el.className = 'update-toast';
-  el.setAttribute('role', 'status');
-  const text = document.createElement('span');
-  text.textContent = TEXT;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.textContent = label;
-  btn.addEventListener('click', reload);
-  el.append(text, btn);
-  document.body.append(el);
-  toast = el;
+  toast = { remove: notify(TEXT, { kind: 'news', ttl: 0, key: 'update', action: { label, run: reload } }) };
 }
 
 async function check() {

@@ -1,6 +1,6 @@
 // The UI sound kit (docs/research/ui-patterns.md, rec 1): five tiny synthesized voices for the HUD, in one pitch family
-// (C major pentatonic from C5), quiet (a bus about 8 dB under the master) and short. Behind ?proto=uisfx for now, which
-// also puts `ui-kit` on <html> for the motion and legibility rules (src/render/ui-kit.css). Local and cosmetic.
+// (C major pentatonic from C5), quiet (a bus about 8 dB under the master) and short. Motion and legibility rules for the
+// same HUD are in ./ui-kit.css. Local and cosmetic.
 //
 //   uiSound('tick')         hotbar select: one soft, short tone, the same for every slot (Fortnite-style; TICK = false
 //                           silences it, the slot's bounce still shows the choice)
@@ -12,11 +12,8 @@
 //                           after a pause
 //   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a quiet split-flap flutter (four
 //                           tiny card clicks, no pitched pip), at vol (0-1, by distance from the plaque)
-import { getAudio } from './audio.ts';
-import { clink } from './clink.ts';
-
-export const UI_KIT = new URLSearchParams(location.search).get('proto') === 'uisfx';
-if (UI_KIT) document.documentElement.classList.add('ui-kit');
+import { getAudio } from '../render/audio.ts';
+import { clink } from '../render/clink.ts';
 
 export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count' | 'flap';
 
@@ -74,7 +71,6 @@ function blip(ctx: AudioContext, dest: AudioNode, b: Blip): void {
 }
 
 export function uiSound(kind: UiSound, arg = 0): void {
-  if (!UI_KIT) return;
   const a = getAudio();
   const now = performance.now();
   if (kind === 'count') {
@@ -148,7 +144,7 @@ export function uiSound(kind: UiSound, arg = 0): void {
 
 // Restart a one-shot CSS animation class (press, nope, tick) on an element.
 export function replay(el: Element | null | undefined, cls: string): void {
-  if (!el || !UI_KIT) return;
+  if (!el) return;
   el.classList.remove(cls);
   void (el as HTMLElement).offsetWidth;
   el.classList.add(cls);

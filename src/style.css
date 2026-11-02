@@ -6,7 +6,7 @@
   --sun: #ffc93d;
   --sea: #0f9fc0;
   --sky: #bfe6f5;
-  --glass: rgba(12, 28, 52, 0.58);
+  --glass: rgba(12, 28, 52, 0.72); /* opaque enough that white text stays above 4.5:1 over clouds and foam */
   --glass-line: rgba(255, 255, 255, 0.24);
   --on-glass: #f3f8ff;
   --font-display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;

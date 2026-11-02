@@ -1,7 +1,6 @@
 // One quiet notification lane (docs/research/ui-patterns.md, rec 5): a single slot just past the hotbar for things only
 // you need to know ("Hotbar full", "Boogle was updated"), so notes don't pile up as systems arrive. Shared progress
-// belongs in the world instead (the work-site plaque flips its rows, src/features/work-sites.ts). Behind ?proto=uisfx
-// (src/render/ui-sound.ts): with it off the hotbar note and the update toast stay as they were. Local and cosmetic.
+// belongs in the world instead (the work-site plaque flips its rows, src/features/work-sites.ts). Local and cosmetic.
 //
 //   notify(text, { kind, ttl, key, action })  -> dismiss()
 //     kind    'info' (glass, a pop), 'deny' (coral, a falling two-note and a head-shake) or 'news' (sun edge, a pop)

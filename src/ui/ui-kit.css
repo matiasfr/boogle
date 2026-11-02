@@ -1,6 +1,5 @@
 /* The shared UI kit (docs/research/ui-patterns.md, "A small UI style guide"): motion and colour tokens, imported by
-   the HUD features that use them. The rules that change today's look sit under `.ui-kit` (on <html> with
-   ?proto=uisfx, src/render/ui-sound.ts) so the prototype can be compared with and without. */
+   the HUD features that use them, and the press and refusal motions (`replay(el, 'ui-press')` in ./ui-sound.ts). */
 :root {
   --dur-press: 80ms; /* press-in on key, pad or tap */
   --dur-pop: 240ms; /* something arriving */
@@ -32,10 +31,6 @@
   --leaf: #4fb36a;
   --coral: #d8432f;
   --text-play: 18px; /* anything read during play (rec 4) */
-}
-/* Rec 4: a little more opaque glass, so white text stays above 4.5:1 over clouds and foam. */
-:root.ui-kit {
-  --glass: rgba(12, 28, 52, 0.72);
 }
 
 /* Press feedback: squash in fast, spring back. Uses `scale`, so it composes with each element's own transform. */
@@ -72,15 +67,15 @@
     scale: 1;
   }
 }
-.ui-kit .ui-press {
+.ui-press {
   animation: ui-squash calc(var(--dur-press) * 4) both;
 }
-.ui-kit .ui-nope {
+.ui-nope {
   animation: ui-nope 0.3s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui-kit .ui-press,
-  .ui-kit .ui-nope {
+  .ui-press,
+  .ui-nope {
     animation: none;
   }
 }
