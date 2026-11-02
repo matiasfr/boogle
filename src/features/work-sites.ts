@@ -1,7 +1,7 @@
 // Work sites (src/world/rules/sites.ts): one per section of the preset railway, from the court toward the lighthouse.
 // Each has a Track ring and a Helper ring; walk into one carrying the age's material and your stack pours in, a few
-// pieces at a time. Sleepers pile up in the Track ring as it fills, a hut frame rises once the Helper ring is full, and
-// the plaque lists who brought what (credit only: nobody is listed for not pouring). Placeholder visuals (0.1).
+// pieces at a time. Sleepers pile up in the Track ring as it fills, the helper hut goes up as the Helper ring fills
+// (src/features/hut-build.ts), and the plaque lists who brought what (credit only: nobody is listed for not pouring). Placeholder visuals (0.1).
 // Serves DESIGN.md 4 (cooperation is automatic: everyone's pours land in the same ring) and 6 (communal world,
 // personal rewards: the section is everyone's, the plaque line and your tier are yours). Lockstep sites, Local view.
 // With ?proto=uisfx (docs/research/ui-patterns.md, rec 5: shared news in the world first) a credited pour turns the
@@ -27,13 +27,10 @@ import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { uiSound, UI_KIT } from '../render/ui-sound.ts';
 import { emit } from '../render/particles.ts';
-import { protoOn } from '../proto/flags.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
 const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest rooms)
-// The build prototype (?proto=build, src/proto/build/) draws the hut going up instead of this box.
-const BUILD_PROTO = protoOn('build');
 
 // Colour is the second signal, so each ring also has a shape (docs/research/ui-patterns.md, rec 4): Track is dashed
 // like a row of sleepers, Helper is a double line.
@@ -57,7 +54,6 @@ const doneMat = new THREE.MeshBasicNodeMaterial({
   depthWrite: false,
 });
 const sleepers = pieceMesh(ROUTE.length * SLEEPERS);
-const hutMat = new THREE.MeshStandardNodeMaterial({ color: '#b08454', roughness: 0.9, flatShading: true });
 const postMat = new THREE.MeshStandardNodeMaterial({ color: '#6b4a2b', roughness: 0.9 });
 
 type Label = {
@@ -125,7 +121,6 @@ const views = ROUTE.map((sec, s) => {
   const v = {
     rings: [] as THREE.Mesh[],
     ringLabels: [] as Label[],
-    hut: new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 1.4), hutMat),
     plaque: label(512, 256),
   };
   for (const ring of [TRACK, HELPER]) {
@@ -151,10 +146,6 @@ const views = ROUTE.map((sec, s) => {
   v.plaque.sprite.scale.set(2.6, 1.3, 1);
   v.plaque.sprite.position.set(px, y + 2.2, pz);
   scene.add(v.plaque.sprite);
-  const h = ringAt(s, HELPER);
-  v.hut.position.set(h.x + 1.9, groundHeight(h.x + 1.9, h.z) + 0.6, h.z);
-  v.hut.visible = false;
-  scene.add(v.hut);
   return v;
 });
 
@@ -228,7 +219,6 @@ function redraw() {
       v.rings[ring].material = open ? ringMat[ring] : doneMat;
       paint(v.ringLabels[ring], [ring === TRACK ? 'Track' : 'Helper hut', ringLine(x, s, ring, k)]);
     }
-    v.hut.visible = x.helpers > 0 && !BUILD_PROTO;
     // sleepers stacked in the Track ring as it fills
     const p = ringAt(s, TRACK);
     // (the pile goes down as the machine lays the section)

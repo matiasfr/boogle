@@ -24,7 +24,7 @@ import { me } from '../../player/player.ts';
 import { ROUTE, HELPER, RING_R, ringAt } from '../../sim/route.ts';
 import { BELL_TICKS, bellTick } from '../../sim/era.ts';
 import { COURT } from '../../world/grid.ts';
-import { HUT_BUILD } from '../../proto/build/blueprint.ts';
+import { HUT_BUILD } from '../../render/hut-blueprint.ts';
 import { ERAS, PLATFORM, BELL_POST, WAGON_MARK, type Block, type Bunting } from './blocks.ts';
 import { updateCall } from './call.ts';
 import { updateAtmosphere } from './atmosphere.ts';
@@ -159,7 +159,7 @@ function platformBoxes(): Box[] {
     box(x, z, place(bx, top + BELL_POST.h - 1, 0, 0.7, 0.7, 0.7, 0), BELL_POST.bell),
   ];
 }
-// The first site's helper hut, built (the ?proto=build blueprint without its scaffolding): it stands in every era.
+// The first site's helper hut, built (the hut blueprint without its scaffolding): it stands in every era.
 function helperHut(): Box[] {
   const h = ringAt(0, HELPER),
     x = h.x + RING_R + 1.9,
