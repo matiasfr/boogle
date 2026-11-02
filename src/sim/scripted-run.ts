@@ -1,6 +1,6 @@
 // Scripted runs: something that plays out over a fixed number of ticks from a start tick, the same on every peer with
 // no state but t0 (a machine laying track; later, spark and balloon emitters). Integer only (lockstep), like
-// ./sky-clock.js. Visuals read the same function at a smooth fractional tick (src/netplay/shared-time.ts).
+// ./sky-clock.ts. Visuals read the same function at a smooth fractional tick (src/netplay/shared-time.ts).
 //
 //   script        [{ name, len }]: phases in order, len in ticks (integers > 0)
 //   runAt(script, t0, tick) -> { phase, name, progress, total, done }

@@ -1,4 +1,4 @@
-// The haul playtest kit's panel (?proto=haul; loaded by src/features/haul-kit.ts; checklist:
+// The haul playtest kit's panel (?proto=haul; loaded by src/features/proto-haul.ts; checklist:
 // docs/playtest-kits/haul.md). Two kinds of knobs:
 // - This tab: the Local feel numbers (src/player/haul-feel.ts): pour cadence, pickup flight. Instant, never
 //   sent.

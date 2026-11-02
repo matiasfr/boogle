@@ -1,6 +1,6 @@
 // Roster rules: the `who.set` op and the `roster` state (../../sim/roster.ts): who each player id (pid) is, in order of
 // first sight. Every later table stores a player as their roster index. The pid is the host-stamped `e.u`
-// (../sync.js), never something the edit claims. Lockstep: everything here runs the same on every peer (see ./README.md).
+// (../sync.ts), never something the edit claims. Lockstep: everything here runs the same on every peer (see ./README.md).
 import {
   createRoster,
   canSet,

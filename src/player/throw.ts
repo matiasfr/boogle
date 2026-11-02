@@ -2,7 +2,7 @@
 // numbers). Hold to charge, aim where the camera looks, release to launch; the dots show where it will go. The thing
 // itself flies in src/physics/ball.ts (the ball) or src/adapters/gifts.ts (items). Serves DESIGN.md 10 (slapstick: every
 // throw feels the same). The charge state stays in me.charging / me.chargeStart (the HUD, bump, impact and the input
-// code read or reset it), but only startCharge here starts one. This file must not import ball.js (it imports us).
+// code read or reset it), but only startCharge here starts one. This file must not import ball.ts (it imports us).
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
 import { groundHeight } from '../adapters/terrain.ts';
@@ -88,5 +88,5 @@ function updatePreview() {
   previewAttr.needsUpdate = true;
 }
 
-// late -200, first in late, before the HUD (hud.js, -190).
+// late -200, first in late, before the HUD (hud.ts, -190).
 onFrame(updatePreview, { phase: 'late', order: -200 });

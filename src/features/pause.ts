@@ -377,7 +377,7 @@ export function openPause(start: Page = 'main') {
   tab = inputKind();
   padCtx = 'foot';
   card.querySelector('.pause-title')!.textContent = getRoomId();
-  dlg.showModal(); // after openModal: its setPadModal keeps gamepad.js from pulling focus off the buttons
+  dlg.showModal(); // after openModal: its setPadModal keeps gamepad.ts from pulling focus off the buttons
   show(start);
   return true;
 }

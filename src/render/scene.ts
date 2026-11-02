@@ -6,7 +6,7 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 
 // WebGPU only: no WebGL 2 fallback, so every feature may use compute, storage buffers and the rest of WebGPU without a
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
-// render() throws until init() resolves, so main.js starts the game from rendererReady.
+// render() throws until init() resolves, so main.ts starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
 export const renderer = new THREE.WebGPURenderer({
   canvas,
@@ -15,14 +15,14 @@ export const renderer = new THREE.WebGPURenderer({
   trackTimestamp: Number(params.get('prof')) > 0, // GPU ms per frame in the ?prof=1 overlay (src/debug/prof-overlay.ts)
 });
 (renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
-export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.js scales the ratio below this
+export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.ts scales the ratio below this
 export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
 renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 // Neutral, not AgX: AgX greyed the toy palette (sea, sky and grass lost their saturation).
 renderer.toneMapping = THREE.NeutralToneMapping;
-renderer.toneMappingExposure = 1.0; // the one base exposure; sky.js eases it up at night (eyes adapting), lights stay physical
+renderer.toneMappingExposure = 1.0; // the one base exposure; sky.ts eases it up at night (eyes adapting), lights stay physical
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const lobbyNote = (text: string) => {

@@ -3,7 +3,7 @@
 // stalls for tens of ms. compileAsync builds them ahead, but only for what the renderer would draw: it skips hidden
 // objects and anything outside the camera's frustum, so those are switched on for the length of the call.
 //
-//   precompile(null, fn)  main.js, behind the loading screen: the whole scene, then every warm-up object; fn(0..1) as
+//   precompile(null, fn)  main.ts, behind the loading screen: the whole scene, then every warm-up object; fn(0..1) as
 //                         each part finishes
 //   precompile(object)    a lazy part, as it is built: that object (in the scene already or not)
 //   warmUp(make)          for things that only appear once someone plays (a new player's avatar, a held item): make()

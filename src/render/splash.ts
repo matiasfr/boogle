@@ -7,7 +7,7 @@ import { emit } from './particles.ts';
 import { groundHeight } from '../adapters/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 
-const FEET = 0.35; // waterline offset used by the swim code in physics.js
+const FEET = 0.35; // waterline offset used by the swim code in physics.ts
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;

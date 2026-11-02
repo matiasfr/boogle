@@ -1,4 +1,4 @@
-// Registers the service worker (./sw-worker.ts, built to sw.js) once the game is interactive, so its first-load
+// Registers the service worker (./sw-worker.ts, built to sw.ts) once the game is interactive, so its first-load
 // precache never competes with the boot (docs/plans/loading.md). From the second visit on, hashed files (JS, WASM,
 // CSS, models, the KTX2 transcoder) come from its cache with no request at all; the page itself, version.json and the
 // server always go to the network, so src/features/updates.ts sees a new deploy as before.
@@ -23,7 +23,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   else
     bootDone.then(() =>
       navigator.serviceWorker
-        .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' })
+        .register(`${import.meta.env.BASE_URL}sw.ts`, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' })
         .catch((e) => console.warn('[sw] not registered:', e)),
     );
 }

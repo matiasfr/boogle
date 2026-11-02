@@ -359,5 +359,5 @@ function updateClouds(dt: number) {
     if (c.position.x > 340) c.position.x = -340;
   }
 }
-// update -190, after the camera (player.js, -200), before the feature update hooks (src/loop.ts lists the orders).
+// update -190, after the camera (player.ts, -200), before the feature update hooks (src/loop.ts lists the orders).
 onFrame(({ dt }) => updateClouds(dt), { phase: 'update', order: -190 });

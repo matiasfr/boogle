@@ -1,4 +1,4 @@
-// The greybox era swap (docs/plans/find-the-fun.md step 4; loaded by src/features/era-swap.ts behind ?proto=era).
+// The greybox era swap (docs/plans/find-the-fun.md step 4; loaded by src/features/proto-era.ts behind ?proto=era).
 // A Local render of the lockstep era (src/world/rules/opening.ts): era-1 blocks (low A-frame huts, a campfire) stand
 // around the court and along the route; once the route is laid, anyone at the platform at its far end can start
 // opening day. A gathering call (./call.ts: signal smoke and a ring that shows the time left) runs until
@@ -363,7 +363,7 @@ onFrame(
 
 // ---------------------------------------------------------------- the solo shortcut
 // A small button that lays the rest of the route at once (open.lay), so one tester reaches opening day in seconds. The
-// host only takes it in a proto- room (env protoRoom, set by src/features/era-swap.ts).
+// host only takes it in a proto- room (env protoRoom, set by src/features/proto-era.ts).
 export function shortcutButton(protoRoom: boolean): void {
   const box = document.createElement('div');
   box.className = 'era-proto';

@@ -1,4 +1,4 @@
-// The cave surface: the network's signed distance (network.js) roughened with rock noise, turned into triangles by
+// The cave surface: the network's signed distance (network.ts) roughened with rock noise, turned into triangles by
 // marching cubes. One seamless shell for tunnels and chambers alike, used for both the look and the collider.
 // Returns plain typed arrays (no three.js objects), so it can be timed and checked in Node.
 //

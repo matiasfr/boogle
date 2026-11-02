@@ -109,7 +109,7 @@ Each milestone is one PR with `npm run check` passing, a scenario or a `/look` s
 - **Feel:** drift sparks, dust, a time shown as a plank tally.
 - **Rewards:** personal only (the era hat in S6). No prize pile and nothing shared.
 - **The Puff Boost** (The Boogler launches you) comes later.
-- **Files:** `src/features/soapbox.ts` plus its Owner vehicle.
+- **Files:** `src/features/proto-soapbox.ts` plus its Owner vehicle.
 - **Check:** a `/look` sheet of a run.
 
 **Court ball is out of this slice.** Its design waits for the mini-games pass, along with whether venues ever feed the haul.

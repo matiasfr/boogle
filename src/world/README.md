@@ -6,18 +6,18 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 
 | File | Owns |
 |---|---|
-| `sync.js` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
+| `sync.ts` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
-| `game-world.js` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
-| `grid.js` | Pure, lockstep: grid constants. |
+| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
+| `grid.ts` | Pure, lockstep: grid constants. |
 | `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden. |
 
 Pure sim logic lives in `../sim/` (mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
-and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.js`;
+and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
 tests install the rules on their own sync instances (`test/helpers/net.mjs`).
 
-## Contract (`sync.js`)
+## Contract (`sync.ts`)
 
 ```js
 // Rules modules get registerOp/registerState/onTick through install(sync, ...); adapters import the rest.
@@ -52,7 +52,7 @@ submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells.
                                    // binds it when the tab connects; an edit's own u is dropped). Edits from a
                                    // session with no pid are rejected.
                                    // Returns true if queued, not applied: the host may reject it, and edits held
-                                   // while reconnecting can be dropped (see sync.js header). Use onApplied for
+                                   // while reconnecting can be dropped (see sync.ts header). Use onApplied for
                                    // anything irreversible.
 setPid(pid)                  // this tab's player id (src/player/identity.ts), for edits it stamps itself (local)
 pidOf(selfId)                // a session's pid, or null

@@ -1,6 +1,6 @@
 // The service worker's decisions, pure so test/sw-policy.test.ts can check them (./sw-worker.ts does the I/O;
 // docs/plans/loading.md, "Service worker"). Every file Vite writes under assets/ has a content hash in its name, so a URL
-// there never changes meaning: cache-first is safe for them and for nothing else (the page, version.json, sw.js, the
+// there never changes meaning: cache-first is safe for them and for nothing else (the page, version.json, sw.ts, the
 // icons and the web manifest keep their names across deploys and always go to the network).
 
 export const CACHE_PREFIX = 'boogle-';

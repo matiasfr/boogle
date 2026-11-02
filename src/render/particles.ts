@@ -1,6 +1,6 @@
 // One cosmetic particle pool for dust, sand and spray. Local only: never networked and never read by the simulation,
 // so floats and Math.random are fine. One look: round soft dots (an instanced Sprite), used by splash foam
-// (src/render/splash.ts), the ball's sand puff (features/impact.js) and skid and splat dust (features/feel.js).
+// (src/render/splash.ts), the ball's sand puff (features/impact.ts) and skid and splat dust (features/feel.ts).
 //
 //   emit(p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
 //                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),

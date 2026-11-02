@@ -107,7 +107,7 @@ export function updateIntent(dt: number) {
     rz = -Math.sin(cam.yaw);
   me.wish.set(fx * f + rx * s, 0, fz * f + rz * s);
   if (me.wish.lengthSq() > 1) me.wish.normalize();
-  // me.down: knocked flat by a fast ball (features/impact.js); held: talking (src/player/conversation.ts)
+  // me.down: knocked flat by a fast ball (features/impact.ts); held: talking (src/player/conversation.ts)
   if (!me.entered || me.down || inputState.held) me.wish.set(0, 0, 0);
   me.jumpQueued = me.down || inputState.held ? 0 : Math.max(0, me.jumpQueued - dt);
 
@@ -150,7 +150,7 @@ function updateCamera(elapsed: number) {
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
-// world -290, after the ball's respawn check (ball.js, -300): falling off the world puts you back at the spawn.
+// world -290, after the ball's respawn check (ball.ts, -300): falling off the world puts you back at the spawn.
 onFrame(
   () => {
     if (me.body && me.body.position.y < -25) {
@@ -161,7 +161,7 @@ onFrame(
   { phase: 'world', order: -290 },
 );
 
-// update -290, after the ball mesh (ball.js, -300), before remote avatars (net.js, -280): the avatar follows the body.
+// update -290, after the ball mesh (ball.ts, -300), before remote avatars (net.ts, -280): the avatar follows the body.
 // A deck you ride turns you and the camera with it, and you walk at your speed on the deck, not over the ground.
 onFrame(
   ({ dt }) => {
@@ -178,5 +178,5 @@ onFrame(
   { phase: 'update', order: -290 },
 );
 
-// update -200, after every visual sync, before the clouds (props.js, -190) and the features.
+// update -200, after every visual sync, before the clouds (props.ts, -190) and the features.
 onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });

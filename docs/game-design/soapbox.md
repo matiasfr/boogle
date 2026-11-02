@@ -2,7 +2,7 @@
 
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
-precision). Without the flag the cart never loads: `src/features/soapbox.ts` imports `src/proto/soapbox/` only with
+precision). Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
 it (and otherwise only hides a remote driver; see Sync).*
 
 ## What you see and do
@@ -105,7 +105,7 @@ For comparing in one sitting; no `&v` is the tuning below.
 Owner kind. The driver publishes the cart as presence `soapbox: [x, y, z, qx, qy, qz, qw, wheel angle, speed]` (null
 when not seated); other tabs with the flag draw it with `createSnaps` at `now - INTERP_MS`. Each tab has its own
 parked cart; an empty cart is local. Tabs without the flag draw no carts: they hide a remote player's avatar while
-their `soapbox` presence is set (`src/features/soapbox.ts`, the only part that runs without the flag).
+their `soapbox` presence is set (`src/features/proto-soapbox.ts`, the only part that runs without the flag).
 
 ## Look at it
 

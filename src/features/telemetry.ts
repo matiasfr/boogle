@@ -72,7 +72,7 @@ if (SERVER) {
   onDesync(({ keys }) => report('desync', { keys: keys.join(',') || 'tick/order' }));
   onSnapFail(({ from, reason }) => report('snapshot', { from, reason }));
 
-  // ---- connection: net.js reports every change of net.state ('connecting' | 'live' | 'solo') ----
+  // ---- connection: net.ts reports every change of net.state ('connecting' | 'live' | 'solo') ----
   let since = performance.now(); // when the current attempt started connecting (page load for the first one)
   let wasLive = false; // since the last failure: a drop after being live is 'lost', not a failed 'join'
   let failed = 0; // failed attempts before the first good join

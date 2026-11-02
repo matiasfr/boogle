@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 // Rapier's plain and SIMD builds (src/physics/backend-rapier.ts loads one).
 const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) => ({
   name,
-  message: 'Physics goes through src/physics/engine.ts (docs/plans/rapier.md).',
+  message: 'Physics goes through src/physics/engine.ts (docs/plans/done/rapier.md).',
 }));
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage = 'src/world/rules/ is lockstep only: src/sim/, ../grid.js and sibling rules (see its README).';
@@ -36,7 +36,7 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
   .map((property) => ({ object: 'Math', property, message: det(`Math.${property}`) + ' Use a table or polynomial.' }));
 
-// WebGPURenderer (docs/plans/webgpu-migration.md) never calls onBeforeCompile, can't draw ShaderMaterial and draws
+// WebGPURenderer (docs/plans/done/webgpu-migration.md) never calls onBeforeCompile, can't draw ShaderMaterial and draws
 // THREE.Points as 1 px dots.
 const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (src/render/README.md).';
 
@@ -137,7 +137,7 @@ export default [
       ],
     },
   },
-  // The physics backend is the only module that imports a physics library (docs/plans/rapier.md).
+  // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
   {
     files: ['src/physics/backend-*.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [syncBan] }] },

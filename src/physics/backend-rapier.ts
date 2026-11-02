@@ -1,4 +1,4 @@
-// Rapier backend of the physics facade (./engine.ts documents the API; docs/plans/rapier.md). Rapier's WASM loads with ready(); bodies made before that are kept as mirrors and built in Rapier once it is
+// Rapier backend of the physics facade (./engine.ts documents the API; docs/plans/done/rapier.md). Rapier's WASM loads with ready(); bodies made before that are kept as mirrors and built in Rapier once it is
 // in. Each body is a mirror: game code writes position, velocity, force, quaternion on it in preStep hooks; every fixed
 // step pushes those into Rapier, steps, and pulls the result back. A position or rotation that differs from what Rapier
 // last reported was set by the game (a teleport, a ride) and is written through.

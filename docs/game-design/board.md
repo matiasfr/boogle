@@ -3,7 +3,7 @@
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), from the decision in
 [boogle-2.md](../proposals/boogle-2.md) that stations are the fast-travel board and trains are ride-only and timetabled.
 Gut question: "Does the board make the island feel connected and quick to get around?" Serves DESIGN.md 8 (Designed for
-drop-in, drop-out) and 7 (Telegraph everything). Without the flag nothing loads: `src/features/board.ts` imports
+drop-in, drop-out) and 7 (Telegraph everything). Without the flag nothing loads: `src/features/proto-board.ts` imports
 `src/proto/board/` only with it.*
 
 ## What you see and do

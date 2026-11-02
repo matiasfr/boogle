@@ -12,10 +12,10 @@ Still open:
   browser as host") is closer to today.
 - DESIGN.md's "Small and readable" says everything is TypeScript; 103 files in `src/` are still `.js` (59 are `.ts`).
 - AGENTS.md and CLAUDE.md say PR CI runs `world-inputs`, `smoke` and `two-player-dig`; `ci.yml` runs only
-  `world-inputs`, and there is no `two-player-dig` scenario. AGENTS.md also lists F, Q and Z as keys `input.js` binds
+  `world-inputs`, and there is no `two-player-dig` scenario. AGENTS.md also lists F, Q and Z as keys `input.ts` binds
   by hand; it binds Space, E and R.
 
-Fixed since: the Boogler friendship is now global, like the hotbar; `src/world/README.md` now says what reads `world.epochMs`; the spring API and `dev/water-lab/` are gone (#31), frame logic left `main.js` (#29); the lighthouse
+Fixed since: the Boogler friendship is now global, like the hotbar; `src/world/README.md` now says what reads `world.epochMs`; the spring API and `dev/water-lab/` are gone (#31), frame logic left `main.ts` (#29); the lighthouse
 header, DESIGN's Lockstep examples, PLAN Phase 4's slosh and worker items and the tech plan's legacy-code line now match
 the code.
 

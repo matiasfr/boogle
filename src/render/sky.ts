@@ -6,7 +6,7 @@
 // down), a deep-blue sky and a raised ambient, so terrain, paths and players read at a glance and the things that
 // glow still stand out.
 //
-// SUN_DIR (constants.js) is the key light's direction, read by the shadow-casting light in player.js and the water's
+// SUN_DIR (constants.ts) is the key light's direction, read by the shadow-casting light in player.ts and the water's
 // glints. This module points it at the sun by day and at the moon by night.
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
@@ -86,7 +86,7 @@ const L = {
   discDay: new THREE.Color(1, 0.9, 0.7).multiplyScalar(3),
   discSet: new THREE.Color(1, 0.48, 0.16).multiplyScalar(1.5),
 };
-// Lights are physical values; the one global exposure is scene.js's. At night it eases up like an eye adapting, so the
+// Lights are physical values; the one global exposure is scene.ts's. At night it eases up like an eye adapting, so the
 // night lights below need no compensation of their own.
 const BASE_EXPOSURE = renderer.toneMappingExposure;
 const NIGHT_EXPOSURE = 1.15;

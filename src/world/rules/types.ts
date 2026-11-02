@@ -28,7 +28,7 @@ export type SyncView = {
 };
 /** The static land every peer builds the same: grid size and the gifts layout (filled before tick 1). */
 export type Land = { n: number; layout: { trees: Cell[]; perches: (Cell & { kind: number })[] } };
-/** Every module's API, keyed by its name: what installRules returns (./index.js). */
+/** Every module's API, keyed by its name: what installRules returns (./index.ts). */
 export type Rules = {
   mushrooms: ReturnType<typeof import('./mushrooms.ts').install>;
   gifts: ReturnType<typeof import('./gifts.ts').install>;
@@ -43,7 +43,7 @@ export type Rules = {
   opening: import('./opening.ts').OpeningApi;
   wagon: import('./wagon.ts').WagonApi;
 };
-/** The replay test's seeded stream (./edit-gen.js). */
+/** The replay test's seeded stream (./edit-gen.ts). */
 export type Stream = {
   int: (lo: number, hi: number) => number;
   pick: <T>(a: readonly T[]) => T;

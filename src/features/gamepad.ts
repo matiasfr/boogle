@@ -272,7 +272,7 @@ onStart(() => {
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && scan());
   // Touching the screen hands control back to the touch overlay.
   addEventListener('touchstart', () => setActive(false), { passive: true });
-  // input.js zeroes the stick on blur; the next poll reads the pad afresh.
+  // input.ts zeroes the stick on blur; the next poll reads the pad afresh.
   addEventListener('blur', releaseAll);
   scan(); // once after load: a pad connected before the page was
   setTimeout(scan, 1000);

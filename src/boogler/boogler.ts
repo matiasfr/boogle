@@ -701,7 +701,7 @@ export function updateBoogler(dt: number, now: number) {
   boogler.labelPos.set(disp.x, gy + hatSpring.y + HAT_H + LABEL_GAP, disp.z);
 }
 
-// Screen-space position for the HUD label and edge pointer (hud.js).
+// Screen-space position for the HUD label and edge pointer (hud.ts).
 const vp = new THREE.Vector3();
 const centerOn = { x: 0, y: 0, behind: false },
   labelOn = { x: 0, y: 0, behind: false };

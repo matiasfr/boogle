@@ -18,7 +18,7 @@ import type { SyncView, Land, Rules } from './types.ts';
 
 export const RULES = [mushrooms, gifts, roster, stacks, piles, sites, sources, bank, ball, tune, opening, wagon];
 
-// Installs every rules module on a sync (the real one in game-world.js, fresh ones in tests). Each gets a view of the
+// Installs every rules module on a sync (the real one in game-world.ts, fresh ones in tests). Each gets a view of the
 // sync without submitEdit (rules react to edits, they never make them), the land, and the APIs of the modules before it.
 export function installRules(sync: SyncView, land: Land): Rules {
   const view = {

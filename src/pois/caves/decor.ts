@@ -533,7 +533,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     root.add(sign);
   }
 
-  // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.js).
+  // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.ts).
   const solidGeo = mergeParts(parts);
   const sp = solidGeo.attributes.position.array;
   const amb = new Float32Array(sp.length / 3);

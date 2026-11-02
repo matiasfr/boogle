@@ -210,7 +210,7 @@ function updateRide(dt: number, now: number) {
 // input, src/player/conversation.ts): back (pad B, Esc), the close button, ending up more than LEAVE_RANGE away (a ball
 // knocks you), hopping on him or the pause view end it (a kick-off telling-off waits for your answer, however far you
 // flew).
-// The conversations (talk.js and its ~1,100 lines, lines.js) are their own chunk: fetched right after start
+// The conversations (talk.ts and its ~1,100 lines, lines.ts) are their own chunk: fetched right after start
 // (setupBooglerPlay), so they are there long before anyone reaches him; a talk opened sooner waits for them.
 let talk: Talk | null = null;
 let talkMod: Promise<typeof import('./talk.ts')> | null = null;

@@ -58,7 +58,7 @@ The sea already makes the ball float and players swim (see the `preStep` buoyanc
 
 ## Phase 3: Shape the ground (dig and pile)
 
-> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
+> Removed 2026-10-30 to clear room around the ball (docs/plans/done/cleanup-dig-water-junk.md); the items below are history.
 
 The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 world units) shared by the mesh, the physics body and the water shader's height texture. Editing it is the foundation for everything after.
 
@@ -77,7 +77,7 @@ The terrain is already a 129×129 heightfield (`heights[i][j]`, cell size 1.25 w
 
 ## Phase 4: Living water (the core sim)
 
-> Removed 2026-10-30 to clear room around the ball (docs/plans/cleanup-dig-water-junk.md); the items below are history.
+> Removed 2026-10-30 to clear room around the ball (docs/plans/done/cleanup-dig-water-junk.md); the items below are history.
 
 - [x] A **2.5D column water sim**, not 3D voxels. The island has no overhangs, so 3D buys almost nothing for a big cost. Each cell has terrain height plus integer water depth (0–255). Water flows to lower neighbors by a fixed integer rule in a fixed scan order, so every machine gets bit-identical results.
 - [x] Run it only on a **sim region** near the beach (start around 48×48 cells, ~60×60 m) at 10–20 ticks/s. Track an **active-cell list** so settled water sleeps (Noita's trick, the biggest performance win).
