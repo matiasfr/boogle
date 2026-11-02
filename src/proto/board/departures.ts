@@ -3,7 +3,7 @@
 // network): every tab computes the same times from the shared tick. Stations are the wagon's stops: 0 is the first
 // site, k the site of section k, and `laid` the far end of the last laid section.
 import { ROUTE } from '../../sim/route.ts';
-import { wagonAt, wagonCycle } from '../../sim/wagon.ts';
+import { wagonAt, wagonCycle, WAGON_PACE, type WagonPace } from '../../sim/wagon.ts';
 
 /** A dwell in the timetable: the wagon stands at `stop` from `start` to `end` (ticks into the cycle), leaving in `dir`. */
 export type Dwell = { stop: number; dir: 1 | -1; start: number; end: number };
@@ -15,15 +15,17 @@ export function stationAt(k: number): { x: number; z: number } {
   return { x: to[0], z: to[1] };
 }
 
-const cache: Dwell[][] = [];
-/** Every dwell in one cycle with `laid` sections laid, in order ([] with none laid). */
-export function dwells(laid: number): Dwell[] {
-  if (cache[laid]) return cache[laid];
-  const cycle = wagonCycle(laid);
+const cache = new Map<string, Dwell[]>();
+/** Every dwell in one cycle with `laid` sections laid at `pace`, in order ([] with none laid). */
+export function dwells(laid: number, pace: WagonPace = WAGON_PACE): Dwell[] {
+  const key = `${laid}:${pace.cruise}:${pace.accel}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const cycle = wagonCycle(laid, pace);
   const out: Dwell[] = [];
   let cur: Dwell | null = null;
   for (let t = 0; t <= cycle; t++) {
-    const w = t < cycle ? wagonAt(laid, t) : null;
+    const w = t < cycle ? wagonAt(laid, t, 0, pace) : null;
     const stop = w ? w.stop : -1;
     if (cur && (stop !== cur.stop || w!.dir !== cur.dir)) {
       cur.end = t;
@@ -32,23 +34,26 @@ export function dwells(laid: number): Dwell[] {
     }
     if (!cur && w && stop >= 0) cur = { stop, dir: w.dir, start: t, end: t };
   }
-  return (cache[laid] = out);
+  cache.set(key, out);
+  return out;
 }
 
 /**
  * The wagon's next call at `stop` leaving in `dir` (1 out, towards the far end; -1 back, towards station 0), seen at
  * `tick` (fractional is fine). `arrive` and `leave` are ticks from now (arrive 0 while it already stands there). Null if
- * it never leaves that stop that way (the far end only leaves back, station 0 only out) or nothing is laid.
+ * it never leaves that stop that way (the far end only leaves back, station 0 only out) or nothing is laid. `pace` is
+ * the room's (src/sim/tune.ts paceIn), as wagonAt runs it.
  */
 export function nextCall(
   laid: number,
   stop: number,
   dir: 1 | -1,
   tick: number,
+  pace: WagonPace = WAGON_PACE,
 ): { arrive: number; leave: number } | null {
-  const cycle = wagonCycle(laid);
+  const cycle = wagonCycle(laid, pace);
   if (!cycle) return null;
-  const d = dwells(laid).find((x) => x.stop === stop && x.dir === dir);
+  const d = dwells(laid, pace).find((x) => x.stop === stop && x.dir === dir);
   if (!d) return null;
   let phase = tick % cycle;
   if (phase < 0) phase += cycle;
