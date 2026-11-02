@@ -11,6 +11,9 @@
       "cite": [
         {
           "file": "src/entities/ball/state.ts"
+        },
+        {
+          "file": "src/netplay/owner-sync.ts"
         }
       ]
     },

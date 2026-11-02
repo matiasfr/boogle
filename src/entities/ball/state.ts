@@ -20,6 +20,7 @@ import { createBody, physicsTime, setMotion } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { me, handPosition, carryPosition } from '../../player/state.ts';
 import { sendPresence } from '../../netplay/net.ts';
+import { createOwnerSync } from '../../netplay/owner-sync.ts';
 
 export const ball = {
   body: createBody({
@@ -33,7 +34,7 @@ export const ball = {
   myE: 0, // epoch of this tab's current claim
   mine: false, // this tab simulates the ball and publishes it
   held: false,
-  remoteOwned: false, // another tab simulates it (./sync.ts works out which)
+  remoteOwned: false, // another tab simulates it (ballOwner works out which)
   // Where the ball is for gameplay and display. One writer a frame: the body when mine, the owner's snapshots when not.
   pose: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
   snap: 0, // goes up when the ball is put somewhere new: the view jumps there instead of smoothing
@@ -46,6 +47,34 @@ export const setBallMode = (mode: 'sim' | 'ghost') => setMotion(ball.body, mode 
 setBallMode('ghost');
 teleport(ball.body, ball.pose.p.x, ball.pose.p.y, ball.pose.p.z);
 
+const tmpQa = new THREE.Quaternion(),
+  tmpQb = new THREE.Quaternion();
+// Who simulates the ball. Only ./sync.ts and ./headless.ts use this directly: anything else claims and releases below.
+export const ballOwner = createOwnerSync(ball, {
+  setMode: setBallMode,
+  loadBody() {
+    const { p, q, v } = ball.pose;
+    teleport(ball.body, p.x, p.y, p.z);
+    ball.body.quaternion.set(q.x, q.y, q.z, q.w);
+    ball.body.velocity.set(v.x, v.y, v.z);
+  },
+  writePose(p, a, b, u) {
+    ball.pose.p.set(p[0]!, p[1]!, p[2]!);
+    tmpQa.set(a.q[0]!, a.q[1]!, a.q[2]!, a.q[3]!).normalize();
+    tmpQb.set(b.q[0]!, b.q[1]!, b.q[2]!, b.q[3]!).normalize();
+    ball.pose.q.slerpQuaternions(tmpQa, tmpQb, u);
+    ball.pose.v.set(b.v[0]!, b.v[1]!, b.v[2]!);
+  },
+  adoptOrphan: () => claimBall(false),
+  onRelease() {
+    ball.held = false;
+    me.holding = false;
+    me.charging = false;
+    me.lostBallAt = performance.now();
+  },
+  extrapolateMs: 150,
+});
+
 const hand = new THREE.Vector3();
 export function ballInReach() {
   if (!me.entered) return false;
@@ -53,33 +82,11 @@ export function ballInReach() {
 }
 
 export function claimBall(held: boolean) {
-  ball.myE = ball.e + 1;
-  ball.e = ball.myE;
-  ball.mine = true;
   ball.held = held;
-  ball.remoteOwned = false;
-  const { p, q, v } = ball.pose;
-  teleport(ball.body, p.x, p.y, p.z);
-  ball.body.quaternion.set(q.x, q.y, q.z, q.w);
-  if (held) {
-    setBallMode('ghost');
-  } else {
-    setBallMode('sim');
-    ball.body.velocity.set(v.x, v.y, v.z);
-  }
-  sendPresence();
+  ballOwner.claim(held ? 'ghost' : 'sim');
 }
 
-export function releaseBall() {
-  if (!ball.mine) return;
-  ball.mine = false;
-  ball.held = false;
-  me.holding = false;
-  me.charging = false;
-  me.lostBallAt = performance.now();
-  setBallMode('ghost');
-  sendPresence();
-}
+export const releaseBall = () => ballOwner.release();
 
 export function grabBall() {
   if (ball.mine) {
