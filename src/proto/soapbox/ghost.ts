@@ -115,15 +115,19 @@ export function createGhost() {
         u = Math.min(1, x - i);
       const a = i * W,
         b = j * W;
-      pa.set(f[a] + (f[b] - f[a]) * u, f[a + 1] + (f[b + 1] - f[a + 1]) * u, f[a + 2] + (f[b + 2] - f[a + 2]) * u);
-      qa.set(f[a + 3], f[a + 4], f[a + 5], f[a + 6]).normalize();
-      qb.set(f[b + 3], f[b + 4], f[b + 5], f[b + 6]).normalize();
+      pa.set(
+        f[a]! + (f[b]! - f[a]!) * u,
+        f[a + 1]! + (f[b + 1]! - f[a + 1]!) * u,
+        f[a + 2]! + (f[b + 2]! - f[a + 2]!) * u,
+      );
+      qa.set(f[a + 3]!, f[a + 4]!, f[a + 5]!, f[a + 6]!).normalize();
+      qb.set(f[b + 3]!, f[b + 4]!, f[b + 5]!, f[b + 6]!).normalize();
       g.position.copy(pa);
       g.quaternion.slerpQuaternions(qa, qb, u);
       const moved = g.visible ? Math.hypot(pa.x - lastX, pa.z - lastZ) : 0;
       lastX = pa.x;
       lastZ = pa.z;
-      poseCart(g, f[a + 7] + (f[b + 7] - f[a + 7]) * u, dt > 0 ? moved : 0);
+      poseCart(g, f[a + 7]! + (f[b + 7]! - f[a + 7]!) * u, dt > 0 ? moved : 0);
       g.visible = true;
     },
   };
