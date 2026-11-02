@@ -399,7 +399,10 @@ async function startStandin() {
 }
 
 // gated by src/features/proto-hero.ts
-// &body=standin: the robot; &body=pill: the first figure; by default the platformer hero (./platformer.ts).
-if (q.get('body') === 'standin') void startStandin();
-else if (q.get('body') === 'pill') void start();
-else void import('./platformer.ts').then((m) => m.startPlatformerHero());
+// By default hand-made clips on a mannequin (./clips.ts). &body=keyed: the code-animated platformer hero (./platformer.ts);
+// &body=standin: the robot; &body=pill: the first figure.
+const body = q.get('body');
+if (body === 'standin') void startStandin();
+else if (body === 'pill') void start();
+else if (body === 'keyed') void import('./platformer.ts').then((m) => m.startPlatformerHero());
+else void import('./clips.ts').then((m) => m.startClipsHero());

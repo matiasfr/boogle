@@ -1,4 +1,22 @@
 {
+  "hero-clips": {
+    "source": "hero-clips.glb",
+    "sourceHash": "7198a9487347dd95",
+    "outHash": "7bdee5511d3820b5",
+    "rawBytes": 6590900,
+    "bytes": 428048,
+    "triangles": 13744,
+    "animations": [
+      "Idle_Loop",
+      "Jog_Fwd_Loop",
+      "Jump_Land",
+      "Jump_Loop",
+      "Jump_Start",
+      "Sprint_Loop",
+      "Walk_Loop"
+    ],
+    "textures": []
+  },
   "hero-outfit-castaway": {
     "source": "hero-outfit-castaway.py",
     "sourceHash": "b07aeb5ad3aab05a",
