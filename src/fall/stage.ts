@@ -1,11 +1,11 @@
 // What the fall starts on (?proto=fall): a rail that stops in mid-air, a trolley riding it and a deck of cloud that hides
 // the island below. Code-built greybox. Local: nobody else sees any of it.
 import * as THREE from 'three/webgpu';
-import { SPAWN } from '../../constants.ts';
-import { groundHeight } from '../../island/heights.ts';
-import { cam } from '../../player/player.ts';
-import { addPart, mergeParts } from '../../render/props.ts';
-import { scene } from '../../render/scene.ts';
+import { defineKind, despawn, spawn } from '../entity/entity.ts';
+import { SPAWN } from '../constants.ts';
+import { groundHeight } from '../island/heights.ts';
+import { cam } from '../player/player.ts';
+import { addPart, mergeParts } from '../render/props.ts';
 
 /** Metres from the rail down to the ground: about 6 s in the air, at the player's 20 m/s fall cap. It's long because it
  * only happens once, on a first visit; a returning player goes straight in. */
@@ -63,8 +63,7 @@ function buildRail() {
   rail.add(new THREE.Mesh(mergeParts(steel), vertexColored()), sleepers);
   rail.position.copy(RAIL_END);
   rail.rotation.y = YAW; // its local -z is forward, so it runs back along +z from the end
-  scene.add(rail);
-  return sleepers;
+  return { rail, sleepers };
 }
 
 /** The cart: a track layer's trolley, origin at rail height, facing -z. Planks on wheels, with a flat open deck, so your
@@ -86,7 +85,6 @@ function buildCar() {
   group.position.copy(CAR_START);
   group.rotation.order = 'YXZ';
   group.rotation.y = YAW;
-  scene.add(group);
   return { group };
 }
 
@@ -118,7 +116,6 @@ function buildDeck() {
     puffs.push(puff);
     placePuff(mesh, k, puff);
   }
-  scene.add(mesh);
   return { mesh, puffs };
 }
 type Puff = { along: number; across: number; chord: number; y: number; r: number };
@@ -128,10 +125,28 @@ function placePuff(mesh: THREE.InstancedMesh, k: number, f: Puff) {
   mesh.instanceMatrix.needsUpdate = true;
 }
 
-const sleepers = buildRail();
+// They stand there until the fall has no more use for them; the cart stays where it lands, for the director to clear.
+defineKind('fall-prop', {});
+function freeMeshes(root: THREE.Object3D) {
+  root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+}
+const { rail, sleepers } = buildRail();
+const railProp = spawn({ kind: 'fall-prop', mesh: rail, dispose: () => freeMeshes(rail) });
 export const car = buildCar();
+export const carProp = spawn({ kind: 'fall-prop', mesh: car.group, dispose: () => freeMeshes(car.group) });
 const deck = buildDeck();
-export const deckMesh = deck.mesh;
+const deckProp = spawn({
+  kind: 'fall-prop',
+  mesh: deck.mesh,
+  dispose() {
+    deck.mesh.geometry.dispose();
+    deck.mesh.dispose();
+  },
+});
+/** You've come out of the cloud: it would only hang over the island from here on. */
+export const clearDeck = () => despawn(deckProp);
+/** You've landed: nobody's going back up. */
+export const clearRail = () => despawn(railProp);
 
 /** The card's treadmill: the cart stays put and the world slides back under it, so it's already travelling. `travelled`
  * is metres so far. The rail's steel looks the same anywhere, so only its sleepers move, a sleeper's gap at most. A puff that

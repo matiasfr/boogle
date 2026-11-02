@@ -2,12 +2,12 @@
 // until you hit it, then a physics body per letter, flung out from the impact; you can kick them around until each one
 // shrinks away. Local: each player's own, never sent and never read by the sim, so a friend sees you land on nothing.
 import * as THREE from 'three/webgpu';
-import { groundHeight } from '../../island/heights.ts';
-import { addBody, createBody, removeBody, setMask, type Body, type Shape } from '../../physics/engine.ts';
-import { GROUP } from '../../physics/physics.ts';
-import { emit } from '../../render/particles.ts';
-import { addPart, mergeParts } from '../../render/props.ts';
-import { scene } from '../../render/scene.ts';
+import { groundHeight } from '../island/heights.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
+import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts';
+import { GROUP } from '../physics/physics.ts';
+import { emit } from '../render/particles.ts';
+import { addPart, mergeParts } from '../render/props.ts';
 import { FWD, RIGHT, TARGET, UP } from './stage.ts';
 
 const H = 3.8, // m tall
@@ -69,7 +69,10 @@ const p4 = new THREE.Vector3();
 const s4 = new THREE.Vector3();
 const zAxis = new THREE.Vector3(0, 0, 1);
 
-type Letter = { mesh: THREE.Mesh; shapes: Shape[]; body: Body | null; goesAt: number; goneAt: number };
+type Letter = { mesh: THREE.Mesh; shapes: Shape[] };
+
+defineKind('fall-sign', {});
+defineKind('fall-letter', { update: 20 });
 
 function letterOf(ch: string): { geo: THREE.BufferGeometry; shapes: Shape[] } {
   const parts: THREE.BufferGeometry[] = [];
@@ -97,6 +100,7 @@ const FACE = new THREE.Vector3().crossVectors(RIGHT, LEAN);
 const POSE = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(RIGHT, LEAN, FACE));
 
 const letters: Letter[] = [];
+const sign = new THREE.Group();
 const postParts: THREE.BufferGeometry[] = [];
 [...WORD].forEach((ch, k) => {
   const along = (k - (WORD.length - 1) / 2) * (W + GAP);
@@ -107,8 +111,8 @@ const postParts: THREE.BufferGeometry[] = [];
   mesh.position.copy(foot).addScaledVector(LEAN, H / 2 + 0.05);
   mesh.quaternion.copy(POSE);
   mesh.castShadow = true;
-  scene.add(mesh);
-  letters.push({ mesh, shapes, body: null, goesAt: 0, goneAt: 0 });
+  sign.add(mesh);
+  letters.push({ mesh, shapes });
   // A post holding it up from behind.
   const height = H * 0.62 * Math.cos(TILT);
   const post = foot.clone().addScaledVector(FWD, H * 0.62 * Math.sin(TILT) + DEPTH);
@@ -121,7 +125,8 @@ const postParts: THREE.BufferGeometry[] = [];
 });
 const posts = new THREE.Mesh(mergeParts(postParts), mat);
 posts.castShadow = true;
-scene.add(posts);
+sign.add(posts);
+const signProp = spawn({ kind: 'fall-sign', mesh: sign, dispose: () => posts.geometry.dispose() });
 
 const DUST = new THREE.Color('#e8d6a6');
 const WOOD = new THREE.Color('#a97a48');
@@ -164,12 +169,34 @@ export function burst(at: THREE.Vector3, dust: number, chips: number) {
   }
 }
 
-let blasted = -1,
-  solid = false;
+/** A letter off its posts: thrown, kickable once it has left you alone a moment, then shrinking away. */
+function flyingLetter(l: Letter, body: Body, now: number, k: number): GameEntity {
+  const goesAt = now + (LINGER_S + k * STAGGER_S) * 1000,
+    goneAt = goesAt + FADE_S * 1000,
+    solidAt = now + HOLD_OFF_S * 1000;
+  let solid = false;
+  const entity: GameEntity = spawn({
+    kind: 'fall-letter',
+    mesh: l.mesh,
+    bodies: [body],
+    update({ now }) {
+      if (!solid && now > solidAt) {
+        solid = true;
+        setMask(body, -1); // now you can kick them around
+      }
+      if (now >= goneAt) return despawn(entity);
+      const ip = body.interpolatedPosition;
+      l.mesh.position.set(ip.x, ip.y, ip.z);
+      l.mesh.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+      l.mesh.scale.setScalar(now > goesAt ? 1 - (now - goesAt) / (FADE_S * 1000) : 1);
+    },
+    dispose: () => l.mesh.geometry.dispose(),
+  });
+  return entity;
+}
+
 /** You hit it, at `at`: every letter gets a body and leaves. */
 export function blastLetters(at: THREE.Vector3, now: number) {
-  blasted = now;
-  posts.visible = false;
   letters.forEach((l, k) => {
     const body = createBody({
       mass: MASS,
@@ -181,7 +208,6 @@ export function blastLetters(at: THREE.Vector3, now: number) {
       linearDamping: 0.08,
       angularDamping: 0.15,
     });
-    addBody(body);
     const dx = l.mesh.position.x - at.x,
       dz = l.mesh.position.z - at.z,
       d = Math.hypot(dx, dz) || 1;
@@ -191,30 +217,8 @@ export function blastLetters(at: THREE.Vector3, now: number) {
     body.velocity.set((dx / d) * out + FWD.x * ahead, 6 + Math.random() * 5, (dz / d) * out + FWD.z * ahead);
     const spin = () => (Math.random() - 0.5) * 11;
     body.angularVelocity.set(spin(), spin(), spin());
-    l.body = body;
-    l.goesAt = now + (LINGER_S + k * STAGGER_S) * 1000;
-    l.goneAt = l.goesAt + FADE_S * 1000;
+    l.mesh.removeFromParent(); // spawn parents it to the scene; it's posed in the world already, as the sign has no offset
+    flyingLetter(l, body, now, k);
   });
-}
-
-export function updateLetters(now: number) {
-  if (blasted < 0) return;
-  const solidNow = !solid && now - blasted > HOLD_OFF_S * 1000;
-  if (solidNow) solid = true;
-  for (let k = letters.length - 1; k >= 0; k--) {
-    const l = letters[k]!;
-    const b = l.body!;
-    if (solidNow) setMask(b, -1); // now you can kick them around
-    if (now >= l.goneAt) {
-      removeBody(b);
-      scene.remove(l.mesh);
-      l.mesh.geometry.dispose();
-      letters.splice(k, 1);
-      continue;
-    }
-    const ip = b.interpolatedPosition;
-    l.mesh.position.set(ip.x, ip.y, ip.z);
-    l.mesh.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
-    l.mesh.scale.setScalar(now > l.goesAt ? 1 - (now - l.goesAt) / (FADE_S * 1000) : 1);
-  }
+  despawn(signProp);
 }

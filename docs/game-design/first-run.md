@@ -30,7 +30,7 @@
   save, since })`: `save()` says what to remember about the room now, `since(then)` turns last visit's value into a
   line or null. Each room's memory is `boogle.visit.<room>`, written every 5 s while the room's state is known and on
   page hide. Persistent progress, a mailbox or a postcard add their lines here.
-- **The fall** ([src/proto/fall/](../../src/proto/fall/); `?proto=fall` replays it on every load, with your saved name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
+- **The fall** ([src/fall/](../../src/fall/); `?proto=fall` replays it on every load, with your saved name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
   it) and no HUD. It takes your colour live and hops when you change it, and your name floats over it as you type. Jump in
   runs it off the end of the rail (about 1.2 s, speeding up to 10 m/s) while the camera swings round from your face to behind you, one shot with no cut.
   You steer on the way down (the usual air control, inside a funnel that closes on the sign, so you can't miss), drop
@@ -47,7 +47,7 @@
 - **Files.** [src/player/arrival.ts](../../src/player/arrival.ts), [src/player/hud.ts](../../src/player/hud.ts) (the
   card), [src/features/welcome-back.ts](../../src/features/welcome-back.ts),
   [src/features/first-run.ts](../../src/features/first-run.ts),
-  [src/features/home-app.ts](../../src/features/home-app.ts), [src/features/proto-fall.ts](../../src/features/proto-fall.ts). Scenarios: `arrival`, `first-run`, `home-app`. Identity:
+  [src/features/home-app.ts](../../src/features/home-app.ts), [src/features/fall.ts](../../src/features/fall.ts). Scenarios: `arrival`, `first-run`, `home-app`. Identity:
   [identity.md](identity.md).
 
 ---
