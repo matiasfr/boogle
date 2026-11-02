@@ -8,7 +8,8 @@
 // hear near it, at most once every FLIP_GAP_MS while you keep pouring (docs/research/ui-patterns.md, rec 5: shared news
 // in the world first). Signs and
 // plaques shrink and fade as the camera comes within a few metres (src/render/near-fade.ts), so standing at a site or
-// riding the machine past one keeps the view clear. One entity: every section's rings, signs and plaque, in one group.
+// riding the machine past one keeps the view clear. One entity: every section's rings, signs,
+// plaque and stacked sleepers, in one group.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -120,6 +121,7 @@ function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?:
 }
 
 const site = new THREE.Group();
+site.userData.worldLabels = true; // the soapbox hides them while you drive
 site.add(sleepers);
 const views = ROUTE.map((sec, s) => {
   const v = {

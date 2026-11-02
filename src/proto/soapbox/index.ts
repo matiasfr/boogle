@@ -906,8 +906,8 @@ function sit(avatar: THREE.Object3D, q: THREE.Quaternion) {
   inner.scale.set(1, 1, 1);
 }
 
-// Seated, world labels (work-site rings and plaques, signs: canvas sprites straight under the scene) hide, so the run
-// reads; they come back when you get out. Enforced every frame, after their own hooks.
+// Seated, world labels (work-site rings and plaques, signs: canvas sprites under the scene, or under a group of its marked
+// userData.worldLabels) hide, so the run reads; they come back when you get out. Enforced every frame, after their own hooks.
 const hidden = new Map<THREE.Object3D, boolean>();
 let scanAt = 0;
 onFrame(
@@ -921,9 +921,13 @@ onFrame(
     }
     if (now > scanAt) {
       scanAt = now + 500;
-      for (const o of scene.children) {
+      const scan = (o: THREE.Object3D) => {
         const map = (o as THREE.Sprite).isSprite ? ((o as THREE.Sprite).material as THREE.SpriteMaterial).map : null;
         if (map?.image instanceof HTMLCanvasElement && !hidden.has(o)) hidden.set(o, o.visible);
+      };
+      for (const o of scene.children) {
+        scan(o);
+        if (o.userData.worldLabels) o.children.forEach(scan);
       }
     }
     for (const o of hidden.keys()) o.visible = false;

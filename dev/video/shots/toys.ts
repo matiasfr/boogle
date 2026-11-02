@@ -57,8 +57,8 @@ export default {
     // Facing +z (yaw 3.0), off the deck and down the hill: half a charge glides it well past the beach path.
     await g.eval(`${TP(F.x, F.z, F.y + 0.8)} ${AIM(3.0, -0.35)}`);
     await g.wait(1.2);
-    // The thrown frisbee is the newest thing in the scene (src/adapters/gifts.ts startFlight); follow it till it lands.
-    const GRAB = `const { scene } = await import('/src/render/scene.ts'); window.__fris = scene.children.at(-1);`;
+    // The thrown frisbee is the newest gift object (src/adapters/gifts.ts startFlight); follow it till it lands.
+    const GRAB = `const { giftObjects } = await import('/src/adapters/gifts.ts'); window.__fris = giftObjects.children.at(-1);`;
     const POS = `const m = window.__fris; return m?.parent ? [m.position.x, m.position.y, m.position.z] : null;`;
     let cam: number[] | null = null,
       at: number[] | null = null;
