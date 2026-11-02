@@ -23,6 +23,8 @@
 //                                  -1 if clear. thin: 'skip' or 'only' for shapes under 1.6 m across (trunks, posts), or a
 //                                  body with `seeThrough`; 'include' by default. For a camera arm, line of sight, placing
 //   physicsTime()                  seconds of simulated time
+//   physicsClock(), setPhysicsClock(c)   that time and what's left under a step, for a replay to start from
+//                                  (dev/sim/replay.ts): sea state follows the time, and the steps a frame holds the rest
 //   stepAlpha()                    how far the drawn frame is between the last two fixed steps (0..1), for poses
 //                                  interpolatedPosition does not cover (a platform's yaw)
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
@@ -90,6 +92,8 @@ export const onPostStep: (fn: () => void, opts?: StepOpts) => void = backend.onP
 export const stepPhysics: (dt: number) => void = backend.stepPhysics;
 export const stepFixed: () => void = backend.stepFixed;
 export const physicsTime: () => number = backend.physicsTime;
+export const physicsClock: () => { time: number; acc: number } = backend.physicsClock;
+export const setPhysicsClock: (clock: { time: number; acc: number }) => void = backend.setPhysicsClock;
 export const stepAlpha: () => number = backend.stepAlpha;
 export const forEachStatic: (mask: number, fn: (body: Body, shapes: Shape[]) => void) => void = backend.forEachStatic;
 export const forEachContact: (
