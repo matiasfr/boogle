@@ -464,12 +464,12 @@ export const PROTOS: Proto[] = [
     id: 'crossing',
     title: 'The long crossing',
     step: 7,
-    status: 'live',
+    status: 'answered',
     answer: {
       on: '2026-11-02',
       verdict:
         'Default was pretty well balanced; Vast felt like a novelty that would wear off, and Express a little too fast.',
-      next: 'A crossing starts at about a minute (1.2 km at 20 m/s), the top speed is for the end-game trains, and you can sit on the train.',
+      next: 'A crossing starts at about a minute (1.2 km at 20 m/s), the top speed is for the end-game trains, and you can sit on the train. The sea pass is "a good step for the water"; more look work comes later.',
     },
     url: '/?room=proto-crossing&proto=crossing&tod=0.07',
     question: 'Does this start to look like the shot you picked?',
@@ -516,7 +516,6 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
-  { id: 'crossing', why: 'Does this start to look like the shot you picked?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
