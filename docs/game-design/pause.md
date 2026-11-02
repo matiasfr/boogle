@@ -3,7 +3,8 @@
 - **What.** A local overlay (the island keeps running) with Resume, Controls (the generated guide with Keyboard,
   Gamepad and Touch tabs, starting on your input kind; the Gamepad tab is a drawn controller with labelled callouts,
   see [controls.md](controls.md), with Show as a list for the old list), Room (who is here and an invite link; `?room=` is left out for
-  the default room), Fullscreen (toggles the whole page, so the HUD stays; it reads Exit fullscreen while on, and is
+  the default room), a mute button and volume slider for every sound in the game (remembered in this browser; left and
+  right move it on a pad), Fullscreen (toggles the whole page, so the HUD stays; it reads Exit fullscreen while on, and is
   hidden where the page can't go fullscreen, such as iPhone Safari or a frame without it, and in the installed app,
   which is already fullscreen; a gamepad press is refused by the browser, so the button asks for a click or tap; on
   iPad the first press explains that Safari's fullscreen there turns off the keyboard's letter keys (WebKit grants

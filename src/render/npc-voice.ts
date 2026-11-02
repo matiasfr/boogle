@@ -2,7 +2,7 @@
 // Web Audio nodes (a saw through three parallel vowel filters) performs it. The plan is seeded by the line, so the same
 // line in the same mood always comes out the same. Its numbers start from docs/research/npc-babble-voices.md (sections
 // 4, 7 and 9). Cosmetic and local; never read by the sim. A new speaker is a new VoiceSpec.
-import { getAudio } from './audio.ts';
+import { duckForVoice, getAudio } from './audio.ts';
 
 /** One line being spoken as it types. It owns the typing clock, so sound and text stay together. */
 export type LineSpeech = {
@@ -278,6 +278,7 @@ export function speak(text: string, mood: string, v: VoiceSpec): LineSpeech {
         lane = createLane(audio.ctx, audio.out, v);
         ctx = audio.ctx;
         zero = ctx.currentTime - ms / 1000;
+        duckForVoice(true);
       }
       const now = ctx!.currentTime;
       for (; next < syllables.length && syllables[next]!.at <= ms + HORIZON; next++) {
@@ -288,13 +289,17 @@ export function speak(text: string, mood: string, v: VoiceSpec): LineSpeech {
       if (next === syllables.length) {
         const last = syllables[next - 1];
         lane.end(Math.max(now, zero + (last ? (last.at + last.ms) / 1000 : 0)) + RELEASE + 0.02);
+        duckForVoice(false);
         done = true;
       }
     },
     stop() {
       if (done) return;
       done = true;
-      if (lane) lane.stop(ctx!.currentTime);
+      if (lane) {
+        lane.stop(ctx!.currentTime);
+        duckForVoice(false);
+      }
     },
   };
 }

@@ -71,7 +71,7 @@ function blip(ctx: AudioContext, dest: AudioNode, b: Blip): void {
 }
 
 export function uiSound(kind: UiSound, arg = 0): void {
-  const a = getAudio();
+  const a = getAudio('ui');
   const now = performance.now();
   if (kind === 'count') {
     run = now - (last.count ?? -1e9) > 600 ? 0 : Math.max(-5, Math.min(9, run + Math.sign(arg || 1)));

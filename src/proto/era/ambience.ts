@@ -42,7 +42,7 @@ let next = { pad: 0, pluck: 0, gull: 0, knock: 0, creak: 0, breeze: 0, motif: 0 
   chord = 0;
 
 function setup(): Beds | null {
-  const a = getAudio();
+  const a = getAudio('ambience');
   if (!a) return null;
   const { ctx } = a;
   const sr = ctx.sampleRate;

@@ -4,6 +4,7 @@
 // The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
 // player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.
+// The main page also has the mute button and volume slider.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
@@ -21,6 +22,8 @@ import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
 import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 import { youEditor } from '../player/you-editor.ts';
 import { leaveIsland } from '../player/arrival.ts';
+import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
+import { uiSound } from '../ui/ui-sound.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -142,6 +145,54 @@ const syncFsButton = () => {
 doc.addEventListener('fullscreenchange', syncFsButton);
 doc.addEventListener('webkitfullscreenchange', syncFsButton);
 
+const SPEAKER = '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>';
+const WAVES =
+  '<path d="M15 9a4.2 4.2 0 0 1 0 6M17.6 6.5a7.8 7.8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
+const CROSS =
+  '<path d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
+// The mute button and volume slider: every sound in the game (src/render/audio.ts).
+function soundRow() {
+  const row = el('div', 'pause-sound');
+  const slider = el('input', 'pause-volume');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '1';
+  slider.step = '0.05';
+  slider.setAttribute('aria-label', 'Volume');
+  const mute = button('', () => {
+    setMuted(!isMuted());
+    sync();
+    if (!isMuted()) uiSound('tick');
+  });
+  mute.classList.add('pause-mute');
+  mute.dataset.act = 'mute';
+  function sync() {
+    const off = isMuted() || getVolume() === 0;
+    slider.value = String(isMuted() ? 0 : getVolume());
+    mute.setAttribute('aria-label', isMuted() ? 'Unmute' : 'Mute');
+    mute.setAttribute('aria-pressed', String(isMuted()));
+    mute.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER}${off ? CROSS : WAVES}</svg>`;
+  }
+  slider.addEventListener('input', () => {
+    if (isMuted()) setMuted(false);
+    setVolume(Number(slider.value));
+    sync();
+  });
+  slider.addEventListener('change', () => uiSound('tick')); // hear the level you landed on
+  sync();
+  row.append(mute, slider);
+  return row;
+}
+// Left and right on a pad move the slider.
+function nudgeVolume(dir: number) {
+  const slider = document.activeElement;
+  if (!(slider instanceof HTMLInputElement) || slider.type !== 'range') return false;
+  slider.value = String(Number(slider.value) + dir * 0.1);
+  slider.dispatchEvent(new Event('input'));
+  slider.dispatchEvent(new Event('change'));
+  return true;
+}
+
 function renderMain() {
   const leave = button('Leave', () => {
     if (leaveTimer) leaveIsland();
@@ -163,7 +214,7 @@ function renderMain() {
   const list = el('div', 'pause-list');
   list.append(resume, controls, room);
   if (canFullscreen()) list.append(fullscreenButton());
-  list.append(leave);
+  list.append(soundRow(), leave);
   return list;
 }
 
@@ -312,7 +363,8 @@ function moveTab(dir: number) {
 }
 
 function onKey(e: KeyboardEvent) {
-  if (e.code !== 'Escape' && isTyping(e)) return; // the Room page's name box
+  const onSlider = (e.target as Element | null)?.matches?.('input[type="range"]');
+  if (e.code !== 'Escape' && isTyping(e) && !onSlider) return; // the Room page's name box
   if (e.code === 'Escape') {
     e.preventDefault();
     if (page !== 'main') show('main');
@@ -336,9 +388,10 @@ function onKey(e: KeyboardEvent) {
 function onPad(slot: string) {
   if (slot === 'up') move(-1);
   else if (slot === 'down') move(1);
-  else if (slot === 'left') moveTab(-1);
-  else if (slot === 'right') moveTab(1);
-  else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
+  else if (slot === 'left' || slot === 'right') {
+    const dir = slot === 'left' ? -1 : 1;
+    if (!nudgeVolume(dir)) moveTab(dir);
+  } else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
   else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();
   else if (slot === menuSlot('back')) {
     if (page === 'main') closePause();

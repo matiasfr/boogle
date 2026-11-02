@@ -9,9 +9,9 @@ at `/?room=proto-groove&proto=groove`.*
 **Retired 2026-11-02 (cut).** The owner's listening-pack audit cut the synthesized loop (all takes): no placeholder
 music plays anywhere ([boogle-2.md](../proposals/boogle-2.md), "Sound"). `?proto=groove` no longer does anything; the
 engine and synth voices are gone. What stays for the owner's own music later, imported by nothing today: the music
-clock (`src/proto/groove/clock.ts`), the grid and harmony (`grid.ts`), the mixer (`mixer.ts`) and the stems loader
-(`stems.ts`, format in [assets/audio/README.md](../../assets/audio/README.md)); the `installMixer` and `onBeat` seams in
-`src/render/audio.ts` stay too, and with nothing installed `onBeat` plays a sound effect exactly when asked (no added
+clock (`src/proto/groove/clock.ts`), the grid and harmony (`grid.ts`), the game's mix ([src/render/audio.ts](../../src/render/audio.ts)) and the stems loader
+(`stems.ts`, format in [assets/audio/README.md](../../assets/audio/README.md)); the `onBeat` seam in
+`src/render/audio.ts` stays too, and with nothing installed `onBeat` plays a sound effect exactly when asked (no added
 latency). What it was:
 
 ## What you heard
