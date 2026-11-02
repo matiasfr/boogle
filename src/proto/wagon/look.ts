@@ -207,7 +207,7 @@ const SLACK = {
 type Gear = { side: number; siderod: THREE.Mesh; conrod: THREE.Mesh; crosshead: THREE.Mesh; piston: THREE.Mesh };
 
 function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: THREE.Mesh[][], gear: Gear[]): void {
-  const radius = wheelSets.map((ws) => (ws[0].geometry as THREE.CylinderGeometry).parameters.radiusTop);
+  const radius = wheelSets.map((ws) => (ws[0]!.geometry as THREE.CylinderGeometry).parameters.radiusTop);
   const angle = cars.map(() => 0);
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
   const slack: Spring[] = cars.map(() => ({ x: 0, v: 0 }));
@@ -220,15 +220,15 @@ function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: TH
       if (dt <= 0) return;
       cars.forEach((car, n) => {
         const at = car.parent?.position;
-        if (!at || !car.parent!.visible) return void last[n].set(NaN, 0, 0);
+        if (!at || !car.parent!.visible) return void last[n]!.set(NaN, 0, 0);
         const yaw = car.parent!.rotation.y;
         // the distance covered along the car's own +z (a jump of metres is a reset: don't spin)
-        const dx = at.x - last[n].x,
-          dz = at.z - last[n].z;
+        const dx = at.x - last[n]!.x,
+          dz = at.z - last[n]!.z;
         const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
-        last[n].copy(at);
-        angle[n] += ds / radius[n];
-        for (const w of wheelSets[n]) w.rotation.x = angle[n];
+        last[n]!.copy(at);
+        angle[n]! += ds / radius[n]!;
+        for (const w of wheelSets[n]!) w.rotation.x = angle[n]!;
         if (n === 0) {
           const v = damp(speed, ds / dt, 0.05, dt);
           accel = damp(accel, (v - speed) / dt, 0.08, dt);
@@ -237,7 +237,7 @@ function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: TH
       });
       // The loco's rods: crank pins on the right side lead the left by a quarter turn.
       for (const g of gear) {
-        const th = angle[0] + (g.side > 0 ? Math.PI / 2 : 0);
+        const th = angle[0]! + (g.side > 0 ? Math.PI / 2 : 0);
         const py = AXLE + ROD.crank * Math.cos(th),
           pz = ROD.crank * Math.sin(th); // a pin's offset from its wheel's centre (rotation about +x)
         const front = ROD.wheelbase / 2;
@@ -255,8 +255,8 @@ function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: TH
       bodies.forEach((b, n) => {
         if (!n) return;
         const goal = reducedMotion ? 0 : clamp(-accel * SLACK.perAccel * n, -SLACK.max, SLACK.max);
-        springStep(slack[n], goal, k, d, dt);
-        b.position.z = slack[n].x;
+        springStep(slack[n]!, goal, k, d, dt);
+        b.position.z = slack[n]!.x;
       });
     },
     { phase: 'update', order: 8 }, // after ./index.ts places the cars (order 6)

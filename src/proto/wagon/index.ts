@@ -100,17 +100,17 @@ const BOTTOM = 0.4; // m over the ground where a car's collider starts (the whee
 
 // ---------------------------------------------------------------- the line as a polyline, metres
 const SEG = ROUTE.map((r) => {
-  const len = Math.round(Math.hypot(r.to[0] - r.x, r.to[1] - r.z) * 100) / 100; // as wagon.ts rounds it
-  return { x: r.x, z: r.z, ux: (r.to[0] - r.x) / len, uz: (r.to[1] - r.z) / len, len };
+  const len = Math.round(Math.hypot(r.to[0]! - r.x, r.to[1]! - r.z) * 100) / 100; // as wagon.ts rounds it
+  return { x: r.x, z: r.z, ux: (r.to[0]! - r.x) / len, uz: (r.to[1]! - r.z) / len, len };
 });
 const AT: number[] = [];
 SEG.reduce((at, s) => (AT.push(at), at + s.len), 0);
 // The point `d` metres along the line from the first site (extended straight past either end).
 function lineAt(d: number, out: { x: number; z: number }) {
   let k = 0;
-  while (k < SEG.length - 1 && d > AT[k + 1]) k++;
-  const s = SEG[k],
-    u = d - AT[k];
+  while (k < SEG.length - 1 && d > AT[k + 1]!) k++;
+  const s = SEG[k]!,
+    u = d - AT[k]!;
   out.x = s.x + s.ux * u;
   out.z = s.z + s.uz * u;
   return out;
@@ -142,7 +142,7 @@ function fakeLaid(n: number) {
 }
 const laidCount = () => (fake >= 0 ? fake : sites.open);
 const layTick = (k: number) => {
-  const t0 = k < sites.open ? sites.list[k].t0 : -1;
+  const t0 = k < sites.open ? sites.list[k]!.t0 : -1;
   if (t0 >= 0) return t0 + lengthOf(MACHINE_RUN); // laid by a machine run
   if (opening.laid && k >= opening.laid[0] && k < sites.open) return opening.laid[1]; // by the open.lay shortcut
   return seen.get(k) ?? 0; // faked in this tab, or laid before the shortcut kept its tick
@@ -180,8 +180,8 @@ function timeline(): Seg[] {
   segsKey = key;
   segs = [];
   for (let k = 0, from = -Infinity; k < n; k++) {
-    from = Math.max(from, ticks[k]);
-    if (k + 1 < n && Math.max(from, ticks[k + 1]) === from) continue; // laid together: one change
+    from = Math.max(from, ticks[k]!);
+    if (k + 1 < n && Math.max(from, ticks[k + 1]!) === from) continue; // laid together: one change
     const prev = segs[segs.length - 1];
     if (!prev) {
       segs.push({ from, laid: k + 1, t0: from }); // the first section: it starts standing at the first site
@@ -209,7 +209,7 @@ function stokedAt(tick: number): WagonState | null {
 function wagonNow(tick: number): WagonState | null {
   const list = timeline();
   if (STOKE) return stokedAt(tick);
-  for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k].from) return at(list[k].laid, tick, list[k].t0);
+  for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k]!.from) return at(list[k]!.laid, tick, list[k]!.t0);
   return null;
 }
 
@@ -272,7 +272,7 @@ const cars: Car[] = CARS.map(({ spec, off }, k) => {
   });
   addBody(body);
   const mesh = new THREE.Group(),
-    rock = look.cars[k];
+    rock = look.cars[k]!;
   rock.position.y = -(BOTTOM + hy); // body centre -> ground
   const ground = rock.position.y;
   mesh.add(rock);
@@ -516,7 +516,7 @@ onVariant('wagon', LIVE, applyExtras);
 
 // Helper-hut freight arrives on the rear flatbed and hops off into the open Track ring (./freight.ts).
 wagonFreight({
-  rear: cars[cars.length - 1],
+  rear: cars[cars.length - 1]!,
   laid: laidCount,
   standing: (ahead) => (clock === clock ? (wagonNow(clock + ahead)?.stop ?? -1) : -1),
 });
@@ -614,7 +614,7 @@ if (ON_ISLAND) {
       if (boardAt < 0 || performance.now() < boardAt || !me.entered || !me.body || parked) return;
       if (performance.now() > boardAt + 8000) return void (boardAt = -1); // the wagon never came: stay put
       boardAt = -1;
-      const c = cars[1],
+      const c = cars[1]!,
         p = c.body.position;
       teleport(me.body, p.x, p.y + c.hy + PLAYER_R + 0.3, p.z);
       me.body.velocity.set(0, 0, 0);

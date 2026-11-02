@@ -85,7 +85,7 @@ export function wagonBench(ctx: WagonCtx) {
     inner.scale.set(1.05, 0.86, 1.05);
   };
   const place = (avatar: THREE.Object3D, k: number, side: number) => {
-    const c = ctx.cars[k],
+    const c = ctx.cars[k]!,
       b = benches[k];
     if (!b) return;
     avatar.position.copy(seatPoint(c, side, b.z, v));
@@ -120,7 +120,7 @@ export function wagonBench(ctx: WagonCtx) {
   }
   function standUp() {
     if (!seated || !me.body) return;
-    const c = ctx.cars[seated.k],
+    const c = ctx.cars[seated.k]!,
       b = benches[seated.k];
     // in front of your seat, on the deck, moving with it
     const p = c.rock.localToWorld(v.set(seated.side * 0.75, c.spec.top + PLAYER_R + 0.12, b ? b.z : 0));
@@ -150,7 +150,7 @@ export function wagonBench(ctx: WagonCtx) {
     const k = ctx.cars.findIndex((c) => carry.on === c.platform);
     const b = k > 0 ? benches[k] : null;
     if (!b) return NO_TARGETS;
-    const c = ctx.cars[k];
+    const c = ctx.cars[k]!;
     const l = c.mesh.worldToLocal(v.copy(me.body.interpolatedPosition)); // you in the car's frame
     if (Math.hypot(l.x, l.z - b.z) > REACH) return NO_TARGETS;
     const side = l.x >= 0 ? 1 : -1;
@@ -200,7 +200,7 @@ export function wagonBench(ctx: WagonCtx) {
       for (const b of benches) if (b) b.g.visible = shown;
       if (seated && me.body && me.avatar) {
         const { k, side } = seated;
-        const c = ctx.cars[k],
+        const c = ctx.cars[k]!,
           b = benches[k]!;
         if (me.jumpQueued > 0) {
           me.jumpQueued = 0;

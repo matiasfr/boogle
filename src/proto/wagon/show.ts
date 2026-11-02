@@ -164,7 +164,7 @@ export function wagonShow(ctx: WagonCtx) {
     play(t, _dt, dir) {
       const now = performance.now() / 1000;
       for (let k = 0; k < N; k++) {
-        const b = birds[k];
+        const b = birds[k]!;
         const tt = t < 0 ? 0 : t - b.delay;
         // 0..1 out (lift-off, wheel away) and 0..1 back (glide in to land)
         const out = tt <= 0 ? 0 : Math.min(1, tt / GULL_UP),

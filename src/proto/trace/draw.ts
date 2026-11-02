@@ -34,10 +34,10 @@ function ribbon(s: Sitting) {
   };
   const p = s.p;
   for (let i = 4; i < p.length; i += 4) {
-    const ax = p[i - 3],
-      az = p[i - 2],
-      bx = p[i + 1],
-      bz = p[i + 2];
+    const ax = p[i - 3]!,
+      az = p[i - 2]!,
+      bx = p[i + 1]!,
+      bz = p[i + 2]!;
     const len = Math.hypot(bx - ax, bz - az);
     if (len > JUMP) {
       open = false;
@@ -46,7 +46,7 @@ function ribbon(s: Sitting) {
     if (len < 0.01) continue;
     const nx = -(bz - az) / len / 2,
       nz = (bx - ax) / len / 2;
-    const a = p[i + 3];
+    const a = p[i + 3]!;
     const pieces = Math.ceil(len / STEP);
     for (let k = open ? 1 : 0; k <= pieces; k++)
       pair(ax + ((bx - ax) * k) / pieces, az + ((bz - az) * k) / pieces, nx, nz, a);
@@ -103,7 +103,7 @@ if (card) {
       g.name = 'proto-trace';
       g.add(ribbon(last));
       for (let i = 0; i < last.idle.length; i += 4)
-        g.add(ring(last.idle[i + 1], last.idle[i + 2], Math.min(3, 0.6 + Math.sqrt(last.idle[i + 3]) * 0.35)));
+        g.add(ring(last.idle[i + 1]!, last.idle[i + 2]!, Math.min(3, 0.6 + Math.sqrt(last.idle[i + 3]!) * 0.35)));
       for (const m of last.marks) if (m.k !== 'verb') g.add(pole(m.x, m.z, markColor(m.k), 1.8, 0.3));
       if (last.end) g.add(pole(last.end.x, last.end.z, '#ffffff', 3, 0.35));
       scene.add(g);
