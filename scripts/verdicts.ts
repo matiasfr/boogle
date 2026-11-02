@@ -1,6 +1,8 @@
-// npm run verdicts [-- --days N] [--md]
+// npm run verdicts [-- --days N] [--md] [--all]
 // Playtest verdicts the prototype bar sent to the server (POST /report, kind `playtest`; server/src/server.js), read
 // back through GET /reports for the last N UTC days (default 3), newest first, grouped by prototype.
+// The bar sends on the verdict tap and again with the note, so by default only the latest report per card and variant
+// in a sitting (reports less than SITTING_MS apart) shows; --all shows every send.
 //   --md   print draft lines in docs/playtests.md's entry format instead, one `## <day>` block per day.
 // Token: REPORT_TOKEN from the environment, else a `REPORT_TOKEN=...` line in `.env.local` at the repo root
 // (gitignored). It is the Fly secret of the same name; it is sent only as the Authorization header, never printed.
@@ -16,6 +18,8 @@ const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
 const args = process.argv.slice(2);
 const days = Math.max(1, Math.min(30, Number(args[args.indexOf('--days') + 1]) || 3));
 const md = args.includes('--md');
+const all = args.includes('--all');
+const SITTING_MS = 30 * 60_000;
 
 type Playtest = {
   at: string;
@@ -78,8 +82,10 @@ const countsLine = (c: Record<string, number> = {}) => {
   if (s >= 1) parts.push(`${s < 90 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`} in prototype`);
   return parts.join(', ');
 };
+// A sentence that already ends in punctuation gets no extra full stop.
+const stop = (s: string) => (/[.!?…]$/.test(s) ? s : `${s}.`);
 const answer = (d: Playtest['detail']) =>
-  `${VERDICT[d.verdict]}${d.variant ? ` (on ${d.variant})` : ''}${d.note.trim() ? `: ${oneLine(d.note)}` : ''}.`;
+  stop(`${VERDICT[d.verdict]}${d.variant ? ` (on ${d.variant})` : ''}${d.note.trim() ? `: ${oneLine(d.note)}` : ''}`);
 
 const auth = token();
 const list: Playtest[] = [];
@@ -93,6 +99,19 @@ for (let i = 0; i < days; i++) {
   }
 }
 list.sort((a, b) => b.at.localeCompare(a.at));
+// One report per card and variant per sitting: newest first, a report within SITTING_MS before a later one of the same
+// card and variant (the tap before its note, a changed mind) is dropped.
+if (!all) {
+  const seen = new Map<string, number>(); // card/variant -> time of the last report looked at (a later one)
+  const kept = list.filter((r) => {
+    const key = `${r.detail.proto}/${r.detail.variant}`;
+    const t = Date.parse(r.at);
+    const later = seen.get(key);
+    seen.set(key, t);
+    return later === undefined || later - t >= SITTING_MS;
+  });
+  list.splice(0, list.length, ...kept);
+}
 if (!list.length) {
   console.log(`No playtest verdicts in the last ${days} day${days === 1 ? '' : 's'}.`);
   process.exit(0);
