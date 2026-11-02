@@ -1,0 +1,42 @@
+{
+  "style": "Asset for a goofy low-poly island game about friends building a railway: chunky toy-like shapes, flat-shaded facets, warm saturated colours, soft daylight. No text, no logos, no watermark.",
+  "items": [
+    {
+      "id": "icon-mushroom",
+      "kind": "icon",
+      "prompt": "Hotbar icon: a fat red-capped mushroom with white spots, slightly tilted, three-quarter view."
+    },
+    {
+      "id": "icon-crate",
+      "kind": "icon",
+      "prompt": "Hotbar icon: a small wooden shipping crate with rope handles, three-quarter view from slightly above."
+    },
+    {
+      "id": "sprite-palm",
+      "kind": "sprite",
+      "chroma": "#ff00ff",
+      "prompt": "A far-off palm tree for a distant billboard: curved trunk, five broad fronds, a few coconuts."
+    },
+    {
+      "id": "sprite-boogler",
+      "kind": "sprite",
+      "chroma": "#00ff00",
+      "prompt": "The Boogler: a round purple blob with stubby arms, big friendly eyes and a mayor's sash, waving."
+    },
+    {
+      "id": "tile-sand",
+      "kind": "tile",
+      "prompt": "Beach sand with faint ripples and a few tiny shell fragments, pale gold."
+    },
+    {
+      "id": "matcap-clay",
+      "kind": "matcap",
+      "prompt": "Soft warm toy clay, matte with a faint sheen."
+    },
+    {
+      "id": "ref-boogler",
+      "kind": "refsheet",
+      "prompt": "The Boogler: a round purple blob character with stubby arms, big friendly eyes and a mayor's sash."
+    }
+  ]
+}

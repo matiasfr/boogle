@@ -96,6 +96,9 @@ Boogle is built by a handful of friends and their agents shipping at once, so ho
 ### Small and readable
 This is a friends' project. Prefer plain modules, few dependencies and code someone can read in one sitting. Everything is TypeScript (`strict`): types are how many people and agents change shared code at once without breaking each other's wire messages and state shapes, and Vite and Node run it as written, with no build step of ours. Measure before optimizing; when you do optimize the sim, sleep settled regions (active-cell lists) before reaching for workers or the GPU.
 
+### Code first, images by approval
+Build shapes, materials and effects in code first: an agent can make and change them in minutes, which is what prototyping needs. Once a thing has proved itself in play, a generated image may replace or dress it (an icon, a billboard, a decal, a tileable texture, a matcap) if it looks better. A person picks every shipped image from a contact sheet (`/concept-art`); agents draft them, but they never ship one nobody approved. Images from one set share a style prompt, so they read as one world next to the code-built ones. The prompts file for every shipped image is committed, so it can be regenerated. Each image is downscaled to the size it is drawn at, kept small (aim under 100 KB), and imported by the feature that uses it, so Vite hashes it. Reference sheets and concept art stay references.
+
 ## How we work
 
 - **Playtest constantly, solo first.** Every prototype must work and be fun for one person on their own; multiplayer builds on top of that. We iterate in small steps and play each change on the live site. Every change reaches `main` through a PR that merges itself when CI is green (`npm run ship`), so iteration stays fast and nothing red goes live. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
