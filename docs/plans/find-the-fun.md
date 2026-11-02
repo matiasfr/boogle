@@ -156,4 +156,4 @@ real slice does.
 
 - [x] **`?proto=crossing`:** a fast train over a long viaduct to a far greybox island, with the same distance at two
       speeds and a much longer one, to find what "vast" means in seconds and metres.
-- [ ] **Playtest 7.**
+- [x] **Playtest 7.**
