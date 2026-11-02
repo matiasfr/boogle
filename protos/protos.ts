@@ -76,7 +76,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-fall&proto=fall&tod=0.2',
     question: 'Did that make you laugh?',
-    what: 'Your Buddy riding a handcar above the clouds while you pick. Jump in runs it off the end of the rail; steer down through the cloud into the BOOGLE sign.',
+    what: 'Your Buddy riding a flat trolley above the clouds while you pick. Jump in runs it off the end of the rail; steer down through the cloud into the BOOGLE sign.',
     since: '2026-11-02',
     verb: 'falls',
     chapter: 'it replaces the arrival: every load starts from the card, above the clouds',

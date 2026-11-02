@@ -125,7 +125,7 @@ scene.add(posts);
 
 const DUST = new THREE.Color('#e8d6a6');
 const WOOD = new THREE.Color('#a97a48');
-/** A burst where you hit: dust out along the ground, splinters up. Also what the handcar lands in. */
+/** A burst where you hit: dust out along the ground, splinters up. Also what the cart lands in. */
 export function burst(at: THREE.Vector3, dust: number, chips: number) {
   for (let k = 0; k < dust; k++) {
     const a = Math.random() * Math.PI * 2,

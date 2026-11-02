@@ -1,7 +1,7 @@
 // The fall into the world (src/features/proto-fall.ts loads this behind ?proto=fall; docs/game-design/first-run.md). You
-// meet your Buddy riding a handcar on a rail above the clouds, with the name-and-colour card beside it. Jump in
+// meet your Buddy riding a flat trolley on a rail above the clouds, with the name-and-colour card beside it. Jump in
 // runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
-// apart; you lie flat with stars, the handcar lands next to you, and the game begins. The rail going nowhere says what the
+// apart; you lie flat with stars, the cart lands next to you, and the game begins. The rail going nowhere says what the
 // game wants, without words. Serves DESIGN.md 10 (Slapstick over precision) and 7 (Telegraph everything). Local, apart from
 // your body and the existing flops: the prop pieces are this tab's alone.
 import './fall.css';
@@ -37,11 +37,9 @@ import {
   slideWorld,
 } from './stage.ts';
 
-const CRUISE = 5, // m/s the handcar is already doing behind the card
+const CRUISE = 5, // m/s the cart is already doing behind the card
   RELEASE = 10, // m/s as the rail runs out: it speeds up over the last stretch
-  PUMP_RATE = 3.1, // rad/s: about a two-second stroke, the same on the card and on the rail
-  PUMP_SWING = 0.3, // rad
-  OFF_END = 0.8, // m the handcar's middle is past the end when it tips and you leave it
+  OFF_END = 0.8, // m the cart's middle is past the end when it tips and you leave it
   LAUNCH_UP = 4, // m/s: a little hop off the end
   BLEND_S = 1, // the camera swinging from your face to behind you
   FALL_PITCH = -1.05, // looking down past your feet
@@ -204,10 +202,9 @@ onPreStep(() => {
   }
 });
 
-// ---------------------------------------------------------------- the handcar comes too
+// ---------------------------------------------------------------- the cart comes too
 const carV = new THREE.Vector3();
-let pumpPhase = 0,
-  travelled = 0,
+let travelled = 0,
   rumble = 0;
 let carFlying = false,
   carDown = false,
@@ -222,8 +219,6 @@ function releaseCar() {
 function updateCar(dt: number) {
   const g = car.group;
   if (state === 'card' || state === 'roll') {
-    pumpPhase += dt * PUMP_RATE;
-    car.pump.rotation.x = Math.sin(pumpPhase) * PUMP_SWING;
     // It rides the sleepers: a small tremble and a slow rock.
     travelled += dt * CRUISE;
     rumble = Math.sin((travelled * 2 * Math.PI) / 0.95) * 0.007;
@@ -363,7 +358,7 @@ onFrame(
     updateLetters(now);
     if (state === 'card') {
       updatePreview(dt);
-      standOnCar(buddyAt, CAR_START); // not the handcar's rumble: the camera holds still
+      standOnCar(buddyAt, CAR_START); // not the cart's rumble: the camera holds still
       stageShot(buddyAt);
       camera.position.copy(stagePos);
       camera.quaternion.copy(stageQ);
