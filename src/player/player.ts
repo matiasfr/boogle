@@ -86,6 +86,12 @@ const camPos = new THREE.Vector3(),
   camFrom = new THREE.Vector3(),
   fwd = new THREE.Vector3();
 const camArm = makeCameraArm();
+// Plain loops and shared objects below: this runs every frame (npm run hitches).
+function constrained(look: THREE.Vector3, pos: THREE.Vector3) {
+  for (let k = 0; k < camConstraints.length; k++) if (camConstraints[k]!(look, pos)) return true;
+  return false;
+}
+const ORIGIN = { x: 0, y: 0, z: 0 };
 const camFloor = (x: number, z: number) => Math.max(groundHeight(x, z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
 function updateCamera(elapsed: number) {
   if (!me.entered || !me.body) {
@@ -99,7 +105,7 @@ function updateCamera(elapsed: number) {
       rz = -Math.sin(cam.yaw);
     camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
     camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
-    if (!camConstraints.some((fn) => fn(camLook, camPos))) {
+    if (!constrained(camLook, camPos)) {
       // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
       // left in the way (a ridge, a wall). It collides with what you collide with: outside the caves, not their rock.
       camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
@@ -110,7 +116,7 @@ function updateCamera(elapsed: number) {
     camera.lookAt(camLook.addScaledVector(fwd, 8));
   }
   sky.position.copy(camera.position);
-  const focus = me.body ? me.body.interpolatedPosition : { x: 0, y: 0, z: 0 };
+  const focus = me.body ? me.body.interpolatedPosition : ORIGIN;
   sun.target.position.set(focus.x, focus.y, focus.z);
   sun.position.set(focus.x + SUN_DIR.x * 80, focus.y + SUN_DIR.y * 80, focus.z + SUN_DIR.z * 80);
 }

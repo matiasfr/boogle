@@ -371,24 +371,66 @@ export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: numb
   }
 }
 
-const isThinCollider = (c: RAPIER.Collider) => thinColliders.has(c.handle),
-  notThinCollider = (c: RAPIER.Collider) => !thinColliders.has(c.handle);
-const NO_TURN = { x: 0, y: 0, z: 0, w: 1 };
-const balls = new Map<number, RAPIER.Ball>();
+const isThinCollider = (handle: number) => thinColliders.has(handle),
+  notThinCollider = (handle: number) => !thinColliders.has(handle),
+  anyCollider = () => true;
+// A camera sweeps twice a frame, and world.castShape makes four WASM objects a call, each registered for finalization, and
+// a hit with four vectors. So this calls what's under it with the same arguments, on inputs it keeps (npm run hitches).
+type RawVector = ReturnType<typeof RAPIER.VectorOps.intoRaw>;
+type RawRotation = ReturnType<typeof RAPIER.RotationOps.intoRaw>;
+type RawShape = ReturnType<RAPIER.Shape['intoRaw']>;
+let sweep: { from: RawVector; by: RawVector; turn: RawRotation; r: number; ball: RawShape } | undefined;
 export function sweepSphere(from: V3, to: V3, r: number, o: { mask?: number; thin?: 'include' | 'skip' | 'only' }) {
   if (!R || !world) return -1;
-  const v = { x: to.x - from.x, y: to.y - from.y, z: to.z - from.z };
-  const len = Math.hypot(v.x, v.y, v.z);
+  const dx = to.x - from.x,
+    dy = to.y - from.y,
+    dz = to.z - from.z;
+  const len = Math.hypot(dx, dy, dz);
   if (len === 0) return -1;
-  let ball = balls.get(r);
-  if (!ball) balls.set(r, (ball = new R.Ball(r)));
+  sweep ??= {
+    from: R.VectorOps.intoRaw(from),
+    by: R.VectorOps.intoRaw(from),
+    turn: R.RotationOps.intoRaw({ x: 0, y: 0, z: 0, w: 1 }),
+    r,
+    ball: new R.Ball(r).intoRaw(),
+  };
+  if (sweep.r !== r) {
+    sweep.ball.free();
+    sweep.r = r;
+    sweep.ball = new R.Ball(r).intoRaw();
+  }
+  sweep.from.x = from.x;
+  sweep.from.y = from.y;
+  sweep.from.z = from.z;
+  sweep.by.x = dx;
+  sweep.by.y = dy;
+  sweep.by.z = dz;
   const filter = ((0xffff << 16) | ((o.mask ?? -1) & 0xffff)) >>> 0;
   const flags =
     R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC | R.QueryFilterFlags.EXCLUDE_KINEMATIC;
-  const only = o.thin === 'only' ? isThinCollider : o.thin === 'skip' ? notThinCollider : undefined;
+  const only = o.thin === 'only' ? isThinCollider : o.thin === 'skip' ? notThinCollider : anyCollider;
   // 1 s at this velocity is the whole sweep. Not stopping at penetration: what it starts inside doesn't hold it.
-  const h = world.castShape(from, NO_TURN, v, ball, 0, 1, false, flags, filter, undefined, undefined, only);
-  return h ? h.time_of_impact * len : -1;
+  const h = world.broadPhase.raw.castShape(
+    world.narrowPhase.raw,
+    world.bodies.raw,
+    world.colliders.raw,
+    sweep.from,
+    sweep.turn,
+    sweep.by,
+    sweep.ball,
+    0,
+    1,
+    false,
+    flags,
+    filter,
+    undefined,
+    undefined,
+    only,
+  );
+  if (!h) return -1;
+  const at = h.time_of_impact() * len;
+  h.free();
+  return at;
 }
 
 export const rayHit = (): RayHit => ({
