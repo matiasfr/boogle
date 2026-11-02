@@ -60,9 +60,9 @@ const QUALITIES: Record<string, number[]> = {
 export function parseChord(name: string) {
   const m = /^([A-G])([#b]?)(.*)$/.exec(name.trim());
   if (!m) return { root: 9, tones: [9, 0, 4] }; // A minor
-  const root = (ROOTS[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? 11 : 0)) % 12;
-  const ivs = QUALITIES[m[3]] ?? (m[3].startsWith('m') ? QUALITIES.m : QUALITIES['']);
-  return { root, tones: ivs.map((i) => (root + i) % 12) };
+  const root = (ROOTS[m[1]!]! + (m[2] === '#' ? 1 : m[2] === 'b' ? 11 : 0)) % 12;
+  const ivs = QUALITIES[m[3]!] ?? (m[3]!.startsWith('m') ? QUALITIES.m : QUALITIES['']);
+  return { root, tones: ivs!.map((i) => (root + i) % 12) };
 }
 
 export const midiToHz = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
