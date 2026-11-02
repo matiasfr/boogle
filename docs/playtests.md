@@ -110,3 +110,17 @@ One short entry per session: date, who (first names), what was new, what was fun
 - "There's more to fix, but it's a good step for the water." Agreed with the director's list: steam puffs, a paler sky with no clouds, glitter that fades early, no shallows or foam at the piers, and greybox solid objects.
 - After: the water direction holds; the rest waits for a later look pass.
 
+## 2026-11-02 (the real place, `?proto=place`)
+- Who: Matias, solo, iPad + controller; told to the director.
+- Gut question: yes, wanted to connect it, "but it wasn't clear what connecting it would do from the beginning".
+- Liked: the sense of scale, peaking on the far cliff after the bridge, seeing the island in the distance. The roundabout walk, then the train as a shortcut. Lots of trains running: "there was life happening". Seeing the cargo. Wanted to keep going, "just to explore more".
+- Felt off: at the start, didn't know what to do, didn't see the path, didn't notice the survey stake. Hauling from right beside the ring: only 3 trips, so not grindy, but not satisfying and not intentional.
+- Felt off: missed the earlier track layer, which physically dropped the pieces of track. Wants construction with physicality, like the scaffolding, not things scaling up.
+- Ride home: "felt cool" but no reason to go back, and less of a moment than the Vast crossing. Maybe home's resources could be taken somewhere else, or going back could unlock something.
+- Camps: not a real decision; got lost and picked the left one by accident. Doesn't have to stay.
+- Town: couldn't tell which cargo changed what, beyond concrete buildings appearing. Wants more intentional, physical buildings, and a town that expands into places you can walk out to.
+- Wanted: numbers on resources eventually, a bit of RPG progression "so you really feel it". Death Stranding's auto-pavers came up again: places you walk out to, where the rail comes up.
+- Compared to `?proto=net`: bigger and probably an improvement, but not yet "really in a place".
+- Broke: falling through the tracks; the train and track layer aren't solid in places. No stuck spots.
+- After: boogle-2.md (Decided, 2 November); follow-up questions with the owner.
+
