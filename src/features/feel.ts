@@ -216,7 +216,7 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
   const aF = ax * fx + az * fz,
     aS = ax * -fz + az * fx;
   const hl = halfLifeOf(SPRING.leanEase);
-  const ls = (a.userData as { leanScale?: number }).leanScale ?? 1; // a skin may lean on its own (proto-hero.ts)
+  const ls = (a.userData as { leanScale?: number }).leanScale ?? 1; // a skin may lean on its own (src/proto/hero/index.ts)
   s.lx = damp(s.lx, ls * clamp(-aF * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean), hl, dt);
   s.lz = damp(s.lz, ls * clamp(-aS * SPRING.leanK, -SPRING.maxLean, SPRING.maxLean), hl, dt);
   // flops

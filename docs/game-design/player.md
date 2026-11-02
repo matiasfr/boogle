@@ -2,7 +2,7 @@
 
 Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
 [src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.ts](../../src/features/feel.ts),
-[src/physics/platforms.ts](../../src/physics/platforms.ts), [src/features/proto-ride.ts](../../src/features/proto-ride.ts).
+[src/physics/platforms.ts](../../src/physics/platforms.ts), [src/proto/ride/index.ts](../../src/proto/ride/index.ts).
 
 ## Movement and jump
 

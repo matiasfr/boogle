@@ -1,7 +1,7 @@
 // The jointed hero (assets/src/hero-rig.py, built by `npm run assets`): load it once, make as many as needed. Each one
 // is a clone sharing geometry and the shared materials, with its own body material in the player's colour, its own
-// outfit and its own bones to pose. Used by the hero prototypes (src/features/proto-hero-rig.ts, the hero standing in
-// ?proto=assets, and src/features/proto-hero.ts, playing as it). Lazy: import it with import().
+// outfit and its own bones to pose. Used by the hero prototypes (src/proto/hero/rig.ts, the hero standing in
+// ?proto=assets, and src/proto/hero/index.ts, playing as it). Lazy: import it with import().
 //
 // Looks are picked from the URL, the same for every hero in the tab:
 //   &eyes=bead|googly|flat      eye style ("Face" in hero-rig.py; bead, the owner's pick, by default)

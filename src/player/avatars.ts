@@ -23,7 +23,7 @@ export type AvatarData = {
 export type Avatar = THREE.Group & { userData: AvatarData };
 
 /**
- * Another body for every avatar, from a prototype (?proto=hero, src/features/proto-hero.ts). `dress` is called once
+ * Another body for every avatar, from a prototype (?proto=hero, src/proto/hero/index.ts). `dress` is called once
  * per avatar (on every new one, and on the ones already there when the skin is set): it hides the capsule and adds its
  * own figure inside `inner`, so the bob, the squash spring and the flops (src/features/feel.ts) still move it.
  * `animate` runs after the bob each frame, to pose limbs. Render only.
