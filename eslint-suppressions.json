@@ -213,15 +213,5 @@
     "boogle/use-an-entity": {
       "count": 1
     }
-  },
-  "src/render/props.ts": {
-    "boogle/use-an-entity": {
-      "count": 3
-    }
-  },
-  "src/render/water-render.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
   }
 }

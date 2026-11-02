@@ -30,8 +30,7 @@ import { GRID_RES, HALF, CELL } from '../constants.ts';
 import { SUN_DIR } from './sun-dir.ts';
 import { clamp } from '../math.ts';
 import { heights } from '../island/terrain.ts';
-import { scene } from './scene.ts';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 
 // Ground height packed into 16 bits (R = high byte, G = low byte), for a smooth shore depth.
 const heightTex = (() => {
@@ -165,17 +164,18 @@ waterMat.positionNode = Fn(() => {
 waterMat.colorNode = color();
 
 // late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
-onFrame(
-  ({ elapsed }) => {
-    seaU.uTime.value = elapsed;
-  },
-  { phase: 'late', order: 3010 },
-);
+defineKind('sea', { lateUpdate: 3010 });
 
 export function createWaterMesh() {
   const geo = new THREE.PlaneGeometry(1300, 1300, 100, 100); // ~13 m quads; the vertex wave is ~30 m long
   geo.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geo, waterMat);
-  scene.add(mesh);
+  spawn({
+    kind: 'sea',
+    mesh,
+    lateUpdate({ elapsed }) {
+      seaU.uTime.value = elapsed;
+    },
+  });
   return mesh;
 }
