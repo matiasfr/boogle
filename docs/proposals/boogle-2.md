@@ -25,6 +25,7 @@
 
 These are standing preferences from the thread.
 
+- **Codex is for images for now** (2 November; owner: "my codex usage is running low now, so let's save the remaining for visual image generation tasks and keep using Claude for coding tasks"). Previz and concept art can use Codex; code, research docs and plans go to Claude until the owner says otherwise.
 - **Feel first.** "Game feel is tantamount." Every interactive thing gets a feel pass before it gets rewards.
 - **Mechanics before narrative.** Find the fun in the core loop and its feel first (1 November). Story, characters and gags come later and are easy to fill in. Don't commit to them before the loop works.
 - **Think ambitiously.** Early mocks were "too simplistic". The owner wants clear technological stratification between eras, a bigger island, and a city.
@@ -233,6 +234,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
 - **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
 
+- **2026-11-02, the soapbox is removed** (owner: "I think we can remove the soapbox mini game. We can keep some of the code in case we bring it back later in a different place, but I don't think that island is the right place for it. The ball can stay"). Its card is retired and its code stays behind `?proto=soapbox`. Replaces the entry below.
 - **2026-11-01, the RC-car soapbox stays** ("pretty fun"; was "one more try, then cut"). Races with these carts are an idea for later (ideas.md). Not being able to drive on at the bottom of the hill felt like a possible miss, so the next version lets you keep driving.
 - **2026-11-01, mini-games:** topple is retired ("not particularly engaging"); hop leads (platforming as a mini-game); golf stays wanted (he and his friends love mini golf) but needs a real design in the mini-games pass.
 - **2026-11-01, the era question waits for depth** ("the world should look beautiful at each age … not enough depth to tell meaningfully"). It's asked again once eras 1–2 have real level design.

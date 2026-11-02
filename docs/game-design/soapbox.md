@@ -1,5 +1,7 @@
 # 6.20 Prototype: soapbox (`?proto=soapbox`)
 
+*Retired 2 November: not on the `?play` island, the playlist or the prototype list's live cards. The code stays, and `?proto=soapbox` still loads it, in case it comes back somewhere else.*
+
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
 precision). Third try (2026-11-01): after two "no"s the cart drives as a suspensiony RC car with analog triggers

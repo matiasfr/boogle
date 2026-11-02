@@ -262,7 +262,11 @@ export const PROTOS: Proto[] = [
     id: 'soapbox',
     title: 'Soapbox cart',
     step: 5,
-    status: 'live',
+    status: 'retired',
+    retired: {
+      why: 'cut',
+      note: 'Owner, 2 Nov: remove the soapbox mini-game; the old island isn’t the right place for it. The code stays behind ?proto=soapbox in case it comes back somewhere else.',
+    },
     url: '/?proto=soapbox',
     answer: {
       on: '2026-11-01',
@@ -553,7 +557,6 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
-  { id: 'soapbox', why: 'Do you keep driving after the finish?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
