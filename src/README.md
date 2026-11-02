@@ -12,7 +12,7 @@ so hashed file names don't depend on it).
 - `sim/`: pure, deterministic logic (no three.js, no DOM), unit-tested in `test/`.
 - `net/`: the room interface, a WebSocket to our server, which hosts every room (see [net/README.md](net/README.md)).
 - `netplay/`: game networking on top of the room: `net.ts` (presence, the remotes table, peer lifecycle hooks; pure
-  infrastructure, lint-enforced) and its pure helpers (snapshot buffer, presence fields, build tags, report scrubbing,
+  infrastructure, lint-enforced), `owner-sync.ts` (an Owner object that changes hands) and its pure helpers (snapshot buffer, presence fields, build tags, report scrubbing,
   smooth shared time).
 - `entity/`: the entity core, for anything new in the world or on screen: `entity.ts` (`defineKind`, `spawn`, `despawn`; the
   lifecycle contract is at its top) and `walker.ts`, its pure logic, tested in Node.

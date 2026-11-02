@@ -4,8 +4,8 @@
 // (src/loop.ts).
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { tabHidden } from '../../netplay/net.ts';
-import { ball, netBall, prepareBall, settleBall, surfBall, walkIntoBall } from './state.ts';
-import { resolveBallOwner, sampleBallPose } from './sync.ts';
+import { ball, ballOwner, netBall, prepareBall, settleBall, surfBall, walkIntoBall } from './state.ts';
+import { resolveBallOwner } from './sync.ts';
 
 defineKind('ball', { prePhysics: -90, fixedPre: 45, fixedPost: 15, postPhysics: -300 });
 defineKind('ball-carry', { prePhysics: -70, postPhysics: -280 });
@@ -32,7 +32,7 @@ spawn({
 spawn({
   kind: 'ball-carry',
   prePhysics() {
-    sampleBallPose();
+    ballOwner.sample();
     prepareBall();
   },
   postPhysics: ({ now }) => walkIntoBall(now),

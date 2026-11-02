@@ -303,7 +303,7 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
       the real ground, the ball at about 800x real time and within 1 mm of the browser on land, the lockstep rules, and a two-process ball hand-off through a real local server.
       An entity joins by having a `headless.ts`, with its view left to `index.ts` as its own kind. Not yet: the player (one blob with its mesh, so `me.body` is null), every other
       entity, most features, and static colliders other than the ground, which are built with what draws them.
-- [ ] **18. Replication component.** `sync.ts` minus the ball's wire shape: the claim rule, latest claim and snapshots per peer, the
+- [x] **18. Replication component.** `sync.ts` minus the ball's wire shape: the claim rule, latest claim and snapshots per peer, the
       orphan pick, the mode switch, and sampling into `pose` with the extrapolation cap. `held`, carry, surf and respawn stay with the
       object, and `snap` is an additive field. Entity `id` isn't a network id. Presence keys stay literal. Verify: `check:full`,
       `check:gpu`, two-tab ownership hand-off, `/code-review`.

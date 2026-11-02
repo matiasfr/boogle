@@ -99,7 +99,7 @@ function peerColor(peer: string) {
 //   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
 //                                  state === prev: 'solo' -> 'solo' is a retry that failed before reaching a room.
 //                                  Details are on net (error, retries, room). Local only; never sends anything.
-//   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (src/entities/ball/sync.ts: this tab
+//   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (./owner-sync.ts: this tab
 //                                  owns the ball). Checked after `entered`, in registration order, before hosting.
 //   onPeerAdded(fn)                fn(remote) as a Remote is created, before anything can read it: add your fields here.
 //   onPeerLeftIsland(fn)           fn(remote) on each update from a peer that isn't on the island (they may still be in
