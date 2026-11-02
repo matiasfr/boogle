@@ -53,8 +53,10 @@ function reloadIfHidden() {
 const TEXT = 'Boogle was updated – reload to stay in sync with friends';
 function showToast() {
   if (toast) return;
-  // A pad slot only if one is free (AGENTS.md); otherwise the click and the reload-when-hidden cover it.
-  const pad = freeSlots()[0];
+  // A pad slot only if one is free (AGENTS.md); otherwise the click and the reload-when-hidden cover it. D-pad up first:
+  // the first free slot in PAD's order can be a stick click (R3), too easy to press by accident for a reload.
+  const free = freeSlots();
+  const pad = free.includes('up') ? 'up' : free[0];
   const label =
     pad && registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
       ? `Reload (${PAD_LABEL[pad]})`

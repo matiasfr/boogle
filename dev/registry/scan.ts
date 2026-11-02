@@ -11,6 +11,8 @@
 //   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
 //   messages: { type: [path] }       `t: '...'` in files that call .send(, outside src/net/: who sends each type
 //   pads:     { slot: [path:id] }    registerAction pad slots (describeControl rows only describe, they may share)
+//   protoPads: { slot: [path:id] }   the same in src/proto/: a slot free on normal pages stays free, and a prototype
+//                                    stays out of the game's way (at runtime a claim that clashes stays unbound and warns)
 //   padSlots: [slot]                 PAD in src/player/controls.ts
 //   frames:   [{ path, phase, order, kind? }]  onFrame, onPreStep and onPostStep hooks with a literal order, and each
 //                                    entry of a defineKind (path is file:line)
@@ -29,6 +31,7 @@ export type Registry = {
   presence: Record<string, string[]>;
   messages: Record<string, string[]>;
   pads: Record<string, string[]>;
+  protoPads: Record<string, string[]>;
   padSlots: string[];
   frames: FrameHook[];
   kindErrors?: string[];
@@ -50,14 +53,15 @@ const add = (map: Record<string, string[]>, key: string, who: string) => (map[ke
 // not a name two agents can pick; presence includes the core keys of buildPresence; a hook is core by order
 // (isCoreHook). A file the reader cannot parse is an error, not a silent skip.
 export function scanSources(files: Source[]): Registry {
-  const reg: Registry = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
+  const reg: Registry = { presence: {}, messages: {}, pads: {}, protoPads: {}, padSlots: [], frames: [] };
   for (const { path, text } of files) {
     const r = readFile(path, text);
     if (r.parseError) (reg.parseErrors ??= []).push(`${path}: ${r.parseError}`);
     if (bare(path) === CORE_PRESENCE_FILE) for (const key of r.corePresence) add(reg.presence, key, `${path} (core)`);
     for (const { key, line } of [...r.owner, ...r.host]) add(reg.presence, key, `${path}:${line}`);
     if (!path.startsWith('src/net/')) for (const type of r.sends) add(reg.messages, type, path);
-    for (const a of r.actions) if (a.pad !== null) add(reg.pads, a.pad, `${path}:${a.id ?? '?'}`);
+    const pads = path.startsWith('src/proto/') ? reg.protoPads : reg.pads;
+    for (const a of r.actions) if (a.pad !== null) add(pads, a.pad, `${path}:${a.id ?? '?'}`);
     if (bare(path) === 'src/player/controls') reg.padSlots = r.padSlots;
     for (const f of r.frames) {
       if (f.explicit) {
@@ -84,13 +88,13 @@ export function checkRegistry(reg: Registry): string[] {
   for (const [type, who] of Object.entries(reg.messages)) {
     if (who.length > 1) errors.push(`message type '${type}' is sent from two files: ${who.join(', ')}. Rename one.`);
   }
-  for (const [slot, who] of Object.entries(reg.pads)) {
+  for (const [slot, who] of [...Object.entries(reg.pads), ...Object.entries(reg.protoPads)]) {
     if (who.length > 1) errors.push(`pad slot '${slot}' is claimed twice: ${who.join(', ')}. The later stays unbound.`);
     else if (reg.padSlots.length && !reg.padSlots.includes(slot))
       errors.push(`pad slot '${slot}' (${who}) is not in PAD`);
   }
   if (reg.padSlots.length && reg.padSlots.every((s) => reg.pads[s])) {
-    errors.push('every pad slot is taken: updates.ts needs freeSlots()[0] at runtime. Rethink the layout.');
+    errors.push('every pad slot is taken: updates.ts needs a free one at runtime. Rethink the layout.');
   }
   // Core hooks (src/loop.ts's list) sit below the feature range or at 3000+ in 'late'; lazy feature parts outside
   // src/features/ use the feature range and may tie (ties run in registration order).
