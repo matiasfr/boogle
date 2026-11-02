@@ -13,7 +13,7 @@ Four files, nothing else edited:
    test that the same inputs give the same hash and that serialize/load round-trips.
 2. `src/world/rules/<x>.js`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
-3. One line appended to `RULES` in `index.js`. Append only: states snapshot, load and hash in its order, so
+3. One line appended to `RULES` in `index.ts`. Append only: states snapshot, load and hash in its order, so
    reordering it desyncs rooms where peers run different builds.
 4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
@@ -38,7 +38,7 @@ Run `npm run check:full`. Notes:
 
 ```js
 // src/world/rules/<name>.js
-// Imports allowed: ../grid.js, ../../sim/*, ./<earlier rule>.js (constants only).
+// Imports allowed: ../grid.ts, ../../sim/*, ./<earlier rule>.js (constants only).
 export const name = 'thing'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -56,7 +56,7 @@ export function install(sync, land, rules) {
 Rules:
 
 - Lockstep math only (DESIGN.md, "Determinism from day one"): the determinism lint covers this folder, and its import
-  lint allows only `../grid.js`, `../../sim/*` and sibling rules (no
+  lint allows only `../grid.ts`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
@@ -100,7 +100,7 @@ op names.
 | Key | Set by | Server | Used by |
 |---|---|---|---|
 | `canPlantAt(i, j)` | `src/adapters/mushroom-garden.ts` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
-| `protoRoom` | `src/features/haul-kit.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.fill`, `tune.reset`, `open.lay` validate |
+| `protoRoom` | `src/features/proto-haul.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.fill`, `tune.reset`, `open.lay` validate |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
 `server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.
@@ -128,14 +128,14 @@ export const edits = {
 };
 ```
 
-Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../game-world.js` in the adapter.
+Then append `thing` to `RULES` in `index.ts`, and read `rules.thing` from `../game-world.ts` in the adapter.
 
 ## Modules
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `mushrooms.js` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
-| `gifts.js` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
+| `mushrooms.ts` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
+| `gifts.ts` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
 | `roster.ts` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.ts` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.ts`); `drop` returns `{ placed, ids }` |
 | `stacks.ts` | none | `stacks` | `{ stacks, count(pid), kind(pid), countAt(k), kindAt(k), room(pid, k), add(pid, k, n), take(pid, n) }`: what each player carries (`../../sim/stacks.ts`), by roster index; later rules call `add`/`take` in their apply |
@@ -145,6 +145,6 @@ Then append `thing` to `RULES` in `index.js`, and read `rules.thing` from `../ga
 | `ball.ts` | `ball.rest` | `ball` | `{ ball, rest() }`: the beach ball's last resting spot in cm (`../../sim/ball-rest.ts`); no tick; the adapter `src/features/ball-rest.ts` saves it and puts the ball back |
 | `tune.ts` | `tune.set`, `tune.fill`, `tune.reset` (`proto-` rooms only, env `protoRoom`) | `tune` | `{ tune, cost(s, ring), get(key) }`: playtest tuning of the haul's lockstep numbers (`../../sim/tune.ts`; defaults are today's constants, only overrides saved); `tune.fill` fills the open Track ring (as freight); `tune.reset` empties stacks, piles, sites and bundles. `stacks`, `sites` and `sources` read `rules.tune` at run time (it installs after them) |
 | `opening.ts` | `open.start`, `open.here`, `open.lay` (`proto-` rooms only, env `protoRoom`) | `opening` | `{ opening, ready(), bell(tick), era(tick) }`: opening day (`../../sim/era.ts`): the tick it started, once the age's last section is laid (first start wins), and the tick everyone was at the platform (`open.here`, which ends the gathering call early, once); `bell` is its run (phase `call`, then `bell`), `era` the derived era (2 once the bell has run out). `open.lay` is the playtest shortcut that lays the rest of the route; `tune.reset` also undoes opening day |
-| `edit-gen.js` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
+| `edit-gen.ts` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 
 The land (`{ n, layout }`) comes from `../home-land.json` outside the game (server, tests); see `../README.md`.

@@ -2,7 +2,7 @@
 // interpolate between. Pure (no three.js), so it is unit-tested.
 //
 //   const snaps = createSnaps();
-//   snaps.push(time, sample)   time in local ms (net.js converts the sender's clock); samples are any objects
+//   snaps.push(time, sample)   time in local ms (net.ts converts the sender's clock); samples are any objects
 //   snaps.sample(t)            -> null when empty, else { a, b, u, over }: lerp a -> b by u; over = ms past b
 //   snaps.clear(), snaps.length
 //

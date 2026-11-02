@@ -120,7 +120,7 @@ function peerColor(peer: string) {
 //   onNetState(fn)                 fn(state, prev) on every setNet call, after net.state changed. It also fires when
 //                                  state === prev: 'solo' -> 'solo' is a retry that failed before reaching a room.
 //                                  Details are on net (error, retries, room). Local only; never sends anything.
-//   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (ball.js: this tab
+//   keepPresenceWhile(fn)          keep sending presence while fn() is true, even off the island (ball.ts: this tab
 //                                  owns the ball). Checked after `me.entered`, in registration order, before hosting.
 const presenceFields: Field[] = [];
 // The keys buildPresence sets itself; a field can't take one (nor an earlier field's key).
@@ -530,7 +530,7 @@ export function updateRemotes(now: number) {
 }
 
 // ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
-// update -280, after this player's avatar (player.js, -290), before the camera (-200): remote avatars take their
+// update -280, after this player's avatar (player.ts, -290), before the camera (-200): remote avatars take their
 // interpolated pose and walk at the speed they moved since last frame.
 const tmpV = new THREE.Vector3();
 onFrame(

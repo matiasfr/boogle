@@ -2,21 +2,21 @@
 
 Boogle draws with three.js's `WebGPURenderer` (`three/webgpu`) and writes every custom shader in TSL (`three/tsl`).
 **WebGPU only** (since 2026-10-31): Chrome and Edge, Safari 26 on iOS, iPadOS and macOS, Firefox on Windows and Apple
-Silicon. There is no WebGL 2 fallback (`scene.js` turns three's off), so a browser without WebGPU gets a note in the
+Silicon. There is no WebGL 2 fallback (`scene.ts` turns three's off), so a browser without WebGPU gets a note in the
 lobby instead of the island. In return any feature may use compute shaders, storage buffers, storage textures and
 indirect draws directly, with no second path and no `isWebGPUBackend` check. CI runs WebGPU too (SwiftShader over
-Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/plans/webgpu-migration.md).
+Vulkan). How the migration went: [docs/plans/done/webgpu-migration.md](../../docs/plans/done/webgpu-migration.md).
 
 ## The frame
 
-- [`scene.js`](scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
+- [`scene.ts`](scene.ts) builds `renderer`, `scene`, `camera`, `sun` and the sky placeholder synchronously, so
   modules can import them at load. `renderer.render()` throws until `renderer.init()` resolves: the network and lobby start at once, and
-  `main.js` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
-  screen). Behind it, [`precompile.js`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
+  `main.ts` waits for `rendererReady` only for the frame loop and the Enter button ("Loading island" is the loading
+  screen). Behind it, [`precompile.ts`](precompile.ts) builds every pipeline (hidden and off-screen objects too, plus
   `warmUp()` objects such as a new player's avatar) so no frame stalls on a shader compile. A lazy part calls
   `precompile(object)` as it builds its meshes. On iOS 27 Safari a `compileAsync` after the first frames can throw
   "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
-  create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.js` hands the frame to `renderer.setAnimationLoop`, so three
+  create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.ts` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
   last frame's counts until the next one starts. A lost GPU device
   reloads the page once it is visible, at most once a minute.
@@ -24,7 +24,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   whose 4x samples are stored (the default). Discarding them (`storeMultisampled*Buffer: false`, which makes three use a
   `TRANSIENT_ATTACHMENT` memoryless texture on Safari 27) blanked the scene on iPad Safari 27 (1 Nov 2026: only the clear
   colour; Safari 27 on an M1 Mac was fine), so it stays off until tested on an iPad;
-  then one output pass that tone maps (`NeutralToneMapping`; exposure is one base value in `scene.js`, which `sky.js` raises a little at night, like eyes
+  then one output pass that tone maps (`NeutralToneMapping`; exposure is one base value in `scene.ts`, which `sky.ts` raises a little at night, like eyes
   adapting) and encodes sRGB. Draw with
   `renderFrame()`. It renders the scene once per animation frame; a second call in the same frame only redraws the
   output quad, so don't call it twice to measure anything.
@@ -32,7 +32,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
   node from `scenePass` (`scenePass.getTextureNode()`, MRT outputs), assign `pipeline.outputNode`, and set
   `pipeline.needsUpdate = true`. Each full-screen effect costs fill on phones: measure it on a real device, and plan
   for a quality setting rather than turning it on for everyone.
-- [`features/adaptive-res.js`](../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
+- [`features/adaptive-res.ts`](../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
   `min(devicePixelRatio, 2)` from the frame time. Don't call `setPixelRatio` elsewhere.
 
 ## Colour
@@ -40,7 +40,7 @@ Vulkan). How the migration went: [docs/plans/webgpu-migration.md](../../docs/pla
 Everything is linear. Lights, materials and palettes are physical-ish linear values; the output pass does tone
 mapping and sRGB. `THREE.Color` set from a hex string converts sRGB to linear for you; a raw `vec3` literal in TSL
 is linear. three's own fog (`scene.fog`) applies to node materials; set `fog: false` on a material that does its own.
-The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
+The day/night palettes live in [`sky.ts`](sky.ts) (`C`, `L`).
 
 ## Materials
 
@@ -48,16 +48,16 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
   as they are: the renderer maps them to node materials. Use them when there's nothing custom.
 - **Custom looks** are node materials from `three/webgpu` (`MeshStandardNodeMaterial`, `MeshBasicNodeMaterial`,
   `SpriteNodeMaterial`, `PointsNodeMaterial`, ...) with TSL in their node slots: `colorNode`, `positionNode`,
-  `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `adapters/terrain.js`),
+  `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `adapters/terrain.ts`),
   `opacityNode`. Use `colorNode`, not `fragmentNode`: `fragmentNode` skips lighting, fog and the output transform.
 - **Extending a material another module owns** (sway, wiggle, tint): `patchNode(mat, slot, prev => node)` from
-  [`material-patch.js`](material-patch.ts). It wraps what is in the slot, so several patches compose.
+  [`material-patch.ts`](material-patch.ts). It wraps what is in the slot, so several patches compose.
 - **Uniforms** are TSL `uniform(value)` nodes. A module that others drive exports them as a plain object of handles
-  (`seaU` and `seaRipples` in `water-render.js`); consumers set `.value` and never reach into a material.
+  (`seaU` and `seaRipples` in `water-render.ts`); consumers set `.value` and never reach into a material.
   Per-instance data is an `InstancedBufferAttribute` read with `instancedDynamicBufferAttribute` or `attribute()`.
 - **Sized points are sprites.** WebGPU has no point size, so `THREE.Points` draws 1 px dots. Draw many dots as one
-  `Sprite` with `sprite.count = n` and instanced attributes (`particles.js`, fireflies, the throw preview). For
-  particles, call `emit()` from `particles.js`; don't build a pool.
+  `Sprite` with `sprite.count = n` and instanced attributes (`particles.ts`, fireflies, the throw preview). For
+  particles, call `emit()` from `particles.ts`; don't build a pool.
 - **Lint bans the WebGL-only APIs** in `src/`: `ShaderMaterial`, `RawShaderMaterial`, `ShaderChunk`, `ShaderLib`,
   `UniformsLib`, `UniformsUtils`, `WebGLRenderer`, `THREE.Points`, `onBeforeCompile`, `customProgramCacheKey` and
   `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; `player/item-icons.ts` shows a readback that goes
@@ -68,7 +68,7 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 - `vec3(someColor)` with a `THREE.Color` silently renders black: use `vec3(c.r, c.g, c.b)` or `color(c)`.
 - WGSL needs texture samples and derivatives (`dFdx`, `dFdy`) in uniform control flow: sample before any `If`,
   `Loop` with a data-dependent exit, or `Discard`.
-- Don't import a TSL function under the same name as a helper from `../math.js` (`clamp`, `lerp`, `smoothstep`):
+- Don't import a TSL function under the same name as a helper from `../math.ts` (`clamp`, `lerp`, `smoothstep`):
   alias it (`clamp as tslClamp`), or the module fails to load.
 - `smoothstep` with reversed edges is undefined in WGSL: write `smoothstep(a, b, x).oneMinus()`.
 - Node graphs compile once per material. Change a uniform's `.value` per frame, never rebuild the node.
@@ -96,7 +96,7 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.
-- `window.boogle.gfx` (`gfx()` in `scene.js`) is `'webgpu'` once `rendererReady` resolves, null before; telemetry
+- `window.boogle.gfx` (`gfx()` in `scene.ts`) is `'webgpu'` once `rendererReady` resolves, null before; telemetry
   reports it with each connection.
 - Headless frame rates mean nothing. Judge frame time on a real iPhone, iPad and a mid-range Android.
 
@@ -104,7 +104,7 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
 
 The "Graphics quality tiers" item in [PLAN.md](../../PLAN.md): a quality setting in the pause view (auto, low,
 medium, high), with compute particles behind `emit()`, TRAA, bloom, clustered lights for night lanterns (in place of
-the two-light pool in `lights.js`), cascaded shadows, and GTAO, SSGI, SSR and god rays on the high tier. The look-inside-the-materials
+the two-light pool in `lights.ts`), cascaded shadows, and GTAO, SSGI, SSR and god rays on the high tier. The look-inside-the-materials
 ideas in [docs/research/stylized-rendering-on-a-budget.md](../../docs/research/stylized-rendering-on-a-budget.md)
 remain the floor every device gets. The `?proto=look` lab ([src/debug/look-lab.ts](../debug/look-lab.ts)) switches
 candidate layers on the real island and times them; measured costs and the recommended iPad target:

@@ -1,9 +1,9 @@
-// The physics facade (docs/plans/rapier.md): the only door to a physics library. Game code builds bodies from plain
+// The physics facade (docs/plans/done/rapier.md): the only door to a physics library. Game code builds bodies from plain
 // shape descriptions and reads and writes the body fields every backend keeps: position, velocity, angularVelocity,
 // force, quaternion, interpolatedPosition (the pose to draw, between the last two fixed steps). Use only their x, y, z
 // (w) and set(): no backend's own vector methods.
 //
-// The engine is Rapier (./backend-rapier.ts, WASM). `physicsReady` resolves once its WASM is in; main.js waits for it.
+// The engine is Rapier (./backend-rapier.ts, WASM). `physicsReady` resolves once its WASM is in; main.ts waits for it.
 //
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
@@ -13,7 +13,7 @@
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
 //   material(name, { friction, restitution })   a contact uses the product of its two materials' values
 //   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
-//   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.js only
+//   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.ts only
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld

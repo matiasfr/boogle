@@ -16,7 +16,7 @@ The open questions in the two plans have working answers so work can start; chan
 - **Hosting:** stay on GitHub Pages until shared memory (`SharedArrayBuffer`) is needed, then move the static site to
   Cloudflare Pages (COOP/COEP headers). Nothing before phase 4 needs it.
 - **ECS:** instance pools, no ECS library.
-- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](rapier.md)).
+- **Physics engine:** move from cannon-es to Rapier (decided 2026-10-31; [rapier.md](done/rapier.md)).
 - **Server transport:** WebSocket first (as [server-host.md](server-host.md) chose); unreliable datagrams only on
   evidence.
 
@@ -35,7 +35,7 @@ The open questions in the two plans have working answers so work can start; chan
       registry and loaders, Node 24 (step 8a).
 - [ ] Allocation-free hot path (step 2). `hitches` measures each hook warm and splits objects from V8's boxed
       numbers (Safari has none); 2026-11-01 took our hooks from 6.6 to 3.3 KB/frame of objects and from ~19 to ~11 of
-      boxed numbers, with a 4 KB budget that fails `hitches`. Physics moved to Rapier ([rapier.md](rapier.md)).
+      boxed numbers, with a 4 KB budget that fails `hitches`. Physics moved to Rapier ([rapier.md](done/rapier.md)).
       Remaining: under 1 KB/frame of objects (the biggest left: presence sends, 0.9).
 - [ ] Baseline on the target devices (skipped for now, 2026-10-31: needs the devices in hand): `hitches` and `perf` on the iPad and the Android phone, numbers recorded in
       open-world.md next to the Mac ones.
@@ -46,7 +46,7 @@ The open questions in the two plans have working answers so work can start; chan
 
 ## Phase 2: batching and the GPU
 
-- [x] Physics on Rapier ([rapier.md](rapier.md)): spike and measure (done: Rapier 0.19.3, 6× faster steps, ~2 KB
+- [x] Physics on Rapier ([rapier.md](done/rapier.md)): spike and measure (done: Rapier 0.19.3, 6× faster steps, ~2 KB
       vs ~62 KB garbage per step, 584 KB WASM), a physics facade on cannon-es (done), a Rapier backend
       behind `?physics=rapier`, feel tuning, then the switch and removing cannon-es.
 - [x] Instance pools (`src/render/instances.ts`); move critters, gifts and blob shadows onto them; freeze static

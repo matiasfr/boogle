@@ -71,7 +71,7 @@ export function requestLock() {
 // Lets go of every held key, button, stick (a modal takes the input: src/player/modal.ts).
 let releaseInputFn: (() => void) | null = null;
 export const releaseInput = () => releaseInputFn?.();
-// Wired from main.js after every module has loaded (hud.js and input.js import each other).
+// Wired from main.ts after every module has loaded (hud.ts and input.ts import each other).
 export function initInput() {
   if (isTouch) document.body.classList.add('touch');
   // Capture phase, so the switch happens before the press is handled. A key aimed at a text field may come from the

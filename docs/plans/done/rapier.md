@@ -1,8 +1,8 @@
 # Plan: physics on Rapier
 
-> **Status: done (2026-10-31): Rapier is the only physics engine; cannon-es is removed.** Part of [architecture.md](architecture.md), phase 2.
+> **Status: done (2026-10-31): Rapier is the only physics engine; cannon-es is removed.** Part of [architecture.md](../architecture.md), phase 2.
 > Why: cannon-es allocates about 60 KB of JS garbage per frame inside `world.step` (measured with
-> `npm run hitches -- --allocs`, [game-loop.md](game-loop.md) step 2), has no continuous collision (the fall-speed cap
+> `npm run hitches -- --allocs`, [game-loop.md](../game-loop.md) step 2), has no continuous collision (the fall-speed cap
 > and fall-through net in `src/physics/physics.ts` exist for that), and is pure JS on the main thread. Rapier
 > (`@dimforge/rapier3d-compat`) runs in WASM: no JS garbage per step, continuous collision, faster narrowphase, and it
 > can run in a worker later (game-loop.md step 7). Each step is one PR that leaves `main` green; physics feel is the

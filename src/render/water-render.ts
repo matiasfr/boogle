@@ -49,12 +49,12 @@ const heightTex = (() => {
   return t;
 })();
 
-// Uniform handles (TSL nodes): the sea's clock is the frame's `elapsed` (splash.js stamps ripple starts with it), the
+// Uniform handles (TSL nodes): the sea's clock is the frame's `elapsed` (splash.ts stamps ripple starts with it), the
 // ripple slots are written by src/render/splash.ts, and src/render/sky.ts tints the sea through uLight, uSky and uSpecCol.
 export const seaRipples = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); // x, z, start time, strength
 export const seaU = {
   uTime: uniform(0),
-  uSun: uniform(SUN_DIR), // the key light's direction (constants.js), mutated in place by sky.js
+  uSun: uniform(SUN_DIR), // the key light's direction (constants.ts), mutated in place by sky.ts
   uSky: uniform(new THREE.Color('#a9dcf3')),
   uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.ts)
   uSpecCol: uniform(new THREE.Color(1.0, 0.97, 0.88)), // glint colour of the key light (sun or moon)
@@ -130,7 +130,7 @@ const color = Fn(() => {
   return vec4(col, alpha);
 });
 
-// The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.js).
+// The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.ts).
 const waterMat = new MeshBasicNodeMaterial({ transparent: true });
 waterMat.positionNode = Fn(() => {
   const p = positionLocal;
@@ -141,7 +141,7 @@ waterMat.positionNode = Fn(() => {
 })();
 waterMat.colorNode = color();
 
-// late 3010, last hook before render, after the presence send (net.js, 3000): the sea's clock.
+// late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
 onFrame(
   ({ elapsed }) => {
     seaU.uTime.value = elapsed;

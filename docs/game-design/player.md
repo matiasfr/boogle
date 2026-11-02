@@ -26,7 +26,7 @@ Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.
 
 - You swim when the water surface (the sea or the cave pond) is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
-- There is no dive (removed 2026-10-30, [plans/cleanup-dig-water-junk.md](../plans/cleanup-dig-water-junk.md)).
+- There is no dive (removed 2026-10-30, [plans/done/cleanup-dig-water-junk.md](../plans/done/cleanup-dig-water-junk.md)).
 
 ## Flops (cosmetic)
 
@@ -97,8 +97,8 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.js](../../src/player/avatars.ts)).
-- Eight colours ([constants.js](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
+- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)).
+- Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
 - Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage
   (`boogle.name`, `boogle.color`); a first visit's card offers a friendly random name and a random colour, later

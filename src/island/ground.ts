@@ -1,8 +1,8 @@
-// The island's base ground on the world grid, in whole centimetres: the island (index.js: natural shape plus every
-// POI's stamps) with the volleyball court levelled, quantized once. The render side (adapters/terrain.js: mesh and
+// The island's base ground on the world grid, in whole centimetres: the island (index.ts: natural shape plus every
+// POI's stamps) with the volleyball court levelled, quantized once. The render side (adapters/terrain.ts: mesh and
 // heightfield) builds from it; the lockstep rules don't read it.
 //
-// An input, not the sim: like shape.js it uses Math.hypot, so it stays out of the determinism lint's lockstep files.
+// An input, not the sim: like shape.ts it uses Math.hypot, so it stays out of the determinism lint's lockstep files.
 // No three.js, no DOM.
 import { GRID_RES, CELL, HALF, COURT } from '../world/grid.ts';
 import { lerp, smoothstep } from '../math-pure.ts';

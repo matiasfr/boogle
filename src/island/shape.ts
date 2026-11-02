@@ -4,11 +4,11 @@
 // - home: the original island around the origin (spawn, court, mushroom garden). Inside HOME_KEEP metres of the origin
 //   the ground is exactly what it always was, so nothing there moves.
 // - mainland: a few times home's size, to the north (-z), with rolling meadows, an eastern plain, a western point and
-//   a rocky massif in the north-west. Points of interest are placed on it by their site files (src/pois/*/site.js).
+//   a rocky massif in the north-west. Points of interest are placed on it by their site files (src/pois/*/site.ts).
 //   Kept small on purpose: everything is a short sprint from spawn (about 10-15 s), so friends stay in sight of
 //   each other, and the lighthouse hill in the middle is visible from everywhere.
 //
-// Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; ground.js quantizes
+// Pure arithmetic on floats (no three.js, no DOM). Every client computes the same numbers; ground.ts quantizes
 // them to centimetres once, so the shared sim never sees raw floats.
 import { lerp, smoothstep, fbm } from '../math-pure.ts';
 import { SEABED } from '../world/grid.ts';

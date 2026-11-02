@@ -73,7 +73,7 @@ so without them it takes longer: a retune is pending.
   ran off..." (`RESUME`).
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye (one press: his farewell
   is a bubble). Greetings and farewells change with your level.
-- **Loading.** The conversations (`talk.js` and `lines.js`) are their own chunk, fetched right after start; a talk
+- **Loading.** The conversations (`talk.ts` and `lines.ts`) are their own chunk, fetched right after start; a talk
   opened before it arrives waits for it. What he says outside a talk (level-ups, ride complaints, "Nope!") is in
   the small eager [src/boogler/barks.ts](../../src/boogler/barks.ts) ([src/boogler/play.ts](../../src/boogler/play.ts)).
 - **Story threads** ([src/boogler/lines.ts](../../src/boogler/lines.ts), [src/boogler/talk.ts](../../src/boogler/talk.ts)):

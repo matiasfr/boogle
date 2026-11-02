@@ -23,7 +23,7 @@
 | Shared projects, eras, order of events | Pure, replay-tested lockstep rules that run the same on the server and in tabs | `src/sim/`, `src/world/rules/`, `test/world-replay.test.mjs` |
 | Timetabled, ride-only trains | Scripted runs as a pure function of the tick: any number of trains costs no network traffic | `src/sim/scripted-run.ts` (`runAt`) |
 | Personal coin, knacks, hats | A stable player id across visits, and a roster of who's in the room | `src/player/identity.ts`, `src/world/rules/roster.ts` |
-| Physics comedy, vehicles | Rapier (6× faster steps than cannon-es, ~2 KB garbage per step) behind a facade with kinematic bodies | `src/physics/engine.ts`, [rapier.md](rapier.md) |
+| Physics comedy, vehicles | Rapier (6× faster steps than cannon-es, ~2 KB garbage per step) behind a facade with kinematic bodies | `src/physics/engine.ts`, [rapier.md](done/rapier.md) |
 | Smoke, sparks, steam | WebGPU compute particles behind `emit()` | `src/render/particles.ts` |
 | A frame budget as content grows | Per-hook profiling (`?prof=1`, `perf`, `hitches`), instance pools | [game-loop.md](game-loop.md) |
 

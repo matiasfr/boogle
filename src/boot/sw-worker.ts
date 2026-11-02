@@ -1,6 +1,6 @@
 // The service worker (docs/plans/loading.md, "Service worker"), built to dist/sw.js by vite.config.js
 // ('boogle-sw'), which bundles this file and fills in SW_CONFIG: the build id and the files the first frame needs.
-// Registered by ./sw.ts once the game is interactive. Not in development (the dev server has no sw.js).
+// Registered by ./sw.ts once the game is interactive. Not in development (the dev server has no sw.ts).
 //
 //   install    one cache per build, `boogle-<build>`: the first-load files, copied from an older build's cache when
 //              the file is unchanged (same hashed name) or fetched; a file that fails is fetched on use instead
@@ -9,7 +9,7 @@
 //              build's cache. Everything else (the page, version.json, the server, fonts) is not touched, so the page
 //              and the update check in src/features/updates.ts always see the network.
 //
-// Kill switch: a build with BOOGLE_SW=off ships a sw.js that deletes every boogle- cache and unregisters itself, and
+// Kill switch: a build with BOOGLE_SW=off ships a sw.ts that deletes every boogle- cache and unregisters itself, and
 // ./sw.ts unregisters instead of registering; `?sw=0` does the same for one browser and one load.
 import { cacheable, cacheName, stale, CACHE_PREFIX } from './sw-policy.ts';
 

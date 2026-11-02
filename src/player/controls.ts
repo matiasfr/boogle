@@ -360,7 +360,7 @@ export function listControls() {
     .map(row);
 }
 
-// One control by id, hidden from the guide or not (glyphs.js reads its keys and slots).
+// One control by id, hidden from the guide or not (glyphs.ts reads its keys and slots).
 export function controlById(id: string) {
   const c = actions.get(id) ?? described.get(id);
   return c ? row(c) : null;

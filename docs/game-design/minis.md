@@ -5,7 +5,7 @@
 mode: walk up, play, walk away. No rewards; nothing gates anything. Serves DESIGN.md 1 (Toys before chores), 2 (Physics
 toys first) and 10 (Slapstick over precision). Gut question: "Which of these would you play again unprompted?"
 `&v=topple`, `&v=golf` or `&v=hop` shows one; no `v` shows all three. Without the flag nothing loads
-(`src/features/minis.ts` imports `src/proto/minis/` only with it).*
+(`src/features/proto-minis.ts` imports `src/proto/minis/` only with it).*
 
 ## Topple stack (east of the court, by the palms)
 
@@ -57,7 +57,7 @@ the sand, each as a motion sheet in `.look/scenarios/minis/`.
 ## Files
 
 [src/proto/minis/](../../src/proto/minis/) (`topple.ts`, `golf.ts`, `hop.ts`, `common.ts`: labels, bests, sounds,
-confetti and your ball shots), [src/features/minis.ts](../../src/features/minis.ts),
+confetti and your ball shots), [src/features/proto-minis.ts](../../src/features/proto-minis.ts),
 [dev/scenarios/minis.ts](../../dev/scenarios/minis.ts).
 
 ## Not built

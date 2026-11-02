@@ -1,4 +1,4 @@
-// The look lab (?proto=look; loaded by src/features/look-lab.ts; write-up: docs/proposals/visual-target.md). A panel
+// The look lab (?proto=look; loaded by src/features/proto-look.ts; write-up: docs/proposals/visual-target.md). A panel
 // of render layers you can switch one by one, and presets that are sets of them. Nothing here changes the default
 // look: without the flag this module never loads.
 //   ?proto=look&look=high          start on a preset (today, mid, ipad, high, toon, diorama, toybox, miniature, ultra)

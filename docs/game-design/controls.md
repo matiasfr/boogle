@@ -5,9 +5,9 @@ slot, handlers, its keyboard codes (`key`, one shared listener that skips repeat
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
 binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) and the first-run card are generated
 from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
-in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.js](../../src/features/feel.ts),
-[hotbar.js](../../src/features/hotbar.ts), [bump.js](../../src/features/bump.ts), [honk.js](../../src/features/honk.ts),
-[ping.js](../../src/features/ping.ts), [pause.js](../../src/features/pause.ts), [dino.js](../../src/features/dino.ts) and [updates.js](../../src/features/updates.ts).
+in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.ts](../../src/features/feel.ts),
+[hotbar.ts](../../src/features/hotbar.ts), [bump.ts](../../src/features/bump.ts), [honk.ts](../../src/features/honk.ts),
+[ping.ts](../../src/features/ping.ts), [pause.ts](../../src/features/pause.ts), [dino.ts](../../src/features/dino.ts) and [updates.ts](../../src/features/updates.ts).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
 |---|---|---|---|---|---|---|

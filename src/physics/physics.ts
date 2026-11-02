@@ -96,7 +96,7 @@ export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: 
   return body;
 }
 
-// Registered from main.js with the game state so this module stays free of import cycles.
+// Registered from main.ts with the game state so this module stays free of import cycles.
 /** What the step hooks read and write on this player and the ball (src/player/player.ts, ./ball.ts). */
 type StepPlayer = {
   body: Body | null;

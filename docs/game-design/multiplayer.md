@@ -119,8 +119,8 @@ the card, and a session the server replaced is turned away if its socket comes b
 - The ball's lag for non-owners is reported (`rttMs`, the round trip to the server; 6.15).
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep
   ticking through a worker heartbeat ([src/world/background.ts](../../src/world/background.ts)), catching up at most 5 s.
-- Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.js`,
-  `impact.js`).
+- Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.ts`,
+  `impact.ts`).
 - Trust: the server's validation checks ranges, rates and state, but not the player's reach (PLAN's "Key decision" mentions
   reach). Fine among friends, per PLAN.
 

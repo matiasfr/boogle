@@ -1,5 +1,5 @@
 // A file the player brings, fetched from a link they paste (their own private copy, e.g. a Dropbox share) instead of
-// dropped in. The link is used once and not kept; the file then goes into store.js like a dropped one.
+// dropped in. The link is used once and not kept; the file then goes into store.ts like a dropped one.
 
 // A Dropbox share page (www.dropbox.com/scl/fi/...?rlkey=...&dl=0) as the direct download, which also allows a fetch
 // from another site. Other links are left as they are.

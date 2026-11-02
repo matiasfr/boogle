@@ -5,19 +5,19 @@ without touching anything else on the island.
 
 | Layer | File | What it does |
 |---|---|---|
-| Natural shape | `shape.js` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
-| Stamps | `stamps.js` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
-| Sites | `src/pois/<name>/site.js` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
-| Content | `src/pois/<name>/index.js` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.ts`. |
+| Natural shape | `shape.ts` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
+| Stamps | `stamps.ts` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
+| Sites | `src/pois/<name>/site.ts` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
+| Content | `src/pois/<name>/index.ts` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.ts`. |
 
-`index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
+`index.ts` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
-(`ground.js`). `src/adapters/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
+(`ground.ts`). `src/adapters/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
 
-1. `src/pois/<name>/site.js`:
+1. `src/pois/<name>/site.ts`:
 
    ```js
    export default {
@@ -32,8 +32,8 @@ keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, wh
    };
    ```
 
-2. `src/pois/<name>/index.js` builds the content in `onStart` (after the terrain and props exist), using
-   `groundHeight`, `siteFrame(site)` from `stamps.js` for local-to-world placement, and `addPart`/`mergeParts` from
+2. `src/pois/<name>/index.ts` builds the content in `onStart` (after the terrain and props exist), using
+   `groundHeight`, `siteFrame(site)` from `stamps.ts` for local-to-world placement, and `addPart`/`mergeParts` from
    `src/render/props.ts` to merge small parts into one draw call.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
@@ -47,7 +47,7 @@ the railway for that tab only (`layout.ts`; options and the layout lab: [docs/pr
 ## Rules
 
 - **Same ground everywhere.** Stamps and shapes use plain arithmetic and `Math.sqrt` (no trig), and the heights are
-  quantized to centimetres once (`ground.js`), so every client builds the same heightfield (`npm run island-map` composes it the
+  quantized to centimetres once (`ground.ts`), so every client builds the same heightfield (`npm run island-map` composes it the
   same way in Node, `dev/island/map.mjs`).
 - **Home is special.** `HOME` (`src/world/grid.ts`) is the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, garden) must stay
   exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME`; the lighthouse

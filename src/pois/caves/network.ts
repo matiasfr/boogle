@@ -1,6 +1,6 @@
 // The cave system under the north-west massif: chambers joined by tunnels, open to the surface at four mouths.
-// Pure data and pure maths (no three.js), shared by site.js (terrain: ridges over the tunnels, trenches at the mouths)
-// and index.js (the cave mesh, colliders, decor and the "am I underground?" test).
+// Pure data and pure maths (no three.js), shared by site.ts (terrain: ridges over the tunnels, trenches at the mouths)
+// and index.ts (the cave mesh, colliders, decor and the "am I underground?" test).
 //
 // World coordinates in metres; `y` of a node is its floor height. Everything stays above sea level (the player swims
 // below SEA), and under at least COVER metres of rock.
@@ -64,7 +64,7 @@ const norm = ([x, z]: [number, number]): [number, number] => {
 
 // Tunnel centre polylines (floor heights along them). A tunnel that ends at a mouth runs straight out through it, along
 // the mouth's outward direction (for node.approach metres inside), and on MOUTH_REACH metres into its trench (it is
-// trimmed there; see index.js). `cover` is the part under the hill, which needs rock over it.
+// trimmed there; see index.ts). `cover` is the part under the hill, which needs rock over it.
 export const SEGMENTS = TUNNELS.map(([a, b, bend]) => {
   const ends = [nodeById[a], nodeById[b]].map((n): { inner: P3; mouth: P3 | null; tail: P3[] } => {
     if (n.kind !== 'mouth') return { inner: { x: n.x, z: n.z, y: n.y }, mouth: null, tail: [] };
@@ -157,7 +157,7 @@ const CHAMBERS = Object.values(nodeById).filter((n): n is Chamber | Cellar => n.
 
 // Distance to the open cave at p, plus the zone and floor height of the nearest part (out.zone, out.floor).
 // Shapes are joined smoothly, then cut by one floor blended from theirs, so junctions stay flat (a smooth union of two
-// floor planes would dip). Ignores the mouth trimming; see index.js for that.
+// floor planes would dip). Ignores the mouth trimming; see index.ts for that.
 const info = { zone: 0, floor: 0 };
 const MAX_PARTS = 64; // shape distance, zone and floor of each piece, reused (no garbage per call)
 const partD = new Float64Array(MAX_PARTS),

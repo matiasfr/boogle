@@ -22,7 +22,7 @@
 //                              for none). It is asked once a frame (the hooks asking interactTarget() share one pick) and
 //                              on every press, so keep it cheap, allocate only when something is in reach, and do not
 //                              cache. Register once, from your feature file in src/features/ (a module this
-//                              file imports, like gifts.js, would make an import cycle).
+//                              file imports, like gifts.ts, would make an import cycle).
 //   target                     { id, verb, at, r?, run | blocked, show? }
 //     id       a stable string per thing; the prompt pops in again when it changes
 //     verb     the word on the prompt ('Pick up', 'Talk')

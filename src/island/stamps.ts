@@ -1,5 +1,5 @@
 // Terrain stamps: how a point of interest reshapes and repaints the natural ground (src/island/shape.ts) around it,
-// without touching anything else on the island. Sites (src/pois/<name>/site.js) list stamps in their own local frame;
+// without touching anything else on the island. Sites (src/pois/<name>/site.ts) list stamps in their own local frame;
 // createIsland() places them in the world and composes everything into one height and paint function.
 //
 // A stamp is a shape plus an effect. Shapes (local metres; +z is the site's forward `dir`, +x its right):

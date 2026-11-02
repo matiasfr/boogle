@@ -1,7 +1,7 @@
 // Bank rules: the bank.wake op and the `bank` state: offline time already turned into helper freight (../../sim/bank.ts).
 // When a tab starts hosting a saved world, it submits bank.wake { ms } for the time nobody hosted; apply turns it into
 // the helper huts' freight in the open site's Track ring (./sites.ts), capped at one section, and the machine still
-// waits for a player to start it. The op is hostOnly (../sync.js): only the host's own submit is stamped, so nobody can
+// waits for a player to start it. The op is hostOnly (../sync.ts): only the host's own submit is stamped, so nobody can
 // replay a broadcast wake, and a second wake from the same gap banks nothing because the gap subtracts `ms`.
 // Lockstep: everything here runs the same on every peer (see ./README.md).
 import { offlineFreight } from '../../sim/bank.ts';

@@ -1,4 +1,4 @@
-// Frame-loop hooks, so features plug in without editing main.js.
+// Frame-loop hooks, so features plug in without editing main.ts.
 //
 //   onFrame(fn, { phase, order })   fn({ now, dt, elapsed }) every frame; lower order runs first, ties run in
 //                                   registration (import) order
@@ -7,23 +7,23 @@
 //     phase 'late'   just before render (HUD, previews, uniforms; presence send and render come last)
 //   onStart(fn)                     once, after input/lobby/network start (right away if that already happened)
 //
-// main.js runs, before the step: updateRemotes, resolveBallOwner, updateIntent, prepareBall, world.step. The core
+// main.ts runs, before the step: updateRemotes, resolveBallOwner, updateIntent, prepareBall, world.step. The core
 // modules then hook in at orders features leave alone (pick an order between these, never equal to one):
-//   world   -300 ball.js: an owned ball off the island respawns; ball.disp follows the body
-//           -290 player.js: fall respawn         -280 ball.js: walking into a slow ball claims it
-//   update  -300 ball.js: ball mesh              -290 player.js: own avatar       -280 net.js: remote avatars
-//           -200 player.js: camera               -190 props.js: clouds            -150 assets.ts: glTF clips
+//   world   -300 ball.ts: an owned ball off the island respawns; ball.disp follows the body
+//           -290 player.ts: fall respawn         -280 ball.ts: walking into a slow ball claims it
+//   update  -300 ball.ts: ball mesh              -290 player.ts: own avatar       -280 net.ts: remote avatars
+//           -200 player.ts: camera               -190 props.ts: clouds            -150 assets.ts: glTF clips
 //           (features: -10 and up)
-//   late    -200 throw.ts: throw preview        -190 hud.js: HUD                 -20 particles.js: particles
+//   late    -200 throw.ts: throw preview        -190 hud.ts: HUD                 -20 particles.ts: particles
 //           (features: -10 to 2000)
-//           3000 net.js: presence send           3010 water-render.js: sea uTime  (then main.js renders)
+//           3000 net.ts: presence send           3010 water-render.ts: sea uTime  (then main.ts renders)
 //
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and calls
-// onFrame/onStart. main.js loads every file in src/features/ automatically.
+// onFrame/onStart. main.ts loads every file in src/features/ automatically.
 //
 // Lazy parts (faster first load): a feature stays a small eager file and loads its heavy or rarely used part with a
-// dynamic import(), e.g. `onStart(() => import('../pois/caves/index.js'))` (src/features/pois.ts) or
-// `if (flag) import('../debug/netdebug.js')` (src/features/syncsafety.ts). The lazy module registers its own hooks when
+// dynamic import(), e.g. `onStart(() => import('../pois/caves/index.ts'))` (src/features/pois.ts) or
+// `if (flag) import('../debug/netdebug.ts')` (src/features/syncsafety.ts). The lazy module registers its own hooks when
 // it arrives: onStart then runs at once, and onFrame hooks slot in by order (ties: after the eager ones). Never lazy:
 // anything that registers sync ops or state (src/world/sync.ts), the rules modules (src/world/rules/), or anything a
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
@@ -38,12 +38,12 @@ const hooks: Record<Phase, Hook[]> = { world: [], update: [], late: [] };
 const starts: (() => void)[] = [];
 let started = false;
 
-// Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.js's own
+// Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.ts's own
 // sections (pre-step, physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
 // (vite.config.js passes it in through onFrame.in), or `name` in its options, else its phase and order.
 //   prof.table(n)   the n most expensive sections: { name, avg, p95, max } in ms over the window, plus 'frame' (total)
 //   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
-// main.js marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
+// main.ts marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
 const WINDOW = 240;
 const sections = new Map<string, Section>(); // name -> { name, ring: Float32Array(WINDOW), last: ms this frame }
 const list: Section[] = []; // the same sections, for allocation-free loops

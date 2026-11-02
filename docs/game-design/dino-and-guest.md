@@ -20,7 +20,7 @@
 - **Sync kind.** Owner: presence `mr` carries your guest's pose (24 numbers). Other players with both files see your
   guest; without them they see your usual avatar.
 - **Files.** [src/features/dino.ts](../../src/features/dino.ts) (eager: the dino, the files flow, controls, presence),
-  [src/guest/](../../src/guest/) (lazy: `play.js`, `engine.js`, `model.js`, `collision.js`, `rom.js`), the shared
+  [src/guest/](../../src/guest/) (lazy: `play.ts`, `engine.ts`, `model.ts`, `collision.ts`, `rom.ts`), the shared
   [src/decomp/](../../src/decomp/) (files dialog, IndexedDB store), [native/guest/](../../native/guest/README.md).
 - **Known issues.** Not yet tried with two players, on the lighthouse stair, in the caves, on a gamepad or on touch.
   The plan for more such characters is [plans/decomp-characters.md](../plans/decomp-characters.md).

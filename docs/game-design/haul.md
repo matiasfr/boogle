@@ -144,7 +144,7 @@ world for everyone at the same tick, and Reset haul empties every stack and pile
 the start, keeping the tuning. Elsewhere the host refuses both. Without the flag nothing changes. Plaque points always
 use the default section cost.
 
-Code: [src/features/haul-kit.ts](../../src/features/haul-kit.ts), [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts),
+Code: [src/features/proto-haul.ts](../../src/features/proto-haul.ts), [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts),
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` (overrides only); ops `tune.set {key, v}`, `tune.reset`. Scenario: `npm run scenario -- haul-kit`.
 
@@ -259,7 +259,7 @@ reaches opening day in seconds; Reset haul (the haul kit) also undoes opening da
 and the sky is untouched; the state and ops exist but nothing submits them.
 
 Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
-[src/features/era-swap.ts](../../src/features/era-swap.ts), [src/proto/era/](../../src/proto/era/index.ts) (each era's
+[src/features/proto-era.ts](../../src/features/proto-era.ts), [src/proto/era/](../../src/proto/era/index.ts) (each era's
 kit, blocks and sky tint, is one table, [blocks.ts](../../src/proto/era/blocks.ts); the call, sky,
 ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
 (`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,

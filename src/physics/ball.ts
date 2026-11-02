@@ -282,7 +282,7 @@ onFrame(
   { phase: 'world', order: -300 },
 );
 
-// world -280, after the player's fall respawn (player.js, -290): walking into a slow ball takes ownership so the push
+// world -280, after the player's fall respawn (player.ts, -290): walking into a slow ball takes ownership so the push
 // resolves in this tab's simulation.
 onFrame(
   ({ now }) => {

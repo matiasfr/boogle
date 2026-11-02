@@ -1,6 +1,6 @@
 import { COLORS } from '../constants.ts';
 import { me, enterIsland } from './player.ts';
-import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.js, which imports us
+import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.ts, which imports us
 import { net, remotes } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
@@ -59,7 +59,7 @@ function updateHud() {
     document.body.classList.toggle('main-throws', label === 'Throw');
   }
 }
-// late -190, after the throw preview (player.js, -200), before the feature late hooks (src/loop.ts lists the orders).
+// late -190, after the throw preview (player.ts, -200), before the feature late hooks (src/loop.ts lists the orders).
 onFrame(updateHud, { phase: 'late', order: -190 });
 
 let peopleKey = '';

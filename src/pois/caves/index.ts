@@ -1,12 +1,12 @@
-// The caves under the north-west massif: tunnels and chambers (network.js) with four mouths, an abandoned mine, an
-// underground pond and a wine cellar (decor.js).
+// The caves under the north-west massif: tunnels and chambers (network.ts) with four mouths, an abandoned mine, an
+// underground pond and a wine cellar (decor.ts).
 //
 // The heightfield can't have holes or overhangs, so the caves are their own world below it:
-// - one seamless mesh (mesh.js), built a little each frame after start, used for the look and as a trimesh collider;
+// - one seamless mesh (mesh.ts), built a little each frame after start, used for the look and as a trimesh collider;
 // - the ground is cut open at the four mouths (setTerrainHoles) once the cave mesh is there;
 // - players and the ball switch between the ground's colliders and the cave's (collision groups) when they cross
 //   into the cave volume; a safety net puts anything that ends up inside solid rock back where it was;
-// - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.js `atmosphere`);
+// - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.ts `atmosphere`);
 //   the darkness with depth is baked per vertex (aAmb, see ambAt/withCaveAmbient), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three/webgpu';
@@ -193,7 +193,7 @@ function brickMaterial() {
   return withCaveAmbient(mat);
 }
 
-// Rock rings round the mouths (mesh.js), hiding where the hillside's holes meet the tunnels. Look only: they sit
+// Rock rings round the mouths (mesh.ts), hiding where the hillside's holes meet the tunnels. Look only: they sit
 // in the rock and the trench walls, a hand's width proud of the tunnel wall.
 function makeCollars({ positions, indices }: { positions: Float32Array; indices: Uint32Array }) {
   const geo = new THREE.BufferGeometry();

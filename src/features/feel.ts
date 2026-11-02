@@ -115,7 +115,7 @@ addPresenceField('fl', () =>
 );
 onRemotePresence((r, pr) => {
   const f = pr.fl;
-  // Temporary: same stale-repeat guard as kd in impact.js (old-build tabs never clear fl). Remove once every tab
+  // Temporary: same stale-repeat guard as kd in impact.ts (old-build tabs never clear fl). Remove once every tab
   // runs b0a3a7b or later.
   const left: number | undefined = Array.isArray(f) ? f[1] : undefined;
   if (left !== undefined && left === r.flLast) return;

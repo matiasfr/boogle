@@ -1,7 +1,7 @@
 # 6.12 Caves
 
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
-  ([src/features/pois.ts](../../src/features/pois.ts); its `site.js` ground stays eager): one seamless mesh, built a little
+  ([src/features/pois.ts](../../src/features/pois.ts); its `site.ts` ground stays eager): one seamless mesh, built a little
   each frame once loaded,
   is both the look and a trimesh collider. The ground is cut open at the four mouths (`setTerrainHoles`), and a ring
   of rock round each mouth (look only) hides the seam where the hillside's hole meets the tunnel. Bodies switch
@@ -10,7 +10,7 @@
   (`atmosphere.underground`); darkness is baked per vertex by distance from the nearest mouth (full daylight within 2 m,
   60 % from 14 m in). Cave rock casts shadows so the sun no longer lights the tunnels.
 - **Sync kind.** Local and cosmetic, apart from collisions, which only affect bodies this client simulates.
-- **Files.** [src/pois/caves/](../../src/pois/caves/) (`network.js`, `mesh.js`, `decor.js`, `index.js`, `site.js`),
+- **Files.** [src/pois/caves/](../../src/pois/caves/) (`network.ts`, `mesh.ts`, `decor.ts`, `index.ts`, `site.ts`),
   [src/physics/physics.ts](../../src/physics/physics.ts) (`GROUP`, `groundProbe`).
 - **Known issues.** The phone playtest asked for an audit of the caves' look and the walk in and out; the owner keeps
   the caves but wants that audit before more is added ([tech-plan.md](../tech-plan.md), "Decided").

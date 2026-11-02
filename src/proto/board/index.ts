@@ -1,4 +1,4 @@
-// The departures board prototype (docs/game-design/board.md; loaded by src/features/board.ts behind ?proto=board).
+// The departures board prototype (docs/game-design/board.md; loaded by src/features/proto-board.ts behind ?proto=board).
 // Stations are the fast-travel board (docs/proposals/boogle-2.md): at each laid station a greybox sign with a split-flap
 // display shows the timetabled wagon's next calls (./departures.ts over wagonAt) and a line map with the wagon on it.
 // Interact on the sign opens a picker of the other laid stations:
