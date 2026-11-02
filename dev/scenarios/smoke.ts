@@ -35,7 +35,7 @@ export default {
     const { modes, ok, host, client } = await roles(A, B);
     if (!t.check("both tabs hold the server's world", ok, modes.join())) return;
 
-    // One tab tosses a watering can at a beach cell west of the court; the other sees the item.
+    // One tab tosses a frisbee at a beach cell west of the court; the other sees the item.
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
     const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
     // A starved runner's tab drops and reopens its socket (runs 41421157347, 41418371480: reconnects for a minute or two),

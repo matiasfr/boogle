@@ -19,7 +19,7 @@ Four files, nothing else edited:
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
    If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
-   feature file, since features cannot import each other. Example: `src/adapters/mushroom-garden.ts`.
+   feature file, since features cannot import each other. Example: `src/adapters/gifts.ts`.
 
 Run `npm run check:full`. Notes:
 
@@ -99,7 +99,6 @@ op names.
 
 | Key | Set by | Server | Used by |
 |---|---|---|---|
-| `canPlantAt(i, j)` | `src/adapters/mushroom-garden.ts` (dry land, nothing over the spot) | the plant mask in `src/world/home-land.json` (`server/src/host/land.ts`) | `mush.plant` validate (`plantOk`); `gift.toss` seeds (`rules.mushrooms.plantOk`) |
 | `protoRoom` | `src/features/proto-haul.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.fill`, `tune.reset`, `open.lay` validate |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
@@ -134,7 +133,6 @@ Then append `thing` to `RULES` in `index.ts`, and read `rules.thing` from `../ga
 
 | Module | Ops | State | API |
 |---|---|---|---|
-| `mushrooms.ts` | `mush.plant`, `mush.water` | `mushrooms` | `{ garden, plantOk(i, j, env), plant(i, j) }` |
 | `gifts.ts` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |
 | `roster.ts` | `who.set` | `roster` | `{ roster, indexOf(pid), ensure(pid), nameOf(k), colorOf(k), size() }`: every pid seen, with name and colour, by index of first sight (cap 256). Tables store players as this index; `ensure` adds one (apply only). |
 | `piles.ts` | `pile.drop`, `pile.take` | `piles` | `{ piles, drop(i, j, k, n), room(k, n) }`: loose material on the ground (`../../sim/piles.ts`); `drop` returns `{ placed, ids }` |

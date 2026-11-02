@@ -4,7 +4,7 @@
 |---|---|
 | Adapter | The render and input side of a lockstep system; reacts through `onApplied`, `onAfterTick`, `onSnapshot`. |
 | Cell | One 1.25 m square of the world grid, `(i, j)` at x = i × 1.25 − 255, z = 255 − j × 1.25. |
-| Edit | A small op (`mush.plant`, `gift.toss`, `pile.take` ...) a client submits; the host stamps and broadcasts it. |
+| Edit | A small op (`gift.toss`, `pile.take` ...) a client submits; the host stamps and broadcasts it. |
 | Epoch | The ball ownership counter; the highest claim wins. |
 | Host | The lockstep authority that stamps edits: our server for a room it hosts, otherwise the browser holding `boogle-<room>-host`, which also saves to the server. |
 | Host field | Host-kind state published in the lead's presence (`addHostField`). |

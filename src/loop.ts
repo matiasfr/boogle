@@ -29,11 +29,11 @@
 // The fixed step (src/physics/engine.ts) has its own lists, walked 0 to 4 times a frame around each physics step: lower
 // order first, ties in registration order. The orders below are pinned; moving one is a change of behaviour and gets
 // its own commit. No order means 1000: prototypes and anything unnumbered run after all of these.
-//   onPreStep   10 platforms.ts: decks move    20 mushroom-garden: a growing cap shoves you   30 player-jump: jump shape, snap
+//   onPreStep   10 platforms.ts: decks move    20 free   30 player-jump: jump shape, snap
 //               39 remote-player: body targets  40 player: its controller   45 ball: friction and surf
 //               50 boogler: his body follows him   60 boogler-ride: carry the rider, launches
 //               70 windmills: sails spin       80 caves: the safety net   90 guest: the guest's body (lazy)
-//   onPostStep  10 mushroom-garden: the bounce   15 ball: fall-through net
+//   onPostStep  10 mushroom-bounce   15 ball: fall-through net
 //               20 player: its fall-through net, ground contact (coyote)
 //               30 boogler-ride: standing on him
 //

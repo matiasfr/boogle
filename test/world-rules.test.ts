@@ -8,25 +8,12 @@ import { RULES, installRules } from '../src/world/rules/index.ts';
 import { homeLand, fixture } from './helpers/land.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
-import { SEEDS } from '../src/world/rules/gifts.ts';
 import type { Rules } from '../src/world/rules/types.ts';
 
-const CANONICAL = [
-  'mushrooms',
-  'gifts',
-  'roster',
-  'stacks',
-  'piles',
-  'sites',
-  'sources',
-  'bank',
-  'ball',
-  'tune',
-  'opening',
-]; // production order (test/fixtures/world-inputs.json)
+const CANONICAL = ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune', 'opening']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
-  const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
+  const s = createSync({ env: { protoRoom: true } });
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
   return { s, rules, after: {} as Record<string, number> };
@@ -38,17 +25,12 @@ const tick = (x: Peer, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 
 // A new rules module with ops adds its script here.
 type Step = Record<string, unknown> | ((x: Peer) => Record<string, unknown>);
 const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
-  mushrooms: () => [
-    { op: 'mush.plant', i: 228, j: 200 },
-    { op: 'mush.water', i: 228, j: 200 },
-  ],
   gifts: () => [
-    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('can'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
+    { op: 'gift.toss', i: 230, j: 205, k: giftIndex('frisbee'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     ({ rules }) => {
       const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS)!;
       return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
     },
-    { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
   ],
   roster: () => [{ op: 'who.set', i: 0, j: 0, n: 'Ana', c: 3 }],
   piles: () => [
@@ -133,18 +115,6 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
   tick(b, 50);
   assert.deepEqual(b.s.stateHashes(), a.s.stateHashes());
   assert.equal(b.s.worldHash(), a.s.worldHash());
-});
-
-test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
-  const s = createSync({ env: { canPlantAt: (i: number) => i !== 228 } });
-  s.setSelfId('a');
-  installRules(s, homeLand());
-  assert.equal(s.submitEdit({ op: 'mush.plant', i: 228, j: 200 }), false);
-  assert.equal(s.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), true);
-  const bare = createSync();
-  bare.setSelfId('a');
-  installRules(bare, homeLand());
-  assert.equal(bare.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), false);
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {

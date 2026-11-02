@@ -1,4 +1,4 @@
-// A grown mushroom bounces you: grow one on open grass, drop the player onto the middle of its cap from 2 m above, and
+// A mushroom bounces you: sprout some on open grass, drop the player onto the middle of its cap from 2 m above, and
 // record the body's height for 2.5 s. The first bounce has to lift you well clear of the cap (an owner's playtest found
 // you stuck on top, re-landing every frame). A motion sheet of the bounce. Serves DESIGN.md 1 and 10.
 import { TP } from './lib/world.ts';
@@ -15,62 +15,57 @@ type Run = {
   sleep: (ms: number) => Promise<void>;
 };
 
-const MIN_RISE = 4; // m above the cap the first bounce has to reach (a full-grown bounce is 15 m/s: about 11 m)
-const GROWN = `(async () => {
-  const { garden } = await import('/src/adapters/mushroom-garden.ts');
-  const { GROW_TICKS } = await import('/src/sim/mushrooms.ts');
-  return garden.plots.some((p) => p.i === SPOT_I && p.j === SPOT_J && p.g >= GROW_TICKS); })()`;
+const MIN_RISE = 4; // m above the cap the first bounce has to reach (a bounce is 15 m/s: about 11 m)
+// How many mushroom colliders a tab has (the page-side check, as an expression that awaits nothing: engine on window).
+const CAPS = `(window.__caps ??= 0, import('/src/physics/engine.ts').then(({ forEachStatic }) => { let n = 0; forEachStatic(-1, (b, shapes) => { if (shapes.length === 2 && shapes[1].rTop === 1.9) n++; }); window.__caps = n; }), window.__caps)`;
 
 export default {
-  about: 'a player dropped onto a grown mushroom bounces high off it',
+  about: 'a player dropped onto a sprouted mushroom bounces high off it',
   timeout: 180000,
   async run(t: Run) {
     const room = 'mush' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'bouncer', room });
     await g.waitFor(`window.boogle?.me?.entered && window.boogle.sync.worldStatus().ready`, { timeout: 90000 });
     await g.eval(`document.querySelector('.first-run-close')?.click();`);
+    const friend = await t.open({ name: 'friend', room });
+    await friend.waitFor(`window.boogle?.me?.entered && window.boogle.remotes.size >= 1`, { timeout: 90000 });
+    await g.waitFor(`window.boogle.remotes.size >= 1`, { timeout: 90000 });
 
-    // Open grass away from the dirt patch, planted and watered through edits.
+    // Open grass: use a bag and let the mushrooms pop up.
+    await g.eval(`${TP(-30, 30)} window.boogle.me.yaw = 0;`);
+    await t.sleep(400);
     const spot = (await g.eval(`
-      const { CELL, HALF } = await import('/src/constants.ts');
-      const G = await import('/src/adapters/mushroom-garden.ts');
-      const { PATCH } = await import('/src/sim/mushrooms.ts');
-      for (let r = 8; r < 60; r += 2)
-        for (let a = 0; a < 24; a++) {
-          const i = Math.round(PATCH.i0 - r * Math.cos(a / 3.8)), j = Math.round(PATCH.j0 - r * Math.sin(a / 3.8));
-          if (G.plantOk(i, j)) return { i, j, x: i * CELL - HALF, z: HALF - j * CELL };
-        }
-      return null;`)) as { i: number; j: number; x: number; z: number } | null;
-    t.check('found open ground for a mushroom', !!spot, JSON.stringify(spot));
+      const M = await import('/src/adapters/mushrooms.ts');
+      const I = await import('/src/player/inventory.ts');
+      const H = await import('/src/player/hands.ts');
+      const s = M.spotsAhead();
+      if (!s.length) return null;
+      I.take('seeds');
+      H.useDown(); H.useUp();
+      return { ground: s.length / 2 };`)) as { ground: number } | null;
+    t.check('found open ground for mushrooms', !!spot, JSON.stringify(spot));
     if (!spot) return;
-    await g.eval(`${TP(spot.x + 6, spot.z)}
-      window.boogle.sync.submitEdit({ op: 'mush.plant', i: ${spot.i}, j: ${spot.j} });`);
-    await g.waitFor(`(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.ts');
-      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`);
-    await g.eval(`window.boogle.sync.submitEdit({ op: 'mush.water', i: ${spot.i}, j: ${spot.j} });`);
-    const grown = await g.waitFor(GROWN.replace('SPOT_I', String(spot.i)).replace('SPOT_J', String(spot.j)), {
-      timeout: 60000,
-    });
-    t.check('the mushroom grows', grown >= 0, grown + ' ms');
-    await t.sleep(1500); // the drawn size eases up to full, and the collider follows it
+    await t.sleep(1000); // the pop, then the collider
+    const seen = await friend.waitFor(`${CAPS} === ${spot.ground}`, { timeout: 15000 });
+    t.check('the other tab sees the same mushrooms', seen >= 0, seen + ' ms');
 
     // The cap's top, from the collider (the body's highest shape).
-    const cap = (await g.eval(`
+    const found = (await g.eval(`
       const { forEachStatic } = await import('/src/physics/engine.ts');
       let top = null;
       forEachStatic(-1, (b, shapes) => {
-        if (Math.hypot(b.position.x - ${spot.x}, b.position.z - ${spot.z}) > 0.1 || shapes.length !== 2) return;
+        if (shapes.length !== 2 || shapes[1].rTop !== 1.9) return;
         const s = shapes[1];
-        top = b.position.y + s.offset.y + s.h / 2;
+        top = { x: b.position.x, z: b.position.z, y: b.position.y + s.offset.y + s.h / 2 };
       });
-      return top;`)) as number | null;
-    t.check('the grown mushroom has a cap collider', cap !== null, String(cap));
-    if (cap === null) return;
+      return top;`)) as { x: number; z: number; y: number } | null;
+    t.check('a sprouted mushroom has a cap collider', found !== null, JSON.stringify(found));
+    if (found === null) return;
+    const { x, z, y: cap } = found;
 
     // Drop from 2 m over the cap and record the body's height every frame.
-    await g.view({ cam: [spot.x + 9, cap + 3, spot.z + 9], look: [spot.x, cap + 3, spot.z] });
-    await g.eval(`${TP(spot.x, spot.z, cap + 2)}
+    await g.view({ cam: [x + 9, cap + 3, z + 9], look: [x, cap + 3, z] });
+    await g.eval(`${TP(x, z, cap + 2)}
       window.__bounceTrace = [];
       const t0 = performance.now();
       const rec = () => {
@@ -87,9 +82,13 @@ export default {
     const maxUp = Math.max(...trace.map(([, , vy]) => vy));
     const rise = peak - cap;
     t.check(
-      `landing on a grown mushroom bounces you at least ${MIN_RISE} m`,
+      `landing on a mushroom bounces you at least ${MIN_RISE} m`,
       rise >= MIN_RISE,
       `peak ${rise.toFixed(2)} m over the cap, top speed up ${maxUp.toFixed(1)} m/s, ${trace.length} frames; ${sheet.sheet}`,
     );
+
+    // They are temporary, on both tabs.
+    const gone = await friend.waitFor(`${CAPS} === 0`, { timeout: 30000 });
+    t.check('the mushrooms wilt away on their own', gone >= 0, gone + ' ms');
   },
 };

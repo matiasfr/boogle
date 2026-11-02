@@ -15,7 +15,6 @@ import { me, ITEM_HAND } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { inv, SLOTS, heldId, select, type Slot } from '../player/inventory.ts';
 import { updateHands, throwDown, releaseThrow, useVerb, canThrow, handsNote } from '../player/hands.ts';
-import { pouring } from '../adapters/mushroom-garden.ts';
 import { itemModel } from '../player/item-models.ts';
 import { warmUp } from '../render/precompile.ts';
 import { setIcon, warmIcons } from '../player/item-icons.ts';
@@ -29,12 +28,11 @@ import { notify } from '../ui/notify.ts';
 // How each thing sits in the hand: the model's offset below the hand, and the hand's tilt (x tips it forward).
 type Grip = { p: [number, number, number]; r?: [number, number, number] };
 const GRIP: Record<string, Grip> = {
-  can: { p: [0, -0.33, 0.05] },
   seeds: { p: [0, -0.3, 0] },
   frisbee: { p: [0, -0.02, 0], r: [0.25, 0, -0.5] },
 };
 const DEFAULT_GRIP: Grip = { p: [0, -0.12, 0] };
-const HANGS = new Set(['can', 'seeds']); // carried by a handle, down at the hip on a body with arms
+const HANGS = new Set(['seeds']); // carried by a handle, down at the hip on a body with arms
 
 function heldModel(id: string) {
   const g = GRIP[id] ?? DEFAULT_GRIP;
@@ -74,10 +72,8 @@ function updateInHand() {
     const hand = setHeld(me.avatar, heldId());
     if (hand) {
       const [x, y, z] = hand.userData.tilt;
-      const pour = heldId() === 'can' && pouring() ? -0.9 : 0;
       const wind = me.charging ? -0.6 : 0;
-      hand.rotation.set(x + pour + wind, y, z);
-      if (pour) (me.avatar.userData as { holdKind?: string }).holdKind = 'item'; // lifted to pour
+      hand.rotation.set(x + wind, y, z);
     }
   }
   for (const r of remotes.values()) {
@@ -104,8 +100,7 @@ const ui = {
 const label = (s: Slot | null | undefined) => {
   if (!s) return '';
   const name = s.id === 'ball' ? 'Beach ball' : GIFTS[giftIndex(s.id)]!.name;
-  const cap = name[0]!.toUpperCase() + name.slice(1);
-  return s.id === 'seeds' ? `Mushroom seeds ×${s.n}` : cap;
+  return name[0]!.toUpperCase() + name.slice(1);
 };
 
 function buildHud() {
@@ -131,9 +126,7 @@ function buildHud() {
     img.className = 'hotbar-icon';
     img.alt = '';
     img.hidden = true;
-    const n = document.createElement('span');
-    n.className = 'hotbar-n';
-    b.append(key, img, n);
+    b.append(key, img);
     b.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
       select(k);
@@ -188,7 +181,6 @@ function renderHud(now: number) {
       b.title = label(s);
       img.hidden = !s;
       if (s) setIcon(img, s.id);
-      b.querySelector('.hotbar-n')!.textContent = s?.id === 'seeds' ? String(s.n) : '';
     });
     ui.name.innerHTML = nameTag(inv.slots[inv.sel], kind);
     if (ui.sel !== inv.sel) {

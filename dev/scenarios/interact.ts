@@ -2,7 +2,7 @@
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
 // left halfway picks up where you stopped. A tossed item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, a can behind you does not hide the log bundle you face, riding him puts the
+// E does nothing while you wind up a throw, a frisbee behind you does not hide the log bundle you face, riding him puts the
 // ball first, and a failed planting says why.
 import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
@@ -149,7 +149,7 @@ export default {
 
     // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X alike).
     const wind = await g.eval(`${INV}
-      const { STALL } = await import('/src/adapters/mushroom-garden.ts');
+      const { STALL } = await import('/src/adapters/mushrooms.ts');
       const { me } = window.boogle;
       I.take('frisbee');
       ${TP('STALL.x + Math.sin(STALL.yaw) * 1.6', 'STALL.z + Math.cos(STALL.yaw) * 1.6')}
@@ -157,17 +157,17 @@ export default {
       const at = H.interactTarget()?.id ?? '';
       H.useDown();
       H.interactDown(); H.interactUp();
-      const out = { at, charging: me.charging, held: I.heldId(), can: I.has('can') };
+      const out = { at, charging: me.charging, held: I.heldId(), seeds: I.has('seeds') };
       me.charging = false;
       return out;`);
     t.check(
       'mid-throw at the stall, E neither takes nor throws',
-      wind.at.startsWith('stall-') && wind.charging && wind.held === 'frisbee' && !wind.can,
+      wind.at.startsWith('stall-') && wind.charging && wind.held === 'frisbee' && !wind.seeds,
       JSON.stringify(wind),
     );
 
-    // A watering can behind you does not hide the log bundle you face: drop a can on open ground past a bundle, stand
-    // between them facing the bundle, and the prompt says Take logs while the can is still in reach.
+    // A frisbee behind you does not hide the log bundle you face: drop one on open ground past a bundle, stand
+    // between them facing the bundle, and the prompt says Take logs while the frisbee is still in reach.
     const palm = await g.eval(`${INV}
       const G = await import('/src/adapters/gifts.ts');
       const { rules } = await import('/src/world/game-world.ts');
@@ -177,7 +177,7 @@ export default {
       const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.ts');
-      const b = window.boogle.me.body, can = giftIndex('can');
+      const b = window.boogle.me.body, can = giftIndex('frisbee');
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
@@ -216,22 +216,22 @@ export default {
       : -1;
     const shakeShot = await g.still('shake');
     t.check(
-      'a can behind you does not hide the log bundle ahead: the prompt says Take logs',
+      'a frisbee behind you does not hide the log bundle ahead: the prompt says Take logs',
       shakeMs >= 0 && palm.ids.includes(palm.item) && palm.pick === palm.palm,
       `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
     );
 
-    // Seeds on ground they cannot go in: the click says why.
+    // A bag of seeds where nothing can grow: the click says why.
     const spot = await g.eval(`${INV}
-      const G = await import('/src/adapters/mushroom-garden.ts');
+      const G = await import('/src/adapters/mushrooms.ts');
       const { me } = window.boogle;
-      I.take('seeds', 3);
+      I.take('seeds');
       for (let r = 0; r < 40; r += 2)
         for (let a = 0; a < 12; a++) {
           const x = ${item.x} + r * Math.cos(a / 1.9), z = ${item.z} + r * Math.sin(a / 1.9);
           ${TP('x', 'z')}
           me.yaw = 0;
-          if (G.plantTarget()?.text) return { x, z };
+          if (!G.spotsAhead().length) return { x, z };
         }
       return null;`);
     if (spot) {
@@ -241,13 +241,13 @@ export default {
       const note = await g.eval(
         `return { on: ${shown('.notify.shown[data-kind="deny"]')}, text: ${text('.notify-text')} };`,
       );
-      const noteShot = await g.still('cant-plant');
+      const noteShot = await g.still('cant-grow');
       t.check(
-        'a failed planting says why',
-        note.on && note.text.includes("Can't plant"),
+        'a bag that cannot sprout says why',
+        note.on && note.text.includes("Can't grow"),
         `${JSON.stringify(note)}; ${noteShot}`,
       );
-    } else t.check('found ground where seeds cannot go', false);
+    } else t.check('found ground where nothing can grow', false);
 
     // Before the pointer is captured, the hint is a mouse glyph and a verb.
     const look = await g.eval(`

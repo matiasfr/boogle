@@ -36,19 +36,15 @@ function stream(seed: number): Stream {
 }
 const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => m.edits ?? {}));
 
-// One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state. protoRoom: a playtest
-// room, so the tune ops and the open.lay shortcut run too.
+// One tab. protoRoom: a playtest room, so the tune ops and the open.lay shortcut run too.
 function makePeer(seed: number, net: FakeNet | null, id: string, host?: boolean) {
-  const salt = strHash(id);
-  const s = createSync({
-    env: { canPlantAt: (i: number, j: number) => (i * 7 + j * 13 + salt) % 5 !== 0, protoRoom: true },
-  });
+  const s = createSync({ env: { protoRoom: true } });
   const rules = installRules(s, homeLand());
   const x = {
     id,
     s,
     rules,
-    r: stream(seed ^ salt),
+    r: stream(seed ^ strHash(id)),
     applied: new Map<string, number>(),
     hashes: new Map<number, string>(),
     p: { alive: true } as { alive: boolean; host?: boolean },

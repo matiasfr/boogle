@@ -1,7 +1,7 @@
 // What your hands do with the hotbar (src/player/inventory.ts), and the one interact button.
 //
 //   useDown/useUp            click, pad D-pad → (and X with nothing in reach): use what is in your hand. A thing (ball, frisbee, ...) winds up a throw and
-//                            flies on release; the can pours, seeds go in at your feet. Empty hands
+//                            flies on release; a bag of seeds sprouts mushrooms ahead of you. Empty hands
 //                            interact.
 //   interactDown/interactUp  E, pad X: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
@@ -9,7 +9,7 @@
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
 //   canThrow()               whether you hold anything (everything held can be thrown)
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
-//   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
+//   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //   emptyHands               { down, up }: what using empty hands does before it falls back to interacting; a
 //                            prototype can set it. down returns true if it acted.
@@ -44,7 +44,7 @@ import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.t
 import { remoteHoldsBall } from '../entities/ball/sync.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
-import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.ts';
+import { sprout } from '../adapters/mushrooms.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
 import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
 import { currentFrame } from '../loop.ts';
@@ -59,7 +59,7 @@ export type Interactable = InteractTarget & {
   show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts
 };
 
-const USE_VERB: Record<string, string> = { can: 'Water', seeds: 'Plant' };
+const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
 export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
@@ -91,7 +91,7 @@ registerInteractable(() => {
   if (!ballInReach() || (ball.mine && ball.held)) return NO_TARGETS;
   const at = ballAt.copy(ball.pose.p).setY(ball.pose.p.y + 0.5);
   const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
-  return [roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
+  return [roomFor() < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
 });
 
 const targets: Interactable[] = []; // reused by every pick
@@ -171,8 +171,7 @@ export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
   if (!id) return emptyHands.down() || interact();
-  if (id === 'can') return pour();
-  if (id === 'seeds') return plantFront() || deny(plantTarget()?.text ?? '');
+  if (id === 'seeds') return sprout() ? !!useOne() : deny("Can't grow here");
   return windUp();
 }
 

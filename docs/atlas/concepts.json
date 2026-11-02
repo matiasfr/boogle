@@ -8,7 +8,7 @@
       { "kind": "local", "says": "Only you see it", "eg": "particles, sky, sounds" },
       { "kind": "owner", "says": "One player drives it, others watch", "eg": "your avatar, the ball, what you hold" },
       { "kind": "host", "says": "The host decides for everyone", "eg": "the Boogler" },
-      { "kind": "lock", "says": "Everyone agrees exactly, and it lasts", "eg": "mushrooms, gifts, prototype flags" },
+      { "kind": "lock", "says": "Everyone agrees exactly, and it lasts", "eg": "gifts, piles, prototype flags" },
       { "kind": "msg", "says": "A one-off event, nothing kept", "eg": "honk, ping" }
     ]
   },
@@ -69,11 +69,11 @@
     "ui": "Shared HUD pieces: the notification lane and UI sounds."
   },
   "boxes": {
-    "you.features": "{features} plug-ins: honk, hotbar, ping, gifts, mushroom garden…",
+    "you.features": "{features} plug-ins: honk, hotbar, ping, gifts, mushrooms…",
     "you.registries": "controls · interact · particles",
     "you.loop": "input → physics → world → update → late → draw",
     "you.systems": "player · physics · rendering · characters · places",
-    "you.world": "mushrooms · gifts · prototype flags",
+    "you.world": "gifts · piles · prototype flags",
     "you.netplay": "presence and the room",
     "you.input": "keys · pad · touch",
     "you.screen": "three.js draws it",
@@ -161,7 +161,7 @@
     {
       "id": "world",
       "title": "Shared world",
-      "one": "The island state everyone must agree on exactly: mushrooms, gifts, prototype flags. It persists.",
+      "one": "The island state everyone must agree on exactly: gifts, piles, prototype flags. It persists.",
       "like": "Chess by post: players send moves, never the board, and everyone replays the same moves in the same order.",
       "rules": [
         "Tabs send edits, not state. The server puts them in order and stamps a tick.",

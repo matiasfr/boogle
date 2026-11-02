@@ -8,7 +8,7 @@
 //    it is, so hashes and saves don't change; the drawn wagon (src/sim/wagon.ts) builds its line on first use, after this.
 // 3. The land the rules run on (palm cells, the frisbee perch) is pinned to src/world/home-land.json, as the server
 //    has it (src/features/walk-layout.ts), so a moved POI can't move a log source or a perch.
-// 4. Spawn, court and garden never move (HOME_KEEP, src/island/README.md). Only the first ROUTE.length sections apply;
+// 4. Spawn, court and seed stand never move (HOME_KEEP, src/island/README.md). Only the first ROUTE.length sections apply;
 //    later ones in the file are for the lab.
 // Best in its own room (`?room=proto-layout&layout=coast-line`), so the real island's save never sees it.
 // Serves DESIGN.md 7 (telegraph everything): try where things sit, and what you can see from where, by walking it.

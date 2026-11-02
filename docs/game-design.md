@@ -16,7 +16,7 @@ different systems don't touch the same file. A new system adds its file and one 
 Boogle is a drop-in browser island for up to 8 friends. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
 and The Boogler. Returning players go straight in with their saved identity. In the base game you can throw, bump and chase the ball;
-throw things at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
+throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and
 carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals).
@@ -42,7 +42,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 6 | Communal world, personal rewards | Work sites are shared; hotbar and Boogler friendship are per player, in localStorage. |
 | 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
 | 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
-| 9 | Leave something for the next visitor | Mushrooms, items, piles, haul stacks and work sites persist in server snapshots. |
+| 9 | Leave something for the next visitor | Items, piles, haul stacks and work sites persist in server snapshots. |
 | 10 | Slapstick over precision | Face-plants, flops, sail bonks, Boogler launches. |
 
 Technical principles (sync kinds, determinism, sync edits not state, clear authority, server hosts every room,
@@ -60,7 +60,7 @@ Sync kinds are defined in [DESIGN.md](../DESIGN.md), "Pick how each feature shar
 tick of 100 ms (10 per second).
 
 - [6.1 Beach ball](game-design/ball.md)
-- [6.4 Mushrooms and the stall](game-design/mushrooms.md)
+- [6.4 Mushrooms and the seed stand](game-design/mushrooms.md)
 - [6.5 Gifts](game-design/gifts.md)
 - [6.6 Hotbar and items](game-design/hotbar.md)
 - [6.7 Throwing and flight](game-design/throwing.md)

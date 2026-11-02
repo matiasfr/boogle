@@ -6,8 +6,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
-import { loadHomeLand } from '../src/host/land.ts';
-import { PATCH } from '../../src/sim/mushrooms.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -183,10 +181,7 @@ test('relay: messages reach the others with from; oversize and host-only types d
 
 test('world: a joiner gets the snapshot alone; an edit comes back stamped to everyone; it saves and resumes', async () => {
   const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '300' });
-  const home = loadHomeLand();
-  let cell = [0, 0];
-  for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w && !cell[0]; i++)
-    for (let j = PATCH.j0; j < PATCH.j0 + PATCH.h && !cell[0]; j++) if (home.canPlantAt(i, j)) cell = [i, j];
+  const toss = { op: 'gift.toss', i: 230, j: 205, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
   let saved = 0;
   try {
     const a = connect(base, 'beach', 'aaa');
@@ -196,19 +191,19 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
     const first = await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb');
     for (let k = 0; k < first.d.n; k++)
       chunks.push((await b.next((m) => isWorld('w:snap')(m) && m.d.to === 'bbb' && m.d.k === k)).d);
-    assert.ok('mushrooms' in JSON.parse(chunks.map((c) => c.s).join('')).snap.data);
+    assert.ok('gifts' in JSON.parse(chunks.map((c) => c.s).join('')).snap.data);
     assert.equal(first.from, 'server');
     assert.ok(!a.msgs.some((m) => m.d?.t === 'w:snap' && m.d.to === 'bbb'));
 
-    a.send({ t: 'm', d: { t: 'w:edit', e: { op: 'mush.plant', i: cell[0], j: cell[1] } } });
+    a.send({ t: 'm', d: { t: 'w:edit', e: toss } });
     const stamped = (m: Msg) =>
       isWorld('w:edits')(m) &&
-      m.d.list.some((x: Msg) => x.e.op === 'mush.plant' && x.e.p === 'aaa' && x.e.u === 'aaapid');
+      m.d.list.some((x: Msg) => x.e.op === 'gift.toss' && x.e.p === 'aaa' && x.e.u === 'aaapid');
     await Promise.all([a.next(stamped), b.next(stamped)]);
     await sleep(700);
     const doc = JSON.parse(await fs.readFile(path.join(dataDir, 'beach.json'), 'utf8'));
     assert.equal(doc.writerId, 'server');
-    assert.deepEqual(doc.data.data.mushrooms.p.slice(0, 2), cell); // { v: 2, p: [i, j, g, ...] }
+    assert.ok('gifts' in doc.data.data);
 
     const closedA = a.closed;
     await svc.close({ save: true });
@@ -224,7 +219,7 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
     const world = again.svc.roomHost()!.room('beach')!.world;
     await sleep(20);
     assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
-    assert.equal(world.rules.mushrooms.garden.plots.length, 1);
+    assert.ok(world.rules.gifts.gifts.items.some((it: Msg) => it.i === toss.i && it.j === toss.j));
   } finally {
     await again.svc.close({ save: false });
   }

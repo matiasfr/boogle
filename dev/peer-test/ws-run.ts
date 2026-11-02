@@ -7,8 +7,6 @@ import path from 'node:path';
 import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
 import { freePort } from '../look/lib.ts';
 import { createService, loadConfig } from '../../server/src/server.ts';
-import { loadHomeLand } from '../../server/src/host/land.ts';
-import { PATCH } from '../../src/sim/mushrooms.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: string | { error: string; max?: number } };
 const results: { name: string; ok: boolean }[] = [];
@@ -32,9 +30,9 @@ const web = await startWeb('ws-page.ts');
 const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
   web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
 const world = (p: Page) => ev(p.page, () => window.T.world());
-const plots = async (p: Page) => (await world(p)).plots as [number, number][];
-const hasPlot = async (p: Page, [i, j]: number[]): Promise<boolean> =>
-  (await plots(p)).some(([a, b]) => a === i && b === j);
+const items = async (p: Page) => (await world(p)).items as [number, number][];
+const hasItem = async (p: Page, [i, j]: number[]): Promise<boolean> =>
+  (await items(p)).some(([a, b]) => a === i && b === j);
 // Recorded state hashes agree at every tick (after `from`) that all of `group` recorded; true if at least one is shared.
 async function hashesAgree(group: Page[], from = 0): Promise<boolean> {
   const all = await Promise.all(group.map((p) => ev(p.page, () => window.T.hashes)));
@@ -43,10 +41,10 @@ async function hashesAgree(group: Page[], from = 0): Promise<boolean> {
     .filter((t) => t > from && all.every((h) => t in h));
   return ticks.length > 0 && ticks.every((t) => all.every((h) => h[t] === all[0][t]));
 }
-const { canPlantAt } = loadHomeLand();
-const cells: number[][] = [];
-for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w; i += 3)
-  for (let j = PATCH.j0; j < PATCH.j0 + PATCH.h; j += 3) if (canPlantAt(i, j)) cells.push([i, j]);
+const cells = [
+  [230, 205],
+  [232, 207],
+];
 
 let exitCode = 1;
 try {
@@ -116,19 +114,19 @@ try {
   const errs = (await Promise.all(all.map((p) => ev(p.page, () => window.T.errors)))).flat();
   check('from matches every sender', errs.length === 0, errs.join());
 
-  // 4. world: a plant reaches everyone through the server, and everyone hashes the same
+  // 4. world: a toss reaches everyone through the server, and everyone hashes the same
   await waitFor(async () => (await Promise.all(all.map(world))).every((w) => w.status.ready), 5000);
-  await ev(A.page, ([i, j]: number[]) => window.T.plant(i, j), cells[0]);
-  const plantMs = await waitFor(
-    async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0]!)))).every(Boolean),
+  await ev(A.page, ([i, j]: number[]) => window.T.toss(i, j), cells[0]);
+  const tossMs = await waitFor(
+    async () => (await Promise.all(all.map((p) => hasItem(p, cells[0]!)))).every(Boolean),
     3000,
   );
-  check('a plant reaches every page within 1 s', plantMs >= 0 && plantMs < 1000, plantMs + ' ms');
+  check('a toss reaches every page within 1 s', tossMs >= 0 && tossMs < 1000, tossMs + ' ms');
   check('every page hashes the same at shared ticks', (await waitFor(() => hashesAgree(all), 4000)) >= 0);
 
-  // 5. a late joiner gets the plot from a snapshot; past the cap a page is turned away
+  // 5. a late joiner gets the item from a snapshot; past the cap a page is turned away
   let D = await open('D');
-  check('late joiner D has the plot', (await waitFor(() => hasPlot(D, cells[0]!), 3000)) >= 0);
+  check('late joiner D has the item', (await waitFor(() => hasItem(D, cells[0]!), 3000)) >= 0);
   const E = await open('E');
   const refusal = E.selfId as { error?: string; max?: number };
   check(
@@ -177,20 +175,20 @@ try {
   }, 5000);
   check('pages reconnect within 5 s of a restart', backMs >= 0, backMs + ' ms');
   check(
-    'the plot survives the restart',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0]!)))).every(Boolean), 3000)) >= 0,
+    'the item survives the restart',
+    (await waitFor(async () => (await Promise.all(all.map((p) => hasItem(p, cells[0]!)))).every(Boolean), 3000)) >= 0,
   );
   await sleep(500);
   const after = (await world(B)).tick;
   check('the world went back at most 5 ticks', after >= before - 5, `before ${before}, after ${after}`);
-  await ev(B.page, ([i, j]: number[]) => window.T.plant(i, j), cells[1]);
+  await ev(B.page, ([i, j]: number[]) => window.T.toss(i, j), cells[1]);
   check(
     'an edit after the restart reaches everyone',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[1]!)))).every(Boolean), 3000)) >= 0,
+    (await waitFor(async () => (await Promise.all(all.map((p) => hasItem(p, cells[1]!)))).every(Boolean), 3000)) >= 0,
   );
 
   // 8. a crash (no final save): pages resync to the last periodic save and agree again
-  await sleep(400); // one periodic save holds the second plot
+  await sleep(400); // one periodic save holds the second item
   await svc.close({ save: false });
   svc = await serve();
   await Promise.all(all.map((p) => ev(p.page, () => (window.T.hashes = {}))));

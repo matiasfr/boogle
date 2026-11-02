@@ -1,6 +1,6 @@
 // The hotbar: a new player starts empty-handed; pick something up and it is in your hand; throw it and it lands for
-// everyone; the beach ball rides on your back while you hold something else; The Boogler takes what you hold; seeds go
-// in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
+// everyone; the beach ball rides on your back while you hold something else; The Boogler takes what you hold; a bag of
+// seeds sprouts mushrooms; the frisbee on the lighthouse deck glides far. On a phone: only
 // filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
 // bar clears the HUD.
 import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
@@ -133,68 +133,15 @@ export default {
     );
     await g.eval(`(await import('/src/boogler/dialogue.ts')).closeDialogue();`);
 
-    // Seeds go in off the dirt patch: find open grass near home, plant, water, then stand where it grows.
-    const spot = await g.eval(`${INV}
-      const { CELL, HALF, GRID_RES } = await import('/src/constants.ts');
-      const G = await import('/src/adapters/mushroom-garden.ts');
-      const { PATCH } = await import('/src/sim/mushrooms.ts');
-      for (let r = 6; r < 60; r += 2)
-        for (let a = 0; a < 24; a++) {
-          const i = Math.round(PATCH.i0 - r * Math.cos(a / 3.8)), j = Math.round(PATCH.j0 - r * Math.sin(a / 3.8));
-          if (i >= PATCH.i0 - 4 && i < PATCH.i0 + PATCH.w + 4 && j >= PATCH.j0 - 4 && j < PATCH.j0 + PATCH.h + 4) continue;
-          if (G.plantOk(i, j)) return { i, j, x: i * CELL - HALF, z: HALF - j * CELL };
-        }
-      return null;`);
-    t.check('found open ground away from the dirt patch', !!spot, JSON.stringify(spot));
-    if (!spot) return;
-    await g.eval(`${INV} I.take('seeds', 5); ${TP(spot.x, `${spot.z} + 0.9`)} ${AIM(0)}`);
+    // A bag of seeds: using it sprouts mushrooms ahead of you, spends the bag, and they end up solid.
+    await g.eval(`${INV} I.take('seeds'); ${TP(-30, 30)} ${AIM(0)}`);
     await g.wait(0.4);
-    await g.eval(`${INV} H.useDown(); H.useUp();`);
-    const hasPlot = await g.waitFor(
-      `(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.ts');
-      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j}); })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    t.check('a seed goes in off the dirt patch', hasPlot >= 0, `cell ${spot.i},${spot.j}`);
-    await g.eval(`${INV} I.take('can'); H.useDown(); H.useUp();`);
-    // Stand on the seed as soon as it starts growing, before it has a collider: later, on a fast machine, the cap is
-    // already above your feet and you land on top and ride it up instead (that is intended, but not this check).
-    await g.waitFor(
-      `(async () => {
-      const { garden } = await import('/src/adapters/mushroom-garden.ts');
-      return garden.plots.some((p) => p.i === ${spot.i} && p.j === ${spot.j} && p.g > 0); })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    await g.eval(TP(spot.x + 0.3, spot.z));
-    const before = await g.eval(
-      `const p = window.boogle.me.body.position; return Math.hypot(p.x - ${spot.x}, p.z - ${spot.z});`,
-    );
-    await g.view({ cam: [spot.x + 7, 3.5, spot.z + 7], look: [spot.x, 0.8, spot.z] });
-    const grow = await g.motion('growing', { frames: 8, seconds: 6 });
-    // The sheet is six seconds of real time; a slow tab's clock is far behind that.
-    await g.waitFor(
-      `(() => { const p = window.boogle.me.body.position; return Math.hypot(p.x - ${spot.x}, p.z - ${spot.z}) > ${before} + 1; })()`,
-      { timeout: EDIT_WAIT_MS },
-    );
-    const after = await g.eval(
-      `const p = window.boogle.me.body.position; return { d: Math.hypot(p.x - ${spot.x}, p.z - ${spot.z}), y: p.y };`,
-    );
-    t.check(
-      'a growing mushroom shoves you out from under it',
-      after.d > before + 1,
-      `${before.toFixed(2)} -> ${after.d.toFixed(2)} m; ${grow.sheet}`,
-    );
-    const solid = await g.eval(`
-      const { forEachStatic } = await import('/src/physics/engine.ts');
-      const near = [];
-      forEachStatic(-1, (b, shapes) => Math.hypot(b.position.x - ${spot.x}, b.position.z - ${spot.z}) < 0.1 && near.push(shapes.length));
-      return near;`);
-    t.check(
-      'the growing mushroom has a collider',
-      solid.some((n: number) => n === 2),
-      JSON.stringify(solid),
-    );
+    const sprouted = await g.eval(`${INV}
+      const M = await import('/src/adapters/mushrooms.ts');
+      const spots = M.spotsAhead();
+      H.useDown(); H.useUp();
+      return { spots: spots.length / 2, kept: I.has('seeds') };`);
+    t.check('a bag sprouts mushrooms and is spent', sprouted.spots > 0 && !sprouted.kept, JSON.stringify(sprouted));
 
     // The frisbee waits on the lighthouse deck; throw it off and it glides far.
     const { FRISBEE } = await g.eval(

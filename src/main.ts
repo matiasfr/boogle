@@ -12,7 +12,7 @@ import { me } from './player/player.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
-import { createStall } from './adapters/mushroom-garden.ts';
+import { createStall } from './adapters/mushrooms.ts';
 import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';

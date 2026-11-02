@@ -4,7 +4,6 @@ import type { vec4 } from 'three/tsl';
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
 import { smoothstep, valueNoise } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { PATCH } from '../sim/mushrooms.ts';
 import { island } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
 
@@ -16,8 +15,7 @@ const WET = new THREE.Color('#c9ad78'),
   SAND = new THREE.Color('#efd89d'),
   GRASS = new THREE.Color('#7cc650');
 const GRASS_DK = new THREE.Color('#4e9a3d'),
-  ROCK = new THREE.Color('#9d978c'),
-  DIRT = new THREE.Color('#7a5534');
+  ROCK = new THREE.Color('#9d978c');
 const tmpC = new THREE.Color(),
   tmpG = new THREE.Color(),
   tmpP = new THREE.Color();
@@ -52,10 +50,6 @@ function paintVertex(out: Float32Array, o: number, k: number, x: number, h: numb
   const pp = poiPaint!;
   const pa = pp[k * 4 + 3]!;
   if (pa > 0) c.lerp(tmpP.setRGB(pp[k * 4]!, pp[k * 4 + 1]!, pp[k * 4 + 2]!, THREE.SRGBColorSpace), pa);
-  const i = k % GRID_RES,
-    j = (k - i) / GRID_RES;
-  if (i >= PATCH.i0 - 1 && i <= PATCH.i0 + PATCH.w && j >= PATCH.j0 - 1 && j <= PATCH.j0 + PATCH.h)
-    c.copy(DIRT).offsetHSL(0, 0, nse * 0.04);
   out[o * 3] = c.r;
   out[o * 3 + 1] = c.g;
   out[o * 3 + 2] = c.b;

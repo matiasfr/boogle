@@ -1,7 +1,7 @@
 // The island's natural ground, before any point of interest reshapes it (src/island/stamps.ts does that).
 //
 // Two landmasses joined into one island:
-// - home: the original island around the origin (spawn, court, mushroom garden). Inside HOME_KEEP metres of the origin
+// - home: the original island around the origin (spawn, court, seed stand). Inside HOME_KEEP metres of the origin
 //   the ground is exactly what it always was, so nothing there moves.
 // - mainland: a few times home's size, to the north (-z), with rolling meadows, an eastern plain, a western point and
 //   a rocky massif in the north-west. Points of interest are placed on it by their site files (src/pois/*/site.ts).
@@ -81,7 +81,7 @@ export function naturalHeight(x: number, z: number) {
   const r = Math.sqrt(x * x + z * z);
   if (r < HOME_KEEP) return home;
   // The mainland fades in outside HOME_KEEP and only ever raises the ground (smooth max), so spawn, the court and
-  // the garden keep the ground they always had.
+  // the seed stand keep the ground they always had.
   const main = lerp(SEABED, mainlandHeight(x, z), smoothstep(HOME_KEEP, HOME_KEEP + 12, r));
   return smax(home, main, 2);
 }

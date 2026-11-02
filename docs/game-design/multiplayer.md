@@ -46,7 +46,7 @@ are held (up to 64, 5 s) and released one per 210 ms.
 | Log sources (the bundles at the home palms) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
 | Ball resting spot | Lockstep (the ball's physics stays Owner) | op `ball.rest` (integer cm; one per 2 s); state `ball`; restored once when a tab loads the world |
 | Offline helper bank | Lockstep, from a host-only measurement | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank` |
-| Mushrooms | Lockstep | ops `mush.plant`, `mush.water`; state `mushrooms` |
+| Mushrooms | Local, from a one-off message | message `mush` (6.4) |
 | Thrown things, frisbee | Lockstep | ops `gift.take`, `gift.toss`; state `gifts` |
 | Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
@@ -63,7 +63,7 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 [src/world/rules/README.md](../../src/world/rules/README.md).
 
 - 10 ticks per second. Tabs send `w:edit`; the server (the host) validates, stamps each edit 3 ticks ahead and
-  broadcasts `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order: mushrooms,
+  broadcasts `w:edits`. Everyone applies edits in tick and sequence order, then runs ticks in `RULES` order:
   gifts, roster, stacks, piles, sites, sources, bank (append only: it is the wire order; the list restarted with the
   0.1 namespace, when the terrain, water and proto stubs were retired). Tabs run about 2 to 3 ticks behind the server.
 - Every 20 ticks (2 s) the server sends per-state hashes; a tab that disagrees (or gets an edit for a past tick) asks
@@ -114,7 +114,7 @@ the card, and a session the server replaced is turned away if its socket comes b
 
 - **Only helper huts work while a room is unloaded.** A loaded room ticks with nobody in it; one unloaded (10 minutes
   after its last player left) doesn't. `world.epochMs` (the wall time of tick 0) is read by the helper bank alone: the
-  server submits `bank.wake` when it loads a save, for the time it was unloaded (6.19). Mushroom growth and the day
+  server submits `bank.wake` when it loads a save, for the time it was unloaded (6.19). The day
   count ticks.
 - The ball's lag for non-owners is reported (`rttMs`, the round trip to the server; 6.15).
 - The sim is not in a Web Worker (tech plan C4 decided: no worker). Hidden tabs keep

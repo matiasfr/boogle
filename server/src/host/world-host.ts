@@ -45,7 +45,7 @@ export function createWorldHost({
   log = () => {},
 }: WorldHostOptions) {
   // protoRoom: playtest tuning (tune.set, tune.reset) is allowed in `proto-` rooms only (src/world/rules/tune.ts).
-  const sync = createSync({ env: { canPlantAt: home.canPlantAt, protoRoom: isProtoRoom(roomId) } });
+  const sync = createSync({ env: { protoRoom: isProtoRoom(roomId) } });
   const rules = installRules(sync, home.land as Parameters<typeof installRules>[1]);
   const sendFns = new Set<(msg: Msg) => void>();
   const msgFns = new Set<(msg: unknown, from: string) => void>();

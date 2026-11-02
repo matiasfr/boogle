@@ -1,8 +1,9 @@
 // Everything you can carry, throw or give The Boogler. The index is on the wire (`gifts` items, `gift.toss`, presence
 // `hd`): reorder only with a `WORLD_NS` bump (src/world/namespace.ts).
 //
-//   src      'stall' comes from the seed stall, 'perch' waits on a perch (the lighthouse deck), 'ball' is carried,
-//            never spawned
+//   src      'stall' comes from the seed stand, 'perch' waits on a perch (the lighthouse deck), 'ball' is carried,
+//            never spawned, 'none': nothing hands it out any more (the watering can, kept for its line until the
+//            owner decides; AGENTS.md, "Keep The Boogler's copy")
 //   taste    how The Boogler feels about it ('love' | 'like' | 'meh' | 'dislike'); line: what he says when you hand
 //            it over
 //   key      he refuses it, and line is why
@@ -19,7 +20,7 @@ export const GIFTS = [
     id: 'can',
     name: 'watering can',
     color: '#4fa3d9',
-    src: 'stall',
+    src: 'none',
     taste: 'meh',
     line: 'A watering can. I will water myself every morning. Grow, Boogler, grow! ...Nothing. Maybe tomorrow.',
   },
@@ -43,5 +44,5 @@ export const GIFTS = [
 ];
 
 export const giftIndex = (id: string) => GIFTS.findIndex((g) => g.id === id);
-// Whether a catalog entry can sit in a hotbar and be thrown: everything but the ball (its own owner rules).
-export const carryable = (g: (typeof GIFTS)[number] | undefined) => !!g && g.src !== 'ball';
+// Whether a catalog entry can sit in a hotbar and be thrown: not the ball (its own owner rules), nor what nothing hands out.
+export const carryable = (g: (typeof GIFTS)[number] | undefined) => !!g && g.src !== 'ball' && g.src !== 'none';

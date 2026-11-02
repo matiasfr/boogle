@@ -5,7 +5,7 @@ Still open:
 - PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.187.
 - DESIGN.md's authority table names "weather", which does not exist yet.
 - DESIGN principle 9 says growth is computed from elapsed time; only the helper bank reads `world.epochMs` (as
-  `src/world/README.md` now says), and mushrooms, fruit and the day count ticks.
+  `src/world/README.md` now says), and fruit and the day count ticks.
 - DESIGN.md's "Server hosts every room" describes [plans/server-host.md](../plans/server-host.md) step 9, which is not
   built: the code still has peer-hosted rooms, host migration and the fallback (`src/net/room.ts`), the server hosts
   only the rooms in `SERVER_ROOMS`, and `server/fly.toml` sets none. AGENTS.md's first paragraph ("PeerJS with one

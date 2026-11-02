@@ -1,4 +1,4 @@
-// Frame hitches: `npm run hitches`. Flies a tour around the island (every view, caves, garden, lighthouse), steps the
+// Frame hitches: `npm run hitches`. Flies a tour around the island (every view, caves, meadow, lighthouse), steps the
 // sky day -> sunset -> night, fires particles, holds a throw and cycles the hotbar, and records every frame over 33 ms
 // with what was happening: the tour step, the sky time, and whether three's resource counters (programs, geometries,
 // textures) moved that frame, which means a shader compile or an upload landed in it.
@@ -136,20 +136,20 @@ const TOUR = `
   const LIGHT = { cam: [160, 26, -10], look: [212, 26, -50] };
 
   await step('spawn', 2000, () => sky.preview(0.3));
-  for (const k of ['hill', 'shore', 'court', 'garden', 'overview']) await step('view ' + k, 1500, view(VIEWS[k]));
+  for (const k of ['hill', 'shore', 'court', 'meadow', 'overview']) await step('view ' + k, 1500, view(VIEWS[k]));
   await step('caves', 2500, view(CAVE));
   await step('lighthouse', 2000, view(LIGHT));
   await step('particles', 2500, () => { dbg.set(VIEWS.court.cam, VIEWS.court.look, null); burst(12, 1, 21); });
   await step('throw preview', 1500, async () => { I.take('frisbee'); I.select(I.slotOf('frisbee')); H.useDown(); });
   await step('throw release', 1000, () => H.useUp());
   await step('hotbar', 2500, async () => {
-    for (const id of ['frisbee', 'seeds', 'can']) I.take(id);
+    for (const id of ['frisbee', 'seeds']) I.take(id);
     for (let s = 0; s < 6; s++) { I.select(s); await sleep(250); }
   });
   await step('sunset', 3000, () => { sky.preview(0.55); dbg.set(VIEWS.shore.cam, VIEWS.shore.look, null); });
   await step('sunset overview', 2000, () => dbg.set(VIEWS.overview.cam, VIEWS.overview.look, null));
   await step('night', 3000, night(VIEWS.overview));
-  await step('night garden', 2000, night(VIEWS.garden));
+  await step('night meadow', 2000, night(VIEWS.meadow));
   await step('night shore', 2000, night(VIEWS.shore));
   await step('night lighthouse', 2500, night(LIGHT));
   await step('night caves', 2500, night(CAVE));
@@ -177,7 +177,7 @@ async function measureHooks(g: Game) {
     const count = () => { n++; if (on) requestAnimationFrame(count); };
     requestAnimationFrame(count);
     window.__step = 'allocs';
-    for (const [v, sky] of [['court', 0.3], ['garden', 0.3], ['shore', 0.8], ['garden', 0.8]]) {
+    for (const [v, sky] of [['court', 0.3], ['meadow', 0.3], ['shore', 0.8], ['meadow', 0.8]]) {
       window.boogle.sky.preview(sky, sky > 0.5 ? 0.5 : undefined);
       window.__debugCam.set(VIEWS[v].cam, VIEWS[v].look, null);
       await sleep(1500);

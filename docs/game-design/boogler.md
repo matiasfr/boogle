@@ -13,11 +13,11 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
   interpolate. The lead is the host on a peer room, and the tab the server picks on a server-hosted room (8.1). Solo
   tabs and clients that hear no lead for 3 s walk him locally. He has a kinematic body, so the ball
   bounces off him and you can stand on him.
-- **Behaviour.** Starts on dry land near (6, 22). Home is the garden centre (30, 2.5): he potters within 22 m and is
+- **Behaviour.** Starts on dry land near (6, 22). Home is the meadow (30, 2.5): he potters within 22 m and is
   pulled back the further he strays; each stop near home has an 8 % chance to start a trip, 70 % of the time to a POI
   (stopping 6 m outside its keep-out disc), otherwise a random mainland spot; he gives up a trip 3 % of the time per
   stop. Walks 1.5 m/s, turns 3.2 rad/s, stays on land between 0.45 and 30 m high, avoids slopes over 0.55 per metre,
-  obstacles and the garden patch. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
+  obstacles. Stops and faces anyone talking within 5 m; turns to look at players within 7 m;
   hurries at 2.3 m/s while ridden; flees at 3.4 m/s from wary players within 9 m.
 - **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
   [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).

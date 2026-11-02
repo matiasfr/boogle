@@ -59,7 +59,7 @@ export default {
       t.check(`${tag}: logs on your back`, got >= 0);
       await g.eval(`${TP(b.x - 1.2, b.z + 0.6)} window.boogle.me.yaw = 0;`);
       await g.view({ cam: [b.x - 3.4, b.y + 2.3, b.z + 3.6], look: [b.x - 0.4, b.y + 0.6, b.z] }, 55);
-      await g.eval(`${INV} I.take('frisbee', 1, false); I.select(0);`);
+      await g.eval(`${INV} I.take('frisbee', false); I.select(0);`);
       {
         const ticked = await g.waitFor(
           `(async () => { ${R} return document.querySelector('.haul-n')?.textContent === String(rules.stacks.count(identity.pid)); })()`,

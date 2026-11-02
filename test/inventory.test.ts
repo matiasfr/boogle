@@ -15,11 +15,11 @@ store.set(
     null,
     { id: 'nonsense' },
     { id: 'ball' },
-    { id: 'seeds', n: 99 },
+    { id: 'seeds' },
     { id: 'can' },
     { id: 'frisbee' },
-    { id: 'seeds', n: 3 },
-    { id: 'seeds', n: 2 },
+    { id: 'seeds' },
+    { id: 'seeds' },
   ]),
 );
 const { inv, SLOTS, cycle, select, take, drop } = await import('../src/player/inventory.ts');
@@ -29,10 +29,8 @@ test('a longer save compacts to the first five filled known items', () => {
   assert.equal(inv.slots.length, 5);
   assert.deepEqual(
     inv.slots.map((s) => s && s.id),
-    ['seeds', 'can', 'frisbee', 'seeds', 'seeds'],
+    ['seeds', 'frisbee', 'seeds', 'seeds', null],
   );
-  assert.equal(inv.slots[0]?.n, 20, 'seeds are clamped to 20');
-  assert.equal(inv.slots[3]?.n, 3);
 });
 
 test('cycling wraps and select outside the bar does nothing', () => {
@@ -44,10 +42,10 @@ test('cycling wraps and select outside the bar does nothing', () => {
 });
 
 test('take refuses an id that is not in the catalog', () => {
-  drop('can');
+  drop('frisbee');
   const version = inv.version;
   assert.equal(take('driftwood'), false, 'a removed item never reaches a slot the HUD would name');
   assert.equal(inv.version, version);
   assert.ok(!inv.slots.some((s) => s?.id === 'driftwood'));
-  assert.equal(take('can'), true);
+  assert.equal(take('frisbee'), true);
 });
