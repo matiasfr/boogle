@@ -39,6 +39,7 @@ import {
 import { FOG_NEAR, FOG_FAR } from '../constants.ts';
 import { SUN_DIR } from './sun-dir.ts';
 import { lerp, smoothstep } from '../math.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { renderer, scene, camera, sun, sky } from './scene.ts';
 import { seaU } from './water-render.ts';
 import { clouds } from './props.ts';
@@ -255,6 +256,8 @@ function makeMoonMat() {
   return mat;
 }
 
+// The sun and the moon: each billboard is its own thing in the sky, with no methods; updateSky places them.
+defineKind('sky-disc', {});
 let sunGroup: THREE.Group | null = null,
   moonGroup: THREE.Group | null = null,
   hemi: THREE.HemisphereLight | null = null;
@@ -273,7 +276,8 @@ export function createSky() {
       o.frustumCulled = false;
       o.renderOrder = -0.5; // before the sea, so the water draws over a setting sun
     });
-  scene.add(sunGroup, moonGroup);
+  spawn({ kind: 'sky-disc', mesh: sunGroup });
+  spawn({ kind: 'sky-disc', mesh: moonGroup });
   hemi = (scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight) || null;
 }
 
