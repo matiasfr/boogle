@@ -26,7 +26,7 @@ stripped). `--hud` keeps the HUD in the picture. Add views to the `VIEWS` table 
 
 **Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
 Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only single-player scenarios, `world-inputs`; `smoke` runs
-here, `npm run check:gpu`, inside `npm run ship`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
+here, `npm run check:gpu` or `npm run ship -- --gpu`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
 run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
 material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.ts`,
 `night.ts`, `particles.ts`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:
@@ -37,7 +37,7 @@ material "not compatible" with the node renderer) is a bug to fix. Ready-made ev
 A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
 It sets up a situation in the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` runs `smoke` on a Mac's GPU in `npm run ship`, and the rest run nightly
+risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
 Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
 console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
@@ -46,7 +46,7 @@ are optional; on a slow sandbox, push and read CI.
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
 `reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly run: run it
-after changing held edits in `src/world/sync.js`, reconnects in `src/net/ws-room.ts` or `src/netplay/net.js` attach/fail.
+after changing held edits in `src/world/sync.ts`, reconnects in `src/net/ws-room.ts` or `src/netplay/net.ts` attach/fail.
 
 ```js
 export default {

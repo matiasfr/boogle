@@ -62,7 +62,7 @@ function worktree(ref: string, branch?: string): string {
   return dir;
 }
 
-const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). Read AGENTS.md and DESIGN.md first; they bind you.`;
+const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). Read AGENTS.md and DESIGN.md first; they bind you. For design, level, art or character work, also read docs/proposals/boogle-2.md.`;
 
 function previzPrompt(out: string, refs: string[]): string {
   const shots = Number(opts.shots) || 4;
@@ -90,7 +90,7 @@ const taskPrompt = () => `${HOUSE}
 
 Task: ${brief}
 
-Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npm run check\` and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship; network is off. Your final message: what you changed, what check printed, and anything you were unsure of or could not verify (you cannot see the running game).`;
+Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship; network is off. Your final message: what you changed, what check printed, and anything you were unsure of or could not verify (you cannot see the running game).`;
 
 function main() {
   const reportFile = path.join(logs, 'report.md');
