@@ -72,7 +72,6 @@ const texel = uniform(new THREE.Vector2(1 / 960, 1 / 600));
 const size = new THREE.Vector2();
 
 let live: { dispose(): void }[] = [];
-let ownPass: THREE.PassNode | null = null;
 
 export const postActive = (f: PostFlags) => Object.values(f).some(Boolean);
 
@@ -84,7 +83,6 @@ export function updatePostUniforms() {
 export function buildPost(f: PostFlags) {
   for (const n of live) n.dispose();
   live = [];
-  ownPass = null;
   pipeline.outputColorTransform = true;
   if (!postActive(f)) {
     pipeline.outputNode = scenePass;
@@ -94,7 +92,6 @@ export function buildPost(f: PostFlags) {
   const taa = f.taa || f.ssgi; // SSGI is noisy per frame: it needs the temporal resolve
   const needNormal = f.ao || f.ssgi || f.outline || f.softline;
   const p = pass(scene, camera, taa ? { samples: 0 } : {});
-  ownPass = p;
   live.push(p);
   const outs: Record<string, N> = { output };
   if (needNormal) outs.normal = directionToColor(normalView);
@@ -205,5 +202,3 @@ const grade = Fn(([c]: N[]) => {
   const v = pow(length(screenUV.sub(0.5)).mul(1.35), 2.5).mul(postU.vignette);
   return vec4(rgb.mul(float(1).sub(v)), 1);
 });
-
-export const labPass = () => ownPass;

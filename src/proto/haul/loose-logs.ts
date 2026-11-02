@@ -41,7 +41,6 @@ const mesh = pieceMesh(MAX_LIVE);
 let flying = 0;
 const waiting: { n: number; at: number; op: string }[] = [];
 export const outOfStack = () => flying + waiting.reduce((t, w) => t + w.n, 0);
-export const liveCount = () => live.length;
 /** What's left on your stack to throw or tip, after the logs already on their way. */
 export const myLogs = () => (identity.pid ? Math.max(0, rules.stacks.count(identity.pid) - outOfStack()) : 0);
 

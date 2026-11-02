@@ -5,4 +5,5 @@
 // device. `&look=<preset>`, `&fx=a,b,-c` and `&era=steam` pick them from the URL, for `/look` and the look-lab
 // scenario. Without the flag nothing loads and nothing changes. Serves DESIGN.md "Understandable at a glance" (see
 // and measure which layers make the island read better before any of them ships). Sync kind: Local.
-if (new URLSearchParams(location.search).get('proto') === 'look') import('../debug/look-lab.ts');
+import { protoOn } from '../proto/flags.ts';
+if (protoOn('look')) void import('../debug/look-lab.ts');
