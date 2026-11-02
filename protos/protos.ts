@@ -176,25 +176,13 @@ export const PROTOS: Proto[] = [
     answer: {
       on: '2026-11-01',
       verdict: 'Yes it’s wonderful. Quick feels pretty good.',
-      next: 'Quick laying (about 14 s) goes into the game; fix the jump at the end of the run.',
+      next: 'Done: the 14 s run is the game’s only laying run, and the jump at the end is fixed.',
     },
-    url: '/?room=proto-lay&proto=lay&v=crawl',
+    url: '/?room=proto-lay&proto=lay',
     question: 'Is laying a section satisfying or dead time?',
-    what: 'Fill the Track ring (top left), Start the machine (E): today’s 50 s run with thumping sleepers, clanking rails and chuffs. Hop on its deck to ride.',
+    what: 'Fill the Track ring (top left), Start the machine (E): a 14 s run with thumping sleepers, clanking rails and chuffs. Hop on its deck to ride.',
     since: '2026-11-01',
     spawn: { x: 7, z: 9, yaw: -0.52 }, // by the first work site (the Track ring and the machine), looking down the line
-    variants: [
-      {
-        name: 'quick',
-        url: '/?room=proto-lay&proto=lay&v=quick',
-        what: 'The same run in 14 s: the payoff comes fast.',
-      },
-      {
-        name: 'push',
-        url: '/?room=proto-lay&proto=lay&v=push',
-        what: 'It lays only while you walk into its back: about 25 s of shoving solo, faster with friends.',
-      },
-    ],
   },
   {
     id: 'era',
