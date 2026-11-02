@@ -242,7 +242,7 @@ export const PROTOS: Proto[] = [
       verdict: 'I absolutely love this kind of animation.',
       next: 'Construction you can watch is how things get built in the game.',
     },
-    url: '/?room=proto-build&proto=build',
+    url: '/', // in the game now: the hut build (src/proto/build is gone)
     question: 'Is watching it go up satisfying?',
     what: 'Press Pour 10 logs (top left) four times and watch the helper hut go up. New: a ghost of the hut, pieces flying in to a beat with a rising tune, and a scaffold you can kick over.',
     since: '2026-11-01',
@@ -258,11 +258,10 @@ export const PROTOS: Proto[] = [
       verdict: 'Yeah this is a massive improvement.',
       next: 'The UI that answers goes into the game.',
     },
-    url: '/?proto=uisfx',
+    url: '/', // the default HUD now (no ?proto=uisfx)
     question: 'Does the UI feel alive and satisfying without getting in the way?',
     what: 'HUD sounds (hotbar tick, prompt pop, take thunk, full deny, haul count), presses that squash, a haul count that ticks up, bigger text on darker glass. Compare with plain /.',
     since: '2026-11-01',
-    chapter: 'it changes every HUD sound and press, so it is judged against the plain island',
   },
   {
     id: 'board',

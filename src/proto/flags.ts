@@ -12,7 +12,7 @@
 
 /** The prototypes that share the island under `?play`, each at its own spot. The rest of the live cards are chapters
  * (protos/protos.ts says why on each). */
-export const ISLAND = ['haul', 'wagon', 'lay', 'soapbox', 'build', 'minis', 'assets', 'moves'] as const;
+export const ISLAND = ['haul', 'wagon', 'lay', 'soapbox', 'minis', 'assets', 'moves'] as const;
 
 const q = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
 /** The page's `?proto=` ('' for none). */
