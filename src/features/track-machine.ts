@@ -470,7 +470,7 @@ function frame({ now, dt }: FrameCtx): void {
 defineKind('track-machine', { update: 35 });
 
 const machine = new THREE.Group();
-machine.add(root);
+machine.add(root, sleepers);
 if (!protoOn('net')) machine.add(rails); // its 85 m legs need rails that follow the ground (src/proto/net/rails.ts)
 
 // Spawned once physics is in, before the first frame (main.ts waits for it too): the body starts where the goal is.

@@ -10,16 +10,16 @@
 // scaffold are Local. A join, a reload or a resync snaps to the stage as it is, without the drops: a hut finished
 // before you came stands finished. Greybox boxes only.
 // Research: docs/research/construction-you-can-watch.md (recs 1, 3-6) and procedural-animation.md (rec 4).
+// One entity holds the pieces and the ghost; each fallen scaffold piece is a short-lived entity of its own for its body.
 // Serves DESIGN.md 7 (Telegraph everything: the ghost and scaffold show the hut's size before a plank is up, and every
 // pour visibly moves it on) and 9 (Leave something for the next visitor: a half-built hut says what's left to bring).
 import { rules } from '../world/game-world.ts';
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { emit } from '../render/particles.ts';
 import { getAudio } from '../render/audio.ts';
 import { arc, ring } from '../render/motion.ts';
-import { addBody, createBody, material, removeBody, type Body } from '../physics/engine.ts';
+import { createBody, material, type Body } from '../physics/engine.ts';
 import { onSnapshot } from '../world/sync.ts';
 import { groundHeight, heights } from '../island/terrain.ts';
 import { reducedMotion } from '../constants.ts';
@@ -87,7 +87,6 @@ mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(mesh.co
 mesh.castShadow = mesh.receiveShadow = true;
 mesh.frustumCulled = false;
 mesh.count = 0;
-scene.add(mesh);
 // The ghost (construction rec 3): every piece still to come, faint, from the first log until it lands.
 const ghostMat = new THREE.MeshStandardNodeMaterial({
   color: '#e8f4ff',
@@ -99,9 +98,12 @@ const ghostMat = new THREE.MeshStandardNodeMaterial({
 const ghost = new THREE.InstancedMesh(geo, ghostMat, ROUTE.length * HUT_BUILD.length);
 ghost.frustumCulled = false;
 ghost.count = 0;
-scene.add(ghost);
+const huts = new THREE.Group();
+huts.add(mesh, ghost);
 // The fallen scaffold (construction rec 5): Local physics props you can kick, for LOOSE seconds.
 const looseMat = material('scaffold', { friction: 0.7, restitution: 0.25 });
+defineKind('hut-loose-pole', {}); // no methods: place() reads its body, and the entity is its lifetime
+type LoosePole = GameEntity & { body: Body };
 
 // Per piece, Local: 0 not there, 1 queued, 2 arriving or standing (since `t`), 3 coming down (since `t`).
 const GONE = 0,
@@ -113,7 +115,7 @@ type View = {
   state: Uint8Array;
   t: Float64Array;
   landed: Uint8Array; // the landing's sound and dust have played
-  loose: (Body | null)[]; // a fallen scaffold piece's body
+  loose: (LoosePole | null)[]; // a fallen scaffold piece
   queue: number[];
   next: number; // when the next queued piece may go up
   notes: number[]; // per phase: pieces landed so far (the next note up the scale)
@@ -299,7 +301,7 @@ const m4 = new THREE.Matrix4(),
   scl = new THREE.Vector3();
 
 // A scaffold piece let go: a dynamic box (its origin at the piece's base), nudged outward so it topples.
-function letGo(v: View, p: Piece): Body {
+function letGo(v: View, p: Piece): LoosePole {
   const ledger = p.h < 1;
   const b = createBody({
     mass: ledger ? 6 : 4,
@@ -312,7 +314,7 @@ function letGo(v: View, p: Piece): Body {
     angularDamping: 0.4,
     linearDamping: 0.1,
   });
-  addBody(b);
+  const pole = spawn({ kind: 'hut-loose-pole', body: b, bodies: [b] });
   const out = Math.abs(p.z) > 0.1 ? Math.sign(p.z) : 0;
   const r = () => (Math.random() - 0.5) * 0.6;
   if (ledger) {
@@ -323,7 +325,7 @@ function letGo(v: View, p: Piece): Body {
     // tip outward about the foot: +x rotation swings the top toward +z
     b.angularVelocity.set(out * 1.3 + r(), r(), out ? r() : -Math.sign(p.x) * 1.3);
   }
-  return b;
+  return pole;
 }
 
 // Writes piece k of site v at time sec; returns false when it isn't drawn.
@@ -375,24 +377,24 @@ function place(v: View, p: Piece, k: number, sec: number): boolean {
     if (t >= t0 && !v.landed[k]) land(v, p, k, sec);
   } else if (st === DOWN) {
     if (t > 0) {
-      let b = v.loose[k];
-      if (!b && !reducedMotion && t < LOOSE) b = v.loose[k] = letGo(v, p);
+      let pole = v.loose[k];
+      if (!pole && !reducedMotion && t < LOOSE) pole = v.loose[k] = letGo(v, p);
       if (t >= LOOSE || reducedMotion) {
-        if (b) {
-          pos.copy(b.interpolatedPosition as THREE.Vector3);
-          removeBody(b);
+        if (pole) {
+          pos.copy(pole.body.interpolatedPosition as THREE.Vector3);
+          despawn(pole);
           v.loose[k] = null;
           puff(v, { ...p, x: pos.x - v.at.x, y: pos.y - v.at.y, z: pos.z - v.at.z }, 6);
         } else puff(v, p, 6);
         v.state[k] = GONE;
         return false;
       }
-      if (b) {
+      if (pole) {
         // shrinks away over its last half second
         const s = Math.min(1, (LOOSE - t) * 2);
-        const bq = b.quaternion;
+        const bq = pole.body.quaternion;
         q.set(bq.x, bq.y, bq.z, bq.w);
-        const ip = b.interpolatedPosition;
+        const ip = pole.body.interpolatedPosition;
         m4.compose(pos.set(ip.x, ip.y, ip.z), q, scl.set(p.w * s, p.h * s, p.d * s));
         return true;
       }
@@ -405,8 +407,11 @@ function place(v: View, p: Piece, k: number, sec: number): boolean {
   return true;
 }
 
-onFrame(
-  ({ now }: { now: number }) => {
+defineKind('hut-build', { update: 38 });
+spawn({
+  kind: 'hut-build',
+  mesh: huts,
+  update({ now }) {
     if (!views) {
       if (!heights.length) return; // the ground isn't built yet
       views = makeViews();
@@ -442,5 +447,4 @@ onFrame(
     ghost.visible = g > 0;
     ghost.instanceMatrix.needsUpdate = true;
   },
-  { phase: 'update', order: 38 },
-);
+});

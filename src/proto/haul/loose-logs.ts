@@ -36,6 +36,7 @@ const sideways = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0,
 type Log = { body: Body; n: number; age: number; still: number; landed: boolean; k: number };
 const live: Log[] = [];
 const mesh = pieceMesh(MAX_LIVE);
+scene.add(mesh);
 
 /** Units of your stack that are out of it right now: flying, rolling, or counted and waiting for the host. */
 let flying = 0;

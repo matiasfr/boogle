@@ -5,7 +5,8 @@
 // is always more for the next visitor). Lockstep charges, Local view.
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { trees } from '../render/props.ts';
 import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
@@ -77,8 +78,11 @@ registerInteractable(() => {
 });
 
 let drawn = -1; // sources.rev last drawn (it changes on takes, refills, the trickle and loads)
-onFrame(
-  () => {
+defineKind('log-sources', { update: 36 });
+spawn({
+  kind: 'log-sources',
+  mesh,
+  update() {
     if (rules.sources.sources.rev === drawn) return;
     drawn = rules.sources.sources.rev;
     const k = materialOf(rules.sites.age());
@@ -93,5 +97,4 @@ onFrame(
     });
     commitPieces(mesh, c);
   },
-  { phase: 'update', order: 36 },
-);
+});

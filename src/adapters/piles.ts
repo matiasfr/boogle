@@ -13,7 +13,7 @@ export const piles = rules.piles.piles;
 const SHOWN = 12; // pieces drawn per pile, whatever its count
 const PICK_R = 1.3; // metres from a pile's centre that walk over it (the default; the host doesn't check reach)
 const PICK_DY = 1.6;
-const mesh = pieceMesh(160 * SHOWN);
+export const pileMesh = pieceMesh(160 * SHOWN);
 const m4 = new THREE.Matrix4();
 const spots = new Map(); // pile id -> world position (a pile never moves)
 const spotOf = (p: Pile) => {
@@ -42,12 +42,12 @@ function redraw() {
   for (const p of piles.list) {
     if (pending.has(p.id)) continue;
     const at = spotOf(p);
-    for (let m = 0; m < Math.min(p.n, SHOWN) && n < mesh.instanceMatrix.count; m++) {
-      mesh.setMatrixAt(n, heapMatrix(m, p.id, at.x, at.y, at.z, m4));
-      mesh.setColorAt(n++, pieceColor(p.k));
+    for (let m = 0; m < Math.min(p.n, SHOWN) && n < pileMesh.instanceMatrix.count; m++) {
+      pileMesh.setMatrixAt(n, heapMatrix(m, p.id, at.x, at.y, at.z, m4));
+      pileMesh.setColorAt(n++, pieceColor(p.k));
     }
   }
-  commitPieces(mesh, n);
+  commitPieces(pileMesh, n);
   for (const id of spots.keys()) if (!piles.list.some((p) => p.id === id)) spots.delete(id);
 }
 
