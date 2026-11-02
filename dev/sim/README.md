@@ -14,6 +14,10 @@
 
 `ball-course.ts` is the course itself, with no Node or browser API. `node dev/sim/ball-browser.ts` runs that same file in the real game on the GPU and rewrites `ball-browser.json`: do that after changing the ball's physics, the ground or the course. A difference you didn't mean is a bug in the headless world, or in your change.
 
+## What's in it: `npm run inspect`
+
+`npm run inspect` starts this headless world, runs 240 frames and prints every entity: kind, phases and orders, positions, state from `describe()`, cost. It ends by listing each kind the source defines that a headless run doesn't have. `-- --browser` asks the real game through the look harness instead, `-- --json` prints the data. In a run or a page, `inspect()` from `src/entity/inspect.ts` (`window.boogle.inspect()`) returns the same thing.
+
 ## An entity in a headless run
 
 An entity runs headless once it has a `headless.ts` (`src/entities/ball/` is the example). That file spawns the kinds with no view, and reaches neither the scene nor the DOM. `index.ts` imports it and adds the view as its own kind, so the game and the run share one code path. `world.ts` loads every `src/entities/*/headless.ts`, and `test/entity-state-node.test.ts` holds them to it.

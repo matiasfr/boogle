@@ -13,6 +13,23 @@ import { launch } from '../player/throw.ts';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting
 
+const sync = {
+  world,
+  worldStatus,
+  stateHashes,
+  submitEdit,
+  markHashes(tick: number) {
+    marks.set(tick, null);
+  },
+  hashesAt: (tick: number) => marks.get(tick) ?? null,
+  tossBall(charge = 0.5) {
+    grabBall();
+    const { p, v } = launch('ball', charge);
+    throwBall(p, v);
+  },
+};
+export type SyncHandle = typeof sync;
+
 onStart(() => {
   // After every onTick handler and before the host hashes, so a mark sees the tick's final state (what sync hashes).
   onAfterTick((t) => {
@@ -21,19 +38,5 @@ onStart(() => {
   if (!window.boogle) return;
   // A getter: onStart can run before the renderer's init() resolves.
   Object.defineProperty(window.boogle, 'gfx', { get: gfx, enumerable: true });
-  window.boogle.sync = {
-    world,
-    worldStatus,
-    stateHashes,
-    submitEdit,
-    markHashes(tick: number) {
-      marks.set(tick, null);
-    },
-    hashesAt: (tick: number) => marks.get(tick) ?? null,
-    tossBall(charge = 0.5) {
-      grabBall();
-      const { p, v } = launch('ball', charge);
-      throwBall(p, v);
-    },
-  };
+  window.boogle.sync = sync;
 });

@@ -307,8 +307,9 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
       orphan pick, the mode switch, and sampling into `pose` with the extrapolation cap. `held`, carry, surf and respawn stay with the
       object, and `snap` is an additive field. Entity `id` isn't a network id. Presence keys stay literal. Verify: `check:full`,
       `check:gpu`, two-tab ownership hand-off, `/code-review`.
-- [ ] **19. Inspector.** A typed `inspect()` listing entities, their state and per-kind cost, working in the browser and
-      headless, with `npm run inspect` on top. It replaces reads of the `window.boogle` grab bag.
+- [x] **19. Inspector.** A typed `inspect()` listing entities, their state and per-kind cost, working in the browser and
+      headless, with `npm run inspect` on top. It replaces reads of the `window.boogle` grab bag, which move over as agents
+      touch them.
 - [ ] **20. Blueprints and a level validator.** Typed blueprints for reusable objects and levels, building on `Site`, stamps
       and layout files. A check in `npm run check` catches unreachable areas, overlaps, bad slopes and budget overruns.
       Cites `docs/research/level-design.md`.

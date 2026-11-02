@@ -7,6 +7,7 @@ import { createWaterMesh } from './render/water-render.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.ts';
 import { ball } from './entities/ball/state.ts';
+import { inspect } from './entity/inspect.ts';
 import { me } from './player/player.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
@@ -83,7 +84,7 @@ async function play() {
 }
 
 // Debug handle for poking at the game from the console (before start(): features' onStart hooks add to it).
-window.boogle = { THREE, scene, camera, me, ball, net, remotes };
+window.boogle = { THREE, scene, camera, me, ball, net, remotes, inspect } as Window['boogle'];
 
 start();
 splashStage(0.3, 0.45, 'Waking up the graphics');

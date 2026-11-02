@@ -33,6 +33,8 @@ here, `npm run check:gpu` or `npm run ship -- --gpu`). `?dpr=fixed` (always pass
 run prints `renderer backend: ...` and `gfx errors: ...`; an entry there is a bug to fix. Rendering rules:
 `src/render/README.md`.
 
+To ask what's in the world rather than see it: `npm run inspect -- --browser`, or `window.boogle.inspect()` from `--eval` and `g.eval`, not reads of the rest of the `window.boogle` grab bag.
+
 ## 2. Validate: scenarios (`npm run scenario -- <name>`, `npm run scenarios` for all)
 
 A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
