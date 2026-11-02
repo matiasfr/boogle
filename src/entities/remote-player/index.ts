@@ -229,7 +229,7 @@ onFrame(
       } else if (was) was.yaw = NaN;
       r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
       r.prevPos.copy(r.target);
-      animateAvatar(r.avatar, r.speed, r.state === 1, dt);
+      animateAvatar(r.avatar, r.speed, r.state === 1, dt, r.state === 2);
     }
   },
   { phase: 'update', order: -280 },

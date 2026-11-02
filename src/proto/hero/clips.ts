@@ -1,7 +1,7 @@
 // Prototype: the hero (?proto=hero). Every avatar plays hand-made animation, Quaternius's Universal Animation Library
 // (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. The body is the Buddy (assets/src/buddy.py),
 // and &hat=cap or beanie wears one of its `wear_head_` parts; &body=mannequin is the library's own figure, for judging
-// motion apart from our model. Walk, jog and sprint are played by distance at the rate that
+// motion apart from our model. &buddy turns this on inside any other prototype. Walk, jog and sprint are played by distance at the rate that
 // matches each clip's stride to the ground (measured from the library's root-motion file), so the feet don't slide; they
 // share one phase so a blend between them stays in step. Everything comes from speed and airborne, so remote players need
 // no new presence. Serves DESIGN.md 1 (moving around is a toy). Sync kind: Local (render only).
@@ -27,7 +27,10 @@ const FADE = { ground: 0.06, air: 0.05 }; // s
 const JUMP_FROM = 0.3; // s into Jump_Start where the feet leave the ground (its wind-up would delay the jump)
 const LAND = { for: 0.35, stop: 2.5 }; // s of Jump_Land, and the speed above which you run straight out of it
 const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
-const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land'];
+// The swim clips' waterline is the ground, and the water is 0.8 m above the soles (physics floats you there); `lift` brings its eyes clear of it.
+const SWIM = { idle: 'Swim_Idle_Loop', fwd: 'Swim_Fwd_Loop', fwdFrom: 0.4, fwdTo: 1.6, rate: 0.45, lift: 0.98 }; // m/s; m
+const SEAT = 'Driving_Loop';
+const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land', SWIM.idle, SWIM.fwd, SEAT];
 const BODIES = {
   mannequin: { url: clipsUrl, height: 1.75, armOut: 0 },
   buddy: { url: buddyUrl, height: 0, armOut: (12 * Math.PI) / 180 }, // its body is wider than the mannequin's
@@ -48,7 +51,7 @@ type Rig = {
 };
 const rigs = new WeakMap<Avatar, Rig>();
 
-function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
+function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
   if (!r || dt <= 0) return;
   const inner = a.userData.inner;
@@ -70,7 +73,13 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   const move = clamp(v / BLEND.idleTo, 0, 1);
   const want: Record<string, number> = {};
   const landing = r.landT < LAND.for && v < LAND.stop;
-  if (airborne) {
+  const seated = performance.now() - (a.userData.seatedAt ?? -1e9) < 200;
+  if (seated) want[SEAT] = 1;
+  else if (swimming) {
+    const fwd = clamp((v - SWIM.fwdFrom) / (SWIM.fwdTo - SWIM.fwdFrom), 0, 1);
+    want[SWIM.idle] = 1 - fwd;
+    want[SWIM.fwd] = fwd;
+  } else if (airborne) {
     const start = r.airT < 0.18;
     want.Jump_Start = start ? 1 : 0;
     want.Jump_Loop = start ? 0 : 1;
@@ -87,6 +96,8 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     r.acts[n]!.setEffectiveWeight(r.w[n]!);
   }
 
+  inner.position.y += SWIM.lift * (r.w[SWIM.idle]! + r.w[SWIM.fwd]!);
+
   // The stride is the blend of the clips' strides, so the feet keep to the ground through a blend.
   const stride =
     r.strideK * (STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog);
@@ -98,8 +109,17 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   r.acts.Jump_Start!.time = Math.min(JUMP_FROM + r.airT, r.acts.Jump_Start!.getClip().duration);
   r.acts.Jump_Loop!.time = r.airT % r.acts.Jump_Loop!.getClip().duration;
   r.acts.Jump_Land!.time = r.landT;
+  for (const n of [SWIM.idle, SWIM.fwd, SEAT])
+    r.acts[n]!.time = (r.idleT * (n === SWIM.fwd ? 1 + v * SWIM.rate : 1)) % r.acts[n]!.getClip().duration;
   r.mixer.update(0);
-  r.life.update(dt, (a.position.y - r.lastY) / dt, airborne);
+  const u = a.userData;
+  r.life.update(dt, {
+    vy: (a.position.y - r.lastY) / dt,
+    airborne: airborne && !seated,
+    load: seated ? 0 : (u.load ?? 0),
+    hold: seated ? null : (u.holdKind ?? null),
+    down: u.flopAmt ?? 0,
+  });
   r.lastY = a.position.y;
 }
 
@@ -148,6 +168,8 @@ export async function startClipsHero() {
     for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
     a.userData.inner.add(holder);
     a.userData.leanScale = 0; // the clips lean on their own
+    a.userData.flopY = -0.24; // flat on its back, a slimmer body than the capsule's
+    holder.updateMatrix();
     const mixer = new THREE.AnimationMixer(root);
     const acts: Record<string, THREE.AnimationAction> = {};
     const w: Record<string, number> = {};
@@ -159,6 +181,10 @@ export async function startClipsHero() {
       acts[n] = act;
       w[n] = n === 'Idle_Loop' ? 1 : 0;
     }
+    const life = makeLife(root, tgt.children[0]!);
+    const sockets = life.sockets(holder.matrix);
+    a.userData.loadFit = { frame: sockets.back, back: 0.215, floor: 0.14, len: 0.86, round: true };
+    a.userData.handSocket = sockets.hand;
     rigs.set(a, {
       mixer,
       acts,
@@ -169,7 +195,7 @@ export async function startClipsHero() {
       airT: 1,
       landT: 1,
       strideK: ratio * s,
-      life: makeLife(root, tgt.children[0]!),
+      life,
       lastY: a.position.y,
     });
   };

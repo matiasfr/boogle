@@ -1,4 +1,4 @@
 {
-  "licence": "CC0 1.0. Universal Animation Library [Standard] by Quaternius (quaternius.com/packs/universalanimationlibrary.html, UAL1_Standard.glb, no root motion), cut down to the clips ?proto=hero plays: Idle_Loop, Walk_Loop, Jog_Fwd_Loop, Sprint_Loop, Jump_Start, Jump_Loop, Jump_Land. The mannequin is a stand-in for the hero.",
+  "licence": "CC0 1.0. Universal Animation Library [Standard] by Quaternius (quaternius.com/packs/universalanimationlibrary.html, UAL1_Standard.glb, no root motion), cut down to the clips ?proto=hero plays: Idle_Loop, Walk_Loop, Jog_Fwd_Loop, Sprint_Loop, Jump_Start, Jump_Loop, Jump_Land, Swim_Idle_Loop, Swim_Fwd_Loop, Driving_Loop. The mannequin is a stand-in for the hero.",
   "budgetKB": 1024
 }

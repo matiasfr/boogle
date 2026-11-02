@@ -133,7 +133,13 @@ onFrame(
     me.avatar.position.set(ip.x, ip.y, ip.z);
     me.avatar.rotation.y = me.yaw;
     const v = me.body.velocity;
-    animateAvatar(me.avatar, Math.hypot(v.x - carry.x, v.z - carry.z), me.coyote <= 0 && !me.swimming, dt);
+    animateAvatar(
+      me.avatar,
+      Math.hypot(v.x - carry.x, v.z - carry.z),
+      me.coyote <= 0 && !me.swimming,
+      dt,
+      me.swimming && me.coyote <= 0,
+    );
   },
   { phase: 'update', order: -290 },
 );

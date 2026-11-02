@@ -370,7 +370,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=hero',
     question: 'Does this feel like the character you want to play as?',
-    what: 'The Buddy, a simple, slightly plump figure in your colour, on hand-made clips with today’s direct controller and a closer camera.',
+    what: 'The Buddy, a simple, slightly plump figure in your colour, with today’s direct controller and a closer camera. New: logs on its back with both hands at its chest, items in its hand, swimming, sitting and flopping fitted to its body.',
     since: '2026-11-01',
     variants: [
       {

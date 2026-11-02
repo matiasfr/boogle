@@ -889,8 +889,16 @@ let fovKick = 0;
 // after animateAvatar and feel.ts's spring and overrides both).
 function sit(avatar: THREE.Object3D, q: THREE.Quaternion) {
   avatar.quaternion.copy(q);
+  const u = avatar.userData as { inner?: THREE.Object3D; seatedAt?: number; loadFit?: unknown };
+  u.seatedAt = performance.now();
+  const inner = u.inner;
+  if (u.loadFit) {
+    // A body with a seated clip of its own (src/proto/hero/clips.ts): it needn't be squashed into the tub.
+    avatar.scale.set(1, 1, 1);
+    if (inner) inner.rotation.x = 0;
+    return;
+  }
   avatar.scale.set(1.06, 0.82, 1.06);
-  const inner = (avatar.userData as { inner?: THREE.Object3D }).inner;
   if (!inner) return;
   inner.position.y = -0.12;
   inner.rotation.x = 0.22;

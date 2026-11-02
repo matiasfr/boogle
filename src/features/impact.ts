@@ -305,9 +305,10 @@ function flop(avatar: Avatar, down: boolean, left: number, dt: number, t: number
   const e = entOf(avatar);
   const u = avatar.userData;
   e.amt = lerp(e.amt, down ? 1 : 0, 1 - Math.exp(-dt * (down ? 22 : 14)));
+  u.flopAmt = e.amt;
   if (e.amt > 0.002) {
     u.inner.rotation.x = lerp(u.inner.rotation.x, Math.PI / 2, e.amt);
-    u.inner.position.y = lerp(u.inner.position.y, PLAYER_R, e.amt);
+    u.inner.position.y = lerp(u.inner.position.y, u.flopY ?? PLAYER_R, e.amt);
     u.inner.scale.set(1, 1, 1);
   }
   e.stars.visible = down && left > 0;
@@ -316,7 +317,8 @@ function flop(avatar: Avatar, down: boolean, left: number, dt: number, t: number
     const sp = e.stars.children.length;
     e.stars.children.forEach((s, k) => {
       const a = t * 5 + (k * Math.PI * 2) / sp;
-      s.position.set(Math.cos(a) * 0.5, 1.0 + Math.sin(a * 2) * 0.05, HEAD_OFFSET + 0.2 + Math.sin(a) * 0.5);
+      const low = (u.flopY ?? PLAYER_R) - PLAYER_R; // a body lying lower has its stars lower
+      s.position.set(Math.cos(a) * 0.5, 1.0 + low + Math.sin(a * 2) * 0.05, HEAD_OFFSET + 0.2 + Math.sin(a) * 0.5);
     });
   }
 }
