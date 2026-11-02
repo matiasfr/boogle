@@ -11,10 +11,12 @@
   as a sticky notice in the notification lane ([hud.md](hud.md)) with a Reload button, and reloads the next time it is
   hidden. Each player's build rides in presence `bv`.
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
-- **Loading across a deploy.** A deploy replaces every hashed file at once, so a page mid-load can ask for one that's
-  gone. In its first 60 s a page that can't fetch a part of the game reloads once (and not again within 60 s), rather
-  than sit on the loading screen for good. After that it stays put, and the notice above covers it. Local.
-  File: [src/boot/chunk-reload.ts](../../src/boot/chunk-reload.ts).
+- **Loading across a deploy.** A deploy replaces every hashed file at once, so a page mid-load could ask for one that's
+  gone. Each deploy keeps what left the build in the last 30 minutes published, so it still finds them. As a fallback,
+  in its first 60 s a page that can't fetch a part of the game reloads once (and not again within 60 s), rather than
+  sit on the loading screen for good. After that it stays put, and the notice above covers it. Local.
+  Files: [scripts/keep-old-assets.ts](../../scripts/keep-old-assets.ts),
+  [src/boot/chunk-reload.ts](../../src/boot/chunk-reload.ts).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
   mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)
   loads [src/debug/netdebug.ts](../../src/debug/netdebug.ts) only with the flag; `?debugcam=1` likewise loads
