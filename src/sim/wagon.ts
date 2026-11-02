@@ -20,6 +20,9 @@ import { MS_PER_TICK } from './bank.ts';
 export const WAGON_CRUISE = 30; // cm per tick at full speed (3 m/s)
 export const WAGON_ACCEL = 30; // ticks to reach full speed from a stop, and to brake from it (3 s, so 1 m/s^2)
 export const WAGON_DWELL = 60; // ticks standing at each stop (6 s)
+// Rise over run the wagon is meant to take. Nothing here enforces it: the line follows the ground, and `npm run
+// level-check` reports a section steeper than this. Not read by the timetable.
+export const WAGON_MAX_GRADE = 0.25;
 
 /** A speed profile: cruise in cm per tick, accel in ticks to reach it from a stop. Playtest rooms tune it (./tune.ts). */
 export type WagonPace = { cruise: number; accel: number };

@@ -28,4 +28,5 @@ export default {
     path([-6, -4], [-24, -12], [-38, -20]), // up to the rocky upland
   ],
   keepOut: [{ r: 11 }],
+  reach: [{ name: "the stair's foot", x: -4.5 }],
 } satisfies Site;

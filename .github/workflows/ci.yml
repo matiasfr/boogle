@@ -42,6 +42,7 @@ jobs:
       - if: github.ref != 'refs/heads/main'
         run: git fetch -q --depth=1 origin main:refs/remotes/origin/main
       - run: npm run registry
+      - run: npm run level-check
 
   server:
     runs-on: ubuntu-latest

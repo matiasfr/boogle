@@ -50,4 +50,5 @@ export default {
   z: 0,
   stamps,
   keepOut: MOUTHS.map((m) => ({ x: m.x + m.ox * 6, z: m.z + m.oz * 6, r: 9 })),
+  reach: MOUTHS.map((m) => ({ name: `the ${m.id} mouth`, x: m.x, z: m.z })),
 } satisfies Site;
