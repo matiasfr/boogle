@@ -12,7 +12,14 @@ const pupilMat = new THREE.MeshStandardMaterial({ color: '#13243f', roughness: 0
 const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
 
 /** What animateAvatar keeps on an avatar (group.userData). */
-export type AvatarData = { inner: THREE.Group; mat: THREE.MeshStandardMaterial; phase: number; colorIdx: number };
+/** leanScale: how much of feel.ts's whole-body lean this avatar takes (1 when unset; a skin with its own lean sets 0). */
+export type AvatarData = {
+  inner: THREE.Group;
+  mat: THREE.MeshStandardMaterial;
+  phase: number;
+  colorIdx: number;
+  leanScale?: number;
+};
 export type Avatar = THREE.Group & { userData: AvatarData };
 
 /**

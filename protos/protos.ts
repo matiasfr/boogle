@@ -292,7 +292,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=hero',
     question: 'Does running and jumping as this character feel good enough to keep it?',
-    what: 'Every player is the jointed hero in their colour: a run cycle, arms up in the air, the old squash and flops on top, a blink. &hero=work or castaway dresses it.',
+    what: 'Every player is the jointed hero. Movement pass 2: it leans from the body, not the whole figure, its stride grows with speed with feet planted, bob locked to the footfalls, arms pumping, air poses, a skid on reversals. Compare with &lean=old, &stride=old, &airpose=old, &skid=old; try ?air=35 for more air control.',
     since: '2026-11-01',
     chapter: 'it swaps your body for every toy, so it is judged on its own',
   },

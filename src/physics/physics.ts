@@ -17,6 +17,10 @@ import type { Body } from './engine.ts';
 import type { Remote } from '../netplay/net.ts';
 import type * as THREE from 'three';
 
+// Air acceleration (m/s²). ?air=35 tries another on any page (docs/research/third-person-platformer-movement.md,
+// rec 6: Celeste's air control is 0.65 of ground, ours 0.2); unset, it stays 14.
+const AIR_ACCEL = Number(new URLSearchParams(location.search).get('air')) || 14;
+
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
 
@@ -128,7 +132,7 @@ export function installStepHooks({
       const rvx = b.velocity.x - carry.x,
         rvz = b.velocity.z - carry.z;
       const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-      const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : 14;
+      const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
       let dx = me.wish.x * speed - rvx,
         dz = me.wish.z * speed - rvz;
       const dl = Math.hypot(dx, dz),
