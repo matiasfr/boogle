@@ -210,10 +210,15 @@ export default {
     });
     const deck = await g.still('deck');
     t.check('the frisbee waits on the lighthouse deck', perched, deck);
-    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
-    const got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`, {
-      timeout: EDIT_WAIT_MS,
-    });
+    // Press again if nothing came, as a player would: at a runner's frame rate one press can land before the prompt is on
+    // the frisbee (nightly 41434493212), and the frisbee is still there to take.
+    let got = -1;
+    for (let k = 0; k < 3 && got < 0; k++) {
+      await g.eval(`${INV} H.interactDown(); H.interactUp();`);
+      got = await g.waitFor(`(async () => { ${INV} return I.heldId() === 'frisbee'; })()`, {
+        timeout: EDIT_WAIT_MS / 3,
+      });
+    }
     t.check('you can pick the frisbee up', got >= 0);
     await g.eval(`window.__debugCam.clear();`);
     await g.eval(AIM(3.0, 0.12));
