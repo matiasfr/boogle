@@ -25,7 +25,7 @@
 
 These are standing preferences from the thread.
 
-- **Codex is for images for now** (2 November; owner: "my codex usage is running low now, so let's save the remaining for visual image generation tasks and keep using Claude for coding tasks"). Previz and concept art can use Codex; code, research docs and plans go to Claude until the owner says otherwise.
+- **Use Codex wherever it makes sense** (2 November; owner: "I have weekly resets for Codex that I don't have for Claude. So let's continue leveraging Codex where it's most sensible"). Previz, research, plans and self-contained code go to Codex; work that needs eyes on the running game goes to Claude, which also reviews what Codex makes.
 - **Feel first.** "Game feel is tantamount." Every interactive thing gets a feel pass before it gets rewards.
 - **Mechanics before narrative.** Find the fun in the core loop and its feel first (1 November). Story, characters and gags come later and are easy to fill in. Don't commit to them before the loop works.
 - **Think ambitiously.** Early mocks were "too simplistic". The owner wants clear technological stratification between eras, a bigger island, and a city.
