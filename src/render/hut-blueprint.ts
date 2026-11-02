@@ -41,18 +41,19 @@ const corners = [
   [-1, 1],
 ];
 
+// The poles stand well above the roof so the site reads from the court and the spawn while the hut is still low.
 const scaffold: Box[] = [
   ...corners.map(([sx, sz]) => ({
     kind: 'scaffold' as const,
     x: sx * 1.5,
     y: 0,
     z: sz * 1.3,
-    w: 0.08,
-    h: 2.8,
-    d: 0.08,
+    w: 0.11,
+    h: 3.6,
+    d: 0.11,
   })),
   ...[-1, 1].flatMap((sz) =>
-    [1.1, 2.2].map((y) => ({ kind: 'scaffold' as const, x: 0, y, z: sz * 1.3, w: 3.1, h: 0.06, d: 0.06 })),
+    [1.3, 3.0].map((y) => ({ kind: 'scaffold' as const, x: 0, y, z: sz * 1.3, w: 3.1, h: 0.08, d: 0.08 })),
   ),
 ];
 const sills: Box[] = [
