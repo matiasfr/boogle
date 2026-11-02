@@ -33,6 +33,7 @@ const POSES: [string, Partial<LifeState>][] = [
   ['Item', { hold: 'item' }],
   ['Can', { hold: 'hang' }],
   ['Seated', { seated: true }],
+  ['Windup', { charging: true }],
   ['Ball', { hold: 'ball' }],
   ['Knocked', { down: 1 }],
 ];
