@@ -122,6 +122,8 @@ function claimFocus() {
   canvas.focus({ preventScroll: true });
 }
 
+// An analog trigger as 0..1, with a small dead zone and the full travel (vehicle-feel.md, RC cars 4).
+const trigger = (b: GamepadButton | undefined) => (b ? clamp((b.value - 0.05) / 0.9, 0, 1) || (b.pressed ? 1 : 0) : 0);
 const dead = (v: number) => (Math.abs(v) < DEAD ? 0 : (Math.sign(v) * (Math.abs(v) - DEAD)) / (1 - DEAD));
 
 function setActive(on: boolean) {
@@ -130,7 +132,7 @@ function setActive(on: boolean) {
   document.body.classList.toggle('gamepad', on);
   if (on) claimFocus();
   if (!on) {
-    input.stickX = input.stickY = 0;
+    input.stickX = input.stickY = input.triggerL = input.triggerR = 0;
     releaseAll();
   }
 }
@@ -194,6 +196,8 @@ function poll(dt: number) {
     down[i] = !!b && (b.pressed || b.value > PRESS);
   }
   dpadAxes(pad, down);
+  input.triggerL = trigger(pad.buttons[6]);
+  input.triggerR = trigger(pad.buttons[7]);
   if (!active && (lx || ly || rx || ry || down.includes(true))) setActive(true);
   if (!active) return;
   setBrand(pad.id);
@@ -203,7 +207,7 @@ function poll(dt: number) {
   if (modal) {
     if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
     modalOn = true;
-    input.stickX = input.stickY = 0;
+    input.stickX = input.stickY = input.triggerL = input.triggerR = 0;
     for (let i = 0; i < PAD.length; i++) {
       if (down[i] && !pressed[i]) modal(PAD[i]);
       pressed[i] = down[i];
