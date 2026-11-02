@@ -56,5 +56,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [_primary-source-notes.md](_primary-source-notes.md): raw fetched facts and quotes behind the reports, with fetch status. No proposals.
 
 - [0.1/](0.1/): the 0.1 direction (2026-10-30/31; the briefs say "v2"): what is settled ([SETTLED.md](0.1/SETTLED.md)), the haul-stack resource loop ([7-resource-loop.md](0.1/7-resource-loop.md)), sources, contribution tiers and casual play ([8-collecting-tiers.md](0.1/8-collecting-tiers.md)), rarity done kindly ([9-brainrot-hooks.md](0.1/9-brainrot-hooks.md)), and identity, persistence and the groundwork milestones ([10-groundwork.md](0.1/10-groundwork.md)). Plan: [docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md).
+- [engine-architecture.md](engine-architecture.md) (2026-11-01): what engine programmers look for, what changes on the web, how small games fail as they grow, and how to review without noise. Twelve review checks fitted to Boogle, what's already enforced, what not to flag, and how the architecture reviewer runs. Source for [the skill](../../.claude/skills/architecture-review/SKILL.md).
 
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
