@@ -2,7 +2,7 @@
 // screen: the island loads with the bar on step 1, Next walks every step (an island toy teleports you to its spawn
 // without a reload; a chapter is its own page, and Next from it comes back to the island), a variant switch on the
 // wagon happens live (no reload), and a verdict with a note is saved per variant for the protos page's Copy all.
-// Stills: the bar at the haul, the wagon and the minis. Serves DESIGN.md "How we work".
+// Stills: the bar at step 1 and at the wagon. Serves DESIGN.md "How we work".
 
 type Game = {
   page: {
@@ -31,10 +31,15 @@ type Run = {
 const BAR = `document.querySelector('.proto-bar')`;
 const STEP = `${BAR}?.querySelector('.pb-n')?.textContent ?? ''`;
 const TITLE = `${BAR}?.querySelector('.pb-title')?.textContent ?? ''`;
-// Distance from the step's card (or playing variant's) spawn, by title; -1 for a card with none (moves).
+// Distance from the step's card (or playing variant's) spawn, by title; -1 for a card with none (moves). The wagon's
+// step puts you on its middle flatbed: the distance from that.
 const OFF = `const { PROTOS } = await import('/protos/protos.ts');
   const { protoV } = await import('/src/proto/flags.ts');
   const p = PROTOS.find((c) => c.title === (${TITLE}));
+  if (p.id === 'wagon') {
+    const c = window.__wagon.cars[1].body.position, b = window.boogle.me.body.position;
+    return Math.hypot(b.x - c.x, b.z - c.z);
+  }
   const s = p.variants?.find((v) => v.name === protoV(p.id))?.spawn ?? p.spawn;
   if (!s) return -1;
   const b = window.boogle.me.body.position;
@@ -53,8 +58,8 @@ export default {
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
     await g.eval(`document.querySelector('.first-run-close')?.click();`);
     await t.sleep(1500);
-    t.check('the haul: at its spawn', Number(await g.eval(OFF)) < 2.5);
-    t.check('still: the bar at the haul', true, await g.still('play-haul'));
+    t.check('step 1: at its spawn', Number(await g.eval(OFF)) < 2.5);
+    t.check('still: the bar at step 1', true, await g.still('play-start'));
 
     // Walk every step. A marker on window tells a teleport (survives) from a page load (gone).
     const seen: string[] = [];
@@ -79,9 +84,10 @@ export default {
       t.check(`${title}: you are at its spot`, off < 3, `${off.toFixed(2)} m`);
       if (title === 'Ride: the wagon') {
         const v = await g.eval(`return window.__wagon?.VARIANT;`);
-        t.check('the wagon starts on the playlist’s first variant (fast), live', v === 'fast' && !reloaded, String(v));
+        t.check('the wagon plays the playlist’s first variant (the default, calm)', v === 'calm', String(v));
         await t.sleep(2000);
         t.check('still: the wagon', true, await g.still('play-wagon'));
+        await g.eval(`window.__playMark = 1;`);
         await g.eval(
           `[...${BAR}.querySelectorAll('.pb-variants button')].find((b) => b.textContent.startsWith('lively')).click();`,
         );
@@ -103,7 +109,6 @@ export default {
           JSON.stringify(s),
         );
       }
-      if (title === 'Mini-game toys') t.check('still: the minis', true, await g.still('play-minis'));
     }
     console.log(seen.join('\n'));
 

@@ -35,7 +35,8 @@ import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/e
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, carry, CARRY, type Platform } from '../../physics/platforms.ts';
 import { reducedMotion, PLAYER_R } from '../../constants.ts';
-import { me } from '../../player/player.ts';
+import { me, cam } from '../../player/player.ts';
+import { teleport } from '../../physics/physics.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
@@ -572,6 +573,30 @@ export function wagonPanel(protoRoom: boolean): void {
 // While the playlist is at the laying run, the wagon runs only what is really laid, so it never drives through the
 // machine at work; it takes the whole line back at the next step (a change takes over at the wagon's next stop).
 if (ON_ISLAND && !params.has('laid')) onStep((step) => (step === 'lay' ? (fake = -1) : fakeLaid(ROUTE.length)));
+
+// On the island the playlist's wagon step (arriving at it, a reload into it, or a live variant switch) puts you on the
+// middle flatbed's deck facing the loco, so the variant's difference (rock, speed, steam) is felt in seconds instead of
+// waiting for the wagon to come round. After the bar's own drop (it places you on the first frame you're in), and
+// only while the wagon runs; grind keeps you on the ground by the rails.
+let boardAt = -1; // performance.now() to board at (-1: no)
+const boardSoon = () => void (boardAt = V === 'grind' ? -1 : performance.now() + 400);
+if (ON_ISLAND) {
+  onStep((step) => (step === 'wagon' ? boardSoon() : (boardAt = -1)));
+  onVariant('wagon', ['', 'calm', 'lively', 'fast'], boardSoon);
+  onFrame(
+    () => {
+      if (boardAt < 0 || performance.now() < boardAt || !me.entered || !me.body || parked) return;
+      if (performance.now() > boardAt + 8000) return void (boardAt = -1); // the wagon never came: stay put
+      boardAt = -1;
+      const c = cars[1],
+        p = c.body.position;
+      teleport(me.body, p.x, p.y + c.hy + PLAYER_R + 0.3, p.z);
+      me.body.velocity.set(0, 0, 0);
+      cam.yaw = me.yaw = c.yaw + Math.PI; // looking along the line at the loco and its smoke
+    },
+    { phase: 'world', order: 42 },
+  );
+}
 
 // For the look evals (dev/look/evals/wagon.js).
 window.__wagon = {

@@ -53,6 +53,10 @@ switch variant (another reload) → back to the page to copy notes. Research rec
 3. **The playlist** is `PLAYTEST_ORDER`, one step per card: the bar shows "3/14", the title, the gut question, the
    variant buttons (ticked once judged), Yes / No / Can't tell with a one-line note (a plain text box: iOS dictation
    works) and ◀ Prev · Copy all · Next ▶. Next teleports you to the next toy's spawn, facing it.
+   It keeps only open questions: after the 1 November run-through, settled cards are `graduated`, `answered` or
+   `parked` (protos/protos.ts, each with the owner's verdict) and sit in the protos page's compact Answered list; their
+   toys stay on the island but out of the playlist. The playing variant's one line shows under its buttons, and the
+   wagon's step puts you on its deck.
 4. **Pad and touch.** Everything is a button on the bar; on the Backbone, D-pad ↓ opens the bar as a modal (D-pad
    between buttons, A presses, LB / RB previous / next toy, B closes); P and arrows on a keyboard.
 5. **Variants switch live** where the prototype registers `onVariant(id, names, fn)`: Local feel (wagon calm, lively

@@ -223,15 +223,18 @@ if (card) {
 
     // Variants: the default first, then each `&v=`; the one playing is pressed, the ones with a verdict ticked.
     const vButtons: [string, HTMLButtonElement][] = [];
+    const whats = new Map<string, string>(); // variant (vName) -> its one line, shown for the one playing
+    const what = el('p', 'pb-what');
     if (p.variants?.length) {
       const row = el('div', 'pb-row pb-variants');
-      for (const v of [{ name: '', url: p.url, what: 'The default take.' }, ...p.variants]) {
+      for (const v of [{ name: '', url: p.url, what: p.defaultWhat ?? 'The default take.' }, ...p.variants]) {
         const b = button('pb-btn', vName(p, v.name), () => choose(p.id, v.name));
         b.title = v.what;
         vButtons.push([v.name, b]);
+        whats.set(vName(p, v.name), v.what);
         row.append(b);
       }
-      parts.push(row);
+      parts.push(row, what);
     }
 
     // The verdict for the variant playing: one tap, then an optional line on why (a plain text box: dictation works).
@@ -292,6 +295,7 @@ if (card) {
         b.setAttribute('aria-pressed', String(vName(p, name) === cur));
         b.classList.toggle('done', !!s.byV[vName(p, name)]?.verdict);
       }
+      what.textContent = whats.get(cur) ?? '';
       const m = s.byV[cur];
       for (const [v, b] of vb) b.setAttribute('aria-pressed', String(m?.verdict === v));
       sent.hidden = !isSent(p.id, cur);

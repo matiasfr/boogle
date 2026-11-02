@@ -14,6 +14,7 @@ import { inputState } from '../../player/input.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
 import { ON_ISLAND, PROTO, currentStep, onStep, onVariant, protoV } from '../flags.ts';
+import { protoCount } from '../count.ts';
 
 const q = new URLSearchParams(location.search);
 export const MOVES = {
@@ -54,6 +55,7 @@ onPreStep(() => {
       st.used = true;
       b.velocity.y = Math.max(b.velocity.y, 0) + MOVES.second;
       st.jumps++;
+      protoCount('second jumps', 1, 'moves');
       me.jumpQueued = 0;
     }
     st.held = true; // (a press we didn't take stays queued: it still jumps if you land within the buffer)

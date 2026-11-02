@@ -4,13 +4,13 @@
 // counters the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts).
 // Nothing here talks to a server.
 import './protos.css';
-import { PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
+import { ANSWERED, PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
 import { countsLine, read, vName, write, type Saved } from './store.ts';
 import { allEntries, body, copy, header, label, stepLabel } from './entry.ts';
 import { heatMap } from './heat.ts';
 
-const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, retired: 2 };
+const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, graduated: 2, answered: 2, parked: 2, retired: 3 };
 const touch = matchMedia('(pointer: coarse)').matches;
 
 // Re-read on every access: the game's prototype bar writes verdicts and counters to the same key from another tab.
@@ -220,7 +220,27 @@ function startHere(): HTMLElement {
 }
 document.getElementById('list')!.before(startHere());
 
+// "Answered": graduated, answered and parked cards, one compact row each: the status, the owner's verdict in his
+// words and what happens next. Their full cards are gone from the list below (the question is settled).
+function answered(): HTMLElement {
+  const wrap = el('section', 'settled');
+  wrap.append(el('h2', '', 'Answered'));
+  const ul = el('ul', 'answers');
+  for (const p of PROTOS.filter((q) => ANSWERED.includes(q.status))) {
+    const li = el('li', `answer ${p.status}`);
+    const head = el('p', 'a-head');
+    head.append(el('strong', 'badge', p.status), ' ', el('strong', '', p.title));
+    li.append(head);
+    if (p.answer) li.append(el('q', 'a-verdict', p.answer.verdict), el('p', 'a-next', p.answer.next));
+    ul.append(li);
+  }
+  wrap.append(ul);
+  return wrap;
+}
+if (PROTOS.some((p) => ANSWERED.includes(p.status))) document.getElementById('list')!.before(answered());
+
 const sorted = PROTOS.map((p, i) => ({ p, i }))
+  .filter(({ p }) => !ANSWERED.includes(p.status))
   .sort((a, b) => ORDER[a.p.status] - ORDER[b.p.status] || a.i - b.i)
   .map((x) => x.p);
 document.getElementById('list')!.append(...sorted.map(card));
