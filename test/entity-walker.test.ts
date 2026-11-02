@@ -2,7 +2,7 @@
 // can't see in a still. It's no precedent for testing features.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWalkers, OFF_AFTER_THROWS, type EntityPhase, type WalkerEntity } from '../src/entity/walker.ts';
+import { createWalkers, type EntityPhase, type WalkerEntity } from '../src/entity/walker.ts';
 import type { FrameCtx } from '../src/loop.ts';
 
 const CTX: FrameCtx = { now: 0, dt: 1 / 60, elapsed: 0 };
@@ -16,7 +16,7 @@ function setup() {
     addHook: (phase: EntityPhase, _order, name, walk) => void hooks.set(name, walk),
     attach: (e) => void log.push(`attach ${e.name}`),
     detach: (e) => void log.push(`detach ${e.name}`),
-    reportError: (err, where, off) => void errors.push(`${where}${off ? ' off' : ''}: ${(err as Error).message}`),
+    reportError: (err, where) => void errors.push(`${where}: ${(err as Error).message}`),
   });
   const run = (name: string) => hooks.get(name)!(CTX);
   const entity = (name: string, update?: (e: E) => void, kind = 'k'): E => {
@@ -200,7 +200,7 @@ test('despawning something never spawned only marks it dead', () => {
   assert.deepEqual(log, []);
 });
 
-test('a throw ends that walk only: the next walk runs, and other kinds and phases never notice', () => {
+test('a throw skips only that entity: the rest of its kind, other kinds and phases never notice', () => {
   const { w, log, errors, run } = setup();
   w.defineKind('bad', { update: 0, lateUpdate: 1 });
   w.defineKind('good', { update: 2 });
@@ -225,60 +225,30 @@ test('a throw ends that walk only: the next walk runs, and other kinds and phase
   };
   log.length = 0;
   walkAll();
-  assert.deepEqual(log, ['bad update', 'bad late', 'good'], 'the throw skipped the rest of its own walk');
+  assert.deepEqual(log, ['bad update', 'second', 'bad late', 'good']);
   boom = false;
   log.length = 0;
   walkAll();
-  assert.deepEqual(log, ['bad update', 'second', 'bad late', 'good'], 'back at once');
+  assert.deepEqual(log, ['bad update', 'second', 'bad late', 'good']);
   assert.deepEqual(errors, ['bad update: boom']);
 });
 
-test('a phase turns off after that many walks in a row that threw, and only that phase', () => {
+test('an entity that throws every walk keeps its turn, its siblings keep theirs, and it reports once', () => {
   const { w, log, errors, run } = setup();
-  w.defineKind('bad', { update: 0, lateUpdate: 1 });
-  w.defineKind('good', { update: 2 });
+  w.defineKind('k', { update: 0 });
   w.spawn({
-    kind: 'bad',
+    kind: 'k',
     alive: true,
     update() {
       log.push('bad');
       throw new Error('boom');
     },
-    lateUpdate: () => void log.push('late'),
   });
-  w.spawn({ kind: 'good', alive: true, update: () => void log.push('good') });
+  w.spawn({ kind: 'k', alive: true, update: () => void log.push('next') });
   log.length = 0;
-  for (let k = 0; k < OFF_AFTER_THROWS; k++) run('bad update');
-  assert.equal(log.length, OFF_AFTER_THROWS);
-  assert.deepEqual(errors, ['bad update: boom', 'bad update off: boom'], 'the first throw and the turn-off');
-  log.length = 0;
-  run('bad update');
-  run('bad lateUpdate');
-  run('good update');
-  assert.deepEqual(log, ['late', 'good']);
-});
-
-test('a clean walk resets the count, and a kind that throws on and off reports once', () => {
-  const { w, log, errors, run } = setup();
-  w.defineKind('k', { update: 0 });
-  let boom = true;
-  w.spawn({
-    kind: 'k',
-    alive: true,
-    update() {
-      log.push('walked');
-      if (boom) throw new Error('boom');
-    },
-  });
-  for (let round = 0; round < 3; round++) {
-    boom = true;
-    for (let k = 0; k < OFF_AFTER_THROWS - 1; k++) run('k update');
-    boom = false;
-    run('k update');
-  }
-  log.length = 0;
-  run('k update');
-  assert.deepEqual(log, ['walked'], 'still on');
+  for (let k = 0; k < 100; k++) run('k update');
+  assert.equal(log.filter((x) => x === 'bad').length, 100);
+  assert.equal(log.filter((x) => x === 'next').length, 100);
   assert.deepEqual(errors, ['k update: boom']);
 });
 

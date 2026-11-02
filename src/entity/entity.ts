@@ -17,10 +17,9 @@
 // - defineKind runs once per kind, at module top level; defining a kind twice throws. onPreStep, addPresenceField and
 //   onRemotePresence have no unregister, so they too are registered per kind, never per instance.
 // - No start and no enable: the module graph and onStart do that job.
-// - A method that throws is caught, which ends that walk of that kind and phase; other kinds and the render carry on. After
-//   30 walks in a row that threw, that phase turns off until the page reloads (a clean walk resets the count): one passing
-//   error mustn't cost the session its player or camera, and a broken kind mustn't take the frame with it. reportError (so
-//   scenarios fail on it) gets the first throw and the turn-off, not every frame.
+// - A method that throws is caught and skips only that entity's turn: the rest of its kind, the other kinds and the render
+//   carry on, and it runs again next time. reportError (so scenarios fail on it) gets the
+//   first throw of each kind and phase, not every frame.
 // - No per-frame allocation: one closure per kind and phase, made in defineKind, and teardown removes from lists in place.
 //
 // One kind has one slot per phase. An object that needs two slots in a phase is two kinds (`ball` and `ball-carry`), as a
@@ -44,7 +43,7 @@ import { FIXED } from '../constants.ts';
 import { currentFrame, frameCtx, mark, onFrame, type FrameCtx, type Phase } from '../loop.ts';
 import { addBody, onPostStep, onPreStep, removeBody, type Body } from '../physics/engine.ts';
 import { scene } from '../render/scene-graph.ts';
-import { createWalkers, OFF_AFTER_THROWS, type EntityPhase, type KindOrders } from './walker.ts';
+import { createWalkers, type EntityPhase, type KindOrders } from './walker.ts';
 
 export type { EntityPhase };
 export interface GameEntity {
@@ -95,9 +94,8 @@ const walkers = createWalkers<GameEntity>({
     e.mesh?.removeFromParent();
     if (e.bodies) for (const b of e.bodies) removeBody(b);
   },
-  reportError(err, where, off) {
-    const outcome = off ? ` ${OFF_AFTER_THROWS} walks in a row; it stays off until the page reloads` : '';
-    console.error(`[entity] ${where} threw${outcome}`);
+  reportError(err, where) {
+    console.error(`[entity] ${where} threw`);
     reportError(err);
   },
 });
