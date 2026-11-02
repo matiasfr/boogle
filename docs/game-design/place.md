@@ -1,73 +1,101 @@
 # 6.28 Prototype: a real place (`?proto=place`)
 
-*A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 8: "Having found that place on foot, did you want
-to connect it?" After three rounds of `?proto=net`, whose island wasn't in line with the vision and gave nothing to find
-or decide, this tests a place, a choice and a real distance. Serves DESIGN.md 1 (Toys before chores) and 9 (Leave
-something for the next visitor). Layout: Threefold Reach (`.look/previz/home-redesign/`, section 3). Research:
-[big-walk-level-design](../research/big-walk-level-design.md) (sections 5 and 9, recs 5-7 and 10), [compounding
-infrastructure](../research/compounding-infrastructure.md) (summary 1, recs 1-2), [level design](../research/level-design.md).
-Without the flag nothing loads: `src/features/proto-place.ts` imports `src/proto/place/` only with it, in the room
-`proto-place`.*
+*A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 9: "Did carrying materials out to the track feel like
+building something, or like a chore?" The first round (step 8, plant a stake, haul to a ring, trestle scaling up) got a yes
+on wanting to connect the place but no clear sense of what connecting would do, a missed path and a missed stake
+([playtests](../playtests.md), 2 November). This round replaces it, and the decision log's rules bind it: nothing consumed
+and vanishing, construction that drops into place, what looks solid is solid, more directed than Death Stranding.
+Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything) and 9 (Leave something for the next visitor). Layout:
+Threefold Reach (`.look/previz/home-redesign/`, section 3). Research: [construction you can watch](../research/construction-you-can-watch.md),
+[harvest feel](../research/harvest-feel.md), [big walk level design](../research/big-walk-level-design.md). The stations are
+Death Stranding's auto-pavers; the look of the frame, feeder and cradle follows `.look/previz/visible-materials/`. Without the
+flag nothing loads: `src/features/proto-place.ts` imports `src/proto/place/` only with it, in the room `proto-place`.*
 
 ## The place
 
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
-and a river at the bottom, splits it into three lobes.
-
-- **The village:** low huts on the west lobe at 18 m, where you start.
-- **The timber camp:** on the north ridge at 30 m, under a 55 m hill. The quarry: on the east table at 24 m. Each has a
-  tall white smoke column you can see from the village.
-- **Needle Bell:** a leaning 105 m rock spire with a lookout and an orange vane, on an islet where the gorge forks.
-- **Two footbridges:** low, over the river. The north one stands under where the trestle will go.
+and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
+quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
+river. Across the sea to the north-east, about a kilometre out and out of reach, stands a dark island with a broken ring on it
+and a bright shard in the ring's middle.
 
 ## The run
 
-1. **See.** You start at the village's edge, with both columns and the spire across the gorge, empty platforms and a row of
-   orange stakes pointing the way each line would go.
-2. **Walk.** Each route winds along the lobe, down a ramp cut into the wall, over a footbridge and up the far side. It
-   passes three gold finds, and one route has a rock arch and a rim lookout, the other an old cart and an arch. No jumps
-   needed.
-3. **Claim.** At the camp, Interact on the tall flag: **Plant survey stake**. Nothing opens until you've walked there.
-4. **Build.** A Track ring and four log bundles appear, the ring at the gorge's rim. **Take logs** gives 8 logs on your back;
-   walking into the ring pours them. Each 24 logs (three trips) pays for a segment, of three per link. The machine runs
-   from the camp toward the village, taking 7 s per segment: bents rise ahead of it, and the deck and rails follow.
-5. **Ride.** When the line reaches the village, the camp wakes piece by piece and two trains run on two tracks, half a
-   cycle apart: one each way about every 18 s. You can't walk the trestle; it has no deck to stand on.
-6. **Payoff.** Crates hop onto the rear flatbed at the camp and off at the village's heap. Timber changes the village's
-   north side (6 crates: halls and a 32 m clock tower; 16: more halls and a water tower). Stone changes its south side (6:
-   stone streets and a 48 m keep with a gold crown; 16: more streets and a works stack). Fanfare, fireworks, kept sounds.
-7. **Choose again.** The other camp has the same walk and stake. Now a cable runs from the village's heap over the gorge to
-   a depot near the ring, and the connected camp's crates slide along it. **Take a load** takes 24 logs in one press.
+1. **Goal up front.** At spawn a big sign says the track layer is stranded at the timber camp, follow the path and wake it,
+   then build the line home. In view: a wide, strong path, a half-built forge (foundations and bare scaffolding), a crane, a
+   rail stub ending toward the gorge. One line of objective on the HUD changes at each beat, and an orange beacon stands over
+   the next thing. Signposts at the fork and the turns, small arrows along the way.
+2. **Walk and wake.** The path winds north, down the wall, over a footbridge under where the trestle will go, up and round
+   the ridge: about 78 s, with three gold finds and a rock arch. The machine sits at the camp end of line 1, its rack of 12 rails
+   showing, a loaded train waiting behind it. Interact: **Wake the track layer**.
+3. **Chop.** Trees with an orange band, in a grove by station 1 and one by the rim. Interact: **Chop**. The swing starts on the
+   press, the axe meets the bark 60 ms later, the tree shakes, chips fly and 4 logs arc straight to your back. Three strokes
+   fell a tree, leaving a stump and the trunk where it fell. Your back holds 12.
+4. **Stations.** Three on line 1, each an open frame with amber posts, a log on its board and a short roller feeder. Walk up
+   to the frame and your logs land in it one by one with a thunk: 24 logs, so about two trips. Station 1 is at the camp and
+   lays to the near rim; station 2 is at the near rim and lays across the gorge; station 3 is on the far rim, reached by walking
+   out over the trestle you just built with timber on your back, and lays into the village's stub.
+5. **Laying.** A full frame's logs roll along the feeder into the machine's open cradle; then it drives at 5 m/s, dropping
+   sleepers one at a time off its front, rails in pairs behind them, with thud, clank and dust. The cradle and the rack visibly
+   empty. Over the gorge, bents drop in ahead of it, legs first, then caps, stringers and a plank deck 3.6 m wide. You can ride it or
+   stand on the fresh track: the track's collider grows in 2 m slabs as the machine passes, and legs are solid.
+6. **First line through.** Whistle, fanfare, fireworks; the village's people jump and their number goes up. You keep control. The
+   machine runs on to the turntable at line 1's end, and the train leaves the camp with its 8 crates. One train, one track.
+7. **The forge.** Crates land on a dock by the platform. The crane lifts each one straight into the scaffold and that crate's
+   pieces drop in: frame, walls, roof, chimney. A board over it reads like "Forge: timber 9/12". The HUD also shows the shared
+   numbers: the train's capacity (8 crates) and the village's people.
+8. **Home.** When the forge is done its chimney lights and its mouth glows, and rails pour out one by one onto a rack. If you're
+   away, the objective says rails are ready at home and riding home is how you get them. Trains after the forge fill the
+   village's timber heap, and the town's existing step-ups answer that (6 and 16 crates).
+9. **Line 2.** The turntable swings the machine round to face the quarry. **Take rails** at the rack, **Take timber** at the heap
+   (a crate opens into 6 logs), then carry them to line 2's stations: 4 rails and 8 logs, 8 and 8, 8 and 4. Rails go to the machine's
+   rack and logs into its cradle the same way. The carry gets longer as the line goes out, across the stem of the gorge.
+10. **The quarry.** When the line arrives, a train runs from the village, loads stone, and brings it to the yard; the town's stone
+    step-ups (6 and 16 crates) answer. The last objective points at the island across the sea.
 
-No counters: the ring's logs, the heaps and the buildings are the readout. Falling is harmless: in the water, Interact reads
-**Back up the path**. Trees and most props have no colliders. **The panel** has Start over, Skip the walk (to the next
-stake) and Skip the haul (pays one segment).
+Falling is harmless: in the water, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and
+carry (fills the current station), Skip to the forge and Skip to line 2.
+
+## Departures from the brief
+
+The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
+Its cradle isn't solid, unlike the rest of it: a second shape on the flatbed's body made you fall through the deck (see below).
 
 ## Measured
 
-Scripted at iPad size (1366 x 1024) with real input, on a Mac:
+Scripted at 1180 x 820 with real input (walking, no sprint, one scripted press per chop), on a Mac, in seconds:
 
-| | north | east |
-|---|---|---|
-| Walk, village to camp, 5.6 m/s | 78.5 s | 79 s |
-| Sprint, 9.5 m/s | 46.7 s | 44.8 s |
-| Ride, stop to stop | 14.4 s | about 15 s (calculated) |
+| Beat | Time |
+|---|---|
+| Walk to the machine | 78 |
+| Station 1: chop and carry; its stretch laid | 22; 15 |
+| Station 2: chop and carry; the trestle laid | 19; 11 |
+| Station 3: chop and carry over the trestle; its stretch laid | 42; 6.5 |
+| Line 1 open at | 200 |
+| To the platform, ride out and back (19.5 each way) | 69 |
+| Forge lit, machine turned, at | 280 |
+| Line 2, station 1: rails, timber, carry; laid | 10; 7 |
+| Line 2, station 2 (two trips); laid | 34; 17 |
+| Line 2, station 3; laid | 36; 13 |
+| Line 2 open at | 398 |
+| First stone at the village | 437 (7 min 18 s) |
 
-Door to door by rail, from the village fire to the camp's platform: 27.6 s, with a wait of about 5 s. By the numbers: about 6 s to
-the platform, 9 s mean wait (18 s worst) and 14.4 s riding, so about 30 s on average and 38 s at worst.
+No beat runs over 90 s; the walk is the longest. Someone reading signs and looking around will take longer.
 
-Hauling, first link (hand): 23, 33 and 31 s per segment; 95 s from stake to open. Second link (depot): 13 s (crates still
-arriving), 6 and 6 s; 33 s from stake to open. The whole run takes about 5.5 minutes straight through.
+Standing tests (real physics): dropped on the track at 9 points from far rim to near rim, walked the deck from end to end, stood
+on a train's flatbed, the machine's deck and its loco, all held.
 
 ## How it's built
 
-Local, apart from the back bundle. `sites` lays one fixed route in one order, so two links in the order you choose can't
-be expressed in it. Which camp you claimed, the trestle, trains, crates and town are this tab's, in localStorage per room.
-The back bundle and bundles' charges are the room's: `src.take` on palms moved here through `haulHooks.moved`, and pouring is
-`site.stock` into the open Track ring on today's island, unseen, with its cost tuned up to 600. The hard cap is `tune.set`
-(8, then 24 once a link is open). Start over is `tune.reset`.
+Local, all of it, in localStorage per room (`boogle-place-v2`). Your back's log count is kept in the prototype and drawn by the
+game's bundle through `backSeam` (`src/features/haul-stack.ts`), with rails strapped upright behind it, so chopping and unloading
+never wait on the host. Pieces in the air are one instanced pool (`pieces.ts`, `send`); pieces joining a build fall from above
+(`dropSet`), never scaled. The town's step-ups and the camps waking still rise the old way.
 
-The land is one height function on a 2 m grid, drawn as one faceted mesh and collided as one heightfield; the walls are
-near-vertical grid cells. Bridges and platforms are boxes, the spire a cylinder. From the crossing: the sea, sky and far
-plane (`src/proto/crossing/sea.ts`, `sky.ts`), the speed put back past the 237 m soft wall, the player's CCD off. Numbers:
-`src/proto/place/layout.ts`. Look evals: `dev/look/evals/place.ts`.
+Each line's track is one instanced set sorted by where the machine drops each piece; 2 m slab colliders join as it passes. The
+machine is the wagon's look on two kinematic platforms; it advances in the physics step, and trains are the same kind of car
+with a timetable. A flatbed with a compound shape lost its deck collider in testing, so the flatbed stays a single box.
+
+The land is one height function on a 2 m grid, drawn as one faceted mesh and collided as one heightfield. From the crossing: the
+sea, sky and far plane (`src/proto/crossing/sea.ts`, `sky.ts`), the speed put back past the 237 m soft wall, the player's CCD
+off. Numbers: `TUNE` in `src/proto/place/layout.ts`. Look evals: `dev/look/evals/place.ts`.

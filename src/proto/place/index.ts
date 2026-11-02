@@ -1,41 +1,36 @@
-// A real place (docs/plans/find-the-fun.md, step 8; loaded by src/features/proto-place.ts behind ?proto=place). A slice
-// of Threefold Reach with the crossing's sea: a village, a gorge, two camps smoking across it and a spire to steer by.
-// You walk there, plant a stake, haul for each track segment while the trestle goes up, and ride home with the cargo; the
-// town grows differently for timber and stone, and the second link is less work because the first feeds a depot.
-// Gut question: having found that place on foot, did you want to connect it? Serves DESIGN.md 1 (Toys before chores) and
-// 9 (Leave something for the next visitor). Research: docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7
-// and 10; docs/research/compounding-infrastructure.md, summary 1, recs 1-2; docs/research/level-design.md.
+// A real place, second round (docs/plans/find-the-fun.md, step 9; loaded by src/features/proto-place.ts behind ?proto=place).
+// A slice of Threefold Reach with the crossing's sea. A sign at the village says what to do; you walk the long way round to
+// a stranded track layer, wake it, chop timber and carry it to auto-paver stations along the route. The machine takes those
+// same logs and lays the line home piece by piece, trestle and all, and you can stand on any of it. The first train's
+// cargo is craned straight into a forge in town, the lit forge pours rails on a rack, and those rails, with timber from
+// the village's heap, build line 2 out from home to the quarry. Past it all, something strange across the sea.
+// Gut question: did carrying materials out to the track feel like building something, or like a chore?
+// Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything) and 9 (Leave something for the next visitor).
+// Research: docs/research/construction-you-can-watch.md, docs/research/harvest-feel.md; Death Stranding's auto-pavers;
+// the decision log's 2 November entries.
 //
-// What's shared and what isn't: your back bundle and the bundles' charges are the room's (`src.take`, poured off with
-// `site.stock` into a ring nobody sees, on a site far away with its cost tuned up), and the numbers are `tune.set`. Which
-// camp you claimed, the trestle, trains, crates and town are this tab's, in localStorage per room: `sites` lays one
-// fixed route in one order, so two links in the order you choose can't be expressed in it.
+// Sync: Local, all of it, kept in localStorage per room. The back bundle's count is here too (`backSeam`, ./chop.ts), so
+// chopping never waits on the host.
 import './place.css';
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
-import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
-import { onApplied, submitEdit, world, worldStatus } from '../../world/sync.ts';
-import { getRoomId, net } from '../../netplay/net.ts';
-import { isProtoRoom } from '../../sim/tune.ts';
-import { TRACK } from '../../sim/route.ts';
-import { materialOf } from '../../sim/materials.ts';
-import { PLAYER_R } from '../../constants.ts';
+import { worldStatus, world, onApplied, submitEdit } from '../../world/sync.ts';
+import { getRoomId } from '../../netplay/net.ts';
+import { PLAYER_R, FOG_FAR } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
-import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
+import { myBundleNext } from '../../features/haul-stack.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
 import { setCcd, teleport } from '../../physics/engine.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
-import { fly } from '../../render/haul-pieces.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { thump, whistle } from '../../render/machine-sfx.ts';
-import { FOG_FAR } from '../../constants.ts';
+import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { dressSea } from '../crossing/sea.ts';
 import { extendSky } from '../crossing/sky.ts';
-import { fanfare, pop } from '../minis/common.ts';
+import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { draw } from '../net/boxes.ts';
 import {
   clearCrates,
@@ -55,13 +50,74 @@ import { playPanel } from '../flags.ts';
 import { protoCount } from '../count.ts';
 import { protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
-import { HEAP, LINKS, ORIGIN, SPAWN, TUNE, VILLAGE, lineAt, railY, toWorld, type LinePoint } from './layout.ts';
-import { buildMachine, buildPlatform, buildTrains, buildTrestle, cycleOf, drawTrestle, runSeconds } from './rail.ts';
-import { campBlocks, makePart, rise, snapTown, updateTown } from './town.ts';
+import {
+  CRANE,
+  DOCK,
+  FORGE,
+  HEAP,
+  LINKS,
+  ORIGIN,
+  RACK,
+  SPAWN,
+  STUB,
+  TURNTABLE,
+  TUNE,
+  VILLAGE,
+  YARD,
+  lineAt,
+  railY,
+  toWorld,
+  type LinePoint,
+} from './layout.ts';
+import { clearTrips, send, updatePieces, dustRing } from './pieces.ts';
+import {
+  besideLine,
+  buildMachine,
+  buildPlatform,
+  buildTrack,
+  buildTrain,
+  cycleOf,
+  runSeconds,
+  thud,
+  type Track,
+  type TrainRun,
+} from './rail.ts';
+import { buildStation, type StationRun } from './stations.ts';
+import {
+  TREES,
+  back,
+  chop,
+  felled,
+  fellenList,
+  resetTrees,
+  restoreFellen,
+  standing,
+  updateChop,
+  type Tree,
+} from './chop.ts';
+import {
+  craneBusy,
+  craneClear,
+  craneLift,
+  crateIn,
+  forge,
+  forgePhase,
+  nextDrop,
+  rackFrom,
+  rackTop,
+  resetForge,
+  snapForge,
+  takeRail,
+  updateForge,
+} from './forge.ts';
+import { buildSigns, cheerNow, setBeacon, setNumbers, setObjective, updateCrowd } from './signs.ts';
+import { campBlocks, fireworks, makePart, rise, snapTown, updateTown } from './town.ts';
 
 buildLand();
 dressSea();
 extendSky();
+buildSigns();
+haulHooks.moved = () => true; // today's island's bundles aren't in this world
 
 // ---------------------------------------------------------------- the far distance, and past the edge of the map
 // Hazier than the crossing: the place is the view, and today's island behind you should be a far shape.
@@ -81,193 +137,130 @@ camConstraints.push((_, pos) => {
   return false;
 });
 
-// ---------------------------------------------------------------- what stands in each link
-const FLAT = (color: string) => flat(color, 0.9);
+// ---------------------------------------------------------------- the two lines and what stands on them
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-const wx = (x: number) => toWorld(x);
-const v3 = (x: number, z: number, up = 0) => new THREE.Vector3(wx(x), H(wx(x), z) + up, z);
+const FLAT = (color: string) => flat(color, 0.9);
 
-type Link = {
-  spec: (typeof LINKS)[number];
+const machine = buildMachine();
+const thudAt = (_k: number, kind: string, x: number, y: number, z: number) => thud(machine, kind, x, y, z);
+type LineRun = {
   k: number;
-  state: 0 | 1 | 2; // untouched, staked, open
-  funded: number; // segments paid for
-  logs: number; // in the ring, toward the next
-  built: number; // metres along the line the machine has reached (it comes from the far end)
-  trestle: ReturnType<typeof buildTrestle>;
-  machine: ReturnType<typeof buildMachine>;
-  trains: ReturnType<typeof buildTrains>;
+  spec: (typeof LINKS)[number];
+  track: Track;
+  stations: StationRun[];
+  stage: number; // the station whose turn it is; stations.length once the line's done
+  open: boolean;
+  train: TrainRun;
   pile: Heap;
-  depot: Heap;
-  depotOn: boolean;
-  camp: {
-    asleep: ReturnType<typeof makePart>;
-    awake: ReturnType<typeof makePart>;
-    smoke: { x: number; y: number; z: number };
-  };
-  flag: THREE.Group;
-  ring: THREE.Group;
-  ringLogs: THREE.InstancedMesh;
-  bundleMeshes: THREE.InstancedMesh[];
-  groups: number[][]; // source ids per bundle
-  plinth: THREE.Group;
-  bentAt: number;
+  camp: { awake: ReturnType<typeof makePart>; smoke: { x: number; y: number; z: number } };
+  madeAt: number;
 };
-
-const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2.2, 6).rotateZ(Math.PI / 2);
-const logMat = FLAT('#a9794c');
-const LOGS_PER_BUNDLE = 6;
-
-function cable(a: THREE.Vector3, b: THREE.Vector3, color: string, thick: number) {
-  const len = a.distanceTo(b);
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(thick, thick, len, 5), FLAT(color));
-  m.position.copy(a).add(b).multiplyScalar(0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
-  scene.add(m);
-  return m;
-}
-
-const hubMast = new THREE.Vector3(wx(HEAP.x), VILLAGE.y + 9, HEAP.z + 4);
-const hubMastMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.5), FLAT('#7f5630'));
-hubMastMesh.position.set(hubMast.x, VILLAGE.y + 4.5, hubMast.z);
-hubMastMesh.visible = false;
-scene.add(hubMastMesh);
-
-function buildLink(spec: (typeof LINKS)[number], k: number): Link {
+const lines: LineRun[] = LINKS.map((spec, k) => {
   const { line } = spec;
   const { asleep, awake } = campBlocks(spec);
-  const campX = wx(spec.camp.x);
+  const campX = toWorld(spec.camp.x);
   const sleep = makePart(asleep, campX, spec.camp.z),
     wake = makePart(awake, campX, spec.camp.z);
   draw(sleep, () => 1);
   const stack = asleep[1]!;
   const smoke = { x: stack.x, y: H(stack.x, stack.z) + (stack.y ?? 0) + stack.h, z: stack.z };
-
-  // The stake to plant: a tall flagged pole, the thing you walked here for.
-  const flag = new THREE.Group();
-  const pole = new THREE.Mesh(new THREE.BoxGeometry(0.22, 5, 0.22), FLAT('#f4f1e8'));
-  pole.position.y = 2.5;
-  const pennant = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 1.9), FLAT('#f0752c'));
-  pennant.position.set(0, 4.3, 0.95);
-  flag.add(pole, pennant);
-  flag.position.copy(v3(spec.stake.x, spec.stake.z));
-  flag.traverse((o) => void (o.castShadow = true));
-  scene.add(flag);
-
-  // The ring: where hauled logs go, with what's in it as the readout.
-  const ring = new THREE.Group();
-  const torus = new THREE.Mesh(new THREE.TorusGeometry(TUNE.ringR, 0.14, 6, 28).rotateX(Math.PI / 2), FLAT('#f0752c'));
-  torus.position.y = 0.2;
-  const ringLogs = new THREE.InstancedMesh(logGeo, logMat, TUNE.cost);
-  ringLogs.count = 0;
-  ringLogs.castShadow = true;
-  ringLogs.frustumCulled = false;
-  ring.add(torus, ringLogs);
-  ring.position.copy(v3(spec.ring.x, spec.ring.z));
-  ring.visible = false;
-  scene.add(ring);
-
-  const bundleMeshes = spec.bundles.map((b) => {
-    const m = new THREE.InstancedMesh(logGeo, logMat, LOGS_PER_BUNDLE);
-    m.castShadow = true;
-    m.frustumCulled = false;
-    const at = new THREE.Object3D();
-    const c = v3(b.x, b.z);
-    for (let n = 0; n < LOGS_PER_BUNDLE; n++) {
-      const row = n < 3 ? 0 : n < 5 ? 1 : 2,
-        col = row === 0 ? n : row === 1 ? n - 3 : 0;
-      at.position.set(c.x, c.y + 0.22 + row * 0.36, c.z + (col - (2 - row) / 2) * 0.42);
-      at.updateMatrix();
-      m.setMatrixAt(n, at.matrix);
-    }
-    const mark = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3, 0.14), FLAT('#f0752c'));
-    mark.position.set(c.x + 1.3, c.y + 1.5, c.z);
-    m.add(mark);
-    m.visible = false;
-    scene.add(m);
-    return m;
-  });
-
-  // The depot: a plinth, a flag and whatever the cable has brought.
-  const plinth = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.BoxGeometry(6, 0.3, 6), FLAT('#bdb8ac'));
-  base.position.y = 0.15;
-  const mast = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.5), FLAT('#7f5630'));
-  mast.position.set(3.4, 4.5, 0);
-  plinth.add(base, mast);
-  plinth.position.copy(v3(spec.depot.x, spec.depot.z));
-  plinth.visible = false;
-  scene.add(plinth);
-
-  // Stakes along the way, from the first: where a line could go.
-  lineAt(line, 0, P);
+  // Survey stakes beside the line: where it'll go.
   const stakes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 1.5, 0.14), FLAT('#f0752c'), 30);
   const o = new THREE.Object3D();
   let n = 0;
   for (let s = 22; s < line.len - 8 && n < 30; s += 11) {
-    lineAt(line, s, P);
-    const x = wx(P.x) - P.uz * 5.5,
-      z = P.z + P.ux * 5.5,
-      y = H(x, z);
+    const q = besideLine(line, s, 5.5),
+      y = H(q.x, q.z);
     if (railY(line, s) - y > 2) continue; // over the gorge
-    o.position.set(x, y + 0.75, z);
+    o.position.set(q.x, y + 0.75, q.z);
     o.updateMatrix();
     stakes.setMatrixAt(n++, o.matrix);
   }
   stakes.count = n;
   stakes.frustumCulled = false;
   scene.add(stakes);
-
-  buildPlatform(line, 2, 26, -5);
-  buildPlatform(line, line.len - 26, line.len - 2, line.len + 5);
-
-  const pileAt = lineAt(line, line.len - TUNE.stopIn, { ...P });
-  const pileX = wx(pileAt.x) - pileAt.uz * 6.5 * (k ? 1 : -1),
-    pileZ = pileAt.z + pileAt.ux * 6.5 * (k ? 1 : -1);
-
+  // Platforms: at the village, and at the far end.
+  buildPlatform(line, 6, 28, 2.9, 34);
+  buildPlatform(line, line.len - 26, line.len - 2, 2.9, line.len + 5);
+  const pileAt = besideLine(line, line.len - TUNE.stopIn - 3.7, -5);
   return {
-    spec,
     k,
-    state: 0,
-    funded: 0,
-    logs: 0,
-    built: line.len,
-    trestle: buildTrestle(line),
-    machine: buildMachine(line),
-    trains: buildTrains(line),
-    pile: heap(pileX, pileZ, 3, H(pileX, pileZ)),
-    depot: heap(wx(spec.depot.x) - 0.5, spec.depot.z, 3, H(wx(spec.depot.x), spec.depot.z) + 0.3),
-    depotOn: false,
-    camp: { asleep: sleep, awake: wake, smoke },
-    flag,
-    ring,
-    ringLogs,
-    bundleMeshes,
-    groups: [],
-    plinth,
-    bentAt: Infinity,
+    spec,
+    track: buildTrack(spec, thudAt),
+    stations: spec.stations.map((q) => buildStation(q, line, spec.dir)),
+    stage: 0,
+    open: false,
+    train: buildTrain(line),
+    pile: heap(pileAt.x, pileAt.z, 3, H(pileAt.x, pileAt.z)),
+    camp: { awake: wake, smoke },
+    madeAt: 0,
   };
-}
-const links = LINKS.map(buildLink);
-const hub = heap(wx(HEAP.x), HEAP.z, 5, VILLAGE.y);
-const allHeaps: Heap[] = [hub, ...links.map((l) => l.pile), ...links.map((l) => l.depot)];
+});
+const [L1, L2] = lines as [LineRun, LineRun];
+
+// The turntable where line 1 ends and line 2 begins: a low disc that turns with the machine.
+const TX = toWorld(TURNTABLE.x),
+  TZ = TURNTABLE.z,
+  TY = railY(L1.spec.line, 0);
+const disc = new THREE.Group();
+disc.position.set(TX, H(TX, TZ), TZ);
+const discBase = new THREE.Mesh(new THREE.CylinderGeometry(TURNTABLE.r, TURNTABLE.r, 0.24, 20), FLAT('#7f7a70'));
+discBase.position.y = TY + 0.0 - disc.position.y;
+discBase.receiveShadow = true;
+disc.add(discBase);
+const discBars = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, TURNTABLE.r * 2 - 0.3), FLAT('#5c5046'));
+discBars.position.y = TY + 0.13 - disc.position.y;
+disc.add(discBars);
+scene.add(disc);
+addStatic(
+  { kind: 'cylinder', rTop: TURNTABLE.r, rBottom: TURNTABLE.r, h: 0.24, segments: 12 },
+  { x: TX, y: TY, z: TZ },
+);
+
+// ---------------------------------------------------------------- the village's heaps
+const dock = heap(toWorld(DOCK.x), DOCK.z, 3, VILLAGE.y);
+const hub = heap(toWorld(HEAP.x), HEAP.z, 4, VILLAGE.y);
+const yard = heap(toWorld(YARD.x), YARD.z, 4, VILLAGE.y);
+const allHeaps: Heap[] = [dock, hub, yard, L1.pile, L2.pile];
+const heapBoard = label(3, 1.5);
+heapBoard.sprite.position.set(toWorld(HEAP.x), VILLAGE.y + 3, HEAP.z);
+scene.add(heapBoard.sprite);
+const rackBoard = label(3, 1.5);
+rackBoard.sprite.position.set(toWorld(RACK.x), VILLAGE.y + 4.6, RACK.z);
+scene.add(rackBoard.sprite);
+const forgeBoard = label(5.6, 2.8);
+forgeBoard.sprite.position.set(toWorld(FORGE.x), VILLAGE.y + 9, FORGE.z + 4.6);
+scene.add(forgeBoard.sprite);
 
 // ---------------------------------------------------------------- local state, kept per room
-const KEY = `boogle-place-v1:${getRoomId()}`;
-const s = { wood: 0, stone: 0, finds: [] as number[] };
+const KEY = `boogle-place-v2:${getRoomId()}`;
+const s = {
+  awake: false,
+  turned: false, // the machine has gone over to line 2
+  wood: 0,
+  stone: 0,
+  people: TUNE.people,
+  loose: 0, // logs out of an opened crate at the heap, not yet taken
+  finds: [] as number[],
+};
+const stepsOf = (n: number) => (n >= TUNE.stepAt[1]! ? 2 : n >= TUNE.stepAt[0]! ? 1 : 0);
 function save() {
   try {
     localStorage.setItem(
       KEY,
       JSON.stringify({
         s,
+        back: { logs: back.logs, rails: back.rails },
+        forge: { crates: forge.crates, rails: forge.rails, made: forge.made },
         hub: hub.list,
-        links: links.map((l) => ({
-          state: l.state,
-          funded: l.funded,
-          logs: l.logs,
+        dock: dock.list,
+        yard: yard.list,
+        fellen: fellenList(),
+        lines: lines.map((l) => ({
+          stage: l.stage,
+          open: l.open,
           pile: l.pile.list,
-          depot: l.depot.list,
+          have: l.stations.map((q) => q.have),
         })),
       }),
     );
@@ -275,160 +268,303 @@ function save() {
     // private mode: a reload starts over
   }
 }
-const stepsOf = (n: number) => (n >= TUNE.stepAt[1]! ? 2 : n >= TUNE.stepAt[0]! ? 1 : 0);
 function restore() {
   try {
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!j) return;
     Object.assign(s, j.s);
+    back.logs = j.back?.logs ?? 0;
+    back.rails = j.back?.rails ?? 0;
+    Object.assign(forge, j.forge ?? {});
     hub.list = j.hub ?? [];
-    j.links?.forEach(
-      (q: { state: 0 | 1 | 2; funded: number; logs: number; pile: Kind[]; depot: Kind[] }, k: number) => {
-        const l = links[k];
+    dock.list = j.dock ?? [];
+    yard.list = j.yard ?? [];
+    restoreFellen(j.fellen ?? []);
+    j.lines?.forEach(
+      (q: { stage: number; open: boolean; pile: Kind[]; have: { logs: number; rails: number }[] }, k: number) => {
+        const l = lines[k];
         if (!l) return;
-        l.state = q.state;
-        l.funded = q.funded;
-        l.logs = q.logs;
+        l.stage = q.stage;
+        l.open = q.open;
         l.pile.list = q.pile ?? [];
-        l.depot.list = q.depot ?? [];
-        l.built = l.spec.line.len * (1 - l.funded / TUNE.segments);
+        l.stations.forEach((st, n) => Object.assign(st.have, q.have?.[n] ?? {}));
       },
     );
   } catch {
     // an old shape: start fresh
   }
 }
-function snapLink(l: Link) {
-  l.flag.visible = true;
-  l.flag.position.y = H(l.flag.position.x, l.flag.position.z);
-  l.ring.visible = l.state === 1;
-  drawRingLogs(l);
-  for (const m of l.bundleMeshes) m.visible = l.state === 1;
-  drawTrestle(l.trestle, l.built);
-  draw(l.camp.awake, () => (l.state === 2 ? 1 : 0));
-  if (l.state === 2) {
-    l.machine.hide();
-    l.trains.start(cycleOf(l.spec.line) / 2);
-  } else {
-    l.trains.stop();
-    if (l.state === 1 && l.built < l.spec.line.len) l.machine.show(l.built);
-    else l.machine.hide();
-  }
-  l.plinth.visible = l.depotOn = depotWanted(l);
-  if (l.depotOn) ensureCable(l);
-}
-const anyOpen = () => links.some((l) => l.state === 2);
-const depotWanted = (l: Link) => l.state === 1 && l.funded < TUNE.segments && anyOpen();
 
-function drawRingLogs(l: Link) {
-  const n = Math.min(TUNE.cost, Math.round(l.logs * 0.5));
-  l.ringLogs.count = n;
-  const o = new THREE.Object3D();
-  for (let k = 0; k < n; k++) {
-    o.position.set((k % 3) * 0.5 - 0.5, 0.26 + Math.floor(k / 3) * 0.3, (k % 2) * 0.4);
-    o.rotation.y = (k % 3) * 0.4;
-    o.updateMatrix();
-    l.ringLogs.setMatrixAt(k, o.matrix);
-  }
-  l.ringLogs.instanceMatrix.needsUpdate = true;
-}
+// ---------------------------------------------------------------- the machine's run
+type Mode = 'asleep' | 'idle' | 'feeding' | 'laying' | 'running' | 'waiting' | 'turning' | 'shunting' | 'done';
+const run = {
+  mode: 'asleep' as Mode,
+  head: 0, // metres along the machine's line where pieces land
+  line: L1,
+  feedT: 0,
+  feedLeft: 0, // pieces yet to leave the frame
+  feedAir: 0,
+  cradle: 0, // logs in it
+  rack: TUNE.rackStart,
+  cradle0: 0,
+  rack0: 0,
+  stretch0: 0,
+  turnT: 0,
+};
+const headAtTurntable = () => -machine.GAP / 2 - machine.F; // on line 1's far side of s=0, the machine centred on the disc
+const heading = { line1: 0, line2: 0 };
+lineAt(L1.spec.line, 0, P);
+heading.line1 = Math.atan2(-P.ux, -P.uz);
+lineAt(L2.spec.line, 0, P);
+heading.line2 = Math.atan2(P.ux, P.uz);
 
-// ---------------------------------------------------------------- the bundles and the depot: the room's logs
-let claimed = false;
-function claim() {
-  if (claimed) return true;
-  const list = rules.sources.list();
-  if (list.length < 24) return false;
-  claimed = true;
-  let id = 0;
-  for (const l of links) l.groups = l.spec.bundles.map(() => [id++, id++, id++]);
-  depotIds = list.map((_, n) => n).slice(id);
-  haulHooks.moved = () => true;
-  rules.sources.sources.rev++;
-  return true;
+const scratch = new THREE.Vector3(),
+  scratch2 = new THREE.Vector3(),
+  bundleRot = new THREE.Quaternion();
+
+function stationOf(l: LineRun) {
+  return l.stations[l.stage] ?? null;
 }
-let depotIds: number[] = [];
-const chargesOf = (ids: number[]) => ids.reduce((t, id) => t + rules.sources.charges(id), 0);
-const yieldN = () => rules.tune.get('yield') ?? 4;
-let flyFrom = new THREE.Vector3();
-function takes(ids: number[], want: number, from: THREE.Vector3) {
-  let sent = 0;
-  for (const id of ids)
-    for (let c = rules.sources.charges(id); c > 0 && sent < want; c--)
-      if (submitEdit({ op: 'src.take', i: 0, j: 0, id })) sent++;
-  if (sent) flyFrom = from;
-  return sent;
+function beginFeed(l: LineRun, st: StationRun) {
+  run.mode = 'feeding';
+  run.line = l;
+  run.feedT = 0;
+  run.feedLeft = st.shown.logs + st.shown.rails;
+  run.feedAir = 0;
+  whistle(st.x, st.z);
 }
-onApplied((e: { op: string; p: string }, _t: number, r: { n?: number } | null) => {
-  if (e.op === 'src.take' && r?.n && e.p === (net.room?.selfId ?? 'local')) fly(flyFrom, r.n, true);
-});
-let pourInto: Link | null = null;
-onApplied((e: { op: string; p: string }, _t: number, r: { n?: number } | null) => {
-  if (e.op !== 'site.stock' || !r?.n || e.p !== (net.room?.selfId ?? 'local') || !pourInto) return;
-  const l = pourInto;
-  l.logs += r.n;
-  while (l.logs >= TUNE.cost && l.funded < TUNE.segments) {
-    l.logs -= TUNE.cost;
-    fund(l);
+function stepFeed(dt: number) {
+  const l = run.line,
+    st = stationOf(l);
+  if (!st) return;
+  run.feedT -= dt;
+  while (run.feedLeft > 0 && run.feedT <= 0) {
+    run.feedT += TUNE.feedS;
+    run.feedLeft--;
+    run.feedAir++;
+    if (st.shown.logs > 0) {
+      const n = st.shown.logs - 1;
+      const from = st.logSlot(n, new THREE.Vector3());
+      st.drawStock({ logs: n, rails: st.shown.rails });
+      send('log', from, st.feederEnd, {
+        dur: 0.55,
+        apex: 0.15,
+        size: [2.2, 2.2],
+        aim: (to) => void machine.worldCradle(to),
+        land: () => {
+          run.feedAir--;
+          run.cradle++;
+          machine.setCradle(run.cradle);
+          clank(st.x, st.z);
+        },
+      });
+    } else {
+      const n = st.shown.rails - 1;
+      const from = st.railSlot(n, new THREE.Vector3());
+      st.drawStock({ logs: 0, rails: n });
+      send('rail', from, st.feederEnd, {
+        dur: 0.6,
+        apex: 0.5,
+        aim: (to) => void machine.worldRack(to),
+        land: () => {
+          run.feedAir--;
+          run.rack++;
+          machine.setRack(run.rack);
+          clank(st.x, st.z);
+        },
+      });
+    }
   }
-  drawRingLogs(l);
-  thump(l.ring.position.x, l.ring.position.z);
+  if (run.feedLeft <= 0 && run.feedAir <= 0) {
+    run.mode = 'laying';
+    run.cradle0 = run.cradle;
+    run.rack0 = run.rack;
+    run.stretch0 = run.head;
+    protoCount('stretches');
+    mark(`lay ${st.spec.label}`);
+    setStationTags();
+  }
+}
+function stepLay(dt: number) {
+  const l = run.line,
+    st = stationOf(l)!;
+  const { dir, line } = l.spec;
+  const to = st.spec.to;
+  const left = (to - run.head) * dir;
+  const step = Math.min(left, TUNE.laySpeed * dt);
+  run.head += dir * step;
+  l.track.layTo(l.track.u(run.head));
+  machine.at(line, run.head, dir);
+  machine.moved(step);
+  const span = (to - run.stretch0) * dir,
+    done = span > 0 ? ((run.head - run.stretch0) * dir) / span : 1;
+  const cradleNow = Math.ceil(run.cradle0 * (1 - done)),
+    rackNow = l === L1 ? rackForLine1(run.head) : Math.ceil(run.rack0 * (1 - done));
+  if (cradleNow !== run.cradle) machine.setCradle((run.cradle = cradleNow));
+  if (rackNow !== run.rack) machine.setRack((run.rack = rackNow));
+  if (left - step <= 0.001) finishStretch(l);
+}
+/** Line 1's rails come off the machine's own rack: it's empty when the line is done. */
+const rackForLine1 = (head: number) => {
+  const total = STUB.camp - STUB.village;
+  return Math.ceil(TUNE.rackStart * Math.max(0, (head - STUB.village) / total));
+};
+function finishStretch(l: LineRun) {
+  const st = stationOf(l)!;
+  whistle(st.x, st.z);
+  dustRing(st.x, st.y, st.z, 8, 2, 0.3);
+  l.stage++;
+  mark(`laid ${st.spec.label}`);
+  if (l.stage < l.stations.length) run.mode = 'idle';
+  else {
+    openLine(l);
+    run.mode = l === L1 ? 'running' : 'done';
+  }
+  setStationTags();
   save();
-});
-function fund(l: Link) {
-  l.funded = Math.min(TUNE.segments, l.funded + 1);
-  whistle(l.ring.position.x, l.ring.position.z);
-  protoCount('segments');
-  mark(`segment ${l.spec.id} ${l.funded}`);
+}
+function stepRunIn(dt: number) {
+  const to = headAtTurntable();
+  const step = Math.min(run.head - to, TUNE.runSpeed * dt);
+  run.head -= step;
+  machine.at(L1.spec.line, run.head, -1);
+  machine.moved(step);
+  if (run.head - to < 0.001) run.mode = 'waiting';
+}
+const eased = (u: number) => u * u * (3 - 2 * u);
+function stepTurn(dt: number) {
+  run.turnT += dt / TUNE.turnS;
+  const u = Math.min(1, run.turnT);
+  let d = heading.line2 - heading.line1;
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  const yaw = heading.line1 + d * eased(u);
+  machine.turn(TX, TY, TZ, yaw);
+  disc.rotation.y = yaw;
+  if (u >= 1) {
+    run.mode = 'shunting';
+    run.line = L2;
+    run.head = machine.GAP / 2 + machine.F;
+    machine.at(L2.spec.line, run.head, 1);
+    whistle(TX, TZ);
+  }
+}
+function stepShunt(dt: number) {
+  const to = STUB.east;
+  const step = Math.min(to - run.head, TUNE.laySpeed * 0.6 * dt);
+  run.head += step;
+  machine.at(L2.spec.line, run.head, 1);
+  machine.moved(step);
+  if (to - run.head < 0.001) {
+    run.mode = 'idle';
+    setStationTags();
+  }
+}
+machine.onStep = (dt) => {
+  if (!ready) return;
+  if (run.mode === 'laying') stepLay(dt);
+  else if (run.mode === 'running') stepRunIn(dt);
+  else if (run.mode === 'turning') stepTurn(dt);
+  else if (run.mode === 'shunting') stepShunt(dt);
+};
+
+function setStationTags() {
+  for (const l of lines)
+    l.stations.forEach((st, n) => {
+      const mine =
+        l === run.line && run.mode !== 'asleep' && n === l.stage && (run.mode === 'idle' || run.mode === 'feeding');
+      st.setTag(mine);
+    });
+}
+
+function wake() {
+  s.awake = true;
+  run.mode = 'idle';
+  machine.wake(true);
+  whistle(machine.flatbed.x, machine.flatbed.z);
+  thump(machine.flatbed.x, machine.flatbed.z);
+  fanfare(false);
+  protoMark('verb');
+  mark('woke');
+  setStationTags();
+  save();
+}
+
+function openLine(l: LineRun) {
+  l.open = true;
+  l.madeAt = performance.now() + 2000;
+  if (l === L1) l.train.start(true);
+  else l.train.start(false, TUNE.dwell - 0.5);
+  rise(l.camp.awake);
+  fanfare(true);
+  s.people += 8;
+  whistle(TX, TZ);
+  fireworks({ x: TX + 8, y: VILLAGE.y + 22, z: TZ - 4 });
+  cheerNow();
+  protoCount('links');
+  mark(`open ${l.spec.id}`);
+}
+
+// ---------------------------------------------------------------- delivering: your back into the frame
+let unloadT = 0;
+function unload(dt: number) {
+  unloadT -= dt;
+  if (unloadT > 0 || !me.body) return;
+  const l = run.line,
+    st = stationOf(l);
+  if (!st || run.mode !== 'idle') return;
+  const p = me.body.position;
+  if (Math.hypot(p.x - st.x, p.z - st.z) > TUNE.reachStation) return;
+  const kind =
+    back.logs > 0 && st.wants('logs') > 0 ? 'logs' : back.rails > 0 && st.wants('rails') > 0 ? 'rails' : null;
+  if (!kind) return;
+  unloadT = TUNE.unloadS;
+  st.coming[kind]++;
+  if (kind === 'logs') {
+    myBundleNext(Math.max(0, back.logs - 1), scratch, bundleRot);
+    back.logs--;
+    const to = st.logSlot(st.have.logs + st.coming.logs - 1, new THREE.Vector3());
+    send('log', scratch, to, {
+      dur: 0.32,
+      apex: 0.9,
+      size: [1, 2.2],
+      land: () => landAtStation(l, st, 'logs'),
+    });
+  } else {
+    scratch.set(p.x, p.y + 0.9, p.z);
+    back.rails--;
+    const to = st.railSlot(st.have.rails + st.coming.rails - 1, new THREE.Vector3());
+    send('rail', scratch, to, {
+      dur: 0.36,
+      apex: 0.9,
+      land: () => landAtStation(l, st, 'rails'),
+    });
+  }
+}
+function landAtStation(l: LineRun, st: StationRun, kind: 'logs' | 'rails') {
+  st.coming[kind]--;
+  st.have[kind]++;
+  st.drawStock({ logs: st.have.logs, rails: st.have.rails });
+  st.setTag(true);
+  if (kind === 'logs') knock(0.7, 1);
+  else clank(st.x, st.z);
+  thump(st.x, st.z);
+  dustRing(st.x, st.y + 0.4, st.z, 2, 0.8, 0.14);
+  if (st.full() && run.mode === 'idle' && stationOf(l) === st) beginFeed(l, st);
+  save();
 }
 
 // ---------------------------------------------------------------- the verbs
 const log: [string, number][] = [];
 const mark = (name: string) => void log.push([name, performance.now()]);
-const dustCol = new THREE.Color('#d8c49a');
-function puffAt(x: number, y: number, z: number, n = 10) {
-  for (let k = 0; k < n; k++) {
-    const a = (k / n) * Math.PI * 2;
-    emit({
-      x,
-      y: y + 0.2,
-      z,
-      vx: Math.cos(a) * 3,
-      vy: 1.2,
-      vz: Math.sin(a) * 3,
-      life: 0.9,
-      size: 0.6,
-      color: dustCol,
-      alpha: 0.8,
-      grow: [1, 2.6],
-      drag: 2,
-      fade: 0.5,
-    });
-  }
-}
-function plant(l: Link) {
-  l.state = 1;
-  l.flag.position.y = H(l.flag.position.x, l.flag.position.z) + 3;
-  plantAnim = { l, t: 0 };
-  l.ring.visible = true;
-  for (const m of l.bundleMeshes) m.visible = true;
-  thump(l.flag.position.x, l.flag.position.z);
-  fanfare(false);
-  protoCount('stakes');
-  protoMark('verb');
-  mark(`stake ${l.spec.id}`);
-  save();
-}
-let plantAnim: { l: Link; t: number } | null = null;
-
 const atPrompt = new THREE.Vector3();
 const prompts = new Map<string, THREE.Vector3>();
-const promptAt = (id: string, p: THREE.Vector3, up: number) => {
+const promptAt = (id: string, x: number, y: number, z: number) => {
   let v = prompts.get(id);
   if (!v) prompts.set(id, (v = new THREE.Vector3()));
-  return v.set(p.x, p.y + up, p.z);
+  return v.set(x, y, z);
 };
-const nearest = (x: number, z: number) => {
+const nearestSample = (x: number, z: number) => {
   let bd = Infinity,
     best: [number, number, number] = [SPAWN.x, SPAWN.z, VILLAGE.y];
   for (const path of PATH_SAMPLES)
@@ -445,169 +581,171 @@ const nearest = (x: number, z: number) => {
 function backUp() {
   const b = me.body;
   if (!b) return;
-  const q = nearest(b.position.x, b.position.z);
+  const q = nearestSample(b.position.x, b.position.z);
   teleport(b, q[0] + ORIGIN.x, Math.max(H(q[0] + ORIGIN.x, q[1]), q[2] + 0.12) + PLAYER_R + 0.4, q[1]); // a bridge's samples are over water
   b.velocity.set(0, 0, 0);
   carry.x = carry.z = 0;
 }
+function takeRails(st: StationRun) {
+  const want = Math.min(st.wants('rails') - back.rails - railsIncoming, back.room(), forge.rails);
+  for (let k = 0; k < want; k++) {
+    rackTop(forge.rails, scratch);
+    takeRail();
+    back.incoming++;
+    railsIncoming++;
+    send('rail', scratch, scratch, {
+      dur: 0.3 + k * 0.05,
+      apex: 1,
+      aim: (to) => {
+        if (me.body) to.set(me.body.position.x, me.body.position.y + 0.8, me.body.position.z);
+      },
+      land: () => {
+        back.incoming--;
+        railsIncoming--;
+        back.rails++;
+        clank(rackFrom.x, rackFrom.z);
+      },
+    });
+  }
+  if (want > 0) mark('took rails');
+  save();
+}
+let railsIncoming = 0;
+function takeTimber(st: StationRun) {
+  const want = Math.min(st.wants('logs') - back.logs - logsIncoming, back.room());
+  let sent = 0;
+  for (let k = 0; k < want; k++) {
+    if (s.loose <= 0) {
+      if (!hub.list.length) break;
+      topSlot(hub, scratch2);
+      hub.list.pop();
+      s.loose += TUNE.crateLogs;
+      drawHeaps(allHeaps);
+    } else topSlot(hub, scratch2);
+    s.loose--;
+    sent++;
+    back.incoming++;
+    logsIncoming++;
+    send('log', scratch2, scratch2, {
+      dur: 0.3 + k * 0.04,
+      apex: 1,
+      aim: (to) => {
+        if (myBundleNext(back.logs, scratch, bundleRot)) to.copy(scratch);
+      },
+      land: () => {
+        back.incoming--;
+        logsIncoming--;
+        back.logs++;
+        pop(k, 0.45);
+      },
+    });
+  }
+  if (sent) {
+    knock(0.6, 0.8);
+    save();
+  }
+}
+let logsIncoming = 0;
+const hasTimber = () => hub.list.length > 0 || s.loose > 0;
 registerInteractable(() => {
-  if (!me.body || !claim()) return NO_TARGETS;
+  if (!me.body) return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   let out: Interactable[] | null = null;
   if (me.swimming) {
     atPrompt.set(p.x, p.y + 1.2, p.z);
     return [{ id: 'place-back', verb: 'Back up the path', at: atPrompt, run: backUp }];
   }
-  const pid = identity.pid;
-  const room = pid ? rules.stacks.room(pid, materialOf(rules.sites.age())) : 0;
-  for (const l of links) {
-    if (l.state === 0 && Math.hypot(p.x - l.flag.position.x, p.z - l.flag.position.z) < 3.4)
-      (out ??= []).push({
-        id: `stake${l.k}`,
-        verb: 'Plant survey stake',
-        at: promptAt(`stake${l.k}`, l.flag.position, 2),
-        run: () => plant(l),
-      });
-    if (l.state !== 1 || l.funded >= TUNE.segments) continue;
-    l.spec.bundles.forEach((b, n) => {
-      const ids = l.groups[n]!;
-      if (chargesOf(ids) <= 0) return;
-      const at = bundleAt(l, n);
-      if (Math.hypot(p.x - at.x, p.z - at.z) > 3) return;
-      const t = { id: `bundle${l.k}.${n}`, verb: 'Take logs', at: promptAt(`bundle${l.k}.${n}`, at, 1.2) };
-      const want = Math.min(2, Math.floor(room / yieldN()));
-      (out ??= []).push(
-        want <= 0
-          ? { ...t, blocked: 'Full' }
-          : {
-              ...t,
-              run: () => {
-                if (takes(ids, want, at)) pop(1, 0.6);
-              },
-            },
-      );
+  if (run.mode === 'asleep' && machine.distance(p.x, p.z) < 6)
+    (out ??= []).push({
+      id: 'place-wake',
+      verb: 'Wake the track layer',
+      at: promptAt('wake', machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
+      run: wake,
     });
-    if (l.depotOn) {
-      const at = l.plinth.position;
-      if (Math.hypot(p.x - at.x, p.z - at.z) < 5.5) {
-        const t = { id: `depot${l.k}`, verb: 'Take a load', at: promptAt(`depot${l.k}`, at, 2.4) };
-        const want = Math.min(TUNE.depotTake / 4, Math.floor(room / yieldN()));
-        (out ??= []).push(
-          want <= 0 || l.depot.list.length < 3
-            ? { ...t, blocked: want <= 0 ? 'Full' : 'Crates on the way' }
-            : {
-                ...t,
-                run: () => {
-                  if (!takes(depotIds, want, at)) return;
-                  l.depot.list.splice(-3, 3);
-                  drawHeaps(allHeaps);
-                  protoCount('depot loads');
-                  save();
-                },
-              },
-        );
-      }
+  if (s.awake)
+    for (const t of TREES) {
+      if (!standing(t)) continue;
+      if (Math.hypot(p.x - t.x, p.z - t.z) > 3.2) continue;
+      const room = back.room();
+      (out ??= []).push(
+        room <= 0
+          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, blocked: 'Full' }
+          : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, run: () => void chopTree(t) },
+      );
+    }
+  if (s.turned) {
+    const st = stationOf(L2);
+    if (Math.hypot(p.x - rackFrom.x, p.z - rackFrom.z) < 4)
+      (out ??= []).push(
+        !st || st.wants('rails') - back.rails - railsIncoming <= 0
+          ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Station has enough' }
+          : back.room() <= 0
+            ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Full' }
+            : forge.rails <= 0
+              ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Forge is pouring' }
+              : { id: 'place-rack', verb: 'Take rails', at: rackFrom, run: () => takeRails(st) },
+      );
+    if (Math.hypot(p.x - hub.x, p.z - hub.z) < 4.2) {
+      const at = promptAt('heap', hub.x, VILLAGE.y + 2, hub.z);
+      (out ??= []).push(
+        !st || st.wants('logs') - back.logs - logsIncoming <= 0
+          ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'Station has enough' }
+          : back.room() <= 0
+            ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'Full' }
+            : !hasTimber()
+              ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'The train is bringing more' }
+              : { id: 'place-heap', verb: 'Take timber', at, run: () => takeTimber(st) },
+      );
     }
   }
   return out ?? NO_TARGETS;
 });
-const bundleAts = new Map<string, THREE.Vector3>();
-function bundleAt(l: Link, n: number) {
-  const key = `${l.k}.${n}`;
-  let v = bundleAts.get(key);
-  if (!v) {
-    const b = l.spec.bundles[n]!;
-    bundleAts.set(key, (v = v3(b.x, b.z)));
-  }
-  return v;
-}
-
-// ---------------------------------------------------------------- pouring, the machine, the link opening
-let lastPour = 0;
-function pour(now: number) {
-  const pid = identity.pid;
-  if (!me.body || !pid || now - lastPour < 350) return;
-  const carried = rules.stacks.count(pid);
-  if (carried <= 0) return;
-  const p = me.body.position;
-  for (const l of links) {
-    if (l.state !== 1 || l.funded >= TUNE.segments) continue;
-    if (Math.hypot(p.x - l.ring.position.x, p.z - l.ring.position.z) > TUNE.ringR + 0.4) continue;
-    const site = rules.sites.sites.open;
-    if (rules.sites.room(site, TRACK) <= 0) continue;
-    pourInto = l;
-    lastPour = now;
-    submitEdit({ op: 'site.stock', i: 0, j: 0, s: site, ring: TRACK, n: Math.min(carried, TUNE.cost * 2) });
-    return;
-  }
-}
-function layOn(l: Link, dt: number) {
-  if (l.state !== 1) return;
-  const { len } = l.spec.line;
-  const to = len * (1 - l.funded / TUNE.segments);
-  if (l.built <= to) {
-    if (l.funded < TUNE.segments) return;
-    return open(l);
-  }
-  l.built = Math.max(to, l.built - ((len / TUNE.segments) * dt) / TUNE.layS);
-  drawTrestle(l.trestle, l.built);
-  l.machine.show(l.built);
-  if (l.bentAt - l.built > 6.5) {
-    l.bentAt = l.built;
-    lineAt(l.spec.line, l.built, P);
-    thump(wx(P.x), P.z);
-    puffAt(wx(P.x), H(wx(P.x), P.z), P.z, 6);
-  }
-}
-function open(l: Link) {
-  l.state = 2;
-  l.built = 0;
-  drawTrestle(l.trestle, 0);
-  l.ring.visible = false;
-  for (const m of l.bundleMeshes) m.visible = false;
-  l.machine.hide();
-  l.plinth.visible = l.depotOn = false;
-  l.trains.start(0);
-  rise(l.camp.awake);
-  fanfare(true);
-  whistle(wx(l.spec.camp.x), l.spec.camp.z);
-  madeAt[l.k] = performance.now() + 4000;
-  protoCount('links');
-  mark(`open ${l.spec.id}`);
-  save();
+function chopTree(t: Tree) {
+  if (!chop(t)) return;
+  if (t.strokes === 0) protoCount('chops');
 }
 
 // ---------------------------------------------------------------- crates
-const madeAt = links.map(() => 0);
-const door = new THREE.Vector3(),
-  landAt = new THREE.Vector3(),
-  ground = new THREE.Vector3();
-function make(l: Link, now: number) {
-  if (l.state !== 2 || now < madeAt[l.k]! || l.pile.list.length >= TUNE.pileMax) return;
-  madeAt[l.k] = now + TUNE.pileEvery * 1000;
+const scr = new THREE.Vector3();
+function make(l: LineRun, now: number) {
+  if (!l.open || now < l.madeAt || l.pile.list.length >= TUNE.pileMax) return;
+  l.madeAt = now + TUNE.pileEvery * 1000;
   const kind = l.spec.kind as Kind;
-  door.set(l.pile.x, (l.pile.y ?? 0) + 3, l.pile.z);
-  nextSlot(l.pile, landAt);
-  hopTo(kind, door, landAt, 0, () => {
+  scr.set(l.pile.x, (l.pile.y ?? 0) + 3, l.pile.z);
+  const to = nextSlot(l.pile, new THREE.Vector3());
+  hopTo(kind, scr, to, 0, () => {
     l.pile.list.push(kind);
     drawHeaps(allHeaps);
     save();
   });
 }
-function arrive(l: Link, tr: Link['trains']['trains'][number], stop: number) {
+function arrive(l: LineRun, stop: number) {
+  const { tr } = l.train;
   if (stop === 0) {
+    const onto = l === L1 ? dock : yard;
     let n = 0;
     tr.load.held.forEach((c, k) => {
       if (!c) return;
       const kind = c.kind;
-      nextSlot(hub, ground);
-      hopOff(tr.load, k, ground, 0.5 + n++ * 0.2, () => landHub(kind));
+      const to = nextSlot(onto, new THREE.Vector3());
+      // Reserves its slot by landing in order: the heap draws what's landed.
+      to.y += 0;
+      const delay = 0.4 + n++ * 0.22;
+      hopOff(tr.load, k, to, delay, () => {
+        onto.list.push(kind);
+        if (onto === yard) {
+          s.stone++;
+          s.people++;
+        }
+        drawHeaps(allHeaps);
+        save();
+      });
     });
   } else {
     let n = 0;
     while (l.pile.list.length && deckFree(tr.load) >= 0) {
-      topSlot(l.pile, ground);
-      hopOn(tr.load, l.pile.list.pop()!, ground, 0.5 + n++ * 0.18);
+      const from = topSlot(l.pile, new THREE.Vector3());
+      hopOn(tr.load, l.pile.list.pop()!, from, 0.4 + n++ * 0.14);
     }
     if (n) {
       drawHeaps(allHeaps);
@@ -615,83 +753,36 @@ function arrive(l: Link, tr: Link['trains']['trains'][number], stop: number) {
     }
   }
 }
-function landHub(kind: Kind) {
-  hub.list.push(kind);
-  if (kind === 'wood') s.wood++;
-  if (kind === 'stone') s.stone++;
-  if (hub.list.length > 60) hub.list.splice(0, hub.list.length - 60);
+function feedCrane() {
+  if (craneBusy() || !dock.list.length) return;
+  const from = topSlot(dock, new THREE.Vector3());
+  const wantForge = forge.crates < TUNE.forgeCost;
+  dock.list.pop();
   drawHeaps(allHeaps);
-  save();
-}
-
-// The cable: from the village's heap to the depot, crates sliding over the gorge. It's what makes the second site near.
-const crateGeo = new THREE.BoxGeometry(0.82, 0.82, 0.82);
-const crateMat: Record<string, THREE.MeshStandardNodeMaterial> = { wood: FLAT('#a8703a'), stone: FLAT('#8f959c') };
-const riding: {
-  mesh: THREE.Mesh;
-  t: number;
-  len: number;
-  from: THREE.Vector3;
-  to: THREE.Vector3;
-  kind: Kind;
-  l: Link;
-}[] = [];
-const cables = new Map<Link, THREE.Mesh>();
-function ensureCable(l: Link) {
-  hubMastMesh.visible = true;
-  if (cables.has(l)) return (cables.get(l)!.visible = true);
-  const to = l.plinth.position.clone().add(new THREE.Vector3(3.4, 9, 0));
-  cables.set(l, cable(hubMast, to, '#3a302c', 0.08));
-}
-let sentAt = 0;
-function serveDepots(now: number, dt: number) {
-  const openLink = links.find((q) => q.state === 2);
-  for (const l of links) {
-    if (l.state === 1 && !l.depotOn && depotWanted(l)) {
-      l.depotOn = true;
-      l.plinth.visible = true;
-      ensureCable(l);
-      puffAt(l.plinth.position.x, l.plinth.position.y, l.plinth.position.z);
-      mark(`depot ${l.spec.id}`);
-    }
-    if (!l.depotOn && cables.get(l)?.visible) cables.get(l)!.visible = false;
-    if (!l.depotOn || !openLink || now < sentAt) continue;
-    const inAir = riding.filter((c) => c.l === l).length;
-    if (l.depot.list.length + inAir >= TUNE.depotCrates) continue;
-    sentAt = now + 1100;
-    const kind = openLink.spec.kind as Kind;
-    const mesh = new THREE.Mesh(crateGeo, crateMat[kind]);
-    mesh.castShadow = true;
-    scene.add(mesh);
-    const to = l.plinth.position.clone().add(new THREE.Vector3(3.4, 8.4, 0));
-    riding.push({ mesh, t: 0, len: hubMast.distanceTo(to), from: hubMast.clone(), to, kind, l });
-  }
-  for (let k = riding.length - 1; k >= 0; k--) {
-    const c = riding[k]!;
-    c.t += dt;
-    const u = Math.min(1, (c.t * TUNE.cableSpeed) / c.len);
-    c.mesh.position.lerpVectors(c.from, c.to, u);
-    c.mesh.position.y -= 0.7;
-    if (u >= 1) {
-      c.mesh.removeFromParent();
-      riding.splice(k, 1);
-      const { l, kind } = c;
-      nextSlot(l.depot, landAt);
-      hopTo(kind, c.mesh.position, landAt, 0, () => {
-        l.depot.list.push(kind);
-        drawHeaps(allHeaps);
-        save();
-      });
-    }
-  }
+  if (wantForge)
+    craneLift(from, nextDrop(new THREE.Vector3()), () => {
+      crateIn();
+      s.people++;
+      save();
+    });
+  else
+    craneLift(from, nextSlot(hub, new THREE.Vector3()), () => {
+      hub.list.push('wood');
+      if (hub.list.length > 60) hub.list.splice(0, hub.list.length - 60);
+      s.wood++;
+      s.people++;
+      drawHeaps(allHeaps);
+      thump(hub.x, hub.z);
+      save();
+    });
 }
 
 // ---------------------------------------------------------------- small finds on the way
 const FIND_SPOTS = PATH_SAMPLES.flatMap((path, n) =>
   [0.2, 0.47, 0.82].map((f, k) => {
     const q = path[Math.floor(path.length * f)]!,
-      side = k % 2 ? 3.2 : -3.2;
-    const x = wx(q[0] + side),
+      side = k % 2 ? 4.5 : -4.5;
+    const x = toWorld(q[0] + side),
       z = q[1] + (k % 2 ? 1 : -1);
     return { id: n * 10 + k, x, z, y: H(x, z) + 1 };
   }),
@@ -748,7 +839,7 @@ function buildStops() {
     wood = '#7f5630';
   const row = (x: number, z: number, w: number, h: number, d: number, color: string, y = 0, yaw = 0) => ({
     kind: 'stop',
-    x: wx(x),
+    x: toWorld(x),
     z,
     y,
     w,
@@ -778,7 +869,7 @@ function buildStops() {
       row(25, 164, 3, 7, 3.2, rock),
       row(20.5, 160, 13.5, 2.2, 3.8, rock, 6.2, -0.72),
     ],
-    wx(0),
+    toWorld(0),
     0,
   );
   draw(part, () => 1);
@@ -789,33 +880,183 @@ function buildStops() {
     [16, 156],
     [25, 164],
   ] as const)
-    addStatic({ kind: 'box', hx: 1.5, hy: 3.5, hz: 1.7 }, { x: wx(x), y: H(wx(x), z) + 3.5, z });
+    addStatic({ kind: 'box', hx: 1.5, hy: 3.5, hz: 1.7 }, { x: toWorld(x), y: H(toWorld(x), z) + 3.5, z });
 }
 buildStops();
 
-// ---------------------------------------------------------------- start over and the frame
-function startOver() {
-  for (const l of links) {
-    l.state = 0;
-    l.funded = 0;
-    l.logs = 0;
-    l.built = l.spec.line.len;
-    l.pile.list = [];
-    l.depot.list = [];
-    l.depotOn = false;
-    l.bentAt = Infinity;
-    l.trestle.drawnAt = Infinity;
-    for (const tr of l.trains.trains) {
-      clearCrates(tr.load);
-      tr.lastStop = -1;
+// ---------------------------------------------------------------- the objective: one line, and a beacon over it
+const nearestTree = () => {
+  const b = me.body;
+  if (!b) return null;
+  let best: Tree | null = null,
+    bd = Infinity;
+  for (const t of TREES) {
+    if (!standing(t)) continue;
+    const d = Math.hypot(b.position.x - t.x, b.position.z - t.z);
+    if (d < bd) {
+      bd = d;
+      best = t;
     }
-    snapLink(l);
   }
+  return best;
+};
+function objective(now: number) {
+  const b = me.body;
+  const beam = (x: number, y: number, z: number) => setBeacon({ x, y, z }, now);
+  if (run.mode === 'asleep') {
+    beam(machine.flatbed.x, machine.flatbed.y + 2, machine.flatbed.z);
+    return b && machine.distance(b.position.x, b.position.z) < 25
+      ? 'Wake the track layer.'
+      : 'Follow the path across the gorge. Wake the track layer at the timber camp.';
+  }
+  const carried = back.logs + back.rails + back.incoming;
+  if (run.mode === 'feeding') {
+    setBeacon(null, now);
+    return 'The machine is taking your logs.';
+  }
+  if (run.mode === 'laying') {
+    setBeacon(null, now);
+    return 'Laying track. Ride the machine, or walk on the fresh track.';
+  }
+  if (run.mode === 'running') {
+    setBeacon(null, now);
+    return 'The line is through! The first train is on its way.';
+  }
+  if (run.mode === 'turning' || run.mode === 'shunting') {
+    setBeacon(rackFrom, now);
+    return 'The forge is lit. The track layer turns for line 2.';
+  }
+  if (run.mode === 'waiting') {
+    if (b && Math.hypot(b.position.x - TX, b.position.z - TZ) > 90)
+      return 'Ride the train home. Its cargo is building the forge.';
+    beam(toWorld(FORGE.x), VILLAGE.y + 8, FORGE.z);
+    return `Hop on the train and ride your line. Its timber builds the forge: ${forge.crates}/${TUNE.forgeCost}.`;
+  }
+  if (run.mode === 'done') {
+    setBeacon(null, now);
+    return L2.open && s.stone > 0
+      ? 'Stone is reaching the village. And what is that, far across the sea?'
+      : 'Line 2 is through! Ride the first stone home. Then look across the sea.';
+  }
+  // Idle at a station: what's next depends on what it wants and what you carry.
+  const st = stationOf(run.line);
+  if (!st) return '';
+  const name = st.spec.label;
+  const counts =
+    st.spec.logs && st.spec.rails
+      ? `rails ${st.have.rails}/${st.spec.rails}, logs ${st.have.logs}/${st.spec.logs}`
+      : `${st.have.logs}/${st.spec.logs}`;
+  if (run.line === L1) {
+    const stillNeeds = st.wants('logs') - carried;
+    if (stillNeeds > 0 && back.room() > 0) {
+      const t = nearestTree();
+      if (t) beam(t.x, t.y + 9, t.z);
+      return carried
+        ? `Chop more, or carry what you have to ${name}: ${counts}.`
+        : `Chop trees for timber. ${name} needs logs: ${counts}.`;
+    }
+    beam(st.x, st.y + 2, st.z);
+    if (run.line.stage === 2) return `Carry your logs over the trestle to ${name}: ${counts}.`;
+    return `Carry your logs to ${name}: ${counts}.`;
+  }
+  // Line 2: rails from the rack, timber from the heap.
+  const needR = st.wants('rails') - back.rails - railsIncoming,
+    needL = st.wants('logs') - back.logs - logsIncoming;
+  if (b && Math.hypot(b.position.x - TX, b.position.z - TZ) > 120 && back.rails + back.logs === 0) {
+    beam(rackFrom.x, rackFrom.y + 1, rackFrom.z);
+    return 'Rails are ready at home. Ride the train home.';
+  }
+  if (back.room() > 0 && needR > 0) {
+    beam(rackFrom.x, rackFrom.y + 1, rackFrom.z);
+    return `Take rails from the forge rack for ${name}: ${counts}.`;
+  }
+  if (back.room() > 0 && needL > 0) {
+    beam(hub.x, VILLAGE.y + 3, hub.z);
+    return hasTimber()
+      ? `Take timber from the heap for ${name}: ${counts}.`
+      : `The train brings timber to the heap. ${name} needs: ${counts}.`;
+  }
+  beam(st.x, st.y + 2, st.z);
+  return `Carry it out to ${name}: ${counts}.`;
+}
+
+// ---------------------------------------------------------------- start over and the frame
+function placeMachine() {
+  const l = !s.turned ? L1 : L2;
+  run.line = l;
+  if (l === L1 && L1.open) {
+    run.head = headAtTurntable();
+    machine.at(L1.spec.line, run.head, -1);
+    run.mode = 'waiting';
+  } else {
+    const st = stationOf(l);
+    run.head = st ? st.spec.s : l.spec.line.len - 1;
+    machine.at(l.spec.line, run.head, l.spec.dir);
+    if (!s.awake) run.mode = 'asleep';
+    else run.mode = st ? 'idle' : 'done';
+  }
+  machine.snap();
+  machine.wake(s.awake);
+  disc.rotation.y = s.turned ? heading.line2 : heading.line1;
+  run.cradle = 0;
+  machine.setCradle(0);
+  run.rack = l === L1 && !L1.open ? rackForLine1(run.head) : 0;
+  machine.setRack(run.rack);
+  for (const q of lines) {
+    const end = q.stations[q.stage];
+    const head = end ? end.spec.s : q.spec.dir > 0 ? q.spec.line.len : STUB.village;
+    q.track.snapTo(q.track.u(head));
+    q.stations.forEach((st, n) => st.drawStock(n === q.stage ? st.have : { logs: 0, rails: 0 }));
+  }
+  setStationTags();
+  if (run.mode === 'idle') {
+    const st = stationOf(l);
+    if (st?.full()) beginFeed(l, st);
+  }
+}
+function snapLines() {
+  for (const l of lines) {
+    draw(l.camp.awake, () => (l.open ? 1 : 0));
+    if (l.open) l.train.resume(cycleOf(l.spec.line) / 2);
+    else if (l === L1) l.train.park();
+    else l.train.hide();
+    clearCrates(l.train.tr.load);
+    l.train.tr.lastStop = -1;
+  }
+}
+function fillPiles() {
+  L1.pile.list = Array.from({ length: TUNE.deckCrates + 2 }, () => 'wood');
+  L2.pile.list = Array.from({ length: TUNE.deckCrates + 2 }, () => 'stone');
+}
+function startOver() {
+  for (const l of lines) {
+    l.stage = 0;
+    l.open = false;
+    l.madeAt = 0;
+    for (const st of l.stations) {
+      st.have.logs = st.have.rails = 0;
+      st.coming.logs = st.coming.rails = 0;
+    }
+  }
+  fillPiles();
+  s.awake = s.turned = false;
   s.wood = s.stone = 0;
+  s.people = TUNE.people;
+  s.loose = 0;
   s.finds = [];
+  back.logs = back.rails = back.incoming = 0;
+  railsIncoming = logsIncoming = 0;
   hub.list = [];
-  for (const c of riding) c.mesh.removeFromParent();
-  riding.length = 0;
+  dock.list = [];
+  yard.list = [];
+  clearTrips();
+  craneClear();
+  resetTrees();
+  felled.n = 0;
+  resetForge();
+  run.mode = 'asleep';
+  snapLines();
+  placeMachine();
   drawHeaps(allHeaps);
   snapTown(0, 0);
   log.length = 0;
@@ -826,33 +1067,18 @@ onApplied((e: { op: string }) => e.op === 'tune.reset' && startOver());
 function atSpawn() {
   const b = me.body;
   if (!b) return;
-  teleport(b, wx(SPAWN.x), H(wx(SPAWN.x), SPAWN.z) + PLAYER_R + 0.4, SPAWN.z);
+  teleport(b, toWorld(SPAWN.x), H(toWorld(SPAWN.x), SPAWN.z) + PLAYER_R + 0.4, SPAWN.z);
   b.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = SPAWN.yaw;
   cam.pitch = -0.14;
-}
-
-let lastSet = 0;
-const proto = isProtoRoom(getRoomId());
-function tuneRoom(now: number) {
-  if (!proto || now - lastSet < 1000) return;
-  const { tune } = rules.tune;
-  const want: [string, number][] = [
-    ['cost0', 600],
-    ['hard', anyOpen() ? TUNE.depotTake : TUNE.bundleTake],
-  ];
-  for (const [key, v] of want)
-    if (tune.v[key as keyof typeof tune.v] !== v) {
-      submitEdit({ op: 'tune.set', i: 0, j: 0, key, v });
-      lastSet = now;
-    }
 }
 
 let ready = false,
   placed = false,
   wasRiding = false;
 const smokeCol = new THREE.Color('#f2efe8');
-let smokeAcc = 0;
+let smokeAcc = 0,
+  lastWas = '';
 onFrame(
   ({ dt, now }) => {
     const b = me.body;
@@ -871,46 +1097,51 @@ onFrame(
       }
     }
     if (!ready) {
-      if (!worldStatus().ready || world.tick <= 0 || !claim()) return;
+      if (!worldStatus().ready || world.tick <= 0) return;
       ready = true;
+      fillPiles();
       restore();
-      links.forEach(snapLink);
+      snapLines();
+      placeMachine();
+      snapForge();
       drawHeaps(allHeaps);
       snapTown(stepsOf(s.wood), stepsOf(s.stone));
     }
-    tuneRoom(now);
-    pour(now);
-    serveDepots(now, dt);
-    for (const l of links) {
-      layOn(l, dt);
-      make(l, now);
-      if (l.state === 2)
-        for (const tr of l.trains.trains) {
-          if (tr.stop !== tr.lastStop) {
-            if (tr.stop >= 0) arrive(l, tr, tr.stop);
-            tr.lastStop = tr.stop;
-          }
-        }
+    if (run.mode === 'feeding') stepFeed(dt);
+    if (run.mode === 'waiting' && forge.lit) {
+      // The forge can light while line 1 is the machine's: that's when it turns for line 2.
+      s.turned = true;
+      run.mode = 'turning';
+      run.turnT = 0;
+      whistle(TX, TZ);
     }
-    if (plantAnim) {
-      plantAnim.t += dt;
-      const { l, t } = plantAnim;
-      const y = H(l.flag.position.x, l.flag.position.z);
-      const u = Math.min(1, t / 0.22);
-      l.flag.position.y = y + 3 * (1 - u * u);
-      if (u >= 1) {
-        puffAt(l.flag.position.x, y, l.flag.position.z);
-        thump(l.flag.position.x, l.flag.position.z);
-        plantAnim = null;
+    unload(dt);
+    for (const l of lines) {
+      l.track.update(dt);
+      make(l, now);
+      const { tr } = l.train;
+      if (tr.stop !== tr.lastStop) {
+        if (tr.stop >= 0 && (l.open || (l === L1 && tr.stop === 1))) arrive(l, tr.stop);
+        tr.lastStop = tr.stop;
       }
     }
+    feedCrane();
+    updateForge(dt, () => {
+      mark('forge lit');
+      protoCount('forge');
+      fanfare(true);
+      save();
+    });
+    updatePieces(dt);
+    updateChop(dt, now);
     updateCrates(dt);
     updateTown(stepsOf(s.wood), stepsOf(s.stone), dt);
     updateFinds(dt);
+    updateCrowd(dt, now);
     // The two smoke columns: tall, slow and white, the first thing you read across the gorge.
     smokeAcc += dt * 3;
     for (; smokeAcc >= 1; smokeAcc--)
-      for (const l of links) {
+      for (const l of lines) {
         const c = l.camp.smoke;
         emit({
           x: c.x + (Math.random() - 0.5),
@@ -928,8 +1159,25 @@ onFrame(
           drag: 0.02,
         });
       }
+    // What's on screen.
+    setObjective(objective(now));
+    setNumbers(L1.open ? TUNE.deckCrates : null, s.people);
+    forgeBoard.set(
+      forge.lit ? 'Forge lit' : `Forge: timber ${forge.crates}/${TUNE.forgeCost}`,
+      forge.lit ? `${forge.made} rails poured` : forgePhase(),
+    );
+    forgeBoard.sprite.visible = true;
+    heapBoard.sprite.visible = s.turned || hub.list.length > 0;
+    heapBoard.set('Timber', `${hub.list.length} crates`);
+    rackBoard.sprite.visible = forge.lit;
+    rackBoard.set('Rails', `${forge.rails} on the rack`);
     // What the owner does.
-    const riding_ = links.some((l) => l.trains.onTrain(carry.on));
+    const was = run.mode;
+    if (was !== lastWas) {
+      lastWas = was;
+      if (was === 'turning') mark('turning');
+    }
+    const riding_ = lines.some((l) => l.train.onTrain(carry.on));
     if (riding_ && !wasRiding) {
       protoCount('rides');
       mark('ride');
@@ -953,44 +1201,100 @@ const btn = (text: string, fn: () => void) => {
 btn('Start over', () => {
   if (!submitEdit({ op: 'tune.reset', i: 0, j: 0 })) startOver();
 });
-function skipWalk() {
-  const l = links.find((q) => q.state === 0) ?? links.find((q) => q.state === 1);
+const hop = (x: number, z: number, yaw: number) => {
   const b = me.body;
-  if (!l || !b) return;
-  const to = l.flag.position;
-  teleport(b, to.x + 3, H(to.x + 3, to.z) + PLAYER_R + 0.4, to.z);
+  if (!b) return;
+  teleport(b, x, H(x, z) + PLAYER_R + 0.4, z);
   b.velocity.set(0, 0, 0);
   carry.x = carry.z = 0;
+  cam.yaw = me.yaw = yaw;
+};
+function skipWalk() {
+  if (run.mode === 'asleep') {
+    lineAt(L1.spec.line, run.head + 2, P);
+    return hop(machine.flatbed.x - P.uz * -3.4, machine.flatbed.z + P.ux * -3.4, 0);
+  }
+  const st = stationOf(run.line);
+  if (st) hop(st.x, st.z, 0);
 }
-function skipHaul() {
-  const l = links.find((q) => q.state === 1 && q.funded < TUNE.segments);
-  if (!l) return;
-  fund(l);
+/** The chop and the carry: the current station has what it needs, and the machine starts. */
+function skipDelivery() {
+  if (run.mode === 'asleep') wake();
+  if (run.mode !== 'idle') return;
+  const st = stationOf(run.line);
+  if (!st) return;
+  st.have.logs = st.spec.logs;
+  st.have.rails = st.spec.rails;
+  st.coming.logs = st.coming.rails = 0;
+  st.drawStock(st.have);
+  st.setTag(true);
+  beginFeed(run.line, st);
+  save();
+}
+/** Line 1 finished, the train running and the forge waiting on its timber. */
+function skipForge() {
+  if (L1.open) return hop(toWorld(-68), 2, -2.3);
+  L1.stage = L1.stations.length;
+  L1.open = true;
+  s.awake = true;
+  s.people += 8;
+  rise(L1.camp.awake);
+  L1.madeAt = performance.now();
+  L1.train.start(true);
+  L1.track.snapTo(L1.track.u(STUB.village));
+  L1.stations.forEach((st) => st.drawStock({ logs: 0, rails: 0 }));
+  run.line = L1;
+  placeMachine();
+  hop(toWorld(-68), 2, -2.3);
+  save();
+}
+/** The forge lit, its rack full, a heap of timber: line 2's first station is next. */
+function skipLine2() {
+  if (!L1.open) skipForge();
+  forge.crates = TUNE.forgeCost;
+  forge.rails = forge.made = TUNE.rackMax;
+  snapForge();
+  s.turned = true;
+  hub.list = Array.from({ length: 12 }, () => 'wood');
+  s.wood = 12;
+  run.line = L2;
+  placeMachine();
+  drawHeaps(allHeaps);
+  hop(toWorld(RACK.x + 3.5), RACK.z + 2, -0.8);
   save();
 }
 btn('Skip the walk', skipWalk);
-btn('Skip the haul', skipHaul);
+btn('Skip chop and carry', skipDelivery);
+btn('Skip to the forge', skipForge);
+btn('Skip to line 2', skipLine2);
 (document.querySelector('.hud') ?? document.body).append(box);
 playPanel('place', box);
 
 // For the look evals (dev/look/evals/place.ts).
 window.__place = {
-  links,
+  lines,
+  machine,
+  run,
   s,
+  back,
+  forge,
   hub,
+  dock,
+  yard,
   log,
+  TREES,
   TUNE,
+  CRANE,
   PATH_SAMPLES,
   ORIGIN,
   H,
   rideSeconds: runSeconds,
   cycleOf,
   skipWalk,
-  skipHaul,
-  plant,
-  open,
-  give: (kind: Kind, n: number) => {
-    for (let k = 0; k < n; k++) landHub(kind);
-  },
+  skipDelivery,
+  skipForge,
+  skipLine2,
+  startOver,
+  wake,
   backUp,
 };

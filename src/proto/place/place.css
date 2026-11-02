@@ -21,3 +21,54 @@
   box-shadow: 0 3px 0 var(--ink);
   cursor: pointer;
 }
+
+/* The objective: one short line, always on screen, big enough for an iPad across the room. */
+.place-objective {
+  position: absolute;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%);
+  max-width: min(62vw, 760px);
+  padding: 10px 20px;
+  font: 800 20px/1.25 var(--font-body);
+  color: var(--ink);
+  text-align: center;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--ink);
+  pointer-events: none;
+}
+.place-objective.place-pop {
+  animation: place-pop 0.28s ease-out;
+}
+@keyframes place-pop {
+  0% {
+    transform: translateX(-50%) scale(0.92);
+  }
+  60% {
+    transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+/* What everyone shares: the train's capacity and the town's people. */
+.place-nums {
+  position: absolute;
+  right: 14px;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font: 700 15px var(--font-body);
+  color: var(--ink);
+  pointer-events: none;
+}
+.place-nums span {
+  padding: 3px 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}

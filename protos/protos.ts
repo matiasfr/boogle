@@ -92,11 +92,11 @@ export const PROTOS: Proto[] = [
     step: 8,
     status: 'live',
     url: '/?room=proto-place&proto=place&tod=0.07',
-    question: 'Having found that place on foot, did you want to connect it?',
-    what: 'A gorge, a village and two camps smoking across it. Walk over, plant a stake, haul while the trestle goes up, and ride home with the cargo.',
+    question: 'Did carrying materials out to the track feel like building something, or like a chore?',
+    what: 'A sign, a stranded track layer, chop and carry timber to stations, and the machine lays those same logs as track. The train’s cargo builds a forge, whose rails start line 2.',
     since: '2026-11-02',
-    spawn: { x: 910, z: 9, yaw: -1.05 }, // at the village's edge, looking over the gorge at both smoke columns and the spire
-    verb: 'stakes',
+    spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the sign, the path, the forge and the stub ahead
+    verb: 'chops',
     chapter: 'it builds its own land far from the island, with its own far plane, fog and sea',
   },
   {
@@ -547,7 +547,7 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'place', why: 'Having found that place on foot, did you want to connect it?' },
+  { id: 'place', why: 'Did carrying materials out to the track feel like building something, or like a chore?' },
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
