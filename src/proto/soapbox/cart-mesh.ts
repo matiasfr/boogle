@@ -126,14 +126,14 @@ export function poseCart(cart: Cart, steer: number, dist: number, ride: Ride = R
   u.body.position.set(0, ride.heave, 0);
   u.body.rotation.set(ride.pitch, 0, ride.roll, 'YXZ');
   for (let i = 0; i < 4; i++) {
-    const w = u.wheels[i];
-    w.position.y = drops ? drops[i] : 0;
+    const w = u.wheels[i]!;
+    w.position.y = drops ? drops[i]! : 0;
     w.rotation.y = i < 2 ? steer : 0;
-    u.spins[i].rotation.x = u.spin;
+    u.spins[i]!.rotation.x = u.spin;
     // the strut: from the chassis' outrigger down to the wheel's hub, inboard of the tyre
-    const [x, z] = WHEELS[i];
+    const [x, z] = WHEELS[i]!;
     chassisPoint(top, ride, x * 0.82, MOUNT_Y, z);
-    const s = u.struts[i];
+    const s = u.struts[i]!;
     s.position.copy(top);
     dir.set(x * 0.82, w.position.y, z).sub(top);
     const len = Math.max(0.05, dir.length());
