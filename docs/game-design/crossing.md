@@ -56,6 +56,6 @@ All at runtime, under the flag:
 - The fog is set after `sky.ts` rewrites it each frame: 180 to 3600 m (9200 m in `vast`).
 - Four flat rectangles of sea surround the game's fixed 1300 m plane, out to where the fog is solid. They wear the
   plane's own material (`src/proto/crossing/sea.ts`), so nothing shows where they meet at 650 m.
-- Past the map's 237 m soft wall (`src/entities/player/index.ts`), a later pre-step hook puts back the speed the wall took.
+- Past the map's 237 m soft wall (`src/entities/player/state.ts`), a later pre-step hook puts back the speed the wall took.
 - The player body's CCD goes off: it stops whole steps on a falling deck at train speed.
 - The camera stays above the water in open sea.

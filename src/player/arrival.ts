@@ -15,7 +15,7 @@
 //   friendlyName()          a random friendly name for the first-visit card
 //   leaveIsland()           the pause view's Leave: reload onto the card
 
-const NAME = 'boogle.name'; // also written by enterIsland (src/player/player.ts) and the pause view's You editor
+const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
 const LAST = 'boogle.lastVisit';
 const ROOM = (room: string) => `boogle.visit.${room}`;
 const LEAVING = 'boogle.leaving'; // sessionStorage: this tab just left, so the card shows once

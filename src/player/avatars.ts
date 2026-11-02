@@ -1,8 +1,6 @@
 import * as THREE from 'three';
-import { COLORS, PLAYER_R, PLAYER_MASS, HEAD_OFFSET } from '../constants.ts';
+import { COLORS, PLAYER_R, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
-import { playerMat, NOT_SCENERY } from '../physics/physics.ts';
-import { createBody, BODY } from '../physics/engine.ts';
 import { warmUp } from '../render/precompile.ts';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
@@ -107,20 +105,6 @@ export function makeLabel(text: string) {
   sprite.position.y = 2.05;
   sprite.renderOrder = 10;
   return sprite;
-}
-
-export function makePlayerBody(kinematic: boolean) {
-  return createBody({
-    mass: kinematic ? 0 : PLAYER_MASS,
-    type: kinematic ? BODY.KINEMATIC : BODY.DYNAMIC,
-    material: playerMat,
-    fixedRotation: true,
-    mask: kinematic ? NOT_SCENERY : -1, // remote players are moved by the network, not by the ground
-    shapes: [
-      { kind: 'sphere', r: PLAYER_R },
-      { kind: 'sphere', r: PLAYER_R, offset: { x: 0, y: HEAD_OFFSET, z: 0 } },
-    ],
-  });
 }
 
 // A player (and a name label) appears the moment someone joins: build their pipelines behind the lobby instead.

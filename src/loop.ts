@@ -14,10 +14,10 @@
 // Core orders, which features leave alone (pick an order between these, never equal to one; `npm run registry -- --json`
 // lists the features' too). Bare names are kinds, and files are services on a plain hook:
 //   prePhysics  -100 remote-player: remote poses   -90 ball: who owns the ball (can release it: me.holding)
-//               -80 player: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
+//               -80 player-intent: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
 //   world   -300 ball: an owned ball off the island respawns; ball.pose follows the body
 //           -290 player: fall respawn            -280 ball-carry: walking into a slow ball claims it
-//   update  -300 ball-view: ball mesh            -290 player: own avatar          -280 remote-player: remote avatars
+//   update  -300 ball-view: ball mesh            -290 player-view: own avatar        -280 remote-player: remote avatars
 //           -200 camera                          -190 cloud                       -150 assets.ts: glTF clips
 //           -60 conversation                     -10 world.ts: lockstep ticks     -5 sky, guest
 //           (features: -10 and up)

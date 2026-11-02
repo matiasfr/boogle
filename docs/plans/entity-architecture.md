@@ -260,7 +260,7 @@ Do this before the entity work: it's what delivers the separation.
 - [x] **12. The local player, as one blob.** ([#510](https://github.com/matiasfr/boogle/pull/510)) `player.ts` and its part of `installStepHooks` become one entity with no behaviour
       change. The camera becomes its own kind at -200. Remove `updateIntent` from `main.ts`. Keep the `me` export path stable. Verify:
       as step 11, with `/look` of movement, swimming and respawn. The owner's call (2026-11-02): don't stop here, the owner plays
-      at the end. Still to do: split its state and view, and the camera's.
+      at the end. Its state and view are split (`src/entities/player/`, as the ball's: `npm run sim` runs it). The camera stays browser-only, in one file.
 - [x] **13. The Boogler, as one blob.** `src/boogler/boogler.ts` (726 lines) becomes an entity, staying in its folder, host field
       `g` unchanged, `lines.ts` untouched. Verify: `/look`, and talking and riding work. Still to do: split its state and view.
 - [x] **14. Remaining game objects, one PR per group:** ([#497](https://github.com/matiasfr/boogle/pull/497), [#499](https://github.com/matiasfr/boogle/pull/499), [#501](https://github.com/matiasfr/boogle/pull/501), [#504](https://github.com/matiasfr/boogle/pull/504), [#505](https://github.com/matiasfr/boogle/pull/505), [#506](https://github.com/matiasfr/boogle/pull/506), [#507](https://github.com/matiasfr/boogle/pull/507), [#508](https://github.com/matiasfr/boogle/pull/508), [#512](https://github.com/matiasfr/boogle/pull/512), [#514](https://github.com/matiasfr/boogle/pull/514), [#515](https://github.com/matiasfr/boogle/pull/515), [#516](https://github.com/matiasfr/boogle/pull/516), [#517](https://github.com/matiasfr/boogle/pull/517))
@@ -303,8 +303,8 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
         chose plain modules), and its reviewer reads for duplicate paths (check 10).
 - [x] **17. Headless runtime.** ([#519](https://github.com/matiasfr/boogle/pull/519), [#520](https://github.com/matiasfr/boogle/pull/520), [#522](https://github.com/matiasfr/boogle/pull/522)) `npm run sim -- <name>` ([dev/sim/README.md](../../dev/sim/README.md)) runs entity state and Rapier in Node with no scene code or GPU. Works: the same Rapier WASM,
       the real ground, the ball at about 800x real time and within 1 mm of the browser on land, the lockstep rules, and a two-process ball hand-off through a real local server.
-      An entity joins by having a `headless.ts`, with its view left to `index.ts` as its own kind. Not yet: the player (one blob with its mesh, so `me.body` is null), every other
-      entity, most features, and static colliders other than the ground, which are built with what draws them.
+      An entity joins by having a `headless.ts`, with its view left to `index.ts` as its own kind. The player joined once its state and view split, and enters with `enterIsland()`. Not yet: every other
+      entity (the Boogler's split is still to do), most features, and static colliders other than the ground, which are built with what draws them.
 - [x] **18. Replication component.** `sync.ts` minus the ball's wire shape: the claim rule, latest claim and snapshots per peer, the
       orphan pick, the mode switch, and sampling into `pose` with the extrapolation cap. `held`, carry, surf and respawn stay with the
       object, and `snap` is an additive field. Entity `id` isn't a network id. Presence keys stay literal. Verify: `check:full`,
@@ -315,7 +315,8 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
 - [ ] **20. Blueprints and a level validator.** Typed blueprints for reusable objects and levels, building on `Site`, stamps
       and layout files. A check in `npm run check` catches unreachable areas, overlaps, bad slopes and budget overruns.
       Cites `docs/research/level-design.md`.
-- [ ] **21. Input replay.** Record a session's inputs to a file, replay them headless on a new build, and compare state.
+- [ ] **21. Input replay.** Record a session's inputs to a file, replay them headless on a new build, and compare state. Unblocked: a run writes `input` and `cam`
+      (`src/player/input-state.ts`, `src/player/state.ts`) and calls `enterIsland()`. It has to place the body itself, since entering picks a random spot.
 - [ ] **22. Runtime systems, only when the game needs them.**
       - Streaming and LOD: design before era 3 starts ([architecture.md](architecture.md), phase 4).
       - Animation state machine: with the hero character.

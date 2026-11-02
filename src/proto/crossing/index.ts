@@ -28,7 +28,7 @@ dressSea();
 extendSky();
 
 // ---------------------------------------------------------------- past the edge of the map
-// The player's soft wall (src/entities/player/index.ts) turns you back 18 m inside the 510 m square, whether you swim or ride: at 237 m it sets your
+// The player's soft wall (src/entities/player/state.ts) turns you back 18 m inside the 510 m square, whether you swim or ride: at 237 m it sets your
 // speed away from the origin to -2 m/s. This hook runs after it (lazy modules register last) and, past the wall, puts
 // back the speed you would have had, by the same steering sum. The real fix: a wall that knows the world is bigger.
 const WALL = HALF - 18;

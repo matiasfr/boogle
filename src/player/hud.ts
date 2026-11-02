@@ -1,4 +1,5 @@
-import { COLORS } from '../constants.ts';
+import { COLORS, DEFAULT_NAME } from '../constants.ts';
+import { sanitizeName } from '../math.ts';
 import { me } from './state.ts';
 import { enterIsland } from './player.ts';
 import { dom } from './dom.ts';
@@ -117,11 +118,26 @@ function renderSwatches() {
   });
 }
 
+// The lobby's part of entering: its name field, closing it, remembering who you are. The rest is enterIsland's.
+function joinFromLobby() {
+  if (me.entered) return;
+  const name = sanitizeName(dom.nameInput.value) || DEFAULT_NAME;
+  document.body.classList.add('playing');
+  dom.lobbyEl.hidden = true;
+  try {
+    localStorage.setItem('boogle.name', name);
+    localStorage.setItem('boogle.color', String(me.colorIdx));
+  } catch {
+    // storage unavailable (private mode); the name just will not be remembered
+  }
+  enterIsland(name);
+}
+
 // The island can be drawn: Jump in becomes available (the lobby itself, and the network, do not wait for this).
 export function lobbyReady() {
   dom.enterBtn.disabled = false;
   dom.enterBtn.textContent = 'Jump in';
-  if (direct) enterIsland();
+  if (direct) joinFromLobby();
 }
 
 export function initLobby() {
@@ -143,7 +159,7 @@ export function initLobby() {
   dom.joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (dom.enterBtn.disabled) return; // the graphics are still starting
-    enterIsland();
+    joinFromLobby();
     canvas.focus();
     requestLock();
   });

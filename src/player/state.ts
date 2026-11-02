@@ -1,5 +1,5 @@
 // The local player's state and the poses read off it: a leaf module, so hands, the HUD, input, the ball and the
-// adapters can read them without importing the systems that drive them (player.ts, which re-exports all of this).
+// adapters can read them without importing the systems that drive them (src/entities/player/state.ts; player.ts re-exports all of this).
 import * as THREE from 'three/webgpu';
 import { SPAWN, BALL_SPAWN } from '../constants.ts';
 import type { Body } from '../physics/engine.ts';
