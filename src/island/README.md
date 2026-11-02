@@ -72,6 +72,7 @@ a few hooks anyone can reuse:
 - `groundProbe.netted` (same file): return false where something lives below the terrain, so the fall-through net
   (which puts bodies under the terrain back on top) leaves that area to your own safety net.
 - `camConstraints` (`src/player/player.ts`): keep the camera somewhere special (inside the tunnels).
+- The camera's arm (`src/player/camera-arm.ts`) stays out of anything static you collide with, so a new building or cliff needs nothing from you. Shapes under 1.6 m across only count right at the lens, as a camera shouldn't zoom for every trunk; `seeThrough` on `createBody` overrides that either way. A new camera mode gets the same thing from `makeCameraArm()`.
 - `atmosphere.underground` (`src/render/sky.ts`): 0..1, dims the sky light and closes the fog in.
 
 `npm run scenario -- caves` walks through them, throws the ball about and floats it on the pond.

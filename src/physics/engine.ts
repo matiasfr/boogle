@@ -18,6 +18,10 @@
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
+//   sweepSphere(from, to, r, { mask, thin })   metres a sphere of radius r moves from `from` towards `to` before it touches
+//                                  something static (what moves and sensors don't count, nor does anything it starts inside);
+//                                  -1 if clear. thin: 'skip' or 'only' for shapes under 1.6 m across (trunks, posts), or a
+//                                  body with `seeThrough`; 'include' by default. For a camera arm, line of sight, placing
 //   physicsTime()                  seconds of simulated time
 //   stepAlpha()                    how far the drawn frame is between the last two fixed steps (0..1), for poses
 //                                  interpolatedPosition does not cover (a platform's yaw)
@@ -63,6 +67,7 @@ export type BodyOptions = {
   fixedRotation?: boolean;
   linearDamping?: number;
   angularDamping?: number;
+  seeThrough?: boolean; // for sweepSphere's `thin`: set it to override what its shapes' size would say
 };
 export type StepOpts = { order?: number };
 export type RayHit = { hasHit: boolean; distance: number; hitPointWorld: V3; hitNormalWorld: V3 };
@@ -91,6 +96,12 @@ export const forEachContact: (
   body: Body,
   fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void,
 ) => void = backend.forEachContact;
+export const sweepSphere: (
+  from: V3,
+  to: V3,
+  r: number,
+  o: { mask?: number; thin?: 'include' | 'skip' | 'only' },
+) => number = backend.sweepSphere;
 export const rayHit: () => RayHit = backend.rayHit;
 export const raycastClosest: (from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) => boolean =
   backend.raycastClosest;

@@ -52,6 +52,7 @@ class MBody {
   fixedRotation = false;
   linearDamping = 0.01;
   angularDamping = 0.01;
+  seeThrough: boolean | undefined = undefined;
   inWorld = false;
   rb: RAPIER.RigidBody | null = null;
   colliders: RAPIER.Collider[] = [];
@@ -62,6 +63,15 @@ let R: R | null = null;
 let world: RAPIER.World | null = null;
 const bodies = new Set<MBody>(); // in the world
 const byCollider = new Map<number, MBody>();
+const thinColliders = new Set<number>(); // handles, for sweepSphere
+const THIN = 0.8; // m: half the width under which a shape counts as thin
+// Across the ground: a tree's height doesn't make it wide, unless it's lying down (a rotated cylinder or box).
+function isThin(s: Shape) {
+  if (s.kind === 'sphere') return s.r < THIN;
+  if (s.kind === 'box') return Math.max(s.hx, s.hz, s.rotation ? s.hy : 0) < THIN;
+  if (s.kind === 'cylinder') return Math.max(s.rTop, s.rBottom, s.rotation ? s.h / 2 : 0) < THIN;
+  return false;
+}
 type StepHook = { fn: () => void; order: number };
 const pre: StepHook[] = [],
   post: StepHook[] = [];
@@ -139,6 +149,7 @@ function buildColliders(b: MBody) {
     const col = w.createCollider(d, rb);
     b.colliders.push(col);
     byCollider.set(col.handle, b);
+    if (b.seeThrough ?? isThin(s)) thinColliders.add(col.handle);
   });
 }
 function rbType(kind: BodyKind) {
@@ -174,6 +185,7 @@ function remember(b: MBody) {
 function dropColliders(b: MBody) {
   for (const col of b.colliders) {
     byCollider.delete(col.handle);
+    thinColliders.delete(col.handle);
     world!.removeCollider(col, false);
   }
   b.colliders = [];
@@ -191,6 +203,7 @@ export function createBody(o: BodyOptions = {}): Body {
   b.fixedRotation = !!o.fixedRotation;
   b.linearDamping = o.linearDamping ?? 0.01;
   b.angularDamping = o.angularDamping ?? 0.01;
+  b.seeThrough = o.seeThrough;
   if (o.position) b.position.set(o.position.x, o.position.y, o.position.z);
   if (o.rotation) b.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
   b.previousPosition.set(b.position.x, b.position.y, b.position.z);
@@ -356,6 +369,26 @@ export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: numb
     });
     if (done) return;
   }
+}
+
+const isThinCollider = (c: RAPIER.Collider) => thinColliders.has(c.handle),
+  notThinCollider = (c: RAPIER.Collider) => !thinColliders.has(c.handle);
+const NO_TURN = { x: 0, y: 0, z: 0, w: 1 };
+const balls = new Map<number, RAPIER.Ball>();
+export function sweepSphere(from: V3, to: V3, r: number, o: { mask?: number; thin?: 'include' | 'skip' | 'only' }) {
+  if (!R || !world) return -1;
+  const v = { x: to.x - from.x, y: to.y - from.y, z: to.z - from.z };
+  const len = Math.hypot(v.x, v.y, v.z);
+  if (len === 0) return -1;
+  let ball = balls.get(r);
+  if (!ball) balls.set(r, (ball = new R.Ball(r)));
+  const filter = ((0xffff << 16) | ((o.mask ?? -1) & 0xffff)) >>> 0;
+  const flags =
+    R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC | R.QueryFilterFlags.EXCLUDE_KINEMATIC;
+  const only = o.thin === 'only' ? isThinCollider : o.thin === 'skip' ? notThinCollider : undefined;
+  // 1 s at this velocity is the whole sweep. Not stopping at penetration: what it starts inside doesn't hold it.
+  const h = world.castShape(from, NO_TURN, v, ball, 0, 1, false, flags, filter, undefined, undefined, only);
+  return h ? h.time_of_impact * len : -1;
 }
 
 export const rayHit = (): RayHit => ({

@@ -38,6 +38,7 @@ import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { enablePropsNearFade, propsNearFade } from '../../render/props.ts';
 import { me, cam, camConstraints, camForward } from '../../player/player.ts';
+import { makeCameraArm } from '../../player/camera-arm.ts';
 import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { heldId } from '../../player/inventory.ts';
@@ -932,35 +933,23 @@ onFrame(
 
 // The chase camera (vehicle-feel.md 4): aims ahead of the cart along its velocity (where it will be, Lonely Mountains),
 // leads its yaw into the steering (Nesky: turn where the player turns) and keeps its distance nearly fixed (distance lag
-// is what hurts). A fast car needs a readable camera more than a clean one, so it pulls in only for something wide
-// (a rock or a cliff, which blocks all three of its rays), never closer than CAM_MIN and always eased; thin things
-// (trunks) and leafy crowns (no colliders) it ignores, and props within PROPS_FADE m of the lens dither away
-// (src/render/props.ts) instead of filling the screen.
-const camRay = { hit: rayHit() };
+// is what hurts). A fast car needs a readable camera more than a clean one, so its arm (src/player/camera-arm.ts) pulls
+// in only for something wide (a rock or a cliff), never closer than CAM_MIN and always eased; thin things (trunks) and
+// leafy crowns (no colliders) it ignores, and props within PROPS_FADE m of the lens dither away (src/render/props.ts)
+// instead of filling the screen.
 const ahead = new THREE.Vector3(); // the smoothed look-ahead offset
 const aheadWant = new THREE.Vector3();
 const camFwd = new THREE.Vector3();
 const camFrom = new THREE.Vector3();
-const rayA = new THREE.Vector3(),
-  rayB = new THREE.Vector3();
 let camLead = 0;
-let camD = -1, // the camera's distance from the cart, eased (in briskly, back out slowly): -1 until the first frame
-  camAt = 0;
 const CAM_MIN = 3; // m: never closer than this (a close-up behind a rock hurts more than a rock at the edge)
-const CAM_IN = 9, // m/s: the fastest the distance closes, and opens again
-  CAM_OUT = 5;
-const CAM_SIDE = 0.8; // m either side of the centre ray: something narrower than 1.6 m doesn't pull the camera in
+// In briskly, back out slowly, and rate-capped, so even a rock that appears all at once glides the camera in.
+const camArm = makeCameraArm({ min: CAM_MIN, glide: { in: 5, out: 2, maxIn: 9, maxOut: 5 } });
 const PROPS_FADE = 3; // m from the lens where trees, fronds and rocks start to dither away while seated
 enablePropsNearFade(); // this module loads only with the prototype on (src/features/proto-soapbox.ts)
-// How far along `dir` (length `len`) a ray from camFrom, offset (sx, sz), gets before scenery; `len` if clear.
-function clearTo(dir: THREE.Vector3, len: number, sx: number, sz: number) {
-  rayA.set(camFrom.x + sx, camFrom.y, camFrom.z + sz);
-  rayB.copy(rayA).addScaledVector(dir, len);
-  return raycastClosest(rayA, rayB, { mask: GROUP.SCENERY }, camRay.hit) ? camRay.hit.distance : len;
-}
 camConstraints.push((look, pos) => {
   if (!S.seated) {
-    camD = -1;
+    camArm.reset();
     propsNearFade.value = 0;
     return false;
   }
@@ -970,23 +959,7 @@ camConstraints.push((look, pos) => {
   const v = body.velocity;
   const dist = T.camDist + T.camPull * clamp((Math.hypot(v.x, v.z) - 6) / 10, 0, 1);
   pos.copy(look).addScaledVector(camForward(camFwd), -dist);
-  const d = camFrom.distanceTo(pos);
-  const dir = camFwd.subVectors(pos, camFrom).divideScalar(d); // the arm, cart to camera
-  // its right, flat
-  const fl = Math.hypot(dir.x, dir.z) || 1;
-  const rx = (-dir.z / fl) * CAM_SIDE,
-    rz = (dir.x / fl) * CAM_SIDE;
-  // the farthest any of the three rays reaches: a trunk stops one, a rock all three
-  const reach = Math.max(clearTo(dir, d, 0, 0), clearTo(dir, d, rx, rz), clearTo(dir, d, -rx, -rz));
-  const goal = reach >= d ? d : clamp(reach - 0.4, CAM_MIN, d);
-  const t = performance.now();
-  const dt = Math.min(0.1, (t - camAt) / 1000);
-  camAt = t;
-  if (camD < 0) camD = goal;
-  // eased and rate-capped, so even a rock that appears all at once glides the camera in rather than jumping it
-  camD += clamp((goal - camD) * (1 - Math.exp(-dt * (goal < camD ? 5 : 2))), -CAM_IN * dt, CAM_OUT * dt);
-  camD = Math.min(camD, d);
-  pos.copy(camFrom).addScaledVector(dir, camD);
+  camArm.solve(camFrom, pos, GROUP.SCENERY);
   pos.y = Math.max(pos.y, groundHeight(pos.x, pos.z) + 0.45);
   return true;
 });
