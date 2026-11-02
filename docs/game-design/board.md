@@ -35,13 +35,9 @@ all three sections).
     your stop, then "Arrived" with the time it took), a yellow beam and spinning arrow over the wagon until you board,
     and a green column on the stop. Get off elsewhere and the plan starts again from the nearest station.
   - Not laid yet: greyed, "Opens when the line reaches it".
-- **A stop's sign** is minimal and has no picker (Interact there says "Ride the wagon to a hub to jump"). The variants
-  differ only in how it tells you when the next wagon leaves:
-  - **`&v=pole`** (default): a 1.6 x 0.75 m flap face on one post: the name, `NEXT WAGON`, and one row each way
-    (`>LIGHTHOUSE 0:07`, `<COURT 0:49`, `NOW` in green while it stands here), the next to leave on top.
-  - **`&v=plaque`**: a painted cream plank on two short posts: the name, `WAGON STOP`, and a timetable dial. One turn is
-    one round trip; a red band (to Lighthouse) and a blue band (to Court) mark when the wagon stands here, each ending
-    in the mark where it leaves; the hand is now. A key and "Leaves when the hand hits its mark · round trip 1:05".
+- **A stop's sign** is minimal and has no picker (Interact there says "Ride the wagon to a hub to jump"): a 1.6 x 0.75 m
+  flap face on one post, with the name, `NEXT WAGON`, and one row each way (`>LIGHTHOUSE 0:07`, `<COURT 0:49`, `NOW` in
+  green while it stands here), the next to leave on top.
 - **The wagon** is a greybox flatbed (2.2 x 3.6 m deck, a lamp at each end) on a kinematic body following `wagonAt` with
   platform carry ([physics/platforms.ts](../../src/physics/platforms.ts)): stand on it and you ride. It runs at the
   wagon prototype's fast pace (6.5 m/s cruise, 2 s to speed up): Court to Lighthouse in about 25 s, a round trip with

@@ -59,6 +59,7 @@ function card(p: Proto): HTMLElement {
   head.append(meta, el('h2', '', p.title), el('p', 'what', p.what));
   if (p.note) head.append(el('p', 'note', p.note));
   if (p.retired?.note) head.append(el('p', 'note', p.retired.note));
+  if (p.answer) head.append(el('p', 'note', `“${p.answer.verdict}” ${p.answer.next}`));
   c.append(head);
 
   const play = el('a', 'btn play', 'Play');

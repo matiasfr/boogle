@@ -44,7 +44,8 @@ export type Proto = {
    * trace's activities ('riding', 'driving', 'carrying'). Only it counts, so on the island another toy's ride or carry
    * isn't this card's verb. Left out, the first ride, drive or carry is. */
   verb?: string;
-  /** A graduated, answered or parked card: the day, the owner's verdict in his words (one line) and what happens next. */
+  /** A graduated, answered or parked card: the day, the owner's verdict in his words (one line) and what happens next.
+   * A live card has one when its first question is settled and it is back asking something new. */
   answer?: { on: string; verdict: string; next: string };
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
@@ -99,7 +100,12 @@ export const PROTOS: Proto[] = [
     id: 'ride',
     title: 'Ride: platform carry',
     step: 2,
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Still fine.',
+      next: 'Standing on a moving deck stays as it is: the wagon is transportation.',
+    },
     url: '/?proto=ride',
     question: 'Does riding feel good enough to ride twice for no reason?',
     what: 'Stand on a moving flatbed; jump off at speed.',
@@ -107,7 +113,6 @@ export const PROTOS: Proto[] = [
     spawn: { x: 3, z: 37, yaw: 0.79 }, // beside the flatbed at its first stop, looking at it
     verb: 'riding',
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
-    chapter: 'its flatbed’s route crosses the mushroom hop line and the golf hole',
   },
   {
     id: 'wagon',
@@ -207,8 +212,13 @@ export const PROTOS: Proto[] = [
     step: 5,
     status: 'live',
     url: '/?proto=soapbox',
-    question: 'Is driving fun?',
-    what: 'New: the cart is now an RC car with suspension you can see: the body rolls in turns, squats on the throttle, dives on the brake and squashes on landings, on big wheels. RT throttle, LT brake and reverse (analog; W/S on keys); throttle in the air lifts the nose, brake drops it. Same ~9 s run off the massif’s summit, hold Jump (A) to drift for a boost, ghost of your best run.',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Pretty fun.',
+      next: 'The RC-car soapbox stays; races with these carts are an idea for later.',
+    },
+    question: 'Do you keep driving after the finish?',
+    what: 'New: the finish shows your time and leaves you in control: drive on anywhere on the island. Stop (or press Interact while the time shows) for Back to the top and a new run. Same RC car and ~9 s run off the massif’s summit, drift for a boost, ghost of your best run.',
     since: '2026-11-01',
     spawn: { x: -61.5, z: -95, yaw: -1.571 }, // behind the cart on the summit, looking down the ridge
     variants: [
@@ -256,21 +266,18 @@ export const PROTOS: Proto[] = [
     id: 'board',
     title: 'Departures board',
     step: 3,
-    status: 'live',
-    url: '/?room=proto-board&proto=board&v=pole',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'The poles looked fine to start with.',
+      next: 'Stops start with the pole sign; the plaque is gone.',
+    },
+    url: '/?room=proto-board&proto=board',
     question: 'Do hubs-only jumps make you want to ride between stops?',
     what: 'Only hubs (Court and Lighthouse, the two ends) jump: their big board takes you to the other hub, or tells you which wagon to ride to a stop. Stops have a small sign. The wagon runs fast.',
     since: '2026-11-01',
-    note: 'Press “Lay the whole route” first. Swap &v=pole for &v=plaque to compare the stop signs; &laid=1 or 2 tries a shorter line.',
+    note: 'Press “Lay the whole route” first. &laid=1 or 2 tries a shorter line.',
     verb: 'trips',
-    chapter: 'it runs its own wagon on the wagon’s line',
-    variants: [
-      {
-        name: 'plaque',
-        url: '/?room=proto-board&proto=board&v=plaque',
-        what: 'Stops get a painted timetable dial instead of a flap countdown.',
-      },
-    ],
   },
   {
     id: 'groove',
@@ -287,13 +294,17 @@ export const PROTOS: Proto[] = [
     id: 'look',
     title: 'Graphics ceiling',
     step: 'depth',
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Pretty good … we may want to iterate a little more.',
+      next: 'The current look is okay for now; no more look work until there’s a reason.',
+    },
     url: '/?proto=look&look=ipad&v=ipad',
     question: 'Which look should Boogle aim for?',
     what: 'Code-only graphics on the real island: presets and layers top right, Y for the steam palette, Measure frame for ms.',
     since: '2026-11-01',
     note: 'Write-up and numbers: docs/proposals/visual-target.md.',
-    chapter: 'it changes how the whole island is drawn',
     variants: [
       { name: 'today', url: '/?proto=look&look=today&v=today', what: 'The shipped look, for comparison.' },
       {
@@ -474,19 +485,9 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'wagon', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'show', why: 'Did you stay on to see what came next?' },
   { id: 'wagon', variant: 'bench', why: 'Did you sit down and just watch the island go by?' },
-  { id: 'wagon', variant: 'fast', why: 'Would you ride it twice for no reason?' },
-  { id: 'soapbox', why: 'Is driving fun?' },
-  { id: 'soapbox', variant: 'bouncy', why: 'Is driving fun?' },
-  { id: 'soapbox', variant: 'tight', why: 'Is driving fun?' },
-  { id: 'soapbox', variant: 'drift', why: 'Is driving fun?' },
-  { id: 'ride', why: 'Would you ride the flatbed twice for no reason?' },
-  { id: 'board', why: 'Do hubs-only jumps make you want to ride between stops?' },
-  { id: 'board', variant: 'plaque', why: 'Do hubs-only jumps make you want to ride between stops?' },
-  { id: 'look', variant: 'high', why: 'High or toybox: which look should Boogle aim for?' },
-  { id: 'look', variant: 'toybox', why: 'High or toybox: which look should Boogle aim for?' },
+  { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
 ];
 
