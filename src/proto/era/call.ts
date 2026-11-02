@@ -17,7 +17,7 @@ import { CALL_S } from '../../sim/era.ts';
 import type { RunState } from '../../sim/scripted-run.ts';
 import { GATHER } from './blocks.ts';
 
-const END = ROUTE[ROUTE.length - 1].to;
+const END = ROUTE[ROUTE.length - 1]!.to;
 const SEGMENTS = 40;
 const SMOKE_PER_S = 14;
 
@@ -47,8 +47,8 @@ function buildRing(): void {
   for (let k = 0; k < SEGMENTS; k++) {
     // Clockwise from north, so the lit arc burns down like a clock hand.
     const a = (k / SEGMENTS) * Math.PI * 2;
-    const x = END[0] + Math.sin(a) * GATHER.r,
-      z = END[1] - Math.cos(a) * GATHER.r;
+    const x = END[0]! + Math.sin(a) * GATHER.r,
+      z = END[1]! - Math.cos(a) * GATHER.r;
     q.setFromAxisAngle(up, -a);
     ring.setMatrixAt(k, m.compose(p.set(x, groundHeight(x, z) - 0.15, z), q, s)); // sunk a little: slopes
     ring.setColorAt(k, dim);
@@ -74,7 +74,7 @@ banner.hidden = true;
 let bannerText = '';
 
 // ---------------------------------------------------------------- everyone here?
-const inRing = (x: number, z: number) => Math.hypot(x - END[0], z - END[1]) <= GATHER.r;
+const inRing = (x: number, z: number) => Math.hypot(x - END[0]!, z - END[1]!) <= GATHER.r;
 function everyoneHere(): boolean {
   if (!me.entered || !me.body || !inRing(me.body.position.x, me.body.position.z)) return false;
   for (const r of remotes.values()) if (r.entered && r.avatar && !inRing(r.target.x, r.target.z)) return false;
@@ -103,13 +103,13 @@ export function updateCall(r: RunState, sec: number): void {
 
   // The signal smoke: a tall, warm column over the platform, through the call and the bell.
   smokeAcc += dt * SMOKE_PER_S;
-  const y = groundHeight(END[0], END[1]) + 3.5;
+  const y = groundHeight(END[0]!, END[1]!) + 3.5;
   for (; smokeAcc >= 1; smokeAcc--)
     emit({
       // From the platform's west end, leaning west on the breeze: clear of the lighthouse behind it from the court.
-      x: END[0] - 2 + (Math.random() - 0.5) * 0.8,
+      x: END[0]! - 2 + (Math.random() - 0.5) * 0.8,
       y,
-      z: END[1] + (Math.random() - 0.5) * 0.8,
+      z: END[1]! + (Math.random() - 0.5) * 0.8,
       vx: -1.6 + (Math.random() - 0.5) * 0.6,
       vy: 7 + Math.random() * 2,
       vz: (Math.random() - 0.5) * 0.6,

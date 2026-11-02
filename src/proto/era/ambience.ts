@@ -295,7 +295,7 @@ function bed(b: Beds, t: number, ahead: number): void {
   if (next.pad < ahead) {
     const len = rand(18, 26);
     // Rest for a whole chord now and then: silence is part of the bed (Breath of the Wild, Minecraft).
-    if (Math.random() < 0.8) pad(b, next.pad, CHORDS[chord], len);
+    if (Math.random() < 0.8) pad(b, next.pad, CHORDS[chord]!, len);
     chord = (chord + 1 + Math.floor(Math.random() * 2)) % CHORDS.length;
     next.pad += len - 5; // the next chord swells in under this one's fade
   }
@@ -303,10 +303,10 @@ function bed(b: Beds, t: number, ahead: number): void {
     if (Math.random() < 0.75) {
       const n = 1 + Math.floor(Math.random() * 3),
         pan = rand(-0.4, 0.4);
-      let k = PLUCKS.indexOf(pick(PLUCKS));
-      for (let i = 0, at = next.pluck; i < n; i++, at += BEAT * pick([0.5, 0.75, 1, 1.5])) {
-        mallet(b, at, hz(PLUCKS[k]), rand(0.035, 0.06), pan, i === n - 1 ? 0.5 : 0.2);
-        k = Math.max(0, Math.min(PLUCKS.length - 1, k + pick([-2, -1, 1, 2])));
+      let k = PLUCKS.indexOf(pick(PLUCKS)!);
+      for (let i = 0, at = next.pluck; i < n; i++, at += BEAT * pick([0.5, 0.75, 1, 1.5])!) {
+        mallet(b, at, hz(PLUCKS[k]!), rand(0.035, 0.06), pan, i === n - 1 ? 0.5 : 0.2);
+        k = Math.max(0, Math.min(PLUCKS.length - 1, k + pick([-2, -1, 1, 2])!));
       }
     }
     next.pluck += rand(7, 16);

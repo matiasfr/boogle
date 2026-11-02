@@ -66,7 +66,7 @@ const stall = (x: number, z: number, yaw = 0, smokes = false): Block => ({
   d: 2.2,
   yaw,
   color: '#efe3c8',
-  top: { h: 0.5, color: STALL_COLORS[stalls++ % STALL_COLORS.length], over: 0.8 },
+  top: { h: 0.5, color: STALL_COLORS[stalls++ % STALL_COLORS.length]!, over: 0.8 },
   chimney: smokes ? { h: 2.6, dx: 0.7, dz: -0.5 } : undefined,
 });
 const IRON = '#4a4642',
@@ -82,8 +82,8 @@ const waterTower: Block[] = [
     [-1, 1],
   ].map(([sx, sz]) => ({
     kind: 'water tower leg',
-    x: TOWER.x + sx * 1.7,
-    z: TOWER.z + sz * 1.7,
+    x: TOWER.x + sx! * 1.7,
+    z: TOWER.z + sz! * 1.7,
     w: 0.35,
     h: TOWER.legs,
     d: 0.35,

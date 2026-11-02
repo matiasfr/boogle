@@ -10,7 +10,7 @@ import { ERAS } from './blocks.ts';
 
 type Tint = { top: THREE.Color; horizon: THREE.Color; amount: number; near: number; far: number };
 const tint = (e: number): Tint => {
-  const s = ERAS[e].sky;
+  const s = ERAS[e]!.sky;
   return { ...s, top: new THREE.Color(s.top), horizon: new THREE.Color(s.horizon) };
 };
 const A = tint(1),
