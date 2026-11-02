@@ -8,7 +8,6 @@ declare global {
     __gulls?: unknown;
     __feel?: unknown; // src/features/feel.ts tuning, for scenarios
     __carry?: unknown; // src/physics/platforms.ts tuning and state
-    __ride?: unknown; // src/proto/ride/index.ts (?proto=ride) tuning and state
     __soapbox?: unknown; // src/proto/soapbox/index.ts: tuning and state, for ?proto=soapbox evals
     __wagon?: unknown; // src/proto/wagon/index.ts (?proto=wagon) state and the look evals' shortcuts
     __moves?: unknown; // src/proto/moves/index.ts (&jump2=1, &glide=1) tuning and state

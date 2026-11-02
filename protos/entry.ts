@@ -24,7 +24,7 @@ export function hasNotes(p: Proto): boolean {
   );
 }
 
-// "barrow: No: too slow downhill (2 spills, 4 min in prototype)"
+// "wave: No: too tense (2 spills, 4 min in prototype)"
 function variantLine(name: string, v: VariantSaved): string {
   const quick = v.verdict ? `${label(v.verdict)}${v.note.trim() ? `: ${oneLine(v.note)}` : ''}` : '(no verdict)';
   const did = countsLine(v.counts);

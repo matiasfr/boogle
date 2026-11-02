@@ -74,16 +74,6 @@ export const PROTOS: Proto[] = [
     values: true,
     variants: [
       {
-        name: 'barrow',
-        url: '/?room=proto-haul-barrow&proto=haul&v=barrow',
-        what: 'A wheelbarrow that holds 150 (E to push); too fast downhill and it spills. Tip it into the ring.',
-      },
-      {
-        name: 'toss',
-        url: '/?room=proto-haul-toss&proto=haul&v=toss',
-        what: 'Hold click near the site: your logs fly into the ring by handfuls.',
-      },
-      {
         name: 'wave',
         url: '/?room=proto-haul-wave&proto=haul&v=wave',
         what: 'The best bundles sit on a sandbar a wave sweeps every minute or so. Get back above the stakes in time.',
@@ -100,19 +90,15 @@ export const PROTOS: Proto[] = [
     id: 'ride',
     title: 'Ride: platform carry',
     step: 2,
-    status: 'answered',
-    answer: {
-      on: '2026-11-01',
-      verdict: 'Still fine.',
-      next: 'Standing on a moving deck stays as it is: the wagon is transportation.',
-    },
+    status: 'retired',
     url: '/?proto=ride',
     question: 'Does riding feel good enough to ride twice for no reason?',
     what: 'Stand on a moving flatbed; jump off at speed.',
     since: '2026-11-01',
-    spawn: { x: 3, z: 37, yaw: 0.79 }, // beside the flatbed at its first stop, looking at it
-    verb: 'riding',
-    note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
+    retired: {
+      why: 'merged',
+      note: 'Owner: “Still fine.” Standing on a moving deck stays as it is, and the wagon carries that verdict from here.',
+    },
   },
   {
     id: 'wagon',

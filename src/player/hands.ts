@@ -12,7 +12,7 @@
 //   useVerb()                what using the thing in your hand does ('Throw', 'Water', ...), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
 //   emptyHands               { down, up }: what using empty hands does before it falls back to interacting; a
-//                            prototype sets it (the haul toss, src/proto/haul/toss.ts). down returns true if it acted.
+//                            prototype can set it. down returns true if it acted.
 //                            Mouse, pad and the touch main button all reach it.
 //   onInteractPress(fn)      fn(target, ran) on every interact press (not mid-throw): for press feedback in the HUD
 //

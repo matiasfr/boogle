@@ -11,5 +11,5 @@ import { protoOn } from '../proto/flags.ts';
 setEnv({ protoRoom: isProtoRoom(getRoomId()) });
 if (protoOn('haul')) {
   import('../debug/haul-kit.ts');
-  import('../proto/haul/index.ts'); // pickup feel, and with &v=barrow or &v=toss another way to move logs
+  import('../proto/haul/index.ts'); // pickup feel, and with &v=wave or &v=magnet another take on hauling
 }

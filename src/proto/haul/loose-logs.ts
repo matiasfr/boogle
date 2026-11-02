@@ -1,5 +1,5 @@
-// Loose logs for the haul variants (?proto=haul&v=barrow|toss): real physics logs that tumble out of a tipped barrow
-// or fly from your hand, roll, and settle. A log is counted from your own stack with the existing lockstep ops, so
+// Loose logs for the haul's wave variant (?proto=haul&v=wave): real physics logs that fly off your back when a wave
+// catches you, roll, and settle. A log is counted from your own stack with the existing lockstep ops, so
 // nothing new goes on the wire: one that touches down in (or rolls into) a ring of the open work site, or within a metre of it, is poured there
 // (`site.stock`, as if you had walked in); one that comes to rest anywhere else becomes a ground pile (`pile.drop`, as
 // a spill). Until the
