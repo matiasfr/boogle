@@ -20,5 +20,6 @@ export const COLORS = ['#ff6b5a', '#ffc23d', '#7fd14a', '#19c3b3', '#3d9bff', '#
 export const DEFAULT_NAME = 'Dat Frinco';
 export const DEFAULT_ROOM = 'beach';
 
-export const isTouch = matchMedia('(pointer: coarse)').matches;
-export const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Absent in Node (state.ts files load there: test/entity-state-node.test.ts).
+export const isTouch = globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
+export const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;

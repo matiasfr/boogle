@@ -41,7 +41,7 @@ import { groundHeight, setTerrainHoles } from '../../island/terrain.ts';
 import { onStart, onFrame } from '../../loop.ts';
 import { atmosphere } from '../../render/sky.ts';
 import { camConstraints, me } from '../../player/player.ts';
-import { ball } from '../../physics/ball.ts';
+import { ball } from '../../entities/ball/state.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.ts';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.ts';

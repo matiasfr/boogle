@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.ts';
 import { onPreStep, setMotion, getMask } from '../physics/engine.ts';
 import { waterField } from '../physics/water-field.ts';
-import { ball, claimBall } from '../physics/ball.ts';
+import { ball, claimBall } from '../entities/ball/state.ts';
 import { scene } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { me, cam } from '../player/player.ts';
@@ -131,7 +131,7 @@ function hitBall(now: number) {
   const hx = target.x + fx * 0.6,
     hy = target.y + 0.2,
     hz = target.z + fz * 0.6;
-  const p = ball.disp.p;
+  const p = ball.pose.p;
   if (Math.hypot(p.x - hx, p.y - hy, p.z - hz) > 1.1) return;
   hitAt = now;
   if (!ball.mine) claimBall(false);

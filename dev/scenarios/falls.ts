@@ -5,7 +5,7 @@ import type { T } from './run.ts';
 const DROPS = `
   const { groundProbe } = await import('/src/physics/physics.ts');
   const { stepFixed } = await import('/src/physics/engine.ts');
-  const { ball, claimBall } = await import('/src/physics/ball.ts');
+  const { ball, claimBall } = await import('/src/entities/ball/state.ts');
   const { groundHeight } = await import('/src/island/terrain.ts');
   const { HALF, SEA } = await import('/src/constants.ts');
   const { me } = window.boogle;

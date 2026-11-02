@@ -184,4 +184,4 @@ export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
   carry.z *= k;
 }
 
-window.__carry = { CARRY, carry };
+if (typeof window !== 'undefined') window.__carry = { CARRY, carry }; // a dev handle; this file also loads in Node

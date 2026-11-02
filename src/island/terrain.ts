@@ -2,40 +2,15 @@ import * as THREE from 'three/webgpu';
 import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray } from 'three/tsl';
 import type { vec4 } from 'three/tsl';
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
-import { lerp, smoothstep, valueNoise } from '../math.ts';
+import { smoothstep, valueNoise } from '../math.ts';
 import { scene } from '../render/scene.ts';
 import { PATCH } from '../sim/mushrooms.ts';
-import { island, baseCm } from './index.ts';
+import { island } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
 
-// heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the
-// island's base ground (src/island/ground.ts: natural shape plus every POI's stamps, court levelled), in whole
-// centimetres like the shared sim. Nothing edits it.
-export const heights: number[][] = [];
-for (let i = 0; i < GRID_RES; i++) {
-  const col = new Array(GRID_RES);
-  for (let j = 0; j < GRID_RES; j++) col[j] = baseCm[i * GRID_RES + j]! / 100;
-  heights.push(col);
-}
+import { heights } from './heights.ts';
 
-export const cellX = (i: number) => i * CELL - HALF;
-export const cellZ = (j: number) => HALF - j * CELL;
-// The cell [i, j] nearest world x, z, kept off the grid's edge (where edits are refused).
-export const cellOf = (x: number, z: number): [number, number] => [
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((x + HALF) / CELL))),
-  Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
-];
-
-export function groundHeight(x: number, z: number) {
-  const fi = (x + HALF) / CELL,
-    fj = (HALF - z) / CELL;
-  if (fi < 0 || fj < 0 || fi >= GRID_RES - 1 || fj >= GRID_RES - 1) return SEABED;
-  const i = Math.floor(fi),
-    j = Math.floor(fj),
-    u = fi - i,
-    v = fj - j;
-  return lerp(lerp(heights[i]![j]!, heights[i + 1]![j]!, u), lerp(heights[i]![j + 1]!, heights[i + 1]![j + 1]!, u), v);
-}
+export { heights, cellX, cellZ, cellOf, groundHeight } from './heights.ts';
 
 const WET = new THREE.Color('#c9ad78'),
   SAND = new THREE.Color('#efd89d'),

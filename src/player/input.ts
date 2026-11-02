@@ -3,7 +3,7 @@ import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.ts';
 import { me, cam } from './state.ts';
-import { respawnBall, releaseBall } from '../physics/ball.ts';
+import { respawnBall, releaseBall } from '../entities/ball/state.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';

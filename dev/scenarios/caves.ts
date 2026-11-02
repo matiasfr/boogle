@@ -36,7 +36,7 @@ const STEP_ROUTE = `
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
   const { groundHeight } = await import('/src/island/terrain.ts');
-  const { ball, claimBall } = await import('/src/physics/ball.ts');
+  const { ball, claimBall } = await import('/src/entities/ball/state.ts');
   const { caveSd } = await import('/src/pois/caves/mesh.ts');
   const { NODES, POND } = await import('/src/pois/caves/network.ts');
   claimBall(false);

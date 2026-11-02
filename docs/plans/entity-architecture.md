@@ -1,6 +1,6 @@
 # Plan: stricter flags and a game-entity architecture
 
-> **Status: approved, Parts 1 and 2 done, Part 3 under way, step 10 next (2026-11-02).** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
+> **Status: approved, Parts 1 to 3 done, Part 4 under way, step 11 now (2026-11-02).** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
 > [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) to hold foundation work until after the vertical slice.
 > It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md). It also overrides "don't
 > propose untangling the knot before the slice" in [engine-architecture.md](../research/engine-architecture.md), check 9.
@@ -221,16 +221,16 @@ Do this before the entity work: it's what delivers the separation.
       - Move `SUN_DIR` out of `src/constants.ts`, so `net.ts` doesn't reach three through it.
       - Add the lint rule for `src/netplay/`. `src/player/identity.ts` is exempt: it imports only `src/sim/` and `src/net/`.
       - Verify: `check:full`, `check:gpu`, `npm run load` before and after, a `/look` still of a remote avatar, `/code-review`.
-- [ ] **8. Break the big knot.** Move `me`, `cam` and pose helpers to `src/player/state.ts`, `dom` to `src/player/dom.ts`, and
+- [x] **8. Break the big knot.** ([#450](https://github.com/matiasfr/boogle/pull/450)) Move `me`, `cam` and pose helpers to `src/player/state.ts`, `dom` to `src/player/dom.ts`, and
       `input` and `inputState` to `src/player/input-state.ts`. Old paths re-export them. `enterIsland` calls a new `peopleChanged()`
       from `net.ts`. Those three leaf modules make the graph one-way. Evaluation order is the risk: compare actions,
       interactables and frame hooks before and after, built and dev. Verify: scenarios, `/look` of carrying and throwing.
-- [ ] **9. Empty the knot ratchet's allow-list.** Includes `src/pois/caves/{index,decor}.ts`, by moving the shared ambient code to
+- [x] **9. Empty the knot ratchet's allow-list.** ([#455](https://github.com/matiasfr/boogle/pull/455)) Includes `src/pois/caves/{index,decor}.ts`, by moving the shared ambient code to
       `ambient.ts`.
 
 ### Part 4: entities
 
-- [ ] **10. Entity core.**
+- [x] **10. Entity core.** ([#467](https://github.com/matiasfr/boogle/pull/467))
       - First, in its own commit: pin today's `onPreStep` and `onPostStep` order in numbers, before anything moves. They run in
         registration order today, and `main.ts:34` installs the player's controller last.
       - Check the API on paper against the player, the Boogler, `hut-build.ts` and the mushroom stall before freezing it.

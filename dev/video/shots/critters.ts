@@ -102,7 +102,7 @@ export default {
           if (k <= 40) [cx, cy, cz] = await g.eval(SCHOOL); // follow the school until the drop, then hold still
           if (k === 40)
             await g.eval(`
-              const { ball, claimBall, setBallMode } = await import('/src/physics/ball.ts');
+              const { ball, claimBall, setBallMode } = await import('/src/entities/ball/state.ts');
               const { teleport } = await import('/src/physics/physics.ts');
               if (!ball.mine) claimBall(false);
               setBallMode('sim');

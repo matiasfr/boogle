@@ -9,7 +9,7 @@ import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { clamp } from '../math.ts';
 import { me, camForward } from '../player/player.ts';
-import { ball } from '../physics/ball.ts';
+import { ball } from '../entities/ball/state.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
 import { onFrame, onStart } from '../loop.ts';
@@ -32,7 +32,7 @@ const fwd = new THREE.Vector3(),
 function aimPing() {
   camForward(fwd);
   const o = camera.position;
-  const bp = ball.disp.p;
+  const bp = ball.pose.p;
   const t = tmp.copy(bp).sub(o).dot(fwd);
   if (t > 0 && t < TUNE.maxRange && tmp.copy(o).addScaledVector(fwd, t).distanceTo(bp) < TUNE.ballRadius)
     return { x: bp.x, y: bp.y, z: bp.z, k: 'ball' };

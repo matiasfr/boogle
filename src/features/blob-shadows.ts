@@ -8,7 +8,7 @@ import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { ball } from '../physics/ball.ts';
+import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 
@@ -37,7 +37,7 @@ onFrame(
     };
     if (me.avatar) put(me.avatar.position, PLAYER_R * 1.4);
     for (const r of remotes.values()) if (r.avatar) put(r.avatar.position, PLAYER_R * 1.4);
-    put(ball.mesh.position, BALL_R * 1.3);
+    put(ballMesh.position, BALL_R * 1.3);
     pool.end();
   },
   { phase: 'late' },

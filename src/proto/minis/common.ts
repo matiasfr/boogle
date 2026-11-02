@@ -5,7 +5,7 @@ import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
-import { ball } from '../../physics/ball.ts';
+import { ball } from '../../entities/ball/state.ts';
 import { me } from '../../player/player.ts';
 import { onFrame } from '../../loop.ts';
 

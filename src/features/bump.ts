@@ -3,7 +3,7 @@
 // first (claimBall, the normal epoch path) and apply the impulse in our own sim so it resolves immediately.
 import './bump.css';
 import { me, cam } from '../player/player.ts';
-import { ball, claimBall } from '../physics/ball.ts';
+import { ball, claimBall, setBallVelocity } from '../entities/ball/state.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
@@ -25,7 +25,7 @@ function bump() {
   if (now - lastBump < TUNE.cooldownMs) return false;
   if (ball.held && !ball.mine) return false; // can't dig a ball someone is holding; steal it instead
   const b = me.body.position,
-    p = ball.disp.p;
+    p = ball.pose.p;
   if (Math.hypot(p.x - b.x, p.y - (b.y + 0.55), p.z - b.z) > TUNE.reach) return false;
   lastBump = now;
   me.bumpAt = now;
@@ -43,9 +43,8 @@ function bump() {
     vy *= k;
     vz *= k;
   }
-  body.velocity.set(vx, vy, vz);
+  setBallVelocity(vx, vy, vz);
   body.angularVelocity.set(fz * 5, 0, -fx * 5);
-  ball.disp.v.set(vx, vy, vz);
   sendPresence();
   return true;
 }

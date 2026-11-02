@@ -8,7 +8,7 @@
 import { onStart } from '../loop.ts';
 import { world, worldStatus, stateHashes, submitEdit, onAfterTick } from '../world/sync.ts';
 import { gfx } from '../render/scene.ts';
-import { grabBall, throwBall } from '../physics/ball.ts';
+import { grabBall, throwBall } from '../entities/ball/state.ts';
 import { launch } from '../player/throw.ts';
 
 const marks = new Map(); // tick -> per-state hashes, null while waiting

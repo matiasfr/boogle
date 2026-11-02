@@ -222,6 +222,53 @@ export default [
       ],
     },
   },
+  // src/physics/ is infrastructure: game objects call it, not the reverse. Type imports are fine (this is the typed rule,
+  // beside the core one above, which counts them): a step hook takes what it needs from main.ts as an argument.
+  {
+    files: ['src/physics/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/player/**', '**/netplay/**', '**/entities/**', '**/features/**'],
+              message: 'src/physics/ is infrastructure: pass it what it needs, or let the object call it.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // An entity's state.ts is its body and rules, and loads in Node (test/entity-state-node.test.ts): the scene, the screen
+  // and the DOM go in its view.ts (docs/plans/entity-architecture.md, "File shape").
+  {
+    files: ['src/entities/*/state.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: rapierBans,
+          patterns: [
+            {
+              group: ['**/render/**', '**/ui/**', '**/player/hud.ts', '**/island/terrain.ts', './view.ts', './sync.ts'],
+              message:
+                'state.ts holds no scene, DOM or HUD, and imports neither its view nor its sync: they read it. Ground lookups are in src/island/heights.ts.',
+            },
+            syncBan,
+            protoBan,
+            debugBan,
+          ],
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        { name: 'document', message: 'state.ts holds no DOM: pass the value in from index.ts, or use view.ts.' },
+        { name: 'window', message: 'state.ts holds no DOM: pass the value in from index.ts, or use view.ts.' },
+      ],
+    },
+  },
   {
     files: ['src/**/*.{js,ts}'],
     ignores: LOCKSTEP_FILES,
