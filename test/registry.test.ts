@@ -121,6 +121,19 @@ test('pad slots: registerAction claims, describeControl does not, one slot must 
   assert.match(checkRegistry(reg).join('\n'), /pad slot 'x' is claimed twice/);
 });
 
+test("pad slots: a prototype's claim leaves the slot free and doesn't clash with the game's", () => {
+  const reg = scanSources([
+    CONTROLS,
+    file('src/player/input.ts', "registerAction('use', { pad: 'x' });"),
+    file('src/proto/bar/pad.ts', "registerAction('proto-bar', { pad: 'x' });\nregisterAction('other', { pad: 'b' });"),
+  ]);
+  assert.deepEqual(reg.pads, { x: ['src/player/input.ts:use'] });
+  assert.deepEqual(reg.protoPads, { x: ['src/proto/bar/pad.ts:proto-bar'], b: ['src/proto/bar/pad.ts:other'] });
+  assert.deepEqual(checkRegistry(reg), []);
+  reg.protoPads.b!.push('src/proto/q.ts:q');
+  assert.match(checkRegistry(reg).join('\n'), /pad slot 'b' is claimed twice/);
+});
+
 test('feature onFrame orders stay in the feature range and off core orders', () => {
   const reg = scanSources([
     file(

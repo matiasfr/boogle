@@ -56,9 +56,10 @@ Notes:
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): R3, D-pad ↑ and D-pad → (D-pad ↓ opens the prototype bar, registered only on
-  prototype pages, src/proto/bar/pad.ts). The update notice borrows the first free one (D-pad ↑) while it is up, so
-  AGENTS.md requires at least one to stay unclaimed.
+- **Free pad slots** (`npm run registry -- --json`): R3, D-pad ↑, D-pad ↓ and D-pad →. D-pad ↓ opens the prototype bar on
+  prototype pages only ([src/proto/bar/pad.ts](../../src/proto/bar/pad.ts)); claims in `src/proto/` don't count as taken
+  and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
+  slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
 - **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
