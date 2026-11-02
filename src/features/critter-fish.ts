@@ -19,7 +19,7 @@ import { onFrame, onStart } from '../loop.ts';
 import { scene } from '../render/scene.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
-import { ball } from '../physics/ball.ts';
+import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 import { patchNode } from '../render/material-patch.ts';
@@ -104,7 +104,7 @@ onFrame(
     const hm = home!;
     // scares: a ball that just hit the water near the surface, players swimming
     scares.length = 0;
-    const bp = ball.mesh.position;
+    const bp = ballMesh.position;
     const bs = waterField.surfaceAt(bp.x, bp.z);
     if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
     lastBallY = bp.y;

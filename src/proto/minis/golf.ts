@@ -7,7 +7,8 @@ import { createBody, addBody, teleport, material, type Shape } from '../../physi
 import { GROUP } from '../../physics/physics.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
-import { ball, respawnBall, remoteHoldsBall } from '../../physics/ball.ts';
+import { ball, respawnBall } from '../../entities/ball/state.ts';
+import { remoteHoldsBall } from '../../entities/ball/sync.ts';
 import { me, cam } from '../../player/player.ts';
 import { drop, has } from '../../player/inventory.ts';
 import { registerInteractable } from '../../player/hands.ts';
@@ -149,7 +150,7 @@ function teeOff() {
   teleport(ball.body, TEE.x, teeY + 0.3 + BALL_R, TEE.z);
   ball.body.velocity.set(0, 0, 0);
   ball.body.angularVelocity.set(0, 0, 0);
-  ball.disp.p.set(TEE.x, teeY + 0.3 + BALL_R, TEE.z);
+  ball.pose.p.set(TEE.x, teeY + 0.3 + BALL_R, TEE.z);
   st.mode = 'ready';
   st.strokes = 0;
   pop(0);
@@ -218,7 +219,7 @@ registerInteractable(() => {
 
 onFrame(
   () => {
-    const bp = ball.disp.p;
+    const bp = ball.pose.p;
     const live = st.mode === 'ready' || st.mode === 'play';
     // Carrying the ball: a stroke for every 3 m walked with it.
     const held = ball.mine && ball.held;
@@ -229,7 +230,7 @@ onFrame(
       stroke('+1 carry');
     }
     // Someone else took the ball: this hole is off.
-    if (live && ball.owner?.remote) {
+    if (live && ball.remoteOwned) {
       st.mode = 'idle';
       paintSigns();
     }

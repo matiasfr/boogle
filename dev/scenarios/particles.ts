@@ -4,7 +4,7 @@ import type { T } from './run.ts';
 const HEAD = `
   const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/island/terrain.ts');
-  const { claimBall } = await import('/src/physics/ball.ts');
+  const { claimBall } = await import('/src/entities/ball/state.ts');
   const { splash } = await import('/src/render/splash.ts');
   const { particleCounts } = await import('/src/render/particles.ts');
   const { me, ball } = window.boogle;`;

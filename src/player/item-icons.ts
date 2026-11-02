@@ -9,7 +9,7 @@
 import * as THREE from 'three/webgpu';
 import { renderOutput, texture, uv } from 'three/tsl';
 import { renderer } from '../render/scene.ts';
-import { ball } from '../physics/ball.ts';
+import { ballMesh } from '../entities/ball/view.ts';
 import { itemModel } from './item-models.ts';
 
 const ICON = 96;
@@ -70,7 +70,7 @@ export const warmIcons = (ids: string[]) => Promise.all(ids.map(iconUrl));
 
 async function draw(id: string) {
   if (!hdr) setup();
-  const model = id === 'ball' ? new THREE.Mesh(ball.mesh.geometry, ball.mesh.material) : itemModel(id);
+  const model = id === 'ball' ? new THREE.Mesh(ballMesh.geometry, ballMesh.material) : itemModel(id);
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model);
   const size = box.getSize(new THREE.Vector3()).length() || 1;

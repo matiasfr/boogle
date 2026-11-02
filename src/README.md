@@ -14,15 +14,16 @@ Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `lo
   infrastructure, lint-enforced) and its pure helpers (snapshot buffer, presence fields, build tags, report scrubbing,
   smooth shared time).
 - `entity/`: the entity core: `entity.ts` (`defineKind`, `spawn`, `despawn`; the lifecycle contract is at its top) and
-  `walker.ts`, its pure logic, tested in Node. Nothing uses it yet.
-- `entities/`: game objects (docs/plans/entity-architecture.md). `remote-player/`: other players as this tab draws them,
-  avatars, labels, bodies and interpolation, plus riding a shared platform.
-- `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/terrain.ts`
-  is the fixed ground's heightfield and mesh (`groundHeight`, `cellX`/`cellZ`).
+  `walker.ts`, its pure logic, tested in Node.
+- `entities/`: game objects (docs/plans/entity-architecture.md). `ball/`: the beach ball, the worked example of a
+  long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`). `remote-player/`: other players as this tab
+  draws them, avatars, labels, bodies and interpolation, plus riding a shared platform.
+- `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/heights.ts`
+  is the fixed ground's heights (`groundHeight`, `cellX`/`cellZ`), `island/terrain.ts` its mesh.
 - `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
   modules must import it.
-- `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
+- `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models. `state.ts` (`me`, `cam`, poses), `dom.ts` and `input-state.ts` are leaf
   modules, so what `player.ts` and `input.ts` drive can read them without an import cycle.

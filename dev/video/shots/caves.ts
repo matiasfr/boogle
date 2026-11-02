@@ -86,11 +86,11 @@ export default {
 
     // The pond: the ball dropped onto the water bobs and floats, crystals and glowing mushrooms round it.
     await g.eval(AT(hub.x, hub.y, hub.z)); // out of frame
-    await g.eval(`const { ball, claimBall } = await import('/src/physics/ball.ts');
+    await g.eval(`const { ball, claimBall } = await import('/src/entities/ball/state.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       claimBall(false);
       teleport(ball.body, ${POND.x - 0.6}, ${POND.level + 3}, ${POND.z + 0.4}); ball.body.velocity.set(0, 0, 0);
-      ball.disp.p.copy(ball.body.position);`);
+      ball.pose.p.copy(ball.body.position);`);
     const pond = [POND.x, POND.level + 0.4, POND.z];
     out.push(
       await g.record('caves-pond', {

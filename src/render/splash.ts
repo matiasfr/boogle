@@ -90,13 +90,13 @@ type Vec = { x: number; y: number; z: number };
 export function updateSplash(
   dt: number,
   elapsed: number,
-  ball: { mesh: { position: Vec }; held: boolean; disp: { v: Vec } },
+  bp: Vec,
+  ball: { held: boolean; pose: { v: Vec } },
   me: { entered: boolean; body: { position: Vec; velocity: Vec } | null },
   remotes: Map<string, { avatar: unknown; visible: boolean; target: Vec }>,
 ) {
   elapsedNow = elapsed;
-  const bp = ball.mesh.position;
-  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.disp.v.y, dt, 2.2, 1);
+  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.pose.v.y, dt, 2.2, 1);
 
   if (me.entered && me.body) {
     const p = me.body.position;

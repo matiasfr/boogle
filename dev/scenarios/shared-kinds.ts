@@ -27,7 +27,7 @@ export default {
       const d = (x1, z1, x2, z2) => Math.hypot(x1 - x2, z1 - z2);
       return {
         player: pr.p && r?.avatar ? d(pr.p[0], pr.p[2], r.target.x, r.target.z) : null,
-        ball: pr.b && !b.ball.mine ? d(pr.b.p[0], pr.b.p[2], b.ball.disp.p.x, b.ball.disp.p.z) : null,
+        ball: pr.b && !b.ball.mine ? d(pr.b.p[0], pr.b.p[2], b.ball.pose.p.x, b.ball.pose.p.z) : null,
         boogler: pr.g ? d(pr.g.p[0], pr.g.p[1], boogler.center.x, boogler.center.z) : null,
         g: pr.g?.p ?? null,
       };`;

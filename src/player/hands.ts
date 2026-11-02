@@ -40,7 +40,8 @@
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
-import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.ts';
+import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
+import { remoteHoldsBall } from '../entities/ball/sync.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
 import { plantTarget, plantFront, pour } from '../adapters/mushroom-garden.ts';
@@ -88,7 +89,7 @@ export function registerInteractable(fn: () => Interactable[]) {
 // The beach ball is the hands' own interactable.
 registerInteractable(() => {
   if (!ballInReach() || (ball.mine && ball.held)) return NO_TARGETS;
-  const at = ballAt.copy(ball.disp.p).setY(ball.disp.p.y + 0.5);
+  const at = ballAt.copy(ball.pose.p).setY(ball.pose.p.y + 0.5);
   const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
   return [roomFor('ball') < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
 });

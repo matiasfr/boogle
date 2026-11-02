@@ -10,7 +10,7 @@
       "code": "ball.js · world phase, order −280",
       "cite": [
         {
-          "file": "src/physics/ball.ts"
+          "file": "src/entities/ball/state.ts"
         }
       ]
     },

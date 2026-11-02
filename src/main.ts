@@ -7,7 +7,7 @@ import { createWaterMesh } from './render/water-render.ts';
 import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.ts';
-import { ball, resolveBallOwner, prepareBall } from './physics/ball.ts';
+import { ball } from './entities/ball/state.ts';
 import { me, updateIntent } from './player/player.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { updateRemotes } from './entities/remote-player/index.ts';
@@ -21,6 +21,8 @@ import { prefetchAssets } from './render/asset-manifest.ts';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
+// And every entity's index.ts (src/entities/ball/index.ts is the example).
+import.meta.glob('./entities/*/index.ts', { eager: true });
 bootMark('modules'); // every eager module is in and evaluated (src/boot/timeline.ts lists the phases)
 physicsReady.then(() => bootMark('rapier'));
 rendererReady.then(() => bootMark('gpu'));
@@ -32,15 +34,13 @@ createWaterMesh();
 createProps();
 createClouds();
 createStall();
-installStepHooks({ me, ball, remotes });
+installStepHooks({ me, remotes });
 bootMark('props');
 
 // Once a frame before the step, in this order, because each reads what the last wrote (me.holding, me.yaw): remote poses,
-// ball ownership, this player's intent, the ball's kinematic pose.
+// ball ownership (-90, the ball's own), this player's intent, the ball's kinematic pose (-70, the ball's own).
 onFrame(({ now }) => updateRemotes(now), { phase: 'prePhysics', order: -100, name: 'updateRemotes' });
-onFrame(({ now }) => resolveBallOwner(now), { phase: 'prePhysics', order: -90, name: 'resolveBallOwner' });
 onFrame(({ dt }) => updateIntent(dt), { phase: 'prePhysics', order: -80, name: 'updateIntent' });
-onFrame(() => prepareBall(), { phase: 'prePhysics', order: -70, name: 'prepareBall' });
 
 // Everything in a frame (intent, gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks around the physics
 // step; src/loop.ts lists their order.

@@ -74,7 +74,7 @@ export default {
 
     // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
     const ball = await g.eval(`${INV}
-      const { ball } = await import('/src/physics/ball.ts');
+      const { ball } = await import('/src/entities/ball/state.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       const { boogler } = await import('/src/boogler/boogler.ts');
       const { groundHeight } = await import('/src/island/terrain.ts');
@@ -86,7 +86,7 @@ export default {
         const x = c.x + (dx / (d || 1)) * 8, z = c.z + (dz / (d || 1)) * 8;
         teleport(window.boogle.me.body, x, groundHeight(x, z) + 0.6, z);
       }
-      teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.disp.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
+      teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.pose.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
       I.take('frisbee');

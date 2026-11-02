@@ -43,14 +43,14 @@ export default {
     t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 
     // The client throws the ball: it takes ownership and the host watches it fly.
-    const ballAt = `(() => { const p = window.boogle.ball.disp.p; return [p.x, p.y, p.z]; })()`;
+    const ballAt = `(() => { const p = window.boogle.ball.pose.p; return [p.x, p.y, p.z]; })()`;
     const from = await host.eval(`return ${ballAt};`);
     await client.eval(`window.boogle.sync.tossBall(0.6);`);
     const flew = await host.waitFor(
       ([x, y, z]) => {
         const b = window.boogle.ball;
-        const p = b.disp.p;
-        return !b.mine && !!b.owner?.remote && Math.hypot(p.x - x, p.y - y, p.z - z) > 1;
+        const p = b.pose.p;
+        return !b.mine && b.remoteOwned && Math.hypot(p.x - x, p.y - y, p.z - z) > 1;
       },
       { timeout: 60000, arg: from },
     );

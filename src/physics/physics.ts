@@ -1,23 +1,13 @@
-import { FIXED, GRAVITY, SEA, HALF, CELL, BALL_R, BALL_MASS, PLAYER_MASS, PLAYER_R } from '../constants.ts';
-import {
-  material,
-  createBody,
-  addBody,
-  teleport,
-  onPreStep,
-  onPostStep,
-  physicsTime,
-  forEachContact,
-} from './engine.ts';
-import { clamp } from '../math.ts';
-import { groundHeight, heights } from '../island/terrain.ts';
+import { FIXED, GRAVITY, HALF, CELL, PLAYER_MASS, PLAYER_R } from '../constants.ts';
+import { material, createBody, addBody, teleport, onPreStep, onPostStep, forEachContact } from './engine.ts';
+import { groundHeight, heights } from '../island/heights.ts';
 import { waterField } from './water-field.ts';
 import { carry, carryStep } from './platforms.ts';
 import type { Body } from './engine.ts';
 import type { Remote } from '../netplay/net.ts';
 import type * as THREE from 'three';
 
-const q = new URLSearchParams(location.search);
+const q = new URLSearchParams(globalThis.location?.search);
 // Air acceleration (m/s²). ?air=35 tries another on any page (rec 6: Celeste's air control is 0.65 of ground, ours
 // 0.2); unset, it stays 14.
 const AIR_ACCEL = Number(q.get('air')) || 14;
@@ -49,7 +39,7 @@ export const groundProbe = {
 // (0.33 m a step against a 0.45 m radius), and anything that still gets through is put back on top.
 const MAX_FALL = 20; // m/s
 const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
-function catchFallThrough(body: Body, r: number) {
+export function catchFallThrough(body: Body, r: number) {
   const p = body.position;
   if (!groundProbe.netted(p.x, p.z)) return;
   const g = groundProbe.under(p.x, p.y, p.z);
@@ -88,7 +78,7 @@ export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: 
 }
 
 // Registered from main.ts with the game state so this module stays free of import cycles.
-/** What the step hooks read and write on this player and the ball (src/player/player.ts, ./ball.ts). */
+/** What the step hooks read and write on this player (src/player/player.ts). */
 type StepPlayer = {
   body: Body | null;
   coyote: number;
@@ -98,16 +88,7 @@ type StepPlayer = {
   wish: THREE.Vector3;
   yaw: number;
 };
-type StepBall = { mine: boolean; held: boolean; body: Body };
-export function installStepHooks({
-  me,
-  ball,
-  remotes,
-}: {
-  me: StepPlayer;
-  ball: StepBall;
-  remotes: Map<string, Remote>;
-}) {
+export function installStepHooks({ me, remotes }: { me: StepPlayer; remotes: Map<string, Remote> }) {
   onPreStep(
     () => {
       for (const r of remotes.values()) {
@@ -169,55 +150,12 @@ export function installStepHooks({
           }
         }
       }
-
-      if (ball.mine && !ball.held) {
-        const bb = ball.body;
-        if (bb.position.y - groundProbe.under(bb.position.x, bb.position.y, bb.position.z) < BALL_R + 0.08) {
-          const k = 1 - (Math.hypot(bb.velocity.x, bb.velocity.z) < 0.5 ? 10 : 1.2) * FIXED;
-          bb.velocity.x *= k;
-          bb.velocity.z *= k;
-          bb.angularVelocity.set(bb.angularVelocity.x * k, bb.angularVelocity.y * k, bb.angularVelocity.z * k);
-        }
-        // Surf: the surface bobs with the same waves the sea shader draws, and a slow, smoothly varying
-        // current runs along the shore. A gentle, surging inward drift keeps the ball washing in eventually.
-        const t = physicsTime();
-        const px = bb.position.x,
-          pz = bb.position.z;
-        const pondSurf = waterField.surfaceAt(px, pz);
-        const still = pondSurf > SEA + 0.06; // a pond above sea level: no waves, no sea drift
-        const surf = still
-          ? pondSurf
-          : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
-        const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
-        if (sub > 0) {
-          let cx = 0,
-            cz = 0,
-            grip: number;
-          if (still) {
-            // pulled to a stop, more firmly the deeper the water
-            grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);
-          } else {
-            const rr = Math.hypot(px, pz) || 1;
-            const nx = px / rr,
-              nz = pz / rr;
-            const along = 0.9 * Math.sin(t * 0.045 + 1.3) + 0.5 * Math.sin(t * 0.13 + rr * 0.05);
-            const inward = 0.28 + 0.22 * Math.sin(t * 0.35 + rr * 0.1) + 0.12 * Math.sin(t * 0.11);
-            cx = -nx * inward - nz * along;
-            cz = -nz * inward + nx * along;
-            grip = sub;
-          }
-          bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * bb.velocity.y * sub;
-          bb.force.x += (cx - bb.velocity.x) * 0.9 * BALL_MASS * grip;
-          bb.force.z += (cz - bb.velocity.z) * 0.9 * BALL_MASS * grip;
-        }
-      }
     },
     { order: 40 },
   );
 
   onPostStep(
     () => {
-      if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R);
       const b = me.body;
       if (!b) return;
       catchFallThrough(b, PLAYER_R);

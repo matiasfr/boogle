@@ -25,7 +25,7 @@ const beside = (check: string) => `(async () => {
 // onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
 const onBack = (check: string) => `(async () => {
   const { boogler, ACT } = await import('/src/boogler/boogler.ts');
-  const { ball } = await import('/src/physics/ball.ts');
+  const { ball } = await import('/src/entities/ball/state.ts');
   const { teleport } = await import('/src/physics/physics.ts');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
   const dropping = Math.hypot(p.x - c.x, p.z - c.z) < 1 && p.y > c.y + 0.3;
@@ -33,7 +33,7 @@ const onBack = (check: string) => `(async () => {
   else if (!ball.held) {
     teleport(ball.body, p.x + 0.9, p.y + 0.3, p.z);
     ball.body.velocity.set(0, 0, 0);
-    ball.disp.p.copy(ball.body.position);
+    ball.pose.p.copy(ball.body.position);
   }
   await new Promise((r) => setTimeout(r, 150));
   return boogler.me.act === ACT.RIDE && ${check};

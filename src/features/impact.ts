@@ -12,7 +12,8 @@ import { emit } from '../render/particles.ts';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { clamp, lerp } from '../math.ts';
-import { ball } from '../physics/ball.ts';
+import { ball } from '../entities/ball/state.ts';
+import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence, type Remote } from '../netplay/net.ts';
 import { onFrame } from '../loop.ts';
@@ -130,15 +131,15 @@ function stepSpring(dt: number) {
   }
 }
 function applySquash() {
-  const m = ball.mesh;
+  const m = ballMesh;
   let ax = axis,
     sa = 1;
   if (Math.abs(sx) > 0.012 || Math.abs(sv) > 0.1) {
     sa = clamp(1 - sx, 0.55, 1.4);
   } else {
-    const sp = ball.disp.v.length();
+    const sp = ball.pose.v.length();
     if (sp > 6 && !ball.held) {
-      ax = tmpV.copy(ball.disp.v).normalize();
+      ax = tmpV.copy(ball.pose.v).normalize();
       sa = 1 + Math.min(sp * 0.006, 0.1);
     }
   }
@@ -182,13 +183,13 @@ function nearestPerson(p: THREE.Vector3) {
 function detect(now: number) {
   if (ball.mine && me.holding) lastHeldByMe = now;
   const held = ball.held;
-  const p = ball.disp.p;
+  const p = ball.pose.p;
   if (held) {
     if (!wasHeld && prevSpeed > TUNE.catchMinSpeed) {
       freezeUntil = now + TUNE.hitStopMs;
       freezeMine = !!me.holding;
-      freezeP.copy(ball.mesh.position);
-      freezeQ.copy(ball.mesh.quaternion);
+      freezeP.copy(ballMesh.position);
+      freezeQ.copy(ballMesh.quaternion);
       kick(prevV.lengthSq() > 0.01 ? prevV : axis, clamp(prevSpeed / 40, 0.08, 0.3));
       boing(prevSpeed * 0.5, 0.08 * farGain(p.x, p.z), false);
     }
@@ -196,7 +197,7 @@ function detect(now: number) {
     return;
   }
   wasHeld = false;
-  const v = ball.disp.v;
+  const v = ball.pose.v;
   const dvx = v.x - prevV.x,
     dvy = v.y - prevV.y,
     dvz = v.z - prevV.z;
@@ -238,8 +239,8 @@ function checkFaceplant(now: number, speed: number) {
   if (now - lastHeldByMe < 700 || now - (me.bumpAt ?? -1e9) < 700 || me.holding || me.charging) return; // your own throws never flop you
   const b = me.body.position;
   const head = tmpV.set(b.x, b.y + HEAD_OFFSET, b.z);
-  const d = head.distanceTo(ball.disp.p);
-  if (d > PLAYER_R + BALL_R + 0.12 || ball.disp.p.y < b.y + HEAD_OFFSET * 0.4) return;
+  const d = head.distanceTo(ball.pose.p);
+  if (d > PLAYER_R + BALL_R + 0.12 || ball.pose.p.y < b.y + HEAD_OFFSET * 0.4) return;
   me.down = true;
   downUntil = now + TUNE.downMs;
   me.holding = me.charging = false;
@@ -339,8 +340,8 @@ onFrame(
     // Hit-stop: hold the ball mesh, and your own avatar's pose, for a few frames. Physics keeps running.
     const frozen = now < freezeUntil;
     if (frozen) {
-      ball.mesh.position.copy(freezeP);
-      ball.mesh.quaternion.copy(freezeQ);
+      ballMesh.position.copy(freezeP);
+      ballMesh.quaternion.copy(freezeQ);
     }
     const inner = me.avatar?.userData.inner;
     if (inner) {

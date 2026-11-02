@@ -8,7 +8,7 @@ import { scene } from '../render/scene.ts';
 import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
-import { ball } from '../physics/ball.ts';
+import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 
@@ -154,7 +154,7 @@ onFrame(
     bodies.visible = wings.visible = on;
     if (!on || dt <= 0) return;
     threats();
-    const bp = ball.mesh.position;
+    const bp = ballMesh.position;
     const ballLanding = lastBallY - bp.y > 0.03 && bp.y - groundHeight(bp.x, bp.z) < 0.7;
     lastBallY = bp.y;
     bodyPool.begin();
