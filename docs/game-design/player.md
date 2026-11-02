@@ -112,15 +112,15 @@ Part of the [game design document](../game-design.md) (as built). Update this fi
 
 ## Prototype: the hero (`?proto=hero`)
 
-Behind the flag, every avatar is the jointed hero ([assets/src/hero2-rig.py](../../assets/src/hero2-rig.py),
-[src/proto/hero/platformer.ts](../../src/proto/hero/platformer.ts)): a big separate head, a stout body, long arms, legs
-with knees, no mouth. It's posed from motion alone, so remote players need no new presence. Planted feet stay where they
-land (a stride of `0.74 · v^0.6` m per cycle, at most 0.62 m of it on one foot), the swing is hand-keyed, and the hips
-drop into each stance. The body leans at most 10° and banks at most 9°, and the head stays level and looks into turns.
+Behind the flag, every avatar plays hand-made animation ([src/proto/hero/clips.ts](../../src/proto/hero/clips.ts)):
+Quaternius's Universal Animation Library (CC0) on its mannequin, as a stand-in to judge motion apart from any model of
+ours. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
+stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
+the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
+6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint.
 
-The page also uses a modern-Mario controller ([src/physics/physics.ts](../../src/physics/physics.ts), `&ctl=old` for
-today's; `?ctl=odyssey` tries it on any page): you run where you face (turning at most 390°/s, 510°/s at sprint), speed
-builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air control is
-35 m/s², and jumps start at 8.6 m/s plus 0.08 × speed. The camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts),
-`&cam=old` for today's) sits at 5.2 m, trails the body by 0.07 s (0.3 s in height while airborne) and widens up to 7° at
-a sprint. `&steps=1` adds quiet footsteps; `&body=standin` and `&body=pill` swap the figure.
+`&ctl=odyssey` (any page) tries a modern-Mario controller: you run where you face (turning at most 390°/s, 510°/s at
+sprint), speed builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air
+control is 35 m/s², and jumps start at 8.6 m/s plus 0.08 × speed. It read as inertia in play. `&body=keyed` is the
+code-animated hero ([src/proto/hero/platformer.ts](../../src/proto/hero/platformer.ts)), with `&steps=1` for footsteps;
+`&body=standin` and `&body=pill` are earlier figures.
