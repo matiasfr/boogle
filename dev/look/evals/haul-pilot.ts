@@ -7,7 +7,7 @@ import { submitEdit } from '../../../src/world/sync.ts';
 import { identity } from '../../../src/player/identity.ts';
 import { input } from '../../../src/player/input.ts';
 import { me, cam } from '../../../src/player/player.ts';
-import { teleport } from '../../../src/physics/physics.ts';
+import { teleport } from '../../../src/physics/engine.ts';
 import { groundHeight } from '../../../src/island/terrain.ts';
 
 const win = window as unknown as { __debugCam?: { clear(): void } };

@@ -10,13 +10,13 @@ import { SEA, SPAWN } from '../../src/constants.ts';
 import { cam, enterIsland, me } from '../../src/entities/player/state.ts';
 import { groundHeight } from '../../src/island/heights.ts';
 import { onPostStep, teleport } from '../../src/physics/engine.ts';
+import { r3 } from '../../src/math.ts';
 import { input } from '../../src/player/input-state.ts';
 
 const SAMPLE_EVERY = 5; // steps
 const YAW = 2.2; // heading across open ground, clear of the ball, the trees and the stall
 const SETTLE = 60; // steps at rest before a leg starts
 
-const r3 = (v: number) => Math.round(v * 1000) / 1000;
 const flatSpeed = () => Math.hypot(me.body!.velocity.x, me.body!.velocity.z);
 
 export type Sample = number[]; // step, x, y, z, horizontal speed

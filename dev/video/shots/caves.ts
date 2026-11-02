@@ -6,7 +6,7 @@ import { NODES, MOUTHS, POND } from '../../../src/pois/caves/network.ts';
 const READY = `(async () => (await import('/src/pois/caves/index.ts')).cavesReady())()`;
 // Put the player at (x, y, z), still (y is the floor: inside the caves groundHeight is the hill above).
 const AT = (x: number, y: number, z: number) => `
-  const { teleport } = await import('/src/physics/physics.ts');
+  const { teleport } = await import('/src/physics/engine.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y} + 1, ${z}); b.velocity.set(0, 0, 0);`;
 // Walk towards (x, z) with the play camera behind: aim the camera that way, the move key does the rest.
@@ -42,7 +42,7 @@ export default {
     const sx = south.x + south.ox * 9,
       sz = south.z + south.oz * 9;
     await g.eval(`window.__debugCam?.clear();
-      const { teleport } = await import('/src/physics/physics.ts');
+      const { teleport } = await import('/src/physics/engine.ts');
       const { groundHeight } = await import('/src/island/terrain.ts');
       const b = window.boogle.me.body; teleport(b, ${sx}, groundHeight(${sx}, ${sz}) + 0.6, ${sz}); b.velocity.set(0, 0, 0);
       const { cam } = await import('/src/player/player.ts'); cam.yaw = Math.atan2(${south.ox}, ${south.oz}); cam.pitch = -0.12;`);
@@ -87,7 +87,7 @@ export default {
     // The pond: the ball dropped onto the water bobs and floats, crystals and glowing mushrooms round it.
     await g.eval(AT(hub.x, hub.y, hub.z)); // out of frame
     await g.eval(`const { ball, claimBall } = await import('/src/entities/ball/state.ts');
-      const { teleport } = await import('/src/physics/physics.ts');
+      const { teleport } = await import('/src/physics/engine.ts');
       claimBall(false);
       teleport(ball.body, ${POND.x - 0.6}, ${POND.level + 3}, ${POND.z + 0.4}); ball.body.velocity.set(0, 0, 0);
       ball.pose.p.copy(ball.body.position);`);

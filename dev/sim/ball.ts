@@ -2,7 +2,8 @@
 // checked against what the same course did in the real game (./ball-browser.json, from ./ball-browser.ts).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { frame, headless, virtualClock } from './world.ts';
+import { timedCourse } from './timed.ts';
+import { headless, virtualClock } from './world.ts';
 import { runCourse, type CourseResult, type Sample } from './ball-course.ts';
 
 const TOLERANCE = 0.01; // m and m/s on land: the same WASM on the same ground should give the same answer
@@ -12,16 +13,7 @@ await headless();
 virtualClock(); // performance.now() is the run's own clock from here on; speed is timed with hrtime
 const browser = JSON.parse(fs.readFileSync(new URL('./ball-browser.json', import.meta.url), 'utf8')) as CourseResult;
 
-const hrtimeMs = () => Number(process.hrtime.bigint()) / 1e6;
-let frames = 0;
-const t0 = hrtimeMs();
-const result = await runCourse((done) => {
-  while (!done()) {
-    frame();
-    frames++;
-  }
-});
-const ms = hrtimeMs() - t0;
+const { result, frames, ms } = await timedCourse(runCourse);
 
 let worst = 0;
 function near(name: string, got: readonly number[], want: readonly number[]) {

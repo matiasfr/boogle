@@ -103,7 +103,7 @@ export default {
           if (k === 40)
             await g.eval(`
               const { ball, claimBall, setBallMode } = await import('/src/entities/ball/state.ts');
-              const { teleport } = await import('/src/physics/physics.ts');
+              const { teleport } = await import('/src/physics/engine.ts');
               if (!ball.mine) claimBall(false);
               setBallMode('sim');
               teleport(ball.body, ${cx}, 3, ${cz});

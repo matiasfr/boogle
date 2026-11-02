@@ -2,11 +2,13 @@
 // island or with a dev/layouts/*.json applied, on the same ground the game builds, with no scene or renderer.
 import fs from 'node:fs';
 import path from 'node:path';
-import { BALL_SPAWN, CELL, COURT, GRID_RES, HALF, SEABED, SPAWN } from '../../src/constants.ts';
+import { BALL_SPAWN, CELL, COURT, GRID_RES, HALF, SPAWN } from '../../src/constants.ts';
 import { isHomePalm, scatterProps, type PropPlacement } from '../../src/blueprints/props.ts';
-import { islandBaseCm } from '../../src/island/ground.ts';
-import { clearedIn, moveSite, type LayoutFile } from '../../src/island/layout.ts';
-import { createIsland, siteFrame, type Site } from '../../src/island/stamps.ts';
+import { heightIn, islandBaseCm } from '../../src/island/ground.ts';
+import { clearedIn, moveSite, routeIn, type LayoutFile, type Section } from '../../src/island/layout.ts';
+import { createIsland, siteFrame } from '../../src/island/stamps.ts';
+import { clamp } from '../../src/math-pure.ts';
+import { baseSites, type IdSite } from './sites.ts';
 import { ROUTE, TRACK, HELPER, ringAt } from '../../src/sim/route.ts';
 
 export const root = path.join(import.meta.dirname, '../..');
@@ -14,8 +16,6 @@ const STALL = { x: 15.2, z: 13.4 }; // src/adapters/mushrooms.ts, which draws: n
 
 export type Target = { name: string; x: number; z: number; file: string };
 export type Disc = { name: string; owner: string; x: number; z: number; r: number; file: string };
-export type Section = { x: number; z: number; to: number[] };
-type IdSite = Site & { id: string };
 
 export type Level = {
   name: string; // "today", or the layout's file name
@@ -33,19 +33,11 @@ export type Level = {
   spawnNode: number;
 };
 
-const poiDir = path.join(root, 'src/pois');
-const ids = fs
-  .readdirSync(poiDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && fs.existsSync(path.join(poiDir, d.name, 'site.ts')))
-  .map((d) => d.name)
-  .sort();
-const baseSites: IdSite[] = [];
-for (const id of ids) baseSites.push({ id, ...(await import(path.join(poiDir, id, 'site.ts'))).default });
 export const siteFile = (id: string) => `src/pois/${id}/site.ts`;
 
 export const nodeOf = (x: number, z: number) => {
-  const i = Math.min(GRID_RES - 1, Math.max(0, Math.round((x + HALF) / CELL))),
-    j = Math.min(GRID_RES - 1, Math.max(0, Math.round((HALF - z) / CELL)));
+  const i = clamp(Math.round((x + HALF) / CELL), 0, GRID_RES - 1),
+    j = clamp(Math.round((HALF - z) / CELL), 0, GRID_RES - 1);
   return i * GRID_RES + j;
 };
 export const nodeX = (k: number) => Math.floor(k / GRID_RES) * CELL - HALF;
@@ -64,27 +56,11 @@ export function loadLevel(layoutFile: string | null): Level {
   const cm = islandBaseCm(island);
   const h = new Float64Array(cm.length);
   for (let k = 0; k < cm.length; k++) h[k] = cm[k]! / 100;
-  // src/island/heights.ts's groundHeight, on this level's heights.
-  const groundAt = (x: number, z: number) => {
-    const fi = (x + HALF) / CELL,
-      fj = (HALF - z) / CELL;
-    if (fi < 0 || fj < 0 || fi >= GRID_RES - 1 || fj >= GRID_RES - 1) return SEABED;
-    const i = Math.floor(fi),
-      j = Math.floor(fj),
-      u = fi - i,
-      v = fj - j;
-    const near = h[i * GRID_RES + j]! + (h[(i + 1) * GRID_RES + j]! - h[i * GRID_RES + j]!) * u;
-    const far = h[i * GRID_RES + j + 1]! + (h[(i + 1) * GRID_RES + j + 1]! - h[i * GRID_RES + j + 1]!) * u;
-    return near + (far - near) * v;
-  };
+  const columns = Array.from({ length: GRID_RES }, (_, i) => Array.from(h.subarray(i * GRID_RES, (i + 1) * GRID_RES)));
+  const groundAt = (x: number, z: number) => heightIn(columns, x, z);
 
-  // As src/island/layout.ts applies it: the game builds ROUTE.length sections, and later ones in a file are for the lab.
-  const ok = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+  const route = routeIn(layout, ROUTE);
   const fileRoute = layout?.route ?? [];
-  const route: Section[] = ROUTE.map((def, s) => {
-    const r = fileRoute[s];
-    return r && ok(r.x) && ok(r.z) && ok(r.to?.[0]) && ok(r.to?.[1]) ? r : def;
-  });
   const labSections = Math.max(0, fileRoute.length - ROUTE.length);
   const routeFile = layoutFile ?? 'src/sim/route.ts';
   const placements = scatterProps({ groundHeight: groundAt, keptOut: island.keptOut }).filter(

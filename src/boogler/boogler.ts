@@ -11,12 +11,12 @@
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the host stops for
 // players who talk to him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import { FIXED, INTERP_MS, HALF, reducedMotion } from '../constants.ts';
+import { INTERP_MS, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera, toScreen } from '../render/scene.ts';
-import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.ts';
-import { createBody, BODY } from '../physics/engine.ts';
+import { chaseKinematic, playerMat, NOT_SCENERY } from '../physics/physics.ts';
+import { createBody, BODY, teleport } from '../physics/engine.ts';
 import { blockedAt } from '../entities/props/state.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
@@ -511,17 +511,7 @@ export function createBoogler() {
 export function booglerBodyStep() {
   const b = boogler.body;
   if (!b) return;
-  const p = b.position;
-  const tx = disp.x,
-    tz = disp.z,
-    ty = groundHeight(tx, tz);
-  const dx = tx - p.x,
-    dy = ty - p.y,
-    dz = tz - p.z;
-  if (dx * dx + dy * dy + dz * dz > 36) {
-    teleport(b, tx, ty, tz);
-    b.velocity.set(0, 0, 0);
-  } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+  chaseKinematic(b, disp.x, groundHeight(disp.x, disp.z), disp.z);
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };

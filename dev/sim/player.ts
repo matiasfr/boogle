@@ -2,7 +2,8 @@
 // is checked against what the same course did in the real game (./player-browser.json, from ./player-browser.ts).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { frame, headless, virtualClock } from './world.ts';
+import { timedCourse } from './timed.ts';
+import { headless, virtualClock } from './world.ts';
 import { runCourse, type PlayerCourseResult, type Sample } from './player-course.ts';
 
 const TOLERANCE = 0.01; // m and m/s: the same WASM, the same controller and the same ground should give the same answer
@@ -13,16 +14,7 @@ const browser = JSON.parse(
   fs.readFileSync(new URL('./player-browser.json', import.meta.url), 'utf8'),
 ) as PlayerCourseResult;
 
-const hrtimeMs = () => Number(process.hrtime.bigint()) / 1e6;
-let frames = 0;
-const t0 = hrtimeMs();
-const result = await runCourse((done) => {
-  while (!done()) {
-    frame();
-    frames++;
-  }
-});
-const ms = hrtimeMs() - t0;
+const { result, frames, ms } = await timedCourse(runCourse);
 
 let worst = 0;
 let worstAt = '';

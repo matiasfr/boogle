@@ -3,6 +3,7 @@
 // casts a shadow (the sun's shadow box only covers the player's surroundings), and only the deck and the two stations
 // collide. Sea-crossings research, points 2 and 10: the destination stays in view, as a cheap silhouette.
 import * as THREE from 'three/webgpu';
+import { flat } from '../flat.ts';
 import { scene } from '../../render/scene.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
@@ -10,7 +11,7 @@ import { mulberry32 } from '../../sim/rng.ts';
 import { LOOK } from './tuning.ts';
 import { LENGTH, LOW, ORIGIN, STOP_A, STOP_B, WALK, lineAt, railY, type LinePoint } from './line.ts';
 
-const FLAT = (color: string) => new THREE.MeshStandardNodeMaterial({ color, roughness: 0.95, flatShading: true });
+const FLAT = (color: string) => flat(color);
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const pose = new THREE.Object3D();
 

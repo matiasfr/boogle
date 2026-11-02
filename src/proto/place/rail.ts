@@ -6,8 +6,8 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { chuff, clank, thump } from '../../render/machine-sfx.ts';
-import { angleLerp } from '../../math.ts';
+import { chuff, clank } from '../../render/machine-sfx.ts';
+import { angleLerp, clamp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
@@ -108,7 +108,6 @@ export function buildTrestle(line: Line): Trestle {
   const set = makeSet(boxes);
   return { ...set, s: Float32Array.from(sAt), piece, drawnAt: Infinity };
 }
-const clamp01 = (u: number) => Math.max(0, Math.min(1, u));
 /** Draws the trestle with the machine having reached `built` metres along the line (it runs from the far end home). */
 export function drawTrestle(t: Trestle, built: number) {
   if (built === t.drawnAt) return;
@@ -116,9 +115,9 @@ export function drawTrestle(t: Trestle, built: number) {
   draw(t, (k) => {
     const d = t.s[k]! - built;
     const kind = t.piece[k];
-    if (kind === 'leg') return clamp01((d + 16) / 5); // the bents rise ahead of the machine
-    if (kind === 'deck') return clamp01((d + 7) / 2);
-    return clamp01(d / 1.5);
+    if (kind === 'leg') return clamp((d + 16) / 5, 0, 1); // the bents rise ahead of the machine
+    if (kind === 'deck') return clamp((d + 7) / 2, 0, 1);
+    return clamp(d / 1.5, 0, 1);
   });
 }
 
@@ -195,7 +194,6 @@ export function buildMachine(line: Line): Machine {
     },
   };
 }
-export const bentThump = (x: number, z: number) => thump(x, z);
 
 // ---------------------------------------------------------------- trains
 const CARS: { spec: CarSpec; off: number }[] = [
@@ -234,10 +232,9 @@ export type Train = {
   from: number;
 };
 
-const runSeconds = (line: Line) => (line.len - TUNE.stopIn * 2) / TUNE.cruise + TUNE.cruise / TUNE.accel;
-export const cycleOf = (line: Line) => 2 * (TUNE.dwell + runSeconds(line));
 /** Rides between stops, for the report and the card. */
-export const rideSeconds = runSeconds;
+export const runSeconds = (line: Line) => (line.len - TUNE.stopIn * 2) / TUNE.cruise + TUNE.cruise / TUNE.accel;
+export const cycleOf = (line: Line) => 2 * (TUNE.dwell + runSeconds(line));
 
 const a = { ...P },
   b = { ...P };

@@ -3,9 +3,8 @@
 // kinds because it needs two slots in prePhysics and postPhysics, with the player's -80 and -290 between them
 // (src/loop.ts).
 import { defineKind, spawn } from '../../entity/entity.ts';
-import { tabHidden } from '../../netplay/net.ts';
 import { ball, ballOwner, netBall, prepareBall, settleBall, surfBall, walkIntoBall } from './state.ts';
-import { resolveBallOwner } from './sync.ts';
+import './sync.ts';
 
 defineKind('ball', { prePhysics: -90, fixedPre: 45, fixedPost: 15, postPhysics: -300 });
 defineKind('ball-carry', { prePhysics: -70, postPhysics: -280 });
@@ -13,7 +12,7 @@ defineKind('ball-carry', { prePhysics: -70, postPhysics: -280 });
 spawn({
   kind: 'ball',
   bodies: [ball.body],
-  prePhysics: ({ now }) => resolveBallOwner(now, tabHidden()),
+  prePhysics: ({ now }) => ballOwner.resolve(now),
   fixedPre: ({ dt }) => surfBall(dt),
   fixedPost: netBall,
   postPhysics: settleBall,

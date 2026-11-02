@@ -52,7 +52,6 @@ class MBody {
   fixedRotation = false;
   linearDamping = 0.01;
   angularDamping = 0.01;
-  seeThrough: boolean | undefined = undefined;
   inWorld = false;
   rb: RAPIER.RigidBody | null = null;
   colliders: RAPIER.Collider[] = [];
@@ -149,7 +148,7 @@ function buildColliders(b: MBody) {
     const col = w.createCollider(d, rb);
     b.colliders.push(col);
     byCollider.set(col.handle, b);
-    if (b.seeThrough ?? isThin(s)) thinColliders.add(col.handle);
+    if (isThin(s)) thinColliders.add(col.handle);
   });
 }
 function rbType(kind: BodyKind) {
@@ -203,7 +202,6 @@ export function createBody(o: BodyOptions = {}): Body {
   b.fixedRotation = !!o.fixedRotation;
   b.linearDamping = o.linearDamping ?? 0.01;
   b.angularDamping = o.angularDamping ?? 0.01;
-  b.seeThrough = o.seeThrough;
   if (o.position) b.position.set(o.position.x, o.position.y, o.position.z);
   if (o.rotation) b.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
   b.previousPosition.set(b.position.x, b.position.y, b.position.z);
@@ -233,6 +231,7 @@ export function setMotion(body: Body, motion: 'dynamic' | 'kinematic', response 
   buildColliders(b);
 }
 export const getMask = (body: Body) => m(body).mask;
+export const setCcd = (body: Body, on: boolean) => void m(body).rb?.enableCcd(on);
 export function setMask(body: Body, mask: number) {
   const b = m(body);
   b.mask = mask;
@@ -392,15 +391,14 @@ export function forEachContact(body: Body, fn: ContactFn) {
 }
 
 const isThinCollider = (handle: number) => thinColliders.has(handle),
-  notThinCollider = (handle: number) => !thinColliders.has(handle),
-  anyCollider = () => true;
+  notThinCollider = (handle: number) => !thinColliders.has(handle);
 // A camera sweeps twice a frame, and world.castShape makes four WASM objects a call, each registered for finalization, and
 // a hit with four vectors. So this calls what's under it with the same arguments, on inputs it keeps (npm run hitches).
 type RawVector = ReturnType<typeof RAPIER.VectorOps.intoRaw>;
 type RawRotation = ReturnType<typeof RAPIER.RotationOps.intoRaw>;
 type RawShape = ReturnType<RAPIER.Shape['intoRaw']>;
 let sweep: { from: RawVector; by: RawVector; turn: RawRotation; r: number; ball: RawShape } | undefined;
-export function sweepSphere(from: V3, to: V3, r: number, o: { mask?: number; thin?: 'include' | 'skip' | 'only' }) {
+export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) {
   if (!R || !world) return -1;
   const dx = to.x - from.x,
     dy = to.y - from.y,
@@ -425,10 +423,10 @@ export function sweepSphere(from: V3, to: V3, r: number, o: { mask?: number; thi
   sweep.by.x = dx;
   sweep.by.y = dy;
   sweep.by.z = dz;
-  const filter = ((0xffff << 16) | ((o.mask ?? -1) & 0xffff)) >>> 0;
+  const filter = ((0xffff << 16) | (o.mask & 0xffff)) >>> 0;
   const flags =
     R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC | R.QueryFilterFlags.EXCLUDE_KINEMATIC;
-  const only = o.thin === 'only' ? isThinCollider : o.thin === 'skip' ? notThinCollider : anyCollider;
+  const only = o.thin === 'only' ? isThinCollider : notThinCollider;
   // 1 s at this velocity is the whole sweep. Not stopping at penetration: what it starts inside doesn't hold it.
   const h = world.broadPhase.raw.castShape(
     world.narrowPhase.raw,

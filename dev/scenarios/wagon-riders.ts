@@ -24,7 +24,7 @@ const SECONDS = 24;
 // Bob on the car, a little off its centre, facing along it (feet sphere just above the deck).
 const BOARD = `
   const { me } = await import('/src/player/player.ts');
-  const { teleport } = await import('/src/physics/physics.ts');
+  const { teleport } = await import('/src/physics/engine.ts');
   const { PLAYER_R } = await import('/src/constants.ts');
   const { yawOf } = await import('/src/physics/platforms.ts');
   const c = window.__wagon.cars[${CAR}], b = c.body, yaw = yawOf(b.quaternion);

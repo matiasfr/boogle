@@ -25,7 +25,7 @@ export type LayoutFile = {
   clear?: { line?: number; discs?: { x: number; z: number; r: number }[] };
 };
 
-type Section = { x: number; z: number; to: number[] };
+export type Section = { x: number; z: number; to: number[] };
 
 const files = import.meta.glob<LayoutFile>('../../dev/layouts/*.json', { import: 'default' });
 const wanted = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('layout');
@@ -42,11 +42,16 @@ async function load(name: string): Promise<LayoutFile | null> {
 export const layout: LayoutFile | null = wanted ? await load(wanted) : null;
 
 const ok = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-if (layout?.route)
-  layout.route.slice(0, ROUTE.length).forEach((r, s) => {
-    if (!ok(r.x) || !ok(r.z) || !ok(r.to?.[0]) || !ok(r.to?.[1])) return;
-    Object.assign(ROUTE[s]!, { x: r.x, z: r.z, to: [r.to[0], r.to[1]] });
+/** The sections a layout file gives: the first `base.length`, each if it's whole, and `base`'s own otherwise. */
+export function routeIn(file: LayoutFile | null, base: readonly Section[]): Section[] {
+  return base.map((def, s) => {
+    const r = file?.route?.[s];
+    return r && ok(r.x) && ok(r.z) && ok(r.to?.[0]) && ok(r.to?.[1]) ? r : def;
   });
+}
+routeIn(layout, ROUTE).forEach((r, s) => {
+  if (r !== ROUTE[s]) Object.assign(ROUTE[s]!, { x: r.x, z: r.z, to: [r.to[0], r.to[1]] });
+});
 
 /** Moves a POI's site (its default export, in place, so its content module sees it too) to the layout's place. */
 export function placeSite(id: string, site: { x: number; z: number; dir?: [number, number] }): void {

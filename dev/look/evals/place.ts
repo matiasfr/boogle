@@ -38,8 +38,8 @@ if (!place) throw new Error('no place: add proto=place to the query');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
 const { teleport } = (await import(
-  '/src/physics/physics.ts' as string
-)) as typeof import('../../../src/physics/physics.ts');
+  '/src/physics/engine.ts' as string
+)) as typeof import('../../../src/physics/engine.ts');
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 while (!me.body) await wait(100);
 await wait(1500);

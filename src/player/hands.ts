@@ -41,7 +41,7 @@ import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
-import { remoteHoldsBall } from '../entities/ball/sync.ts';
+import { remoteHoldsBall } from '../entities/ball/state.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
 import { sprout } from '../adapters/mushrooms.ts';

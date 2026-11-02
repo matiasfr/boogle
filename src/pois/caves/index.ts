@@ -35,7 +35,8 @@ import {
 } from 'three/tsl';
 import { scene, camera } from '../../render/scene.ts';
 import { precompile } from '../../render/precompile.ts';
-import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.ts';
+import { teleport } from '../../physics/engine.ts';
+import { groundMat, GROUP, groundProbe } from '../../physics/physics.ts';
 import { type Body, createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../island/terrain.ts';
 import { onStart, onFrame } from '../../loop.ts';

@@ -45,6 +45,7 @@ type Rig = {
   life: ReturnType<typeof makeLife>;
   lastY: number;
 };
+const FADED = 1e-3; // a fading clip's weight under this is 0: exponential fades otherwise take 45 s to get there
 const rigs = new WeakMap<Avatar, Rig>();
 // animate's scratch, kept so a frame allocates nothing (npm run hitches). Neither outlives the call.
 const want = Object.fromEntries(NAMES.map((n) => [n, 0])) as Record<string, number>;
@@ -92,7 +93,9 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   const k = 1 - Math.exp(-dt / (airborne ? FADE.air : FADE.ground));
   for (let j = 0; j < NAMES.length; j++) {
     const n = NAMES[j]!;
-    r.w[n]! += (want[n]! - r.w[n]!) * k;
+    const w = r.w[n]! + (want[n]! - r.w[n]!) * k;
+    r.w[n] = !want[n] && w < FADED ? 0 : w;
+    r.acts[n]!.enabled = r.w[n]! > 0; // a clip at no weight isn't sampled
     r.acts[n]!.setEffectiveWeight(r.w[n]!);
   }
 
@@ -127,6 +130,25 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   r.lastY = a.position.y;
 }
 
+// Skinned meshes cull by a sphere in their own space. three.js would compute one once, from whatever pose it's in, and the
+// geometry's own isn't in that space at all. Every part shares this one, the whole body's at rest with room for what the
+// clips do: a small part like the face swings too far from its own centre. A Buddy on its back turns the sphere with it.
+const POSE_ROOM = 2; // measured: the clips reach 1.85 times the rest sphere
+let poseBounds: THREE.Sphere | null = null;
+function boundsOf(holder: THREE.Object3D) {
+  if (poseBounds) return poseBounds;
+  const whole = new THREE.Sphere();
+  holder.updateMatrixWorld(true);
+  holder.traverse((o) => {
+    const m = o as THREE.SkinnedMesh;
+    if (!m.isSkinnedMesh) return;
+    m.computeBoundingSphere();
+    whole.union(m.boundingSphere!);
+  });
+  whole.radius *= POSE_ROOM;
+  return (poseBounds = whole);
+}
+
 /** How long preparing the clips for this skeleton took at load, for the test readout. */
 export let bakeMs = 0;
 
@@ -138,21 +160,25 @@ export async function startBuddy() {
   const tgt = model.instance();
   let ratio = 1;
   const baked = new Map<string, THREE.AnimationClip>();
-  const t0 = performance.now();
+  let bake = 0;
   for (const n of NAMES) {
+    const t0 = performance.now();
     const r = retargetClip(clips.clip(n), src, tgt, { armOut: ARM_OUT });
+    bake += performance.now() - t0;
     baked.set(n, r.clip);
     ratio = r.ratio;
+    await new Promise((go) => setTimeout(go)); // a clip at a time, so the bake isn't one long task
   }
-  bakeMs = Math.round(performance.now() - t0);
+  bakeMs = Math.round(bake);
   const dress = (a: Avatar, colorIdx: number) => {
     if (rigs.has(a)) return;
     const holder = model.instance();
+    const bounds = boundsOf(holder);
     const root = holder.children[0]!;
     holder.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
-      m.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
+      if ((m as THREE.SkinnedMesh).isSkinnedMesh) (m as THREE.SkinnedMesh).boundingSphere = bounds;
       if (m.name.startsWith('wear_')) m.visible = m.name.startsWith(hat);
       const shared = m.material as THREE.MeshStandardNodeMaterial;
       if (shared.name === 'M_Main') {

@@ -86,7 +86,7 @@ export function siteFrame(site: { x: number; z: number; dir?: [number, number] }
 }
 
 // Distance from p to segment ab, and the parameter t along it.
-function segDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number) {
+export function segDist(px: number, pz: number, ax: number, az: number, bx: number, bz: number) {
   const ex = bx - ax,
     ez = bz - az;
   const ll = ex * ex + ez * ez;

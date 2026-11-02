@@ -4,7 +4,7 @@
 // Friendship is personal (src/boogler/friendship.ts), saved in localStorage once per browser, shared by every room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.ts) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
-import { FIXED } from '../constants.ts';
+import { FIXED, PLAYER_R } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
@@ -119,6 +119,7 @@ export function checkStandingOnBoogler() {
   const b = me.body,
     gb = boogler.body;
   if (!b || !gb) return;
+  if (Math.hypot(b.position.x - gb.position.x, b.position.z - gb.position.z) > W_R + PLAYER_R + 0.5) return;
   forEachContact(b, (nx, ny, nz, other) => {
     if (other !== gb || ny <= 0.5) return false;
     ride.lastOn = physicsTime();

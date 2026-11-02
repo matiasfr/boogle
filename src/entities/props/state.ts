@@ -1,8 +1,7 @@
 // The island's scenery with no view: where each prop stands (src/blueprints/props.ts), the footprints things walk
 // around, and the collider bodies. src/render/props.ts draws from the same placements.
 import { collidersOf, footprintOf, type Sphere } from '../../blueprints/blueprint.ts';
-import { isHomePalm, PROP_BLUEPRINTS, scatterProps, type PropPlacement } from '../../blueprints/props.ts';
-import { HALF } from '../../constants.ts';
+import { isHomePalm, PROP_BLUEPRINTS, scatterProps, tileKey, type PropPlacement } from '../../blueprints/props.ts';
 import { groundHeight } from '../../island/heights.ts';
 import { island } from '../../island/index.ts';
 import { clearedAt } from '../../island/layout.ts';
@@ -56,11 +55,6 @@ export function blockedAt(x: number, z: number, pad = 0) {
     }
   return false;
 }
-
-// Props are split into TILE-metre tiles: the view's merged meshes, so the camera and the shadow pass skip the ones out
-// of view, and the colliders, merged into one body per tile (the physics step pays per body).
-const TILE = 64;
-export const tileKey = (x: number, z: number) => bkey(Math.floor((x + HALF) / TILE), Math.floor((z + HALF) / TILE));
 
 // A home palm has a body of its own. What a layout clears away has no collider.
 function buildBodies() {

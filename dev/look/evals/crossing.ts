@@ -27,7 +27,6 @@ const cross = window.__crossing as {
     hy: number;
   }[];
   seekS: (s: number) => void;
-  setSpeed: (x: number, z: number) => void;
   lineAt: (s: number, out: Pt) => Pt;
   railY: (s: number) => number;
 };
@@ -38,8 +37,8 @@ const plat = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
 const { teleport } = (await import(
-  '/src/physics/physics.ts' as string
-)) as typeof import('../../../src/physics/physics.ts');
+  '/src/physics/engine.ts' as string
+)) as typeof import('../../../src/physics/engine.ts');
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 while (!me.body) await wait(100);
 await wait(800); // the prototype bar has placed you
@@ -53,7 +52,6 @@ if (test === 'spawn' || test === 'play') {
   cross.lineAt(frac * cross.LENGTH, P);
   teleport(body, P.x + 40, 0.1, P.z);
   body.velocity.set(0, 0, 0);
-  cross.setSpeed(0, 0);
   cam.yaw = me.yaw = -Math.PI / 2; // looking east, away from the line
   cam.pitch = -0.1;
   input.keys.add('KeyW');
@@ -63,7 +61,6 @@ if (test === 'spawn' || test === 'play') {
   const l = test === 'back' ? 12 : 2.1;
   teleport(body, P.x - P.uz * l, cross.railY(s) + 0.7 + 0.47 + 0.2, P.z + P.ux * l);
   body.velocity.set(0, 0, 0);
-  cross.setSpeed(0, 0);
   cam.yaw = me.yaw = test === 'back' ? Math.atan2(P.ux, P.uz) : Math.atan2(P.ux, P.uz) + Math.PI;
   cam.pitch = -0.1;
   if (test === 'sprint') {
@@ -79,7 +76,6 @@ if (test === 'spawn' || test === 'play') {
   body.velocity.set(car.body.velocity.x, car.body.velocity.y, car.body.velocity.z);
   plat.carry.x = car.body.velocity.x;
   plat.carry.z = car.body.velocity.z;
-  cross.setSpeed(car.body.velocity.x, car.body.velocity.z);
   cam.yaw = me.yaw = car.yaw + Math.PI;
   cam.pitch = -0.12;
 }

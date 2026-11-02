@@ -176,7 +176,7 @@ const RECORDER = String.raw`(() => {
 // ---------------------------------------------------------------- takes
 // Page-code snippets the takes share.
 const TP = (x: string | number, z: string | number) => `{
-  const { teleport } = await import('/src/physics/physics.ts');
+  const { teleport } = await import('/src/physics/engine.ts');
   const { groundHeight } = await import('/src/island/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
@@ -208,33 +208,21 @@ const PAGES: Page[] = [
         group: 'UI kit',
         title: 'Prompt pop',
         when: 'The interact prompt appears ("Take logs", "Pick up"): three of them.',
-        body: seq(
-          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
-          Array(3).fill(`uiSound('pop');`),
-          600,
-        ),
+        body: seq(`const { uiSound } = await import('/src/ui/ui-sound.ts');`, Array(3).fill(`uiSound('pop');`), 600),
       },
       {
         id: 'ui-thunk',
         group: 'UI kit',
         title: 'Thunk (it worked)',
         when: 'A press that did something (Take logs, Pick up): a wooden tok on G4 over a soft low knock.',
-        body: seq(
-          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
-          Array(3).fill(`uiSound('thunk');`),
-          500,
-        ),
+        body: seq(`const { uiSound } = await import('/src/ui/ui-sound.ts');`, Array(3).fill(`uiSound('thunk');`), 500),
       },
       {
         id: 'ui-deny',
         group: 'UI kit',
         title: 'Deny',
         when: 'A press that could not happen ("Hotbar full"): twice.',
-        body: seq(
-          `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
-          Array(2).fill(`uiSound('deny');`),
-          700,
-        ),
+        body: seq(`const { uiSound } = await import('/src/ui/ui-sound.ts');`, Array(2).fill(`uiSound('deny');`), 700),
       },
       {
         id: 'ui-count',

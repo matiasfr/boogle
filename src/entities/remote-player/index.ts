@@ -5,13 +5,13 @@
 //
 // It reads the local player through localPresence().
 import * as THREE from 'three';
-import { COLORS, FIXED, INTERP_MS } from '../../constants.ts';
+import { COLORS, INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
 import { teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
 import { makeAvatar, makeLabel, animateAvatar } from '../../player/avatars.ts';
-import { makePlayerBody } from '../../physics/physics.ts';
+import { chaseKinematic, makePlayerBody } from '../../physics/physics.ts';
 import {
   addPresenceField,
   localPresence,
@@ -183,6 +183,8 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
   const prevPos = r.target.clone();
   let label: ReturnType<typeof makeLabel> | null = null;
   let labelText = '';
+  let shownColor = -1,
+    shownMat: THREE.MeshStandardMaterial | null = null;
   let posed = false; // the first frame puts it at that frame's pose: no walk from where its first presence arrived
   const entity = spawn({
     kind: 'remote-player',
@@ -199,7 +201,12 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
         prevPos.copy(r.target);
         teleport(body, r.target.x, r.target.y, r.target.z);
       }
-      avatar.userData.mat.color.set(COLORS[r.colorIdx]!);
+      if (r.colorIdx !== shownColor || avatar.userData.mat !== shownMat) {
+        // A Buddy's skin swaps the material once it loads, so that counts as a change too.
+        shownColor = r.colorIdx;
+        shownMat = avatar.userData.mat;
+        shownMat.color.set(COLORS[shownColor]!);
+      }
       if (labelText !== r.name) {
         if (label) {
           avatar.remove(label);
@@ -211,16 +218,7 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
       }
     },
     fixedPre() {
-      const p = body.position;
-      const dx = r.target.x - p.x,
-        dy = r.target.y - p.y,
-        dz = r.target.z - p.z;
-      if (dx * dx + dy * dy + dz * dz > 36) {
-        teleport(body, r.target.x, r.target.y, r.target.z);
-        body.velocity.set(0, 0, 0);
-      } else {
-        body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
-      }
+      chaseKinematic(body, r.target.x, r.target.y, r.target.z);
     },
     // The avatar takes its interpolated pose and walks at the speed it moved since last frame.
     update({ dt, now }) {

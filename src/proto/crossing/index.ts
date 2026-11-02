@@ -5,12 +5,12 @@
 // docs/game-design/crossing.md describes it; research: docs/research/sea-crossings.md, docs/research/train-riding.md.
 import './crossing.css';
 import * as THREE from 'three/webgpu';
-import { FIXED, HALF, PLAYER_R } from '../../constants.ts';
+import { PLAYER_R } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
 import { emit } from '../../render/particles.ts';
 import { camera } from '../../render/scene.ts';
-import { onPostStep, onPreStep } from '../../physics/engine.ts';
-import { teleport } from '../../physics/physics.ts';
+import { setCcd, teleport } from '../../physics/engine.ts';
+import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
@@ -28,36 +28,7 @@ dressSea();
 extendSky();
 
 // ---------------------------------------------------------------- past the edge of the map
-// The player's soft wall (src/entities/player/state.ts) turns you back 18 m inside the 510 m square, whether you swim or ride: at 237 m it sets your
-// speed away from the origin to -2 m/s. This hook runs after it (lazy modules register last) and, past the wall, puts
-// back the speed you would have had, by the same steering sum. The real fix: a wall that knows the world is bigger.
-const WALL = HALF - 18;
-let lastVx = 0,
-  lastVz = 0;
-onPostStep(() => {
-  if (!me.body) return;
-  lastVx = me.body.velocity.x;
-  lastVz = me.body.velocity.z;
-});
-onPreStep(() => {
-  const b = me.body;
-  if (!b || (Math.abs(b.position.x) <= WALL && Math.abs(b.position.z) <= WALL)) return;
-  const top = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
-  const rvx = lastVx - carry.x,
-    rvz = lastVz - carry.z;
-  const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-  const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : 14;
-  let dx = me.wish.x * top - rvx,
-    dz = me.wish.z * top - rvz;
-  const dl = Math.hypot(dx, dz),
-    most = accel * FIXED;
-  if (dl > most) {
-    dx *= most / dl;
-    dz *= most / dl;
-  }
-  b.velocity.x = lastVx + dx;
-  b.velocity.z = lastVz + dz;
-});
+softWall.at = Infinity; // this world runs well past the 510 m square the player's soft wall guards
 
 // ---------------------------------------------------------------- arriving, falling in, getting back
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -69,7 +40,6 @@ const backOnLine = () => {
   const l = (WALK.in + WALK.out) / 2;
   teleport(b, P.x - P.uz * l, railY(s) + WALK.up + PLAYER_R + 0.3, P.z + P.ux * l);
   b.velocity.set(0, 0, 0);
-  lastVx = lastVz = 0;
   carry.x = carry.z = 0;
   cam.yaw = me.yaw = Math.atan2(-P.ux, -P.uz);
 };
@@ -109,9 +79,8 @@ onFrame(
       // Going downhill at train speed, the player body's CCD (on for every dynamic body, backend-rapier.ts) stops whole
       // steps at the deck under it: its sweep seems not to allow for the deck falling too, once the deck drops further
       // in a step than you're sunk into it. You lose 0.8 m along the train per step and slide off the back. Nothing here
-      // is thin or fast enough to need CCD (falls are capped at 20 m/s), so it goes off. Past the facade, a throwaway's
-      // shortcut: the real thing needs `setCcd` on src/physics/engine.ts.
-      (b as unknown as { rb?: { enableCcd(on: boolean): void } }).rb?.enableCcd(false);
+      // is thin or fast enough to need CCD (falls are capped at 20 m/s), so it goes off.
+      setCcd(b, false);
     }
     // What the owner does, for the playtest entry.
     const riding = onTrain(carry.on);
@@ -196,8 +165,6 @@ window.__crossing = {
   RUN_SECONDS,
   LENGTH,
   STOP_B,
-  // a teleport in an eval: what the wall's undo starts from
-  setSpeed: (x: number, z: number) => void ((lastVx = x), (lastVz = z)),
   train,
   clock,
   cars,

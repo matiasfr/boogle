@@ -1,12 +1,11 @@
 // What breaks a level for a player, as a designer would catch it in an editor. Each issue says where and what to do about
 // it. This catches what's broken; what a good level aims for is docs/research/level-design.md.
 import { collidersOf, footprintOf } from '../../src/blueprints/blueprint.ts';
-import { isHomePalm, PROP_BLUEPRINTS } from '../../src/blueprints/props.ts';
+import { isHomePalm, PROP_BLUEPRINTS, tileKey } from '../../src/blueprints/props.ts';
 import {
   CELL,
   GRAVITY,
   GRID_RES,
-  HALF,
   JUMP_SPEED,
   PLAYER_R,
   SEA,
@@ -15,7 +14,7 @@ import {
   SWIM_JUMP_SPEED,
   WALKABLE_NY,
 } from '../../src/constants.ts';
-import { siteFrame } from '../../src/island/stamps.ts';
+import { segDist, siteFrame } from '../../src/island/stamps.ts';
 import { WAGON_MAX_GRADE } from '../../src/sim/wagon.ts';
 import { flood, standable, type Grid, type Mover } from './flood.ts';
 import { nodeOf, nodeX, nodeZ, siteFile, type Level } from './level.ts';
@@ -45,13 +44,6 @@ const BUDGET = { placed: 300, spheres: 1100, bodies: 60 };
 
 const f1 = (v: number) => v.toFixed(1);
 const at = (x: number, z: number) => `(${f1(x)}, ${f1(z)})`;
-
-function distToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number) {
-  const dx = bx - ax,
-    dz = bz - az;
-  const u = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz || 1)));
-  return Math.hypot(px - ax - u * dx, pz - az - u * dz);
-}
 
 /** Nodes where a collider, too tall to jump onto, keeps the player's body out. */
 function blockedNodes(level: Level) {
@@ -238,7 +230,7 @@ function overlaps(level: Level, out: Issue[]) {
   });
   // The line, against what stands in its way.
   route.forEach((sec, s) => {
-    const seg = (x: number, z: number) => distToSegment(x, z, sec.x, sec.z, sec.to[0]!, sec.to[1]!);
+    const seg = (x: number, z: number) => segDist(x, z, sec.x, sec.z, sec.to[0]!, sec.to[1]!).d;
     for (const d of discs)
       if (seg(d.x, d.z) < d.r + TRACK_HALF)
         out.push({
@@ -408,7 +400,7 @@ export function budgets(level: Level) {
   for (const p of level.placements) {
     spheres += collidersOf(PROP_BLUEPRINTS[p.blueprint], p).length;
     if (isHomePalm(p)) palms++;
-    else tiles.add(Math.floor((p.x + HALF) / 64) * 4096 + Math.floor((p.z + HALF) / 64));
+    else tiles.add(tileKey(p.x, p.z));
   }
   const counts = { placed: level.placements.length, spheres, bodies: palms + tiles.size };
   const over = (Object.keys(BUDGET) as (keyof typeof BUDGET)[]).filter((k) => counts[k] > BUDGET[k]);

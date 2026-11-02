@@ -8,6 +8,7 @@
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
 //   setShapes(body, shapes)        replace its shapes (a thing that changes size); mass and bounds follow
 //   getMask(body), setMask(body, mask)   which collision groups it collides with (the caves swap them)
+//   setCcd(body, on)               continuous collision, on for every dynamic body
 //   setMotion(body, 'dynamic' | 'kinematic', response, mass)   switch how it moves; kinematic stops it (response:
 //                                  pushes; mass: set it too)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
@@ -20,8 +21,8 @@
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
 //   sweepSphere(from, to, r, { mask, thin })   metres a sphere of radius r moves from `from` towards `to` before it touches
 //                                  something static (what moves and sensors don't count, nor does anything it starts inside);
-//                                  -1 if clear. thin: 'skip' or 'only' for shapes under 1.6 m across (trunks, posts), or a
-//                                  body with `seeThrough`; 'include' by default. For a camera arm, line of sight, placing
+//                                  -1 if clear. thin: 'skip' or 'only' for shapes under 1.6 m across (trunks, posts).
+//                                  For a camera arm, line of sight, placing
 //   physicsTime()                  seconds of simulated time
 //   physicsClock(), setPhysicsClock(c)   that time and what's left under a step, for a replay to start from
 //                                  (dev/sim/replay.ts): sea state follows the time, and the steps a frame holds the rest
@@ -69,7 +70,6 @@ export type BodyOptions = {
   fixedRotation?: boolean;
   linearDamping?: number;
   angularDamping?: number;
-  seeThrough?: boolean; // for sweepSphere's `thin`: set it to override what its shapes' size would say
 };
 export type StepOpts = { order?: number };
 export type RayHit = { hasHit: boolean; distance: number; hitPointWorld: V3; hitNormalWorld: V3 };
@@ -83,6 +83,7 @@ export const setMotion: (body: Body, motion: 'dynamic' | 'kinematic', response?:
   backend.setMotion;
 export const getMask: (body: Body) => number = backend.getMask;
 export const setMask: (body: Body, mask: number) => void = backend.setMask;
+export const setCcd: (body: Body, on: boolean) => void = backend.setCcd;
 export const addBody: (body: Body) => void = backend.addBody;
 export const removeBody: (body: Body) => void = backend.removeBody;
 export const teleport: (body: Body, x: number, y: number, z: number) => void = backend.teleport;
@@ -100,12 +101,8 @@ export const forEachContact: (
   body: Body,
   fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void,
 ) => void = backend.forEachContact;
-export const sweepSphere: (
-  from: V3,
-  to: V3,
-  r: number,
-  o: { mask?: number; thin?: 'include' | 'skip' | 'only' },
-) => number = backend.sweepSphere;
+export const sweepSphere: (from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) => number =
+  backend.sweepSphere;
 export const rayHit: () => RayHit = backend.rayHit;
 export const raycastClosest: (from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) => boolean =
   backend.raycastClosest;

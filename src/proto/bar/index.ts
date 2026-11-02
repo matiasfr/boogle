@@ -12,7 +12,7 @@
 import './bar.css';
 import { onFrame } from '../../loop.ts';
 import { me, cam } from '../../player/player.ts';
-import { teleport } from '../../physics/physics.ts';
+import { teleport } from '../../physics/engine.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { PROTOS, playlist, onIsland, variantUrl, type Proto, type Spawn } from '../../../protos/protos.ts';

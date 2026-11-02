@@ -1,10 +1,22 @@
-import { HALF, CELL, HEAD_OFFSET, PLAYER_MASS, PLAYER_R } from '../constants.ts';
+import { HALF, CELL, FIXED, HEAD_OFFSET, PLAYER_MASS, PLAYER_R } from '../constants.ts';
 import { BODY, material, createBody, addBody, teleport } from './engine.ts';
 import { groundHeight, heights } from '../island/heights.ts';
 import type { Body } from './engine.ts';
 
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
-export { teleport };
+
+// Moves a kinematic body to where it should be by the next step, as a speed so what it touches is pushed; a long way off,
+// it jumps there.
+export function chaseKinematic(body: Body, x: number, y: number, z: number) {
+  const p = body.position;
+  const dx = x - p.x,
+    dy = y - p.y,
+    dz = z - p.z;
+  if (dx * dx + dy * dy + dz * dz > 36) {
+    teleport(body, x, y, z);
+    body.velocity.set(0, 0, 0);
+  } else body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+}
 
 // A contact uses the product of its two materials' values (ground is neutral): ball on ground 0.6 / 0.55.
 export const groundMat = material('ground', { friction: 1, restitution: 1 });

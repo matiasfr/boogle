@@ -12,6 +12,7 @@
 // fixed route in one order, so two links in the order you choose can't be expressed in it.
 import './place.css';
 import * as THREE from 'three/webgpu';
+import { flat } from '../flat.ts';
 import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
 import { onApplied, submitEdit, world, worldStatus } from '../../world/sync.ts';
@@ -19,13 +20,13 @@ import { getRoomId, net } from '../../netplay/net.ts';
 import { isProtoRoom } from '../../sim/tune.ts';
 import { TRACK } from '../../sim/route.ts';
 import { materialOf } from '../../sim/materials.ts';
-import { FIXED, HALF, PLAYER_R } from '../../constants.ts';
+import { PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
-import { onPostStep, onPreStep } from '../../physics/engine.ts';
-import { teleport } from '../../physics/physics.ts';
+import { setCcd, teleport } from '../../physics/engine.ts';
+import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { fly } from '../../render/haul-pieces.ts';
 import { scene } from '../../render/scene.ts';
@@ -55,16 +56,7 @@ import { protoCount } from '../count.ts';
 import { protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
 import { HEAP, LINKS, ORIGIN, SPAWN, TUNE, VILLAGE, lineAt, railY, toWorld, type LinePoint } from './layout.ts';
-import {
-  bentThump,
-  buildMachine,
-  buildPlatform,
-  buildTrains,
-  buildTrestle,
-  cycleOf,
-  drawTrestle,
-  rideSeconds,
-} from './rail.ts';
+import { buildMachine, buildPlatform, buildTrains, buildTrestle, cycleOf, drawTrestle, runSeconds } from './rail.ts';
 import { campBlocks, makePart, rise, snapTown, updateRises, updateTown } from './town.ts';
 
 buildLand();
@@ -83,41 +75,14 @@ onFrame(
   },
   { phase: 'update', order: -3 },
 );
-// physics.ts's soft wall turns you back at 237 m from the origin: as in the crossing, this puts back your speed past it.
-const WALL = HALF - 18;
-let lastVx = 0,
-  lastVz = 0;
-onPostStep(() => {
-  if (!me.body) return;
-  lastVx = me.body.velocity.x;
-  lastVz = me.body.velocity.z;
-});
-onPreStep(() => {
-  const b = me.body;
-  if (!b || (Math.abs(b.position.x) <= WALL && Math.abs(b.position.z) <= WALL)) return;
-  const top = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
-  const rvx = lastVx - carry.x,
-    rvz = lastVz - carry.z;
-  const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-  const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : 14;
-  let dx = me.wish.x * top - rvx,
-    dz = me.wish.z * top - rvz;
-  const dl = Math.hypot(dx, dz),
-    most = accel * FIXED;
-  if (dl > most) {
-    dx *= most / dl;
-    dz *= most / dl;
-  }
-  b.velocity.x = lastVx + dx;
-  b.velocity.z = lastVz + dz;
-});
+softWall.at = Infinity; // this world runs well past the 510 m square the player's soft wall guards
 camConstraints.push((_, pos) => {
   if (insidePlace(pos.x, pos.z)) pos.y = Math.max(pos.y, H(pos.x, pos.z) + 0.5);
   return false;
 });
 
 // ---------------------------------------------------------------- what stands in each link
-const FLAT = (color: string) => new THREE.MeshStandardNodeMaterial({ color, roughness: 0.9, flatShading: true });
+const FLAT = (color: string) => flat(color, 0.9);
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const wx = (x: number) => toWorld(x);
 const v3 = (x: number, z: number, up = 0) => new THREE.Vector3(wx(x), H(wx(x), z) + up, z);
@@ -135,7 +100,6 @@ type Link = {
   pile: Heap;
   depot: Heap;
   depotOn: boolean;
-  made: number;
   camp: {
     asleep: ReturnType<typeof makePart>;
     awake: ReturnType<typeof makePart>;
@@ -274,7 +238,6 @@ function buildLink(spec: (typeof LINKS)[number], k: number): Link {
     pile: heap(pileX, pileZ, 3, H(pileX, pileZ)),
     depot: heap(wx(spec.depot.x) - 0.5, spec.depot.z, 3, H(wx(spec.depot.x), spec.depot.z) + 0.3),
     depotOn: false,
-    made: 0,
     camp: { asleep: sleep, awake: wake, smoke },
     flag,
     ring,
@@ -336,12 +299,11 @@ function restore() {
   }
 }
 function snapLink(l: Link) {
-  const staked = l.state >= 1;
   l.flag.visible = true;
   l.flag.position.y = H(l.flag.position.x, l.flag.position.z);
   l.ring.visible = l.state === 1;
   drawRingLogs(l);
-  for (const m of l.bundleMeshes) m.visible = staked && l.state === 1;
+  for (const m of l.bundleMeshes) m.visible = l.state === 1;
   drawTrestle(l.trestle, l.built);
   draw(l.camp.awake, () => (l.state === 2 ? 1 : 0));
   if (l.state === 2) {
@@ -486,7 +448,6 @@ function backUp() {
   const q = nearest(b.position.x, b.position.z);
   teleport(b, q[0] + ORIGIN.x, Math.max(H(q[0] + ORIGIN.x, q[1]), q[2] + 0.12) + PLAYER_R + 0.4, q[1]); // a bridge's samples are over water
   b.velocity.set(0, 0, 0);
-  lastVx = lastVz = 0;
   carry.x = carry.z = 0;
 }
 registerInteractable(() => {
@@ -594,7 +555,7 @@ function layOn(l: Link, dt: number) {
   if (l.bentAt - l.built > 6.5) {
     l.bentAt = l.built;
     lineAt(l.spec.line, l.built, P);
-    bentThump(wx(P.x), P.z);
+    thump(wx(P.x), P.z);
     puffAt(wx(P.x), H(wx(P.x), P.z), P.z, 6);
   }
 }
@@ -867,7 +828,6 @@ function atSpawn() {
   if (!b) return;
   teleport(b, wx(SPAWN.x), H(wx(SPAWN.x), SPAWN.z) + PLAYER_R + 0.4, SPAWN.z);
   b.velocity.set(0, 0, 0);
-  lastVx = lastVz = 0;
   cam.yaw = me.yaw = SPAWN.yaw;
   cam.pitch = -0.14;
 }
@@ -899,7 +859,7 @@ onFrame(
     if (b && !placed) {
       placed = true;
       // Above a falling deck at train speed, the player body's CCD stops whole steps (src/proto/crossing/index.ts).
-      (b as unknown as { rb?: { enableCcd(on: boolean): void } }).rb?.enableCcd(false);
+      setCcd(b, false);
       atSpawn();
     }
     // A spawn or a teleport lands by the old island's ground height, and that's under this land: lift it onto the top.
@@ -1001,7 +961,6 @@ function skipWalk() {
   const to = l.flag.position;
   teleport(b, to.x + 3, H(to.x + 3, to.z) + PLAYER_R + 0.4, to.z);
   b.velocity.set(0, 0, 0);
-  lastVx = lastVz = 0;
   carry.x = carry.z = 0;
 }
 function skipHaul() {
@@ -1025,7 +984,7 @@ window.__place = {
   PATH_SAMPLES,
   ORIGIN,
   H,
-  rideSeconds,
+  rideSeconds: runSeconds,
   cycleOf,
   skipWalk,
   skipHaul,

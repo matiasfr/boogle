@@ -4,7 +4,7 @@
 //   BOOGLE_QUERY='proto=moves&jump2=1&glide=1' npm run look -- --eval /tmp/e.js --warm 0.2 --seconds 3 --frames 12
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
-import { teleport } from '../../../src/physics/physics.ts';
+import { teleport } from '../../../src/physics/engine.ts';
 import { groundHeight } from '../../../src/island/terrain.ts';
 
 type DebugCam = { set(cam: number[], look: number[]): void; clear(): void };

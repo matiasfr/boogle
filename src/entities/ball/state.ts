@@ -15,8 +15,8 @@ import {
 } from '../../constants.ts';
 import { clamp } from '../../math.ts';
 import { groundHeight } from '../../island/heights.ts';
-import { ballMat, catchFallThrough, groundProbe, teleport } from '../../physics/physics.ts';
-import { createBody, physicsTime, setMotion } from '../../physics/engine.ts';
+import { ballMat, catchFallThrough, groundProbe } from '../../physics/physics.ts';
+import { createBody, physicsTime, setMotion, teleport } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { me, handPosition, carryPosition } from '../../player/state.ts';
 import { sendPresence } from '../../netplay/net.ts';
@@ -47,10 +47,15 @@ export const setBallMode = (mode: 'sim' | 'ghost') => setMotion(ball.body, mode 
 setBallMode('ghost');
 teleport(ball.body, ball.pose.p.x, ball.pose.p.y, ball.pose.p.z);
 
+/** The ball as its owner publishes it (presence `b`, ./sync.ts). */
+export type BallWire = { e: number; p: number[]; v: number[]; q: number[]; h: number };
+
+export const remoteHoldsBall = () => ball.remoteOwned && ball.held;
+
 const tmpQa = new THREE.Quaternion(),
   tmpQb = new THREE.Quaternion();
 // Who simulates the ball. Only ./sync.ts and ./headless.ts use this directly: anything else claims and releases below.
-export const ballOwner = createOwnerSync(ball, {
+export const ballOwner = createOwnerSync<BallWire>(ball, {
   setMode: setBallMode,
   loadBody() {
     const { p, q, v } = ball.pose;
@@ -72,6 +77,9 @@ export const ballOwner = createOwnerSync(ball, {
     me.charging = false;
     me.lostBallAt = performance.now();
   },
+  // Its holder is gone, or the holder's claim says so. Even a hidden tab that won't adopt it has to hear this: placeBall
+  // would refuse for good.
+  onOwner: (claim) => void (ball.held = !!claim?.h),
   extrapolateMs: 150,
 });
 
@@ -214,11 +222,11 @@ export function settleBall() {
   ball.pose.v.set(v.x, v.y, v.z);
 }
 
-// After the player's fall respawn (player.ts, -290): walking into a slow ball takes ownership so the push resolves in
-// this tab's simulation.
+// After the player's fall respawn (src/entities/player/, -290): walking into a slow ball takes ownership so the push
+// resolves in this tab's simulation.
 export function walkIntoBall(now: number) {
   if (!me.body) return;
-  if (!ball.mine && ball.remoteOwned && !ball.held && now - me.lostBallAt > 400 && ball.pose.v.length() < 5) {
+  if (ball.remoteOwned && !ball.held && now - me.lostBallAt > 400 && ball.pose.v.length() < 5) {
     const p = me.body.position;
     const bpos = ball.pose.p;
     const dy = clamp(bpos.y - p.y, 0, HEAD_OFFSET);

@@ -113,8 +113,7 @@ const entityPlugin = {
     },
   },
 };
-// src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted (src/player/player.ts
-// says why its two wait).
+// src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted.
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
   'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object

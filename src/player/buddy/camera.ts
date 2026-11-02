@@ -5,6 +5,7 @@
 // cameras (the caves) win.
 import { camera } from '../../render/scene.ts';
 import { reducedMotion } from '../../constants.ts';
+import { clamp } from '../../math.ts';
 import { cam, camConstraints, me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';
 
@@ -31,12 +32,12 @@ export function startFollowCamera() {
     const ip = b.interpolatedPosition;
     if (y !== y || Math.abs(ip.y - y) > 6) y = ip.y; // the first frame, or a teleport: no swoop
     y += (ip.y - y) * (1 - Math.exp(-dt / (me.coyote > 0 ? CAM.lagHeight : CAM.lagAir)));
-    const dy = Math.max(-CAM.maxY, Math.min(CAM.maxY, y - ip.y));
+    const dy = clamp(y - ip.y, -CAM.maxY, CAM.maxY);
     look.y += dy;
     pos.y += dy;
     // Speed over what you stand on: a train's speed isn't you sprinting.
     const v = Math.hypot(b.velocity.x - carry.x, b.velocity.z - carry.z);
-    const want = CAM.sprintFov * Math.max(0, Math.min(1, (v - 6.5) / 3));
+    const want = CAM.sprintFov * clamp((v - 6.5) / 3, 0, 1);
     if (Math.abs(widened - want) > 0.02) {
       const step = (want - widened) * (1 - Math.exp(-dt * 5));
       widened += step;

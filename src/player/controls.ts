@@ -36,10 +36,8 @@
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
 // A key with no pad action of its own (hotbar digits) binds through onKey(codes, { down, up }), same guard.
 //
-// To layer behaviour onto another module's action, wrap it from onStart; never overwrite its handlers by hand. onStart
-// callbacks run in import order and src/main.ts loads src/features/ sorted by file name, so a file sorting before the
-// action's owner finds nothing there: wrapAction throws in dev (in a build it warns and returns false). Actions from
-// src/player/input.ts are always there, and a lazy module's onStart runs after them all.
+// To layer behaviour onto another module's action, wrap it from onStart; never overwrite its handlers by hand. An action
+// not registered yet takes the wrap when it is, so file order doesn't matter; one that never comes warns.
 //   wrapAction(id, { down, up })   each wrapper is called as (next) with the handler it wraps (a no-op if there was
 //                                  none) and decides whether to call it; the last wrap runs first
 //   triggerAction(id, edge)        presses ('down') or releases ('up') an action, wraps included, for an input route
@@ -153,9 +151,6 @@ export const GROUPS: [string, string][] = [
   ['friends', 'Friends'],
   ['menu', 'Menu'],
 ];
-
-// Vite's flag; this file also loads in Node (unit tests), where import.meta.env doesn't exist.
-const DEV = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
 
 const actions = new Map<string, Action>(); // id -> action
 const bySlot = new Map<string, Action>(); // slot -> action
@@ -314,6 +309,8 @@ export function registerAction(
   };
   actions.set(id, action);
   bySlot.set(pad, action);
+  for (const wrap of waitingWraps.get(id) ?? []) applyWrap(action, wrap);
+  waitingWraps.delete(id);
   // Keys and the touch button go through the action, so wrapAction reaches them too.
   onKey(key, { owner: id, down: () => action.down?.(), up: () => action.up?.() });
   if (typeof touch === 'object' && touch?.className) action.button = touchButton(action, touch);
@@ -377,19 +374,28 @@ export function actionById(id: string, who = 'actionById') {
   return action || null;
 }
 
-export function wrapAction(id: string, wrap: { down?: (next: Edge) => void; up?: (next: Edge) => void }) {
-  const action = actionById(id, 'wrapAction');
-  if (!action) {
-    if (DEV) throw new Error(`wrapAction: no action "${id}" yet: is its owner loaded after this file?`);
-    return false;
-  }
+type ActionWrap = { down?: (next: Edge) => void; up?: (next: Edge) => void };
+const waitingWraps = new Map<string, ActionWrap[]>();
+
+function applyWrap(action: Action, wrap: ActionWrap) {
   for (const k of ['down', 'up'] as const) {
     if (!wrap[k]) continue;
     const next = action[k] || (() => {});
     const fn = wrap[k]!;
     action[k] = () => fn(next);
   }
-  return true;
+}
+
+export function wrapAction(id: string, wrap: ActionWrap) {
+  const action = actions.get(id);
+  if (action) return applyWrap(action, wrap);
+  warnSoon ??= setTimeout(warnWaitingWraps); // once this load's module code and onStart are through
+  waitingWraps.set(id, [...(waitingWraps.get(id) ?? []), wrap]);
+}
+let warnSoon: ReturnType<typeof setTimeout> | null = null;
+function warnWaitingWraps() {
+  warnSoon = null;
+  for (const id of waitingWraps.keys()) console.warn(`[controls] wrapAction: no action "${id}"`);
 }
 
 export const triggerAction = (id: string, edge: 'down' | 'up') => actionById(id, 'triggerAction')?.[edge]?.();

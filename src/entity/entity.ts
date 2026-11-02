@@ -63,8 +63,8 @@ export interface GameEntity {
   describe?(): Record<string, unknown>; // its state for inspect() (./inspect.ts); called only when someone asks
 }
 
-/** What spawn takes: spawn sets alive, and a factory only names an id it needs. */
-export type EntityInit = Omit<GameEntity, 'id' | 'alive'> & { id?: string; alive?: boolean };
+/** What spawn takes: spawn sets the id and alive. */
+export type EntityInit = Omit<GameEntity, 'id' | 'alive'>;
 
 const FRAME_PHASE = { prePhysics: 'prePhysics', postPhysics: 'world', update: 'update', lateUpdate: 'late' } as const;
 const fixedCtx: FrameCtx = { now: 0, dt: FIXED, elapsed: 0 };
@@ -116,6 +116,6 @@ export const despawn: (entity: GameEntity) => void = walkers.despawn;
 
 let lastId = 0;
 export function spawn<T extends EntityInit>(entity: T): T & GameEntity {
-  entity.id ??= `${entity.kind}-${++lastId}`;
+  (entity as { id?: string }).id = `${entity.kind}-${++lastId}`;
   return walkers.spawn(entity as T & GameEntity);
 }

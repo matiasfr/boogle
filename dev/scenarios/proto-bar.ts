@@ -65,7 +65,7 @@ export default {
     t.check('the verdict went to the server (the sent tick shows)', sent === true);
 
     // Move off the spawn, switch to drift: the handling changes live, no reload, and you stay where you stood.
-    await g.eval(`const { teleport } = await import('/src/physics/physics.ts');
+    await g.eval(`const { teleport } = await import('/src/physics/engine.ts');
       const s = ${SPAWN}; const b = window.boogle.me.body; teleport(b, s.x + 3, b.position.y, s.z + 2);`);
     await t.sleep(300);
     await g.eval(
