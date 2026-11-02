@@ -139,14 +139,20 @@ competes with the boot.
   for the page to finish loading, and the worker never writes into a cache that was deleted (it would come back).
 - **Checked:** `node dev/look/sw-check.ts` builds four times (a, b, c, and the kill switch) and serves them one after
   another on one origin. All pass: second visit, 0 requests reach the server (every hashed file from the worker);
-  deploy b, 10 of 44 files fetched, the rest from cache, page shows b; reload on b, 0 requests; deploy c keeps b and c
+  deploy b (only the build id differs), 0 files fetched, page shows b; reload on b, 0 requests; deploy c keeps b and c
   and drops a; the kill-switch build leaves no registration and no cache.
 
-**Follow-ups, not built:** (1) 10 of 44 files change in a deploy that only changes the build id, because the id is
-inlined into a module and the change ripples up the import chain through the hashed file names. Moving `BUILD` to a
-leaf module read at runtime (or `version.json`) would make a one-line change cost one file. (2) Navigation requests
-could be revalidated by the worker (`cache: 'no-cache'`) so a reload after a deploy never gets Pages' 10-minute stale
-HTML; `updates.ts`'s loop guard covers that today.
+**Follow-ups:**
+
+- [x] (1) The build id renamed hashed files: inlined into a module, it rippled up the import chain, so 39 of 130 files
+  got new names on a deploy that changed nothing else. It now lives in each page as `<meta name="boogle-build">`
+  (`vite.config.ts`, read by `src/build-id.ts`): the same source under two ids builds 0 different file names. The page
+  and its chunks come from one build, so the id always names the code running.
+- [ ] (2) Navigation requests could be revalidated by the worker (`cache: 'no-cache'`) so a reload after a deploy never
+  gets Pages' 10-minute stale HTML; `updates.ts`'s loop guard covers that today.
+- [ ] (3) A lazy file (a chunk or model outside the precache list) found in an older build's cache isn't copied into
+  the current one, so it is deleted two visits later and downloaded again though its name never changed. Fix in
+  `respond()` in `sw-worker.ts`: copy a hit into this build's cache.
 
 ### b. Content manifest (built)
 
