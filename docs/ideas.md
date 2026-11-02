@@ -9,5 +9,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## The Boogler
 
 ## Multiplayer
+- Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
 
 ## Tooling

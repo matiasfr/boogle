@@ -109,7 +109,7 @@ and test it.
       numbers change for everyone in the room at once.
 - [x] **Haul variants:** a wheelbarrow (`&v=barrow`) and throwing logs (`&v=toss`) beside the back bundle, compared
       in the same playtest ([haul.md](../game-design/haul.md), "Prototype: haul variants").
-- [ ] **Playtest 1** (solo); findings in playtests.md, answer in boogle-2.md.
+- [x] **Playtest 1** (solo); findings in playtests.md, answer in boogle-2.md.
 
 ## 2. Is riding fun? (the rail spike)
 
@@ -118,7 +118,7 @@ and test it.
 - [x] **Platform carry:** the player stands on a kinematic Rapier body and is carried without jitter; jumping off
       keeps the platform's speed. Proved on a test platform behind `?proto=ride`.
 - [x] **Placeholder wagon:** a greybox wagon on `wagonAt` you can ride, behind `?proto=wagon`.
-- [ ] **Playtest 2.**
+- [x] **Playtest 2.**
 
 ## 3. Does what you built feel like yours?
 
@@ -128,7 +128,7 @@ and test it.
 - [x] **Riding only on laid sections:** the wagon's run grows with each laid section (`?proto=wagon`).
 - [x] **Laying-run variants:** is the 50 s laying run satisfying or dead time? Crawl (today's, juicier), quick (14 s)
       and push (lays only while pushed), rideable, compared in one sitting (`?room=proto-lay&proto=lay&v=`).
-- [ ] **Playtest 3.**
+- [x] **Playtest 3.**
 
 ## 4. Does the island change enough at an era's end?
 
@@ -140,4 +140,4 @@ and test it.
 
 - [x] **Soapbox cart:** an Owner vehicle down the lighthouse path (`?proto=soapbox`;
       [docs/game-design/soapbox.md](../game-design/soapbox.md)).
-- [ ] **Playtest 5.**
+- [x] **Playtest 5.**
