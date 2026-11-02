@@ -7,6 +7,8 @@ import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
 import { makeSet, type Box, type BoxSet } from '../net/boxes.ts';
+import { LOOK } from './look.ts';
+import { kitLogs } from './look-kit.ts';
 
 // ---------------------------------------------------------------- falling into place
 const GRAVITY = 24; // m/s²
@@ -76,7 +78,7 @@ export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 const railGeo = new THREE.BoxGeometry(1, 1, 1);
 const railMat = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
 const MAX = 96;
-const logs = pieceMesh(MAX);
+const logs = LOOK.kit ? kitLogs(MAX) : pieceMesh(MAX);
 const rails = new THREE.InstancedMesh(railGeo, railMat, MAX);
 rails.count = 0;
 rails.frustumCulled = false;
@@ -131,7 +133,7 @@ const m = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   v = new THREE.Vector3(),
   sc = new THREE.Vector3();
-const color = pieceColor(0);
+const color = LOOK.kit ? new THREE.Color(1, 1, 1) : pieceColor(0);
 export function updatePieces(dt: number) {
   let nl = 0,
     nr = 0;
@@ -167,7 +169,7 @@ export function updatePieces(dt: number) {
 /** A log as it lies in a frame or on the machine: the same log, cut to a length that reads at this distance. */
 export const STACK_LOG = { size: 2.2, thick: 1.5 };
 export const logStackMesh = (max: number) => {
-  const g = pieceMesh(max);
+  const g = LOOK.kit ? kitLogs(max) : pieceMesh(max);
   scene.add(g);
   return g;
 };

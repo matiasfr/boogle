@@ -26,7 +26,7 @@
 .place-objective {
   position: absolute;
   left: 50%;
-  bottom: 78px;
+  bottom: calc(112px + env(safe-area-inset-bottom, 0px)); /* above the log-count chip (haul-stack.css) */
   transform: translateX(-50%);
   max-width: min(62vw, 760px);
   padding: 10px 20px;

@@ -20,6 +20,8 @@ import { H, addStatic, plank, slab } from './land.ts';
 import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
 import { flat } from '../flat.ts';
+import { LOOK, STEEL, paint } from './look.ts';
+import { kitBatch, lookTrack, machineLook } from './look-kit.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -181,10 +183,13 @@ export function buildTrack(
       }
   }
 
-  const set = dropSet(boxes, (k) => {
-    const b = boxes[k]!;
-    thudAt(k, kinds[k]!, b.x, b.y, b.z);
-  });
+  const set = lookTrack(
+    dropSet(boxes, (k) => {
+      const b = boxes[k]!;
+      thudAt(k, kinds[k]!, b.x, b.y, b.z);
+    }),
+    kinds,
+  );
   const order = boxes
     .map((_, k) => k)
     .filter((k) => !pre[k])
@@ -396,7 +401,8 @@ const F = 2.4, // m from the head (where pieces land) back to the flatbed's midd
   GAP = 3.7; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
 export function buildMachine() {
-  const look = wagonLook(1, false);
+  const kitLook = LOOK.kit ? machineLook() : null;
+  const look = kitLook ?? wagonLook(1, false);
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
@@ -412,17 +418,23 @@ export function buildMachine() {
     return m;
   };
   // Cradle sides, in the flatbed's +z half (its front), open at the top.
-  box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
-  box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
-  box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
-  box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
-  // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
-  box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
-  box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
-  const heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
+  let heldRail: THREE.Object3D;
+  if (kitLook) heldRail = kitLook.heldRail;
+  else {
+    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
+    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
+    box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
+    box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
+    // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
+    box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
+    box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
+    heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
+  }
 
   const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
-  const rackRails = new THREE.InstancedMesh(railGeo, flat('#4c5058', 0.6), RACK_RAILS);
+  const rackRails = LOOK.kit
+    ? kitBatch('rail', STEEL, RACK_RAILS)
+    : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), RACK_RAILS);
   rackRails.castShadow = true;
   rackRails.frustumCulled = false;
   const o = new THREE.Object3D();

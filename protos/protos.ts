@@ -100,6 +100,13 @@ export const PROTOS: Proto[] = [
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the sign, the path, the forge and the stub ahead
     verb: 'chops',
     chapter: 'it builds its own land far from the island, with its own far plane, fog and sea',
+    variants: [
+      {
+        name: 'look',
+        url: '/?room=proto-place&proto=place&tod=0.07&v=look&look=all',
+        what: 'Is this the look you want the whole world to have? The same run: smooth land, warm sun, cool shade, real pieces.',
+      },
+    ],
   },
   {
     id: 'net',

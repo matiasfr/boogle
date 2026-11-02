@@ -50,6 +50,8 @@ import { playPanel } from '../flags.ts';
 import { protoCount } from '../count.ts';
 import { protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
+import { LOOK, installLight } from './look.ts';
+import { installContact } from './look-kit.ts';
 import {
   CRANE,
   DOCK,
@@ -142,6 +144,9 @@ const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const FLAT = (color: string) => flat(color, 0.9);
 
 const machine = buildMachine();
+if (LOOK.light) installLight();
+if (LOOK.contact) installContact([machine.flatbed, machine.loco], TREES);
+if (LOOK.gtao) void import('./look-gtao.ts');
 const thudAt = (_k: number, kind: string, x: number, y: number, z: number) => thud(machine, kind, x, y, z);
 type LineRun = {
   k: number;

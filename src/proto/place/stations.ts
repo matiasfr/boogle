@@ -7,6 +7,8 @@ import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
 import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
+import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
+import { kitBatch, stationKit } from './look-kit.ts';
 import { ORIGIN, lineAt, type Line, type LinePoint, type Station } from './layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from './pieces.ts';
 
@@ -31,55 +33,62 @@ export function buildStation(spec: Station, line: Line, dir: number) {
   g.position.set(x, y, z);
   g.rotation.y = yaw;
   const add = (w: number, h: number, d: number, color: string, px: number, py: number, pz: number) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color));
+    const m = new THREE.Mesh(lookBox(w, h, d), boxPaint(color, w, h, d));
     m.position.set(px, py, pz);
     m.castShadow = true;
     g.add(m);
     return m;
   };
-  // In the frame's own space: +z along the line, +x across it.
-  for (const sx of [-1, 1])
-    for (const sz of [-1, 1]) {
-      add(0.34, 1.25, 0.34, '#7f5630', (sx * FRAME_D) / 2, 0.62, (sz * FRAME_W) / 2);
-      add(0.42, 0.28, 0.42, '#f2a51a', (sx * FRAME_D) / 2, 1.38, (sz * FRAME_W) / 2);
-    }
-  for (const sx of [-1, 1]) add(0.14, 0.4, FRAME_W, '#8a6236', (sx * FRAME_D) / 2, 0.36, 0);
-  add(FRAME_D, 0.4, 0.14, '#8a6236', 0, 0.36, -FRAME_W / 2);
-  add(FRAME_D, 0.4, 0.14, '#8a6236', 0, 0.36, FRAME_W / 2);
-  add(FRAME_D, 0.1, FRAME_W, '#6e4c2a', 0, 0.06, 0);
-  // The board with a log on it, on the side away from the track, where you walk up.
   const away = lx * Math.cos(yaw) - lz * Math.sin(yaw) > 0 ? 1 : -1; // the track's on the frame's -away side
-  add(0.08, 0.55, 1.1, '#efe0ba', away * (FRAME_D / 2 + 0.1), 0.42, 0);
-  const pict = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.75, 8).rotateX(Math.PI / 2), flat('#3a2a1a'));
-  pict.position.set(away * (FRAME_D / 2 + 0.15), 0.42, 0);
-  g.add(pict);
-  // Rollers from the frame toward the track.
-  const feeder = new THREE.Group();
   const SPAN = OUT - FRAME_D / 2 - 1.2;
-  const bed = new THREE.Mesh(new THREE.BoxGeometry(SPAN, 0.08, 0.9), flat('#4a4d55'));
-  bed.position.y = 0.5;
-  bed.castShadow = true;
-  feeder.add(bed);
-  const rollers = new THREE.InstancedMesh(
-    new THREE.CylinderGeometry(0.07, 0.07, 0.86, 8).rotateX(Math.PI / 2),
-    flat('#a9adb5', 0.5),
-    Math.round(SPAN / 0.3),
-  );
-  const o = new THREE.Object3D();
-  for (let k = 0; k < rollers.count; k++) {
-    o.position.set((k + 0.5) * 0.3 - SPAN / 2, 0.58, 0);
-    o.updateMatrix();
-    rollers.setMatrixAt(k, o.matrix);
+  if (LOOK.contact) {
+    addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw);
+    addBlob(x - lx * (FRAME_D / 2 + SPAN / 2), y, z - lz * (FRAME_D / 2 + SPAN / 2), SPAN + 1, 1.5, yaw + Math.PI / 2);
   }
-  rollers.frustumCulled = false;
-  feeder.add(rollers);
-  feeder.position.set(-away * (FRAME_D / 2 + SPAN / 2), 0, 0);
-  for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.7), flat('#3a3d44'));
-    leg.position.set(dx, 0.25, 0);
-    feeder.add(leg);
+  if (LOOK.kit) stationKit(g, away, FRAME_D, FRAME_W, SPAN);
+  else {
+    // In the frame's own space: +z along the line, +x across it.
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) {
+        add(0.34, 1.25, 0.34, '#7f5630', (sx * FRAME_D) / 2, 0.62, (sz * FRAME_W) / 2);
+        add(0.42, 0.28, 0.42, '#f2a51a', (sx * FRAME_D) / 2, 1.38, (sz * FRAME_W) / 2);
+      }
+    for (const sx of [-1, 1]) add(0.14, 0.4, FRAME_W, '#8a6236', (sx * FRAME_D) / 2, 0.36, 0);
+    add(FRAME_D, 0.4, 0.14, '#8a6236', 0, 0.36, -FRAME_W / 2);
+    add(FRAME_D, 0.4, 0.14, '#8a6236', 0, 0.36, FRAME_W / 2);
+    add(FRAME_D, 0.1, FRAME_W, '#6e4c2a', 0, 0.06, 0);
+    // The board with a log on it, on the side away from the track, where you walk up.
+    add(0.08, 0.55, 1.1, '#efe0ba', away * (FRAME_D / 2 + 0.1), 0.42, 0);
+    const pict = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.75, 8).rotateX(Math.PI / 2), flat('#3a2a1a'));
+    pict.position.set(away * (FRAME_D / 2 + 0.15), 0.42, 0);
+    g.add(pict);
+    // Rollers from the frame toward the track.
+    const feeder = new THREE.Group();
+    const bed = new THREE.Mesh(new THREE.BoxGeometry(SPAN, 0.08, 0.9), flat('#4a4d55'));
+    bed.position.y = 0.5;
+    bed.castShadow = true;
+    feeder.add(bed);
+    const rollers = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.07, 0.07, 0.86, 8).rotateX(Math.PI / 2),
+      flat('#a9adb5', 0.5),
+      Math.round(SPAN / 0.3),
+    );
+    const o = new THREE.Object3D();
+    for (let k = 0; k < rollers.count; k++) {
+      o.position.set((k + 0.5) * 0.3 - SPAN / 2, 0.58, 0);
+      o.updateMatrix();
+      rollers.setMatrixAt(k, o.matrix);
+    }
+    rollers.frustumCulled = false;
+    feeder.add(rollers);
+    feeder.position.set(-away * (FRAME_D / 2 + SPAN / 2), 0, 0);
+    for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.7), flat('#3a3d44'));
+      leg.position.set(dx, 0.25, 0);
+      feeder.add(leg);
+    }
+    g.add(feeder);
   }
-  g.add(feeder);
   scene.add(g);
   // Solid: the frame, and the feeder's bed, which you can step over.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
@@ -97,11 +106,13 @@ export function buildStation(spec: Station, line: Line, dir: number) {
   }
 
   const logs = logStackMesh(Math.max(1, spec.logs));
-  const rails = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z),
-    flat('#4c5058', 0.6),
-    Math.max(1, spec.rails),
-  );
+  const rails = LOOK.kit
+    ? kitBatch('rail', STEEL, spec.rails)
+    : new THREE.InstancedMesh(
+        new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z),
+        LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6),
+        Math.max(1, spec.rails),
+      );
   rails.castShadow = true;
   rails.frustumCulled = false;
   rails.count = 0;
