@@ -71,8 +71,9 @@ const SHALLOW = lin(0.42, 0.9, 0.86);
 const MID = lin(0.1, 0.7, 0.8);
 const DEEP = lin(0.05, 0.38, 0.64);
 
-const color = Fn(() => {
-  const t = seaU.uTime;
+// The pieces of the sea a prototype's own look reuses through `waterMat` (src/proto/crossing/sea.ts). Call them inside
+// an Fn. Water depth at this pixel, from the ground height:
+export const seaDepth = () => {
   const w = positionWorld;
   // The height texture's rows follow the grid's j, so v runs the same way as the old shader (no flip).
   const uv = vec2(w.x.add(HALF).div(CELL).add(0.5), float(HALF).sub(w.z).div(CELL).add(0.5)).div(GRID_RES);
@@ -83,18 +84,13 @@ const color = Fn(() => {
     .div(65535)
     .mul(20)
     .sub(10);
-  const depth = max(w.y.sub(ground), 0);
-  const col = mix(SHALLOW, MID, smoothstep(0, 2.5, depth)).toVar();
-  col.assign(mix(col, DEEP, smoothstep(2.5, 9, depth)));
-  const p = w.xz;
-  const n1 = sin(p.x.mul(0.43).add(t.mul(1.2))).mul(cos(p.y.mul(0.37).sub(t.mul(0.9))));
-  const n2 = sin(p.x.add(p.y).mul(1.1).sub(t.mul(1.9)));
-  const n3 = cos(p.x.sub(p.y).mul(0.8).add(t.mul(1.4)));
-  const nrm = normalize(vec3(n1.mul(0.12).add(n2.mul(0.06)), 1, n3.mul(0.06).sub(n1.mul(0.08))));
-  const viewDir = normalize(cameraPosition.sub(w));
-  const spec = pow(max(dot(nrm, normalize(seaU.uSun.add(viewDir))), 0), 140);
-  const fres = pow(float(1).sub(max(viewDir.y, 0)), 4);
-  col.assign(mix(col, seaU.uSky, fres.mul(0.45)));
+  return max(w.y.sub(ground), 0);
+};
+
+// The shore's foam band, from the depth.
+export const seaFoam = (depth: ReturnType<typeof seaDepth>) => {
+  const t = seaU.uTime;
+  const p = positionWorld.xz;
   const band = float(1).sub(smoothstep(0, 0.6, depth));
   const ripple = sin(
     depth
@@ -104,7 +100,12 @@ const color = Fn(() => {
   )
     .mul(0.5)
     .add(0.5);
-  const foam = band.mul(smoothstep(0.45, 0.85, ripple.mul(0.7).add(band.mul(0.5)))).toVar();
+  return band.mul(smoothstep(0.45, 0.85, ripple.mul(0.7).add(band.mul(0.5))));
+};
+// The expanding rings of the eight ripple slots.
+export const seaRings = () => {
+  const t = seaU.uTime;
+  const p = positionWorld.xz;
   const ring = float(0).toVar();
   for (let i = 0; i < seaRipples.length; i++) {
     const rp = uRip.element(i) as unknown as ReturnType<typeof vec4>; // a vec4 element (three's types say string)
@@ -122,6 +123,26 @@ const color = Fn(() => {
       );
     });
   }
+  return ring;
+};
+
+const color = Fn(() => {
+  const t = seaU.uTime;
+  const w = positionWorld;
+  const depth = seaDepth();
+  const col = mix(SHALLOW, MID, smoothstep(0, 2.5, depth)).toVar();
+  col.assign(mix(col, DEEP, smoothstep(2.5, 9, depth)));
+  const p = w.xz;
+  const n1 = sin(p.x.mul(0.43).add(t.mul(1.2))).mul(cos(p.y.mul(0.37).sub(t.mul(0.9))));
+  const n2 = sin(p.x.add(p.y).mul(1.1).sub(t.mul(1.9)));
+  const n3 = cos(p.x.sub(p.y).mul(0.8).add(t.mul(1.4)));
+  const nrm = normalize(vec3(n1.mul(0.12).add(n2.mul(0.06)), 1, n3.mul(0.06).sub(n1.mul(0.08))));
+  const viewDir = normalize(cameraPosition.sub(w));
+  const spec = pow(max(dot(nrm, normalize(seaU.uSun.add(viewDir))), 0), 140);
+  const fres = pow(float(1).sub(max(viewDir.y, 0)), 4);
+  col.assign(mix(col, seaU.uSky, fres.mul(0.45)));
+  const foam = seaFoam(depth).toVar();
+  const ring = seaRings();
   col.addAssign(vec3(0.25, 0.3, 0.3).mul(ring));
   foam.assign(max(foam, tslClamp(ring, 0, 1)));
   col.assign(mix(col, vec3(1), foam.mul(0.9)));
@@ -131,8 +152,9 @@ const color = Fn(() => {
   return vec4(col, alpha);
 });
 
-// The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.ts).
-const waterMat = new MeshBasicNodeMaterial({ transparent: true });
+// The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.ts). Exported so a prototype can
+// give it another look; nothing else in the game touches it.
+export const waterMat = new MeshBasicNodeMaterial({ transparent: true });
 waterMat.positionNode = Fn(() => {
   const p = positionLocal;
   const wave = sin(p.x.mul(0.21).add(seaU.uTime.mul(1.3)))

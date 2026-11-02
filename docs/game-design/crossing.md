@@ -23,6 +23,11 @@ it. Its own room, `proto-crossing`, and Local: no ops, states, presence or messa
 - **The far stop.** A small concrete quay around the end of the line, to step off on and look back from. The island
   behind it (about 300 m wide and 120 m tall, a tower on its summit taller still, a blocky town at its foot) is a
   silhouette with no colliders.
+- **The look.** A first pass at the owner's pick from the previz (shot 2, after Super Mario Sunshine): a late-morning
+  sky, honey timber, pale piers, and the sea below. The card opens at `&tod=0.07`, which holds the sun ahead and to the
+  right; without it the sky follows the world clock, and golden hour and the moonlit night are the game's own.
+- **The sea's colour.** Blue by depth and drifting toward the sky at a low angle, with a lane of sun glitter under the
+  sun: world-locked flecks up close that fade into a soft sheen far off. Numbers: `LOOK` in `tuning.ts`.
 - **The sea.** Mostly open: one islet, three rock stacks, one big far islet and a wreck, none of them solid.
 - **Falling off** puts you in the sea. Jumping off the train keeps its speed: you fly alongside it, plunge, and skim on
   with spray for about 8 s (one fall from 45 m/s went about 200 m). A jump straight up lands you back on your flatbed. In open sea,
@@ -49,7 +54,8 @@ All at runtime, under the flag:
 - `camera.far` goes from 1500 m to 1.3 × the fog's far (4.7 km, or 12 km in `vast`) and `camera.near` from 0.1 to
   0.25 m, for depth precision.
 - The fog is set after `sky.ts` rewrites it each frame: 180 to 3600 m (9200 m in `vast`).
-- Four flat rectangles of sea surround the game's fixed 1300 m plane, out to where the fog is solid.
+- Four flat rectangles of sea surround the game's fixed 1300 m plane, out to where the fog is solid. They wear the
+  plane's own material (`src/proto/crossing/sea.ts`), so nothing shows where they meet at 650 m.
 - Past the map's 237 m soft wall (`src/physics/physics.ts`), a later pre-step hook puts back the speed the wall took.
 - The player body's CCD goes off: it stops whole steps on a falling deck at train speed.
 - The camera stays above the water in open sea.

@@ -7,6 +7,7 @@ import { scene } from '../../render/scene.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { mulberry32 } from '../../sim/rng.ts';
+import { LOOK } from './tuning.ts';
 import { LENGTH, LOW, ORIGIN, STOP_A, STOP_B, WALK, lineAt, railY, type LinePoint } from './line.ts';
 
 const FLAT = (color: string) => new THREE.MeshStandardNodeMaterial({ color, roughness: 0.95, flatShading: true });
@@ -28,10 +29,10 @@ function addStatic(shape: Shape, position: { x: number; y: number; z: number }, 
 // ---------------------------------------------------------------- the viaduct's deck: one ribbon, one collider
 // Each band is a strip along the line between two points of the cross-section [lateral, height over the rails].
 type Band = { a: [number, number]; b: [number, number]; color: string };
-const BED = '#5d5a55',
-  WALKWAY = '#b9ad98',
-  SIDE = '#8f8c86',
-  RAIL = '#2e2f35';
+const BED = LOOK.bed,
+  WALKWAY = LOOK.timber,
+  SIDE = LOOK.timberDark,
+  RAIL = LOOK.rail;
 const railBands = (c: number): Band[] => [
   { a: [c - 0.06, 0], b: [c - 0.06, 0.15], color: RAIL },
   { a: [c - 0.06, 0.15], b: [c + 0.06, 0.15], color: RAIL },
@@ -137,7 +138,7 @@ function along(
 }
 function buildRepeats() {
   // Sleepers, close together under you. Pale against the dark bed, so they flicker past.
-  along(new THREE.BoxGeometry(2.3, 0.1, 0.4), '#a48f70', 1.8, (_, o) => void (o.position.y += 0.05));
+  along(new THREE.BoxGeometry(2.3, 0.1, 0.4), LOOK.sleeper, 1.8, (_, o) => void (o.position.y += 0.05));
   // Markers along the walkway's edge, the near-field pulse of speed.
   const sideX = (o: THREE.Object3D, l: number, h: number) => {
     o.position.x -= P.uz * l;
@@ -147,7 +148,7 @@ function buildRepeats() {
   const SPAN = 45; // m at each end the stations stand on
   along(
     new THREE.BoxGeometry(0.12, 0.7, 0.12),
-    '#d8553d',
+    LOOK.marker,
     5,
     (_, o) => sideX(o, WALK.out - 0.08, WALK.up + 0.35),
     SPAN,
@@ -157,13 +158,13 @@ function buildRepeats() {
   const mid = (WALK.in + WALK.out) / 2;
   along(
     new THREE.BoxGeometry(WALK.out - WALK.in, 0.04, 0.18),
-    '#8f8574',
+    LOOK.seam,
     2.5,
     (_, o) => sideX(o, mid, WALK.up + 0.02),
     SPAN,
     LENGTH - SPAN,
   );
-  along(new THREE.BoxGeometry(0.14, 3.6, 0.14), '#b4b0a7', 27, (_, o) => sideX(o, -2.4, 1.2), SPAN, LENGTH - SPAN);
+  along(new THREE.BoxGeometry(0.14, 3.6, 0.14), LOOK.pierCap, 27, (_, o) => sideX(o, -2.4, 1.2), SPAN, LENGTH - SPAN);
   // Pillars from the sea to the deck, with a cap across, every 27 m; the stations stand on their own.
   const PILLAR = 27;
   const tall = (s: number, o: THREE.Object3D) => {
@@ -172,10 +173,10 @@ function buildRepeats() {
     o.position.y = -2 + h / 2;
     sideX(o, 0.7, 0);
   };
-  along(new THREE.BoxGeometry(2.4, 1, 2.8), '#c9c6bd', PILLAR, tall, SPAN, LENGTH - SPAN);
+  along(new THREE.BoxGeometry(2.4, 1, 2.8), LOOK.pier, PILLAR, tall, SPAN, LENGTH - SPAN);
   along(
     new THREE.BoxGeometry(6.4, 0.8, 3.2),
-    '#b4b0a7',
+    LOOK.pierCap,
     PILLAR,
     (_, o) => {
       o.position.y -= 1.2;
