@@ -127,7 +127,7 @@ The split follows principle 6:
 - A toast on every tab, and a one-page journal with a silhouette.
 
 Tests:
-- *Unit:* finds are idempotent, the first finder is kept, and the snapshot round-trips. Add the op to `edits` for `world-replay.test.mjs`.
+- *Unit:* finds are idempotent, the first finder is kept, and the snapshot round-trips. Add the op to `edits` for `world-replay.test.ts`.
 - *Playtest:* two friends play at different times. Did the second go and witness the sail bonk for themselves? Did the postcard make them grateful to the first?
 
 If both answers are yes, build the vent and chain A.

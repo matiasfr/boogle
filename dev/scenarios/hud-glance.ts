@@ -3,7 +3,7 @@
 // and the plaque mid-flip after a credited pour. Checks the haul chip ticks up to the confirmed count, a press squashes
 // the prompt, and a run of pours flips the plaque at most once a second. Each leg writes stills (`desk-*`, `ipad-*`).
 // Serves DESIGN.md "Understandable at a glance".
-import { TP, INV } from './lib/world.mjs';
+import { TP, INV } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;
@@ -29,7 +29,7 @@ type Run = {
 const R = `const { rules } = await import('/src/world/game-world.ts'); const { identity } = await import('/src/player/identity.ts');`;
 // The log bundle nearest (13, 12), and its spot.
 const BUNDLE = `${R}
-  const { cellX, cellZ, groundHeight } = await import('/src/adapters/terrain.ts');
+  const { cellX, cellZ, groundHeight } = await import('/src/island/terrain.ts');
   const list = rules.sources.list().map((p, id) => { const x = cellX(p.i) + 0.9, z = cellZ(p.j) + 0.4; return { id, x, z, y: groundHeight(x, z), d: Math.hypot(x - 13, z - 12) }; });
   list.sort((a, b) => a.d - b.d);`;
 
@@ -94,7 +94,7 @@ export default {
       // down here so the still catches it mid-flip).
       await g.eval(`${TP(12.5, 9.5)}`);
       const py = (await g.eval(
-        `const { groundHeight } = await import('/src/adapters/terrain.ts'); return groundHeight(13.6, 3.6);`,
+        `const { groundHeight } = await import('/src/island/terrain.ts'); return groundHeight(13.6, 3.6);`,
       )) as number;
       await g.view({ cam: [18, py + 2.8, 8.5], look: [13.6, py + 1.8, 3.6] }, 50);
       await g.eval(`const w = await import('/src/features/work-sites.ts'); w.flapFeel.ms = 2400;`);

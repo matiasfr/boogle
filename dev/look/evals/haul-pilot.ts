@@ -1,7 +1,7 @@
-// A pilot for the haul variants (src/proto/haul/), for the haul-*.js look evals: fills your stack from the bundles,
+// A pilot for the haul variants (src/proto/haul/), for the haul-*.ts look evals: fills your stack from the bundles,
 // walks you along waypoints through the real input (the left stick, the sprint latch) and tosses through the real use
 // action, so what the sheets show is what a player gets. Needs the variant on:
-//   BOOGLE_QUERY='proto=haul&v=barrow' npm run look -- --eval dev/look/evals/haul-barrow-push.js ...
+//   BOOGLE_QUERY='proto=haul&v=barrow' npm run look -- --eval dev/look/evals/haul-barrow-push.ts ...
 import { rules } from '../../../src/world/game-world.ts';
 import { submitEdit } from '../../../src/world/sync.ts';
 import { identity } from '../../../src/player/identity.ts';
@@ -10,7 +10,7 @@ import { me, cam } from '../../../src/player/player.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { touchDown, useUp } from '../../../src/player/hands.ts';
 import { teleport } from '../../../src/physics/physics.ts';
-import { groundHeight } from '../../../src/adapters/terrain.ts';
+import { groundHeight } from '../../../src/island/terrain.ts';
 
 type Barrow = {
   S: { mode: string; wobble: number; heading: number };
@@ -18,6 +18,7 @@ type Barrow = {
   body: { position: { x: number; y: number; z: number } };
   grab: () => void;
   place: (x: number, z: number, heading?: number) => void;
+  startPour: () => void;
 };
 const win = window as unknown as { __barrow?: Barrow; __debugCam?: { clear(): void } };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

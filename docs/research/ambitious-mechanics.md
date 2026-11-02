@@ -43,7 +43,7 @@ On controls, the bundle needs no new buttons. The tide and squalls are things th
 
 ## Overnight risks are performance and tide tuning, not netcode
 
-The largest unknown is CPU. A rising tide wakes many water cells at once, and no frame-time budget is documented. Recent commits are all draw-call trims aimed at iPhone/iPad, so the team is watching the budget closely (a codebase brief at the time, since deleted as stale; see git history). The prompt therefore asks for modest amplitude (about +60 cm normal, +100 cm king tide), slump and erosion work limited to cells near water or recent edits with a hard per-tick cap, and an fps check in the scenario. The second unknown is feel. PLAN.md's open question is whether the tide is "fun or stressful", and there is only one logged playtest ([docs/playtests.md](../playtests.md)). A `?tidefast=1` flag that compresses the cycle lets the user judge the rhythm in minutes, and the toggles let them strip the bundle down to whatever feels good. Finally, the user's main checkout has uncommitted edits (`AGENTS.md`, `package.json`, an untracked `dev/look/perf.mjs`). The agent should work in a fresh worktree off `origin/main` and leave those alone. It should push only to `prototype/storm-tide`. The repo's automerge only watches `claude/*` and the pre-push hook only guards `main`, so a `prototype/` branch is never merged automatically.
+The largest unknown is CPU. A rising tide wakes many water cells at once, and no frame-time budget is documented. Recent commits are all draw-call trims aimed at iPhone/iPad, so the team is watching the budget closely (a codebase brief at the time, since deleted as stale; see git history). The prompt therefore asks for modest amplitude (about +60 cm normal, +100 cm king tide), slump and erosion work limited to cells near water or recent edits with a hard per-tick cap, and an fps check in the scenario. The second unknown is feel. PLAN.md's open question is whether the tide is "fun or stressful", and there is only one logged playtest ([docs/playtests.md](../playtests.md)). A `?tidefast=1` flag that compresses the cycle lets the user judge the rhythm in minutes, and the toggles let them strip the bundle down to whatever feels good. Finally, the user's main checkout has uncommitted edits (`AGENTS.md`, `package.json`, an untracked `dev/look/perf.ts`). The agent should work in a fresh worktree off `origin/main` and leave those alone. It should push only to `prototype/storm-tide`. The repo's automerge only watches `claude/*` and the pre-push hook only guards `main`, so a `prototype/` branch is never merged automatically.
 
 ## Conclusion
 
@@ -56,7 +56,7 @@ GOAL: Build a playable "Storm Tide" prototype of Boogle on a new branch `prototy
 
 HARD RULES (read twice)
 - NEVER push to, merge into, or ship onto `main`. Do NOT run `npm run ship` (it rebases and pushes to main). Do NOT open a PR, and do NOT use a `claude/*` branch name (automerge watches those). Push only with `git push -u origin prototype/storm-tide` (then plain `git push`).
-- The user's main checkout at /Users/matiasfranco/Developer/boogle has uncommitted changes (AGENTS.md, package.json, .claude/skills/look/SKILL.md, untracked dev/look/perf.mjs, .claude/launch.json, research_notes/, reports/). Do not commit, stash, reset or discard them. Work in a fresh worktree:
+- The user's main checkout at /Users/matiasfranco/Developer/boogle has uncommitted changes (AGENTS.md, package.json, .claude/skills/look/SKILL.md, untracked dev/look/perf.ts, .claude/launch.json, research_notes/, reports/). Do not commit, stash, reset or discard them. Work in a fresh worktree:
     git -C /Users/matiasfranco/Developer/boogle fetch origin
     git -C /Users/matiasfranco/Developer/boogle worktree add ../boogle-storm-tide -b prototype/storm-tide origin/main
     cd ../boogle-storm-tide && npm ci
@@ -121,7 +121,7 @@ VALIDATION (required)
 - `npm run check` green before every push. Run `npm run check:full` at least once at the end (proto state touches sync).
 - Add `dev/scenarios/storm-tide.mjs` with two networked players in one room using `?tidefast=1`: assert both peers report identical sea level and world hash after a full cycle; a shoreline wall erodes; a smash edit opens a breach and water flows through; a squall adds water inside its footprint; the crate appears at king tide and both peers see it; report fps. Run it with `npm run scenario -- storm-tide` until it passes.
 - Produce stills with `npm run look` (e.g. `--view mouth`, `--view overview`, and a custom `--cam/--look` on the shoreline) during warning, high tide, a squall and the crate; read the images and iterate on visibility of every telegraph. Do not commit ad-hoc Playwright scripts as tests and do not commit the PNGs unless small and placed under dev/.
-- Determinism tests live in test/*.test.mjs, node:test, pure logic only, each file well under a second (shrink grids and tick counts).
+- Determinism tests live in test/*.test.ts, node:test, pure logic only, each file well under a second (shrink grids and tick counts).
 - Performance guard: keep the tide amplitude modest, cap per-tick slump/erosion work, and if the scenario fps drops sharply vs `?proto=0`, reduce caps before adding features.
 
 COMMITS

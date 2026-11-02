@@ -338,8 +338,8 @@ does not host, handoff is PUT (stored if not older). Same per-IP rate limit as P
 uses `import.meta.glob`). The rules need only `land = { n, layout }` (the README says so), and Node tests already run
 them on the layout pinned in `test/fixtures/world-inputs.json`. Step 2 moves `n` and `layout` to
 `src/world/home-land.json` and adds `plant`, a run-length mask of `canPlantAt(i, j)` over `g = i * n + j` (runs
-alternate, starting with unplantable), all written and checked by `dev/scenarios/world-inputs.mjs` in the running
-game. The fixture keeps `states` and `ops`. `test/helpers/land.mjs` (and so the replay test and `npm run registry`)
+alternate, starting with unplantable), all written and checked by `dev/scenarios/world-inputs.ts` in the running
+game. The fixture keeps `states` and `ops`. `test/helpers/land.ts` (and so the replay test and `npm run registry`)
 reads the new file.
 
 ### Fly
@@ -386,12 +386,12 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
 - [x] **2. The land as data (`src/world/home-land.json`).**
   - `src/adapters/mushroom-garden.ts`: rename `spotOk` to an exported `canPlantAt(i, j)` (same body); keep
     `const env = { canPlantAt }` and `setEnv(env)`.
-  - `dev/scenarios/world-inputs.mjs`: in `READ`, also import `/src/adapters/mushroom-garden.ts`, fail the check
+  - `dev/scenarios/world-inputs.ts`: in `READ`, also import `/src/adapters/mushroom-garden.ts`, fail the check
     "the plant mask needs an empty garden" if `garden.plots.length`, and build `plant` (the run-length encoding above,
     ~10 lines in the page). With `UPDATE_FIXTURE=1` write `src/world/home-land.json` = `{ about, n, layout, plant }`
     (Prettier-formatted, as today) and the fixture `test/fixtures/world-inputs.json` = `{ about, states, ops }`.
     Without it, compare grid size, state and op order, layout, and the mask (report the plantable cell counts).
-  - `test/helpers/land.mjs`: read `n` and `layout` from `src/world/home-land.json`; export `fixture` unchanged for
+  - `test/helpers/land.ts`: read `n` and `layout` from `src/world/home-land.json`; export `fixture` unchanged for
     `states`/`ops`.
   - `src/world/README.md` and `src/world/rules/README.md`: mention `home-land.json` (what reads it, how to regenerate).
   - Verify: `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, then `npm run scenario -- world-inputs` passes;
@@ -404,7 +404,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - `checkHash(tick, h, hs)`: when `hs` is an object, compare `mine[k] === hs[k]` over the keys both have, minus
     `skipped`; fall back to `worldHash() === h` only when `hs` is missing. `subsystems` lists the compared keys only.
     Keep sending `h` (older tabs use it). Update the header comment.
-  - Tests in `test/world-sync.test.mjs` (helpers in `test/helpers/net.mjs`):
+  - Tests in `test/world-sync.test.ts` (helpers in `test/helpers/net.ts`):
     - "a client re-pins to a new host right after its room reconnects": peers h1 (host), h2, c; `net.setUp(c, false)`,
       `net.killHost()` (h2 hosts), run 10 frames, `net.setUp(c, true)`, run 10 frames (500 ms < `HOST_STALE_MS`):
       `c.s.worldStatus().hostId === 'h2'`, and an edit c submits next is applied on h2.
@@ -425,7 +425,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `persist(false, true)` before `becomeClient()`. `persist(unloading, handoff)`: with `handoff`, skip the
     `lastSavedHash` check and send `POST /rooms/<id>/handoff` (same body, bodies under 1,000,000 chars) instead of PUT.
   - Header comment and `src/world/README.md` ("Other exports"): `saveMs`, `saveNow`, `adoptSnapshot`, handoff.
-  - Tests (`test/world-sync.test.mjs`; add `net.demote(p)` to the helper: sets `p.host = false` and calls its host
+  - Tests (`test/world-sync.test.ts`; add `net.demote(p)` to the helper: sets `p.host = false` and calls its host
     handlers with false):
     - "saveMs sets how often a host saves": fake storage, `saveMs: 1000`, 25 frames: one `setItem`.
     - "saveNow writes at once and skips an unchanged world".
@@ -451,7 +451,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Create `ids.js` and `ws-wire.js` as in Design. `peer-room.js` imports `SELF_ID`, `okId`, `safeRoom`,
     `peerHostId` from `ids.js` (delete its copies) and adds `transport: 'peer'`, `isLead: () => isHostNow`,
     `onLeadChange(h)` (registered with the host handlers).
-  - `test/net-wire.test.mjs`: `decode` rejects non-objects, arrays and missing `t`; `roomUrl` maps http->ws and
+  - `test/net-wire.test.ts`: `decode` rejects non-objects, arrays and missing `t`; `roomUrl` maps http->ws and
     https->wss; `peerHostId('beach') === 'boogle-beach-host'` and `peerHostId('a-b') === 'boogle-a_2db-host'`;
     `okId('server')` is true (so the server must reserve it explicitly).
   - `src/net/README.md`: the three new members.
@@ -562,7 +562,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     (server answers `peer`).
 
 - [x] **9. The switch: every room on the server** (`server/`, `src/netplay/net.ts`, `src/boogler/boogler.ts`,
-  `src/features/telemetry.ts`, `src/debug/netdebug.ts`, `dev/look/lib.mjs`, `dev/peer-test/`, `vite.config.*`,
+  `src/features/telemetry.ts`, `src/debug/netdebug.ts`, `dev/look/lib.ts`, `dev/peer-test/`, `vite.config.*`,
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
   - Done. Deviations: the loaded-room cap is `MAX_HOSTED_ROOMS` (default 20), since `MAX_ROOMS` already caps saved
@@ -585,7 +585,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     and the repo-root Docker build checked in CI.
   - Local dev: a dev-only Vite plugin starts `createService` in-process (`SERVER_ROOMS=*`, `DATA_DIR` under
     `.boogle-data/`, gitignored) and sets `VITE_BOOGLE_SERVER` to it, so `npm run dev` needs nothing else.
-  - Harness: `dev/look/lib.mjs` starts `createService` instead of the bare `PeerServer`, so `smoke`,
+  - Harness: `dev/look/lib.ts` starts `createService` instead of the bare `PeerServer`, so `smoke`,
     `shared-kinds`, `world-inputs` and `npm run load` all run on the server. `ws-run.mjs` uses the real `net.ts`
     path where it can.
   - `telemetry.js`: the connect report's `role` is `server`; `netdebug.js` shows the lead and the RTT.

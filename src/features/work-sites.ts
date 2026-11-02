@@ -16,7 +16,7 @@ import { scene, camera } from '../render/scene.ts';
 import { fadeNear } from '../render/near-fade.ts';
 import { onApplied, submitEdit, world } from '../world/sync.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt } from '../sim/route.ts';

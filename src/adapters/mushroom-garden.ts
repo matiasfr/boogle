@@ -5,7 +5,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
-import { heights, groundHeight, cellX, cellZ } from './terrain.ts';
+import { heights, groundHeight, cellX, cellZ } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
 import { obstacles } from '../render/props.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
@@ -53,7 +53,7 @@ export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
 
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
-// dev/scenarios/world-inputs.mjs bakes it into src/world/home-land.json for the server, which has no renderer.
+// dev/scenarios/world-inputs.ts bakes it into src/world/home-land.json for the server, which has no renderer.
 export function canPlantAt(i: number, j: number) {
   const x = cellX(i),
     z = cellZ(j),

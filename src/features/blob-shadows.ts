@@ -7,7 +7,7 @@ import { scene } from '../render/scene.ts';
 import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 import { BALL_R, PLAYER_R } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';

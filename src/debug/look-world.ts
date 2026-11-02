@@ -48,7 +48,7 @@ import { scene, camera, sun } from '../render/scene.ts';
 import { skyU } from '../render/sky.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { SUN_DIR, GRID_RES, CELL, HALF, COURT } from '../constants.ts';
-import { heights } from '../adapters/terrain.ts';
+import { heights } from '../island/terrain.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { island } from '../island/index.ts';
 import { smoothstep } from '../math.ts';

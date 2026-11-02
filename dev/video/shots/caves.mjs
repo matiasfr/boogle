@@ -38,7 +38,7 @@ export default {
       sz = south.z + south.oz * 9;
     await g.eval(`window.__debugCam?.clear();
       const { teleport } = await import('/src/physics/physics.ts');
-      const { groundHeight } = await import('/src/adapters/terrain.ts');
+      const { groundHeight } = await import('/src/island/terrain.ts');
       const b = window.boogle.me.body; teleport(b, ${sx}, groundHeight(${sx}, ${sz}) + 0.6, ${sz}); b.velocity.set(0, 0, 0);
       const { cam } = await import('/src/player/player.ts'); cam.yaw = Math.atan2(${south.ox}, ${south.oz}); cam.pitch = -0.12;`);
     await g.wait(1.5);

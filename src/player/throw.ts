@@ -5,7 +5,7 @@
 // code read or reset it), but only startCharge here starts one. This file must not import ball.ts (it imports us).
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';

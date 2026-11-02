@@ -1,9 +1,9 @@
 // Mini-game toys (?proto=minis, docs/game-design/minis.md), solo: a ball thrown into the topple stack knocks crates off
 // and the count goes up; one hole of ball golf, teed off and finished with a lob into the bucket; a hop run down the
 // mushroom line that overshoots and lands in the sand. A motion sheet of each. Serves DESIGN.md 1, 2 and 10.
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
-// The parts of the harness (dev/scenarios/run.mjs, dev/look/lib.mjs) this scenario uses.
+// The parts of the harness (dev/scenarios/run.ts, dev/look/lib.ts) this scenario uses.
 type Game = {
   eval: (body: string) => Promise<unknown>;
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;
@@ -23,7 +23,7 @@ type Run = {
 
 const M = (f: string) => `(await import('/src/proto/minis/${f}.ts'))`;
 const BALL = `const B = await import('/src/physics/ball.ts'); const I = await import('/src/player/inventory.ts');
-  const T = await import('/src/adapters/terrain.ts');`;
+  const T = await import('/src/island/terrain.ts');`;
 // Grab the ball into your hands (as E does), then throw it from (x, y, z) with velocity (vx, vy, vz).
 const THROW = (x: number, y: string, z: number, v: string) => `
   ${BALL}

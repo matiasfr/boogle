@@ -48,7 +48,7 @@ For agents changing this feature or adding another character like it. The player
 
 ## Test
 
-- `npm run check` (lint, unit tests including `test/guest-rom.test.mjs`, build).
+- `npm run check` (lint, unit tests including `test/guest-rom.test.ts`, build).
 - `npm run scenario -- dino`: the dormant path, with no files. It runs in CI.
 - `GUEST_ROM=/path/to/rom.z64 npm run scenario -- guest-play`: the real path. It gives both files through the picker,
   becomes the guest, runs, jumps, switches back and reloads. It is skipped without `GUEST_ROM`, so CI never runs it.

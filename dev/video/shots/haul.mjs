@@ -8,7 +8,7 @@ const R = `const { rules } = await import('/src/world/game-world.ts');
 // Put the player on the ground at (x, z), still, facing yaw.
 const TP = (x, z, yaw) => `
   const { teleport } = await import('/src/physics/physics.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
   b.velocity.set(0, 0, 0);

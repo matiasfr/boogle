@@ -18,7 +18,7 @@ import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { teleport } from '../../../src/physics/physics.ts';
 import { onPreStep } from '../../../src/physics/engine.ts';
-import { groundHeight } from '../../../src/adapters/terrain.ts';
+import { groundHeight } from '../../../src/island/terrain.ts';
 import { ROUTE } from '../../../src/sim/route.ts';
 
 type DebugCam = { set(cam: number[], look: number[]): void; clear(): void };

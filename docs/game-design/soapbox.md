@@ -77,7 +77,7 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **Seated** you sit low in the tub, leaning back and tilting with the cart, with no walk cycle (remote drivers too).
   World labels (work-site rings and plaques, signs) hide while you drive and come back when you get out.
 
-The scripted pilot's run (`dev/look/evals/soapbox-run.js`, on the triggers: throttle up to 12 m/s, braking for the
+The scripted pilot's run (`dev/look/evals/soapbox-run.ts`, on the triggers: throttle up to 12 m/s, braking for the
 bends) takes about 9 s, with a top speed near 15 m/s. It sometimes runs off the line into a palm or up a rock: a
 wipeout or a stop that a player would steer out of.
 
@@ -135,8 +135,8 @@ their `soapbox` presence is set (`src/features/proto-soapbox.ts`, the only part 
 
 ## Look at it
 
-`BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.js --hud --warm 0.2 --seconds 13 --frames 16`
-(also `soapbox-drift.js`, `soapbox-crash.js` and `soapbox-ghost.js`, a first run that sets the ghost and a second
+`BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.ts --hud --warm 0.2 --seconds 13 --frames 16`
+(also `soapbox-drift.ts`, `soapbox-crash.ts` and `soapbox-ghost.ts`, a first run that sets the ghost and a second
 beside it; each eval's header has its timing; add `&v=bouncy`, `&v=tight` or `&v=drift` to the query for a variant,
 and `--size 1180x820` for iPad size). The pilot,
 `dev/look/evals/soapbox-pilot.ts`, drives through the real input.

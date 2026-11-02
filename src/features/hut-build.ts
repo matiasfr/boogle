@@ -21,7 +21,7 @@ import { getAudio } from '../render/audio.ts';
 import { arc, ring } from '../render/motion.ts';
 import { addBody, createBody, material, removeBody, type Body } from '../physics/engine.ts';
 import { onSnapshot } from '../world/sync.ts';
-import { groundHeight, heights } from '../adapters/terrain.ts';
+import { groundHeight, heights } from '../island/terrain.ts';
 import { reducedMotion } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { ROUTE, HELPER, RING_R, ringAt } from '../sim/route.ts';
