@@ -62,7 +62,7 @@ onApplied((e: Edit<Partial<TakeFields & TossFields>>, _tick: number, r: Item | n
     pending.delete(e.id!);
     if (!r || e.p !== myId()) return;
     // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
-    if (!take(GIFTS[r.kind].id, 1, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
+    if (!take(GIFTS[r.kind]!.id, 1, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
   } else if (e.op === 'gift.toss') {
     const fl = claimFlight(e as Edit<TossFields>);
     if (e.y !== LOST && e.k !== SEEDS && r) fx.arriving.set(r.id, fl);
@@ -82,7 +82,7 @@ export function createGifts3d() {
 function itemPos(it: Item, out: THREE.Vector3) {
   if (it.src === SRC.PERCH) {
     const k = layout.perches.findIndex((p) => p.i === it.i && p.j === it.j);
-    if (k >= 0) return out.copy(perchSpots[k]);
+    if (k >= 0) return out.copy(perchSpots[k]!);
   }
   const x = cellX(it.i),
     z = cellZ(it.j);
@@ -115,9 +115,9 @@ const seedGeo = new THREE.SphereGeometry(0.07, 8, 6);
 const seedMat = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9 });
 
 function startFlight(kind: number, p: THREE.Vector3, v: THREE.Vector3, nonce: number): Flight {
-  const glide = GIFTS[kind].id === 'frisbee';
+  const glide = GIFTS[kind]!.id === 'frisbee';
   const path = flyPath(p, v, glide);
-  const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind].id);
+  const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind]!.id);
   mesh.position.copy(p);
   scene.add(mesh);
   const fl = { mesh, glide, nonce, t0: performance.now(), done: false, ...path };
@@ -141,14 +141,14 @@ function endFlight(fl: Flight) {
 
 function updateFlights(now: number) {
   for (let k = flights.length - 1; k >= 0; k--) {
-    const fl = flights[k];
+    const fl = flights[k]!;
     const t = Math.max(0, (now - fl.t0) / 1000 / STEP); // a frame's timestamp can predate a flight started mid-frame
     const n = Math.floor(t);
     if (n >= fl.points.length - 1) {
       endFlight(fl);
       continue;
     }
-    fl.mesh.position.lerpVectors(fl.points[n], fl.points[n + 1], t - n);
+    fl.mesh.position.lerpVectors(fl.points[n]!, fl.points[n + 1]!, t - n);
     const age = t * STEP;
     if (fl.glide) fl.mesh.rotation.set(0.12, age * 18, 0.08);
     else fl.mesh.rotation.set(age * 9, age * 4, age * 6);
@@ -186,7 +186,7 @@ const at = new THREE.Vector3();
 
 function makeVisual(it: Item): Visual {
   const root = new THREE.Group();
-  root.add(itemModel(GIFTS[it.kind].id));
+  root.add(itemModel(GIFTS[it.kind]!.id));
   root.rotation.y = ((it.id * 2.399) % (PI * 2)) - PI;
   let sparkle: THREE.Sprite | null = null;
   if (it.src === SRC.PERCH) {
@@ -210,7 +210,7 @@ function sweepGone(v: Visual, id: number) {
 function updateItems(dt: number, now: number, target: number | null) {
   pass++;
   for (let k = 0; k < gifts.items.length; k++) {
-    const it = gifts.items[k];
+    const it = gifts.items[k]!;
     let v = visuals.get(it.id);
     if (!v) visuals.set(it.id, (v = makeVisual(it)));
     v.seen = pass;
@@ -248,7 +248,7 @@ function updateItems(dt: number, now: number, target: number | null) {
   }
   visuals.forEach(sweepGone);
   for (let k = fx.leaving.length - 1; k >= 0; k--) {
-    const l = fx.leaving[k];
+    const l = fx.leaving[k]!;
     l.t += dt / 0.22;
     if (l.t >= 1 || reducedMotion) {
       scene.remove(l.v.root);
@@ -276,7 +276,7 @@ export function giftTargets() {
   let out: (Interactable & { item: number })[] | null = null; // made only when something is in reach
   const now = performance.now();
   for (let k = 0; k < gifts.items.length; k++) {
-    const it = gifts.items[k];
+    const it = gifts.items[k]!;
     // Not one you already asked to take, nor a thrown one still in the air.
     if (now - (pending.get(it.id) ?? -1e9) < 2000 || visuals.get(it.id)?.root.visible === false) continue;
     const pos = itemPos(it, reachAt);
@@ -287,7 +287,7 @@ export function giftTargets() {
     const full = inv.slots.filter((s) => !s).length <= pending.size;
     const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
     const t = { id: `item${it.id}`, verb: 'Pick up', at, item: it.id };
-    if (full || roomFor(GIFTS[it.kind].id) < 0) out.push({ ...t, blocked: 'Hotbar full' });
+    if (full || roomFor(GIFTS[it.kind]!.id) < 0) out.push({ ...t, blocked: 'Hotbar full' });
     else
       out.push({
         ...t,

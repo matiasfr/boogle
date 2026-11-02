@@ -57,7 +57,7 @@ const pourAt = { until: 0 };
 export function canPlantAt(i: number, j: number) {
   const x = cellX(i),
     z = cellZ(j),
-    g = heights[i][j];
+    g = heights[i]![j]!;
   if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
   return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
 }
@@ -181,7 +181,7 @@ const spotGeo = mergeGeometries(
   ].map(([a, r, s]) =>
     new THREE.SphereGeometry(s, 8, 4)
       .scale(1, 0.25, 1)
-      .translate(Math.cos(a) * r, CAP_T * (r > 1.1 ? 0.95 : 1.02), Math.sin(a) * r),
+      .translate(Math.cos(a!) * r!, CAP_T * (r! > 1.1 ? 0.95 : 1.02), Math.sin(a!) * r!),
   ),
 );
 const moundGeo = new THREE.SphereGeometry(0.42, 10, 6).scale(1, 0.35, 1);
@@ -211,7 +211,7 @@ const visuals = new Map<string, Visual>(); // "i,j" -> its meshes
 
 function makeVisual(p: { i: number; j: number }): Visual {
   const root = new THREE.Group();
-  root.position.set(cellX(p.i), heights[p.i][p.j], cellZ(p.j));
+  root.position.set(cellX(p.i), heights[p.i]![p.j]!, cellZ(p.j));
   const mound = new THREE.Mesh(moundGeo, moundMat);
   mound.receiveShadow = true;
   const sprout = new THREE.Mesh(sproutGeo, sproutMat);
@@ -346,7 +346,7 @@ export function stallTargets() {
   const p = me.body.interpolatedPosition;
   let out: Interactable[] | null = null; // made only when something is in reach
   for (let k = 0; k < pickups.length; k++) {
-    const pick = pickups[k];
+    const pick = pickups[k]!;
     if (!pick.world) continue;
     const dx = pick.world.x - p.x,
       dz = pick.world.z - p.z;
