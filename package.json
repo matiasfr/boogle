@@ -5,7 +5,7 @@
   "type": "module",
   "description": "One island, one beach ball, and everyone who has the page open.",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "vite",
