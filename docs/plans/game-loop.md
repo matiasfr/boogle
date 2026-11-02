@@ -148,6 +148,10 @@ types for wire messages, presence payloads and op/state shapes come with their f
 **Done when** no `.js` or `.mjs` is left outside `node_modules`, `allowJs` is off, and a wrong wire-message field
 fails `npm run check`.
 
+**Status (2026-11-01):** every file is converted and `allowJs` is off, except `eslint.config.js`: ESLint loads a `.ts`
+config only through `jiti` or an unstable flag, so it stays JavaScript with `eslint.config.d.ts` beside it. Whether a
+wrong wire-message field fails `check` has not been tested.
+
 ## Order
 
 1 → 8a → 2 → 3, then 4 and 8b alongside, then 5 and 6. 7 only on evidence. Steps 1, 2 and 8 change no
