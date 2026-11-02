@@ -12,7 +12,6 @@ import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
 import { PATCH } from '../../src/sim/mushrooms.ts';
-import { PUSH_RUN_KIND } from '../../src/sim/scripted-run.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -50,7 +49,6 @@ test('every op of every rules module is accepted from a client or, host-only, fr
   ])
     wh.rules.piles.drop(i, 188, k, 64);
   wh.rules.sites.addFreight(60);
-  wh.rules.tune.tune.v.run = PUSH_RUN_KIND; // the push run, so site.push has a run to push (the same on every peer: none here)
 
   const accepted = new Set<string>();
   wh.sync.onApplied((e: Msg) => void accepted.add(e.op));

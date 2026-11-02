@@ -9,8 +9,6 @@ import { homeLand, fixture } from './helpers/land.mjs';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.ts';
-import { setTune } from '../src/sim/tune.ts';
-import { PUSH_RUN, PUSH_RUN_KIND } from '../src/sim/scripted-run.ts';
 
 const CANONICAL = [
   'mushrooms',
@@ -72,12 +70,7 @@ const SCRIPTS = {
     { op: 'site.stock', i: 0, j: 0, s: 0, ring: 1, n: 1 },
     ({ rules }) => {
       rules.sites.addFreight(60); // fill the Track ring the same way on both peers, so the machine can start
-      setTune(rules.tune.tune, 'run', PUSH_RUN_KIND); // the push run (tune.set runs later, in tune's own script)
       return { op: 'site.run', i: 0, j: 0, s: 0 };
-    },
-    (x) => {
-      for (let k = 0; k < PUSH_RUN[0].len; k++) tick(x); // past warm-up: the machine lays only while pushed
-      return { op: 'site.push', i: 0, j: 0, s: 0 };
     },
   ],
   opening: () => [

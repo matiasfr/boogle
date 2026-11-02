@@ -15,9 +15,6 @@ import {
   addFreight,
   helpersOf,
   runOf,
-  stallRun,
-  canPush,
-  pushRun,
   pointsOf,
   serializeSites,
   loadSites,
@@ -26,7 +23,6 @@ import {
 import { ROUTE, TRACK, HELPER, costOf } from '../../sim/route.ts';
 import { materialOf } from '../../sim/materials.ts';
 import { HARD_MAX } from '../../sim/stacks.ts';
-import { RUNS, PUSH_RUN_KIND, PUSH_TICKS } from '../../sim/scripted-run.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
 import type { SyncView, Land, Stream } from './types.ts';
@@ -43,9 +39,6 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
   const { stacks, roster } = rules;
   // A ring's cost in this room: rules.tune (a later module, ./tune.ts) is read at run time, once everything is installed.
   const cost = (s: number, ring: number) => (rules.tune ? rules.tune.cost(s, ring) : costOf(s, ring));
-  // The room's machine run (tuned in playtest rooms: crawl, quick or push; ../../sim/scripted-run.ts RUNS).
-  const kind = () => (rules.tune ? rules.tune.get('run') : 0);
-  const script = () => RUNS[kind()] ?? RUNS[0];
   const doneFns: ((s: number, tick: number) => void)[] = []; // fn(s, tick) when section s is laid (later rules, such as sources, subscribe at install)
 
   // How many of n units pid can pour into ring at site s now (0: refused).
@@ -71,30 +64,12 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
       return { s: e.s, t0: tick };
     },
   });
-  // The push variant: a player walking into the machine sends site.push every PUSH_TICKS ticks; each buys PUSH_TICKS
-  // ticks of laying (several pushers add up). The host refuses pushes closer together than that from one sender
-  // (lastPush: host-only bookkeeping, like reach; it never reaches state).
-  const lastPush = new Map<string, number>();
-  sync.registerOp<{ s: number }>('site.push', {
-    validate: (e, ctx) => {
-      if (kind() !== PUSH_RUN_KIND || !canPush(sites, e.s, ctx.tick, script())) return false;
-      if (ctx.tick - (lastPush.get(ctx.from) ?? -1e9) < PUSH_TICKS - 1) return false;
-      lastPush.set(ctx.from, ctx.tick);
-      return true;
-    },
-    apply: (e, tick) => {
-      if (kind() !== PUSH_RUN_KIND) return null;
-      const n = pushRun(sites, e.s, tick, script());
-      return n ? { s: e.s, n } : null;
-    },
-  });
-  // Each tick: helper freight, a push run standing still, then a run that has played out lays its section (R1 and anything else listening hear
+  // Each tick: helper freight, then a run that has played out lays its section (R1 and anything else listening hear
   // it), and when an age's last section is laid the age moves on and whatever is left of the old material on anyone's
   // back pours into that last site, credited (decision 7: one material on your back, nothing lost).
   sync.onTick((t) => {
     helperFreight(sites, t, cost);
-    if (kind() === PUSH_RUN_KIND) stallRun(sites, t, script());
-    const s = finishRun(sites, t, cost, script());
+    const s = finishRun(sites, t, cost);
     if (s < 0) return;
     for (const fn of doneFns) fn(s, t);
     if (ageAt(sites) === ROUTE[s].age) return;
@@ -116,19 +91,15 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
     room: (s: number, ring: number) => ringRoom(sites, s, ring, cost),
     cost, // a ring's cost in this room (tuned in playtest rooms)
     canRun: (s: number) => canRun(sites, s, cost),
-    run: (s: number, tick: number) => runOf(sites, s, tick, script()), // { phase, name, progress, total, done } of site s's run at tick
-    script, // the room's machine run script
-    kind, // its index in RUNS (0 crawl, 1 quick, 2 push)
+    run: (s: number, tick: number) => runOf(sites, s, tick), // { phase, name, progress, total, done } of site s's run at tick
     helpers: () => helpersOf(sites),
     addFreight: (n: number) => addFreight(sites, n, cost), // apply only: helper output into the open Track ring; returns what fit
   };
 }
 
 // Replay-test generators (./README.md): pour part of your stack into a ring of the open site (sometimes a closed one),
-// start the machine there, or push it.
+// or start the machine there.
 export const edits = {
-  'site.push': (r: Stream, view: { rules: { sites: SitesApi } }) =>
-    r.chance(JUNK) ? bad(r, 'site.push') : { op: 'site.push', i: 0, j: 0, s: view.rules.sites.sites.open },
   'site.run': (r: Stream, view: { rules: { sites: SitesApi } }) =>
     r.chance(JUNK) ? bad(r, 'site.run') : { op: 'site.run', i: 0, j: 0, s: view.rules.sites.sites.open },
   'site.stock': (r: Stream, view: { rules: { sites: SitesApi } }) =>

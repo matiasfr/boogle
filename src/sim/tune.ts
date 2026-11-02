@@ -6,7 +6,6 @@ import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
 import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
 import { FNV_SEED, foldAll } from './hash.ts';
-import { RUNS } from './scripted-run.ts';
 import type { CostFn } from './sites.ts';
 
 // APPEND ONLY: a key's index is folded into the hash. A key that goes away moves to RETIRED.
@@ -19,11 +18,11 @@ export const TUNABLES = [
   { key: 'trickle', def: TRICKLE_EVERY, min: 10, max: 6000, label: 'Bundle refill every (ticks)' },
   { key: 'wagonCruise', def: WAGON_CRUISE, min: 10, max: 100, label: 'Wagon cruise (cm per tick)' },
   { key: 'wagonAccel', def: WAGON_ACCEL, min: 5, max: 100, label: 'Wagon speed-up (ticks to cruise)' },
-  { key: 'run', def: 0, min: 0, max: RUNS.length - 1, label: 'Machine run (0 crawl, 1 quick, 2 push)' },
 ] as const;
 // Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
-// wobble and jump spill, removed after the first playtest).
-const RETIRED: readonly string[] = ['soft', 'spill'];
+// wobble and jump spill, removed after the first playtest) and the machine run variant (one run since the laying
+// playtest).
+const RETIRED: readonly string[] = ['soft', 'spill', 'run'];
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];
 /** v: every key's current value; rev counts every change, for views (neither saved nor hashed). */

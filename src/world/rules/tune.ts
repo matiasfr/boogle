@@ -1,5 +1,5 @@
 // Playtest tuning rules: the `tune` state (../../sim/tune.ts), the tune.set op that changes one of the haul loop's
-// lockstep numbers for the whole room at once (including which machine run plays), tune.fill (fills the open Track
+// lockstep numbers for the whole room at once, tune.fill (fills the open Track
 // ring), and tune.reset, which puts the haul (stacks, piles, sites, bundles) back
 // to fresh. All only in `proto-` rooms: the host knows the room id (env.protoRoom), the rules don't. The earlier haul
 // rules (stacks, sites, sources) read the tuned numbers through `rules.tune`, filled once every module is installed.
@@ -46,7 +46,6 @@ export function install(
       const x = sites.list[sites.open];
       return !x || ROUTE[sites.open].age !== 0 || (x.t0 < 0 && v >= x.stock[TRACK]);
     }
-    if (key === 'run') return !(sites.list[sites.open]?.t0 >= 0); // never mid-run: the script decides when it ends
     if (key === 'helper0')
       return sites.list.every((x, s) => {
         if (ROUTE[s].age !== 0) return true;

@@ -40,7 +40,7 @@ import { teleport } from '../../physics/physics.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
-import { lengthOf } from '../../sim/scripted-run.ts';
+import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
 import { wagonStoke, fireHeat } from './stoke.ts';
@@ -137,7 +137,7 @@ function fakeLaid(n: number) {
 const laidCount = () => (fake >= 0 ? fake : sites.open);
 const layTick = (k: number) => {
   const t0 = k < sites.open ? sites.list[k].t0 : -1;
-  if (t0 >= 0) return t0 + lengthOf(rules.sites.script()); // laid by a machine run (the room's run variant)
+  if (t0 >= 0) return t0 + lengthOf(MACHINE_RUN); // laid by a machine run
   if (opening.laid && k >= opening.laid[0] && k < sites.open) return opening.laid[1]; // by the open.lay shortcut
   return seen.get(k) ?? 0; // faked in this tab, or laid before the shortcut kept its tick
 };
