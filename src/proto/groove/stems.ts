@@ -49,7 +49,7 @@ export function pickManifest(): StemsManifest | null {
   const paths = Object.keys(manifests).sort();
   const path = paths.find((p) => want && p.endsWith(`/${want}.json`)) ?? paths[0];
   if (!path) return null;
-  const m = manifests[path];
+  const m = manifests[path]!;
   if (!m.bpm || !m.bars || !m.layers) {
     console.warn(`[music] ${path} needs bpm, bars and layers`);
     return null;
