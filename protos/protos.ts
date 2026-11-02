@@ -33,8 +33,9 @@ export type Proto = {
   /** Where the in-game prototype bar drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
    * toward -z, forward = (-sin, -cos)). Leave it out to start at the usual spawn. */
   spawn?: Spawn;
-  /** The counter (`protoCount`) whose first bump is the prototype's verb, for the trace's time-to-verb. Leave it out
-   * when the verb is a ride, a drive or a carry: the trace sees those on its own. */
+  /** The prototype's verb, for the trace's time-to-verb: a counter (`protoCount`) whose first bump is it, or one of the
+   * trace's activities ('riding', 'driving', 'carrying'). Only it counts, so on the island another toy's ride or carry
+   * isn't this card's verb. Left out, the first ride, drive or carry is. */
   verb?: string;
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
@@ -54,6 +55,7 @@ export const PROTOS: Proto[] = [
     what: "Logs on your back from the palm bundles, poured into the rail's work site. Tuning panel top right.",
     since: '2026-11-01',
     spawn: { x: 4, z: 10, yaw: -0.67 }, // by the palm nearest the first work site, looking past it to the site
+    verb: 'carrying',
     values: true,
     variants: [
       {
@@ -89,6 +91,7 @@ export const PROTOS: Proto[] = [
     what: 'Stand on a moving flatbed; jump off at speed.',
     since: '2026-11-01',
     spawn: { x: 3, z: 37, yaw: 0.79 }, // beside the flatbed at its first stop, looking at it
+    verb: 'riding',
     note: 'Add &ridespeed=6 to the address to change the flatbed’s speed.',
     chapter: 'its flatbed’s route crosses the mushroom hop line and the golf hole',
   },
@@ -102,6 +105,7 @@ export const PROTOS: Proto[] = [
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed.',
     since: '2026-11-01',
     spawn: { x: 13, z: -9, yaw: 3.0 }, // at the second station (Palm Walk), the wagon coming up the line towards you
+    verb: 'riding',
     variants: [
       {
         name: 'lively',
@@ -133,6 +137,7 @@ export const PROTOS: Proto[] = [
     url: '/?proto=moves&jump2=1&glide=1',
     question: 'Do you jump twice just because you can, and does the glide make the island feel smaller?',
     what: 'Press jump again in the air for a second jump; hold it to glide down slowly.',
+    verb: 'second jumps',
     since: '2026-11-01',
     note: 'Works on any ?proto= page: add &jump2=1 and/or &glide=1 to its address. On the island: on at this step only.',
     variants: [
@@ -229,6 +234,7 @@ export const PROTOS: Proto[] = [
     what: 'A flap-display sign at each station; E picks a station. v=hop travels at once, v=ride tells you which wagon to catch.',
     since: '2026-11-01',
     note: 'Press “Lay the whole route” first. Swap &v=hop for &v=ride; &laid=1 or 2 tries a shorter line.',
+    verb: 'trips',
     chapter: 'it runs its own wagon on the wagon’s line',
     variants: [{ name: 'ride', url: '/?room=proto-board&proto=board&v=ride', what: 'Tells you which wagon to catch.' }],
   },

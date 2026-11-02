@@ -4,7 +4,7 @@
 // position, rounded to a metre, and what you were doing (walking, riding a deck, driving, carrying, swimming, idle);
 // each stretch of standing still for IDLE_S or more; failure marks (`protoMark` from src/proto/mark.ts: wipeouts,
 // tumbles, crashes, spills, and a splash when you fall in the water); seconds from the start to the verb (the first
-// ride, drive or carry, the card's `verb` counter, or `protoMark('verb')`); and where and when it ended. Saved to this
+// ride, drive or carry, or the card's own `verb`: a counter, an activity, or `protoMark('verb')`); and where and when it ended. Saved to this
 // browser's protos store (protos/store.ts) every few seconds and when the tab hides, the card's last 10 sittings; the
 // protos page draws them as heat maps. Loaded by the prototype bar.
 // Local: never synced, never sent anywhere. Serves DESIGN.md "How we work".
@@ -12,14 +12,16 @@ import { onFrame } from '../../loop.ts';
 import { me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';
 import { ACTIVITIES, IDLE_S, saveSitting, sittingLine, type Activity, type Sitting } from '../../../protos/store.ts';
+import { PROTOS } from '../../../protos/protos.ts';
 import { hookActivity, onProtoMark } from '../mark.ts';
 
 const STILL = 0.4; // m/s: slower than this counts as standing still
 const SAVE_S = 10; // s between saves while playing
 const MAX_SAMPLES = 3600; // an hour at 1 Hz; past it the track halves and samples every 2 s, and so on
-const ACTIVE = new Set<Activity>(['riding', 'driving', 'carrying']); // the first of these is the verb
+const ACTIVE = new Set<Activity>(['riding', 'driving', 'carrying']); // the first of these is the verb (no card `verb`)
 
 let card = '';
+let cardVerb: string | undefined; // the card's own `verb` (a counter or an activity): then only it is the verb
 let s: Sitting | null = null;
 let t0 = 0; // performance.now() when the sitting started
 const clock = () => Math.round((performance.now() - t0) / 100) / 10; // s since the sitting started
@@ -77,6 +79,7 @@ function leave() {
 export function startSitting(id: string, v: string, fromLoad = false) {
   leave();
   card = id;
+  cardVerb = PROTOS.find((p) => p.id === id)?.verb;
   s = { id: Date.now(), v, p: [], idle: [], marks: [], verb: null, end: null };
   t0 = fromLoad ? 0 : performance.now();
   step = 1;
@@ -102,7 +105,7 @@ onFrame(
     if (acc < step) return;
     acc -= step;
     const a = activity();
-    if (ACTIVE.has(a)) verb();
+    if (cardVerb ? a === cardVerb : ACTIVE.has(a)) verb();
     const { x, z } = pos();
     s.p.push(Math.round(clock()), x, z, ACTIVITIES.indexOf(a));
     if (s.p.length / 4 > MAX_SAMPLES) {

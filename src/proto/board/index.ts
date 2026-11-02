@@ -35,6 +35,7 @@ import { wagonAt } from '../../sim/wagon.ts';
 import { isProtoRoom } from '../../sim/tune.ts';
 import { stationAt, nextCall, towards } from './departures.ts';
 import { onVariant, protoV } from '../flags.ts';
+import { protoCount } from '../count.ts';
 
 const params = new URLSearchParams(location.search);
 let VARIANT = protoV('board') === 'ride' ? 'ride' : 'hop';
@@ -559,6 +560,7 @@ function choose(k: number) {
   const from = pickFrom;
   closePicker();
   if (k === from) return;
+  protoCount('trips', 1, 'board');
   if (VARIANT === 'hop') hop(k);
   else plan = { from, to: k, at: performance.now(), phase: 'catch', doneAt: 0 };
 }

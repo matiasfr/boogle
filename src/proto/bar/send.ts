@@ -5,7 +5,8 @@
 // store and Copy all still have it. Inert without VITE_BOOGLE_SERVER (dev without a server). Local: nothing is synced.
 import { getRoomId } from '../../netplay/net.ts';
 import { BUILD } from '../../netplay/builds.ts';
-import { read, sittingLine, sittings } from '../../../protos/store.ts';
+import { read, sittingLine, sittings, vName } from '../../../protos/store.ts';
+import { PROTOS } from '../../../protos/protos.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const last = new Map<string, string>(); // card/variant -> the last payload sent
@@ -23,14 +24,15 @@ export function sendVerdict(id: string, v: string): boolean {
   if (!SERVER || typeof navigator.sendBeacon !== 'function') return false;
   const s = read(id);
   const m = s.byV[v];
-  if (!m?.verdict) return false;
+  const p = PROTOS.find((q) => q.id === id);
+  if (!m?.verdict || !p) return false;
   const detail = {
     proto: id,
     variant: v,
     verdict: m.verdict,
     note: m.note.trim(),
     counts: m.counts,
-    trace: sittingLine(sittings(id).at(-1)),
+    trace: sittingLine(sittings(id).findLast((t) => vName(p, t.v) === v)),
     values: s.values.trim() || undefined,
     build: BUILD,
   };

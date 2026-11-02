@@ -33,10 +33,11 @@ export function countFor(p: Proto, variant: string) {
   v = variant;
 }
 
-/** Adds `by` to the counter `name` of the prototype being played (no-op without one). Cheap to call often: writes are
- * batched. */
-export function protoCount(name: string, by = 1) {
-  if (!card || !Number.isFinite(by)) return;
+/** Adds `by` to the counter `name` of the prototype being played (no-op without one). `toy`, the calling prototype's
+ * card id: on the island, where every toy runs at once, its counts land only while its card is the playlist's step.
+ * Cheap to call often: writes are batched. */
+export function protoCount(name: string, by = 1, toy?: string) {
+  if (!card || !Number.isFinite(by) || (toy && toy !== card.id)) return;
   if (name === card.verb) protoMark('verb');
   pending[name] = (pending[name] ?? 0) + by;
   if (!timer) timer = window.setTimeout(flushCounts, 2000);
