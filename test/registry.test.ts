@@ -3,7 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.mjs';
 
-const file = (path, text) => ({ path, text });
+// Name -> the files that claim it, as scanSources builds each map.
+type Names = Record<string, string[]>;
+const file = (path: string, text: string) => ({ path, text });
 const NET = file(
   'src/netplay/net.ts',
   'function buildPresence() {\n  const pr = {\n    v: 1,\n    p: null,\n  };\n}\n',
@@ -18,7 +20,7 @@ test('the scan ignores calls in strings and comments, and definitions', () => {
     ),
   ]);
   assert.deepEqual(Object.keys(reg.presence), ['z']);
-  assert.deepEqual(reg.presence.z, ['src/features/a.js:3']);
+  assert.deepEqual((reg.presence as Names).z, ['src/features/a.js:3']);
 });
 
 test('TypeScript reads like JavaScript: typed locals, `as const`, generics, a moved file', () => {
@@ -34,7 +36,7 @@ test('TypeScript reads like JavaScript: typed locals, `as const`, generics, a mo
     ),
   ]);
   assert.deepEqual(Object.keys(reg.presence).sort(), ['p', 'v', 'z']);
-  assert.deepEqual(reg.presence.v, ['src/netplay/net.ts (core)']);
+  assert.deepEqual((reg.presence as Names).v, ['src/netplay/net.ts (core)']);
   assert.deepEqual(reg.padSlots, ['a', 'b']);
   assert.deepEqual(reg.pads, { a: ['src/features/a.ts:go'] });
   assert.deepEqual(Object.keys(reg.messages), ['beep']);
@@ -69,7 +71,7 @@ test('a message type sent from two files fails; a receiver-only file does not co
   ]);
   assert.deepEqual(Object.keys(reg.messages).sort(), ['beep', 'honk']);
   assert.deepEqual(checkRegistry(reg), []);
-  reg.messages.honk.push('src/features/copy.js');
+  (reg.messages as Names).honk.push('src/features/copy.js');
   assert.match(checkRegistry(reg)[0], /message type 'honk'/);
 });
 
@@ -81,7 +83,7 @@ test('pad slots: registerAction claims, describeControl does not, one slot must 
   ]);
   assert.deepEqual(reg.pads, { x: ['src/player/input.ts:use'], a: ['src/features/hotbar.ts:jump'] });
   assert.deepEqual(checkRegistry(reg), []);
-  reg.pads.b = ['src/features/c.js:c'];
+  (reg.pads as Names).b = ['src/features/c.js:c'];
   assert.match(checkRegistry(reg).join('\n'), /every pad slot is taken/);
   reg.pads.x.push('src/features/d.js:d');
   assert.match(checkRegistry(reg).join('\n'), /pad slot 'x' is claimed twice/);
@@ -103,7 +105,13 @@ test('feature onFrame orders stay in the feature range and off core orders', () 
   assert.match(errors[1], /b\.js:1: features use onFrame order -10 and up/);
 });
 
-const rulesReg = (rules, states, ops = {}) => ({ rules, states, ops, presence: {}, messages: {} });
+const rulesReg = (rules: string[], states: Record<string, unknown>, ops: Record<string, string> = {}) => ({
+  rules,
+  states,
+  ops,
+  presence: {},
+  messages: {},
+});
 
 test('RULES must keep main as a prefix', () => {
   const base = rulesReg(['terrain', 'gifts'], {});
@@ -113,7 +121,7 @@ test('RULES must keep main as a prefix', () => {
 });
 
 test("a new world namespace is a clean break: main's rules, ops and states bind nothing", () => {
-  const s = (version, value) => ({ version, shape: shapeOf(value) });
+  const s = (version: number, value: unknown) => ({ version, shape: shapeOf(value) });
   const base = rulesReg(['terrain', 'gifts'], { terrain: s(0, {}), gifts: s(0, { v: 1 }) }, { 'g.take': 'gifts' });
   const head = { ...rulesReg(['gifts'], { gifts: s(0, { w: 1 }) }, {}), ns: 'v01' };
   const { errors, notes } = compareRegistries(base, head);
@@ -124,7 +132,7 @@ test("a new world namespace is a clean break: main's rules, ops and states bind 
 });
 
 test('states: no removal, no version going down, no shape change without a version bump', () => {
-  const s = (version, value) => ({ version, shape: shapeOf(value) });
+  const s = (version: number, value: unknown) => ({ version, shape: shapeOf(value) });
   const base = rulesReg([], { g: s(0, { v: 1, it: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
   const same = rulesReg([], { g: s(0, { it: [], v: 2 }), m: s(1, { m: 3 }) }, { 'g.take': 'g' });
   assert.deepEqual(compareRegistries(base, same).errors, []);

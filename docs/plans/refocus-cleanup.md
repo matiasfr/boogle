@@ -47,7 +47,7 @@ writes this into AGENTS.md.
 **Where to implement.** Use a separate worktree off `origin/main`, for example
 `git worktree add ../boogle-refocus origin/main -b refocus/<step>`. Never touch, stage or commit the main checkout's
 uncommitted owner work: `src/boogler/hud.ts`, `src/boogler/dialogue.ts`, `src/features/boogler.css`,
-`dev/concepts/*`, `dev/scenarios/boogler-tag.mjs`, `test/chroma.test.mjs`, `DESIGN.md`, `package.json`,
+`dev/concepts/*`, `dev/scenarios/boogler-tag.mjs`, `test/chroma.test.ts`, `DESIGN.md`, `package.json`,
 `package-lock.json` and `.claude/skills/concept-art/SKILL.md`. No step edits any of those files except step 8
 (`DESIGN.md`, see its note). Step 3 edits `src/boogler/lines.ts`, which the owner has not touched. This plan file sits
 untracked in the main checkout: copy it into the worktree's `docs/plans/` and commit it with step 1.
@@ -103,7 +103,7 @@ where the wood age's log bundles lie".
   `world-inputs` scenario reads the layout from a `window.boogle.land` handle set there, instead of
   `window.boogle.gifts.trees`.
 - **Unchanged and still passing:** `test/sources.test.ts`, `test/sites.test.ts`, `dev/scenarios/haul-loop.ts` (it
-  submits `src.take` directly), the replay test's `src.take` generator, and `test/world-rules.test.mjs`
+  submits `src.take` directly), the replay test's `src.take` generator, and `test/world-rules.test.ts`
   `SCRIPTS.sources`.
 - **Rejected:** a separate `layout.logs` list of spots away from the palms. It means new land data, a new pinned
   fixture and a new meaning for `src.take` ids, for no gain in play. Walk-in pickup, as piles do, was also rejected:
@@ -132,7 +132,7 @@ come from it.
   Even if one were, `hd` and `gift.toss` are validated with `carryable(GIFTS[k])`, so the worst case is an item shown
   wrong or a toss rejected, never a crash.
 - **Old saves.** v01 snapshots, on the server and in localStorage `boogle.world.v01-<room>`, are never loaded again
-  (a different id). The v02 loader only has to survive junk, and `test/world-snapshots.test.mjs` already feeds every
+  (a different id). The v02 loader only has to survive junk, and `test/world-snapshots.test.ts` already feeds every
   state junk. The pinned fixture moves to `test/fixtures/snap-v02.json`.
 
 ### Lockstep piece (step 6): `ball`
@@ -331,7 +331,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     "Home palms (their cells are the wood age's log spots, src/features/log-sources.ts)".
   - **Interact label.** `src/player/input.ts` line 223: the `interact` label becomes `'Talk, pick up, take'`.
   - **Removed Boogler copy.** These lines go from `src/boogler/lines.ts` and the catalog. Every node keeps at least
-    two answers and no answer points at a deleted node (checked by `test/boogler-talk.test.mjs` "every message offers
+    two answers and no answer points at a deleted node (checked by `test/boogler-talk.test.ts` "every message offers
     at least two answers and every link resolves").
     1. Catalog `coconut`: "A coconut. I have eaten four hundred coconuts on this island. This one is four hundred
        and one."
@@ -390,18 +390,18 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       bundle: find a target whose id starts with `logs` instead of `palm`, and expect "Take logs" instead of "Shake".
       Its search over `trees` and `giftTargets()` becomes a search over the interact targets, through
       `interactTarget()` or the log targets. If that turns fiddly, re-aim it at the stall.
-    - `test/world-snapshots.test.mjs`: `k: 3` becomes `k: 1`.
-    - `test/world-rules.test.mjs` `SCRIPTS.gifts`: toss the can (`giftIndex('can')`), then `gift.take` the item with
+    - `test/world-snapshots.test.ts`: `k: 3` becomes `k: 1`.
+    - `test/world-rules.test.ts` `SCRIPTS.gifts`: toss the can (`giftIndex('can')`), then `gift.take` the item with
       `src === SRC.TOSS`, then the seed toss. Also delete the `fruit.drop` line. `SCRIPTS.sources` is unchanged.
-    - `test/boogler-friendship.test.mjs` "gifts score by taste": use seeds (like), can (meh) and frisbee (like).
+    - `test/boogler-friendship.test.ts` "gifts score by taste": use seeds (like), can (meh) and frisbee (like).
       Assert like, then `Math.round(TASTE_PTS.like / 2)` on a repeat, then meh, then the cap. The round-trip test
       gives seeds instead of a banana.
-    - `test/boogler-talk.test.mjs`: the key-item loop becomes `['ball']`, and any fruit `giftIndex` becomes
+    - `test/boogler-talk.test.ts`: the key-item loop becomes `['ball']`, and any fruit `giftIndex` becomes
       `'seeds'`.
-  - **Gift tests.** `test/gifts.test.mjs`: delete the fruit, regrow, drop-direction, shore and legacy-v1 tests, and
+  - **Gift tests.** `test/gifts.test.ts`: delete the fruit, regrow, drop-direction, shore and legacy-v1 tests, and
     keep take, toss, perch and cap. Add a serialize/load/hash round-trip of the new shape. Replace the "retired catalog
     entries" test with "only the ball is not carryable".
-  - **Snapshot fixture.** In `test/world-snapshots.test.mjs`, read `fixtures/snap-v02.json` and update the header and
+  - **Snapshot fixture.** In `test/world-snapshots.test.ts`, read `fixtures/snap-v02.json` and update the header and
     test names. Delete `test/fixtures/snap-v01.json`. Write `snap-v02.json` with a throwaway script, not committed:
     on `createSync({ env: { canPlantAt: () => true } })` + `installRules(s, homeLand())`, submit `who.set` (Ana, c 2),
     `mush.plant` 228,200, a `gift.toss` of k 1 at 230,205 and an `src.take` of id 0, call `updateWorld(0.1)` 15
@@ -467,7 +467,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
       - 4 and 8 with no presents: 5 (also when always answering with the last option);
       - 4 and 8 with presents: 4.
     - If the test lands at 6 after step 3, raise `chapterPts` to 9 rather than changing the model.
-  - `test/boogler-friendship.test.mjs`: the round-trip test still passes (ids now). Add a check that a stored
+  - `test/boogler-friendship.test.ts`: the round-trip test still passes (ids now). Add a check that a stored
     `{ kind: 3, at }` entry from the old format is dropped on load.
   - Docs:
     - `docs/game-design/boogler.md`:
@@ -526,7 +526,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - `src/world/rules/types.ts`: the `Rules` entry;
     - `src/physics/ball.ts`: `placeBall`;
     - `test/fixtures/world-inputs.json`: `"ball"` appended to `states`, `"ball.rest"` to `ops`;
-    - `test/world-rules.test.mjs`: `'ball'` appended to `CANONICAL`, and
+    - `test/world-rules.test.ts`: `'ball'` appended to `CANONICAL`, and
       `SCRIPTS.ball = () => [{ op: 'ball.rest', i: 0, j: 0, x: 1200, y: 150, z: 2000 }]`;
     - `test/world-size.test.ts`: a set ball spot fits the budget.
   - `test/ball-rest.test.ts` covers:

@@ -1,12 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pickInteract, FACING } from '../src/sim/interact-pick.ts';
+import type { InteractTarget } from '../src/sim/interact-pick.ts';
+
+type Target = InteractTarget & { id: string };
 
 // You stand at the origin looking along -z (three.js forward at yaw 0); +x and -x are beside you, +z is behind.
-const pick = (targets) => pickInteract(targets, 0, 0, 0, -1);
+const pick = (targets: (Target | null)[]) => pickInteract(targets, 0, 0, 0, -1)!; // null only for nothing in reach
 const run = () => {};
-const at = (id, x, z, more = {}) => ({ id, at: { x, z }, run, ...more });
-const blocked = (id, x, z) => ({ id, at: { x, z }, blocked: 'Hotbar full' });
+const at = (id: string, x: number, z: number, more: { r?: number } = {}): Target => ({
+  id,
+  at: { x, z },
+  run,
+  ...more,
+});
+const blocked = (id: string, x: number, z: number): Target => ({ id, at: { x, z }, blocked: 'Hotbar full' });
 
 test('the nearest target wins', () => {
   assert.equal(pick([at('far', 2, 0), at('near', -1.5, 0)]).id, 'near');

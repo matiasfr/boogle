@@ -31,7 +31,8 @@ async function rulesOf(root) {
     .map((x) => `src/world/rules/index.${x}`)
     .find((f) => fs.existsSync(path.join(root, f)));
   const { RULES } = await import(url(rulesIndex));
-  const { homeLand } = await import(url('test/helpers/land.mjs'));
+  const land = ['ts', 'mjs'].map((x) => `test/helpers/land.${x}`).find((f) => fs.existsSync(path.join(root, f)));
+  const { homeLand } = await import(url(land));
   const ops = {};
   const states = {};
   let current = '?';

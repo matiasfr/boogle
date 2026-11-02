@@ -23,8 +23,8 @@ folder map in [src/README.md](../../src/README.md).
   registry check (`npm run registry`: wire shapes against `main`, for mixed builds) and build.
   `npm run check:full` adds server tests and the headless network tests (`dev/peer-test/run.mjs` for peer rooms,
   `ws-run.ts` for server-hosted rooms and the room picker). Key tests:
-  [test/world-replay.test.mjs](../../test/world-replay.test.mjs) (seeded edits for every op, host killed midway, late
-  joiner, identical hashes) and [test/world-snapshots.test.mjs](../../test/world-snapshots.test.mjs).
+  [test/world-replay.test.ts](../../test/world-replay.test.ts) (seeded edits for every op, host killed midway, late
+  joiner, identical hashes) and [test/world-snapshots.test.ts](../../test/world-snapshots.test.ts).
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
   [dev/scenarios/](../../dev/scenarios/): atlas, boogler-tag, caves, controls-guide, dino, falls, first-run,
   guest-play, haul-loop, hotbar, interact, lighthouse, particles, pause, reconnect-edit, shared-kinds, smoke, splash,

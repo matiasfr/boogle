@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mio0, toBigEndian } from '../src/guest/rom.ts';
 
-const ascii = (s) => [...s].map((c) => c.charCodeAt(0));
+const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
 
 test('mio0 expands literals and back-references', () => {
   // "ABCABCABC": three literals, then 6 bytes copied from 3 back.

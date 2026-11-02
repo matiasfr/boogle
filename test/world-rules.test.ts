@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createSync } from '../src/world/sync.ts';
 import { RULES, installRules } from '../src/world/rules/index.ts';
-import { homeLand, fixture } from './helpers/land.mjs';
+import { homeLand, fixture } from './helpers/land.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import { SEEDS } from '../src/world/rules/gifts.ts';
+import type { Rules } from '../src/world/rules/types.ts';
 
 const CANONICAL = [
   'mushrooms',
@@ -29,13 +30,15 @@ function peer() {
   const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
-  return { s, rules, after: {} };
+  return { s, rules, after: {} as Record<string, number> };
 }
-const tick = (x, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
+type Peer = ReturnType<typeof peer>;
+const tick = (x: Peer, n = 1) => x.s.updateWorld(n * 0.1); // local mode: whole 100 ms ticks, edits apply next tick
 
 // One accepted edit per op, per system, built from that peer's state (a function builds its edit when its turn comes).
 // A new rules module with ops adds its script here.
-const SCRIPTS = {
+type Step = Record<string, unknown> | ((x: Peer) => Record<string, unknown>);
+const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
   mushrooms: () => [
     { op: 'mush.plant', i: 228, j: 200 },
     { op: 'mush.water', i: 228, j: 200 },
@@ -43,7 +46,7 @@ const SCRIPTS = {
   gifts: () => [
     { op: 'gift.toss', i: 230, j: 205, k: giftIndex('can'), y: ON_GROUND, n: 7, l: [0, 100, 0, 0, 0, 0] },
     ({ rules }) => {
-      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS);
+      const it = rules.gifts.gifts.items.find((x) => x.src === SRC.TOSS)!;
       return { op: 'gift.take', i: it.i, j: it.j, id: it.id };
     },
     { op: 'gift.toss', i: 232, j: 200, k: SEEDS, y: ON_GROUND, n: 8, l: [0, 100, 0, 0, 0, 0] }, // plants a mushroom
@@ -88,8 +91,8 @@ const SCRIPTS = {
 
 // Runs every converted system's script on x, three ticks apart (over every per-player rate limit). Returns the edits;
 // x.after holds each module's state hash right after its own script.
-function play(x) {
-  const edits = [];
+function play(x: Peer) {
+  const edits: Record<string, unknown>[] = [];
   for (const m of RULES) {
     for (const step of SCRIPTS[m.name]?.(x) ?? []) {
       const e = typeof step === 'function' ? step(x) : step;
@@ -140,7 +143,7 @@ test('a snapshot round-trips through JSON and stays in step for 50 ticks', () =>
 });
 
 test('mush.plant fails closed: the host env decides, and no env rejects the edit', () => {
-  const s = createSync({ env: { canPlantAt: (i) => i !== 228 } });
+  const s = createSync({ env: { canPlantAt: (i: number) => i !== 228 } });
   s.setSelfId('a');
   installRules(s, homeLand());
   assert.equal(s.submitEdit({ op: 'mush.plant', i: 228, j: 200 }), false);
@@ -152,7 +155,7 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
 });
 
 test('wagon.stoke is for proto- rooms only, and takes a whole number of logs', () => {
-  const stoker = (env) => {
+  const stoker = (env: Record<string, unknown>) => {
     const s = createSync({ env: { canPlantAt: () => true, ...env } });
     s.setSelfId('a');
     const rules = installRules(s, homeLand());
@@ -168,8 +171,8 @@ test('wagon.stoke is for proto- rooms only, and takes a whole number of logs', (
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
   const allowed = /\/src\/(world\/rules\/[^/]+|world\/grid|sim\/[^/]+)\.(js|ts)$/;
-  const seen = new Set();
-  const visit = (url) => {
+  const seen = new Set<string>();
+  const visit = (url: URL) => {
     if (seen.has(url.href)) return;
     seen.add(url.href);
     assert.match(url.pathname, allowed, `rules reach ${url.pathname}`);

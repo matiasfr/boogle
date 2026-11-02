@@ -54,7 +54,7 @@ test('serialize/load round-trips with the same hash; bad data throws', () => {
 // The whole loop on the real rules in local mode: shake, pour, run, lay, refill, and the age change at the end.
 import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
-import { homeLand } from './helpers/land.mjs';
+import { homeLand } from './helpers/land.ts';
 import { FULL } from '../src/sim/sources.ts';
 import { RUN_BONUS } from '../src/sim/sites.ts';
 import { lengthOf, MACHINE_RUN } from '../src/sim/scripted-run.ts';
