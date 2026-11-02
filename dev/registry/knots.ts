@@ -6,19 +6,7 @@ import type { Source } from './scan.ts';
 
 // Today's knots. This list only shrinks: a file that leaves a knot loses its line here, and
 // docs/plans/entity-architecture.md part 3 takes it to empty. Don't add to it; break the new cycle.
-export const KNOTS: string[][] = [
-  [
-    'src/adapters/gifts.ts',
-    'src/adapters/mushroom-garden.ts',
-    'src/physics/ball.ts',
-    'src/player/hands.ts',
-    'src/player/hud.ts',
-    'src/player/input.ts',
-    'src/player/player.ts',
-    'src/player/throw.ts',
-  ],
-  ['src/pois/caves/decor.ts', 'src/pois/caves/index.ts'],
-];
+export const KNOTS: string[][] = [['src/pois/caves/decor.ts', 'src/pois/caves/index.ts']];
 
 export type Imports = Map<string, string[]>;
 

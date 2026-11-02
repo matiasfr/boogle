@@ -15,7 +15,7 @@ import { groundHeight } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
 import { ballMat, teleport } from './physics.ts';
 import { createBody, addBody, setMotion } from './engine.ts';
-import { me, handPosition, carryPosition } from '../player/player.ts';
+import { me, handPosition, carryPosition } from '../player/state.ts';
 import { cancelCharge } from '../player/throw.ts';
 import {
   net,

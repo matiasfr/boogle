@@ -38,7 +38,7 @@
 //
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.ts; the ball keeps its own physics.
 import * as THREE from 'three';
-import { me, cam } from './player.ts';
+import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, remoteHoldsBall, grabBall, throwBall } from '../physics/ball.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';

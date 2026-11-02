@@ -104,7 +104,7 @@ function peerColor(peer: string) {
 //   onPeerLeftIsland(fn)           fn(remote) on each update from a peer that isn't on the island (they may still be in
 //                                  the room). Can repeat for one peer.
 //   onPeerRemoved(fn)              fn(remote) as a peer leaves the room, while it's still in `remotes`.
-//   onPeopleChanged(fn)            fn() after a batch of peer changes (the roster).
+//   onPeopleChanged(fn)            fn() after a batch of peer changes (the roster). peopleChanged() runs them.
 //   setLocalPresence(source)       the local player, read by every send; localPresence() returns it (null until set).
 const presenceFields: Field[] = [];
 // The keys buildPresence sets itself; a field can't take one (nor an earlier field's key).
@@ -169,6 +169,15 @@ export function onPeerRemoved(fn: (r: Remote) => void) {
 }
 export function onPeopleChanged(fn: () => void) {
   peopleHooks.push(fn);
+}
+export function peopleChanged() {
+  for (const fn of peopleHooks) {
+    try {
+      fn();
+    } catch (e) {
+      console.warn('[boogle] people hook failed', e);
+    }
+  }
 }
 let local: LocalPresence | null = null;
 export function setLocalPresence(source: LocalPresence) {
@@ -281,13 +290,7 @@ function onPeersChange(change: {
   for (const p of change.joined) upsertPeer(p);
   for (const p of change.updated) upsertPeer(p);
   for (const p of change.left) removePeer(p.peer);
-  for (const fn of peopleHooks) {
-    try {
-      fn();
-    } catch (e) {
-      console.warn('[boogle] people hook failed', e);
-    }
-  }
+  peopleChanged();
 }
 
 function setNet(state: string) {

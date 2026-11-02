@@ -10,7 +10,7 @@ import { scene } from '../render/scene.ts';
 import { obstacles } from '../render/props.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
 import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
-import { me } from '../player/player.ts';
+import { me } from '../player/state.ts';
 import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
 import { waterField } from '../physics/water-field.ts';
 import { dropPoint } from '../physics/flight.ts';

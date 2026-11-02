@@ -1,67 +1,22 @@
 import * as THREE from 'three/webgpu';
-import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, DEFAULT_NAME, reducedMotion } from '../constants.ts';
+import { SPAWN, PLAYER_R, SEA, DEFAULT_NAME, reducedMotion } from '../constants.ts';
 import { SUN_DIR } from '../render/sun-dir.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
 import { teleport, ODYSSEY } from '../physics/physics.ts';
-import { addBody, type Body } from '../physics/engine.ts';
+import { addBody } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
-import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';
-import '../entities/remote-player/index.ts'; // ahead of the ball, which imports us: `riding` stays the first field
-import { sendPresence, setLocalPresence } from '../netplay/net.ts';
-import { dom, renderPeople } from './hud.ts';
-import { input, inputState } from './input.ts';
+import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.ts';
+import { sendPresence, setLocalPresence, peopleChanged } from '../netplay/net.ts';
+import { dom } from './dom.ts';
+import { input, inputState } from './input-state.ts';
+import { me, cam, camForward } from './state.ts';
 import { onFrame } from '../loop.ts';
 
-export const me = {
-  entered: false,
-  name: '',
-  colorIdx: 0,
-  body: null as Body | null,
-  avatar: null as Avatar | null,
-  yaw: 0,
-  coyote: 0,
-  jumpQueued: 0,
-  jumpHeld: false,
-  swimming: false,
-  sprint: false,
-  holding: false,
-  charging: false,
-  chargeStart: 0,
-  suppressUp: false,
-  down: false,
-  lostBallAt: -1e9,
-  bumpAt: undefined as number | undefined, // last time you walked into someone (src/features/bump.ts)
-  wish: new THREE.Vector3(),
-  skid: false, // ?ctl=odyssey: braking to a stop before a pivot (src/physics/physics.ts)
-};
+export { me, cam, camForward, handPosition, carryPosition, ITEM_HAND, throwFrom } from './state.ts';
 setLocalPresence(me);
-export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 6.5 };
 
-export function camForward(out = new THREE.Vector3()) {
-  const cp = Math.cos(cam.pitch);
-  return out.set(-Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp);
-}
-function playerPos() {
-  return me.body ? me.body.interpolatedPosition : { x: SPAWN.x, y: 2, z: SPAWN.z };
-}
-// A point beside the player in their own frame (x right, y up, z back; the avatar faces -z), in world space.
-function fromBody(out: THREE.Vector3, x: number, y: number, z: number) {
-  const p = playerPos();
-  const s = Math.sin(me.yaw),
-    c = Math.cos(me.yaw);
-  return out.set(p.x + x * c + z * s, p.y + y, p.z - x * s + z * c);
-}
-// Right hand, on the camera's shoulder side; must stay over PLAYER_R + BALL_R from the body axis.
-export const handPosition = (out = new THREE.Vector3()) => fromBody(out, 0.55, 0.75, -0.85);
-// The beach ball rides on your back while something else is in your hand.
-export const carryPosition = (out = new THREE.Vector3()) =>
-  me.holding ? handPosition(out) : fromBody(out, 0, 1.05, 0.85);
-// Where small held things sit (src/features/hotbar.ts draws them there).
-export const ITEM_HAND = { x: 0.5, y: 0.42, z: -0.42 };
-// Where they leave from when thrown: an overhand throw from head height, which clears a waist-high railing.
-export const throwFrom = (out = new THREE.Vector3()) => fromBody(out, 0.45, 1.0, -0.5);
 export function enterIsland() {
   if (me.entered) return;
   me.name = sanitizeName(dom.nameInput.value) || DEFAULT_NAME;
@@ -86,7 +41,7 @@ export function enterIsland() {
     // storage unavailable (private mode); the name just will not be remembered
   }
   sendPresence();
-  renderPeople();
+  peopleChanged();
 }
 
 const KEY_TURN = 2; // rad/s while ← or → is held without mouse look
