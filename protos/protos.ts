@@ -352,8 +352,21 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=hero',
     question: 'Does running and jumping as this character feel good enough to keep it?',
-    what: 'Every player is the new hero: big head, stout body, long arms, legs with knees, no mouth, a hand-keyed run and new air poses. &ctl=odyssey tries a modern-Mario controller. &body=standin (a robot with pro clips) or &body=pill (the first figure) to compare.',
+    what: 'Every player is the new hero: big head, stout body, long arms, legs with knees, no mouth. Feet plant as it runs; a modern-Mario controller (run where you face, turns carve, pull back to skid and pivot) and a closer camera that trails you.',
     since: '2026-11-01',
+    variants: [
+      {
+        name: 'old-controller',
+        url: '/?proto=hero&ctl=old&cam=old&v=old-controller',
+        what: 'The same hero with today’s controller and camera.',
+      },
+      {
+        name: 'robot',
+        url: '/?proto=hero&body=standin&v=robot',
+        what: 'A stand-in with hand-made run clips, to feel the controller on its own.',
+      },
+      { name: 'steps', url: '/?proto=hero&steps=1&v=steps', what: 'The hero with quiet footsteps.' },
+    ],
     chapter: 'it swaps your body for every toy, so it is judged on its own',
   },
   {

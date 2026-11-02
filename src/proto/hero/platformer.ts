@@ -1,15 +1,21 @@
-// The platformer hero (assets/src/hero2-rig.py), the default body of ?proto=hero: long legs with knees, a separate head,
-// the proportions of Ratchet or a Bricktron as our own character. Its run is pose-to-pose: hand-keyed tables of leg
-// angles over the stride cycle (contact, down, passing, push-off, the way a run is animated by hand), played by distance
-// so the stride matches the ground. Code adds the lean, hip twist, bob, arm pumps and a head that stays level.
+// The platformer hero (assets/src/hero2-rig.py), the default body of ?proto=hero: legs with knees, a big separate head,
+// the proportions of Ratchet or a Bricktron as our own character. Its run is built the way a hand-animated run is, in
+// parts (docs/research/third-person-platformer-movement.md):
+// - Stance: the foot stays where it landed while the hips pass over it. A two-bone solve finds the thigh and knee, so
+//   the foot doesn't skate, and the heel rolls up to the toe at push-off.
+// - Swing: hand-keyed poses (the heel folds up, passes, the knee drives) played by distance through the stride.
+// - The hips drop into each stance and rise in the flight between steps; code adds the lean, hip and chest twist, arm
+//   pumps, a head that stays level and looks into turns, a blink and footfall dust.
 // Everything comes from motion alone (speed, airborne, position, facing), so remote players get it with no new presence.
-// &lineup=<m/s> holds eight heroes through one stride cycle, to judge the cycle from a still (debug).
+// &steps=1 adds quiet footsteps. &lineup=<m/s> holds eight heroes through one stride cycle, for judging it from a still.
 import * as THREE from 'three/webgpu';
-import { COLORS, PLAYER_R, SPAWN } from '../../constants.ts';
+import { COLORS, PLAYER_R, SPAWN, reducedMotion } from '../../constants.ts';
 import { clamp } from '../../math.ts';
 import { springStep, stiffnessOf, dampingOf, type Spring } from '../../render/motion.ts';
 import { precompile } from '../../render/precompile.ts';
 import { loadAsset } from '../../render/assets.ts';
+import { emit } from '../../render/particles.ts';
+import { getAudio } from '../../render/audio.ts';
 import { scene } from '../../render/scene.ts';
 import { onFrame } from '../../loop.ts';
 import { groundHeight } from '../../island/terrain.ts';
@@ -17,47 +23,27 @@ import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
 import { shadeOnce } from '../../player/hero.ts';
+import { startHeroCamera } from './camera.ts';
 import url from '../../../assets/built/hero2-rig.glb?url';
 
-type Key = [u: number, thigh: number, knee: number, sole: number]; // sole: the foot's angle to the ground (+ toes up)
-const RUN_KEYS: Key[] = [
-  [0, 35, -10, 15], // contact: the leg reaches forward, heel first
-  [0.1, 18, -35, 0], // down: the knee takes the weight
-  [0.25, -2, -12, 0], // passing: the leg straightens under the body
-  [0.38, -32, -6, -35], // push-off: up on the toes, the hips at their highest
-  [0.5, -38, -35, -50], // the other foot lands; this one trails
-  [0.62, -18, -85, -35], // the heel folds up
-  [0.75, 18, -105, -20], // passing, folded tight
-  [0.88, 52, -70, 0], // the knee drives forward and up
-];
-const WALK_KEYS: Key[] = [
-  [0, 24, -4, 18],
-  [0.12, 14, -12, 0],
-  [0.3, -6, -6, 0],
-  [0.5, -24, -8, -18],
-  [0.62, -14, -40, -30],
-  [0.78, 14, -50, -10],
-  [0.92, 28, -18, 8],
-];
-const BOB_KEYS = [
-  [0, -0.02],
-  [0.2, -0.06],
-  [0.5, 0],
-  [0.76, 0.06],
-  [1, -0.02],
-]; // m, over one step: lowest just after a foot lands, highest in the push-off
+const q = new URLSearchParams(location.search);
+const STEPS = q.get('steps') === '1';
+const D = Math.PI / 180;
+
+const LEG = { thigh: 0.25, shin: 0.27, hip: 0.66, ankle: 0.14, toe: 0.2, heel: 0.09 }; // m, from hero2-rig.py's joints
 const TUNE = {
-  stride: 0.74, // m per cycle × v^0.6 (Alexander, with a 0.68 m hip and this game's gravity): 2.1 m at 5.6 m/s
-  sprint: 7.5, // m/s where the legs start reaching further
-  lean: { perSpeed: 0.55, max: 5 }, // degrees of body lean
-  kick: { start: 8, brake: 12, cap: 25, hz: 3, zeta: 0.45 }, // degrees; m/s²
-  bank: { k: 0.4, max: 10 }, // × atan(lateral accel / 18); degrees
-  twist: { hips: 8, chest: 10 }, // degrees
-  headLevel: 0.7, // of the body's lean and roll the head takes back, so the face stays up
+  stride: 0.74, // m per cycle × v^0.6 (Alexander, with a 0.68 m hip and this game's gravity): 2.5 m at 7.5 m/s
+  sweep: 0.62, // m the hips travel over a planted foot at most (a longer one can't be reached by these legs)
+  ahead: 0.42, // of the sweep lands in front of the hips
+  lean: { perSpeed: 0.9, max: 10 }, // degrees of body lean
+  kick: { start: 7, brake: 11, cap: 25, hz: 3, zeta: 0.45 }, // degrees; m/s²
+  bank: { k: 0.4, max: 9 }, // × atan(lateral accel / 18); degrees
+  twist: { hips: 9, chest: 13 }, // degrees, at a full run
+  headLevel: 0.75, // of the body's lean and roll the head takes back, so the face stays up
+  headTurn: { k: 0.16, max: 30 }, // of the turn rate the head looks ahead by; degrees
 };
 const SKID = { angle: 100, speed: 4, release: 60, stop: 2 }; // degrees, m/s
 const BLINK = { every: [2.5, 5.5], ms: 110 };
-const D = Math.PI / 180;
 const BONES = [
   'root',
   'hips',
@@ -65,53 +51,161 @@ const BONES = [
   'head',
   ...['arm', 'forearm', 'hand', 'thigh', 'shin', 'foot'].flatMap((b) => [b + '_l', b + '_r']),
 ];
+// The swing, in degrees, between where stance ends and where it starts again: [thigh, knee, sole], walk then run.
+const SWING = {
+  walk: [
+    [-8, -45, -20],
+    [14, -55, -12],
+    [26, -25, 6],
+  ],
+  run: [
+    [-14, -100, -28],
+    [32, -115, -16],
+    [66, -85, 4],
+  ],
+};
+type Angles = [thigh: number, knee: number, sole: number];
 
-function sampleKeys(keys: Key[], u: number): [number, number, number] {
-  let i = keys.length - 1;
-  while (i > 0 && keys[i][0] > u) i--;
-  const a = keys[i],
-    b = keys[(i + 1) % keys.length];
-  const span = (b[0] <= a[0] ? b[0] + 1 : b[0]) - a[0];
-  const t = (u - a[0]) / span,
-    e = t * t * (3 - 2 * t);
-  return [a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e, a[3] + (b[3] - a[3]) * e];
+const smooth = (t: number) => t * t * (3 - 2 * t);
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+/** Catmull-Rom through evenly spaced points at t in 0..1. */
+function curve(p: number[], t: number) {
+  const n = p.length - 1,
+    f = clamp(t, 0, 1) * n,
+    i = Math.min(n - 1, Math.floor(f)),
+    u = f - i;
+  const a = p[Math.max(0, i - 1)],
+    b = p[i],
+    c = p[i + 1],
+    d = p[Math.min(n, i + 2)];
+  return 0.5 * (2 * b + (c - a) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (3 * b - a - 3 * c + d) * u * u * u);
 }
-function sampleBob(u: number) {
-  let i = 0;
-  while (i < BOB_KEYS.length - 2 && BOB_KEYS[i + 1][0] <= u) i++;
-  const [ta, va] = BOB_KEYS[i],
-    [tb, vb] = BOB_KEYS[i + 1];
-  const t = (u - ta) / (tb - ta);
-  return va + (vb - va) * t * t * (3 - 2 * t);
+/** Thigh and knee angles (degrees) that put the ankle x in front of the hip and h below it. */
+function solve(x: number, h: number): [number, number] {
+  const { thigh: a, shin: b } = LEG;
+  const d = Math.min(Math.hypot(x, h), a + b - 0.002);
+  const f = Math.acos(clamp((d * d - a * a - b * b) / (2 * a * b), -1, 1));
+  return [(Math.atan2(x, h) + Math.atan2(b * Math.sin(f), a + b * Math.cos(f))) / D, -f / D];
+}
+const liftOf = (sole: number) => (sole < 0 ? LEG.toe * Math.sin(-sole * D) : LEG.heel * Math.sin(sole * D));
+
+type Gait = { stride: number; sweep: number; duty: number; run: number; toe: number };
+function gaitOf(v: number): Gait {
+  const stride = Math.max(0.6, TUNE.stride * Math.pow(Math.max(v, 0.3), 0.6));
+  const sweep = Math.min(TUNE.sweep + 0.05 * clamp((v - 7.5) / 3, 0, 1), stride * 0.5);
+  const run = clamp((v - 2.5) / 2, 0, 1);
+  return { stride, sweep, duty: sweep / stride, run, toe: mix(22, 44, run) };
+}
+/** How far the hips sit below their standing height, over one step (u: 0 a foot lands, 1 the other does). */
+function hipOf(g: Gait, u: number) {
+  const end = 2 * g.duty; // where stance ends, in the step
+  const walk = mix(-0.035, -0.008, Math.sin(Math.PI * u));
+  let run: number;
+  if (u < end / 2) run = mix(-0.065, -0.115, smooth(u / (end / 2)));
+  else if (u < end) run = mix(-0.115, -0.05, smooth((u - end / 2) / (end / 2)));
+  else {
+    const s = (u - end) / Math.max(1e-3, 1 - end);
+    run = s < 0.5 ? mix(-0.05, -0.012, smooth(s * 2)) : mix(-0.012, -0.065, smooth((s - 0.5) * 2));
+  }
+  return mix(walk, run, g.run);
+}
+function soleOf(g: Gait, s: number) {
+  if (s < 0.25) return mix(12, 0, s / 0.25);
+  return s < 0.55 ? 0 : -g.toe * smooth((s - 0.55) / 0.45);
+}
+/** One planted leg at s through its stance, with the hips offset by hip, on ground at height gy. */
+function stance(g: Gait, s: number, hip: number, gy: number): Angles {
+  const sole = soleOf(g, s);
+  const x = g.sweep * TUNE.ahead - s * g.sweep;
+  const [t, k] = solve(x, LEG.hip + hip - (LEG.ankle + liftOf(sole) + gy));
+  return [t, k, sole];
+}
+/** One leg at u through its cycle (0: lands). */
+function legAt(g: Gait, u: number, hip: number, gy: number): Angles {
+  if (u < g.duty) return stance(g, u / g.duty, hip, gy);
+  const s = (u - g.duty) / (1 - g.duty);
+  const a = stance(g, 1, hipOf(g, Math.min(1, 2 * g.duty)), 0),
+    b = stance(g, 0, hipOf(g, 0), 0);
+  const out: Angles = [0, 0, 0];
+  for (let i = 0; i < 3; i++) {
+    const keys = [a[i], 0, 0, 0, b[i]];
+    for (let j = 0; j < 3; j++) keys[j + 1] = mix(SWING.walk[j][i], SWING.run[j][i], g.run);
+    out[i] = curve(keys, s);
+  }
+  return out;
 }
 
 type Pose = {
   bones: Record<string, THREE.Object3D>;
   eyes: THREE.Object3D[];
-  phase: number; // 0..1 through a stride cycle
+  phase: number; // 0..1 through a stride cycle (left foot lands at 0, right at 0.5)
   x: Record<string, number>;
   y: Record<string, number>;
   z: Record<string, number>;
+  hip: number;
   blink: number;
   last: THREE.Vector3 | null;
   vel: THREE.Vector3;
   acc: THREE.Vector3;
   kick: Spring;
   wasAir: boolean;
-  landT: number;
+  landT: number; // s since landing
+  landV: number; // how hard
+  groundT: number; // s on the ground
+  airLead: 'l' | 'r'; // the leg that drives up out of a jump
   skid: boolean;
+  yawPrev: number;
+  yawRate: number; // degrees/s, smoothed
+  glance: number;
+  glanceT: number;
 };
 const poses = new WeakMap<Avatar, Pose>();
 const tmp = new THREE.Vector3();
+const DUST = new THREE.Color('#d9c49a');
+
+function dust(a: Avatar, n: number, spread: number, kick: number) {
+  if (reducedMotion) return;
+  const fx = -Math.sin(a.rotation.y),
+    fz = -Math.cos(a.rotation.y);
+  for (let i = 0; i < n; i++)
+    emit({
+      x: a.position.x + (Math.random() - 0.5) * 0.3,
+      y: a.position.y - PLAYER_R + 0.05,
+      z: a.position.z + (Math.random() - 0.5) * 0.3,
+      vx: (Math.random() - 0.5) * spread - fx * kick,
+      vy: 0.5 + Math.random() * 0.9,
+      vz: (Math.random() - 0.5) * spread - fz * kick,
+      life: 0.25 + Math.random() * 0.25,
+      size: 0.1,
+      alpha: 0.7,
+      color: DUST,
+      gravity: 5,
+    });
+}
+function stepSound(v: number) {
+  const au = getAudio('sfx');
+  if (!au) return;
+  const { ctx, out } = au;
+  const t = ctx.currentTime,
+    o = ctx.createOscillator(),
+    g = ctx.createGain();
+  o.frequency.setValueAtTime(150 + Math.random() * 30, t);
+  o.frequency.exponentialRampToValueAtTime(70, t + 0.05);
+  g.gain.setValueAtTime(0.05 + 0.006 * v, t);
+  g.gain.exponentialRampToValueAtTime(0.0005, t + 0.07);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + 0.08);
+}
 
 function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   const p = poses.get(a);
   if (!p || dt <= 0) return;
   const inner = a.userData.inner;
-  inner.position.y = 0;
   inner.rotation.x = 0;
   inner.scale.set(1, 1, 1);
 
+  // Motion from where the avatar is drawn: velocity and acceleration, smoothed (remote positions arrive at 20 Hz).
   if (!p.last) p.last = a.position.clone();
   tmp.subVectors(a.position, p.last).divideScalar(dt);
   p.last.copy(a.position);
@@ -123,13 +217,26 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   p.acc.z += (az * kv - p.acc.z) * (1 - Math.exp(-dt / 0.06));
   const v = speed,
     vy = p.vel.y;
-  const fx = -Math.sin(a.rotation.y),
-    fz = -Math.cos(a.rotation.y);
+  const yaw = a.rotation.y,
+    fx = -Math.sin(yaw),
+    fz = -Math.cos(yaw);
   const aF = p.acc.x * fx + p.acc.z * fz,
     aL = p.acc.x * -fz + p.acc.z * fx;
-  if (p.wasAir && !airborne) p.landT = 0;
+  const dYaw = Math.atan2(Math.sin(yaw - p.yawPrev), Math.cos(yaw - p.yawPrev)) / D / dt;
+  p.yawPrev = yaw;
+  p.yawRate += (dYaw - p.yawRate) * (1 - Math.exp(-dt / 0.08));
+
+  if (airborne && !p.wasAir) p.airLead = p.phase < 0.5 ? 'r' : 'l'; // the leg that's behind drives up
+  if (p.wasAir && !airborne) {
+    p.landT = 0;
+    p.landV = -Math.min(vy, 0);
+    p.groundT = 0;
+    p.phase = p.phase < 0.25 || p.phase > 0.75 ? 0 : 0.5; // land on the nearer foot
+    dust(a, p.landV > 8 ? 8 : 4, 2.2, 0);
+  }
   p.wasAir = airborne;
   p.landT += dt;
+  p.groundT = airborne ? 0 : p.groundT + dt;
   const along = v > 0.1 ? (p.vel.x * fx + p.vel.z * fz) / Math.max(1e-3, Math.hypot(p.vel.x, p.vel.z)) : 1;
   const off = Math.acos(clamp(along, -1, 1)) / D;
   if (a === me.avatar && me.skid)
@@ -139,97 +246,146 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   else if (p.skid && (v < SKID.stop || off < SKID.release)) p.skid = false;
 
   // Targets in degrees per bone: x swings a hanging limb forward (and tips the body back), z swings an arm out to its
-  // side, y twists.
+  // side, y twists. Legs follow exactly while running (a lag would make planted feet skate); anything else eases in.
   const x: Record<string, number> = {},
     y: Record<string, number> = {},
     z: Record<string, number> = {};
-  let ease = 0.04;
-  const leg = (side: 'l' | 'r', thigh: number, knee: number, sole: number) => {
+  const leg = (side: 'l' | 'r', [thigh, knee, sole]: Angles) => {
     x['thigh_' + side] = thigh;
     x['shin_' + side] = knee;
     x['foot_' + side] = sole - thigh - knee;
   };
+  let ease = 0.04,
+    hip = 0;
+
   if (airborne) {
     ease = 0.05;
+    const lead = p.airLead,
+      trail = lead === 'l' ? 'r' : 'l';
     if (vy > 2.5) {
-      // Rising: one knee driven up, the other leg trailing, one mitt punching up.
-      leg('l', 75, -95, 10);
-      leg('r', -22, -30, -40);
-      Object.assign(x, { arm_r: 20, forearm_r: 30, arm_l: -25, forearm_l: 50, body: -4 });
-      Object.assign(z, { arm_r: 120, arm_l: 25 });
+      // Rising: the lead knee driven up, the other leg trailing; the opposite mitt punches forward and up, clear of the
+      // face, the other arm sweeps back.
+      leg(lead, [78, -100, 8]);
+      leg(trail, [-24, -32, -40]);
+      x['arm_' + trail] = 72;
+      x['forearm_' + trail] = 42;
+      z['arm_' + trail] = 24;
+      x['arm_' + lead] = -48;
+      x['forearm_' + lead] = 38;
+      z['arm_' + lead] = 26;
+      x.body = -6;
     } else if (vy > -2.5) {
-      // The top: both knees tucked, arms out.
-      leg('l', 60, -90, 0);
-      leg('r', 35, -70, -10);
-      Object.assign(x, { forearm_l: 25, forearm_r: 25 });
-      Object.assign(z, { arm_l: 75, arm_r: 75 });
+      // The top: both knees tucked, arms out, hanging for a beat.
+      leg(lead, [62, -95, 0]);
+      leg(trail, [36, -72, -12]);
+      x.forearm_l = x.forearm_r = 28;
+      z.arm_l = z.arm_r = 72;
+      x.body = -2;
+      ease = 0.08;
     } else {
-      // Falling: legs reaching down for the ground, arms up and flared.
-      const flutter = 7 * Math.sin(performance.now() * 0.016);
-      leg('l', 18, -22, 10);
-      leg('r', -6, -30, 0);
-      Object.assign(x, { forearm_l: 15, forearm_r: 15, body: -3 });
-      Object.assign(z, { arm_l: 115 + flutter, arm_r: 115 - flutter });
+      // Falling: legs reaching down for the ground, arms up and flared, a little flutter.
+      const flutter = 6 * Math.sin(performance.now() * 0.016);
+      leg(lead, [22, -24, 10]);
+      leg(trail, [-8, -34, -4]);
+      x.forearm_l = x.forearm_r = 18;
+      z.arm_l = 108 + flutter;
+      z.arm_r = 108 - flutter;
+      x.body = 3;
+      ease = 0.09;
     }
   } else if (p.skid) {
-    leg('l', 45, -15, 20);
-    leg('r', -5, -70, 0);
-    Object.assign(x, { body: 16, arm_l: 55, arm_r: 45, forearm_l: 20, forearm_r: 20 });
-    Object.assign(z, { arm_l: 45, arm_r: 45 });
-    inner.position.y = -0.1;
+    // Braced against the slide: the lead leg stuck out in front, hips low, leaning back, arms flung forward.
+    hip = -0.15;
+    leg('l', [...solve(0.34, LEG.hip + hip - LEG.ankle - 0.03), 18]);
+    leg('r', [...solve(-0.06, LEG.hip + hip - LEG.ankle), 0]);
+    Object.assign(x, { body: 17, arm_l: 58, arm_r: 48, forearm_l: 22, forearm_r: 22 });
+    Object.assign(z, { arm_l: 42, arm_r: 42 });
+    if (Math.random() < 0.5) dust(a, 1, 1.6, -2);
   } else {
-    const stride = Math.max(0.5, TUNE.stride * Math.pow(Math.max(v, 0.3), 0.6));
-    p.phase = (p.phase + (v * dt) / stride) % 1;
-    const run = clamp((v - 2) / 2.5, 0, 1),
-      moving = clamp(v / 0.8, 0, 1),
-      reach = 1 + 0.15 * clamp((v - TUNE.sprint) / 3, 0, 1);
-    for (const [side, u] of [
-      ['l', p.phase],
-      ['r', (p.phase + 0.5) % 1],
-    ] as const) {
-      const w = sampleKeys(WALK_KEYS, u),
-        r = sampleKeys(RUN_KEYS, u);
-      leg(
-        side,
-        (w[0] + (r[0] * reach - w[0]) * run) * moving,
-        (w[1] + (r[1] - w[1]) * run) * moving,
-        (w[2] + (r[2] - w[2]) * run) * moving,
-      );
+    // Your own legs answer the stick at once, before the body has sped up.
+    const wish = a === me.avatar ? Math.min(1, Math.hypot(me.wish.x, me.wish.z)) * 5 : 0;
+    const legV = Math.max(v, wish);
+    const g = gaitOf(legV);
+    const prev = p.phase;
+    p.phase = (p.phase + (legV * dt) / g.stride) % 1;
+    if ((prev < 0.5 && p.phase >= 0.5) || p.phase < prev) {
+      if (legV > 6) dust(a, legV > 8.5 ? 3 : 1, 1.2, 0.8);
+      if (STEPS && legV > 0.8) stepSound(legV);
     }
+    const moving = clamp(legV / 0.7, 0, 1),
+      s = Math.cos(2 * Math.PI * (p.phase - 0.05)); // the arms lag the legs a touch
+    const stepU = (p.phase * 2) % 1;
+    hip = hipOf(g, stepU) * moving - 0.018 * (1 - moving);
+    // On slopes each planted foot finds its ground; the hips drop for a downhill foot.
+    const onSlope = (u: number, sx: number) => {
+      if (u >= g.duty) return 0;
+      const fwd = g.sweep * TUNE.ahead - (u / g.duty) * g.sweep,
+        lx = sx * 0.16;
+      const wx = a.position.x + fx * fwd + -fz * lx,
+        wz = a.position.z + fz * fwd + fx * lx;
+      const dy = groundHeight(wx, wz) - (a.position.y - PLAYER_R);
+      return Math.abs(dy) < 0.3 ? dy : 0; // further off, it isn't this ground we're on (a deck, a rail)
+    };
+    const uL = p.phase,
+      uR = (p.phase + 0.5) % 1;
+    const gyL = onSlope(uL, 1),
+      gyR = onSlope(uR, -1);
+    hip += Math.min(0, gyL, gyR);
+    for (const [side, u, gy] of [
+      ['l', uL, gyL],
+      ['r', uR, gyR],
+    ] as const) {
+      const stand = solve(side === 'l' ? 0.015 : -0.015, LEG.hip - 0.018 - LEG.ankle);
+      const go = legAt(g, u, hip, gy);
+      leg(side, [mix(stand[0], go[0], moving), mix(stand[1], go[1], moving), go[2] * moving]);
+    }
+    // Feet come in towards the line of travel at a run.
+    const inward = 3.5 * g.run;
+    z.thigh_l = -inward;
+    z.thigh_r = inward;
     // Arms pump against the legs: further back than forward, the elbow closing as the arm comes forward.
-    const s = Math.sin(2 * Math.PI * p.phase);
-    const m = run * 0.75 + 0.25 * moving;
+    const m = g.run * 0.8 + 0.2 * moving,
+      big = 1 + 0.2 * clamp((legV - 7.5) / 3, 0, 1);
     for (const [arm, fore, dir] of [
       ['arm_l', 'forearm_l', -1],
       ['arm_r', 'forearm_r', 1],
     ] as const) {
       const fwd = dir * s;
-      x[arm] = m * (fwd > 0 ? 30 : 48) * fwd;
-      x[fore] = 15 + m * (50 + 45 * Math.max(0, fwd));
+      x[arm] = m * big * (fwd > 0 ? 34 : 50) * fwd;
+      x[fore] = 14 + m * (46 + 50 * Math.max(0, fwd));
+      z[arm] = 6 + 7 * m;
     }
-    Object.assign(z, { arm_l: 5 + 8 * m, arm_r: 5 + 8 * m });
-    // The hips twist with the forward leg, the chest against them; the bob comes twice a cycle.
-    y.hips = TUNE.twist.hips * m * s;
-    y.body = -(TUNE.twist.hips + TUNE.twist.chest) * m * s;
-    z.body = -3 * m * s;
-    inner.position.y = sampleBob((p.phase * 2) % 1) * (0.35 + 0.65 * run) * moving;
-    if (v < 0.3) {
-      const sway = Math.sin(performance.now() / 900);
-      z.body = 1.5 * sway;
-      x.arm_l = 3 * sway;
-      x.arm_r = -3 * sway;
+    // The hips turn with the forward leg, the chest against them; the body rolls over the planted foot.
+    const c = Math.cos(2 * Math.PI * p.phase);
+    y.hips = TUNE.twist.hips * m * c;
+    y.body = -(TUNE.twist.hips + TUNE.twist.chest) * m * c;
+    z.body = -3.5 * m * Math.cos(2 * Math.PI * (p.phase - 0.12));
+    if (v < 0.3 && wish === 0) {
+      // Standing: a slow breath and sway, and now and then a glance around.
+      const t = performance.now() / 1000;
+      hip += 0.006 * Math.sin(t * 2.1);
+      z.body = 1.2 * Math.sin(t * 0.8);
+      x.arm_l = 2.5 * Math.sin(t * 1.1);
+      x.arm_r = -2.5 * Math.sin(t * 1.1);
       x.forearm_l = x.forearm_r = 12;
-      z.arm_l = z.arm_r = 6;
+      z.arm_l = z.arm_r = 7;
+      ease = 0.1;
     }
   }
-  // Landing: the knees give for a moment, gone as soon as you move off.
-  if (!airborne && p.landT < 0.14 && v < 2.5) {
-    leg('l', 40, -65, 0);
-    leg('r', 40, -65, 0);
-    inner.position.y = -0.16 * (1 - p.landT / 0.14);
+  // Landing: the knees give and spring back, gone as soon as you run off.
+  if (!airborne && !p.skid && p.landT < 0.2 && v < 2.5) {
+    const u = p.landT / 0.2,
+      give = Math.min(0.2, 0.08 + p.landV * 0.012) * Math.sin(Math.PI * Math.min(1, u * 1.2));
+    hip = -give - 0.018;
+    const h = LEG.hip + hip - LEG.ankle;
+    leg('l', [...solve(0.06, h), 0]);
+    leg('r', [...solve(-0.06, h), 0]);
+    x.arm_l = x.arm_r = -10;
+    z.arm_l = z.arm_r = 26;
     ease = 0.03;
   }
-  // Lean from the body, a sprung kick on starts and brakes, a bank into turns from the soles; the head stays level.
+
+  // Lean from the body, a sprung kick on starts and brakes, a bank into turns from the soles (rec 1).
   const K = TUNE.kick;
   const f = clamp(aF, -K.cap, K.cap) / K.cap;
   springStep(p.kick, (f > 0 ? K.start : K.brake) * f, stiffnessOf(K.hz), dampingOf(K.hz, K.zeta), dt);
@@ -238,18 +394,33 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     x.body = (x.body ?? 0) - lean;
     z.root = -clamp((TUNE.bank.k * Math.atan(aL / 18)) / D, -TUNE.bank.max, TUNE.bank.max);
   }
+  // The head stays level, faces forward through the twist, and looks into turns.
+  p.glanceT -= dt;
+  if (p.glanceT < 0) {
+    p.glance = Math.random() < 0.5 ? 0 : (Math.random() - 0.5) * 50;
+    p.glanceT = 1.5 + Math.random() * 3;
+  }
+  const look =
+    clamp(p.yawRate * TUNE.headTurn.k, -TUNE.headTurn.max, TUNE.headTurn.max) + (v < 0.3 && !airborne ? p.glance : 0);
   x.head = -(x.body ?? 0) * TUNE.headLevel;
   z.head = -(z.body ?? 0) * TUNE.headLevel;
-  y.head = -(y.body ?? 0) * 0.5 - (y.hips ?? 0) * 0.5;
+  y.head = -((y.body ?? 0) + (y.hips ?? 0)) * 0.8 + look;
 
   const k = 1 - Math.exp(-dt / ease);
+  const planted = !airborne && !p.skid && p.groundT > 0.1 && v > 0.7; // legs and hips exactly on their solve
   for (const name of BONES) {
     const out = name.startsWith('arm') && name.endsWith('_r') ? -1 : 1;
-    p.x[name] = (p.x[name] ?? 0) + ((x[name] ?? 0) - (p.x[name] ?? 0)) * k;
-    p.y[name] = (p.y[name] ?? 0) + ((y[name] ?? 0) - (p.y[name] ?? 0)) * k;
-    p.z[name] = (p.z[name] ?? 0) + ((z[name] ?? 0) * out - (p.z[name] ?? 0)) * k;
+    const isLeg = name.startsWith('thigh') || name.startsWith('shin') || name.startsWith('foot');
+    const kk = planted && isLeg ? 1 : name === 'head' ? 1 - Math.exp(-dt / 0.08) : k;
+    p.x[name] = (p.x[name] ?? 0) + ((x[name] ?? 0) - (p.x[name] ?? 0)) * kk;
+    p.y[name] = (p.y[name] ?? 0) + ((y[name] ?? 0) - (p.y[name] ?? 0)) * kk;
+    p.z[name] = (p.z[name] ?? 0) + ((z[name] ?? 0) * out - (p.z[name] ?? 0)) * kk;
     p.bones[name].rotation.set(p.x[name] * D, p.y[name] * D, p.z[name] * D);
   }
+  p.hip += (hip - p.hip) * (planted ? 1 : k);
+  // feel.ts squashes the whole avatar about its origin, 0.45 m above the soles: keep the soles on the ground.
+  inner.position.y = p.hip - PLAYER_R / Math.max(0.2, a.scale.y) + PLAYER_R;
+
   // Blink: the eyes vanish for a moment.
   p.blink -= dt * 1000;
   const shut = p.blink < 0;
@@ -285,6 +456,7 @@ export async function startPlatformerHero() {
       x: {},
       y: {},
       z: {},
+      hip: 0,
       blink: 1500 + Math.random() * 3000,
       last: null,
       vel: new THREE.Vector3(),
@@ -292,13 +464,21 @@ export async function startPlatformerHero() {
       kick: { x: 0, v: 0 },
       wasAir: false,
       landT: 1,
+      landV: 0,
+      groundT: 1,
+      airLead: 'l',
       skid: false,
+      yawPrev: a.rotation.y,
+      yawRate: 0,
+      glance: 0,
+      glanceT: 2 + Math.random() * 3,
     });
   };
   await precompile(kit.instance('hero'));
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
+  startHeroCamera();
 
-  const lineup = Number(new URLSearchParams(location.search).get('lineup'));
+  const lineup = Number(q.get('lineup'));
   if (lineup > 0) {
     const row: Avatar[] = [];
     for (let i = 0; i < 8; i++) {
@@ -317,8 +497,10 @@ export async function startPlatformerHero() {
     onFrame(
       ({ dt }) =>
         row.forEach((av, i) => {
+          const pose = poses.get(av)!;
+          pose.groundT = 1;
           animate(av, lineup, false, dt);
-          poses.get(av)!.phase = i / 8;
+          pose.phase = i / 8;
         }),
       { phase: 'update', order: 42 },
     );

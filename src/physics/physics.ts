@@ -23,10 +23,11 @@ const q = new URLSearchParams(location.search);
  * movement.md, Odyssey's numbers). On the ground you run where you face, not where the stick points: facing turns
  * towards the stick at a capped rate (src/player/player.ts), so runs carve arcs; speed follows stick tilt and builds
  * over about a quarter second instead of snapping to it; pulling the stick back past 95° at speed skids to a stop and
- * then pivots. Top speed is about 6 body heights per second, as Mario's. Unset, nothing here changes.
+ * then pivots. Top speed is about 6 body heights per second, as Mario's, and jumps go about 1.4 body heights, higher at
+ * a run. It's the default on ?proto=hero (&ctl=old for today's); elsewhere, unset, nothing here changes.
  */
-export const ODYSSEY = q.get('ctl') === 'odyssey';
-const ODY = { run: 7.5, sprint: 10.5, accel: 30, brake: 60, skid: 50 }; // m/s, m/s²
+export const ODYSSEY = q.get('ctl') === 'odyssey' || (q.get('proto') === 'hero' && q.get('ctl') !== 'old');
+const ODY = { run: 7.5, sprint: 10.5, accel: 30, brake: 45, skid: 50, jump: 8.6, jumpPerSpeed: 0.08 }; // m/s, m/s²
 // Air acceleration (m/s²). ?air=35 tries another on any page (rec 6: Celeste's air control is 0.65 of ground, ours
 // 0.2); unset, it stays 14 (35 with ?ctl=odyssey).
 const AIR_ACCEL = Number(q.get('air')) || (ODYSSEY ? 35 : 14);
@@ -171,7 +172,8 @@ export function installStepHooks({
       if (b.velocity.y < -MAX_FALL) b.velocity.y = -MAX_FALL;
       if (me.jumpQueued > 0) {
         if (me.coyote > 0) {
-          b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + 7.6; // adds to an upward bounce: bounces chain
+          const jump = ODYSSEY ? ODY.jump + ODY.jumpPerSpeed * Math.hypot(rvx, rvz) : 7.6; // Mario jumps higher at a run
+          b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + jump; // adds to an upward bounce: bounces chain
           me.coyote = 0;
           me.jumpQueued = 0;
         } else if (me.swimming) {
