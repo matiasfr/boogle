@@ -48,7 +48,7 @@ const T = {
   maxTicks: 12,
   fastMs: 45,
 };
-const rnd = ([a, b]: number[]) => a + Math.random() * (b - a);
+const rnd = ([a, b]: number[]) => a! + Math.random() * (b! - a!);
 
 // A pickup's pieces. `counted`: the host has added them to your stack (a Take flies on apply, a pile when it answers);
 // `early`: how many landed before it did.
@@ -216,7 +216,7 @@ onFrame(
   ({ now }: { now: number }) => {
     const dt = Math.min(0.05, Math.max(0, (now - (lastNow || now)) / 1000));
     lastNow = now;
-    while (fast.length && now >= fast[0].at) {
+    while (fast.length && now >= fast[0]!.at) {
       const f = fast.shift()!;
       step(f.b, f.add, true, f.chord);
     }
@@ -230,7 +230,7 @@ onFrame(
     const color = pieceColor(Math.max(0, identity.pid ? rules.stacks.kind(identity.pid) : 0));
     let c = 0;
     for (let k = 0; k < pieces.length; k++) {
-      const p = pieces[k];
+      const p = pieces[k]!;
       let u = 0; // 0 -> 1 over the homing flight
       if (p.phase === 'spill' && now >= p.until) {
         p.vel.y -= T.g * dt;
@@ -258,7 +258,7 @@ onFrame(
         p.rate = rnd(T.spin) * Math.PI * 2;
       }
       if (p.phase === 'notice') {
-        const w = 1 - Math.max(0, (p.until - now) / T.notice[1]);
+        const w = 1 - Math.max(0, (p.until - now) / T.notice[1]!);
         p.pos.copy(p.from).y += p.lift * outQuad(w);
         p.angle += p.rate * dt * w;
         if (now >= p.until) {

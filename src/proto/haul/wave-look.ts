@@ -68,14 +68,14 @@ function sandMesh() {
   const pos: number[] = [],
     col: number[] = [];
   const vert = (i: number, j: number) => {
-    const h = heights[i][j];
+    const h = heights[i]![j]!;
     pos.push(X0 + i * CELL, h, Z1 - j * CELL);
     c.copy(WET).lerp(DRY, smooth(0.08, 0.4, h));
     col.push(c.r, c.g, c.b);
   };
   for (let i = 0; i < NX; i++)
     for (let j = 0; j < NZ; j++) {
-      const hs = [heights[i][j], heights[i + 1][j], heights[i][j + 1], heights[i + 1][j + 1]];
+      const hs = [heights[i]![j]!, heights[i + 1]![j]!, heights[i]![j + 1]!, heights[i + 1]![j + 1]!];
       if (Math.max(...hs) < -1.2) continue; // deep under the sea: nobody sees it
       vert(i, j);
       vert(i + 1, j);
@@ -175,7 +175,7 @@ function swellGeometry() {
     const tall = 1 + 0.12 * Math.sin(x * 0.07 + 2);
     PROFILE.forEach(([z, y], k) => {
       pos.push(x, y * tall, z + wob);
-      col.push(cc[k].r, cc[k].g, cc[k].b);
+      col.push(cc[k]!.r, cc[k]!.g, cc[k]!.b);
     });
   }
   const idx: number[] = [];

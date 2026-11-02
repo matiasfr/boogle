@@ -57,7 +57,7 @@ export const squash = (): void => void (squashAt = performance.now());
 
 onFrame(
   ({ now }: { now: number }) => {
-    if (pending.length && now >= pending[0]) {
+    if (pending.length && now >= pending[0]!) {
       pending.shift();
       squashAt = now;
       thock(identity.pid ? rules.stacks.count(identity.pid) : 0);
