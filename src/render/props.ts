@@ -8,9 +8,8 @@ import { MASSIF } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { scene } from './scene.ts';
 import { addStaticSpheres } from '../physics/physics.ts';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { freezeStatic } from './instances.ts';
 import type { Body } from '../physics/engine.ts';
 
@@ -239,6 +238,8 @@ function addRock(
 const flatEnough = (x: number, z: number, h: number, max: number) =>
   Math.abs(groundHeight(x + 1, z) - h) <= max && Math.abs(groundHeight(x, z + 1) - h) <= max;
 
+// Scenery that never moves: an entity for its lifetime alone, with no methods.
+defineKind('props', {});
 export function createProps() {
   const tiles = tiledParts();
   // POIs keep their ground clear and are walked around.
@@ -331,10 +332,12 @@ export function createProps() {
 
   const group = new THREE.Group();
   tiles.addTo(group, propsMat);
-  scene.add(group);
+  spawn({ kind: 'props', mesh: group });
   freezeStatic(group); // never moves: no per-frame matrix work
 }
 
+// update -190, after the camera (player.ts, -200), before the feature update hooks (src/loop.ts lists the orders).
+defineKind('cloud', { update: -190 });
 export const clouds: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
 export function createClouds() {
   const rng = mulberry32(77);
@@ -361,17 +364,14 @@ export function createClouds() {
     const a = rng() * Math.PI * 2,
       d = 140 + rng() * 180;
     mesh.position.set(Math.cos(a) * d, 55 + rng() * 35, Math.sin(a) * d);
-    scene.add(mesh);
+    spawn({
+      kind: 'cloud',
+      mesh,
+      update({ dt }) {
+        mesh.position.x += dt * 1.2;
+        if (mesh.position.x > 340) mesh.position.x = -340;
+      },
+    });
     clouds.push(mesh);
   }
 }
-
-function updateClouds(dt: number) {
-  for (let k = 0; k < clouds.length; k++) {
-    const c = clouds[k]!;
-    c.position.x += dt * 1.2;
-    if (c.position.x > 340) c.position.x = -340;
-  }
-}
-// update -190, after the camera (player.ts, -200), before the feature update hooks (src/loop.ts lists the orders).
-onFrame(({ dt }) => updateClouds(dt), { phase: 'update', order: -190 });
