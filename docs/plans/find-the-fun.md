@@ -148,7 +148,7 @@ The rail builds the world ([boogle-2.md](../proposals/boogle-2.md), Decided, 2 N
 island: prototypes stay outside the entity plan until they're promoted, so this doesn't wait for its steps 10–12. The
 real slice does.
 
-- [ ] **`?proto=net`:** connect a camp, crates ride to the village, the village steps up and the train speeds up; then
+- [x] **`?proto=net`:** connect a camp, crates ride to the village, the village steps up and the train speeds up; then
       the rail fills the next work site for you (`&v=haul` keeps hauling by hand, to tell which part is the fun).
 - [ ] **Playtest 6.**
 

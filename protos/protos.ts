@@ -56,6 +56,27 @@ export type Proto = {
 
 export const PROTOS: Proto[] = [
   {
+    id: 'net',
+    title: 'The line feeds the town',
+    step: 6,
+    status: 'live',
+    url: '/?room=proto-net&proto=net&layout=net-line',
+    question: 'When the village steps up, do you want to go connect the next camp?',
+    what: 'Connect a camp by rail: its crates ride to the village by themselves, the village steps up, the train speeds up and the rail fills the next work site.',
+    since: '2026-11-02',
+    defaultWhat: 'After the first step-up the rail fills the next Track ring; you press Start.',
+    spawn: { x: -24.5, z: 31, yaw: 0.02 }, // in the village, looking up the line at Camp 1's smoke
+    verb: 'links',
+    chapter: 'it reshapes the line and fills the island with its town',
+    variants: [
+      {
+        name: 'haul',
+        url: '/?room=proto-net&proto=net&layout=net-line&v=haul',
+        what: 'The town still grows and the train still speeds up, but you haul every section by hand.',
+      },
+    ],
+  },
+  {
     id: 'haul',
     title: 'The haul',
     step: 1,
@@ -504,6 +525,8 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
+  { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
+  { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
 ];
