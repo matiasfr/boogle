@@ -119,7 +119,7 @@ old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` int
 ## 5. Patch video loop
 
 `.github/workflows/patch-video.yml` runs this every morning, Pacific time (and on demand from the Actions tab, with `force` to skip the
-gate). A shell gate first counts commits touching game files since the last video (`npm run video:changes --
+gate and `notes` for instructions to that one run, such as featuring a prototype). A shell gate first counts commits touching game files since the last video (`npm run video:changes --
 --count`, at least 3), so quiet days cost nothing. Claude then does steps 1-4 and opens a `claude/*` PR instead of
 step 6. It writes `.look/publish.json` (the `video:publish` fields as JSON) instead of step 5. The workflow then
 publishes with `--from .look/publish.json` and comments the share link in the "Patch videos" issue, mentioning the
