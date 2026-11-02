@@ -52,7 +52,8 @@ are held (up to 64, 5 s) and released one per 210 ms.
 | Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
 | Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
 | The guest's pose | Owner | presence `mr` |
-| Hotbar, Boogler friendship, first-run flags | Local | localStorage |
+| What you hold | Local | none |
+| Boogler friendship, first-run flags | Local | localStorage |
 | Critters, splashes, impact juice, blob shadows, pause view, guide | Local | none |
 
 Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms behind (`INTERP_MS`).
@@ -83,7 +84,6 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 | Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
 | Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
 | The browser's key behind the pid | localStorage | `boogle.key` (24 random `[a-z0-9]`, never shown or relayed) | global, per browser |
-| Hotbar | localStorage | `boogle.hotbar` | global, not per room |
 | Boogler friendship | localStorage | `boogle.boogler` | global, not per room |
 | First-run card seen | localStorage | `boogle.firstRun.<kind>` | global |
 | Guest engine, the pieces cut from the ROM | IndexedDB | `boogle-decomp` / `files`: `guest-engine`, `guest-rom` | per browser, never uploaded |

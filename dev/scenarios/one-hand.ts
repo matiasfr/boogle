@@ -1,8 +1,7 @@
-// The hotbar: a new player starts empty-handed; pick something up and it is in your hand; throw it and it lands for
-// everyone; the beach ball rides on your back while you hold something else; The Boogler takes what you hold; a bag of
-// seeds sprouts mushrooms; the frisbee on the lighthouse deck glides far. On a phone: only
-// filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
-// bar clears the HUD.
+// One thing in your hands: a new player starts empty-handed; pick something up and it is in your hand; throw it and it
+// lands for everyone; pick up something else and what you held lands by you, the beach ball too; The Boogler takes what
+// you hold; a bag of seeds sprouts mushrooms; the frisbee on the lighthouse deck glides far. On a phone: Toss shows only
+// for a throwable thing the main button would not throw, and the name tag clears the HUD.
 import { TP, INV, toss, TOSSED, TOSSED_ITEM, EDIT_WAIT_MS, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 
@@ -16,9 +15,9 @@ const DOM = `
   const label = () => document.getElementById('btn-grab').textContent;
   const throws = () => document.body.classList.contains('main-throws');`;
 const when = (cond: string) => `(() => { ${DOM} return ${cond}; })()`;
-// The touch HUD stays clear: the bar overlaps none of the brand and roster, the net pill, or a touch button on screen.
+// The touch HUD stays clear: the name tag overlaps none of the brand and roster, the net pill, or a touch button on screen.
 const LAYOUT = `${DOM}
-  const bar = rect('.hotbar');
+  const bar = rect('.held-name');
   const hits = (r) => !(bar.right <= r.left || r.right <= bar.left || bar.bottom <= r.top || r.bottom <= bar.top);
   const others = ['.hud-tl', '.hud-tr', '.stick', ...[...document.querySelectorAll('#touch .tbtn')].map((b) =>
     '.' + [...b.classList].join('.'))].filter(shown);
@@ -26,18 +25,25 @@ const LAYOUT = `${DOM}
   return { bar: [bar.left, bar.top, bar.right, bar.bottom].map(Math.round), checked: others.length, hit };`;
 
 export default {
-  about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone hotbar',
+  about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone HUD',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
     const g = await t.open({ name: 'holder', hud: 'play' });
     await lowResOnCi(g);
     const consoleErrors: string[] = [];
     g.page.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && consoleErrors.push(m.text()));
-    const start = await g.eval(`${INV} return { slots: I.inv.slots, sel: I.inv.sel };`);
+    const start = await g.eval(`${INV} return I.heldId();`);
+    t.check('a new player starts empty-handed', start === null, JSON.stringify(start));
     t.check(
-      'a new player starts empty-handed',
-      start.slots.every((s: unknown) => !s) && start.sel === -1,
-      JSON.stringify(start),
+      'no slots on screen, and the keys and bumpers that changed them do nothing',
+      await g.eval(`${INV}
+        const { actionById } = await import('/src/player/controls.ts');
+        I.take('seeds');
+        dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit2' }));
+        dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit2' }));
+        const kept = I.heldId() === 'seeds';
+        I.useOne();
+        return kept && !actionById('slot-prev') && !actionById('slot-next') && !document.querySelector('.hotbar-slot');`),
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
@@ -72,7 +78,35 @@ export default {
       return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
     t.check('a thrown thing lands as a shared item, metres away', landed >= 0 && far > 4, `${far.toFixed(1)} m`);
 
-    // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
+    // Swap: holding a bag, pick up a tossed frisbee, and the bag lands by you as a shared item, in reach to swap back.
+    await g.eval(`${toss(1, 6)};`);
+    await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
+    const next = await g.eval(TOSSED_ITEM);
+    await g.eval(`${INV} I.take('seeds'); ${TP(next.x + 0.6, next.z)}`);
+    await g.wait(0.5);
+    await g.eval(`${INV} H.interactDown(); H.interactUp();`);
+    const swapped = await g.waitFor(
+      `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${next.kind}].id; })()`,
+      { timeout: EDIT_WAIT_MS },
+    );
+    const bagDown = await g.waitFor(
+      `(async () => { const { giftIndex } = await import('/src/sim/gift-catalog.ts');
+        return window.boogle.gifts.items.some((it) => it.src === 0 && it.kind === giftIndex('seeds')); })()`,
+      { timeout: EDIT_WAIT_MS },
+    );
+    const bagAway = await g.eval(`
+      const { CELL, HALF } = await import('/src/constants.ts');
+      const { giftIndex } = await import('/src/sim/gift-catalog.ts');
+      const it = window.boogle.gifts.items.find((it) => it.src === 0 && it.kind === giftIndex('seeds'));
+      const p = window.boogle.me.body.position;
+      return it ? Math.hypot(it.i * CELL - HALF - p.x, HALF - it.j * CELL - p.z) : -1;`);
+    t.check(
+      'picking something up replaces what you hold, which lands by you',
+      swapped >= 0 && bagDown >= 0 && bagAway >= 0 && bagAway < 5,
+      `${bagAway.toFixed(1)} m`,
+    );
+
+    // The ball: grab it, it is in your hand; pick up something else and it flies off, out of your hands and your claim.
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/entities/ball/state.ts');
       const { teleport } = await import('/src/physics/engine.ts');
@@ -88,15 +122,14 @@ export default {
       }
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.pose.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
-      const inHand = I.heldId() === 'ball' && window.boogle.me.holding;
+      const inHand = I.heldId() === 'ball' && window.boogle.me.holding && ball.held;
       I.take('frisbee');
-      const onBack = ball.held && !window.boogle.me.holding && I.has('ball');
-      I.select(I.slotOf('ball'));
-      I.drop('frisbee');
-      return { inHand, onBack, back: window.boogle.me.holding };`);
+      const gone = !ball.held && !window.boogle.me.holding && !I.has('ball') && I.heldId() === 'frisbee';
+      I.useOne();
+      return { inHand, gone };`);
     t.check(
-      'the ball takes a slot, rides on your back, and comes back to hand',
-      ball.inHand && ball.onBack && ball.back,
+      'the ball is in your hand, and something new knocks it out',
+      ball.inHand && ball.gone,
       JSON.stringify(ball),
     );
 
@@ -201,12 +234,9 @@ export default {
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [390, 844] });
     await lowResOnCi(thumb);
     const one = await thumb.waitFor(
-      when(
-        `!!document.querySelector('.hotbar') &&
-          [...document.querySelectorAll('.hotbar-slot')].filter((b) => b.getClientRects().length).length === 0`,
-      ),
+      when(`!!document.querySelector('.held') && !document.querySelector('.held-name').textContent`),
     );
-    t.check('on touch a new player sees no slots, not five', one >= 0, `${one} ms`);
+    t.check('on touch a new player has an empty name tag', one >= 0, `${one} ms`);
 
     await thumb.eval(`${INV} ${TP(14, 24)}`);
     await thumb.eval(`${INV} I.take('frisbee');`);
@@ -222,7 +252,7 @@ export default {
     const portrait = await thumb.eval(LAYOUT);
     const portraitShot = await thumb.still('touch-portrait');
     t.check(
-      'portrait: the hotbar clears the brand, roster, net pill and buttons',
+      'portrait: the name tag clears the brand, roster, net pill and buttons',
       portrait.checked >= 4 && !portrait.hit.length,
       `${JSON.stringify(portrait)}; ${portraitShot}`,
     );
@@ -233,7 +263,7 @@ export default {
     const landscape = await thumb.eval(LAYOUT);
     const landscapeShot = await thumb.still('touch-landscape');
     t.check(
-      'landscape: the hotbar clears the brand, roster, net pill and buttons',
+      'landscape: the name tag clears the brand, roster, net pill and buttons',
       landscape.checked >= 4 && !landscape.hit.length,
       `${JSON.stringify(landscape)}; ${landscapeShot}`,
     );

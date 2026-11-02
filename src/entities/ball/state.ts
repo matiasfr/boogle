@@ -18,7 +18,7 @@ import { groundHeight } from '../../island/heights.ts';
 import { ballMat, catchFallThrough, groundProbe } from '../../physics/physics.ts';
 import { createBody, physicsTime, setMotion, teleport } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
-import { me, handPosition, carryPosition } from '../../player/state.ts';
+import { me, handPosition } from '../../player/state.ts';
 import { sendPresence } from '../../netplay/net.ts';
 import { createOwnerSync } from '../../netplay/owner-sync.ts';
 
@@ -146,10 +146,10 @@ export function respawnBall() {
   sendPresence();
 }
 
-// Before the step, after the player's intent: a carried ball goes to the carry spot, another tab's to its pose.
+// Before the step, after the player's intent: a carried ball goes to your hand, another tab's to its pose.
 export function prepareBall() {
   if (ball.mine && ball.held && me.body) {
-    const h = carryPosition();
+    const h = handPosition();
     teleport(ball.body, h.x, h.y, h.z);
   } else if (!ball.mine) {
     teleport(ball.body, ball.pose.p.x, ball.pose.p.y, ball.pose.p.z);

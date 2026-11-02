@@ -1,10 +1,10 @@
-/* The notification lane (src/ui/notify.ts): one glass pill where the hotbar's note was, just past the hotbar (above
-   it on a keyboard, below it on touch, beside it in portrait), clear of the crosshair and the prompt. Read-only status,
+/* The notification lane (src/ui/notify.ts): one glass pill where the held thing's name tag is on a keyboard (it gives
+   way), below the tag on touch, beside it in portrait, clear of the crosshair and the prompt. Read-only status,
    so glass with no drop shadow; its button is a sticker (pressable). Shared tokens from ./ui-kit.css. */
 .notify {
   position: fixed;
   left: 50%;
-  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
   display: flex;
   align-items: center;
@@ -68,7 +68,7 @@
   box-shadow: 0 1px 0 var(--ink);
 }
 
-/* Touch: the hotbar is along the top, so the lane sits under it; in portrait it is a column on the right. */
+/* Touch: the name tag is along the top, so the lane sits under it; in portrait it is a column on the right. */
 body.touch .notify {
   top: calc(66px + env(safe-area-inset-top, 0px));
   bottom: auto;

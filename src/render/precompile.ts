@@ -8,7 +8,7 @@
 //   precompile(object)    a lazy part, as it is built: that object (in the scene already or not)
 //   warmUp(make)          for things that only appear once someone plays (a new player's avatar, a held item): make()
 //                         returns a throwaway Object3D with the same materials; it is compiled at start, never drawn.
-//                         Work that draws off-screen itself (the hotbar's item icons) does it in make() and returns a
+//                         Work that draws off-screen itself (the item icons) does it in make() and returns a
 //                         promise of anything else; it is awaited in turn
 import { renderer, scene, camera, rendererReady } from './scene.ts';
 import { bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';

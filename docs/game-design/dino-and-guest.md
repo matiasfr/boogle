@@ -4,7 +4,7 @@
   ([src/guest/dino.ts](../../src/guest/dino.ts)). Talk to him (E, pad X) and you become the guest: a character with its
   own full move set and controller (run, long jump, backflip, ground pound, punch and kick, ledge grabs, swimming),
   run by the guest engine. Talk to him again to be yourself. A puff of sparks and a "Rawr!" mark each switch. The
-  hands, hotbar and ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
+  hands, what you hold and the ball still work: a punch or kick that reaches the ball knocks it away (10 m/s, 14 for a kick).
 - **Bring your own ROM.** The guest needs two files the game never ships or uploads: the guest engine
   (`engine.wasm`, built from [native/guest/](../../native/guest/README.md)) and the player's own ROM it is built for (8 MB,
   checked by SHA-1), from which the guest's animations and the textures are cut. The first talk fetches the owner's

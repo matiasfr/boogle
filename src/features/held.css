@@ -1,0 +1,81 @@
+/* What you hold: its name fading in at the bottom of the screen. Play-size text and the motion tokens from
+   src/ui/ui-kit.css. */
+.held {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+}
+.held-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 15px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: var(--text-play);
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--dur-leave) var(--ease-out),
+    transform var(--dur-leave) var(--ease-out);
+}
+.held-name:not(:has(.held-use)) {
+  padding-right: 15px;
+}
+.held-name.shown {
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--dur-pop);
+}
+/* The notification lane (src/ui/notify.ts) sits where the name tag is, so the name gives way to it. */
+body:has(.notify.shown) .held-name {
+  transition: none;
+  opacity: 0;
+}
+.held-use {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font: 400 18px/1 var(--font-display);
+  letter-spacing: 0.3px;
+}
+.held-use .g-key,
+.held-use .g-pad {
+  transform: scale(0.88);
+}
+
+/* Touch: the bottom edge belongs to the buttons, so the tag sits at the top; in portrait on the right, under the net
+   pill and menu button. */
+body.touch .held {
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+@media (orientation: portrait) {
+  body.touch .held {
+    top: calc(72px + env(safe-area-inset-top, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    left: auto;
+    transform: none;
+  }
+}
+/* Toss throws what you hold when the main button would not (src/player/hud.ts sets main-throws) */
+.tbtn.toss {
+  display: none;
+  right: calc(108px + env(safe-area-inset-right, 0px));
+  bottom: calc(274px + env(safe-area-inset-bottom, 0px));
+  width: 64px;
+  height: 64px;
+  font-size: 14px;
+}
+body.holding-throwable:not(.main-throws) .tbtn.toss {
+  display: block;
+}

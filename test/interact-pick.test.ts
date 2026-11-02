@@ -14,7 +14,7 @@ const at = (id: string, x: number, z: number, more: { r?: number } = {}): Target
   run,
   ...more,
 });
-const blocked = (id: string, x: number, z: number): Target => ({ id, at: { x, z }, blocked: 'Hotbar full' });
+const blocked = (id: string, x: number, z: number): Target => ({ id, at: { x, z }, blocked: 'Full load' });
 
 test('the nearest target wins', () => {
   assert.equal(pick([at('far', 2, 0), at('near', -1.5, 0)]).id, 'near');
@@ -42,7 +42,7 @@ test('a runnable target wins over a nearer blocked one, in either order', () => 
 
 test('a blocked target shows when nothing runnable is in reach, nearest first', () => {
   assert.equal(pick([blocked('far', 2, 0), null, blocked('near', 1, 0)]).id, 'near');
-  assert.equal(pick([null, blocked('shell', 1, 0)]).blocked, 'Hotbar full');
+  assert.equal(pick([null, blocked('shell', 1, 0)]).blocked, 'Full load');
 });
 
 test('nothing in reach picks nothing', () => {

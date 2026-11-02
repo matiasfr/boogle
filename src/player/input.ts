@@ -10,7 +10,6 @@ import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
 import { cancelCharge } from './throw.ts';
-import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
 
 export { input, inputState } from './input-state.ts';
@@ -306,9 +305,6 @@ export function initInput() {
     group: 'ball',
     down: respawnBall,
   });
-  // The hotbar row (src/features/hotbar.ts) covers both.
-  registerAction('slot-prev', { pad: 'lb', label: 'Previous slot', guide: false, down: () => cycle(-1) });
-  registerAction('slot-next', { pad: 'rb', label: 'Next slot', guide: false, down: () => cycle(1) });
   // Click once to sprint, like most console games: it stays on until the stick is let go (updateIntent, src/entities/player/state.ts).
   registerAction('sprint', {
     pad: 'l3',

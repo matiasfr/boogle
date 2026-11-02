@@ -14,7 +14,7 @@
 //     the rest describes the control for the guide, see below; guide: false keeps it off the guide (it is covered by
 //     another row, or has nothing to show)
 //   describeControl(id, { label, detail, keys, pad, touch, group, order, context })
-//     a display-only row for a control with no pad action of its own (move, look, hotbar digits). It never
+//     a display-only row for a control with no pad action of its own (move, look). It never
 //     claims a slot and never dispatches. pad may be a slot, an array of slots, or a stick: 'ls' / 'rs'. Describing
 //     the same id again replaces it.
 //   listControls()     every action (guide !== false) and described control as plain rows, sorted by GROUPS index,
@@ -34,7 +34,7 @@
 // A control with keys or touch must also have a pad binding (AGENTS.md: every control is playable on a gamepad).
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
-// A key with no pad action of its own (hotbar digits) binds through onKey(codes, { down, up }), same guard.
+// A key with no pad action of its own binds through onKey(codes, { down, up }), same guard.
 //
 // To layer behaviour onto another module's action, wrap it from onStart; never overwrite its handlers by hand. An action
 // not registered yet takes the wrap when it is, so file order doesn't matter; one that never comes warns.

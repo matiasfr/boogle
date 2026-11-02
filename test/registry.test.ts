@@ -111,9 +111,9 @@ test('pad slots: registerAction claims, describeControl does not, one slot must 
   const reg = scanSources([
     CONTROLS,
     file('src/player/input.ts', "registerAction('use', { pad: 'x', down() { go({ pad: 'a' }); } });"),
-    file('src/features/hotbar.ts', "describeControl('toss', { pad: 'x' });\nregisterAction('jump', { pad: 'a' });"),
+    file('src/features/held.ts', "describeControl('toss', { pad: 'x' });\nregisterAction('jump', { pad: 'a' });"),
   ]);
-  assert.deepEqual(reg.pads, { x: ['src/player/input.ts:use'], a: ['src/features/hotbar.ts:jump'] });
+  assert.deepEqual(reg.pads, { x: ['src/player/input.ts:use'], a: ['src/features/held.ts:jump'] });
   assert.deepEqual(checkRegistry(reg), []);
   (reg.pads as Names).b = ['src/features/c.js:c'];
   assert.match(checkRegistry(reg).join('\n'), /every pad slot is taken/);

@@ -13,7 +13,7 @@ const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
 /**
  * leanScale: how much of feel.ts's whole-body lean this avatar takes (1 when unset; a skin with its own lean sets 0).
  * What a skin offers the game (unset on the capsule): loadFit, how a haul bundle sits on this body (src/features/haul-stack.ts);
- * handSocket, where held things hang (src/features/hotbar.ts); flopY, the inner group's height lying flat (src/features/impact.ts).
+ * handSocket, where held things hang (src/features/held.ts); flopY, the inner group's height lying flat (src/features/impact.ts).
  * What the game tells a skin: load, pieces carried; holdKind, what's in hand; flopAmt, 0..1 flopped over; seatedAt, when it
  * was last seated in a vehicle. All render only.
  */

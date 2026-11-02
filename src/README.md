@@ -28,7 +28,7 @@ so hashed file names don't depend on it).
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
   modules must import it.
 - `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, thrown-item flights, the water-field bridge (sea and cave pond).
-- `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
+- `player/`: the local player and camera, avatars, hands and what you hold, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models. `state.ts` (`me`, `cam`, poses), `dom.ts` and `input-state.ts` are leaf
   modules, so what `player.ts` and `input.ts` drive can read them without an import cycle.
 - `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,

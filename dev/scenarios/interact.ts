@@ -128,7 +128,7 @@ export default {
     await g.eval(`${toss(1, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
-    await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
+    await g.eval(`${INV} I.useOne(); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
     await g.wait(0.4);
     const itemShot = await g.still('item');
@@ -138,14 +138,10 @@ export default {
       `(async () => { ${INV} const { GIFTS } = await import('/src/sim/gift-catalog.ts'); return I.heldId() === GIFTS[${item.kind}].id; })()`,
       { timeout: EDIT_WAIT_MS },
     );
-    await g.waitFor(`${text('.hotbar-name')}.includes('Throw')`);
-    const tag = await g.eval(`return ${text('.hotbar-name')};`);
+    await g.waitFor(`${text('.held-name')}.includes('Throw')`);
+    const tag = await g.eval(`return ${text('.held-name')};`);
     const tagShot = await g.still('held');
-    t.check(
-      'E picks it up, and the hotbar names it with Throw',
-      got >= 0 && tag.includes('Throw'),
-      `"${tag}"; ${tagShot}`,
-    );
+    t.check('E picks it up, and the name tag says Throw', got >= 0 && tag.includes('Throw'), `"${tag}"; ${tagShot}`);
 
     // Winding up a throw at the stall: E takes nothing, and letting go of E does not throw (pad X alike).
     const wind = await g.eval(`${INV}
@@ -181,7 +177,7 @@ export default {
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
-      I.select(-1);
+      I.useOne();
       const bundles = rules.sources.list().map((p) => ({ x: cellX(p.i) + 0.9, z: cellZ(p.j) + 0.4 }));
       for (let k = 0; k < bundles.length; k++) {
         const P = bundles[k];
@@ -237,7 +233,7 @@ export default {
     if (spot) {
       await g.eval(`${INV} H.useDown(); H.useUp();`);
       await g.wait(0.3);
-      // The notification lane (src/ui/notify.ts) has said it since the UI that answers replaced the hotbar's own note.
+      // The notification lane (src/ui/notify.ts) has said it since the UI that answers replaced the hands' own note.
       const note = await g.eval(
         `return { on: ${shown('.notify.shown[data-kind="deny"]')}, text: ${text('.notify-text')} };`,
       );

@@ -73,7 +73,7 @@ Player (`Game`) API, from `dev/look/lib.ts`:
 - `g.still(label)`, `g.motion(label, { frames, seconds, region, heatmap })` -> `{ score, hotFrac, sheet, heat }`; `heat` is null unless requested. `g.fps()` samples completed game frames; `g.healthErrors()` reports runtime/console/backend failures.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
 - `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or
-  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.ts`.
+  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/one-hand.ts`.
 
 Rules of thumb: keep scenarios short; wait on state, not time; assert on what the player would notice (it exists,
 moved, synced, is visible in a region, is not flickering); keep thresholds loose (they guard against regressions,

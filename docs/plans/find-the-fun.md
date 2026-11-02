@@ -97,8 +97,8 @@ until a look is picked; none of it blocks a playtest.
   offer, measured per effect, to set the visual quality target on an M4 iPad Pro.
 - **Construction you can watch (built 1 November):** the helper hut goes up piece by piece as its ring fills,
   scaffolding first, behind `?room=proto-build&proto=build` (one gut question: is watching it go up satisfying?).
-- **One thing in your hands (built 2 November):** no hotbar, and picking something up drops what you hold, behind
-  `?room=proto-onehand&proto=onehand` (one gut question: do you miss the hotbar?).
+- **One thing in your hands (2 November, answered):** the owner didn't miss the hotbar, so it is cut and picking
+  something up dropping what you hold is the game ([docs/game-design/held.md](../game-design/held.md)).
 - **Feel passes** on whatever a playtest says is close: one facet per agent (the stack's sway, the wagon's clack).
 
 ## 1. Is hauling fun as a toy? (the haul playtest kit)

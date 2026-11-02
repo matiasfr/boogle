@@ -1,7 +1,7 @@
 // The pause view: a local overlay (the island keeps running, only this player's input is taken). H opens it on the
 // controls, every control with keys is in the guide there; Resume is focused; held keys do nothing behind it; the room
 // page shows the room and an invite button and renames you; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
-// input; the phone's menu button clears the hotbar and the connection pill; the first-run card shows once per input.
+// input; the phone's menu button clears the name tag and the connection pill; the first-run card shows once per input.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
 import type { T } from './run.ts';
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
@@ -219,24 +219,22 @@ export default {
 
     await again.ctx.close();
 
-    // 7. A phone: the menu button clears the hotbar and the connection pill; both pages fit.
+    // 7. A phone: the menu button clears the name tag and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.8);
-    await phone.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee'); I.take('frisbee');`);
+    await phone.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee');`);
     await phone.wait(0.5);
     const lay = await phone.eval(`
       const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
       const hit = (a, b) => !(a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t);
-      const btn = r('.menu-btn'), bar = r('.hotbar'), net = r('.net'), tl = r('.hud-tl');
-      const slots = [...document.querySelectorAll('.hotbar-slot')].filter((s) => s.getClientRects().length).map((s) => {
-        const b = s.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; });
-      return { btn, net, bar, tl, size: [btn.w, btn.h],
-        hitsPill: hit(btn, net), hitsHotbar: slots.some((s) => hit(btn, s)), hitsTL: hit(btn, tl),
+      const btn = r('.menu-btn'), net = r('.net'), tl = r('.hud-tl');
+      return { btn, net, tl, size: [btn.w, btn.h],
+        hitsPill: hit(btn, net), hitsTag: hit(btn, r('.held-name')), hitsTL: hit(btn, tl),
         inView: btn.l >= 0 && btn.r <= innerWidth && btn.t >= 0 };`);
     const phoneShot = await phone.still('hud');
     t.check(
-      'on a phone the menu button is 44px, on screen, and clear of the pill, hotbar and roster',
-      lay.size[0] >= 44 && lay.size[1] >= 44 && lay.inView && !lay.hitsPill && !lay.hitsHotbar && !lay.hitsTL,
+      'on a phone the menu button is 44px, on screen, and clear of the pill, name tag and roster',
+      lay.size[0] >= 44 && lay.size[1] >= 44 && lay.inView && !lay.hitsPill && !lay.hitsTag && !lay.hitsTL,
       `${JSON.stringify(lay)}; ${phoneShot}`,
     );
     await phone.eval(`document.querySelector('.menu-btn').click();`);

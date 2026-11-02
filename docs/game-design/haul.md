@@ -22,7 +22,7 @@ up to 60 pieces. It is drawn as a lashed bundle: logs lying crosswise across you
 with two rope bands round them. It fills out rather than towers: at most 22 logs are drawn (every piece up to 12,
 then about one in five more), and the logs get longer as the count grows (half as long again at 60), so a full load is
 wider than you and only reaches the top of your head. It has no motion of its own (it rides your walk's bob and lean)
-and nothing falls off: jumping with any load is safe. A chip above the hotbar shows the material and count while you
+and nothing falls off: jumping with any load is safe. A chip above the name tag shows the material and count while you
 carry anything, the count ticking one by one with a clink ([hud.md](hud.md)). Walking into a pile takes as much of it as fits; its pieces fly to your back at
 once, and the count follows when the host confirms (about half a second). Your stack belongs to the room: it waits for
 you after a reload, and other players see it on your avatar. No new control: pickup is walking, pouring is walking
@@ -217,7 +217,7 @@ that it shows greyed with "Lay the whole route first"). The first start wins, an
 
 - **The gathering call**, up to 45 s (`CALL_S` in [src/sim/era.ts](../../src/sim/era.ts)): a yellow column of signal
   smoke rises over the platform, visible from anywhere on the island; a ring of yellow segments 9 m round the
-  platform burns down with the time left; a banner above the hotbar says "Gather at the platform". The call ends
+  platform burns down with the time left; a banner above the name tag says "Gather at the platform". The call ends
   early once every online player is inside the ring (any tab that sees it submits `open.here`; the first one stamps
   the tick), so alone at the platform it is straight to the bell. It never waits for a head count, and nobody can
   reset or cancel it.

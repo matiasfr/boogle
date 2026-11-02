@@ -36,7 +36,7 @@
   font: 600 15px/1.3 var(--font-body);
   color: var(--ink-soft);
 }
-/* Touch: the hotbar runs along the top, so the card sits under it. */
+/* Touch: the held thing's name tag is along the top, so the card sits under it. */
 body.touch .welcome-back {
   top: calc(70px + env(safe-area-inset-top, 0px));
 }

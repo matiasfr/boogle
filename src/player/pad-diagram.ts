@@ -20,7 +20,7 @@ import { padGlyph, padText, padDetail } from './glyphs.ts';
 const NS = 'http://www.w3.org/2000/svg';
 const W = 480; // the controller's viewBox width
 
-type Callout = { slot: string; id?: string; label: string; detail?: string; hot?: boolean; shared?: boolean };
+type Callout = { slot: string; id?: string; label: string; detail?: string; hot?: boolean };
 type Point = [number, number];
 // Where each leader line ends on the drawing, and the points it passes on the way so it never crosses another control.
 const SPOTS: Record<string, { at: Point; via?: Point[]; side: 'l' | 'r' }> = {
@@ -73,19 +73,15 @@ function callouts(context: string): Map<string, Callout> {
   const put = (slot: string, c: ControlRow, hot = false) => {
     const was = out.get(slot);
     if (was && !hot) return;
-    out.set(slot, { slot, id: c.id, label: c.label, detail: detailOf(c.detail), hot, shared: slotsOf(c).length > 1 });
+    out.set(slot, { slot, id: c.id, label: c.label, detail: detailOf(c.detail), hot });
   };
   for (const c of list) if (!c.context) for (const s of slotsOf(c)) put(s, c);
   // A slot only a situation uses (LT crouches as the guest) still says what it does, and when.
   for (const c of list)
     if (c.context && !TITLES[c.context])
       for (const s of slotsOf(c)) if (!out.has(s)) put(s, { ...c, label: `${c.label} (${c.context})` });
-  // Hidden actions name what a shared row leaves out: the hotbar row covers LB and RB, its actions say which way.
-  for (const a of listActions()) {
-    const c = out.get(a.pad);
-    if (!c) out.set(a.pad, { slot: a.pad, id: a.id, label: a.label });
-    else if (!a.guide && c.shared && a.label) c.detail = a.label;
-  }
+  // Hidden actions still say what their slot does.
+  for (const a of listActions()) if (!out.has(a.pad)) out.set(a.pad, { slot: a.pad, id: a.id, label: a.label });
   if (context === 'talking') for (const t of talkSet()) out.set(t.slot, { ...t, id: `talk-${t.slot}`, hot: true });
   for (const c of list) if (c.context === context) for (const s of slotsOf(c)) put(s, c, true);
   if (context === 'talking')

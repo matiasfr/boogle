@@ -55,7 +55,7 @@
   font-size: 26px;
   color: var(--paper);
 }
-/* The gathering call: a banner above the hotbar while it runs, with the time left (the sky stays clear for the smoke). */
+/* The gathering call: a banner above the name tag while it runs, with the time left (the sky stays clear for the smoke). */
 .era-call {
   position: absolute;
   left: 50%;

@@ -195,8 +195,8 @@ const PAGES: Page[] = [
       {
         id: 'ui-tick',
         group: 'UI kit',
-        title: 'Hotbar tick',
-        when: 'Selecting a hotbar slot: one soft tone, the same for every slot (here: ten selects in a row).',
+        title: 'Tick',
+        when: 'A new thing in your hand, or a menu step: one soft tone (here: ten in a row).',
         body: seq(
           `const { uiSound } = await import('/src/ui/ui-sound.ts');`,
           [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) => `uiSound('tick', ${k});`),
@@ -221,7 +221,7 @@ const PAGES: Page[] = [
         id: 'ui-deny',
         group: 'UI kit',
         title: 'Deny',
-        when: 'A press that could not happen ("Hotbar full"): twice.',
+        when: 'A press that could not happen (a seed bag where nothing can grow): twice.',
         body: seq(`const { uiSound } = await import('/src/ui/ui-sound.ts');`, Array(2).fill(`uiSound('deny');`), 700),
       },
       {

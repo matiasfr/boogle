@@ -94,7 +94,7 @@ The day/night palettes live in [`sky.ts`](sky.ts) (`C`, `L`).
   Web Inspector ([gpu-info.ts](../debug/gpu-info.ts)).
   `npm run perf` prints them, and `npm run hitches` names the slowest section of each hitch frame. `npm run hitches -- --allocs` adds JS heap
   allocated per frame and the functions that allocate most (library allocations charged to the game code calling them).
-- `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, the hotbar) and
+- `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, swapping what you hold) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.
 - `window.boogle.gfx` (`gfx()` in `scene.ts`) is `'webgpu'` once `rendererReady` resolves, null before; telemetry

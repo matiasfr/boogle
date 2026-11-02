@@ -1,4 +1,4 @@
-/* The first-run card: a paper sticker at the lower left (the hotbar is centred, the player is in the middle). */
+/* The first-run card: a paper sticker at the lower left (the held thing's name is centred, the player is in the middle). */
 .first-run {
   position: fixed;
   left: max(14px, env(safe-area-inset-left, 0px));
@@ -45,10 +45,10 @@ body.touch .first-run {
   top: 30%;
   max-width: min(300px, 60vw);
 }
-/* A laptop narrower than the card plus half the hotbar: the card sits above the hotbar instead of beside it. */
-@media (max-width: 1180px) {
+/* A window narrower than the card plus half the name tag: the card sits above the tag instead of beside it. */
+@media (max-width: 960px) {
   body:not(.touch) .first-run {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }
 /* Short screens (a phone held sideways, a small laptop window): the hands group waits for the menu, and the card
@@ -69,7 +69,7 @@ body.touch .first-run {
   }
 }
 /* An upright phone: the held-item buttons (Toss) rise up the right side to the card's height, so the hands group waits
-   for the menu here too, and the card sits higher (under a full hotbar). */
+   for the menu here too, and the card sits higher. */
 @media (max-width: 480px) {
   body.touch .first-run {
     top: calc(128px + env(safe-area-inset-top, 0px));

@@ -10,7 +10,7 @@
   drawn, at the usual spawn (or the room or prototype's own, from the URL), with the saved name and colour. A bare
   launch of the Home Screen app goes straight back to the room or prototype it was last in. The pause view's Leave
   reloads onto the card once (session storage `boogle.leaving`), so a player can still change name or colour there.
-- **Welcome back.** A returning player gets a small paper card at the top centre (under the hotbar on touch) for
+- **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
   "3 new stretches of track were laid", "Opening day happened while you were away". Nothing changed, or no memory of
@@ -18,7 +18,7 @@
 - **First-run card.** The first time you play with each input kind (keyboard, pad, touch) a small paper card lists the
   basics (groups move, camera, ball, hands, from the registry) and points at the menu. Only its close button takes
   clicks; it leaves after 3 s of walking, 15 s, a click on the close button, or when the menu opens. It sits at the
-  lower left (above the hotbar on screens under 1180 px wide; mid-left on touch). On short screens (under 520 px tall)
+  lower left (above the name tag on screens under 960 px wide; mid-left on touch). On short screens (under 520 px tall)
   and upright phones it drops the hands group and sits higher, clear of the held-item buttons.
 - **Hooks for later** ([src/player/arrival.ts](../../src/player/arrival.ts)): `isFirstVisit()`, `showCard()`,
   `lastVisit` (`{ at, room }` of the previous visit, localStorage `boogle.lastVisit`), and `addWelcomeItem({ key,
