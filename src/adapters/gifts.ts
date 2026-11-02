@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
-import { me, throwFrom } from '../player/player.ts';
+import { me, throwFrom } from '../player/state.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { SEEDS, LOST } from '../world/rules/gifts.ts';

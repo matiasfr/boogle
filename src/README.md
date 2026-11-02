@@ -22,7 +22,8 @@ Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `lo
   modules must import it.
 - `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
-  guide, modal, HUD, item icons and models.
+  guide, modal, HUD, item icons and models. `state.ts` (`me`, `cam`, poses), `dom.ts` and `input-state.ts` are leaf
+  modules, so what `player.ts` and `input.ts` drive can read them without an import cycle.
 - `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,
   node-material patching (`patchNode`), and the shared (cosmetic) audio context. How to draw things:
   [render/README.md](render/README.md).

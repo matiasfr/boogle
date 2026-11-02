@@ -1,34 +1,18 @@
 import { COLORS } from '../constants.ts';
-import { me, enterIsland } from './player.ts';
-import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.ts, which imports us
+import { me } from './state.ts';
+import { enterIsland } from './player.ts';
+import { dom } from './dom.ts';
+import { chargeOf } from './throw-curve.ts';
 import { net, remotes, onNetState, onPeopleChanged } from '../netplay/net.ts';
-import { inputState, requestLock } from './input.ts';
+import { inputState } from './input-state.ts';
+import { requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
 import { interactTarget, useVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
 import { onFrame } from '../loop.ts';
 import { showCard, friendlyName } from './arrival.ts';
 
-// Elements of index.html, always there.
-const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-export const dom = {
-  lobbyEl: $('lobby'),
-  joinForm: $<HTMLFormElement>('join'),
-  nameInput: $<HTMLInputElement>('name-input'),
-  swatchesEl: $('swatches'),
-  enterBtn: $<HTMLButtonElement>('enter'),
-  rosterEl: $('roster'),
-  netEl: $('net'),
-  netLabel: $('net-label'),
-  hintEl: $('hint'),
-  chargeEl: $('charge'),
-  chargeFill: $('charge-fill'),
-  grabBtn: $('btn-grab'),
-  jumpBtn: $('btn-jump'),
-  touchEl: $('touch'),
-  stickEl: $('stick'),
-  knobEl: $('knob'),
-};
+export { dom } from './dom.ts';
 
 let lastHint: boolean | null = null;
 function updateHud() {

@@ -2,8 +2,7 @@
 // posed from their presence (src/netplay/net.ts owns the Remote and its network fields; this module adds the display
 // fields). Also the `riding` presence field, which keeps a rider steady on a shared platform. Serves DESIGN.md 4.
 //
-// Always eager: src/player/player.ts imports it ahead of the ball, so `riding` stays the first presence field, and it
-// reads the local player through localPresence() rather than importing player.ts, which would pull the ball in first.
+// Always eager (src/main.ts imports it). It reads the local player through localPresence().
 import * as THREE from 'three';
 import { COLORS, INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';

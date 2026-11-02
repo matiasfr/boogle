@@ -10,7 +10,7 @@ import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { onFrame } from '../loop.ts';
-import { me, camForward, handPosition, throwFrom } from './player.ts';
+import { me, camForward, handPosition, throwFrom } from './state.ts';
 import { heldId } from './inventory.ts';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';
 
