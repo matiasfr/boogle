@@ -77,6 +77,26 @@ export const PROTOS: Proto[] = [
     ],
   },
   {
+    id: 'babble',
+    title: "The Boogler's voice",
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-babble&proto=babble',
+    question: 'Does he sound like a ridiculous host you want to hear again, even when he stops showing off?',
+    what: 'Talk to The Boogler: he speaks in Animal Crossing-style babble as his line types, pausing on punctuation.',
+    since: '2026-11-02',
+    defaultWhat: 'One sound per syllable, shaped by the letters.',
+    verb: 'chatting',
+    chapter: 'it is a voice on an NPC who wanders, not a spot on the island',
+    variants: [
+      {
+        name: 'letters',
+        url: '/?room=proto-babble&proto=babble&v=letters',
+        what: 'One short sound per letter, with the text typing slower to match.',
+      },
+    ],
+  },
+  {
     id: 'haul',
     title: 'The haul',
     step: 1,
@@ -494,6 +514,8 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
+  { id: 'babble', why: 'Does he sound like a ridiculous host you want to hear again, even when he stops showing off?' },
+  { id: 'babble', variant: 'letters', why: 'Is a sound on every letter more Animal Crossing, or just more?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */

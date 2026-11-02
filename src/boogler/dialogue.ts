@@ -91,6 +91,22 @@ let el: Dom | null = null;
 let cur: Current | null = null;
 const react = { until: 0 };
 
+/** A voice speaking one line as it types (?proto=babble): it owns the typing clock, so sound and text stay together. */
+export type LineSpeech = {
+  shownAt: (ms: number) => number; // characters shown this long after the line started
+  update: (ms: number) => void;
+  stop: () => void; // skipped, closed or replaced: silent at once
+};
+let lineVoice: ((text: string, mood: string) => LineSpeech) | null = null;
+let speech: LineSpeech | null = null;
+export const setLineVoice = (fn: typeof lineVoice) => {
+  lineVoice = fn;
+};
+function hush() {
+  speech?.stop();
+  speech = null;
+}
+
 function dom(): Dom {
   if (el) return el;
   const root = document.createElement('div');
@@ -124,6 +140,7 @@ function dom(): Dom {
 
 function finishTyping() {
   if (!cur) return;
+  hush();
   cur.typing = false;
   cur.shown = cur.text.length;
   const d = dom();
@@ -202,6 +219,8 @@ export function showDialogue(view: DialogueView, bond: Bond, onPick: (i: number)
   );
   d.opts.hidden = cur.typing;
   boogler.me.speaking = cur.typing;
+  hush();
+  if (cur.typing && lineVoice) speech = lineVoice(view.say, view.mood);
   if (!cur.typing) finishTyping();
 }
 
@@ -263,6 +282,7 @@ export function dialogueReact({
 export function closeDialogue() {
   if (!dialogue.open) return;
   dialogue.open = false;
+  hush();
   cur = null;
   react.until = 0;
   const d = dom();
@@ -280,7 +300,9 @@ export function updateDialogue(now: number) {
     if (cur) dom().face.innerHTML = portrait(cur.mood);
   }
   if (!cur?.typing) return;
-  const n = Math.min(cur.text.length, Math.floor(((now - cur.at) / 1000) * CHARS_PER_S));
+  const ms = now - cur.at;
+  speech?.update(ms);
+  const n = speech ? speech.shownAt(ms) : Math.min(cur.text.length, Math.floor((ms / 1000) * CHARS_PER_S));
   if (n !== cur.shown) {
     cur.shown = n;
     dom().say.textContent = cur.text.slice(0, n);
