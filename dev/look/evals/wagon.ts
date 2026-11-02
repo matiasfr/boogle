@@ -41,8 +41,8 @@ const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
 const { teleport } = (await import(
-  '/src/physics/physics.ts' as string
-)) as typeof import('../../../src/physics/physics.ts');
+  '/src/physics/engine.ts' as string
+)) as typeof import('../../../src/physics/engine.ts');
 const { groundHeight } = (await import(
   '/src/island/terrain.ts' as string
 )) as typeof import('../../../src/island/terrain.ts');

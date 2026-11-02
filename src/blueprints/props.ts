@@ -4,39 +4,42 @@
 // A placement is seeded, so scatterProps() gives every client the same list on the same ground. It draws everything a
 // placement needs in one go, in the order the props have always drawn it. Each draw feeds the next one, so adding or
 // reordering a single draw here moves everything after it.
-import { COURT, SPAWN } from '../constants.ts';
+import { COURT, HALF, SPAWN } from '../constants.ts';
 import { MASSIF } from '../island/shape.ts';
 import { mulberry32 } from '../sim/rng.ts';
-import type { Blueprint, Placement } from './blueprint.ts';
+import type { Blueprint, Lean, Placement } from './blueprint.ts';
 
 export const TRUNK_SEGMENTS = 7;
 
+// Props are split into TILE-metre tiles: the view's merged meshes, so the camera and the shadow pass skip the ones out
+// of view, and the colliders, merged into one body per tile (the physics step pays per body).
+const TILE = 64;
+export const tileKey = (x: number, z: number) => Math.floor((x + HALF) / TILE) * 4096 + Math.floor((z + HALF) / TILE);
+
 export const PROP_BLUEPRINTS: Record<PropPlacement['blueprint'], Blueprint> = {
   palm: {
-    name: 'palm',
     footprint: 0.5,
     colliders: [{ shape: 'trunk', segments: TRUNK_SEGMENTS, r: 0.32, lift: 0.25 }],
   },
   broadleaf: {
-    name: 'broadleaf',
     footprint: 0.45,
     colliders: [
       { shape: 'sphere', y: 0.4, r: 0.3 },
       { shape: 'sphere', y: 1.2, r: 0.3 },
     ],
   },
-  rock: { name: 'rock', footprint: 0.95, wet: true, colliders: [{ shape: 'sphere', y: 0.1, r: 0.82 }] },
+  rock: { footprint: 0.95, wet: true, colliders: [{ shape: 'sphere', y: 0.1, r: 0.82 }] },
 };
 
 export type PalmLook = { fronds: { angle: number; droop: number }[] };
 export type BroadleafLook = { height: number; crown: number; blobs: { angle: number; spin: number[] }[] };
 export type RockLook = { spin: number[]; dark: boolean };
 export type PropPlacement =
-  | (Placement<PalmLook> & { blueprint: 'palm'; home?: boolean })
-  | (Placement<BroadleafLook> & { blueprint: 'broadleaf'; home?: boolean })
-  | (Placement<RockLook> & { blueprint: 'rock'; home?: boolean });
+  | (Placement<PalmLook> & { blueprint: 'palm'; lean: Lean; look: PalmLook; home?: boolean })
+  | (Placement<BroadleafLook> & { blueprint: 'broadleaf'; look: BroadleafLook })
+  | (Placement<RockLook> & { blueprint: 'rock'; size: number; look: RockLook });
 /** Home palms are the wood age's log spots: a layout's `clear` leaves them standing, and each has a body of its own. */
-export const isHomePalm = (p: PropPlacement) => !!p.home && p.blueprint === 'palm';
+export const isHomePalm = (p: PropPlacement) => p.blueprint === 'palm' && !!p.home;
 
 /** What the scatter asks of the island. */
 export type ScatterGround = {
@@ -105,7 +108,7 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
     if (h < -1.2 || h > 8 || !clear(x, z, 8)) continue;
     if (spots.some((t) => Math.hypot(t.x - x, t.z - z) < 3)) continue;
     const size = 0.6 + rng() * 1.3;
-    out.push({ ...rock(x, z, h, size, rng), home: true });
+    out.push(rock(x, z, h, size, rng));
     rocks++;
   }
 

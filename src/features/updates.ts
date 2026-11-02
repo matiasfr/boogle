@@ -11,7 +11,7 @@
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import { onStart } from '../loop.ts';
 import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
-import { BUILD } from '../netplay/builds.ts';
+import { BUILD } from '../build-id.ts';
 import { net } from '../netplay/net.ts';
 import { notify } from '../ui/notify.ts';
 

@@ -20,6 +20,7 @@ import { setPhysicsClock, teleport } from '../../src/physics/engine.ts';
 import { input, inputState } from '../../src/player/input-state.ts';
 import { handPosition } from '../../src/player/state.ts';
 import { launchVelocity, profileFor } from '../../src/player/throw-curve.ts';
+import { hrtimeMs } from './timed.ts';
 import { frame, headless, virtualClock } from './world.ts';
 
 const DIR = path.join(import.meta.dirname, 'replays');
@@ -143,7 +144,6 @@ function play() {
   return trace;
 }
 
-const hrtimeMs = () => Number(process.hrtime.bigint()) / 1e6;
 const t0 = hrtimeMs();
 const trace = play();
 const ms = hrtimeMs() - t0;

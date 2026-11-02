@@ -5,12 +5,12 @@ import { BALL_SPAWN, HALF, SEA } from '../../src/constants.ts';
 import { ball, grabBall, throwBall } from '../../src/entities/ball/state.ts';
 import { groundHeight } from '../../src/island/heights.ts';
 import { onPostStep, teleport } from '../../src/physics/engine.ts';
+import { r3 } from '../../src/math.ts';
 
 const SAMPLE_EVERY = 10; // steps: a sixth of a second
 const SEA_AT = { x: -176, z: 0 }; // over deep water
 const THROW = { from: { x: 12, z: 20, up: 2 }, vel: { x: -5, y: 7, z: -6 } };
 
-const r3 = (v: number) => Math.round(v * 1000) / 1000;
 const speed = () => Math.hypot(ball.body.velocity.x, ball.body.velocity.y, ball.body.velocity.z);
 const pos = () => [r3(ball.body.position.x), r3(ball.body.position.y), r3(ball.body.position.z)];
 

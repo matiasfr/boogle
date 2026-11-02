@@ -44,7 +44,7 @@ function updateHud() {
     document.body.classList.toggle('main-throws', label === 'Throw');
   }
 }
-// late -190, after the throw preview (player.ts, -200), before the feature late hooks (src/loop.ts lists the orders).
+// late -190, after the throw preview (src/player/throw.ts, -200), before the feature late hooks (src/loop.ts lists the orders).
 defineKind('hud', { lateUpdate: -190 });
 spawn({ kind: 'hud', lateUpdate: updateHud });
 

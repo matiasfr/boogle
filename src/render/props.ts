@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { bool, dot, fract, positionView, screenCoordinate, uniform, vec2 } from 'three/tsl';
-import { trunkPoints, type Placement } from '../blueprints/blueprint.ts';
-import { isHomePalm, TRUNK_SEGMENTS, type BroadleafLook, type PalmLook, type RockLook } from '../blueprints/props.ts';
-import { placements, tileKey } from '../entities/props/state.ts';
+import { trunkPoints } from '../blueprints/blueprint.ts';
+import { isHomePalm, tileKey, TRUNK_SEGMENTS, type PropPlacement } from '../blueprints/props.ts';
+import { placements } from '../entities/props/state.ts';
 import { clearedAt } from '../island/layout.ts';
 import { mulberry32 } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -71,10 +71,14 @@ const m = new THREE.Matrix4(),
   up = new THREE.Vector3(0, 1, 0),
   sc = new THREE.Vector3(1, 1, 1);
 
+type Palm = PropPlacement & { blueprint: 'palm' };
+type Broadleaf = PropPlacement & { blueprint: 'broadleaf' };
+type Rock = PropPlacement & { blueprint: 'rock' };
+
 // A leaning palm: trunk segments, fronds.
-function addPalm(parts: THREE.BufferGeometry[], p: Placement<PalmLook>) {
+function addPalm(parts: THREE.BufferGeometry[], p: Palm) {
   const segments = TRUNK_SEGMENTS;
-  const joints = trunkPoints(p.x, p.h, p.z, p.lean!, segments).map((j) => new THREE.Vector3(j.x, j.y, j.z));
+  const joints = trunkPoints(p.x, p.h, p.z, p.lean, segments).map((j) => new THREE.Vector3(j.x, j.y, j.z));
   for (let k = 0; k < segments; k++) {
     const prev = joints[k]!,
       next = joints[k + 1]!;
@@ -86,7 +90,7 @@ function addPalm(parts: THREE.BufferGeometry[], p: Placement<PalmLook>) {
     addPart(parts, trunkGeo, m, k % 2 ? '#9a6a3e' : '#80552d');
   }
   const top = joints[segments]!;
-  p.look!.fronds.forEach(({ angle, droop }, k) => {
+  p.look.fronds.forEach(({ angle, droop }, k) => {
     const mm = new THREE.Matrix4()
       .makeTranslation(top.x, top.y, top.z)
       .multiply(new THREE.Matrix4().makeRotationY(angle))
@@ -97,8 +101,8 @@ function addPalm(parts: THREE.BufferGeometry[], p: Placement<PalmLook>) {
 }
 
 // A round-crowned meadow tree: short trunk, a few leafy blobs.
-function addBroadleaf(parts: THREE.BufferGeometry[], { x, h, z, look }: Placement<BroadleafLook>) {
-  const { height, crown, blobs } = look!;
+function addBroadleaf(parts: THREE.BufferGeometry[], { x, h, z, look }: Broadleaf) {
+  const { height, crown, blobs } = look;
   m.compose(new THREE.Vector3(x, h + height / 2 - 0.2, z), q.identity(), sc.set(0.22, height + 0.4, 0.22));
   addPart(parts, trunkGeo, m, '#7a5232');
   const greens = ['#4f9a3a', '#5fae43', '#468a35'];
@@ -115,11 +119,10 @@ function addBroadleaf(parts: THREE.BufferGeometry[], { x, h, z, look }: Placemen
   });
 }
 
-function addRock(parts: THREE.BufferGeometry[], { x, h, z, size, look }: Placement<RockLook>) {
-  const r = size!;
-  q.setFromEuler(new THREE.Euler(look!.spin[0], look!.spin[1], look!.spin[2]));
+function addRock(parts: THREE.BufferGeometry[], { x, h, z, size: r, look }: Rock) {
+  q.setFromEuler(new THREE.Euler(look.spin[0], look.spin[1], look.spin[2]));
   m.compose(new THREE.Vector3(x, h + r * 0.15, z), q, sc.set(r * 1.1, r * 0.75, r));
-  addPart(parts, blobGeo, m, look!.dark ? '#8a857c' : '#a19b90');
+  addPart(parts, blobGeo, m, look.dark ? '#8a857c' : '#a19b90');
 }
 
 // Scenery that never moves, as one entity with no methods. Its colliders are the `props` entity (src/entities/props/).
@@ -147,7 +150,7 @@ export function createProps() {
   freezeStatic(group); // never moves: no per-frame matrix work
 }
 
-// update -190, after the camera (player.ts, -200), before the feature update hooks (src/loop.ts lists the orders).
+// update -190, after the camera (src/entities/camera/, -200), before the feature update hooks (src/loop.ts lists the orders).
 defineKind('cloud', { update: -190 });
 export const clouds: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
 export function createClouds() {

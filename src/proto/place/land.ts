@@ -2,6 +2,7 @@
 // heightfield. The gorge's walls are near-vertical cells of that grid, so nothing here overhangs; the footbridges and
 // platforms are their own boxes. Trees have no colliders (greybox), and the spire's are a cylinder. Local.
 import * as THREE from 'three/webgpu';
+import { flat } from '../flat.ts';
 import { scene } from '../../render/scene.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
@@ -81,7 +82,7 @@ function ground(x: number, z: number) {
     0.8 * Math.sin(x * 0.05 + 1) * Math.cos(z * 0.06) +
     0.5 * Math.sin(x * 0.13 + z * 0.09) +
     0.3 * Math.cos(x * 0.31 - z * 0.23);
-  const beach = -5 + (top + 5) * shore * shore * (3 - 2 * shore);
+  const beach = -5 + (top + 5) * smoothstep(0, 1, shore);
   let h = beach + noise * shore;
   // the gorge
   const w = 1 + 0.1 * Math.sin(x * 0.07 + z * 0.05);
@@ -209,7 +210,7 @@ export const insidePlace = (wx: number, wz: number) =>
   Math.abs(wx - ORIGIN.x) < EXT - 4 && Math.abs(wz - ORIGIN.z) < EXT - 4;
 
 // ---------------------------------------------------------------- the mesh and the heightfield
-const FLAT = (color: string) => new THREE.MeshStandardNodeMaterial({ color, roughness: 0.95, flatShading: true });
+const FLAT = (color: string) => flat(color);
 
 function buildMesh() {
   const pos = new Float32Array(N * N * 3),

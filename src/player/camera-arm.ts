@@ -2,7 +2,7 @@
 // Cinemachine's deoccluder and Godot's SpringArm3D do this; here the sweep is a sphere as big as the lens's near plane
 // (docs/research/third-person-camera.md, rec 6). Any camera can have one, and nothing it should respect needs telling:
 // anything static in `mask` counts, so a new building or cliff blocks it on the day it's added. Thin things (a trunk, a
-// post: narrower than 1.6 m, see sweepSphere in src/physics/engine.ts, or a body's `seeThrough`) don't pull it in from
+// post: narrower than 1.6 m, see sweepSphere in src/physics/engine.ts) don't pull it in from
 // afar, as a camera that zoomed for every palm would pump all the way along a beach; only one right at the lens moves it.
 // What moves (players, the ball, a train) never blocks it. Local, render only.
 //
@@ -10,6 +10,7 @@
 // way, so walking in the open has no lag. `glide` eases it in as well, for a fast vehicle, where a jump hurts more than a
 // moment with a rock at the edge; `min` keeps it that far out however close things get.
 import * as THREE from 'three/webgpu';
+import { clamp } from '../math.ts';
 import { sweepSphere } from '../physics/engine.ts';
 import { camera } from '../render/scene.ts';
 
@@ -73,7 +74,7 @@ export function makeCameraArm({ min = 0, glide }: { min?: number; glide?: Glide 
       if (free || at === Infinity) at = safe;
       else if (glide) {
         const rate = 1 - Math.exp(-dt * (safe < at ? glide.in : glide.out));
-        at += Math.max(-glide.maxIn * dt, Math.min(glide.maxOut * dt, (safe - at) * rate));
+        at += clamp((safe - at) * rate, -glide.maxIn * dt, glide.maxOut * dt);
       } else if (safe < at) {
         at = safe;
         holdUntil = now + HOLD_MS;

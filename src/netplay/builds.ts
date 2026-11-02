@@ -6,8 +6,6 @@
 import { BUILD } from '../build-id.ts';
 import { addPresenceField, onRemotePresence, remotes } from './net.ts';
 
-export { BUILD };
-
 addPresenceField('bv', () => BUILD);
 onRemotePresence((r, pr) => {
   r.build = typeof pr.bv === 'string' ? pr.bv.slice(0, 12) : null;

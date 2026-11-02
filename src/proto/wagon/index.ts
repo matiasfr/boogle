@@ -31,7 +31,7 @@ import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, carry, CARRY, type Platform } from '../../physics/platforms.ts';
 import { reducedMotion, PLAYER_R } from '../../constants.ts';
 import { me, cam } from '../../player/player.ts';
-import { teleport } from '../../physics/physics.ts';
+import { teleport } from '../../physics/engine.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';

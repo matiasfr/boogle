@@ -4,7 +4,7 @@
 // navigator.sendBeacon (text/plain: no CORS preflight, survives the page closing). Failures stay silent: the local
 // store and Copy all still have it. Inert without VITE_BOOGLE_SERVER (dev without a server). Local: nothing is synced.
 import { getRoomId } from '../../netplay/net.ts';
-import { BUILD } from '../../netplay/builds.ts';
+import { BUILD } from '../../build-id.ts';
 import { read, sittingLine, sittings, vName } from '../../../protos/store.ts';
 import { PROTOS } from '../../../protos/protos.ts';
 

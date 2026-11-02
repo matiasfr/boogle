@@ -8,6 +8,7 @@ const NOT_RUNS = new Set([
   'run',
   'world',
   'inspect',
+  'timed',
   'ball-browser',
   'ball-course',
   'ball-handoff-peer',

@@ -16,8 +16,8 @@ import {
 } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
 import { groundHeight } from '../../island/heights.ts';
-import { forEachContact, getMask, raycastClosest, rayHit } from '../../physics/engine.ts';
-import { catchFallThrough, GROUP, makePlayerBody, teleport } from '../../physics/physics.ts';
+import { forEachContact, getMask, raycastClosest, rayHit, teleport } from '../../physics/engine.ts';
+import { catchFallThrough, GROUP, makePlayerBody } from '../../physics/physics.ts';
 import { carry, carryStep } from '../../physics/platforms.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { peopleChanged, sendPresence, setLocalPresence } from '../../netplay/net.ts';
@@ -128,7 +128,7 @@ export function shapeJump() {
   const b = me.body!;
   const vy = b.velocity.y;
   const surf = waterField.surfaceAt(b.position.x, b.position.z);
-  const under = surf - (b.position.y + 0.35) > 0;
+  const under = surf - (b.position.y + SWIM_DEPTH) > 0;
   // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
   if (vy <= 0) jumpActive = false;
   if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
@@ -145,6 +145,13 @@ export function shapeJump() {
       if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
     }
   }
+}
+
+/** Where the player's soft wall stands. A world bigger than the map moves it (a prototype: Infinity). */
+export const softWall = { at: SOFT_WALL };
+function turnedBack(p: number, v: number) {
+  const out = Math.sign(p) * v;
+  return out > -2 ? v - Math.sign(p) * (out + 2) : v;
 }
 
 // Each physics step: steer the body's velocity toward what you want, jump, swim, and stay inside the map.
@@ -183,13 +190,8 @@ export function steerPlayer() {
   }
   if (depth > 0) b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
   // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
-  for (const ax of ['x', 'z'] as const) {
-    const p = b.position[ax];
-    if (Math.abs(p) > SOFT_WALL) {
-      const out = Math.sign(p) * b.velocity[ax];
-      if (out > -2) b.velocity[ax] -= Math.sign(p) * (out + 2);
-    }
-  }
+  if (Math.abs(b.position.x) > softWall.at) b.velocity.x = turnedBack(b.position.x, b.velocity.x);
+  if (Math.abs(b.position.z) > softWall.at) b.velocity.z = turnedBack(b.position.z, b.velocity.z);
 }
 
 // Each physics step, after it: back on top if you fell through, and ground under your feet starts the ledge grace.

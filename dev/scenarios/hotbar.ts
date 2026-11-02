@@ -75,7 +75,7 @@ export default {
     // The ball: grab it, put it on your back by switching to a frisbee, take it back out.
     const ball = await g.eval(`${INV}
       const { ball } = await import('/src/entities/ball/state.ts');
-      const { teleport } = await import('/src/physics/physics.ts');
+      const { teleport } = await import('/src/physics/engine.ts');
       const { boogler } = await import('/src/boogler/boogler.ts');
       const { groundHeight } = await import('/src/island/terrain.ts');
       const p = window.boogle.me.body.position;

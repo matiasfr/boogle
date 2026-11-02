@@ -1,7 +1,7 @@
 // The ground's heights and the lookups on them, with no scene or renderer: physics and entity state read these, and
 // terrain.ts builds the mesh from them.
-import { GRID_RES, CELL, HALF, SEABED } from '../constants.ts';
-import { lerp } from '../math.ts';
+import { GRID_RES, CELL, HALF } from '../constants.ts';
+import { heightIn } from './ground.ts';
 import { baseCm } from './index.ts';
 
 // heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the
@@ -22,13 +22,4 @@ export const cellOf = (x: number, z: number): [number, number] => [
   Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
 ];
 
-export function groundHeight(x: number, z: number) {
-  const fi = (x + HALF) / CELL,
-    fj = (HALF - z) / CELL;
-  if (fi < 0 || fj < 0 || fi >= GRID_RES - 1 || fj >= GRID_RES - 1) return SEABED;
-  const i = Math.floor(fi),
-    j = Math.floor(fj),
-    u = fi - i,
-    v = fj - j;
-  return lerp(lerp(heights[i]![j]!, heights[i + 1]![j]!, u), lerp(heights[i]![j + 1]!, heights[i + 1]![j + 1]!, u), v);
-}
+export const groundHeight = (x: number, z: number) => heightIn(heights, x, z);

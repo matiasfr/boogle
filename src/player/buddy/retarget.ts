@@ -78,21 +78,18 @@ export function retargetClip(
   // the head, and its bob stays.
   const headPair = pairs.find((x) => x.a.name === 'Head')!;
   let pitch = 0;
-  for (let f = 0; f < frames; f++) {
-    sample(Math.min(clip.duration, f / FPS));
-    pitch += Math.asin(p.copy(Z).applyQuaternion(worldQ(headPair.a).multiply(headPair.restA)).y) / frames;
-  }
-  const level = new THREE.Quaternion().setFromAxisAngle(X, pitch);
   // The library's hips roll and twist to carry a lean body; on a round one that reads as its mass shifting. Half of it
   // comes off, and half of their sideways sway.
   const hipMean = new THREE.Quaternion(0, 0, 0, 0);
   for (let f = 0; f < frames; f++) {
     sample(Math.min(clip.duration, f / FPS));
+    pitch += Math.asin(p.copy(Z).applyQuaternion(worldQ(headPair.a).multiply(headPair.restA)).y) / frames;
     const h = worldQ(hips.a).multiply(hips.restA).multiply(hips.restB);
     const sign = h.dot(hipMean) < 0 ? -1 : 1;
     hipMean.set(hipMean.x + sign * h.x, hipMean.y + sign * h.y, hipMean.z + sign * h.z, hipMean.w + sign * h.w);
   }
   hipMean.normalize();
+  const level = new THREE.Quaternion().setFromAxisAngle(X, pitch);
   for (let f = 0; f < frames; f++) {
     const t = Math.min(clip.duration, f / FPS);
     times.push(t);

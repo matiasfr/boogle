@@ -1,13 +1,12 @@
 // Cosmetic splashes: foam droplets (the shared pool, src/render/particles.ts) plus a ripple ring in the sea shader.
 // Detected locally on every client from displayed positions, never networked, so floats and Math.random are fine here.
 import * as THREE from 'three';
-import { BALL_R, GRAVITY, reducedMotion } from '../constants.ts';
+import { BALL_R, GRAVITY, reducedMotion, SWIM_DEPTH } from '../constants.ts';
 import { seaRipples } from './water-render.ts';
 import { emit } from './particles.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 
-const FEET = 0.35; // waterline offset used by the swim code in src/entities/player/state.ts
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
@@ -54,7 +53,7 @@ function makeTracker(bottomOffset: number): Tracker {
   return { y: NaN, x: 0, z: 0, cool: 0, bottomOffset };
 }
 const ballTrack = makeTracker(-BALL_R);
-const meTrack = makeTracker(-FEET);
+const meTrack = makeTracker(-SWIM_DEPTH);
 const remoteTracks = new Map<string, Tracker>();
 
 function track(
@@ -105,7 +104,7 @@ export function updateSplash(
   for (const [peer, r] of remotes) {
     if (!r.avatar || !r.visible) continue;
     let t = remoteTracks.get(peer);
-    if (!t) remoteTracks.set(peer, (t = makeTracker(-FEET)));
+    if (!t) remoteTracks.set(peer, (t = makeTracker(-SWIM_DEPTH)));
     const p = r.target;
     track(t, p.x, p.y, p.z, null, dt, 3.5, 0.5);
   }

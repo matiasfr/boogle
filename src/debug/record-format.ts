@@ -1,5 +1,6 @@
 // What a recording is (src/debug/record.ts makes one in the browser, dev/sim/replay.ts plays one headless), and the state
 // trace both of them write, one row a frame, so a replay can be compared with the session it came from. No DOM or scene.
+import { r3 } from '../math.ts';
 import type { ball } from '../entities/ball/state.ts';
 import type { me } from '../player/state.ts';
 
@@ -72,8 +73,6 @@ export const TRACE_FIELDS = [
   'ball.qw',
   'ball.held',
 ];
-
-const r3 = (v: number) => Math.round(v * 1000) / 1000;
 
 /** The state at the end of a frame's physics and world phases: TRACE_FIELDS, to a millimetre. */
 export function traceRow(player: typeof me, thing: typeof ball) {

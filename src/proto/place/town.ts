@@ -7,6 +7,7 @@ import { emit } from '../../render/particles.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
 import { fanfare } from '../minis/common.ts';
 import { blockBoxes, draw, makeSet, type BoxSet, type Smoke } from '../net/boxes.ts';
+import { easeBack, LANDMARK_AFTER, puff, RIPPLE_MPS, shell, SHELLS, smooth, soot } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
 import { H } from './land.ts';
 import { VILLAGE, toWorld, type LinkSpec } from './layout.ts';
@@ -161,13 +162,6 @@ const STEPS: Record<'wood' | 'stone', Block[][]> = {
 
 // ---------------------------------------------------------------- building parts on this land
 type Part = BoxSet & { delay: Float32Array; smokes: Smoke[]; top: { x: number; y: number; z: number } | null };
-const RIPPLE_MPS = 13,
-  LANDMARK_AFTER = 1.1;
-const easeBack = (u: number) => 1 + 2.2 * (u - 1) ** 3 + 1.2 * (u - 1) ** 2;
-const smooth = (u: number) => u * u * (3 - 2 * u);
-const dust = new THREE.Color('#d8c8a6'),
-  soot = new THREE.Color('#8d8780');
-const SHELLS = ['#ff4f4f', '#ffcf33', '#4fdc7a', '#2f8cff', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
 
 /** Builds a set of blocks standing on this land, rippling out from (cx, cz) when it rises. */
 export function makePart(rows: Block[], cx: number, cz: number): Part {
@@ -198,49 +192,6 @@ type Rise = { part: Part; t: number; end: number; puffed: Set<number>; show: boo
 const rises: Rise[] = [];
 export function rise(part: Part) {
   rises.push({ part, t: 0, end: endOf(part) + 0.1, puffed: new Set(), show: true });
-}
-function puff(x: number, y: number, z: number, r: number) {
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 7) * Math.PI * 2;
-    emit({
-      x: x + Math.cos(a) * r,
-      y: y + 0.3,
-      z: z + Math.sin(a) * r,
-      vx: Math.cos(a) * 3,
-      vy: 1.4,
-      vz: Math.sin(a) * 3,
-      life: 1.3,
-      size: 1.2,
-      color: dust,
-      alpha: 0.85,
-      grow: [1, 3],
-      gravity: -0.4,
-      drag: 1.6,
-      fade: 0.5,
-    });
-  }
-}
-function shell(x: number, y: number, z: number, color: THREE.Color) {
-  for (let k = 0; k < 34; k++) {
-    const a = Math.random() * Math.PI * 2,
-      u = Math.random() * 2 - 1,
-      s = 11 + Math.random() * 4,
-      c = Math.sqrt(1 - u * u);
-    emit({
-      x,
-      y,
-      z,
-      vx: Math.cos(a) * c * s,
-      vy: u * s,
-      vz: Math.sin(a) * c * s,
-      life: 1.4 + Math.random() * 0.5,
-      size: 2.1,
-      color,
-      gravity: 5,
-      drag: 1.5,
-      shrink: 0.3,
-    });
-  }
 }
 const shells: { t: number; x: number; y: number; z: number; c: THREE.Color }[] = [];
 function fireworks(top: { x: number; y: number; z: number }) {

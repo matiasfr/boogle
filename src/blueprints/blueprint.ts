@@ -1,8 +1,8 @@
-// A blueprint is a kind of static world object as data: its name, what it collides with and how much ground it takes,
+// A blueprint is a kind of static world object as data: what it collides with and how much ground it takes,
 // kept apart from how it's drawn. A placement is one of them in the world, also data. Neither knows about three.js, so
 // the game, a headless run and `npm run level-check` read the same thing (docs/research/level-design.md).
 //
-//   const rock: Blueprint = { name: 'rock', footprint: 0.95, wet: true, colliders: [{ shape: 'sphere', y: 0.1, r: 0.82 }] };
+//   const rock: Blueprint = { footprint: 0.95, wet: true, colliders: [{ shape: 'sphere', y: 0.1, r: 0.82 }] };
 //   collidersOf(rock, { blueprint: 'rock', x, z, h, size: 1.4 })   the spheres, in world metres
 //
 // Distances in a blueprint are metres at size 1 and scale with the placement's `size`; a `trunk` depends on its lean.
@@ -17,7 +17,6 @@ export type Collider =
   | { shape: 'trunk'; segments: number; r: number; lift: number };
 
 export type Blueprint = {
-  name: string;
   /** Radius of the ground it takes, for what walks around it and for overlap checks. */
   footprint: number;
   colliders: Collider[];

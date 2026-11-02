@@ -25,17 +25,8 @@ const { ROUTE, RING_R } = await import('../../src/sim/route.ts');
 const { WAGON_CRUISE, WAGON_ACCEL, WAGON_DWELL } = await import('../../src/sim/wagon.ts');
 const { MS_PER_TICK } = await import('../../src/sim/bank.ts');
 const { SPAWN, BALL_SPAWN, FOG_NEAR, FOG_FAR } = await import('../../src/constants.ts');
-type Site = import('../../src/island/stamps.ts').Site;
 
-// Every POI's site, in folder order (src/island/index.ts composes them the same way).
-const poiDir = path.join(root, 'src/pois');
-const ids = fs
-  .readdirSync(poiDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && fs.existsSync(path.join(poiDir, d.name, 'site.ts')))
-  .map((d) => d.name)
-  .sort();
-const sites: (Site & { id: string })[] = [];
-for (const id of ids) sites.push({ id, ...(await import(`../../src/pois/${id}/site.ts`)).default });
+const { baseSites: sites } = await import('../level/sites.ts');
 // The caves' stamps are in world coordinates around their tunnels: they stay put, so they're part of the base.
 const FIXED = new Set(['caves']);
 
