@@ -4,14 +4,13 @@
 // publish. Loaded on first use by src/features/dino.ts.
 import * as THREE from 'three';
 import { FIXED, PLAYER_R, PLAYER_MASS, reducedMotion } from '../constants.ts';
-import { onPreStep, setMotion, getMask } from '../physics/engine.ts';
+import { setMotion, getMask } from '../physics/engine.ts';
 import { waterField } from '../physics/water-field.ts';
 import { ball, claimBall } from '../entities/ball/state.ts';
-import { scene } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { me, cam } from '../player/player.ts';
 import { input } from '../player/input.ts';
-import { onFrame } from '../loop.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { getSim, BUTTON } from './engine.ts';
 import type { Sim } from './engine.ts';
 import type { RomPieces } from './rom.ts';
@@ -33,7 +32,8 @@ const ATTACKING = 0x100000 | 0x200000 | 0x400000; // the engine's punching, kick
 const DUST = new THREE.Color('#e9dcc0');
 
 let sim: Sim | null = null,
-  mesh: ModelMesh | null = null;
+  mesh: ModelMesh | null = null,
+  playing: GameEntity | null = null;
 // The guest's collision lives in a frame centred near him (the engine keeps everything within ±8192 units).
 const origin = { x: 0, z: 0 };
 let phase = 0,
@@ -83,7 +83,7 @@ export async function startGuest(data: RomPieces) {
   put(target, b.position);
   put(expected, b.position);
   phase = 0;
-  scene.add(m);
+  playing = spawn(guestEntity(m));
   me.avatar!.userData.inner.visible = false;
   guest.active = true;
 }
@@ -95,7 +95,8 @@ export function stopGuest() {
   const b = me.body!;
   setMotion(b, 'dynamic', true, PLAYER_MASS);
   b.velocity.set(last.vx * PER_S, last.vy * PER_S, last.vz * PER_S);
-  scene.remove(mesh!);
+  despawn(playing!);
+  playing = null;
   me.avatar!.userData.inner.visible = true;
 }
 
@@ -193,60 +194,61 @@ function tick(sim: Sim, now: number) {
   }
 }
 
-// The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
-// respawn, the caves' safety net), the guest goes there.
-onPreStep(
-  () => {
-    if (!guest.active || !me.body || !sim) return;
-    const b = me.body;
-    const p = b.position;
-    if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
-      moveOrigin(b.position.x, b.position.z);
-      sim.teleport(
-        (b.position.x - origin.x) * UNITS,
-        (b.position.y - PLAYER_R) * UNITS,
-        (b.position.z - origin.z) * UNITS,
+// One while you are the guest: he's in the world from startGuest to stopGuest.
+defineKind('guest', { fixedPre: 90, update: -5 });
+function guestEntity(m: ModelMesh) {
+  return {
+    kind: 'guest',
+    mesh: m,
+    // The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
+    // respawn, the caves' safety net), the guest goes there.
+    fixedPre() {
+      if (!me.body || !sim) return;
+      const b = me.body;
+      const p = b.position;
+      if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
+        moveOrigin(b.position.x, b.position.z);
+        sim.teleport(
+          (b.position.x - origin.x) * UNITS,
+          (b.position.y - PLAYER_R) * UNITS,
+          (b.position.z - origin.z) * UNITS,
+        );
+        last = sim.state();
+        put(target, b.position);
+      }
+      if (phase === 0) tick(sim, performance.now());
+      const left = (2 - phase) * FIXED;
+      b.velocity.set(
+        (target.x - b.position.x) / left,
+        (target.y - b.position.y) / left,
+        (target.z - b.position.z) / left,
       );
-      last = sim.state();
-      put(target, b.position);
-    }
-    if (phase === 0) tick(sim, performance.now());
-    const left = (2 - phase) * FIXED;
-    b.velocity.set(
-      (target.x - b.position.x) / left,
-      (target.y - b.position.y) / left,
-      (target.z - b.position.z) / left,
-    );
-    expected.x = b.position.x + b.velocity.x * FIXED;
-    expected.y = b.position.y + b.velocity.y * FIXED;
-    expected.z = b.position.z + b.velocity.z * FIXED;
-    phase = (phase + 1) % 2;
-  },
-  { order: 90 },
-);
-
-// The guest's feet are a ball radius under the body's centre.
-onFrame(
-  () => {
-    if (!guest.active || !me.body || !mesh || !me.avatar) return;
-    const ip = me.body.interpolatedPosition;
-    mesh.position.set(ip.x, ip.y - PLAYER_R, ip.z);
-    me.avatar.userData.inner.visible = false;
-  },
-  { phase: 'update', order: -5 },
-);
+      expected.x = b.position.x + b.velocity.x * FIXED;
+      expected.y = b.position.y + b.velocity.y * FIXED;
+      expected.z = b.position.z + b.velocity.z * FIXED;
+      phase = (phase + 1) % 2;
+    },
+    // The guest's feet are a ball radius under the body's centre.
+    update() {
+      if (!me.body || !me.avatar) return;
+      const ip = me.body.interpolatedPosition;
+      m.position.set(ip.x, ip.y - PLAYER_R, ip.z);
+      me.avatar.userData.inner.visible = false;
+    },
+  };
+}
 
 // ---------------------------------------------------------------- other players' guests
 
-const remoteMeshes = new Map<Remote, { mesh: ModelMesh; pose: number[] | null }>();
+defineKind('remote-guest', {}); // updateRemoteGuests poses them: the entity is its mesh's lifetime
+const remoteMeshes = new Map<Remote, { entity: GameEntity; mesh: ModelMesh; pose: number[] | null }>();
 
 // Draws every remote who is the guest (r.guest holds their pose) and lets their usual avatar show again when they stop.
 export function updateRemoteGuests(remotes: Map<string, Remote>) {
   if (!sim) return;
   for (const [r, entry] of remoteMeshes) {
     if (remotes.get(r.peer) === r && r.guest && r.avatar) continue;
-    scene.remove(entry.mesh);
-    entry.mesh.geometry.dispose();
+    despawn(entry.entity);
     if (r.avatar) r.avatar.userData.inner.visible = true;
     remoteMeshes.delete(r);
   }
@@ -254,8 +256,12 @@ export function updateRemoteGuests(remotes: Map<string, Remote>) {
     if (!r.guest || !r.avatar) continue;
     let entry = remoteMeshes.get(r);
     if (!entry) {
-      entry = { mesh: createModelMesh(), pose: null };
-      scene.add(entry.mesh);
+      const m = createModelMesh();
+      entry = {
+        entity: spawn({ kind: 'remote-guest', mesh: m, dispose: () => m.geometry.dispose() }),
+        mesh: m,
+        pose: null,
+      };
       remoteMeshes.set(r, entry);
     }
     if (entry.pose !== r.guest) {
