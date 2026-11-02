@@ -42,7 +42,8 @@
     "video:publish": "node dev/video/publish.ts",
     "assets": "node dev/assets/build.ts",
     "verdicts": "node scripts/verdicts.ts",
-    "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts"
+    "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
+    "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",

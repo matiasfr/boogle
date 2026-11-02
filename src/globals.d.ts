@@ -1,8 +1,38 @@
 // Globals the game puts on window.
+import type * as THREE from 'three/webgpu';
+import type { ball } from './entities/ball/state.ts';
+import type { inspect } from './entity/inspect.ts';
+import type { SyncHandle } from './features/debug-handle.ts';
+import type { prof } from './loop.ts';
+import type { net, remotes } from './netplay/net.ts';
+import type { me } from './player/state.ts';
+import type { camera, scene } from './render/scene.ts';
+
+/**
+ * The debug handle for the console and the look and scenario harness (src/main.ts). What's commonly read is typed. The
+ * rest is a grab bag from the features' onStart hooks: new code asks `inspect()`, and a read moves over when someone
+ * touches it (AGENTS.md, "Tests").
+ */
+export interface BoogleHandle {
+  /** The way to look at entities: every kind, its phases, entities, positions, state and cost (src/entity/inspect.ts). */
+  inspect: typeof inspect;
+  THREE: typeof THREE;
+  scene: typeof scene;
+  camera: typeof camera;
+  me: typeof me;
+  ball: typeof ball;
+  net: typeof net;
+  remotes: typeof remotes;
+  // Added by features' onStart hooks (src/features/debug-handle.ts, prof.ts), so these are there once a page is in a room.
+  sync: SyncHandle;
+  prof: typeof prof;
+  gfx: 'webgpu' | null;
+  [more: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- the grab bag, as above
+}
+
 declare global {
   interface Window {
-    /** Debug handle for the console and the look/scenario harness (src/main.ts, src/features/debug-handle.ts). */
-    boogle: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any -- a grab bag by design
+    boogle: BoogleHandle;
     /** Critter state for scenarios (src/features/critter-*.ts). */
     __fish?: unknown;
     __gulls?: unknown;

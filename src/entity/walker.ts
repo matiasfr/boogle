@@ -88,6 +88,15 @@ export function createWalkers<E extends WalkerEntity>(host: WalkerHost<E>) {
       dead.push(e);
     },
 
+    /** Dev tools: every kind, its orders and its live list. Read it now; don't keep it. */
+    kinds() {
+      return [...lists].map(([kind, entities]) => ({
+        kind,
+        orders: orders.get(kind)!,
+        entities: entities as readonly E[],
+      }));
+    },
+
     /** Dev tools: every distinct method of a live entity, keyed `<kind> <phase>|<n>`. */
     methods() {
       const out: Record<string, (ctx: FrameCtx) => void> = {};

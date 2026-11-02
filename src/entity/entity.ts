@@ -60,6 +60,7 @@ export interface GameEntity {
   update?(ctx: FrameCtx): void; // visual sync
   lateUpdate?(ctx: FrameCtx): void; // just before render
   dispose?(): void;
+  describe?(): Record<string, unknown>; // its state for inspect() (./inspect.ts); called only when someone asks
 }
 
 /** What spawn takes: spawn sets alive, and a factory only names an id it needs. */
@@ -108,6 +109,8 @@ for (const phase of ['prePhysics', 'world', 'update', 'late'] as Phase[])
 
 /** For `npm run hitches`, to name each kind's allocation row. */
 export const entityMethods: () => Record<string, (ctx: FrameCtx) => void> = walkers.methods;
+/** For inspect() (./inspect.ts). */
+export const entityKinds = walkers.kinds;
 export const defineKind: (kind: string, orders: KindOrders) => void = walkers.defineKind;
 export const despawn: (entity: GameEntity) => void = walkers.despawn;
 

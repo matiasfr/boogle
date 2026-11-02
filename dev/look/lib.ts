@@ -140,7 +140,7 @@ export class Game {
   errors: string[] = [];
   consoleErrors: string[] = [];
   gfxErrors: string[] = [];
-  gfx: string | undefined;
+  gfx: string | null | undefined;
 
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),

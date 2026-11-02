@@ -17,6 +17,16 @@ spawn({
   fixedPre: ({ dt }) => surfBall(dt),
   fixedPost: netBall,
   postPhysics: settleBall,
+  describe: () => ({
+    mine: ball.mine,
+    held: ball.held,
+    remoteOwned: ball.remoteOwned,
+    epoch: ball.e,
+    myEpoch: ball.myE,
+    snap: ball.snap,
+    position: ball.pose.p,
+    velocity: ball.pose.v,
+  }),
 });
 
 spawn({
