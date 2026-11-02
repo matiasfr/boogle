@@ -74,10 +74,10 @@ function curve(p: number[], t: number) {
     f = clamp(t, 0, 1) * n,
     i = Math.min(n - 1, Math.floor(f)),
     u = f - i;
-  const a = p[Math.max(0, i - 1)],
-    b = p[i],
-    c = p[i + 1],
-    d = p[Math.min(n, i + 2)];
+  const a = p[Math.max(0, i - 1)]!,
+    b = p[i]!,
+    c = p[i + 1]!,
+    d = p[Math.min(n, i + 2)]!;
   return 0.5 * (2 * b + (c - a) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (3 * b - a - 3 * c + d) * u * u * u);
 }
 /** Thigh and knee angles (degrees) that put the ankle x in front of the hip and h below it. */
@@ -128,8 +128,8 @@ function legAt(g: Gait, u: number, hip: number, gy: number): Angles {
     b = stance(g, 0, hipOf(g, 0), 0);
   const out: Angles = [0, 0, 0];
   for (let i = 0; i < 3; i++) {
-    const keys = [a[i], 0, 0, 0, b[i]];
-    for (let j = 0; j < 3; j++) keys[j + 1] = mix(SWING.walk[j][i], SWING.run[j][i], g.run);
+    const keys = [a[i]!, 0, 0, 0, b[i]!];
+    for (let j = 0; j < 3; j++) keys[j + 1] = mix(SWING.walk[j]![i]!, SWING.run[j]![i]!, g.run);
     out[i] = curve(keys, s);
   }
   return out;
@@ -415,7 +415,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     p.x[name] = (p.x[name] ?? 0) + ((x[name] ?? 0) - (p.x[name] ?? 0)) * kk;
     p.y[name] = (p.y[name] ?? 0) + ((y[name] ?? 0) - (p.y[name] ?? 0)) * kk;
     p.z[name] = (p.z[name] ?? 0) + ((z[name] ?? 0) * out - (p.z[name] ?? 0)) * kk;
-    p.bones[name].rotation.set(p.x[name] * D, p.y[name] * D, p.z[name] * D);
+    p.bones[name]!.rotation.set(p.x[name] * D, p.y[name] * D, p.z[name] * D);
   }
   p.hip += (hip - p.hip) * (planted ? 1 : k);
   // feel.ts squashes the whole avatar about its origin, 0.45 m above the soles: keep the soles on the ground.
@@ -425,7 +425,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   p.blink -= dt * 1000;
   const shut = p.blink < 0;
   for (const e of p.eyes) e.visible = !shut;
-  if (p.blink < -BLINK.ms) p.blink = (BLINK.every[0] + Math.random() * (BLINK.every[1] - BLINK.every[0])) * 1000;
+  if (p.blink < -BLINK.ms) p.blink = (BLINK.every[0]! + Math.random() * (BLINK.every[1]! - BLINK.every[0]!)) * 1000;
 }
 
 export async function startPlatformerHero() {
@@ -434,10 +434,10 @@ export async function startPlatformerHero() {
   const dress = (a: Avatar, colorIdx: number) => {
     if (poses.has(a)) return;
     const holder = kit.instance('hero');
-    const root = holder.children[0];
+    const root = holder.children[0]!;
     const shared = (root.getObjectByName('torso_part') as THREE.Mesh).material as THREE.MeshStandardNodeMaterial;
     const mat = shared.clone();
-    mat.color.set(COLORS[colorIdx]);
+    mat.color.set(COLORS[colorIdx]!);
     const eyes: THREE.Object3D[] = [];
     root.traverse((o) => {
       const m = o as THREE.Mesh;
