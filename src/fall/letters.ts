@@ -1,19 +1,16 @@
-// The sign you land in (?proto=fall): BOOGLE in railway timber, half built and leaning on posts where you fall. Just meshes
-// until you hit it, then a physics body per letter, flung out from the impact; you can kick them around until each one
-// shrinks away. Local: each player's own, never sent and never read by the sim, so a friend sees you land on nothing.
+// The title you smash through: BOOGLE in railway timber, hanging in the sky between the cloud and the ground. Just meshes
+// until you hit it; then the letters fall with you, and when you land each gets a physics body and comes down around you. You
+// can kick them about until each one shrinks away. Local: each player's own, never sent and never read by the sim, so a
+// friend sees you land on nothing.
 import * as THREE from 'three/webgpu';
 import { groundHeight } from '../island/heights.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
-import { protoV } from '../proto/flags.ts';
 import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
 import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 import { FWD, RIGHT, TARGET, UP } from './stage.ts';
 
-/** The title hangs in the sky, between the cloud and the ground, and you smash through it (`&v=air`, being compared with
- * crashing into it on the ground). */
-export const AIR = protoV('fall') === 'air';
 /** How high it hangs: about 1.5 s of reading after you leave the cloud. */
 export const TITLE_Y = TARGET.y + 55;
 
@@ -22,7 +19,7 @@ const H = 3.8, // m tall
   T = 0.66, // plank width
   GAP = 0.8, // m between letters
   DEPTH = 0.3,
-  TILT = (48 * Math.PI) / 180, // leaning back, so it reads from the sky as well as from the ground
+  TILT = (66 * Math.PI) / 180, // faced up at you falling on it
   MASS = 9,
   HOLD_OFF_S = 0.7, // the letters leave you alone this long, so they can't shove you where you lie
   LINGER_S = 20, // before the first starts to go
@@ -102,18 +99,16 @@ function letterOf(ch: string): { geo: THREE.BufferGeometry; shapes: Shape[] } {
 }
 
 // The sign's face looks up and back at you: x along the word, y up its lean, z out of its face.
-const tilt = AIR ? (66 * Math.PI) / 180 : TILT; // in the air, faced further up at you falling on it
-const LEAN = UP.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(FWD, Math.sin(tilt));
+const LEAN = UP.clone().multiplyScalar(Math.cos(TILT)).addScaledVector(FWD, Math.sin(TILT));
 const FACE = new THREE.Vector3().crossVectors(RIGHT, LEAN);
 const POSE = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(RIGHT, LEAN, FACE));
 
 const letters: Letter[] = [];
 const sign = new THREE.Group();
-const postParts: THREE.BufferGeometry[] = [];
 [...WORD].forEach((ch, k) => {
   const along = (k - (WORD.length - 1) / 2) * (W + GAP);
   const foot = TARGET.clone().addScaledVector(RIGHT, along);
-  foot.y = AIR ? TITLE_Y : groundHeight(foot.x, foot.z);
+  foot.y = TITLE_Y;
   const { geo, shapes } = letterOf(ch);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.copy(foot).addScaledVector(LEAN, H / 2 + 0.05);
@@ -131,21 +126,8 @@ const postParts: THREE.BufferGeometry[] = [];
     0.8 + Math.random() * 1.4,
   );
   letters.push({ mesh, shapes, rel: new THREE.Vector3(), ring, spin });
-  if (AIR) return;
-  // A post holding it up from behind.
-  const height = H * 0.62 * Math.cos(TILT);
-  const post = foot.clone().addScaledVector(FWD, H * 0.62 * Math.sin(TILT) + DEPTH);
-  addPart(
-    postParts,
-    box,
-    m4.compose(p4.set(post.x, post.y + height / 2, post.z), q4.identity(), s4.set(0.28, height, 0.28)),
-    '#7a5a3a',
-  );
 });
-const posts = new THREE.Mesh(mergeParts(postParts), mat);
-posts.castShadow = true;
-sign.add(posts);
-const signProp = spawn({ kind: 'fall-sign', mesh: sign, dispose: () => posts.geometry.dispose() });
+const signProp = spawn({ kind: 'fall-sign', mesh: sign });
 
 const DUST = new THREE.Color('#e8d6a6');
 const WOOD = new THREE.Color('#a97a48');
@@ -188,7 +170,7 @@ export function burst(at: THREE.Vector3, dust: number, chips: number) {
   }
 }
 
-/** A letter off its posts: thrown, kickable once it has left you alone a moment, then shrinking away. */
+/** A letter come to earth: thrown, kickable once it has left you alone a moment, then shrinking away. */
 function flyingLetter(l: Letter, body: Body, now: number, k: number): GameEntity {
   const goesAt = now + (LINGER_S + k * STAGGER_S) * 1000,
     goneAt = goesAt + FADE_S * 1000,
@@ -214,7 +196,7 @@ function flyingLetter(l: Letter, body: Body, now: number, k: number): GameEntity
   return entity;
 }
 
-/** `&v=air`: you've gone through the title, at `at`. The letters break loose and fall with you. */
+/** You've gone through the title, at `at`. The letters break loose and fall with you. */
 export function hitTitle(at: THREE.Vector3) {
   for (const l of letters) l.rel.copy(l.mesh.position).sub(at);
 }
@@ -230,10 +212,10 @@ export function fallWithYou(at: { x: number; y: number; z: number }, dt: number)
   }
 }
 
-/** You hit it, at `at`: every letter gets a body and leaves. */
+/** You've landed, at `at`: every letter gets a body and comes down around you. */
 export function blastLetters(at: THREE.Vector3, now: number) {
   letters.forEach((l, k) => {
-    if (AIR) l.mesh.position.y = Math.max(l.mesh.position.y, groundHeight(l.mesh.position.x, l.mesh.position.z) + 1.6);
+    l.mesh.position.y = Math.max(l.mesh.position.y, groundHeight(l.mesh.position.x, l.mesh.position.z) + 1.6);
     const body = createBody({
       mass: MASS,
       group: GROUP.DEFAULT,
@@ -247,10 +229,10 @@ export function blastLetters(at: THREE.Vector3, now: number) {
     const dx = l.mesh.position.x - at.x,
       dz = l.mesh.position.z - at.z,
       d = Math.hypot(dx, dz) || 1;
-    // Out from you, and forward, so they tumble down where you'll see them when you look up.
+    // Out from you, and forward, so they crash down where you'll see them when you look up.
     const out = 2.5 + Math.random() * 4,
       ahead = 3 + Math.random() * 4;
-    const up = AIR ? -5 - Math.random() * 5 : 6 + Math.random() * 5; // from the air, they come down on top of you
+    const up = -5 - Math.random() * 5;
     body.velocity.set((dx / d) * out + FWD.x * ahead, up, (dz / d) * out + FWD.z * ahead);
     const spin = () => (Math.random() - 0.5) * 11;
     body.angularVelocity.set(spin(), spin(), spin());

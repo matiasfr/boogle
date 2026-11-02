@@ -11,13 +11,13 @@ import { addPart, mergeParts } from '../render/props.ts';
  * only happens once, on a first visit; a returning player goes straight in. */
 export const HEIGHT = 120;
 
-// The whole shot lines up with the camera's starting direction: the line runs forward, the sign reads left to right.
+// The whole shot lines up with the camera's starting direction: the line runs forward, the title reads left to right.
 export const YAW = cam.yaw;
 export const FWD = new THREE.Vector3(-Math.sin(YAW), 0, -Math.cos(YAW));
 export const RIGHT = new THREE.Vector3(Math.cos(YAW), 0, -Math.sin(YAW));
 export const UP = new THREE.Vector3(0, 1, 0);
 
-/** The middle of the sign, on the ground: where you land. */
+/** The spot under the title, on the ground: where you land. */
 export const TARGET = new THREE.Vector3(SPAWN.x, 0, SPAWN.z).addScaledVector(FWD, -3);
 TARGET.y = groundHeight(TARGET.x, TARGET.z);
 

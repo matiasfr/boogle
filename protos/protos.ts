@@ -75,25 +75,17 @@ export const PROTOS: Proto[] = [
     id: 'fall',
     title: 'The fall into the world',
     step: 'depth',
-    status: 'live',
+    status: 'graduated',
     answer: {
       on: '2026-11-02',
-      verdict: 'The idea is very sound. I really enjoyed it.',
+      verdict: 'The idea is very sound. When I smash through it and the letters come through the air, that’s a yes.',
       next: 'Done: it is the game’s first visit. This link replays it; what a returning player gets is next.',
     },
     url: '/?room=proto-fall&proto=fall&tod=0.2',
-    question: 'Which is the better title moment: smashing through it in the air, or crashing into it on the ground?',
-    what: 'Your Buddy riding a flat trolley above the clouds while you pick. Jump in runs it off the end of the rail; steer down through the cloud into the BOOGLE sign.',
+    question: 'Did that make you laugh?',
+    what: 'Your Buddy riding a flat trolley above the clouds while you pick. Jump in runs it off the end of the rail; steer down through the cloud, smash through BOOGLE in the sky and the letters fall with you.',
     since: '2026-11-02',
     chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
-    defaultWhat: 'You crash into BOOGLE on the ground.',
-    variants: [
-      {
-        name: 'air',
-        url: '/?room=proto-fall&proto=fall&tod=0.2&v=air',
-        what: 'BOOGLE hangs in the sky under the cloud: you smash through it and the letters fall with you.',
-      },
-    ],
   },
   {
     id: 'place',
@@ -557,8 +549,6 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'fall', variant: 'air', why: 'Is smashing through the title in the air the better moment?' },
-  { id: 'fall', why: 'Or is crashing into it on the ground?' },
   { id: 'place', why: 'Did carrying materials out to the track feel like building something, or like a chore?' },
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
