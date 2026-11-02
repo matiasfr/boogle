@@ -41,7 +41,7 @@ const ok = (v: unknown): v is number => typeof v === 'number' && Number.isFinite
 if (layout?.route)
   layout.route.slice(0, ROUTE.length).forEach((r, s) => {
     if (!ok(r.x) || !ok(r.z) || !ok(r.to?.[0]) || !ok(r.to?.[1])) return;
-    Object.assign(ROUTE[s], { x: r.x, z: r.z, to: [r.to[0], r.to[1]] });
+    Object.assign(ROUTE[s]!, { x: r.x, z: r.z, to: [r.to[0], r.to[1]] });
   });
 
 /** Moves a POI's site (its default export, in place, so its content module sees it too) to the layout's place. */
