@@ -62,11 +62,12 @@ export default {
     await A.page.waitForTimeout(6000);
     t.check('the first tab does not come back by itself', told(await state(A.page)));
 
-    // A real click. On CI's software WebGPU, Playwright's check fails with "<div class="elsewhere"> intercepts pointer
-    // events" though the DOM has the button on top at its centre (nightly 41434493212: elementsFromPoint gives BUTTON,
-    // card, dim layer), so CI skips that check and still sends the mouse there; a press that misses fails below.
+    // A real click on a real GPU. On CI's software WebGPU a mouse press doesn't reach the button though the DOM has it on
+    // top at its centre (elementsFromPoint: BUTTON, card, dim layer; nightly 41434493212), and a forced press changed
+    // nothing (41436663037): the runner's input misses, not the card. So CI presses the button directly.
     await A.page.bringToFront();
-    await A.page.click('.elsewhere button', { force: !!process.env.CI });
+    if (process.env.CI) await A.page.dispatchEvent('.elsewhere button', 'click');
+    else await A.page.click('.elsewhere button');
     await A.page.waitForSelector('#enter:not([disabled])', loaded);
     t.check('Play here: the first tab is live again', (await until(A.page, live, 60000)) >= 0);
     t.check('and the second tab is told', (await until(B, told, 30000)) >= 0);

@@ -210,8 +210,10 @@ export default {
     });
     const deck = await g.still('deck');
     t.check('the frisbee waits on the lighthouse deck', perched, deck);
-    // Press again if nothing came, as a player would: at a runner's frame rate one press can land before the prompt is on
-    // the frisbee (nightly 41434493212), and the frisbee is still there to take.
+    // The camera comes back first: the still's wide view of the deck is the slowest thing a runner draws here, and its tab
+    // applied the pick-up only once this view had gone (nightlies 41434493212, 41436663037: over 180 s, then the throw took
+    // 40 s). Press again if nothing came, as a player would.
+    await g.eval(`window.__debugCam.clear();`);
     let got = -1;
     for (let k = 0; k < 3 && got < 0; k++) {
       await g.eval(`${INV} H.interactDown(); H.interactUp();`);
@@ -220,7 +222,6 @@ export default {
       });
     }
     t.check('you can pick the frisbee up', got >= 0);
-    await g.eval(`window.__debugCam.clear();`);
     await g.eval(AIM(3.0, 0.12));
     await g.wait(0.4);
     // Half a charge: a full one glides about 85 m, past the beach into the sea in this direction.
