@@ -94,7 +94,7 @@ Every avatar plays hand-made animation ([src/player/buddy/body.ts](../../src/pla
 Animation Library (CC0). Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
 the camera ([src/player/buddy/camera.ts](../../src/player/buddy/camera.ts), `&cam=old` for the older one) sits at 5.2 m instead of
-6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
+6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Solid things can't come between it and you ([src/player/camera-arm.ts](../../src/player/camera-arm.ts)): anything static that you collide with pulls it in at once, then it eases back out (0.12 s, then a 0.3 s time constant), and a slope lifts it first. Things under 1.6 m across, like trunks, only move it when they're right at the lens. What moves doesn't block it. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
 
 The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to

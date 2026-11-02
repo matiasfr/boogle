@@ -5,9 +5,10 @@ import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
-import { addBody } from '../physics/engine.ts';
+import { addBody, getMask } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.ts';
+import { makeCameraArm } from './camera-arm.ts';
 import { sendPresence, setLocalPresence, peopleChanged } from '../netplay/net.ts';
 import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
@@ -82,7 +83,10 @@ export const camConstraints: ((look: THREE.Vector3, pos: THREE.Vector3) => boole
 
 const camPos = new THREE.Vector3(),
   camLook = new THREE.Vector3(),
+  camFrom = new THREE.Vector3(),
   fwd = new THREE.Vector3();
+const camArm = makeCameraArm();
+const camFloor = (x: number, z: number) => Math.max(groundHeight(x, z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
 function updateCamera(elapsed: number) {
   if (!me.entered || !me.body) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
@@ -96,9 +100,12 @@ function updateCamera(elapsed: number) {
     camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
     camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
     if (!camConstraints.some((fn) => fn(camLook, camPos))) {
-      const floor = Math.max(groundHeight(camPos.x, camPos.z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
-      camPos.y = Math.max(camPos.y, floor);
-    }
+      // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
+      // left in the way (a ridge, a wall). It collides with what you collide with: outside the caves, not their rock.
+      camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
+      camArm.solve(camFrom.set(ip.x, camLook.y, ip.z), camPos, getMask(me.body));
+      camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
+    } else camArm.reset();
     camera.position.copy(camPos);
     camera.lookAt(camLook.addScaledVector(fwd, 8));
   }
