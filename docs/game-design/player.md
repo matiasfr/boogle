@@ -91,13 +91,13 @@ Part of the [game design document](../game-design.md) (as built). Update this fi
 ## Prototype: the hero (`?proto=hero`)
 
 Behind the flag, every avatar plays hand-made animation ([src/proto/hero/clips.ts](../../src/proto/hero/clips.ts)):
-Quaternius's Universal Animation Library (CC0), by default on its mannequin, kept to compare motion apart from any model
-of ours. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
+Quaternius's Universal Animation Library (CC0), on the Buddy; `&body=mannequin` plays it on the library's own figure, to
+compare motion apart from our model. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
 the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
 6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint.
 
-`&body=buddy` is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
+The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to
 the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
 pitch comes off the head (the library's idle looks down about 13°) and its bob stays. Most of the butt's weight rides on the
