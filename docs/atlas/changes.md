@@ -7,6 +7,7 @@
 - The Boogler still runs in one player's tab, but now [the server picks that tab](#story/boogler) and picks a new one if it leaves.
 - New story: [opening day starts](#story/opening). One stamped tick starts a whole scripted moment (the gathering call, the bell, the era change), so every tab and every late joiner sees the same thing without anything else being sent.
 - Two new folders get notes: prototypes (everything behind `?proto=`) and shared HUD pieces.
+- Later the same day, only small fixes landed: the code now double-checks every list lookup before trusting it, like checking a drawer isn't empty before reaching in. Nothing in the picture moved.
 
 ## 2026-10-30
 
