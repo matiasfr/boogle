@@ -18,6 +18,7 @@ import url from '../../../assets/built/hero-clips.glb?url';
 import tracklayerUrl from '../../../assets/built/tracklayer.glb?url';
 import buddyUrl from '../../../assets/built/buddy.glb?url';
 import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from './retarget.ts';
+import { makeLife } from './life.ts';
 
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
 // The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
@@ -44,6 +45,8 @@ type Rig = {
   legs: number;
   spread: [THREE.Object3D, number][];
   strideK: number; // the stride's scale: the legs', and the whole figure's
+  life?: ReturnType<typeof makeLife>;
+  lastY: number;
 };
 const rigs = new WeakMap<Avatar, Rig>();
 
@@ -102,14 +105,17 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   for (const [bone, k] of r.scaled) bone.scale.setScalar(k);
   r.pelvis.position.multiplyScalar(r.legs);
   for (const [bone, k] of r.spread) bone.position.multiplyScalar(k);
+  if (r.life) r.life.update(dt, (a.position.y - r.lastY) / dt, airborne);
+  r.lastY = a.position.y;
 }
 
 // &body=buddy (assets/src/buddy.py, a simple smooth figure in the player's colour) and &body=tracklayer (a fixed design,
-// assets/src/tracklayer.json, made with Meshy): the same clips, retargeted onto each one's own skeleton at load.
+// assets/src/tracklayer.json, made with Meshy): the same clips, retargeted onto each one's own skeleton at load. No rim
+// of light (the owner prefers it off). &hat=cap or beanie wears one of the Buddy's `wear_head_` parts.
 const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the mannequin's
 async function startModel(modelUrl: string, map: Record<string, string>, tint: boolean) {
   const [clips, model] = await Promise.all([loadAsset(url), loadAsset(modelUrl)]);
-  shadeOnce(model.gltf.scene);
+  const hat = 'wear_head_' + new URLSearchParams(location.search).get('hat');
   const src = clips.instance();
   const tgt = model.instance();
   let ratio = 1;
@@ -127,6 +133,7 @@ async function startModel(modelUrl: string, map: Record<string, string>, tint: b
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       m.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
+      if (m.name.startsWith('wear_')) m.visible = m.name.startsWith(hat);
       const shared = m.material as THREE.MeshStandardNodeMaterial;
       if (tint && shared.name === 'M_Main') {
         const own = shared.clone();
@@ -165,6 +172,8 @@ async function startModel(modelUrl: string, map: Record<string, string>, tint: b
       legs: 1,
       spread: [],
       strideK: ratio,
+      life: makeLife(root, tgt.children[0]!, map),
+      lastY: a.position.y,
     });
   };
   await precompile(model.instance());
@@ -233,6 +242,7 @@ export async function startClipsHero() {
       legs,
       spread,
       strideK: legs * s,
+      lastY: 0,
     });
   };
   await precompile(kit.instance());

@@ -11,6 +11,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { patchNode } from '../src/render/material-patch.ts';
 import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from '../src/proto/hero/retarget.ts';
+import { makeLife } from '../src/proto/hero/life.ts';
 import tracklayerUrl from '../assets/built/tracklayer.glb?url';
 import buddyUrl from '../assets/built/buddy.glb?url';
 import clipsUrl from '../assets/built/hero-clips.glb?url';
@@ -32,6 +33,7 @@ const VIEWS: Record<string, { yaw: number; dist: number; y: number }> = {
   Side: { yaw: Math.PI / 2, dist: 3.6, y: HEIGHT },
   Back: { yaw: Math.PI, dist: 3.6, y: HEIGHT },
   Close: { yaw: 0.4, dist: 1.5, y: 1.5 },
+  Face: { yaw: 0, dist: 1.7, y: 1.36 }, // level with the eyes, to judge the gaze
   Game: { yaw: Math.PI, dist: 6.5, y: 2.6 }, // about where the game's camera sits
 };
 
@@ -42,6 +44,12 @@ const MODELS: Record<string, { label: string; url: string; map: Record<string, s
 const modelName = new URLSearchParams(location.search).get('model') ?? 'buddy';
 const chosen = MODELS[modelName] ?? MODELS.buddy!;
 const modelUrl = chosen.url;
+const HATS: [string, string][] = [
+  ['None', ''],
+  ["Conductor's cap", 'wear_head_cap'],
+  ['Beanie', 'wear_head_beanie'],
+];
+const HOP = { v: 7.6, gravity: 18, wait: 0.7, land: 0.35, from: 0.3 }; // the game's jump, roughly; JUMP_FROM in clips.ts
 const COLOURS = ['#1fbfc4', '#ff6b5a', '#ffb02e', '#7ed321', '#4a90e2', '#a55eea', '#ff5e9e', '#ff8a3d'];
 
 const canvas = $<HTMLCanvasElement>('view');
@@ -77,7 +85,7 @@ const setView = (name: string) => {
   const v = VIEWS[name]!;
   camera.fov = name === 'Game' ? 62 : 40;
   camera.updateProjectionMatrix();
-  controls.target.set(0, name === 'Close' ? 1.35 : HEIGHT, 0);
+  controls.target.set(0, name === 'Close' || name === 'Face' ? 1.36 : HEIGHT, 0);
   camera.position.set(Math.sin(v.yaw) * v.dist, v.y, Math.cos(v.yaw) * v.dist);
 };
 function resize() {
@@ -110,7 +118,8 @@ model.scene.traverse((o) => {
   if (!m.isMesh) return;
   m.castShadow = true;
   m.frustumCulled = false;
-  triangles += (m.geometry.index?.count ?? m.geometry.attributes.position!.count) / 3;
+  if (m.name.startsWith('wear_')) m.visible = false;
+  else triangles += (m.geometry.index?.count ?? m.geometry.attributes.position!.count) / 3;
   const old = m.material as THREE.Material;
   let n = toNode.get(old);
   if (!n) {
@@ -168,6 +177,21 @@ function rebake(armOut: number) {
   updateCrowd();
 }
 
+// A jump as the game plays it: the clips by the same timing, the figure thrown up, and life.ts on top.
+let hopT = -1;
+const hopHold = Number(new URLSearchParams(location.search).get('hop'));
+function hop(dt: number) {
+  const air = (2 * HOP.v) / HOP.gravity;
+  hopT = hopHold ? hopHold : (hopT + dt) % (air + HOP.wait);
+  const inAir = hopT < air;
+  const want = inAir ? (hopT < 0.18 ? 'Jump_Start' : 'Jump_Loop') : hopT < air + HOP.land ? 'Jump_Land' : 'Idle_Loop';
+  if (want !== current) play(want, 0.06);
+  if (want === 'Jump_Start') action!.time = HOP.from + hopT;
+  if (want === 'Jump_Land') action!.time = hopT - air;
+  figure.position.y = inAir && !hopHold ? HOP.v * hopT - (HOP.gravity * hopT * hopT) / 2 : 0; // held: in frame
+  return { vy: inAir ? HOP.v - HOP.gravity * hopT : 0, inAir };
+}
+
 function button(parent: string, label: string, on: () => void) {
   const b = document.createElement('button');
   b.type = 'button';
@@ -176,7 +200,14 @@ function button(parent: string, label: string, on: () => void) {
   $(parent).append(b);
   return b;
 }
-for (const [label, name] of CLIPS) button('clips', label, () => play(name)).dataset.clip = name;
+const pick = (name: string) => {
+  hopT = -1;
+  figure.position.y = 0;
+  play(name);
+};
+for (const [label, name] of CLIPS) button('clips', label, () => pick(name)).dataset.clip = name;
+button('clips', 'Hop', () => (hopT = 0));
+button('clips', 'Blink', () => life.blink());
 for (const name of Object.keys(VIEWS)) button('views', name, () => setView(name));
 for (const [name, m] of Object.entries(MODELS))
   button('models', m.label, () => (location.search = '?model=' + name)).classList.toggle('on', m === chosen);
@@ -187,6 +218,25 @@ if (skin)
     b.style.cssText = `background:${c};width:24px;height:24px;padding:0`;
     b.setAttribute('aria-label', 'Colour ' + c);
   }
+let wornHat = '';
+function setHat(name: string) {
+  wornHat = name;
+  for (const root of [figure, crowd]) {
+    root.traverse((o) => {
+      if (o.name.startsWith('wear_')) o.visible = !!name && o.name.startsWith(name);
+    });
+  }
+  for (const b of $('hats').children) b.classList.toggle('on', (b as HTMLElement).dataset.hat === name);
+}
+const hatMat = [...materials].find((m) => m.name === 'M_Hat');
+if (hatMat) {
+  for (const [label, name] of HATS) button('hats', label, () => setHat(name)).dataset.hat = name;
+  for (const c of ['#7a2433', '#2f4a8a', '#2f7d4f', '#e0b13c', '#f2efe6', '#3a3a44']) {
+    const b = button('hat-colours', '', () => hatMat.color.set(c));
+    b.style.cssText = `background:${c};width:24px;height:24px;padding:0`;
+    b.setAttribute('aria-label', 'Hat colour ' + c);
+  }
+}
 const rimButtons = [button('rims', 'Rim on', () => setRim(1)), button('rims', 'Rim off', () => setRim(0))];
 function setRim(v: number) {
   rimOn.value = v;
@@ -227,15 +277,24 @@ function updateCrowd() {
     m.timeScale = speed;
     crowdMixers.push(m);
   }
+  setHat(wornHat);
 }
 $<HTMLInputElement>('crowd').addEventListener('change', updateCrowd);
 
+const life = makeLife(figure, restFigure, chosen.map);
 bake((12 * Math.PI) / 180);
 play('Idle_Loop', 0);
-setRim(1);
+setRim(0);
 setView('Three');
 const q = new URLSearchParams(location.search);
 if (q.get('clip')) play(q.get('clip')!, 0);
+if (q.get('hat')) setHat('wear_head_' + q.get('hat'));
+if (hopHold) hopT = 0;
+if (q.get('t')) {
+  // Hold one moment of the clip, for comparing stills.
+  action!.time = Number(q.get('t'));
+  action!.paused = true;
+}
 if (q.get('view')) setView(q.get('view')!);
 const spin = $<HTMLInputElement>('spin');
 if (q.has('spin')) spin.checked = true;
@@ -244,10 +303,25 @@ if (q.has('crowd')) {
   updateCrowd();
 }
 
+Object.assign(window, {
+  character: {
+    figure,
+    mixer,
+    restFigure,
+    camera,
+    controls,
+    get action() {
+      return action;
+    },
+  },
+});
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(0.05, clock.getDelta());
+  const jump = hopT >= 0 ? hop(dt) : { vy: 0, inAir: false };
   mixer.update(dt);
+  life.update(dt, jump.vy, jump.inAir);
+  if (q.get('blink')) for (const n of ['eye_l', 'eye_r']) figure.getObjectByName(n)!.scale.y = Number(q.get('blink'));
   for (const m of crowdMixers) m.update(dt);
   if (spin.checked) figure.rotation.y += dt * 0.8;
   controls.update();

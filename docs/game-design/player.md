@@ -102,12 +102,17 @@ Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](
 hips and stride shrink with the legs.
 
 `&body=buddy` is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
-smooth skin blended by a voxel remesh and bound with automatic weights, about 6,500 triangles, no textures, on the same clips.
+smooth skin blended by a voxel remesh, with softened weights and a head and mitts that hold their shape, plus a face moulded to
+the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
+pitch comes off the head (the library's idle looks down about 13°) and its bob stays. It blinks, and in the air
+([src/proto/hero/life.ts](../../src/proto/hero/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next
+jump) and spreads its arms while falling, blended from its vertical speed. `&hat=cap` wears a conductor's cap and `&hat=beanie` a
+beanie, parts on the head bone hidden until worn, each one more draw call or two.
 
 `&body=tracklayer` is a fixed design ([assets/src/tracklayer.json](../../assets/src/tracklayer.json), made with Meshy): 8,264
 triangles, 256 px textures, the same clips retargeted onto its skeleton at load ([src/proto/hero/retarget.ts](../../src/proto/hero/retarget.ts)),
 with the upper arms swung out 12° to clear its wider body. It doesn't take the player's colour yet. boogle.club/character/ shows
-it alone, with every clip, views, a crowd of 8 and render switches.
+it alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.
 
 `&ctl=odyssey` (any page) tries a modern-Mario controller: you run where you face (turning at most 390°/s, 510°/s at
 sprint), speed builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air

@@ -356,7 +356,12 @@ export const PROTOS: Proto[] = [
       {
         name: 'buddy',
         url: '/?proto=hero&body=buddy&v=buddy',
-        what: 'A simple, slightly plump smooth figure in your colour, on the same clips.',
+        what: 'A simple, slightly plump smooth figure in your colour: softer joints, looking straight ahead, blinking, with a livelier jump.',
+      },
+      {
+        name: 'conductor',
+        url: '/?proto=hero&body=buddy&hat=cap&v=conductor',
+        what: 'The Buddy in a conductor’s cap, the first hat.',
       },
       {
         name: 'tracklayer',
