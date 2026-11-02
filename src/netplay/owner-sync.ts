@@ -12,6 +12,7 @@
 //                                   anything else on the wire likewise
 //     adoptOrphan()                 nobody has it and this tab should: claim it, and whatever else that means here
 //     onRelease()                   this tab is letting go, by choice or outbid: whatever else that means here
+//     onOwner(claim)                once a frame while this tab isn't the owner: the winning claim, or null for nobody
 //     extrapolateMs                 how far past the last snapshot the pose may run on its velocity
 //   });
 //
@@ -20,15 +21,15 @@
 //   owner.claim(mode)               this tab takes it, one epoch up: the body takes the pose, the mode flips, presence goes
 //   owner.release()                 this tab lets go, if it had it: onRelease, back to ghost, presence goes
 //   owner.hear(peer, wire, time)    from onRemotePresence: a peer's claim, or anything else for none
-//   owner.resolve(now, hidden)      once a frame, before the step: settles who owns it; returns the winning claim if it
-//                                   isn't this tab. hidden: this tab isn't on screen, so it won't pick up an orphan
+//   owner.resolve(now)              once a frame, before the step: settles who owns it, then onOwner if it isn't this tab
+//                                   (a tab that isn't on screen won't pick up an orphan)
 //   owner.sample()                  once a frame, after resolve: writePose from the owner's snapshots, if it isn't this tab
 //
 // The presence key is the object's own `addPresenceField('key', ...)` and `hear(r.peer, pr.key, time)`, literal so
 // `npm run registry` sees it. Each object lives as long as the page: nothing here unhooks from net.ts yet.
 import { INTERP_MS } from '../constants.ts';
 import { finiteArr, lerp } from '../math.ts';
-import { net, remotes, keepPresenceWhile, onPeerRemoved, sendPresence } from './net.ts';
+import { net, remotes, keepPresenceWhile, onPeerRemoved, sendPresence, tabHidden } from './net.ts';
 import { createSnaps } from './snaps.ts';
 
 export type OwnerMode = 'sim' | 'ghost';
@@ -47,6 +48,7 @@ export type OwnedObject<C extends OwnerClaim> = {
   writePose(p: readonly number[], a: C, b: C, u: number): void;
   adoptOrphan(): void;
   onRelease(): void;
+  onOwner(claim: C | null): void;
   extrapolateMs: number;
 };
 
@@ -69,6 +71,44 @@ export function createOwnerSync<C extends OwnerClaim>(state: OwnerState, object:
     state.mine = false;
     object.setMode('ghost');
     sendPresence();
+  }
+
+  // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner. Nobody owns
+  // it: the visible peer with the lowest label picks it up, and alone (solo) that's this tab at once.
+  function settle(now: number): C | null {
+    let best: Peer | null = null;
+    let bestE = state.mine ? state.myE : -Infinity;
+    let bestPeer = net.myPeer ?? '';
+    for (const peer of peers.values()) {
+      const c = peer.claim;
+      if (!c) continue;
+      if (c.e > bestE || (c.e === bestE && peer.peer > bestPeer)) {
+        best = peer;
+        bestE = c.e;
+        bestPeer = peer.peer;
+      }
+      state.e = Math.max(state.e, c.e);
+    }
+    if (best) release();
+    owner = best;
+    state.remoteOwned = !!best;
+    if (best || state.mine) {
+      orphanSince = 0;
+      return best ? best.claim : null;
+    }
+
+    if (net.state === 'solo') {
+      object.adoptOrphan();
+      return null;
+    }
+    if (!net.room) return null;
+    if (!orphanSince) orphanSince = now;
+    if (now - orphanSince < ORPHAN_WAIT_MS || now - net.readyAt < JOIN_WAIT_MS || !net.myPeer || tabHidden())
+      return null;
+    let lowest = net.myPeer;
+    for (const r of remotes.values()) if (r.visible && r.peer < lowest) lowest = r.peer;
+    if (lowest === net.myPeer) object.adoptOrphan();
+    return null;
   }
 
   return {
@@ -97,41 +137,9 @@ export function createOwnerSync<C extends OwnerClaim>(state: OwnerState, object:
       }
     },
 
-    // Highest epoch wins; a tie goes to the lexically larger peer label, so every tab picks the same owner. Nobody owns
-    // it: the visible peer with the lowest label picks it up, and alone (solo) that's this tab at once.
-    resolve(now: number, hidden: boolean): C | null {
-      let best: Peer | null = null;
-      let bestE = state.mine ? state.myE : -Infinity;
-      let bestPeer = net.myPeer ?? '';
-      for (const peer of peers.values()) {
-        const c = peer.claim;
-        if (!c) continue;
-        if (c.e > bestE || (c.e === bestE && peer.peer > bestPeer)) {
-          best = peer;
-          bestE = c.e;
-          bestPeer = peer.peer;
-        }
-        state.e = Math.max(state.e, c.e);
-      }
-      if (best) release();
-      owner = best;
-      state.remoteOwned = !!best;
-      if (best || state.mine) {
-        orphanSince = 0;
-        return best ? best.claim : null;
-      }
-
-      if (net.state === 'solo') {
-        object.adoptOrphan();
-        return null;
-      }
-      if (!net.room) return null;
-      if (!orphanSince) orphanSince = now;
-      if (now - orphanSince < ORPHAN_WAIT_MS || now - net.readyAt < JOIN_WAIT_MS || !net.myPeer || hidden) return null;
-      let lowest = net.myPeer;
-      for (const r of remotes.values()) if (r.visible && r.peer < lowest) lowest = r.peer;
-      if (lowest === net.myPeer) object.adoptOrphan();
-      return null;
+    resolve(now: number) {
+      const claim = settle(now);
+      if (!state.mine) object.onOwner(claim);
     },
 
     sample() {

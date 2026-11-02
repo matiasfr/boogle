@@ -4,14 +4,7 @@
 import { r2, r3 } from '../../math.ts';
 import { me } from '../../player/state.ts';
 import { addPresenceField, onRemotePresence } from '../../netplay/net.ts';
-import { ball, ballOwner } from './state.ts';
-
-/** The ball as its owner publishes it (presence `b`). */
-export type BallWire = { e: number; p: number[]; v: number[]; q: number[]; h: number };
-
-export function remoteHoldsBall() {
-  return !ball.mine && ball.remoteOwned && ball.held;
-}
+import { ball, ballOwner, type BallWire } from './state.ts';
 
 addPresenceField('b', (): BallWire | null => {
   if (!ball.mine) return null;
@@ -27,10 +20,3 @@ addPresenceField('b', (): BallWire | null => {
   };
 });
 onRemotePresence((r, pr, time) => ballOwner.hear(r.peer, pr.b, time));
-
-export function resolveBallOwner(now: number, hidden: boolean) {
-  const claim = ballOwner.resolve(now, hidden);
-  if (claim) ball.held = !!(claim as BallWire).h;
-  // Its holder is gone: nobody holds it, even in a hidden tab that won't adopt it (placeBall would refuse for good).
-  else if (!ball.mine) ball.held = false;
-}

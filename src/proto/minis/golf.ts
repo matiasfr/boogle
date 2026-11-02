@@ -8,7 +8,7 @@ import { GROUP } from '../../physics/physics.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
 import { ball, respawnBall } from '../../entities/ball/state.ts';
-import { remoteHoldsBall } from '../../entities/ball/sync.ts';
+import { remoteHoldsBall } from '../../entities/ball/state.ts';
 import { me, cam } from '../../player/player.ts';
 import { drop, has } from '../../player/inventory.ts';
 import { registerInteractable } from '../../player/hands.ts';
