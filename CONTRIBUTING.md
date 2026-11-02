@@ -4,7 +4,9 @@ Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](
 
 ## Setup
 
-Node 24 (`.nvmrc`). `npm install` (also installs the pre-push hook), then `npm run dev` and open http://localhost:5173. Running our own signaling server locally, and the `?room=` / `?netdebug=1` options, are in [README.md](README.md#multiplayer).
+Use Node 24 (`.nvmrc`; `nvm use` if you use nvm). Run `npm ci`, then `npm run dev` and open the URL Vite prints. Installation includes the server dependencies and pre-push hook. The dev server starts the game server automatically; no production secrets are needed. The `?room=` / `?netdebug=1` options are in [README.md](README.md#multiplayer).
+
+For browser checks, install the pinned Playwright browser with `npx playwright install chromium` (Linux: `npx playwright install --with-deps chromium`). Start with `npm run check`; the change-specific checks are in [AGENTS.md](AGENTS.md#tests).
 
 ## How we work
 
@@ -35,3 +37,22 @@ The playtest is the real test. Whenever something new lands, jump on https://boo
 - **Other agents** (Codex, Cursor, ...) read `AGENTS.md` directly. Change shared rules there, never in `CLAUDE.md`. Codex also gets the skills through `.agents/skills`, a link to `.claude/skills`.
 - **On GitHub**, mention `@claude` in an issue or PR ([claude.yml](.github/workflows/claude.yml)). It opens a PR from a `claude/` branch that [automerge.yml](.github/workflows/automerge.yml) squash-merges once CI is green. Add the `no-automerge` label or ask for a draft to review first. [ci-autofix.yml](.github/workflows/ci-autofix.yml) fixes a red `main` and red or conflicting `ship/` and `claude/` branches.
 - Treat AI-written code like any other: play it, skim the diff, and push back on slow or browser-based tests for things a unit test or a playtest covers.
+
+### Codex local and worktree tasks
+
+Open this repository in Codex. `AGENTS.md` is the shared entry point; `.agents/skills` is a committed relative symlink, so the same skills are available in a fresh worktree. There is no separate Codex copy to maintain. Read `src/README.md` for the code map, `docs/game-design.md` for what is built, and `docs/proposals/boogle-2.md` before design work.
+
+Use a worktree for an independent task and install dependencies there. For automatic setup in the desktop app, configure a project local environment with the following setup script after making Node 24 available to its shell:
+
+```sh
+npm ci
+npx playwright install chromium
+```
+
+Use the Linux browser-install command above on Linux. The app saves the generated environment configuration under `.codex/`; it can be committed for the team. This is optional desktop configuration, not a prerequisite for CLI tasks. See [OpenAI's local environment documentation](https://learn.chatgpt.com/docs/environments/local-environment).
+
+Useful desktop actions are `npm run dev`, `npm run check` and `npm run look -- --view hill`. The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it does not need an already-running dev server. Open the still, motion sheet and heatmap; check for `renderer backend: webgpu` and `gfx errors: none`.
+
+Claude's edit hooks do not run in Codex: format the files you changed with `npx prettier --write <files>`, and run `npx eslint <changed TypeScript files>`. Do not format the whole repository. If a sandbox blocks setup or checks, request access for that command. In particular, `npm ci` can install dependencies successfully while its `prepare` step reports a Git config permission error; verify `git config --get core.hooksPath` is `.githooks`, and rerun `npm run prepare` with the required access if it is not.
+
+Commit only the task's files and use `SHIP_NO_AI=1 npm run ship` for Codex-managed conflict resolution. This uses the same `ship/` branch, CI and owner-gate workflow as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification, and distinguish a pushed branch from a verified merge or deployment in the handoff.
