@@ -1,5 +1,5 @@
 // Critters (924924d): run at the gulls and they burst off the sand, drop the ball on the fish school and it scatters,
-// fireflies over the mushroom garden at night.
+// fireflies over the meadow at night.
 import type { Shot } from '../clip.ts';
 import { STAND } from './_stand.ts';
 
@@ -114,14 +114,8 @@ export default {
       }),
     );
 
-    // Fireflies: a full-moon night over the mushroom garden, a crane down from above so the dark soil is the backdrop.
-    const garden = await g.eval(`
-      const { PATCH } = await import('/src/sim/mushrooms.ts');
-      const { CELL, HALF } = await import('/src/constants.ts');
-      const { groundHeight } = await import('/src/island/terrain.ts');
-      const x = (PATCH.i0 + PATCH.w / 2) * CELL - HALF, z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
-      return [x, groundHeight(x, z), z];`);
-    const [gx, , gz] = garden;
+    // Fireflies: a full-moon night over the meadow, a crane down from above.
+    const [gx, gz] = [30, 2.5];
     await g.eval(STAND(gx + 16, gz - 16));
     await g.eval(SKY(0.8, 0.5));
     await g.wait(6);

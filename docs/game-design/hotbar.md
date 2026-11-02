@@ -1,8 +1,8 @@
 # 6.6 Hotbar and items
 
 - **What and how it plays.** Five slots; whatever is selected is drawn in your hand and everyone sees it. New players
-  start empty-handed. Pick-ups go into a free slot (seeds stack to 20); the ball takes a slot while you
-  hold it and leaves when ownership does. Using what you hold: the can waters, seeds plant, anything
+  start empty-handed. Pick-ups go into a free slot; the ball takes a slot while you
+  hold it and leaves when ownership does. Using what you hold: a bag of seeds sprouts mushrooms, anything
   else winds up a throw. A full hotbar greys the prompt ("Hotbar full").
 - **Controls.** 1-5 (same key again for empty hands), pad LB / RB, tap a slot; use (click / X); Toss on touch.
 - **Sync kind.** Local for the contents (localStorage `boogle.hotbar`); Owner for what is in your hand (presence `hd`,

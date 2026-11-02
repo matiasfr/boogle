@@ -6,7 +6,7 @@
 // The engine is Rapier (./backend-rapier.ts, WASM). `physicsReady` resolves once its WASM is in; main.ts waits for it.
 //
 //   createBody({ mass, type, material, group, mask, response, position, rotation, shapes })   not yet in the world
-//   setShapes(body, shapes)        replace its shapes (a growing mushroom); mass and bounds follow
+//   setShapes(body, shapes)        replace its shapes (a thing that changes size); mass and bounds follow
 //   getMask(body), setMask(body, mask)   which collision groups it collides with (the caves swap them)
 //   setMotion(body, 'dynamic' | 'kinematic', response, mass)   switch how it moves; kinematic stops it (response:
 //                                  pushes; mass: set it too)

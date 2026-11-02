@@ -1,8 +1,8 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts).
-// Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it and
-// with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
+// Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
+// Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
 // Sim: CPU ms per lockstep tick (average, p95, max), split per op, onApplied/onTick/onAfterTick handler and state hash (see
 // profileTicks in src/world/sync.ts), on the idle island. The page runs the ticks back to back (updateWorld), so slow
@@ -42,17 +42,6 @@ const STATS = `
     backend: window.boogle.gfx,
     calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,
     geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs };`;
-
-// Grow every plot at once by loading a snapshot, instead of waiting for sim ticks.
-const FULL_GARDEN = `
-  const { snapshot, loadSnapshot } = await import('/src/world/sync.ts');
-  const { PATCH, GROW_TICKS } = await import('/src/sim/mushrooms.ts');
-  const s = snapshot();
-  s.data.mushrooms = [];
-  for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w; i += 3)
-    for (let j = PATCH.j0; j < PATCH.j0 + PATCH.h; j += 3) s.data.mushrooms.push(i, j, GROW_TICKS);
-  loadSnapshot(s);
-  return s.data.mushrooms.length / 3;`;
 
 // Run `n` ticks under profileTicks, yielding to the page every few so frames and timers still run. A host hashes every state every 20 ticks; a solo page is not a host, so
 // this does it in its place.
@@ -129,11 +118,8 @@ try {
       await g.eval(`window.boogle.sky.preview(0.3); window.__debugCam.set(${pose});`);
       await sleep(6000);
     }
-    const rows: Record<string, unknown> = { 'island, empty garden': await g.eval(STATS) };
-    if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(rows['island, empty garden']));
-    const n = await g.eval(FULL_GARDEN);
-    await sleep(500);
-    rows[`island, ${n} grown mushrooms`] = await g.eval(STATS);
+    const rows: Record<string, unknown> = { island: await g.eval(STATS) };
+    if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(rows.island));
     console.log('render');
     console.table(rows);
     // CPU per frame section (src/loop.ts), averaged over the last 240 frames. Headless: compare before/after only.
@@ -144,7 +130,7 @@ try {
   }
   if (doSim) {
     await sleep(1000);
-    await profile(g, `sim, idle island${doRender ? ' (garden grown)' : ''}`, IDLE_TICKS);
+    await profile(g, 'sim, idle island', IDLE_TICKS);
   }
 } catch (e) {
   console.error(e);

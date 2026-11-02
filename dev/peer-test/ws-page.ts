@@ -99,12 +99,12 @@ const T = (window.T = {
       peers: r.peers().map((p) => ({ peer: p.peer, sameTab: p.sameTab, presence: p.presence })),
     };
   },
-  plant: null as unknown as (i: number, j: number) => boolean, // set by startWorld
+  toss: null as unknown as (i: number, j: number) => boolean, // set by startWorld
   world: (): unknown => null,
 });
 
 function startWorld(room: Room) {
-  const w = createSync({ env: { canPlantAt: () => true } });
+  const w = createSync();
   const rules = installRules(w, { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1]);
   w.onAfterTick((t) => {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
@@ -117,10 +117,10 @@ function startWorld(room: Room) {
     w.updateWorld((now - last) / 1000);
     last = now;
   }, 50);
-  T.plant = (i, j) => w.submitEdit({ op: 'mush.plant', i, j });
+  T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
   T.world = () => ({
     tick: w.world.tick,
-    plots: rules.mushrooms.garden.plots.map((p) => [p.i, p.j]),
+    items: rules.gifts.gifts.items.map((p) => [p.i, p.j]),
     status: w.worldStatus(),
   });
 }

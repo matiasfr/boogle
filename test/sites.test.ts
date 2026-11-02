@@ -60,7 +60,7 @@ import { RUN_BONUS } from '../src/sim/sites.ts';
 import { lengthOf, MACHINE_RUN } from '../src/sim/scripted-run.ts';
 
 test('a run lays its section, credits the starter, refills sources and opens the next site; the age then moves on', () => {
-  const s = createSync({ env: { canPlantAt: () => true } });
+  const s = createSync();
   s.setSelfId('a');
   s.setPid('ana');
   const rules = installRules(s, homeLand());
@@ -97,7 +97,7 @@ test('a run lays its section, credits the starter, refills sources and opens the
 });
 
 test('two starts stamped for the same run: the first one counts', () => {
-  const s = createSync({ env: { canPlantAt: () => true } });
+  const s = createSync();
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
   rules.sites.addFreight(60);
@@ -113,7 +113,7 @@ test('two starts stamped for the same run: the first one counts', () => {
 
 // The ?proto=lay shortcut: tune.fill fills the open Track ring as freight, so a solo tester can start the machine.
 test('tune.fill fills the ring with no credit, and the run lays the section', () => {
-  const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
+  const s = createSync({ env: { protoRoom: true } });
   s.setSelfId('a');
   s.setPid('ana');
   const rules = installRules(s, homeLand());

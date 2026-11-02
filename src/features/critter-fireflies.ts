@@ -1,18 +1,16 @@
 // Fireflies, cosmetic tier: at night a few dozen soft blinking lights drift around the
-// mushroom garden and over the grass. One additive point cloud; positions and blinks are local floats.
-// Serves DESIGN.md 9 (the garden is a place worth visiting at night). Local only.
+// meadow east of the court and over the grass. One additive point cloud; positions and blinks are local floats.
+// Serves DESIGN.md 9 (the meadow is a place worth visiting at night). Local only.
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
-import { CELL, HALF } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { skyDebug } from '../render/sky.ts';
-import { PATCH } from '../sim/mushrooms.ts';
 
-const FLIES = { count: 60, nearGarden: 0.6, night: 0.35, size: 0.45 };
+const FLIES = { count: 60, nearMeadow: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),
   col = new Float32Array(FLIES.count * 3);
 const posAttr = dynAttr(pos, 3);
@@ -42,14 +40,14 @@ const flies = instancedSprite(fliesMat, posAttr, FLIES.count);
 
 const F: { x: number; z: number; h: number; ph: number; sp: number }[] = [];
 onStart(() => {
-  const gx = (PATCH.i0 + PATCH.w / 2) * CELL - HALF,
-    gz = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
+  const gx = 30,
+    gz = 2.5;
   for (let k = 0; k < FLIES.count; k++) {
     let x = gx,
       z = gz;
-    if (Math.random() < FLIES.nearGarden) {
-      x += (Math.random() - 0.5) * PATCH.w * CELL * 1.6;
-      z += (Math.random() - 0.5) * PATCH.h * CELL * 1.6;
+    if (Math.random() < FLIES.nearMeadow) {
+      x += (Math.random() - 0.5) * 40;
+      z += (Math.random() - 0.5) * 40;
     } else
       for (let t = 0; t < 30; t++) {
         const a = Math.random() * Math.PI * 2,

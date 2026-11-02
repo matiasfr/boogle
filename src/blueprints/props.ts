@@ -4,9 +4,8 @@
 // A placement is seeded, so scatterProps() gives every client the same list on the same ground. It draws everything a
 // placement needs in one go, in the order the props have always drawn it. Each draw feeds the next one, so adding or
 // reordering a single draw here moves everything after it.
-import { CELL, COURT, HALF, SPAWN } from '../constants.ts';
+import { COURT, SPAWN } from '../constants.ts';
 import { MASSIF } from '../island/shape.ts';
-import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../sim/rng.ts';
 import type { Blueprint, Placement } from './blueprint.ts';
 
@@ -81,14 +80,11 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
 
   // Home: the original palms and rocks, from the same seed and in the same order as always.
   const rng = mulberry32(20261028);
-  const gx0 = PATCH.i0 * CELL - HALF - 6,
-    gx1 = (PATCH.i0 + PATCH.w) * CELL - HALF + 3,
-    gz0 = HALF - (PATCH.j0 + PATCH.h) * CELL - 3,
-    gz1 = HALF - PATCH.j0 * CELL + 4;
+  // The meadow stays open: this rectangle also keeps the seeded sequence, so every home palm and rock stays where it is.
   const clear = (x: number, z: number, r: number) =>
     Math.hypot(x - SPAWN.x, z - SPAWN.z) > r &&
     Math.hypot(x - COURT.x, z - COURT.z) > COURT.r + 3 &&
-    !(x > gx0 && x < gx1 && z > gz0 && z < gz1) &&
+    !(x > 11.5 && x < 45.5 && z > -13 && z < 19) &&
     !keptOut(x, z, 2);
   const spots: { x: number; z: number; h: number }[] = [];
   for (let tries = 0; tries < 900 && spots.length < 36; tries++) {
@@ -115,7 +111,7 @@ export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlac
 
   // Mainland: palms along the coasts, round trees in the meadows, boulders (more of them up on the massif).
   const wild = mulberry32(20261029);
-  // Beyond the home island's shore, clear of spawn, the court, the garden and home's own palms.
+  // Beyond the home island's shore, clear of spawn, the court and home's own palms.
   const outsideHome = (x: number, z: number) =>
     x * x + z * z > 48 * 48 && clear(x, z, 9) && !spots.some((t) => (t.x - x) ** 2 + (t.z - z) ** 2 < 16);
   const onMassif = (x: number, z: number) =>

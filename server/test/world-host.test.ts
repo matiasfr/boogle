@@ -11,7 +11,6 @@ import { createStore } from '../src/store.ts';
 import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
-import { PATCH } from '../../src/sim/mushrooms.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -108,26 +107,23 @@ test('a w:need gets snapshot chunks addressed to that client only', async () => 
       .map((m) => m.s)
       .join(''),
   );
-  assert.ok('mushrooms' in payload.snap.data);
+  assert.ok('gifts' in payload.snap.data);
   await wh.close({ save: false });
 });
 
 test('the world saves as the server and a restart resumes from it', async () => {
   const dir = tmp();
   let { store, wh } = await makeHost(dir, 500);
-  let cell: [number, number] | null = null;
-  for (let i = PATCH.i0; i < PATCH.i0 + PATCH.w && !cell; i++)
-    for (let j = PATCH.j0; j < PATCH.j0 + PATCH.h && !cell; j++)
-      if (wh.rules.mushrooms.plantOk(i, j, home)) cell = [i, j];
-  assert.ok(cell);
-  wh.deliver({ t: 'w:edit', e: { op: 'mush.plant', i: cell[0], j: cell[1] } }, 'c1');
+  const tossed = (w: { rules: Msg }) =>
+    w.rules.gifts.gifts.items.filter((it: Msg) => it.i === 230 && it.j === 205).length;
+  wh.deliver({ t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } }, 'c1');
   for (let f = 0; f < 12; f++) (wh.step(0.05), await settle());
   await wh.close({ save: true });
   const doc = store.readSync('beach')!;
   assert.equal(doc.writerId, 'server');
   const tick = doc.tick;
   assert.ok(tick > 0 && (doc.data as Msg).tick === tick);
-  assert.equal(wh.rules.mushrooms.garden.plots.length, 1);
+  assert.equal(tossed(wh), 1);
 
   // Nothing changes from here, but the tick moves on: a close still saves it (the helper bank reads it).
   ({ store, wh } = await makeHost(dir));
@@ -138,6 +134,6 @@ test('the world saves as the server and a restart resumes from it', async () => 
 
   ({ wh } = await makeHost(dir));
   assert.ok(wh.sync.world.tick >= later && later > tick, `resumed at ${wh.sync.world.tick}, saved ${later}`);
-  assert.equal(wh.rules.mushrooms.garden.plots.length, 1);
+  assert.equal(tossed(wh), 1);
   await wh.close({ save: false });
 });

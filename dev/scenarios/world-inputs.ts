@@ -1,6 +1,5 @@
-// World inputs: the static facts every peer builds the shared world from. The land (grid size, gifts layout and the
-// plant mask: where a seed may grow, run-length encoded) is pinned in src/world/home-land.json, which the server and
-// Node tests run the rules on; the state and op order in test/fixtures/world-inputs.json.
+// World inputs: the static facts every peer builds the shared world from. The land (grid size and gifts layout) is
+// pinned in src/world/home-land.json, which the server and Node tests run the rules on; the state and op order in test/fixtures/world-inputs.json.
 // It checks, in the running game: the grid size, the state key order (snapshot, load and hash order), the op order
 // (once sync has registry()) and the gifts layout (trees, perches), which Node tests run the rules on
 // (test/helpers/land.ts). The ground's heights are not an input: no rule reads them.
@@ -17,22 +16,8 @@ const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta
 const READ = `
   const sync = await import('/src/world/sync.ts');
   const { land } = await import('/src/world/game-world.ts');
-  const { canPlantAt, garden } = await import('/src/adapters/mushroom-garden.ts');
   const pick = (o) => JSON.parse(JSON.stringify(o));
-  // Plant mask over cell g = i * n + j: run lengths, alternating, starting with unplantable. Caps count as cover, so it
-  // needs an empty garden.
-  const n = land.n, plant = [];
-  let run = 0, on = false;
-  for (let i = 0; i < n; i++)
-    for (let j = 0; j < n; j++) {
-      const ok = canPlantAt(i, j);
-      if (ok === on) run++;
-      else (plant.push(run), (run = 1), (on = ok));
-    }
-  plant.push(run);
   return {
-    plots: garden.plots.length,
-    plant,
     n: land.n,
     states: Object.keys(sync.snapshot().data),
     ops: typeof sync.registry === 'function' ? sync.registry().ops : null,
@@ -53,7 +38,6 @@ export default {
     const old = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) : null;
 
     if (process.env.UPDATE_FIXTURE === '1') {
-      if (!t.check('the plant mask needs an empty garden', got.plots === 0, `${got.plots} plots`)) return;
       const prettier = await import('prettier');
       const write = async (file: string, data: unknown) => {
         const opts = (await prettier.resolveConfig(file)) ?? {};
@@ -61,7 +45,7 @@ export default {
         fs.writeFileSync(file, await prettier.format(JSON.stringify(data), { ...opts, filepath: file }));
       };
       const about = 'Pinned by dev/scenarios/world-inputs.ts (UPDATE_FIXTURE=1).';
-      await write(LAND, { about, n: got.n, layout: got.layout, plant: got.plant });
+      await write(LAND, { about, n: got.n, layout: got.layout });
       await write(FIXTURE, { about, states: got.states, ops: got.ops ?? old?.ops ?? null });
       t.check('wrote the land and the fixture', true, `${LAND}; ${got.states.join(',')}; ${counts(got.layout)}`);
       return;
@@ -77,8 +61,5 @@ export default {
     if (got.ops) same('op order', got.ops, old.ops);
     else console.log('  SKIP  op order (sync has no registry() yet)');
     same('gifts layout', got.layout, land.layout, counts);
-    const cells = (rle: number[]) => rle.filter((_, k) => k % 2).reduce((a, b) => a + b, 0);
-    if (got.plots === 0) same('plant mask', got.plant, land.plant, (r: number[]) => `${cells(r)} plantable cells`);
-    else console.log(`  SKIP  plant mask (${got.plots} plots in the garden cover cells)`);
   },
 };

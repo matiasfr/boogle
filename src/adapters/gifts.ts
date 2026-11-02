@@ -7,8 +7,7 @@ import { groundHeight, cellX, cellZ, cellOf } from '../island/terrain.ts';
 import { me, throwFrom } from '../player/state.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
-import { SEEDS, LOST } from '../world/rules/gifts.ts';
-import { plantOk } from './mushroom-garden.ts'; // the thrower's own landing check for seeds
+import { LOST } from '../world/rules/gifts.ts';
 import { waterField } from '../physics/water-field.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../sim/gifts.ts';
@@ -63,10 +62,10 @@ onApplied((e: Edit<Partial<TakeFields & TossFields>>, _tick: number, r: Item | n
     pending.delete(e.id!);
     if (!r || e.p !== myId()) return;
     // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
-    if (!take(GIFTS[r.kind]!.id, 1, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
+    if (!take(GIFTS[r.kind]!.id, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
   } else if (e.op === 'gift.toss') {
     const fl = claimFlight(e as Edit<TossFields>);
-    if (e.y !== LOST && e.k !== SEEDS && r) fx.arriving.set(r.id, fl);
+    if (e.y !== LOST && r) fx.arriving.set(r.id, fl);
   }
 });
 
@@ -112,13 +111,11 @@ const sparkleMat = (() => {
 // Everything in the air, for everyone: { mesh, points, t0, rest, lost, nonce, done }. The thrower starts a flight the
 // moment they let go; everyone else replays it from the launch when the `gift.toss` edit arrives.
 const flights: Flight[] = [];
-const seedGeo = new THREE.SphereGeometry(0.07, 8, 6);
-const seedMat = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9 });
 
 function startFlight(kind: number, p: THREE.Vector3, v: THREE.Vector3, nonce: number): Flight {
   const glide = GIFTS[kind]!.id === 'frisbee';
   const path = flyPath(p, v, glide);
-  const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind]!.id);
+  const mesh = itemModel(GIFTS[kind]!.id);
   mesh.position.copy(p);
   giftObjects.add(mesh);
   const fl = { mesh, glide, nonce, t0: performance.now(), done: false, ...path };
@@ -157,9 +154,8 @@ function updateFlights(now: number) {
 }
 
 // The shared item's height once a flight is snapped to cell (i, j): whatever lies under the cell's centre.
-function landingY(kind: number, fl: Flight, i: number, j: number) {
+function landingY(fl: Flight, i: number, j: number) {
   if (fl.lost) return LOST;
-  if (kind === SEEDS) return plantOk(i, j) ? ON_GROUND : LOST;
   const x = cellX(i),
     z = cellZ(j);
   const under = dropPoint(new THREE.Vector3(x, fl.rest.y + 0.4, z));
@@ -167,13 +163,13 @@ function landingY(kind: number, fl: Flight, i: number, j: number) {
   return under.y - groundHeight(x, z) < 0.15 ? ON_GROUND : Math.round(under.y * 100);
 }
 
-// Throws `kind` from p with velocity v: it flies for everyone and lands as a shared item, or a seed plants itself where
-// it lands. Returns false if the edit could not be sent (the caller keeps the item).
+// Throws `kind` from p with velocity v: it flies for everyone and lands as a shared item.
+// Returns false if the edit could not be sent (the caller keeps the item).
 export function throwItem(kind: number, p: THREE.Vector3, v: THREE.Vector3) {
   const nonce = (Math.random() * 2 ** 30) | 0;
   const fl = startFlight(kind, p, v, nonce);
   const [i, j] = cellOf(fl.rest.x, fl.rest.z);
-  const y = landingY(kind, fl, i, j);
+  const y = landingY(fl, i, j);
   const l = [p.x, p.y, p.z, v.x, v.y, v.z].map((c) => Math.round(c * 100));
   if (submitEdit({ op: 'gift.toss', i, j, k: kind, y, n: nonce, l })) return true;
   endFlight(fl);
@@ -288,7 +284,7 @@ export function giftTargets() {
     const full = inv.slots.filter((s) => !s).length <= pending.size;
     const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
     const t = { id: `item${it.id}`, verb: 'Pick up', at, item: it.id };
-    if (full || roomFor(GIFTS[it.kind]!.id) < 0) out.push({ ...t, blocked: 'Hotbar full' });
+    if (full || roomFor() < 0) out.push({ ...t, blocked: 'Hotbar full' });
     else
       out.push({
         ...t,

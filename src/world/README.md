@@ -1,6 +1,6 @@
 # World: shared, deterministic island state
 
-Everything players can change and everyone must agree on (mushrooms, items) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
+Everything players can change and everyone must agree on (items, piles) lives behind this module. It follows DESIGN.md: **sync edits, not state**, Lockstep math (integers for conserved quantities), fixed order, host-authoritative.
 
 ## Pieces
 
@@ -9,11 +9,11 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 | `sync.ts` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
-| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.mushrooms`, ...). Adapters import it first. |
+| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...). Adapters import it first. |
 | `grid.ts` | Pure, lockstep: grid constants. |
 | `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden. |
 
-Pure sim logic lives in `../sim/` (mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
+Pure sim logic lives in `../sim/` (gifts, piles, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
 tests install the rules on their own sync instances (`test/helpers/net.ts`).
 
@@ -94,8 +94,7 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 
 ## The land as data
 
-`home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm cells, the log spots, and perch cells) and
-`plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
+`home-land.json` holds the land the rules run on: the grid size `n`, and the gifts layout (palm cells, the log spots, and perch cells). The server
 and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.ts` checks it against the running game
-and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI
+and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` when a tree, rock or POI
 moves on purpose.

@@ -143,7 +143,7 @@ function shapeTriangles(shape: Shape, out: number[], place: (p: P3) => P3) {
 
 function bodyTriangles(body: Body, shapes: Shape[]): Entry {
   let entry = cache.get(body);
-  if (entry && entry.shapes === shapes) return entry; // a growing mushroom gets new shapes: rebuild
+  if (entry && entry.shapes === shapes) return entry; // new shapes: rebuild
   const out: number[] = [];
   for (const shape of shapes) {
     const off = shape.offset ?? { x: 0, y: 0, z: 0 };

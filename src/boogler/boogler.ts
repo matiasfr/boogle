@@ -11,7 +11,7 @@
 // Every player also publishes how they treat him (`bg` in presence, see src/boogler/play.ts): the host stops for
 // players who talk to him, hurries while someone rides him, and runs from players he's wary of.
 import * as THREE from 'three';
-import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
+import { FIXED, INTERP_MS, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera, toScreen } from '../render/scene.ts';
@@ -20,7 +20,6 @@ import { createBody, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../entities/props/state.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
-import { PATCH } from '../sim/mushrooms.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, addHostField, isLead } from '../netplay/net.ts';
 import { createSnaps } from '../netplay/snaps.ts';
@@ -50,10 +49,11 @@ const MIN_H = 0.45; // stays on dry land
 const MAX_H = 30; // the whole island, massif included
 const MAX_STEP = 0.55; // max height change per metre of path
 const MAP_LIMIT = HALF - 25;
-// Home is the mushroom garden: he drifts back towards it, and only now and then sets off to see the rest of the island.
-const HOME_X = (PATCH.i0 + PATCH.w / 2) * CELL - HALF,
-  HOME_Z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
-const HOME_RANGE = 22; // metres around the garden where he just potters about
+// Home is the meadow east of the court: he drifts back towards it, and only now and then sets off to see the rest of the
+// island.
+const HOME_X = 30,
+  HOME_Z = 2.5;
+const HOME_RANGE = 22; // metres around home where he just potters about
 const TRIP_CHANCE = 0.08; // per stop near home: chance to head off somewhere far
 const FACE_RANGE = 7; // turns to look at players this close while idle
 const STALE_MS = 3000; // no host snapshot for this long: walk him locally
@@ -106,13 +106,7 @@ function blocked(x: number, z: number, pad = 0) {
   if (Math.abs(x) > MAP_LIMIT || Math.abs(z) > MAP_LIMIT) return true;
   const h = groundHeight(x, z);
   if (h < MIN_H || h > MAX_H) return true;
-  if (blockedAt(x, z, W_R + pad)) return true;
-  // Keep off the mushroom patch so he never looks like he's trampling the garden.
-  const m = (W_R + pad) / CELL + 0.5,
-    i = (x + HALF) / CELL,
-    j = (HALF - z) / CELL;
-  if (i > PATCH.i0 - m && i < PATCH.i0 + PATCH.w + m && j > PATCH.j0 - m && j < PATCH.j0 + PATCH.h + m) return true;
-  return false;
+  return blockedAt(x, z, W_R + pad);
 }
 
 function pathClear(x0: number, z0: number, x1: number, z1: number) {
@@ -172,7 +166,7 @@ function pickTarget() {
     else if (tryStep(Math.atan2(trip.z - sim.z, trip.x - sim.x), 8, Math.min(22, d))) return true;
     else trip = null;
   }
-  // Pottering: random little walks, pulled back towards the garden the further he strays.
+  // Pottering: random little walks, pulled back towards home the further he strays.
   const pull = clamp((homeD - HOME_RANGE) / 40, 0, 0.85);
   if (rng() < pull && tryStep(Math.atan2(HOME_Z - sim.z, HOME_X - sim.x), 6, 18)) return true;
   return tryStep(rng() * Math.PI * 2, 5, 20);

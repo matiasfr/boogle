@@ -1,4 +1,4 @@
-// Models for everything a player can pick up, hold and throw: the stall's seeds and watering can, and the frisbee.
+// Models for everything a player can pick up, hold and throw: the stand's bag of seeds and the frisbee.
 // itemModel(id) returns a fresh copy (sharing geometry and materials) resting on y = 0; an unknown id gets an empty
 // group.
 import * as THREE from 'three';
@@ -31,13 +31,6 @@ const PI = Math.PI;
 
 // Each builder fills a group resting on y = 0.
 const BUILD: Record<string, (g: THREE.Group) => void> = {
-  can: (g) => {
-    const m = mat('#4fa3d9', { roughness: 0.35, metalness: 0.3, flatShading: false });
-    add(g, cyl(0.17, 0.2, 0.34, 14), '', { p: [0, 0.17, 0], m });
-    add(g, cyl(0.025, 0.04, 0.42), '', { p: [0, 0.24, -0.27], r: [-0.9, 0, 0], m });
-    add(g, cyl(0.06, 0.035, 0.05, 10), '', { p: [0, 0.39, -0.44], r: [-0.9, 0, 0], m });
-    add(g, new THREE.TorusGeometry(0.12, 0.025, 6, 12, PI), '', { p: [0, 0.34, 0.02], r: [0, PI / 2, 0], m });
-  },
   seeds: (g) => {
     add(g, sphere(0.16, 8, 6), '#d8b98a', { p: [0, 0.16, 0], s: [1, 1.15, 0.8] });
     add(g, cyl(0.05, 0.08, 0.08), '#7d5230', { p: [0, 0.33, 0] });

@@ -8,7 +8,7 @@ These principles decide arguments. If a feature idea conflicts with one of them,
 
 **The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Junctions unlock parts of the network, and you still haul for each track segment, with the network bringing materials closer. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. Friends can ride what others built; alone, you build to progress. This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
 
-The ball, the frisbee and the other physics toys are optional fun, not the heart of the game. Farming and water aren't part of the core loop: the shared water sim and sand shaping are gone, crops were never built, and the sea is scenery you can swim in.
+The ball, the frisbee and the other physics toys are optional fun, not the heart of the game. Farming and water aren't part of the core loop: the shared water sim and sand shaping are gone, crops were never built, mushrooms are a one-press toy (no planting or watering), and the sea is scenery you can swim in.
 
 ## Play principles
 

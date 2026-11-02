@@ -50,7 +50,6 @@ import { patchNode } from '../render/material-patch.ts';
 import { GRID_RES, CELL, HALF, COURT } from '../constants.ts';
 import { SUN_DIR } from '../render/sun-dir.ts';
 import { heights } from '../island/terrain.ts';
-import { PATCH } from '../sim/mushrooms.ts';
 import { island } from '../island/index.ts';
 import { smoothstep } from '../math.ts';
 
@@ -476,7 +475,7 @@ export function updateRim(dt: number) {
 // One instanced draw of BLADES blades scattered over a SPAN x SPAN square that wraps around the camera (each blade
 // keeps its world spot while you walk; the square's edge fades out). The vertex shader reads the ground height and a
 // grass mask from a small texture baked once from the terrain heights (grassy ground, not too steep, off the court,
-// the garden and painted paths), so the CPU does nothing per frame.
+// painted paths), so the CPU does nothing per frame.
 const SPAN = 48;
 const BLADES = 80000;
 let grass: THREE.Mesh | null = null;
@@ -499,7 +498,6 @@ function groundTexture() {
         z = HALF - j * CELL;
       let m = smoothstep(1.5, 1.9, h) * smoothstep(0.8, 0.9, ny) * (1 - smoothstep(9, 14, h));
       m *= smoothstep(COURT.r + 0.5, COURT.r + 2.5, Math.hypot(x - COURT.x, z - COURT.z));
-      if (i >= PATCH.i0 - 2 && i <= PATCH.i0 + PATCH.w + 1 && j >= PATCH.j0 - 2 && j <= PATCH.j0 + PATCH.h + 1) m = 0;
       const paint = island.paintAt(x, z);
       if (paint) m *= 1 - Math.min(1, paint[3]! * 1.5);
       // texture row v = (z + HALF) / SIZE, column u = (x + HALF) / SIZE

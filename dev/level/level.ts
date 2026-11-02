@@ -7,11 +7,10 @@ import { isHomePalm, scatterProps, type PropPlacement } from '../../src/blueprin
 import { islandBaseCm } from '../../src/island/ground.ts';
 import { clearedIn, moveSite, type LayoutFile } from '../../src/island/layout.ts';
 import { createIsland, siteFrame, type Site } from '../../src/island/stamps.ts';
-import { PATCH } from '../../src/sim/mushrooms.ts';
 import { ROUTE, TRACK, HELPER, ringAt } from '../../src/sim/route.ts';
 
 export const root = path.join(import.meta.dirname, '../..');
-const STALL = { x: 15.2, z: 13.4 }; // src/adapters/mushroom-garden.ts, which draws: not loadable here
+const STALL = { x: 15.2, z: 13.4 }; // src/adapters/mushrooms.ts, which draws: not loadable here
 
 export type Target = { name: string; x: number; z: number; file: string };
 export type Disc = { name: string; owner: string; x: number; z: number; r: number; file: string };
@@ -96,13 +95,11 @@ export function loadLevel(layoutFile: string | null): Level {
     { name: 'spawn', ...SPAWN, file: 'src/constants.ts' },
     { name: 'the ball', ...BALL_SPAWN, file: 'src/constants.ts' },
     { name: 'the court', x: COURT.x, z: COURT.z, file: 'src/world/grid.ts' },
-    { name: 'the stall', ...STALL, file: 'src/adapters/mushroom-garden.ts' },
-    { name: 'the garden', ...gardenCentre(), file: 'src/sim/mushrooms.ts' },
+    { name: 'the stall', ...STALL, file: 'src/adapters/mushrooms.ts' },
   ];
   const discs: Disc[] = [
     { name: 'the court', owner: 'court', x: COURT.x, z: COURT.z, r: COURT.r, file: 'src/world/grid.ts' },
-    { name: 'the stall', owner: 'stall', ...STALL, r: 1.5, file: 'src/adapters/mushroom-garden.ts' },
-    { name: 'the garden', owner: 'garden', ...gardenCentre(), r: (PATCH.w * CELL) / 2, file: 'src/sim/mushrooms.ts' },
+    { name: 'the stall', owner: 'stall', ...STALL, r: 1.5, file: 'src/adapters/mushrooms.ts' },
   ];
   for (const s of sites) {
     const frame = siteFrame(s);
@@ -141,12 +138,5 @@ export function loadLevel(layoutFile: string | null): Level {
     targets,
     discs,
     spawnNode: nodeOf(SPAWN.x, SPAWN.z),
-  };
-}
-
-function gardenCentre() {
-  return {
-    x: (PATCH.i0 + PATCH.w / 2) * CELL - HALF,
-    z: HALF - (PATCH.j0 + PATCH.h / 2) * CELL,
   };
 }

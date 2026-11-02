@@ -9,13 +9,12 @@ import { setWho, MAX_PLAYERS } from '../src/sim/roster.ts';
 import { addTo, HARD_CAP } from '../src/sim/stacks.ts';
 import { MAX_PILES, MAX_N } from '../src/sim/piles.ts';
 import { MAX_ITEMS, tossItem } from '../src/sim/gifts.ts';
-import { plant, MAX_PLOTS, PATCH } from '../src/sim/mushrooms.ts';
 import { TRACK, HELPER, costOf } from '../src/sim/route.ts';
 
 const BUDGET = 60000;
 
 test('a world filled to every cap serializes under 60 KB', () => {
-  const s = createSync({ env: { canPlantAt: () => true } });
+  const s = createSync();
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
   s.updateWorld(0.1); // the layout-sized states (sources) size themselves on the first tick
@@ -33,8 +32,6 @@ test('a world filled to every cap serializes under 60 KB', () => {
   }
   const g = rules.gifts.gifts;
   for (let k = 0; k < MAX_ITEMS; k++) tossItem(g, k % 3, 200 + k, 200, 12345, 9999999);
-  for (let k = 0; k < MAX_PLOTS; k++)
-    plant(rules.mushrooms.garden, PATCH.i0 + (k % 7) * 3, PATCH.j0 + Math.floor(k / 7) * 3);
   rules.bank.bank.ms = 9_999_999_999;
   rules.ball.ball.p = [-25500, 19999, 25500];
   rules.ball.ball.at = 99_999_999;
@@ -44,6 +41,5 @@ test('a world filled to every cap serializes under 60 KB', () => {
   assert.ok(json.length < BUDGET, `${json.length} chars: ${JSON.stringify(sizes)}`);
   assert.equal(r.pids.length, MAX_PLAYERS);
   assert.equal(piles.list.length, MAX_PILES);
-  assert.ok(rules.mushrooms.garden.plots.length >= MAX_PLOTS - 5, 'the garden is (nearly) full');
   console.log(`[world-size] ${json.length} chars at the caps: ${JSON.stringify(sizes)}`);
 });

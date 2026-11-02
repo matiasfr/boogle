@@ -2,7 +2,7 @@
 // floats over his head; walk within NAME_NEAR and it gives way to his name plate (your friendship hearts, and the
 // interact prompt when he is what you would interact with). His speech bubbles show at any range. While he's off
 // screen and nearby, the same mark sits on the nearest screen edge, aimed at him, with his distance. Past FIND_NEAR it
-// fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about the garden anyway.
+// fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about at home anyway.
 import { boogler, booglerScreen } from './boogler.ts';
 import { me } from '../player/player.ts';
 import { clamp } from '../math.ts';

@@ -24,7 +24,7 @@ so hashed file names don't depend on it).
 - `blueprints/`: static world objects as pure data, kept apart from how they're drawn (`blueprint.ts`; `props.ts`: the palms, round trees and rocks, and where they go). `entities/props/` makes their colliders, `render/props.ts` draws them.
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/heights.ts`
   is the fixed ground's heights (`groundHeight`, `cellX`/`cellZ`), `island/terrain.ts` its mesh.
-- `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react
+- `adapters/`: the game side of lockstep state: gifts, piles; and mushrooms, which aren't lockstep but other modules call. They submit edits and react
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
   modules must import it.
 - `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, thrown-item flights, the water-field bridge (sea and cave pond).

@@ -16,7 +16,7 @@
 
 | Region | Where | Notes |
 |---|---|---|
-| **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court, stall and garden are here. |
+| **Home** | The original island around the origin, radius about 52 m (`HOME_R`). | Within 22 m of the origin (`HOME_KEEP`) the ground never changes. Spawn, court and the seed stand are here. |
 | **Mainland** | Noisy ellipse centred (6, −66), radii 96 × 56 m, plus an east lobe at (86, −36) and a west point at (−78, −20). | Meadows, the eastern plain (windmill farm), the west cove. Only ever raises the ground (smooth max) outside `HOME_KEEP`. |
 | **North-west massif** | Ellipse at (−54, −92), 42 × 30 m, up to 15 m high with ridges. | Rocky upland; the caves run under it. |
 
@@ -26,15 +26,15 @@ Trees, rocks and POI keep-out discs go into `obstacles`, which the Boogler walks
 
 ## Points of interest
 
-Coordinates are world metres (x, z). POI folders are in [src/pois/](../../src/pois/); the stall, court and garden are
+Coordinates are world metres (x, z). POI folders are in [src/pois/](../../src/pois/); the seed stand and court are
 built outside the POI system.
 
 | POI | Where | What is there | What you can do |
 |---|---|---|---|
 | **Spawn** | (14, 26), random within 3 m | [src/constants.ts](../../src/constants.ts) `SPAWN` | Land here; fall below −25 m and you are put back. |
 | **Volleyball court** | Centre (12, 21), radius 8 m | Ground levelled to its centre height and painted sand ([ground.ts](../../src/island/ground.ts), [terrain.ts](../../src/island/terrain.ts)). No net or lines. | The ball spawns at (12, 20). |
-| **Mushroom stall** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags and a watering can ([src/adapters/mushroom-garden.ts](../../src/adapters/mushroom-garden.ts)). | Take 5 seeds per press (stack up to 20) and the watering can. |
-| **Garden patch** | Cells i 218..237, j 192..211: about x 17.5..42.5, z −9..15, centre (30, 2.5) | A dirt patch (`PATCH` in [src/sim/mushrooms.ts](../../src/sim/mushrooms.ts)). Kept clear of trees. | Plant and water seeds (they also grow anywhere else dry). It is the Boogler's home. |
+| **Seed stand** | (15.2, 13.4), yaw 3.0 | Wooden counter, striped awning, "Mushroom seeds" sign, seed bags ([src/adapters/mushrooms.ts](../../src/adapters/mushrooms.ts)). | Take one bag of seeds (6.4). |
+| **Meadow** | About (30, 2.5) | Open grass, kept clear of trees, where the dirt patch used to be. | The Boogler's home. |
 | **Lighthouse** | (6, −58), on a 7.4 m hill with a flat top at 11 m | Striped 18 m tower, spiral stair of 2.5 turns round the outside, gallery deck at about 29.3 m with railings, lamp and two sweeping beams at night ([src/pois/lighthouse/](../../src/pois/lighthouse/)). Paths to home, the windmill farm and the upland. | Climb; the **frisbee** waits on the deck at (7.9, 29.3, −56) and refills 60 s after it is taken. |
 | **Windmill farm** | Site centre (82, −46), facing west | Three wooden windmills (7.2 m towers, 7.2 m sails at 0.55 rad/s on the shared clock) on knolls, striped fields (wheat, greens, ploughed earth), cart tracks, hay bales, a fence ([src/pois/windmills/](../../src/pois/windmills/)). | The sails are solid: they bonk players and bat the ball. Nothing else to do. |
 | **Caves** | Under the massif; mouths below | Tunnels of radius 2.3 m joining a hub (−50, −88), an abandoned mine (−35, −93: rails, minecart of ore, glowing veins), an underground pond (−64, −90: water at 3.0 m, crystals, glowing mushrooms, stalactites, a rowboat) and a wine cellar (−49, −99: barrel racks, bottle shelves, a cask, a candlelit table). Lanterns, timber mouth frames with name boards, a signpost ([src/pois/caves/](../../src/pois/caves/)). | Walk in and explore; throw and float the ball on the pond. Purely a place: no items or ops. |

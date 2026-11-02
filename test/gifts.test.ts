@@ -161,8 +161,8 @@ test('load drops bad items and survives garbage', () => {
   }
 });
 
-test('only the ball is not carryable', () => {
-  for (const g of GIFTS) assert.equal(carryable(g), g.id !== 'ball', g.id);
+test('only the ball and what nothing hands out are not carryable', () => {
+  for (const g of GIFTS) assert.equal(carryable(g), g.id !== 'ball' && g.id !== 'can', g.id);
   assert.deepEqual(
     GIFTS.map((g) => g.id),
     ['seeds', 'can', 'frisbee', 'ball'],

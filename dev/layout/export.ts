@@ -25,7 +25,6 @@ const { ROUTE, RING_R } = await import('../../src/sim/route.ts');
 const { WAGON_CRUISE, WAGON_ACCEL, WAGON_DWELL } = await import('../../src/sim/wagon.ts');
 const { MS_PER_TICK } = await import('../../src/sim/bank.ts');
 const { SPAWN, BALL_SPAWN, FOG_NEAR, FOG_FAR } = await import('../../src/constants.ts');
-const { PATCH } = await import('../../src/sim/mushrooms.ts');
 type Site = import('../../src/island/stamps.ts').Site;
 
 // Every POI's site, in folder order (src/island/index.ts composes them the same way).
@@ -135,13 +134,7 @@ const json = {
     spawn: SPAWN,
     ball: BALL_SPAWN,
     court: COURT,
-    stall: { x: 15.2, z: 13.4 }, // src/adapters/mushroom-garden.ts STALL
-    garden: {
-      x0: PATCH.i0 * CELL - HALF,
-      x1: (PATCH.i0 + PATCH.w) * CELL - HALF,
-      z0: HALF - (PATCH.j0 + PATCH.h) * CELL,
-      z1: HALF - PATCH.j0 * CELL,
-    },
+    stall: { x: 15.2, z: 13.4 }, // src/adapters/mushrooms.ts STALL
   },
   route: ROUTE.map((r) => ({ age: r.age, x: r.x, z: r.z, to: [...r.to] })),
   ring: RING_R,

@@ -27,7 +27,7 @@ test('freight: one piece per hut per HELPER_EVERY ticks, capped', () => {
 
 // A world with one helper hut built at site 0, saved an hour ago (by wall clock) at tick `tick`.
 function savedWorld() {
-  const s = createSync({ env: { canPlantAt: () => true } });
+  const s = createSync();
   s.setSelfId('old');
   s.setPid('builder');
   const rules = installRules(s, homeLand());
@@ -47,7 +47,7 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
   const storage = { getItem: () => JSON.stringify(snap), setItem() {} };
   const net = makeNet();
   const mk = (id: string, host: boolean) => {
-    const s = createSync({ env: { canPlantAt: () => true } });
+    const s = createSync();
     const rules = installRules(s, homeLand());
     const p = net.add(id, host);
     // the feature's logic (src/features/helper-bank.ts), on this tab's clock

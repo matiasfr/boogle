@@ -6,8 +6,9 @@
 // History: v01 (0.1 groundwork); v02 (2026-11): refocus cleanup: no fruit, no shore leftovers, catalog renumbered;
 // v03 (2026-11-01): one 14 s laying run: the crawl and push variants, site.push and the `run` tune key removed;
 // v04 (2026-11-01): the wagon's steam gone (stoke cut after the second run-through): the `wagon` state and wagon.stoke.
+// v05 (2026-11-02): mushrooms stopped being shared state: the `mushrooms` state, mush.plant and mush.water gone.
 // Pure: read by src/netplay/net.ts, the registry check and tests.
-export const WORLD_NS = 'v04';
+export const WORLD_NS = 'v05';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

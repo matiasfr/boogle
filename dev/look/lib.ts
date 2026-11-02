@@ -27,7 +27,7 @@ export const VIEWS: Record<string, Pose> = {
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
-  garden: { cam: [30, 7, 15], look: [30, 1, 2.5] },
+  meadow: { cam: [30, 7, 15], look: [30, 1, 2.5] },
   overview: { cam: [-40, 40, 40], look: [-5, 0, 0] },
 };
 
