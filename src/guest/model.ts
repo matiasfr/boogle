@@ -25,7 +25,7 @@ function buildAtlas(textures: Uint8Array) {
       cy = Math.floor(k / COLS) * CELL;
     for (let y = 0; y < t.h; y++)
       for (let x = 0; x < t.w; x++, s += 2) {
-        const v = (textures[s] << 8) | textures[s + 1];
+        const v = ((textures[s] ?? 0) << 8) | (textures[s + 1] ?? 0); // from the browser's store: may be short
         const o = ((cy + y) * ATLAS_W + cx + x) * 4;
         px[o] = ((v >> 11) & 31) * 8.226;
         px[o + 1] = ((v >> 6) & 31) * 8.226;
@@ -97,29 +97,29 @@ const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.
 // Copies the sim's vertex buffer into the mesh, metres around the model's feet.
 export function updateModelMesh(mesh: ModelMesh, verts: Float32Array, count: number) {
   const g = mesh.geometry;
-  const pos = g.attributes.position.array,
-    nor = g.attributes.normal.array,
-    col = g.attributes.color.array,
-    uv = g.attributes.guestUv.array,
-    rect = g.attributes.guestRect.array,
-    mix = g.attributes.guestMix.array;
+  const pos = g.attributes.position!.array,
+    nor = g.attributes.normal!.array,
+    col = g.attributes.color!.array,
+    uv = g.attributes.guestUv!.array,
+    rect = g.attributes.guestRect!.array,
+    mix = g.attributes.guestMix!.array;
   const n = Math.min(count, MAX_VERTS);
   for (let i = 0; i < n; i++) {
     const s = i * VERT_FLOATS;
-    pos[i * 3] = verts[s] / UNITS;
-    pos[i * 3 + 1] = verts[s + 1] / UNITS;
-    pos[i * 3 + 2] = verts[s + 2] / UNITS;
-    nor[i * 3] = verts[s + 3];
-    nor[i * 3 + 1] = verts[s + 4];
-    nor[i * 3 + 2] = verts[s + 5];
-    col[i * 3] = lin(verts[s + 6]);
-    col[i * 3 + 1] = lin(verts[s + 7]);
-    col[i * 3 + 2] = lin(verts[s + 8]);
-    uv[i * 2] = verts[s + 9];
-    uv[i * 2 + 1] = verts[s + 10];
-    const r = RECTS[verts[s + 11]] ?? RECTS[0];
+    pos[i * 3] = verts[s]! / UNITS;
+    pos[i * 3 + 1] = verts[s + 1]! / UNITS;
+    pos[i * 3 + 2] = verts[s + 2]! / UNITS;
+    nor[i * 3] = verts[s + 3]!;
+    nor[i * 3 + 1] = verts[s + 4]!;
+    nor[i * 3 + 2] = verts[s + 5]!;
+    col[i * 3] = lin(verts[s + 6]!);
+    col[i * 3 + 1] = lin(verts[s + 7]!);
+    col[i * 3 + 2] = lin(verts[s + 8]!);
+    uv[i * 2] = verts[s + 9]!;
+    uv[i * 2 + 1] = verts[s + 10]!;
+    const r = RECTS[verts[s + 11]!] ?? RECTS[0]!;
     rect.set(r, i * 4);
-    mix[i] = verts[s + 11] >= 0 ? verts[s + 12] : 0;
+    mix[i] = verts[s + 11]! >= 0 ? verts[s + 12]! : 0;
   }
   for (const a of Object.values(g.attributes) as THREE.BufferAttribute[]) {
     a.clearUpdateRanges();
