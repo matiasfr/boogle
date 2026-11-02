@@ -1,4 +1,4 @@
-// Platforms: kinematic bodies the local player stands on and is carried by (a wagon, the ?proto=ride flatbed).
+// Platforms: kinematic bodies the local player stands on and is carried by (a wagon's cars).
 // docs/plans/find-the-fun.md, step 2; docs/plans/boogle-2-architecture-fit.md, "The slice's one risk: riding".
 //
 //   registerPlatform({ body, hx, hz, top, move, id?, shared? })   -> unregister()
@@ -9,8 +9,7 @@
 //     id, shared  shared: true when every tab computes this platform's pose identically (the wagon's cars, from
 //               shared time), with a stable id ('wagon:car1'). A rider on one sends their offset in its frame
 //               (presence key `riding`, src/netplay/net.ts) and other tabs draw them on their own copy, so they stay
-//               put on the deck instead of trailing it by the presence delay. The ?proto=ride flatbed is per tab: not
-//               shared.
+//               put on the deck instead of trailing it by the presence delay.
 //   platformById(id), toPlatform(p, pos, yaw, out), fromPlatform(p, local, interpolated, out): that frame's maths
 //   carry       the velocity the player's steering is relative to (src/physics/physics.ts adds it to the target):
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and

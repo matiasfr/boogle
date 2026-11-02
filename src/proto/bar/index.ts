@@ -174,7 +174,7 @@ if (card) {
     if (!own) saveHint(id);
     if (ON_ISLAND) return location.reload();
     // The variant's own address (its room may differ), plus whatever else this page's address carries (another room
-    // you chose, `ridespeed`, `dpr`, `play`): only `v` and the variant's own params change.
+    // you chose, `dpr`, `play`): only `v` and the variant's own params change.
     const next = new URLSearchParams(location.search);
     next.delete('v');
     for (const [k, val] of new URLSearchParams(variantUrl(p, v).split('?')[1] ?? '')) next.set(k, val);

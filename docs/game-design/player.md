@@ -2,7 +2,7 @@
 
 Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
 [src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.ts](../../src/features/feel.ts),
-[src/physics/platforms.ts](../../src/physics/platforms.ts), [src/proto/ride/index.ts](../../src/proto/ride/index.ts).
+[src/physics/platforms.ts](../../src/physics/platforms.ts).
 
 ## Movement and jump
 
@@ -48,15 +48,11 @@ there is no shiver and no freeze in place (the pose still holds).
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
 ([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
 
-## Prototype: riding (?proto=ride)
+## Riding a moving deck
 
-Behind the flag only ([docs/plans/find-the-fun.md](../plans/find-the-fun.md), step 2). A greybox flatbed (2.5 × 4 m,
-deck about 0.6 m up) shuttles along a 33 m route past the court's west side and along its north edge: two gentle
-right-hand corners, a grade that follows the ground, 3 m/s cruise (`?ridespeed=6` or `__ride.RIDE.cruise`), 1 m/s²
-starts and stops, 5 s stopped at each end to hop on. Each tab runs its own flatbed (Local).
-
-Standing on it carries you ([src/physics/platforms.ts](../../src/physics/platforms.ts)): your steering is relative to
-the deck point under you, the deck's turn turns you and the camera, and you stay snapped to its floor. Landing on a
+Standing on a moving deck, like the wagon's cars, carries you
+([src/physics/platforms.ts](../../src/physics/platforms.ts)): your steering is relative to the deck point under you,
+the deck's turn turns you and the camera, and you stay snapped to its floor. Landing on a
 moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
 ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
