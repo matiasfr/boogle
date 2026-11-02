@@ -18,7 +18,7 @@
     "load": "WS_LOAD=1 node dev/peer-test/ws-run.ts",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p .",
-    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run assets -- --check && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run level-check && npm run assets -- --check && npm run build",
     "test:unit": "node --test --test-timeout=5000 'test/**/*.test.ts'",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "check:gpu": "node dev/scenarios/run.ts smoke",
@@ -43,7 +43,8 @@
     "assets": "node dev/assets/build.ts",
     "verdicts": "node scripts/verdicts.ts",
     "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
-    "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts"
+    "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",
+    "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",

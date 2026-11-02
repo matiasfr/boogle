@@ -312,8 +312,8 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
 - [x] **19. Inspector.** A typed `inspect()` listing entities, their state and per-kind cost, working in the browser and
       headless, with `npm run inspect` on top. It replaces reads of the `window.boogle` grab bag, which move over as agents
       touch them.
-- [ ] **20. Blueprints and a level validator.** Typed blueprints for reusable objects and levels, building on `Site`, stamps
-      and layout files. A check in `npm run check` catches unreachable areas, overlaps, bad slopes and budget overruns.
+- [x] **20. Blueprints and a level validator.** Typed blueprints for reusable objects and levels, building on `Site`, stamps
+      and layout files. A check in `npm run check` catches unreachable areas, overlaps and bad slopes, and reports budget overruns.
       Cites `docs/research/level-design.md`.
 - [ ] **21. Input replay.** Record a session's inputs to a file, replay them headless on a new build, and compare state. Unblocked: a run writes `input` and `cam`
       (`src/player/input-state.ts`, `src/player/state.ts`) and calls `enterIsland()`. It has to place the body itself, since entering picks a random spot.

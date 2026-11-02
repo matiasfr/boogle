@@ -2,7 +2,18 @@
 // the fall back to the spawn. No scene, DOM or HUD here: test/entity-state-node.test.ts holds it to that, so a headless
 // run drives the player by writing to `input` and `cam` (src/player/input-state.ts, src/player/state.ts), as input.ts does.
 // `me` and `cam` live in src/player/state.ts, a leaf that hands, the HUD and the ball read too.
-import { FIXED, GRAVITY, HALF, PLAYER_MASS, PLAYER_R, SPAWN } from '../../constants.ts';
+import {
+  FIXED,
+  GRAVITY,
+  JUMP_SPEED,
+  PLAYER_MASS,
+  PLAYER_R,
+  SOFT_WALL,
+  SPAWN,
+  SWIM_DEPTH,
+  SWIM_JUMP_SPEED,
+  WALKABLE_NY,
+} from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
 import { groundHeight } from '../../island/heights.ts';
 import { forEachContact } from '../../physics/engine.ts';
@@ -81,7 +92,7 @@ export function steerPlayer() {
   me.coyote -= FIXED;
   carryStep(b, me); // a deck under you (src/physics/platforms.ts): steering below is relative to its motion
   const surfY = waterField.surfaceAt(b.position.x, b.position.z);
-  const depth = surfY - (b.position.y + 0.35);
+  const depth = surfY - (b.position.y + SWIM_DEPTH);
   me.swimming = depth > 0;
   const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
   const rvx = b.velocity.x - carry.x,
@@ -101,20 +112,19 @@ export function steerPlayer() {
   if (b.velocity.y < -MAX_FALL) b.velocity.y = -MAX_FALL;
   if (me.jumpQueued > 0) {
     if (me.coyote > 0) {
-      b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + 7.6; // adds to an upward bounce: bounces chain
+      b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + JUMP_SPEED; // adds to an upward bounce: bounces chain
       me.coyote = 0;
       me.jumpQueued = 0;
     } else if (me.swimming) {
-      b.velocity.y = Math.max(b.velocity.y, 4.5);
+      b.velocity.y = Math.max(b.velocity.y, SWIM_JUMP_SPEED);
       me.jumpQueued = 0;
     }
   }
   if (depth > 0) b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
   // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
-  const lim = HALF - 18;
   for (const ax of ['x', 'z'] as const) {
     const p = b.position[ax];
-    if (Math.abs(p) > lim) {
+    if (Math.abs(p) > SOFT_WALL) {
       const out = Math.sign(p) * b.velocity[ax];
       if (out > -2) b.velocity[ax] -= Math.sign(p) * (out + 2);
     }
@@ -126,7 +136,7 @@ export function groundPlayer() {
   const b = me.body!;
   catchFallThrough(b, PLAYER_R);
   forEachContact(b, (nx, ny) => {
-    if (ny <= 0.55) return false;
+    if (ny <= WALKABLE_NY) return false;
     me.coyote = 0.1;
     return true;
   });

@@ -25,6 +25,8 @@ export type LayoutFile = {
   clear?: { line?: number; discs?: { x: number; z: number; r: number }[] };
 };
 
+type Section = { x: number; z: number; to: number[] };
+
 const files = import.meta.glob<LayoutFile>('../../dev/layouts/*.json', { import: 'default' });
 const wanted = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('layout');
 
@@ -48,7 +50,15 @@ if (layout?.route)
 
 /** Moves a POI's site (its default export, in place, so its content module sees it too) to the layout's place. */
 export function placeSite(id: string, site: { x: number; z: number; dir?: [number, number] }): void {
-  const p = layout?.pois?.find((q) => q.id === id);
+  moveSite(layout, id, site);
+}
+/** placeSite for any layout file: `npm run level-check` composes each one. */
+export function moveSite(
+  file: LayoutFile | null,
+  id: string,
+  site: { x: number; z: number; dir?: [number, number] },
+): void {
+  const p = file?.pois?.find((q) => q.id === id);
   if (!p || !ok(p.x) || !ok(p.z) || id === 'caves') return; // the caves' stamps are in world coordinates
   site.x = p.x;
   site.z = p.z;
@@ -56,12 +66,14 @@ export function placeSite(id: string, site: { x: number; z: number; dir?: [numbe
 }
 
 /** True where `clear` leaves the scenery out. Only trees and rocks ask (src/entities/props/state.ts, src/render/props.ts); without it, never. */
-export function clearedAt(x: number, z: number): boolean {
-  const c = layout?.clear;
+export const clearedAt = (x: number, z: number): boolean => clearedIn(layout, ROUTE, x, z);
+/** clearedAt for any layout file and its route. */
+export function clearedIn(file: LayoutFile | null, route: Section[], x: number, z: number): boolean {
+  const c = file?.clear;
   if (!c) return false;
   if (c.discs?.some((d) => (x - d.x) ** 2 + (z - d.z) ** 2 < d.r * d.r)) return true;
   if (!c.line) return false;
-  return ROUTE.some((r) => {
+  return route.some((r) => {
     const dx = r.to[0]! - r.x,
       dz = r.to[1]! - r.z;
     const u = Math.max(0, Math.min(1, ((x - r.x) * dx + (z - r.z) * dz) / (dx * dx + dz * dz)));

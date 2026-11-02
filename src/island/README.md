@@ -29,6 +29,7 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
        { shape: 'disc', r: 9, fade: 1, paint: '#c8b48a', strength: 0.6 },
      ],
      keepOut: [{ r: 11 }],      // no trees or rocks, the Boogler walks around (local x, z, r)
+     reach: [{ name: 'the stage', z: 4 }], // where a player must be able to get to (local x, z)
    };
    ```
 
@@ -36,7 +37,7 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
    `groundHeight`, `siteFrame(site)` from `stamps.ts` for local-to-world placement, and `addPart`/`mergeParts` from
    `src/render/props.ts` to merge small parts into one draw call.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
-   where you meant, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
+   where you meant, run `npm run level-check`, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 
 Remove a POI by deleting its folder. Move one by changing `x`, `z`, `dir` in its site.
 

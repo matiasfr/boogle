@@ -61,4 +61,5 @@ export default {
     track(TRACK),
   ],
   keepOut: [{ r: 32 }],
+  reach: MILLS.map((m, k) => ({ name: `mill ${k + 1}`, x: m.x, z: m.z })),
 } satisfies Site;

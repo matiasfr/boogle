@@ -50,6 +50,8 @@ export type Site = {
   dir?: [number, number];
   stamps?: Stamp[];
   keepOut?: { x?: number; z?: number; r: number }[];
+  /** Where a player is meant to get to, in local metres: `npm run level-check` walks there from spawn. */
+  reach?: { name: string; x?: number; z?: number }[];
 };
 type Op = 'set' | 'add' | 'min' | 'max';
 type Frame = ReturnType<typeof siteFrame>;
