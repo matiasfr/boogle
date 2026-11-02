@@ -13,8 +13,8 @@ await drive({});
 for (let k = 0; k < 200 && box.run.state !== 'done'; k++) await new Promise((r) => setTimeout(r, 100));
 await new Promise((r) => setTimeout(r, 1500)); // the cart brakes to a stop past the finish
 const left = box.LINE.slice(1).map(([x, z], k, l): [number, number] => {
-  const [ax, az] = l[Math.max(0, k - 1)],
-    [bx, bz] = l[Math.min(l.length - 1, k + 1)];
+  const [ax, az] = l[Math.max(0, k - 1)]!,
+    [bx, bz] = l[Math.min(l.length - 1, k + 1)]!;
   const len = Math.hypot(bx - ax, bz - az) || 1;
   return [x - ((bz - az) / len) * 1.2, z + ((bx - ax) / len) * 1.2];
 });

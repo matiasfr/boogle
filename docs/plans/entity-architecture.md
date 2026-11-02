@@ -1,6 +1,6 @@
 # Plan: stricter flags and a game-entity architecture
 
-> **Status: awaiting the owner's approval (2026-11-01).** Code read at `main` `8c4232d6`. This overrides the advice in
+> **Status: approved, Part 1 done (2026-11-01).** Code read at `main` `8c4232d6`. This overrides the advice in
 > [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) to hold foundation work until after the vertical slice.
 > It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md).
 
@@ -149,11 +149,11 @@ folder; later steps run in order, because they share files.
       `useUnknownInCatchVariables` (0 errors). Add `server/**/*.ts` to `include` (0 errors). Add `npm run typecheck` to CI's
       `client` job: until now only `npm run check` ran it, so a branch that skipped `ship` was never type-checked. Verify:
       `npm run check`, `npm --prefix server test`.
-- [ ] **2. `noUncheckedIndexedAccess` in the lockstep code.** `src/sim/` (126 errors), `src/world/rules/` (32), then the
+- [x] **2. `noUncheckedIndexedAccess` in the lockstep code.** `src/sim/` (126 errors), `src/world/rules/` (32), then the
       other 2 in `src/world/` by hand. Add a real guard only where a value can truly be missing, and never change a
       result. Verify: `npx tsc --noEmit --noUncheckedIndexedAccess | grep -E '^src/(sim|world)'` is empty,
       `test/world-replay.test.ts` passes, `npm run check:full`, `/code-review`.
-- [ ] **3. The same flag everywhere else, one PR per group:**
+- [x] **3. The same flag everywhere else, one PR per group:**
       - Core: `src/loop.ts` 11, `net/` 1, `netplay/` 35, `physics/` 32, `player/` 29, `render/` 55, `ui/` 1, `boot/` 2.
         Add `check:full` and `check:gpu`.
       - Game: `features/` 300, `pois/` 219, `boogler/` 73, `island/` 71, `adapters/` 59, `guest/` 149, `debug/` 36.
@@ -162,7 +162,7 @@ folder; later steps run in order, because they share files.
       - Fix rule: `!` where the index is loop-bounded or a fixed tuple (it's erased at build, so no hot-path cost); a real
         guard where the index or key comes from the wire, a save, user input or a lookup. Don't reword or remove any
         Boogler line.
-- [ ] **4. Flip it.** Add `noUncheckedIndexedAccess` to `tsconfig.json`, and fix whatever parallel work added since. Verify:
+- [x] **4. Flip it.** Add `noUncheckedIndexedAccess` to `tsconfig.json`, and fix whatever parallel work added since. Verify:
       `npm run check`.
 
 ### Part 2: foundation
