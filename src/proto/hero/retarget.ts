@@ -67,19 +67,33 @@ export function retargetClip(
   };
   const p = new THREE.Vector3(),
     out = new THREE.Quaternion();
-  const Z = new THREE.Vector3(0, 0, 1);
-  for (let f = 0; f < frames; f++) {
-    const t = Math.min(clip.duration, f / FPS);
-    times.push(t);
+  const Z = new THREE.Vector3(0, 0, 1),
+    X = new THREE.Vector3(1, 0, 0);
+  const sample = (t: number) => {
     act.time = t;
     mixer.update(0);
     src.updateMatrixWorld(true);
+  };
+  // The library's head looks down (about 13 degrees in its idle). Ours looks ahead: each clip's average pitch comes off
+  // the head, and its bob stays.
+  const headPair = pairs.find((x) => x.a.name === 'Head')!;
+  let pitch = 0;
+  for (let f = 0; f < frames; f++) {
+    sample(Math.min(clip.duration, f / FPS));
+    pitch += Math.asin(p.copy(Z).applyQuaternion(worldQ(headPair.a).multiply(headPair.restA)).y) / frames;
+  }
+  const level = new THREE.Quaternion().setFromAxisAngle(X, pitch);
+  for (let f = 0; f < frames; f++) {
+    const t = Math.min(clip.duration, f / FPS);
+    times.push(t);
+    sample(t);
     world.clear();
     for (const pair of pairs) {
       const want = worldQ(pair.a).multiply(pair.restA).multiply(pair.restB);
       // A wider body than the source's: swing the upper arms out so the hands clear it (the figure faces +z, left is +x).
-      if (armOut && pair.b.name === 'LeftArm') want.premultiply(out.setFromAxisAngle(Z, armOut));
-      if (armOut && pair.b.name === 'RightArm') want.premultiply(out.setFromAxisAngle(Z, -armOut));
+      if (armOut && pair.a.name === 'upperarm_l') want.premultiply(out.setFromAxisAngle(Z, armOut));
+      if (armOut && pair.a.name === 'upperarm_r') want.premultiply(out.setFromAxisAngle(Z, -armOut));
+      if (pair === headPair) want.premultiply(level);
       world.set(pair.b, want);
     }
     // Local = parent's world⁻¹ × this bone's world.
