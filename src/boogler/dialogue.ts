@@ -10,8 +10,19 @@ import { boogler } from './boogler.ts';
 import { GIFTS } from '../sim/gift-catalog.ts';
 import { setIcon } from '../player/item-icons.ts';
 import { glyph, inputKind, padBrand } from '../player/glyphs.ts';
+import { speak, type LineSpeech, type VoiceSpec } from '../render/npc-voice.ts';
 
-const CHARS_PER_S = 48;
+// His voice, a comic, grandiose host (docs/research/npc-babble-voices.md, section 9); it also sets how fast his line types.
+const VOICE: VoiceSpec = {
+  baseHz: 155,
+  rangeSemis: 2,
+  formantScale: 0.9,
+  brightnessHz: 3500,
+  cps: 48,
+  grainMs: [65, 95],
+  gainDb: -12,
+  vowels: [0.3, 0.15, 0.1, 0.25, 0.2],
+};
 const REACT_MS = 1500;
 const MOUTHS = {
   smile:
@@ -91,17 +102,7 @@ let el: Dom | null = null;
 let cur: Current | null = null;
 const react = { until: 0 };
 
-/** A voice speaking one line as it types (?proto=babble): it owns the typing clock, so sound and text stay together. */
-export type LineSpeech = {
-  shownAt: (ms: number) => number; // characters shown this long after the line started
-  update: (ms: number) => void;
-  stop: () => void; // skipped, closed or replaced: silent at once
-};
-let lineVoice: ((text: string, mood: string) => LineSpeech) | null = null;
 let speech: LineSpeech | null = null;
-export const setLineVoice = (fn: typeof lineVoice) => {
-  lineVoice = fn;
-};
 function hush() {
   speech?.stop();
   speech = null;
@@ -220,7 +221,7 @@ export function showDialogue(view: DialogueView, bond: Bond, onPick: (i: number)
   d.opts.hidden = cur.typing;
   boogler.me.speaking = cur.typing;
   hush();
-  if (cur.typing && lineVoice) speech = lineVoice(view.say, view.mood);
+  if (cur.typing) speech = speak(view.say, view.mood, VOICE);
   if (!cur.typing) finishTyping();
 }
 
@@ -302,7 +303,7 @@ export function updateDialogue(now: number) {
   if (!cur?.typing) return;
   const ms = now - cur.at;
   speech?.update(ms);
-  const n = speech ? speech.shownAt(ms) : Math.min(cur.text.length, Math.floor((ms / 1000) * CHARS_PER_S));
+  const n = speech?.shownAt(ms) ?? cur.text.length;
   if (n !== cur.shown) {
     cur.shown = n;
     dom().say.textContent = cur.text.slice(0, n);
