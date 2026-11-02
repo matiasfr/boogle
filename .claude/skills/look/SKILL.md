@@ -1,47 +1,47 @@
 ---
 name: look
-description: Validate a feature in the running game - see stills and motion, and write scenario checks that assert on game state. Use after any visual, feel, water, physics or multiplayer change, and to close the loop on your own work.
+description: Inspect a feature in the running game with targeted stills and real-time motion; use scenario assertions for sync contracts. Use after visual, feel, physics or multiplayer changes to close the loop on your work.
 ---
 
 # Look and validate
 
-Unit tests cover pure logic. For "does it actually work in the running game" (things that happen over time, flicker, objects that move or vanish, two players seeing the same thing) use the headless harness in `dev/look/` and `dev/scenarios/`. It starts Vite and a local signaling server, drives Chromium (Playwright), and cleans up after itself. Output goes to `.look/` (gitignored). **Always open the PNGs with Read and look at them**; numbers alone miss things. A visible change puts a still on its PR: `scripts/pr-shot.sh <png>...` uploads it and prints the Markdown (AGENTS.md, "Shipping").
+Use `dev/look/` for visual evidence and `dev/scenarios/` for assertions on sync contracts. The harness starts Vite and a local game server, drives Chromium and cleans up after itself. Output goes to `.look/` (gitignored). Open the generated images and watch real-time recordings when judging motion. A visible change puts an inspected still on its PR (`scripts/pr-shot.sh <png>...`; AGENTS.md, "Shipping"). Evidence and measurement rationale: `docs/research/visual-validation.md`.
+
+Before capturing, name one question, the action that reveals it, the camera/device that frames it, and the expected visible result. A generic island capture only checks startup. Report the observation separately from the command's exit status; never call a low pixel-change score a visual pass.
 
 ## 1. Inspect: `npm run look`
 
 ```
-npm run look -- --view hill                           # preset: hill | shore | court | overview | garden
-npm run look -- --cam -10,12,-14 --look -22,3.5,-21   # any pose (metres, y up); --fov 60
-npm run look -- --view shore --eval setup.js --warm 5 --region 0.3,0.3,0.4,0.4
+npm run look -- --view hill                           # startup/capture check only
+npm run look -- --cam -10,12,-14 --look -22,3.5,-21 --question "Does the feature read from here?"
+# setup.ts and action.ts are task-specific page-code bodies:
+npm run look -- --eval setup.ts --action action.ts --video --seconds 5 --question "Does the action visibly complete?"
+npm run look -- --heatmap --region 0.3,0.3,0.4,0.4 --question "Does this stationary prop flicker?"
 ```
 
-Writes `<name>-still.png`, `<name>-motion.png` (contact sheet: `--frames 8` over `--seconds 2`, timestamped),
-`<name>-heat.png` (per-pixel temporal stddev: bright = changing) and prints a **motion score** (mean stddev 0-255,
-over `--region x,y,w,h` as fractions of the frame, default whole frame). A calm still scene scores under 1; flicker
-and popping show up as bright speckle or edges in the heatmap. `--eval file.js` runs a page-code body before the
-camera is placed (see below; a `.ts` body, like those in `dev/look/evals/`, ends in `export {};` and has its types
-stripped). `--hud` keeps the HUD in the picture. Add views to the `VIEWS` table in
-`dev/look/lib.ts`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
-(10 ticks/s) is slow to warm up: `--warm 10` or more.
+Default outputs are `<name>-still.png` and `<name>-motion.png` (8 timestamped screenshots over 2 seconds). A sheet shows coarse poses; it can miss brief glitches and does not prove smoothness. Use `--video` for `<name>-realtime.webm`, recorded after warm-up without advancing a fake clock. Playback answers the visible-motion question; recording overhead and encoded frame cadence mean it is not a performance benchmark. Use the live game and `npm run hitches` for frame stalls.
 
-**Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
+`--eval setup.ts` runs before camera placement and warm-up. `--action action.ts` runs after warm-up and after video starts; it should initiate the action and return so the sheet samples the action too. Page-code bodies may use top-level await, end in `export {};`, and must not contain a top-level return (Node strips the types before evaluation). Ready-made setup files: `dev/look/evals/sunset.ts`, `night.ts`, `particles.ts`. Use a camera that keeps the action in view, `--hud` for UI, `--name` for distinct captures, and `--url` for an existing game.
+
+`--heatmap` requires a nonempty `--region x,y,w,h` inside 0..1, writes `<name>-heat.png` with only that region highlighted, and reports its pixel variation. `--region` alone highlights the region in the sheet and reports its variation. This is diagnostic: waves and intended motion light up too; reordering the sampled frames leaves the variance unchanged; a frozen renderer scores zero. It is useful for a specific stability question with a comparable camera/state, never a general quality threshold.
+
+The command fails on page or console errors (including graphics errors), a non-WebGPU backend, an unavailable completed-frame counter or no completed game frames during its final one-second sample. `prof.last.frames` counts frames after the game's render call returns, not browser rAF callbacks or GPU presentation. Old deployed builds without that counter fail explicitly; use an updated build. A successful run only establishes capture health. State what the inspected evidence does and does not establish.
+
+**Graphics backend.** The game is WebGPU only, and so is every run: Metal on a Mac, SwiftShader over
 Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only single-player scenarios, `world-inputs`; `smoke` runs
 here, `npm run check:gpu` or `npm run ship -- --gpu`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
-run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
-material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.ts`,
-`night.ts`, `particles.ts`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:
+run prints `renderer backend: ...` and `gfx errors: ...`; an entry there is a bug to fix. Rendering rules:
 `src/render/README.md`.
 
 ## 2. Validate: scenarios (`npm run scenario -- <name>`, `npm run scenarios` for all)
 
 A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
 It sets up a situation in the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
-failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
-risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
+failure, including page and console errors. Follow AGENTS.md's test diet: new scenarios only for sync contracts, not routine UI, tuning or feel. Run the relevant existing scenario when it resolves a concrete concern. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
 Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
 console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
-are optional; on a slow sandbox, push and read CI.
+are optional; if access blocks a required visual check, request it per AGENTS.md rather than substituting CI for seeing the change.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
@@ -68,7 +68,7 @@ Player (`Game`) API, from `dev/look/lib.ts`:
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.ts`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (throw is click-hold).
-- `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
+- `g.still(label)`, `g.motion(label, { frames, seconds, region, heatmap })` -> `{ score, hotFrac, sheet, heat }`; `heat` is null unless requested. `g.fps()` samples completed game frames; `g.healthErrors()` reports runtime/console/backend failures.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
 - `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or
   `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.ts`.
@@ -76,8 +76,7 @@ Player (`Game`) API, from `dev/look/lib.ts`:
 Rules of thumb: keep scenarios short; wait on state, not time; assert on what the player would notice (it exists,
 moved, synced, is visible in a region, is not flickering); keep thresholds loose (they guard against regressions,
 not tune the look); put the image paths in check details so a failure is diagnosable. Prefer submitting edits through
-`submitEdit` over aiming the mouse. Real-time motion scores depend on the machine, so compare before/after on the
-same machine, never against absolute numbers from elsewhere.
+`submitEdit` over aiming the mouse for sync assertions; use real input when the question concerns controls. Pixel variation is only useful for a named region and expectation, with comparable state and capture conditions.
 
 ## 3. Render and sim cost: `npm run perf`
 
@@ -92,8 +91,7 @@ lights or per-tick sim work, and compare.
 ## 4. Clips and videos
 
 Recording video clips and GIFs, and cutting them into trailers: see the `video` skill (`npm run clip`,
-`npm run reel`).
+`npm run reel`). Those clips advance virtual time, so smooth playback is not evidence of real-time performance. For an action's timing and visible stalls, use `npm run look -- --video` or observe the running game.
 
 ## Loop for a feature
-Write or extend a scenario that fails without your feature, implement, run it, Read the stills/sheets/heatmaps,
-fix what looks wrong, repeat. Commit the scenario with the feature.
+Name the visual question, set up the action and view, capture, inspect and fix what is off (up to three rounds per AGENTS.md). Include a concrete observation and any unverified behavior in the handoff. Only add a scenario when a sync contract needs one; visual changes use targeted evidence rather than another test suite.

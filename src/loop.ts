@@ -55,7 +55,7 @@ let started = false;
 // sections (physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
 // (vite.config.ts passes it in through onFrame.in), or `name` in its options, else its phase and order.
 //   prof.table(n)   the n most expensive sections: { name, avg, p95, max } in ms over the window, plus 'frame' (total)
-//   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
+//   prof.last       { frames } completed, plus { ms, top, topMs } for the last frame (its slowest section)
 // main.ts marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
 const WINDOW = 240;
 const sections = new Map<string, Section>(); // name -> { name, ring: Float32Array(WINDOW), last: ms this frame }
@@ -67,7 +67,7 @@ let frames = 0;
 let frameId = 0; // frames counted from 1 while one runs, 0 between frames (input events, timers)
 /** The frame running now (1, 2, ...), or 0 outside one: a key for caches that hold for one frame's hooks. */
 export const currentFrame = () => frameId;
-const last = { ms: 0, top: '', topMs: 0 };
+const last = { frames: 0, ms: 0, top: '', topMs: 0 };
 function record(name: string, ms: number) {
   let s = sections.get(name);
   if (!s) {
@@ -93,6 +93,7 @@ export function mark(name: string) {
 }
 export function endFrame(name: string) {
   mark(name);
+  last.frames++; // main calls endFrame only after renderFrame returns; browser callbacks alone do not count
   frameId = 0;
   last.ms = cursor - frameStart;
   record('frame', last.ms);

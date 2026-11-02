@@ -130,16 +130,11 @@ try {
     }
     clearTimeout(timer);
     for (const g of games) {
-      if (g.errors.length) {
+      for (const error of g.healthErrors()) {
         bads++;
-        console.log(`  FAIL  page errors in ${g.name}: ${g.errors.slice(0, 2).join(' | ')}`);
+        console.log(`  FAIL  ${g.name}: ${error}`);
       }
     }
-    for (const g of games)
-      if (g.gfx !== 'webgpu') {
-        bads++;
-        console.log(`  FAIL  ${g.name} runs ${g.gfx ?? 'no renderer'}, not WebGPU`);
-      }
     for (const p of pages) {
       if (p.errors.length) {
         bads++;

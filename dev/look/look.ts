@@ -1,6 +1,6 @@
 // Visual inspection for agents: `npm run look -- --view hill`. See .claude/skills/look/SKILL.md.
-// Enters the island headless, puts the camera at a view, warms up, then writes a still, a motion contact sheet
-// and a per-pixel stddev heatmap, and prints a motion score. Scenario checks live in dev/scenarios/.
+// Captures evidence for a named visual question. A successful capture is not a visual verdict.
+// Heatmaps are optional; --video records wall time, unlike the virtual-time promo clips in dev/video/.
 import fs from 'node:fs';
 import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
@@ -14,6 +14,10 @@ const opt: {
   look: number[] | null;
   url: string | null;
   eval: string | null;
+  action: string | null;
+  question: string;
+  video: boolean;
+  heatmap: boolean;
   out: string;
   warm: number;
   frames: number;
@@ -30,6 +34,10 @@ const opt: {
   look: null,
   url: null,
   eval: null,
+  action: null,
+  question: 'Renderer startup and capture only',
+  video: false,
+  heatmap: false,
   out: '.look',
   warm: 10,
   frames: 8,
@@ -56,6 +64,10 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--look') opt.look = v().split(',').map(Number);
   else if (a === '--url') opt.url = v();
   else if (a === '--eval') opt.eval = v();
+  else if (a === '--action') opt.action = v();
+  else if (a === '--question') opt.question = v();
+  else if (a === '--video') opt.video = true;
+  else if (a === '--heatmap') opt.heatmap = true;
   else if (a === '--out') opt.out = v();
   else if (a === '--warm') opt.warm = parseFloat(v());
   else if (a === '--frames') opt.frames = parseInt(v(), 10);
@@ -71,7 +83,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
-  [--eval file.js|file.ts] [--warm 10s] [--frames 8] [--seconds 2] [--region x,y,w,h (fractions)] [--size 960x600]
+  [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
+  [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
   [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]`);
     process.exit(0);
   } else {
@@ -79,32 +92,79 @@ for (let k = 0; k < argv.length; k++) {
     process.exit(2);
   }
 }
+const region = opt.region;
+if (
+  !Number.isInteger(opt.frames) ||
+  opt.frames < 2 ||
+  !Number.isFinite(opt.seconds) ||
+  opt.seconds <= 0 ||
+  !Number.isFinite(opt.warm) ||
+  opt.warm < 0 ||
+  opt.size.length !== 2 ||
+  opt.size.some((v) => !Number.isInteger(v) || v <= 0) ||
+  (opt.heatmap && !region) ||
+  (region &&
+    (region.length !== 4 ||
+      region.some((v) => !Number.isFinite(v) || v < 0 || v > 1) ||
+      region[2]! <= 0 ||
+      region[3]! <= 0 ||
+      region[0]! + region[2]! > 1 ||
+      region[1]! + region[3]! > 1))
+) {
+  console.error(
+    'Use frames >= 2, seconds > 0, warm >= 0, positive integer size, and a nonempty region inside 0..1. --heatmap requires --region.',
+  );
+  process.exit(2);
+}
 const pose = opt.cam ? { cam: opt.cam, look: opt.look || [0, 0, 0] } : VIEWS[opt.view];
 if (!pose) throw new Error('unknown view ' + opt.view);
 const label = opt.name || (opt.cam ? 'custom' : opt.view);
 
 let stack: Stack | undefined, browser: Browser | undefined;
+async function pageScript(g: Game, file: string) {
+  let body = fs.readFileSync(path.resolve(file), 'utf8');
+  // TS evals are modules (top-level await); remove the module marker after stripping types for page evaluation.
+  if (file.endsWith('.ts')) body = stripTypeScriptTypes(body).replace(/^export \{\};.*$/m, '');
+  const out = await g.eval(body);
+  if (out !== undefined) console.log('eval result:', JSON.stringify(out));
+}
 try {
   stack = await startStack({ url: opt.url });
   browser = await launch();
   const g = await Game.open(browser, stack, { out: opt.out, size: opt.size, hud: opt.hud, room: opt.room });
-  if (opt.eval) {
-    let body = fs.readFileSync(path.resolve(opt.eval), 'utf8');
-    // A .ts body (dev/look/evals/) ends in `export {}` so the type checker reads it as a module (top-level await, its
-    // own scope): strip the types and that line, and the page runs the same body as before.
-    if (opt.eval.endsWith('.ts')) body = stripTypeScriptTypes(body).replace(/^export \{\};.*$/m, '');
-    const out = await g.eval(body);
-    if (out !== undefined) console.log('eval result:', JSON.stringify(out));
-  }
+  console.log(
+    `question: ${opt.question}\nview: ${JSON.stringify(pose)}\naction: ${opt.action ?? 'none (observe only)'}`,
+  );
+  if (opt.eval) await pageScript(g, opt.eval);
   await g.view(pose, opt.fov ?? undefined);
   console.log(`warming up ${opt.warm}s ...`);
   await new Promise((r) => setTimeout(r, opt.warm * 1000));
-  const still = await g.still(label);
-  const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region: opt.region });
-  console.log(`still:   ${still}\nmotion:  ${m.sheet}\nheatmap: ${m.heat}`);
-  reportGfxErrors([g]);
+  const video = opt.video ? path.join(g.out, `${label}-realtime.webm`) : null;
+  if (video)
+    await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
+  try {
+    if (opt.action) await pageScript(g, opt.action);
+    const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region, heatmap: opt.heatmap });
+    console.log(`still:   ${await g.still(label)}\nmotion:  ${m.sheet}`);
+    if (m.heat) console.log(`heatmap: ${m.heat}`);
+    if (region)
+      console.log(
+        `region pixel change: ${m.score.toFixed(3)}; pixels >8: ${(m.hotFrac * 100).toFixed(1)}% (diagnostic, not a quality score)`,
+      );
+    const fps = await g.fps();
+    console.log(`completed game frames/s: ${fps.toFixed(1)} (1s sample; not a GPU benchmark)`);
+    reportGfxErrors([g]);
+    const errors = g.healthErrors();
+    if (fps <= 0) errors.push('No completed game frames during the sample');
+    if (errors.length) throw new Error(errors.join('\n'));
+  } finally {
+    if (video) {
+      await g.page.screencast.stop();
+      console.log(`real-time video: ${video}`);
+    }
+  }
   console.log(
-    `motion score (${label}): ${m.score.toFixed(3)}  (mean temporal stddev 0-255; hot pixels >8: ${(m.hotFrac * 100).toFixed(1)}%; ${(await g.fps()).toFixed(1)} fps)`,
+    'Capture checks passed: WebGPU, advancing game frames, no page or console errors. Inspect the artifacts to answer the question.',
   );
 } catch (e) {
   console.error(e);
