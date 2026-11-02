@@ -1,20 +1,10 @@
 {
-  "src/boogler/boogler.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
   "src/boogler/fx.ts": {
     "boogle/use-an-entity": {
       "count": 3
     }
   },
   "src/entities/remote-player/index.ts": {
-    "boogle/use-an-entity": {
-      "count": 3
-    }
-  },
-  "src/features/boogler.ts": {
     "boogle/use-an-entity": {
       "count": 3
     }

@@ -256,11 +256,12 @@ Do this before the entity work: it's what delivers the separation.
       - Verify: `check:full`, `check:gpu`, a `/look` motion sheet of a thrown ball, two-tab ownership hand-off, and lines of code no
         more than about 1.3 times today's. Then give a fresh agent the docs and a small new object: did it land in one PR, pass
         lint first time and match the ball? If not, fix the API before step 12.
-- [ ] **12. The local player, as one blob.** `player.ts` and its part of `installStepHooks` become one entity with no behaviour
+- [x] **12. The local player, as one blob.** ([#510](https://github.com/matiasfr/boogle/pull/510)) `player.ts` and its part of `installStepHooks` become one entity with no behaviour
       change. The camera becomes its own kind at -200. Remove `updateIntent` from `main.ts`. Keep the `me` export path stable. Verify:
-      as step 11, with `/look` of movement, swimming and respawn. **Stop here: the owner plays it.** Split state and view after that.
-- [ ] **13. The Boogler, as one blob.** `src/boogler/boogler.ts` (726 lines) becomes an entity, staying in its folder, host field
-      `g` unchanged, `lines.ts` untouched. Verify: `/look`, and talking and riding work. Split later.
+      as step 11, with `/look` of movement, swimming and respawn. The owner's call (2026-11-02): don't stop here, the owner plays
+      at the end. Still to do: split its state and view, and the camera's.
+- [x] **13. The Boogler, as one blob.** `src/boogler/boogler.ts` (726 lines) becomes an entity, staying in its folder, host field
+      `g` unchanged, `lines.ts` untouched. Verify: `/look`, and talking and riding work. Still to do: split its state and view, and move `src/boogler/fx.ts`'s three `scene.add`s (its orb and pops) onto entities.
 - [ ] **14. Remaining game objects, one PR per group:**
       - Remote players: `updateRemotes` and their `onPreStep` target at `physics.ts:123-135` move, and the `declare module` bridge goes.
         Then `installStepHooks` and its call in `main.ts` go.

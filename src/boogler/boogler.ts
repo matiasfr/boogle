@@ -14,9 +14,9 @@ import * as THREE from 'three';
 import { FIXED, INTERP_MS, CELL, HALF, reducedMotion } from '../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, mulberry32 } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { scene, camera, toScreen } from '../render/scene.ts';
+import { camera, toScreen } from '../render/scene.ts';
 import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.ts';
-import { createBody, addBody, onPreStep, BODY } from '../physics/engine.ts';
+import { createBody, BODY } from '../physics/engine.ts';
 import { blockedAt } from '../render/props.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
@@ -317,6 +317,8 @@ function hear(v: unknown, time: number, peer: string) {
   lastSnapAt = performance.now();
 }
 
+addHostField('g', publish, hear);
+
 function sampleSnaps(t: number) {
   const s = snaps.sample(t);
   if (!s) return;
@@ -487,14 +489,14 @@ function buildModel() {
 type Parts = ReturnType<typeof buildModel>;
 
 // ---------------------------------------------------------------- lifecycle
+// src/features/boogler.ts spawns what this returns, at start: he needs the props to exist, to know where the trees and
+// rocks are.
 export function createBoogler() {
   const s = findStart();
   sim.x = disp.x = target.x = s.x;
   sim.z = disp.z = target.z = s.z;
   modelParts = buildModel();
   group = modelParts.root;
-  scene.add(group);
-  addHostField('g', publish, hear);
 
   const b = createBody({
     type: BODY.KINEMATIC,
@@ -505,24 +507,25 @@ export function createBoogler() {
     ],
   });
   teleport(b, s.x, groundHeight(s.x, s.z), s.z);
-  addBody(b);
   boogler.body = b;
-  onPreStep(
-    () => {
-      const p = b.position;
-      const tx = disp.x,
-        tz = disp.z,
-        ty = groundHeight(tx, tz);
-      const dx = tx - p.x,
-        dy = ty - p.y,
-        dz = tz - p.z;
-      if (dx * dx + dy * dy + dz * dz > 36) {
-        teleport(b, tx, ty, tz);
-        b.velocity.set(0, 0, 0);
-      } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
-    },
-    { order: 50 },
-  );
+  return { group, body: b };
+}
+
+// His body follows him, each physics step.
+export function booglerBodyStep() {
+  const b = boogler.body;
+  if (!b) return;
+  const p = b.position;
+  const tx = disp.x,
+    tz = disp.z,
+    ty = groundHeight(tx, tz);
+  const dx = tx - p.x,
+    dy = ty - p.y,
+    dz = tz - p.z;
+  if (dx * dx + dy * dy + dz * dz > 36) {
+    teleport(b, tx, ty, tz);
+    b.velocity.set(0, 0, 0);
+  } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };
