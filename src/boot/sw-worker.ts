@@ -1,4 +1,4 @@
-// The service worker (docs/plans/loading.md, "Service worker"), built to dist/sw.js by vite.config.js
+// The service worker (docs/plans/loading.md, "Service worker"), built to dist/sw.js by vite.config.ts
 // ('boogle-sw'), which bundles this file and fills in SW_CONFIG: the build id and the files the first frame needs.
 // Registered by ./sw.ts once the game is interactive. Not in development (the dev server has no sw.ts).
 //

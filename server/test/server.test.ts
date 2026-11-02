@@ -4,9 +4,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.js';
+import { createService, loadConfig } from '../src/server.ts';
+import type { ServerConfig } from '../src/server.ts';
 
-async function start(env = {}, overrides = {}) {
+async function start(env: Record<string, string> = {}, overrides: Partial<ServerConfig> = {}) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-test-'));
   const cfg = loadConfig({ DATA_DIR: dataDir, ...env }, { log: () => {}, ...overrides });
   const svc = createService(cfg);
@@ -35,7 +36,7 @@ test('healthz', async () => {
   }
 });
 
-const report = (base, body, type = 'text/plain') =>
+const report = (base: string, body: unknown, type = 'text/plain') =>
   fetch(`${base}/report`, {
     method: 'POST',
     headers: { 'content-type': type },
@@ -114,7 +115,7 @@ test('report: playtest verdicts keep their own shape and a longer note', async (
 test('report: per-IP rate limit and daily size cap', async () => {
   let s = await start({ REPORT_RATE_PER_MIN: '2' });
   try {
-    const codes = [];
+    const codes: number[] = [];
     for (let i = 0; i < 3; i++) codes.push((await report(s.base, { room: 'a', kind: 'error', detail: 'e' })).status);
     assert.deepEqual(codes, [204, 204, 429]);
   } finally {
@@ -135,7 +136,7 @@ test('report: the first write of a day deletes report files older than 30 days',
   const s = await start();
   try {
     const dir = path.join(s.dataDir, 'reports');
-    const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
     await fs.mkdir(dir, { recursive: true });
     for (const name of [`${daysAgo(40)}.jsonl`, `${daysAgo(5)}.jsonl`, 'notes.txt']) {
       await fs.writeFile(path.join(dir, name), '{}\n');
@@ -160,7 +161,8 @@ test('reports: GET needs REPORT_TOKEN and the bearer token', async () => {
   try {
     const day = today();
     await report(s.base, { room: 'a', kind: 'snapshot', detail: { from: 'peer', reason: 'parse' } });
-    const get = (q, auth) => fetch(`${s.base}/reports${q}`, { headers: auth ? { authorization: auth } : {} });
+    const get = (q: string, auth?: string) =>
+      fetch(`${s.base}/reports${q}`, { headers: auth ? { authorization: auth } : {} });
     assert.equal((await get('')).status, 401);
     assert.equal((await get('', 'Bearer nope')).status, 401);
     assert.equal((await get('?day=yesterday', 'Bearer tok')).status, 400);
@@ -185,7 +187,7 @@ test('CORS: default *, and allow-list', async () => {
       headers: { origin: 'https://x.example', 'access-control-request-method': 'POST' },
     });
     assert.equal(pre.status, 204);
-    assert.match(pre.headers.get('access-control-allow-methods'), /POST/);
+    assert.match(pre.headers.get('access-control-allow-methods') ?? '', /POST/);
   } finally {
     await s.stop();
   }
@@ -226,7 +228,7 @@ test('an upgrade with an unparseable target does not crash the server', async ()
   try {
     const { port } = new URL(s.base);
     for (const target of ['//[', 'http://[']) {
-      const reply = await new Promise((resolve) => {
+      const reply = await new Promise<string>((resolve) => {
         const sock = net.connect(Number(port), '127.0.0.1', () =>
           sock.write(
             `GET ${target} HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n` +
@@ -250,7 +252,7 @@ test('an upgrade outside /room/ is refused', async () => {
   const { WebSocket } = await import('ws');
   const s = await start();
   try {
-    const refused = await new Promise((resolve) => {
+    const refused = await new Promise<number | undefined | 'error'>((resolve) => {
       const ws = new WebSocket(`${s.base.replace('http', 'ws')}/peerjs/peerjs?key=peerjs&id=x&token=t`);
       ws.on('unexpected-response', (_req, res) => resolve(res.statusCode));
       ws.on('error', () => resolve('error'));

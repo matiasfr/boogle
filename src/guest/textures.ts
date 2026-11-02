@@ -1,5 +1,5 @@
 // The guest's and the dino's textures (RGBA16), in atlas order. src/guest/rom.ts reads each from the player's ROM, `at`
-// bytes into the MIO0 block at `block`. native/guest/build.mjs names the upstream source file of each, in the same
+// bytes into the MIO0 block at `block`. native/guest/build.ts names the upstream source file of each, in the same
 // order, and compiles that index in place of its pixels.
 const GUEST = 0x114750,
   DINO = 0x16d870;

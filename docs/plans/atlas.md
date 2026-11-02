@@ -78,7 +78,7 @@ lives in `concepts.json` under `boxes`.
 **d3:** six d3 modules (`d3-selection`, `d3-transition`, `d3-interpolate`, `d3-hierarchy`, `d3-shape`, `d3-sankey`)
 instead of the `d3` umbrella. They are the same code `d3@7.8.5` ships, but about 12 packages in the lockfile instead
 of about 31. They are imported only from `atlas/`, so Rollup puts them in the atlas chunk; `manualChunks` in
-`vite.config.js` returns `undefined` for them. Pin exact versions: `d3-selection@3.0.0 d3-transition@3.0.1
+`vite.config.ts` returns `undefined` for them. Pin exact versions: `d3-selection@3.0.0 d3-transition@3.0.1
 d3-interpolate@3.0.1 d3-hierarchy@3.1.2 d3-shape@3.2.0 d3-sankey@0.12.3` (the set `d3@7.8.5` uses). If npm resolves
 newer patch versions, take them. Put them in `dependencies` (they ship to users, like `three`).
 
@@ -442,7 +442,7 @@ glance".
     In `configureServer(server)`, on watcher `change`/`add`/`unlink` of a path under `/src/` or `/server/src/`,
     invalidate that module (`server.moduleGraph.getModuleById(id)` then `invalidateModule`) so a dev reload shows
     fresh facts.
-  - `vite.config.js`: import `atlasFacts`, add it to `plugins`, and add
+  - `vite.config.ts`: import `atlasFacts`, add it to `plugins`, and add
     `rollupOptions.input: { main: resolve('index.html'), atlas: resolve('atlas/index.html') }` (`resolve` =
     `fileURLToPath(new URL(p, import.meta.url))`). Leave `manualChunks` as it is.
   - Create `atlas/index.html` (prototype markup, plus `<meta name="robots" content="noindex">` and
@@ -610,7 +610,7 @@ glance".
 - **The build must never fail because of the atlas.** The extractor catches parse errors per file, the Vite plugin
   catches everything, and the narrative is imported as raw text. Step 5's verification exercises all three.
 - **Hotspots:** `index.html`, `src/main.ts`, `src/style.css`, `PLAN.md` and `src/world/rules/index.js` are untouched.
-  Shared config edits stay small: `vite.config.js` (one import, one plugin, `input`), `deploy.yml` (two lines: `fetch-depth: 0` and `filter: blob:none`),
+  Shared config edits stay small: `vite.config.ts` (one import, one plugin, `input`), `deploy.yml` (two lines: `fetch-depth: 0` and `filter: blob:none`),
   `automerge.yml` (one `if`), `scenarios-nightly.yml` (one line), `AGENTS.md` and `README.md` (one line each),
   `DESIGN.md` (one section, its own commit).
 - **The game bundle must not grow.** d3 and the virtual facts module are imported only from `atlas/`. Step 5 checks

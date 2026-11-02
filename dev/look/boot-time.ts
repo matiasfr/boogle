@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { createService, loadConfig } from '../../server/src/server.js';
+import { createService, loadConfig } from '../../server/src/server.ts';
 import { launch, freePort, root, sleep } from './lib.ts';
 
 type Timeline = { line: string; nav: string; sw: number; marks: { name: string; t: number }[]; req: number };

@@ -1,5 +1,5 @@
 // npm run verdicts [-- --days N] [--md] [--all]
-// Playtest verdicts the prototype bar sent to the server (POST /report, kind `playtest`; server/src/server.js), read
+// Playtest verdicts the prototype bar sent to the server (POST /report, kind `playtest`; server/src/server.ts), read
 // back through GET /reports for the last N UTC days (default 3), newest first, grouped by prototype.
 // The bar sends on the verdict tap and again with the note, so by default only the latest report per card and variant
 // in a sitting (reports less than SITTING_MS apart) shows; --all shows every send.

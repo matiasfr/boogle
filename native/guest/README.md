@@ -12,7 +12,7 @@ Needs clang with the `wasm32` target and `wasm-ld` (macOS: `brew install lld`; A
 A ROM is not needed: the build compiles only what upstream keeps as source.
 
 ```bash
-GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
+GUEST_DECOMP=/path/to/checkout node native/guest/build.ts
 ```
 
 `CLANG` and `WASM_LD` override the tool paths. The result is `native/guest/out/engine.wasm` (gitignored).
@@ -29,7 +29,7 @@ GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
 
 ## What is compiled, what comes from the ROM
 
-- From the upstream checkout (listed in `build.mjs`): the character's actions and step code, its interaction code, the
+- From the upstream checkout (listed in `build.ts`): the character's actions and step code, its interaction code, the
   engine's collision, math, graph node and geo layout code, the guest's and the dino's geometry and geo layouts, and
   the dino's animations.
 - From the player's own ROM at runtime (`src/guest/rom.ts`): the guest's animation bank and the guest and dino

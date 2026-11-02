@@ -444,7 +444,7 @@ export async function connectRoom() {
   try {
     const debug = Number(new URLSearchParams(location.search).get('netdebug')) || 0; // ?netdebug=1 (2: every reconnect)
     // Our server hosts every room (server/README.md): VITE_BOOGLE_SERVER, set by deploy.yml, and by the dev server's
-    // own in-process one in `npm run dev` (vite.config.js).
+    // own in-process one in `npm run dev` (vite.config.ts).
     const server = import.meta.env.VITE_BOOGLE_SERVER;
     if (!server) throw Object.assign(new Error('VITE_BOOGLE_SERVER is not set'), { code: 'no_server' });
     room = await createWsRoom({

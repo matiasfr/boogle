@@ -457,7 +457,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - `src/net/README.md`: the three new members.
   - Verify: `npm run check:full` (`test:net` checks peer-room is unchanged).
 
-- [x] **7. The server host, off by default** (`server/src/host/*`, `server/src/server.js`, deploy files).
+- [x] **7. The server host, off by default** (`server/src/host/*`, `server/src/server.ts`, deploy files).
   - Shipped in three PRs: [x] 7a `land.ts` + `world-host.ts` (`server/test/land.test.ts`, `world-host.test.ts`: every
     op accepted, snapshot to one client, save and resume); [x] 7b `hosted-room.ts` + `rooms.ts`, the upgrade route and
     its PeerJS id guard, `SERVER_ROOMS` / `MAX_PLAYERS` / `SERVER_SAVE_MS` (`server/test/host.test.ts`); [x] 7c endpoints, Docker and deploy, README (Docker and deploy landed early, with 7b's fix). Files are `.ts` (AGENTS.md, "TypeScript"). The world host also
@@ -471,7 +471,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     closes the room host first (`roomHost.close({ save })`), so `index.js`'s shutdown needs no change.
   - Docker and deploy: `server/Dockerfile` builds from the repo root: copy `package.json` (for `"type": "module"`
     under `/app/src`), `server/package*.json` then `npm ci --omit=dev` in `/app/server`, `server/src`, `src/world`,
-    `src/sim`, `src/net/ids.js`, `src/net/ws-wire.js`; `CMD` runs `node server/src/index.js` (keep the `su-exec`
+    `src/sim`, `src/net/ids.js`, `src/net/ws-wire.js`; `CMD` runs `node server/src/index.ts` (keep the `su-exec`
     logic). New root `.dockerignore`: `**/node_modules`, `.git`, `dist`, `native`, `docs`, `public`, `dev`, `test`,
     `server/data`, `.claude`. `deploy-server.yml`: trigger paths add `src/world/**`, `src/sim/**`, `src/net/ids.js`,
     `src/net/ws-wire.js`, `.dockerignore`; the deploy job runs `flyctl deploy . --config server/fly.toml --dockerfile
@@ -566,7 +566,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   `server/fly.toml`, docs). One PR: the client and the server's env change together. Owner-gated. Builds on 8b:
   `src/net/room.ts` and `isLead()` already exist; the switch drops the picker's peer and fallback paths.
   - Done. Deviations: the loaded-room cap is `MAX_HOSTED_ROOMS` (default 20), since `MAX_ROOMS` already caps saved
-    rooms (1000); the server's packages install with the root `npm ci` (a `postinstall`), so `vite.config.js` and the
+    rooms (1000); the server's packages install with the root `npm ci` (a `postinstall`), so `vite.config.ts` and the
     harness can import it; `ws-room` got a test seam, `pause(ms)`, because Chromium's offline mode spares localhost
     and `reconnect-edit` (now: a tab drops, tosses while reconnecting, the toss lands) needs a real drop. The scenarios'
     `roles()` now means "both tabs follow the server", with the lead tab first. `npm run load` and
