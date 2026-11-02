@@ -104,6 +104,7 @@ const SUN_I = 2.5,
 // ---------------------------------------------------------------- sky dome
 export const skyU = {
   uTop: uniform(C.dayTop.clone()),
+  uCurve: uniform(0.6), // how the dome climbs from horizon to top; only ?proto=crossing's day changes it
   uHorizon: uniform(C.dayHorizon.clone()),
   uSun: uniform(new THREE.Vector3()),
   uMoon: uniform(new THREE.Vector3()),
@@ -125,7 +126,7 @@ const hash = Fn(([p0]: [any]) => {
 
 const skyColor = Fn(() => {
   const d = normalize(positionGeometry);
-  const col = mix(skyU.uHorizon, skyU.uTop, pow(max(d.y, 0), 0.6)).toVar();
+  const col = mix(skyU.uHorizon, skyU.uTop, pow(max(d.y, 0), skyU.uCurve)).toVar();
   const s = max(dot(d, skyU.uSun), 0);
   // The sun's glow: a wide warm wash and a tight halo that the disc's own glow fades into.
   col.addAssign(skyU.uGlow.mul(pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45))));
@@ -178,7 +179,7 @@ const valueNoise = Fn(([p]: [any]) => {
   return mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z);
 });
 
-const sunU = { uCol: uniform(L.discDay.clone()), uFade: uniform(1) };
+export const sunU = { uCol: uniform(L.discDay.clone()), uFade: uniform(1) };
 
 // A bright disc, a touch darker at the limb, inside a soft glow of its colour that fades into the sky's own halo
 // (skyColor). Clouds and the sea draw over it.

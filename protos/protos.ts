@@ -469,16 +469,16 @@ export const PROTOS: Proto[] = [
     id: 'crossing',
     title: 'The long crossing',
     step: 7,
-    status: 'answered',
+    status: 'live',
     answer: {
       on: '2026-11-02',
       verdict:
         'Default was pretty well balanced; Vast felt like a novelty that would wear off, and Express a little too fast.',
       next: 'A crossing starts at about a minute (1.2 km at 20 m/s), the top speed is for the end-game trains, and you can sit on the train.',
     },
-    url: '/?room=proto-crossing&proto=crossing',
-    question: 'Does the crossing feel vast in a good way, and would you ride it again?',
-    what: 'A train over a long viaduct to an island you can see from the start. Step on a flatbed and ride; a walkway runs beside the rails if you’d rather.',
+    url: '/?room=proto-crossing&proto=crossing&tod=0.07',
+    question: 'Does this start to look like the shot you picked?',
+    what: 'The crossing in the late-morning look you picked from the previz, after Mario Sunshine: a new sea, sky and timber, with sun glitter on the water. Step on a flatbed and ride.',
     since: '2026-11-02',
     defaultWhat: '1.2 km at 20 m/s: about a minute.',
     spawn: { x: 48, z: 5, yaw: 3.142 }, // on the home platform beside the flatbeds, looking down the line at the far island
@@ -487,13 +487,13 @@ export const PROTOS: Proto[] = [
     variants: [
       {
         name: 'express',
-        url: '/?room=proto-crossing&proto=crossing&v=express',
+        url: '/?room=proto-crossing&proto=crossing&v=express&tod=0.07',
         what: 'The same 1.2 km at 50 m/s: about half a minute. Is an upgrade a thrill?',
         spawn: { x: 48, z: 5, yaw: 3.142 },
       },
       {
         name: 'vast',
-        url: '/?room=proto-crossing&proto=crossing&v=vast',
+        url: '/?room=proto-crossing&proto=crossing&v=vast&tod=0.07',
         what: 'The same train over 4 km of sea: about a minute and a half.',
         spawn: { x: 48, z: 5, yaw: 3.142 },
       },
@@ -521,6 +521,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
+  { id: 'crossing', why: 'Does this start to look like the shot you picked?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
