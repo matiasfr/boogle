@@ -23,9 +23,9 @@ export function padBar(bar: HTMLElement, opts: { prev: () => void; next: () => v
     const rs = rows();
     if (!rs.length) return;
     row = Math.max(0, Math.min(rs.length - 1, row));
-    col = Math.max(0, Math.min(rs[row].length - 1, col));
+    col = Math.max(0, Math.min(rs[row]!.length - 1, col));
     for (const b of bar.querySelectorAll<HTMLElement>('[data-focus]')) delete b.dataset.focus;
-    const el = rs[row][col];
+    const el = rs[row]![col]!;
     el.dataset.focus = '1';
     if (!el.matches('input')) el.focus({ preventScroll: true });
   }
@@ -33,7 +33,7 @@ export function padBar(bar: HTMLElement, opts: { prev: () => void; next: () => v
     const rs = rows();
     if (dr) {
       // keep roughly the same horizontal place when the next row has more or fewer buttons
-      const share = rs[row] ? (col + 0.5) / rs[row].length : 0;
+      const share = rs[row] ? (col + 0.5) / rs[row]!.length : 0;
       row = (row + dr + rs.length) % rs.length;
       col = Math.floor(share * (rs[row]?.length ?? 1));
     } else col = (col + dc + (rs[row]?.length ?? 1)) % (rs[row]?.length ?? 1);
