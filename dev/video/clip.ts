@@ -56,7 +56,7 @@ const opt = {
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
-  const a = argv[k];
+  const a = argv[k]!;
   const v = () => argv[++k]!;
   if (a === '--root') opt.root = path.resolve(v());
   else if (a === '--gif') opt.gif = true;
@@ -84,7 +84,7 @@ const ease = {
   inOut: (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2),
   out: (x: number) => 1 - (1 - x) ** 3,
 };
-const mix = (a: number[], b: number[], u: number) => a.map((v, i) => v + (b[i] - v) * u);
+const mix = (a: number[], b: number[], u: number) => a.map((v, i) => v + (b[i]! - v) * u);
 const pose = (p: string | Pose): Pose => (typeof p === 'string' ? (VIEWS as { [k: string]: Pose })[p]! : p);
 const move =
   (a: string | Pose, b: string | Pose | null, seconds: number, e = ease.inOut): Each =>

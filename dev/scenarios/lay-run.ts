@@ -100,13 +100,13 @@ export default {
         rise = 0,
         rode = 0;
       for (let k = 1, j = 0; k < tr.length; k++) {
-        while (j < k - 1 && tr[k][0] - tr[j + 1][0] >= 100) j++;
-        const dt = (tr[k][0] - tr[j][0]) / 1000;
+        while (j < k - 1 && tr[k]![0]! - tr[j + 1]![0]! >= 100) j++;
+        const dt = (tr[k]![0]! - tr[j]![0]!) / 1000;
         if (dt < 0.1) continue;
-        deck = Math.max(deck, Math.hypot(tr[k][4] - tr[j][4], tr[k][6] - tr[j][6]) / dt);
-        rider = Math.max(rider, Math.hypot(tr[k][1] - tr[j][1], tr[k][3] - tr[j][3]) / dt);
-        rise = Math.max(rise, tr[k][2] - tr[k][5]);
-        rode += tr[k][7];
+        deck = Math.max(deck, Math.hypot(tr[k]![4]! - tr[j]![4]!, tr[k]![6]! - tr[j]![6]!) / dt);
+        rider = Math.max(rider, Math.hypot(tr[k]![1]! - tr[j]![1]!, tr[k]![3]! - tr[j]![3]!) / dt);
+        rise = Math.max(rise, tr[k]![2]! - tr[k]![5]!);
+        rode += tr[k]![7]!;
       }
       const last = tr[tr.length - 1];
       const detail = `deck ${deck.toFixed(1)} m/s, rider ${rider.toFixed(1)} m/s, rider over deck up to ${rise.toFixed(2)} m, on deck ${rode}/${tr.length} frames, ends on it: ${last?.[7]}`;

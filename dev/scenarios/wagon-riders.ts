@@ -75,9 +75,9 @@ type Sample = {
 // The largest distance of any offset from the mean offset (m).
 function wander(offs: number[][]) {
   if (!offs.length) return NaN;
-  const mx = offs.reduce((a, o) => a + o[0], 0) / offs.length,
-    mz = offs.reduce((a, o) => a + o[1], 0) / offs.length;
-  return Math.max(...offs.map((o) => Math.hypot(o[0] - mx, o[1] - mz)));
+  const mx = offs.reduce((a, o) => a + o[0]!, 0) / offs.length,
+    mz = offs.reduce((a, o) => a + o[1]!, 0) / offs.length;
+  return Math.max(...offs.map((o) => Math.hypot(o[0]! - mx, o[1]! - mz)));
 }
 
 export default {
@@ -116,10 +116,10 @@ export default {
       string | null;
 
     const riding = log.filter((s) => s.on);
-    const moved = log.length ? Math.hypot(log.at(-1)!.x - log[0].x, log.at(-1)!.z - log[0].z) : 0;
+    const moved = log.length ? Math.hypot(log.at(-1)!.x - log[0]!.x, log.at(-1)!.z - log[0]!.z) : 0;
     const turned = log.length ? Math.max(...log.map((s) => s.yaw)) - Math.min(...log.map((s) => s.yaw)) : 0;
-    const stopped = log.some((s, k) => k > 0 && s.speed < 0.05 && log[k - 1].speed >= 0.05);
-    const left = log.some((s, k) => k > 0 && s.speed >= 0.05 && log[k - 1].speed < 0.05);
+    const stopped = log.some((s, k) => k > 0 && s.speed < 0.05 && log[k - 1]!.speed >= 0.05);
+    const left = log.some((s, k) => k > 0 && s.speed >= 0.05 && log[k - 1]!.speed < 0.05);
     t.check(
       'the car moved, cornered and stopped',
       moved > 8 && turned > 0.02 && (stopped || left),
@@ -167,7 +167,7 @@ export default {
     const trail = (await A.eval(`return window.__leave;`)) as number[][];
     const steps = trail
       .slice(1)
-      .map((s, k) => Math.hypot(s[1] - trail[k][1], s[2] - trail[k][2]) / Math.max(1, s[0] - trail[k][0]));
+      .map((s, k) => Math.hypot(s[1]! - trail[k]![1]!, s[2]! - trail[k]![2]!) / Math.max(1, s[0]! - trail[k]![0]!));
     const fastest = Math.max(...steps) * 1000; // m/s between two frames
     const off = await A.waitFor(`![...window.boogle.remotes.values()][0].ride`, { timeout: 3000 });
     t.check('Bob leaves the deck in her view', off >= 0, `${off} ms`);

@@ -7,9 +7,9 @@ import { STAND } from './_stand.ts';
 
 const SKY = (frac: number) => `window.boogle.sky.preview(${frac})`;
 const ring = (c: number[], a: number, d: number, h: number) => [
-  c[0] + Math.cos(a) * d,
-  c[1] + h,
-  c[2] + Math.sin(a) * d,
+  c[0]! + Math.cos(a) * d,
+  c[1]! + h,
+  c[2]! + Math.sin(a) * d,
 ];
 
 export default {
@@ -30,16 +30,17 @@ export default {
       }),
     );
     const farm = [windmills.x, FARM_Y + 1, windmills.z];
-    await g.eval(STAND(farm[0] - 34, farm[2] + 6));
+    await g.eval(STAND(farm[0]! - 34, farm[2]! + 6));
     await g.wait(1);
     out.push(
       await g.record('island-windmills', {
         seconds: 7,
-        each: (t) => g.view({ cam: ring(farm, 2.0 + t * 0.07, 34, 9 - t * 0.5), look: [farm[0] + 2, 7, farm[2] - 4] }),
+        each: (t) =>
+          g.view({ cam: ring(farm, 2.0 + t * 0.07, 34, 9 - t * 0.5), look: [farm[0]! + 2, 7, farm[2]! - 4] }),
       }),
     );
     const lamp = [lighthouse.x, PAD_Y + 5, lighthouse.z];
-    await g.eval(STAND(lamp[0] + 4, lamp[2] + 30));
+    await g.eval(STAND(lamp[0]! + 4, lamp[2]! + 30));
     await g.eval(SKY(0.5));
     await g.wait(1);
     out.push(
@@ -47,7 +48,7 @@ export default {
         seconds: 9,
         each: async (t) => {
           await g.eval(SKY(0.5 + Math.min(1, t / 6) * 0.13));
-          await g.view({ cam: ring(lamp, 2.6 - t * 0.05, 30, 2 - t * 0.2), look: [lamp[0], lamp[1] + 1, lamp[2]] });
+          await g.view({ cam: ring(lamp, 2.6 - t * 0.05, 30, 2 - t * 0.2), look: [lamp[0]!, lamp[1]! + 1, lamp[2]!] });
         },
       }),
     );

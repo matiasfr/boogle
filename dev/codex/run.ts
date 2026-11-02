@@ -26,8 +26,15 @@ const opts: Record<string, string> = {};
 const pos: string[] = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--dry') opts.dry = '1';
-  else if (args[i].startsWith('--')) opts[args[i].slice(2)] = args[++i];
-  else pos.push(args[i]);
+  else if (args[i]!.startsWith('--')) {
+    const flag = args[i]!;
+    const value = args[++i];
+    if (value === undefined) {
+      console.error(`${flag} needs a value`);
+      process.exit(2);
+    }
+    opts[flag.slice(2)] = value;
+  } else pos.push(args[i]!);
 }
 const [mode, rawTopic, ...briefParts] = pos as [Mode, string, ...string[]];
 const brief = briefParts.join(' ').trim();

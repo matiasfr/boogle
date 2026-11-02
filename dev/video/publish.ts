@@ -19,13 +19,21 @@ const opt = {
   dry: false,
 };
 for (let k = 0; k < argv.length; k++) {
-  const a = argv[k];
-  if (a === '--title') opt.title = argv[++k];
-  else if (a === '--summary') opt.summary = argv[++k];
-  else if (a === '--feature') opt.features.push(argv[++k]);
-  else if (a === '--target') opt.target = argv[++k];
+  const a = argv[k]!;
+  const v = () => {
+    const value = argv[++k];
+    if (value === undefined) {
+      console.error(a + ' needs a value');
+      process.exit(2);
+    }
+    return value;
+  };
+  if (a === '--title') opt.title = v();
+  else if (a === '--summary') opt.summary = v();
+  else if (a === '--feature') opt.features.push(v());
+  else if (a === '--target') opt.target = v();
   else if (a === '--from')
-    Object.assign(opt, JSON.parse(fs.readFileSync(argv[++k], 'utf8'))); // the same fields as JSON
+    Object.assign(opt, JSON.parse(fs.readFileSync(v(), 'utf8'))); // the same fields as JSON
   else if (a === '--dry') opt.dry = true;
   else if (!a.startsWith('-')) opt.file = a;
   else {
@@ -48,7 +56,7 @@ const tags = new Set(
 );
 let tag = `video-${date}`;
 for (let n = 2; tags.has(tag); n++) tag = `video-${date}-${n}`;
-const url = `https://${owner.toLowerCase()}.github.io/${repo}/updates/${tag}/`;
+const url = `https://${owner!.toLowerCase()}.github.io/${repo}/updates/${tag}/`;
 
 const dir = path.resolve('.look/publish', tag);
 fs.mkdirSync(dir, { recursive: true });

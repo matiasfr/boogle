@@ -75,7 +75,7 @@ export async function run() {
     grab: [19, 1, 0.5],
     throw: [26, 1, 0.8],
   };
-  const [d0, dir, turn] = starts[shot];
+  const [d0, dir, turn] = starts[shot]!;
   W.seekPhase(phaseAt(num('d', d0), dir));
   await sleep(150);
   stand(dir > 0 ? turn : Math.PI + turn);
@@ -108,7 +108,7 @@ export async function run() {
   // after the harness places its own frozen camera
   setTimeout(() => {
     if (q.get('wide') !== '1') return win.__debugCam.clear();
-    const a = ROUTE[1];
+    const a = ROUTE[1]!;
     const y = groundHeight(a.x, a.z);
     win.__debugCam.set([a.x - 18, y + 9, a.z], [a.x, y + 1, a.z]);
   }, 400);

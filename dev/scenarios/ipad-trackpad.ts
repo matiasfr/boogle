@@ -83,8 +83,8 @@ export default {
     const grab = (await g.eval(
       `const r = document.getElementById('btn-grab').getBoundingClientRect(); return [r.width, r.right, r.bottom];`,
     )) as number[];
-    t.check('tablet: the main button is at least 100 px', grab[0] >= 100, JSON.stringify(grab));
-    t.check('tablet: the main button stays on screen', grab[1] <= 1194 && grab[2] <= 834, JSON.stringify(grab));
+    t.check('tablet: the main button is at least 100 px', grab[0]! >= 100, JSON.stringify(grab));
+    t.check('tablet: the main button stays on screen', grab[1]! <= 1194 && grab[2]! <= 834, JSON.stringify(grab));
 
     // Touch stick dead zone (rec 7): a real touch through CDP (pointerType 'touch').
     const cdp = await page.context().newCDPSession(page);

@@ -104,7 +104,7 @@ export function reportGfxErrors(games: Game[]) {
   const seen = new Set(games.flatMap((g) => g.gfxErrors));
   if (!seen.size) return console.log('gfx errors: none');
   console.log(`gfx errors (${seen.size} distinct):`);
-  for (const e of seen) console.log('  ' + e.split('\n')[0].slice(0, 240));
+  for (const e of seen) console.log('  ' + e.split('\n')[0]!.slice(0, 240));
 }
 
 // BOOGLE_QUERY=physics=rapier (any URL params) is added to every page the harness opens: scenarios on another backend.
@@ -158,7 +158,7 @@ export class Game {
     g.out = path.resolve(opts.out || '.look');
     g.prefix = opts.prefix || '';
     g.size = opts.size || [960, 600];
-    g.ctx = await browser.newContext({ viewport: { width: g.size[0], height: g.size[1] }, hasTouch: !!opts.touch });
+    g.ctx = await browser.newContext({ viewport: { width: g.size[0]!, height: g.size[1]! }, hasTouch: !!opts.touch });
     if (opts.clock) await g.ctx.clock.install();
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });
@@ -317,9 +317,9 @@ export class Game {
       shots.push({ t, b64: (await this.page.screenshot()).toString('base64') });
     }
     const calc = await this.ctx.newPage();
-    const res = await calc.evaluate(analyse, { shots, region, W, H });
+    const res = await calc.evaluate(analyse, { shots, region, W: W!, H: H! });
     await calc.close();
-    const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1], 'base64'));
+    const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1]!, 'base64'));
     const sheet = this.path(label, 'motion'),
       heat = this.path(label, 'heat');
     save(sheet, res.sheetUrl);
@@ -434,10 +434,10 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
   });
   const n = data.length;
   const heat = cx.createImageData(W, H);
-  const rx0 = region ? Math.floor(region[0] * W) : 0,
-    ry0 = region ? Math.floor(region[1] * H) : 0,
-    rx1 = region ? Math.ceil((region[0] + region[2]) * W) : W,
-    ry1 = region ? Math.ceil((region[1] + region[3]) * H) : H;
+  const rx0 = region ? Math.floor(region[0]! * W) : 0,
+    ry0 = region ? Math.floor(region[1]! * H) : 0,
+    rx1 = region ? Math.ceil((region[0]! + region[2]!) * W) : W,
+    ry1 = region ? Math.ceil((region[1]! + region[3]!) * H) : H;
   let sum = 0,
     cnt = 0,
     hot = 0;
@@ -447,10 +447,10 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
       let sd = 0;
       for (let ch = 0; ch < 3; ch++) {
         let m = 0;
-        for (let f = 0; f < n; f++) m += data[f][o + ch];
+        for (let f = 0; f < n; f++) m += data[f]![o + ch]!;
         m /= n;
         let v = 0;
-        for (let f = 0; f < n; f++) v += (data[f][o + ch] - m) ** 2;
+        for (let f = 0; f < n; f++) v += (data[f]![o + ch]! - m) ** 2;
         sd += v / n;
       }
       sd = Math.sqrt(sd / 3);
@@ -483,7 +483,7 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
     sx.fillStyle = 'rgba(0,0,0,0.6)';
     sx.fillRect(x, y, 70, 20);
     sx.fillStyle = '#fff';
-    sx.fillText(shots[f].t.toFixed(2) + 's', x + 4, y + 15);
+    sx.fillText(shots[f]!.t.toFixed(2) + 's', x + 4, y + 15);
     if (region) {
       sx.strokeStyle = '#f0f';
       sx.strokeRect(x + rx0 / 2, y + ry0 / 2, (rx1 - rx0) / 2, (ry1 - ry0) / 2);
