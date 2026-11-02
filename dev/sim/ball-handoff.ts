@@ -4,7 +4,7 @@
 //   2. The other grabs it: the epoch goes up, the first lets go, and exactly one owns it at each report.
 //   3. It's thrown: the old owner's pose ends where the new owner's body does.
 //   4. An edit from one reaches the other's lockstep world, with no desync.
-//   5. The owner leaves: the one left picks up the ball where it lay.
+//   5. The owner leaves holding it: the ball is no longer held, then the one left picks it up where it lay.
 import assert from 'node:assert/strict';
 import { fork, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
@@ -97,8 +97,20 @@ try {
   for (const report of reports) assert.equal(report.desyncs, 0, 'no desync');
 
   // 5
+  await ask(other!, { do: 'grab' });
+  await until(
+    'the owner holds it',
+    () => ask(owner!),
+    (r) => r.held,
+    2000,
+  );
   const lay = (await ask(other!)).pose;
   other!.kill();
+  await until(
+    'its holder leaves, and nobody holds it before anyone adopts it',
+    () => ask(owner!),
+    (r) => r.others === 0 && !r.mine && !r.held,
+  );
   const inherited = await until(
     'the owner leaves, and the one left picks the ball up where it lay',
     () => ask(owner!),
