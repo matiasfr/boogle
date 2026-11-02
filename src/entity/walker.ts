@@ -17,8 +17,12 @@ export type WalkerHost<E> = {
   addHook(phase: EntityPhase, order: number, name: string, walk: (ctx: FrameCtx) => void): void;
   attach(e: E): void; // the mesh and bodies join the world
   detach(e: E): void; // and leave it
-  reportError(err: unknown, where: string): void;
+  /** `off`: that phase has just turned off for good. */
+  reportError(err: unknown, where: string, off?: boolean): void;
 };
+
+/** Walks in a row that threw before a phase turns off: half a second at 60 Hz, for frame and fixed-step phases alike. */
+export const OFF_AFTER_THROWS = 30;
 
 export function createWalkers<E extends WalkerEntity>(host: WalkerHost<E>) {
   const lists = new Map<string, E[]>(); // kind -> its entities, oldest first
@@ -28,18 +32,22 @@ export function createWalkers<E extends WalkerEntity>(host: WalkerHost<E>) {
   const dead: E[] = []; // despawned, waiting for flush
 
   function walker(list: E[], phase: EntityPhase, name: string) {
-    let off = false;
+    let throws = 0; // walks in a row
+    let reported = false; // once per phase for the session: a kind that throws on and off would report at frame rate
     return (ctx: FrameCtx) => {
-      if (off) return;
+      if (throws >= OFF_AFTER_THROWS) return;
       const n = list.length; // cached first: an entity spawned during this walk starts on the next one
       try {
         for (let k = 0; k < n; k++) {
           const e = list[k]!;
           if (e.alive) e[phase]?.(ctx);
         }
+        throws = 0;
       } catch (err) {
-        off = true; // a missing kind beats a frozen game
-        host.reportError(err, name);
+        // Never rethrown: the other kinds, the teardown flush and the render run whatever this one does.
+        const off = ++throws === OFF_AFTER_THROWS;
+        if (off || !reported) host.reportError(err, name, off);
+        reported = true;
       }
     };
   }
