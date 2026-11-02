@@ -28,6 +28,7 @@ import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../../rend
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 import { notify } from '../../ui/notify.ts';
 import { GRAVITY, reducedMotion } from '../../constants.ts';
 import { ROUTE } from '../../sim/route.ts';
@@ -238,14 +239,6 @@ function horn(blasts: number) {
     }
   }
 }
-let noiseBuf: AudioBuffer | null = null;
-function noise(ctx: AudioContext) {
-  if (noiseBuf) return noiseBuf;
-  noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-  const d = noiseBuf.getChannelData(0);
-  for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-  return noiseBuf;
-}
 let rumble: { gain: GainNode; lp: BiquadFilterNode } | null = null;
 function setRumble(level: number) {
   if (!rumble) {
@@ -253,7 +246,7 @@ function setRumble(level: number) {
     const a = getAudio();
     if (!a) return;
     const src = a.ctx.createBufferSource();
-    src.buffer = noise(a.ctx);
+    src.buffer = noiseBuffer(a.ctx, 2);
     src.loop = true;
     const lp = a.ctx.createBiquadFilter();
     lp.type = 'lowpass';
@@ -274,7 +267,7 @@ function whoosh(strength: number) {
   const { ctx, out } = a;
   const t = ctx.currentTime + 0.01;
   const src = ctx.createBufferSource();
-  src.buffer = noise(ctx);
+  src.buffer = noiseBuffer(ctx, 2);
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
   bp.frequency.setValueAtTime(500, t);

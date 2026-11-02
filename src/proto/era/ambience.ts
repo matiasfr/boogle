@@ -11,6 +11,7 @@
 // - far off and rare: a gull, a mallet on wood, a rope creaking; all through one dark reverb, panned;
 // - every minute or so the island motif, on the marimba.
 import { getAudio } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 
 const LEVEL = 0.5; // the whole bed, under the game's own sounds
 const MOTIF = [0, 2, 4, 7, 4]; // semitones over the root: the island motif
@@ -90,9 +91,7 @@ function setup(): Beds | null {
   hi.connect(gain(0.6, verb));
 
   // Noise: white for clicks and foam; brown (integrated white) for surf and breeze, so there is no hiss.
-  const noise = ctx.createBuffer(1, sr * 2, sr);
-  const w = noise.getChannelData(0);
-  for (let k = 0; k < w.length; k++) w[k] = Math.random() * 2 - 1;
+  const noise = noiseBuffer(ctx, 2);
   const brown = ctx.createBuffer(1, sr * 6, sr);
   const b = brown.getChannelData(0);
   for (let k = 0, v = 0; k < b.length; k++) b[k] = (v = (v + 0.02 * (Math.random() * 2 - 1)) / 1.02) * 3.5;

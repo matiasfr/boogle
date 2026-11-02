@@ -20,7 +20,6 @@ const VOICE: VoiceSpec = {
   brightnessHz: 3500,
   cps: 48,
   grainMs: [65, 95],
-  gainDb: 0,
   vowels: [0.3, 0.15, 0.1, 0.25, 0.2],
 };
 const REACT_MS = 1500;

@@ -4,6 +4,8 @@
 //
 //   music, ambience -> duck \
 //   sfx, ui, voice ----------> master (the player's volume) -> compressor -> speakers
+import { clamp } from '../math-pure.ts';
+
 export type Bus = 'music' | 'ambience' | 'sfx' | 'ui' | 'voice';
 // The balance between the buses, in dB. Balance a kind of sound here, not in each sound.
 const MIX_DB: Record<Bus, number> = { music: -13, ambience: 0, sfx: 0, ui: 0, voice: -12 };
@@ -11,7 +13,7 @@ const MASTER = 0.8;
 const DUCK_DB = -9; // music and ambience while an NPC speaks
 const VOLUME_KEY = 'boogle.volume';
 const MUTED_KEY = 'boogle.muted';
-const dbToGain = (db: number) => 10 ** (db / 20);
+export const dbToGain = (db: number) => 10 ** (db / 20);
 
 function stored(key: string) {
   try {
@@ -95,7 +97,7 @@ function applyVolume() {
   if (ctx && master) master.gain.setTargetAtTime(masterGain(), ctx.currentTime, 0.015);
 }
 export function setVolume(v: number) {
-  volume = Math.min(1, Math.max(0, v));
+  volume = clamp(v, 0, 1);
   store(VOLUME_KEY, String(volume));
   applyVolume();
 }

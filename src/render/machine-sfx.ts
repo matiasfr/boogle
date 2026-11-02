@@ -2,10 +2,10 @@
 // end-of-run whistle, synthesized on the shared audio context (./audio.ts), quieter with distance from the camera.
 // Local and cosmetic: never read by the simulation, so Math.random is fine.
 import { getAudio } from './audio.ts';
+import { noiseBuffer } from './noise.ts';
 import { camera } from './scene.ts';
 
 const HEAR = 45; // metres: silent beyond
-let noise: AudioBuffer | null = null;
 
 function at(x: number, z: number, gain: number) {
   const a = getAudio();
@@ -13,16 +13,11 @@ function at(x: number, z: number, gain: number) {
   const d = Math.hypot(camera.position.x - x, camera.position.z - z);
   const g = gain * Math.max(0, 1 - d / HEAR) ** 2;
   if (g < 0.003) return null;
-  if (!noise || noise.sampleRate !== a.ctx.sampleRate) {
-    noise = a.ctx.createBuffer(1, a.ctx.sampleRate, a.ctx.sampleRate);
-    const ch = noise.getChannelData(0);
-    for (let k = 0; k < ch.length; k++) ch[k] = Math.random() * 2 - 1;
-  }
   return { ...a, g, t: a.ctx.currentTime + 0.005 };
 }
 function burst(ctx: AudioContext, out: AudioNode, t: number, len: number) {
   const src = ctx.createBufferSource();
-  src.buffer = noise;
+  src.buffer = noiseBuffer(ctx, 1);
   src.connect(out);
   src.start(t, Math.random() * 0.5, len + 0.05);
   return src;
