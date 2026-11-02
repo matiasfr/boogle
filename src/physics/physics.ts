@@ -1,8 +1,7 @@
-import { FIXED, HALF, CELL } from '../constants.ts';
-import { material, createBody, addBody, teleport, onPreStep } from './engine.ts';
+import { HALF, CELL } from '../constants.ts';
+import { material, createBody, addBody, teleport } from './engine.ts';
 import { groundHeight, heights } from '../island/heights.ts';
 import type { Body } from './engine.ts';
-import type { Remote } from '../netplay/net.ts';
 
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
@@ -67,26 +66,4 @@ export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: 
   });
   addBody(body);
   return body;
-}
-
-// Registered from main.ts. Moves to the remote player's entity (docs/plans/entity-architecture.md, step 14).
-export function installStepHooks({ remotes }: { remotes: Map<string, Remote> }) {
-  onPreStep(
-    () => {
-      for (const r of remotes.values()) {
-        if (!r.body) continue;
-        const p = r.body.position;
-        const dx = r.target.x - p.x,
-          dy = r.target.y - p.y,
-          dz = r.target.z - p.z;
-        if (dx * dx + dy * dy + dz * dz > 36) {
-          teleport(r.body, r.target.x, r.target.y, r.target.z);
-          r.body.velocity.set(0, 0, 0);
-        } else {
-          r.body.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
-        }
-      }
-    },
-    { order: 39 },
-  );
 }

@@ -4,17 +4,15 @@ import { scene, camera, renderer, rendererReady, renderFrame } from './render/sc
 import { precompile, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
 import { createWaterMesh } from './render/water-render.ts';
-import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.ts';
 import { ball } from './entities/ball/state.ts';
 import { me } from './player/player.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
-import { updateRemotes } from './entities/remote-player/index.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
 import { createStall } from './adapters/mushroom-garden.ts';
-import { onFrame, runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
+import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
@@ -34,13 +32,7 @@ createWaterMesh();
 createProps();
 createClouds();
 createStall();
-installStepHooks({ remotes });
 bootMark('props');
-
-// Once a frame before the step, in this order, because each reads what the last wrote (me.holding, me.yaw): remote poses,
-// ball ownership (-90, the ball's own), this player's intent (-80, its own), the ball's kinematic pose (-70, the ball's
-// own).
-onFrame(({ now }) => updateRemotes(now), { phase: 'prePhysics', order: -100, name: 'updateRemotes' });
 
 // Everything in a frame (intent, gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks around the physics
 // step; src/loop.ts lists their order.
