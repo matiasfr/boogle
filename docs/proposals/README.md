@@ -1,6 +1,6 @@
 # Proposals
 
-Directions and ideas that aren't decided yet. Unlike [PLAN.md](../../PLAN.md), nothing here is committed to. Pick, mix, cut. Each file cites the research it rests on, in [docs/research/](../research/README.md).
+[boogle-2.md](boogle-2.md) is the living decision log. Everything else here is historical or parked (marked at its top) and binds no one. Pick, mix, cut. Each file cites the research it rests on, in [docs/research/](../research/README.md).
 
 - [boogle-2.md](boogle-2.md): **start here for Boogle 2.0.** The owner's design decisions (rounds 1–8), standing preferences, where the artifacts and paintings are, open questions, and the agreed next step: find the fun with mechanics-only prototypes.
 - [directions.md](directions.md): eight broad directions for the game (an idle bazaar, exploration by raft and buggy, a mystery told by the island, toybox physics, an asynchronous coconut post, staying tiny, plus the storm tide and the landmark restoration from the newer reports on `main`), the two plumbing fixes they depend on, the principles each serves and bends, and ways to mix them.

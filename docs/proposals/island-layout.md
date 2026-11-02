@@ -1,5 +1,7 @@
 # Island layout: options for eras 1–2, and a rough archipelago
 
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+
 *Proposal, 1 November 2026. Draft options for the director to react to; nothing here is decided until
 [boogle-2.md](boogle-2.md) says so. Serves DESIGN.md 7 (telegraph everything) and 8 (designed for drop-in), and the
 owner's "solo first". "Rec n" cites the numbered recommendations in

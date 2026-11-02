@@ -1,5 +1,7 @@
 # Boogle v2 — settled calls (do not re-open)
 
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../../DESIGN.md) and the [decision log](../../proposals/boogle-2.md).
+
 Progression
 - A preset railway (like Death Stranding 2's highways), built in short sections and upgraded through about 7 ages: wood, iron, steel, diesel/concrete, electric, monorail, maglev.
 - Stations bring goofy characters. Ancient stones rising reveal the route (leaning).

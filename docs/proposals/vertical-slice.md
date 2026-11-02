@@ -1,5 +1,7 @@
 # Vertical slice: eras 1–2 (the wood age → steam wagons)
 
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+
 *Proposal and build spec, 31 October 2026. Round 7 decisions folded in, 1 November 2026.*
 
 - **Design source.** [boogle-2.md](boogle-2.md), the Boogle 2.0 design record (the owner's decisions from the design thread), is authoritative on design. Story detail is in [story-and-finale](story-and-finale.md).
