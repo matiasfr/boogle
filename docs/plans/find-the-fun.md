@@ -141,3 +141,19 @@ and test it.
 - [x] **Soapbox cart:** an Owner vehicle down the lighthouse path (`?proto=soapbox`;
       [docs/game-design/soapbox.md](../game-design/soapbox.md)).
 - [x] **Playtest 5.**
+
+## 6. Does the line feed the town? (the rail loop)
+
+The rail builds the world ([boogle-2.md](../proposals/boogle-2.md), Decided, 2 November). Throwaway greybox on today's
+island: prototypes stay outside the entity plan until they're promoted, so this doesn't wait for its steps 10–12. The
+real slice does.
+
+- [ ] **`?proto=net`:** connect a camp, crates ride to the village, the village steps up and the train speeds up; then
+      the rail fills the next work site for you (`&v=haul` keeps hauling by hand, to tell which part is the fun).
+- [ ] **Playtest 6.**
+
+## 7. Does a long crossing feel vast?
+
+- [ ] **`?proto=crossing`:** a fast train over a long viaduct to a far greybox island, with the same distance at two
+      speeds and a much longer one, to find what "vast" means in seconds and metres.
+- [ ] **Playtest 7.**
