@@ -40,6 +40,7 @@ These are standing preferences from the thread.
 
 ### The shape of the game
 
+- **2026-11-02, the game runs closer to 8 hours, and starts with fewer eras** (owner, after the compounding research: "expand the game length more to an 8-hour, closer to an 8-hour experience"; "if we need to start with fewer eras, because we already have so much going on and so many assets, maybe we can just reduce those a little bit in quantity"). The eight eras below are the long list, no longer the plan; which ones remain is open question 14.
 - **The island grows through eight technology eras.** It expands outward (reclaimed land) and new islands rise around it.
   1. **The wood age** (in the game; "castaway camp" is a name for its look only)
   2. Steam wagons
@@ -54,7 +55,7 @@ These are standing preferences from the thread.
 - **2026-11-01, home grows; the metropolis doesn't** (owner: "the starting area should evolve over time and grow", and "closer to the end game, you get to reach more of an existing metropolis ... we wouldn't have to evolve it over time up close or anything. We would just build it as its more final state"). The mainland is one build in its final state, with no era versions up close; era work goes into home and the islands. How big home gets by the late eras, and what "monorail city" means there, is still open.
 - **2026-11-01, islands aren't tied to mini-games** (owner: "I don't want to tie certain levels to different mini games. That was more just an aside thought"). Places are designed on their own terms, for variety.
 - **Old lines upgrade with the eras**, and a heritage narrow-gauge loco keeps running.
-- **Pace: fast.** About 1–3 evenings per era.
+- **Pace: fast.** Was about 1–3 evenings per era; the 8-hour target above replaces that, see Changed.
 - **After the finale,** the archipelago stays open as a toy box.
 - **The ending is open** (see [story-and-finale.md](story-and-finale.md), section 2).
 
@@ -176,6 +177,7 @@ These are standing preferences from the thread.
 
 ## Changed
 
+- **2026-11-02:** "eight eras at 1–3 evenings each" became "closer to 8 hours, starting with fewer eras": the owner wants to limit how many assets the game needs.
 - **2026-11-01:** "riding must be more than standing on a moving platform" became "the wagon is transportation": after trying the research's variants, the owner doesn't want extra verbs on the ride.
 - **2026-11-01:** "stations are the fast-travel board" became "only hub stations are fast travel", after the board playtest: every stop being a jump would make riding pointless.
 - **2026-11-01:** the synthesized groove loop was cut after the listening pack.
@@ -202,10 +204,11 @@ These are standing preferences from the thread.
 
 8. ~~Wagon show and bench: cut, or keep?~~ Cut (Decided, 2 November); the wagon is plain transportation.
 9. ~~Next deliverable~~ Prototype the rail loop first (2 November; find-the-fun.md, steps 6 and 7). The eras 1–2 slice and the home redesign get planned together once it answers, and the slice is built after the entity plan's steps 10–12 ([entity-architecture.md](../plans/entity-architecture.md)).
-10. Game length: the rail-loop exploration assumed 2–8 hours, but eight eras at 1–3 evenings each is 8–24 evenings. Which is the target? The director leans towards the shorter game, with fewer eras.
+10. ~~Game length~~ Closer to 8 hours, with fewer eras (Decided, 2 November).
 11. What happens to hauling once the rail delivers? The back bundle got a yes. The director suggests hand hauling in the wood age and at the frontier, with everything behind you automated. `?proto=net&v=haul` tests part of this.
 12. Does "play is the material" still hold? In the rail loop the network produces material and play earns personal rewards, which would also settle how mini-games feed progress. Adopting it reverses round 2.
 13. How do you first reach a far island? "Walk it before the rail does" works on land, but a vast sea needs the line itself to get there first, or a boat.
+14. Which eras remain? The director suggests five, each changing how you build: wood, steam, iron and harbour, electric, monorail and maglev.
 
 ## Next: find the fun (agreed direction, 1 November)
 
