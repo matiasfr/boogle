@@ -19,7 +19,7 @@ all three sections).
 
 ## What you see and do
 
-- **A hub's board** stands 5.6 m west of the station, facing the line: a 4 x 2.25 m split-flap face on two posts under
+- **A hub's board** stands 5.6 m west of the station (Court's 6 m south of that, clear of a palm), facing the line: a 4 x 2.25 m split-flap face on two posts under
   a red cap, and beside it a 6.6 m mast with a red HUB roundel you spot from across the island. The face reads the
   station's name and a red `HUB · FAST TRAVEL` tag; one flap row with the next departure (`> LIGHTHOUSE      0:42`,
   `BOARDING` in green while it stands here) and one with the stops it calls at (`VIA PALM WALK RIDGE`); and a line map:
