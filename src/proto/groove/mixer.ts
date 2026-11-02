@@ -48,7 +48,7 @@ export function createMixer(ctx: AudioContext, master: AudioNode): Mixer {
     update() {
       meter.getFloatTimeDomainData(buf);
       let peak = 0;
-      for (let k = 0; k < buf.length; k++) peak = Math.max(peak, Math.abs(buf[k]));
+      for (let k = 0; k < buf.length; k++) peak = Math.max(peak, Math.abs(buf[k]!));
       const hot = peak > threshold;
       if (hot === down) return;
       down = hot;
