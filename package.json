@@ -29,6 +29,7 @@
     "wip": "node dev/inflight.ts wip",
     "perf": "node dev/look/perf.ts",
     "hitches": "node dev/look/hitches.ts",
+    "counts": "node dev/look/counts.ts",
     "island-map": "node dev/island/map.ts",
     "concepts": "node dev/concepts/generate.ts",
     "scenario": "node dev/scenarios/run.ts",
