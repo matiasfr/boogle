@@ -13,6 +13,7 @@ import { sharedSeconds } from '../netplay/shared-time.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { ROUTE } from '../sim/route.ts';
 import { MACHINE_RUN } from '../sim/scripted-run.ts';
+import { protoOn } from '../proto/flags.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
@@ -51,7 +52,7 @@ rails.count = 0;
 rails.visible = false;
 rails.frustumCulled = false;
 rails.castShadow = true;
-scene.add(rails);
+if (!protoOn('net')) scene.add(rails); // its 85 m legs need rails that follow the ground (src/proto/net/rails.ts)
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e3 = new THREE.Euler(),

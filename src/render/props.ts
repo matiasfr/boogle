@@ -3,6 +3,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { bool, dot, fract, positionView, screenCoordinate, uniform, vec2 } from 'three/tsl';
 import { SPAWN, COURT, CELL, HALF } from '../constants.ts';
 import { island } from '../island/index.ts';
+import { clearedAt } from '../island/layout.ts';
 import { MASSIF } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
@@ -116,14 +117,17 @@ function tiledParts() {
   const map = new Map<number, THREE.BufferGeometry[]>(),
     shapes = new Map<number, Sphere[]>();
   const key = (x: number, z: number) => bkey(Math.floor((x + HALF) / TILE), Math.floor((z + HALF) / TILE));
+  const left: THREE.BufferGeometry[] = []; // what a layout clears away goes here and is never drawn
   return {
     at(x: number, z: number) {
+      if (clearedAt(x, z) && !trees.some((t) => t.x === x && t.z === z)) return ((left.length = 0), left); // home palms stay
       const k = key(x, z);
       if (!map.has(k)) map.set(k, []);
       return map.get(k)!;
     },
     // Static collider spheres, merged into one physics body per tile (the physics step pays per body).
     collide(x: number, z: number, spheres: Sphere[]) {
+      if (clearedAt(x, z)) return;
       const k = key(x, z);
       if (!shapes.has(k)) shapes.set(k, []);
       shapes.get(k)!.push(...spheres);

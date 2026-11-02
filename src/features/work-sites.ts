@@ -22,6 +22,7 @@ import { identity } from '../player/identity.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt } from '../sim/route.ts';
 import { haulFeel } from '../player/haul-feel.ts';
 import { materialOf, MATERIALS } from '../sim/materials.ts';
+import { protoOn } from '../proto/flags.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -31,6 +32,7 @@ import { emit } from '../render/particles.ts';
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
 const costOf = rules.sites.cost; // the room's ring costs (tuned in playtest rooms)
+const NO_HELPER = protoOn('net'); // ?proto=net: the rail replaces the Helper ring, so it isn't there to see or fill
 
 // Colour is the second signal, so each ring also has a shape (docs/research/ui-patterns.md, rec 4): Track is dashed
 // like a row of sleepers, Helper is a double line.
@@ -135,6 +137,7 @@ const views = ROUTE.map((sec, s) => {
     l.sprite.position.set(p.x, y + 1.6, p.z);
     scene.add(l.sprite);
     v.ringLabels.push(l);
+    if (NO_HELPER && ring === HELPER) mesh.visible = l.sprite.visible = false;
   }
   // The plaque stands off the line (beside the Helper ring, just past it), so the wagon runs clear of it.
   const px = sec.x + 2.6,
@@ -269,6 +272,7 @@ function pour(now: number): void {
   const pos = me.body.position;
   for (const ring of [TRACK, HELPER]) {
     const p = ringAt(s, ring);
+    if (NO_HELPER && ring === HELPER) continue;
     if (Math.hypot(pos.x - p.x, pos.z - p.z) > RING_R || rules.sites.room(s, ring) <= 0) continue;
     const n = Math.min(haulFeel.pourN, rules.stacks.count(identity.pid));
     lastPour = now;

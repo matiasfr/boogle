@@ -20,6 +20,9 @@ export type LayoutFile = {
   name: string;
   pois?: { id: string; x: number; z: number; dir?: [number, number] }[];
   route?: { age: number; x: number; z: number; to: [number, number] }[];
+  /** Scenery left out so a long line runs clear (the placing and the palm cells don't change): metres each side of the
+   * route, and discs for what stands beside it. */
+  clear?: { line?: number; discs?: { x: number; z: number; r: number }[] };
 };
 
 const files = import.meta.glob<LayoutFile>('../../dev/layouts/*.json', { import: 'default' });
@@ -50,4 +53,18 @@ export function placeSite(id: string, site: { x: number; z: number; dir?: [numbe
   site.x = p.x;
   site.z = p.z;
   if (p.dir && ok(p.dir[0]) && ok(p.dir[1])) site.dir = [p.dir[0], p.dir[1]];
+}
+
+/** True where `clear` leaves the scenery out. Only trees and rocks ask (src/render/props.ts); without it, never. */
+export function clearedAt(x: number, z: number): boolean {
+  const c = layout?.clear;
+  if (!c) return false;
+  if (c.discs?.some((d) => (x - d.x) ** 2 + (z - d.z) ** 2 < d.r * d.r)) return true;
+  if (!c.line) return false;
+  return ROUTE.some((r) => {
+    const dx = r.to[0]! - r.x,
+      dz = r.to[1]! - r.z;
+    const u = Math.max(0, Math.min(1, ((x - r.x) * dx + (z - r.z) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - r.x - u * dx, z - r.z - u * dz) < c.line!;
+  });
 }

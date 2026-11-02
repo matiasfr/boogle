@@ -29,7 +29,7 @@ export const CRATES = [
 export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
 
 /** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
-export function wagonLook(trailers: number): WagonLook {
+export function wagonLook(trailers: number, crated = true): WagonLook {
   const mat = (color: string, metal = 0) =>
     new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });
   const brass = mat('#c9a24a', 0.6),
@@ -110,7 +110,7 @@ export function wagonLook(trailers: number): WagonLook {
     for (const sz of [-1, 1]) box(g, TRAILER.hx * 2, 0.25, 0.08, wood, 0, TRAILER.top + 0.12, sz * (TRAILER.hz - 0.04));
     // The last flatbed carries freight for the work sites (solid: ./index.ts gives each crate a collider); the others
     // stay clear to ride.
-    if (k === trailers - 1)
+    if (crated && k === trailers - 1)
       for (const { x, z, sz, yaw, base } of CRATES) {
         const c = box(g, sz, sz, sz, crate, x, TRAILER.top + base + sz / 2, z);
         c.rotation.y = yaw;
