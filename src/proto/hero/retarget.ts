@@ -30,6 +30,7 @@ export const UAL_TO_MESHY: Record<string, string> = {
 /** For a figure with the library's own bone names, in other proportions (assets/src/buddy.py). */
 export const UAL_TO_SELF: Record<string, string> = Object.fromEntries(Object.keys(UAL_TO_MESHY).map((k) => [k, k]));
 const FPS = 30;
+const HIP_CALM = 0.5;
 
 /** Both roots at the origin in their rest poses. Returns the clip on the target's bones, and the hips' height ratio. */
 export function retargetClip(
@@ -83,6 +84,21 @@ export function retargetClip(
     pitch += Math.asin(p.copy(Z).applyQuaternion(worldQ(headPair.a).multiply(headPair.restA)).y) / frames;
   }
   const level = new THREE.Quaternion().setFromAxisAngle(X, pitch);
+  // The library's hips roll and twist to carry a lean body; on a round one that reads as its mass shifting. Half of it
+  // comes off, and half of their sideways sway.
+  const hipMean = new THREE.Quaternion(0, 0, 0, 0);
+  for (let f = 0; f < frames; f++) {
+    sample(Math.min(clip.duration, f / FPS));
+    const h = worldQ(hips.a).multiply(hips.restA).multiply(hips.restB);
+    const sign = h.dot(hipMean) < 0 ? -1 : 1;
+    hipMean.set(
+      hipMean.x + sign * h.x,
+      hipMean.y + sign * h.y,
+      hipMean.z + sign * h.z,
+      hipMean.w + sign * h.w,
+    );
+  }
+  hipMean.normalize();
   for (let f = 0; f < frames; f++) {
     const t = Math.min(clip.duration, f / FPS);
     times.push(t);
@@ -94,6 +110,7 @@ export function retargetClip(
       if (armOut && pair.a.name === 'upperarm_l') want.premultiply(out.setFromAxisAngle(Z, armOut));
       if (armOut && pair.a.name === 'upperarm_r') want.premultiply(out.setFromAxisAngle(Z, -armOut));
       if (pair === headPair) want.premultiply(level);
+      if (pair === hips) want.slerp(hipMean, HIP_CALM);
       world.set(pair.b, want);
     }
     // Local = parent's world⁻¹ × this bone's world.
@@ -101,7 +118,9 @@ export function retargetClip(
       const local = parentWorld(pair.b.parent!).clone().invert().multiply(world.get(pair.b)!);
       pair.track.push(local.x, local.y, local.z, local.w);
     }
-    p.copy(hips.a.getWorldPosition(p)).sub(headA).multiplyScalar(ratio).add(headB);
+    p.copy(hips.a.getWorldPosition(p)).sub(headA).multiplyScalar(ratio);
+    p.x *= 1 - HIP_CALM;
+    p.add(headB);
     hipParent.worldToLocal(p);
     hipTrack.push(p.x, p.y, p.z);
   }

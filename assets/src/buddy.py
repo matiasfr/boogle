@@ -223,6 +223,17 @@ for _ in range(6):
     W = soft
 
 
+# The butt and hips ride on the pelvis, not the thighs: a swinging thigh otherwise drags that mass from side to side.
+for v in me.vertices:
+    k = 0.8 * smoothstep(0.58, 0.72, v.co.z)  # less, or a thigh raised at a sprint leaves a shelf
+    w = W[v.index]
+    for side in ('thigh_l', 'thigh_r'):
+        moved = w.get(side, 0.0) * k
+        if moved:
+            w[side] -= moved
+            w['pelvis'] = w.get('pelvis', 0.0) + moved
+
+
 def rigid(v, weights):
     W[v.index] = weights
 
