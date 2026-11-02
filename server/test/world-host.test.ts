@@ -47,7 +47,7 @@ test('every op of every rules module is accepted from a client or, host-only, fr
     [230, 0],
     [250, 1],
   ])
-    wh.rules.piles.drop(i, 188, k, 64);
+    wh.rules.piles.drop(i!, 188, k!, 64);
   wh.rules.sites.addFreight(60);
 
   const accepted = new Set<string>();
@@ -62,8 +62,8 @@ test('every op of every rules module is accepted from a client or, host-only, fr
     const left = ops.filter((o) => !accepted.has(o));
     const late = ['open.lay', 'open.start', 'open.here', 'tune.reset', 'tune.fill']; // a fill needs an empty ring: after the reset
     const early = left.filter((o) => !late.includes(o));
-    const op = early.length ? r.pick(early) : late.find((o) => left.includes(o))!;
-    const e = generators[op](r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
+    const op = early.length ? r.pick(early)! : late.find((o) => left.includes(o))!;
+    const e = generators[op]!(r, { rules: wh.rules, land: home.land, tick: wh.sync.world.tick });
     if (e) {
       if (hostOnly.has(op)) wh.sync.submitEdit(e);
       else wh.deliver({ t: 'w:edit', e }, 'c1');
