@@ -5,4 +5,5 @@ import './timeline.ts';
 import './app-fill.ts';
 import './splash.ts';
 import './sw.ts';
+import './chunk-reload.ts';
 import('../main.ts');
