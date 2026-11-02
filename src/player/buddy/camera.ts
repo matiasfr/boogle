@@ -1,16 +1,15 @@
 // The follow camera (&cam=old for the older one). Closer than that one was, and across the ground it stays locked to
 // the body: a trailing camera read as inertia in play. In the air it follows height softly, so a jump rises in the
-// frame instead of the world sinking. Sprinting widens the view a touch. Distance and widening are the owner's pick from
-// comparing 5.2, 5.8 and 6.5 m and 0, 3 and 5 degrees (docs/research/third-person-camera.md). Local, render only; other
+// frame instead of the world sinking. Sprinting widens the view a touch. The distance (5.2 m, `cam.dist`) and the widening are
+// the owner's pick from comparing 5.2, 5.8 and 6.5 m and 0, 3 and 5 degrees (docs/research/third-person-camera.md). Local, render only; other
 // cameras (the caves) win.
 import { camera } from '../../render/scene.ts';
 import { reducedMotion } from '../../constants.ts';
 import { clamp } from '../../math.ts';
-import { cam, camConstraints, me } from '../../player/player.ts';
+import { camConstraints, me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';
 
 const CAM = {
-  dist: 5.2, // m (it was 6.5)
   lagHeight: 0.1, // s it trails height on the ground
   lagAir: 0.2, // s it trails height in the air
   maxY: 1.4, // m
@@ -19,7 +18,6 @@ const CAM = {
 
 export function startFollowCamera() {
   if (new URLSearchParams(location.search).get('cam') === 'old') return;
-  cam.dist = CAM.dist;
   let y = NaN,
     last = 0,
     widened = 0; // degrees of the lens that are this camera's: other modes (a vehicle) set theirs too
