@@ -70,6 +70,15 @@ export function enterIsland(name: string) {
   peopleChanged();
 }
 
+// The jump button, whichever way it's pressed (src/player/input.ts): queued for a moment, held for the arc's shape.
+export function pressJump() {
+  me.jumpQueued = 0.15;
+  me.jumpHeld = true;
+}
+export function releaseJump() {
+  me.jumpHeld = false;
+}
+
 export function updateIntent(dt: number) {
   const k = input.keys;
   if (!input.stickX && !input.stickY) input.sprint = false; // the pad's sprint latch ends when the stick rests

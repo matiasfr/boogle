@@ -4,6 +4,7 @@ import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.ts';
 import { me, cam } from './state.ts';
 import { respawnBall, releaseBall } from '../entities/ball/state.ts';
+import { pressJump, releaseJump } from '../entities/player/state.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
@@ -28,10 +29,6 @@ const WHEEL_PITCH = 0.0028;
 // Touch stick: travel radius in CSS px (larger on tablets, rec 7) and a scaled radial dead zone as a share of it.
 const tablet = matchMedia('(min-width: 700px) and (min-height: 700px)');
 const STICK_DEAD = 0.12;
-const pressJump = () => {
-  me.jumpQueued = 0.15;
-  me.jumpHeld = true;
-};
 let everLocked = false; // a refused lock is only permanent if none ever worked (Chrome refuses one just after Esc)
 const lockRefused = () => {
   if (!everLocked) inputState.lockFailed = true;
@@ -93,7 +90,7 @@ export function initInput() {
     input.keys.delete(e.code);
     // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
     if (e.key === 'Meta') input.keys.clear();
-    if (e.code === 'Space') me.jumpHeld = false;
+    if (e.code === 'Space') releaseJump();
     if (e.code === 'KeyE' && me.entered) interactUp();
   });
   let drag: { x: number; y: number; moved: boolean } | null = null;
@@ -217,7 +214,7 @@ export function initInput() {
     e.stopPropagation();
     pressJump();
   });
-  for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, () => (me.jumpHeld = false));
+  for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, releaseJump);
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     touchDown();
@@ -267,7 +264,7 @@ export function initInput() {
     group: 'move',
     order: 1,
     down: pressJump,
-    up: () => (me.jumpHeld = false),
+    up: releaseJump,
   });
   // Pad X is the one hands button, like the touch main button: it acts on the prompt when there is one (Talk, Pick up,
   // Take, Get in), and otherwise uses what you hold (hold to charge a throw). D-pad → uses what you hold even next to
