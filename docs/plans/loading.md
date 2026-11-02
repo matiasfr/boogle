@@ -128,6 +128,10 @@ competes with the boot.
 - **Deploy flow:** a new deploy changes `sw.js` (the build id and the file list are inlined), the browser notices on
   the next navigation (`updateViaCache: 'none'`), the new worker precaches only what changed, and the reload that
   `updates.ts` triggers already finds most files cached.
+- **Old files stay published:** a Pages deploy replaces the whole site, so `deploy.yml` copies what left the build in
+  the last 30 minutes back from the live site (`scripts/keep-old-assets.ts`). A page loading across a deploy, or on an
+  HTML copy Pages cached for 10 minutes, still finds its files. The worker's caches don't cover that: they only hold
+  files this browser has already fetched.
 - **Home Screen app:** same origin and scope (`BASE_URL`), so the app and Safari tabs share the worker. Navigations are
   not intercepted, so a launch with no network shows Safari's offline page as today (the game needs the server anyway).
 - **Kill switch:** build with `BOOGLE_SW=off`: that `sw.js` deletes every `boogle-` cache and unregisters itself, and

@@ -37,6 +37,10 @@ jobs:
           BASE: /
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
           VITE_BUILD: ${{ github.sha }}
+      # Recent builds' hashed files stay published for pages still loading them. Never blocks a game deploy.
+      - run: node scripts/keep-old-assets.ts dist || true
+        env:
+          SITE_URL: https://boogle.club/
       # Share pages for patch videos (video-* releases, dev/video/site.ts). Never blocks a game deploy.
       - run: node dev/video/site.ts dist || true
         env:
