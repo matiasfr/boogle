@@ -1,3 +1,4 @@
+import { BUILD } from '../build-id.ts';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
@@ -360,7 +361,7 @@ export async function connectRoom() {
       pid: identity.pid,
       key: identity.key,
       debug,
-      build: String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12),
+      build: BUILD,
     });
   } catch (e) {
     console.warn('[boogle] could not join room:', e);

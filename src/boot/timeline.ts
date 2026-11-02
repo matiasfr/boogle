@@ -1,6 +1,7 @@
 // The boot timeline: when each loading phase finished, in ms since the navigation started (performance.now()), so a
 // load can be read phase by phase and compared across browsers, cold and warm (docs/plans/loading.md). Local only,
-// always on (a few performance.mark calls). The page's entry (./index.ts) imports it first, so it holds no imports.
+// always on (a few performance.mark calls). The page's entry (./index.ts) imports it first, so it imports
+// only ../build-id.ts, which has no imports.
 //
 //   bootMark(name, detail?)   a phase just finished: also a performance.mark('boot:<name>') for the browser's profiler
 //   bootSpan(name, ms)        a duration that isn't a point on the line (WGSL generation inside the shader warm-up)
@@ -17,6 +18,8 @@
 // module evaluated, src/main.ts), rapier (physics WASM in), gpu (the WebGPU device), terrain and props (meshes built),
 // shaders (the warm-up done), first (one frame drawn), interactive ("Jump in" enabled and the loading screen gone),
 // room (joined a room on our server; it races the GPU, so it can come before or after).
+
+import { BUILD } from '../build-id.ts';
 
 export type BootMark = { name: string; t: number; detail?: Record<string, number | string> };
 const marks: BootMark[] = [];
@@ -70,7 +73,7 @@ export function bootTimeline() {
   if (n) all.push({ name: 'html', t: round(n.domInteractive) });
   all.push(...marks);
   return {
-    build: String(import.meta.env.VITE_BUILD ?? '').slice(0, 12),
+    build: BUILD,
     nav: n?.type ?? 'unknown',
     sw: navigator.serviceWorker?.controller ? 1 : 0,
     ua: navigator.userAgent,

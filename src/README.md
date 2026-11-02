@@ -1,7 +1,8 @@
 # src/ map
 
 Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `loop.ts` (`onFrame`/`onStart` phases), `style.css`, `constants.ts`,
-`math.ts` and `math-pure.ts` (the pure half, also used in Node).
+`math.ts` and `math-pure.ts` (the pure half, also used in Node), `build-id.ts` (this page's build, read from the page
+so hashed file names don't depend on it).
 
 - `boot/`: the page's entry and the loading screen (key art, progress bar), shown before the game downloads; the boot timeline (`timeline.ts`) and the service worker (`sw*.ts`; docs/plans/loading.md).
 - `features/`: self-contained plug-ins, auto-loaded by `main.ts` (`import.meta.glob('./features/*.{js,ts}')`). Add new
