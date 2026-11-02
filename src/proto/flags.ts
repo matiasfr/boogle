@@ -56,7 +56,7 @@ export function savePlay(patch: { step?: string; v?: Record<string, string> }) {
 // anything reads them; the address goes back to a plain `?play` so a reload resumes wherever you got to.
 if (PLAY && q.get('play')) {
   const [step, v] = (q.get('play') ?? '').split(':');
-  savePlay({ step, ...(v !== undefined ? { v: { [step]: v } } : {}) });
+  savePlay({ step, ...(v !== undefined ? { v: { [step!]: v } } : {}) });
   const rest = new URLSearchParams(q);
   rest.delete('play');
   try {
@@ -72,7 +72,7 @@ const now: Record<string, string> = {};
 /** The variant prototype `id` plays now ('' for its default): the address's `v` standalone or in a chapter, the
  * playlist's pick on the island as the page loaded, or what a live switch set since. */
 export function protoV(id: string): string {
-  if (id in now) return now[id];
+  if (id in now) return now[id]!;
   if (PROTO === id) return q.get('v') ?? '';
   return loaded[id] ?? '';
 }

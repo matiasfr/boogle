@@ -195,9 +195,9 @@ export function saveSitting(card: string, s: Sitting) {
       return;
     } catch {
       // Full: drop the oldest sitting of the card with the most, then try again.
-      const most = Object.keys(all).sort((a, b) => all[b].length - all[a].length)[0];
-      if (!most || all[most].length <= 1) return;
-      all[most].shift();
+      const most = Object.keys(all).sort((a, b) => all[b]!.length - all[a]!.length)[0];
+      if (!most || all[most]!.length <= 1) return;
+      all[most]!.shift();
     }
   }
 }
@@ -213,7 +213,7 @@ export function sittingLine(s: Sitting | undefined): string {
   const n = s.idle.length / 4;
   if (n) {
     let total = 0;
-    for (let i = 3; i < s.idle.length; i += 4) total += s.idle[i];
+    for (let i = 3; i < s.idle.length; i += 4) total += s.idle[i]!;
     parts.push(`idle ${n === 1 ? 'once' : `${n} times`} (${dur(total)})`);
   }
   const kinds: Record<string, number> = {};
