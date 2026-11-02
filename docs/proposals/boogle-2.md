@@ -132,6 +132,7 @@ These are standing preferences from the thread.
 - **2026-11-01, the synthesized groove loop is cut** (all five takes). The shared clock, mixer and stems loader can stay for the owner's own music later; no placeholder music plays.
 - **2026-11-01, cut sounds** (silence them, keep the mechanics): wagon whistle and clacks, freight thumps, stoke roar and chuffs, all grind sounds, all soapbox sounds, opening-day call/bell/swap. Better sounds come later, from references.
 - **2026-11-01, keep:** prompt pop, deny, haul count run (right direction), honk, all mini-game sounds (knock, pop ladder, fanfare, sad trombone, mushroom boing), the hut build, the board whoosh, the track machine.
+- **2026-11-01, NPC voices:** Animal Crossing-style babble, a new sound as the text streams in, starting with The Boogler. A formant synth, not a recorded syllable bank, to keep it light ([research](../research/npc-babble-voices.md), `?proto=babble`).
 - **2026-11-01, tweak, with references:** hotbar tick (single tone or none; Fortnite), the "it worked" thunk, plaque flap, ping and ball boing (more subtle), double-jump whoop (more subtle; Fortnite), pickup thock and the magnet burst (Ratchet & Clank bolts: a deep dive), the haul count (towards Ratchet & Clank), the wood-age ambience (less white noise, more chill; go deeper).
 - **2026-11-01, honks form chords on their own:** a honk isn't always the same note; players' honks should land as a chord together.
 

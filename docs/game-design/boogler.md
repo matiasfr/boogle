@@ -55,6 +55,8 @@ so without them it takes longer: a retune is pending.
 
 ## Talk
 
+- `?proto=babble` gives him a voice: a formant synth speaks as his line types, with pauses on punctuation (`&v=letters`
+  speaks every letter, typing slower). Elsewhere he types silently, as described below.
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
   second and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
   ([npcs.md](npcs.md)): A / E goes on or says the selected answer, D-pad or stick / ↑ ↓ picks, B / Esc leaves; a
