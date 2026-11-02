@@ -1,5 +1,6 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
-// `-- --render` or `-- --sim` for one half).
+// `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
+// dev/look/counts.ts).
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it and
 // with a fully grown mushroom garden. Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
@@ -7,14 +8,16 @@
 // profileTicks in src/world/sync.ts), on the idle island. The page runs the ticks back to back (updateWorld), so slow
 // headless frames don't starve the sample; the numbers are still wall clock on a machine that is also software
 // rendering, so compare before/after on your change, not absolute numbers.
+import fs from 'node:fs';
 import type { Browser } from 'playwright';
-import { startStack, launch, Game, sleep } from './lib.ts';
+import { startStack, launch, Game, sleep, VIEWS } from './lib.ts';
 import type { Stack } from './lib.ts';
 
 const argv = process.argv.slice(2);
 const url = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null;
 const doRender = !argv.includes('--sim');
 const doSim = !argv.includes('--render');
+const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
 const IDLE_TICKS = 100;
 
 // The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
@@ -68,6 +71,11 @@ const PROFILE = (n: number) => `
   }
   return { ...res, mode: worldStatus().mode, isolated: crossOriginIsolated };`;
 
+const SEEDED_RANDOM = () => {
+  let x = 1;
+  Math.random = () => (x = (x * 16807) % 2147483647) / 2147483647;
+};
+
 const fmt = (v: number) => Math.round(v * 1000) / 1000;
 type Stat = { 'avg ms': number; 'p95 ms': number; 'max ms': number };
 function stat(vals: number[]): Stat {
@@ -110,9 +118,19 @@ let stack: Stack | undefined, browser: Browser | undefined;
 try {
   stack = await startStack({ url });
   browser = await launch();
-  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim });
+  // The spawn is a random spot, the sky follows the clock and the shadow pass culls around all that, so counts that must
+  // repeat (--json) take a seeded Math.random, a fixed camera and a fixed sun, once the lazy props are in.
+  const init = jsonOut ? SEEDED_RANDOM : undefined;
+  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim, init });
   if (doRender) {
+    if (jsonOut) {
+      const { cam, look } = VIEWS.overview!;
+      const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, null`;
+      await g.eval(`window.boogle.sky.preview(0.3); window.__debugCam.set(${pose});`);
+      await sleep(6000);
+    }
     const rows: Record<string, unknown> = { 'island, empty garden': await g.eval(STATS) };
+    if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(rows['island, empty garden']));
     const n = await g.eval(FULL_GARDEN);
     await sleep(500);
     rows[`island, ${n} grown mushrooms`] = await g.eval(STATS);

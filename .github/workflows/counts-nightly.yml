@@ -1,0 +1,41 @@
+name: Counts
+
+# Draw calls, shadow draws, shader programs and first-load gzip as a JSON artifact, one a night (dev/look/counts.ts).
+# Counts only: SwiftShader's times mean nothing. No budget yet, and never blocks a merge.
+
+on:
+  schedule:
+    - cron: '37 10 * * *' # daily, 10:37 UTC, after scenarios-nightly.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  counts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - id: pw
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium and system deps
+        run: npx playwright install --with-deps chromium
+      - run: npm run counts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counts
+          path: .look/counts.json
+          include-hidden-files: true # .look/ is a dot directory
+          if-no-files-found: error
