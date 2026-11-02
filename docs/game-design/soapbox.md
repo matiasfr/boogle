@@ -2,12 +2,15 @@
 
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
-precision). Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
+precision). Third try (2026-11-01): after two "no"s the cart drives as a suspensiony RC car with analog triggers
+([boogle-2.md](../proposals/boogle-2.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). If
+this is still a no, driving waits. Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
 it (and otherwise only hides a remote driver; see Sync).*
 
 ## What you see and do
 
-- A greybox cart (a plank tub, a red seat back and bonnet, four coconut wheels) is parked on the summit of the rocky
+- A greybox RC-style cart (a plank tub, a red seat back and bonnet, on four big coconut wheels hung from pale struts,
+  so you can see the body ride on its springs) is parked on the summit of the rocky
   massif in the north-west (about 19 m up, the island's highest ground), facing east along its ridge. The course
   (`src/proto/soapbox/course.ts`): east along the ridge, a right-hander, down the south face's east edge (a crest at
   its foot gives about half a second of air), a kink past a palm, and a long right across the lowland, finishing as it
@@ -18,8 +21,13 @@ it (and otherwise only hides a remote driver; see Sync).*
   the bay's flat shore: its last 8 s were kicking along at 5 m/s.)
 - **Get in:** Interact (E, pad X, touch Grab) within 2.6 m. **Get out:** Interact again. Stopped (under 1.5 m/s) more
   than 4 m from the start, Interact reads **Back to the top** instead: you and the cart are put back on the start.
-- **Driving** uses the move input, relative to the cart: left and right steer, forward kicks off (up to 5 m/s, to get
-  off the flat shoulder), back brakes (and creeps backwards from a standstill). **Jump** (Space, pad A, touch Jump) is
+- **Driving** (vehicle-feel.md, RC cars 4-6): left and right on the stick or A/D steer. **Throttle** is RT (analog), W
+  or ↑, or the stick pushed forward; **brake, then reverse** from a crawl is LT (analog), S or ↓, or the stick pulled
+  back. The most of each input counts; throttle and brake together cancel. The motor pulls 12 m/s² from a standstill,
+  falling to nothing at 13 m/s (the hill takes you past it); reverse tops out at 5 m/s. While seated RT and LT do only
+  this: Bump and the guest's crouch wait until you get out (`wrapAction`). **In the air** throttle lifts the nose and
+  brake drops it (real RC jumping), damped so it never tumbles; on landing the angle goes into the springs, so a
+  nose-first landing slams the front. **Jump** (Space, pad A, touch Jump) is
   the handbrake while moving, and hops you out once stopped. The arrow keys only steer here (no arrow-key camera turn)
   and a two-finger scroll does not look: the chase camera owns the view. A stick pulled back brakes only past 0.35 of
   its travel (a bowtie dead zone; steering keeps the stick's own 0.12), so a thumb drifting down doesn't stop the cart.
@@ -50,9 +58,11 @@ it (and otherwise only hides a remote driver; see Sync).*
   camera stays back and turns after you, so you see the flight and the landing. The empty cart rolls to a stop and goes
   back to the start, wheel back on, after 2 s. Once you have landed, Interact reads **Back to the top** for 20 s,
   wherever you are: you are put in the cart on the start, Ready. No walk back up the massif, no cost per crash.
+- **Suspension you can see:** the body rolls out of a turn (about 9° in a hard one), squats on the throttle, dives on
+  the brake, squashes and rebounds on a landing, and rocks over crests while the wheels follow the ground on their own
+  (a wheel hangs up to 20 cm below rest). The same ride shows on other players' carts.
 - **Feel:** dust from the rear wheels growing with speed (more, bigger, longer-lived, trailing behind you from 12 m/s),
-  sparks while the rear slides, a dust burst and sparks on a crash; the cart tilts to the ground, rolls out of turns
-  and bounces on landings. **No sound for now:** the rolling rumble and rattle, the wind, the charge ticks, the boost whoosh and the crash were cut in the sound audit (2026-11-02); better ones come later, from references.
+  sparks while the rear slides, a dust burst and sparks on a crash. **No sound for now:** the rolling rumble and rattle, the wind, the charge ticks, the boost whoosh and the crash were cut in the sound audit (2026-11-02); better ones come later, from references.
 - **Camera:** it aims ahead of the cart along its velocity (0.3 s of it, at most 4 m: where the cart will be), turns
   with your steering (up to 0.25 rad, faded in over 0.3 s), swings in behind where the cart is going (so a drift shows
   from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); it pulls in short of any
@@ -67,17 +77,21 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **Seated** you sit low in the tub, leaning back and tilting with the cart, with no walk cycle (remote drivers too).
   World labels (work-site rings and plaques, signs) hide while you drive and come back when you get out.
 
-The scripted pilot's run (`dev/look/evals/soapbox-run.js`, braking for the bends) takes about 10.5 s in all three
-variants, with a top speed near 14 m/s, finishing at about 8 m/s.
+The scripted pilot's run (`dev/look/evals/soapbox-run.js`, on the triggers: throttle up to 12 m/s, braking for the
+bends) takes about 9 s, with a top speed near 15 m/s. It sometimes runs off the line into a palm or up a rock: a
+wipeout or a stop that a player would steer out of.
 
 ## Handling variants (`&v=`)
 
-For comparing in one sitting; no `&v` is the tuning below.
+For comparing in one sitting, each changing one thing; no `&v` is the tuning below. They switch live from the
+prototype bar.
 
-- **`&v=grip`:** planted and precise. Grip 48, handbrake grip 14, drift turn x1.15, nose at most 0.55 rad out,
-  handbrake drag 2.2: short, tidy drifts.
-- **`&v=drifty`:** loose rear, long drifts, the full drift boost. Grip 32 (letting go only to 0.8x when sideways),
-  handbrake grip 3, drift turn x1.7, nose up to 1.35 rad out, 75% of a slide carried forward, handbrake drag 1.0.
+- **`&v=bouncy`:** soft, long-travel springs: spring 16, damper 0.9 (damping ratio about 0.2, so it bounces twice), a
+  wheel hangs up to 34 cm, landings jolt up to 7 m/s. Big roll and bounce, a monster truck.
+- **`&v=tight`:** stiff, short springs and more grip: spring 70, damper 5 (ratio 0.6), 9 cm of droop, grip 46,
+  handbrake grip 9, and less grip lost with wheels off the ground (0.8x). Planted.
+- **`&v=drift`:** a loose rear: grip 32 (letting go only to 0.8x when sideways), handbrake grip 3, drift turn x1.7,
+  nose up to 1.35 rad out, 75% of a slide carried forward, handbrake drag 1.0, the full drift boost.
 
 ## How it works
 
@@ -92,8 +106,18 @@ For comparing in one sitting; no `&v` is the tuning below.
   0.8; full from 0.95). The handbrake's grip has no curve. The research's first guesses (0.15, 0.55, 0.7) let a landing
   on the face snowball into a slide you could not steer out of. With the handbrake the turn rate is 1.4x, but the
   nose never swings more than 1 rad from the direction of travel: drifts hold, they don't spin out.
-- **Speed:** rolling resistance 0.35 m/s², air drag 0.014 v², handbrake 1.6 m/s², brake 16 m/s² (enough to hold the
-  cart on the massif's steep face). An empty cart, or one past the finish, brakes at 5 m/s².
+- **Speed:** the motor (above), rolling resistance 0.35 m/s², air drag 0.014 v², handbrake 1.6 m/s², brake 16 m/s²
+  (enough to hold the cart on the massif's steep face).
+- **Suspension** (all cosmetic but the grip; vehicle-feel.md, RC cars 1-3): the mesh is two layers. The frame sits on
+  the sphere, facing the heading and tilted to the plane through the ground under the four wheels (a straight-down ray
+  at each; the sphere's own normal when one misses or the plane is steeper than n.y 0.8, a wheel on a rock). Each frame
+  a ray per wheel down the frame finds its ground, and a spring-damper per wheel (k 30, c 2.2 per unit mass: about
+  1.7 Hz, damping ratio 0.4; never pulling; a stiff, damped bump stop at 6 cm) holds up a chassis with heave, pitch and
+  roll, integrated at 120 Hz. The chassis feels the frame's motion the other way: 0.6 of each sudden change in the
+  sphere's vertical speed (at most 5 m/s; a landing, a dip), the forward acceleration x2 as pitch (squat, dive) and the
+  wheels' sideways grip x1.5 as roll. With no wheel down it eases back to rest. Limits: heave 0.35 m, pitch 0.4 rad,
+  roll 0.32 rad. Grip is multiplied by 0.55-1 by the share of wheels on the ground, so a bounce after a landing is
+  briefly loose. An empty cart, or one past the finish, brakes at 5 m/s².
 - **Crash:** the speed the physics solver knocks off in a step (a leaky sum over a few steps), over 9 m/s while you were
   doing at least 6 m/s, or a landing that adds 15 m/s upward in one step. Driving into water gets you out.
 - **Seated,** your own body leaves the physics world and is put on the seat each frame, so the camera, your avatar and
@@ -103,7 +127,9 @@ For comparing in one sitting; no `&v` is the tuning below.
 ## Sync
 
 Owner kind. The driver publishes the cart as presence `soapbox: [x, y, z, qx, qy, qz, qw, wheel angle, speed]` (null
-when not seated); other tabs with the flag draw it with `createSnaps` at `now - INTERP_MS`. Each tab has its own
+when not seated; the frame, without the ride) and the ride as `soapboxRide: [heave, pitch, roll, four wheel heights]`
+(a separate key, so an older build still draws the cart, stiffly); other tabs with the flag draw both with
+`createSnaps` at `now - INTERP_MS`. Each tab has its own
 parked cart; an empty cart is local. Tabs without the flag draw no carts: they hide a remote player's avatar while
 their `soapbox` presence is set (`src/features/proto-soapbox.ts`, the only part that runs without the flag).
 
@@ -111,8 +137,8 @@ their `soapbox` presence is set (`src/features/proto-soapbox.ts`, the only part 
 
 `BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.js --hud --warm 0.2 --seconds 13 --frames 16`
 (also `soapbox-drift.js`, `soapbox-crash.js` and `soapbox-ghost.js`, a first run that sets the ghost and a second
-beside it; each eval's header has its timing; add `&v=drifty` to the query for a
-variant). The pilot,
+beside it; each eval's header has its timing; add `&v=bouncy`, `&v=tight` or `&v=drift` to the query for a variant,
+and `--size 1180x820` for iPad size). The pilot,
 `dev/look/evals/soapbox-pilot.ts`, drives through the real input.
 
 ## Not built

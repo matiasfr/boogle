@@ -1,5 +1,5 @@
 // A pilot for the soapbox prototype (src/proto/soapbox/), for the soapbox-*.js look evals (run, drift, crash).
-// It drives through the real input (the left stick and the jump button's hold), so what the sheets show is what a
+// It drives through the real input (the left stick, the triggers and the jump button's hold), so what the sheets show is what a
 // player gets. Needs ?proto=soapbox: BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.js
 import { input } from '../../../src/player/input.ts';
 import { me } from '../../../src/player/player.ts';
@@ -20,6 +20,7 @@ type Plan = {
   driftSteer?: number; // -1 left .. 1 right
   driftCorners?: boolean; // handbrake into the sharp corners instead of braking
   seconds?: number;
+  cruise?: number; // m/s the pilot holds the throttle up to (default 12)
 };
 export type Stats = {
   boarded: boolean;
@@ -94,7 +95,9 @@ export async function drive(plan: Plan) {
     input.stickX = steer;
     const bend = turn > 0.6 && dist < 6 + speed * 0.6 && speed > 9;
     const brake = !drifting && !box.S.boostLeft && ((sharp && speed > 8) || bend || (Math.abs(err) > 1 && speed > 6));
-    input.stickY = brake ? 1 : speed < 4.5 ? -1 : 0; // kick along when slow
+    // the triggers, as a pad player would: throttle eased off near the cruise speed, the brake for the bends
+    input.triggerR = brake ? 0 : Math.max(0, Math.min(1, ((plan.cruise ?? 12) - speed) / 3));
+    input.triggerL = brake ? 1 : 0;
     stats.top = Math.max(stats.top, speed);
     stats.slip = Math.max(stats.slip, Math.abs(box.S.slip));
     if (box.S.drifting) stats.drifted += (now - last) / 1000;
@@ -107,7 +110,7 @@ export async function drive(plan: Plan) {
     if (box.S.seated && t < (plan.seconds ?? 60) && box.run.state !== 'done') requestAnimationFrame(step);
     else {
       stats.thrown = !box.S.seated && box.run.state === 'crashed';
-      input.stickX = input.stickY = 0;
+      input.stickX = input.stickY = input.triggerL = input.triggerR = 0;
       me.jumpHeld = false;
     }
   };

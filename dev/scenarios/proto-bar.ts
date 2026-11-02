@@ -60,18 +60,18 @@ export default {
     const sent = await g.eval(`return !document.querySelector('.pb-sent')?.hidden;`);
     t.check('the verdict went to the server (the sent tick shows)', sent === true);
 
-    // Move off the spawn, switch to drifty: the handling changes live, no reload, and you stay where you stood.
+    // Move off the spawn, switch to drift: the handling changes live, no reload, and you stay where you stood.
     await g.eval(`const { teleport } = await import('/src/physics/physics.ts');
       const s = ${SPAWN}; const b = window.boogle.me.body; teleport(b, s.x + 3, b.position.y, s.z + 2);`);
     await t.sleep(300);
     await g.eval(
-      `window.__barMark = 1; [...document.querySelectorAll('.pb-variants button')].find((b) => b.textContent === 'drifty').click();`,
+      `window.__barMark = 1; [...document.querySelectorAll('.pb-variants button')].find((b) => b.textContent === 'drift').click();`,
     );
-    await g.page.waitForURL(/v=drifty/, { timeout: 30000 });
+    await g.page.waitForURL(/v=drift/, { timeout: 30000 });
     await t.sleep(1000);
     const grip = await g.eval(`return [window.__barMark === 1, window.__soapbox.T.grip];`);
     t.check(
-      'drifty switches live (no reload), with its handling',
+      'drift switches live (no reload), with its handling',
       JSON.stringify(grip) === '[true,32]',
       JSON.stringify(grip),
     );
@@ -87,7 +87,7 @@ export default {
       JSON.stringify(after.counts),
     );
     const pressed = await g.eval(`return document.querySelector('.pb-variants [aria-pressed="true"]')?.textContent;`);
-    t.check('drifty shows as playing', pressed === 'drifty', String(pressed));
+    t.check('drift shows as playing', pressed === 'drift', String(pressed));
     t.check('no page errors', !g.errors.length, g.errors.slice(0, 3).join(' | '));
   },
 };
