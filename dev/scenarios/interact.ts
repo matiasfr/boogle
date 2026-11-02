@@ -128,7 +128,7 @@ export default {
     await g.eval(`${toss(1, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
-    await g.eval(`${INV} I.useOne(); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
+    await g.eval(`${INV} I.emptyHand(); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
     await g.wait(0.4);
     const itemShot = await g.still('item');
@@ -153,7 +153,7 @@ export default {
       const at = H.interactTarget()?.id ?? '';
       H.useDown();
       H.interactDown(); H.interactUp();
-      const out = { at, charging: me.charging, held: I.heldId(), seeds: I.has('seeds') };
+      const out = { at, charging: me.charging, held: I.heldId(), seeds: I.heldId() === 'seeds' };
       me.charging = false;
       return out;`);
     t.check(
@@ -177,7 +177,7 @@ export default {
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
-      I.useOne();
+      I.emptyHand();
       const bundles = rules.sources.list().map((p) => ({ x: cellX(p.i) + 0.9, z: cellZ(p.j) + 0.4 }));
       for (let k = 0; k < bundles.length; k++) {
         const P = bundles[k];

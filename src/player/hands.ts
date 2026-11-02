@@ -41,10 +41,10 @@
 // Thrown things other than the beach ball fly and land through src/adapters/gifts.ts; the ball keeps its own physics.
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
-import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
+import { startCharge, cancelCharge, chargeAmount, launch, releasePoint } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
-import { heldId, take, useOne, drop, has, onHandChange, onLetGo } from './inventory.ts';
+import { heldId, take, emptyHand, drop, onHandChange, onLetGo } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
 import { sprout } from '../adapters/mushrooms.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
@@ -68,7 +68,7 @@ const ballAt = new THREE.Vector3();
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
 function syncBall() {
   const carried = ball.mine && ball.held;
-  if (!carried && has('ball')) drop('ball');
+  if (!carried) drop('ball');
   me.holding = carried && heldId() === 'ball';
 }
 onHandChange(() => {
@@ -80,7 +80,7 @@ onHandChange(() => {
 // everything else uses (the ball through its own throw).
 const DROP = { forward: 2.2, up: 3.2 }; // m/s
 onLetGo((id) => {
-  const { p } = launch(id, 0);
+  const p = releasePoint(id);
   const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
   if (id === 'ball') throwBall(p, v);
   else throwItem(giftIndex(id), p, v);
@@ -161,7 +161,7 @@ function throwHeld(c: number) {
   if (!id || !me.body) return;
   const { p, v } = launch(id, c);
   if (id === 'ball') return throwBall(p, v);
-  useOne();
+  emptyHand();
   if (!throwItem(giftIndex(id), p, v)) take(id);
 }
 
@@ -182,7 +182,7 @@ export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
   if (!id) return emptyHands.down();
-  if (id === 'seeds') return sprout() ? !!useOne() : deny("Can't grow here");
+  if (id === 'seeds') return sprout() ? !!emptyHand() : deny("Can't grow here");
   return windUp();
 }
 

@@ -17,7 +17,7 @@ import { waterField } from '../physics/water-field.ts';
 import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.ts';
 import { itemModel } from '../player/item-models.ts';
-import { take, has } from '../player/inventory.ts';
+import { take, heldId } from '../player/inventory.ts';
 import { createLimiter } from '../sim/social.ts';
 import type { Body } from '../physics/engine.ts';
 import type { Interactable } from '../player/hands.ts';
@@ -355,7 +355,7 @@ export function createStall() {
 // What interacting at the stand can do (see interactTarget in src/player/hands.ts): take a bag, unless you carry one.
 export function stallTargets() {
   const w = pickup.world;
-  if (!me.entered || !me.body || !w || has('seeds')) return NO_TARGETS;
+  if (!me.entered || !me.body || !w || heldId() === 'seeds') return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   const dx = w.x - p.x,
     dz = w.z - p.z;

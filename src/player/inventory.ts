@@ -3,15 +3,17 @@
 //
 //   inv.held               a catalog id (src/sim/gift-catalog.ts), 'ball', or null for empty hands
 //   take(id)               into your hand; what you held lets go (onLetGo)
-//   onHandChange(fn)       fn() after any change
+//   onHandChange(fn)       fn() after any change: one listener, src/player/hands.ts
 //   onLetGo(fn)            fn(id) when something is pushed out of your hand: src/player/hands.ts drops it by your feet
 import { GIFTS, carryable } from '../sim/gift-catalog.ts';
 
 const known = (id: string) => GIFTS.some((g) => g.id === id && carryable(g));
 
 export const inv = { held: null as string | null, version: 0 };
-const changeFns: (() => void)[] = [];
-export const onHandChange = (fn: () => void) => changeFns.push(fn);
+let handChanged = () => {};
+export const onHandChange = (fn: () => void) => {
+  handChanged = fn;
+};
 let letGo: (id: string) => void = () => {};
 export const onLetGo = (fn: (id: string) => void) => {
   letGo = fn;
@@ -19,11 +21,10 @@ export const onLetGo = (fn: (id: string) => void) => {
 
 function changed() {
   inv.version++;
-  for (const fn of changeFns) fn();
+  handChanged();
 }
 
 export const heldId = () => inv.held;
-export const has = (id: string) => inv.held === id;
 
 // Puts `id` in your hand. Returns false if `id` is neither the ball nor a carryable catalog item (the name tag names it
 // from the catalog).
@@ -36,7 +37,7 @@ export function take(id: string) {
 }
 
 // Empties your hand. Returns what was in it.
-export function useOne() {
+export function emptyHand() {
   const id = inv.held;
   if (!id) return null;
   inv.held = null;
@@ -45,5 +46,5 @@ export function useOne() {
 }
 
 export function drop(id: string) {
-  if (has(id)) useOne();
+  if (inv.held === id) emptyHand();
 }

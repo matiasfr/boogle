@@ -10,7 +10,7 @@ import { scene } from '../../render/scene.ts';
 import { ball, respawnBall } from '../../entities/ball/state.ts';
 import { remoteHoldsBall } from '../../entities/ball/state.ts';
 import { me, cam } from '../../player/player.ts';
-import { drop, has } from '../../player/inventory.ts';
+import { drop } from '../../player/inventory.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { BALL_R } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
@@ -146,7 +146,7 @@ paintSigns();
 
 function teeOff() {
   respawnBall();
-  if (has('ball')) drop('ball');
+  drop('ball');
   teleport(ball.body, TEE.x, teeY + 0.3 + BALL_R, TEE.z);
   ball.body.velocity.set(0, 0, 0);
   ball.body.angularVelocity.set(0, 0, 0);

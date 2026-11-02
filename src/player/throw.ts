@@ -30,9 +30,11 @@ export const aimPoint = (out = new THREE.Vector3()) =>
 
 const aim = new THREE.Vector3();
 // What throwing `id` at charge c would do right now: { p: where it leaves your hand, v: its velocity, profile }.
+export const releasePoint = (id: string | null) => (id === 'ball' ? handPosition() : throwFrom());
+
 export function launch(id: string | null, c: number) {
   const profile = profileFor(id);
-  const p = id === 'ball' ? handPosition() : throwFrom();
+  const p = releasePoint(id);
   const dir = aimPoint(aim).sub(p).normalize();
   const bodyV = me.body ? me.body.velocity : { x: 0, y: 0, z: 0 };
   const v = launchVelocity(profile, c, dir, bodyV);
