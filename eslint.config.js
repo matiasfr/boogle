@@ -117,6 +117,7 @@ const entityPlugin = {
 const ENTITY_SERVICES = [
   'src/loop.ts', // onFrame itself, and the profiler
   'src/render/particles.ts', // the particle simulation behind emit()
+  'src/render/sprites.ts', // instancedSprite, behind particles, fireflies and the throw preview
   'src/render/lights.ts', // the lights pool
   'src/render/assets.ts', // the glTF animation mixer
   'src/netplay/net.ts', // the presence send

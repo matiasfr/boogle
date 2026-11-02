@@ -13,7 +13,7 @@ import { ball } from '../entities/ball/state.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
-import { defineKind, despawn, nextId, spawn, type GameEntity } from '../entity/entity.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
 import { PING_KINDS, validatePing, createLimiter, honkFreq, type Ping } from '../sim/social.ts';
 
@@ -135,9 +135,7 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   const born = performance.now();
   let lastDist = '';
   const entity: GameEntity = spawn({
-    id: nextId('ping'),
     kind: 'ping',
-    alive: true,
     mesh: ring,
     lateUpdate({ now }) {
       const age = now - born;
