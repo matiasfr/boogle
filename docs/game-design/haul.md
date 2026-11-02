@@ -91,8 +91,9 @@ Scenario: `npm run scenario -- hut-build`.
 ## Machine runs, helpers and the age change
 
 Once the open site's Track ring holds a whole section, anyone standing by it gets "Start the machine" (E, the
-Interact button). The run is scripted and the same for everyone, including a late joiner: 3 s warming up, 45 s
-crawling the section laying sleepers and rails behind it, 2 s whistle (500 ticks; drawn at smooth shared time). Then
+Interact button). The run is scripted and the same for everyone, including a late joiner: 1.5 s warming up, 11 s
+laying the section's sleepers and rails, 1.5 s whistle (140 ticks, 14 s; drawn at smooth shared time; the quick run
+picked in the laying playtest, docs/proposals/boogle-2.md). Then
 the section is laid, whoever started it gets 5 points on that plaque, every palm refills, and the next site opens.
 A built helper hut adds one piece of freight to the open site's Track ring every 27 s (it waits while that ring is
 full or running). When an age's last section is laid the age moves on; whatever is left of the old material on
@@ -106,7 +107,7 @@ long nobody hosted (wall clock against the save's tick), and the huts' freight f
 under a minute bank nothing.
 
 **The machine.** A little red steam loco with a sleeper chute at the front waits on the railhead, its chute at the
-open section's start. Started, it warms up where it stands (fast chuffs, a shudder), then crawls the section dropping
+open section's start. Started, it warms up where it stands (fast chuffs, a shudder), then runs up the section dropping
 sleepers off its chute one by one: each thumps down with a ring of dust and the machine bumps, every other one a rail
 clanks down with sparks, the funnel chuffs as it goes and the Track ring's pile shrinks. It whistles and steams at the
 end, already on the next section's railhead, so it doesn't move again until the next start: a rider stays on through
@@ -117,20 +118,19 @@ as the train pulls away (drawn only: the run's timing is the same). With a faked
 `?laid=N`) the train runs on over the open section, so the machine sinks into the ground until it is back off it
 (it is solid, and would sweep riders off the decks).
 
-**Run variants** (`?room=proto-lay&proto=lay&v=crawl|quick|push`, docs/plans/find-the-fun.md step 3). The room's run
-is the `run` tune key (proto- rooms; never changed mid-run): crawl (0, the default above), quick (1: 1.5 s warm, 11 s
-lay, 1.5 s whistle) and push (2: 2 s warm, then it lays only while someone walks into its back: each `site.push {s}`
-buys 5 ticks of laying and a pusher sends one every 5 ticks, so solo it takes ~25 s and more pushers go faster; a
-"Push me!" sign shows while it waits). The `?proto=lay` panel switches variant, fills the open Track ring
-(`tune.fill`, as freight with no plaque credit) and starts over (`tune.reset`). Scenario: `npm run scenario -- lay-run`.
+**Laying prototype** (`?room=proto-lay&proto=lay`, docs/plans/find-the-fun.md step 3). A panel fills the open Track
+ring (`tune.fill`, as freight with no plaque credit) and starts over (`tune.reset`), so one tester can lay section after
+section. The 50 s crawl and the push run (it laid only while you walked into its back) were variants until the
+playtest picked the quick run. Scenario: `npm run scenario -- lay-run` (rides a whole run at desktop and iPad size and
+checks the deck never lunges at the end).
 
-Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`, `RUNS`), op `site.run {s}` and the
+Code: [src/sim/scripted-run.ts](../../src/sim/scripted-run.ts) (`runAt`, `MACHINE_RUN`), op `site.run {s}` and the
 `sites` tick; the bank: [src/sim/bank.ts](../../src/sim/bank.ts), [src/world/rules/bank.ts](../../src/world/rules/bank.ts),
 [src/features/helper-bank.ts](../../src/features/helper-bank.ts), op `bank.wake`, state `bank`. Scenario: `npm run scenario -- haul-loop`.
 
 Code: [src/sim/sites.ts](../../src/sim/sites.ts), [src/sim/tiers.ts](../../src/sim/tiers.ts),
 [src/world/rules/sites.ts](../../src/world/rules/sites.ts), [src/features/work-sites.ts](../../src/features/work-sites.ts),
-[src/features/track-machine.ts](../../src/features/track-machine.ts) (the machine, the railway, riding and pushing).
+[src/features/track-machine.ts](../../src/features/track-machine.ts) (the machine, the railway, riding).
 Lockstep state `sites`; op `site.stock {s, ring, n}` (validated against your own stack, the age's material and the open
 site). Ring reach is not checked by the host, like every reach today.
 

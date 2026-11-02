@@ -12,11 +12,6 @@
   color: var(--ink);
   pointer-events: auto;
 }
-.lay-proto .lay-kinds {
-  display: flex;
-  gap: 4px;
-}
-.lay-proto a,
 .lay-proto button {
   font: inherit;
   padding: 5px 11px;
@@ -27,9 +22,6 @@
   box-shadow: 0 3px 0 var(--ink);
   text-decoration: none;
   cursor: pointer;
-}
-.lay-proto a.on {
-  background: #ffd23f;
 }
 .lay-proto button:disabled {
   opacity: 0.5;

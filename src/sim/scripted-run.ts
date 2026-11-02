@@ -24,28 +24,10 @@ export function runAt(script: readonly Phase[], t0: number, tick: number): RunSt
   return { phase: k, name: script[k].name, progress: Math.floor((e * 1000) / script[k].len), total, done: false };
 }
 
-// The wood-age track layer: it warms up, crawls the section laying track, and whistles. 50 s.
+// The wood-age track layer: it warms up, lays the section's sleepers and rails, and whistles. 14 s: the quick run the
+// laying playtest picked (docs/proposals/boogle-2.md, 2026-11-01); the 50 s crawl and the push run were cut.
 export const MACHINE_RUN: readonly Phase[] = [
-  { name: 'warm', len: 30 },
-  { name: 'lay', len: 450 },
-  { name: 'whistle', len: 20 },
-];
-// Laying-run variants (docs/game-design/haul.md, "Machine runs"), chosen per room by the `run` tune key (./tune.ts) so
-// every peer and the server play the same script. APPEND ONLY: a variant's index is the tuned value.
-//   crawl  today's run (MACHINE_RUN)
-//   quick  the same three phases in 14 s
-//   push   its lay phase only advances while players push (./sites.ts stallRun / pushRun): ~25 s for one pusher
-export const QUICK_RUN: readonly Phase[] = [
   { name: 'warm', len: 15 },
   { name: 'lay', len: 110 },
   { name: 'whistle', len: 15 },
 ];
-export const PUSH_RUN: readonly Phase[] = [
-  { name: 'warm', len: 20 },
-  { name: 'lay', len: 250 },
-  { name: 'whistle', len: 20 },
-];
-export const RUNS = [MACHINE_RUN, QUICK_RUN, PUSH_RUN] as const;
-export const RUN_KINDS = ['crawl', 'quick', 'push'] as const;
-export const PUSH_RUN_KIND = 2;
-export const PUSH_TICKS = 5; // lay ticks one push (site.push) buys: a pusher sends one every 5 ticks, so solo runs at 1x

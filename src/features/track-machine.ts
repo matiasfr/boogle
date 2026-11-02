@@ -1,21 +1,18 @@
 // The track machine and the railway it lays (src/world/rules/sites.ts, "Machine runs" in docs/game-design/haul.md).
 // The machine parks at the open section's start; once a run starts it warms up (rapid chuffs, a shudder), crawls the
 // section dropping sleepers one by one off its front (each thumps down with dust; every other one a rail clanks) and
-// whistles at the end. You can ride its deck (a platform, src/physics/platforms.ts). On the push run (?proto=lay&v=push)
-// it lays only while someone walks into its back: this tab sends site.push every PUSH_TICKS ticks while you do.
-// Serves DESIGN.md 1 (Toys before chores: construction you can watch, ride and shove) and 10 (Slapstick over precision).
-// Lockstep sites (read only, plus site.push), Local view, sounds and platform.
+// whistles at the end. You can ride its deck (a platform, src/physics/platforms.ts).
+// Serves DESIGN.md 1 (Toys before chores: construction you can watch and ride) and 10 (Slapstick over precision).
+// Lockstep sites (read only), Local view, sounds and platform.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { attribute, positionLocal, uniform } from 'three/tsl';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
-import { submitEdit } from '../world/sync.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
 import { groundHeight } from '../adapters/terrain.ts';
-import { me } from '../player/player.ts';
 import { ROUTE } from '../sim/route.ts';
-import { PUSH_RUN_KIND, PUSH_TICKS } from '../sim/scripted-run.ts';
+import { MACHINE_RUN } from '../sim/scripted-run.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
@@ -23,7 +20,7 @@ import { chuff, thump, clank, whistle } from '../render/machine-sfx.ts';
 import { angleLerp } from '../math.ts';
 import { BODY, addBody, createBody, physicsReady, stepAlpha, type Body } from '../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../physics/physics.ts';
-import { registerPlatform, platformById, carry, yawOf, type Platform } from '../physics/platforms.ts';
+import { registerPlatform, platformById, yawOf, type Platform } from '../physics/platforms.ts';
 
 const { sites } = rules.sites;
 const TUNE = {
@@ -31,8 +28,7 @@ const TUNE = {
   fall: 0.2, // s a sleeper takes to drop off the front
   drop: 0.7, // m it drops from
   chuffEvery: 0.32, // m travelled per chuff while laying
-  follow: 9, // 1/s: how fast the drawn machine catches up with the run (smooths the push run's steps)
-  pushMs: PUSH_TICKS * 100, // a push every PUSH_TICKS ticks while you walk into its back
+  follow: 9, // 1/s: how fast the drawn machine catches up with the run
 };
 // The machine: a deck you can ride (hx, hz: half size; top above the body's centre), the boiler and funnel at the back,
 // the sleeper chute at the front. It rides on the track it lays: its front is `front` m past the laid head (behind it),
@@ -82,9 +78,6 @@ const st = {
   prevYaw: 0, // the body's yaw before this physics step
   travelled: 0, // m since the last chuff
   sinceChuff: 0, // s since the last chuff
-  stillFor: 0, // s the laid length has stood still (the push run's sign)
-  lastD: 0,
-  lastNow: 0,
 };
 
 // Redrawn only while something changes: a laid length moves, or a sleeper is still falling or bouncing (until settled,
@@ -302,37 +295,11 @@ for (let j = 0; j < 4; j++) {
 let loadShown = -1;
 const FUNNEL_TOP = new THREE.Vector3(0, 1.75, -1.05);
 
-// The push prompt: a sign over the machine while the push run waits for a shove.
-const sign = (() => {
-  const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 96;
-  const g = c.getContext('2d')!;
-  g.fillStyle = 'rgba(40, 26, 12, 0.78)';
-  g.beginPath();
-  g.roundRect(4, 4, 248, 88, 22);
-  g.fill();
-  g.fillStyle = '#fff7e8';
-  g.font = '800 46px Figtree, system-ui, sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText('Push me!', 128, 50);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  s.scale.set(1.6, 0.6, 1);
-  s.position.set(0, 2.4, -M.hz);
-  s.renderOrder = 10;
-  s.visible = false;
-  root.add(s);
-  return s;
-})();
-
 // Where the machine should be (`at`: its centre, metres along the section): parked on the railhead, its front at the
 // open section's start (START); laying, its front is just behind the laid head (d). A run ends with it on the next
 // section's railhead, so it never moves between runs: parking it anywhere else made it lunge there the moment a
-// section was laid, throwing anyone riding its deck. Once the whole route is laid it sinks out of sight. Push runs read whole ticks (their clock stands still between
-// pushes); the others the smooth shared time. Where the ?proto=wagon train stands at the end of the line its loco
+// section was laid, throwing anyone riding its deck. Once the whole route is laid it sinks out of sight. It reads the
+// smooth shared time. Where the ?proto=wagon train stands at the end of the line its loco
 // overhangs the railhead by about 5 m, so the drawn machine keeps its back bar CLEAR m ahead of the loco's nose
 // (`clearOfWagon`) and drops back to its spot as the train pulls away: Local, the run's timing is unchanged. A faked
 // laid count (the wagon panel's +, `?laid=N`) runs the train on over the open section: the machine sinks into the
@@ -358,12 +325,10 @@ function laidAt(s: number, tick: number): number {
   const x = sites.list[s];
   if (rules.sites.isDone(s)) return LINES[s].len;
   if (!x || x.t0 < 0) return 0;
-  const script = rules.sites.script();
   const r = rules.sites.run(s, Math.floor(tick));
   if (r.name === 'warm' || r.phase < 0) return 0;
   if (r.name !== 'lay') return LINES[s].len;
-  const t = rules.sites.kind() === PUSH_RUN_KIND ? Math.floor(tick) : tick;
-  return LINES[s].len * Math.min(1, Math.max(0, (t - x.t0 - script[0].len) / script[1].len));
+  return LINES[s].len * Math.min(1, Math.max(0, (tick - x.t0 - MACHINE_RUN[0].len) / MACHINE_RUN[1].len));
 }
 function aim(tick: number): void {
   const open = sites.open;
@@ -415,46 +380,6 @@ void physicsReady.then(() => {
   platform = { body, hx: M.hx, hz: M.hz, top: M.hy, move };
   registerPlatform(platform);
 });
-
-// ---------------------------------------------------------------- pushing (the push run)
-let lastPush = -1e9,
-  pushing = false;
-function push(now: number): void {
-  pushing = false;
-  const b = me.body;
-  if (!b || !me.entered || !body || rules.sites.kind() !== PUSH_RUN_KIND || goal.name !== 'lay') return;
-  if (carry.on && carry.on.body === body) return; // riding it doesn't push it
-  const fx = Math.sin(pose.yaw),
-    fz = Math.cos(pose.yaw);
-  const rx = b.position.x - pose.x,
-    rz = b.position.z - pose.z;
-  const along = rx * fx + rz * fz,
-    side = rx * fz - rz * fx;
-  if (along > -M.hz + 0.3 || along < -M.hz - 1.3 || Math.abs(side) > M.hx + 0.5) return;
-  if (me.wish.x * fx + me.wish.z * fz < 0.4) return; // walking into it, not standing about
-  pushing = true;
-  if (now - lastPush < TUNE.pushMs) return;
-  lastPush = now;
-  submitEdit({ op: 'site.push', i: 0, j: 0, s: sites.open });
-  st.squash = Math.max(st.squash, 0.6); // a heave
-  for (let j = 0; j < 4; j++)
-    emit({
-      x: b.position.x + (Math.random() - 0.5) * 0.4,
-      y: b.position.y - 0.4,
-      z: b.position.z + (Math.random() - 0.5) * 0.4,
-      vx: -fx * 1.5 + (Math.random() - 0.5),
-      vy: 0.5 + Math.random() * 0.6,
-      vz: -fz * 1.5 + (Math.random() - 0.5),
-      life: 0.5,
-      size: 0.12,
-      color: DUST,
-      alpha: 0.7,
-      gravity: 1,
-      drag: 3,
-      grow: [0.7, 2],
-      fade: 0.6,
-    });
-}
 
 // ---------------------------------------------------------------- the frame
 let lastName = '';
@@ -514,7 +439,7 @@ onFrame(
     }
     root.visible = !goal.gone;
 
-    // phases: warm shudders and chuffs fast; lay chuffs by distance (a push run waiting puffs idly); whistle steams
+    // phases: warm shudders and chuffs fast; lay chuffs by distance; whistle steams
     if (goal.name !== lastName) {
       if (goal.name === 'warm') puff(1);
       if (goal.name === 'whistle') {
@@ -531,8 +456,7 @@ onFrame(
     else if (look.position.x || look.position.y) look.position.set(0, 0, 0);
     let heavy = -1;
     if (goal.name === 'warm' && st.sinceChuff > 0.22) heavy = 0.8;
-    else if (goal.name === 'lay' && st.travelled > TUNE.chuffEvery)
-      heavy = rules.sites.kind() === PUSH_RUN_KIND ? 0.6 : 0.2;
+    else if (goal.name === 'lay' && st.travelled > TUNE.chuffEvery) heavy = 0.2;
     else if (goal.name === 'lay' && st.sinceChuff > 1.6) heavy = 0;
     if (heavy >= 0) {
       puff(heavy);
@@ -567,18 +491,9 @@ onFrame(
     // the sleepers waiting by the chute: fewer as the section fills
     const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s].len)) : 4;
     if (left !== loadShown) commitPieces(load, (loadShown = left));
-
-    // the push run: the sign while it waits, and this tab's pushes
-    push(now);
-    const d = goal.d;
-    st.stillFor = Math.abs(d - st.lastD) > 1e-4 ? 0 : st.stillFor + (now - st.lastNow) / 1000;
-    st.lastD = d;
-    st.lastNow = now;
-    sign.visible = rules.sites.kind() === PUSH_RUN_KIND && goal.name === 'lay' && st.stillFor > 0.8 && !pushing;
-    sign.position.y = 2.4 + Math.sin(now / 180) * 0.06;
   },
   { phase: 'update', order: 35 },
 );
 
-// For the look evals: where the machine is, whether this tab is pushing.
-export const trackMachine = { pose, goal, isPushing: () => pushing, platform: () => platform };
+// For the look evals: where the machine is.
+export const trackMachine = { pose, goal, platform: () => platform };

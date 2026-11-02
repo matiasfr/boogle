@@ -57,7 +57,7 @@ import { installRules } from '../src/world/rules/index.ts';
 import { homeLand } from './helpers/land.mjs';
 import { FULL } from '../src/sim/sources.ts';
 import { RUN_BONUS } from '../src/sim/sites.ts';
-import { lengthOf, MACHINE_RUN, QUICK_RUN, PUSH_RUN, PUSH_RUN_KIND, PUSH_TICKS } from '../src/sim/scripted-run.ts';
+import { lengthOf, MACHINE_RUN } from '../src/sim/scripted-run.ts';
 
 test('a run lays its section, credits the starter, refills sources and opens the next site; the age then moves on', () => {
   const s = createSync({ env: { canPlantAt: () => true } });
@@ -111,8 +111,8 @@ test('two starts stamped for the same run: the first one counts', () => {
   assert.equal(site.t0, 1);
 });
 
-// Laying-run variants (?proto=lay): the room's `run` tuning picks the script; the push run lays only while pushed.
-test('run variants: tune.fill fills the ring, quick lays in 140 ticks, push stands still until pushed', () => {
+// The ?proto=lay shortcut: tune.fill fills the open Track ring as freight, so a solo tester can start the machine.
+test('tune.fill fills the ring with no credit, and the run lays the section', () => {
   const s = createSync({ env: { canPlantAt: () => true, protoRoom: true } });
   s.setSelfId('a');
   s.setPid('ana');
@@ -121,32 +121,14 @@ test('run variants: tune.fill fills the ring, quick lays in 140 ticks, push stan
     if (e) assert.equal(s.submitEdit(e), true, JSON.stringify(e));
     for (let k = 0; k < n; k++) s.updateWorld(0.1);
   };
-  step(null, 300); // past tick PUSH_TICKS * lay, so t0 never has to clamp at 0
+  step(null, 2);
   const st = rules.sites.sites;
-  step({ op: 'tune.set', i: 0, j: 0, key: 'run', v: 1 });
   step({ op: 'tune.fill', i: 0, j: 0 });
   assert.equal(rules.sites.canRun(0), true);
   assert.equal(st.list[0].plaque.length, 0, 'a fill is freight: no credit');
   step({ op: 'site.run', i: 0, j: 0, s: 0 });
-  assert.equal(s.submitEdit({ op: 'tune.set', i: 0, j: 0, key: 'run', v: 0 }), false, 'never mid-run');
-  step(null, lengthOf(QUICK_RUN) + 1);
-  assert.equal(st.open, 1, 'the quick run laid section 1');
-
-  step({ op: 'tune.set', i: 0, j: 0, key: 'run', v: PUSH_RUN_KIND });
-  step({ op: 'tune.fill', i: 0, j: 0 });
-  step({ op: 'site.run', i: 0, j: 0, s: 1 }, 30);
-  assert.equal(rules.sites.run(1, s.world.tick).name, 'lay');
-  const before = rules.sites.run(1, s.world.tick).total;
-  step(null, 400);
-  assert.equal(rules.sites.run(1, s.world.tick).total, before, 'nobody pushes: it waits');
-  assert.equal(st.open, 1);
-  assert.equal(s.submitEdit({ op: 'site.push', i: 0, j: 0, s: 1 }), true);
-  assert.equal(s.submitEdit({ op: 'site.push', i: 0, j: 0, s: 1 }), false, 'one push per PUSH_TICKS per sender');
-  let pushes = 1;
-  for (let k = 0; k < 200 && st.open === 1; k++) {
-    step(null, PUSH_TICKS);
-    if (s.submitEdit({ op: 'site.push', i: 0, j: 0, s: 1 })) pushes++;
-  }
-  assert.equal(st.open, 2, 'pushed through');
-  assert.equal(pushes, PUSH_RUN[1].len / PUSH_TICKS, 'solo: one lay tick per tick of pushing');
+  step(null, lengthOf(MACHINE_RUN) - 2);
+  assert.equal(st.open, 0, 'still laying');
+  step(null, 3);
+  assert.equal(st.open, 1, 'laid in 14 s');
 });
