@@ -181,6 +181,10 @@ function nearestPerson(p: THREE.Vector3) {
 }
 
 function detect(now: number) {
+  if (me.down && now >= me.downUntil) {
+    me.down = false;
+    immuneUntil = now + TUNE.immuneMs;
+  }
   if (ball.mine && me.holding) lastHeldByMe = now;
   const held = ball.held;
   const p = ball.pose.p;
@@ -224,17 +228,9 @@ function detect(now: number) {
 }
 
 // ---------------------------------------------------------------- face-plant
-let downUntil = 0,
-  immuneUntil = 0;
+let immuneUntil = 0;
 function checkFaceplant(now: number, speed: number) {
-  if (!me.body || !me.entered) return;
-  if (me.down) {
-    if (now >= downUntil) {
-      me.down = false;
-      immuneUntil = now + TUNE.immuneMs;
-    }
-    return;
-  }
+  if (!me.body || !me.entered || me.down) return;
   if (now < immuneUntil || speed < TUNE.faceplantSpeed || ball.held) return;
   if (now - lastHeldByMe < 700 || me.holding || me.charging) return; // your own throws never flop you
   const b = me.body.position;
@@ -242,12 +238,12 @@ function checkFaceplant(now: number, speed: number) {
   const d = head.distanceTo(ball.pose.p);
   if (d > PLAYER_R + BALL_R + 0.12 || ball.pose.p.y < b.y + HEAD_OFFSET * 0.4) return;
   me.down = true;
-  downUntil = now + TUNE.downMs;
+  me.downUntil = now + TUNE.downMs;
   me.holding = me.charging = false;
   shake = reducedMotion ? 0 : 1;
   boing(18, 0.35, true);
 }
-addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(downUntil - performance.now())) : null));
+addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(me.downUntil - performance.now())) : null));
 onRemotePresence((r, pr) => {
   const kd = pr.kd as number;
   // Temporary: tabs on builds before b0a3a7b never clear kd, so they repeat their last value forever. A live kd
@@ -359,7 +355,7 @@ onFrame(
     }
     applySquash();
 
-    if (me.avatar) flop(me.avatar, me.down, downUntil - now, dt, elapsed);
+    if (me.avatar) flop(me.avatar, me.down, me.downUntil - now, dt, elapsed);
     for (const r of remotes.values())
       if (r.avatar) flop(r.avatar, (r.kdUntil ?? 0) > now, (r.kdUntil ?? 0) - now, dt, elapsed);
 
