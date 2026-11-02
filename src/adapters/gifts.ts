@@ -3,7 +3,7 @@
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
-import { groundHeight, cellX, cellZ, cellOf } from './terrain.ts';
+import { groundHeight, cellX, cellZ, cellOf } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
 import { me, throwFrom } from '../player/player.ts';
 import { net } from '../netplay/net.ts';

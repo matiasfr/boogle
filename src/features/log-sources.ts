@@ -13,7 +13,7 @@ import { registerInteractable, NO_TARGETS, type Interactable } from '../player/h
 import { me } from '../player/player.ts';
 import { haulHooks } from '../player/haul-variant.ts';
 import { net } from '../netplay/net.ts';
-import { cellX, cellZ, groundHeight } from '../adapters/terrain.ts';
+import { cellX, cellZ, groundHeight } from '../island/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';
 import { FULL, type Cell } from '../sim/sources.ts';
 import { materialOf } from '../sim/materials.ts';

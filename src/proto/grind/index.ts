@@ -16,7 +16,7 @@ import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { FIXED, GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { angleLerp, clamp, smoothstep } from '../../math.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { me, cam } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';

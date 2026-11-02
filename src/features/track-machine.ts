@@ -10,7 +10,7 @@ import { attribute, positionLocal, uniform } from 'three/tsl';
 import { onFrame } from '../loop.ts';
 import { scene } from '../render/scene.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { ROUTE } from '../sim/route.ts';
 import { MACHINE_RUN } from '../sim/scripted-run.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';

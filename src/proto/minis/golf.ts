@@ -5,7 +5,7 @@
 import * as THREE from 'three/webgpu';
 import { createBody, addBody, teleport, material, type Shape } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
 import { ball, respawnBall, remoteHoldsBall } from '../../physics/ball.ts';
 import { me, cam } from '../../player/player.ts';

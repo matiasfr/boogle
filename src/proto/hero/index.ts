@@ -306,7 +306,7 @@ async function start() {
   const lineup = Number(q.get('lineup'));
   if (lineup > 0) {
     const { scene } = await import('../../render/scene.ts');
-    const { groundHeight } = await import('../../adapters/terrain.ts');
+    const { groundHeight } = await import('../../island/terrain.ts');
     const { SPAWN } = await import('../../constants.ts');
     const row: Avatar[] = [];
     for (let i = 0; i < 8; i++) {

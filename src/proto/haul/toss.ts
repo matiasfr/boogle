@@ -12,7 +12,7 @@ import { me, cam, throwFrom } from '../../player/player.ts';
 import { heldId } from '../../player/inventory.ts';
 import { describeControl } from '../../player/controls.ts';
 import { emptyHands } from '../../player/hands.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { rules } from '../../world/game-world.ts';
 import { ROUTE, TRACK, HELPER, ringAt } from '../../sim/route.ts';
 import { launchLog, myLogs } from './loose-logs.ts';

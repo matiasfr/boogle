@@ -3,7 +3,7 @@
 // BOOGLE_QUERY='proto=haul&v=magnet' npm run look -- --eval dev/look/evals/haul-magnet-sprint.js --cam 0,0,0 --warm 0.2 --seconds 2 --frames 12
 const H = await import('/dev/look/evals/haul-pilot.ts');
 const { submitEdit } = await import('/src/world/sync.ts');
-const { cellOf, cellX, cellZ, groundHeight } = await import('/src/adapters/terrain.ts');
+const { cellOf, cellX, cellZ, groundHeight } = await import('/src/island/terrain.ts');
 await H.fill(12);
 await new Promise((r) => setTimeout(r, 2500)); // the Take spills land first
 const [i, j] = cellOf(6, 2);

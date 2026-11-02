@@ -11,7 +11,7 @@ import {
   HEAD_OFFSET,
 } from '../constants.ts';
 import { clamp, lerp, finiteArr, r2, r3 } from '../math.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
 import { ballMat, teleport } from './physics.ts';
 import { createBody, addBody, setMotion } from './engine.ts';

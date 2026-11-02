@@ -72,7 +72,7 @@ export default {
       const { ball } = await import('/src/physics/ball.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       const { boogler } = await import('/src/boogler/boogler.ts');
-      const { groundHeight } = await import('/src/adapters/terrain.ts');
+      const { groundHeight } = await import('/src/island/terrain.ts');
       const p = window.boogle.me.body.position;
       if (!ball.mine) return { err: 'not mine' };
       // The Boogler wanders: if he is close, E would pick Talk over the ball. Step 8 m away from him first.

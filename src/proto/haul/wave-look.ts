@@ -6,7 +6,7 @@ import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { createBody, addBody, material } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 
 // The places, in world metres (+z is south, out to sea from the court's beach).
 export const BAR = { x: 3, z: 71, ax: 14, az: 5, top: 0.55 }; // an ellipse of dry sand

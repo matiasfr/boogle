@@ -2,7 +2,7 @@
 // mechanic (docs/plans/find-the-fun.md, "Greybox first, with a seam for depth"). Local space: -z forward, the wheel in
 // front, the handles behind; the origin is on the ground under the tray's middle.
 import * as THREE from 'three/webgpu';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 
 const wood = new THREE.MeshStandardNodeMaterial({ color: '#b98a55', roughness: 0.85, flatShading: true });
 const metal = new THREE.MeshStandardNodeMaterial({ color: '#d4573b', roughness: 0.6, metalness: 0.1 });

@@ -177,7 +177,7 @@ const RECORDER = String.raw`(() => {
 // Page-code snippets the takes share.
 const TP = (x: string | number, z: string | number) => `{
   const { teleport } = await import('/src/physics/physics.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, groundHeight(${x}, ${z}) + 0.6, ${z});
   b.velocity.set(0, 0, 0);

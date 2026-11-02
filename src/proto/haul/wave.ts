@@ -23,7 +23,7 @@ import { registerInteractable, NO_TARGETS, type Interactable } from '../../playe
 import { haulHooks } from '../../player/haul-variant.ts';
 import { onPreStep } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
-import { cellX, cellZ, groundHeight } from '../../adapters/terrain.ts';
+import { cellX, cellZ, groundHeight } from '../../island/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../../render/haul-pieces.ts';
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
