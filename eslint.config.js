@@ -125,6 +125,9 @@ const ENTITY_SERVICES = [
   'src/features/world.ts', // the lockstep tick driver
   'src/features/gamepad.ts', // gamepad polling
   'src/features/adaptive-res.ts', // adaptive resolution
+  'src/features/ball-rest.ts', // watches the ball and reports where it lies to the lockstep rule; owns nothing
+  'src/features/feel.ts', // the spring and flop layer over every avatar; owns no object
+  'src/features/impact.ts', // hit-stop, squash and flop over the ball's and avatars' meshes; owns no object
 ];
 
 export default [
