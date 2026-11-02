@@ -113,15 +113,15 @@ onFrame(
     let cx = 0,
       cz = 0;
     for (let k = 0; k < P.length; k++) {
-      cx += P[k].x / FISH.count;
-      cz += P[k].z / FISH.count;
+      cx += P[k]!.x / FISH.count;
+      cz += P[k]!.z / FISH.count;
     }
     for (let k = 0; k < P.length; k++) {
-      const f = P[k];
+      const f = P[k]!;
       let ax = (cx - f.x) * 0.15 + (Math.random() - 0.5) * 2,
         az = (cz - f.z) * 0.15 + (Math.random() - 0.5) * 2;
       for (let m = 0; m < P.length; m++) {
-        const o = P[m];
+        const o = P[m]!;
         if (o === f) continue;
         const dx = f.x - o.x,
           dz = f.z - o.z,
@@ -135,7 +135,7 @@ onFrame(
         }
       }
       for (let m = 0; m < scares.length; m++) {
-        const s = scares[m];
+        const s = scares[m]!;
         const dx = f.x - s.x,
           dz = f.z - s.z,
           d = Math.sqrt(dx * dx + dz * dz);
@@ -152,8 +152,8 @@ onFrame(
           bx = 0,
           bz = 0;
         for (let m = 0; m < PROBES.length; m++) {
-          const px = PROBES[m][0],
-            pz = PROBES[m][1];
+          const px = PROBES[m]![0]!,
+            pz = PROBES[m]![1]!;
           const d = depthAt(f.x + px, f.z + pz);
           if (d > best) {
             best = d;
@@ -182,7 +182,7 @@ onFrame(
     }
     pool.begin();
     for (let k = 0; k < FISH.count; k++) {
-      const f = P[k],
+      const f = P[k]!,
         h = Math.atan2(f.vx, f.vz) / 2;
       pool.push(f.x, f.y, f.z, 0, Math.sin(h), 0, Math.cos(h), 1, 1, 1);
     }

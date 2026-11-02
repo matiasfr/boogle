@@ -112,7 +112,7 @@ export function chordSound(notes: number[], vol: number) {
   }
   // A little glitter on top: high chimes from the same notes.
   for (let k = 0; k < 6; k++) {
-    const f = freqs[k % freqs.length] * (k % 2 ? 4 : 2);
+    const f = freqs[k % freqs.length]! * (k % 2 ? 4 : 2);
     const t0 = t + 0.04 + k * 0.06;
     const o = ctx.createOscillator();
     o.type = 'sine';
@@ -226,7 +226,7 @@ function sparkleOver(avatar: THREE.Object3D | null | undefined) {
 
 function update(dt: number) {
   for (let k = notes.length - 1; k >= 0; k--) {
-    const n = notes[k];
+    const n = notes[k]!;
     n.age += dt;
     const f = n.age / TUNE.noteLife;
     if (f >= 1 || !n.avatar.parent) {
@@ -243,7 +243,7 @@ function update(dt: number) {
     n.sprite.material.opacity = f > 0.65 ? 1 - (f - 0.65) / 0.35 : 1;
   }
   for (let k = sparks.length - 1; k >= 0; k--) {
-    const p = sparks[k];
+    const p = sparks[k]!;
     p.age += dt;
     if (p.age >= p.life) {
       scene.remove(p.sprite);

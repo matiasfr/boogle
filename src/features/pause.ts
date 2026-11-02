@@ -74,7 +74,7 @@ function people() {
 function personRow(p: Person) {
   const li = el('li', 'pause-person');
   const dot = el('span', 'pause-dot');
-  dot.style.background = COLORS[p.colorIdx] ?? COLORS[0];
+  dot.style.background = COLORS[p.colorIdx] ?? COLORS[0]!;
   li.append(dot, el('span', 'pause-name', p.name));
   if (p.you) li.append(el('span', 'pause-you', 'you'));
   return li;
@@ -226,7 +226,7 @@ function setCtx(id: string) {
 function cycleCtx(dir: number) {
   if (page !== 'controls' || tab !== 'pad' || padView !== 'diagram') return;
   const ids = padContexts().map(([id]) => id);
-  setCtx(ids[(ids.indexOf(padCtx) + dir + ids.length) % ids.length]);
+  setCtx(ids[(ids.indexOf(padCtx) + dir + ids.length) % ids.length]!);
 }
 function rerender(focus: string) {
   const fresh = renderControls();
@@ -303,12 +303,12 @@ function move(dir: number) {
   const list = stops();
   if (!list.length) return;
   const k = list.indexOf(document.activeElement as HTMLElement);
-  list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length].focus({ preventScroll: true });
+  list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length]!.focus({ preventScroll: true });
 }
 function moveTab(dir: number) {
   if (page !== 'controls') return;
   const k = TABS.findIndex(([kind]) => kind === tab);
-  setTab(TABS[(k + dir + TABS.length) % TABS.length][0]);
+  setTab(TABS[(k + dir + TABS.length) % TABS.length]![0]);
 }
 
 function onKey(e: KeyboardEvent) {

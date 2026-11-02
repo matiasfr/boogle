@@ -34,7 +34,7 @@ addWelcomeItem({
     const names: string[] = [];
     roster.pids.forEach((pid, k) => {
       if (pid === identity.pid) return;
-      if (!(pid in was) || rules.sites.points(pid) > was[pid]) names.push(rules.roster.nameOf(k) || 'Someone');
+      if (!(pid in was) || rules.sites.points(pid) > was[pid]!) names.push(rules.roster.nameOf(k) || 'Someone');
     });
     if (!names.length) return null;
     return `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here`;

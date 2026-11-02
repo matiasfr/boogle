@@ -70,7 +70,7 @@ onFrame(
     flies.visible = shown > 0.01 && F.length > 0;
     if (!flies.visible) return;
     for (let k = 0; k < F.length; k++) {
-      const f = F[k];
+      const f = F[k]!;
       const t = elapsed * f.sp + f.ph;
       const x = f.x + Math.sin(t * 0.7) * 1.2 + Math.sin(t * 1.9) * 0.3,
         z = f.z + Math.cos(t * 0.6) * 1.2 + Math.cos(t * 2.3) * 0.3;

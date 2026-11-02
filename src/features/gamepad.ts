@@ -99,8 +99,8 @@ function dpadAxes(pad: Gamepad, down: boolean[]) {
     const v = a[hat.axis] ?? 9;
     if (Math.abs(v) <= 1.01) {
       const k = Math.round(((v + 1) * 7) / 2) % 8; // 0 up, 1 up-right, 2 right ... 7 up-left
-      x = [0, 1, 1, 1, 0, -1, -1, -1][k];
-      y = [-1, -1, 0, 1, 1, 1, 0, -1][k];
+      x = [0, 1, 1, 1, 0, -1, -1, -1][k]!;
+      y = [-1, -1, 0, 1, 1, 1, 0, -1][k]!;
     }
   } else {
     x = a[6] ?? 0;
@@ -139,7 +139,7 @@ function setActive(on: boolean) {
 
 function releaseAll() {
   for (let i = 0; i < PAD.length; i++) {
-    if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
+    if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i]!)?.up?.();
     pressed[i] = grabbed[i] = false;
   }
 }
@@ -205,11 +205,11 @@ function poll(dt: number) {
   // A modal moves focus between its own buttons, so it skips claimFocus. Held actions get their release on entry.
   const modal = padModal();
   if (modal) {
-    if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i])?.up?.();
+    if (!modalOn) for (let i = 0; i < PAD.length; i++) if (pressed[i] && !grabbed[i]) actionForSlot(PAD[i]!)?.up?.();
     modalOn = true;
     input.stickX = input.stickY = input.triggerL = input.triggerR = 0;
     for (let i = 0; i < PAD.length; i++) {
-      if (down[i] && !pressed[i]) modal(PAD[i]);
+      if (down[i] && !pressed[i]) modal(PAD[i]!);
       pressed[i] = down[i];
       grabbed[i] = true; // its release belongs to the modal too
     }
@@ -217,7 +217,7 @@ function poll(dt: number) {
   }
   modalOn = false;
   const grab = padGrab();
-  const takes = (i: number) => !!grab?.slots.includes(PAD[i]);
+  const takes = (i: number) => !!grab?.slots.includes(PAD[i]!);
   for (let i = 0; i < PAD.length; i++)
     if (down[i] && !pressed[i] && !takes(i)) {
       claimFocus(); // a grab moves focus between its own buttons
@@ -248,7 +248,7 @@ function poll(dt: number) {
   cam.pitch = clamp(cam.pitch - ry * Math.abs(ry) * LOOK_PITCH * dt, -1.25, 0.9);
 
   for (let i = 0; i < PAD.length; i++) {
-    const action = actionForSlot(PAD[i]);
+    const action = actionForSlot(PAD[i]!);
     if (down[i] && !pressed[i] && PAD[i] === menuSlot('back') && typingIn() && !takes(i)) {
       (document.activeElement as HTMLElement).blur(); // back out of the text field; the game keeps the press
       claimFocus();
@@ -257,7 +257,7 @@ function poll(dt: number) {
       const picked = picks && (i === UP || i === DOWN); // pick() above sent it
       grabbed[i] = picked || takes(i);
       if (!grabbed[i]) action?.down?.();
-      else if (!picked) grab!.fn(PAD[i]);
+      else if (!picked) grab!.fn(PAD[i]!);
     } else if (!down[i] && pressed[i] && !grabbed[i]) action?.up?.();
     if (down[i] && !grabbed[i]) action?.held?.(dt);
     pressed[i] = down[i];

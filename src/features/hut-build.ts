@@ -171,7 +171,7 @@ function puff(v: View, p: Piece, n = 8, wide = 1): void {
 // phrase with a chord. At most VOICES per site per 0.3 s.
 const PENTA = [0, 2, 4, 7, 9]; // semitones
 const ROOT = 196; // Hz (G3)
-const noteHz = (step: number) => ROOT * 2 ** ((PENTA[step % 5] + 12 * Math.floor(step / 5)) / 12);
+const noteHz = (step: number) => ROOT * 2 ** ((PENTA[step % 5]! + 12 * Math.floor(step / 5)) / 12);
 let noise: AudioBuffer | null = null;
 function knock(ctx: AudioContext, out: AudioNode, t: number, hz: number, vol: number, len: number) {
   const o = ctx.createOscillator();
@@ -230,16 +230,16 @@ function thump(v: View, p: Piece, sec: number, note = -1, chord = false): void {
 // Plays a piece's landing: dust, a thump on the phase's next note, and the phase's chord if it completes one.
 function land(v: View, p: Piece, k: number, sec: number): void {
   v.landed[k] = 1;
-  const ph = phaseIx[k];
+  const ph = phaseIx[k]!;
   const beat = lastOfPhase[k];
   puff(v, p, beat ? 18 : 8, beat ? 1.8 : 1);
-  thump(v, p, sec, v.notes[ph]++, beat);
+  thump(v, p, sec, v.notes[ph]!++, beat);
 }
 
 // ---------------------------------------------------------------- stage
 // Moves site s's pieces toward the stage its Helper ring has reached.
 function step(v: View, s: number, sec: number): void {
-  const site = rules.sites.sites.list[s];
+  const site = rules.sites.sites.list[s]!;
   const built = site.helpers > 0;
   const f = buildFraction(site.stock[HELPER], rules.sites.cost(s, HELPER), built);
   const snap = !v.seen;
@@ -267,7 +267,7 @@ function step(v: View, s: number, sec: number): void {
         if (st === QUEUED) v.queue.splice(v.queue.indexOf(k), 1);
       }
     }
-    if (v.state[k] === UP && sec - v.t[k] < DONE) busy = true;
+    if (v.state[k] === UP && sec - v.t[k]! < DONE) busy = true;
   });
   // Send the next piece in line up; a longer queue goes a little faster, and a new phase waits a beat.
   if (v.queue.length && sec >= v.next) {
@@ -276,8 +276,8 @@ function step(v: View, s: number, sec: number): void {
     v.t[k] = sec;
     v.landed[k] = 0;
     const gap = Math.max(MIN_GAP, GAP - CATCH_UP * v.queue.length);
-    const nextPhase = v.queue.length && phaseIx[v.queue[0]] !== phaseIx[k];
-    v.next = sec + (HUT_BUILD[k].kind === 'scaffold' ? gap * 0.5 : gap) + (nextPhase ? PHASE_PAUSE : 0);
+    const nextPhase = v.queue.length && phaseIx[v.queue[0]!] !== phaseIx[k];
+    v.next = sec + (HUT_BUILD[k]!.kind === 'scaffold' ? gap * 0.5 : gap) + (nextPhase ? PHASE_PAUSE : 0);
   }
   // Built and every piece in: the scaffold falls, one piece after another.
   if (built && !busy) {
@@ -329,7 +329,7 @@ function letGo(v: View, p: Piece): Body {
 function place(v: View, p: Piece, k: number, sec: number): boolean {
   const st = v.state[k];
   if (st === GONE || st === QUEUED) return false;
-  const t = sec - v.t[k];
+  const t = sec - v.t[k]!;
   let dx = 0,
     dy = 0,
     dz = 0,

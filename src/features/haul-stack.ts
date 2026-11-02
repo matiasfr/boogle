@@ -40,7 +40,7 @@ const slots: [number, number][] = (() => {
   return pts.sort((p, r) => score(p) - score(r) || p[0] - r[0]).slice(0, SHOWN);
 })();
 // The bundle's extent with k pieces: [top, depth] of the slot centres, for the rope bands.
-const extents = slots.map((_, k) => [
+const extents = slots.map((_, k): [number, number] => [
   Math.max(...slots.slice(0, k + 1).map((s) => s[0])),
   Math.max(...slots.slice(0, k + 1).map((s) => s[1])),
 ]);
@@ -84,7 +84,7 @@ export const setBackBundleHidden = (pid: string, hidden: boolean): void =>
 const frameOf = (a: THREE.Object3D): THREE.Object3D => (a.userData as { inner?: THREE.Object3D }).inner ?? a;
 // Slot m in the frame's space, its log end a little ragged.
 const slotAt = (m: number, out: THREE.Vector3): THREE.Vector3 =>
-  out.set((((m * 37) % 7) - 3) * 0.012, FLOOR + R + slots[m][0], BACK + R + slots[m][1]);
+  out.set((((m * 37) % 7) - 3) * 0.012, FLOOR + R + slots[m]![0], BACK + R + slots[m]![1]);
 function pieceAt(f: THREE.Object3D, m: number, len: number, out: THREE.Matrix4): THREE.Matrix4 {
   q.setFromEuler(e.set(0, (((m * 13) % 5) - 2) * 0.03, (((m * 7) % 5) - 2) * 0.02));
   sc.set(len * (1 + (((m * 11) % 5) - 2) * 0.03), RS, RS);
@@ -92,7 +92,7 @@ function pieceAt(f: THREE.Object3D, m: number, len: number, out: THREE.Matrix4):
 }
 // The two rope bands round k pieces: an ellipse a little outside the bundle's cross-section.
 function bandAt(f: THREE.Object3D, k: number, len: number, side: number, out: THREE.Matrix4): THREE.Matrix4 {
-  const [y1, z1] = extents[k - 1];
+  const [y1, z1] = extents[k - 1]!;
   v.set(side * 0.28 * PIECE.len * len, FLOOR + R + y1 / 2, BACK + R + z1 / 2);
   sc.set(1, y1 / 2 + R * 1.05, z1 / 2 + R * 1.05);
   return out.compose(v, q.identity(), sc).premultiply(f.matrixWorld);
@@ -151,7 +151,7 @@ onFrame(
     }
     // fly-ins: a short hop from the pile to the top of your bundle
     for (let f = flights.length - 1; f >= 0; f--) {
-      const fl = flights[f];
+      const fl = flights[f]!;
       const u = (now - fl.t0) / haulFeel.flyMs;
       if (u >= 1 || !me.avatar || (identity.pid && elsewhere.has(identity.pid))) {
         flights.splice(f, 1);
@@ -204,8 +204,8 @@ function tickChip(host: Stack, now: number): void {
   const key = `${shown.n}/${mine.k}`;
   if (key === shown.key) return;
   shown.key = key;
-  chipN.textContent = shown.n ? String(shown.n) : '';
-  chipWhat.textContent = shown.n ? MATERIALS[Math.max(0, mine.k)] : '';
+  chipN!.textContent = shown.n ? String(shown.n) : '';
+  chipWhat!.textContent = shown.n ? (MATERIALS[Math.max(0, mine.k)] ?? '') : '';
   chip.classList.toggle('on', !!shown.n);
   chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
 }

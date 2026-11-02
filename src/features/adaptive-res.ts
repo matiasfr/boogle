@@ -48,7 +48,7 @@ function apply(r: number) {
 function measureCadence() {
   sorted.set(ring);
   sorted.subarray(0, filled).sort();
-  cadence = Math.min(50, Math.max(4, sorted[Math.floor(filled * 0.1)]));
+  cadence = Math.min(50, Math.max(4, sorted[Math.floor(filled * 0.1)]!));
 }
 
 if (!FIXED_DPR)

@@ -128,7 +128,7 @@ const RUN2 = GULLS.scareRun * GULLS.scareRun,
   BALL2 = GULLS.scareBall * GULLS.scareBall;
 function scaredBy(g: Gull, ballLanding: boolean, bp: THREE.Vector3) {
   for (let k = 0; k < threatCount; k++) {
-    const t = th[k];
+    const t = th[k]!;
     const dx = t.p.x - g.x,
       dz = t.p.z - g.z;
     if (t.run && dx * dx + dz * dz < RUN2) return true;
@@ -160,7 +160,7 @@ onFrame(
     bodyPool.begin();
     wingPool.begin();
     for (let k = 0; k < G.length; k++) {
-      const g = G[k];
+      const g = G[k]!;
       g.t -= dt;
       if (g.state === 'idle') {
         if (scaredBy(g, ballLanding, bp)) {

@@ -152,8 +152,8 @@ function applySquash() {
   const e = tmpM.elements;
   for (let c = 0; c < 3; c++) {
     const o = c * 4;
-    const d = ax.x * e[o] + ax.y * e[o + 1] + ax.z * e[o + 2];
-    for (let r = 0; r < 3; r++) e[o + r] = sp * e[o + r] + (sa - sp) * d * ax.getComponent(r);
+    const d = ax.x * e[o]! + ax.y * e[o + 1]! + ax.z * e[o + 2]!;
+    for (let r = 0; r < 3; r++) e[o + r] = sp * e[o + r]! + (sa - sp) * d * ax.getComponent(r);
   }
   tmpM.setPosition(m.position);
   m.matrix.copy(tmpM);

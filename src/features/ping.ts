@@ -108,7 +108,7 @@ const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boolean) {
   const old = pings.get(from);
   if (old) removePing(from, old);
-  const color = COLORS[colorIdx] ?? COLORS[0];
+  const color = COLORS[colorIdx] ?? COLORS[0]!;
   const el = document.createElement('div');
   el.className = 'ping';
   el.style.setProperty('--c', color);

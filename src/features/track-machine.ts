@@ -37,8 +37,8 @@ const M = { hx: 0.8, hz: 1.5, hy: 0.15, lift: 0.5, front: -0.55 };
 
 // ---------------------------------------------------------------- the railway
 const LINES = ROUTE.map((sec) => {
-  const dx = sec.to[0] - sec.x,
-    dz = sec.to[1] - sec.z;
+  const dx = sec.to[0]! - sec.x,
+    dz = sec.to[1]! - sec.z;
   const len = Math.hypot(dx, dz);
   return { len, yaw: Math.atan2(dx, dz), fx: dx / len, fz: dz / len, n: Math.floor(len / TUNE.step) };
 });
@@ -60,8 +60,8 @@ const m4 = new THREE.Matrix4(),
   sleeperScale = new THREE.Vector3(2.2, 0.8, 1.4);
 // A point d metres along section s (past either end: straight on), on the ground.
 function along(s: number, d: number, out = at): THREE.Vector3 {
-  const a = ROUTE[s],
-    l = LINES[s];
+  const a = ROUTE[s]!,
+    l = LINES[s]!;
   const x = a.x + l.fx * d,
     z = a.z + l.fz * d;
   return out.set(x, groundHeight(x, z), z);
@@ -96,28 +96,28 @@ function drawRailway(tick: number, now: number, live: boolean): void {
   let c = 0,
     r = 0;
   for (let s = 0; s < ROUTE.length; s++) {
-    const { len, yaw, n } = LINES[s];
-    const d = Math.min(len, laidWas[s]);
+    const { len, yaw, n } = LINES[s]!;
+    const d = Math.min(len, laidWas[s]!);
     const shown = Math.max(0, Math.min(n, Math.floor(d / TUNE.step + 0.5)));
-    const drops = dropAt[s];
+    const drops = dropAt[s]!;
     // new sleepers: a few at once are the machine laying them (animate); many are a load or a late join (just there)
     const fresh = shown - drops.length;
     for (let k = drops.length; k < shown; k++) {
       drops.push(live && fresh <= 3 ? now : 0);
-      landed[s].push(!(live && fresh <= 3));
+      landed[s]!.push(!(live && fresh <= 3));
       if (live && fresh <= 3) settled = now + SETTLE_MS;
     }
-    if (drops.length > shown) drops.length = landed[s].length = shown;
+    if (drops.length > shown) drops.length = landed[s]!.length = shown;
     for (let k = 0; k < shown; k++) {
       along(s, (k + 0.5) * TUNE.step);
-      const t = drops[k] ? (now - drops[k]) / 1000 : 1;
+      const t = drops[k] ? (now - drops[k]!) / 1000 : 1;
       let tilt = 0;
       if (t < TUNE.fall) {
         const f = t / TUNE.fall;
         at.y += TUNE.drop * (1 - f * f);
         tilt = (1 - f) * 0.5;
-      } else if (!landed[s][k]) {
-        landed[s][k] = true;
+      } else if (!landed[s]![k]) {
+        landed[s]![k] = true;
         land(s, k);
       } else if (t < TUNE.fall + 0.15) at.y += Math.sin(((t - TUNE.fall) / 0.15) * Math.PI) * 0.04; // a little bounce
       at.y += 0.06;
@@ -128,7 +128,7 @@ function drawRailway(tick: number, now: number, live: boolean): void {
     // rails reach the last landed sleeper
     let railTo = 0;
     for (let k = shown - 1; k >= 0; k--)
-      if (landed[s][k]) {
+      if (landed[s]![k]) {
         railTo = (k + 1) * TUNE.step;
         break;
       }
@@ -137,7 +137,7 @@ function drawRailway(tick: number, now: number, live: boolean): void {
     q.setFromEuler(e3.set(0, yaw, 0));
     railScale.set(1, 1, railTo);
     for (let k = 0; k < 2; k++) {
-      const off = RAIL_OFF[k];
+      const off = RAIL_OFF[k]!;
       along(s, railTo / 2);
       at.set(at.x + Math.cos(yaw) * off, at.y + 0.16, at.z - Math.sin(yaw) * off);
       rails.setMatrixAt(r++, m4.compose(at, q, railScale));
@@ -159,7 +159,7 @@ function land(s: number, k: number): void {
   const p = along(s, (k + 0.5) * TUNE.step);
   thump(p.x, p.z);
   st.squash = 1;
-  const { fx, fz } = LINES[s];
+  const { fx, fz } = LINES[s]!;
   for (let j = 0; j < 14; j++) {
     const a = (j / 14) * Math.PI * 2 + Math.random() * 0.3;
     const sp = 1.2 + Math.random() * 1.4;
@@ -228,7 +228,7 @@ function part(geo: THREE.BufferGeometry, f: Finish, x: number, y: number, z: num
     g.computeVertexNormals(); // non-indexed: face normals, the flat-shaded look
   }
   addPart(parts, g, m4.makeRotationX(rx).setPosition(x, y, z), f.color);
-  extras.push({ n: parts[parts.length - 1].attributes.position.count, f, x, y, z, gain });
+  extras.push({ n: parts[parts.length - 1]!.attributes.position!.count, f, x, y, z, gain });
 }
 part(new THREE.BoxGeometry(M.hx * 2, M.hy * 2, M.hz * 2), WOOD, 0, 0, 0); // deck
 part(new THREE.CylinderGeometry(0.45, 0.45, 1.3, 14).rotateX(Math.PI / 2), PAINT, 0, 0.6, -0.75, 0, [0.03, 0.03, 0]); // boiler
@@ -240,7 +240,7 @@ for (const x of [-0.6, 0.6]) part(new THREE.BoxGeometry(0.06, 0.3, 0.16), IRON, 
 part(new THREE.BoxGeometry(1.2, 0.05, 0.6), WOOD, 0, -0.05, M.hz + 0.22, 0.5); // the sleeper chute, in front
 const bodyGeo = mergeParts(parts);
 {
-  const total = bodyGeo.attributes.position.count;
+  const total = bodyGeo.attributes.position!.count;
   const rm = new Float32Array(total * 2),
     pivot = new Float32Array(total * 3),
     gain = new Float32Array(total * 3);
@@ -278,7 +278,7 @@ look.add(wheels);
 const ONE = new THREE.Vector3(1, 1, 1);
 function spinWheels(): void {
   q.setFromEuler(e3.set(st.spin, 0, 0));
-  for (let k = 0; k < WHEELS.length; k++) wheels.setMatrixAt(k, m4.compose(WHEELS[k], q, ONE));
+  for (let k = 0; k < WHEELS.length; k++) wheels.setMatrixAt(k, m4.compose(WHEELS[k]!, q, ONE));
   wheels.instanceMatrix.needsUpdate = true;
 }
 spinWheels();
@@ -312,9 +312,9 @@ function clearOfWagon(s: number, at: number): number {
   // src/proto/wagon/: car 0 is the loco, at the train's outbound end (looked for twice a second until it turns up)
   if (!loco && lookups++ % 30 === 0) loco = platformById('wagon:car0');
   if (!loco || loco.body.position.y < -20) return at; // no wagon, or none on the line yet (parked under the island)
-  const { fx, fz } = LINES[s];
-  const rx = loco.body.position.x - ROUTE[s].x,
-    rz = loco.body.position.z - ROUTE[s].z;
+  const { fx, fz } = LINES[s]!;
+  const rx = loco.body.position.x - ROUTE[s]!.x,
+    rz = loco.body.position.z - ROUTE[s]!.z;
   if (Math.abs(rx * fz - rz * fx) > 4) return at; // off this line
   const nose = rx * fx + rz * fz + loco.hz + 0.2; // its buffer beam
   goal.sunk = nose > 6.5; // a faked laid count runs it on over the open section: sink where the nose passed us
@@ -323,19 +323,19 @@ function clearOfWagon(s: number, at: number): number {
 const goal = { s: 0, d: 0, at: START, x: 0, y: 0, z: 0, yaw: 0, running: false, name: '', gone: false, sunk: false };
 function laidAt(s: number, tick: number): number {
   const x = sites.list[s];
-  if (rules.sites.isDone(s)) return LINES[s].len;
+  if (rules.sites.isDone(s)) return LINES[s]!.len;
   if (!x || x.t0 < 0) return 0;
   const r = rules.sites.run(s, Math.floor(tick));
   if (r.name === 'warm' || r.phase < 0) return 0;
-  if (r.name !== 'lay') return LINES[s].len;
-  return LINES[s].len * Math.min(1, Math.max(0, (tick - x.t0 - MACHINE_RUN[0].len) / MACHINE_RUN[1].len));
+  if (r.name !== 'lay') return LINES[s]!.len;
+  return LINES[s]!.len * Math.min(1, Math.max(0, (tick - x.t0 - MACHINE_RUN[0]!.len) / MACHINE_RUN[1]!.len));
 }
 function aim(tick: number): void {
   const open = sites.open;
   const s = Math.min(open, ROUTE.length - 1);
   goal.s = s;
-  goal.d = open >= ROUTE.length ? LINES[s].len : laidAt(s, tick);
-  goal.running = open < ROUTE.length && sites.list[open].t0 >= 0;
+  goal.d = open >= ROUTE.length ? LINES[s]!.len : laidAt(s, tick);
+  goal.running = open < ROUTE.length && sites.list[open]!.t0 >= 0;
   const r = goal.running ? rules.sites.run(open, Math.floor(tick)) : null;
   goal.name = r?.name ?? '';
   goal.gone = open >= ROUTE.length;
@@ -346,7 +346,7 @@ function aim(tick: number): void {
   goal.x = c.x;
   goal.z = c.z;
   goal.y = c.y + M.lift - (goal.gone || goal.sunk ? 4 : 0);
-  goal.yaw = LINES[s].yaw;
+  goal.yaw = LINES[s]!.yaw;
 }
 
 // The drawn pose chases the goal; the body follows the drawn pose (a kinematic platform, so riders are carried).
@@ -489,7 +489,7 @@ onFrame(
     }
 
     // the sleepers waiting by the chute: fewer as the section fills
-    const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s].len)) : 4;
+    const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s]!.len)) : 4;
     if (left !== loadShown) commitPieces(load, (loadShown = left));
   },
   { phase: 'update', order: 35 },
