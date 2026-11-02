@@ -116,6 +116,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 ### Progress and rewards
 
 - **2026-11-01, resource management stays light, never survival-craft** (owner). The hotbar stays for now, though he isn't sure about it; it may shrink to the few things that need it.
+- **2026-11-02, harvesting has an action, and the magnet starts sooner** (owner: "we need some kind of action"; the animation "should be quick to do and satisfying"; "there's a delay before the magnetism happens on the resources. Maybe we can have that start sooner once you've pressed X on the resource"). A short swing plays the moment you press, and the pull follows straight after it. Goes into the harvest prototype, with [harvest-feel.md](../research/harvest-feel.md) once it lands.
 - **2026-11-01, resources will be harvested, not picked up** (direction, not built): wood comes from chopping trees and the like; what falls to the ground is collected with the magnet, perhaps differently per resource.
 - **2026-11-01, the back bundle stays the way to haul** ("Default is quite good"). The magnet he loved moves to pickups elsewhere, later, and pulls without a button.
 - **2026-11-01, double jump and glide are unlocks, not starting moves** ("abilities that should be unlocked later in the game"), for platforming and a sense of expanded movement.
