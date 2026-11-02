@@ -45,7 +45,7 @@ Designed 1 November, after the owner's first round: testing went page → Play (
 switch variant (another reload) → back to the page to copy notes. Research recs 5–7, 9 and 10.
 
 1. **One link.** `/?play` opens the island in its own room (`proto-play`) with every prototype that fits on it at once
-   (`ISLAND`, `src/proto/flags.ts`: haul, wagon, lay, soapbox, build, minis, assets, moves), each at its own spot;
+   (`ISLAND`, `src/proto/flags.ts`: haul, wagon, lay, soapbox, minis, assets, moves), each at its own spot;
    returning players skip the lobby (`src/player/arrival.ts`), and the Home Screen app reopens it.
 2. **Chapters.** A card that reshapes the world or clashes with a toy (era, look, layout, uisfx, board with its own
    wagon, ride whose flatbed crosses the minis) says why in `chapter`; the playlist opens its own address with
