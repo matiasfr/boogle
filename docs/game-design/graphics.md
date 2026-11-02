@@ -2,7 +2,7 @@
 
 - **What.** The island draws with WebGPU only: Chrome and Edge, Safari 26 on iPhone, iPad and Mac, Firefox on
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
-  (key art, the title and a progress bar: download, graphics device, shaders) paints before the game's code arrives and
+  (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
   covers the lobby until the graphics device is up and every shader is built (8 s at most), so Jump in is the moment
   nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../../src/boot/)). `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),

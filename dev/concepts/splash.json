@@ -1,10 +1,10 @@
 {
-  "style": "Title screen key art for Boogle, a goofy low-poly multiplayer island game. Stay honest to how the game looks today (the reference image is a screenshot): flat-shaded low-poly terrain, bright green grass hills, warm tan sand, chunky low-poly palm trees with curved trunks, grey-brown boulders, a red-and-white striped lighthouse with a spiral stair on the hill, a pale lavender-blue sky. The players are smooth, glossy capsule shapes (tall rounded pills) in single solid colours (blue, orange, green, pink, yellow) with no faces, no arms, no legs and no clothes. The Boogler is a low, flat, squashed purple blob like a puddle of jelly with a tall black top hat on top, no face. The beach ball is white with red and blue panels. Only lightly stylized: a little more painterly light, richer colour and a soft vignette than the screenshot, but the same shapes. Composition: the beach ball big and mid-bounce in the foreground with a puff of sand, two or three capsule players hopping after it, The Boogler nearby, the lighthouse hill behind. The upper third is open calm sky with nothing in it, the bottom fifth is plain calm sand with nothing on it, and the subject stays near the horizontal centre so a tall phone crop still works. 16:9.",
-  "refs": ["dev/concepts/refs/game-beach.jpg"],
+  "style": "Title screen key art for Boogle, a cosy multiplayer island game. Image 1 is the approved picture: keep it exactly, the same camera, the same island shape and layout, the striped lighthouse on its hill, the three windmills on the ridge, the cave massif at the right end, the sand beaches and turquoise shallows, the sunset sky, the low sun at the left and its reflection on the deep blue faceted sea. Same rendered light and colour. Add only one thing: a train. Image 2 shows the train to use: a little toy-like steam locomotive with a red cab, a brass boiler and a black funnel, pulling two wooden flatbeds, the rear one loaded with crates, on a timber-sleeper railway. Draw the train larger than true scale so it reads clearly at a glance, with a bright cream plume of round steam puffs rising from the funnel. A single thin railway line loops around the island. Keep the upper third open sky and the bottom fifth open calm sea with nothing in them. No characters. 16:9. No text, no letters, no logos, no UI.",
+  "refs": [".look/concepts/splash/island-vista.png", ".look/previz/wagon-ride/shot-1.png"],
   "items": [
     {
-      "id": "honest-golden",
-      "prompt": "Warm late-afternoon golden light, long soft shadows on the sand, the lighthouse catching the sun. No text, no letters, no logos, no UI."
+      "id": "train-bridge",
+      "prompt": "The train crosses a low timber trestle bridge over the turquoise bay at the front centre of the island, from one beach to the next, with its reflection in the shallow water."
     }
   ]
 }

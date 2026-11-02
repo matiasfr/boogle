@@ -1,6 +1,7 @@
-// The loading screen: key art, the title and a progress bar, from the first paint until the island can be drawn
-// (shaders compiled, one frame out). The page's entry (./index.ts) shows it before it starts downloading the game.
-// Local only.
+// The loading screen: key art, the title, a progress bar and a turning gear, from the first paint until the island can
+// be drawn (shaders compiled, one frame out). The page's entry (./index.ts) shows it before it starts downloading the
+// game. Local only. The gear is a CSS transform, which the compositor runs, so it keeps turning while the bar waits on
+// a busy main thread.
 //
 //   splashStage(from, to, label)   a new step: the bar jumps to `from` and creeps toward `to` until the next call
 //   splashProgress(f)              how far through the current step (0..1), when a step can tell
@@ -25,7 +26,13 @@ root.innerHTML = `
   <img class="splash-art" alt="" decoding="async" />
   <div class="splash-title">B<span class="o">oo</span>gle</div>
   <div class="splash-foot">
-    <div class="splash-bar"><div class="splash-fill"></div></div>
+    <div class="splash-progress">
+      <svg class="splash-gear" viewBox="-25 -25 50 50" aria-hidden="true">
+        <path d="M15.0 -4.0L21.2 -3.7L21.2 3.7L15.0 4.0L13.4 7.7L17.6 12.3L12.3 17.6L7.8 13.4L4.0 15.0L3.7 21.2L-3.7 21.2L-4.0 15.0L-7.7 13.4L-12.3 17.6L-17.6 12.3L-13.4 7.7L-15.0 4.0L-21.2 3.7L-21.2 -3.7L-15.0 -4.0L-13.4 -7.8L-17.6 -12.3L-12.3 -17.6L-7.8 -13.4L-4.0 -15.0L-3.7 -21.2L3.7 -21.2L4.0 -15.0L7.8 -13.4L12.3 -17.6L17.6 -12.3L13.4 -7.8Z" />
+        <circle r="5.5" />
+      </svg>
+      <div class="splash-bar"><div class="splash-fill"></div></div>
+    </div>
     <div class="splash-label"></div>
   </div>`;
 const img = root.querySelector<HTMLImageElement>('.splash-art')!;
