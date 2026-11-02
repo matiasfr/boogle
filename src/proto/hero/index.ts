@@ -170,7 +170,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     const duty = dutyOf(v),
       t = clamp((v - 5.6) / 3.9, 0, 1),
       walking = clamp(v / 1.5, 0, 1);
-    const lift = (STRIDE.lift[0] + (STRIDE.lift[1] - STRIDE.lift[0]) * t) * walking;
+    const lift = (STRIDE.lift[0]! + (STRIDE.lift[1]! - STRIDE.lift[0]!) * t) * walking;
     const L = leg(p.phase, stride, duty, lift),
       R = leg((p.phase + 0.5) % 1, stride, duty, lift);
     const k = walking; // at rest the legs settle straight
@@ -191,11 +191,11 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     Object.assign(z, { arm_l: 6 + 10 * m, arm_r: 6 + 10 * m });
     // Bob, squash and roll locked to the footfalls: lowest and squashed as a foot lands, up and stretched between.
     const c = (1 + Math.cos(4 * Math.PI * p.phase)) / 2; // 1 at each footfall
-    const bob = (STRIDE.bob[0] + (STRIDE.bob[1] - STRIDE.bob[0]) * t) * walking;
+    const bob = (STRIDE.bob[0]! + (STRIDE.bob[1]! - STRIDE.bob[0]!) * t) * walking;
     inner.position.y = bob * (1 - c);
     const sy = 1 - STRIDE.squash * c * walking + 0.03 * (1 - c) * walking;
     inner.scale.set(1 / Math.sqrt(sy), sy, 1 / Math.sqrt(sy));
-    z.body = -(STRIDE.roll[0] + (STRIDE.roll[1] - STRIDE.roll[0]) * t) * walking * s;
+    z.body = -(STRIDE.roll[0]! + (STRIDE.roll[1]! - STRIDE.roll[0]!) * t) * walking * s;
     if (v < 0.3) {
       const sway = Math.sin(performance.now() / 900);
       x.arm_l = 3 * sway;
@@ -269,16 +269,16 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   p.blink -= dt * 1000;
   const shut = p.blink < 0;
   for (const e of p.hero.eyeParts) e.visible = !shut;
-  if (p.blink < -BLINK.ms) p.blink = (BLINK.every[0] + Math.random() * (BLINK.every[1] - BLINK.every[0])) * 1000;
+  if (p.blink < -BLINK.ms) p.blink = (BLINK.every[0]! + Math.random() * (BLINK.every[1]! - BLINK.every[0]!)) * 1000;
 }
 
 async function start() {
   const { loadHeroKit } = await import('../../player/hero.ts');
   const kit = await loadHeroKit();
-  await precompile(kit.make(COLORS[0]).holder); // shaders compile now, not when the first player appears
+  await precompile(kit.make(COLORS[0]!).holder); // shaders compile now, not when the first player appears
   const dress = (a: Avatar, colorIdx: number) => {
     if (poses.has(a)) return;
-    const hero = kit.make(COLORS[colorIdx]);
+    const hero = kit.make(COLORS[colorIdx]!);
     for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
     hero.holder.position.y = -PLAYER_R; // the avatar's origin is the centre of its foot sphere
     a.userData.inner.add(hero.holder);
@@ -359,13 +359,13 @@ async function startStandin() {
       const m = o as THREE.Mesh;
       if (m.isMesh && (m.material as THREE.MeshStandardMaterial).name?.startsWith('Main')) {
         m.material = (m.material as THREE.MeshStandardMaterial).clone();
-        (m.material as THREE.MeshStandardMaterial).color.set(COLORS[colorIdx]);
+        (m.material as THREE.MeshStandardMaterial).color.set(COLORS[colorIdx]!);
       }
     });
     for (const child of a.userData.inner.children) child.visible = false;
     a.userData.inner.add(holder);
     a.userData.leanScale = 0;
-    const mixer = new THREE.AnimationMixer(holder.children[0]);
+    const mixer = new THREE.AnimationMixer(holder.children[0]!);
     const acts: Record<string, THREE.AnimationAction> = {};
     for (const n of ['Idle', 'Walking', 'Running', 'Jump']) {
       acts[n] = mixer.clipAction(kit.clip(n));
@@ -385,14 +385,14 @@ async function startStandin() {
     const walk = clamp(speed / 0.6, 0, 1) * (1 - clamp((speed - STANDIN.walkMax) / 1.2, 0, 1));
     const run = clamp((speed - STANDIN.walkMax) / 1.2, 0, 1);
     const air = airborne ? 1 : 0;
-    acts.Idle.setEffectiveWeight((1 - walk - run) * (1 - air));
-    acts.Walking.setEffectiveWeight(walk * (1 - air));
-    acts.Running.setEffectiveWeight(run * (1 - air));
-    acts.Jump.setEffectiveWeight(air);
-    acts.Walking.timeScale = Math.max(0.3, speed / STANDIN.walk);
-    acts.Running.timeScale = Math.max(0.5, speed / STANDIN.run);
-    acts.Jump.timeScale = 0;
-    if (airborne) acts.Jump.time = 0.45; // mid-air in the clip
+    acts.Idle!.setEffectiveWeight((1 - walk - run) * (1 - air));
+    acts.Walking!.setEffectiveWeight(walk * (1 - air));
+    acts.Running!.setEffectiveWeight(run * (1 - air));
+    acts.Jump!.setEffectiveWeight(air);
+    acts.Walking!.timeScale = Math.max(0.3, speed / STANDIN.walk);
+    acts.Running!.timeScale = Math.max(0.5, speed / STANDIN.run);
+    acts.Jump!.timeScale = 0;
+    if (airborne) acts.Jump!.time = 0.45; // mid-air in the clip
     st.mixer.update(dt);
   };
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
