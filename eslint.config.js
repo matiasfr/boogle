@@ -41,7 +41,7 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
 const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (src/render/README.md).';
 
 export default [
-  { ignores: ['dist/', 'node_modules/', 'server/', '.claude/'] },
+  { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.mjs', '**/*.ts'],
