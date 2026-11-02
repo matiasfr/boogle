@@ -166,7 +166,7 @@ const BASE = { ...T };
 const handling = (v: string) => Object.assign(T, BASE, VARIANTS[v] ?? {});
 handling(protoV('soapbox'));
 onVariant('soapbox', ['', 'bouncy', 'tight', 'drift'], handling);
-const MAX_FALL = 22; // m/s, as physics.ts: no continuous collision against the heightfield
+const MAX_FALL = 22; // m/s, as the player's: no continuous collision against the heightfield
 
 // ---------------------------------------------------------------- the route
 const startY = () => groundHeight(START.x, START.z) + T.r + 0.05;

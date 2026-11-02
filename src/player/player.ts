@@ -1,19 +1,15 @@
-import * as THREE from 'three/webgpu';
-import { SPAWN, PLAYER_R, SEA, DEFAULT_NAME, reducedMotion } from '../constants.ts';
-import { SUN_DIR } from '../render/sun-dir.ts';
+import type * as THREE from 'three/webgpu';
+import { SPAWN, PLAYER_R, DEFAULT_NAME } from '../constants.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { scene, camera, sun, sky } from '../render/scene.ts';
+import { scene } from '../render/scene.ts';
 import { teleport } from '../physics/physics.ts';
-import { addBody, getMask } from '../physics/engine.ts';
-import { carry } from '../physics/platforms.ts';
-import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.ts';
-import { makeCameraArm } from './camera-arm.ts';
+import { addBody } from '../physics/engine.ts';
+import { makeAvatar, makePlayerBody } from './avatars.ts';
 import { sendPresence, setLocalPresence, peopleChanged } from '../netplay/net.ts';
 import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
-import { me, cam, camForward } from './state.ts';
-import { onFrame } from '../loop.ts';
+import { me, cam } from './state.ts';
 
 export { me, cam, camForward, handPosition, carryPosition, ITEM_HAND, throwFrom } from './state.ts';
 setLocalPresence(me);
@@ -80,82 +76,3 @@ export function updateIntent(dt: number) {
 // Features that need the third-person camera somewhere special (the caves keep it inside the tunnel) push
 // fn(look, pos) -> true when they placed `pos` themselves; then the usual "stay above the ground" rule is skipped.
 export const camConstraints: ((look: THREE.Vector3, pos: THREE.Vector3) => boolean)[] = [];
-
-const camPos = new THREE.Vector3(),
-  camLook = new THREE.Vector3(),
-  camFrom = new THREE.Vector3(),
-  fwd = new THREE.Vector3();
-const camArm = makeCameraArm();
-// Plain loops and shared objects below: this runs every frame (npm run hitches).
-function constrained(look: THREE.Vector3, pos: THREE.Vector3) {
-  for (let k = 0; k < camConstraints.length; k++) if (camConstraints[k]!(look, pos)) return true;
-  return false;
-}
-const ORIGIN = { x: 0, y: 0, z: 0 };
-const camFloor = (x: number, z: number) => Math.max(groundHeight(x, z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
-function updateCamera(elapsed: number) {
-  if (!me.entered || !me.body) {
-    const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
-    camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);
-    camera.lookAt(0, 3, 0);
-  } else {
-    const ip = me.body.interpolatedPosition;
-    camForward(fwd);
-    const rx = Math.cos(cam.yaw),
-      rz = -Math.sin(cam.yaw);
-    camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
-    camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
-    if (!constrained(camLook, camPos)) {
-      // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
-      // left in the way (a ridge, a wall). It collides with what you collide with: outside the caves, not their rock.
-      camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
-      camArm.solve(camFrom.set(ip.x, camLook.y, ip.z), camPos, getMask(me.body));
-      camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
-    } else camArm.reset();
-    camera.position.copy(camPos);
-    camera.lookAt(camLook.addScaledVector(fwd, 8));
-  }
-  sky.position.copy(camera.position);
-  const focus = me.body ? me.body.interpolatedPosition : ORIGIN;
-  sun.target.position.set(focus.x, focus.y, focus.z);
-  sun.position.set(focus.x + SUN_DIR.x * 80, focus.y + SUN_DIR.y * 80, focus.z + SUN_DIR.z * 80);
-}
-
-// ---------------------------------------------------------------- frame hooks (orders: top of src/loop.ts)
-// world -290, after the ball's respawn check (src/entities/ball/, -300): falling off the world puts you back at the spawn.
-onFrame(
-  () => {
-    if (me.body && me.body.position.y < -25) {
-      teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
-      me.body.velocity.set(0, 0, 0);
-    }
-  },
-  { phase: 'world', order: -290 },
-);
-
-// update -290, after the ball mesh (src/entities/ball/, -300), before remote avatars (remote-player, -280): the avatar follows the
-// body.
-// A deck you ride turns you and the camera with it, and you walk at your speed on the deck, not over the ground.
-onFrame(
-  ({ dt }) => {
-    if (!me.avatar || !me.body) return;
-    me.yaw += carry.spin;
-    cam.yaw += carry.spin;
-    carry.spin = 0;
-    const ip = me.body.interpolatedPosition;
-    me.avatar.position.set(ip.x, ip.y, ip.z);
-    me.avatar.rotation.y = me.yaw;
-    const v = me.body.velocity;
-    animateAvatar(
-      me.avatar,
-      Math.hypot(v.x - carry.x, v.z - carry.z),
-      me.coyote <= 0 && !me.swimming,
-      dt,
-      me.swimming && me.coyote <= 0,
-    );
-  },
-  { phase: 'update', order: -290 },
-);
-
-// update -200, after every visual sync, before the clouds (props.ts, -190) and the features.
-onFrame(({ elapsed }) => updateCamera(elapsed), { phase: 'update', order: -200 });

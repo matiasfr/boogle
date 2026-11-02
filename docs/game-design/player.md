@@ -1,6 +1,6 @@
 # 4. Player
 
-Files: [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
+Files: [src/entities/player/index.ts](../../src/entities/player/index.ts), [src/player/player.ts](../../src/player/player.ts), [src/physics/physics.ts](../../src/physics/physics.ts), [src/player/avatars.ts](../../src/player/avatars.ts),
 [src/player/hud.ts](../../src/player/hud.ts), [src/features/feel.ts](../../src/features/feel.ts),
 [src/physics/platforms.ts](../../src/physics/platforms.ts).
 

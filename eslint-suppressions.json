@@ -86,7 +86,7 @@
   },
   "src/main.ts": {
     "boogle/use-an-entity": {
-      "count": 2
+      "count": 1
     }
   },
   "src/physics/physics.ts": {
@@ -106,7 +106,7 @@
   },
   "src/player/player.ts": {
     "boogle/use-an-entity": {
-      "count": 5
+      "count": 2
     }
   },
   "src/pois/caves/decor.ts": {
