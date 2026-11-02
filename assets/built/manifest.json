@@ -32,5 +32,30 @@
       "drop"
     ],
     "textures": []
+  },
+  "standin-robot": {
+    "source": "standin-robot.glb",
+    "sourceHash": "e2b9ce964770fb90",
+    "outHash": "9ac748807bca50c7",
+    "rawBytes": 463988,
+    "bytes": 183572,
+    "triangles": 3237,
+    "animations": [
+      "Dance",
+      "Death",
+      "Idle",
+      "Jump",
+      "No",
+      "Punch",
+      "Running",
+      "Sitting",
+      "Standing",
+      "ThumbsUp",
+      "Walking",
+      "WalkJump",
+      "Wave",
+      "Yes"
+    ],
+    "textures": []
   }
 }
