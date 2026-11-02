@@ -21,6 +21,7 @@
 - Last, only test tools: `?record=1` writes down your keys and buttons frame by frame, like a player piano roll, and a headless run plays that roll back on the newest build to name the first frame that differs. The jump's shape moved into the player's own state so both runs press the same code. Nothing shared changed, so nothing in the picture moved.
 - A new prototype, a real place to find on foot and connect (`?proto=place`): a village, a gorge and two camps you link by rail. It reuses the rail loop's shared-world edits, so no arrow in the picture changes.
 - Last, only small changes: trees and rocks are now written down as plain data (what each one bumps into and how much ground it takes), like a parts list kept apart from the paint job, so the game and a new level checker read the same list. Their new folder gets a note. Nothing in the picture moved.
+- Then only small changes: the watering can left the item list (every room started fresh for it), and the code that hands a shared object like the ball from tab to tab now tells the object outright who holds it, like a relay baton that says whose hand it is in. [Kicking the ball](#story/ball) travels the same way, and nothing in the picture moved.
 
 ## 2026-10-30
 
