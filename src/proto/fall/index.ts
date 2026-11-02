@@ -1,4 +1,4 @@
-// The fall into the world (src/features/proto-fall.ts loads this behind ?proto=fall; docs/game-design/first-run.md). You
+// The fall into the world (src/features/proto-fall.ts loads this on a first visit or ?proto=fall; docs/game-design/first-run.md). You
 // meet your Buddy riding a flat trolley on a rail above the clouds, with the name-and-colour card beside it. Jump in
 // runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
 // apart; you lie flat with stars, the cart lands next to you, and the game begins. The rail going nowhere says what the
