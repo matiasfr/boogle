@@ -27,6 +27,22 @@ const syncBan = {
   message:
     'Lockstep ops/state/ticks live in src/world/rules/<name>.js (see its README). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
 };
+// src/world/ runs on the server too (server/src/host/world-host.ts) and src/net/ is only the room layer: neither may
+// reach the renderer, the player or a feature.
+const headlessBan = {
+  regex: '^(three(/|$)|(\\.\\./)+(render|player|features)/)',
+  message: 'src/world/ and src/net/ stay headless: no three.js, src/render/, src/player/ or src/features/.',
+};
+// A prototype or debug tool loads with a dynamic import() so the normal game doesn't carry it. flags.ts and mark.ts are
+// the small, eager way in.
+const protoBan = {
+  regex: '(^|/)proto/(?!(flags|mark)\\.[jt]s$)',
+  message: 'Outside src/proto/, import only proto/flags.ts and proto/mark.ts statically; use import() for the rest.',
+};
+const debugBan = {
+  regex: '(^|/)debug/',
+  message: 'Outside src/debug/, load debug tools with a dynamic import().',
+};
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
@@ -39,6 +55,40 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
 // WebGPURenderer (docs/plans/done/webgpu-migration.md) never calls onBeforeCompile, can't draw ShaderMaterial and draws
 // THREE.Points as 1 px dots.
 const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (src/render/README.md).';
+const glOnly = {
+  selector:
+    'MemberExpression[property.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points|onBeforeCompile|customProgramCacheKey|readRenderTargetPixels)$/]',
+  message: GL_ONLY,
+};
+// One door per shared service: one socket, one audio context, one frame loop. A file on `allow` may use that service;
+// `requestAnimationFrame`'s list is one-shots and what runs outside the loop, never a second loop (use onFrame). The
+// member form covers `window.AudioContext || webkitAudioContext`, which is how src/render/audio.ts reaches it.
+const DOORS = [
+  {
+    allow: ['src/net/ws-room.ts'],
+    selector: "NewExpression[callee.name='WebSocket'], NewExpression[callee.property.name='WebSocket']",
+    message: 'One socket: rooms go through src/net/ (onRoomReady, room.send), never a WebSocket of your own.',
+  },
+  {
+    allow: ['src/render/audio.ts'],
+    selector:
+      'NewExpression[callee.name=/^(webkit)?AudioContext$/], MemberExpression[property.name=/^(webkit)?AudioContext$/]',
+    message: 'One audio context: use the one in src/render/audio.ts.',
+  },
+  {
+    allow: [
+      'src/main.ts', // one frame, to finish the pipelines before the loop starts
+      'src/boot/splash.ts', // the splash, before the loop
+      'src/features/welcome-back.ts', // one-shot, starts a CSS transition
+      'src/player/pad-diagram.ts', // one-shot, measures after layout
+      'src/proto/bar/pad.ts', // one-shot, refocus after a redraw
+      'src/debug/look-lab.ts', // waits a frame between captures
+    ],
+    selector: "Identifier[name='requestAnimationFrame']",
+    message: 'One frame loop: use onFrame (src/loop.ts). A one-shot joins the allow-list in eslint.config.js.',
+  },
+];
+const doorRule = ({ selector, message }) => ({ selector, message });
 
 export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
@@ -53,15 +103,29 @@ export default [
   },
   // TypeScript everywhere (AGENTS.md): typescript-eslint's recommended rules on .ts files; tsc does the type checking.
   ...tseslint.configs.recommended.map((c) => ({ ...c, files: ['**/*.ts'] })),
-  // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync ban.
+  // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],
-    ignores: ['src/net/**'],
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan, debugBan] }] },
+  },
+  {
+    files: ['src/proto/**/*.{js,ts}'],
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, debugBan] }] },
+  },
+  {
+    files: ['src/debug/**/*.{js,ts}'],
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [syncBan, protoBan] }] },
+  },
+  {
+    files: ['src/world/*.{js,ts}', 'src/net/**/*.{js,ts}'],
+    ignores: ['src/world/game-world.{js,ts}'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: rapierBans, patterns: [headlessBan, syncBan, protoBan, debugBan] }],
+    },
   },
   {
     files: ['src/world/game-world.{js,ts}'],
-    rules: { 'no-restricted-imports': ['error', { paths: rapierBans }] },
+    rules: { 'no-restricted-imports': ['error', { paths: rapierBans, patterns: [headlessBan, protoBan, debugBan] }] },
   },
   {
     files: ['src/world/rules/**/*.{js,ts}'],
@@ -100,6 +164,8 @@ export default [
               message: 'Features stay independent: share code via src/, not another feature.',
             },
             syncBan,
+            protoBan,
+            debugBan,
           ],
         },
       ],
@@ -127,20 +193,18 @@ export default [
     files: ['src/**/*.{js,ts}'],
     ignores: LOCKSTEP_FILES,
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            'MemberExpression[property.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points|onBeforeCompile|customProgramCacheKey|readRenderTargetPixels)$/]',
-          message: GL_ONLY,
-        },
-      ],
+      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule)],
     },
   },
+  // A door's allow-list keeps every other door, and the WebGL ban, in force on that file.
+  ...DOORS.map((door) => ({
+    files: door.allow,
+    rules: { 'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule)] },
+  })),
   // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
   {
     files: ['src/physics/backend-*.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [syncBan] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [syncBan, protoBan, debugBan] }] },
   },
   // Separate block with its own rules, so it composes with the src/sim one above (a later block setting the same rule
   // for these files would replace it).
@@ -170,6 +234,7 @@ export default [
             'MemberExpression[object.property.name=/^(Math|crypto|Date|performance)$/][object.object.name=/^(globalThis|window|self)$/]',
           message: 'Write Math.x (crypto.x, ...), not globalThis.Math.x, so the determinism lint can check it.',
         },
+        ...DOORS.map(doorRule),
       ],
     },
   },
