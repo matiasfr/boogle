@@ -3,7 +3,8 @@
 // section dropping sleepers one by one off its front (each thumps down with dust; every other one a rail clanks) and
 // whistles at the end. You can ride its deck (a platform, src/physics/platforms.ts).
 // Serves DESIGN.md 1 (Toys before chores: construction you can watch and ride) and 10 (Slapstick over precision).
-// Lockstep sites (read only), Local view, sounds and platform. One entity: the machine, its body and the rails it lays.
+// Lockstep sites (read only), Local view, sounds and platform. One entity: the machine, its body and the rails
+// and sleepers it lays.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { attribute, positionLocal, uniform } from 'three/tsl';

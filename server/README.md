@@ -30,6 +30,7 @@ Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp fil
 | `SERVER_ROOMS` | `*` | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept).  |
 | `ROOM_IDLE_MS` | `600000` | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join). |
 | `MAX_HOSTED_ROOMS` | `20` | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`. |
+| `UPGRADES_PER_MIN` | `20` | Room sockets opened per IP per minute; past it a 429. |
 | `MAX_PLAYERS` | `8` | Players per hosted room (the server is not one). A reconnecting player is always let back in. |
 | `SERVER_SAVE_MS` | `2000` | How often a hosted room saves its world (when it changed). |
 

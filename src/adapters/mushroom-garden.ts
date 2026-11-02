@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
 import { heights, groundHeight, cellX, cellZ } from '../island/terrain.ts';
-import { defineKind, spawn } from '../entity/entity.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { obstacles } from '../entities/props/state.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
 import { material, createBody, setShapes, forEachContact } from '../physics/engine.ts';
@@ -29,6 +29,7 @@ type Visual = {
   sprout: THREE.Mesh;
   shroom: THREE.Group;
   body: Body | null;
+  cap: GameEntity | null; // the body's entity
   bodyS: number;
   shown: number;
   squishAt: number;
@@ -84,7 +85,7 @@ defineKind('mushroom-cap', {}); // no methods: a cap's collider, which comes lon
 function shapeBody(v: Visual, s: number) {
   if (!v.body) {
     v.body = createBody({ material: mushroomMat, group: GROUP.SCENERY, position: v.root.position });
-    spawn({ kind: 'mushroom-cap', bodies: [v.body] });
+    v.cap = spawn({ kind: 'mushroom-cap', bodies: [v.body] });
     capBodies.set(v.body, v);
   }
   setShapes(v.body!, [
@@ -223,13 +224,36 @@ function makeVisual(p: { i: number; j: number }): Visual {
   shroom.scale.setScalar(0.001);
   root.add(mound, sprout, shroom);
   plots.add(root);
-  return { root, mound, sprout, shroom, body: null, bodyS: 0, shown: 0, squishAt: 0 };
+  return {
+    root,
+    mound,
+    sprout,
+    shroom,
+    body: null,
+    cap: null,
+    bodyS: 0,
+    shown: 0,
+    squishAt: 0,
+  };
 }
 
 // Overshoots then settles, so the mushroom pops up.
 const easeOutBack = (t: number) => 1 + 2.4 * (t - 1) ** 3 + 1.4 * (t - 1) ** 2;
 
+// Plots only come and never go, but a resync can load a garden without one this tab drew: no mesh or collider stays behind.
+function sweepLostPlots() {
+  const kept = new Set(garden.plots.map((p) => `${p.i},${p.j}`));
+  for (const [key, v] of visuals) {
+    if (kept.has(key)) continue;
+    visuals.delete(key);
+    plots.remove(v.root);
+    if (v.body) capBodies.delete(v.body);
+    if (v.cap) despawn(v.cap);
+  }
+}
+
 export function updateGarden(dt: number, now: number) {
+  if (visuals.size > garden.plots.length) sweepLostPlots();
   for (const p of garden.plots) {
     const key = `${p.i},${p.j}`;
     let v = visuals.get(key);

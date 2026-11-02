@@ -62,11 +62,21 @@ export default {
     await A.page.waitForTimeout(6000);
     t.check('the first tab does not come back by itself', told(await state(A.page)));
 
-    // A real click on a real GPU. On the nightly runner's software WebGPU, Playwright's hit test finds the dim layer at
-    // the button's centre, in front or behind, though the button is drawn there, so this presses the button directly.
+    // A real click. On the nightly runner's software WebGPU, Playwright's hit test has found the dim layer at the button's
+    // centre, though the button is drawn there. If it still does on CI, print what is at that point, then press it directly.
     await A.page.bringToFront();
-    if (process.env.CI) await A.page.dispatchEvent('.elsewhere button', 'click');
-    else await A.page.click('.elsewhere button');
+    await A.page.click('.elsewhere button', { timeout: 30000 }).catch(async (e: Error) => {
+      if (!process.env.CI) throw e;
+      const at = await A.page.evaluate(`(() => {
+        const r = document.querySelector('.elsewhere button').getBoundingClientRect();
+        const x = r.x + r.width / 2, y = r.y + r.height / 2;
+        return { rect: [r.x, r.y, r.width, r.height], inner: [innerWidth, innerHeight], hidden: document.hidden,
+          vv: [visualViewport.width, visualViewport.height, visualViewport.scale, visualViewport.offsetTop],
+          at: document.elementsFromPoint(x, y).map((o) => o.tagName + '.' + o.className) };
+      })()`);
+      console.log('second-tab: the real click missed:', e.message.split('\n')[0], JSON.stringify(at));
+      await A.page.dispatchEvent('.elsewhere button', 'click');
+    });
     await A.page.waitForSelector('#enter:not([disabled])', loaded);
     t.check('Play here: the first tab is live again', (await until(A.page, live, 60000)) >= 0);
     t.check('and the second tab is told', (await until(B, told, 30000)) >= 0);

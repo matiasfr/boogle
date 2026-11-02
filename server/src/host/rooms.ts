@@ -19,12 +19,12 @@ import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.t
 import type { Store } from '../store.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
-const UPGRADES_PER_MIN = 20; // per IP
 
 export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
   roomIdleMs: number;
   maxHostedRooms: number;
+  upgradesPerMin: number; // per IP
   allowedOrigins: string[];
   trustProxy: unknown;
   log: (...a: unknown[]) => void;
@@ -91,7 +91,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const now = Date.now();
       const u = upgrades.get(ip) ?? { n: 0, at: now };
       upgrades.set(ip, u);
-      if (++u.n > UPGRADES_PER_MIN) return refuse(socket, '429 Too Many Requests');
+      if (++u.n > cfg.upgradesPerMin) return refuse(socket, '429 Too Many Requests');
 
       // Split, never `new URL(req.url)`: a target like `//[` throws, and a throw in the upgrade listener crashes the
       // server. URLSearchParams and the guarded decode below don't throw.

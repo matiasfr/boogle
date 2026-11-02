@@ -38,9 +38,24 @@ export default {
     // One tab tosses a watering can at a beach cell west of the court; the other sees the item.
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
     const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
-    const sent = await client.eval(`return ${toss(1, 'Date.now() % 1000')};`);
-    const landed = await host.waitFor(item, { timeout: EDIT_WAIT_MS });
-    t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
+    // A starved runner's tab drops and reopens its socket (runs 41421157347, 41418371480: reconnects for a minute or two),
+    // and an edit caught in that gap is dropped by design (src/world/sync.ts, HELD_MAX_MS). So toss as a player would: when
+    // live, and again if nothing came. Broken gifts still fail all three.
+    const LIVE = `window.boogle.net.state === 'live' && window.boogle.sync.worldStatus().ready`;
+    const tossedAt = Date.now();
+    const sent: unknown[] = [];
+    let landed = -1;
+    for (let k = 0; k < 3 && landed < 0; k++) {
+      if ((await client.waitFor(LIVE, { timeout: 30000 })) < 0) continue;
+      sent.push(await client.eval(`return ${toss(1, 'Date.now() % 1000')};`));
+      landed = await host.waitFor(item, { timeout: EDIT_WAIT_MS / 3 });
+    }
+    const dropped = await client.eval(`return window.boogle.sync.worldStatus().heldDropped;`);
+    t.check(
+      "one tab's toss reaches the other",
+      landed >= 0,
+      `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped`,
+    );
 
     // The client throws the ball: it takes ownership and the host watches it fly.
     const ballAt = `(() => { const p = window.boogle.ball.pose.p; return [p.x, p.y, p.z]; })()`;
@@ -79,5 +94,8 @@ export default {
     const errs = [...worldErrors.get(host)!, ...worldErrors.get(client)!];
     const shots = [await A.still('Alice'), await B.still('Bob')];
     t.check('no [world] errors in either console', !errs.length, [...errs.slice(0, 2), ...shots].join(' | '));
+    // Last, since the runner reads these after this returns. The CDN just after a deploy can 503 a file for a moment (run
+    // 41425998584: the splash art). A file the game needs fails the checks above; lib.ts prints which file it was.
+    for (const g of [A, B]) g.consoleErrors = g.consoleErrors.filter((e: string) => !e.includes('status of 503'));
   },
 };
