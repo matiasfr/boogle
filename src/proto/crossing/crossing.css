@@ -1,0 +1,9 @@
+/* Riding a while, the screen goes quiet (train-riding research, section 20: Death Stranding's HUD fades on a journey). */
+.hud-tl,
+.hud-tr {
+  transition: opacity 1.2s ease;
+}
+body.crossing-quiet .hud-tl,
+body.crossing-quiet .hud-tr {
+  opacity: 0;
+}
