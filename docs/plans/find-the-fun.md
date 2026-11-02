@@ -154,6 +154,6 @@ real slice does.
 
 ## 7. Does a long crossing feel vast?
 
-- [ ] **`?proto=crossing`:** a fast train over a long viaduct to a far greybox island, with the same distance at two
+- [x] **`?proto=crossing`:** a fast train over a long viaduct to a far greybox island, with the same distance at two
       speeds and a much longer one, to find what "vast" means in seconds and metres.
 - [ ] **Playtest 7.**

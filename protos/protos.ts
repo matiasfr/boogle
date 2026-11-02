@@ -448,6 +448,34 @@ export const PROTOS: Proto[] = [
       note: 'Its direct entry is now how every returning player arrives (2 Nov); first visits get a short name-and-colour card, and the rename moved to the menu’s Room page.',
     },
   },
+  {
+    id: 'crossing',
+    title: 'The long crossing',
+    step: 7,
+    status: 'live',
+    url: '/?room=proto-crossing&proto=crossing',
+    question: 'Does the crossing feel vast in a good way, and would you ride it again?',
+    what: 'A train over a long viaduct to an island you can see from the start. Step on a flatbed and ride; a walkway runs beside the rails if you’d rather.',
+    since: '2026-11-02',
+    defaultWhat: '1.2 km at 20 m/s: about a minute.',
+    spawn: { x: 48, z: 5, yaw: 3.142 }, // on the home platform beside the flatbeds, looking down the line at the far island
+    verb: 'rides',
+    chapter: 'it reshapes the world’s far plane, fog and sea',
+    variants: [
+      {
+        name: 'express',
+        url: '/?room=proto-crossing&proto=crossing&v=express',
+        what: 'The same 1.2 km at 50 m/s: about half a minute. Is an upgrade a thrill?',
+        spawn: { x: 48, z: 5, yaw: 3.142 },
+      },
+      {
+        name: 'vast',
+        url: '/?room=proto-crossing&proto=crossing&v=vast',
+        what: 'The same train over 4 km of sea: about a minute and a half.',
+        spawn: { x: 48, z: 5, yaw: 3.142 },
+      },
+    ],
+  },
 ];
 
 export type PlaytestStep = {
@@ -467,6 +495,7 @@ export type PlaytestStep = {
 export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
+  { id: 'crossing', why: 'How far is vast, in seconds and metres?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
