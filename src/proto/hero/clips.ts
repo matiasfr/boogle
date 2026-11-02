@@ -15,6 +15,8 @@ import { shadeOnce } from '../../player/hero.ts';
 import { startHeroCamera } from './camera.ts';
 import { LOOKS, applyLook, inflate } from './looks.ts';
 import url from '../../../assets/built/hero-clips.glb?url';
+import tracklayerUrl from '../../../assets/built/tracklayer.glb?url';
+import { retargetClip } from './retarget.ts';
 
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
 // The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
@@ -101,7 +103,67 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   for (const [bone, k] of r.spread) bone.position.multiplyScalar(k);
 }
 
+// &body=tracklayer: the real character (assets/src/tracklayer.json, made with Meshy) on the same clips, retargeted onto its
+// own skeleton at load. It keeps its painted textures for now, so it doesn't take the player's colour yet.
+const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the mannequin's
+async function startTracklayer() {
+  const [clips, model] = await Promise.all([loadAsset(url), loadAsset(tracklayerUrl)]);
+  shadeOnce(model.gltf.scene);
+  const src = clips.instance();
+  const tgt = model.instance();
+  let ratio = 1;
+  const baked = new Map<string, THREE.AnimationClip>();
+  for (const n of NAMES) {
+    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { armOut: ARM_OUT });
+    baked.set(n, r.clip);
+    ratio = r.ratio;
+  }
+  const dress = (a: Avatar) => {
+    if (rigs.has(a)) return;
+    const holder = model.instance();
+    const root = holder.children[0]!;
+    holder.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
+    });
+    holder.position.y = -PLAYER_R;
+    holder.rotation.y = Math.PI; // the model faces +z; avatars face -z
+    for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
+    a.userData.inner.add(holder);
+    a.userData.leanScale = 0; // the clips lean on their own
+    const mixer = new THREE.AnimationMixer(root);
+    const acts: Record<string, THREE.AnimationAction> = {};
+    const w: Record<string, number> = {};
+    for (const n of NAMES) {
+      const act = mixer.clipAction(baked.get(n)!);
+      act.play();
+      act.timeScale = 0;
+      act.setEffectiveWeight(n === 'Idle_Loop' ? 1 : 0);
+      acts[n] = act;
+      w[n] = n === 'Idle_Loop' ? 1 : 0;
+    }
+    rigs.set(a, {
+      mixer,
+      acts,
+      w,
+      phase: 0,
+      idleT: Math.random() * 2,
+      air: false,
+      airT: 1,
+      landT: 1,
+      scaled: [],
+      pelvis: root.getObjectByName('Hips')!,
+      legs: 1,
+      spread: [],
+      strideK: ratio,
+    });
+  };
+  await precompile(model.instance());
+  setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
+  startHeroCamera();
+}
+
 export async function startClipsHero() {
+  if (new URLSearchParams(location.search).get('body') === 'tracklayer') return startTracklayer();
   const kit = await loadAsset(url);
   shadeOnce(kit.gltf.scene);
   const dress = (a: Avatar, colorIdx: number) => {

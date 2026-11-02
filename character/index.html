@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Boogle Character</title>
+    <link rel="stylesheet" href="./character.css" />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <aside id="panel">
+      <h1>Character</h1>
+      <p id="stats">Loading…</p>
+      <h2>Animation</h2>
+      <div class="row" id="clips"></div>
+      <label
+        >Speed <output id="speed-out">1</output
+        ><input id="speed" type="range" min="0.1" max="1.5" step="0.05" value="1"
+      /></label>
+      <label
+        >Arms out <output id="arm-out">12°</output><input id="arm" type="range" min="0" max="35" step="1" value="12"
+      /></label>
+      <h2>View</h2>
+      <div class="row" id="views"></div>
+      <label class="check"><input id="spin" type="checkbox" /> Turntable</label>
+      <h2>Render</h2>
+      <div class="row" id="rims"></div>
+      <label class="check"><input id="wire" type="checkbox" /> Wireframe</label>
+      <label class="check"><input id="crowd" type="checkbox" /> Crowd of 8</label>
+    </aside>
+  </body>
+</html>
