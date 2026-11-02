@@ -43,7 +43,8 @@ These are standing preferences from the thread.
 The owner's answers to the standing design audit ([design-audit.md](design-audit.md)). **Where an older entry below disagrees, these win.**
 
 - **Skipping the rail:** friends can ride what others built; alone, you build to progress. This replaces "every system is ignorable" for the rail loop.
-- **Materials:** "playing still produces what builds the island". How play does that is open question 15.
+- **Materials:** "playing still produces what builds the island", through hands-on work with "really great game feel, but very simple harvest mechanics". Mini-games don't produce building materials; they can reward other things.
+- **Rewards, a direction not yet designed:** "I remember we did some exploration on having different rarities, and like, I'm definitely interested in incremental game and gacha mechanics". Mini-games may feed this. Open question 15.
 - **Hauling:** you haul each track segment, and the network brings materials closer.
 - **Helpers:** not decided. Owner: "I'm not sure if in the same form, but I kind of feel like it'd be fun to have little helpers running around and giving life to the world, but maybe they can work as part of the camps".
 - **Goods:** not one material per age; camps can make different goods at once.
@@ -240,7 +241,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 12. ~~Does "play is the material" still hold?~~ Yes (audit picks); see question 15.
 13. ~~How do you first reach a far island?~~ The line builds out over the sea, and you ride it (audit picks).
 14. ~~Which eras remain?~~ Six (audit picks).
-15. How does play produce what builds the island? For example only hands-on work like hauling, harvesting and exploring, or mini-games as well? Mini-games still never gate progress.
+15. What do mini-games reward, and do rarities, incremental or gacha mechanics belong? The owner is interested; nothing is designed, and som and knacks stay parked until then.
 16. Do helpers come back as life around the camps?
 
 ## Next: find the fun (agreed direction, 1 November)
