@@ -11,7 +11,6 @@ test('the charge runs 0 to 1 over 900 ms and clamps', () => {
 
 test('each held thing picks its flight', () => {
   assert.equal(profileFor('frisbee').flight, 'glide');
-  assert.equal(profileFor('can').flight, 'plain');
   assert.equal(profileFor('seeds').flight, 'plain');
   assert.equal(profileFor('ball').flight, 'ball');
   assert.equal(profileFor(null).flight, 'plain');
@@ -38,7 +37,6 @@ test('launchVelocity matches the old throw formula to 1e-9', () => {
   for (const c of [0, 0.5, 1]) {
     for (const [id, flat] of [
       ['ball', false],
-      ['can', false],
       ['frisbee', true],
     ] as const) {
       const got = launchVelocity(profileFor(id), c, unit, body);

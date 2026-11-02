@@ -117,7 +117,7 @@ function startWorld(room: Room) {
     w.updateWorld((now - last) / 1000);
     last = now;
   }, 50);
-  T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
+  T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
   T.world = () => ({
     tick: w.world.tick,
     items: rules.gifts.gifts.items.map((p) => [p.i, p.j]),

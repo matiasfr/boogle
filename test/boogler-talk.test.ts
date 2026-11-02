@@ -74,7 +74,7 @@ test('every message in a talk offers at least two answers', () => {
     const f = createFriend();
     addPts(f, Math.floor(rng() * 400));
     if (seed % 4 === 0) for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
-    const t = openTalk(f, ctx({ rng, pocket: [giftIndex('seeds'), giftIndex('can')] }));
+    const t = openTalk(f, ctx({ rng, pocket: [giftIndex('seeds'), giftIndex('frisbee')] }));
     for (let step = 0; step < 30 && talkView(t); step++) {
       const v = talkView(t)!;
       assert.ok(v.opts.length >= 2, `"${v.say}" has ${v.opts.length} answers`);
@@ -209,7 +209,7 @@ test('he takes what is in your hand and it can forgive a wary Boogler', () => {
 
 test('each gift answer carries its item for the icon, every other answer -1', () => {
   // The seeds are catalog index 0, so `o.gift || -1` would hide its icon; `??` must keep it.
-  const kinds = [giftIndex('seeds'), giftIndex('can')];
+  const kinds = [giftIndex('seeds'), giftIndex('frisbee')];
   assert.equal(kinds[0], 0);
   const check = (t: Talk) => {
     const v = talkView(t)!;

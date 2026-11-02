@@ -19,7 +19,7 @@ const ITEM = `const { CELL, HALF } = await import('/src/constants.ts');
 const press = (g: ClipGame, fn: string) => g.eval(`${INV} H.${fn}();`);
 
 export default {
-  about: 'pick up a can (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
+  about: 'pick up a frisbee (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
   async run(c) {
     const g = await c.open({ room: 'cliptoys', hud: 'play' });
     await g.wait(3);

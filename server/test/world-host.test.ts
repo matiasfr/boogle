@@ -116,7 +116,7 @@ test('the world saves as the server and a restart resumes from it', async () => 
   let { store, wh } = await makeHost(dir, 500);
   const tossed = (w: { rules: Msg }) =>
     w.rules.gifts.gifts.items.filter((it: Msg) => it.i === 230 && it.j === 205).length;
-  wh.deliver({ t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } }, 'c1');
+  wh.deliver({ t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } }, 'c1');
   for (let f = 0; f < 12; f++) (wh.step(0.05), await settle());
   await wh.close({ save: true });
   const doc = store.readSync('beach')!;

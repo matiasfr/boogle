@@ -181,7 +181,7 @@ test('relay: messages reach the others with from; oversize and host-only types d
 
 test('world: a joiner gets the snapshot alone; an edit comes back stamped to everyone; it saves and resumes', async () => {
   const { svc, base, dataDir } = await start({ SERVER_SAVE_MS: '300' });
-  const toss = { op: 'gift.toss', i: 230, j: 205, k: 2, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
+  const toss = { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] }; // a frisbee on the beach
   let saved = 0;
   try {
     const a = connect(base, 'beach', 'aaa');

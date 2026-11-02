@@ -125,7 +125,7 @@ export default {
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
     // A tossed frisbee, empty hands: a floating Pick up prompt over it, and E picks it up.
-    await g.eval(`${toss(2, 5)};`); // a frisbee
+    await g.eval(`${toss(1, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
@@ -177,7 +177,7 @@ export default {
       const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
       const { CELL, HALF, SEA } = await import('/src/constants.ts');
-      const b = window.boogle.me.body, can = giftIndex('frisbee');
+      const b = window.boogle.me.body, frisbee = giftIndex('frisbee');
       const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
@@ -194,9 +194,9 @@ export default {
           if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
           const had = new Set(items().map((it) => it.id));
           const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
-          if (!G.throwItem(can, from, from.clone().set(0, -0.5, 0))) continue;
+          if (!G.throwItem(frisbee, from, from.clone().set(0, -0.5, 0))) continue;
           let it = null;
-          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === can);
+          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === frisbee);
           if (!it) continue;
           await nap(600); // its flight comes down
           const sx = it.i * CELL - HALF, sz = HALF - it.j * CELL;

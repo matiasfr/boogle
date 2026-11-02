@@ -7,9 +7,8 @@ friendship value of a first present.
 | # | Id | Name | Source | Weight (chance) | Boogler taste | Points |
 |---|---|---|---|---|---|---|
 | 0 | seeds | bag of mushroom seeds (catalog name: mushroom seed) | stand | | like | 7 |
-| 1 | can | watering can | none (nothing hands it out; kept for his line until the owner decides) | | meh | 3 |
-| 2 | frisbee | frisbee | perch (lighthouse deck) | | like | 7 |
-| 3 | ball | beach ball | ball (key: refused) | | meh | n/a |
+| 1 | frisbee | frisbee | perch (lighthouse deck) | | like | 7 |
+| 2 | ball | beach ball | ball (key: refused) | | meh | n/a |
 
 Every item has a line he says when you hand it over (or why he refuses it).
 
