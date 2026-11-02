@@ -48,7 +48,8 @@ addBody(
   }),
 );
 
-export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: number }[]) {
+/** A static body of spheres, not yet in the world: for an entity's `bodies`. */
+export function staticSpheresBody(spheres: { x: number; y: number; z: number; r: number }[]) {
   // Centre the body on its spheres: the broadphase culls by a bounding sphere around body.position.
   let cx = 0,
     cy = 0,
@@ -58,12 +59,10 @@ export function addStaticSpheres(spheres: { x: number; y: number; z: number; r: 
     cy += s.y / spheres.length;
     cz += s.z / spheres.length;
   }
-  const body = createBody({
+  return createBody({
     material: groundMat,
     group: GROUP.SCENERY,
     position: { x: cx, y: cy, z: cz },
     shapes: spheres.map((s) => ({ kind: 'sphere', r: s.r, offset: { x: s.x - cx, y: s.y - cy, z: s.z - cz } })),
   });
-  addBody(body);
-  return body;
 }

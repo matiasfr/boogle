@@ -12,8 +12,8 @@ without touching anything else on the island.
 
 `index.ts` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
-(`ground.ts`). `src/island/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
-keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
+(`ground.ts`). `src/island/terrain.ts` builds the heightfield and the mesh from it. `src/blueprints/props.ts` keeps
+trees and rocks out of keep-out discs, and `src/entities/props/` pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
 

@@ -10,6 +10,7 @@
 
 - `drop`: Rapier alone, a ball dropped on a floor.
 - `ball`: the ball thrown, settling, respawned off the island and floating, checked against numbers from the real game.
+- `ball-tree`: the ball thrown at a palm, bouncing off a trunk whose colliders come from pure data (`src/blueprints/`).
 - `ball-handoff`: two players in two processes through the real local server (no browser, in real time, about 8 s): picking up an orphaned ball, a steal, a throw the other follows, a lockstep edit, the owner leaving.
 
 `ball-course.ts` is the course itself, with no Node or browser API. `node dev/sim/ball-browser.ts` runs that same file in the real game on the GPU and rewrites `ball-browser.json`: do that after changing the ball's physics, the ground or the course. A difference you didn't mean is a bug in the headless world, or in your change.
@@ -24,10 +25,10 @@ An entity runs headless once it has a `headless.ts` (`src/entities/ball/` is the
 
 ## What's in the world, and what isn't
 
-In: the real ground, Rapier, the ball, the lockstep rules on the server's land, and the net code.
+In: the real ground, Rapier, the ball, the trees and rocks, the lockstep rules on the server's land, and the net code.
 
 Not yet:
 
 - **The player.** `src/entities/player/index.ts` is still one blob with its mesh, and `me.body` stays null. It runs headless once its state and view are split, as the ball's are. Until then a run calls `grabBall()` and `throwBall()` itself.
 - **Other entities and most features**: they have no `headless.ts`, and many reach the DOM or the scene as they load.
-- **Static colliders other than the ground.** Trees and rocks (`src/render/props.ts`), POI structures and mushrooms are built with what draws them, so a ball flies through them here. Pick a course that misses them; a comparison with the browser shows it if one does not.
+- **POI structures and mushrooms.** They're built with what draws them, so a ball flies through them here. Pick a course that misses them; a comparison with the browser shows it if one does not. Trees and rocks are in: their colliders are data (`src/blueprints/props.ts`, `src/entities/props/`).

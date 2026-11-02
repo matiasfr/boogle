@@ -17,7 +17,7 @@ import { groundHeight } from '../island/terrain.ts';
 import { camera, toScreen } from '../render/scene.ts';
 import { playerMat, teleport, NOT_SCENERY } from '../physics/physics.ts';
 import { createBody, BODY } from '../physics/engine.ts';
-import { blockedAt } from '../render/props.ts';
+import { blockedAt } from '../entities/props/state.ts';
 import { island } from '../island/index.ts';
 import { MAINLAND } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';

@@ -7,7 +7,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
 import { heights, groundHeight, cellX, cellZ } from '../island/terrain.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { obstacles } from '../render/props.ts';
+import { obstacles } from '../entities/props/state.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
 import { material, createBody, setShapes, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/state.ts';

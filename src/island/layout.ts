@@ -55,7 +55,7 @@ export function placeSite(id: string, site: { x: number; z: number; dir?: [numbe
   if (p.dir && ok(p.dir[0]) && ok(p.dir[1])) site.dir = [p.dir[0], p.dir[1]];
 }
 
-/** True where `clear` leaves the scenery out. Only trees and rocks ask (src/render/props.ts); without it, never. */
+/** True where `clear` leaves the scenery out. Only trees and rocks ask (src/entities/props/state.ts, src/render/props.ts); without it, never. */
 export function clearedAt(x: number, z: number): boolean {
   const c = layout?.clear;
   if (!c) return false;
