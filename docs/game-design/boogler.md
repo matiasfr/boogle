@@ -64,7 +64,7 @@ so without them it takes longer: a retune is pending.
 - **His voice.** As a line types he speaks in babble, Animal Crossing style with no recordings: a formant synth
   ([src/render/npc-voice.ts](../../src/render/npc-voice.ts)) at 155 Hz says one sound per syllable, shaped by the line's
   letters, so a line always sounds the same. His mood moves the pitch and pace; a question lifts at the end. Skipping,
-  leaving or a new line cuts it. Only you hear your talk. His speech bubbles stay silent, and so does a line shown at
+  leaving or a new line cuts it. Only you hear your talk. He plays on the mix's voice bus, and music and ambience dip 9 dB under him. His speech bubbles stay silent, and so does a line shown at
   once under reduced motion.
 - **Easy in, easy out.** Talks are short. You stand still while one is open (the camera turns to frame him), and
   pressing Esc / pad B / the close button (on a phone, also the main button, which says Leave while you talk), opening

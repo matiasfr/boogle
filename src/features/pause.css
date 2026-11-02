@@ -106,6 +106,36 @@ dialog.pause::backdrop {
   line-height: 1.4;
   color: var(--ink-soft);
 }
+.pause-sound {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pause-mute {
+  flex: none;
+  width: 56px;
+  padding: 6px;
+}
+.pause-mute svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: auto;
+}
+.pause-volume {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+.pause-volume:focus-visible,
+.pause-volume[data-focus] {
+  outline: 4px solid var(--sea);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
 .pause-btn.sure {
   background: #ff8a6b;
 }
