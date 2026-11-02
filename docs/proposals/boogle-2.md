@@ -61,7 +61,7 @@ These are standing preferences from the thread.
 
 - **2026-11-01, laying a section runs quick** (about 14 s; full run-through: "Yes it's wonderful. Quick feels pretty good"). Fix the jump at the end of the laying animation.
 - **2026-11-01, construction you can watch is how things get built** ("I absolutely love this kind of animation"). The piece-by-piece build leaves the prototype for the game.
-- **2026-11-01, the island and the line get redesigned once activities and locales are clearer** (owner: the current island "is not in line with the overall vision"; the line should be meaningful). The layout lab is parked; lighthouse-line is out. Until then, level work stays greybox.
+- **2026-11-01, today's island and line aren't the target** (owner, run-through: the current island "is not in line with the overall vision"; the line should be meaningful, and the map follows the activities and locales). The layout lab's three options on today's island are parked and lighthouse-line is out; the redesign is the next entry.
 - **2026-11-01, the home island is a ground-up redesign, not an extension** (owner: "Everything in the new island should be more intentionally designed"). It's probably bigger than today's ~23,300 m², with Big Walk's environment as the lead reference ("always feels like there's something you're finding"). Design for walking plus the rail, with folds, reveals, traversal unlocks and land reserved for later eras. Don't brief today's layout as the base.
 - **2026-11-01, the rail network is a stepping-stone chain toward the mainland, but not a pure corridor** (owner: "Maybe there's shortcuts or more rails that appear in different places"). One clear frontier direction, with cross-links, branches and loops growing behind it; a ring's interior is never empty sea. Still open: which links appear when, and whether the chain closes into a ring.
 - **2026-11-01, environment previz leads with the real renderer** (painted maps made it "hard to get a real feel"): the look lab's `high` preset and blockouts at the game's camera, with image generation only using those captures as style references. The owner wants more variety and eventually a bigger city on the shore, and islands aren't tied to mini-games.
@@ -104,6 +104,7 @@ These are standing preferences from the thread.
 
 - **2026-11-01, nail the bare hero base before outfits.** Clothes are separate swappable parts (`wear_<slot>_<item>`; slots head, body, hands, feet) and only need to prove the slots work until the base is right. On 2 November the owner chose a separate-head figure, proportioned closer to Ratchet or a Bricktron than lanky, and leans towards no mouth.
 - **2026-11-02, the controls and motion are right on the mannequin; only the animation polish and the look remain.** The owner "really, really" likes how `?proto=hero` controls: today's direct controller (the modern-Mario one's inertia felt less in control), the closer camera, and hand-made clips (Quaternius's CC0 library) on a humanoid skeleton. Code-built figures and agent-authored run cycles didn't satisfy, and the quick test figures on these clips (cute, ears, stout, bib) didn't land either. Next: previz of properly modelled characters that can play these clips.
+- **2026-11-01, the hero starts as a bare base** (owner): settle the base body's shape and proportions first; outfits are swappable parts (head, body, hands, feet) built on it.
 - **Player look: Bib Buddies or a split, still open** (1 November). The owner picked Bib Buddies (coloured bean body, googly eyes, mitten arms, low cream overalls) over the capsule, then proposed the player as an articulated Ratchet-style hero with Bib Buddies as the helpers. Check with the owner before building either.
 - **The Boogler is the mayor** (from era 2). His personal friendship ladder stays separate from the economy.
 - **Opening days end each era:**
@@ -184,6 +185,9 @@ These are standing preferences from the thread.
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
 6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
 7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
+
+8. Wagon show and bench: cut, or keep? The owner hasn't ruled; the wagon is otherwise plain transportation.
+9. Next deliverable: the director recommends planning the eras 1–2 slice (haul → build → lay → ride) together with the home island redesign, so the line means something. Waiting on the owner.
 
 ## Next: find the fun (agreed direction, 1 November)
 

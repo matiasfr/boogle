@@ -13,6 +13,7 @@ Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, 
 - **Nintendo names are fine; ROMs are not.** Never rename or reword something to remove a Nintendo reference. The hard line: no ROM data, or anything cut from it, in the repo, on any branch or in the build.
 - **Use references by name.** When the owner points at a game or character, work out the features they're responding to (proportions, clothes, a mechanic's feel) and use those, naming the reference in briefs and docs: "the stubby proportions of Castle Story's Bricktrons, as our own character", not a vague paraphrase. Don't recreate the thing itself.
 - **Research before deep facets.** A facet with real depth (level design, vehicle handling, rendering, construction, pipelines) starts with research into how games solve it: web sources, GDC talks, postmortems, in `docs/research/<topic>.md` with sources and numbered recommendations. Builders cite it.
+- **Compare to standard engines.** Justify an architecture call by what Unity, Unreal and Godot actually do (their docs), and say where Boogle differs; don't defend a pattern because the code already uses it.
 - **Decisions live in the repo.** A new owner decision that should bind every agent goes in this section or the decision log, not only in one tool's private memory.
 
 ## TypeScript everywhere
