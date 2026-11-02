@@ -11,11 +11,11 @@
 // main.ts runs prePhysics, the physics step, then world, update and late, then renders. The core modules hook in at
 // orders features leave alone (pick an order between these, never equal to one):
 //   prePhysics  -100 remote-player: remote poses   -90 ball: who owns the ball (can release it: me.holding)
-//               -80 player.ts: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
+//               -80 player: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
 //   world   -300 ball: an owned ball off the island respawns; ball.pose follows the body
-//           -290 player.ts: fall respawn         -280 ball-carry: walking into a slow ball claims it
-//   update  -300 ball: ball mesh                 -290 player.ts: own avatar       -280 remote-player: remote avatars
-//           -200 player.ts: camera               -190 props.ts: clouds            -150 assets.ts: glTF clips
+//           -290 player: fall respawn            -280 ball-carry: walking into a slow ball claims it
+//   update  -300 ball: ball mesh                 -290 player: own avatar          -280 remote-player: remote avatars
+//           -200 camera                          -190 props.ts: clouds            -150 assets.ts: glTF clips
 //           (features: -10 and up)
 //   late    -200 throw.ts: throw preview        -190 hud.ts: HUD                 -20 particles.ts: particles
 //           (features: -10 to 2000)
@@ -29,11 +29,11 @@
 // order first, ties in registration order. The orders below are pinned; moving one is a change of behaviour and gets
 // its own commit. No order means 1000: prototypes and anything unnumbered run after all of these.
 //   onPreStep   10 platforms.ts: decks move    20 mushroom-garden: a growing cap shoves you   30 feel.ts: jump feel
-//               40 physics.ts: remote targets, this player's controller   45 ball: friction and surf
+//               39 physics.ts: remote targets   40 player: its controller   45 ball: friction and surf
 //               50 boogler.ts: his body follows him   60 boogler/play.ts: carry the rider, launches
 //               70 windmills: sails spin       80 caves: the safety net   90 guest/play.ts: the guest's body (lazy)
 //   onPostStep  10 mushroom-garden: the bounce   15 ball: fall-through net
-//               20 physics.ts: this player's fall-through net, ground contact (coyote)
+//               20 player: its fall-through net, ground contact (coyote)
 //               30 boogler/play.ts: standing on him
 //
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and spawns entities

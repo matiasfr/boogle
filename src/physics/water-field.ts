@@ -1,4 +1,4 @@
-// Tiny bridge so physics.ts and splash.ts can ask "where is the water here?" without importing the world modules (which
+// Tiny bridge so the player and splash.ts can ask "where is the water here?" without importing the world modules (which
 // import physics). Defaults to the sea; the caves add their pond.
 import { SEA } from '../constants.ts';
 

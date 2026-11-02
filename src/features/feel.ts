@@ -1,9 +1,9 @@
 // Controller feel pass. The body setup stays as it is (dynamic physics body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
 //   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/physics/physics.ts), so mushroom bounces chain
+//     an upward bounce instead of replacing it (src/entities/player/index.ts), so mushroom bounces chain
 //   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
-//   - braking: a harder brake than turn (src/physics/physics.ts) with a dust skid
+//   - braking: a harder brake than turn (src/entities/player/index.ts) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
 //   - canned flops synced as one presence field `fl: [kind, ms]`: hard-landing splat, head-stomp squash, sprint bonk,

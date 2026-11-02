@@ -8,7 +8,7 @@ import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.ts';
 import { ball } from './entities/ball/state.ts';
-import { me, updateIntent } from './player/player.ts';
+import { me } from './player/player.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { updateRemotes } from './entities/remote-player/index.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
@@ -34,13 +34,13 @@ createWaterMesh();
 createProps();
 createClouds();
 createStall();
-installStepHooks({ me, remotes });
+installStepHooks({ remotes });
 bootMark('props');
 
 // Once a frame before the step, in this order, because each reads what the last wrote (me.holding, me.yaw): remote poses,
-// ball ownership (-90, the ball's own), this player's intent, the ball's kinematic pose (-70, the ball's own).
+// ball ownership (-90, the ball's own), this player's intent (-80, its own), the ball's kinematic pose (-70, the ball's
+// own).
 onFrame(({ now }) => updateRemotes(now), { phase: 'prePhysics', order: -100, name: 'updateRemotes' });
-onFrame(({ dt }) => updateIntent(dt), { phase: 'prePhysics', order: -80, name: 'updateIntent' });
 
 // Everything in a frame (intent, gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks around the physics
 // step; src/loop.ts lists their order.
