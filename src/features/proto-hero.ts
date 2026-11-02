@@ -124,7 +124,9 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   p.landT += dt;
   const along = v > 0.1 ? (p.vel.x * fx + p.vel.z * fz) / Math.max(1e-3, Math.hypot(p.vel.x, p.vel.z)) : 1;
   const off = Math.acos(clamp(along, -1, 1)) / D; // degrees between facing and travel
-  if (!SKID_ON || airborne) p.skid = false;
+  if (a === me.avatar && me.skid)
+    p.skid = SKID_ON; // ?ctl=odyssey: you face your run while you skid, so ask it
+  else if (!SKID_ON || airborne) p.skid = false;
   else if (!p.skid && off > SKID.angle && v > SKID.speed) p.skid = true;
   else if (p.skid && (v < SKID.stop || off < SKID.release)) p.skid = false;
 

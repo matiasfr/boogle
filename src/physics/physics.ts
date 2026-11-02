@@ -17,9 +17,19 @@ import type { Body } from './engine.ts';
 import type { Remote } from '../netplay/net.ts';
 import type * as THREE from 'three';
 
-// Air acceleration (m/s²). ?air=35 tries another on any page (docs/research/third-person-platformer-movement.md,
-// rec 6: Celeste's air control is 0.65 of ground, ours 0.2); unset, it stays 14.
-const AIR_ACCEL = Number(new URLSearchParams(location.search).get('air')) || 14;
+const q = new URLSearchParams(location.search);
+/**
+ * ?ctl=odyssey: a modern-Mario-style controller to compare against today's (docs/research/third-person-platformer-
+ * movement.md, Odyssey's numbers). On the ground you run where you face, not where the stick points: facing turns
+ * towards the stick at a capped rate (src/player/player.ts), so runs carve arcs; speed follows stick tilt and builds
+ * over about a quarter second instead of snapping to it; pulling the stick back past 95° at speed skids to a stop and
+ * then pivots. Top speed is about 6 body heights per second, as Mario's. Unset, nothing here changes.
+ */
+export const ODYSSEY = q.get('ctl') === 'odyssey';
+const ODY = { run: 7.5, sprint: 10.5, accel: 30, brake: 60, skid: 50 }; // m/s, m/s²
+// Air acceleration (m/s²). ?air=35 tries another on any page (rec 6: Celeste's air control is 0.65 of ground, ours
+// 0.2); unset, it stays 14 (35 with ?ctl=odyssey).
+const AIR_ACCEL = Number(q.get('air')) || (ODYSSEY ? 35 : 14);
 
 // The physics world lives in ./engine.ts, the only module that imports a physics library.
 export { teleport };
@@ -95,6 +105,8 @@ type StepPlayer = {
   sprint: boolean;
   jumpQueued: number;
   wish: THREE.Vector3;
+  yaw: number;
+  skid: boolean;
 };
 type StepBall = { mine: boolean; held: boolean; body: Body };
 export function installStepHooks({
@@ -128,13 +140,26 @@ export function installStepHooks({
       const surfY = waterField.surfaceAt(b.position.x, b.position.z);
       const depth = surfY - (b.position.y + 0.35);
       me.swimming = depth > 0;
-      const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
+      const ground = me.coyote > 0 && !me.swimming;
+      const speed = ODYSSEY
+        ? (me.sprint ? ODY.sprint : ODY.run) * (me.swimming ? 0.55 : 1)
+        : (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
       const rvx = b.velocity.x - carry.x,
         rvz = b.velocity.z - carry.z;
       const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-      const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
-      let dx = me.wish.x * speed - rvx,
-        dz = me.wish.z * speed - rvz;
+      let accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
+      // The wanted velocity: where the stick points, or with ?ctl=odyssey on the ground, where you face.
+      let wx = me.wish.x * speed,
+        wz = me.wish.z * speed;
+      if (ODYSSEY && ground) {
+        const tilt = Math.min(1, Math.hypot(me.wish.x, me.wish.z));
+        const v = me.skid ? 0 : tilt * speed;
+        wx = -Math.sin(me.yaw) * v;
+        wz = -Math.cos(me.yaw) * v;
+        accel = me.skid ? ODY.skid : v * v < rvx * rvx + rvz * rvz ? ODY.brake : ODY.accel;
+      }
+      let dx = wx - rvx,
+        dz = wz - rvz;
       const dl = Math.hypot(dx, dz),
         maxDv = accel * FIXED;
       if (dl > maxDv) {
