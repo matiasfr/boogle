@@ -36,7 +36,7 @@ for (const [sx, sz] of [
   [1, 1],
   [-1, 1],
 ])
-  SLOTS.push({ piece: 'pole', x: sx * BAY.hx, y: 0, z: sz * BAY.hz, yaw: 0 });
+  SLOTS.push({ piece: 'pole', x: sx! * BAY.hx, y: 0, z: sz! * BAY.hz, yaw: 0 });
 for (const h of BAY.lifts) {
   for (const [sx, sz] of [
     [-1, -1],
@@ -44,7 +44,7 @@ for (const h of BAY.lifts) {
     [1, 1],
     [-1, 1],
   ])
-    SLOTS.push({ piece: 'clamp', x: sx * BAY.hx, y: h, z: sz * BAY.hz, yaw: sx < 0 ? Math.PI : 0 });
+    SLOTS.push({ piece: 'clamp', x: sx! * BAY.hx, y: h, z: sz! * BAY.hz, yaw: sx! < 0 ? Math.PI : 0 });
   for (const z of [-0.3, 0, 0.3]) SLOTS.push({ piece: 'plank', x: 0, y: h + 0.06, z, yaw: 0 });
 }
 const CYCLE = SLOTS.length * STAGGER + 0.6 + HOLD;
@@ -116,13 +116,13 @@ async function build() {
         const at = t - i * STAGGER;
         const show = at >= 0 && t < CYCLE - 0.3;
         for (const { list, isModel } of bays) {
-          const p = list[i];
+          const p = list[i]!;
           p.holder.visible = show;
           if (!show) p.started = false;
           else if (isModel && !p.started) {
             p.started = true;
-            play(p.holder, kit.clip('drop', SLOTS[i].piece));
-          } else if (!isModel) codeDrop(p.holder.children[0], Math.min(at, 0.6));
+            play(p.holder, kit.clip('drop', SLOTS[i]!.piece));
+          } else if (!isModel) codeDrop(p.holder.children[0]!, Math.min(at, 0.6));
         }
       }
     },
