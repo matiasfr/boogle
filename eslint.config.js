@@ -116,6 +116,7 @@ const entityPlugin = {
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
   'src/loop.ts', // onFrame itself, and the profiler
+  'src/render/scene.ts', // the scene and its base lights, which shaders and shadows read; entity.ts imports this file
   'src/render/particles.ts', // the particle simulation behind emit()
   'src/render/sprites.ts', // instancedSprite, behind particles, fireflies and the throw preview
   'src/render/lights.ts', // the lights pool

@@ -54,11 +54,6 @@
       "count": 2
     }
   },
-  "src/features/day-night.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/features/dino.ts": {
     "boogle/use-an-entity": {
       "count": 1
@@ -222,16 +217,6 @@
   "src/render/props.ts": {
     "boogle/use-an-entity": {
       "count": 3
-    }
-  },
-  "src/render/scene.ts": {
-    "boogle/use-an-entity": {
-      "count": 3
-    }
-  },
-  "src/render/sky.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
     }
   },
   "src/render/water-render.ts": {

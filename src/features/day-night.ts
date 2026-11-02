@@ -3,7 +3,9 @@
 //
 // `?tod=0.8` holds this tab's sky at a time of day (0 sunrise, 0.3 noon, 0.6 sunset, 0.8 midnight) and `&moon=0.5` at a
 // moon phase (0 new, 0.5 full), to judge a look without waiting for it. Display only: the world clock is untouched.
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
+import { sky } from '../render/scene.ts';
 import { createSky, updateSky, skyDebug } from '../render/sky.ts';
 
 const q = new URLSearchParams(location.search);
@@ -16,4 +18,5 @@ onStart(() => {
   if (window.boogle) window.boogle.sky = skyDebug; // debug handle: boogle.sky.preview(0.55)
 });
 // After the world tick (order -10), before the other per-frame features.
-onFrame(({ dt }) => updateSky(dt), { order: -5 });
+defineKind('sky', { update: -5 });
+spawn({ kind: 'sky', mesh: sky, update: ({ dt }) => updateSky(dt) });
