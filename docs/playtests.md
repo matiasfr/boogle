@@ -104,3 +104,9 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Liked: the animation, and "the idea that the trains are substantively growing the town with the cargo that they get from the rail expansion". "I know that looked cool."
 - Otherwise: "that's really it. I'm not totally sure beyond that." No clear answer on whether the haul feels good with the network helping.
 - After: trains growing the town from cargo is the part that lands. The next test is a real place with a choice, not more hauling variants.
+
+## 2026-11-02 (the crossing's sea pass)
+- Who: Matias, solo, `?proto=crossing`, default; told to the director.
+- "There's more to fix, but it's a good step for the water." Agreed with the director's list: steam puffs, a paler sky with no clouds, glitter that fades early, no shallows or foam at the piers, and greybox solid objects.
+- After: the water direction holds; the rest waits for a later look pass.
+
