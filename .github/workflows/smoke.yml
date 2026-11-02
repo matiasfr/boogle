@@ -76,7 +76,11 @@ jobs:
             "$URL" "$run" "${fails:-no scenario output; see the run log}")
           num=$(gh issue list --label smoke --state open --limit 1 --json number --jq '.[0].number')
           if [ -n "$num" ]; then
-            gh issue comment "$num" --body "$body"
+            # This runs after every deploy, so a lasting failure would comment on each one: every 6 hours is enough.
+            last=$(gh issue view "$num" --json comments,createdAt --jq '.comments[-1].createdAt // .createdAt')
+            if [ $(($(date -u +%s) - $(date -u -d "$last" +%s))) -gt 21600 ]; then
+              gh issue comment "$num" --body "$body"
+            fi
           else
             gh issue create --title 'Nightly smoke test is failing' --label smoke --body "$body"
           fi
