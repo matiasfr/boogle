@@ -27,7 +27,7 @@
           "symbol": "frame"
         },
         {
-          "file": "src/entities/player/index.ts"
+          "file": "src/entities/player/state.ts"
         }
       ]
     },

@@ -20,6 +20,8 @@ const MAX_ROWS = 8; // entities shown per kind in the table; --json has them all
 async function runHeadless(): Promise<InspectReport> {
   const { headless, frame } = await import('./world.ts');
   await headless();
+  const { enterIsland } = await import('../../src/entities/player/state.ts');
+  enterIsland('inspect'); // a player is in the world only once it enters
   for (let k = 0; k < frames; k++) frame();
   const { inspect } = await import('../../src/entity/inspect.ts');
   return inspect();

@@ -8,7 +8,7 @@ export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: fa
 export const inputState = {
   locked: false,
   lockFailed: false,
-  canLock: 'requestPointerLock' in Element.prototype,
+  canLock: 'requestPointerLock' in (globalThis.Element?.prototype ?? {}), // no Element in a headless run (dev/sim/)
   looked: false,
   seated: false,
   held: false,

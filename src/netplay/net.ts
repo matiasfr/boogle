@@ -13,7 +13,7 @@ import type { Field, Presence } from './presence-fields.ts';
 /** A peer as the room reports it (src/net/README.md). */
 type PeerEntry = { peer: string; sameTab?: boolean; presence?: Presence };
 type PoseSample = { p: number[]; r: number; s: unknown };
-/** What presence reads from the local player, each send (src/player/player.ts registers it: setLocalPresence). */
+/** What presence reads from the local player, each send (src/entities/player/state.ts registers it: setLocalPresence). */
 export type LocalPresence = {
   entered: boolean;
   name: string;

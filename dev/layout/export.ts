@@ -3,7 +3,7 @@
 // caves stay, they don't move), plus each movable POI's own footprint (height change and paint around its site), so the
 // lab can drag a POI and redraw the ground: ground = base + every POI's patch at its new place. Also ROUTE, the home
 // palms (src/world/home-land.json), spawn, the court and the numbers the lab times things with (run speeds from
-// src/entities/player/index.ts, the wagon's timetable from src/sim/wagon.ts).
+// src/entities/player/state.ts, the wagon's timetable from src/sim/wagon.ts).
 //
 // A layout file (dev/layouts/<name>.json, what the lab's "Copy layout" gives you) has the same shape without the
 // terrain: { version, name, pois: [{ id, x, z }], route: [{ age, x, z, to }], ... }. `?layout=<name>` in the game reads
@@ -119,9 +119,9 @@ const atCell = (c: { i: number; j: number }) => ({
 });
 
 // Run speeds, read from the player's movement code so the lab follows it.
-const physics = fs.readFileSync(path.join(root, 'src/entities/player/index.ts'), 'utf8');
+const physics = fs.readFileSync(path.join(root, 'src/entities/player/state.ts'), 'utf8');
 const sp = physics.match(/me\.sprint \? ([\d.]+) : ([\d.]+)\) \* \(me\.swimming \? ([\d.]+)/);
-if (!sp) throw new Error('run speeds not found in src/entities/player/index.ts');
+if (!sp) throw new Error('run speeds not found in src/entities/player/state.ts');
 
 const json = {
   version: 1,

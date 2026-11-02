@@ -25,10 +25,9 @@ An entity runs headless once it has a `headless.ts` (`src/entities/ball/` is the
 
 ## What's in the world, and what isn't
 
-In: the real ground, Rapier, the ball, the trees and rocks, the lockstep rules on the server's land, and the net code.
+In: the real ground, Rapier, the ball, the trees and rocks, the player once a run calls `enterIsland()` (`src/entities/player/state.ts`; it drives the player by writing to `input` and `cam`), the lockstep rules on the server's land, and the net code.
 
 Not yet:
 
-- **The player.** `src/entities/player/index.ts` is still one blob with its mesh, and `me.body` stays null. It runs headless once its state and view are split, as the ball's are. Until then a run calls `grabBall()` and `throwBall()` itself.
 - **Other entities and most features**: they have no `headless.ts`, and many reach the DOM or the scene as they load.
 - **POI structures and mushrooms.** They're built with what draws them, so a ball flies through them here. Pick a course that misses them; a comparison with the browser shows it if one does not. Trees and rocks are in: their colliders are data (`src/blueprints/props.ts`, `src/entities/props/`).

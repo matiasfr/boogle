@@ -1,5 +1,5 @@
-import { HALF, CELL } from '../constants.ts';
-import { material, createBody, addBody, teleport } from './engine.ts';
+import { HALF, CELL, HEAD_OFFSET, PLAYER_MASS, PLAYER_R } from '../constants.ts';
+import { BODY, material, createBody, addBody, teleport } from './engine.ts';
 import { groundHeight, heights } from '../island/heights.ts';
 import type { Body } from './engine.ts';
 
@@ -27,7 +27,7 @@ export const groundProbe = {
 
 // The physics engine has no continuous collision: a sphere that moves more than its radius in one step can end up with its
 // centre under the heightfield, and the contact then pushes it out the bottom. Falls are capped below that speed
-// (src/entities/player/index.ts: 0.33 m a step against a 0.45 m radius), and anything that still gets through is put back
+// (src/entities/player/state.ts: 0.33 m a step against a 0.45 m radius), and anything that still gets through is put back
 // on top.
 const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
 export function catchFallThrough(body: Body, r: number) {
@@ -47,6 +47,21 @@ addBody(
     shapes: [{ kind: 'heightfield', heights, cell: CELL }],
   }),
 );
+
+// A player's body: yours (dynamic), or a remote's (kinematic: moved by the network, not by the ground).
+export function makePlayerBody(kinematic: boolean) {
+  return createBody({
+    mass: kinematic ? 0 : PLAYER_MASS,
+    type: kinematic ? BODY.KINEMATIC : BODY.DYNAMIC,
+    material: playerMat,
+    fixedRotation: true,
+    mask: kinematic ? NOT_SCENERY : -1,
+    shapes: [
+      { kind: 'sphere', r: PLAYER_R },
+      { kind: 'sphere', r: PLAYER_R, offset: { x: 0, y: HEAD_OFFSET, z: 0 } },
+    ],
+  });
+}
 
 /** A static body of spheres, not yet in the world: for an entity's `bodies`. */
 export function staticSpheresBody(spheres: { x: number; y: number; z: number; r: number }[]) {

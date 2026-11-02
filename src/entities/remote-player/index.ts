@@ -10,7 +10,8 @@ import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
 import { teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
-import { makeAvatar, makeLabel, makePlayerBody, animateAvatar } from '../../player/avatars.ts';
+import { makeAvatar, makeLabel, animateAvatar } from '../../player/avatars.ts';
+import { makePlayerBody } from '../../physics/physics.ts';
 import {
   addPresenceField,
   localPresence,

@@ -11,10 +11,10 @@
 //               (presence key `riding`, src/entities/remote-player/) and other tabs draw them on their own copy, so
 //               they stay put on the deck instead of trailing it by the presence delay.
 //   platformById(id), toPlatform(p, pos, yaw, out), fromPlatform(p, local, interpolated, out): that frame's maths
-//   carry       the velocity the player's steering is relative to (src/entities/player/index.ts adds it to the target):
+//   carry       the velocity the player's steering is relative to (src/entities/player/state.ts adds it to the target):
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and
 //               bled away once you land on plain ground or water (a short skid; landing fast counts a tumble)
-//   carry.spin  yaw (radians) the deck turned under you since the last frame; player.ts turns you and the camera by it
+//   carry.spin  yaw (radians) the deck turned under you since the last frame; src/entities/player/ turns you and the camera by it
 //
 // Riding works in the deck's frame: the player's velocity is the deck point's velocity plus the steered part, so
 // Rapier moves body and deck together (zero friction, no sliding) and jumping off keeps the deck's speed for free.
@@ -135,7 +135,7 @@ function deckUnder(b: Body) {
   return null;
 }
 
-// Once per fixed step, before the player's steering (src/entities/player/index.ts). me.coyote > 0: on some ground.
+// Once per fixed step, before the player's steering (src/entities/player/state.ts). me.coyote > 0: on some ground.
 export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
   const p = deckUnder(b);
   if (p) {
