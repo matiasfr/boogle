@@ -10,9 +10,9 @@ export type Dwell = { stop: number; dir: 1 | -1; start: number; end: number };
 
 /** Where station k stands (world metres): section k's site, or the far end of the route's last section. */
 export function stationAt(k: number): { x: number; z: number } {
-  if (k < ROUTE.length) return { x: ROUTE[k].x, z: ROUTE[k].z };
-  const to = ROUTE[ROUTE.length - 1].to;
-  return { x: to[0], z: to[1] };
+  if (k < ROUTE.length) return { x: ROUTE[k]!.x, z: ROUTE[k]!.z };
+  const to = ROUTE[ROUTE.length - 1]!.to;
+  return { x: to[0]!, z: to[1]! };
 }
 
 const cache = new Map<string, Dwell[]>();
