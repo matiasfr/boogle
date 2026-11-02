@@ -115,7 +115,10 @@ function rotorParts() {
   for (let k = 0; k < 4; k++) {
     const a = (k / 4) * Math.PI * 2;
     const rot = new THREE.Euler(0, 0, a);
-    const along = (d: number, w: number) => [Math.cos(a) * d - Math.sin(a) * w, Math.sin(a) * d + Math.cos(a) * w];
+    const along = (d: number, w: number): [number, number] => [
+      Math.cos(a) * d - Math.sin(a) * w,
+      Math.sin(a) * d + Math.cos(a) * w,
+    ];
     const [cx, cy] = along(SAIL_LEN / 2, 0);
     put(parts, box, cx, cy, 0, SAIL_LEN, 0.2, 0.2, '#6b4c30', rot); // whip
     for (const w of [-0.75, 0.75]) {
@@ -221,7 +224,8 @@ function build() {
     );
   }
   // Fences either side of the track where it runs through the wheat (local z 13 to 22.5).
-  const [[ax, az], [bx, bz]] = TRACK.slice(1);
+  const [ax, az] = TRACK[1]!,
+    [bx, bz] = TRACK[2]!;
   const slope = (bx - ax) / (bz - az);
   const railYaw = Math.atan2(frame.fx, frame.fz) + Math.atan2(bx - ax, bz - az);
   for (const side of [-2.1, 2.1])

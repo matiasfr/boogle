@@ -106,7 +106,8 @@ const PALETTE: Record<number, [string, string]> = {
 // A steady 0..1 hash of vertex v's position, to vary the rock colour vertex by vertex.
 function vertexNoise(positions: ArrayLike<number>, v: number) {
   const h =
-    Math.sin(positions[v * 3] * 12.9898 + positions[v * 3 + 2] * 78.233 + positions[v * 3 + 1] * 37.719) * 43758.5453;
+    Math.sin(positions[v * 3]! * 12.9898 + positions[v * 3 + 2]! * 78.233 + positions[v * 3 + 1]! * 37.719) *
+    43758.5453;
   return h - Math.floor(h);
 }
 
@@ -117,36 +118,36 @@ function makeGeometry(m: CaveMesh) {
   const vis: number[] = [],
     col: number[] = [];
   for (let n = 0; n < indices.length; n += 3) {
-    const a = indices[n] * 3,
-      b = indices[n + 1] * 3,
-      c = indices[n + 2] * 3;
+    const a = indices[n]! * 3,
+      b = indices[n + 1]! * 3,
+      c = indices[n + 2]! * 3;
     const out = outOfMouth(
-      (positions[a] + positions[b] + positions[c]) / 3,
-      (positions[a + 2] + positions[b + 2] + positions[c + 2]) / 3,
+      (positions[a]! + positions[b]! + positions[c]!) / 3,
+      (positions[a + 2]! + positions[b + 2]! + positions[c + 2]!) / 3,
     );
-    if (out < 0.7) vis.push(indices[n], indices[n + 1], indices[n + 2]); // overlaps the trench floor a little
-    if (out < COLLIDER_OUT) col.push(indices[n], indices[n + 1], indices[n + 2]);
+    if (out < 0.7) vis.push(indices[n]!, indices[n + 1]!, indices[n + 2]!); // overlaps the trench floor a little
+    if (out < COLLIDER_OUT) col.push(indices[n]!, indices[n + 1]!, indices[n + 2]!);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setIndex(vis);
   geo.computeVertexNormals();
-  const nrm = geo.attributes.normal.array;
+  const nrm = geo.attributes.normal!.array;
   const colors = new Float32Array(positions.length);
   const brick = new Float32Array(positions.length / 3);
   const amb = new Float32Array(positions.length / 3);
   const tmp = new THREE.Color(),
     floorC = new THREE.Color();
   for (let v = 0; v < positions.length / 3; v++) {
-    const [wall, floor] = PALETTE[zones[v]] ?? PALETTE[ZONE.TUNNEL];
+    const [wall, floor] = PALETTE[zones[v]!] ?? PALETTE[ZONE.TUNNEL]!;
     tmp.set(wall);
     floorC.set(floor);
-    tmp.lerp(floorC, THREE.MathUtils.smoothstep(nrm[v * 3 + 1], 0.45, 0.85)); // floors
+    tmp.lerp(floorC, THREE.MathUtils.smoothstep(nrm[v * 3 + 1]!, 0.45, 0.85)); // floors
     const vary = 0.9 + 0.2 * vertexNoise(positions, v);
-    const up = nrm[v * 3 + 1] < -0.5 ? 0.8 : 1; // ceilings a touch darker
+    const up = nrm[v * 3 + 1]! < -0.5 ? 0.8 : 1; // ceilings a touch darker
     colors.set([tmp.r * vary * up, tmp.g * vary * up, tmp.b * vary * up], v * 3);
     brick[v] = zones[v] === ZONE.CELLAR ? 1 : 0;
-    amb[v] = ambAt(positions[v * 3], positions[v * 3 + 2]);
+    amb[v] = ambAt(positions[v * 3]!, positions[v * 3 + 2]!);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.setAttribute('aBrick', new THREE.BufferAttribute(brick, 1));
