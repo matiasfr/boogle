@@ -75,17 +75,17 @@ export function createFriend(): Friend {
 
 export function levelOf(pts: number) {
   let l = 0;
-  while (l < MAX_LEVEL && pts >= LEVELS[l + 1].at) l++;
+  while (l < MAX_LEVEL && pts >= LEVELS[l + 1]!.at) l++;
   return l;
 }
 
 // frac: progress from this level's threshold toward the next (1 at the top level).
 export function bond(f: Friend) {
   const level = levelOf(f.pts);
-  if (level === MAX_LEVEL) return { level, name: LEVELS[level].name, frac: 1 };
-  const lo = LEVELS[level].at,
-    hi = LEVELS[level + 1].at;
-  return { level, name: LEVELS[level].name, frac: (f.pts - lo) / (hi - lo) };
+  if (level === MAX_LEVEL) return { level, name: LEVELS[level]!.name, frac: 1 };
+  const lo = LEVELS[level]!.at,
+    hi = LEVELS[level + 1]!.at;
+  return { level, name: LEVELS[level]!.name, frac: (f.pts - lo) / (hi - lo) };
 }
 
 // Adds points (never below zero). Returns the new level when it went up, else 0.
@@ -124,7 +124,7 @@ export const isQuiet = (f: Friend, now: number) => now < f.quietUntil;
 // kind: 'happy' (scored), 'again' (too soon or too many, no points), 'wary' (still sore about rides).
 export function pet(f: Friend, now: number): { kind: 'happy' | 'again' | 'wary'; pts: number; levelUp: number } {
   if (isWary(f, now)) return { kind: 'wary', pts: 0, levelUp: 0 };
-  const last = f.pets.length ? f.pets[f.pets.length - 1] : -Infinity;
+  const last = f.pets.length ? f.pets[f.pets.length - 1]! : -Infinity;
   if (now - last < RULES.petGap || f.pets.length >= RULES.petMax) return { kind: 'again', pts: 0, levelUp: 0 };
   f.pets.push(now);
   return { kind: 'happy', pts: RULES.petPts, levelUp: addPts(f, RULES.petPts) };

@@ -51,7 +51,7 @@ function save() {
     // storage unavailable; the friendship lasts until reload
   }
 }
-const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)];
+const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
 const named = (s: string) => s.replaceAll('{name}', me.name || 'friend');
 
 // ---------------------------------------------------------------- presence and shared reactions
@@ -84,14 +84,14 @@ function playRemoteEvents() {
   for (const r of remotes.values() as Iterable<BgRemote>) {
     if (!r.bg) continue;
     const prev = seen.get(r.peer);
-    seen.set(r.peer, r.bg[3]);
-    if (prev !== undefined && prev !== r.bg[3]) play(r.bg[2]);
+    seen.set(r.peer, r.bg[3]!);
+    if (prev !== undefined && prev !== r.bg[3]) play(r.bg[2]!);
   }
 }
 
 function celebrate(level: number) {
   emit(EV.LEVEL);
-  const line = named(LEVEL_UP[level]);
+  const line = named(LEVEL_UP[level]!);
   if (dialogue.open) dialogueReact({ line, mood: 'joy', hearts: true, bond: bond(f()) });
   else booglerSay(line, 3200);
 }
@@ -176,10 +176,10 @@ function updateRide(dt: number, now: number) {
   if (on && !ride.puffAt) {
     ride.t += dt;
     const frac = ride.t / limit;
-    while (ride.warned < RIDE_WARN.length && frac >= RIDE_WARN[ride.warned]) booglerSay(RIDE[ride.warned++], 1500);
+    while (ride.warned < RIDE_WARN.length && frac >= RIDE_WARN[ride.warned]!) booglerSay(RIDE[ride.warned++]!, 1500);
     if (frac >= 1) {
       ride.puffAt = now;
-      booglerSay(RIDE[RIDE.length - 1], PUFF_MS + 200);
+      booglerSay(RIDE[RIDE.length - 1]!, PUFF_MS + 200);
       emit(EV.PUFF);
     }
   } else if (!on && !ride.puffAt) {
@@ -220,7 +220,7 @@ const loadTalk = () => (talkMod ??= import('./talk.ts').then((m) => (talkApi = m
 // He is offered whatever is in your hand, and takes it from there (one seed off a stack).
 function giftList() {
   const id = heldId();
-  return id ? [{ kind: giftIndex(id), label: GIFTS[giftIndex(id)].name }] : [];
+  return id ? [{ kind: giftIndex(id), label: GIFTS[giftIndex(id)]!.name }] : [];
 }
 
 function converse(start: 'menu' | 'kick'): boolean {
@@ -236,7 +236,7 @@ function converse(start: 'menu' | 'kick'): boolean {
     start,
     mario: guest.active,
     gifts: giftList,
-    give: (kind: number) => heldId() === GIFTS[kind].id && !!useOne(),
+    give: (kind: number) => heldId() === GIFTS[kind]!.id && !!useOne(),
   });
   render();
   return true;
