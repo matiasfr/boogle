@@ -9,10 +9,10 @@ import './prompt.css';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { toScreen, view } from '../render/scene.ts';
 import { me } from '../player/player.ts';
-import { interactTarget, mainVerb, onInteractPress, type Interactable } from '../player/hands.ts';
+import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
 import { conversation } from '../player/conversation.ts';
-import { glyph, inputKind } from '../player/glyphs.ts';
+import { glyph } from '../player/glyphs.ts';
 
 const onScreen = { x: 0, y: 0, behind: false };
 const ui = {
@@ -41,9 +41,7 @@ spawn({
   kind: 'prompt',
   lateUpdate() {
     const root = ui.root ?? build();
-    // On touch a ball in the air is the main button's to bump, not this prompt's to grab.
-    const bumps = inputKind() === 'touch' && mainVerb() === 'Bump';
-    const t = me.entered && !me.charging && !conversation.open && !bumps ? interactTarget() : null;
+    const t = me.entered && !me.charging && !conversation.open ? interactTarget() : null;
     const html = t ? chip(t) : '';
     // A target that draws its own prompt gets the markup each frame, and '' once when it stops being the one.
     if (ui.show && (ui.showId !== t?.id || ui.show !== t.show)) ui.show('');

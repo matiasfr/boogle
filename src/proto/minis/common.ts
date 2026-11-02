@@ -6,7 +6,6 @@ import { getAudio } from '../../render/audio.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
 import { ball } from '../../entities/ball/state.ts';
-import { me } from '../../player/player.ts';
 import { onFrame } from '../../loop.ts';
 
 // ---------------------------------------------------------------- a big label that faces the camera
@@ -240,21 +239,15 @@ export function puff(x: number, y: number, z: number, n: number, speed: number, 
 }
 
 // ---------------------------------------------------------------- your own shots at the ball
-// A throw (the ball leaves your hands) or a bump (src/player/bump.ts stamps me.bumpAt). Listeners get the kind.
-type Shot = 'throw' | 'bump';
-const shotFns: ((s: Shot) => void)[] = [];
-export const onShot = (fn: (s: Shot) => void) => shotFns.push(fn);
-let wasHeld = false,
-  lastBump = me.bumpAt;
+// A throw: the ball leaves your hands.
+const shotFns: (() => void)[] = [];
+export const onShot = (fn: () => void) => shotFns.push(fn);
+let wasHeld = false;
 onFrame(
   () => {
     const held = ball.mine && ball.held;
-    if (wasHeld && !held && ball.mine) for (const fn of shotFns) fn('throw');
+    if (wasHeld && !held && ball.mine) for (const fn of shotFns) fn();
     wasHeld = held;
-    if (me.bumpAt !== lastBump) {
-      lastBump = me.bumpAt;
-      for (const fn of shotFns) fn('bump');
-    }
   },
   { phase: 'late', order: 41 },
 );

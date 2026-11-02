@@ -109,6 +109,6 @@ lower, deeper and a little shorter than on the capsule, so its head shows over t
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right
 mitt: a bag of seeds carried down at the hip by the handle, anything else with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
 eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
-being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward; a bump is both forearms up, like a volleyball dig (seen on your own only, as no presence says so). The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
+being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward. The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
 
 boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.

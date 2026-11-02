@@ -265,7 +265,7 @@ export function initInput() {
     up: releaseJump,
   });
   // X acts on what's in front of you (Talk, Pick up, Take, Get in); RT and the click are the main action: use what you
-  // hold, or bump the ball with empty hands. B is back: it closes talks and menus and puts a wound-up throw away.
+  // hold. B is back: it closes talks and menus and puts a wound-up throw away.
   registerAction('interact', {
     pad: 'x',
     label: 'Talk, pick up, take',
@@ -278,11 +278,11 @@ export function initInput() {
   });
   registerAction('use', {
     pad: 'rt',
-    label: 'Use what you hold, or bump the ball',
+    label: 'Use what you hold',
     detail: {
-      kbm: 'Hold to charge a throw. Empty hands bump a ball in reach, like a volleyball dig',
-      pad: 'Hold to charge a throw. Empty hands bump a ball in reach, like a volleyball dig',
-      touch: 'The main button, when it reads Throw, Sprout or Bump',
+      kbm: 'Hold to charge a throw',
+      pad: 'Hold to charge a throw',
+      touch: 'The main button, when it reads Throw or Sprout',
     },
     keys: ['Mouse0'],
     touch: 'Main button',

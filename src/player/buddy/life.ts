@@ -42,8 +42,7 @@ const FADE = { in: 0.07, out: 0.09, arm: 0.1, load: 0.2 }; // s
 const BLINK = { closed: 0.1, every: 2, more: 3.5 }; // s; `every` + up to `more` between blinks
 const HELD_SCALE = 0.82; // things in hand, made for the capsule's bulk
 const HANG_HOLD = 0.8;
-const DIG_MS = 260,
-  RELEASE_MS = 240;
+const RELEASE_MS = 240;
 const LOAD_LEAN = { base: 5, full: 11, at: 16 }; // degrees forward with any load, and at this many logs
 
 // Arm poses for the figure's left arm, mirrored for the right: where the upper arm and the forearm point, in its frame.
@@ -55,7 +54,6 @@ const ARMS = {
   rest: { upper: [0.4, -0.9, 0.12], lower: [0.22, -0.95, 0.2] }, // seated, hands down at its sides
   windup: { upper: [0.75, 0.35, -0.55], lower: [0.1, 0.95, 0.2] }, // about to throw, the hand up behind its shoulder
   release: { upper: [0.35, 0.35, 0.87], lower: [0.1, -0.1, 1] }, // and after it, the arm flung forward
-  dig: { upper: [0.25, -0.2, 0.95], lower: [-0.3, 0.42, 0.85] }, // a bump: both forearms up in front, a volleyball dig
   reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
   sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
 } satisfies Record<string, { upper: V3; lower: V3 }>;
@@ -73,7 +71,6 @@ export type LifeState = {
   seated: boolean;
   down: number; // 0..1: how far flopped over (src/features/impact.ts)
   charging?: boolean; // winding up a throw (your own only: no presence says so)
-  bumpAt?: number; // performance.now() of your last bump
 };
 
 export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
@@ -200,8 +197,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
       const now = performance.now();
       if (wasCharging && !s.charging) releasedAt = now;
       wasCharging = !!s.charging;
-      const digging = now - (s.bumpAt ?? -1e9) < DIG_MS,
-        releasing = now - releasedAt < RELEASE_MS;
+      const releasing = now - releasedAt < RELEASE_MS;
       const k = 1 - Math.exp(-dt / FADE.arm);
       for (let i = 0; i < arms.length; i++) {
         const arm = arms[i]!;
@@ -211,21 +207,19 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
             ? 'sprawl'
             : s.seated
               ? 'rest'
-              : digging
-                ? 'dig'
-                : s.charging && right
-                  ? 'windup'
-                  : releasing && right
-                    ? 'release'
-                    : s.hold === 'ball'
-                      ? 'reach'
-                      : s.hold === 'item' && right
-                        ? 'hold'
-                        : s.hold === 'hang' && right
-                          ? 'hang'
-                          : s.load
-                            ? 'strap'
-                            : null;
+              : s.charging && right
+                ? 'windup'
+                : releasing && right
+                  ? 'release'
+                  : s.hold === 'ball'
+                    ? 'reach'
+                    : s.hold === 'item' && right
+                      ? 'hold'
+                      : s.hold === 'hang' && right
+                        ? 'hang'
+                        : s.load
+                          ? 'strap'
+                          : null;
         for (let j = 0; j < NAMES.length; j++) {
           const n = NAMES[j]!;
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;

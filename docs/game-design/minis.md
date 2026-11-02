@@ -11,7 +11,7 @@ toys first) and 10 (Slapstick over precision). Gut question: "Which of these wou
 
 - A green tee mat at (4, 19); a red-and-white bucket with a tall yellow flag at (-30, 16.5), 34 m west past the palm
   grove. **Tee off** (Interact at the tee) puts the beach ball on the tee and zeroes the count; **Start over** there does
-  it again. Every throw and bump is a stroke; carrying the ball costs a stroke for every 3 m walked with it. The
+  it again. Every throw is a stroke; carrying the ball costs a stroke for every 3 m walked with it. The
   count floats over the ball.
 - The ball in the bucket (inside its rim, not held) ends the hole: Hole in one / Eagle / Birdie / Par / Bogey over the
   flag, against par 3 and your best (fewest strokes, localStorage). Par or better, or a best, gets confetti and a
