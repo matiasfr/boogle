@@ -157,6 +157,12 @@ export function shadersMark() {
   });
 }
 
+/** Resolves when the GPU has finished what was submitted so far, compiles a frame needed included. */
+export function gpuDone(): Promise<void> {
+  const { device } = renderer.backend as unknown as { device: { queue: { onSubmittedWorkDone(): Promise<void> } } };
+  return device.queue.onSubmittedWorkDone();
+}
+
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);

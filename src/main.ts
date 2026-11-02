@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
-import { precompile, shadersMark } from './render/precompile.ts';
+import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
 import { createWaterMesh } from './render/water-render.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
@@ -70,14 +70,16 @@ function start() {
 
 async function play() {
   // Slow GPUs (and software rendering) can take many seconds: past 8 s the game opens anyway and the rest builds on.
+  const giveUp = new Promise((r) => setTimeout(r, 8000));
   splashStage(0.45, 0.95, 'Warming up the shaders');
-  await Promise.race([precompile(null, splashProgress), new Promise((r) => setTimeout(r, 8000))]);
+  await Promise.race([precompile(null, splashProgress), giveUp]);
   shadersMark();
+  lobbyReady(); // a returning player joins here, so their avatar's first draw is behind the loading screen too
   last = performance.now();
   renderer.setAnimationLoop(frame); // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
+  await Promise.race([gpuDone(), giveUp]); // submitted is not finished: the screen lifts once the GPU has caught up
   bootMark('first');
-  lobbyReady();
   splashDone();
   bootMark('interactive');
   prefetchAssets(); // the content manifest's `soon` files, in idle time (src/render/asset-manifest.ts)

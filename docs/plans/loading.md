@@ -181,6 +181,9 @@ const RIG = registerAsset({ id: 'hero-rig', url: rigUrl, kind: 'model', priority
 
 ### c. Shaders
 
+A pipeline's cache key includes its target's colour space, so `scenePass` shares the one three's `compileAsync` target
+has. Until 2 November 2026 it didn't, and the first frame built 23 of the warm-up's pipelines again, which Chrome hides.
+
 Facts: three r187 keeps pipelines in memory only (`Pipelines.js`), WebGPU has no persistent pipeline cache API, and
 three generates WGSL from node materials in JS at runtime. Chrome keeps a disk cache of compiled shaders per profile;
 Safari's behaviour is the open question above.
