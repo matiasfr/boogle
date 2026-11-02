@@ -333,6 +333,11 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
     variants: [
       {
+        name: 'buddy',
+        url: '/?proto=hero&body=buddy&v=buddy',
+        what: 'A simple, slightly plump smooth figure in your colour, on the same clips.',
+      },
+      {
         name: 'tracklayer',
         url: '/?proto=hero&body=tracklayer&v=tracklayer',
         what: 'The real character: the Tracklayer, a proper 3D model on the same clips.',

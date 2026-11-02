@@ -16,7 +16,8 @@ import { startHeroCamera } from './camera.ts';
 import { LOOKS, applyLook, inflate } from './looks.ts';
 import url from '../../../assets/built/hero-clips.glb?url';
 import tracklayerUrl from '../../../assets/built/tracklayer.glb?url';
-import { retargetClip } from './retarget.ts';
+import buddyUrl from '../../../assets/built/buddy.glb?url';
+import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from './retarget.ts';
 
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
 // The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
@@ -103,27 +104,36 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   for (const [bone, k] of r.spread) bone.position.multiplyScalar(k);
 }
 
-// &body=tracklayer: the real character (assets/src/tracklayer.json, made with Meshy) on the same clips, retargeted onto its
-// own skeleton at load. It keeps its painted textures for now, so it doesn't take the player's colour yet.
+// &body=buddy (assets/src/buddy.py, a simple smooth figure in the player's colour) and &body=tracklayer (a fixed design,
+// assets/src/tracklayer.json, made with Meshy): the same clips, retargeted onto each one's own skeleton at load.
 const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the mannequin's
-async function startTracklayer() {
-  const [clips, model] = await Promise.all([loadAsset(url), loadAsset(tracklayerUrl)]);
+async function startModel(modelUrl: string, map: Record<string, string>, tint: boolean) {
+  const [clips, model] = await Promise.all([loadAsset(url), loadAsset(modelUrl)]);
   shadeOnce(model.gltf.scene);
   const src = clips.instance();
   const tgt = model.instance();
   let ratio = 1;
   const baked = new Map<string, THREE.AnimationClip>();
   for (const n of NAMES) {
-    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { armOut: ARM_OUT });
+    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { map, armOut: ARM_OUT });
     baked.set(n, r.clip);
     ratio = r.ratio;
   }
-  const dress = (a: Avatar) => {
+  const dress = (a: Avatar, colorIdx: number) => {
     if (rigs.has(a)) return;
     const holder = model.instance();
     const root = holder.children[0]!;
     holder.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) o.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
+      const shared = m.material as THREE.MeshStandardNodeMaterial;
+      if (tint && shared.name === 'M_Main') {
+        const own = shared.clone();
+        own.color.set(COLORS[colorIdx]!);
+        m.material = own;
+        a.userData.mat = own as unknown as THREE.MeshStandardMaterial;
+      }
     });
     holder.position.y = -PLAYER_R;
     holder.rotation.y = Math.PI; // the model faces +z; avatars face -z
@@ -151,7 +161,7 @@ async function startTracklayer() {
       airT: 1,
       landT: 1,
       scaled: [],
-      pelvis: root.getObjectByName('Hips')!,
+      pelvis: root.getObjectByName(map.pelvis!)!,
       legs: 1,
       spread: [],
       strideK: ratio,
@@ -163,7 +173,9 @@ async function startTracklayer() {
 }
 
 export async function startClipsHero() {
-  if (new URLSearchParams(location.search).get('body') === 'tracklayer') return startTracklayer();
+  const body = new URLSearchParams(location.search).get('body');
+  if (body === 'tracklayer') return startModel(tracklayerUrl, UAL_TO_MESHY, false);
+  if (body === 'buddy') return startModel(buddyUrl, UAL_TO_SELF, true);
   const kit = await loadAsset(url);
   shadeOnce(kit.gltf.scene);
   const dress = (a: Avatar, colorIdx: number) => {

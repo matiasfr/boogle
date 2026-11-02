@@ -10,8 +10,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { patchNode } from '../src/render/material-patch.ts';
-import { retargetClip } from '../src/proto/hero/retarget.ts';
-import modelUrl from '../assets/built/tracklayer.glb?url';
+import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from '../src/proto/hero/retarget.ts';
+import tracklayerUrl from '../assets/built/tracklayer.glb?url';
+import buddyUrl from '../assets/built/buddy.glb?url';
 import clipsUrl from '../assets/built/hero-clips.glb?url';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -33,6 +34,15 @@ const VIEWS: Record<string, { yaw: number; dist: number; y: number }> = {
   Close: { yaw: 0.4, dist: 1.5, y: 1.5 },
   Game: { yaw: Math.PI, dist: 6.5, y: 2.6 }, // about where the game's camera sits
 };
+
+const MODELS: Record<string, { label: string; url: string; map: Record<string, string> }> = {
+  buddy: { label: 'The Buddy', url: buddyUrl, map: UAL_TO_SELF },
+  tracklayer: { label: 'The Tracklayer', url: tracklayerUrl, map: UAL_TO_MESHY },
+};
+const modelName = new URLSearchParams(location.search).get('model') ?? 'buddy';
+const chosen = MODELS[modelName] ?? MODELS.buddy!;
+const modelUrl = chosen.url;
+const COLOURS = ['#1fbfc4', '#ff6b5a', '#ffb02e', '#7ed321', '#4a90e2', '#a55eea', '#ff5e9e', '#ff8a3d'];
 
 const canvas = $<HTMLCanvasElement>('view');
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
@@ -116,8 +126,8 @@ const texSize = Math.max(...textures.map((t) => (t.image as { width: number }).w
 const fileKB = async (url: string) => Math.round((await (await fetch(url)).arrayBuffer()).byteLength / 1024);
 const kb = await fileKB(modelUrl);
 $('stats').textContent =
-  `The Tracklayer. ${Math.round(triangles).toLocaleString()} triangles, ${kb.toLocaleString()} KB, ` +
-  `${new Set(textures).size} textures at ${texSize} px.`;
+  `${chosen.label}. ${Math.round(triangles).toLocaleString()} triangles, ${kb.toLocaleString()} KB` +
+  (textures.length ? `, ${new Set(textures).size} textures at ${texSize} px.` : ', no textures.');
 
 const figure = cloneSkinned(model.scene);
 const srcFigure = cloneSkinned(clipKit.scene);
@@ -130,7 +140,7 @@ function bake(armOut: number) {
   baked = new Map(
     CLIPS.map(([, name]) => {
       const clip = clipKit.animations.find((a) => a.name === name)!;
-      return [name, retargetClip(clip, srcFigure, restFigure, { armOut }).clip];
+      return [name, retargetClip(clip, srcFigure, restFigure, { map: chosen.map, armOut }).clip];
     }),
   );
 }
@@ -168,6 +178,15 @@ function button(parent: string, label: string, on: () => void) {
 }
 for (const [label, name] of CLIPS) button('clips', label, () => play(name)).dataset.clip = name;
 for (const name of Object.keys(VIEWS)) button('views', name, () => setView(name));
+for (const [name, m] of Object.entries(MODELS))
+  button('models', m.label, () => (location.search = '?model=' + name)).classList.toggle('on', m === chosen);
+const skin = [...materials].find((m) => m.name === 'M_Main');
+if (skin)
+  for (const c of COLOURS) {
+    const b = button('colours', '', () => skin.color.set(c));
+    b.style.cssText = `background:${c};width:24px;height:24px;padding:0`;
+    b.setAttribute('aria-label', 'Colour ' + c);
+  }
 const rimButtons = [button('rims', 'Rim on', () => setRim(1)), button('rims', 'Rim off', () => setRim(0))];
 function setRim(v: number) {
   rimOn.value = v;
