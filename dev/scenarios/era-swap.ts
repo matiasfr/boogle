@@ -3,9 +3,9 @@
 // reaches the platform, the bell counts down, and the island swaps from era-1 to era-2 (blocks, sky and fog), with a
 // before/after postcard. Stills from the court before, during the call and after, the ring at the platform, and a
 // motion sheet of call -> bell -> swap. Serves DESIGN.md 7.
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
-// The parts of the harness (dev/scenarios/run.mjs, dev/look/lib.mjs) this scenario uses.
+// The parts of the harness (dev/scenarios/run.ts, dev/look/lib.ts) this scenario uses.
 type Game = {
   eval: (body: string) => Promise<unknown>;
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;

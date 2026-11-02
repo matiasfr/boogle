@@ -1,6 +1,6 @@
 name: Smoke
 
-# Two-player check of the live site, after every deploy and nightly (dev/scenarios/smoke.mjs): two headless tabs join room smoke-<UTC weekday
+# Two-player check of the live site, after every deploy and nightly (dev/scenarios/smoke.ts): two headless tabs join room smoke-<UTC weekday
 # 1-7>, see each other, toss an item, throw the ball and compare per-state world hashes. Seven rooms in rotation keep
 # nightly runs from filling the server's MAX_ROOMS, and a reused room also loads its stored snapshot. On failure (or timeout)
 # it opens, or comments on, the one open issue labelled 'smoke', with the failing checks and a link to the run

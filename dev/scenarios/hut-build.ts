@@ -2,9 +2,9 @@
 // ring with the usual ops (src.take, site.stock) and the helper hut goes up as it fills: scaffold, then pieces landing,
 // then the scaffold comes down. Then the finished hut from the spawn and the court, and fresh joins (desktop and iPad
 // size) that must see it standing at once, with no replay. Motion sheets and stills to read. Serves DESIGN.md 7 and 9.
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
-// The parts of the harness (dev/scenarios/run.mjs, dev/look/lib.mjs) this scenario uses.
+// The parts of the harness (dev/scenarios/run.ts, dev/look/lib.ts) this scenario uses.
 type Game = {
   eval: (body: string) => Promise<unknown>;
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;

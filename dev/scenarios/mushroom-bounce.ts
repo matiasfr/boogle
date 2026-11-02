@@ -1,7 +1,7 @@
 // A grown mushroom bounces you: grow one on open grass, drop the player onto the middle of its cap from 2 m above, and
 // record the body's height for 2.5 s. The first bounce has to lift you well clear of the cap (an owner's playtest found
 // you stuck on top, re-landing every frame). A motion sheet of the bounce. Serves DESIGN.md 1 and 10.
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;

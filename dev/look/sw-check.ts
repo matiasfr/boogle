@@ -13,7 +13,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { spawnSync } from 'node:child_process';
 import { createService, loadConfig } from '../../server/src/server.js';
-import { launch, root, sleep } from './lib.mjs';
+import { launch, root, sleep } from './lib.ts';
 
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-sw-'));
 const server = createService(loadConfig({ DATA_DIR: data, SERVER_ROOMS: '*' }, { log: () => {} }));

@@ -1,7 +1,7 @@
 // The haul playtest kit (docs/playtest-kits/haul.md), solo: in a proto- room with ?proto=haul the panel is open, a
 // room-wide knob (the hard cap) changes the world, Reset haul empties it again; a normal room without the flag has no
 // panel and refuses tuning. Serves DESIGN.md 1 (toys before chores).
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;

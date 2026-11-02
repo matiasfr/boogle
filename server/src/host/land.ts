@@ -1,5 +1,5 @@
 // The land the server's world runs on (docs/plans/server-host.md, "Land on the server"): src/world/home-land.json,
-// pinned by dev/scenarios/world-inputs.mjs in the running game. The rules need only { n, layout }; the plant mask
+// pinned by dev/scenarios/world-inputs.ts in the running game. The rules need only { n, layout }; the plant mask
 // stands in for the browser's canPlantAt (src/adapters/mushroom-garden.ts), which reads the rendered terrain.
 //
 //   const { land, canPlantAt } = loadHomeLand()

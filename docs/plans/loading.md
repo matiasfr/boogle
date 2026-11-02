@@ -38,7 +38,7 @@ the work done before the first frame. The architecture, in six lines:
   twice (warm). Each page sends its timeline to the script with `?boottrace=<port>` (a `sendBeacon` to 127.0.0.1, only
   from a page served by this machine). Prints medians per phase and every page's line. Options: `--safari`,
   `--runs`, `--warm`, `--sw 0` (no service worker), `--latency <ms> --mbps <n>` (Chrome's network emulation).
-- Chrome: Playwright's Chromium 1.64 on Metal (headless), the harness's own flags (`dev/look/lib.mjs`).
+- Chrome: Playwright's Chromium 1.64 on Metal (headless), the harness's own flags (`dev/look/lib.ts`).
 - Safari: the real Safari on this Mac, opened with `open -a Safari`.
 - Machine: MacBook Pro, M1 Max. Production build (`vite build`), the normal game (no `?proto=`), a fresh room.
 - 3 cold loads and 6 warm reloads per row; medians. Run-to-run spread was within ±30 ms on every phase.

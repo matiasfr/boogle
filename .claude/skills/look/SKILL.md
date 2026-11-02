@@ -19,22 +19,23 @@ Writes `<name>-still.png`, `<name>-motion.png` (contact sheet: `--frames 8` over
 `<name>-heat.png` (per-pixel temporal stddev: bright = changing) and prints a **motion score** (mean stddev 0-255,
 over `--region x,y,w,h` as fractions of the frame, default whole frame). A calm still scene scores under 1; flicker
 and popping show up as bright speckle or edges in the heatmap. `--eval file.js` runs a page-code body before the
-camera is placed (see below). `--hud` keeps the HUD in the picture. Add views to the `VIEWS` table in
-`dev/look/lib.mjs`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
+camera is placed (see below; a `.ts` body, like those in `dev/look/evals/`, ends in `export {};` and has its types
+stripped). `--hud` keeps the HUD in the picture. Add views to the `VIEWS` table in
+`dev/look/lib.ts`. `--url` uses an already running game. Headless software rendering runs about 10 fps, so the sim
 (10 ticks/s) is slow to warm up: `--warm 10` or more.
 
 **Graphics backend.** The game is WebGPU only, and so is every run: Metal on this Mac (about 60 fps), SwiftShader over
 Vulkan on Linux and CI (a few fps with two tabs: PR CI runs only single-player scenarios, `world-inputs`; `smoke` runs
 here, `npm run check:gpu`, inside `npm run ship`). `?dpr=fixed` (always passed) keeps adaptive resolution off. Every
 run prints `renderer backend: ...` and `gfx errors: ...`; any entry there (a `THREE.` console error, such as a
-material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.js`,
-`night.js`, `particles.js`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:
+material "not compatible" with the node renderer) is a bug to fix. Ready-made evals: `dev/look/evals/sunset.ts`,
+`night.ts`, `particles.ts`. `npm run hitches` (real GPU) lists frame stalls over a tour of the island. Rendering rules:
 `src/render/README.md`.
 
 ## 2. Validate: scenarios (`npm run scenario -- <name>`, `npm run scenarios` for all)
 
-A scenario is `dev/scenarios/<name>.mjs`: `export default { about, async run(t) {...} }`. It sets up a situation in
-the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
+A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
+It sets up a situation in the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
 failure. Not part of `npm run check` (they take 15-80 s each); run the one for your feature, and all of them before
 risky shared changes. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` runs `smoke` on a Mac's GPU in `npm run ship`, and the rest run nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
@@ -61,7 +62,7 @@ export default {
 };
 ```
 
-Player (`Game`) API, from `dev/look/lib.mjs`:
+Player (`Game`) API, from `dev/look/lib.ts`:
 - `g.eval(fn | 'async body with return')` runs in the page; game modules via `await import('/src/...')`; state handles
   `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
@@ -70,7 +71,7 @@ Player (`Game`) API, from `dev/look/lib.mjs`:
 - `g.still(label)`, `g.motion(label, { frames, seconds, region })` -> `{ score, sheet, heat }`, `g.fps()`.
 - `t.check(label, ok, detail)`, `t.sleep(ms)`, `t.open({ name, room, size, hud, touch })`.
 - `touch: true` starts a phone client (`body.touch`, the touch buttons); pair it with `size: [844, 390]`, or
-  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.mjs`.
+  `[390, 844]` for portrait, and `hud: true` so the buttons stay in the pictures. See `dev/scenarios/hotbar.ts`.
 
 Rules of thumb: keep scenarios short; wait on state, not time; assert on what the player would notice (it exists,
 moved, synced, is visible in a region, is not flickering); keep thresholds loose (they guard against regressions,
@@ -81,7 +82,7 @@ same machine, never against absolute numbers from elsewhere.
 ## 3. Render and sim cost: `npm run perf`
 
 About a minute, or more on a loaded machine. Prints draw calls, shadow-pass calls, triangles, geometries and shader
-programs, for the island as entered and with a fully grown garden (`dev/look/perf.mjs`; `-- --url` for a running
+programs, for the island as entered and with a fully grown garden (`dev/look/perf.ts`; `-- --url` for a running
 game). The counts are exact; headless fps is not, so it isn't reported. Then ms per lockstep tick (avg, p95, max), per op, `onApplied`/`onTick`
 handler and state hash, on the idle island and with busy water (beach flooded, a channel being dug): name your
 handler with `onTick(fn, 'label')`. Those are wall-clock times on a software-rendering machine: compare before/after

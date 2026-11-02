@@ -5,14 +5,14 @@
 // A shot is dev/video/shots/<name>.mjs:
 //   export default { about: 'one line', query: 'tidefast=1', async run(c) { ... } };
 // `c` gives you:
-//   c.open({ name, room, query, hud })  a player (Game from lib.mjs) with the clock installed; same room = same island
+//   c.open({ name, room, query, hud })  a player (Game from lib.ts) with the clock installed; same room = same island
 //   g.record(label, { seconds, each })  a clip; `each(t)` runs before every frame (camera moves, input)
 //   c.move(a, b, seconds, ease)          an `each` that glides the debug camera from pose a to pose b
 //   c.ease, c.sleep, c.VIEWS
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.mjs';
+import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.ts';
 
 const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'shots');
 const all = fs

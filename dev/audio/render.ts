@@ -1,6 +1,6 @@
 // The listening pack: every synthesized game sound rendered to a file you can audition away from the game
 // (`node dev/audio/render.ts`; DESIGN.md "How we work": feel is judged by playing, and here by listening). It starts the look
-// harness (dev/look/lib.mjs: Vite, a local server, Chromium), opens one page per prototype, and records the real
+// harness (dev/look/lib.ts: Vite, a local server, Chromium), opens one page per prototype, and records the real
 // Web Audio graph while each sound plays: a tap on everything that reaches the context's destination, recorded
 // sample-exact on the audio thread (an AudioWorklet). Each sound is either called through its module's export or
 // played by the game itself (the wave's telegraph, a laying run, the era's bed), so what you hear is what a player hears,
@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { startStack, launch, Game, root } from '../look/lib.mjs';
+import { startStack, launch, Game, root } from '../look/lib.ts';
 
 type Take = {
   id: string;

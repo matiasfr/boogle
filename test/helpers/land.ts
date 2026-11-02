@@ -1,5 +1,5 @@
 // The land the lockstep rules run on in Node tests (and on the server): the grid size and the gifts layout in
-// src/world/home-land.json, which dev/scenarios/world-inputs.mjs checks against the running game. The state and op
+// src/world/home-land.json, which dev/scenarios/world-inputs.ts checks against the running game. The state and op
 // order stay in test/fixtures/world-inputs.json.
 import fs from 'node:fs';
 import type { Land } from '../../src/world/rules/types.ts';
