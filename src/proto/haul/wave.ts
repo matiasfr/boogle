@@ -62,17 +62,17 @@ function claim() {
   const list = rules.sources.list();
   if (!list.length || movedIds.size) return movedIds.size > 0;
   const far = list
-    .map((p, id) => ({ id, d: Math.hypot(cellX(p.i) - ROUTE[0].x, cellZ(p.j) - ROUTE[0].z) }))
+    .map((p, id) => ({ id, d: Math.hypot(cellX(p.i) - ROUTE[0]!.x, cellZ(p.j) - ROUTE[0]!.z) }))
     .sort((a, b) => b.d - a.d || a.id - b.id);
   far.slice(0, SPOTS.length * TUNE.perBundle).forEach((e, k) => {
-    groups[k % SPOTS.length].push(e.id);
+    groups[k % SPOTS.length]!.push(e.id);
     movedIds.add(e.id);
   });
   haulHooks.moved = (id) => movedIds.has(id);
   rules.sources.sources.rev++; // the palms redraw without them (rev is for views: neither saved nor hashed)
   return true;
 }
-const chargesOf = (g: number) => groups[g].reduce((t, id) => t + rules.sources.charges(id), 0);
+const chargesOf = (g: number) => groups[g]!.reduce((t, id) => t + rules.sources.charges(id), 0);
 const yieldN = () => rules.tune.get('yield') ?? YIELD;
 
 const spotAt = SPOTS.map((s) => new THREE.Vector3(s.x, sandAt(s.x, s.z), s.z));
@@ -99,7 +99,7 @@ registerInteractable(() => {
             ...t,
             run: () => {
               let sent = 0;
-              for (const id of groups[g])
+              for (const id of groups[g]!)
                 for (let c = rules.sources.charges(id); c > 0 && sent < n; c--)
                   if (submitEdit({ op: 'src.take', i: 0, j: 0, id })) sent++;
               if (sent) pending.set(g, now);
@@ -113,7 +113,7 @@ onApplied((e: { op: string; p: string; id: number }, _tick: number, r: { n?: num
   if (e.op !== 'src.take' || !movedIds.has(e.id)) return;
   const g = groups.findIndex((ids) => ids.includes(e.id));
   pending.delete(g);
-  if (r?.n && e.p === (net.room?.selfId ?? 'local')) fly(spotAt[g], r.n);
+  if (r?.n && e.p === (net.room?.selfId ?? 'local')) fly(spotAt[g]!, r.n);
 });
 
 const PER_CHARGE = 3; // pieces drawn per charge left: a sandbar bundle is a big heap
