@@ -11,6 +11,7 @@
     "useUnknownInCatchVariables": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
