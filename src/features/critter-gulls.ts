@@ -3,8 +3,8 @@
 // (bodies, wings). Local Math.random is fine: nothing here is read by the sim.
 // Serves DESIGN.md 9 (alive island) and 10 (running at gulls is the oldest beach toy).
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { createPool } from '../render/instances.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -32,10 +32,11 @@ const wingPool = createPool(
 );
 const bodies = bodyPool.mesh,
   wings = wingPool.mesh;
+const flock = new THREE.Group(); // the two pools: one entity
 for (const m of [bodies, wings]) {
   m.visible = false;
   m.castShadow = true;
-  scene.add(m);
+  flock.add(m);
 }
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -148,8 +149,11 @@ const m4 = new THREE.Matrix4(),
   off = new THREE.Vector3();
 let lastBallY = 0;
 
-onFrame(
-  ({ dt, elapsed }) => {
+defineKind('gulls', { update: 2 });
+spawn({
+  kind: 'gulls',
+  mesh: flock,
+  update: ({ dt, elapsed }) => {
     const on = G.length > 0;
     bodies.visible = wings.visible = on;
     if (!on || dt <= 0) return;
@@ -235,7 +239,6 @@ onFrame(
     bodyPool.end();
     wingPool.end();
   },
-  { phase: 'update', order: 2 },
-);
+});
 
 window.__gulls = G;

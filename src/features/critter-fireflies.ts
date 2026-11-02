@@ -4,7 +4,8 @@
 import * as THREE from 'three/webgpu';
 import { texture, vec4, instancedDynamicBufferAttribute } from 'three/tsl';
 import type { Node } from 'three/webgpu';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { CELL, HALF } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
@@ -63,8 +64,11 @@ onStart(() => {
 });
 
 let shown = 0;
-onFrame(
-  ({ dt, elapsed }) => {
+defineKind('fireflies', { update: 0 });
+spawn({
+  kind: 'fireflies',
+  mesh: flies,
+  update: ({ dt, elapsed }) => {
     const want = skyDebug.state.day < FLIES.night ? 1 : 0;
     shown += (want - shown) * Math.min(1, dt * 0.5);
     flies.visible = shown > 0.01 && F.length > 0;
@@ -86,5 +90,4 @@ onFrame(
     posAttr.needsUpdate = true;
     colAttr.needsUpdate = true;
   },
-  { phase: 'update' },
-);
+});

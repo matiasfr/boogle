@@ -2,8 +2,7 @@
 // is off, so you can still read where you and the ball will land. They shrink as the body rises above the ground.
 // Serves DESIGN.md 10 (slapstick needs readable jumps and catches). Cosmetic, local.
 import * as THREE from 'three';
-import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 import { BALL_R, PLAYER_R } from '../constants.ts';
@@ -22,10 +21,12 @@ const pool = createPool(
 const blobs = pool.mesh;
 blobs.renderOrder = 1;
 blobs.visible = false;
-scene.add(blobs);
 
-onFrame(
-  () => {
+defineKind('blob-shadows', { lateUpdate: -1 });
+spawn({
+  kind: 'blob-shadows',
+  mesh: blobs,
+  lateUpdate: () => {
     const night = !skyNow.keyLight; // no key light: no shadow pass
     blobs.visible = night;
     if (!night) return;
@@ -40,5 +41,4 @@ onFrame(
     put(ballMesh.position, BALL_R * 1.3);
     pool.end();
   },
-  { phase: 'late', order: -1 },
-);
+});

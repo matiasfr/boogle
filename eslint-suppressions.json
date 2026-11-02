@@ -29,29 +29,9 @@
       "count": 1
     }
   },
-  "src/features/blob-shadows.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
   "src/features/boogler.ts": {
     "boogle/use-an-entity": {
       "count": 3
-    }
-  },
-  "src/features/critter-fireflies.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/critter-fish.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
-  "src/features/critter-gulls.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
     }
   },
   "src/features/dino.ts": {
@@ -130,11 +110,6 @@
     }
   },
   "src/features/proto-soapbox.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/splash.ts": {
     "boogle/use-an-entity": {
       "count": 1
     }
