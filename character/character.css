@@ -1,0 +1,105 @@
+:root {
+  --bg: #fff;
+  --ink: #1c2430;
+  --line: #d5dae2;
+  --accent: #1f6f78;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b2028;
+    --ink: #e8ecf2;
+    --line: #3a4350;
+    --accent: #6cc4cc;
+  }
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #9db4cc;
+  color: var(--ink);
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+#panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 230px;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+h2 {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+#stats {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+button {
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+button.on {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+label {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+}
+label output {
+  float: right;
+}
+input[type='range'] {
+  width: 100%;
+  margin: 2px 0 0;
+}
+label.check {
+  margin-top: 6px;
+}
+@media (max-width: 560px) {
+  #panel {
+    top: auto;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 42%;
+  }
+}

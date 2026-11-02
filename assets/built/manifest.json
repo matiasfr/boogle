@@ -85,5 +85,34 @@
       "Yes"
     ],
     "textures": []
+  },
+  "tracklayer": {
+    "source": "tracklayer.glb",
+    "sourceHash": "f47254c2caa16730",
+    "outHash": "15f139b856d4c616",
+    "rawBytes": 9829992,
+    "bytes": 545640,
+    "triangles": 8264,
+    "animations": [
+      "Armature|clip0|baselayer"
+    ],
+    "textures": [
+      {
+        "name": "normal",
+        "size": [
+          256,
+          256
+        ],
+        "mime": "image/png"
+      },
+      {
+        "name": "texture_0",
+        "size": [
+          256,
+          256
+        ],
+        "mime": "image/png"
+      }
+    ]
   }
 }

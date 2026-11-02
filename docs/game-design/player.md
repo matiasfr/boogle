@@ -105,6 +105,11 @@ Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](
 `&body=cute`, `ears`, `stout` and `bib`. Each rescales the mannequin's bones, thickens its skin and adds simple parts; the
 hips and stride shrink with the legs.
 
+`&body=tracklayer` is the real character ([assets/src/tracklayer.json](../../assets/src/tracklayer.json), made with Meshy): 8,264
+triangles, 256 px textures, the same clips retargeted onto its skeleton at load ([src/proto/hero/retarget.ts](../../src/proto/hero/retarget.ts)),
+with the upper arms swung out 12° to clear its wider body. It doesn't take the player's colour yet. boogle.club/character/ shows
+it alone, with every clip, views, a crowd of 8 and render switches.
+
 `&ctl=odyssey` (any page) tries a modern-Mario controller: you run where you face (turning at most 390°/s, 510°/s at
 sprint), speed builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air
 control is 35 m/s², and jumps start at 8.6 m/s plus 0.08 × speed. It read as inertia in play. `&body=keyed` is the
