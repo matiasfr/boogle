@@ -491,10 +491,9 @@ Atlas rail story. Each owner's playtest has just the new thing and one gut quest
   arrivals or double offline credit. Reject malformed/mixed-build data; preserve failed-save guards and named versions.
 - **Geometry/performance:** heightfields do not solve cliffs/underpasses, abstract timetable reservations do not solve actual
   passing yards, and historical Mac look timings do not prove an M4 iPad result. Budget resident collision and far proxies.
-- **Coordination/evidence limits:** this worktree is `codex/rail-slice-v2` at `172f3ea0`. Network is off, so
-  `npm run inflight` is not run: its unconditional fetch conflicts with that boundary. Local refs and the timetable draft
-  were inspected; live branch/PR state and round-3 implementation/verdicts cannot be refreshed. Recheck before building,
-  especially place, entity, terrain, render and reward overlap. No running game or external reference pages were viewed.
+- **Coordination/evidence limits:** this draft was written before round 3 shipped or was played, without seeing the running
+  game or checking in-flight branches. Recheck before building, especially place, entity, terrain, render and reward
+  overlap, and run `npm run inflight`.
 
 ## Open questions for the owner
 
@@ -511,3 +510,7 @@ Atlas rail story. Each owner's playtest has just the new thing and one gut quest
 5. **Is the one-project absence interpretation right?** Recommendation: bank the selected rail bill or finish the one
    already commissioned town build, counting all in-flight goods in that same allowance; never auto-carry, choose another
    connection or chain town growth while everyone is away.
+6. **When does this become the default game?** Step 15 puts the switch last. Director's recommendation: move it up, to
+   soon after steps 2 and 3 play well with a friend and the owner has decided what comes across from today's island, so
+   the later steps grow inside the real game. We're pre-public and progress may be lost, so little argues for waiting for
+   a complete chapter. If the owner agrees, step 15 splits into an early switch and later clean-up.
