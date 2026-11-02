@@ -8,7 +8,7 @@ import { net, remotes, onNetState, onPeopleChanged } from '../netplay/net.ts';
 import { inputState } from './input-state.ts';
 import { requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
-import { interactTarget, useVerb } from './hands.ts';
+import { mainVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { showCard, friendlyName } from './arrival.ts';
@@ -37,8 +37,7 @@ function updateHud() {
     dom.hintEl.hidden = !hint;
   }
   if (!document.body.classList.contains('touch') || !me.entered) return;
-  const t = me.charging ? null : interactTarget(); // mid wind-up the button only throws
-  const label = t?.run ? t.verb : (useVerb() ?? 'Grab');
+  const label = mainVerb();
   if (dom.grabBtn.textContent !== label) {
     dom.grabBtn.textContent = label;
     document.body.classList.toggle('main-throws', label === 'Throw');

@@ -1,9 +1,0 @@
-/* Touch "Bump" button on the right edge, above the main button. */
-.tbtn.bump {
-  right: calc(22px + env(safe-area-inset-right, 0px));
-  bottom: calc(274px + env(safe-area-inset-bottom, 0px));
-  width: 64px;
-  height: 64px;
-  font-size: 15px;
-  background: rgba(61, 155, 255, 0.78);
-}

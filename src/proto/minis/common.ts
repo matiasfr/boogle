@@ -240,7 +240,7 @@ export function puff(x: number, y: number, z: number, n: number, speed: number, 
 }
 
 // ---------------------------------------------------------------- your own shots at the ball
-// A throw (the ball leaves your hands) or a bump (bump.ts stamps me.bumpAt). Listeners get the kind.
+// A throw (the ball leaves your hands) or a bump (src/player/bump.ts stamps me.bumpAt). Listeners get the kind.
 type Shot = 'throw' | 'bump';
 const shotFns: ((s: Shot) => void)[] = [];
 export const onShot = (fn: (s: Shot) => void) => shotFns.push(fn);

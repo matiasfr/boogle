@@ -23,7 +23,7 @@ export const me = {
   suppressUp: false,
   down: false,
   lostBallAt: -1e9,
-  bumpAt: undefined as number | undefined, // last time you walked into someone (src/features/bump.ts)
+  bumpAt: undefined as number | undefined, // last time you walked into someone (src/player/bump.ts)
   wish: new THREE.Vector3(),
 };
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 5.2 };

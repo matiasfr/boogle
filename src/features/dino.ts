@@ -14,10 +14,8 @@ import { defineKind, spawn } from '../entity/entity.ts';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { me } from '../player/player.ts';
-import { dom } from '../player/hud.ts';
-import { registerInteractable, interactTarget, NO_TARGETS } from '../player/hands.ts';
-import { heldId } from '../player/inventory.ts';
-import { registerAction, describeControl, wrapAction } from '../player/controls.ts';
+import { emptyHands, registerInteractable, NO_TARGETS } from '../player/hands.ts';
+import { registerAction, describeControl } from '../player/controls.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.ts';
 import { dino, dinoGroup, dinoSays, updateDino, showRealDino } from '../guest/dino.ts';
 import { guest } from '../guest/state.ts';
@@ -143,34 +141,21 @@ registerInteractable(() => {
   return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: talk }];
 });
 
-// B (punch, kick, dive) is the use button (click, pad D-pad →, and pad X with nothing to act on) with empty hands,
-// unless something other than the ball is in reach: near the ball the click punches, and the interact button (E, pad X)
-// grabs. The touch Grab button punches only when nothing is in reach, since it interacts first.
-function punches() {
-  if (!guest.active || heldId()) return false;
-  const t = interactTarget();
-  return !t || t.id === 'ball';
-}
-function pressB() {
+// B (punch, kick, dive) is the main action (click, pad RT, the touch main button with nothing to act on) with empty hands:
+// it takes the place of a bump, and the interact button (E, pad X) still grabs.
+emptyHands.down = () => {
+  if (!guest.active) return false;
   guest.b = true;
   guest.bHeld = true;
-}
-const releaseB = () => (guest.bHeld = false);
-dom.grabBtn.addEventListener('pointerdown', () => guest.active && !heldId() && !interactTarget() && pressB());
-dom.grabBtn.addEventListener('pointerup', releaseB);
+  return true;
+};
+emptyHands.up = () => (guest.bHeld = false);
 
 // Files this browser already has; the hosted engine is fetched only once someone talks to the dino.
 onStart(() => {
   Promise.all([findEngine(), loadFile<RomPieces>(ROM_KEY)]).then(([, data]) => {
     rom ??= data;
     if (ready()) showRealDino(rom!);
-  });
-  wrapAction('use', {
-    down: (next) => (punches() ? pressB() : next()),
-    up: (next) => {
-      releaseB();
-      next();
-    },
   });
   registerAction('guest-crouch', {
     pad: 'lt',
@@ -186,7 +171,7 @@ onStart(() => {
   describeControl('guest-punch', {
     label: 'Punch, kick, dive',
     keys: ['Mouse0'],
-    pad: 'x',
+    pad: 'rt',
     touch: 'Grab',
     group: 'move',
     order: 4,

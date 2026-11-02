@@ -1,5 +1,5 @@
-// The interact pick: which of the things in reach the one interact button (E, pad X, the touch action button, a click
-// with empty hands) acts on. Local logic, not shared state; it lives here so it can be unit-tested, and it still passes
+// The interact pick: which of the things in reach the one interact button (E, pad X, the touch action button) acts
+// on. Local logic, not shared state; it lives here so it can be unit-tested, and it still passes
 // the determinism lint (Math.sqrt only).
 //
 //   pickInteract(targets, px, pz, fx, fz)   the target to act on, or null

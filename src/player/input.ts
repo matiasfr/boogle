@@ -8,7 +8,7 @@ import { pressJump, releaseJump } from '../entities/player/state.ts';
 import { sendPresence } from '../netplay/net.ts';
 import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
-import { useDown, useUp, interactDown, interactUp, interactTarget, touchDown } from './hands.ts';
+import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
 import { cancelCharge } from './throw.ts';
 import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
@@ -264,37 +264,28 @@ export function initInput() {
     down: pressJump,
     up: releaseJump,
   });
-  // Pad X is the one hands button, like the touch main button: it acts on the prompt when there is one (Talk, Pick up,
-  // Take, Get in), and otherwise uses what you hold (hold to charge a throw). D-pad → uses what you hold even next to
-  // something; E and the click stay apart. B is back: it closes talks and menus and puts a wound-up throw away.
-  let padUsed = false; // this X press went to use, so its release does too
+  // X acts on what's in front of you (Talk, Pick up, Take, Get in); RT and the click are the main action: use what you
+  // hold, or bump the ball with empty hands. B is back: it closes talks and menus and puts a wound-up throw away.
   registerAction('interact', {
     pad: 'x',
     label: 'Talk, pick up, take',
-    detail: { pad: 'Nothing in reach: uses what you hold (hold to charge a throw)' },
     keys: ['KeyE'],
     touch: 'Grab',
     group: 'hands',
     order: 0,
-    down: () => {
-      padUsed = !interactTarget()?.run;
-      if (padUsed) triggerAction('use', 'down');
-      else interactDown();
-    },
-    up: () => {
-      if (padUsed) triggerAction('use', 'up');
-      else interactUp();
-      padUsed = false;
-    },
+    down: interactDown,
+    up: interactUp,
   });
   registerAction('use', {
-    pad: 'right',
-    label: 'Use what you hold',
+    pad: 'rt',
+    label: 'Use what you hold, or bump the ball',
     detail: {
-      kbm: 'Hold to charge a throw, release to throw. With empty hands it does the same as the interact button.',
-      pad: 'Throws (waters, plants) even with something in reach; hold to charge',
+      kbm: 'Hold to charge a throw. Empty hands bump a ball in reach, like a volleyball dig',
+      pad: 'Hold to charge a throw. Empty hands bump a ball in reach, like a volleyball dig',
+      touch: 'The main button, when it reads Throw, Sprout or Bump',
     },
     keys: ['Mouse0'],
+    touch: 'Main button',
     group: 'hands',
     order: 1,
     down: useDown,

@@ -6,7 +6,7 @@ with `touch: { label, className }`, builds its own touch button; `describeContro
 binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) and the first-run card are generated
 from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
 in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.ts](../../src/features/feel.ts),
-[hotbar.ts](../../src/features/hotbar.ts), [bump.ts](../../src/features/bump.ts), [honk.ts](../../src/features/honk.ts),
+[hotbar.ts](../../src/features/hotbar.ts), [honk.ts](../../src/features/honk.ts),
 [ping.ts](../../src/features/ping.ts), [pause.ts](../../src/features/pause.ts), [dino.ts](../../src/features/dino.ts) and [updates.ts](../../src/features/updates.ts).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
@@ -16,13 +16,12 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
-| Bump the ball up (`bump`) | action | V | RT | Bump | The ball | |
-| Talk, pick up, take (`interact`) | action | E | X (nothing in reach: uses what you hold, like the touch main button) | Grab (the main button; its label follows the target) | Hands | |
-| Use what you hold (`use`) | action | Left click | D-pad → (even with something in reach) | main button when it has no target | Hands | |
+| Talk, pick up, take (`interact`) | action | E | X (only this: nothing in reach, it does nothing) | Grab (the main button; its label follows what it would do) | Hands | |
+| Use what you hold, or bump the ball (`use`) | action | Left click | RT | the main button: Throw, Sprout or Bump when it has no target, or the ball is in the air | Hands | |
 | Hold from your hotbar (`hotbar`) | described | 1-5 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
-| Throw what you hold (`toss`) | described | (use) | D-pad → | Toss | Hands | holding |
+| Throw what you hold (`toss`) | described | (use) | RT | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
-| Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action, wrapped) | X | Grab, when nothing is in reach | Getting around | as the guest |
+| Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action's empty hands) | RT | Grab, when nothing is in reach | Getting around | as the guest |
 | Answer in a talk (`talk-answer`) | described | 1-8, ↑ ↓ (E, Space, Enter: next or say it; Esc leaves) | D-pad ↑ ↓ or left stick, A: next or say it (B leaves; X does nothing) | Tap an answer | Friends | talking |
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
@@ -38,7 +37,7 @@ Notes:
   clicks) between two columns of callouts, one per slot and stick, each with a leader line to its button. The callouts
   come from the registry (`listControls`, plus hidden actions such as `slot-prev` / `slot-next` as the detail of the
   shared hotbar row), so a rebound action moves its callout. A slot nobody claims is dimmed and reads Free (today
-  R3, D-pad ↑ and ↓). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
+  R3, D-pad ↑, ↓ and →). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
   letters; with no pad yet the face buttons are a diamond of four dots with the meant one filled. Situations sit
   above it as chips (LB / RB cycle them on the pad): On foot; Driving when a `driving` row exists (the soapbox,
   `?proto=soapbox`); Talking (A or X says the picked answer, A also skips the typing, B leaves, the D-pad and left
@@ -48,20 +47,23 @@ Notes:
   tab; Show as a list gives the generated list back. Under 700 px wide the callouts stack under the controller.
 
 - **Face buttons** (2026-11-02, owner's iPad + controller playtest; research in
-  [cross-device-input.md](../research/cross-device-input.md), section 8): A jumps and confirms, **X / □ is the one
-  hands button** (Talk, Pick up, Take, Get in; with nothing in reach it uses what you hold, as the touch main button
-  does), **B / ○ is back** everywhere, Y honks. Slots are positions in the standard mapping; prompts name them for the
+  [cross-device-input.md](../research/cross-device-input.md), section 8): A jumps and confirms, **X / □ acts on what's
+  in front of you** (Talk, Pick up, Take, Get in), **B / ○ is back** everywhere, Y honks. **RT and the left click are one
+  main action** (2026-11-02): holding something it uses or throws it, hold to charge; with empty hands it bumps a ball in
+  reach (3.4 m), and otherwise does nothing. To grab the ball, talk or pick something up, it's E / X. Touch has one
+  button for both, so its label says what it would do: a target in reach (Talk, Pick up, Grab) wins, except that a ball in
+  the air, or one past grab reach, is Bump; then Throw or Sprout for what you hold. Slots are positions in the standard mapping; prompts name them for the
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): R3 and D-pad ↑ (D-pad ↓ opens the prototype bar, registered only on
+- **Free pad slots** (`npm run registry -- --json`): R3, D-pad ↑ and D-pad → (D-pad ↓ opens the prototype bar, registered only on
   prototype pages, src/proto/bar/pad.ts). The update notice borrows the first free one (D-pad ↑) while it is up, so
   AGENTS.md requires at least one to stay unclaimed.
-- Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
+- Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by the hotbar feature.
 - **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
   steer (no arrow-key camera turn), a two-finger scroll does not look, and `body.seated` shows the driving touch layout:
-  Jump takes the vehicle's label, and Bump, Toss, Honk and Ping hide.
+  Jump takes the vehicle's label, and Toss, Honk and Ping hide.
 - Talk boxes are not modals: they share the NPC talk input ([npcs.md](npcs.md),
   [src/player/conversation.ts](../../src/player/conversation.ts)). The island keeps running and you can look around,
   but you stand still; it takes the keys it answers with (E, Space, Enter, Esc, ↑ ↓, W S, 1-9) and, on the pad
