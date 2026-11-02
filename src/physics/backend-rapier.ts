@@ -351,23 +351,38 @@ function touching(manifold: RAPIER.TempContactManifold) {
   return false;
 }
 // A manifold's normal points from its first collider to its second; flip it so it points into `body`.
-export function forEachContact(body: Body, fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void) {
+// The player runs this every step, so it goes round Rapier's per-call closures and vectors, on one set of callbacks
+// reading the state below (npm run hitches). So not reentrant: a `fn` can't call forEachContact.
+type ContactFn = (nx: number, ny: number, nz: number, other: Body) => boolean | void;
+let contactFn: ContactFn,
+  contactCol = 0,
+  contactOther: MBody | undefined,
+  contactDone = false;
+function contactManifold(manifold: RAPIER.TempContactManifold, flipped: boolean) {
+  if (contactDone || !touching(manifold)) return;
+  const n = manifold.raw.normal(),
+    x = n.x,
+    y = n.y,
+    z = n.z,
+    s = flipped ? 1 : -1;
+  n.free();
+  if (contactFn(x * s, y * s, z * s, contactOther as unknown as Body) === true) contactDone = true;
+}
+function contactPairWith(handle: number) {
+  if (contactDone) return;
+  const other = byCollider.get(handle);
+  if (!other) return;
+  contactOther = other;
+  world!.narrowPhase.contactPair(contactCol, handle, contactManifold);
+}
+export function forEachContact(body: Body, fn: ContactFn) {
   const b = m(body);
   if (!world) return;
-  let done = false;
-  for (const col of b.colliders) {
-    world.contactPairsWith(col, (col2) => {
-      if (done) return;
-      const other = byCollider.get(col2.handle);
-      if (!other) return;
-      world!.contactPair(col, col2, (manifold, flipped) => {
-        if (done || !touching(manifold)) return;
-        const n = manifold.normal(),
-          s = flipped ? 1 : -1;
-        if (fn(n.x * s, n.y * s, n.z * s, other as unknown as Body) === true) done = true;
-      });
-    });
-    if (done) return;
+  contactFn = fn;
+  contactDone = false;
+  for (let k = 0; k < b.colliders.length && !contactDone; k++) {
+    contactCol = b.colliders[k]!.handle;
+    world.narrowPhase.contactPairsWith(contactCol, contactPairWith);
   }
 }
 
