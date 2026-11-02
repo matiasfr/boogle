@@ -4,7 +4,7 @@ import { SUN_DIR } from '../render/sun-dir.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
-import { teleport, ODYSSEY } from '../physics/physics.ts';
+import { teleport } from '../physics/physics.ts';
 import { addBody } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
 import { makeAvatar, makePlayerBody, animateAvatar } from './avatars.ts';
@@ -73,31 +73,7 @@ export function updateIntent(dt: number) {
   let targetYaw = null;
   if (me.holding || me.charging) targetYaw = cam.yaw;
   else if (me.wish.lengthSq() > 0.01) targetYaw = Math.atan2(-me.wish.x, -me.wish.z);
-  if (ODYSSEY && targetYaw !== null && me.body && !me.holding && !me.charging) odysseyTurn(targetYaw, dt);
-  else if (targetYaw !== null) me.yaw = angleLerp(me.yaw, targetYaw, 1 - Math.exp(-dt * 12));
-  if (!ODYSSEY || targetYaw === null) me.skid = false;
-}
-
-// ?ctl=odyssey facing (Odyssey's numbers: smo.wiki, Running): turn at most 390°/s below top speed and 510°/s at it; at
-// a standstill or in the air turn fast; past 95° from where you're running at speed, skid (physics brakes you) and
-// pivot to the stick once nearly stopped.
-const TURN = { slow: 390, fast: 510, still: 1440, air: 540, skidAngle: 95, skidSpeed: 4, pivotSpeed: 1.5 }; // degrees/s, m/s
-function odysseyTurn(target: number, dt: number) {
-  const v = me.body!.velocity;
-  const hv = Math.hypot(v.x - carry.x, v.z - carry.z);
-  let d = target - me.yaw;
-  d = Math.atan2(Math.sin(d), Math.cos(d));
-  const ground = me.coyote > 0;
-  if (ground && !me.skid && Math.abs(d) > (TURN.skidAngle * Math.PI) / 180 && hv > TURN.skidSpeed) me.skid = true;
-  if (me.skid) {
-    if (hv > TURN.pivotSpeed) return;
-    me.skid = false;
-    me.yaw = target; // the pivot
-    return;
-  }
-  const rate =
-    (!ground ? TURN.air : hv < TURN.pivotSpeed ? TURN.still : hv > 9 ? TURN.fast : TURN.slow) * (Math.PI / 180);
-  me.yaw += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
+  if (targetYaw !== null) me.yaw = angleLerp(me.yaw, targetYaw, 1 - Math.exp(-dt * 12));
 }
 
 // Features that need the third-person camera somewhere special (the caves keep it inside the tunnel) push

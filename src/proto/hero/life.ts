@@ -37,15 +37,14 @@ const BLINK = { closed: 0.1, every: 2, more: 3.5 }; // s; `every` + up to `more`
 
 const mirror = (name: string) => name.replace(/_l$/, '\0').replace(/_r$/, '_l').replace('\0', '_r');
 
-/** `map` names the clips' bones on this skeleton. */
-export function makeLife(root: THREE.Object3D, rest: THREE.Object3D, map: Record<string, string>) {
+export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
   const eyes = ['eye_l', 'eye_r'].map((n) => root.getObjectByName(n)).filter(Boolean) as THREE.Object3D[];
   rest.updateMatrixWorld(true);
   const parentRest = new Map<string, THREE.Quaternion>();
   const axes = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
   const bake = (offsets: Offset[], flip: boolean) =>
     offsets.flatMap(([bone, axis, deg]) => {
-      const name = map[flip ? mirror(bone) : bone]!;
+      const name = flip ? mirror(bone) : bone;
       const live = root.getObjectByName(name),
         still = rest.getObjectByName(name);
       if (!live || !still) return [];

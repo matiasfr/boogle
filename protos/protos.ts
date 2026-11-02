@@ -349,8 +349,8 @@ export const PROTOS: Proto[] = [
     step: 'depth',
     status: 'live',
     url: '/?proto=hero',
-    question: 'Which of these characters would you want to play as, and does the motion feel right?',
-    what: 'Hand-made run, sprint and jump clips with today’s direct controller and a closer camera, on quick test figures: the mannequin (default) and the buttons below, plus one finished robot. Judge silhouette and motion; the figures aren’t final art.',
+    question: 'Does this feel like the character you want to play as?',
+    what: 'Hand-made run, sprint and jump clips with today’s direct controller and a closer camera, on the plain mannequin; the Buddy below is the direction.',
     since: '2026-11-01',
     variants: [
       {
@@ -362,46 +362,6 @@ export const PROTOS: Proto[] = [
         name: 'conductor',
         url: '/?proto=hero&body=buddy&hat=cap&v=conductor',
         what: 'The Buddy in a conductor’s cap, the first hat.',
-      },
-      {
-        name: 'tracklayer',
-        url: '/?proto=hero&body=tracklayer&v=tracklayer',
-        what: 'The real character: the Tracklayer, a proper 3D model on the same clips.',
-      },
-      {
-        name: 'cute',
-        url: '/?proto=hero&body=cute&v=cute',
-        what: 'Small and big-headed, short legs, big hands and feet.',
-      },
-      {
-        name: 'ears',
-        url: '/?proto=hero&body=ears&v=ears',
-        what: 'Athletic and long-legged, in the spirit of Ratchet, with tall ears.',
-      },
-      {
-        name: 'stout',
-        url: '/?proto=hero&body=stout&v=stout',
-        what: 'A barrel of a body on short legs, long arms and big hands, in the spirit of a Bricktron.',
-      },
-      {
-        name: 'bib',
-        url: '/?proto=hero&body=bib&v=bib',
-        what: 'Bib Buddies: a one-piece bean with overalls and a cap.',
-      },
-      {
-        name: 'robot',
-        url: '/?proto=hero&body=standin&v=robot',
-        what: 'A chunky robot with its own hand-made model and clips: a finished little character, for comparison.',
-      },
-      {
-        name: 'odyssey',
-        url: '/?proto=hero&ctl=odyssey&v=odyssey',
-        what: 'The mannequin with the modern-Mario controller (run where you face, speed builds).',
-      },
-      {
-        name: 'keyed',
-        url: '/?proto=hero&body=keyed&v=keyed',
-        what: 'The code-animated hero from before, to compare the motion.',
       },
     ],
     chapter: 'it swaps your body for every toy, so it is judged on its own',
