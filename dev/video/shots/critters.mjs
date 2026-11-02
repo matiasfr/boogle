@@ -13,7 +13,7 @@ const RUN = (x, z, on) => `
 // The gulls start strung along 30 m of beach: gather them around the first one so the flock fits the frame, and
 // return the spot plus the direction (from it) with the flattest dry run-up.
 const FLOCK = `
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const G = window.__gulls, c = G[0];
   const dry = (x, z) => { const h = groundHeight(x, z); return h > 0.4 && h < 2.4; };
   G.forEach((g, k) => {
@@ -40,7 +40,7 @@ const SEEDED = `(() => { let a = 20261029; Math.random = () => { a = (a + 0x6d2b
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })()`;
 // Fish in deep water vanish into the blue: move the school to clear water 0.7-1.5 m deep near its home.
 const SHALLOWS = `
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const { waterField } = await import('/src/physics/water-field.ts');
   const { P, home } = window.__fish;
   const depth = (x, z) => waterField.surfaceAt(x, z) - groundHeight(x, z);
@@ -117,7 +117,7 @@ export default {
     const garden = await g.eval(`
       const { PATCH } = await import('/src/sim/mushrooms.ts');
       const { CELL, HALF } = await import('/src/constants.ts');
-      const { groundHeight } = await import('/src/adapters/terrain.ts');
+      const { groundHeight } = await import('/src/island/terrain.ts');
       const x = (PATCH.i0 + PATCH.w / 2) * CELL - HALF, z = HALF - (PATCH.j0 + PATCH.h / 2) * CELL;
       return [x, groundHeight(x, z), z];`);
     const [gx, , gz] = garden;

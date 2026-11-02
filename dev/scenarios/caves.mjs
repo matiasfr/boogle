@@ -5,7 +5,7 @@ const STEP_ROUTE = `
   const { stepFixed, getMask } = await import('/src/physics/engine.ts');
   const { SEGMENTS } = await import('/src/pois/caves/network.ts');
   const { caveSd } = await import('/src/pois/caves/mesh.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const { me } = window.boogle;
   const seg = (a, b) => SEGMENTS.find((s) => s.from === a && s.to === b).pts.map((p) => [p.x, p.z]);
   const route = [[-31.5, -70.6], ...seg('south', 'hub').slice(0, -1), [-49, -89.5], ...seg('hub', 'mine').slice(1, -1),
@@ -34,7 +34,7 @@ const STEP_ROUTE = `
 
 const THROWS = `
   const { stepFixed } = await import('/src/physics/engine.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const { ball, claimBall } = await import('/src/physics/ball.ts');
   const { caveSd } = await import('/src/pois/caves/mesh.ts');
   const { NODES, POND } = await import('/src/pois/caves/network.ts');

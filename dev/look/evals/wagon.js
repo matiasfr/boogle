@@ -31,7 +31,7 @@ const { me, cam } = await import('/src/player/player.ts');
 const { input } = await import('/src/player/input.ts');
 const { carry } = await import('/src/physics/platforms.ts');
 const { teleport } = await import('/src/physics/physics.ts');
-const { groundHeight } = await import('/src/adapters/terrain.ts');
+const { groundHeight } = await import('/src/island/terrain.ts');
 const { submitEdit } = await import('/src/world/sync.ts');
 if (q.get('v') === 'fast' && !(await until(() => W.pace.cruise > 30)))
   throw new Error('v=fast did not set the pace: needs --room proto-wagon');

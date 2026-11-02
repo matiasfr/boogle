@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { GRAVITY, BALL_DAMPING } from '../constants.ts';
 import { GROUP } from './physics.ts';
 import { raycastClosest, rayHit, type V3 } from './engine.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { waterField } from './water-field.ts';
 
 export const STEP = 1 / 60;

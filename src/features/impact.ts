@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { clamp, lerp } from '../math.ts';
 import { ball } from '../physics/ball.ts';
 import { me } from '../player/player.ts';

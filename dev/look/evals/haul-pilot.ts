@@ -10,7 +10,7 @@ import { me, cam } from '../../../src/player/player.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { touchDown, useUp } from '../../../src/player/hands.ts';
 import { teleport } from '../../../src/physics/physics.ts';
-import { groundHeight } from '../../../src/adapters/terrain.ts';
+import { groundHeight } from '../../../src/island/terrain.ts';
 
 type Barrow = {
   S: { mode: string; wobble: number; heading: number };

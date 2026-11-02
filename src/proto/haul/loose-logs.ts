@@ -12,7 +12,7 @@ import { onApplied, submitEdit } from '../../world/sync.ts';
 import { net } from '../../netplay/net.ts';
 import { identity } from '../../player/identity.ts';
 import { createBody, addBody, removeBody, material, type Body } from '../../physics/engine.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE } from '../../render/haul-pieces.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';

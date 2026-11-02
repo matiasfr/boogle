@@ -1,7 +1,7 @@
 // Windmill farm: three rustic wooden windmills whose sails turn with the shared clock (everyone sees the same sails),
 // plus hay bales and a fence along the track. The sails are solid: they bonk players and bat the ball about.
 import * as THREE from 'three';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
 import { groundMat, GROUP, NOT_SCENERY } from '../../physics/physics.ts';
 import { createBody, addBody, onPreStep, BODY } from '../../physics/engine.ts';

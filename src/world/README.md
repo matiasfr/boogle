@@ -63,7 +63,7 @@ registry()                   // { ops, states }: registered keys in order
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
 
-Grid cells use the heightfield indexing from `src/adapters/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
+Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
 Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 

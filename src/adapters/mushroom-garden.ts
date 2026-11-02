@@ -5,7 +5,7 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
-import { heights, groundHeight, cellX, cellZ } from './terrain.ts';
+import { heights, groundHeight, cellX, cellZ } from '../island/terrain.ts';
 import { scene } from '../render/scene.ts';
 import { obstacles } from '../render/props.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';

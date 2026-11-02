@@ -1,5 +1,5 @@
 // The island's base ground on the world grid, in whole centimetres: the island (index.ts: natural shape plus every
-// POI's stamps) with the volleyball court levelled, quantized once. The render side (adapters/terrain.ts: mesh and
+// POI's stamps) with the volleyball court levelled, quantized once. The render side (terrain.ts: mesh and
 // heightfield) builds from it; the lockstep rules don't read it.
 //
 // An input, not the sim: like shape.ts it uses Math.hypot, so it stays out of the determinism lint's lockstep files.
