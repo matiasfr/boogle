@@ -2,7 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dwells, nextCall } from '../src/proto/board/departures.ts';
-import { wagonAt, wagonCycle } from '../src/sim/wagon.ts';
+import { wagonAt, wagonCycle, WAGON_PACE } from '../src/sim/wagon.ts';
+
+const FAST = { cruise: 65, accel: 20 }; // the board's own pace (src/proto/board/index.ts)
 
 test('every stop is called at each way it can leave, and the ends one way only', () => {
   for (const laid of [1, 2, 3]) {
@@ -15,19 +17,20 @@ test('every stop is called at each way it can leave, and the ends one way only',
   assert.equal(nextCall(0, 0, 1, 0), null);
 });
 
-test('the promised call is where the wagon really stands', () => {
-  for (const laid of [1, 2, 3]) {
-    const cycle = wagonCycle(laid);
-    for (let now = -cycle; now < 2 * cycle; now += 37.5)
-      for (let k = 0; k <= laid; k++)
-        for (const dir of [1, -1] as const) {
-          const c = nextCall(laid, k, dir, now);
-          if (!c) continue;
-          assert.ok(c.arrive >= 0 && c.arrive < cycle && c.leave > c.arrive, `laid ${laid} at ${now}`);
-          const w = wagonAt(laid, now + c.arrive + 0.5 * Math.min(1, c.leave - c.arrive))!;
-          assert.equal(w.stop, k);
-          assert.equal(w.dir, dir);
-          assert.notEqual(wagonAt(laid, now + c.leave + 0.5)!.stop, k);
-        }
-  }
+test('the promised call is where the wagon really stands, at either pace', () => {
+  for (const pace of [WAGON_PACE, FAST])
+    for (const laid of [1, 2, 3]) {
+      const cycle = wagonCycle(laid, pace);
+      for (let now = -cycle; now < 2 * cycle; now += 37.5)
+        for (let k = 0; k <= laid; k++)
+          for (const dir of [1, -1] as const) {
+            const c = nextCall(laid, k, dir, now, pace);
+            if (!c) continue;
+            assert.ok(c.arrive >= 0 && c.arrive < cycle && c.leave > c.arrive, `laid ${laid} at ${now}`);
+            const w = wagonAt(laid, now + c.arrive + 0.5 * Math.min(1, c.leave - c.arrive), 0, pace)!;
+            assert.equal(w.stop, k);
+            assert.equal(w.dir, dir);
+            assert.notEqual(wagonAt(laid, now + c.leave + 0.5, 0, pace)!.stop, k);
+          }
+    }
 });
