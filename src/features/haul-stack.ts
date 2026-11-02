@@ -10,13 +10,12 @@ import { rules } from '../world/game-world.ts'; // first: the lockstep rules reg
 import '../ui/ui-kit.css';
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { identity } from '../player/identity.ts';
 import { me } from '../player/player.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { okPid } from '../sim/roster.ts';
 import { HARD_CAP } from '../sim/stacks.ts';
-import { scene } from '../render/scene.ts';
 import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
 import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
@@ -59,7 +58,8 @@ const bands = new THREE.InstancedMesh(
 bands.count = 0;
 bands.frustumCulled = false;
 bands.castShadow = true;
-scene.add(bands);
+const bundles = new THREE.Group();
+bundles.add(mesh, bands);
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
@@ -152,8 +152,11 @@ const chip = document.createElement('div');
 chip.className = 'haul-chip';
 document.body.append(chip);
 
-onFrame(
-  ({ now }: { now: number }) => {
+defineKind('haul-stack', { update: 32 });
+spawn({
+  kind: 'haul-stack',
+  mesh: bundles,
+  update({ now }) {
     const mine = myStack();
     c = b = 0;
     draw(me.entered ? me.avatar : null, backSeam.count(mine.n), mine.k);
@@ -188,8 +191,7 @@ onFrame(
     }
     tickChip(mine, now);
   },
-  { phase: 'update', order: 32 },
-);
+});
 
 // The chip: your material and count, only while you carry something, the count ticking toward the confirmed one (about
 // 300 ms per change).

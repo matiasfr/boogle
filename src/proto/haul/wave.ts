@@ -25,7 +25,7 @@ import { onPreStep } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { cellX, cellZ, groundHeight } from '../../island/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../../render/haul-pieces.ts';
-import { camera } from '../../render/scene.ts';
+import { camera, scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
 import { noiseBuffer } from '../../render/noise.ts';
@@ -119,6 +119,7 @@ onApplied((e: { op: string; p: string; id: number }, _tick: number, r: { n?: num
 
 const PER_CHARGE = 3; // pieces drawn per charge left: a sandbar bundle is a big heap
 const heap = pieceMesh(SPOTS.length * 20 * PER_CHARGE);
+scene.add(heap);
 const m4 = new THREE.Matrix4();
 let drawnRev = -1;
 function drawBundles() {

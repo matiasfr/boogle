@@ -120,6 +120,7 @@ function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?:
 }
 
 const site = new THREE.Group();
+site.add(sleepers);
 const views = ROUTE.map((sec, s) => {
   const v = {
     rings: [] as THREE.Mesh[],

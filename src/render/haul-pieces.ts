@@ -2,7 +2,6 @@
 // stack and the work sites: one instanced-mesh maker per material kind. Logs are short brown cylinders lying on their
 // side. Later ages get their own shapes; until then they reuse the log with a tint.
 import * as THREE from 'three/webgpu';
-import { scene } from './scene.ts';
 
 const TINT = ['#8a5a32', '#7d7f86', '#a9b4c2', '#c9b48a', '#7fd0ff', '#d9d2c4', '#c25ad9']; // by kind (sim/materials.ts)
 export const PIECE = { len: 0.62, r: 0.11 };
@@ -10,8 +9,8 @@ const geo = new THREE.CylinderGeometry(PIECE.r, PIECE.r, PIECE.len, 7).rotateZ(M
 
 const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, flatShading: true }); // one for every piece mesh
 
-// An InstancedMesh of up to `max` pieces, in the scene, hidden until commitPieces shows some. Fill it with
-// setMatrixAt and setColorAt(n, pieceColor(kind)).
+// An InstancedMesh of up to `max` pieces, hidden until commitPieces shows some, for an entity to carry as its mesh or in
+// its Group. Fill it with setMatrixAt and setColorAt(n, pieceColor(kind)).
 export function pieceMesh(max: number): THREE.InstancedMesh {
   const mesh = new THREE.InstancedMesh(geo, mat, max);
   mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3);
@@ -19,7 +18,6 @@ export function pieceMesh(max: number): THREE.InstancedMesh {
   mesh.visible = false;
   mesh.frustumCulled = false;
   mesh.castShadow = true;
-  scene.add(mesh);
   return mesh;
 }
 // Shows the first n pieces written since the last commit (none: the mesh leaves the draw and shadow lists).

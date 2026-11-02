@@ -74,11 +74,6 @@
       "count": 1
     }
   },
-  "src/features/haul-stack.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
-    }
-  },
   "src/features/honk.ts": {
     "boogle/use-an-entity": {
       "count": 2
@@ -87,11 +82,6 @@
   "src/features/hotbar.ts": {
     "boogle/use-an-entity": {
       "count": 1
-    }
-  },
-  "src/features/hut-build.ts": {
-    "boogle/use-an-entity": {
-      "count": 4
     }
   },
   "src/features/identity.ts": {
@@ -104,22 +94,12 @@
       "count": 2
     }
   },
-  "src/features/log-sources.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/features/mushroom-garden.ts": {
     "boogle/use-an-entity": {
       "count": 1
     }
   },
   "src/features/pause.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/piles.ts": {
     "boogle/use-an-entity": {
       "count": 1
     }
@@ -207,11 +187,6 @@
   "src/pois/windmills/index.ts": {
     "boogle/use-an-entity": {
       "count": 6
-    }
-  },
-  "src/render/haul-pieces.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
     }
   },
   "src/render/props.ts": {
