@@ -2,8 +2,9 @@
 // (slapstick: a spilled stack lands where everyone can scoop it back) and 5 (nothing is ever lost, so nobody can
 // grief it away). Lockstep piles, Local pieces.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
-import { onFrame, onStart } from '../loop.ts';
-import { updatePiles, piles } from '../adapters/piles.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
+import { updatePiles, piles, pileMesh } from '../adapters/piles.ts';
 import { identity } from '../player/identity.ts';
 import { pickReach } from '../player/haul-variant.ts';
 import type { Pile } from '../sim/piles.ts';
@@ -13,4 +14,5 @@ const want = (p: Pile) => Math.min(p.n, identity.pid ? rules.stacks.room(identit
 
 const handle = window as unknown as { boogle?: Record<string, unknown> };
 onStart(() => handle.boogle && (handle.boogle.piles = piles)); // debug handle (scenarios)
-onFrame(({ now }: { now: number }) => updatePiles(now, want, pickReach), { phase: 'update', order: 30 });
+defineKind('piles', { update: 30 });
+spawn({ kind: 'piles', mesh: pileMesh, update: ({ now }) => updatePiles(now, want, pickReach) });

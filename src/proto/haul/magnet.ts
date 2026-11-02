@@ -16,6 +16,7 @@ import { me } from '../../player/player.ts';
 import { reducedMotion } from '../../constants.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { pieceMesh, pieceColor, commitPieces, onFly, PIECE } from '../../render/haul-pieces.ts';
+import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { onApplied } from '../../world/sync.ts';
 import { net } from '../../netplay/net.ts';
@@ -74,6 +75,7 @@ type Piece = {
 const pieces: Piece[] = [];
 const MAX = 24;
 const mesh = pieceMesh(MAX);
+scene.add(mesh);
 
 // The count your chip and bundle show: the host's, less what it counted that hasn't landed yet (`behind`), plus what
 // landed that it hasn't counted yet (`ahead`). Pours and drops go straight through. A pile take the host never
