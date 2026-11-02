@@ -9,7 +9,7 @@ onStart(() => {
   if (window.boogle) window.boogle.gifts = gifts; // debug handle
 });
 registerInteractable(giftTargets); // Pick up
-defineKind('gifts', { update: 3 }); // the 0 it had is taken by a kind, and only the prompt reads what this draws
+defineKind('gifts', { update: 0 });
 spawn({
   kind: 'gifts',
   mesh: giftObjects,

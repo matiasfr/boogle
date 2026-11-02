@@ -26,17 +26,20 @@ test('the scan ignores calls in strings and comments, and definitions', () => {
 test('defineKind orders are read: clashes and the feature range fail, a non-literal order is an error', () => {
   const errorsOf = (...files: ReturnType<typeof file>[]) => checkRegistry(scanSources(files));
   assert.deepEqual(errorsOf(file('src/entities/a.ts', "defineKind('a', { update: -300, postPhysics: -300 });")), []);
-  // against a core hook, another kind, the feature range, and a pinned fixed-step site
+  // against a core hook, another core-range kind, the feature range, and a pinned fixed-step site
   const core = file('src/player/p.ts', "onFrame(f, { phase: 'update', order: -290 });");
   assert.match(
     errorsOf(core, file('src/entities/a.ts', "defineKind('a', { update: -290 });"))[0]!,
     /equals src\/player/,
   );
-  const b = file('src/entities/b.ts', "defineKind('b', { lateUpdate: 5 });");
+  const b = file('src/entities/b.ts', "defineKind('b', { lateUpdate: -50 });");
   assert.match(
-    errorsOf(b, file('src/entities/a.ts', "defineKind('a', { lateUpdate: 5 });"))[0]!,
-    /late order 5 equals/,
+    errorsOf(b, file('src/entities/a.ts', "defineKind('a', { lateUpdate: -50 });"))[0]!,
+    /late order -50 equals/,
   );
+  // in the feature range kinds tie, as onFrame hooks do
+  const c = file('src/features/c.ts', "defineKind('c', { lateUpdate: 0 });");
+  assert.deepEqual(errorsOf(c, file('src/features/d.ts', "defineKind('d', { lateUpdate: 0 });")), []);
   assert.match(errorsOf(file('src/features/a.ts', "defineKind('a', { update: -50 });"))[0]!, /order -10 and up/);
   const site = file('src/physics/s.ts', 'onPreStep(f, { order: 40 });');
   assert.match(
