@@ -3,7 +3,7 @@
 import path from 'node:path';
 import type { Page } from 'playwright';
 
-// The part of the harness (dev/scenarios/run.mjs) this scenario uses.
+// The part of the harness (dev/scenarios/run.ts) this scenario uses.
 type Run = {
   page: (pathname: string, o?: { colorScheme?: 'light' | 'dark' }) => Promise<Page>;
   check: (label: string, ok: boolean, detail?: string) => void;

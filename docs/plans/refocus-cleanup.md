@@ -47,7 +47,7 @@ writes this into AGENTS.md.
 **Where to implement.** Use a separate worktree off `origin/main`, for example
 `git worktree add ../boogle-refocus origin/main -b refocus/<step>`. Never touch, stage or commit the main checkout's
 uncommitted owner work: `src/boogler/hud.ts`, `src/boogler/dialogue.ts`, `src/features/boogler.css`,
-`dev/concepts/*`, `dev/scenarios/boogler-tag.mjs`, `test/chroma.test.ts`, `DESIGN.md`, `package.json`,
+`dev/concepts/*`, `dev/scenarios/boogler-tag.ts`, `test/chroma.test.ts`, `DESIGN.md`, `package.json`,
 `package-lock.json` and `.claude/skills/concept-art/SKILL.md`. No step edits any of those files except step 8
 (`DESIGN.md`, see its note). Step 3 edits `src/boogler/lines.ts`, which the owner has not touched. This plan file sits
 untracked in the main checkout: copy it into the worktree's `docs/plans/` and commit it with step 1.
@@ -247,7 +247,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     uncarryable index shows as empty hands" (no shovel or seashell).
   - `src/features/hotbar.css`: change the comments "Eight slots" to five, and divide by `5` instead of `8` in both
     `--slot: clamp(...)` lines.
-  - `dev/scenarios/hotbar.mjs`: change the check message "not eight" to "not five" (nightly only).
+  - `dev/scenarios/hotbar.ts`: change the check message "not eight" to "not five" (nightly only).
   - New `test/inventory.test.ts`: set `globalThis.localStorage` to a Map-backed stub before
     `await import('../src/player/inventory.ts')`. Seed `boogle.hotbar` with an 8-entry array holding nulls, an unknown
     id, `'ball'`, `{ id: 'seeds', n: 99 }` and enough known items (`can`, `frisbee`, more `seeds` entries) to overflow
@@ -322,7 +322,7 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     `land.layout.trees` from `trees` (`src/render/props.ts`) exactly as `createGifts3d` did: `trees.slice(0, 64)`,
     `i = Math.round((t.x + HALF) / CELL)`, `j = Math.round((HALF - t.z) / CELL)`. Import `land` from
     `../world/game-world.ts`, which that file already imports first. Also set
-    `if (window.boogle) window.boogle.land = land; // debug handle`. In `dev/scenarios/world-inputs.mjs`, `READ` takes
+    `if (window.boogle) window.boogle.land = land; // debug handle`. In `dev/scenarios/world-inputs.ts`, `READ` takes
     the layout from `land.layout` (already imported there) instead of `window.boogle.gifts`, and the ready wait
     becomes `window.boogle?.land?.layout?.trees?.length > 0`. The pinned trees must not change: the scenario fails if
     they do.
@@ -380,11 +380,11 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
     - `src/features/prompt.ts` header example: "over the can" instead of "over a mango".
   - **Indices and fruit ids in tests and scenarios.** `grep -rnE "mango|coconut|banana|pomegranate|apricot" test dev`
     and `grep -rnE "k: ?[0-9]+|kind: ?[0-9]+|toss\([0-9]" src test dev`, then fix every hit:
-    - `dev/scenarios/lib/world.mjs`: `toss(k = 1, ...)`, the can (index 0 is now seeds, which plant instead of
-      landing). `dev/scenarios/smoke.mjs` `toss(0, ...)` becomes `toss(1, ...)`. `smoke` runs in `npm run ship` on a
+    - `dev/scenarios/lib/world.ts`: `toss(k = 1, ...)`, the can (index 0 is now seeds, which plant instead of
+      landing). `dev/scenarios/smoke.ts` `toss(0, ...)` becomes `toss(1, ...)`. `smoke` runs in `npm run ship` on a
       Mac and live after every deploy, so this one matters.
-    - `dev/scenarios/hotbar.mjs`, `dev/scenarios/interact.mjs`, `dev/scenarios/pause.mjs` and
-      `dev/scenarios/first-run.mjs`: `toss(1, 5)` now means the can, so fix its comments. Replace `I.take('mango')`,
+    - `dev/scenarios/hotbar.ts`, `dev/scenarios/interact.ts`, `dev/scenarios/pause.ts` and
+      `dev/scenarios/first-run.ts`: `toss(1, 5)` now means the can, so fix its comments. Replace `I.take('mango')`,
       `pick('a mango')` and `held === 'mango'` with `'frisbee'` (`'a frisbee'`).
     - In `interact.mjs`, the "a watering can behind you does not hide the ripe palm you face" check re-aims at a log
       bundle: find a target whose id starts with `logs` instead of `palm`, and expect "Take logs" instead of "Shake".

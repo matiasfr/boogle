@@ -598,7 +598,7 @@ if (ON_ISLAND) {
   );
 }
 
-// For the look evals (dev/look/evals/wagon.js).
+// For the look evals (dev/look/evals/wagon.ts).
 window.__wagon = {
   FEEL,
   get VARIANT() {

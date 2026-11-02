@@ -1,6 +1,6 @@
-// A pilot for the soapbox prototype (src/proto/soapbox/), for the soapbox-*.js look evals (run, drift, crash).
+// A pilot for the soapbox prototype (src/proto/soapbox/), for the soapbox-*.ts look evals (run, drift, crash).
 // It drives through the real input (the left stick, the triggers and the jump button's hold), so what the sheets show is what a
-// player gets. Needs ?proto=soapbox: BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.js
+// player gets. Needs ?proto=soapbox: BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.ts
 import { input } from '../../../src/player/input.ts';
 import { me } from '../../../src/player/player.ts';
 import { forEachStatic } from '../../../src/physics/engine.ts';
@@ -57,7 +57,7 @@ export async function drive(plan: Plan) {
     me.body.position.set(p.x + 1.5, p.y + 0.5, p.z); // stand beside it, then get in
     box.board();
   }
-  setTimeout(() => win.__debugCam?.clear(), 400); // after look.mjs freezes its view: follow with the game camera
+  setTimeout(() => win.__debugCam?.clear(), 400); // after look.ts freezes its view: follow with the game camera
   const t0 = performance.now();
   let wp = 0;
   const stats: Stats = (win.__pilot = {

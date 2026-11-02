@@ -296,7 +296,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
       leadHandlers.add(h);
       return () => leadHandlers.delete(h);
     },
-    // Tests (dev/scenarios/reconnect-edit.mjs): drop the socket as a network loss would, and hold reconnects for `ms`.
+    // Tests (dev/scenarios/reconnect-edit.ts): drop the socket as a network loss would, and hold reconnects for `ms`.
     pause(ms: number) {
       pausedUntil = performance.now() + ms;
       ws?.close();

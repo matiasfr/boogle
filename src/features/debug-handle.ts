@@ -1,4 +1,4 @@
-// Debug handle for scripts that drive the built game (the nightly smoke test, dev/scenarios/smoke.mjs). The deployed
+// Debug handle for scripts that drive the built game (the nightly smoke test, dev/scenarios/smoke.ts). The deployed
 // site has no /src/ modules to import, so the shared world is reached through `window.boogle.sync`:
 //   world, worldStatus(), stateHashes(), submitEdit(e)   straight from src/world/sync.ts
 //   markHashes(tick), hashesAt(tick)   per-state hashes as this tab ends `tick` (null until it has run here)

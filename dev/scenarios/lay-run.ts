@@ -3,9 +3,9 @@
 // sheets of the warm-up, of laying close up, of the whole run and of its end (the whistle, then the machine moving on
 // to the next section with you on it), plus a per-frame trace of the rider across the end: the deck must not lunge
 // and the rider must not be thrown. Serves DESIGN.md 1 and 10.
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
-// The parts of the harness (dev/scenarios/run.mjs, dev/look/lib.mjs) this scenario uses.
+// The parts of the harness (dev/scenarios/run.ts, dev/look/lib.ts) this scenario uses.
 type Game = {
   eval: (body: string) => Promise<unknown>;
   waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;

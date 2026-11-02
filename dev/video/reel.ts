@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { run } from '../look/lib.mjs';
+import { run } from '../look/lib.ts';
 import { music } from './music.ts';
 
 const { chromium } = createRequire(import.meta.url)('playwright') as typeof import('playwright');

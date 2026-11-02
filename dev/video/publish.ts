@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { run } from '../look/lib.mjs';
+import { run } from '../look/lib.ts';
 
 const argv = process.argv.slice(2);
 const opt = {

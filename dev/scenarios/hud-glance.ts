@@ -3,7 +3,7 @@
 // and the plaque mid-flip after a credited pour. Checks the haul chip ticks up to the confirmed count, a press squashes
 // the prompt, and a run of pours flips the plaque at most once a second. Each leg writes stills (`desk-*`, `ipad-*`).
 // Serves DESIGN.md "Understandable at a glance".
-import { TP, INV } from './lib/world.mjs';
+import { TP, INV } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;

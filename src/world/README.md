@@ -96,6 +96,6 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 
 `home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm cells, the log spots, and perch cells) and
 `plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
-and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.mjs` checks it against the running game
+and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.ts` checks it against the running game
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI
 moves on purpose.

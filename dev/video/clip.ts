@@ -5,7 +5,7 @@
 // A shot is dev/video/shots/<name>.ts (typed by `Shot` below):
 //   export default { about: 'one line', query: 'tidefast=1', async run(c) { ... } } satisfies Shot;
 // `c` gives you:
-//   c.open({ name, room, query, hud })  a player (Game from lib.mjs) with the clock installed; same room = same island
+//   c.open({ name, room, query, hud })  a player (Game from lib.ts) with the clock installed; same room = same island
 //   g.record(label, { seconds, each })  a clip; `each(t)` runs before every frame (camera moves, input)
 //   c.move(a, b, seconds, ease)          an `each` that glides the debug camera from pose a to pose b
 //   c.ease, c.sleep, c.VIEWS
@@ -13,14 +13,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from 'playwright';
-import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.mjs';
+import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.ts';
 
 // A camera pose: a named view or { cam, look } (optionally fov).
 export type Pose = { cam: number[]; look: number[]; fov?: number };
 // Runs before every recorded frame: t seconds in, frame k, on game g.
 export type Each = (t: number, k: number, g: ClipGame) => unknown;
 export type RecordOpts = { seconds?: number; each?: Each; fps?: number; gif?: boolean };
-// A player page (Game from lib.mjs) whose record() takes an `each` with the game as its third argument.
+// A player page (Game from lib.ts) whose record() takes an `each` with the game as its third argument.
 export type ClipGame = Omit<Game, 'record'> & { page: Page; record(label: string, r?: RecordOpts): Promise<object> };
 export type Clip = {
   VIEWS: typeof VIEWS;
@@ -101,7 +101,7 @@ const move =
 let stack: Awaited<ReturnType<typeof startStack>> | undefined, browser: Awaited<ReturnType<typeof launch>> | undefined;
 try {
   stack = await startStack({ root: opt.root });
-  browser = await launch();
+  const open = (browser = await launch());
   for (const name of opt.names) {
     const shot: Shot = (await import(shotFile(name))).default;
     console.log(`\n== ${name}: ${shot.about || ''}`);
@@ -114,7 +114,7 @@ try {
       fps: opt.fps,
       gif: opt.gif,
       async open(o = {}) {
-        const g = (await Game.open(browser, stack, {
+        const g = (await Game.open(open, stack, {
           out,
           size: opt.size,
           clock: true,

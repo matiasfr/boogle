@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 import type { BrowserContext, Page } from 'playwright';
-import { freePort, sleep } from '../look/lib.mjs';
+import { freePort, sleep } from '../look/lib.ts';
 
 export { sleep };
 const require = createRequire(import.meta.url);

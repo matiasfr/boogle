@@ -5,7 +5,7 @@
 // interpolation delay. With `laid=3` faked, the train runs over the open section, where the track machine sinks out of
 // its way (src/features/track-machine.ts). Serves DESIGN.md 4 and 10.
 // Two rendering tabs: runs on a Mac (`npm run scenario -- wagon-riders`) or nightly, never in PR CI.
-import { MET } from './lib/world.mjs';
+import { MET } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;

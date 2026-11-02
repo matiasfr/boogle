@@ -53,7 +53,7 @@ export const garden = rules.mushrooms.garden;
 const pourAt = { until: 0 };
 
 // The render side of the host's plant check (env.canPlantAt): dry land with nothing (rock, tree, wall, cap) over it.
-// dev/scenarios/world-inputs.mjs bakes it into src/world/home-land.json for the server, which has no renderer.
+// dev/scenarios/world-inputs.ts bakes it into src/world/home-land.json for the server, which has no renderer.
 export function canPlantAt(i: number, j: number) {
   const x = cellX(i),
     z = cellZ(j),
