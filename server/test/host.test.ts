@@ -99,7 +99,7 @@ test('refusals: unhosted room, bad ids, a full room (a known id still gets in)',
       ['beach', 'aaa', 'aaapid', ''], // no key
       ['beach', 'aaa', 'aaapid', 'short'],
     ]) {
-      const x = connect(base, room, self, pid, key);
+      const x = connect(base, room!, self!, pid!, key!);
       assert.deepEqual(await x.next(is('bad')), { t: 'bad' });
       assert.equal(await x.closed, 4400);
     }

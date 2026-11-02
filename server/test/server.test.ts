@@ -240,7 +240,7 @@ test('an upgrade with an unparseable target does not crash the server', async ()
         sock.on('close', () => resolve(got));
         sock.on('error', () => resolve(got));
       });
-      assert.match(reply.split('\r\n')[0], /^HTTP\/1\.1 4\d\d/, `${target}: ${reply.split('\r\n')[0]}`);
+      assert.match(reply.split('\r\n')[0]!, /^HTTP\/1\.1 4\d\d/, `${target}: ${reply.split('\r\n')[0]}`);
     }
     assert.equal((await fetch(`${s.base}/healthz`)).status, 200, 'still serving');
   } finally {
