@@ -100,8 +100,8 @@ const move =
 
 let stack: Awaited<ReturnType<typeof startStack>> | undefined, browser: Awaited<ReturnType<typeof launch>> | undefined;
 try {
-  stack = await startStack({ root: opt.root });
-  const open = (browser = await launch());
+  const liveStack = (stack = await startStack({ root: opt.root }));
+  const liveBrowser = (browser = await launch());
   for (const name of opt.names) {
     const shot: Shot = (await import(shotFile(name))).default;
     console.log(`\n== ${name}: ${shot.about || ''}`);
@@ -114,7 +114,7 @@ try {
       fps: opt.fps,
       gif: opt.gif,
       async open(o = {}) {
-        const g = (await Game.open(open, stack, {
+        const g = (await Game.open(liveBrowser, liveStack, {
           out,
           size: opt.size,
           clock: true,
