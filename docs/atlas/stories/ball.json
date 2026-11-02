@@ -7,7 +7,7 @@
     {
       "go": [["you.input", "you.systems"]],
       "text": "You walk into the ball. Your tab claims it and now runs its physics.",
-      "code": "ball.js · world phase, order −280",
+      "code": "defineKind('ball', …) · an entity in entities/ball",
       "cite": [
         {
           "file": "src/entities/ball/state.ts"

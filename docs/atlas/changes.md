@@ -14,6 +14,7 @@
 - After that, only small fixes landed: the last two loops between files were untangled (the player and cave code now lean on small helper files instead of on each other), and an old hero prototype was retired. Nothing in the picture moved.
 - Late that night, only small changes again: The Boogler can babble as he talks (behind `?proto=babble`, only your tab hears it), the new Buddy body learned to carry, swim and sit, and the physics-step hooks now run in a numbered order instead of whichever signed up first, like a queue with tickets. Nothing in the picture moved.
 - Overnight, only Local changes: The Boogler's babble now plays for everyone, every sound runs through one mixing desk with a volume slider in the pause view, and a page that loads during a deploy reloads once instead of getting stuck. Nothing is shared, so nothing in the picture moved.
+- After that, the beach ball and the pings became "entities": each one is a self-contained object that knows how to update, draw and clean up after itself, like a toy that comes in its own box with its own instructions. The ball moved to its own folder; [kicking the ball](#story/ball) still travels the same way. Everyone's avatar is now the Buddy. Nothing shared changed shape, so no arrow in the picture moved.
 
 ## 2026-10-30
 
