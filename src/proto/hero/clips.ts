@@ -118,6 +118,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
     airborne: airborne && !seated,
     load: seated ? 0 : (u.load ?? 0),
     hold: seated ? null : (u.holdKind ?? null),
+    seated,
     down: u.flopAmt ?? 0,
   });
   r.lastY = a.position.y;

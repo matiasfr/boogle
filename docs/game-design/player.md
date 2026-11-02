@@ -109,9 +109,9 @@ beanie, parts on the head bone hidden until worn, each one more draw call or two
 The rest of the game fits this body behind the flag (`&buddy` adds it to any other prototype). A haul bundle rides its spine,
 lower, deeper and a little shorter than on the capsule, so its head shows over the top from the follow camera. It leans
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right
-mitt with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
-eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip instead of being
-squashed into the tub. Knocked down, it lies flat, sprawled, with the stars over its head. The capsule is unchanged and still
+mitt: the can and seeds carried down at the hip by the handle (the can lifts to pour), anything else with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
+eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
+being squashed into the tub. Knocked down, it lies flat, sprawled, with the stars over its head. The capsule is unchanged and still
 the body in normal play.
 
 boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.

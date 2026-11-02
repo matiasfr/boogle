@@ -29,7 +29,7 @@ export type AvatarData = {
   handSocket?: THREE.Object3D;
   flopY?: number;
   load?: number;
-  holdKind?: 'item' | 'ball' | null;
+  holdKind?: 'item' | 'hang' | 'ball' | null;
   flopAmt?: number;
   seatedAt?: number;
 };

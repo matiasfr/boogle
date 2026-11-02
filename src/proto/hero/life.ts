@@ -40,6 +40,8 @@ const RISE_AT = 4, // m/s where the rising pose is full
   FALL_AT = 6;
 const FADE = { in: 0.07, out: 0.09, arm: 0.1, load: 0.2 }; // s
 const BLINK = { closed: 0.1, every: 2, more: 3.5 }; // s; `every` + up to `more` between blinks
+const HELD_SCALE = 0.82; // things in hand, made for the capsule's bulk
+const HANG_HOLD = 0.8;
 const LOAD_LEAN = { base: 5, full: 11, at: 16 }; // degrees forward with any load, and at this many logs
 
 // Arm poses for the figure's left arm, mirrored for the right: where the upper arm and the forearm point, in its frame.
@@ -47,6 +49,8 @@ type V3 = [number, number, number];
 const ARMS = {
   strap: { upper: [0.42, -0.9, -0.05], lower: [-0.45, 0.42, 0.8] }, // gripping the bundle's ropes at the chest
   hold: { upper: [0.18, -0.9, 0.34], lower: [-0.05, 0.08, 1] }, // something small held out in front
+  hang: { upper: [0.38, -0.9, -0.05], lower: [0.12, -0.55, 0.82] }, // something with a handle, carried at the hip
+  rest: { upper: [0.4, -0.9, 0.12], lower: [0.22, -0.95, 0.2] }, // seated, hands down at its sides
   reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
   sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
 } satisfies Record<string, { upper: V3; lower: V3 }>;
@@ -60,7 +64,8 @@ export type LifeState = {
   vy: number;
   airborne: boolean;
   load: number; // pieces on its back
-  hold: 'item' | 'ball' | null;
+  hold: 'item' | 'hang' | 'ball' | null;
+  seated: boolean;
   down: number; // 0..1: how far flopped over (src/features/impact.ts)
 };
 
@@ -119,6 +124,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
   }));
   const id = new THREE.Quaternion(),
     q = new THREE.Quaternion();
+  let socket: { hand: THREE.Object3D; hold: THREE.Quaternion; hang: THREE.Quaternion } | null = null;
 
   let air = 0,
     wasAir = false,
@@ -139,10 +145,13 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
         .invert()
         .decompose(back.position, back.quaternion, back.scale);
       named('spine_02').add(back);
-      const hand = new THREE.Object3D(); // the mitt's middle, axes as the inner group's while the arm is in `hold`
-      const held = arms[1]!.pose.hold.worldH;
+      const hand = new THREE.Object3D(); // the mitt's middle, keeping what it holds upright in the arm's pose
+      const upright = new THREE.Quaternion().setFromRotationMatrix(toInner);
+      const uprightIn = (pose: ArmPose) => arms[1]!.pose[pose].worldH.clone().invert().multiply(upright);
       hand.position.set(0, 0.09, 0);
-      hand.quaternion.copy(held).invert().multiply(new THREE.Quaternion().setFromRotationMatrix(toInner));
+      hand.scale.setScalar(HELD_SCALE);
+      socket = { hand, hold: uprightIn('hold'), hang: uprightIn('hang') };
+      hand.quaternion.copy(socket.hold);
       named('hand_r').add(hand);
       return { back, hand };
     },
@@ -178,16 +187,20 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
         const want: ArmPose | null =
           s.down > 0.3
             ? 'sprawl'
-            : s.hold === 'ball'
-              ? 'reach'
-              : s.hold === 'item' && right
-                ? 'hold'
-                : s.load
-                  ? 'strap'
-                  : null;
+            : s.seated
+              ? 'rest'
+              : s.hold === 'ball'
+                ? 'reach'
+                : s.hold === 'item' && right
+                  ? 'hold'
+                  : s.hold === 'hang' && right
+                    ? 'hang'
+                    : s.load
+                      ? 'strap'
+                      : null;
         for (const n of NAMES) {
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;
-          const w = arm.w[n];
+          const w = arm.w[n] * (n === 'hang' ? HANG_HOLD : 1); // a little of the walk's swing stays in a hanging arm
           if (w < 0.005) continue;
           const p = arm.pose[n];
           arm.upper.quaternion.slerp(p.upper, w);
@@ -195,6 +208,8 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
           arm.hand.quaternion.slerp(p.hand, w);
         }
       });
+
+      if (socket) socket.hand.quaternion.slerpQuaternions(socket.hold, socket.hang, arms[1]!.w.hang);
 
       nextBlink -= dt;
       if (nextBlink <= 0) {

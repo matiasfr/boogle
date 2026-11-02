@@ -31,6 +31,8 @@ const POSES: [string, Partial<LifeState>][] = [
   ['Free', {}],
   ['Carrying', { load: 16 }],
   ['Item', { hold: 'item' }],
+  ['Can', { hold: 'hang' }],
+  ['Seated', { seated: true }],
   ['Ball', { hold: 'ball' }],
   ['Knocked', { down: 1 }],
 ];
@@ -323,7 +325,15 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(0.05, clock.getDelta());
   const jump = hopT >= 0 ? hop(dt) : { vy: 0, inAir: false };
   mixer.update(dt);
-  life.update(dt, { vy: jump.vy, airborne: jump.inAir, load: 0, hold: null, down: 0, ...armPose });
+  life.update(dt, {
+    vy: jump.vy,
+    airborne: jump.inAir,
+    load: 0,
+    hold: null,
+    seated: current === 'Driving_Loop',
+    down: 0,
+    ...armPose,
+  });
   if (q.get('blink')) for (const n of ['eye_l', 'eye_r']) figure.getObjectByName(n)!.scale.y = Number(q.get('blink'));
   for (const m of crowdMixers) m.update(dt);
   if (spin.checked) figure.rotation.y += dt * 0.8;
