@@ -134,3 +134,8 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Clutter: "we could probably remove the sleepers on the back"; "the planks on the cart with wheels makes perfect sense".
 - Time in the air: first leaned to "the short version" in case it plays at every login, then: first time creating a character, "like 6 seconds or so, pretty long"; rejoining, "really fast" or "spawn in where they were".
 - After: built that way: the world slides past during the card, Jump in runs the last stretch to the rail's end, and the handcar became a flat trolley with no handle.
+## 2026-11-02 (the look test, `?proto=place&v=look&look=all`)
+- Who: Matias, solo; told to the director.
+- "It looks pretty great. Definitely better."
+- After: it becomes the default in the next round of `?proto=place`; to-dos in [look-pass.md](plans/look-pass.md). Station feedback still to come.
+
