@@ -136,6 +136,7 @@ These are standing preferences from the thread.
 
 ### Look
 
+- **2026-11-02, the look to aim for is the crossing previz, shots 2, 3 and 5, especially 2** (owner: "Especially 2, because it reminds me of Mario Sunshine and how beautiful it is"). Images and how each effect would be built: `.look/previz/crossing-beauty/` (gitignored, in the main checkout on the owner's Mac). Shot 2 is the everyday look; shots 3 (golden hour) and 5 (dusk arrival) are moods it passes through. These are paintings, so they set a target, not a promise: the real renderer has to prove it, on an M4 iPad Pro.
 - **2026-11-02, the world has to get a lot more beautiful** (owner, after the crossing: "we'll need to mess around with the rendering settings and just try and make the world a lot more beautiful in the future"). A direction for later, not a pick; "okay for now" below still holds until then.
 - **2026-11-01, the current look is okay for now** ("pretty good … we may want to iterate a little more"). No more look work until there's a reason.
 - **2026-11-01, title and loading art is a generated, rendered image with a small animated accent,** not a screen of flat vector or CSS art (owner, on the low-poly SVG scenes: "I really dont like this aesthetic"; "the whole screen doesn't have to animate"). Show candidates placed in the real screen before building scenes in code.
