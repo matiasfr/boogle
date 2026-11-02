@@ -18,6 +18,16 @@
 //           (features: -10 to 2000)
 //           3000 net.ts: presence send           3010 water-render.ts: sea uTime  (then main.ts renders)
 //
+// The fixed step (src/physics/engine.ts) has its own lists, walked 0 to 4 times a frame around each physics step: lower
+// order first, ties in registration order. The orders below are pinned; moving one is a change of behaviour and gets
+// its own commit. No order means 1000: prototypes and anything unnumbered run after all of these.
+//   onPreStep   10 platforms.ts: decks move    20 mushroom-garden: a growing cap shoves you   30 feel.ts: jump feel
+//               40 physics.ts: remote targets, this player's controller, the ball's friction and surf
+//               50 boogler.ts: his body follows him   60 boogler/play.ts: carry the rider, launches
+//               70 windmills: sails spin       80 caves: the safety net   90 guest/play.ts: the guest's body (lazy)
+//   onPostStep  10 mushroom-garden: the bounce   20 physics.ts: fall-through net, ground contact (coyote)
+//               30 boogler/play.ts: standing on him
+//
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and calls
 // onFrame/onStart. main.ts loads every file in src/features/ automatically.
 //

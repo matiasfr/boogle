@@ -75,29 +75,32 @@ const floorGap = (b: Body) => {
     : Infinity;
 };
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
-onPreStep(() => {
-  const b = me.body;
-  if (!b) return;
-  const vy = b.velocity.y;
-  const surf = waterField.surfaceAt(b.position.x, b.position.z);
-  const under = surf - (b.position.y + 0.35) > 0;
-  // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
-  if (vy <= 0) jumpActive = false;
-  if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
-  if (!under) {
-    let g = 1;
-    if (vy < 0) g = JUMP.fallGravity;
-    else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
-    else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
-    b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
-    // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
-    // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
-    if (!jumpActive && me.coyote > 0 && vy > 0.4 && vy < MOVE.snapMaxVy) {
-      const gap = floorGap(b);
-      if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
+onPreStep(
+  () => {
+    const b = me.body;
+    if (!b) return;
+    const vy = b.velocity.y;
+    const surf = waterField.surfaceAt(b.position.x, b.position.z);
+    const under = surf - (b.position.y + 0.35) > 0;
+    // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
+    if (vy <= 0) jumpActive = false;
+    if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
+    if (!under) {
+      let g = 1;
+      if (vy < 0) g = JUMP.fallGravity;
+      else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
+      else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
+      b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
+      // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
+      // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
+      if (!jumpActive && me.coyote > 0 && vy > 0.4 && vy < MOVE.snapMaxVy) {
+        const gap = floorGap(b);
+        if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
+      }
     }
-  }
-});
+  },
+  { order: 30 },
+);
 
 // ---------------------------------------------------------------- my flops
 type Flop = { kind: string; until: number };

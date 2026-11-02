@@ -334,10 +334,13 @@ onStart(() => {
   const netted0 = groundProbe.netted;
   groundProbe.netted = (x, z) => !nearCaves(x, z) && netted0(x, z); // track() is the net here
   camConstraints.push(keepCameraInside);
-  onPreStep(() => {
-    if (me.body) track(me.body, 0.4);
-    if (ball.mine && !ball.held) track(ball.body, 0);
-  });
+  onPreStep(
+    () => {
+      if (me.body) track(me.body, 0.4);
+      if (ball.mine && !ball.held) track(ball.body, 0);
+    },
+    { order: 80 },
+  );
 
   // Build in ~8 ms slices between frames, so nobody notices.
   const job = build();

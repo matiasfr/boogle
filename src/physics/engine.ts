@@ -12,7 +12,8 @@
 //                                  pushes; mass: set it too)
 //   addBody(body), removeBody(body), teleport(body, x, y, z)
 //   material(name, { friction, restitution })   a contact uses the product of its two materials' values
-//   onPreStep(fn), onPostStep(fn)  around every fixed step, in registration order
+//   onPreStep(fn, { order }), onPostStep(fn, { order })   around every fixed step: lower order first, ties in
+//                                  registration order. The game's orders are pinned (table: src/loop.ts); no order runs last
 //   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.ts only
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
 //   forEachContact(body, fn)       fn(nx, ny, nz, other) for each touching contact; normal points into `body`
@@ -63,6 +64,7 @@ export type BodyOptions = {
   linearDamping?: number;
   angularDamping?: number;
 };
+export type StepOpts = { order?: number };
 export type RayHit = { hasHit: boolean; distance: number; hitPointWorld: V3; hitNormalWorld: V3 };
 
 const backend = rapier;
@@ -78,8 +80,8 @@ export const addBody: (body: Body) => void = backend.addBody;
 export const removeBody: (body: Body) => void = backend.removeBody;
 export const teleport: (body: Body, x: number, y: number, z: number) => void = backend.teleport;
 export const material: (name: string, props: MaterialProps) => Material = backend.material;
-export const onPreStep: (fn: () => void) => void = backend.onPreStep;
-export const onPostStep: (fn: () => void) => void = backend.onPostStep;
+export const onPreStep: (fn: () => void, opts?: StepOpts) => void = backend.onPreStep;
+export const onPostStep: (fn: () => void, opts?: StepOpts) => void = backend.onPostStep;
 export const stepPhysics: (dt: number) => void = backend.stepPhysics;
 export const stepFixed: () => void = backend.stepFixed;
 export const physicsTime: () => number = backend.physicsTime;

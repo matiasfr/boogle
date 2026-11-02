@@ -107,18 +107,21 @@ function shapeBody(v: Visual, s: number) {
   v.bodyS = s;
 }
 
-onPostStep(() => {
-  const b = me.body;
-  if (!b) return;
-  forEachContact(b, (nx, ny, nz, other) => {
-    const vis = capBodies.get(other);
-    if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
-    b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
-    me.coyote = 0;
-    vis.squishAt = performance.now();
-    return true;
-  });
-});
+onPostStep(
+  () => {
+    const b = me.body;
+    if (!b) return;
+    forEachContact(b, (nx, ny, nz, other) => {
+      const vis = capBodies.get(other);
+      if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
+      b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
+      me.coyote = 0;
+      vis.squishAt = performance.now();
+      return true;
+    });
+  },
+  { order: 10 },
+);
 
 // A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top). The shove
 // works from the size it is drawn at (v.drawS), and its collider doesn't grow while you are under it (updateGarden), so
@@ -138,25 +141,28 @@ function overlaps(b: Body, v: Visual, s: number) {
   if (b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return false;
   return Math.hypot(b.position.x - base.x, b.position.z - base.z) < CAP_R * s + PLAYER_R + 0.05;
 }
-onPreStep(() => {
-  const b = me.body;
-  if (!b) return;
-  for (const v of visuals.values()) {
-    const s = v.drawS ?? 0;
-    if (s < MIN_BODY || v.shown >= 1) continue;
-    const d = underCap(b, v, s);
-    if (!d) continue;
-    const base = v.root.position;
-    const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
-      nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
-    const out = b.velocity.x * nx + b.velocity.z * nz;
-    if (out >= PUSH) continue;
-    b.velocity.x += nx * (PUSH - out);
-    b.velocity.z += nz * (PUSH - out);
-    b.velocity.y = Math.max(b.velocity.y, 2.5);
-    v.squishAt = performance.now();
-  }
-});
+onPreStep(
+  () => {
+    const b = me.body;
+    if (!b) return;
+    for (const v of visuals.values()) {
+      const s = v.drawS ?? 0;
+      if (s < MIN_BODY || v.shown >= 1) continue;
+      const d = underCap(b, v, s);
+      if (!d) continue;
+      const base = v.root.position;
+      const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
+        nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
+      const out = b.velocity.x * nx + b.velocity.z * nz;
+      if (out >= PUSH) continue;
+      b.velocity.x += nx * (PUSH - out);
+      b.velocity.z += nz * (PUSH - out);
+      b.velocity.y = Math.max(b.velocity.y, 2.5);
+      v.squishAt = performance.now();
+    }
+  },
+  { order: 20 },
+);
 
 // ---------------------------------------------------------------- meshes
 const capProfile = [

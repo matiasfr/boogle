@@ -195,28 +195,35 @@ function tick(sim: Sim, now: number) {
 
 // The body arrives where the guest is at the next 30 Hz tick, one 60 Hz step at a time. If something else moved it (a
 // respawn, the caves' safety net), the guest goes there.
-onPreStep(() => {
-  if (!guest.active || !me.body || !sim) return;
-  const b = me.body;
-  const p = b.position;
-  if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
-    moveOrigin(b.position.x, b.position.z);
-    sim.teleport(
-      (b.position.x - origin.x) * UNITS,
-      (b.position.y - PLAYER_R) * UNITS,
-      (b.position.z - origin.z) * UNITS,
+onPreStep(
+  () => {
+    if (!guest.active || !me.body || !sim) return;
+    const b = me.body;
+    const p = b.position;
+    if (Math.hypot(p.x - expected.x, p.y - expected.y, p.z - expected.z) > 0.75) {
+      moveOrigin(b.position.x, b.position.z);
+      sim.teleport(
+        (b.position.x - origin.x) * UNITS,
+        (b.position.y - PLAYER_R) * UNITS,
+        (b.position.z - origin.z) * UNITS,
+      );
+      last = sim.state();
+      put(target, b.position);
+    }
+    if (phase === 0) tick(sim, performance.now());
+    const left = (2 - phase) * FIXED;
+    b.velocity.set(
+      (target.x - b.position.x) / left,
+      (target.y - b.position.y) / left,
+      (target.z - b.position.z) / left,
     );
-    last = sim.state();
-    put(target, b.position);
-  }
-  if (phase === 0) tick(sim, performance.now());
-  const left = (2 - phase) * FIXED;
-  b.velocity.set((target.x - b.position.x) / left, (target.y - b.position.y) / left, (target.z - b.position.z) / left);
-  expected.x = b.position.x + b.velocity.x * FIXED;
-  expected.y = b.position.y + b.velocity.y * FIXED;
-  expected.z = b.position.z + b.velocity.z * FIXED;
-  phase = (phase + 1) % 2;
-});
+    expected.x = b.position.x + b.velocity.x * FIXED;
+    expected.y = b.position.y + b.velocity.y * FIXED;
+    expected.z = b.position.z + b.velocity.z * FIXED;
+    phase = (phase + 1) % 2;
+  },
+  { order: 90 },
+);
 
 // The guest's feet are a ball radius under the body's centre.
 onFrame(

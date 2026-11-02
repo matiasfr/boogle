@@ -255,7 +255,7 @@ function build() {
   scene.add(statics);
   freezeStatic(statics); // never moves: no per-frame matrix work
 
-  onPreStep(spinBodies);
+  onPreStep(spinBodies, { order: 70 });
 }
 
 const sailAngle = (t: number, phase: number) => SPIN * t + 0.35 * Math.sin(t * 0.05 + phase) + phase;
