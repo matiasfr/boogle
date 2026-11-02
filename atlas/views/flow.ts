@@ -76,7 +76,7 @@ export function flowView(ctx: Ctx, el: HTMLElement): Update {
         .source((d) => [d.source.x1, d.y0])
         .target((d) => [d.target.x0, d.y1]),
     )
-    .attr('stroke', (d) => `var(${KINDS[d.kind].c})`)
+    .attr('stroke', (d) => `var(${KINDS[d.kind]!.c})`)
     .attr('stroke-width', (d) => Math.max(2, d.width))
     .attr('stroke-opacity', 0.45)
     .style('cursor', 'pointer')
@@ -110,7 +110,7 @@ export function flowView(ctx: Ctx, el: HTMLElement): Update {
     .attr('width', (d) => d.x1 - d.x0)
     .attr('height', (d) => Math.max(2, d.y1 - d.y0))
     .attr('rx', 2)
-    .attr('fill', (d) => (d.ch ? `var(${KINDS[d.ch].c})` : 'var(--fg)'));
+    .attr('fill', (d) => (d.ch ? `var(${KINDS[d.ch]!.c})` : 'var(--fg)'));
   node
     .append('text')
     .attr('x', (d) => (d.ch ? d.x1 + 10 : d.x0 - 8))

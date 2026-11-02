@@ -13,7 +13,7 @@ let raf = 0;
 export const stopHow = () => cancelAnimationFrame(raf);
 
 const boxC = (b: Box): Pt => [b.x + b.w / 2, b.y + b.h / 2];
-const laneP = (k: string): Pt => [645, LANES[k].y];
+const laneP = (k: string): Pt => [645, LANES[k]!.y];
 
 function edgeToward(b: Box, [tx, ty]: Pt): Pt {
   const [cx, cy] = boxC(b);
@@ -36,12 +36,14 @@ export function routePts(ids: string[]): Pt[] {
           items.push({ pt: v.via as Pt, id: '' });
     items.push({ id });
   });
-  const raw = items.map((it) => (it.pt ? it.pt : it.id.startsWith('lane:') ? laneP(it.id.slice(5)) : boxC(BOX[it.id])));
+  const raw = items.map((it) =>
+    it.pt ? it.pt : it.id.startsWith('lane:') ? laneP(it.id.slice(5)) : boxC(BOX[it.id]!),
+  );
   return items.map((it, i) => {
-    if (it.pt || it.id.startsWith('lane:')) return raw[i];
-    if (i === 0) return edgeToward(BOX[it.id], raw[1]);
-    if (i === items.length - 1) return edgeToward(BOX[it.id], raw[i - 1]);
-    return raw[i];
+    if (it.pt || it.id.startsWith('lane:')) return raw[i]!;
+    if (i === 0) return edgeToward(BOX[it.id]!, raw[1]!);
+    if (i === items.length - 1) return edgeToward(BOX[it.id]!, raw[i - 1]!);
+    return raw[i]!;
   });
 }
 
@@ -149,13 +151,15 @@ export function howView(ctx: Ctx, el: HTMLElement): Update {
   const paths = routes.map((_, i) => el.querySelector<SVGPathElement>('#rt' + i)!);
   const lengths = paths.map((p) => p.getTotalLength());
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    paths.forEach((p, i) => at(i, p, lengths[i]));
+    paths.forEach((p, i) => at(i, p, lengths[i]!));
     return null;
   }
   const t0 = performance.now();
   const tick = (now: number) => {
     const u = ((now - t0) % 1600) / 1600;
-    paths.forEach((p, i) => at(i, p, lengths[i] * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? '0' : '1'));
+    paths.forEach((p, i) =>
+      at(i, p, lengths[i]! * Math.min(1, u * 1.15)).setAttribute('opacity', u > 0.92 ? '0' : '1'),
+    );
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
@@ -182,6 +186,6 @@ export function howIntro(ctx: Ctx): string {
   const ways = (Array.isArray(i.ways) ? i.ways : []).filter((w) => KINDS[w?.kind]);
   return `<div><h2>${esc(i.title ?? 'Boogle in one picture')}</h2></div><p style="color:var(--fg);font-size:14px">${esc(i.lead ?? '')}</p>
     <p>${esc(i.question ?? '')}</p>
-    <div class="ways">${ways.map((w) => `<div style="--c:${kc(w.kind)}"><i></i><b>${KINDS[w.kind].name}</b><span>${esc(w.says ?? '')}</span><small>${esc(w.eg ?? '')}</small></div>`).join('')}</div>
+    <div class="ways">${ways.map((w) => `<div style="--c:${kc(w.kind)}"><i></i><b>${KINDS[w.kind]!.name}</b><span>${esc(w.says ?? '')}</span><small>${esc(w.eg ?? '')}</small></div>`).join('')}</div>
     <p>${esc(i.foot ?? '')}</p>`;
 }

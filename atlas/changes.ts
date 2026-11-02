@@ -9,7 +9,7 @@ export function parseChanges(md: unknown): ChangeEntry[] {
   for (const line of String(md ?? '').split('\n')) {
     const m = /^##\s+(\S+)\s*$/.exec(line);
     if (m) {
-      cur = { date: m[1], body: '' };
+      cur = { date: m[1]!, body: '' };
       out.push(cur);
     } else if (cur) cur.body += line + '\n';
   }
@@ -27,7 +27,7 @@ interface Known {
 // The [text](#story|concept|view/id) links in a body, as [{ kind, id }]; the id is whatever sits between the slash and
 // the closing bracket, so a broken one can be reported.
 export const linksOf = (body: string): { kind: string; id: string }[] =>
-  [...body.matchAll(/\]\(#(story|concept|view)\/([^)]*)\)/g)].map(([, kind, id]) => ({ kind, id }));
+  [...body.matchAll(/\]\(#(story|concept|view)\/([^)]*)\)/g)].map(([, kind, id]) => ({ kind: kind!, id: id! }));
 
 const INLINE = /`([^`]+)`|\[([^\]]+)\]\(#(story|concept|view)\/([a-z0-9-]+)\)/g;
 
@@ -43,7 +43,11 @@ function inline(text: string, known: Known): string {
     else {
       const [, , label, kind, id] = m;
       const live =
-        kind === 'story' ? known.stories?.has(id) : kind === 'concept' ? known.concepts?.has(id) : known.views?.has(id);
+        kind === 'story'
+          ? known.stories?.has(id!)
+          : kind === 'concept'
+            ? known.concepts?.has(id!)
+            : known.views?.has(id!);
       out += live ? `<a href="#${kind}/${id}">${esc(label)}</a>` : esc(label);
     }
   }
@@ -69,7 +73,7 @@ export function renderChanges(entries: ChangeEntry[], known: Known = {}): string
         const li = /^\s*-\s+(.*)$/.exec(line);
         if (li) {
           flush();
-          (list ||= []).push(li[1]);
+          (list ||= []).push(li[1]!);
         } else if (!line.trim()) {
           flush();
           endList();

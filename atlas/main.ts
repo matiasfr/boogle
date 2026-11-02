@@ -99,7 +99,7 @@ function render(rebuild = true) {
   if (rebuild || built !== key || ALWAYS_REBUILD.has(name)) {
     built = key;
     stopHow();
-    update = VIEW_FNS[name](ctx, $('#canvas'));
+    update = VIEW_FNS[name]!(ctx, $('#canvas'));
   } else update?.(ctx);
   inspector(ctx);
   crumbs();
@@ -243,7 +243,7 @@ $<HTMLInputElement>('#q').addEventListener('keydown', (e) => {
     if (!b.length) return;
     act = (act + (e.key === 'ArrowDown' ? 1 : -1) + b.length) % b.length;
     b.forEach((x, i) => x.classList.toggle('act', i === act));
-  } else if (e.key === 'Enter' && hits[act]) pick(hits[act].key);
+  } else if (e.key === 'Enter' && hits[act]) pick(hits[act]!.key);
   else if (e.key === 'Escape') {
     $('#results').hidden = true;
     (e.target as HTMLElement).blur();
@@ -289,7 +289,7 @@ try {
 }
 applyTheme(theme);
 $('#theme').addEventListener('click', () => {
-  theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]!;
   try {
     localStorage.setItem(THEME_KEY, theme);
   } catch {
@@ -318,8 +318,8 @@ function applyHash() {
     if (!N.concepts.some((x) => x.id === id)) return false;
     Object.assign(S, { view: 'how', story: null, stepI: 0, sel: { t: 'concept', id } });
   } else if (kind === 'view') {
-    if (!VIEWS.includes(id)) return false;
-    S.view = id;
+    if (!VIEWS.includes(id!)) return false;
+    S.view = id!;
   } else {
     const f = fileAt(M, id); // a link to src/x.js still finds src/x.ts
     if (!f) return false;
