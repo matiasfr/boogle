@@ -67,9 +67,9 @@ const ALONG: number[] = [0];
 for (let s = 0; s < ROUTE.length; s++) {
   const a = stationAt(s),
     b = stationAt(s + 1);
-  ALONG.push(ALONG[s] + Math.hypot(b.x - a.x, b.z - a.z));
+  ALONG.push(ALONG[s]! + Math.hypot(b.x - a.x, b.z - a.z));
 }
-const TOTAL = ALONG[ALONG.length - 1];
+const TOTAL = ALONG[ALONG.length - 1]!;
 
 // ---------------------------------------------------------------- split flaps
 const FLAPS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:<>-.';
@@ -90,7 +90,7 @@ function setRows(f: Flaps, rows: Row[], now: number) {
     const text = (rows[r]?.text ?? '').toUpperCase().padEnd(f.cols).slice(0, f.cols);
     f.rowColor[r] = rows[r]?.color ?? '#ffd23f';
     cells.forEach((cell, col) => {
-      const ch = FLAPS.includes(text[col]) ? text[col] : ' ';
+      const ch = FLAPS.includes(text[col]!) ? text[col]! : ' ';
       if (cell.target === ch) return;
       cell.target = ch;
       cell.next = now;
@@ -108,7 +108,7 @@ function flip(f: Flaps, now: number): boolean {
       busy = true;
       if (now < cell.next) continue;
       cell.left--;
-      cell.shown = cell.left > 0 ? FLAPS[(FLAPS.indexOf(cell.shown) + 7) % FLAPS.length] : cell.target;
+      cell.shown = cell.left > 0 ? FLAPS[(FLAPS.indexOf(cell.shown) + 7) % FLAPS.length]! : cell.target;
       cell.next = now + FLIP_MS;
     }
   return busy;
@@ -126,7 +126,7 @@ function drawFlaps(g: CanvasRenderingContext2D, f: Flaps, x0: number, y0: number
       g.fillStyle = '#25282f';
       g.fillRect(x, y, w, h);
       const moving = cell.shown !== cell.target;
-      g.fillStyle = moving ? '#fff3c0' : f.rowColor[r];
+      g.fillStyle = moving ? '#fff3c0' : f.rowColor[r]!;
       if (cell.shown !== ' ') {
         g.save();
         g.translate(x + w / 2, y + h / 2 + h * 0.05);
@@ -383,7 +383,7 @@ function drawHub(s: Sign, n: number, wagonDist: number | null) {
   g.strokeStyle = '#3c414b';
   g.setLineDash([16, 18]);
   g.beginPath();
-  g.moveTo(mx(ALONG[Math.max(0, n)]), ly);
+  g.moveTo(mx(ALONG[Math.max(0, n)]!), ly);
   g.lineTo(mx(TOTAL), ly);
   g.stroke();
   g.setLineDash([]);
@@ -391,13 +391,13 @@ function drawHub(s: Sign, n: number, wagonDist: number | null) {
     g.strokeStyle = '#f4efe2';
     g.beginPath();
     g.moveTo(mx(0), ly);
-    g.lineTo(mx(ALONG[n]), ly);
+    g.lineTo(mx(ALONG[n]!), ly);
     g.stroke();
   }
   g.textAlign = 'center';
   for (let k = 0; k < STATIONS; k++) {
     const on = n > 0 && k <= n;
-    const x = mx(ALONG[k]);
+    const x = mx(ALONG[k]!);
     const here = k === s.k;
     g.fillStyle = on || here ? '#f4efe2' : '#3c414b';
     g.strokeStyle = '#c9452f';
@@ -600,8 +600,8 @@ function deckHeight(x: number, z: number, yw: number) {
     [-1, 1],
     [-1, -1],
   ]) {
-    const ox = a * DECK.hx,
-      oz = b * DECK.hz;
+    const ox = a! * DECK.hx,
+      oz = b! * DECK.hz;
     h = Math.max(h, groundHeight(x + ox * c + oz * s, z - ox * s + oz * c));
   }
   return h + CLEARANCE;
@@ -806,7 +806,7 @@ function puff(x: number, y: number, z: number) {
 
 // Where you arrive: in front of the hub's board, facing it (so the first thing you read is where you are).
 function arrival(k: number) {
-  const s = signs[k];
+  const s = signs[k]!;
   const x = s.x + 4.6,
     z = s.z + 2.4;
   return { x, z, y: groundHeight(x, z), yaw: Math.atan2(x - s.x, z - s.z) };
