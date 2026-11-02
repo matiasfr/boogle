@@ -116,12 +116,26 @@ if (dir) {
   notes.push(`no ${baseRef} here: skipped the comparison with main (git fetch origin main to run it)`);
 }
 
+// The burn-down: what's left of the entity ratchet (eslint.config.js; not a registry, so not in --json). ESLint only
+// notices a stale suppression in a file it lints, so a deleted file's entry is caught here: it would inflate the count.
+const suppressions = JSON.parse(fs.readFileSync(path.join(ROOT, 'eslint-suppressions.json'), 'utf8')) as Record<
+  string,
+  Record<string, { count: number }>
+>;
+let suppressed = 0;
+for (const [file, rules] of Object.entries(suppressions)) {
+  suppressed += rules['boogle/use-an-entity']?.count ?? 0;
+  if (!fs.existsSync(path.join(ROOT, file)))
+    errors.push(`eslint-suppressions.json lists ${file}, which is gone: npm run lint -- --prune-suppressions`);
+}
+
 for (const n of notes) console.log(`registry: ${n}`);
 if (errors.length) {
   console.error(`\nregistry: ${errors.length} problem(s) (AGENTS.md, "Shared registries" and "Mixed builds"):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
+console.log(`registry: entity migration, ${suppressed} suppressions left`);
 console.log(
   `registry: ok (${Object.keys(head.presence).length} presence keys, ${Object.keys(head.messages).length} message types, ${Object.keys(head.ops!).length} ops, ${Object.keys(head.states!).length} states)`,
 );

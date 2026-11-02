@@ -1,6 +1,6 @@
 # Plan: stricter flags and a game-entity architecture
 
-> **Status: approved, Parts 1 to 3 done, Part 4 under way, step 11 now (2026-11-02).** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
+> **Status: approved, Parts 1 to 3 done, Part 4 under way, step 12 next (2026-11-02).** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
 > [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) to hold foundation work until after the vertical slice.
 > It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md). It also overrides "don't
 > propose untangling the knot before the slice" in [engine-architecture.md](../research/engine-architecture.md), check 9.
@@ -244,7 +244,7 @@ Do this before the entity work: it's what delivers the separation.
         Each test file opens with a comment marking it as this exception: it exists so agents can catch walker ordering bugs
         they can't see in a still, and it's no precedent for testing features.
       - No gameplay objects yet. Verify: `npm run check`, then `hitches` and `perf` unchanged.
-- [ ] **11. The ball and `ping`, as the worked examples.**
+- [x] **11. The ball and `ping`, as the worked examples.** ([#482](https://github.com/matiasfr/boogle/pull/482), [#483](https://github.com/matiasfr/boogle/pull/483), the ratchet in the PR that ticks this.) Still to do: the fresh-agent test in the last line, which the coordinator runs before step 12.
       - `src/physics/ball.ts` becomes `src/entities/ball/`, as kinds `ball` and `ball-carry`. Surf and friction leave
         `physics.ts:197-235` for a `fixedPre` method, with `document.hidden` passed in. `resolveBallOwner` and `prepareBall` leave
         `main.ts`. `bump.ts`'s write to `pose` goes through a state function, and `placeBall`'s mesh write becomes a `snap` counter.

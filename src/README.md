@@ -13,10 +13,10 @@ Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `lo
 - `netplay/`: game networking on top of the room: `net.ts` (presence, the remotes table, peer lifecycle hooks; pure
   infrastructure, lint-enforced) and its pure helpers (snapshot buffer, presence fields, build tags, report scrubbing,
   smooth shared time).
-- `entity/`: the entity core: `entity.ts` (`defineKind`, `spawn`, `despawn`; the lifecycle contract is at its top) and
-  `walker.ts`, its pure logic, tested in Node.
+- `entity/`: the entity core, for anything new in the world or on screen: `entity.ts` (`defineKind`, `spawn`, `despawn`; the
+  lifecycle contract is at its top) and `walker.ts`, its pure logic, tested in Node.
 - `entities/`: game objects (docs/plans/entity-architecture.md). `ball/`: the beach ball, the worked example of a
-  long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`). `remote-player/`: other players as this tab
+  long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`); `features/ping.ts` is the short-lived one. `remote-player/`: other players as this tab
   draws them, avatars, labels, bodies and interpolation, plus riding a shared platform.
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/heights.ts`
   is the fixed ground's heights (`groundHeight`, `cellX`/`cellZ`), `island/terrain.ts` its mesh.
