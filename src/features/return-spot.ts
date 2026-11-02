@@ -8,7 +8,7 @@ import { groundHeight } from '../island/heights.ts';
 import { getRoomId } from '../netplay/net.ts';
 import { teleport } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
-import { addWelcomeItem, isFirstVisit, roomMemory } from '../player/arrival.ts';
+import { addWelcomeItem, isFirstVisit, roomMemory, SPOT_KEY } from '../player/arrival.ts';
 import { inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
 import { PLAY, PROTO } from '../proto/flags.ts';
@@ -20,7 +20,7 @@ const LIFT = 0.1; // m, so you don't start in the ground you stood on
 const standing = () => me.coyote > 0 && !me.swimming && !me.down && !inputState.seated && !carry.x && !carry.z;
 
 addWelcomeItem({
-  key: 'spot',
+  key: SPOT_KEY,
   save() {
     if (!me.body || !standing()) return undefined; // keep the last good one
     const { x, y, z } = me.body.position;
@@ -40,7 +40,7 @@ function trusted(v: unknown): Spot | null {
 
 onEntered(() => {
   if (isFirstVisit() || PROTO || PLAY) return; // a prototype has its own spawn
-  const s = trusted(roomMemory(getRoomId())?.items.spot);
+  const s = trusted(roomMemory(getRoomId())?.items[SPOT_KEY]);
   if (!s) return;
   teleport(me.body!, s.x, s.y + LIFT, s.z);
   cam.yaw = s.yaw; // enterIsland faces you this way

@@ -7,7 +7,7 @@
   visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. A `?proto=` or
   `?play` page, and an automated browser, get the plain card over the island instead, with the Boogle title.
 - **Returning visit.** With a name saved, there is no card and no fall: the game goes in on its own as soon as the island
-  can be drawn, with the saved name and colour, where you last stood in this room and facing the same way
+  can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
   ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a
   seat or the water; with no record, a different world namespace, or ground that has moved or gone under the sea, you get
   the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to
