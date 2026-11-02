@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { BALL_R, GRAVITY, reducedMotion } from '../constants.ts';
 import { seaRipples } from './water-render.ts';
 import { emit } from './particles.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 
 const FEET = 0.35; // waterline offset used by the swim code in physics.js

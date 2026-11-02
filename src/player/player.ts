@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
 import { teleport, ODYSSEY } from '../physics/physics.ts';
 import { addBody, type Body } from '../physics/engine.ts';

@@ -105,7 +105,7 @@ export default {
 
     // A fixed camera beside the first station, which the car leaves from or arrives at.
     const site = (await A.eval(
-      `const { groundHeight } = await import('/src/adapters/terrain.ts'); return groundHeight(10, -12);`,
+      `const { groundHeight } = await import('/src/island/terrain.ts'); return groundHeight(10, -12);`,
     )) as number;
     await A.view({ cam: [21, site + 7, -6], look: [10, site + 1, -9] }, 55);
     await A.eval(SAMPLE);

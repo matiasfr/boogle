@@ -10,7 +10,7 @@ import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { submitEdit } from '../../world/sync.ts';
 import { remotes } from '../../netplay/net.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { me } from '../../player/player.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { CALL_S } from '../../sim/era.ts';

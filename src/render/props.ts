@@ -4,7 +4,7 @@ import { island } from '../island/index.ts';
 import { MASSIF } from '../island/shape.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { mulberry32 } from '../math.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { scene } from './scene.ts';
 import { addStaticSpheres } from '../physics/physics.ts';
 import { onFrame } from '../loop.ts';

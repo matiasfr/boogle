@@ -29,7 +29,7 @@ import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { world, submitEdit, onApplied, worldStatus, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';

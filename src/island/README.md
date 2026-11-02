@@ -12,7 +12,7 @@ without touching anything else on the island.
 
 `index.js` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
-(`ground.js`). `src/adapters/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
+(`ground.js`). `src/island/terrain.ts` builds the heightfield and the mesh from it; `src/render/props.ts`
 keeps trees and rocks out of keep-out discs and pushes them into `obstacles`, which the Boogler walks around.
 
 ## Add a POI
@@ -63,7 +63,7 @@ the railway for that tab only (`layout.ts`; options and the layout lab: [docs/pr
 The heightfield has no holes or overhangs, so `src/pois/caves/` is its own little world below it, plugged in through
 a few hooks anyone can reuse:
 
-- `setTerrainHoles` (`src/adapters/terrain.ts`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
+- `setTerrainHoles` (`src/island/terrain.ts`): stop drawing the ground inside a few capsules, so a tunnel can open out of a
   hillside. Visual only.
 - Collision groups (`GROUP` in `src/physics/physics.ts`): the ground and surface scenery are `SCENERY`, the cave's colliders
   `CAVE`. A body in the cave volume masks out `SCENERY` and collides with `CAVE`, and the other way round outside.

@@ -14,7 +14,7 @@
 import * as THREE from 'three/webgpu';
 import { FIXED, INTERP_MS, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, r3 } from '../../math.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { GROUP } from '../../physics/physics.ts';
 import {

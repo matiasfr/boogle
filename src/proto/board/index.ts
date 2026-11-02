@@ -24,7 +24,7 @@ import { registerInteractable, type Interactable } from '../../player/hands.ts';
 import { openModal, closeModal } from '../../player/modal.ts';
 import { menuSlot } from '../../player/controls.ts';
 import { requestLock } from '../../player/input.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { me, cam } from '../../player/player.ts';
 import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, teleport, stepAlpha } from '../../physics/engine.ts';

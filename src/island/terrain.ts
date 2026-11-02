@@ -5,7 +5,7 @@ import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
 import { lerp, smoothstep, valueNoise } from '../math.ts';
 import { scene } from '../render/scene.ts';
 import { PATCH } from '../sim/mushrooms.ts';
-import { island, baseCm } from '../island/index.ts';
+import { island, baseCm } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
 
 // heights[i][j] sits at world x = i*CELL - HALF, z = HALF - j*CELL (the heightfield body's frame). It starts as the

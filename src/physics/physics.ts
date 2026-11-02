@@ -10,7 +10,7 @@ import {
   forEachContact,
 } from './engine.ts';
 import { clamp } from '../math.ts';
-import { groundHeight, heights } from '../adapters/terrain.ts';
+import { groundHeight, heights } from '../island/terrain.ts';
 import { waterField } from './water-field.ts';
 import { carry, carryStep } from './platforms.ts';
 import type { Body } from './engine.ts';

@@ -7,7 +7,7 @@ import type { Node } from 'three/webgpu';
 import { onFrame, onStart } from '../loop.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { CELL, HALF } from '../constants.ts';
-import { groundHeight } from '../adapters/terrain.ts';
+import { groundHeight } from '../island/terrain.ts';
 import { skyDebug } from '../render/sky.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 

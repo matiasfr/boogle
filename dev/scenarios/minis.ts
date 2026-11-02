@@ -23,7 +23,7 @@ type Run = {
 
 const M = (f: string) => `(await import('/src/proto/minis/${f}.ts'))`;
 const BALL = `const B = await import('/src/physics/ball.ts'); const I = await import('/src/player/inventory.ts');
-  const T = await import('/src/adapters/terrain.ts');`;
+  const T = await import('/src/island/terrain.ts');`;
 // Grab the ball into your hands (as E does), then throw it from (x, y, z) with velocity (vx, vy, vz).
 const THROW = (x: number, y: string, z: number, v: string) => `
   ${BALL}

@@ -14,7 +14,7 @@ import { onFrame } from '../../loop.ts';
 import { identity } from '../../player/identity.ts';
 import { me } from '../../player/player.ts';
 import { reducedMotion } from '../../constants.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { pieceMesh, pieceColor, commitPieces, onFly, PIECE } from '../../render/haul-pieces.ts';
 import { emit } from '../../render/particles.ts';
 import { onApplied } from '../../world/sync.ts';

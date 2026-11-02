@@ -48,7 +48,7 @@ The day/night palettes live in [`sky.js`](sky.ts) (`C`, `L`).
   as they are: the renderer maps them to node materials. Use them when there's nothing custom.
 - **Custom looks** are node materials from `three/webgpu` (`MeshStandardNodeMaterial`, `MeshBasicNodeMaterial`,
   `SpriteNodeMaterial`, `PointsNodeMaterial`, ...) with TSL in their node slots: `colorNode`, `positionNode`,
-  `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `adapters/terrain.js`),
+  `normalNode`, `emissiveNode`, `aoNode`, `maskNode` (cut-outs, like the cave mouths in `island/terrain.ts`),
   `opacityNode`. Use `colorNode`, not `fragmentNode`: `fragmentNode` skips lighting, fog and the output transform.
 - **Extending a material another module owns** (sway, wiggle, tint): `patchNode(mat, slot, prev => node)` from
   [`material-patch.js`](material-patch.ts). It wraps what is in the slot, so several patches compose.

@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { createBody, addBody, teleport, onPostStep, forEachContact, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
 import { me, cam } from '../../player/player.ts';
 import { registerInteractable } from '../../player/hands.ts';

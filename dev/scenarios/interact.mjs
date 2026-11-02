@@ -172,7 +172,7 @@ export default {
     const palm = await g.eval(`${INV}
       const G = await import('/src/adapters/gifts.ts');
       const { rules } = await import('/src/world/game-world.ts');
-      const { groundHeight, cellX, cellZ } = await import('/src/adapters/terrain.ts');
+      const { groundHeight, cellX, cellZ } = await import('/src/island/terrain.ts');
       const { teleport } = await import('/src/physics/physics.ts');
       const { camera } = await import('/src/render/scene.ts');
       const { cam } = await import('/src/player/player.ts');

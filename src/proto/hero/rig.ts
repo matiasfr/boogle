@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
 import { precompile } from '../../render/precompile.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { SPAWN } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';

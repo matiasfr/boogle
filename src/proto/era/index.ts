@@ -19,7 +19,7 @@ import { emit } from '../../render/particles.ts';
 import { world, submitEdit } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
 import { registerInteractable } from '../../player/hands.ts';
-import { groundHeight, heights } from '../../adapters/terrain.ts';
+import { groundHeight, heights } from '../../island/terrain.ts';
 import { me } from '../../player/player.ts';
 import { ROUTE, HELPER, RING_R, ringAt } from '../../sim/route.ts';
 import { BELL_TICKS, bellTick } from '../../sim/era.ts';

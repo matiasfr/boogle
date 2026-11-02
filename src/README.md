@@ -12,10 +12,11 @@ Top level: `main.js` (boot once the renderer is ready, then the frame loop), `lo
 - `net/`: the room interface, a WebSocket to our server, which hosts every room (see [net/README.md](net/README.md)).
 - `netplay/`: game networking on top of the room: `net.js` (presence, remote players, interpolation) and its pure
   helpers (snapshot buffer, presence fields, build tags, report scrubbing, smooth shared time).
-- `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...).
-- `adapters/`: the game side of lockstep state: gifts, mushroom garden. They submit edits and react
+- `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/terrain.ts`
+  is the fixed ground's heightfield and mesh (`groundHeight`, `cellX`/`cellZ`).
+- `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react
   to `world/rules/`; they never register lockstep state themselves. A new adapter is a feature file, unless other
-  modules must import it. `terrain.js` is left here but is static render now: the fixed ground's heights and mesh.
+  modules must import it.
 - `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, the beach ball, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and hotbar, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models.
