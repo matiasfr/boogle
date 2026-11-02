@@ -1,9 +1,15 @@
 // Formant babble: a line of text becomes a plan (when each character shows, and the syllables it says), and one lane of
 // Web Audio nodes (a saw through three parallel vowel filters) performs it. The plan is seeded by the line, so the same
 // line in the same mood always comes out the same. Its numbers start from docs/research/npc-babble-voices.md (sections
-// 4, 7 and 9). Cosmetic and local; never read by the sim.
-import { getAudio } from '../../render/audio.ts';
-import type { LineSpeech } from '../../boogler/dialogue.ts';
+// 4, 7 and 9). Cosmetic and local; never read by the sim. A new speaker is a new VoiceSpec.
+import { getAudio } from './audio.ts';
+
+/** One line being spoken as it types. It owns the typing clock, so sound and text stay together. */
+export type LineSpeech = {
+  shownAt: (ms: number) => number; // characters shown this long after the line started
+  update: (ms: number) => void;
+  stop: () => void; // skipped, closed or replaced: silent at once
+};
 
 export type VoiceSpec = {
   baseHz: number;

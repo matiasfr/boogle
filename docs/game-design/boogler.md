@@ -55,14 +55,17 @@ so without them it takes longer: a retune is pending.
 
 ## Talk
 
-- `?proto=babble` gives him a voice: a formant synth speaks as his line types, with pauses on punctuation (`&v=letters`
-  speaks every letter, typing slower). Elsewhere he types silently, as described below.
 - Open with E / pad X within 3.6 m ("Talk" shows in his name tag). The talk box types his line at 48 characters per
-  second and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
+  second, pausing on punctuation, and lists answers, with button hints along the bottom; its controls are the shared NPC talk input
   ([npcs.md](npcs.md)): A / E goes on or says the selected answer, D-pad or stick / ↑ ↓ picks, B / Esc leaves; a
   present answer offers what is in your hand (he turns down key items: the ball). His portrait shows his mood and
   squishes when he reacts; it is not a button (no petting).
   On a phone the card keeps off the move stick (the left 45 %): to the right in landscape, at the top in portrait.
+- **His voice.** As a line types he speaks in babble, Animal Crossing style with no recordings: a formant synth
+  ([src/render/npc-voice.ts](../../src/render/npc-voice.ts)) at 155 Hz says one sound per syllable, shaped by the line's
+  letters, so a line always sounds the same. His mood moves the pitch and pace; a question lifts at the end. Skipping,
+  leaving or a new line cuts it. Only you hear your talk. His speech bubbles stay silent, and so does a line shown at
+  once under reduced motion.
 - **Easy in, easy out.** Talks are short. You stand still while one is open (the camera turns to frame him), and
   pressing Esc / pad B / the close button (on a phone, also the main button, which says Leave while you talk), opening
   the pause view, hopping on his back or ending up more than 4.6 m away (a ball knocks you) ends it at once, with his
