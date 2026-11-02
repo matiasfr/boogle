@@ -583,7 +583,7 @@ const wRay = { from: new THREE.Vector3(), to: new THREE.Vector3(), hit: rayHit()
 // A ray per wheel, straight down the frame from above its mount: where the ground is under each wheel.
 function probeGround() {
   for (let i = 0; i < 4; i++) {
-    const [x, z] = WHEELS[i];
+    const [x, z] = WHEELS[i]!;
     toWorld(wRay.from, x, 1.2, z);
     toWorld(wRay.to, x, -1.6, z);
     const hit = raycastClosest(wRay.from, wRay.to, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, wRay.hit);
@@ -599,18 +599,18 @@ function wheelPlane(c: { x: number; y: number; z: number }) {
   const sh = Math.sin(S.heading),
     ch = Math.cos(S.heading);
   for (let i = 0; i < 4; i++) {
-    const [x, z] = WHEELS[i];
+    const [x, z] = WHEELS[i]!;
     const wx = c.x + x * ch + z * sh,
       wz = c.z - x * sh + z * ch;
     wRay.from.set(wx, c.y + 2, wz);
     wRay.to.set(wx, c.y - 3, wz);
     if (!raycastClosest(wRay.from, wRay.to, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, wRay.hit))
       return n;
-    plane.pts[i].set(wx, c.y + 2 - wRay.hit.distance, wz);
+    plane.pts[i]!.set(wx, c.y + 2 - wRay.hit.distance, wz);
   }
   const [fl, fr, rl, rr] = plane.pts;
-  plane.a.subVectors(fr, rl); // one diagonal, then the other: their cross is the plane's normal
-  plane.n.subVectors(fl, rr).cross(plane.a).normalize();
+  plane.a.subVectors(fr!, rl!); // one diagonal, then the other: their cross is the plane's normal
+  plane.n.subVectors(fl!, rr!).cross(plane.a).normalize();
   if (plane.n.y < 0) plane.n.negate();
   return plane.n.y > 0.8 ? plane.n : n; // steeper: a wheel is on a rock or a trunk, not the ground
 }
@@ -635,16 +635,16 @@ function suspend(dt: number) {
       fr = S.aLat * T.rollGain;
     touching = 0;
     for (let i = 0; i < 4; i++) {
-      const [x, z] = WHEELS[i];
+      const [x, z] = WHEELS[i]!;
       const mount = MOUNT_Y + ride.heave - ride.pitch * z + ride.roll * x;
-      const len = mount - groundAt[i];
+      const len = mount - groundAt[i]!;
       if (len <= Lmax) {
         touching++;
         const L = Math.max(len, 0);
-        let f = T.springK * (L0 - L) - (T.springC * (L - lastLen[i])) / h;
-        if (L < STOP) f += 900 * (STOP - L) - (40 * (L - lastLen[i])) / h; // the bump stop: stiff, and soaks it up
+        let f = T.springK * (L0 - L) - (T.springC * (L - lastLen[i]!)) / h;
+        if (L < STOP) f += 900 * (STOP - L) - (40 * (L - lastLen[i]!)) / h; // the bump stop: stiff, and soaks it up
         f = Math.max(0, f);
-        drops[i] = Math.min(groundAt[i], mount - STOP);
+        drops[i] = Math.min(groundAt[i]!, mount - STOP);
         lastLen[i] = L;
         fh += f;
         fp -= (f * z) / I_PITCH;
@@ -796,7 +796,7 @@ function wheelFx(dt: number) {
     // sparks while the rear slides; drifting, their colour and count tell the charge: let go for a boost
     if ((S.drifting || Math.abs(S.slip) > 3) && Math.abs(S.slip) > 1.5) {
       const tier = S.drifting ? S.tier : 0;
-      for (let k = 0; k < [2, 2, 4, 6][tier]; k++)
+      for (let k = 0; k < [2, 2, 4, 6][tier]!; k++)
         if (Math.random() < dt * 40)
           spark(wp.x, wp.y + 0.05, wp.z, 4, false, tier ? TIER[tier] : undefined, [0.07, 0.08, 0.14, 0.19][tier]);
     }
@@ -814,7 +814,7 @@ const out = new THREE.Vector3();
 function popWheel() {
   fixWheel();
   if (reducedMotion) return;
-  const from = mine.userData.wheels[2 + (Math.random() < 0.5 ? 0 : 1)]; // a rear one
+  const from = mine.userData.wheels[2 + (Math.random() < 0.5 ? 0 : 1)]!; // a rear one
   mine.updateMatrixWorld(true);
   const w = from.clone();
   from.getWorldPosition(w.position);
@@ -1024,7 +1024,7 @@ onFrame(
         toWorld(wp, 0, 0.1, AXLE_Z + 0.4);
         for (let k = 0; k < (big ? 40 : 24); k++)
           spark(wp.x, wp.y, wp.z, big ? 9 : 7, false, TIER[S.boosted], big ? 0.2 : 0.15);
-        puff(wp.x, wp.y, wp.z, big ? 14 : 8, 4, TIER[S.boosted], big ? 0.4 : 0.3);
+        puff(wp.x, wp.y, wp.z, big ? 14 : 8, 4, TIER[S.boosted]!, big ? 0.4 : 0.3);
         fovKick = big ? 9 : 5;
         S.boosted = 0;
       }
@@ -1154,22 +1154,22 @@ onFrame(
       }
       if (!t.mesh) scene.add((t.mesh = makeCart()));
       const { a, b, u } = s;
-      const A = a.w,
-        B = b.w;
+      const A = a!.w,
+        B = b!.w;
       t.mesh.visible = true;
-      t.mesh.position.set(lerp(A[0], B[0], u), lerp(A[1], B[1], u), lerp(A[2], B[2], u));
-      tq.set(A[3], A[4], A[5], A[6]).normalize();
-      tq2.set(B[3], B[4], B[5], B[6]).normalize();
+      t.mesh.position.set(lerp(A[0]!, B[0]!, u), lerp(A[1]!, B[1]!, u), lerp(A[2]!, B[2]!, u));
+      tq.set(A[3]!, A[4]!, A[5]!, A[6]!).normalize();
+      tq2.set(B[3]!, B[4]!, B[5]!, B[6]!).normalize();
       t.mesh.quaternion.slerpQuaternions(tq, tq2, u);
-      const RA = a.r ?? b.r,
-        RB = b.r ?? a.r;
+      const RA = a!.r ?? b!.r,
+        RB = b!.r ?? a!.r;
       if (RA && RB) {
-        theirRide.heave = lerp(RA[0], RB[0], u);
-        theirRide.pitch = lerp(RA[1], RB[1], u);
-        theirRide.roll = lerp(RA[2], RB[2], u);
-        for (let i = 0; i < 4; i++) theirDrops[i] = lerp(RA[3 + i], RB[3 + i], u);
-        poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt, theirRide, theirDrops);
-      } else poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt);
+        theirRide.heave = lerp(RA[0]!, RB[0]!, u);
+        theirRide.pitch = lerp(RA[1]!, RB[1]!, u);
+        theirRide.roll = lerp(RA[2]!, RB[2]!, u);
+        for (let i = 0; i < 4; i++) theirDrops[i] = lerp(RA[3 + i]!, RB[3 + i]!, u);
+        poseCart(t.mesh, lerp(A[7]!, B[7]!, u), B[8]! * dt, theirRide, theirDrops);
+      } else poseCart(t.mesh, lerp(A[7]!, B[7]!, u), B[8]! * dt);
       const r = remotes.get(peer);
       if (r?.avatar) sit(r.avatar, tq.copy(t.mesh.quaternion).multiply(t.mesh.userData.body.quaternion));
     }

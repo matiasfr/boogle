@@ -22,11 +22,11 @@ export const LINE: [number, number][] = [
 
 const yawOf = (dx: number, dz: number) => Math.atan2(-dx, -dz); // forward = (-sin, -cos), as me.yaw
 const [s0, s1] = LINE;
-export const START = { x: s0[0], z: s0[1], h: yawOf(s1[0] - s0[0], s1[1] - s0[1]) };
+export const START = { x: s0![0], z: s0![1], h: yawOf(s1![0] - s0![0], s1![1] - s0![1]) };
 export const START_GO = 3; // m rolled from the start that starts the clock
 const [f0, f1] = LINE.slice(-2);
-const fl = Math.hypot(f1[0] - f0[0], f1[1] - f0[1]);
-export const FINISH = { x: f1[0], z: f1[1], dx: (f1[0] - f0[0]) / fl, dz: (f1[1] - f0[1]) / fl, half: 6 };
+const fl = Math.hypot(f1![0] - f0![0], f1![1] - f0![1]);
+export const FINISH = { x: f1![0], z: f1![1], dx: (f1![0] - f0![0]) / fl, dz: (f1![1] - f0![1]) / fl, half: 6 };
 
 /** Crossed the finish line (perpendicular to the last leg, within its width) between two positions. */
 export function crossedFinish(px: number, pz: number, x: number, z: number) {
@@ -41,8 +41,8 @@ const CONE_OFF = 3.2; // m either side of it
 export function buildMarkers() {
   const spots: [number, number][] = [];
   for (let k = 1; k < LINE.length - 1; k++) {
-    const [ax, az] = LINE[k],
-      [bx, bz] = LINE[k + 1];
+    const [ax, az] = LINE[k]!,
+      [bx, bz] = LINE[k + 1]!;
     const len = Math.hypot(bx - ax, bz - az);
     const nx = -(bz - az) / len,
       nz = (bx - ax) / len;
@@ -78,7 +78,7 @@ function strip(x: number, z: number, h: number, color: string) {
   const geo = new THREE.BoxGeometry(w / PLANKS + 0.02, 0.05, 0.7);
   const cx = Math.cos(h),
     cz = -Math.sin(h); // across the line
-  const at = (s: number, f: number) => {
+  const at = (s: number, f: number): [number, number, number] => {
     const px = x + cx * s - cz * f,
       pz = z + cz * s + cx * f;
     return [px, groundHeight(px, pz), pz];
