@@ -6,7 +6,7 @@
 // docs/research/ui-patterns.md, recs 1-2.
 import '../ui/ui-kit.css';
 import './prompt.css';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { toScreen, view } from '../render/scene.ts';
 import { me } from '../player/player.ts';
 import { interactTarget, onInteractPress, type Interactable } from '../player/hands.ts';
@@ -36,8 +36,10 @@ function build() {
   return root;
 }
 
-onFrame(
-  () => {
+defineKind('prompt', { lateUpdate: 0 });
+spawn({
+  kind: 'prompt',
+  lateUpdate() {
     const root = ui.root ?? build();
     const t = me.entered && !me.charging && !conversation.open ? interactTarget() : null;
     const html = t ? chip(t) : '';
@@ -70,8 +72,7 @@ onFrame(
     if (!visible) return;
     root.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
   },
-  { phase: 'late' },
-);
+});
 
 // A press answers within the frame, before the host does: squash and thunk, or shake and deny.
 onInteractPress((t, ran) => {

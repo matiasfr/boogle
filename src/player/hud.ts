@@ -9,7 +9,7 @@ import { requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
 import { interactTarget, useVerb } from './hands.ts';
 import { glyph, inputKind } from './glyphs.ts';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { showCard, friendlyName } from './arrival.ts';
 
 export { dom } from './dom.ts';
@@ -44,7 +44,8 @@ function updateHud() {
   }
 }
 // late -190, after the throw preview (player.ts, -200), before the feature late hooks (src/loop.ts lists the orders).
-onFrame(updateHud, { phase: 'late', order: -190 });
+defineKind('hud', { lateUpdate: -190 });
+spawn({ kind: 'hud', lateUpdate: updateHud });
 
 let peopleKey = '';
 export function renderPeople() {

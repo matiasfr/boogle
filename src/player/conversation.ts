@@ -25,7 +25,7 @@
 // class talk-sel, shown while a pad or keyboard plays (body.gamepad, or not body.touch: an iPad keeps body.touch while
 // its pad plays).
 import './conversation.css';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { angleLerp } from '../math.ts';
 import { setPadGrab, menuSlot, describeControl } from './controls.ts';
 import { modalOpen } from './modal.ts';
@@ -191,8 +191,10 @@ addEventListener(
 );
 
 // Between the core camera (-200) and the features: the camera eases round to frame the NPC, and you turn to face them.
-onFrame(
-  ({ dt, now }) => {
+defineKind('conversation', { update: -60 });
+spawn({
+  kind: 'conversation',
+  update({ dt, now }) {
     shot.k += ((cur ? 1 : 0) - shot.k) * (1 - Math.exp(-dt * LIFT_RATE));
     if (!cur) return;
     shot.lift = liftFor(cur.box);
@@ -219,8 +221,7 @@ onFrame(
       cam.pitch += (-0.16 - cam.pitch) * k;
     }
   },
-  { phase: 'update', order: -60 },
-);
+});
 
 describeControl('talk-answer', {
   label: 'Answer in a talk',
