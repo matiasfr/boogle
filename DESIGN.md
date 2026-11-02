@@ -62,10 +62,10 @@ Every feature, including ones we haven't thought of yet, puts each piece of its 
 
 In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` and Host is `addHostField` (both in [`src/netplay/net.ts`](src/netplay/net.ts)); Lockstep is `submitEdit` + `onApplied`/`onSnapshot` for features, with the rules registered through `registerOp`, `registerState` and `onTick` ([`src/world/sync.ts`](src/world/sync.ts)). One-off events (a honk, a ping) are not state: send them as messages with `net.room.send` and receive them through `onRoomReady(room => room.onMessage(...))`, reliable and ordered, reaching every other peer (see [`src/net/README.md`](src/net/README.md)); presence fields are for state that has a current value. Owner and Host values ride one presence packet per player at 20 Hz (`SEND_MS`), latest value wins, so keep each field to a few numbers; smooth them with [`createSnaps`](src/netplay/snaps.ts). Lockstep ticks at 10 Hz, compares hashes every 2 s, and the server saves it.
 
-- **Physics is never lockstep.** Our physics (and three.js math) isn't kept bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (the ball reads the ground) and change it only by submitting edits (a splash).
-- **Crossing kinds goes through edits.** A ball splashing, an NPC planting, a thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
+- **Physics is never lockstep.** Our physics (and three.js math) isn't kept bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (a player bounces on a mushroom) and change it only by submitting edits (stocking a work site).
+- **Crossing kinds goes through edits.** A thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
 - **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever leads next. Your own things (hotbar, friendship with The Boogler) are yours, kept in localStorage.
-- **Tide and weather are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth and need no snapshot. Their visuals read the same function.
+- **Shared schedules are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth and need no snapshot. Their visuals read the same function. The [wagon prototype's timetable](src/sim/wagon.ts) needs no seed: it derives its pose from tick, laid sections and timetable settings, without storing a pose.
 - **The scene graph is a view.** three.js objects are updated from state (lockstep ticks run at 10/s and rendering interpolates between them); never read game state back out of a mesh.
 
 ### Determinism from day one
@@ -74,17 +74,17 @@ Lockstep state must produce bit-identical results on every machine:
 - other values may be floats if they only use `+ - * /` and `Math.sqrt`, which give the same bits in every browser. Never `Math.sin`, `cos`, `pow` (or `**`), `exp`, `log`, `atan2` or `hypot` (browsers round them differently): use a lookup table or our own polynomial. three.js math (`Vector3`, `Quaternion`, `Euler`, `Matrix4`, `MathUtils`) and the physics engine call those internally, so lockstep logic lives in three.js-free modules (`src/sim/`) and the rendering side adapts it. Keep `NaN` and `-0` out of state (JSON turns them into `null` and `0`) and hash floats by their bits;
 - fixed update order and a fixed tick rate;
 - seeded randomness ([`mulberry32`](src/sim/rng.ts)), never `Math.random()` in shared logic;
-- events (tide, weather) are a pure function of tick + seed.
+- events (shared schedules) are a pure function of tick + seed.
 
 ### Sync edits, not state
-For lockstep systems, clients send small **edit events** (plant, water, toss, harvest, splash) over the reliable channel. The server stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as server snapshots (with a hash) for late joiners and desync recovery. Owner and Host state send the values themselves.
+For lockstep systems, clients send small **edit events** (plant or water a mushroom, toss or take a gift, stock a work site) over the reliable channel. The server stamps them with a tick and broadcasts them; everyone applies them to the same deterministic sim. Bulk state only travels as server snapshots (with a hash) for late joiners and desync recovery. Owner and Host state send the values themselves.
 
 ### Clear authority
 | Thing | Authority |
 |---|---|
 | Your player's movement | You (client) |
 | The beach ball | Its current owner (epoch rule in [`src/entities/ball/sync.ts`](src/entities/ball/sync.ts)) |
-| Garden, gifts, weather | The server |
+| Mushrooms, gifts, work sites | The server |
 | The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.ts`](src/boogler/boogler.ts)) |
 | Your friendship with The Boogler, your hotbar | You (client), kept in localStorage ([`src/boogler/play.ts`](src/boogler/play.ts), [`src/player/inventory.ts`](src/player/inventory.ts)) |
 | Persistence (snapshots) | The server writes each room to its disk (every 2 s when it changed, every 30 s and on shutdown regardless) and starts a room from that save; tabs keep no copy |
@@ -103,7 +103,7 @@ Build shapes, materials and effects in code first: an agent can make and change 
 
 ## How we work
 
-- **Playtest constantly, solo first.** Every prototype must work and be fun for one person on their own; multiplayer builds on top of that. We iterate in small steps and play each change on the live site. Every change reaches `main` through a PR that merges itself when CI is green (`npm run ship`), so iteration stays fast and nothing red goes live. Each phase in PLAN.md ends with the question the playtests should answer; note what happened in `docs/playtests.md`.
+- **Playtest constantly, solo first.** Every prototype must work and be fun for one person on their own; multiplayer builds on top of that. We iterate in small steps and play each change on the live site. Every change reaches `main` through a PR that merges itself when CI is green (`npm run ship`), so iteration stays fast and nothing red goes live. Each prototype in [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) has a question the playtests should answer; note what happened in `docs/playtests.md`.
 - **Light tests, real playtests.** Automated tests guard determinism, sync and conservation, and stay fast enough to run before every push; fun and feel are judged by playing.
 - **Every feature says which principle it serves**, and calls out any principle it bends.
 - **Changing a principle is a commit to this file**, with the reason.

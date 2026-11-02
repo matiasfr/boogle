@@ -4,7 +4,7 @@ One island, one beach ball, and everyone who has the page open.
 
 Boogle is a small multiplayer browser game built with [three.js](https://threejs.org) and [Rapier](https://rapier.rs) (physics, WASM). It is bundled with [Vite](https://vite.dev).
 
-**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments) and [PLAN.md](PLAN.md) (what we're building next).
+**Contributing?** Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read [DESIGN.md](DESIGN.md) (the principles that decide design arguments), [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) (the owner's decisions) and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) (what we're prototyping now).
 
 ## Run it locally
 
@@ -38,7 +38,7 @@ Use Node 24 (`.nvmrc`). Installation also installs the server dependencies and p
 - **Local:** `npm run dev` runs our server in-process too (every room, saves in `.boogle-data/`): open two tabs on the same `?room=` to play together. Add `?netdebug=1` to the URL for connection logs.
 - **Online:** the deployed game uses our server (`VITE_BOOGLE_SERVER`, see [server/README.md](server/README.md)), which hosts every room.
 
-Our server hosts every room: each tab opens one WebSocket to it, and it runs the island's world (see PLAN.md, "Key decision"). `npm run test:net` plays 3 headless browsers against a local server.
+Our server hosts every room: each tab opens one WebSocket to it, and it runs the island's world (history: [PLAN.md, "Key decision"](PLAN.md#key-decision-our-server-hosts-every-room)). `npm run test:net` plays 3 headless browsers against a local server.
 
 ### How sync works
 
@@ -58,4 +58,4 @@ To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` 
 
 ## Roadmap
 
-See [PLAN.md](PLAN.md).
+See [DESIGN.md](DESIGN.md) for principles, [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for the owner's decisions and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) for current prototypes.

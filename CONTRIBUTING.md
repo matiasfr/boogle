@@ -1,6 +1,6 @@
 # Contributing to Boogle
 
-Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](DESIGN.md) says how we decide, [PLAN.md](PLAN.md) what we build next, and [AGENTS.md](AGENTS.md) holds the code, testing and shipping rules. AGENTS.md is written for coding agents but applies to humans too; it's short, read it once.
+Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](DESIGN.md) says how we decide, [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) records the owner's decisions, [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) tracks what we're prototyping now, and [AGENTS.md](AGENTS.md) holds the code, testing and shipping rules. AGENTS.md is written for coding agents but applies to humans too; it's short, read it once.
 
 ## Setup
 
@@ -25,11 +25,11 @@ Repo settings this relies on (owner only): Settings > Actions > General > "Allow
 
 - Every feature names the DESIGN.md principle it serves and flags any it bends (commit message body, or the PR).
 - If a change conflicts with a principle, change the idea, or change the principle in DESIGN.md with the reason, in its own commit.
-- Pick work from PLAN.md and tick its checkboxes in the same commit.
+- Use [DESIGN.md](DESIGN.md) and [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) for current design; pick prototype work from [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) and tick its checkboxes in the same commit.
 
 ## Playtesting
 
-The playtest is the real test. Whenever something new lands, jump on https://boogle.club/?room=<name> with whoever is around. Each PLAN.md phase ends with a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
+The playtest is the real test. Whenever something new lands, jump on https://boogle.club/?room=<name> with whoever is around. Each prototype in [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) has a question; jot the answer and anything fun or broken in [docs/playtests.md](docs/playtests.md) (or run `/playtest-notes` in Claude Code). File broken things with the bug report template and `?netdebug=1` logs.
 
 ## Working with AI agents
 
