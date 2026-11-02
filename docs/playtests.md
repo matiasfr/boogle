@@ -75,3 +75,10 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Broke: a jump at the end of the laying animation.
 - After: decisions in boogle-2.md (Decided, 1 November): quick laying, construction and UI that answers into the game, RC-car soapbox try, topple retired, layout parked, moves as unlocks, train-riding research; fast travel is open question 8.
 
+## 2026-11-01 (second run-through)
+- Who: Matias, solo, `/?play`; told to the director rather than through the bar, except hero.
+- Wagon: the speed is fine and it's fine as plain transportation. Doesn't care for snatch, stoke or grind. Show and bench not mentioned.
+- Soapbox (RC car): "pretty fun". Couldn't drive any more once down the hill, maybe a miss. Idea: races with these carts. The new camera looked nice; he didn't notice the near-camera dither.
+- Ride: still fine. Board: poles fine to start with. Look: what we have is okay, may iterate.
+- Hero: could see this rig working with a different model; the aerial animations didn't feel great (his other session's track).
+- After: snatch, stoke and grind cut; the soapbox stays and keeps driving after the run (boogle-2.md, Decided).

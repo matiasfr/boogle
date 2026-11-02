@@ -65,13 +65,14 @@ These are standing preferences from the thread.
 - **2026-11-01, the home island is a ground-up redesign, not an extension** (owner: "Everything in the new island should be more intentionally designed"). It's probably bigger than today's ~23,300 m², with Big Walk's environment as the lead reference ("always feels like there's something you're finding"). Design for walking plus the rail, with folds, reveals, traversal unlocks and land reserved for later eras. Don't brief today's layout as the base.
 - **2026-11-01, the rail network is a stepping-stone chain toward the mainland, but not a pure corridor** (owner: "Maybe there's shortcuts or more rails that appear in different places"). One clear frontier direction, with cross-links, branches and loops growing behind it; a ring's interior is never empty sea. Still open: which links appear when, and whether the chain closes into a ring.
 - **2026-11-01, environment previz leads with the real renderer** (painted maps made it "hard to get a real feel"): the look lab's `high` preset and blockouts at the game's camera, with image generation only using those captures as style references. The owner wants more variety and eventually a bigger city on the shore, and islands aren't tied to mini-games.
-- **2026-11-01, riding must be more than standing on a moving platform** (ride: "passably decent … we could one up this"). Research how games make train rides interesting before the next ride pass.
+- **2026-11-01, the wagon is transportation** (owner, second run-through: "I think it's fine just as a transportation"). The fast pace is fine. Snatch, stoke and grind are cut ("I don't care for" them). Was "riding must be more than standing on a moving platform", see Changed.
 
 - **2026-11-01, an archipelago, not one big open map.** Islands vary in size (home small and dense, later islands several times larger, the mainland port the one big walkable place). Reaching a new island is an era's payoff, telegraphed by seeing it across the water. Connections are physical (reclaimed land, bridges, causeways you can walk and drive), so late game reads as one connected place. Why: the 29 October playtest found a big island empty; the sea gives natural loading boundaries (architecture-fit, "A world bigger than one island").
 
 - **Trains are ride-only and timetabled.** Their position is a pure function of the world tick, so they cost nothing on the network. You don't drive them.
 - **Crates visibly ride the trains** to construction sites.
 - **Construction shows both scaffolding and pieces appearing.**
+- **2026-11-01, stops start with the pole sign** ("the poles looked fine to start with"); the plaque is dropped.
 - **2026-11-01, only hub stations are fast travel** (owner, after the board playtest): fast travel is a jump between locations; other stops are reached by riding. Hubs get the big departures board and more signage; smaller stops get a minimal sign. The train could be faster too. Was "stations are the fast-travel board", see Changed.
 - **Rails from the start.** The wood age lays light rails; there's no plank road.
 - **The rail spike comes first,** and its job is to prove that riding feels good.
@@ -122,6 +123,7 @@ These are standing preferences from the thread.
 
 ### Look
 
+- **2026-11-01, the current look is okay for now** ("pretty good … we may want to iterate a little more"). No more look work until there's a reason.
 - **2026-11-01, title and loading art is a generated, rendered image with a small animated accent,** not a screen of flat vector or CSS art (owner, on the low-poly SVG scenes: "I really dont like this aesthetic"; "the whole screen doesn't have to animate"). Show candidates placed in the real screen before building scenes in code.
 - **2026-11-01, the graphics target is the look lab's "high" preset** (he liked it best), to be compared with the toybox look from the owner's character session; the lab's own toybox preset is "just ok".
 - **2026-11-01, the UI that answers leaves the prototype for the game** ("a massive improvement").
@@ -151,7 +153,7 @@ These are standing preferences from the thread.
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
 - **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
 
-- **2026-11-01, the soapbox gets one more try, then is cut** ("no" twice: "needs to feel more like a suspensiony RC car"; bumper or trigger for throttle and brake). If the RC-car version is still a no, driving waits.
+- **2026-11-01, the RC-car soapbox stays** ("pretty fun"; was "one more try, then cut"). Races with these carts are an idea for later (ideas.md). Not being able to drive on at the bottom of the hill felt like a possible miss, so the next version lets you keep driving.
 - **2026-11-01, mini-games:** topple is retired ("not particularly engaging"); hop leads (platforming as a mini-game); golf stays wanted (he and his friends love mini golf) but needs a real design in the mini-games pass.
 - **2026-11-01, the era question waits for depth** ("the world should look beautiful at each age … not enough depth to tell meaningfully"). It's asked again once eras 1–2 have real level design.
 - **Next deliverable:** the vertical slice for eras 1–2, built on the 0.1 haul loop.
@@ -159,6 +161,7 @@ These are standing preferences from the thread.
 
 ## Changed
 
+- **2026-11-01:** "riding must be more than standing on a moving platform" became "the wagon is transportation": after trying the research's variants, the owner doesn't want extra verbs on the ride.
 - **2026-11-01:** "stations are the fast-travel board" became "only hub stations are fast travel", after the board playtest: every stop being a jump would make riding pointless.
 - **2026-11-01:** the synthesized groove loop was cut after the listening pack.
 - **2026-11-01:** "Playtest constantly with 2–4 real people" (DESIGN.md, How we work) became "solo first": the owner wants each prototype to work for one person before building out.
