@@ -1,8 +1,11 @@
 # Plan: stricter flags and a game-entity architecture
 
-> **Status: approved, Part 1 done (2026-11-01).** Code read at `main` `8c4232d6`. This overrides the advice in
+> **Status: approved, Part 1 done, Parts 2, 3 and step 16 under way (2026-11-02).** Code read at `main` `8c4232d6`. This overrides the advice in
 > [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) to hold foundation work until after the vertical slice.
-> It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md).
+> It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md). It also overrides "don't
+> propose untangling the knot before the slice" in [engine-architecture.md](../research/engine-architecture.md), check 9.
+> That report argues for cheap rules now and against large refactors (Tony Hawk's move to components took two years). The
+> owner heard this and chose to migrate now, so step 12 is a checkpoint: the owner plays the result before the rest moves.
 
 ## Goal
 
@@ -135,8 +138,9 @@ Added as each step makes them pass, in `eslint.config.js`:
 - `src/net/`, `src/netplay/`, `src/world/`: no `three`, `render/`, `player/`, `entities/`, `boogler/` or `features/`.
 - `src/physics/`: no `player/`, `netplay/`, `entities/` or `features/`.
 - `src/entities/*/state.ts`: no `render/`, `ui/` or `player/hud.ts`, and no `document` or `window`.
-- A cycle check over all of `src/`, type imports excluded, in `npm run check` (`npm run cycles`, using `madge` as a dev
-  dependency: ESLint alone can't see cycles without another plugin).
+- `npm run registry` carries an import-knot ratchet ([engine-architecture.md](../research/engine-architecture.md), check 9):
+  today's two strongly connected components are allow-listed and a new member fails. It uses `dev/scan/read.ts`, with no
+  new dependency, and its allow-list shrinks to empty in Part 3.
 
 ## Steps
 
@@ -168,31 +172,41 @@ folder; later steps run in order, because they share files.
 ### Part 2: foundation
 
 - [ ] **5. Research.** `docs/research/entity-architecture.md`, by deep-research subagent, with sources and numbered
-      recommendations. Questions: lifecycles and tick ordering in Unity, Unreal and Godot; entity versus ECS for a small
-      team; how networked games separate state from view; costs in a browser's frame budget. If it contradicts this plan,
-      revise the plan and check with the owner before step 6.
-- [ ] **6. Record the decision.** Binding rule in AGENTS.md ("A feature is a plug-in": new gameplay objects are entities),
-      `docs/proposals/boogle-2.md`, `src/README.md`, and a status note in `boogle-2-architecture-fit.md`.
+      recommendations. [engine-architecture.md](../research/engine-architecture.md) already covers layering, budgets and
+      review, so this doesn't repeat it. Questions: object lifecycle and tick ordering in Unity, Unreal and Godot, and in web
+      engines (PlayCanvas, Needle); how to split state and view in networked games (Photon Fusion, Unreal replication);
+      how to migrate incrementally without a long freeze; costs in a browser's frame budget. If it contradicts this plan,
+      revise the plan and check with the owner before step 10.
+- [x] **6. Record the decision.** `docs/proposals/boogle-2.md`, with notes in `boogle-2-architecture-fit.md` and
+      `engine-architecture.md`. The binding AGENTS.md rule ("new gameplay objects are entities") lands with step 11, once
+      `spawn` exists.
 
 ### Part 3: untangle infrastructure
 
 Do this before the entity work: it's what delivers the separation.
 
-- [ ] **7. Make `net.ts` infrastructure.**
-      - Replace `renderPeople()` and `dom.netEl` calls with events `onPeopleChanged(fn)` and `onNetState(fn)`; `hud.ts`
+- [ ] **7. Make `net.ts` infrastructure.** `src/netplay/net.ts` ends with no value import from `three`, `render/`,
+      `physics/` or `player/`. No wire change, and frame orders stay as they are.
+      - `Remote` becomes an `interface` holding network fields only. `src/entities/remote-player/index.ts` adds `avatar`,
+        `body`, `label`, `labelText`, `target`, `yaw`, `speed`, `prevPos` and `ride` with `declare module` (erased at build).
+        Features keep reading `r.avatar` and `r.target` unchanged, so this needs no churn in their files.
+      - Add `onPeerAdded(r)` and `onPeerRemoved(r)`, fired synchronously when a peer's `Remote` is created and removed, and
+        one for a peer leaving the island. The new module sets up its fields there and takes over `dropRemoteBody`.
+      - Move into the new module: the `riding` field and its hook, `placeRider`, `updateRemotes`, avatar and label
+        creation, and the update -280 hook. `main.ts` calls `updateRemotes` from there (one line).
+      - Replace the `me` reads with `setLocalPresence(source)`, which `player.ts` registers. Presence output is unchanged.
+      - Replace `renderPeople()` and `dom.netEl` with a new `onPeopleChanged(fn)` and the existing `onNetState(fn)`. `hud.ts`
         subscribes.
-      - Replace direct `me` reads with a `setLocalPresence(source)` the player registers. Presence output is unchanged.
-      - Move avatar creation and `animateAvatar` to `src/entities/remote-player/`, driven by peer join and leave events.
-        `Remote` keeps network state only, with display objects in a map owned by the new module; update the importers.
+      - Move `SUN_DIR` out of `src/constants.ts`, so `net.ts` doesn't reach three through it.
+      - Add the lint rule for `src/netplay/`. `src/player/identity.ts` is exempt: it imports only `src/sim/` and `src/net/`.
       - Verify: `check:full`, `check:gpu`, `npm run load` before and after, a `/look` still of a remote avatar, `/code-review`.
-      - Add the `src/net/`, `src/netplay/` and `src/world/` lint rule.
 - [ ] **8. Break the remaining cycles.** Move shared player state (`me`, `cam` and pose helpers) to `src/player/state.ts`,
       imported by `input.ts`, `hands.ts`, `throw.ts`, `hud.ts` and `player.ts`. Have the ball's input and hand actions
       register with `registerAction` and `registerInteractable` from the ball side, so `input.ts` and `hands.ts` stop
       importing it. Have `hud.ts` read the interact target through an event or a getter that `hands.ts` registers. Verify:
       `npm run scenario -- world-inputs`, `/look` stills of carrying and throwing.
-- [ ] **9. Add `npm run cycles`** to `check` once it reports zero. If `src/features/` or prototypes add cycles beyond the 12,
-      fix them here. The `package.json` change goes in its own small PR.
+- [ ] **9. Empty the knot ratchet's allow-list.** Includes `src/pois/caves/{index,decor}.ts` and anything else the ratchet
+      lists by then.
 
 ### Part 4: entities
 
@@ -225,15 +239,20 @@ Do this before the entity work: it's what delivers the separation.
 Boogle has no level editor and doesn't need one. This part gives agents headless versions of what an editor gives humans.
 Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, because they need the state and view split.
 
-- [ ] **16. Guards.** At over 900 commits a week, mechanical checks do the work review can't.
-      - Code health: ESLint `max-lines` and `complexity` limits with today's offenders allowlisted, plus a duplication
-        check. Boogler copy is exempt and never trimmed to pass.
-      - Performance counts in CI: budgets for draw calls, triangles, frame hook count and bundle size. Start with a spike
-        confirming the counts are stable under software rendering.
+- [ ] **16. Guards.** At over 900 commits a week, mechanical checks do the work review can't. These follow
+      [engine-architecture.md](../research/engine-architecture.md), "Recommendations".
+      - `npm run assets -- --check` in CI's `client` job (`typecheck` went in with step 1).
+      - Freeze three boundaries in ESLint: `src/world/` and `src/net/` stay headless; `src/proto/` and `src/debug/` stay lazy;
+        one socket, one audio context, one loop.
+      - The import-knot ratchet in `npm run registry`.
+      - Nightly counts on SwiftShader as a JSON artifact: draw calls, shadow draws, shader programs, first-load gzip, hook
+        objects. Counts only, since headless times mean nothing. Nobody has tried this in Actions yet.
+      - Live error triage: group `/report` errors and desyncs by build, and open an issue when a build brings a new one.
       - Automatic rollback: a failed live smoke test redeploys the last good build. It changes the deploy flow, so the
         owner approves its design first.
-      - Live error triage: group `/report` errors and desyncs by build, and open an issue when a build brings a new one.
       - Visual diffs: compare stills at fixed poses, advisory only.
+      - Dropped: `max-lines`, `complexity` and a duplication tool. The report lists file length under "Don't flag" (DESIGN.md
+        chose plain modules), and its reviewer reads for duplicate paths (check 10).
 - [ ] **17. Headless runtime.** Run entity state and Rapier in Node, without three.js scene code or a GPU, faster than real
       time. Start with a spike confirming our Rapier build loads in Node. Add `npm run sim -- <name>` and port one multiplayer
       scenario to prove it. Compare with Unity's `-batchmode -nographics` and Godot's `--headless`.
@@ -258,8 +277,9 @@ console and native export.
 
 - **Frame order is behaviour.** The table in `src/loop.ts` encodes real dependencies. Keep every order number when moving
   a hook, and change it only in its own commit.
-- **Frame budget.** Target is 4 ms on a 2021 iPad, with a 4 KB per-frame allocation budget that `hitches` fails on. Entity
-  iteration must allocate nothing, and step 10 has to show it.
+- **Frame budget.** The lowest target device is now an M4 iPad Pro (decision log), and whether the 4 ms budget stands is
+  open (ledger AR-3). `hitches` fails over 3.2 KB of hook objects a frame. Entity iteration must allocate nothing, and step
+  10 has to show it.
 - **Lockstep.** Steps 2-4 touch `src/sim/` and rules. A changed guard can alter a result and desync a room. The replay
   test and the server sharing this code are the checks.
 - **`!` dilutes the flag.** Most of the 2,334 fixes will be `!`. The lasting value is in new code and in wire and save data.

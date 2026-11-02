@@ -4,6 +4,7 @@
 > trains, a growing archipelago, a mainland port city; [vertical-slice.md](../proposals/vertical-slice.md),
 > [story-and-finale.md](../proposals/story-and-finale.md)). It ends with a proposed re-ordering of
 > [architecture.md](architecture.md) phases 3–4 for the owner to approve. Code read on 2026-11-01 at `main` `3bd4617`.
+> The owner overrode "don't do foundation work before the slice" on 2026-11-01: [entity-architecture.md](entity-architecture.md).
 
 ## Verdict
 
