@@ -70,6 +70,23 @@ export const PROTOS: Proto[] = [
     },
   },
   {
+    id: 'fall',
+    title: 'The fall into the world',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-fall&proto=fall&tod=0.2',
+    question: 'Did that make you laugh?',
+    what: 'Your Buddy on a handcar where the rail runs out above the clouds. Jump in rolls you off; steer down through the cloud into the BOOGLE sign.',
+    since: '2026-11-02',
+    verb: 'falls',
+    chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
+    defaultWhat: 'About 6 s in the air.',
+    variants: [
+      { name: 'short', url: '/?room=proto-fall&proto=fall&tod=0.2&v=short', what: 'About 3.5 s in the air.' },
+      { name: 'long', url: '/?room=proto-fall&proto=fall&tod=0.2&v=long', what: 'About 10 s in the air.' },
+    ],
+  },
+  {
     id: 'place',
     title: 'A real place',
     step: 8,
@@ -530,6 +547,7 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
+  { id: 'fall', why: 'Did that make you laugh?' },
   { id: 'place', why: 'Having found that place on foot, did you want to connect it?' },
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },

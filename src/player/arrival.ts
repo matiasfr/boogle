@@ -15,6 +15,8 @@
 //   friendlyName()          a random friendly name for the first-visit card
 //   leaveIsland()           the pause view's Leave: reload onto the card
 
+import { PROTO } from '../proto/flags.ts';
+
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
 const LAST = 'boogle.lastVisit';
 const ROOM = (room: string) => `boogle.visit.${room}`;
@@ -65,7 +67,7 @@ try {
 
 const first = !saved;
 export const isFirstVisit = () => first;
-export const showCard = () => first || leaving;
+export const showCard = () => first || leaving || PROTO === 'fall'; // ?proto=fall replays the first visit
 const lastRead = readJson(LAST);
 export const lastVisit: LastVisit | null = okVisit(lastRead) ? lastRead : null;
 

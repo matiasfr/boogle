@@ -22,6 +22,7 @@ export const me = {
   chargeStart: 0,
   suppressUp: false,
   down: false,
+  downUntil: 0, // performance.now() when a knockdown ends (src/features/impact.ts)
   lostBallAt: -1e9,
   wish: new THREE.Vector3(),
 };

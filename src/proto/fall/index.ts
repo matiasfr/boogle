@@ -1,0 +1,396 @@
+// The fall into the world (src/features/proto-fall.ts loads this behind ?proto=fall; docs/game-design/first-run.md). You
+// meet your Buddy on a handcar at the end of a rail above the clouds, with the name-and-colour card beside it. Jump in
+// rolls it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
+// apart; you lie flat with stars, the handcar lands next to you, and the game begins. The rail going nowhere says what the
+// game wants, without words. Serves DESIGN.md 10 (Slapstick over precision) and 7 (Telegraph everything). Local, apart from
+// your body and the existing flops: the prop pieces are this tab's alone.
+import './fall.css';
+import * as THREE from 'three/webgpu';
+import { COLORS, FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
+import { onEntered } from '../../entities/player/state.ts';
+import { groundHeight } from '../../island/heights.ts';
+import { onFrame } from '../../loop.ts';
+import { clamp, smoothstep } from '../../math.ts';
+import { onPreStep, teleport } from '../../physics/engine.ts';
+import { animateAvatar, makeAvatar, makeLabel, type Avatar } from '../../player/avatars.ts';
+import { input, inputState } from '../../player/input-state.ts';
+import { cam, me } from '../../player/player.ts';
+import { getAudio } from '../../render/audio.ts';
+import { emit } from '../../render/particles.ts';
+import { camera, scene, sky, sun } from '../../render/scene.ts';
+import { SUN_DIR } from '../../render/sun-dir.ts';
+import { protoCount } from '../count.ts';
+import { blastLetters, burst, updateLetters } from './letters.ts';
+import { CAR_START, FWD, HEIGHT, RIGHT, ROLL_DIST, STAND, TARGET, UP, YAW, car, deck, DECK_Y } from './stage.ts';
+
+const ROLL_S = 1.5, // on the rail, speeding up
+  OFF_END = 0.8, // m the handcar's middle is past the end when it tips and you leave it
+  LAUNCH_UP = 4, // m/s: a little hop off the end
+  BLEND_S = 1.3, // the camera swinging from your face to behind you
+  FALL_PITCH = -1.05, // looking down past your feet
+  REST_PITCH = -0.38, // after the landing
+  FUNNEL = { base: 1, perMetre: 0.2, firm: 1.5 }, // how far off the sign you can steer, by height, so you can't miss
+  DOWN_MS = 1800, // flat with stars. Under 2000: presence `kd` ignores more
+  GET_UP_MS = 900, // the soonest any input stands you up
+  CAR_LATE_S = 0.8, // how long after you it lands
+  FALL_FOV = 10; // degrees wider on the way down
+
+type State = 'card' | 'roll' | 'fall' | 'down' | 'done';
+let state: State = 'card';
+
+document.body.classList.add('fall-stage', 'fall-air');
+const white = document.createElement('div');
+white.className = 'fall-white';
+document.body.append(white);
+
+// ---------------------------------------------------------------- your Buddy on the card
+// Not the player yet (me.entered would start the game): another avatar in your colour, swapped for you on Jump in.
+let preview: Avatar | null = null;
+let label: THREE.Sprite | null = null;
+let labelText = '';
+let hop = 1; // s since the last colour change
+let shownColor = -1;
+let retry = 0;
+const nameBox = document.getElementById('name-input') as HTMLInputElement | null;
+
+function standOnCar(out: THREE.Vector3, carAt: THREE.Vector3) {
+  return out
+    .copy(carAt)
+    .addScaledVector(FWD, -STAND.back)
+    .addScaledVector(UP, STAND.up + PLAYER_R);
+}
+const buddyAt = new THREE.Vector3();
+
+function updatePreview(dt: number) {
+  retry -= dt;
+  // The Buddy dresses avatars only once it has loaded; until then this is a capsule.
+  if (retry <= 0 && !preview?.userData.handSocket) {
+    retry = 0.25;
+    if (preview) scene.remove(preview);
+    preview = makeAvatar(me.colorIdx);
+    preview.rotation.y = YAW;
+    scene.add(preview);
+    label = null;
+    labelText = '';
+    shownColor = -1;
+  }
+  if (!preview) return;
+  if (me.colorIdx !== shownColor) {
+    if (shownColor >= 0) hop = 0;
+    shownColor = me.colorIdx;
+    // The sun is behind it from here, and this is where you pick the colour: light its front so the colour reads.
+    const m = preview.userData.mat;
+    m.color.set(COLORS[me.colorIdx]!);
+    m.emissive.set(COLORS[me.colorIdx]!);
+    m.emissiveIntensity = 0.42;
+  }
+  hop += dt;
+  const up = hop < 0.34 ? Math.sin((hop / 0.34) * Math.PI) * 0.55 : 0;
+  standOnCar(buddyAt, car.group.position);
+  preview.position.copy(buddyAt);
+  preview.position.y += up;
+  animateAvatar(preview, 0, up > 0, dt);
+  const text = nameBox?.value.trim() ?? '';
+  if (text !== labelText) {
+    labelText = text;
+    if (label) {
+      preview.remove(label);
+      label.material.map?.dispose();
+      label.material.dispose();
+    }
+    label = makeLabel(text || ' ');
+    preview.add(label);
+  }
+}
+
+// ---------------------------------------------------------------- the camera on the card
+const stagePos = new THREE.Vector3();
+const stageLook = new THREE.Vector3();
+const stageQ = new THREE.Quaternion();
+const mat4 = new THREE.Matrix4();
+function stageShot(buddy: THREE.Vector3) {
+  // In front of your Buddy, on its level: the rail runs away behind it and the cloud lies below. It takes the side of the
+  // screen the card leaves free: the left on a wide screen (looking from the front, the world's -RIGHT is screen right),
+  // the top on an upright one.
+  const wide = camera.aspect > 23 / 20;
+  stageLook.copy(buddy).addScaledVector(UP, 0.7);
+  if (wide) stageLook.addScaledVector(RIGHT, -2.1);
+  else stageLook.addScaledVector(UP, -1.5);
+  stagePos
+    .copy(buddy)
+    .addScaledVector(FWD, wide ? 6.6 : 8)
+    .addScaledVector(UP, 1.1)
+    .addScaledVector(RIGHT, wide ? -1.2 : 0);
+  stageQ.setFromRotationMatrix(mat4.lookAt(stagePos, stageLook, UP));
+}
+function lightStage(at: THREE.Vector3) {
+  sun.target.position.copy(at);
+  sun.position.set(at.x + SUN_DIR.x * 80, at.y + SUN_DIR.y * 80, at.z + SUN_DIR.z * 80);
+}
+
+// ---------------------------------------------------------------- Jump in: on the rail, then off it
+let rollT = 0;
+const carAt = new THREE.Vector3();
+function rollPlace(t: number) {
+  const k = clamp(t / ROLL_S, 0, 1);
+  carAt.copy(CAR_START).addScaledVector(FWD, (ROLL_DIST + OFF_END) * k * k);
+}
+const releaseSpeed = (2 * (ROLL_DIST + OFF_END)) / ROLL_S;
+const standAt = new THREE.Vector3();
+
+onEntered(() => {
+  state = 'roll';
+  document.body.classList.remove('fall-stage');
+  if (preview) scene.remove(preview);
+  preview = null;
+  inputState.held = true;
+  standOnCar(standAt, CAR_START);
+  teleport(me.body!, standAt.x, standAt.y, standAt.z);
+  me.body!.velocity.set(0, 0, 0);
+  me.yaw = cam.yaw = YAW;
+});
+
+onPreStep(() => {
+  const b = me.body;
+  if (!b) return;
+  if (state === 'roll') {
+    rollT += FIXED;
+    rollPlace(rollT);
+    standOnCar(standAt, carAt);
+    teleport(b, standAt.x, standAt.y, standAt.z);
+    b.velocity.set(0, 0, 0);
+    me.coyote = 0.1; // standing, for the avatar
+    me.yaw = YAW;
+    if (rollT >= ROLL_S) {
+      state = 'fall';
+      inputState.held = false;
+      me.coyote = 0;
+      b.velocity.set(FWD.x * releaseSpeed * 0.8, LAUNCH_UP, FWD.z * releaseSpeed * 0.8);
+      releaseCar();
+    }
+  } else if (state === 'fall') {
+    // You steer the whole way down, inside a funnel that closes on the sign.
+    const dx = b.position.x - TARGET.x,
+      dz = b.position.z - TARGET.z,
+      d = Math.hypot(dx, dz);
+    const r = FUNNEL.base + Math.max(0, b.position.y - TARGET.y) * FUNNEL.perMetre;
+    if (d > r) {
+      const nx = dx / d,
+        nz = dz / d,
+        want = -(d - r) * FUNNEL.firm,
+        v = b.velocity.x * nx + b.velocity.z * nz;
+      if (v > want) {
+        b.velocity.x -= (v - want) * nx;
+        b.velocity.z -= (v - want) * nz;
+      }
+    }
+  }
+});
+
+// ---------------------------------------------------------------- the handcar comes too
+const carV = new THREE.Vector3();
+let carFlying = false,
+  carDown = false,
+  carSpin = 0;
+const CAR_LAND = TARGET.clone().addScaledVector(RIGHT, 3.2).addScaledVector(FWD, 5.5); // where you'll see it from the ground
+const carMaxFall = HEIGHT / (HEIGHT / 20 + CAR_LATE_S);
+function releaseCar() {
+  carFlying = true;
+  carV.copy(FWD).multiplyScalar(releaseSpeed * 0.6);
+  carV.y = 1;
+}
+function updateCar(dt: number) {
+  const g = car.group;
+  if (state === 'card' || state === 'roll') {
+    const pumpRate = state === 'roll' ? 5 + rollT * 8 : 1.3;
+    car.pump.rotation.x = Math.sin(performance.now() * 0.001 * pumpRate) * (state === 'roll' ? 0.4 : 0.05);
+  }
+  if (state === 'roll') {
+    rollPlace(rollT);
+    g.position.copy(carAt);
+  }
+  if (!carFlying || carDown) return;
+  carV.y = Math.max(carV.y - 30 * dt, -carMaxFall);
+  const pull = 1 - Math.exp(-dt * 0.9);
+  carV.x *= Math.exp(-dt * 2);
+  carV.z *= Math.exp(-dt * 2);
+  g.position.x += carV.x * dt + (CAR_LAND.x - g.position.x) * pull;
+  g.position.z += carV.z * dt + (CAR_LAND.z - g.position.z) * pull;
+  g.position.y += carV.y * dt;
+  carSpin += dt * 2.6;
+  g.rotation.x = -carSpin;
+  g.rotation.z = carSpin * 0.45;
+  const ground = groundHeight(g.position.x, g.position.z);
+  if (g.position.y <= ground + 0.4) {
+    carDown = true;
+    g.position.y = ground + 0.45;
+    g.rotation.x = 0.1;
+    g.rotation.z = 2.5; // on its side, wheels in the air
+    burst(g.position, 22, 16);
+    shake = Math.max(shake, 0.7);
+    thump(0.7);
+  }
+}
+
+// ---------------------------------------------------------------- the crash
+let shake = 0;
+const knock = (ctx: AudioContext, out: AudioNode, at: number, f: number, gain: number) => {
+  const o = ctx.createOscillator(),
+    g = ctx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f, at);
+  o.frequency.exponentialRampToValueAtTime(f * 0.55, at + 0.07);
+  g.gain.setValueAtTime(gain, at);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+  o.connect(g).connect(out);
+  o.start(at);
+  o.stop(at + 0.1);
+};
+function thump(strength: number) {
+  const a = getAudio();
+  if (!a) return;
+  const { ctx, out } = a;
+  const t = ctx.currentTime + 0.002;
+  const o = ctx.createOscillator(),
+    g = ctx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(130, t);
+  o.frequency.exponentialRampToValueAtTime(38, t + 0.28);
+  g.gain.setValueAtTime(0.75 * strength, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + 0.4);
+  // Timber clattering.
+  for (let k = 0; k < 9; k++)
+    knock(
+      ctx,
+      out,
+      t + 0.03 + k * 0.055 + Math.random() * 0.05,
+      240 + Math.random() * 420,
+      0.2 * strength * (1 - k / 11),
+    );
+}
+
+const hit = new THREE.Vector3();
+let downSince = 0;
+function land(now: number) {
+  state = 'down';
+  document.body.classList.remove('fall-air');
+  downSince = now;
+  me.down = true;
+  me.downUntil = now + DOWN_MS;
+  const p = me.body!.position;
+  hit.set(p.x, TARGET.y, p.z);
+  blastLetters(hit, now);
+  burst(hit, 34, 30);
+  shake = reducedMotion ? 0 : 1;
+  thump(1);
+  protoCount('falls');
+}
+
+const pressing = () => input.keys.size > 0 || Math.abs(input.stickX) + Math.abs(input.stickY) > 0.25;
+
+// ---------------------------------------------------------------- every frame
+const STREAK = new THREE.Color('#ffffff');
+const followPos = new THREE.Vector3();
+const followAim = new THREE.Vector3();
+const focus = new THREE.Vector3();
+const from = new THREE.Vector3();
+const to = new THREE.Vector3();
+let blendT = 0,
+  fov = 0,
+  restT = 0;
+
+function blendCamera(dt: number) {
+  blendT += dt;
+  const e = smoothstep(0, BLEND_S, blendT);
+  if (e >= 1) return;
+  const ip = me.body!.interpolatedPosition;
+  focus.set(ip.x, ip.y + 1, ip.z);
+  stageShot(standOnCar(standAt, CAR_START));
+  // Round your side, not through you: angle, radius and height blend separately around you.
+  from.subVectors(stagePos, focus);
+  followPos.copy(camera.position);
+  to.subVectors(followPos, focus);
+  const a0 = Math.atan2(from.x, from.z);
+  let da = Math.atan2(to.x, to.z) - a0;
+  da = Math.atan2(Math.sin(da), Math.cos(da));
+  const a = a0 + da * e,
+    r = THREE.MathUtils.lerp(Math.hypot(from.x, from.z), Math.hypot(to.x, to.z), e);
+  camera.position.set(
+    focus.x + Math.sin(a) * r,
+    THREE.MathUtils.lerp(from.y, to.y, e) + focus.y,
+    focus.z + Math.cos(a) * r,
+  );
+  // Keep you in frame the whole way round: aim at a point moving from the card's aim to the follow camera's.
+  followAim.set(0, 0, -10).applyQuaternion(camera.quaternion).add(followPos);
+  camera.lookAt(followAim.lerp(stageLook, 1 - e));
+}
+
+onFrame(
+  ({ now, dt }) => {
+    updateCar(dt);
+    updateLetters(now);
+    if (state === 'card') {
+      updatePreview(dt);
+      standOnCar(buddyAt, car.group.position);
+      stageShot(buddyAt);
+      camera.position.copy(stagePos);
+      camera.quaternion.copy(stageQ);
+      sky.position.copy(camera.position);
+      lightStage(buddyAt);
+      return;
+    }
+    const b = me.body;
+    if (!b) return;
+    blendCamera(dt);
+
+    if (state === 'fall') {
+      cam.pitch += (FALL_PITCH - cam.pitch) * (1 - Math.exp(-dt * 2.4));
+      if (b.position.y - TARGET.y > 8 && !reducedMotion)
+        for (let k = 0; k < 3; k++)
+          emit({
+            x: b.position.x + (Math.random() - 0.5) * 18,
+            y: b.position.y - 24 + Math.random() * 10,
+            z: b.position.z + (Math.random() - 0.5) * 18,
+            vx: 0,
+            vy: 0,
+            vz: 0,
+            life: 0.7,
+            size: 0.09,
+            alpha: 0.5,
+            color: STREAK,
+          });
+      if (me.coyote > 0 || me.swimming) land(now);
+    } else if (state === 'down') {
+      if (now - downSince > GET_UP_MS && pressing()) me.downUntil = now;
+      if (!me.down) state = 'done';
+    }
+    if (state === 'down' || (state === 'done' && restT < 1.2)) {
+      restT += dt;
+      cam.pitch += (REST_PITCH - cam.pitch) * (1 - Math.exp(-dt * 2));
+    }
+
+    // Through the cloud: white for the moment you're in it, and it's gone from above you once you're out.
+    const inCloud = 1 - clamp(Math.abs(camera.position.y - DECK_Y) / 15, 0, 1);
+    white.style.opacity = String(inCloud * 0.94);
+    if (deck.visible && camera.position.y < DECK_Y - 1) deck.visible = false;
+
+    const wantFov = state === 'fall' && !reducedMotion ? FALL_FOV * clamp(-b.velocity.y / 15, 0, 1) : 0;
+    const step = (wantFov - fov) * (1 - Math.exp(-dt * 5));
+    if (Math.abs(step) > 0.01) {
+      fov += step;
+      camera.fov += step;
+      camera.updateProjectionMatrix();
+    }
+    if (shake > 0.01) {
+      camera.position.x += (Math.random() - 0.5) * 0.5 * shake;
+      camera.position.y += (Math.random() - 0.5) * 0.5 * shake;
+      camera.position.z += (Math.random() - 0.5) * 0.5 * shake;
+      shake *= Math.exp(-dt * 6);
+    }
+    sky.position.copy(camera.position);
+  },
+  { phase: 'late', order: 1200 },
+);

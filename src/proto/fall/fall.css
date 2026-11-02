@@ -1,0 +1,27 @@
+/* The fall (?proto=fall): the card beside your Buddy, nothing over it, and the white of the cloud you drop through. */
+.fall-stage .lobby {
+  background: none;
+  place-items: center end;
+  padding-right: max(7vw, 24px);
+}
+.fall-stage .card h1 {
+  display: none; /* the sign you land in is the title */
+}
+@media (max-aspect-ratio: 23/20) {
+  .fall-stage .lobby {
+    place-items: end center;
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+}
+/* The screen is the shot until you land: no HUD, which also hides the labels of things far below the cloud. */
+.fall-air .hud {
+  visibility: hidden;
+}
+.fall-white {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
