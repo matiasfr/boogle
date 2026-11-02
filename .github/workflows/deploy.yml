@@ -37,8 +37,8 @@ jobs:
           BASE: /
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
           VITE_BUILD: ${{ github.sha }}
-      # Share pages for patch videos (video-* releases, dev/video/site.mjs). Never blocks a game deploy.
-      - run: node dev/video/site.mjs dist || true
+      # Share pages for patch videos (video-* releases, dev/video/site.ts). Never blocks a game deploy.
+      - run: node dev/video/site.ts dist || true
         env:
           SITE_URL: https://boogle.club/
           GH_TOKEN: ${{ github.token }}

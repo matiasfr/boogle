@@ -4,7 +4,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.mjs';
+import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
 import { freePort } from '../look/lib.mjs';
 import { createService, loadConfig } from '../../server/src/server.js';
 import { loadHomeLand } from '../../server/src/host/land.ts';

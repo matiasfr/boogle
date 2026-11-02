@@ -1,12 +1,13 @@
 // The haul loop (0.1 groundwork: 9a888a5 piles, be256d8 stack, f3baeb7 palms give logs, e625724 work sites,
 // e0b3190 the machine): shake palms for logs, carry a wobbly stack and spill it with a jump, pour it into a work site
 // (sleepers pile up, your name goes on the plaque), build a helper hut, start the machine and watch it lay track.
+import type { Shot } from '../clip.ts';
 const ROOM = 'cliphaul';
 
 const R = `const { rules } = await import('/src/world/game-world.ts');
   const { identity } = await import('/src/player/identity.ts');`;
 // Put the player on the ground at (x, z), still, facing yaw.
-const TP = (x, z, yaw) => `
+const TP = (x: number, z: number, yaw?: number) => `
   const { teleport } = await import('/src/physics/physics.ts');
   const { groundHeight } = await import('/src/island/terrain.ts');
   const b = window.boogle.me.body;
@@ -15,7 +16,7 @@ const TP = (x, z, yaw) => `
   ${yaw === undefined ? '' : `window.boogle.me.yaw = ${yaw};`}
   return groundHeight(${x}, ${z});`;
 // The palm with logs nearest (x, z): its index and trunk position.
-const PALM = (x, z) => `${R}
+const PALM = (x: number, z: number) => `${R}
   const { trees } = await import('/src/render/props.ts');
   let best = null;
   rules.sources.list().forEach((_, t) => {
@@ -25,7 +26,7 @@ const PALM = (x, z) => `${R}
   });
   return best;`;
 // Fill this player's stack with logs straight from the far palms (no camera on them), up to n.
-const FILL = (n) => `${R}
+const FILL = (n: number) => `${R}
   const want = Math.ceil((${n} - rules.stacks.count(identity.pid)) / 4);
   let k = 0;
   for (let id = rules.sources.list().length - 1; id >= 0 && k < want; id--)
@@ -160,4 +161,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

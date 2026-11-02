@@ -1,16 +1,16 @@
-// Backing track for `npm run reel` (dev/video/reel.mjs): a synthesized loop, no samples or dependencies.
+// Backing track for `npm run reel` (dev/video/reel.ts): a synthesized loop, no samples or dependencies.
 // A sunny little loop: C G Am F, pad + pluck arpeggio (with a soft echo) + bass + drums, as 16-bit stereo WAV. Drums
 // drop out for the first two bars, the last bar and the `quiet` [from, to] stretches (snapped to bars); the ending fades.
-export function music(seconds, bpm, quiet = []) {
+export function music(seconds: number, bpm: number, quiet: [number, number][] = []): Buffer {
   const SR = 44100,
     n = Math.ceil(seconds * SR),
     beat = 60 / bpm,
     bar = beat * 4,
-    snap = (x) => Math.round(x / bar) * bar,
+    snap = (x: number) => Math.round(x / bar) * bar,
     rests = quiet.map(([a, b]) => [snap(a), snap(b)]),
     echo = Math.round(beat * 0.75 * SR),
     arps = new Float32Array(n);
-  const hz = (m) => 440 * 2 ** ((m - 69) / 12);
+  const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
   const chords = [
     [60, 64, 67],
     [55, 59, 62],

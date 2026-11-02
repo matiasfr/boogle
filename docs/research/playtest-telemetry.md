@@ -96,7 +96,7 @@
 
 - **Counters, local only.** `protoCount(name)` ([src/proto/count.ts](../../src/proto/count.ts)) adds to this browser's protos store ([protos/store.ts](../../protos/store.ts), localStorage key `boogle-protos-v1`), which the game and boogle.club/protos/ share because they're the same origin. Counted now: seconds in the prototype, variant switches, soapbox runs, minis arrivals and their times. They go into the copied playtest entry.
 - **Problem reports to the server.** [src/features/telemetry.ts](../../src/features/telemetry.ts) sends errors, desyncs, snapshot failures and join outcomes to `POST /report`; the server appends JSON lines per UTC day, keeps 30 days and drops IP and headers ([server/README.md](../../server/README.md)). Nothing about play.
-- **A map to draw on.** `npm run island-map` ([dev/island/map.mjs](../../dev/island/map.mjs)) writes a top-down PNG of the island in a second; [dev/layout/export.ts](../../dev/layout/export.ts) writes a 2 m heightmap as JSON for the layout lab.
+- **A map to draw on.** `npm run island-map` ([dev/island/map.ts](../../dev/island/map.ts)) writes a top-down PNG of the island in a second; [dev/layout/export.ts](../../dev/layout/export.ts) writes a 2 m heightmap as JSON for the layout lab.
 - **Events worth placing.** Tumbles, bonks and stomps ([player.md](../game-design/player.md)); soapbox crashes and wipeouts, and its best-run ghost ([soapbox.md](../game-design/soapbox.md)).
 
 ## What this means for Boogle

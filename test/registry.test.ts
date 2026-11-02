@@ -1,7 +1,7 @@
-// The registry scan (dev/registry/scan.mjs): clashes inside one tree, and what a change does to main's registry.
+// The registry scan (dev/registry/scan.ts): clashes inside one tree, and what a change does to main's registry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.mjs';
+import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.ts';
 
 // Name -> the files that claim it, as scanSources builds each map.
 type Names = Record<string, string[]>;

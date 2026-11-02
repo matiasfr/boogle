@@ -1,5 +1,5 @@
-// Build the video share pages into the Pages site: `node dev/video/site.mjs <dist>` (run by .github/workflows/deploy.yml
-// after the game's build). Every GitHub release tagged video-* (made by dev/video/publish.mjs) becomes
+// Build the video share pages into the Pages site: `node dev/video/site.ts <dist>` (run by .github/workflows/deploy.yml
+// after the game's build). Every GitHub release tagged video-* (made by dev/video/publish.ts) becomes
 // <dist>/updates/<tag>/ with its video, poster and a page with a player and link-preview tags, plus an index at
 // <dist>/updates/. Video files never enter git; they live on the releases. Never fails the deploy: with no gh, no
 // network or no releases it builds what it can.
@@ -8,9 +8,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const dist = path.resolve(process.argv[2] || 'dist');
-const sh = (args) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-const esc = (s) =>
-  String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const sh = (args: string[]) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const esc = (s: unknown) =>
+  String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c as '&']);
 
 const updates = path.join(dist, 'updates');
 // Download every video-* release into updates/<tag>/ (skipped without gh or network: pages are built from whatever
@@ -49,12 +49,12 @@ try {
         'meta.json',
       ]);
     } catch (e) {
-      console.log(`skipped ${tag}: ${e.message.split('\n')[0]}`);
+      console.log(`skipped ${tag}: ${(e as Error).message.split('\n')[0]}`);
       fs.rmSync(dir, { recursive: true, force: true });
     }
   }
 } catch (e) {
-  console.log('no releases fetched: ' + e.message.split('\n')[0]);
+  console.log('no releases fetched: ' + (e as Error).message.split('\n')[0]);
 }
 const tags = fs.existsSync(updates)
   ? fs
@@ -64,7 +64,7 @@ const tags = fs.existsSync(updates)
       .reverse()
   : [];
 
-const head = (title, desc, extra = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8">
+const head = (title: string, desc: string, extra = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}"><meta property="og:site_name" content="Boogle">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}">${extra}
@@ -105,13 +105,13 @@ for (const tag of tags) {
 <div class="date">${esc(meta.date)}</div><h1>${esc(meta.title)}</h1>
 <video src="video.mp4" poster="poster.jpg" controls playsinline preload="metadata"></video>
 ${meta.summary ? `<p>${esc(meta.summary)}</p>` : ''}
-${meta.features?.length ? `<ul>${meta.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+${meta.features?.length ? `<ul>${meta.features.map((f: string) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
 <a class="play" href="../../">Play Boogle</a> <p><a href="../">All updates</a></p></main></body></html>`;
     fs.writeFileSync(path.join(dir, 'index.html'), page);
     entries.push({ tag, meta });
     console.log(`video page: updates/${tag}/`);
   } catch (e) {
-    console.log(`skipped ${tag}: ${e.message.split('\n')[0]}`);
+    console.log(`skipped ${tag}: ${(e as Error).message.split('\n')[0]}`);
   }
 }
 
