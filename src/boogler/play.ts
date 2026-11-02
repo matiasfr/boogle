@@ -16,7 +16,7 @@ import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue
 import { modalOpen } from '../player/modal.ts';
 import { LEVEL_UP, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
 import { bond, createFriend, loadFriend, serializeFriend, kickedOff, rideLimit, isWary } from './friendship.ts';
-import { heldId, useOne } from '../player/inventory.ts';
+import { heldId, emptyHand } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { NO_TARGETS } from '../sim/interact-pick.ts';
 import { guest } from '../guest/state.ts';
@@ -235,7 +235,7 @@ function converse(start: 'menu' | 'kick'): boolean {
     start,
     mario: guest.active,
     gifts: giftList,
-    give: (kind: number) => heldId() === GIFTS[kind]!.id && !!useOne(),
+    give: (kind: number) => heldId() === GIFTS[kind]!.id && !!emptyHand(),
   });
   render();
   return true;

@@ -3,7 +3,7 @@
 // same HUD are in ./ui-kit.css. Local and cosmetic.
 //
 //   uiSound('tick')         a new thing in your hand: one soft, short tone (Fortnite-style; TICK = false
-//                           silences it, the slot's bounce still shows the choice)
+//                           silences it, the name tag's bounce still shows it)
 //   uiSound('pop')          the interact prompt appears (rate-limited, so walking past palms doesn't chatter)
 //   uiSound('thunk')        a press that did something (Take logs, Pick up): a marimba-like wooden tok on G4 over a
 //                           soft low knock

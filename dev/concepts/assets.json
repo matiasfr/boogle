@@ -4,12 +4,12 @@
     {
       "id": "icon-mushroom",
       "kind": "icon",
-      "prompt": "Hotbar icon: a fat red-capped mushroom with white spots, slightly tilted, three-quarter view."
+      "prompt": "Item icon: a fat red-capped mushroom with white spots, slightly tilted, three-quarter view."
     },
     {
       "id": "icon-crate",
       "kind": "icon",
-      "prompt": "Hotbar icon: a small wooden shipping crate with rope handles, three-quarter view from slightly above."
+      "prompt": "Item icon: a small wooden shipping crate with rope handles, three-quarter view from slightly above."
     },
     {
       "id": "sprite-palm",

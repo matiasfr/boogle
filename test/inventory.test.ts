@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { has, heldId, inv, onLetGo, take, useOne } from '../src/player/inventory.ts';
+import { heldId, inv, onLetGo, take, emptyHand } from '../src/player/inventory.ts';
 
 const letGo: string[] = [];
 onLetGo((id) => letGo.push(id));
@@ -17,8 +17,8 @@ test('one thing in your hand: a new one pushes the old one out', () => {
   assert.deepEqual(letGo, [], 'nothing to let go of from empty hands');
   assert.equal(take('seeds'), true);
   assert.deepEqual(letGo, ['frisbee']);
-  assert.ok(has('seeds') && !has('frisbee'));
-  assert.equal(useOne(), 'seeds');
+  assert.equal(heldId(), 'seeds');
+  assert.equal(emptyHand(), 'seeds');
   assert.equal(heldId(), null);
   assert.deepEqual(letGo, ['frisbee'], 'using it is not letting go');
 });

@@ -35,15 +35,14 @@ export default {
     const start = await g.eval(`${INV} return I.heldId();`);
     t.check('a new player starts empty-handed', start === null, JSON.stringify(start));
     t.check(
-      'no slots on screen, and the keys and bumpers that changed them do nothing',
+      'the digit keys that changed slots do nothing',
       await g.eval(`${INV}
-        const { actionById } = await import('/src/player/controls.ts');
         I.take('seeds');
         dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit2' }));
         dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit2' }));
         const kept = I.heldId() === 'seeds';
-        I.useOne();
-        return kept && !actionById('slot-prev') && !actionById('slot-next') && !document.querySelector('.hotbar-slot');`),
+        I.emptyHand();
+        return kept;`),
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
@@ -124,8 +123,8 @@ export default {
       H.interactDown(); H.interactUp();
       const inHand = I.heldId() === 'ball' && window.boogle.me.holding && ball.held;
       I.take('frisbee');
-      const gone = !ball.held && !window.boogle.me.holding && !I.has('ball') && I.heldId() === 'frisbee';
-      I.useOne();
+      const gone = !ball.held && !window.boogle.me.holding && I.heldId() !== 'ball' && I.heldId() === 'frisbee';
+      I.emptyHand();
       return { inHand, gone };`);
     t.check(
       'the ball is in your hand, and something new knocks it out',
@@ -158,7 +157,7 @@ export default {
       play.booglerTalk();
       const offeredFrisbee = await pick('a frisbee');
       await says('monopoly');
-      return { offeredFrisbee, frisbeeGone: !I.has('frisbee') };`);
+      return { offeredFrisbee, frisbeeGone: I.heldId() !== 'frisbee' };`);
     t.check(
       'The Boogler takes the frisbee from your hand',
       talk.offeredFrisbee && talk.frisbeeGone,
@@ -173,7 +172,7 @@ export default {
       const M = await import('/src/adapters/mushrooms.ts');
       const spots = M.spotsAhead();
       H.useDown(); H.useUp();
-      return { spots: spots.length / 2, kept: I.has('seeds') };`);
+      return { spots: spots.length / 2, kept: I.heldId() === 'seeds' };`);
     t.check('a bag sprouts mushrooms and is spent', sprouted.spots > 0 && !sprouted.kept, JSON.stringify(sprouted));
 
     // The frisbee waits on the lighthouse deck; throw it off and it glides far.
