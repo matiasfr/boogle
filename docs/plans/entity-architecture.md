@@ -348,6 +348,15 @@ console and native export.
 - **Opportunity cost.** This delays the vertical slice's find-the-fun work. Parts 1 and 3 can pause cleanly between PRs; so
   can Part 4 after step 12.
 
+## Open after the migration (2026-11-02)
+
+Parts 1 to 4 are done. What's left for the owner, or for whoever returns to this:
+
+- **Play it:** does the player still feel right? Check The Boogler (he now stays out of the windmill farm's outer ring) and the guest if a ROM is handy (its code was never run). The Boogler's state/view split waits on this.
+- **A scoped cleanup after that playthrough:** entity boilerplate, `ball-carry` naming, method-less kinds, the `declare module` bridge on `Remote`, scenario wait patches. #545 did some of this and folded part of `dev/sim`'s duplication. Keep order numbers, The Boogler's lines, `src/pois/` and `src/proto/`; `npm run sim`, replay and the registry must keep passing.
+- **Decisions:** no free pad slots for new controls; CI reliability (the recommendation: more headless, fewer scenario patches); skip deploys for merges players don't download; live error triage (needs a `REPORT_TOKEN` repo secret); whether `hotbar` and `interact` stay nightly.
+- **Small:** tune `WAGON_MAX_GRADE` (0.25, an agent's pick); a swimmer's speed peaks at walking speed on each bob; the service worker doesn't carry lazy files forward (`docs/plans/loading.md`, follow-up 3).
+
 ## Decided by the owner (2026-11-01 and 02)
 
 1. **Prototypes (12,845 lines, 44 `onFrame` calls)** get the flag fixes, and become entities only when promoted to the real
