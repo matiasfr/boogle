@@ -192,6 +192,16 @@ export class Game {
       const where = (e.stack || '').split('\n').slice(1, 5).join('\n');
       console.error(`[${g.name} page error]`, e.message + (where ? '\n' + where : ''));
     });
+    // A built file that fails says how: a 404 from which CDN node, or the network. A page reloads past this by itself
+    // (src/boot/chunk-reload.ts), so this line can be all there is to go on.
+    g.page.on('response', (r) => {
+      if (r.status() < 400 || !r.url().includes('/assets/')) return;
+      const h = r.headers();
+      console.error(`[${g.name}] ${r.status()} ${r.url()} (${h['x-cache']}, age ${h['age']}, ${h['x-served-by']})`);
+    });
+    g.page.on('requestfailed', (r) => {
+      if (r.url().includes('/assets/')) console.error(`[${g.name}] ${r.failure()?.errorText} ${r.url()}`);
+    });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
     await g.page.goto(

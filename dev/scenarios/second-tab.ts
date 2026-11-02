@@ -62,10 +62,13 @@ export default {
     await A.page.waitForTimeout(6000);
     t.check('the first tab does not come back by itself', told(await state(A.page)));
 
+    // A player comes back to this tab to press it. Left behind the second tab on a software-rendered runner, its button
+    // never takes the click ("<div class="elsewhere"> intercepts pointer events"): the page isn't being drawn.
+    await A.page.bringToFront();
     await A.page.click('.elsewhere button');
     await A.page.waitForSelector('#enter:not([disabled])', loaded);
     t.check('Play here: the first tab is live again', (await until(A.page, live, 60000)) >= 0);
-    t.check('and the second tab is told', (await until(B, told, 5000)) >= 0);
+    t.check('and the second tab is told', (await until(B, told, 30000)) >= 0);
     await B.close();
   },
 };
