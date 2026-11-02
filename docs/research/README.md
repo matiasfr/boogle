@@ -73,4 +73,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 
 - [eight-hour-pacing.md](eight-hour-pacing.md) (2026-11-02): verified and provisional pacing evidence from compact adventures, co-op campaigns and factory openings; completion-data limits, friend evenings and missed sessions; a six-era, twelve-link budget, hour-by-hour curve, hand-checkable solo/group model and eleven recommendations with smallest tests.
 
+- [living-world-shaders.md](living-world-shaders.md) (2026-11-02): small environmental effects for Sunshine-like warmth on three.js WebGPU/TSL and the M4 iPad Pro; primary-source precedents, wind, cloud shadows, water contacts, steam, particles, wildlife, cloth, fog and surface wear, with shared helpers, twelve ranked effect families, a provisional frame budget and an on-device comparison protocol.
+
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
