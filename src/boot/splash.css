@@ -4,7 +4,7 @@
   inset: 0;
   z-index: 100;
   overflow: hidden;
-  background: linear-gradient(180deg, #4aa8f0 0%, #bfe6f5 60%, #2cc6cf 100%);
+  background: linear-gradient(180deg, #518ae5 0%, #eda97e 32%, #2f7fc4 45%, #07499b 100%);
   transition: opacity 0.45s ease;
 }
 .splash.gone {
@@ -51,8 +51,35 @@
   gap: 10px;
   justify-items: center;
 }
-.splash-bar {
+.splash-progress {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.splash-gear {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+  fill: #ffc93d;
+  stroke: #13243f;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  will-change: transform;
+  animation: splash-gear 2.4s linear infinite;
+}
+.splash-gear circle {
+  fill: #fff;
+}
+@keyframes splash-gear {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.splash-bar {
+  flex: 1;
+  min-width: 0;
   height: 22px;
   box-sizing: border-box;
   padding: 3px;
@@ -82,5 +109,8 @@
   .splash,
   .splash-art {
     transition: none;
+  }
+  .splash-gear {
+    animation: none;
   }
 }
