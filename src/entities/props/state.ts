@@ -20,7 +20,9 @@ export const trees = placements.filter(isHomePalm);
 // Footprints of trees, rocks and POIs ({ x, z, r } on the ground plane), for things that walk around them. POIs keep
 // their ground clear and are walked around. Push freely; blockedAt() re-indexes when the list grows.
 export const obstacles: Obstacle[] = island.keepOut.map((k) => ({ x: k.x, z: k.z, r: k.r }));
-for (const p of placements) obstacles.push({ x: p.x, z: p.z, r: footprintOf(PROP_BLUEPRINTS[p.blueprint], p) });
+for (const p of placements)
+  if (isHomePalm(p) || !clearedAt(p.x, p.z))
+    obstacles.push({ x: p.x, z: p.z, r: footprintOf(PROP_BLUEPRINTS[p.blueprint], p) });
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
 let indexed = -1;
@@ -30,11 +32,14 @@ const bkey = (bx: number, bz: number) => bx * 4096 + bz;
 export function blockedAt(x: number, z: number, pad = 0) {
   if (indexed !== obstacles.length) {
     buckets.clear();
-    for (const o of obstacles) {
-      const k = bkey(Math.floor(o.x / BUCKET), Math.floor(o.z / BUCKET));
-      if (!buckets.has(k)) buckets.set(k, []);
-      buckets.get(k)!.push(o);
-    }
+    // In every cell its disc touches: a farm's 32 m disc reaches well past the cells next to its centre.
+    for (const o of obstacles)
+      for (let a = Math.floor((o.x - o.r) / BUCKET); a <= Math.floor((o.x + o.r) / BUCKET); a++)
+        for (let b = Math.floor((o.z - o.r) / BUCKET); b <= Math.floor((o.z + o.r) / BUCKET); b++) {
+          const k = bkey(a, b);
+          if (!buckets.has(k)) buckets.set(k, []);
+          buckets.get(k)!.push(o);
+        }
     indexed = obstacles.length;
   }
   const bx = Math.floor(x / BUCKET),

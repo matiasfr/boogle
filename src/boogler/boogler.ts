@@ -102,11 +102,13 @@ export const boogler = {
 };
 
 // ---------------------------------------------------------------- terrain checks
-function blocked(x: number, z: number, pad = 0) {
+// Already inside a footprint (a new lead takes over wherever he's drawn, and an older build may have let him in), he may
+// walk through it, or he could never leave.
+function blocked(x: number, z: number, pad = 0, fromX = NaN, fromZ = NaN) {
   if (Math.abs(x) > MAP_LIMIT || Math.abs(z) > MAP_LIMIT) return true;
   const h = groundHeight(x, z);
   if (h < MIN_H || h > MAX_H) return true;
-  return blockedAt(x, z, W_R + pad);
+  return blockedAt(x, z, W_R + pad) && !blockedAt(fromX, fromZ, W_R + pad);
 }
 
 function pathClear(x0: number, z0: number, x1: number, z1: number) {
@@ -116,7 +118,7 @@ function pathClear(x0: number, z0: number, x1: number, z1: number) {
   for (let k = 1; k <= n; k++) {
     const x = lerp(x0, x1, k / n),
       z = lerp(z0, z1, k / n);
-    if (blocked(x, z, 0.2)) return false;
+    if (blocked(x, z, 0.2, x0, z0)) return false;
     const h = groundHeight(x, z);
     if (Math.abs(h - prev) > (MAX_STEP * len) / n) return false;
     prev = h;
@@ -285,7 +287,7 @@ function think(dt: number) {
   const step = Math.min(dist, speed * dt * Math.max(0, Math.cos(off)));
   const nx = sim.x + (dx / dist) * step,
     nz = sim.z + (dz / dist) * step;
-  if (blocked(nx, nz)) {
+  if (blocked(nx, nz, 0, sim.x, sim.z)) {
     sim.walking = false;
     sim.wait = range(0.5, 1.5);
     return;
