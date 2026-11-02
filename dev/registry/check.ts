@@ -1,5 +1,6 @@
-// npm run registry [-- --base <ref>]: checks the shared registries in this tree (dev/registry/scan.ts), then diffs
-// them against <ref> (default origin/main, skipped if it isn't there) for changes that break mixed-build rooms.
+// npm run registry [-- --base <ref>]: checks the shared registries (dev/registry/scan.ts) and the import knots
+// (dev/registry/knots.ts) in this tree, then diffs the registries against <ref> (default origin/main, skipped if it
+// isn't there) for changes that break mixed-build rooms.
 // `--json` prints this tree's registry instead.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -7,6 +8,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.ts';
+import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
@@ -99,7 +101,7 @@ if (args.includes('--json')) {
   process.exit(0);
 }
 
-const errors = checkRegistry(head);
+const errors = [...checkRegistry(head), ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS)];
 const dir = baseTree(baseRef);
 let notes: string[] = [];
 if (dir) {
