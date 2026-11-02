@@ -9,6 +9,7 @@
 // say whether the room was running mixed builds (`mixedBuilds`, src/netplay/builds.ts; a yes or no, never the ids).
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
+import { BUILD_ID } from '../build-id.ts';
 import { net, getRoomId, onNetState } from '../netplay/net.ts';
 import { world, onDesync, onSnapFail } from '../world/sync.ts';
 import { mixedBuilds } from '../netplay/builds.ts';
@@ -16,7 +17,7 @@ import { coarseUa, firstFrame, scrub } from '../netplay/report-format.ts';
 import { gfx } from '../render/scene.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
-const BUILD = import.meta.env.VITE_BUILD || import.meta.env.MODE;
+const BUILD = BUILD_ID || import.meta.env.MODE;
 const MAX_REPORTS = 20;
 const MAX_SAME = 2;
 const BATCH = 10; // the server takes up to 10 per POST

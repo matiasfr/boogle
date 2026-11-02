@@ -1,11 +1,12 @@
 // Which build each player runs. main auto-deploys while friends keep tabs open for hours, so a room can hold several
-// builds at once. This tab's build (import.meta.env.VITE_BUILD, set by vite.config.ts; 'dev-...' in development) rides
-// in presence as `bv` (Owner state: your own build); every remote record gets r.build (null = a peer from before
-// builds were published, so an older one). src/features/updates.ts reloads old tabs; the net debug overlay and
+// builds at once. This tab's build (src/build-id.ts; 'dev-...' in development) rides in presence
+// as `bv` (Owner state: your own build); every remote record gets r.build (null = a peer from before builds were
+// published, so an older one). src/features/updates.ts reloads old tabs; the net debug overlay and
 // connection reports use mixedBuilds().
+import { BUILD } from '../build-id.ts';
 import { addPresenceField, onRemotePresence, remotes } from './net.ts';
 
-export const BUILD = String(import.meta.env.VITE_BUILD || 'dev').slice(0, 12);
+export { BUILD };
 
 addPresenceField('bv', () => BUILD);
 onRemotePresence((r, pr) => {

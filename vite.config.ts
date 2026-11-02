@@ -9,8 +9,9 @@ import type { Service, createService as CreateService, loadConfig as LoadConfig 
 const resolve = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
-// VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
-// import.meta.env.VITE_BUILD, and a build writes it to dist/version.json so open tabs notice a newer deploy
+// VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. It goes in each page as
+// <meta name="boogle-build"> (read by src/build-id.ts), never in a chunk: a deploy that only changes the id must not
+// rename hashed files. A build also writes it to dist/version.json so open tabs notice a newer deploy
 // (src/features/updates.ts).
 const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 
@@ -24,7 +25,6 @@ let localServer: Service | null = null; // the dev server's own game server (boo
 export default defineConfig({
   base: process.env.BASE || '/',
   define: {
-    'import.meta.env.VITE_BUILD': JSON.stringify(build),
     'import.meta.env.VITE_SW': JSON.stringify(swOff ? 'off' : 'on'),
   },
   // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
@@ -90,7 +90,9 @@ export default defineConfig({
     },
     {
       name: 'boogle-version',
-      apply: 'build',
+      transformIndexHtml() {
+        return [{ tag: 'meta', attrs: { name: 'boogle-build', content: build }, injectTo: 'head-prepend' }];
+      },
       generateBundle() {
         this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build }) + '\n' });
       },

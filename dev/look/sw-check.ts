@@ -2,7 +2,7 @@
 // checkout (a, b, c, and a kill-switch build with BOOGLE_SW=off) served one after another from the same origin, as
 // GitHub Pages would, and one Chromium tab reloading through them. Checks that
 //   1. the second load of a build gets every hashed file from the service worker (no request reaches the server);
-//   2. a new deploy installs the new worker, fetches only the files that changed, and serves the rest from cache;
+//   2. a new deploy that changes only the build id installs the new worker and fetches nothing (no hashed name moved);
 //   3. a third deploy deletes the first build's cache and keeps the one before it;
 //   4. the kill-switch build unregisters the worker and deletes every boogle- cache.
 //
@@ -115,7 +115,7 @@ check('first visit: registers and precaches', a1.regs === 1 && has(a1, 'a'), a1)
 const a2 = await load('a', () => true);
 check('second visit: every hashed file from the worker', a2.hits === 0 && a2.sw > 30, a2);
 const b1 = await load('b', (s) => has(s, 'b'));
-check('deploy b: page is b, only changed files fetched', b1.shown === 'swcheck-b' && b1.hits < a1.hits / 2, b1);
+check('deploy b: page is b, no file fetched', b1.shown === 'swcheck-b' && b1.hits === 0, b1);
 const b2 = await load('b', () => true);
 check('deploy b, reload: nothing from the server', b2.hits === 0 && b2.sw > 30, b2);
 const c1 = await load('c', (s) => has(s, 'c') && !has(s, 'a'));
