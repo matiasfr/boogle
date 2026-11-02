@@ -99,16 +99,18 @@ export function blockedAt(x: number, z: number, pad = 0) {
 
 // Merged meshes are split into TILE-metre tiles so the camera and the shadow pass skip the ones out of view.
 const TILE = 64;
+const propsMat = new MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
 // Metres from the lens inside which props dither away, so a chase camera can pass a crown or a rock without a screenful
-// of leaves (the soapbox sets it while seated). 0, the default, keeps every fragment. Shadows are never touched.
+// of leaves (the soapbox sets it while seated). 0 keeps every fragment.
 export const propsNearFade = uniform(0);
-function propsMaterial() {
-  const mat = new MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
+// The fade costs a discard on every prop fragment (and so early depth rejection), so props have no mask until a
+// prototype that uses it asks for one. Shadows are never touched.
+export function enablePropsNearFade() {
   // interleaved gradient noise: stable per pixel, so the fade doesn't sparkle
   const noise = fract(fract(dot(screenCoordinate.xy, vec2(0.06711056, 0.00583715))).mul(52.9829189));
-  mat.maskNode = positionView.length().greaterThan(noise.add(0.3).mul(propsNearFade));
-  mat.maskShadowNode = bool(true);
-  return mat;
+  propsMat.maskNode = positionView.length().greaterThan(noise.add(0.3).mul(propsNearFade));
+  propsMat.maskShadowNode = bool(true);
+  propsMat.needsUpdate = true;
 }
 function tiledParts() {
   const map = new Map<number, THREE.BufferGeometry[]>(),
@@ -324,7 +326,7 @@ export function createProps() {
   );
 
   const group = new THREE.Group();
-  tiles.addTo(group, propsMaterial());
+  tiles.addTo(group, propsMat);
   scene.add(group);
   freezeStatic(group); // never moves: no per-frame matrix work
 }
