@@ -315,9 +315,7 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
 - [x] **20. Blueprints and a level validator.** Typed blueprints for reusable objects and levels, building on `Site`, stamps
       and layout files. A check in `npm run check` catches unreachable areas, overlaps and bad slopes, and reports budget overruns.
       Cites `docs/research/level-design.md`.
-- [ ] **21. Input replay.** Record a session's inputs to a file, replay them headless on a new build, and compare state. Unblocked: a run writes `input` and `cam`
-      (`src/player/input-state.ts`, `src/player/state.ts`) and calls `enterIsland()`, and `npm run sim -- player` shows that matches the browser exactly, step for step. It has to place the body
-      itself, since entering picks a random spot; to feed input at the frames it was recorded, since a browser frame holds 0 to 2 physics steps; and to run `turnWithDeck`, which is in the view's update, if it rides a deck.
+- [x] **21. Input replay.** `?record=1` records a session's inputs to a file (`src/debug/record.ts`), and `npm run sim -- replay` plays them headless on a new build and compares state, printing the first frame and field that differ ([dev/sim/README.md](../../dev/sim/README.md)). It feeds input at the frames it was recorded, places the body itself, starts from the recorded physics clock so sea state matches, and runs `turnWithDeck`. The golden run in `dev/sim/replays/` (walk, sprint, jump, swim, grab and throw the ball) matches its browser session in every field of every frame, to the millimetre.
 - [ ] **22. Runtime systems, only when the game needs them.**
       - Streaming and LOD: design before era 3 starts ([architecture.md](architecture.md), phase 4).
       - Animation state machine: with the hero character.
