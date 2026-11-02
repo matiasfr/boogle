@@ -65,12 +65,11 @@ it (and otherwise only hides a remote driver; see Sync).*
   sparks while the rear slides, a dust burst and sparks on a crash. **No sound for now:** the rolling rumble and rattle, the wind, the charge ticks, the boost whoosh and the crash were cut in the sound audit (2026-11-02); better ones come later, from references.
 - **Camera:** it aims ahead of the cart along its velocity (0.3 s of it, at most 4 m: where the cart will be), turns
   with your steering (up to 0.25 rad, faded in over 0.3 s), swings in behind where the cart is going (so a drift shows
-  from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); it pulls in short of any
-  rock or trunk between it and you. Leafy crowns (palm fronds, broadleaf blobs) have no colliders, so the camera checks
-  the course's canopies as spheres (`canopies` in `src/render/props.ts`, kept 0.9 m clear): with one in the way it
-  first ducks down toward your head height (crowns are overhead, a lower camera often passes under them), then pulls
-  in short of what is still in the way, never closer than 3 m; it goes in at 8/s and back out at 3.5/s (ducking out
-  2.5/s), so a tree passing glides instead of popping. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
+  from outside), and keeps its distance nearly fixed (8.5 m, at most 0.5 m more at speed); a fast car needs a camera it can read, so it
+  ignores thin things: a trunk (anything narrower than about 1.6 m, tested with three rays side by side) and leafy
+  crowns don't move it, and while you're seated trees, fronds and rocks within about 1-4 m of the lens dither away
+  instead. Only something wide on the arm (a big rock) pulls it in, short of the rock and never closer than 3 m, eased
+  and capped at 9 m/s in and 5 m/s back out, so it glides instead of snapping. The field of view widens 0.6° per m/s over 6 m/s, plus a boost's kick, capped at
   +12° together; it opens at 4/s and closes at 2/s. **Shake** is trauma²: a landing from over 6 m/s of fall adds 0.25,
   a crash 0.6, and it decays 1.5 a second; rotation only (2° yaw and pitch, 1° roll at full trauma) from smooth noise
   at 12 Hz. Nothing shakes with reduced motion on.

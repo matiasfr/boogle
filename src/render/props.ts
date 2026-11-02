@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { bool, dot, fract, positionView, screenCoordinate, uniform, vec2 } from 'three/tsl';
 import { SPAWN, COURT, CELL, HALF } from '../constants.ts';
 import { island } from '../island/index.ts';
 import { MASSIF } from '../island/shape.ts';
@@ -64,9 +66,6 @@ export const obstacles: Obstacle[] = [];
 // Home palms in a fixed order (the same on every client): { x, z, h, top: Vector3 crown, hang: [3 angles], body }. Their
 // cells are the wood age's log spots (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
 export const trees: Tree[] = [];
-// Leafy crowns (palm fronds, broadleaf blobs) as rough spheres. They have no colliders (you walk under them), so a
-// chase camera that must not end up inside one reads this list (the soapbox prototype does).
-export const canopies: Sphere[] = [];
 
 const BUCKET = 16; // metres, spatial index cell for obstacles
 let indexed = -1;
@@ -100,6 +99,17 @@ export function blockedAt(x: number, z: number, pad = 0) {
 
 // Merged meshes are split into TILE-metre tiles so the camera and the shadow pass skip the ones out of view.
 const TILE = 64;
+// Metres from the lens inside which props dither away, so a chase camera can pass a crown or a rock without a screenful
+// of leaves (the soapbox sets it while seated). 0, the default, keeps every fragment. Shadows are never touched.
+export const propsNearFade = uniform(0);
+function propsMaterial() {
+  const mat = new MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
+  // interleaved gradient noise: stable per pixel, so the fade doesn't sparkle
+  const noise = fract(fract(dot(screenCoordinate.xy, vec2(0.06711056, 0.00583715))).mul(52.9829189));
+  mat.maskNode = positionView.length().greaterThan(noise.add(0.3).mul(propsNearFade));
+  mat.maskShadowNode = bool(true);
+  return mat;
+}
 function tiledParts() {
   const map = new Map<number, THREE.BufferGeometry[]>(),
     shapes = new Map<number, Sphere[]>();
@@ -172,7 +182,6 @@ function addPalm(parts: THREE.BufferGeometry[], t: Tree, rng: () => number, merg
     addPart(parts, frondGeo, mm, k % 2 ? '#3f9b3a' : '#57b845');
   }
   t.top = top;
-  canopies.push({ x: top.x, y: top.y - 0.6, z: top.z, r: 2.3 }); // the fronds, out and drooping from the crown
   // `hang` is unused now, but its three draws stay: they feed the seeded layout, and later props would move without them.
   t.hang = [rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2];
   if (merge) merge(colliders);
@@ -197,7 +206,6 @@ function addBroadleaf(parts: THREE.BufferGeometry[], x: number, h: number, z: nu
       sc.set(r, r * 0.85, r),
     );
     addPart(parts, blobGeo, m, greens[k]);
-    canopies.push({ x: m.elements[12], y: m.elements[13], z: m.elements[14], r });
   }
   merge([
     { x, y: h + 0.4, z, r: 0.3 },
@@ -316,7 +324,7 @@ export function createProps() {
   );
 
   const group = new THREE.Group();
-  tiles.addTo(group, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }));
+  tiles.addTo(group, propsMaterial());
   scene.add(group);
   freezeStatic(group); // never moves: no per-frame matrix work
 }

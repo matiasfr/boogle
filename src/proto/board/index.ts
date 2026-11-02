@@ -142,6 +142,9 @@ function drawFlaps(g: CanvasRenderingContext2D, f: Flaps, x0: number, y0: number
 
 // ---------------------------------------------------------------- sign parts
 const BOARD_OFF = -5.6; // metres west of the station (clear of the Track ring), facing east towards the line
+// Per station, metres south (+z) of that: Court's board and mast stand clear of the home palm whose trunk is right
+// there (5.2, 6.6), so its fronds don't hang over the face (home palms are log spots, so the board moves, not the palm).
+const BOARD_NUDGE_Z = [6, 0, 0, 0];
 const postMat = new THREE.MeshStandardNodeMaterial({ color: '#5b4632', roughness: 0.9 });
 const boardMat = new THREE.MeshStandardNodeMaterial({ color: '#23262d', roughness: 0.6 });
 const capMat = new THREE.MeshStandardNodeMaterial({ color: '#c9452f', roughness: 0.7 });
@@ -265,7 +268,7 @@ function makePlaque() {
 function makeSign(k: number): Sign {
   const st = stationAt(k);
   const x = st.x + BOARD_OFF,
-    z = st.z;
+    z = st.z + (BOARD_NUDGE_Z[k] ?? 0);
   const y = groundHeight(x, z);
   const group = new THREE.Group();
   group.position.set(x, y, z);

@@ -36,7 +36,7 @@ import {
 } from '../../physics/engine.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { canopies, type Sphere } from '../../render/props.ts';
+import { propsNearFade } from '../../render/props.ts';
 import { me, cam, camConstraints, camForward } from '../../player/player.ts';
 import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
@@ -919,91 +919,61 @@ onFrame(
 );
 
 // The chase camera (vehicle-feel.md 4): aims ahead of the cart along its velocity (where it will be, Lonely Mountains),
-// leads its yaw into the steering (Nesky: turn where the player turns), keeps its distance nearly fixed (distance lag
-// is what hurts) and stays on this side of rocks and trunks, pulled in short of whatever is in the way.
+// leads its yaw into the steering (Nesky: turn where the player turns) and keeps its distance nearly fixed (distance lag
+// is what hurts). A fast car needs a readable camera more than a clean one, so it pulls in only for something wide
+// (a rock or a cliff, which blocks all three of its rays), never closer than CAM_MIN and always eased; thin things
+// (trunks) and leafy crowns (no colliders) it ignores, and props within PROPS_FADE m of the lens dither away
+// (src/render/props.ts) instead of filling the screen.
 const camRay = { hit: rayHit() };
 const ahead = new THREE.Vector3(); // the smoothed look-ahead offset
 const aheadWant = new THREE.Vector3();
 const camFwd = new THREE.Vector3();
 const camFrom = new THREE.Vector3();
+const rayA = new THREE.Vector3(),
+  rayB = new THREE.Vector3();
 let camLead = 0;
-let canopyD = 99, // the camera distance the canopies allow, eased (in fast, back out slowly)
-  canopyAt = 0,
-  duck = 0; // 0..1: how far the camera has dropped to pass under a crown
-const low = new THREE.Vector3();
-// The canopy spheres near the course (src/render/props.ts), gathered once the props exist.
-let nearCanopies: Sphere[] | null = null;
-function courseCanopies() {
-  if (nearCanopies || !canopies.length) return nearCanopies ?? [];
-  const off = (c: Sphere) => {
-    let best = Infinity;
-    for (let k = 0; k < LINE.length - 1; k++) {
-      const [ax, az] = LINE[k],
-        [bx, bz] = LINE[k + 1];
-      const lx = bx - ax,
-        lz = bz - az;
-      const u = clamp(((c.x - ax) * lx + (c.z - az) * lz) / (lx * lx + lz * lz), 0, 1);
-      best = Math.min(best, Math.hypot(c.x - ax - lx * u, c.z - az - lz * u) - c.r);
-    }
-    return best;
-  };
-  return (nearCanopies = canopies.filter((c) => off(c) < 16));
-}
-const CANOPY_PAD = 0.9; // m around each crown: the lens keeps this clear of leaves
-const CANOPY_MIN = 3; // m: never closer than this for a crown (a close-up hurts more than a leaf at the edge)
-// How far from `a` toward `b` (length `len`) the camera can go before a canopy; `len` (or more) when clear. A cart
-// under a crown's rim (`a` inside it) cannot be helped by pulling in, so that crown is skipped.
-function canopyGap(a: THREE.Vector3, b: THREE.Vector3, len: number) {
-  let gap = 99;
-  if (len < 1e-3) return gap;
-  const dx = (b.x - a.x) / len,
-    dy = (b.y - a.y) / len,
-    dz = (b.z - a.z) / len;
-  for (const c of courseCanopies()) {
-    const ox = a.x - c.x,
-      oy = a.y - c.y,
-      oz = a.z - c.z;
-    const r = c.r + CANOPY_PAD;
-    const cc = ox * ox + oy * oy + oz * oz - r * r;
-    if (cc < 0) continue;
-    const bb = ox * dx + oy * dy + oz * dz;
-    const disc = bb * bb - cc;
-    if (disc < 0 || bb > 0) continue;
-    const t = -bb - Math.sqrt(disc);
-    if (t < len) gap = Math.min(gap, Math.max(CANOPY_MIN, t));
-  }
-  return gap;
+let camD = -1, // the camera's distance from the cart, eased (in briskly, back out slowly): -1 until the first frame
+  camAt = 0;
+const CAM_MIN = 3; // m: never closer than this (a close-up behind a rock hurts more than a rock at the edge)
+const CAM_IN = 9, // m/s: the fastest the distance closes, and opens again
+  CAM_OUT = 5;
+const CAM_SIDE = 0.8; // m either side of the centre ray: something narrower than 1.6 m doesn't pull the camera in
+const PROPS_FADE = 3; // m from the lens where trees, fronds and rocks start to dither away while seated
+// How far along `dir` (length `len`) a ray from camFrom, offset (sx, sz), gets before scenery; `len` if clear.
+function clearTo(dir: THREE.Vector3, len: number, sx: number, sz: number) {
+  rayA.set(camFrom.x + sx, camFrom.y, camFrom.z + sz);
+  rayB.copy(rayA).addScaledVector(dir, len);
+  return raycastClosest(rayA, rayB, { mask: GROUP.SCENERY }, camRay.hit) ? camRay.hit.distance : len;
 }
 camConstraints.push((look, pos) => {
-  if (!S.seated) return false;
+  if (!S.seated) {
+    camD = -1;
+    propsNearFade.value = 0;
+    return false;
+  }
+  propsNearFade.value = PROPS_FADE;
   camFrom.copy(look);
   look.add(ahead);
   const v = body.velocity;
   const dist = T.camDist + T.camPull * clamp((Math.hypot(v.x, v.z) - 6) / 10, 0, 1);
   pos.copy(look).addScaledVector(camForward(camFwd), -dist);
-  if (raycastClosest(camFrom, pos, { mask: GROUP.SCENERY }, camRay.hit)) {
-    const d = camFrom.distanceTo(pos);
-    pos.lerp(camFrom, Math.min(1, (d - Math.max(1.2, camRay.hit.distance - 0.4)) / d));
-  }
-  // Leafy crowns have no colliders. With one in the way, the camera first ducks under it (crowns are overhead: a
-  // lower camera often clears them), then pulls in short of whatever is still in the way; both eased, so it glides as
-  // a tree passes instead of popping.
+  const d = camFrom.distanceTo(pos);
+  const dir = camFwd.subVectors(pos, camFrom).divideScalar(d); // the arm, cart to camera
+  // its right, flat
+  const fl = Math.hypot(dir.x, dir.z) || 1;
+  const rx = (-dir.z / fl) * CAM_SIDE,
+    rz = (dir.x / fl) * CAM_SIDE;
+  // the farthest any of the three rays reaches: a trunk stops one, a rock all three
+  const reach = Math.max(clearTo(dir, d, 0, 0), clearTo(dir, d, rx, rz), clearTo(dir, d, -rx, -rz));
+  const goal = reach >= d ? d : clamp(reach - 0.4, CAM_MIN, d);
   const t = performance.now();
-  const dt = Math.min(0.1, (t - canopyAt) / 1000);
-  canopyAt = t;
-  let d = camFrom.distanceTo(pos);
-  const high = canopyGap(camFrom, pos, d);
-  low.copy(pos);
-  low.y = Math.max(groundHeight(low.x, low.z) + 0.9, camFrom.y + 0.1);
-  let duckWant = 0;
-  if (high < d && low.y < pos.y - 0.3) duckWant = canopyGap(camFrom, low, camFrom.distanceTo(low)) > high + 0.5 ? 1 : 0;
-  duck = lerp(duck, duckWant, 1 - Math.exp(-dt * (duckWant > duck ? 8 : 2.5)));
-  pos.lerp(low, duck);
-  d = camFrom.distanceTo(pos);
-  const goal = Math.min(canopyGap(camFrom, pos, d), d);
-  canopyD = Math.min(canopyD, d);
-  canopyD = lerp(canopyD, goal, 1 - Math.exp(-dt * (goal < canopyD ? 8 : 3.5)));
-  if (canopyD < d) pos.lerp(camFrom, (d - canopyD) / d);
+  const dt = Math.min(0.1, (t - camAt) / 1000);
+  camAt = t;
+  if (camD < 0) camD = goal;
+  // eased and rate-capped, so even a rock that appears all at once glides the camera in rather than jumping it
+  camD += clamp((goal - camD) * (1 - Math.exp(-dt * (goal < camD ? 5 : 2))), -CAM_IN * dt, CAM_OUT * dt);
+  camD = Math.min(camD, d);
+  pos.copy(camFrom).addScaledVector(dir, camD);
   pos.y = Math.max(pos.y, groundHeight(pos.x, pos.z) + 0.45);
   return true;
 });
