@@ -17,13 +17,34 @@ import url from '../../../assets/built/hero-clips.glb?url';
 
 const HEIGHT = 1.75; // m
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
-const STRIDE = { walk: 1.3, jog: 5, sprint: 5.5 };
+// The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
+const STRIDE = { walk: 1.3, jog: 5, sprint: 4.8 };
 const BLEND = { idleTo: 0.15, walkTo: 2, jogFrom: 3.2, jogTo: 6.5, sprintFrom: 8.5 }; // m/s
 const FADE = { ground: 0.06, air: 0.05 }; // s
 const JUMP_FROM = 0.3; // s into Jump_Start where the feet leave the ground (its wind-up would delay the jump)
 const LAND = { for: 0.35, stop: 2.5 }; // s of Jump_Land, and the speed above which you run straight out of it
 const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
 const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land'];
+// &body=cute: the same clips on a smaller, big-headed figure, to test carrying them over to other proportions. Clips
+// rotate bones, so a figure with other limb lengths can play them: each bone here gets a uniform scale (children inherit
+// it), and the hips and the stride shrink with the legs so the feet still reach the ground and keep to it.
+const CUTE = {
+  bones: {
+    thigh_l: 0.62,
+    thigh_r: 0.62,
+    foot_l: 2,
+    foot_r: 2,
+    spine_01: 0.85,
+    Head: 2.4,
+    upperarm_l: 0.9,
+    upperarm_r: 0.9,
+    hand_l: 1.7,
+    hand_r: 1.7,
+  } as Record<string, number>,
+  legs: 0.689, // new hip height / the mannequin's 0.932 m: (0.4 + 0.428) × 0.62 of leg, plus the bigger foot's 0.129 m
+};
+const cute = new URLSearchParams(location.search).get('body') === 'cute';
+const legs = cute ? CUTE.legs : 1;
 
 type Rig = {
   mixer: THREE.AnimationMixer;
@@ -34,6 +55,8 @@ type Rig = {
   air: boolean;
   airT: number;
   landT: number;
+  scaled: [THREE.Object3D, number][];
+  pelvis: THREE.Object3D | null;
 };
 const rigs = new WeakMap<Avatar, Rig>();
 
@@ -77,7 +100,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   }
 
   // The stride is the blend of the clips' strides, so the feet keep to the ground through a blend.
-  const stride = STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog;
+  const stride = legs * (STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog);
   r.phase = (r.phase + (v * dt) / stride) % 1;
   if (v < BLEND.idleTo) r.phase = 0;
   for (const n of LOCO) r.acts[n].time = r.phase * r.acts[n].getClip().duration;
@@ -87,6 +110,9 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   r.acts.Jump_Loop.time = r.airT % r.acts.Jump_Loop.getClip().duration;
   r.acts.Jump_Land.time = r.landT;
   r.mixer.update(0);
+  // After the clips, which also key every bone's scale and the hips' height.
+  for (const [bone, k] of r.scaled) bone.scale.setScalar(k);
+  r.pelvis?.position.multiplyScalar(legs);
 }
 
 export async function startClipsHero() {
@@ -127,7 +153,12 @@ export async function startClipsHero() {
       acts[n] = act;
       w[n] = n === 'Idle_Loop' ? 1 : 0;
     }
-    rigs.set(a, { mixer, acts, w, phase: 0, idleT: Math.random() * 2, air: false, airT: 1, landT: 1 });
+    const root = holder.children[0];
+    const scaled: [THREE.Object3D, number][] = cute
+      ? Object.entries(CUTE.bones).map(([n, k]) => [root.getObjectByName(n)!, k])
+      : [];
+    const pelvis = cute ? root.getObjectByName('pelvis')! : null;
+    rigs.set(a, { mixer, acts, w, phase: 0, idleT: Math.random() * 2, air: false, airT: 1, landT: 1, scaled, pelvis });
   };
   await precompile(kit.instance());
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);

@@ -356,6 +356,11 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
     variants: [
       {
+        name: 'cute',
+        url: '/?proto=hero&body=cute&v=cute',
+        what: 'The same clips on a smaller, big-headed figure: can this motion carry over to a cuter character?',
+      },
+      {
         name: 'odyssey',
         url: '/?proto=hero&ctl=odyssey&v=odyssey',
         what: 'The same clips with the modern-Mario controller (run where you face, speed builds).',
