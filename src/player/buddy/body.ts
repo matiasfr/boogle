@@ -1,10 +1,8 @@
-// Prototype: the hero (?proto=hero). Every avatar plays hand-made animation, Quaternius's Universal Animation Library
-// (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. The body is the Buddy (assets/src/buddy.py),
-// and &hat=cap or beanie wears one of its `wear_head_` parts; &body=mannequin is the library's own figure, for judging
-// motion apart from our model. &buddy turns this on inside any other prototype. Walk, jog and sprint are played by distance at the rate that
-// matches each clip's stride to the ground (measured from the library's root-motion file), so the feet don't slide; they
-// share one phase so a blend between them stays in step. Everything comes from speed and airborne, so remote players need
-// no new presence. Serves DESIGN.md 1 (moving around is a toy). Sync kind: Local (render only).
+// The player's body: the Buddy (assets/src/buddy.py), playing hand-made animation, Quaternius's Universal Animation Library
+// (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. &hat=cap or beanie wears one of its
+// `wear_head_` parts. Walk, jog and sprint are played by distance at the rate that matches each clip's stride to the ground
+// (measured from the library's root-motion file), so the feet don't slide; they share one phase so a blend between them
+// stays in step. Everything comes from speed and airborne, so remote players need no new presence. Render only.
 import * as THREE from 'three/webgpu';
 import { COLORS, PLAYER_R } from '../../constants.ts';
 import { clamp } from '../../math.ts';
@@ -14,7 +12,6 @@ import { me } from '../../player/player.ts';
 import { ballOnBack } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
-import { startHeroCamera } from './camera.ts';
 import { makeLife } from './life.ts';
 import { retargetClip } from './retarget.ts';
 import clipsUrl from '../../../assets/built/hero-clips.glb?url';
@@ -32,10 +29,7 @@ const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
 const SWIM = { idle: 'Swim_Idle_Loop', fwd: 'Swim_Fwd_Loop', fwdFrom: 0.4, fwdTo: 1.6, rate: 0.45, lift: 0.98 }; // m/s; m
 const SEAT = 'Driving_Loop';
 const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land', SWIM.idle, SWIM.fwd, SEAT];
-const BODIES = {
-  mannequin: { url: clipsUrl, height: 1.75, armOut: 0 },
-  buddy: { url: buddyUrl, height: 0, armOut: (12 * Math.PI) / 180 }, // its body is wider than the mannequin's
-};
+const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the clips' figure
 
 type Rig = {
   mixer: THREE.AnimationMixer;
@@ -46,7 +40,7 @@ type Rig = {
   air: boolean;
   airT: number;
   landT: number;
-  strideK: number; // the stride's scale: the figure's
+  strideK: number; // the stride's scale: the figure's, against the clips'
   life: ReturnType<typeof makeLife>;
   lastY: number;
 };
@@ -127,21 +121,24 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   r.lastY = a.position.y;
 }
 
-export async function startClipsHero() {
-  const q = new URLSearchParams(location.search);
-  const body = q.get('body') === 'mannequin' ? BODIES.mannequin : BODIES.buddy;
+/** How long preparing the clips for this skeleton took at load, for the test readout. */
+export let bakeMs = 0;
+
+export async function startBuddy() {
+  const hat = 'wear_head_' + new URLSearchParams(location.search).get('hat');
   Object.assign(ballOnBack, { y: 0.5, z: 0.68 }); // low on its back, so its head shows over the ball
-  const hat = 'wear_head_' + q.get('hat');
-  const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(body.url)]);
+  const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(buddyUrl)]);
   const src = clips.instance();
   const tgt = model.instance();
   let ratio = 1;
   const baked = new Map<string, THREE.AnimationClip>();
+  const t0 = performance.now();
   for (const n of NAMES) {
-    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { armOut: body.armOut });
+    const r = retargetClip(clips.clip(n), src, tgt, { armOut: ARM_OUT });
     baked.set(n, r.clip);
     ratio = r.ratio;
   }
+  bakeMs = Math.round(performance.now() - t0);
   const dress = (a: Avatar, colorIdx: number) => {
     if (rigs.has(a)) return;
     const holder = model.instance();
@@ -159,16 +156,7 @@ export async function startClipsHero() {
         a.userData.mat = own as unknown as THREE.MeshStandardMaterial;
       }
     });
-    let s = 1,
-      floor = 0;
-    if (body.height) {
-      holder.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(holder, true);
-      s = body.height / Math.max(0.01, box.max.y - box.min.y);
-      floor = box.min.y * s;
-    }
-    holder.scale.setScalar(s);
-    holder.position.y = -PLAYER_R - floor;
+    holder.position.y = -PLAYER_R;
     holder.rotation.y = Math.PI; // the model faces +z; avatars face -z
     for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
     a.userData.inner.add(holder);
@@ -186,7 +174,7 @@ export async function startClipsHero() {
       acts[n] = act;
       w[n] = n === 'Idle_Loop' ? 1 : 0;
     }
-    const life = makeLife(root, tgt.children[0]!);
+    const life = makeLife(root, tgt);
     const sockets = life.sockets(holder.matrix);
     a.userData.loadFit = { frame: sockets.back, back: 0.215, floor: 0.14, len: 0.86, round: true };
     a.userData.handSocket = sockets.hand;
@@ -199,12 +187,11 @@ export async function startClipsHero() {
       air: false,
       airT: 1,
       landT: 1,
-      strideK: ratio * s,
+      strideK: ratio,
       life,
       lastY: a.position.y,
     });
   };
   await precompile(model.instance());
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
-  startHeroCamera();
 }

@@ -893,7 +893,7 @@ function sit(avatar: THREE.Object3D, q: THREE.Quaternion) {
   u.seatedAt = performance.now();
   const inner = u.inner;
   if (u.loadFit) {
-    // A body with a seated clip of its own (src/proto/hero/clips.ts): it needn't be squashed into the tub.
+    // A body with a seated clip of its own (src/player/buddy/body.ts): it needn't be squashed into the tub.
     avatar.scale.set(1, 1, 1);
     if (inner) inner.rotation.x = 0;
     return;

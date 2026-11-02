@@ -1,21 +1,21 @@
 {
   "buddy": {
     "source": "buddy.py",
-    "sourceHash": "9c3222236e549ae5",
-    "outHash": "29fdc6cbbb43bba9",
+    "sourceHash": "fb8d965af0fda2db",
+    "outHash": "83b56f23453ac778",
     "rawBytes": 268920,
-    "bytes": 67424,
+    "bytes": 67628,
     "triangles": 9252,
     "animations": [],
     "textures": []
   },
   "hero-clips": {
     "source": "hero-clips.glb",
-    "sourceHash": "bf759576a4da88a7",
-    "outHash": "538c1090d2436154",
-    "rawBytes": 6654148,
-    "bytes": 558248,
-    "triangles": 13744,
+    "sourceHash": "3aed47314babac21",
+    "outHash": "1d3e8aa9bec93cc3",
+    "rawBytes": 6051620,
+    "bytes": 464312,
+    "triangles": 0,
     "animations": [
       "Driving_Loop",
       "Idle_Loop",
