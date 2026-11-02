@@ -91,3 +91,10 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Wanted: press X or square to sit on the train. He wasn't falling off, but sitting would feel safe and more relaxing.
 - Felt off: it's greybox, but the world needs to be a lot more beautiful, through rendering settings in the future.
 - After: a crossing starts at about a minute, top speed goes to the end-game trains, and sitting is decided (boogle-2.md, Decided).
+
+## 2026-11-02 (the line feeds the town)
+- Who: Matias, solo, `?proto=net`; told to the director.
+- Verdict: "not really sure still". Likes that "there's a lot of work happening from the rail network".
+- Idea: junctions unlock parts of the network, but you still haul for each track segment; Death Stranding "had some interesting work there".
+- Town: noticed the change for sure, though it's simple greybox and needs fleshing out in the real game.
+- After: the lean is logged (boogle-2.md, Decided, open question 11); the next test keeps hauling, with the network making it easier.
