@@ -105,7 +105,7 @@ await MeshoptDecoder.ready;
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const [model, clipKit] = await Promise.all([loader.loadAsync(buddyUrl), loader.loadAsync(clipsUrl)]);
 
-// The game's rim of sky light, as in src/player/hero.ts, here with a switch.
+// A rim of sky light, with a switch to compare it (the owner chose none).
 const rimOn = uniform(1);
 const rim = float(1)
   .sub(normalView.dot(positionViewDirection).saturate())
