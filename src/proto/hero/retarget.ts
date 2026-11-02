@@ -27,6 +27,8 @@ export const UAL_TO_MESHY: Record<string, string> = {
   foot_r: 'RightFoot',
   ball_r: 'RightToeBase',
 };
+/** For a figure with the library's own bone names, in other proportions (assets/src/buddy.py). */
+export const UAL_TO_SELF: Record<string, string> = Object.fromEntries(Object.keys(UAL_TO_MESHY).map((k) => [k, k]));
 const FPS = 30;
 
 /** Both roots at the origin in their rest poses. Returns the clip on the target's bones, and the hips' height ratio. */
