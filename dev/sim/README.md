@@ -4,12 +4,13 @@
 
 - `hooks.ts` does for Node what Vite does for the browser, with no change to game code: it loads Rapier's WASM (the same files the browser runs) and expands `import.meta.glob` and `import.meta.env`.
 - `world.ts` is the game without its drawing: `await headless()`, then `frame()`. A frame is `main.ts`'s prePhysics, fixed steps and world phase, then the lockstep tick. Update and late never run.
-- One world per process, because the game's state is module-level. Two players are two processes.
+- One world per process, because the game's state is module-level. Two players are two processes (`ball-handoff.ts` forks them; `joinRoom()` puts each in a room).
 
 ## Runs
 
 - `drop`: Rapier alone, a ball dropped on a floor.
 - `ball`: the ball thrown, settling, respawned off the island and floating, checked against numbers from the real game.
+- `ball-handoff`: two players in two processes through the real local server (no browser, in real time, about 8 s): picking up an orphaned ball, a steal, a throw the other follows, a lockstep edit, the owner leaving.
 
 `ball-course.ts` is the course itself, with no Node or browser API. `node dev/sim/ball-browser.ts` runs that same file in the real game on the GPU and rewrites `ball-browser.json`: do that after changing the ball's physics, the ground or the course. A difference you didn't mean is a bug in the headless world, or in your change.
 

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const here = import.meta.dirname;
-const NOT_RUNS = new Set(['hooks', 'run', 'world', 'ball-browser', 'ball-course']);
+const NOT_RUNS = new Set(['hooks', 'run', 'world', 'ball-browser', 'ball-course', 'ball-handoff-peer']);
 const runs = fs
   .readdirSync(here)
   .filter((f) => f.endsWith('.ts'))
