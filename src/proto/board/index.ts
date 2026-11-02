@@ -4,9 +4,7 @@
 // big split-flap departures board (station name, next departure, a line map with hubs, stops and the live wagon) and a
 // HUB roundel on a mast you spot from afar. Interact on it opens one picker: another hub jumps you there; a stop shows
 // when the next wagon leaves and highlights it to ride. Every other station is a stop with a minimal sign, reached by
-// riding. Variants differ in that sign only:
-//   &v=pole   (default) a small flap sign on one post: next wagon each way, counting down
-//   &v=plaque a painted timetable plaque: a dial whose hand reaches a mark when the wagon leaves
+// riding: a small flap sign on one post, next wagon each way, counting down.
 // The wagon runs at the wagon prototype's fast pace (6.5 m/s): in a proto- room the board sets the room's tune on load.
 // &laid=N shows N laid sections on this tab only (the board and the wagon are Local), to try 1 or 2 without hauling;
 // in a proto- room a button lays the whole route for everyone (open.lay, src/world/rules/opening.ts).
@@ -34,16 +32,12 @@ import { BODY, addBody, createBody, teleport, stepAlpha } from '../../physics/en
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
 import { registerPlatform, yawOf, carry, type Platform } from '../../physics/platforms.ts';
 import { ROUTE } from '../../sim/route.ts';
-import { wagonAt, wagonCycle, type WagonPace } from '../../sim/wagon.ts';
+import { wagonAt, type WagonPace } from '../../sim/wagon.ts';
 import { isProtoRoom, paceIn } from '../../sim/tune.ts';
-import { stationAt, nextCall, towards, dwells } from './departures.ts';
-import { onVariant, protoV } from '../flags.ts';
+import { stationAt, nextCall, towards } from './departures.ts';
 import { protoCount } from '../count.ts';
 
 const params = new URLSearchParams(location.search);
-type StopLook = 'pole' | 'plaque';
-const lookOf = (v: string): StopLook => (v === 'plaque' ? 'plaque' : 'pole');
-let LOOK = lookOf(protoV('board'));
 const LAID_OVERRIDE = params.has('laid') ? Math.max(0, Math.min(ROUTE.length, Number(params.get('laid')) | 0)) : -1;
 const STATIONS = ROUTE.length + 1;
 const NAMES = ['Court', 'Palm Walk', 'Ridge', 'Lighthouse'];
@@ -148,7 +142,6 @@ const BOARD_NUDGE_Z = [6, 0, 0, 0];
 const postMat = new THREE.MeshStandardNodeMaterial({ color: '#5b4632', roughness: 0.9 });
 const boardMat = new THREE.MeshStandardNodeMaterial({ color: '#23262d', roughness: 0.6 });
 const capMat = new THREE.MeshStandardNodeMaterial({ color: '#c9452f', roughness: 0.7 });
-const plankMat = new THREE.MeshStandardNodeMaterial({ color: '#8a6a45', roughness: 0.9 });
 const mastMat = new THREE.MeshStandardNodeMaterial({ color: '#3a3d44', roughness: 0.6 });
 
 type Face = { g: CanvasRenderingContext2D; tex: THREE.CanvasTexture; w: number; h: number };
@@ -221,9 +214,6 @@ type Sign = {
   drawnAt: number;
   face: Face; // the hub's board, or the stop's pole face
   flaps: Flaps;
-  plaque: Face | null; // stops only
-  pole: THREE.Group | null;
-  plaqueGroup: THREE.Group | null;
 };
 
 // A hub: a wide board on two posts (face 4 x 2.25 m) under a red cap, and a 6 m mast with the HUB roundel beside it.
@@ -256,15 +246,6 @@ function makePole() {
   return { g, face: addFace(g, POLE_FACE.w, POLE_FACE.h, 1.6, 0.75, 0.065, 2.35) };
 }
 
-// A stop's plaque: a painted plank on two short posts, its face 1.6 x 0.95 m.
-const PLAQUE_FACE = { w: 512, h: 304 };
-function makePlaque() {
-  const g = new THREE.Group();
-  for (const pz of [-0.7, 0.7]) boxIn(g, 0.12, 1.6, 0.12, postMat, -0.06, 0.8, pz);
-  boxIn(g, 0.1, 1.05, 1.75, plankMat, 0, 1.3, 0);
-  return { g, face: addFace(g, PLAQUE_FACE.w, PLAQUE_FACE.h, 1.6, 0.95, 0.055, 1.3) };
-}
-
 function makeSign(k: number): Sign {
   const st = stationAt(k);
   const x = st.x + BOARD_OFF,
@@ -274,43 +255,12 @@ function makeSign(k: number): Sign {
   group.position.set(x, y, z);
   scene.add(group);
   const base = { k, group, x, z, y, at: new THREE.Vector3(), drawnAt: -1e9 };
-  if (isHub(k))
-    return {
-      ...base,
-      hub: true,
-      face: makeHub(group),
-      flaps: makeFlaps(2, 22),
-      plaque: null,
-      pole: null,
-      plaqueGroup: null,
-    };
-  const pole = makePole(),
-    plaque = makePlaque();
-  group.add(pole.g, plaque.g);
-  return {
-    ...base,
-    hub: false,
-    face: pole.face,
-    flaps: makeFlaps(2, 16),
-    plaque: plaque.face,
-    pole: pole.g,
-    plaqueGroup: plaque.g,
-  };
+  if (isHub(k)) return { ...base, hub: true, face: makeHub(group), flaps: makeFlaps(2, 22) };
+  const pole = makePole();
+  group.add(pole.g);
+  return { ...base, hub: false, face: pole.face, flaps: makeFlaps(2, 16) };
 }
 const signs = Array.from({ length: STATIONS }, (_, k) => makeSign(k));
-function showLook() {
-  for (const s of signs) {
-    if (s.pole) s.pole.visible = LOOK === 'pole';
-    if (s.plaqueGroup) s.plaqueGroup.visible = LOOK === 'plaque';
-    s.drawnAt = -1e9;
-  }
-}
-showLook();
-onVariant('board', ['', 'pole', 'plaque'], (v) => {
-  LOOK = lookOf(v);
-  showLook();
-}); // live, from the bar
-
 // ---------------------------------------------------------------- what the signs say
 // The far end the wagon heads for leaving `dir`, with `n` sections laid.
 const endOf = (dir: 1 | -1, n: number) => (dir === 1 ? n : 0);
@@ -457,99 +407,6 @@ function drawPole(s: Sign) {
   g.fillText('NEXT WAGON', W - 14, 36);
   drawFlaps(g, s.flaps, (W - 16 * 31) / 2 + 1, 70, 28, 70, 3);
   s.face.tex.needsUpdate = true;
-}
-
-const OUT = '#c9452f',
-  BACK = '#2f6aa8';
-// The plaque: painted name, a timetable dial (one turn is one round trip; a coloured band each way while the wagon
-// stands here, its end the mark where it leaves; the hand is now), and which colour goes where.
-function drawPlaque(s: Sign, n: number, tick: number, p: WagonPace) {
-  const f = s.plaque!;
-  const { g } = f;
-  const { w: W, h: H } = PLAQUE_FACE;
-  g.fillStyle = '#efe4c8';
-  g.fillRect(0, 0, W, H);
-  g.strokeStyle = '#2a2620';
-  g.lineWidth = 6;
-  g.strokeRect(9, 9, W - 18, H - 18);
-  g.textBaseline = 'middle';
-  g.textAlign = 'left';
-  g.fillStyle = '#2a2620';
-  g.font = '800 44px Figtree, system-ui, sans-serif';
-  g.fillText(nameOf(s.k).toUpperCase(), 28, 50);
-  g.textAlign = 'right';
-  g.fillStyle = OUT;
-  g.font = '800 20px Figtree, system-ui, sans-serif';
-  g.fillText('WAGON STOP', W - 28, 52);
-  const cycle = wagonCycle(n, p);
-  const cx = 112,
-    cy = 186,
-    r = 84;
-  g.fillStyle = '#f8f1de';
-  g.beginPath();
-  g.arc(cx, cy, r, 0, Math.PI * 2);
-  g.fill();
-  g.lineWidth = 5;
-  g.strokeStyle = '#2a2620';
-  g.stroke();
-  if (!cycle) {
-    g.textAlign = 'left';
-    g.fillStyle = '#2a2620';
-    g.font = '700 26px Figtree, system-ui, sans-serif';
-    g.fillText('NO SERVICE YET', 220, 186);
-    f.tex.needsUpdate = true;
-    return;
-  }
-  const ang = (t: number) => -Math.PI / 2 + (t / cycle) * Math.PI * 2;
-  for (const d of dwells(n, p)) {
-    if (d.stop !== s.k) continue;
-    const col = d.dir === 1 ? OUT : BACK;
-    g.strokeStyle = col;
-    g.lineWidth = 16;
-    g.lineCap = 'butt';
-    g.beginPath();
-    g.arc(cx, cy, r - 14, ang(d.start), ang(d.end));
-    g.stroke();
-    // the mark: where it leaves
-    const a = ang(d.end);
-    g.lineWidth = 6;
-    g.beginPath();
-    g.moveTo(cx + Math.cos(a) * (r - 30), cy + Math.sin(a) * (r - 30));
-    g.lineTo(cx + Math.cos(a) * (r + 6), cy + Math.sin(a) * (r + 6));
-    g.stroke();
-  }
-  let ph = tick % cycle;
-  if (ph < 0) ph += cycle;
-  const a = ang(ph);
-  g.strokeStyle = '#2a2620';
-  g.lineWidth = 7;
-  g.lineCap = 'round';
-  g.beginPath();
-  g.moveTo(cx, cy);
-  g.lineTo(cx + Math.cos(a) * (r - 18), cy + Math.sin(a) * (r - 18));
-  g.stroke();
-  g.fillStyle = '#2a2620';
-  g.beginPath();
-  g.arc(cx, cy, 9, 0, Math.PI * 2);
-  g.fill();
-  // the key
-  g.textAlign = 'left';
-  let y = 128;
-  for (const dir of [1, -1] as const) {
-    if (!nextCall(n, s.k, dir, tick, p)) continue;
-    g.fillStyle = dir === 1 ? OUT : BACK;
-    g.fillRect(222, y - 13, 30, 26);
-    g.fillStyle = '#2a2620';
-    g.font = '800 30px Figtree, system-ui, sans-serif';
-    g.fillText(`TO ${nameOf(endOf(dir, n)).toUpperCase()}`, 264, y + 1);
-    y += 46;
-  }
-  g.fillStyle = '#6b6252';
-  g.font = '700 18px Figtree, system-ui, sans-serif';
-  g.fillText('LEAVES WHEN THE HAND', 222, 228);
-  g.fillText('HITS ITS MARK', 222, 250);
-  g.fillText(`ROUND TRIP ${fmt(cycle)}`, 222, 272);
-  f.tex.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------- the greybox wagon (the real one replaces wagonLook)
@@ -982,16 +839,11 @@ onFrame(
       s.group.visible = s.k === 0 || s.k <= n;
       if (!s.group.visible) continue;
       if (cam3 && Math.hypot(cam3.x - s.x, cam3.z - s.z) > 90) continue; // too far to read
-      const plaque = !s.hub && LOOK === 'plaque';
-      let busy = false;
-      if (!plaque) {
-        setRows(s.flaps, s.hub ? hubRows(s.k, n, tick, p) : poleRows(s.k, n, tick, p), now);
-        busy = flip(s.flaps, now);
-      }
+      setRows(s.flaps, s.hub ? hubRows(s.k, n, tick, p) : poleRows(s.k, n, tick, p), now);
+      const busy = flip(s.flaps, now);
       if (now - s.drawnAt < (busy ? FLIP_MS : DRAW_MS)) continue;
       s.drawnAt = now;
       if (s.hub) drawHub(s, n, w ? w.dist / 100 : null);
-      else if (plaque) drawPlaque(s, n, tick, p);
       else drawPole(s);
     }
     // the wagon's look follows its body
@@ -1011,7 +863,6 @@ onFrame(
 // Console and look evals: jump or open the picker at a hub, ride plans, the wagon.
 Object.assign(window, {
   __board: {
-    look: () => LOOK,
     HUBS,
     signs,
     hop,

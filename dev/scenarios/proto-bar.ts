@@ -42,7 +42,11 @@ export default {
     const up = await g.waitFor(`!!document.querySelector('.proto-bar')`, { timeout: 60000 });
     t.check('the bar is up', up >= 0);
     const text = String(await g.eval(`return document.querySelector('.proto-bar').textContent;`));
-    t.check('it shows the title and question', text.includes('Soapbox cart') && text.includes('Is driving fun?'), text);
+    t.check(
+      'it shows the title and question',
+      text.includes('Soapbox cart') && text.includes('Do you keep driving after the finish?'),
+      text,
+    );
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
     await t.sleep(1000);
     const d = Number(await g.eval(AT));

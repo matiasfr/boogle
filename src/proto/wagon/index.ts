@@ -13,11 +13,6 @@
 // so tabs that watched it happen agree; a tab that joins later after a `open.lay` shortcut may run a different phase
 // (prototype; the real timetable will want its own lockstep start tick).
 //
-// `&v=stoke` (docs/research/roblox-patterns.md, pattern 2): the loco has a firebox you feed logs (./stoke.ts), and
-// steam is speed: fed, it runs at 6.5 m/s; cold, at walking pace. Its place is then wagonAt read at the wagon's own
-// clock (lockstep, src/world/rules/wagon.ts: steam moves that clock on faster), on the laid sections with t0 0, so a
-// change in the laid count jumps it (prototype: the panel's Lay is the only change in a stoke playtest).
-//
 // Remote riders: each car is a shared platform (`wagon:car<k>`), so another player standing on a deck is sent and drawn
 // in its frame (presence `riding`, src/netplay/net.ts) and stays put on it here.
 import './wagon.css';
@@ -43,33 +38,27 @@ import { paceIn } from '../../sim/tune.ts';
 import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
 import { wagonFreight } from './freight.ts';
-import { wagonStoke, fireHeat } from './stoke.ts';
 import { wagonShow } from './show.ts';
 import { wagonBench } from './bench.ts';
-import { wagonSnatch } from './snatch.ts';
 import type { WagonCtx } from './ctx.ts';
-import { RATE_ONE, FAST, STEAM_FULL } from '../../sim/wagon-steam.ts';
 import { ON_ISLAND, currentStep, onStep, onVariant, playPanel, protoV } from '../flags.ts';
 
 const TPS = 1000 / TICK_MS;
 // Variants, to compare in one sitting: `&v=calm` (default) and `&v=lively` change only the render and feel; `&v=fast`
 // is lively's feel at about double the speed, through the room's tuning (`wagonCruise`, `wagonAccel`: a proto- room
-// only, set for the whole room when the page loads; calm and lively put the default pace back). `&v=show`, `&v=bench`
-// and `&v=snatch` are calm's ride plus one thing each (riding extras, below; docs/research/train-riding.md).
+// only, set for the whole room when the page loads; calm and lively put the default pace back). `&v=show` and `&v=bench`
+// are calm's ride plus one thing each (riding extras, below; docs/research/train-riding.md).
 const VARIANTS = {
   calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, shake: 0 },
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, shake: 1 },
 };
-type WagonVariant = 'calm' | 'lively' | 'fast' | 'stoke';
-const variantOf = (v: string): WagonVariant => (v === 'fast' || v === 'lively' || v === 'stoke' ? v : 'calm');
-const V = protoV('wagon');
-export let VARIANT = variantOf(V);
-const STOKE = VARIANT === 'stoke';
+type WagonVariant = 'calm' | 'lively' | 'fast';
+const variantOf = (v: string): WagonVariant => (v === 'fast' || v === 'lively' ? v : 'calm');
+export let VARIANT = variantOf(protoV('wagon'));
 const PACES: Record<WagonVariant, WagonPace> = {
   calm: WAGON_PACE,
   lively: WAGON_PACE,
   fast: { cruise: 65, accel: 20 },
-  stoke: { cruise: FAST, accel: 20 }, // full steam is the timetable's own pace; less steam runs it slower
 };
 const FEEL = {
   bogie: 1.1, // m from a car's centre to each bogie (the heading is the chord between them)
@@ -77,13 +66,12 @@ const FEEL = {
   whistleS: 1.2, // s before leaving a stop the steam bursts (the whistle, silent for now)
   // rock: rad of roll kicked per joint at 3 m/s; bounce: m the car drops at a joint; puffs: chuffs per metre (plus a
   // slow idle chuff standing), puffSize their size; shake: the camera's jolt per joint, riding
-  ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT === 'stoke' ? 'calm' : VARIANT],
+  ...VARIANTS[VARIANT === 'fast' ? 'lively' : VARIANT],
 };
 // Calm, lively and fast switch live (the bar, src/proto/flags.ts): the feel here, the skid and the room's pace below.
-// Stoke (another loco and clock) and grind (its own module) reload.
 const SKID = CARRY.skid;
 let paced = false; // the room's pace matches the variant (the panel asks for it)
-const LIVE = ['', 'calm', 'lively', 'fast', 'show', 'bench', 'snatch'];
+const LIVE = ['', 'calm', 'lively', 'fast', 'show', 'bench'];
 onVariant('wagon', LIVE, (v) => {
   VARIANT = variantOf(v);
   Object.assign(FEEL, VARIANTS[VARIANT === 'fast' ? 'lively' : 'calm']);
@@ -194,21 +182,8 @@ function timeline(): Seg[] {
   }
   return segs;
 }
-// The stoke variant: the wagon at shared tick `tick`, read at its own clock: the rules' clock at the last tick, run on
-// at its rate (real time while standing at a stop, as the rules do). Its velocities are the timetable's, scaled by the
-// running rate.
-const { steam } = rules.wagon;
-let tauSeek = 0; // ticks added to the clock (the look evals' shortcut)
-function stokedAt(tick: number): WagonState | null {
-  if (!(laidCount() > 0)) return null;
-  const run = steam.rate / RATE_ONE;
-  const s = at(laidCount(), steam.tau / RATE_ONE + (tick - world.tick) * (!w || w.stop >= 0 ? 1 : run) + tauSeek)!;
-  if (s.stop < 0) Object.assign(s, { speed: s.speed * run, vx: s.vx * run, vz: s.vz * run });
-  return s;
-}
 function wagonNow(tick: number): WagonState | null {
   const list = timeline();
-  if (STOKE) return stokedAt(tick);
   for (let k = list.length - 1; k >= 0; k--) if (tick >= list[k]!.from) return at(list[k]!.laid, tick, list[k]!.t0);
   return null;
 }
@@ -223,7 +198,7 @@ function advance(dt: number) {
 }
 
 // ---------------------------------------------------------------- the bodies
-const look = wagonLook(CARS.length - 1, STOKE);
+const look = wagonLook(CARS.length - 1);
 type Car = {
   spec: CarSpec;
   off: number;
@@ -355,10 +330,7 @@ function move(c: Car, k: number, dt: number) {
 
 // ---------------------------------------------------------------- feel: chuffs, rocking, the steam burst
 const smoke = new THREE.Color('#e8e4dc'),
-  steamWhite = new THREE.Color('#ffffff'),
-  sooty = new THREE.Color('#8f8a84'),
-  smokeHot = new THREE.Color();
-const smokeOf = (hot: number) => smokeHot.copy(smoke).lerp(sooty, hot * 0.8);
+  steamWhite = new THREE.Color('#ffffff');
 const chimney = new THREE.Vector3();
 let jolt = 0, // the riding camera's jolt, decaying
   chuff = 0,
@@ -368,10 +340,7 @@ let jolt = 0, // the riding camera's jolt, decaying
 // The whistle and the rail clacks are silent for now (cut in the sound audit, 2026-11-02); better ones come later.
 function puff(big: number, vx: number, vz: number) {
   look.chimneyTop.getWorldPosition(chimney);
-  // stoked: a hot fire puffs big and sooty, a cold one breathes thin wisps
-  const hot = STOKE ? fireHeat() : 1;
-  const size = STOKE ? 0.55 + 0.75 * hot : 1;
-  for (let n = 0; n < (2 + big * 4) * FEEL.puffSize * size; n++)
+  for (let n = 0; n < (2 + big * 4) * FEEL.puffSize; n++)
     emit({
       x: chimney.x + (Math.random() - 0.5) * 0.2,
       y: chimney.y,
@@ -380,8 +349,8 @@ function puff(big: number, vx: number, vz: number) {
       vy: 1.6 + big + Math.random() * 0.6,
       vz: vz * 0.4 + (Math.random() - 0.5) * 0.5,
       life: 1.4 + Math.random() * 0.8 + big,
-      size: (0.35 + big * 0.2) * FEEL.puffSize * size,
-      color: big ? steamWhite : STOKE ? smokeOf(hot) : smoke,
+      size: (0.35 + big * 0.2) * FEEL.puffSize,
+      color: big ? steamWhite : smoke,
       alpha: 0.75,
       drag: 1.2,
       grow: [1, 3.2],
@@ -427,7 +396,7 @@ onFrame(
     // Chuffs: one per 1 / puffs metres moved, and a lazy one every 1.5 s standing.
     const moved = lastDist === lastDist ? Math.abs(d - lastDist) : 0;
     lastDist = d;
-    chuff += moved * FEEL.puffs + (speed < 0.1 ? dt / (STOKE ? 2.6 - 1.6 * fireHeat() : 1.5) : 0);
+    chuff += moved * FEEL.puffs + (speed < 0.1 ? dt / 1.5 : 0);
     if (chuff >= 1) {
       chuff = Math.min(chuff - 1, 1);
       puff(0, w.vx, w.vz);
@@ -460,19 +429,10 @@ onFrame(
 // landing slides about 4 m instead of 2), so leaving the wagon reads as a stunt rather than a stop.
 if (VARIANT === 'fast') CARRY.skid = 5;
 const dust = new THREE.Color('#c9b48a');
-// &grind=1: grind the laid rails (src/proto/grind/, its own module; the rail carries you, so no dust while on it).
-let grinding = () => false;
-if (params.get('grind') === '1' || V === 'grind')
-  void import('../grind/index.ts').then((m) => {
-    grinding = m.grind({
-      laid: laidCount,
-      cars: () => (w ? cars.map((c) => ({ d: w!.dist / 100 + c.off, hz: c.spec.hz })) : []),
-    }).active;
-  });
 onFrame(
   ({ dt }) => {
     const h = Math.hypot(carry.x, carry.z);
-    if (carry.on || !me.body || me.coyote <= 0 || h < 1.2 || grinding()) return;
+    if (carry.on || !me.body || me.coyote <= 0 || h < 1.2) return;
     const p = me.body.position;
     for (let n = Math.random() < h * dt * 6 ? 1 + (h > 4 ? 1 : 0) : 0; n > 0; n--)
       emit({
@@ -494,8 +454,8 @@ onFrame(
   { phase: 'update', order: 7 },
 );
 
-// ---------------------------------------------------------------- riding extras: show, bench, snatch
-// Each is calm plus one thing (./show.ts, ./bench.ts, ./snatch.ts), all Local bar the bench's `seat` presence. All three
+// ---------------------------------------------------------------- riding extras: show, bench
+// Each is calm plus one thing (./show.ts, ./bench.ts), all Local bar the bench's `seat` presence. Both
 // are built with the wagon and switched on with their variant, only while the playlist is on the wagon's step.
 const ctx: WagonCtx = {
   cars,
@@ -503,13 +463,11 @@ const ctx: WagonCtx = {
   lineAt,
 };
 const show = wagonShow(ctx),
-  bench = wagonBench(ctx),
-  snatch = wagonSnatch(ctx);
+  bench = wagonBench(ctx);
 function applyExtras() {
   const v = currentStep() === 'wagon' ? protoV('wagon') : '';
   show.setOn(v === 'show');
   bench.setOn(v === 'bench');
-  snatch.setOn(v === 'snatch');
 }
 onStep(applyExtras);
 onVariant('wagon', LIVE, applyExtras);
@@ -520,8 +478,6 @@ wagonFreight({
   laid: laidCount,
   standing: (ahead) => (clock === clock ? (wagonNow(clock + ahead)?.stop ?? -1) : -1),
 });
-
-if (STOKE && look.firebox) wagonStoke(look.firebox, () => !parked);
 
 // ---------------------------------------------------------------- rails for a faked count (?laid=N): PROTOTYPE
 const ghostMat = new THREE.MeshStandardNodeMaterial({ color: '#7a6f66', roughness: 0.6, metalness: 0.4 });
@@ -583,11 +539,7 @@ export function wagonPanel(protoRoom: boolean): void {
       }
       lay.disabled = !protoRoom || sites.open >= ROUTE.length;
       reset.disabled = !protoRoom;
-      const pct = Math.round((100 * steam.steam) / STEAM_FULL);
-      const ms = Math.abs(w?.speed ?? 0).toFixed(1);
-      const speed = STOKE
-        ? `stoke · steam ${pct}% · ${ms} m/s · ${steam.fed} logs fed`
-        : `${protoV('wagon') || VARIANT} · ${(tune.v.wagonCruise / 10).toFixed(1)} m/s`;
+      const speed = `${protoV('wagon') || VARIANT} · ${(tune.v.wagonCruise / 10).toFixed(1)} m/s`;
       note.textContent = protoRoom ? speed : `${speed} · Lay, Reset and v=fast need ?room=proto-wagon`;
       fakeNote.textContent = fake >= 0 ? `fake laid: ${fake} (this tab only)` : `laid: ${sites.open}`;
       ghosts.forEach((g, k) => g.forEach((m) => (m.visible = fake > sites.open && k >= sites.open && k < fake)));
@@ -601,11 +553,11 @@ export function wagonPanel(protoRoom: boolean): void {
 if (ON_ISLAND && !params.has('laid')) onStep((step) => (step === 'lay' ? (fake = -1) : fakeLaid(ROUTE.length)));
 
 // On the island the playlist's wagon step (arriving at it, a reload into it, or a live variant switch) puts you on the
-// middle flatbed's deck facing the loco, so the variant's difference (rock, speed, steam) is felt in seconds instead of
+// middle flatbed's deck facing the loco, so the variant's difference (rock, speed) is felt in seconds instead of
 // waiting for the wagon to come round. After the bar's own drop (it places you on the first frame you're in), and
-// only while the wagon runs; grind keeps you on the ground by the rails.
+// only while the wagon runs.
 let boardAt = -1; // performance.now() to board at (-1: no)
-const boardSoon = () => void (boardAt = V === 'grind' ? -1 : performance.now() + 400);
+const boardSoon = () => void (boardAt = performance.now() + 400);
 if (ON_ISLAND) {
   onStep((step) => (step === 'wagon' ? boardSoon() : (boardAt = -1)));
   onVariant('wagon', LIVE, boardSoon);
@@ -642,16 +594,9 @@ window.__wagon = {
     return pace;
   },
   timeline,
-  get steam() {
-    return { steam: steam.steam, rate: steam.rate, tau: steam.tau, fed: steam.fed, heat: fireHeat() };
-  },
-  // Jump the shared clock (stoke: the wagon's own) so the timetable reads `phase` ticks into the current timetable now.
+  // Jump the shared clock so the timetable reads `phase` ticks into the current timetable now.
   seekPhase(phase: number) {
     const now = wagonNow(clock);
-    if (STOKE) {
-      if (now) tauSeek += phase - now.phase;
-      return;
-    }
     if (now) seek += phase - now.phase;
     else seek = 0;
     clock = NaN;
@@ -659,5 +604,4 @@ window.__wagon = {
   fakeLaid,
   show,
   bench,
-  snatch,
 };

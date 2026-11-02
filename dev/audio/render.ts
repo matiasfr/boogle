@@ -186,11 +186,6 @@ const PRE = `const R = window.__rec, { sleep, until } = R;`;
 // A take that calls `calls` (page code) in order, `gap` ms apart; each entry is one statement.
 const seq = (imports: string, calls: string[], gap: number) => `${imports}
   return R.run(null, async () => { for (const f of [${calls.map((c) => `async () => { ${c} }`).join(', ')}]) { await f(); await sleep(${gap}); } });`;
-const grindShot = (shot: string, seconds: number) => `
-  const q = new URLSearchParams(location.search); q.set('gt', '${shot}');
-  history.replaceState(null, '', location.pathname + '?' + q);
-  const G = await import('/dev/look/evals/grind.ts');
-  return R.run(${seconds}, async () => { await G.run(); });`;
 
 const PAGES: Page[] = [
   {
@@ -386,21 +381,6 @@ const PAGES: Page[] = [
   },
   // Silence checks: the sounds the owner's audit cut (docs/proposals/boogle-2.md, "Sound", 2026-11-02) must stay cut
   // until better ones come. These takes play the moment and fail if anything is heard; they write no files.
-  {
-    key: 'grind',
-    query: 'proto=wagon&grind=1&laid=3',
-    setup: `await until(() => window.__wagon && window.boogle.me.body);`,
-    takes: [
-      {
-        id: 'grind-silent',
-        group: 'Silence checks',
-        title: 'Grind the whole line (cut: wagon and grind sounds)',
-        when: 'Landing on a laid rail and grinding it end to end, beside the running wagon: no hiss, clacks or whistle.',
-        silent: true,
-        body: grindShot('full', 16),
-      },
-    ],
-  },
   {
     key: 'soapbox',
     query: 'proto=soapbox',

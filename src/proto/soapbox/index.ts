@@ -93,6 +93,8 @@ const T = {
   throwUp: 11, // m/s up when thrown
   throwKeep: 0.55, // share of the cart's speed you keep when thrown (over whatever you hit, not into it)
   returnAfter: 2, // s an empty cart waits before it rolls itself back to the top
+  againThrown: 20, // s after a wipeout that Interact takes you back to the top, wherever you landed
+  againOut: 10, // s after hopping out away from the top (the cart has gone back without you)
   // grip as a curve of slip ratio |vl| / (|vl| + |vf|) (vehicle-feel.md 2, Rocket League): full up to slipFull, down
   // to slipLoose x grip at slipLet and flat after; times a slope term, slopeGrip x at n.y 0.8 (1 from 0.95). The
   // research's first guesses (0.15, 0.55, 0.7) let a landing on the massif's face snowball into a slide you could not
@@ -205,7 +207,7 @@ const S = {
   fall: 0, // m/s: fastest fall since leaving the ground
   hold: 0, // performance.now() a crash's hit-stop ends (0: none)
   watchUntil: 0, // thrown: the camera stays on you until then
-  againUntil: 0, // after a wipeout, Interact takes you back to the top until then
+  againUntil: 0, // out of the cart away from the top (a wipeout, a hop out), Interact takes you back up until then
   tumble: 0, // s left of the thrown-out spin
   tumbleAngle: 0,
   throttle: 0, // -1..1: this step's drive (+) or brake / reverse (-), for the air pitch
@@ -323,7 +325,7 @@ onPreStep(() => {
     const sgn = Math.sign(vf);
     let a = -T.rolling * sgn - T.drag * vf * Math.abs(vf);
     if (S.drifting) a -= T.handbrake * sgn;
-    if (!S.seated || runHud.state.state === 'done') a -= T.coastBrake * 2 * sgn; // empty, or past the finish: stop
+    if (!S.seated) a -= T.coastBrake * 2 * sgn; // empty: stop
     // the motor: strong off the line, nothing left at its top speed; the brake, then reverse from a crawl
     if (ctl.throttle > 0) a += T.motor * ctl.throttle * clamp(1 - vf / T.top, 0, 1);
     if (ctl.throttle < 0) a += vf > 0.3 ? T.brake * ctl.throttle : vf > -T.reverse ? T.motor * 0.6 * ctl.throttle : 0;
@@ -415,8 +417,9 @@ function getOut(thrown: boolean) {
     impact.hit = impact.top = 0;
     S.tumble = 1.3;
     S.watchUntil = performance.now() + 2400;
-    S.againUntil = performance.now() + 20000;
+    S.againUntil = performance.now() + T.againThrown * 1000;
   } else {
+    if (flat(p.x, p.z, START.x, START.z) > 4) S.againUntil = performance.now() + T.againOut * 1000;
     const x = p.x + left.x * 1.2,
       z = p.z + left.z * 1.2;
     teleport(b, x, Math.max(p.y, groundHeight(x, z) + PLAYER_R) + 0.4, z);
@@ -474,7 +477,8 @@ function again() {
   board();
 }
 
-// One button: get in near the cart; seated, get out, or (stopped away from the top) ride back up.
+// One button: get in near the cart; seated, get out, or (away from the top, stopped or with a finish time still
+// showing) ride back up for a new run.
 const promptAt = new THREE.Vector3();
 registerInteractable(() => {
   if (!me.body) return [];
@@ -482,7 +486,7 @@ registerInteractable(() => {
   if (S.seated) {
     const slow = Math.hypot(body.velocity.x, body.velocity.z) < 1.5;
     const away = flat(p.x, p.z, START.x, START.z) > 4;
-    const top = slow && away;
+    const top = away && (slow || runHud.finishShowing());
     promptAt.set(p.x, p.y + 1.9, p.z);
     return [
       {
@@ -494,7 +498,7 @@ registerInteractable(() => {
     ];
   }
   const mp = me.body.interpolatedPosition;
-  // after a wipeout, once you have landed: straight back to the top in the cart, no walk up the hill
+  // after a wipeout (once you have landed) or a hop out far from the top: back in the cart on the start, no walk up
   if (S.againUntil > performance.now() && S.tumble <= 0 && !S.hold) {
     promptAt.set(mp.x, mp.y + 1.9, mp.z);
     return [{ id: 'soapbox-again', verb: 'Back to the top', at: promptAt, run: again }];
@@ -1015,6 +1019,8 @@ onFrame(
         const la = speed > 0.1 ? Math.min(T.lookAhead, T.lookAheadMax / speed) : 0;
         aheadWant.set(v.x * la, 0, v.z * la);
         ahead.lerp(aheadWant, 1 - Math.exp(-dt * 4));
+        // rolled back onto the start by hand (or stopped there after a lap of the island): a new run is ready
+        if (speed < 1.5 && flat(body.position.x, body.position.z, START.x, START.z) < START_GO) runHud.rearm();
         runHud.tick(body.position.x, body.position.z, physicsTime());
       }
       wheelFx(dt);
@@ -1045,6 +1051,7 @@ onFrame(
       }
     }
     if (S.tumble > 0) S.tumble -= dt;
+    runHud.fade();
   },
   { phase: 'world', order: 10 },
 );

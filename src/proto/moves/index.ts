@@ -1,7 +1,7 @@
 // A second jump in the air and a glide (docs/research/ratchet-and-clank-feel.md rec 6), on any ?proto= page with
 // &jump2=1 and/or &glide=1 (loaded by src/features/proto-moves.ts). Same button as the jump, no new pad slot.
 //   jump2  a press in the air sets vy = max(vy, 0) + 6.0 m/s (about 80 % of the first jump, never stacking into a
-//          super-jump), once per airtime; landing (or a grind rail) gives it back
+//          super-jump), once per airtime; landing gives it back
 //   glide  hold jump after an air press (the double jump's, or a fresh one) and your fall is capped at 4 m/s
 // Serves DESIGN.md 1 (moving around is a toy). Owner kind for your own body: others see it through your presence.
 // Runs after the controller's step hook (a lazy module), so a press it didn't take (no ground under you) is ours.

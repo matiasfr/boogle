@@ -3,8 +3,8 @@
 *A mechanics-only prototype for [find-the-fun](../plans/find-the-fun.md), step 5: "Is driving a vehicle fun?" Feel
 first, no rewards. Serves DESIGN.md 1 (Toys before chores), with 2 (Physics toys first) and 10 (Slapstick over
 precision). Third try (2026-11-01): after two "no"s the cart drives as a suspensiony RC car with analog triggers
-([boogle-2.md](../proposals/boogle-2.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). If
-this is still a no, driving waits. Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
+([boogle-2.md](../proposals/boogle-2.md); research: [vehicle-feel.md](../research/vehicle-feel.md), "RC cars"). The
+owner's verdict on it: "pretty fun", so it stays (second run-through, 2026-11-01). Without the flag the cart never loads: `src/features/proto-soapbox.ts` imports `src/proto/soapbox/` only with
 it (and otherwise only hides a remote driver; see Sync).*
 
 ## What you see and do
@@ -20,7 +20,8 @@ it (and otherwise only hides a remote driver; see Sync).*
   knee-high flags: nothing tall for the chase camera to clip. (The course used to go on through a palm slalom and along
   the bay's flat shore: its last 8 s were kicking along at 5 m/s.)
 - **Get in:** Interact (E, pad X, touch Grab) within 2.6 m. **Get out:** Interact again. Stopped (under 1.5 m/s) more
-  than 4 m from the start, Interact reads **Back to the top** instead: you and the cart are put back on the start.
+  than 4 m from the start, Interact reads **Back to the top** instead: you and the cart are put back on the start,
+  Ready; Jump hops you out there instead.
 - **Driving** (vehicle-feel.md, RC cars 4-6): left and right on the stick or A/D steer. **Throttle** is RT (analog), W
   or ↑, or the stick pushed forward; **brake, then reverse** from a crawl is LT (analog), S or ↓, or the stick pulled
   back. The most of each input counts; throttle and brake together cancel. The motor pulls 12 m/s² from a standstill,
@@ -42,9 +43,15 @@ it (and otherwise only hides a remote driver; see Sync).*
   drifty the full. A bump in the middle of a drift keeps the charge (it just stops growing in the air). An empty-handed click does nothing while seated (it would
   otherwise get you out); holding something, the click still throws it from the cart.
 - **The run:** seated on the start, the HUD shows "Ready". The clock starts once you have rolled 3 m and stops on the
-  finish line, after which the cart brakes itself to a stop; your best time is kept in localStorage (`boogle.soapbox.best`) and shown
-  beside it, with "New best!" when you beat it. A wipeout ends the run ("Wipeout!"); getting out ends it quietly. No
-  prize, no hat. Each finished run counts once on the prototype bar (`runs`).
+  finish line; your best time is kept in localStorage (`boogle.soapbox.best`) and shown beside it, with "New best!" when
+  you beat it. A wipeout ends the run ("Wipeout!"); getting out ends it quietly. No prize, no hat. Each finished run
+  counts once on the prototype bar (`runs`).
+- **After the finish you keep driving** (owner, second run-through: "once I was down the hill, I couldn't drive it
+  anymore"): the time stays up for 6 s and you stay in control, free to drive anywhere on the island, with no clock,
+  until you get out, wipe out or reach the water. **To go again:** for those 6 s Interact reads **Back to the top** even
+  while you roll on; after that, as anywhere, it does once you have stopped (moving, it reads Get out). Stopping on the
+  start by hand also makes a new run Ready. **Out of the cart** more than 4 m from the start (a hop out, the water) the
+  empty cart goes back to the start after 2 s and Interact reads Back to the top for 10 s, so nobody walks up the massif.
 - **The ghost** (`src/proto/soapbox/ghost.ts`): your best run, replayed as a see-through pale blue cart on the next one
   (Trackmania's ghost; [minigames research](../research/minigames-and-physics-minigames.md), shortlist #1). It waits on
   the spot where the clock starts while you are Ready and goes when your clock does, so it is exactly where you were at
@@ -116,7 +123,7 @@ prototype bar.
   sphere's vertical speed (at most 5 m/s; a landing, a dip), the forward acceleration x2 as pitch (squat, dive) and the
   wheels' sideways grip x1.5 as roll. With no wheel down it eases back to rest. Limits: heave 0.35 m, pitch 0.4 rad,
   roll 0.32 rad. Grip is multiplied by 0.55-1 by the share of wheels on the ground, so a bounce after a landing is
-  briefly loose. An empty cart, or one past the finish, brakes at 5 m/s².
+  briefly loose. An empty cart brakes at 5 m/s².
 - **Crash:** the speed the physics solver knocks off in a step (a leaky sum over a few steps), over 9 m/s while you were
   doing at least 6 m/s, or a landing that adds 15 m/s upward in one step. Driving into water gets you out.
 - **Seated,** your own body leaves the physics world and is put on the seat each frame, so the camera, your avatar and
@@ -135,7 +142,8 @@ their `soapbox` presence is set (`src/features/proto-soapbox.ts`, the only part 
 ## Look at it
 
 `BOOGLE_QUERY=proto=soapbox npm run look -- --eval dev/look/evals/soapbox-run.ts --hud --warm 0.2 --seconds 13 --frames 16`
-(also `soapbox-drift.ts`, `soapbox-crash.ts` and `soapbox-ghost.ts`, a first run that sets the ghost and a second
+(also `soapbox-drift.ts`, `soapbox-crash.ts`, `soapbox-roam.ts`, the finish and driving on across the flat, and
+`soapbox-ghost.ts`, a first run that sets the ghost and a second
 beside it; each eval's header has its timing; add `&v=bouncy`, `&v=tight` or `&v=drift` to the query for a variant,
 and `--size 1180x820` for iPad size). The pilot,
 `dev/look/evals/soapbox-pilot.ts`, drives through the real input.
