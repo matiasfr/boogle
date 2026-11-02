@@ -190,9 +190,9 @@ function finish() {
 function rebuildStep(now: number) {
   const k = Math.floor((now - st.rebuildAt) / 110);
   for (let i = 0; i < crates.length && i <= k; i++) {
-    const c = crates[i];
+    const c = crates[i]!;
     if (c.in) continue;
-    const h = HOME[i];
+    const h = HOME[i]!;
     teleport(c.body, h.x, h.y + 0.12, h.z);
     c.body.quaternion.set(yawQ.x, yawQ.y, yawQ.z, yawQ.w);
     c.body.velocity.set(0, 0, 0);
@@ -256,7 +256,7 @@ onFrame(
       if (st.fallen > 0 && now - st.lastFall > RESET_AFTER && now - st.lastMove > 400) finish();
       // Shots that toppled nothing: once all is still for a few seconds, put things straight and count again.
       else if (!st.fallen && now - st.lastMove > RESET_AFTER + 2000) {
-        const shifted = crates.some((c, i) => HOME[i].distanceTo(c.body.position) > 0.25);
+        const shifted = crates.some((c, i) => HOME[i]!.distanceTo(c.body.position) > 0.25);
         if (shifted) finish();
         else {
           st.mode = 'set';
