@@ -11,7 +11,7 @@ import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 import { FWD, RIGHT, TARGET, UP } from './stage.ts';
 
-/** How high it hangs: about 1.5 s of reading after you leave the cloud. */
+/** How high it hangs: over 2 s of reading it clear of the cloud, and as long again falling with the letters. */
 export const TITLE_Y = TARGET.y + 55;
 
 const H = 3.8, // m tall

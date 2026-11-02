@@ -7,9 +7,9 @@ import { groundHeight } from '../island/heights.ts';
 import { cam } from '../player/player.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 
-/** Metres from the rail down to the ground: about 6 s in the air, at the player's 20 m/s fall cap. It's long because it
- * only happens once, on a first visit; a returning player goes straight in. */
-export const HEIGHT = 120;
+/** Metres from the rail down to the ground: about 7.5 s in the air, at the player's 20 m/s fall cap. It's long because it
+ * only happens once, on a first visit, and the title needs room under the cloud to be read. */
+export const HEIGHT = 150;
 
 // The whole shot lines up with the camera's starting direction: the line runs forward, the title reads left to right.
 export const YAW = cam.yaw;
