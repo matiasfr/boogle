@@ -31,8 +31,8 @@ test('the playlist reaches every live card once, in PLAYTEST_ORDER', () => {
   }
 });
 
-test('island toys have a spot of their own (moves goes with you)', () => {
-  const spots = live.filter((p) => onIsland(p) && p.id !== 'moves').map((p) => ({ id: p.id, s: p.spawn }));
+test('island toys have a spot of their own', () => {
+  const spots = live.filter((p) => onIsland(p)).map((p) => ({ id: p.id, s: p.spawn }));
   for (const { id, s } of spots) assert.ok(s, `${id} has no spawn`);
   for (let a = 0; a < spots.length; a++)
     for (let b = a + 1; b < spots.length; b++) {
