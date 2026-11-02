@@ -23,7 +23,6 @@ const CANONICAL = [
   'ball',
   'tune',
   'opening',
-  'wagon',
 ]; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
@@ -80,12 +79,6 @@ const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
     { op: 'open.lay', i: 0, j: 0 }, // the proto shortcut lays the rest of the route (env protoRoom)
     { op: 'open.start', i: 0, j: 0 },
     { op: 'open.here', i: 0, j: 0 }, // everyone at the platform: the call ends early
-  ],
-  wagon: () => [
-    ({ rules }) => {
-      rules.stacks.add('a', 0, 5); // logs on this player's back, the same on both peers (tune.reset emptied them)
-      return { op: 'wagon.stoke', i: 0, j: 0, n: 3 };
-    },
   ],
 };
 
@@ -152,21 +145,6 @@ test('mush.plant fails closed: the host env decides, and no env rejects the edit
   bare.setSelfId('a');
   installRules(bare, homeLand());
   assert.equal(bare.submitEdit({ op: 'mush.plant', i: 230, j: 200 }), false);
-});
-
-test('wagon.stoke is for proto- rooms only, and takes a whole number of logs', () => {
-  const stoker = (env: Record<string, unknown>) => {
-    const s = createSync({ env: { canPlantAt: () => true, ...env } });
-    s.setSelfId('a');
-    const rules = installRules(s, homeLand());
-    rules.stacks.add('a', 0, 5); // logs on this player's back
-    return s;
-  };
-  assert.equal(stoker({ protoRoom: false }).submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), false);
-  assert.equal(stoker({}).submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), false);
-  const proto = stoker({ protoRoom: true });
-  assert.equal(proto.submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: '3' }), false);
-  assert.equal(proto.submitEdit({ op: 'wagon.stoke', i: 0, j: 0, n: 3 }), true);
 });
 
 test('rules import only pure modules (no three.js, DOM or constants.js)', () => {
