@@ -44,7 +44,8 @@ export default {
         seen.every((v, i) => !i || v >= seen[i - 1]!),
         seen.join(' '),
       );
-      await p.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
+      // Attached, not visible: this tab shares the first one's saved name, so it goes straight in, past the lobby.
+      await p.waitForSelector('#enter:not([disabled])', { state: 'attached', timeout: 180000 });
       const gone = await p
         .waitForFunction(() => document.querySelector('.splash')?.classList.contains('gone') ?? true, null, {
           timeout: 3000,
