@@ -189,6 +189,7 @@ export function makePart(rows: Block[], cx: number, cz: number): Part {
 const endOf = (p: Part) => p.boxes.reduce((e, b, k) => Math.max(e, p.delay[k]! + b.pop), 0);
 
 type Rise = { part: Part; t: number; end: number; puffed: Set<number>; show: boolean };
+const RISE_SPEED = 2; // the town and the camps rise, and the fireworks go up, this much faster than ?proto=net's
 const rises: Rise[] = [];
 export function rise(part: Part) {
   rises.push({ part, t: 0, end: endOf(part) + 0.1, puffed: new Set(), show: true });
@@ -253,7 +254,7 @@ export function updateTown(wood: number, stone: number, dt: number) {
     fanfare(drawn[kind] >= 2);
     whistle(cx, cz);
   }
-  updateRises(dt);
+  updateRises(dt * RISE_SPEED);
   for (let k = sinking.length - 1; k >= 0; k--) {
     const q = sinking[k]!;
     q.t += dt;
@@ -266,7 +267,7 @@ export function updateTown(wood: number, stone: number, dt: number) {
     for (const p of list) for (const c of p.smokes) chimney(c);
   }
 }
-export function updateRises(dt: number) {
+function updateRises(dt: number) {
   for (let k = rises.length - 1; k >= 0; k--) {
     const a = rises[k]!,
       p = a.part;

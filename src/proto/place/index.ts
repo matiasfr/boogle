@@ -57,7 +57,7 @@ import { protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
 import { HEAP, LINKS, ORIGIN, SPAWN, TUNE, VILLAGE, lineAt, railY, toWorld, type LinePoint } from './layout.ts';
 import { buildMachine, buildPlatform, buildTrains, buildTrestle, cycleOf, drawTrestle, runSeconds } from './rail.ts';
-import { campBlocks, makePart, rise, snapTown, updateRises, updateTown } from './town.ts';
+import { campBlocks, makePart, rise, snapTown, updateTown } from './town.ts';
 
 buildLand();
 dressSea();
@@ -905,7 +905,6 @@ onFrame(
       }
     }
     updateCrates(dt);
-    updateRises(dt);
     updateTown(stepsOf(s.wood), stepsOf(s.stone), dt);
     updateFinds(dt);
     // The two smoke columns: tall, slow and white, the first thing you read across the gorge.
