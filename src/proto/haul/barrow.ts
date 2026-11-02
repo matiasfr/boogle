@@ -399,7 +399,7 @@ onFrame(
     // fly-ins: a hop from the bundle (or the pile) into the tray
     const top = view.inner.localToWorld(at.set(0, 0.6 + Math.floor(shown / 4) * 0.17, -0.05)).clone();
     for (let f = flights.length - 1; f >= 0; f--) {
-      const fl = flights[f];
+      const fl = flights[f]!;
       const u = (now - fl.t0) / 420;
       if (u >= 1) {
         flights.splice(f, 1);
@@ -451,15 +451,15 @@ onFrame(
       if (!s) continue;
       if (!t.view) scene.add((t.view = makeBarrow()).root);
       const { a, b, u } = s;
-      const A = a.w,
-        B = b.w;
-      const L = (i: number) => A[i] + (B[i] - A[i]) * u;
+      const A = a!.w,
+        B = b!.w;
+      const L = (i: number) => A[i]! + (B[i]! - A[i]!) * u;
       tq.identity();
       t.view.pose({
         x: L(0),
         y: L(1),
         z: L(2),
-        heading: angleLerp(A[3], B[3], u),
+        heading: angleLerp(A[3]!, B[3]!, u),
         tip: L(4),
         pour: L(5),
         wobble: L(6),
