@@ -2,8 +2,9 @@
 
 *It describes what exists on `main` today, not what is planned, and is kept current by the rule in
 [AGENTS.md](../AGENTS.md) (player-facing changes update their file in [game-design/](game-design/) in the same commit). Every number is read from the code or the docs it links. Where the code does not say,
-the doc says "unclear from code". Plans live in [PLAN.md](../PLAN.md) and [tech-plan.md](tech-plan.md); undecided
-ideas live in [proposals/](proposals/README.md) and are only linked as "related ideas".*
+the doc says "unclear from code". Current design lives in [DESIGN.md](../DESIGN.md) and the
+[decision log](proposals/boogle-2.md); prototype work is in [find-the-fun.md](plans/find-the-fun.md), engineering work
+in [tech-plan.md](tech-plan.md). Undecided ideas live in [proposals/](proposals/README.md) and are only linked as "related ideas".*
 
 This page is the index: sections 1 and 2 are here, everything else has one file per section or system, so changes to
 different systems don't touch the same file. A new system adds its file and one line below.
@@ -12,18 +13,19 @@ different systems don't touch the same file. A new system adds its file and one 
 
 ## 1. Overview
 
-Boogle is a drop-in browser island for up to 8 friends. You pick a name and a colour, press "Jump in", and land next to a
+Boogle is a drop-in browser island for up to 8 friends. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
-and The Boogler. Today the loop as actually played is: throw, bump and chase the ball;
+and The Boogler. Returning players go straight in with their saved identity. In the base game you can throw, bump and chase the ball;
 throw things at each other; plant mushroom seeds from the stall and bounce on what grows; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
-honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; shake logs from the palms and
-carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals). There are no
-scores, timers or goals. The tide, weather and crops from the plan are not built.
+honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and
+carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals).
+Wagon rides (`?proto=wagon`), rail-fed town growth (`?proto=net`) and long crossings
+(`?proto=crossing`) are flagged prototypes, not the base game's progression loop.
 
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
-gamepad (W3C standard mapping, aimed at iPhone and iPad). One player's browser hosts the room over PeerJS, or, for
-rooms our server is set to host, the server does over WebSocket (section 8). Live at
+gamepad (W3C standard mapping, aimed at iPhone and iPad). Our server hosts every room over WebSocket, runs its
+lockstep world and saves its snapshots (section 8). Live at
 **https://boogle.club/** (`?room=<name>` picks an island, default `beach`).
 
 ## 2. Pillars
@@ -32,19 +34,19 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 
 | # | Principle | What it means in practice today |
 |---|---|---|
-| 1 | Toys before chores | Ball, throwing and the Boogler have no score. |
-| 2 | Physics toys are optional fun | One physics toy among several: floats, bounces on mushrooms, is thrown like everything else. |
+| 1 | Toys before chores | Ball, throwing and The Boogler have no score. |
+| 2 | Physics toys are optional fun | The beach ball, frisbee and mushroom bounces are optional. |
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
-| 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
+| 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
 | 5 | Nothing is the antagonist | No PvP state damage. |
-| 6 | Communal world, personal rewards | Hotbar and Boogler friendship are per player, in localStorage. |
-| 7 | Telegraph everything | Interact prompt, ping markers. (No world events exist yet to telegraph.) |
-| 8 | Drop-in, drop-out | No lobby; host migration; mixed-build reloads. |
-| 9 | Leave something for the next visitor | Mushrooms, items, piles, haul stacks and work sites persist in snapshots. |
+| 6 | Communal world, personal rewards | Work sites are shared; hotbar and Boogler friendship are per player, in localStorage. |
+| 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
+| 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
+| 9 | Leave something for the next visitor | Mushrooms, items, piles, haul stacks and work sites persist in server snapshots. |
 | 10 | Slapstick over precision | Face-plants, flops, sail bonks, Boogler launches. |
 
 Technical principles (sync kinds, determinism, sync edits not state, clear authority, server hosts every room,
-understandable at a glance, small and readable) are in the same file, and section 8 maps every feature to its kind.
+understandable at a glance, small and readable, code first, images by approval) are in the same file, and section 8 maps every feature to its kind.
 
 ## 3. [The island](game-design/island.md)
 
