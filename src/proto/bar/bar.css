@@ -66,6 +66,15 @@
   font-weight: 500;
   opacity: 0.92;
 }
+/* The playing variant's one line: what to notice. */
+.proto-bar .pb-what {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+.proto-bar .pb-what:empty {
+  display: none;
+}
 .proto-bar .pb-row {
   display: flex;
   flex-wrap: wrap;
