@@ -4,11 +4,6 @@
       "count": 3
     }
   },
-  "src/features/first-run.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/features/hotbar.ts": {
     "boogle/use-an-entity": {
       "count": 1
@@ -30,11 +25,6 @@
     }
   },
   "src/features/proto-soapbox.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/welcome-back.ts": {
     "boogle/use-an-entity": {
       "count": 1
     }

@@ -6,7 +6,7 @@
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import './welcome-back.css';
-import { onFrame } from '../loop.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
 import { getRoomId } from '../netplay/net.ts';
@@ -93,23 +93,34 @@ const known = () => {
   return w.mode !== 'local' && w.ready;
 };
 
-onFrame(
-  ({ now }: { now: number }) => {
-    if (!me.entered) return;
-    if (!enteredAt) enteredAt = now;
-    if (!shown) {
+// The wait for the room: done once the card is up. A first visit (or after Leave) has none to wait for.
+defineKind('welcome-back', { lateUpdate: 44 });
+if (!shown) {
+  const waiting: GameEntity = spawn({
+    kind: 'welcome-back',
+    lateUpdate({ now }) {
+      if (!me.entered) return;
+      if (!enteredAt) enteredAt = now;
       const ready = known();
       if (ready || now - enteredAt > WAIT_MS) {
         shown = true;
         show(ready ? welcomeLines(then) : []);
+        despawn(waiting);
       }
-    }
-    // Remember the room only once it is known (and after the welcome read the old memory).
+    },
+  });
+}
+
+// Remember the room only once it is known (and after the welcome read the old memory).
+defineKind('room-memory', { lateUpdate: 44 });
+spawn({
+  kind: 'room-memory',
+  lateUpdate({ now }) {
+    if (!me.entered) return;
     if (shown && now - savedAt > SAVE_MS && known()) {
       savedAt = now;
       rememberVisit(room);
     }
   },
-  { phase: 'late', order: 44 },
-);
+});
 addEventListener('pagehide', () => me.entered && known() && rememberVisit(room));

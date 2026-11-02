@@ -1,10 +1,11 @@
 // The first-run card: the first time a player enters with a keyboard, a gamepad or a touch screen, a small paper card
 // lists the basics (generated from the control registry, src/player/guide.ts) and points at the menu. Only its close
 // button takes clicks; it goes away once the player has walked about for a few seconds, after 15, when closed, or when the
-// menu opens (the menu lists every control). Local only: one flag per input kind
-// in localStorage. Serves DESIGN.md's "drop-in, drop-out": the controls are one glance away, never a manual.
+// menu opens (the menu lists every control). Each card is an entity, for as long as it's up. Local only: one flag per
+// input kind in localStorage. Serves DESIGN.md's "drop-in, drop-out": the controls are one glance away, never a manual.
 import './first-run.css';
-import { onFrame } from '../loop.ts';
+import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
+import type { FrameCtx } from '../loop.ts';
 import { me } from '../player/player.ts';
 import { input } from '../player/input.ts';
 import { modalOpen } from '../player/modal.ts';
@@ -35,17 +36,25 @@ const remember = (kind: Kind) => {
 };
 
 let card: HTMLElement | null = null;
+let entity: GameEntity | null = null; // while the card is up
 let last: Kind | null = null; // the input kind last looked at
 let moved = 0;
 let shown = 0;
 
+function stop() {
+  if (entity) despawn(entity);
+  entity = null;
+}
+
 function hide() {
+  stop();
   card?.remove();
   card = null;
 }
 
 function dismiss() {
   if (!card) return;
+  stop();
   card.classList.add('gone');
   const c = card;
   card = null;
@@ -76,27 +85,29 @@ function show(k: Kind) {
   });
   c.append(close, renderGuide(k, { groups: GROUPS }), more);
   (document.querySelector('.hud') ?? document.body).append(c);
+  entity = spawn({ kind: 'first-run', lateUpdate });
 }
 
 const walking = () => WALK.some((c) => input.keys.has(c)) || Math.abs(input.stickX) + Math.abs(input.stickY) > 0.25;
 
-onFrame(
-  ({ dt }) => {
-    if (!me.entered) return;
-    const k = inputKind();
-    if (k !== last) {
-      // A new input kind gets its own card, once.
-      last = k;
-      hide();
-      if (!seen(k)) show(k);
-    }
-    if (!card) return;
-    if (modalOpen()) return dismiss(); // the menu has every control in it
-    card.hidden = dialogue.open;
-    if (card.hidden) return;
-    shown += dt;
-    if (walking()) moved += dt;
-    if (moved >= MOVE_S || shown >= MAX_S) dismiss();
-  },
-  { phase: 'late' },
-);
+function lateUpdate({ dt }: FrameCtx) {
+  if (!card || !me.entered) return;
+  if (modalOpen()) return dismiss(); // the menu has every control in it
+  card.hidden = dialogue.open;
+  if (card.hidden) return;
+  shown += dt;
+  if (walking()) moved += dt;
+  if (moved >= MOVE_S || shown >= MAX_S) dismiss();
+}
+defineKind('first-run', { lateUpdate: 0 });
+
+// Entering the island and a change of input both change the body's classes (`playing`, `gamepad`, `touch`). A new input
+// kind gets its own card, once.
+new MutationObserver(() => {
+  if (!me.entered) return;
+  const k = inputKind();
+  if (k === last) return;
+  last = k;
+  hide();
+  if (!seen(k)) show(k);
+}).observe(document.body, { attributes: true, attributeFilter: ['class'] });
