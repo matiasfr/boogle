@@ -50,6 +50,8 @@ These are standing preferences from the thread.
   8. Maglev
 - **Steam comes early and keeps getting better.** The industrial eras (3–5) are grimy and smoky, but goofy. The electric era clears the air.
 - **The mainland port city** is visible from the start, reachable at the end, and you can walk around it.
+- **2026-11-01, home grows; the metropolis doesn't** (owner: "the starting area should evolve over time and grow", and "closer to the end game, you get to reach more of an existing metropolis ... we wouldn't have to evolve it over time up close or anything. We would just build it as its more final state"). The mainland is one build in its final state, with no era versions up close; era work goes into home and the islands. How big home gets by the late eras, and what "monorail city" means there, is still open.
+- **2026-11-01, islands aren't tied to mini-games** (owner: "I don't want to tie certain levels to different mini games. That was more just an aside thought"). Places are designed on their own terms, for variety.
 - **Old lines upgrade with the eras**, and a heritage narrow-gauge loco keeps running.
 - **Pace: fast.** About 1–3 evenings per era.
 - **After the finale,** the archipelago stays open as a toy box.
@@ -144,6 +146,7 @@ These are standing preferences from the thread.
 - **2026-11-01, one playtest path, verdicts sent to the server** (owner: "I don't think I need to press and sort of reload the game every time I want to try something"; "yes" to sending verdicts). `boogle.club/?play` puts every prototype that can share the island on one island, with the world-changing ones as chapters; variants switch live where they're Local, and the prototype bar plays the Start-here list with Next and Prev. A verdict and its one-line note go to the game server's report log (kind `playtest`) as well as staying in the browser; the director reads them with `npm run verdicts` and logs them in playtests.md, so the owner never pastes. Copy all stays as a fallback.
 - **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
 - **2026-11-01, a lighter test load.** `npm run ship` no longer runs smoke on the Mac by default (`-- --gpu` opts in); smoke runs against the live site after each deploy and nightly. New tests only for lockstep code; features and feel get looked at, not tested. `perf` only for heavy rendering changes.
+- **2026-11-01, level previz looks like what we'd build** (owner: "it's hard to get a real feel with that visual style"; "use something that's closer to what we might eventually build"). Use real renderer captures, or image generation matched to them, not painted maps.
 - **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
 - **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
 
