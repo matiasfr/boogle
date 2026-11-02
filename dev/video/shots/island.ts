@@ -52,6 +52,22 @@ export default {
         },
       }),
     );
+    // A moonlit night (e52eb9a): a full moon over the lighthouse, its beams sweeping. Tilt up from the tower to the moon.
+    await g.eval(`window.boogle.sky.preview(0.72, 0.5)`);
+    await g.wait(1);
+    const moon: number[] = await g.eval(`const d = window.boogle.sky.state.moonDir; return [d.x, d.y, d.z];`);
+    const eye = ring(lamp, Math.atan2(-moon[2]!, -moon[0]!), 34, -2); // the tower between us and the moon
+    const sky = [eye[0]! + moon[0]! * 60, eye[1]! + moon[1]! * 60, eye[2]! + moon[2]! * 60];
+    out.push(
+      await g.record('island-night', {
+        seconds: 8,
+        each: c.move(
+          { cam: eye, look: [lamp[0]!, lamp[1]! - 2, lamp[2]!] },
+          { cam: [eye[0]!, eye[1]! - 1, eye[2]!], look: sky },
+          8,
+        ),
+      }),
+    );
     return out;
   },
 } satisfies Shot;
