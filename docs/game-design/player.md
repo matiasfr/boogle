@@ -119,8 +119,9 @@ stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new
 the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
 6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint.
 
-`&body=cute` plays the same clips on a smaller, big-headed figure: bones rescaled (legs 0.62, head 2.4), with the hips and
-stride shrunk to match the legs (× 0.689).
+Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](../../src/proto/hero/looks.ts)):
+`&body=cute`, `ears`, `stout` and `bib`. Each rescales the mannequin's bones, thickens its skin and adds simple parts; the
+hips and stride shrink with the legs.
 
 `&ctl=odyssey` (any page) tries a modern-Mario controller: you run where you face (turning at most 390°/s, 510°/s at
 sprint), speed builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air
