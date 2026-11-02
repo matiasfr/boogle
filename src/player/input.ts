@@ -11,7 +11,8 @@ import { cancelCharge } from './throw.ts';
 import { cycle } from './inventory.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
 
-export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false };
+// triggerL / triggerR: a pad's analog triggers, 0..1 (src/features/gamepad.ts); a vehicle reads them as brake and throttle.
+export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: false, triggerL: 0, triggerR: 0 };
 // canLock: the browser has Pointer Lock at all (Safari on iPadOS has none, research/cross-device-input.md rec 3), so
 // mouse look there is a click-drag or a two-finger trackpad scroll. looked: one of those has turned the camera (the
 // hint in hud.ts then goes). seated: in a vehicle's seat (setSeated), where its chase camera owns the view. held: the

@@ -1,10 +1,14 @@
 // Prototype: the soapbox cart (?proto=soapbox; docs/game-design/soapbox.md, docs/plans/find-the-fun.md step 5).
 // Asks "is driving a vehicle fun?" with feel only: no rewards. Serves DESIGN.md 1 (toys before chores), with 2 and 10.
 //
-// The cart is an arcade vehicle on one physics body: a frictionless sphere that gravity rolls downhill, with grip,
-// steering and drag added by hand each fixed step (vehicles.md rule 1: fake the stability, keep the physics). The mesh
-// is posed on top: tilted to the ground, leaning into turns, bouncing on a spring. Owner kind: the driver publishes the
-// pose as presence `soapbox`; everyone else smooths it with createSnaps.
+// The cart drives like an RC car (research/vehicle-feel.md, "RC cars"): a motor on analog throttle (RT, W, stick
+// forward), brake and reverse (LT, S, stick back), and a sprung body you can see work. The physics is one body: a
+// frictionless sphere with grip, steering, motor and drag added by hand each fixed step (vehicles.md rule 1: fake the
+// stability, keep the physics), so it cannot flip and stall the run. On top, a raycast suspension: a ray per wheel finds
+// the ground, a spring-damper per wheel holds up a chassis that heaves, pitches and rolls with the cart's own
+// accelerations (body roll in a turn, squat on throttle, dive on the brake, a squash on landing), and the wheels follow
+// the ground on their own. Throttle in the air lifts the nose, brake drops it (real RC jumping). Owner kind: the driver
+// publishes the pose as presence `soapbox` and the ride as `soapboxRide`; everyone else smooths them with createSnaps.
 //
 // Seated, your own body leaves the physics world and is put on the seat each frame, so the camera, your avatar and
 // your presence follow the cart. A hard hit throws you out.
@@ -12,7 +16,7 @@
 // Silent for now: the rumble, rattle, wind, drift ticks, boost and crash sounds were cut in the sound audit
 // (2026-11-02); better ones come later.
 import * as THREE from 'three/webgpu';
-import { FIXED, INTERP_MS, PLAYER_R, reducedMotion } from '../../constants.ts';
+import { FIXED, GRAVITY, INTERP_MS, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { clamp, lerp, angleLerp, finiteArr, r2, r3 } from '../../math.ts';
 import { groundHeight } from '../../adapters/terrain.ts';
 import { waterField } from '../../physics/water-field.ts';
@@ -41,7 +45,18 @@ import { describeControl, wrapAction } from '../../player/controls.ts';
 import { remotes, addPresenceField, onRemotePresence, sendPresence } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
-import { makeCart, poseCart, SEAT, TRACK, AXLE_Z, WHEEL_R } from './cart-mesh.ts';
+import {
+  makeCart,
+  poseCart,
+  chassisPoint,
+  SEAT,
+  TRACK,
+  AXLE_Z,
+  WHEEL_R,
+  MOUNT_Y,
+  WHEELS,
+  type Ride,
+} from './cart-mesh.ts';
 import { createRunHud, type RunHud } from './run-hud.ts';
 import { createGhost } from './ghost.ts';
 import { protoMark, protoActivity } from '../mark.ts';
@@ -52,9 +67,10 @@ import { onVariant, protoV } from '../flags.ts';
 const T = {
   mass: 120, // kg: bulldozes the ball (0.6) and players (70)
   r: 0.5, // m: the rolling sphere under the cart
-  push: 5, // m/s²: kicking along with forward held, up to pushMax
-  pushMax: 5, // m/s
-  brake: 16, // m/s²: back held (enough to hold the cart on the massif's steep face)
+  motor: 12, // m/s² of drive at full throttle from a standstill, falling to nothing at `top`
+  top: 13, // m/s: the motor's top speed (the hill can take you past it)
+  reverse: 5, // m/s: backing up, at 0.6x the motor
+  brake: 16, // m/s²: full brake (enough to hold the cart on the massif's steep face)
   rolling: 0.35, // m/s²: rolling resistance
   drag: 0.014, // 1/m: air drag (a = drag·v²); about 22 m/s on the steepest part of the hill
   grip: 36, // m/s²: most sideways acceleration the wheels give before they slide
@@ -97,7 +113,7 @@ const T = {
   boostReadyS: 0.35,
   boostBig: 5, // m/s over boostBigS
   boostBigS: 0.6,
-  boostScale: 0.75, // x both boosts: the default and grip get a milder one, drifty the full
+  boostScale: 0.75, // x both boosts: the others get a milder one, drift the full
   // the chase camera (vehicle-feel.md 4)
   camDist: 8.5, // m behind, nearly fixed
   camPull: 0.5, // m more at speed, at most
@@ -112,12 +128,26 @@ const T = {
   traumaCrash: 0.6,
   traumaDecay: 1.5, // per second
   hitStop: 70, // ms the crash frame holds before you fly (vehicle-feel.md 6)
+  // the suspension (vehicle-feel.md, RC cars 1-3; per wheel, per unit of the chassis' mass): spring k (1/s²) and damper
+  // c (1/s), how far a wheel hangs below its rest height, and how hard the cart's accelerations throw the body
+  springK: 30, // 4 springs: about 1.7 Hz bounce, 15 cm of sag
+  springC: 2.2, // damping ratio about 0.4: one or two visible overshoots
+  droop: 0.2, // m a wheel hangs below rest unloaded (over the sag: a rolled body keeps its inside wheels down)
+  rollGain: 1.5, // rad/s² of roll per m/s² of sideways grip (about 9° in a hard turn, 13° at the grip limit)
+  pitchGain: 2, // rad/s² of pitch per m/s² of speeding up or slowing down (squat and dive)
+  jolt: 0.6, // share of the frame's sudden vertical speed changes (landings, dips) the body takes
+  landMax: 5, // m/s: the most of one jolt
+  contactGrip: 0.55, // x grip with no wheel on the ground (a bounce after a landing is briefly loose)
+  airPitch: 3.5, // rad/s² of nose-up from full throttle in the air (brake: nose down)
+  airDamp: 2.5, // 1/s: the air rotation's damping, so it never tumbles (Re-Volt's angular air resistance)
 };
-// Handling variants for comparing in one sitting: &v=grip (planted, precise, short drifts) and &v=drifty (loose rear,
-// long drifts, the full drift boost). No &v: the tuning above. All three charge drifts the same way.
+// Handling variants for comparing in one sitting, each changing one thing: &v=bouncy (soft, long-travel springs: big
+// roll and bounce), &v=tight (stiff, short springs and more grip) and &v=drift (a loose rear, long drifts, the full
+// drift boost). No &v: the tuning above. All of them charge drifts the same way.
 const VARIANTS: Record<string, Partial<typeof T>> = {
-  grip: { grip: 48, driftGrip: 14, driftYaw: 1.15, driftAngle: 0.55, keepSlide: 0.5, handbrake: 2.2 },
-  drifty: {
+  bouncy: { springK: 16, springC: 0.9, droop: 0.34, landMax: 7 },
+  tight: { springK: 70, springC: 5, droop: 0.09, landMax: 4, grip: 46, driftGrip: 9, contactGrip: 0.8 },
+  drift: {
     grip: 32,
     driftGrip: 3,
     driftYaw: 1.7,
@@ -132,7 +162,7 @@ const VARIANTS: Record<string, Partial<typeof T>> = {
 const BASE = { ...T };
 const handling = (v: string) => Object.assign(T, BASE, VARIANTS[v] ?? {});
 handling(protoV('soapbox'));
-onVariant('soapbox', ['', 'grip', 'drifty'], handling);
+onVariant('soapbox', ['', 'bouncy', 'tight', 'drift'], handling);
 const MAX_FALL = 22; // m/s, as physics.ts: no continuous collision against the heightfield
 
 // ---------------------------------------------------------------- the route
@@ -178,7 +208,10 @@ const S = {
   againUntil: 0, // after a wipeout, Interact takes you back to the top until then
   tumble: 0, // s left of the thrown-out spin
   tumbleAngle: 0,
-  landKick: 0, // m/s of fall speed at the last landing, for the mesh bounce
+  throttle: 0, // -1..1: this step's drive (+) or brake / reverse (-), for the air pitch
+  aLong: 0, // m/s²: how fast the cart is speeding up along its heading (smoothed), for squat and dive
+  aLat: 0, // m/s²: the wheels' sideways grip (+ toward the right; smoothed), for body roll
+  contact: 1, // 0..1: share of the wheels on the ground (eased), from the suspension
   camDist: 0, // the zoom you had before you got in
 };
 protoActivity(() => (S.seated ? 'driving' : null)); // for the playtest trace
@@ -193,12 +226,15 @@ const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
 // A stick pulled back brakes only past this share of its travel (a bowtie dead zone, research/cross-device-input.md
 // rec 7): a thumb that drifts down while steering does not stop the cart. Steering keeps the stick's own small one.
 const BRAKE_DEAD = 0.35;
+// Throttle is the most of W, the stick pushed forward and RT; brake (and reverse) the most of S, the stick pulled
+// back and LT (vehicle-feel.md, RC cars 4: analog triggers). Both held: they cancel.
 function readInput() {
   const k = input.keys;
   const steer = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
-  const fwd = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
   const sy = input.stickY > 0 ? Math.max(0, input.stickY - BRAKE_DEAD) / (1 - BRAKE_DEAD) : input.stickY;
-  return { steer: clamp(steer + input.stickX, -1, 1), throttle: clamp(fwd - sy, -1, 1) };
+  const gas = Math.max(k.has('KeyW') || k.has('ArrowUp') ? 1 : 0, -Math.min(0, sy), input.triggerR);
+  const brake = Math.max(k.has('KeyS') || k.has('ArrowDown') ? 1 : 0, Math.max(0, sy), input.triggerL);
+  return { steer: clamp(steer + input.stickX, -1, 1), throttle: clamp(gas - brake, -1, 1) };
 }
 
 // ---------------------------------------------------------------- the vehicle model (every fixed step)
@@ -217,13 +253,13 @@ onPreStep(() => {
   if (!S.grounded) S.fall = Math.max(S.fall, -v.y);
   else if (!S.wasGrounded) {
     const fall = Math.max(S.fall, -v.y);
-    S.landKick = Math.max(S.landKick, fall);
     if (fall > 6 && S.seated) addTrauma(T.traumaLand);
     S.fall = 0;
   }
   if (v.y < -MAX_FALL) v.y = -MAX_FALL;
 
   const ctl = S.seated ? readInput() : { steer: 0, throttle: 0 };
+  S.throttle = ctl.throttle;
   S.steer += (ctl.steer - S.steer) * (1 - Math.exp(-FIXED * T.steerEase));
   let fx = -Math.sin(S.heading),
     fz = -Math.cos(S.heading);
@@ -276,8 +312,10 @@ onPreStep(() => {
     const ratio = Math.abs(vl) / (Math.abs(vl) + Math.abs(vf) + 1e-6);
     const slide = lerp(1, T.slipLoose, clamp((ratio - T.slipFull) / (T.slipLet - T.slipFull), 0, 1));
     const slope = lerp(T.slopeGrip, 1, clamp((n.y - 0.8) / 0.15, 0, 1));
-    const lim = (S.drifting ? T.driftGrip : T.grip * slide) * slope * FIXED; // the handbrake has its own grip
+    const touch = lerp(T.contactGrip, 1, S.contact); // fewer wheels down (a bounce), less grip
+    const lim = (S.drifting ? T.driftGrip : T.grip * slide) * slope * touch * FIXED; // the handbrake has its own grip
     const vl2 = vl + clamp(-vl, -lim, lim);
+    S.aLat += (clamp((vl2 - vl) / FIXED, -25, 25) - S.aLat) * (1 - Math.exp(-FIXED * 14));
     const keep = T.keepSlide * (vl * vl - vl2 * vl2);
     vf = Math.sign(vf || 1) * Math.sqrt(vf * vf + keep);
     S.slip = vl2;
@@ -286,8 +324,9 @@ onPreStep(() => {
     let a = -T.rolling * sgn - T.drag * vf * Math.abs(vf);
     if (S.drifting) a -= T.handbrake * sgn;
     if (!S.seated || runHud.state.state === 'done') a -= T.coastBrake * 2 * sgn; // empty, or past the finish: stop
-    if (ctl.throttle > 0 && vf < T.pushMax) a += T.push * ctl.throttle;
-    if (ctl.throttle < 0) a += vf > 0.3 ? T.brake * ctl.throttle : vf > -2 ? T.push * 0.5 * ctl.throttle : 0;
+    // the motor: strong off the line, nothing left at its top speed; the brake, then reverse from a crawl
+    if (ctl.throttle > 0) a += T.motor * ctl.throttle * clamp(1 - vf / T.top, 0, 1);
+    if (ctl.throttle < 0) a += vf > 0.3 ? T.brake * ctl.throttle : vf > -T.reverse ? T.motor * 0.6 * ctl.throttle : 0;
     const nvf = vf + a * FIXED;
     vf = ctl.throttle === 0 && Math.sign(nvf) !== sgn ? 0 : nvf; // friction stops you, never reverses you
     if (S.boostLeft > 0) vf += S.boostAcc * FIXED * (sgn || 1);
@@ -303,6 +342,10 @@ onPreStep(() => {
     v.z *= k;
   }
   S.boostLeft = Math.max(0, S.boostLeft - FIXED);
+  // squat and dive: how fast the forward speed changed over the step (the hill, the motor, the brake, a hit)
+  const along = S.grounded ? clamp((vf - S.vf) / FIXED, -30, 30) : 0;
+  S.aLong += (along - S.aLong) * (1 - Math.exp(-FIXED * 10));
+  if (!S.grounded) S.aLat *= 1 - FIXED * 8;
   S.vf = vf;
   pre.set(v.x, v.y, v.z);
 });
@@ -407,7 +450,9 @@ function park() {
   S.steer = 0;
   S.slip = 0;
   S.vf = 0;
+  S.aLong = S.aLat = 0;
   n.set(0, 1, 0);
+  air.pitch = air.v = 0;
 }
 
 function backToTop() {
@@ -462,16 +507,39 @@ registerInteractable(() => {
 onStart(() => {
   // Clicking (to grab the mouse) with empty hands would get you out: seated, an empty-handed click does nothing.
   wrapAction('use', { down: (next) => (S.seated && !heldId() ? undefined : next()) });
+  // RT and LT are the throttle and brake while seated (vehicle-feel.md, RC cars 4), read as analog values from
+  // input.triggerR / triggerL; their own actions (Bump, the guest's crouch) wait until you get out.
+  wrapAction('bump', { down: (next) => (S.seated ? undefined : next()) });
+  wrapAction('guest-crouch', { down: (next) => (S.seated ? undefined : next()) });
   describeControl('soapbox-steer', {
-    label: 'Steer the cart; forward kicks off, back brakes',
+    label: 'Steer the cart',
     keys: [
-      ['KeyW', 'KeyA', 'KeyS', 'KeyD'],
-      ['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'],
+      ['KeyA', 'KeyD'],
+      ['ArrowLeft', 'ArrowRight'],
     ],
     pad: 'ls',
-    touch: 'Drag on the left',
+    touch: 'Drag left and right',
     group: 'move',
     order: 10,
+    context: 'driving',
+  });
+  describeControl('soapbox-gas', {
+    label: 'Throttle (in the air: nose up)',
+    detail: { pad: 'Squeeze for more' },
+    keys: ['KeyW', 'ArrowUp'],
+    pad: 'rt',
+    touch: 'Drag up',
+    group: 'move',
+    order: 10.1,
+    context: 'driving',
+  });
+  describeControl('soapbox-brake', {
+    label: 'Brake, then reverse (in the air: nose down)',
+    keys: ['KeyS', 'ArrowDown'],
+    pad: 'lt',
+    touch: 'Drag down',
+    group: 'move',
+    order: 10.2,
     context: 'driving',
   });
   describeControl('soapbox-drift', {
@@ -492,33 +560,150 @@ const nView = new THREE.Vector3(0, 1, 0);
 const qa = new THREE.Quaternion(),
   qb = new THREE.Quaternion(),
   eul = new THREE.Euler(0, 0, 0, 'YXZ');
-const spring = { y: 0, vy: 0, roll: 0, pitch: 0 };
-let lastVf = 0;
+// The frame (`pose`): on the ground under the sphere, facing the heading, tilted to the ground (and pitched by the
+// throttle in the air). The chassis (`chassis`) rides on it: `ride` is its heave, pitch and roll from rest.
+const chassis = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+const ride: Ride = { heave: 0, pitch: 0, roll: 0 };
+const rideV: Ride = { heave: 0, pitch: 0, roll: 0 };
+const drops = [0, 0, 0, 0]; // each wheel centre's height in the frame (0 at rest)
+const groundAt = [0, 0, 0, 0]; // the height each wheel centre would sit at on the ground below it (-9: nothing)
+const lastLen = [0, 0, 0, 0];
+const air = { pitch: 0, v: 0 }; // the nose's angle in the air from the throttle, and its rate
+let lastVy = 0;
+const I_PITCH = AXLE_Z * AXLE_Z * 0.7, // the chassis' moments of inertia per unit mass (the weight sits inboard)
+  I_ROLL = TRACK * TRACK * 0.7;
+const STOP = 0.06; // m: the bump stop, the shortest a strut gets
+const LIMITS: [keyof Ride, number][] = [
+  ['heave', 0.35],
+  ['pitch', 0.4],
+  ['roll', 0.32],
+];
+const wRay = { from: new THREE.Vector3(), to: new THREE.Vector3(), hit: rayHit() };
+
+// A ray per wheel, straight down the frame from above its mount: where the ground is under each wheel.
+function probeGround() {
+  for (let i = 0; i < 4; i++) {
+    const [x, z] = WHEELS[i];
+    toWorld(wRay.from, x, 1.2, z);
+    toWorld(wRay.to, x, -1.6, z);
+    const hit = raycastClosest(wRay.from, wRay.to, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, wRay.hit);
+    groundAt[i] = hit ? 1.2 - wRay.hit.distance + WHEEL_R : -9;
+  }
+}
+
+// The ground's slope under the four wheels (not just under the sphere), from a straight-down ray at each: the frame
+// tilts to it, so the springs carry only the bumps and the body's own motion, not the difference between the ground
+// under the sphere and under the wheels. The sphere's own normal when a ray misses.
+const plane = { n: new THREE.Vector3(), pts: [0, 1, 2, 3].map(() => new THREE.Vector3()), a: new THREE.Vector3() };
+function wheelPlane(c: { x: number; y: number; z: number }) {
+  const sh = Math.sin(S.heading),
+    ch = Math.cos(S.heading);
+  for (let i = 0; i < 4; i++) {
+    const [x, z] = WHEELS[i];
+    const wx = c.x + x * ch + z * sh,
+      wz = c.z - x * sh + z * ch;
+    wRay.from.set(wx, c.y + 2, wz);
+    wRay.to.set(wx, c.y - 3, wz);
+    if (!raycastClosest(wRay.from, wRay.to, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, wRay.hit))
+      return n;
+    plane.pts[i].set(wx, c.y + 2 - wRay.hit.distance, wz);
+  }
+  const [fl, fr, rl, rr] = plane.pts;
+  plane.a.subVectors(fr, rl); // one diagonal, then the other: their cross is the plane's normal
+  plane.n.subVectors(fl, rr).cross(plane.a).normalize();
+  if (plane.n.y < 0) plane.n.negate();
+  return plane.n.y > 0.8 ? plane.n : n; // steeper: a wheel is on a rock or a trunk, not the ground
+}
+
+// The suspension (vehicle-feel.md, RC cars 1-2): a spring-damper per wheel holds up a chassis with three degrees of
+// freedom, in the frame. What the frame does the chassis feels the other way: a landing's jolt squashes it, the cart's
+// speeding up and slowing down pitch it (squat, dive), the wheels' sideways grip rolls it out of a turn. With no wheel
+// down it eases back to rest while the wheels hang.
+function suspend(dt: number) {
+  const L0 = MOUNT_Y + GRAVITY / (4 * T.springK); // the springs' free length: at rest they sit at MOUNT_Y
+  const Lmax = MOUNT_Y + T.droop;
+  const vy = body.velocity.y;
+  const jolt = S.mode === 'parked' ? 0 : clamp((vy - lastVy) * T.jolt, -T.landMax, T.landMax);
+  lastVy = vy;
+  rideV.heave -= jolt;
+  const n = Math.min(8, Math.ceil(dt * 120));
+  const h = dt / n;
+  let touching = 0;
+  for (let k = 0; k < n; k++) {
+    let fh = -GRAVITY,
+      fp = S.aLong * T.pitchGain,
+      fr = S.aLat * T.rollGain;
+    touching = 0;
+    for (let i = 0; i < 4; i++) {
+      const [x, z] = WHEELS[i];
+      const mount = MOUNT_Y + ride.heave - ride.pitch * z + ride.roll * x;
+      const len = mount - groundAt[i];
+      if (len <= Lmax) {
+        touching++;
+        const L = Math.max(len, 0);
+        let f = T.springK * (L0 - L) - (T.springC * (L - lastLen[i])) / h;
+        if (L < STOP) f += 900 * (STOP - L) - (40 * (L - lastLen[i])) / h; // the bump stop: stiff, and soaks it up
+        f = Math.max(0, f);
+        drops[i] = Math.min(groundAt[i], mount - STOP);
+        lastLen[i] = L;
+        fh += f;
+        fp -= (f * z) / I_PITCH;
+        fr += (f * x) / I_ROLL;
+      } else {
+        drops[i] = mount - Lmax;
+        lastLen[i] = Lmax;
+      }
+    }
+    if (!touching) {
+      // nothing under the wheels: the body settles back to rest over them
+      fh += -40 * ride.heave - 6 * rideV.heave;
+      fp += -40 * ride.pitch - 6 * rideV.pitch;
+      fr += -40 * ride.roll - 6 * rideV.roll;
+    }
+    rideV.heave += fh * h;
+    rideV.pitch += fp * h;
+    rideV.roll += fr * h;
+    ride.heave += rideV.heave * h;
+    ride.pitch += rideV.pitch * h;
+    ride.roll += rideV.roll * h;
+    for (const [key, lim] of LIMITS)
+      if (Math.abs(ride[key]) > lim) {
+        ride[key] = Math.sign(ride[key]) * lim;
+        rideV[key] = 0;
+      }
+  }
+  S.contact += (touching / 4 - S.contact) * (1 - Math.exp(-dt * 12));
+}
+
+const XAXIS = new THREE.Vector3(1, 0, 0);
 function updatePose(dt: number) {
   if (S.hold) return; // a crash's hit-stop: the cart (and you on it) hold the frame of the hit
   const ip = body.interpolatedPosition;
-  nView.lerp(S.grounded || S.mode === 'parked' ? n : UP, 1 - Math.exp(-dt * 10)).normalize();
-  // suspension: a spring kicked by landings, so bumps read
-  if (S.landKick > 0) {
-    spring.vy -= Math.min(S.landKick, 14) * 0.35;
-    S.landKick = 0;
+  nView.lerp(S.grounded || S.mode === 'parked' ? wheelPlane(ip) : UP, 1 - Math.exp(-dt * 10)).normalize();
+  // the RC car's own air control: throttle lifts the nose, brake drops it, damped so it never tumbles; on landing the
+  // angle goes into the springs (nose-first slams the front)
+  if (!S.grounded && S.mode === 'driving') {
+    air.v += S.throttle * T.airPitch * dt;
+    air.v *= Math.exp(-T.airDamp * dt);
+    air.pitch = clamp(air.pitch + air.v * dt, -0.8, 0.8);
+  } else if (air.pitch || air.v) {
+    ride.pitch += air.pitch;
+    rideV.pitch += air.v;
+    air.pitch = air.v = 0;
   }
-  spring.vy += (-180 * spring.y - 12 * spring.vy) * dt;
-  spring.y = clamp(spring.y + spring.vy * dt, -0.2, 0.2);
-  // body roll out of a turn and pitch on braking: slapstick, not truth
-  const lat = S.vf * S.yawRate;
-  const acc = dt > 0 ? (S.vf - lastVf) / dt : 0;
-  lastVf = S.vf;
-  const e = 1 - Math.exp(-dt * 8);
-  spring.roll += (clamp(lat * 0.014 + S.slip * 0.03, -0.3, 0.3) - spring.roll) * e;
-  spring.pitch += (clamp(-acc * 0.012, -0.15, 0.15) - spring.pitch) * e;
   qa.setFromUnitVectors(UP, nView);
   qb.setFromAxisAngle(UP, S.heading);
   pose.q.copy(qa).multiply(qb);
-  eul.set(spring.pitch, 0, spring.roll);
-  pose.q.multiply(qb.setFromEuler(eul));
-  pose.p.set(ip.x, ip.y, ip.z).addScaledVector(nView, -(T.r - WHEEL_R) + spring.y);
+  pose.q.multiply(qb.setFromAxisAngle(XAXIS, air.pitch));
+  pose.p.set(ip.x, ip.y, ip.z).addScaledVector(nView, -(T.r - WHEEL_R));
+  probeGround();
+  suspend(Math.min(dt, 0.05));
+  chassisPoint(chassis.p, ride, 0, 0, 0).applyQuaternion(pose.q).add(pose.p);
+  chassis.q.copy(pose.q).multiply(qb.setFromEuler(eul.set(ride.pitch, 0, ride.roll, 'YXZ')));
 }
+// A point on the chassis (the seat), in the world.
+const onChassis = (out: THREE.Vector3, x: number, y: number, z: number) =>
+  out.set(x, y, z).applyQuaternion(chassis.q).add(chassis.p);
 const toWorld = (out: THREE.Vector3, x: number, y: number, z: number) =>
   out.set(x, y, z).applyQuaternion(pose.q).add(pose.p);
 
@@ -838,7 +1023,7 @@ onFrame(
     const v = body.velocity;
     const speed = Math.hypot(v.x, v.z);
     if (S.seated && me.body) {
-      toWorld(seat, 0, SEAT.y, SEAT.z);
+      onChassis(seat, 0, SEAT.y, SEAT.z);
       teleport(me.body, seat.x, seat.y, seat.z);
       me.body.velocity.set(0, 0, 0);
       me.yaw = S.heading;
@@ -914,12 +1099,12 @@ onFrame(
     const d = Math.hypot(ip.x - lastP.x, ip.z - lastP.z) * Math.sign(S.vf || 1);
     lastP.set(ip.x, ip.y, ip.z);
     S.wheel = S.mode === 'parked' ? 0 : S.wheel;
-    poseCart(mine, S.wheel, d);
+    poseCart(mine, S.wheel, d, ride, drops);
     // your best run, on the run clock (recorded while it runs; shown seated, from Ready to a second past its finish)
     const clock = S.seated ? runHud.clock(physicsTime()) : null;
-    if (clock !== null && runHud.state.state === 'running') ghost.record(clock, pose.p, pose.q, S.wheel);
+    if (clock !== null && runHud.state.state === 'running') ghost.record(clock, chassis.p, chassis.q, S.wheel);
     ghost.show(clock, dt);
-    if (S.seated && me.avatar) sit(me.avatar, pose.q);
+    if (S.seated && me.avatar) sit(me.avatar, chassis.q);
     // thrown out: a flip on the way, after feel.ts's spring (order 20) has set the lean
     if (S.tumble > 0 && me.avatar) {
       S.tumbleAngle += dt * 13;
@@ -944,7 +1129,7 @@ buildMarkers();
 // Owner sync: the cart you sit in, as [x, y, z, qx, qy, qz, qw, front wheel angle, speed]. Null when you are not in
 // it (an empty cart is local only: it rolls back to the top by itself).
 type Wire = number[];
-type Snap = { w: Wire };
+type Snap = { w: Wire; r: Wire | null };
 addPresenceField('soapbox', (): Wire | null => {
   if (!S.seated) return null;
   const { p, q } = pose;
@@ -961,6 +1146,11 @@ addPresenceField('soapbox', (): Wire | null => {
     r2(Math.hypot(v.x, v.z) * Math.sign(S.vf || 1)),
   ];
 });
+// The ride on top, as [heave, pitch, roll, then the four wheels' heights]: a separate key, so a build without it still
+// draws the cart (stiffly).
+addPresenceField('soapboxRide', (): Wire | null =>
+  S.seated ? [r3(ride.heave), r3(ride.pitch), r3(ride.roll), ...drops.map(r3)] : null,
+);
 type Theirs = { snaps: ReturnType<typeof createSnaps<Snap>>; mesh: ReturnType<typeof makeCart> | null };
 const theirs = new Map<string, Theirs>();
 onRemotePresence((r, pr, time) => {
@@ -971,10 +1161,13 @@ onRemotePresence((r, pr, time) => {
     return;
   }
   if (!t) theirs.set(r.peer, (t = { snaps: createSnaps<Snap>(), mesh: null }));
-  t.snaps.push(time, { w });
+  const ridden = pr.soapboxRide;
+  t.snaps.push(time, { w, r: finiteArr(ridden, 7) ? ridden : null });
 });
 const tq = new THREE.Quaternion(),
   tq2 = new THREE.Quaternion();
+const theirRide: Ride = { heave: 0, pitch: 0, roll: 0 };
+const theirDrops = [0, 0, 0, 0];
 onFrame(
   ({ dt, now }) => {
     for (const [peer, t] of theirs) {
@@ -997,9 +1190,17 @@ onFrame(
       tq.set(A[3], A[4], A[5], A[6]).normalize();
       tq2.set(B[3], B[4], B[5], B[6]).normalize();
       t.mesh.quaternion.slerpQuaternions(tq, tq2, u);
-      poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt);
+      const RA = a.r ?? b.r,
+        RB = b.r ?? a.r;
+      if (RA && RB) {
+        theirRide.heave = lerp(RA[0], RB[0], u);
+        theirRide.pitch = lerp(RA[1], RB[1], u);
+        theirRide.roll = lerp(RA[2], RB[2], u);
+        for (let i = 0; i < 4; i++) theirDrops[i] = lerp(RA[3 + i], RB[3 + i], u);
+        poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt, theirRide, theirDrops);
+      } else poseCart(t.mesh, lerp(A[7], B[7], u), B[8] * dt);
       const r = remotes.get(peer);
-      if (r?.avatar) sit(r.avatar, t.mesh.quaternion);
+      if (r?.avatar) sit(r.avatar, tq.copy(t.mesh.quaternion).multiply(t.mesh.userData.body.quaternion));
     }
   },
   { phase: 'update', order: 26 },
@@ -1009,6 +1210,9 @@ onFrame(
 window.__soapbox = {
   T,
   S,
+  ride,
+  drops,
+  air,
   body,
   START,
   FINISH,

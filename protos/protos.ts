@@ -208,15 +208,16 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=soapbox',
     question: 'Is driving fun?',
-    what: 'A ~10 s run off the rocky massif’s summit (north-west): the ridge, a drop down the face, a long right across the lowland. E to get in; hold Jump to drift, let go on blue or pink sparks for a boost. New: a ghost of your best run to race, with a split at the finish, and a camera that ducks and pulls in under the trees instead of going through them.',
+    what: 'New: the cart is now an RC car with suspension you can see: the body rolls in turns, squats on the throttle, dives on the brake and squashes on landings, on big wheels. RT throttle, LT brake and reverse (analog; W/S on keys); throttle in the air lifts the nose, brake drops it. Same ~9 s run off the massif’s summit, hold Jump (A) to drift for a boost, ghost of your best run.',
     since: '2026-11-01',
     spawn: { x: -61.5, z: -95, yaw: -1.571 }, // behind the cart on the summit, looking down the ridge
     variants: [
-      { name: 'grip', url: '/?proto=soapbox&v=grip', what: 'Planted and precise: short, tidy drifts.' },
+      { name: 'bouncy', url: '/?proto=soapbox&v=bouncy', what: 'Soft, long-travel springs: big roll and bounce.' },
+      { name: 'tight', url: '/?proto=soapbox&v=tight', what: 'Stiff, short springs and more grip: planted.' },
       {
-        name: 'drifty',
-        url: '/?proto=soapbox&v=drifty',
-        what: 'Loose rear, long drifts and the full drift boost (the others get 0.75x).',
+        name: 'drift',
+        url: '/?proto=soapbox&v=drift',
+        what: 'A loose rear: long drifts and the full drift boost (the others get 0.75x).',
       },
     ],
   },
@@ -439,14 +440,16 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'wagon', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'fast', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'stoke', why: 'Would you ride it twice for no reason?' },
-  { id: 'soapbox', variant: 'drifty', why: 'Would you do another run?' },
+  { id: 'soapbox', why: 'Is driving fun?' },
+  { id: 'soapbox', variant: 'bouncy', why: 'Is driving fun?' },
+  { id: 'soapbox', variant: 'tight', why: 'Is driving fun?' },
+  { id: 'soapbox', variant: 'drift', why: 'Is driving fun?' },
   { id: 'ride', why: 'Would you ride the flatbed twice for no reason?' },
   { id: 'board', why: 'Do hubs-only jumps make you want to ride between stops?' },
   { id: 'board', variant: 'plaque', why: 'Do hubs-only jumps make you want to ride between stops?' },
   { id: 'look', variant: 'high', why: 'High or toybox: which look should Boogle aim for?' },
   { id: 'look', variant: 'toybox', why: 'High or toybox: which look should Boogle aim for?' },
-  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
-];
+  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
 export const onIsland = (p: Proto) => (ISLAND as readonly string[]).includes(p.id);
