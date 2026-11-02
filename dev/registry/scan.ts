@@ -108,8 +108,8 @@ export function checkRegistry(reg: Registry): string[] {
       errors.push(`entity kind '${f.kind}' is defined twice: ${file}, ${kindFiles.get(f.kind)}`);
     kindFiles.set(f.kind, file);
   }
-  // An entity kind's order is unique among the kinds and the core hooks of its phase, and a pinned fixed-step order is
-  // unique (src/loop.ts has the table): a tie would run in import order.
+  // A kind may not tie with a core order (below the feature range, or 3000+ in 'late'), and a pinned fixed-step order is
+  // unique (src/loop.ts has the table). In the feature range kinds tie as onFrame hooks do, in registration order.
   const FIXED_PHASE = new Set(['fixedPre', 'fixedPost']);
   reg.frames.forEach((f, i) => {
     const pinned = FIXED_PHASE.has(f.phase);
@@ -119,7 +119,12 @@ export function checkRegistry(reg: Registry): string[] {
         o.phase === f.phase &&
         o.order === f.order &&
         j !== i &&
-        (pinned || o.kind ? j < i : isCoreHook(o.path, o.order)), // earlier: each pair is reported once
+        // earlier: each pair is reported once
+        (pinned
+          ? j < i
+          : o.kind
+            ? j < i && (isCoreHook(f.path, f.order) || isCoreHook(o.path, o.order))
+            : isCoreHook(o.path, o.order)),
     );
     if (clash) errors.push(`${f.path}: ${f.phase} order ${f.order} equals ${clash.path}; pick another`);
   });

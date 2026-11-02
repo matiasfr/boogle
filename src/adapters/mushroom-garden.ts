@@ -110,7 +110,7 @@ function shapeBody(v: Visual, s: number) {
 
 export function bounceOffCaps() {
   const b = me.body;
-  if (!b) return;
+  if (!b || !capBodies.size) return; // reading the contacts allocates, so a garden with no caps skips it
   forEachContact(b, (nx, ny, nz, other) => {
     const vis = capBodies.get(other);
     if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;

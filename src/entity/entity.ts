@@ -23,6 +23,7 @@
 //
 // One kind has one slot per phase. An object that needs two slots in a phase is two kinds (`ball` and `ball-carry`), as a
 // Unity object has several components. Orders are literals, so `npm run registry` can read them.
+// A kind can't take a core order; in the feature range (-10 and up) kinds tie as onFrame hooks do, in registration order.
 //
 // Importing an entity: game code imports its state.ts; presentation code (what draws around it) may also import its
 // view.ts; only the glob in src/main.ts imports its index.ts.

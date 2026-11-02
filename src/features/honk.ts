@@ -264,7 +264,7 @@ function update(dt: number) {
     p.sprite.material.rotation = p.age * 4;
   }
 }
-defineKind('honk', { lateUpdate: 1 }); // not 0: ping has it, and only these sprites read this
+defineKind('honk', { lateUpdate: 0 });
 spawn({ kind: 'honk', mesh: sparkles, lateUpdate: ({ dt }) => update(dt) });
 
 // ---------------------------------------------------------------- honks
