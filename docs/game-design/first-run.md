@@ -32,8 +32,7 @@
   You steer on the way down (the usual air control, inside a funnel that closes on the sign, so you can't miss), drop
   through the cloud into the island's daylight, and hit BOOGLE, written in timber and leaning on posts at the spawn. It
   flies apart, you lie flat with stars (1.8 s; any input stands you up after 0.9 s) and the cart lands next to you 0.8 s
-  later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's
-  usual 20 m/s, so 120 m is about 6 s in the air (`&v=short` 60 m, about 3.5 s; `&v=long` 200 m, about 10 s). Local: only
+  later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 120 m drop is about 6 s in the air. It's meant for a first visit only (the prototype replays it on every load, for testing); a returning player goes straight in as above. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing.
 - **History.** `?proto=arrive` (1 Nov 2026; wordless-onboarding recs 1, 2, 3, 8) tried skipping the lobby on every
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
