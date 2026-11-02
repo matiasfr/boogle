@@ -361,6 +361,9 @@ test('the reader tells senders from receivers, and keeps core presence keys and 
     sources: [{ path: 'src/main.ts', text: MAIN }],
   });
   assert.deepEqual(main.loop, { pre: ['updateRemotes', 'world.step'], render: 'renderFrame' });
+  const hooked = MAIN.replace('updateRemotes();', 'runFrame("prePhysics");');
+  const facts = extractFacts({ git: false, sources: [{ path: 'src/main.ts', text: hooked }] });
+  assert.deepEqual(facts.loop, { pre: ['world.step'], render: 'renderFrame' });
   assert.equal(extractFacts({ git: false, sources: [{ path: 'src/main.ts', text: 'const a = 1;' }] }).loop, null);
 });
 

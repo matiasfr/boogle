@@ -103,7 +103,7 @@ export function checkAtlas({ facts, concepts, stories = [], changes, loadProblem
 
   if (!facts?.error && !facts?.loop)
     out.push(
-      'src/main: the extractor could not find the frame function (the one given to setAnimationLoop, which calls runFrame); the Frame view shows no pre-step row',
+      'src/main: the extractor could not find the frame function (the one given to setAnimationLoop, which calls runFrame); the Frame view shows no step row',
     );
   return out;
 }

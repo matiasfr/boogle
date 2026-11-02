@@ -199,8 +199,8 @@ function dotted(call: ts.CallExpression): string | null {
 }
 
 // The frame loop in main: the function handed to setAnimationLoop(fn). pre = its top-level calls before the first
-// runFrame (what runs ahead of the onFrame hooks: remote poses, the physics step); render = the call after the last
-// runFrame (the draw). Profiling marks are not steps. Null when it cannot be found.
+// runFrame that follows the step (the physics step: runFrame('prePhysics') is hooks, listed with their phase); render =
+// the call after the last runFrame (the draw). Profiling marks are not steps. Null when it cannot be found.
 const PROFILING = new Set(['beginFrame', 'endFrame', 'mark']);
 function loopOf(sf: ts.SourceFile): Loop | null {
   let fnName: string | null = null;
@@ -217,6 +217,7 @@ function loopOf(sf: ts.SourceFile): Loop | null {
     .map((st) => (ts.isExpressionStatement(st) ? unwrap(st.expression) : undefined))
     .map((e) => (e && ts.isAwaitExpression(e) ? unwrap(e.expression) : e))
     .filter((e): e is ts.CallExpression => !!e && ts.isCallExpression(e))
+    .filter((c) => !(calleeName(c) === 'runFrame' && strOf(c.arguments[0]) === 'prePhysics'))
     .map(dotted)
     .filter((name) => !PROFILING.has(name ?? ''));
   const first = calls.indexOf('runFrame');

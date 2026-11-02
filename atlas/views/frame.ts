@@ -4,7 +4,8 @@ import { hooks } from '../model.ts';
 import type { Ctx, Update } from '../types.ts';
 
 const PHASES = [
-  ['pre', 'Before the step'],
+  ['prePhysics', 'prePhysics'],
+  ['pre', 'The step'],
   ['world', 'world'],
   ['update', 'update'],
   ['late', 'late'],

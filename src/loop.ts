@@ -2,13 +2,16 @@
 //
 //   onFrame(fn, { phase, order })   fn({ now, dt, elapsed }) every frame; lower order runs first, ties run in
 //                                   registration (import) order
+//     phase 'prePhysics' once a frame, before the physics step (intent, remote poses); core only so far
 //     phase 'world'  right after the physics step (gameplay reacting to physics)
 //     phase 'update' visual sync and camera (core, below -100), then the features (default: most features)
 //     phase 'late'   just before render (HUD, previews, uniforms; presence send and render come last)
 //   onStart(fn)                     once, after input/lobby/network start (right away if that already happened)
 //
-// main.ts runs, before the step: updateRemotes, resolveBallOwner, updateIntent, prepareBall, world.step. The core
-// modules then hook in at orders features leave alone (pick an order between these, never equal to one):
+// main.ts runs prePhysics, the physics step, then world, update and late, then renders. The core modules hook in at
+// orders features leave alone (pick an order between these, never equal to one):
+//   prePhysics  -100 remote-player: remote poses   -90 ball.ts: who owns the ball (can release it: me.holding)
+//               -80 player.ts: intent (reads me.holding, writes me.yaw)   -70 ball.ts: the carried pose (reads both)
 //   world   -300 ball.ts: an owned ball off the island respawns; ball.disp follows the body
 //           -290 player.ts: fall respawn         -280 ball.ts: walking into a slow ball claims it
 //   update  -300 ball.ts: ball mesh              -290 player.ts: own avatar       -280 remote-player: remote avatars
@@ -39,17 +42,17 @@
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
 
 export type FrameCtx = { now: number; dt: number; elapsed: number };
-export type Phase = 'world' | 'update' | 'late';
+export type Phase = 'prePhysics' | 'world' | 'update' | 'late';
 type Hook = { fn: (ctx: FrameCtx) => void; order: number; name: string };
 type Section = { name: string; ring: Float32Array; last: number };
 export type FrameOpts = { phase?: Phase; order?: number; name?: string };
 
-const hooks: Record<Phase, Hook[]> = { world: [], update: [], late: [] };
+const hooks: Record<Phase, Hook[]> = { prePhysics: [], world: [], update: [], late: [] };
 const starts: (() => void)[] = [];
 let started = false;
 
 // Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.ts's own
-// sections (pre-step, physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
+// sections (physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
 // (vite.config.ts passes it in through onFrame.in), or `name` in its options, else its phase and order.
 //   prof.table(n)   the n most expensive sections: { name, avg, p95, max } in ms over the window, plus 'frame' (total)
 //   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
@@ -116,9 +119,15 @@ export const prof = {
   },
 };
 
+// Vite's flag; this file also loads in Node (unit tests), where import.meta.env doesn't exist.
+const DEV = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
+
 export function onFrame(fn: (ctx: FrameCtx) => void, { phase = 'update', order = 0, name }: FrameOpts = {}) {
   const list = hooks[phase];
   if (!list) throw new Error(`onFrame: unknown phase ${phase}`);
+  // The sort below would reorder the list runFrame is walking, repeating or skipping a hook. Register at module top
+  // level or from onStart; a lazy module's top level runs between frames.
+  if (DEV && frameId !== 0) throw new Error(`onFrame called during a frame (${name ?? `${phase} ${order}`})`);
   list.push({ fn, order, name: name ?? `${phase} ${order}` });
   list.sort((a, b) => a.order - b.order);
 }

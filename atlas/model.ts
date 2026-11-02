@@ -85,8 +85,8 @@ export function wireOf(file: FileFacts): [string, string[]][] {
   return out;
 }
 
-// Every frame hook: the extracted onFrame calls, plus the steps src/main runs before the physics step and its final
-// draw (facts.loop; without it the Frame view has no pre-step or render row). `core` comes from the extractor (a
+// Every frame hook: the extracted onFrame calls, plus the physics step src/main runs and its final draw (facts.loop;
+// without it the Frame view has no step or render row). `core` comes from the extractor (a
 // reserved order outside src/features/). Hook id: `${file}#${n}`, the nth onFrame in that file.
 export function hooks(model: Model): Hook[] {
   const loop = model.facts?.loop;
