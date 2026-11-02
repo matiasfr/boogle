@@ -2,6 +2,7 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or [PLAN.md](../../PLAN.md) rests on one, link it from there.
 
+- [research-map.md](research-map.md) (2026-11-02): decision-ranked index of all reports in this checkout, including 0.1; ten remaining opportunities, conflicts with the latest owner decisions, and a status/use/phase row per source.
 - [water-farming-multiplayer.md](water-farming-multiplayer.md): what makes small drop-in shared worlds fun, water and farming precedents, the deterministic water sim. The source of the "tide-and-garden" direction.
 - [netcode-browser-physics.md](netcode-browser-physics.md): netcode models, cross-browser float determinism, NetplayJS, WebRTC vs WebSocket vs WebTransport. Why physics stays host-authoritative and the shared sim stays on integers.
 
