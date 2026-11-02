@@ -28,7 +28,7 @@ const voices: { g: GainNode; end: number }[] = [];
 let noise: AudioBuffer | null = null;
 
 function voice(ctx: AudioContext, out: AudioNode, at: number, dur: number, p: number): GainNode {
-  for (let k = voices.length - 1; k >= 0; k--) if (voices[k].end < ctx.currentTime) voices.splice(k, 1);
+  for (let k = voices.length - 1; k >= 0; k--) if (voices[k]!.end < ctx.currentTime) voices.splice(k, 1);
   while (voices.length >= VOICES) {
     const old = voices.shift()!; // drop the oldest, never the newest
     old.g.gain.cancelScheduledValues(ctx.currentTime);

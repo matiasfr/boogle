@@ -55,7 +55,7 @@ export function launchLog(
   if (n < 1) return false;
   if (live.length >= MAX_LIVE) {
     // pile the units onto the youngest log rather than dropping them
-    const last = live[live.length - 1];
+    const last = live[live.length - 1]!;
     last.n += n;
     flying += n;
     return true;
@@ -98,7 +98,7 @@ function ringOf(x: number, z: number): number {
 /** Where a ring of the open site is and whether it takes logs, for the variants' prompts and juice. */
 export function openRingNear(x: number, z: number, slack = 0): { ring: number; x: number; z: number } | null {
   const s = rules.sites.sites.open;
-  if (s >= ROUTE.length || !identity.pid || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s].age)) return null;
+  if (s >= ROUTE.length || !identity.pid || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s]!.age)) return null;
   for (const ring of [TRACK, HELPER]) {
     const c = ringAt(s, ring);
     if (Math.hypot(x - c.x, z - c.z) < RING_R + slack && rules.sites.room(s, ring) > 0) return { ring, ...c };
@@ -240,10 +240,10 @@ const m4 = new THREE.Matrix4(),
   sc = new THREE.Vector3(LOG_SCALE, LOG_SCALE, LOG_SCALE);
 onFrame(
   ({ dt, now }: { dt: number; now: number }) => {
-    for (let w = waiting.length - 1; w >= 0; w--) if (now - waiting[w].at > PENDING_MS) waiting.splice(w, 1);
+    for (let w = waiting.length - 1; w >= 0; w--) if (now - waiting[w]!.at > PENDING_MS) waiting.splice(w, 1);
     let c = 0;
     for (let k = live.length - 1; k >= 0; k--) {
-      const log = live[k];
+      const log = live[k]!;
       const b = log.body;
       const p = b.position,
         v = b.velocity;
