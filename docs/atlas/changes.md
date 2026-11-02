@@ -26,6 +26,7 @@
 - Last, only controls and a prototype: one main button (RT or a left click) now uses what you hold or, empty-handed, bumps a nearby ball, so the separate bump and camera-zoom controls are gone, like a remote with fewer buttons. A new prototype (`?proto=onehand`) lets you hold just one thing, with no hotbar. Nothing shared changed, so nothing in the picture moved.
 - Last of the day, only a prototype: the fall into the world (`?proto=fall`), where you roll a handcar off the end of a rail above the clouds and tumble into a big wooden BOOGLE sign whose letters you can kick around. It all happens in your tab only, like a cutscene nobody else needs to see, so nothing in the picture moved.
 - Then, only Local changes about arriving and leaving: a first visit now starts with that fall, and a return puts you back where you last stood in that room, like a bookmark kept on your own device. The pause view gained Get unstuck (back to the spawn) and Start fresh (forget you on this device), and Leave now goes to a small menu page. Nothing is shared, so nothing in the picture moved.
+- Then, only a prototype and a cleanup: the real place (`?proto=place`) gained a stations round, where you chop logs, feed them to track-laying machines, and pour rails at a forge to build a second line, like a model railway you build sleeper by sleeper. It all lives in your tab. The old code-posed hero is gone, since the Buddy replaced it. Nothing in the picture moved.
 
 ## 2026-10-30
 
