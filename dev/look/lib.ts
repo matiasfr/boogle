@@ -1,4 +1,4 @@
-// Shared harness for `npm run look` and `npm run scenario`: a Vite dev server plus a local PeerJS signaling
+// Shared harness for `npm run look` and `npm run scenario`: a Vite dev server plus a local game
 // server, headless Chromium, and a small `Game` wrapper (one page = one player) with stills and motion capture.
 import net from 'node:net';
 import fs from 'node:fs';
@@ -138,6 +138,7 @@ export class Game {
   tracing = false;
   paused = false;
   errors: string[] = [];
+  consoleErrors: string[] = [];
   gfxErrors: string[] = [];
   gfx: string | undefined;
 
@@ -184,7 +185,9 @@ export class Game {
     g.errors = [];
     g.gfxErrors = []; // console errors from three (THREE.*): unported materials show up here
     g.page.on('console', (m) => {
-      if (m.type() === 'error' && m.text().startsWith('THREE.')) g.gfxErrors.push(m.text());
+      if (m.type() !== 'error') return;
+      g.consoleErrors.push(m.text());
+      if (m.text().startsWith('THREE.')) g.gfxErrors.push(m.text());
     });
     g.page.on('pageerror', (e) => {
       g.errors.push(e.message);
@@ -284,21 +287,28 @@ export class Game {
   up = (code: string) => this.page.keyboard.up(code);
   click = (x: number, y: number, opts?: Parameters<Page['mouse']['click']>[2]) => this.page.mouse.click(x, y, opts);
 
+  healthErrors() {
+    return [
+      ...this.errors.map((e) => `page error: ${e}`),
+      ...this.consoleErrors.map((e) => `console error: ${e}`),
+      ...(this.gfx === 'webgpu' ? [] : [`renderer is ${this.gfx ?? 'unknown'}, expected webgpu`]),
+    ];
+  }
+
+  // Completed game frames over wall time. A separate rAF counter can tick while rendering is stopped.
   async fps(ms = 1000) {
-    return this.page.evaluate(
-      (ms) =>
-        new Promise<number>((res) => {
-          let n = 0;
-          const t0 = performance.now();
-          const f = () => {
-            n++;
-            if (performance.now() - t0 < ms) requestAnimationFrame(f);
-            else res((n * 1000) / (performance.now() - t0));
-          };
-          requestAnimationFrame(f);
-        }),
-      ms,
-    );
+    const sample = () =>
+      this.page.evaluate(() => {
+        const frames: unknown = window.boogle.prof?.last.frames;
+        if (typeof frames !== 'number' || !Number.isSafeInteger(frames) || frames < 0)
+          throw new Error('Completed-frame counter unavailable; use a build with prof.last.frames');
+        return { frames, time: performance.now() };
+      });
+    const before = await sample();
+    await sleep(ms);
+    const after = await sample();
+    if (after.frames < before.frames || after.time <= before.time) throw new Error('Page reset during frame sampling');
+    return ((after.frames - before.frames) * 1000) / (after.time - before.time);
   }
 
   path(label: string, kind: string) {
@@ -311,11 +321,16 @@ export class Game {
     return p;
   }
 
-  // N screenshots spread over `seconds`, tiled into a contact sheet with timestamps, plus a per-pixel temporal
-  // stddev heatmap. score = mean stddev (0..255) over `region` ([x,y,w,h] as fractions of the frame).
+  // N screenshots spread over `seconds`, tiled into a contact sheet. Heatmaps are opt-in diagnostics, not quality
+  // scores: variance ignores frame order and cannot distinguish intended motion from jitter or a frozen renderer.
   async motion(
     label = 'motion',
-    { frames = 8, seconds = 2, region = null }: { frames?: number; seconds?: number; region?: number[] | null } = {},
+    {
+      frames = 8,
+      seconds = 2,
+      region = null,
+      heatmap = false,
+    }: { frames?: number; seconds?: number; region?: number[] | null; heatmap?: boolean } = {},
   ) {
     const [W, H] = this.size;
     const shots: Shot[] = [];
@@ -327,13 +342,13 @@ export class Game {
       shots.push({ t, b64: (await this.page.screenshot()).toString('base64') });
     }
     const calc = await this.ctx.newPage();
-    const res = await calc.evaluate(analyse, { shots, region, W: W!, H: H! });
+    const res = await calc.evaluate(analyse, { shots, region, heatmap, W: W!, H: H! });
     await calc.close();
     const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1]!, 'base64'));
     const sheet = this.path(label, 'motion'),
-      heat = this.path(label, 'heat');
+      heat = heatmap ? this.path(label, 'heat') : null;
     save(sheet, res.sheetUrl);
-    save(heat, res.heatUrl);
+    if (heat && res.heatUrl) save(heat, res.heatUrl);
     return { score: res.score, hotFrac: res.hotFrac, sheet, heat };
   }
 
@@ -423,7 +438,19 @@ export class Game {
 
 // Runs inside a scratch page (canvas), so the harness needs no image library.
 type Shot = { t: number; b64: string };
-async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[] | null; W: number; H: number }) {
+async function analyse({
+  shots,
+  region,
+  heatmap,
+  W,
+  H,
+}: {
+  shots: Shot[];
+  region: number[] | null;
+  heatmap: boolean;
+  W: number;
+  H: number;
+}) {
   const imgs = await Promise.all(
     shots.map(
       (s) =>
@@ -443,7 +470,7 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
     return cx.getImageData(0, 0, W, H).data;
   });
   const n = data.length;
-  const heat = cx.createImageData(W, H);
+  const heat = heatmap ? cx.createImageData(W, H) : null;
   const rx0 = region ? Math.floor(region[0]! * W) : 0,
     ry0 = region ? Math.floor(region[1]! * H) : 0,
     rx1 = region ? Math.ceil((region[0]! + region[2]!) * W) : W,
@@ -454,6 +481,8 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const o = (y * W + x) * 4;
+      if (heat) heat.data[o + 3] = 255;
+      if (x < rx0 || x >= rx1 || y < ry0 || y >= ry1) continue;
       let sd = 0;
       for (let ch = 0; ch < 3; ch++) {
         let m = 0;
@@ -464,19 +493,24 @@ async function analyse({ shots, region, W, H }: { shots: Shot[]; region: number[
         sd += v / n;
       }
       sd = Math.sqrt(sd / 3);
-      if (x >= rx0 && x < rx1 && y >= ry0 && y < ry1) {
-        sum += sd;
-        cnt++;
-        if (sd > 8) hot++;
+      sum += sd;
+      cnt++;
+      if (sd > 8) hot++;
+      if (heat) {
+        const h = Math.min(1, sd / 40); // black -> red -> yellow -> white over 0..40
+        heat.data[o] = Math.min(255, h * 3 * 255);
+        heat.data[o + 1] = Math.max(0, Math.min(255, (h * 3 - 1) * 255));
+        heat.data[o + 2] = Math.max(0, Math.min(255, (h * 3 - 2) * 255));
       }
-      const h = Math.min(1, sd / 40); // black -> red -> yellow -> white over 0..40
-      heat.data[o] = Math.min(255, h * 3 * 255);
-      heat.data[o + 1] = Math.max(0, Math.min(255, (h * 3 - 1) * 255));
-      heat.data[o + 2] = Math.max(0, Math.min(255, (h * 3 - 2) * 255));
-      heat.data[o + 3] = 255;
     }
-  cx.putImageData(heat, 0, 0);
-  const heatUrl = cv.toDataURL('image/png');
+  if (heat) {
+    cx.putImageData(heat, 0, 0);
+    if (region) {
+      cx.strokeStyle = '#f0f';
+      cx.strokeRect(rx0, ry0, rx1 - rx0, ry1 - ry0);
+    }
+  }
+  const heatUrl = heat ? cv.toDataURL('image/png') : null;
   const cols = Math.min(4, n),
     rows = Math.ceil(n / cols),
     tw = Math.floor(W / 2),
