@@ -1,26 +1,26 @@
 // Arrival: first visit or returning visit (docs/proposals/boogle-2.md, 2026-11-02; docs/game-design/first-run.md). A
-// first visit (no saved name on this device) gets the small name-and-colour card (index.html's lobby, src/player/hud.ts);
+// first visit (no saved name on this device) gets the name-and-colour card (index.html's lobby, src/player/hud.ts);
 // a returning visit skips it and lands straight in the world with the saved name and colour, and
 // src/features/welcome-back.ts shows a light "Welcome back" that says what changed in this room since the last visit.
 // Local only: everything here is this browser's localStorage, read once at load. Serves DESIGN.md 8 (Designed for
 // drop-in) and 9 (Leave something for the next visitor: a returning player hears what the others did).
 //
 //   isFirstVisit()          no identity saved on this device: show the card
-//   showCard()              the card shows this load: a first visit, or just after Leave (leaveIsland)
+//   showCard()              the card shows this load: a first visit
 //   lastVisit               { at, room } of the previous visit (ms since 1970), or null; read at load
 //   roomMemory(room)        what the welcome items remembered about `room` at the last visit, or null
 //   addWelcomeItem(item)    one more thing a returning player hears about (persistent progress, mail, ... later)
 //   rememberVisit(room)     save { at, room } and every item's save() for `room` (welcome-back.ts, every few seconds)
 //   welcomeLines(then)      each item's line about what changed since `then`, in order, skipping the quiet ones
 //   friendlyName()          a random friendly name for the first-visit card
-//   leaveIsland()           the pause view's Leave: reload onto the card
+//   leaveIsland()           the pause view's Leave: out to the menu page (/menu/), where the game isn't running
+//   startFresh()            the pause view's Start fresh: forget this person on this device and fall in as someone new
 
 import { PROTO } from '../proto/flags.ts';
 
 const NAME = 'boogle.name'; // also written by the lobby (src/player/hud.ts) and the pause view's You editor
 const LAST = 'boogle.lastVisit';
 const ROOM = (room: string) => `boogle.visit.${room}`;
-const LEAVING = 'boogle.leaving'; // sessionStorage: this tab just left, so the card shows once
 
 // window.localStorage itself throws where site data is blocked (and is missing in node tests).
 function store(kind: 'localStorage' | 'sessionStorage'): Storage | null {
@@ -56,18 +56,9 @@ try {
 } catch {
   // no storage: every visit is a first visit
 }
-let leaving = false;
-try {
-  const s = store('sessionStorage');
-  leaving = s?.getItem(LEAVING) === '1';
-  s?.removeItem(LEAVING);
-} catch {
-  // no session storage: Leave lands straight back in
-}
-
 const first = !saved;
 export const isFirstVisit = () => first;
-export const showCard = () => first || leaving || PROTO === 'fall'; // ?proto=fall replays the first visit
+export const showCard = () => first || PROTO === 'fall'; // ?proto=fall replays the first visit
 const lastRead = readJson(LAST);
 export const lastVisit: LastVisit | null = okVisit(lastRead) ? lastRead : null;
 
@@ -97,6 +88,7 @@ export function roomMemory(room: string): RoomMemory | null {
 }
 
 export function rememberVisit(room: string, at = Date.now()) {
+  if (fresh) return;
   const then = roomMemory(room); // read first, so this visit's welcome still compares with the last one
   const out: Record<string, unknown> = { ...then?.items };
   for (const it of items) {
@@ -154,10 +146,23 @@ const NAMES = [
 export const friendlyName = () => NAMES[Math.floor(Math.random() * NAMES.length)]!;
 
 export function leaveIsland() {
-  try {
-    store('sessionStorage')?.setItem(LEAVING, '1');
-  } catch {
-    // lands straight back in
+  location.href = new URL(
+    `menu/?from=${encodeURIComponent(location.search)}`,
+    location.origin + location.pathname,
+  ).href;
+}
+
+// Who you are on this device: your identity, and what's yours rather than the island's. The controls cards you've seen
+// and your settings stay: it's still you at the keyboard.
+const PERSON = ['boogle.name', 'boogle.color', 'boogle.pid', 'boogle.key', 'boogle.lastVisit', 'boogle.boogler'];
+const PERSON_PREFIX = ['boogle.visit.', 'boogle.minis.', 'boogle.soapbox.'];
+let fresh = false;
+export function startFresh() {
+  fresh = true; // pagehide must not write the old person back
+  const s = store('localStorage');
+  if (s) {
+    for (const k of PERSON) s.removeItem(k);
+    for (const k of Object.keys(s)) if (PERSON_PREFIX.some((p) => k.startsWith(p))) s.removeItem(k);
   }
   location.reload();
 }

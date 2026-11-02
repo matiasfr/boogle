@@ -59,7 +59,7 @@ addWelcomeItem({
 const room = getRoomId();
 const then = roomMemory(room); // before this visit remembers anything
 let enteredAt = 0;
-let shown = !!showCard(); // a first visit (or after Leave) gets the card instead
+let shown = !!showCard(); // a first visit gets the card instead
 let savedAt = -1e9;
 
 function show(lines: string[]) {
@@ -93,7 +93,7 @@ const known = () => {
   return w.mode !== 'local' && w.ready;
 };
 
-// The wait for the room: done once the card is up. A first visit (or after Leave) has none to wait for.
+// The wait for the room: done once the card is up. A first visit has none to wait for.
 defineKind('welcome-back', { lateUpdate: 44 });
 if (!shown) {
   const waiting: GameEntity = spawn({

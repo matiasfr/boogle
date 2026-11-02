@@ -13,8 +13,8 @@
   and suggests Add to Home Screen; the button then reads Fullscreen anyway (touch only)) and
   Leave (press twice within 3 s). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button. The Room page ends with a You section: a
-  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Leave reloads onto the
-  first-visit card once, so a returning player can still go through it ([first-run.md](first-run.md)).
+  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Under them, Start fresh asks once more, then replays the first visit as someone new. Leave goes to
+  a small menu page with the game stopped ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/pad-diagram.ts](../../src/player/pad-diagram.ts),

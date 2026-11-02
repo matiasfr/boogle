@@ -6,10 +6,15 @@
   until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
   visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. A `?proto=` or
   `?play` page, and an automated browser, get the plain card over the island instead, with the Boogle title.
-- **Returning visit.** With a name saved, there is no card: the game goes in on its own as soon as the island can be
-  drawn, at the usual spawn (or the room or prototype's own, from the URL), with the saved name and colour. A bare
-  launch of the Home Screen app goes straight back to the room or prototype it was last in. The pause view's Leave
-  reloads onto the card once (session storage `boogle.leaving`), so a player can still change name or colour there.
+- **Returning visit.** With a name saved, there is no card and no fall: the game goes in on its own as soon as the island
+  can be drawn, with the saved name and colour, where you last stood in this room and facing the same way
+  ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a
+  seat or the water; with no record, a different world namespace, or ground that has moved or gone under the sea, you get
+  the usual spawn (or the room or prototype's own, from the URL). A bare launch of the Home Screen app goes straight back to
+  the room or prototype it was last in.
+- **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing
+  renders and you leave the room. Back to the island returns to the same address; a lobby picker can go here if there are
+  ever more lobbies. Start fresh ([identity.md](identity.md)) forgets you on this device and replays the first visit.
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
@@ -37,7 +42,7 @@
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
   (merged) on 2 Nov: its direct entry is how returning players arrive now and its rename editor is the pause view's
   You section; the arrival spot, the ball roll, the trimmed card and the timings went with it.
-- **Sync kind.** Local (localStorage `boogle.name`, `boogle.color`, `boogle.lastVisit`, `boogle.visit.<room>`,
+- **Sync kind.** Local (localStorage `boogle.name`, `boogle.color`, `boogle.lastVisit`, `boogle.visit.<room>` (your spot among them),
   `boogle.firstRun.<kind>`). The welcome back reads lockstep state (roster, sites, opening) and never changes it.
 - **Files.** [src/player/arrival.ts](../../src/player/arrival.ts), [src/player/hud.ts](../../src/player/hud.ts) (the
   card), [src/features/welcome-back.ts](../../src/features/welcome-back.ts),
