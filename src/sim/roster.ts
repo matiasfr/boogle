@@ -63,7 +63,7 @@ export function setWho(r: Roster, pid: string, n: string, c: number): { idx: num
 }
 
 // [[pid, name, colour], ...] in index order.
-export const serializeRoster = (r: Roster): RosterJson => r.pids.map((p, k) => [p, r.names[k], r.colors[k]]);
+export const serializeRoster = (r: Roster): RosterJson => r.pids.map((p, k) => [p, r.names[k]!, r.colors[k]!]);
 
 export function loadRoster(r: Roster, json: unknown): void {
   if (!Array.isArray(json)) throw new Error('roster: not an array');
@@ -79,6 +79,6 @@ export function loadRoster(r: Roster, json: unknown): void {
 
 export function hashRoster(r: Roster): number {
   let h = fold(FNV_SEED, r.pids.length);
-  for (let k = 0; k < r.pids.length; k++) h = fold(foldStr(foldStr(h, r.pids[k]), r.names[k]), r.colors[k]);
+  for (let k = 0; k < r.pids.length; k++) h = fold(foldStr(foldStr(h, r.pids[k]!), r.names[k]!), r.colors[k]!);
   return h;
 }

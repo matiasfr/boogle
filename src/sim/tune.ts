@@ -10,8 +10,8 @@ import type { CostFn } from './sites.ts';
 
 // APPEND ONLY: a key's index is folded into the hash. A key that goes away moves to RETIRED.
 export const TUNABLES = [
-  { key: 'cost0', def: AGES[0].cost, min: 2, max: 600, label: 'Section cost (wood)' },
-  { key: 'helper0', def: AGES[0].helper, min: 1, max: 600, label: 'Helper hut cost (wood)' },
+  { key: 'cost0', def: AGES[0]!.cost, min: 2, max: 600, label: 'Section cost (wood)' },
+  { key: 'helper0', def: AGES[0]!.helper, min: 1, max: 600, label: 'Helper hut cost (wood)' },
   { key: 'hard', def: HARD_CAP, min: 1, max: HARD_MAX, label: 'Hard cap' },
   { key: 'yield', def: YIELD, min: 1, max: 60, label: 'Logs per take' },
   { key: 'full', def: FULL, min: 1, max: FULL_MAX, label: 'Takes per bundle' },

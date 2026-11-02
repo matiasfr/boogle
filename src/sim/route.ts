@@ -24,8 +24,8 @@ export const TRACK = 0;
 export const HELPER = 1;
 export const RING_R = 1.7; // metres
 export const ringAt = (s: number, ring: number): { x: number; z: number } => ({
-  x: ROUTE[s].x + (ring === TRACK ? -2.4 : 2.4),
-  z: ROUTE[s].z,
+  x: ROUTE[s]!.x + (ring === TRACK ? -2.4 : 2.4),
+  z: ROUTE[s]!.z,
 });
 export const costOf = (s: number, ring: number): number =>
-  ring === TRACK ? AGES[ROUTE[s].age].cost : AGES[ROUTE[s].age].helper;
+  ring === TRACK ? AGES[ROUTE[s]!.age]!.cost : AGES[ROUTE[s]!.age]!.helper;

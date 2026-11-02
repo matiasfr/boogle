@@ -13,6 +13,6 @@ export const TIERS = [
 // The highest tier reached with this many points, as an index into TIERS; -1 below the first.
 export function tierOf(pts: number): number {
   let t = -1;
-  while (t + 1 < TIERS.length && pts >= TIERS[t + 1].pts) t++;
+  while (t + 1 < TIERS.length && pts >= TIERS[t + 1]!.pts) t++;
   return t;
 }

@@ -279,7 +279,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick.
   function releaseHeld() {
-    while (held.length && wall - held[0].at > HELD_MAX_MS) {
+    while (held.length && wall - held[0]!.at > HELD_MAX_MS) {
       held.shift();
       stats.heldDropped++;
     }
@@ -400,7 +400,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     }
     try {
       if (!isInt(v) || v < 0) throw new Error(`bad version ${v}`);
-      for (let x = v + 1; x <= s.version; x++) if (s.migrate[x]) json = s.migrate[x](json);
+      for (let x = v + 1; x <= s.version; x++) if (s.migrate[x]) json = s.migrate[x]!(json);
       s.load(json);
     } catch (err) {
       stats.loadErrors++;

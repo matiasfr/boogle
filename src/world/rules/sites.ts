@@ -44,7 +44,7 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
   // How many of n units pid can pour into ring at site s now (0: refused).
   function pourable(pid: string, s: unknown, ring: unknown, n: unknown): number {
     if (!siteOpen(sites, s) || (ring !== TRACK && ring !== HELPER) || !isInt(n) || n < 1 || n > HARD_MAX) return 0;
-    if (stacks.kind(pid) !== materialOf(ROUTE[s].age)) return 0;
+    if (stacks.kind(pid) !== materialOf(ROUTE[s]!.age)) return 0;
     return Math.min(n, stacks.count(pid), ringRoom(sites, s, ring, cost));
   }
   sync.registerOp<{ s: number; ring: number; n: number }>('site.stock', {
@@ -72,8 +72,8 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
     const s = finishRun(sites, t, cost);
     if (s < 0) return;
     for (const fn of doneFns) fn(s, t);
-    if (ageAt(sites) === ROUTE[s].age) return;
-    const old = materialOf(ROUTE[s].age);
+    if (ageAt(sites) === ROUTE[s]!.age) return;
+    const old = materialOf(ROUTE[s]!.age);
     for (let idx = 0; idx < roster.size(); idx++)
       if (stacks.kindAt(idx) === old) stock(sites, s, TRACK, idx, stacks.takeAt(idx, stacks.countAt(idx)), cost);
   }, 'sites');
@@ -120,7 +120,7 @@ export const edits = {
 // Ring caps use the room's tuned cost; plaque credit the age's default one.
 export function invariants({ sites, cost: costIn }: SitesApi): string | null {
   for (let s = 0; s < sites.list.length; s++) {
-    const x = sites.list[s];
+    const x = sites.list[s]!;
     if (x.poured + x.freight !== x.stock[TRACK] + x.stock[HELPER] + x.used) return `site ${s} lost units`;
     if (x.stock[TRACK] > costIn(s, TRACK) && !isDone(sites, s)) return `site ${s} track over cost`;
     if (x.stock[HELPER] > costIn(s, HELPER)) return `site ${s} helper over cost`;

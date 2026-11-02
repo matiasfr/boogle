@@ -46,7 +46,7 @@ export function findItem(s: Gifts, id: number) {
 export function takeItem(s: Gifts, id: number, tick = 0): Item | null {
   const k = s.items.findIndex((it) => it.id === id);
   if (k < 0) return null;
-  const it = s.items.splice(k, 1)[0];
+  const it = s.items.splice(k, 1)[0]!;
   const p = it.src === SRC.PERCH ? perchOf(s, it) : -1;
   if (p >= 0 && p < MAX_PERCHES) s.perchAt[p] = tick + PERCH_REFILL;
   return it;
@@ -54,7 +54,7 @@ export function takeItem(s: Gifts, id: number, tick = 0): Item | null {
 
 // A thrown thing comes to rest: kind lies at cell (i, j), y = ON_GROUND or a resting height in cm.
 export function canToss(kind: number, i: number, j: number, y: number) {
-  if (![kind, i, j, y].every((v) => isInt(v)) || kind < 0 || kind >= GIFTS.length || GIFTS[kind].src === 'ball')
+  if (![kind, i, j, y].every((v) => isInt(v)) || kind < 0 || kind >= GIFTS.length || GIFTS[kind]!.src === 'ball')
     return false;
   if (i < 0 || j < 0 || i >= MAX_CELL || j >= MAX_CELL) return false;
   return y === ON_GROUND || (y >= 0 && y <= MAX_Y);
@@ -78,8 +78,8 @@ export function tossItem(s: Gifts, kind: number, i: number, j: number, y: number
 export function tickGifts(s: Gifts, tick: number) {
   s.items = s.items.filter((it) => it.src === SRC.PERCH || tick - it.born < LIFE);
   for (let k = 0; k < s.perches.length && k < MAX_PERCHES; k++) {
-    const p = s.perches[k];
-    if (tick < s.perchAt[k] || s.items.length >= MAX_ITEMS) continue;
+    const p = s.perches[k]!;
+    if (tick < s.perchAt[k]! || s.items.length >= MAX_ITEMS) continue;
     if (s.items.some((it) => it.src === SRC.PERCH && it.i === p.i && it.j === p.j)) continue;
     s.items.push({ id: s.nextId++, kind: p.kind, i: p.i, j: p.j, src: SRC.PERCH, born: tick, y: ON_PERCH });
   }

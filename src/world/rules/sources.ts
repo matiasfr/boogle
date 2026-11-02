@@ -48,14 +48,14 @@ export function install(
       const k = materialOf(sites.age());
       const y = yieldN();
       const over = y - Math.min(y, stacks.room(e.u, k));
-      const p = list()[e.id];
+      const p = list()[e.id]!;
       return over === 0 || piles.room(p.i + 1, p.j, k, over) === over;
     },
     apply: (e) => {
       const n = take(sources, sites.age(), list().length, e.id, full(), yieldN());
       if (!n) return null;
       const k = materialOf(sites.age());
-      const p = list()[e.id];
+      const p = list()[e.id]!;
       // what fits beside the source; validate checked it all fits, so the stack takes the rest
       const over = Math.min(n - Math.min(n, stacks.room(e.u, k)), piles.room(p.i + 1, p.j, k, n));
       if (over) piles.drop(p.i + 1, p.j, k, over);
@@ -82,7 +82,7 @@ export const edits = {
     if (r.chance(JUNK)) return bad(r, 'src.take');
     const { trees } = view.land.layout;
     const id = r.int(0, trees.length - 1);
-    return { op: 'src.take', i: trees[id].i, j: trees[id].j, id };
+    return { op: 'src.take', i: trees[id]!.i, j: trees[id]!.j, id };
   },
 };
 

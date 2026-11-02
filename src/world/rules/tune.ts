@@ -44,11 +44,11 @@ export function install(
   function fits(key: TuneKey, v: number): boolean {
     if (key === 'cost0') {
       const x = sites.list[sites.open];
-      return !x || ROUTE[sites.open].age !== 0 || (x.t0 < 0 && v >= x.stock[TRACK]);
+      return !x || ROUTE[sites.open]!.age !== 0 || (x.t0 < 0 && v >= x.stock[TRACK]);
     }
     if (key === 'helper0')
       return sites.list.every((x, s) => {
-        if (ROUTE[s].age !== 0) return true;
+        if (ROUTE[s]!.age !== 0) return true;
         return x.helpers || s < sites.open ? v >= x.stock[HELPER] : v > x.stock[HELPER];
       });
     return true;
