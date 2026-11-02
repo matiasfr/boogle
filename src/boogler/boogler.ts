@@ -507,19 +507,22 @@ export function createBoogler() {
   teleport(b, s.x, groundHeight(s.x, s.z), s.z);
   addBody(b);
   boogler.body = b;
-  onPreStep(() => {
-    const p = b.position;
-    const tx = disp.x,
-      tz = disp.z,
-      ty = groundHeight(tx, tz);
-    const dx = tx - p.x,
-      dy = ty - p.y,
-      dz = tz - p.z;
-    if (dx * dx + dy * dy + dz * dz > 36) {
-      teleport(b, tx, ty, tz);
-      b.velocity.set(0, 0, 0);
-    } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
-  });
+  onPreStep(
+    () => {
+      const p = b.position;
+      const tx = disp.x,
+        tz = disp.z,
+        ty = groundHeight(tx, tz);
+      const dx = tx - p.x,
+        dy = ty - p.y,
+        dz = tz - p.z;
+      if (dx * dx + dy * dy + dz * dz > 36) {
+        teleport(b, tx, ty, tz);
+        b.velocity.set(0, 0, 0);
+      } else b.velocity.set(dx / FIXED, dy / FIXED, dz / FIXED);
+    },
+    { order: 50 },
+  );
 }
 
 const anim = { phase: 0, hop: 0, hopIn: 5, walk: 0, t: 0 };

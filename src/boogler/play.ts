@@ -116,34 +116,40 @@ const ride = {
 const riding = () => physicsTime() - ride.lastOn < 0.15 && performance.now() > ride.immuneUntil;
 
 function installRidePhysics() {
-  onPostStep(() => {
-    const b = me.body,
-      gb = boogler.body;
-    if (!b || !gb) return;
-    forEachContact(b, (nx, ny, nz, other) => {
-      if (other !== gb || ny <= 0.5) return false;
-      ride.lastOn = physicsTime();
-      return true;
-    });
-  });
+  onPostStep(
+    () => {
+      const b = me.body,
+        gb = boogler.body;
+      if (!b || !gb) return;
+      forEachContact(b, (nx, ny, nz, other) => {
+        if (other !== gb || ny <= 0.5) return false;
+        ride.lastOn = physicsTime();
+        return true;
+      });
+    },
+    { order: 30 },
+  );
   // Runs after the player's and The Boogler's own preSteps: move the rider with him, and keep a launch from being
   // steered to a stop by air control.
-  onPreStep(() => {
-    const b = me.body,
-      gb = boogler.body;
-    if (!b || !gb) return;
-    if (riding()) {
-      b.position.x += gb.velocity.x * FIXED;
-      b.position.z += gb.velocity.z * FIXED;
-    }
-    const fly = ride.fly;
-    if (!fly) return;
-    if (physicsTime() > fly.until || (physicsTime() > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
-    else {
-      b.velocity.x = fly.vx;
-      b.velocity.z = fly.vz;
-    }
-  });
+  onPreStep(
+    () => {
+      const b = me.body,
+        gb = boogler.body;
+      if (!b || !gb) return;
+      if (riding()) {
+        b.position.x += gb.velocity.x * FIXED;
+        b.position.z += gb.velocity.z * FIXED;
+      }
+      const fly = ride.fly;
+      if (!fly) return;
+      if (physicsTime() > fly.until || (physicsTime() > fly.from + 0.2 && me.coyote > 0)) ride.fly = null;
+      else {
+        b.velocity.x = fly.vx;
+        b.velocity.z = fly.vz;
+      }
+    },
+    { order: 60 },
+  );
 }
 
 function launch(now: number) {

@@ -102,13 +102,16 @@ export function fromPlatform(p: Platform, l: Local, interpolated: boolean, out: 
 export const yawOf = (q: { x: number; y: number; z: number; w: number }) =>
   Math.atan2(2 * (q.w * q.y + q.x * q.z), 1 - 2 * (q.y * q.y + q.x * q.x));
 
-// Module-level, so it runs before the player's controller hook (installed later, from main.ts).
-onPreStep(() => {
-  for (const p of platforms) {
-    prevYaw.set(p, yawOf(p.body.quaternion));
-    p.move(FIXED);
-  }
-});
+// Before the player's controller hook (orders: top of src/loop.ts).
+onPreStep(
+  () => {
+    for (const p of platforms) {
+      prevYaw.set(p, yawOf(p.body.quaternion));
+      p.move(FIXED);
+    }
+  },
+  { order: 10 },
+);
 
 // The deck the body stands on, with its feet gap (m, + = air below), or null.
 let gap = 0;

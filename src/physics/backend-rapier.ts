@@ -4,9 +4,10 @@
 // last reported was set by the game (a teleport, a ride) and is written through.
 import type * as RAPIER from '@dimforge/rapier3d';
 import { FIXED, GRAVITY } from '../constants.ts';
-import type { Body, BodyKind, BodyOptions, Material, MaterialProps, RayHit, Shape, V3 } from './engine.ts';
+import type { Body, BodyKind, BodyOptions, Material, MaterialProps, RayHit, Shape, StepOpts, V3 } from './engine.ts';
 
 type R = typeof RAPIER;
+const DEFAULT_STEP_ORDER = 1000; // past every pinned hook (src/loop.ts): prototypes and anything unnumbered run last
 class Vec {
   x = 0;
   y = 0;
@@ -61,8 +62,9 @@ let R: R | null = null;
 let world: RAPIER.World | null = null;
 const bodies = new Set<MBody>(); // in the world
 const byCollider = new Map<number, MBody>();
-const pre: (() => void)[] = [],
-  post: (() => void)[] = [];
+type StepHook = { fn: () => void; order: number };
+const pre: StepHook[] = [],
+  post: StepHook[] = [];
 let acc = 0,
   time = 0;
 
@@ -250,8 +252,15 @@ export function teleport(body: Body, x: number, y: number, z: number) {
 // their product (CoefficientCombineRule.Multiply).
 export const material = (name: string, props: MaterialProps): Material => ({ name, ...props }) as Mat;
 
-export const onPreStep = (fn: () => void) => void pre.push(fn);
-export const onPostStep = (fn: () => void) => void post.push(fn);
+// Lower order first, ties in registration order. Only registering allocates; a step walks the sorted list.
+function addStepHook(list: StepHook[], fn: () => void, order: number) {
+  let k = list.length;
+  while (k > 0 && list[k - 1]!.order > order) k--;
+  list.splice(k, 0, { fn, order });
+}
+export const onPreStep = (fn: () => void, { order = DEFAULT_STEP_ORDER }: StepOpts = {}) => addStepHook(pre, fn, order);
+export const onPostStep = (fn: () => void, { order = DEFAULT_STEP_ORDER }: StepOpts = {}) =>
+  addStepHook(post, fn, order);
 
 function push(b: MBody) {
   const rb = b.rb!,
@@ -285,12 +294,12 @@ function pull(b: MBody) {
 }
 function step() {
   if (!world) return;
-  for (const fn of pre) fn();
+  for (const h of pre) h.fn();
   for (const b of bodies) if (b.rb) push(b);
   world.step();
   for (const b of bodies) if (b.rb) pull(b);
   time += FIXED;
-  for (const fn of post) fn();
+  for (const h of post) h.fn();
 }
 let lastAlpha = 1;
 function interpolate(alpha: number) {
