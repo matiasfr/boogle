@@ -35,7 +35,11 @@ jobs:
       - run: npm run build
       - run: npm run test:unit
       # Shared names (presence keys, message types, pad slots, frame orders) and mixed-build rules against main.
-      - run: git fetch -q --depth=1 origin main:refs/remotes/origin/main && npm run registry
+      # On main the checkout's origin/main is this commit, so there's nothing to compare, and fetching a main that has
+      # moved on since the checkout is a rejected non-fast-forward: a red run in every burst of merges.
+      - if: github.ref != 'refs/heads/main'
+        run: git fetch -q --depth=1 origin main:refs/remotes/origin/main
+      - run: npm run registry
 
   server:
     runs-on: ubuntu-latest
