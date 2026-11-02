@@ -75,7 +75,7 @@ export const scriptOf = (o: Opening): readonly Phase[] =>
         { name: 'bell', len: BELL_TICKS },
       ];
 /** The tick the bell starts (-1 before opening day). */
-export const bellTick = (o: Opening): number => (o.t0 < 0 ? -1 : o.t0 + scriptOf(o)[0].len);
+export const bellTick = (o: Opening): number => (o.t0 < 0 ? -1 : o.t0 + scriptOf(o)[0]!.len);
 export const openingAt = (o: Opening, tick: number): RunState => runAt(scriptOf(o), o.t0, tick);
 export const openedAt = (o: Opening, tick: number): boolean => openingAt(o, tick).done;
 

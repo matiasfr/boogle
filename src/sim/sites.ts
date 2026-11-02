@@ -70,8 +70,8 @@ function row(site: Site, idx: number): PlaqueRow {
 }
 // Credits idx with `units` poured at site s. Returns the whole points added.
 export function credit(st: Sites, s: number, idx: number, units: number): number {
-  const r = row(st.list[s], idx);
-  const cost = AGES[ROUTE[s].age].cost;
+  const r = row(st.list[s]!, idx);
+  const cost = AGES[ROUTE[s]!.age]!.cost;
   const total = r[2] + units * 100;
   const pts = Math.floor(total / cost);
   r[1] += pts;
@@ -79,8 +79,8 @@ export function credit(st: Sites, s: number, idx: number, units: number): number
   return pts;
 }
 export function bonus(st: Sites, s: number, idx: number, pts: number): void {
-  row(st.list[s], idx)[1] += pts;
-  st.list[s].bonus += pts;
+  row(st.list[s]!, idx)[1] += pts;
+  st.list[s]!.bonus += pts;
 }
 
 // Moves n units (already taken off idx's stack) into a ring; a full Helper ring builds the hut.
@@ -93,9 +93,9 @@ export function stock(
   n: number,
   cost: CostFn = costOf,
 ): { pts: number; built: boolean } {
-  const site = st.list[s];
+  const site = st.list[s]!;
   st.rev++;
-  site.stock[ring] += n;
+  site.stock[ring]! += n;
   site.poured += n;
   const pts = idx >= 0 ? credit(st, s, idx, n) : 0;
   let built = false;
@@ -110,11 +110,11 @@ export function stock(
 
 // A run can start at the open site once its Track ring holds a whole section and nothing is running there.
 export const canRun = (st: Sites, s: unknown, cost: CostFn = costOf): boolean =>
-  siteOpen(st, s) && st.list[s].t0 < 0 && st.list[s].stock[TRACK] >= cost(s, TRACK);
+  siteOpen(st, s) && st.list[s]!.t0 < 0 && st.list[s]!.stock[TRACK] >= cost(s, TRACK);
 export function startRun(st: Sites, s: number, idx: number, tick: number): void {
   st.rev++;
-  st.list[s].t0 = tick;
-  st.list[s].starter = idx;
+  st.list[s]!.t0 = tick;
+  st.list[s]!.starter = idx;
 }
 export const runOf = (st: Sites, s: number, tick: number): RunState => runAt(MACHINE_RUN, st.list[s]?.t0 ?? -1, tick);
 
@@ -146,7 +146,7 @@ export function layRest(st: Sites): number {
 
 // The age the route has reached: the age of the open section, or one past the last once the route is laid.
 export const ageAt = (st: Sites): number =>
-  st.open < ROUTE.length ? ROUTE[st.open].age : ROUTE[ROUTE.length - 1].age + 1;
+  st.open < ROUTE.length ? ROUTE[st.open]!.age : ROUTE[ROUTE.length - 1]!.age + 1;
 
 // Helper huts send freight: every HELPER_EVERY ticks, one piece per built hut into the open site's Track ring (as far
 // as it has room; a full or running ring just waits). Returns the pieces added.
@@ -158,8 +158,8 @@ export function addFreight(st: Sites, n: number, cost: CostFn = costOf): number 
   const add = Math.min(n, ringRoom(st, s, TRACK, cost));
   if (add <= 0) return 0;
   st.rev++;
-  st.list[s].stock[TRACK] += add;
-  st.list[s].freight += add;
+  st.list[s]!.stock[TRACK] += add;
+  st.list[s]!.freight += add;
   return add;
 }
 // Points per roster index over every site's plaque.
@@ -185,10 +185,10 @@ export function loadSites(st: Sites, json: unknown): void {
       flat: unknown = row[n];
     if (!nums.every(isInt) || !Array.isArray(flat)) throw new Error('sites: bad site');
     if (flat.length % 3 || !flat.every(isInt)) throw new Error('sites: bad plaque');
-    const site = list[s];
-    site.stock = [nums[0], nums[1]];
-    FIELDS.forEach((f, k) => (site[f] = nums[2 + k]));
-    for (let k = 0; k < flat.length; k += 3) site.plaque.push([flat[k], flat[k + 1], flat[k + 2]]);
+    const site = list[s]!;
+    site.stock = [nums[0]!, nums[1]!];
+    FIELDS.forEach((f, k) => (site[f] = nums[2 + k]!));
+    for (let k = 0; k < flat.length; k += 3) site.plaque.push([flat[k]!, flat[k + 1]!, flat[k + 2]!]);
   });
   Object.assign(st, { open: Math.min(o, ROUTE.length), list, rev: st.rev + 1 });
 }

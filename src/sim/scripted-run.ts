@@ -17,11 +17,11 @@ export function runAt(script: readonly Phase[], t0: number, tick: number): RunSt
   if (t0 < 0 || tick < t0) return { phase: -1, name: '', progress: 0, total: 0, done: false };
   let e = tick - t0;
   if (e >= len)
-    return { phase: script.length - 1, name: script[script.length - 1].name, progress: 1000, total: 1000, done: true };
+    return { phase: script.length - 1, name: script[script.length - 1]!.name, progress: 1000, total: 1000, done: true };
   const total = Math.floor((e * 1000) / len);
   let k = 0;
-  while (e >= script[k].len) e -= script[k++].len; // e < len, so this stops inside the script
-  return { phase: k, name: script[k].name, progress: Math.floor((e * 1000) / script[k].len), total, done: false };
+  while (e >= script[k]!.len) e -= script[k++]!.len; // e < len, so this stops inside the script
+  return { phase: k, name: script[k]!.name, progress: Math.floor((e * 1000) / script[k]!.len), total, done: false };
 }
 
 // The wood-age track layer: it warms up, lays the section's sleepers and rails, and whistles. 14 s: the quick run the

@@ -63,7 +63,7 @@ export function trickle(s: Sources, tick: number, seed: number, every = TRICKLE_
     .map(([id]) => id)
     .sort((a, b) => a - b);
   if (!empty.length) return -1;
-  const id = empty[Math.floor(mulberry32((seed ^ tick) | 0)() * empty.length)];
+  const id = empty[Math.floor(mulberry32((seed ^ tick) | 0)() * empty.length)]!;
   s.spent.delete(id);
   s.rev++;
   return id;

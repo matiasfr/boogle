@@ -71,7 +71,7 @@ export function invariants({ garden }: { garden: Garden }): string | null {
   if (plots.length > MAX_PLOTS) return `${plots.length} plots`;
   for (let a = 0; a < plots.length; a++)
     for (let b = a + 1; b < plots.length; b++)
-      if (Math.max(Math.abs(plots[a].i - plots[b].i), Math.abs(plots[a].j - plots[b].j)) < SPACING)
+      if (Math.max(Math.abs(plots[a]!.i - plots[b]!.i), Math.abs(plots[a]!.j - plots[b]!.j)) < SPACING)
         return `plots ${a} and ${b} too close`;
   return null;
 }

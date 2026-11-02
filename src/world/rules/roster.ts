@@ -53,7 +53,7 @@ export function invariants({ roster }: RosterApi): string | null {
   const { pids, index } = roster;
   if (pids.length > MAX_PLAYERS) return `${pids.length} players`;
   if (index.size !== pids.length) return 'index out of step';
-  for (let k = 0; k < pids.length; k++) if (index.get(pids[k]) !== k) return `pid ${pids[k]} not at ${k}`;
+  for (let k = 0; k < pids.length; k++) if (index.get(pids[k]!) !== k) return `pid ${pids[k]} not at ${k}`;
   if (roster.names.some((n) => n.length > 16)) return 'a long name';
   return null;
 }

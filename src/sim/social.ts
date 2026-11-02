@@ -54,16 +54,16 @@ const HOME = [1, 3, 5, 2, 4, 6, 0, 7]; // colour -> voice: the first three colou
 const STEP = [0, 1, -1, 2]; // per shape
 export function honkChord(seconds: number) {
   const n = Math.floor((Number.isFinite(seconds) ? seconds : 0) / HONK_CHORD_S);
-  return HONK_CHORDS[((n % 4) + 4) % 4];
+  return HONK_CHORDS[((n % 4) + 4) % 4]!;
 }
 // The two notes of a honk (the second is the next voice up, for the double): [f, f2] in Hz.
 export function honkNotes(colorIdx: number, seconds: number, v: number): [number, number] {
   const chord = honkChord(seconds);
-  const home = HOME[Number.isInteger(colorIdx) ? ((colorIdx % 8) + 8) % 8 : 0];
-  const step = STEP[Number.isInteger(v) ? ((v % HONK_SHAPES) + HONK_SHAPES) % HONK_SHAPES : 0];
+  const home = HOME[Number.isInteger(colorIdx) ? ((colorIdx % 8) + 8) % 8 : 0]!;
+  const step = STEP[Number.isInteger(v) ? ((v % HONK_SHAPES) + HONK_SHAPES) % HONK_SHAPES : 0]!;
   let k = home + step;
   if (k < 0 || k > 7) k = home - step;
-  return [chord[k], chord[k < 7 ? k + 1 : k - 2]];
+  return [chord[k]!, chord[k < 7 ? k + 1 : k - 2]!];
 }
 // The shape in a received honk, or 0 for anything else (and for tabs from before shapes existed).
 export function honkShape(msg: unknown) {

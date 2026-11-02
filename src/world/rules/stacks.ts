@@ -63,8 +63,8 @@ export function install(sync: SyncView, land: Land, rules: { roster: RosterApi; 
 // entry.
 export function invariants({ stacks }: StacksApi, rules: { roster: RosterApi }): string | null {
   for (let idx = 0; idx < stacks.n.length; idx++) {
-    if (stacks.n[idx] < 0 || stacks.n[idx] > HARD_MAX) return `stack ${idx} holds ${stacks.n[idx]}`;
-    if (stacks.n[idx] > 0 && idx >= rules.roster.size()) return `stack ${idx} has no roster entry`;
+    if (stacks.n[idx]! < 0 || stacks.n[idx]! > HARD_MAX) return `stack ${idx} holds ${stacks.n[idx]}`;
+    if (stacks.n[idx]! > 0 && idx >= rules.roster.size()) return `stack ${idx} has no roster entry`;
   }
   return null;
 }

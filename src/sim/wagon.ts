@@ -69,7 +69,7 @@ function sections(home = false): Section[] {
   if (out.length) return out;
   const route = home ? HOME_ROUTE : ROUTE;
   for (let s = 0, at = 0; s < route.length; s++) {
-    const r = route[s];
+    const r = route[s]!;
     const ex = r.to[0] - r.x;
     const ez = r.to[1] - r.z;
     const len = Math.round(Math.sqrt(ex * ex + ez * ez) * 100);
@@ -106,7 +106,7 @@ function timetable(laid: number, pace: WagonPace, home = false): Step[] {
   const add = (stop: number, section: number, dir: 1 | -1): void => {
     steps.push({ start: t, len: WAGON_DWELL, stop, section, dir, accel: 0, peak: 0 });
     t += WAGON_DWELL;
-    const { len } = sections(home)[section];
+    const { len } = sections(home)[section]!;
     const { ticks, accel } = runTicks(len, pace);
     steps.push({ start: t, len: ticks, stop: -1, section, dir, accel, peak: len / (ticks - accel) });
     t += ticks;
@@ -124,7 +124,7 @@ export function wagonCycle(laid: number, pace: WagonPace = WAGON_PACE): number {
   const n = clampLaid(laid);
   if (!(n > 0)) return 0;
   const steps = timetable(n, pace);
-  const last = steps[steps.length - 1];
+  const last = steps[steps.length - 1]!;
   return last.start + last.len;
 }
 
@@ -137,12 +137,12 @@ export function wagonStandsAt(laid: number, tick: number, pace: WagonPace = WAGO
   const n = clampLaid(laid);
   if (!(n > 0)) return true;
   const steps = timetable(n, pace, true);
-  const last = steps[steps.length - 1];
+  const last = steps[steps.length - 1]!;
   let phase = tick % (last.start + last.len);
   if (phase < 0) phase += last.start + last.len;
   let k = 0;
-  while (k < steps.length - 1 && phase >= steps[k + 1].start) k++;
-  return steps[k].stop >= 0;
+  while (k < steps.length - 1 && phase >= steps[k + 1]!.start) k++;
+  return steps[k]!.stop >= 0;
 }
 
 /**
@@ -158,9 +158,9 @@ export function wagonAt(laid: number, tick: number, t0 = 0, pace: WagonPace = WA
   let phase = (tick - t0) % cycle;
   if (phase < 0) phase += cycle;
   let k = 0;
-  while (k < steps.length - 1 && phase >= steps[k + 1].start) k++;
-  const st = steps[k];
-  const sec = sections()[st.section];
+  while (k < steps.length - 1 && phase >= steps[k + 1]!.start) k++;
+  const st = steps[k]!;
+  const sec = sections()[st.section]!;
 
   let along = 0; // cm along the section in the run's direction
   let rate = 0; // cm per tick, >= 0

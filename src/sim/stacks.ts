@@ -22,7 +22,7 @@ export function createStacks(): Stacks {
 }
 
 export const countOf = (s: Stacks, idx: number): number => s.n[idx] ?? 0;
-export const kindOf = (s: Stacks, idx: number): number => (countOf(s, idx) > 0 ? s.k[idx] : -1);
+export const kindOf = (s: Stacks, idx: number): number => (countOf(s, idx) > 0 ? s.k[idx]! : -1);
 // How many of kind k player idx could still pick up: none of another kind than they carry.
 // A stack over a lowered cap just takes no more.
 export function roomFor(s: Stacks, idx: number, k: number, hard = HARD_CAP): number {
@@ -42,14 +42,14 @@ export function addTo(s: Stacks, idx: number, k: number, n: number, hard = HARD_
   if (!add) return 0;
   grow(s, idx);
   s.k[idx] = k;
-  s.n[idx] += add;
+  s.n[idx]! += add;
   return add;
 }
 // Takes up to n off the top; returns how many came off.
 export function takeFrom(s: Stacks, idx: number, n: number): number {
   const got = Math.max(0, Math.min(n, countOf(s, idx)));
   if (!got) return 0;
-  s.n[idx] -= got;
+  s.n[idx]! -= got;
   if (s.n[idx] === 0) s.k[idx] = -1;
   return got;
 }
@@ -57,7 +57,7 @@ export function takeFrom(s: Stacks, idx: number, n: number): number {
 // [[idx, k, n], ...] for every player carrying something.
 export function serializeStacks(s: Stacks): StacksJson {
   const out: StacksJson = [];
-  for (let idx = 0; idx < s.n.length; idx++) if (s.n[idx] > 0) out.push([idx, s.k[idx], s.n[idx]]);
+  for (let idx = 0; idx < s.n.length; idx++) if (s.n[idx]! > 0) out.push([idx, s.k[idx]!, s.n[idx]!]);
   return out;
 }
 export function loadStacks(s: Stacks, json: unknown, maxIdx: number): void {
@@ -76,6 +76,6 @@ export function loadStacks(s: Stacks, json: unknown, maxIdx: number): void {
 }
 export function hashStacks(s: Stacks): number {
   let h = FNV_SEED;
-  for (let idx = 0; idx < s.n.length; idx++) if (s.n[idx] > 0) h = foldAll(h, [idx, s.k[idx], s.n[idx]]);
+  for (let idx = 0; idx < s.n.length; idx++) if (s.n[idx]! > 0) h = foldAll(h, [idx, s.k[idx]!, s.n[idx]!]);
   return h;
 }
