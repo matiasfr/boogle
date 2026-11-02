@@ -105,7 +105,10 @@ Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](
 `&body=cute`, `ears`, `stout` and `bib`. Each rescales the mannequin's bones, thickens its skin and adds simple parts; the
 hips and stride shrink with the legs.
 
-`&body=tracklayer` is the real character ([assets/src/tracklayer.json](../../assets/src/tracklayer.json), made with Meshy): 8,264
+`&body=buddy` is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
+smooth skin blended by a voxel remesh and bound with automatic weights, about 6,500 triangles, no textures, on the same clips.
+
+`&body=tracklayer` is a fixed design ([assets/src/tracklayer.json](../../assets/src/tracklayer.json), made with Meshy): 8,264
 triangles, 256 px textures, the same clips retargeted onto its skeleton at load ([src/proto/hero/retarget.ts](../../src/proto/hero/retarget.ts)),
 with the upper arms swung out 12° to clear its wider body. It doesn't take the player's colour yet. boogle.club/character/ shows
 it alone, with every clip, views, a crowd of 8 and render switches.
