@@ -60,22 +60,22 @@ export type GrindHooks = {
 
 // ---------------------------------------------------------------- the line, as the wagon measures it
 const SEG = ROUTE.map((r) => {
-  const len = Math.round(Math.hypot(r.to[0] - r.x, r.to[1] - r.z) * 100) / 100;
-  return { x: r.x, z: r.z, ux: (r.to[0] - r.x) / len, uz: (r.to[1] - r.z) / len, len };
+  const len = Math.round(Math.hypot(r.to[0]! - r.x, r.to[1]! - r.z) * 100) / 100;
+  return { x: r.x, z: r.z, ux: (r.to[0]! - r.x) / len, uz: (r.to[1]! - r.z) / len, len };
 });
 const AT: number[] = [];
 SEG.reduce((at, s) => (AT.push(at), at + s.len), 0);
-const lengthOf = (n: number) => (n > 0 ? AT[n - 1] + SEG[n - 1].len : 0);
+const lengthOf = (n: number) => (n > 0 ? AT[n - 1]! + SEG[n - 1]!.len : 0);
 const segAt = (d: number, n: number) => {
   let k = 0;
-  while (k < n - 1 && d > AT[k + 1]) k++;
+  while (k < n - 1 && d > AT[k + 1]!) k++;
   return k;
 };
 // The point d m along the line (straight on past either end) and the line's direction there.
 function lineAt(d: number, n: number) {
   const k = segAt(d, n),
-    s = SEG[k],
-    u = d - AT[k];
+    s = SEG[k]!,
+    u = d - AT[k]!;
   return { x: s.x + s.ux * u, z: s.z + s.uz * u, ux: s.ux, uz: s.uz };
 }
 const railY = (x: number, z: number) => groundHeight(x, z) + GRIND.railTop;
@@ -83,10 +83,10 @@ const railY = (x: number, z: number) => groundHeight(x, z) + GRIND.railTop;
 function nearest(x: number, z: number, n: number) {
   let best = { d: 0, side: Infinity };
   for (let k = 0; k < n; k++) {
-    const s = SEG[k];
+    const s = SEG[k]!;
     const u = clamp((x - s.x) * s.ux + (z - s.z) * s.uz, 0, s.len);
     const side = Math.hypot(x - (s.x + s.ux * u), z - (s.z + s.uz * u));
-    if (side < best.side) best = { d: AT[k] + u, side };
+    if (side < best.side) best = { d: AT[k]! + u, side };
   }
   return best;
 }
@@ -363,7 +363,7 @@ export function grind(hooks: GrindHooks) {
       if (reducedMotion) return;
       if (g.lift > 0.15)
         sparkDue = 0; // off the rail over the machine: no sparks
-      else sparkDue += dt * (GRIND.sparks[0] + (GRIND.sparks[1] - GRIND.sparks[0]) * u);
+      else sparkDue += dt * (GRIND.sparks[0]! + (GRIND.sparks[1]! - GRIND.sparks[0]!) * u);
       for (; sparkDue >= 1; sparkDue--) spark(Math.random() < 0.5 ? 1 : -1, 1);
       // The camera swings in behind your travel.
       cam.yaw = angleLerp(cam.yaw, Math.atan2(-g.vx, -g.vz), 1 - Math.exp(-dt * GRIND.camYaw));
