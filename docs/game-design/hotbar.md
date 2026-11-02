@@ -17,6 +17,7 @@
 - **The interact pick.** Every provider (ball, gifts and palms, stall, Boogler) lists targets in reach each frame;
   something that would act beats something blocked, then the nearest wins with a nudge toward where you look.
 - **Known issues and limits.** One `boogle.hotbar` key for every room: you are global, the world is per room. Every item is listed in 7.1.
+- **Prototype: one thing in your hands** (`?proto=onehand`, [src/proto/onehand/](../../src/proto/onehand/index.ts), its own room). No slots on screen, and LB, RB and 1-5 do nothing; the held thing's name and button still fade in. Picking something up replaces what you hold, which lands a step ahead through the usual toss (`gift.toss`, or the ball's throw). The Boogler is offered what's in your hand, as always. Your saved hotbar sits it out and comes back on the normal game. No new state or wire change.
 
 ---
 

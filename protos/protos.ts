@@ -56,6 +56,17 @@ export type Proto = {
 
 export const PROTOS: Proto[] = [
   {
+    id: 'onehand',
+    title: 'One thing in your hands',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-onehand&proto=onehand',
+    question: 'Do you miss the hotbar?',
+    what: 'No hotbar on screen and nothing to cycle: pick something up and what you held lands at your feet. Your saved hotbar sits this one out.',
+    since: '2026-11-02',
+    chapter: 'it changes what your hands do everywhere, so it has its own room rather than sharing the island',
+  },
+  {
     id: 'place',
     title: 'A real place',
     step: 8,
@@ -521,6 +532,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
+  { id: 'onehand', why: 'Do you miss the hotbar?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
