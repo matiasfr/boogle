@@ -92,6 +92,14 @@ Sandboxed and can't do this (`npm run look` needs a local port, `npm run infligh
 - `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run verdicts`: the owner's notes from the prototype bar.
 - One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
 
+### Codex tasks
+- Start with `git status --short --branch` and `node --version`. Use Node 24 (`.nvmrc`); in a fresh checkout run `npm ci` (includes server dependencies and the pre-push hook), then `npx playwright install chromium` for browser work. Setup details: [CONTRIBUTING.md](CONTRIBUTING.md#codex-local-and-worktree-tasks).
+- Keep independent tasks in separate worktrees. Install dependencies in each; don't share `node_modules`, Vite caches or `.boogle-data/` between active checkouts. Run `npm run inflight` before substantial work; don't reset, stash or commit someone else's changes.
+- `.claude/settings.json` permissions and format hooks apply to Claude Code only. Codex runs the changed-file formatting and lint commands in "Shipping" itself, and requests scoped access when Git metadata, network, local ports or Chromium are blocked.
+- Shared skills' `/simplify` means review and simplify the diff; `/code-review` means use Codex's review capability. Claude-specific agent/model names are not Codex commands: use supported equivalents and read the referenced agent brief, preserving any plan approval gate. A skill's `$ARGUMENTS` or `$0` means the user's task text or feature name.
+- Follow the "Test diet" above if an older skill asks for broader tests. Use the existing `look` harness and open its PNGs; no new UI unit tests or scenarios unless a sync contract needs one.
+- When shipping from Codex, use `SHIP_NO_AI=1 npm run ship` so a rebase conflict returns to the current agent instead of starting Claude Code. Resolve it keeping both changes and rerun shipping. A push, green CI, merge and deployment are separate states; report only the ones verified.
+
 ## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too); split work so parallel tracks don't touch the same files. Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.
 - A large or risky change (several files with shared state, or `src/sim/`, `src/world/`, `src/net*`, `server/`) can start from a plan in `docs/plans/<name>.md` when asked for one, using the format in `.claude/agents/planner.md`; wait for approval before building it.

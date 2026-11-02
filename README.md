@@ -9,24 +9,24 @@ Boogle is a small multiplayer browser game built with [three.js](https://threejs
 ## Run it locally
 
 ```sh
-npm install
+npm ci
 npm run dev
 # then open the URL Vite prints (http://localhost:5173)
 ```
 
-Needs Node 22 or newer. Other scripts: `npm run check` (lint, unit tests, build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (ship your commits to `main` through a PR that merges itself; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
+Use Node 24 (`.nvmrc`). Installation also installs the server dependencies and pre-push hook. Other scripts: `npm run check` (lint, typecheck, unit tests, registry, asset checks and build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (ship your commits to `main` through a PR that merges itself; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
 
 ## Code layout
 
 `index.html` holds only the markup; the game lives in `src/`:
 
-- `main.js`: boot and the frame loop. `loop.js`: `onFrame`/`onStart` hooks. `features/`: self-contained features (splashes, the Boogler, mushrooms, ...), each auto-loaded with its own CSS and DOM.
-- `constants.js`, `math.js`: shared tuning values, math and noise helpers. `style.css`: base styles.
+- `main.ts`: boot and the frame loop. `loop.ts`: `onFrame`/`onStart` hooks. `features/`: self-contained features (splashes, the Boogler, mushrooms, ...), each auto-loaded with its own CSS and DOM.
+- `constants.ts`, `math.ts`: shared tuning values, math and noise helpers. `style.css`: base styles.
 - `render/`: renderer, camera, lights, sky, sea shader, props (palms/rocks/clouds), particles, splashes and the shared audio context.
 - `physics/`: the physics facade over Rapier (`engine.ts`), materials and step hooks; the ball and its ownership rules; thrown-item flights.
 - `player/`: the local player and camera, avatar meshes, hands and hotbar, input and the control registry, HUD.
-- `netplay/`: `net.js` (presence, remote players and interpolation) and its pure helpers. `net/ws-room.ts` is the room, one WebSocket to our server (see [src/net/README.md](src/net/README.md)).
-- `adapters/`: game-side halves of the lockstep rules (terrain mesh, gifts, mushroom garden). `boogler/`: The Boogler NPC, his talk and friendship.
+- `netplay/`: `net.ts` (presence, remote players and interpolation) and its pure helpers. `net/ws-room.ts` is the room, one WebSocket to our server (see [src/net/README.md](src/net/README.md)).
+- `adapters/`: game-side halves of the lockstep rules (gifts, mushroom garden, piles). `boogler/`: The Boogler NPC, his talk and friendship.
 - `world/`: shared deterministic state, edit sync and snapshots (see [src/world/README.md](src/world/README.md)). `sim/`: pure simulation logic (mushrooms, gifts, RNG) with unit tests in `test/`.
 - `atlas/`: the internal architecture explainer at /atlas (facts from `dev/atlas/`, narrative in `docs/atlas/`).
 - [src/README.md](src/README.md) maps every folder.
@@ -54,7 +54,7 @@ WASD move · Space jump · Mouse look · Click use what you hold (hold to charge
 
 Every merge to `main` builds and deploys to GitHub Pages at https://boogle.club/ (custom domain, set in the repo's Pages settings) via `.github/workflows/deploy.yml`, which runs lint, then `npm run build` (base `/`; a fork without a custom domain sets `BASE: /<repo>/`). You can also run it by hand from the Actions tab. The repo's Pages source must be set to "GitHub Actions".
 
-To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. Unset, the build uses PeerJS's public server.
+To point the game at our server, set a repo variable named `VITE_BOOGLE_SERVER` (Settings, Secrets and variables, Actions, Variables) to the server URL, or run `gh variable set VITE_BOOGLE_SERVER --body https://your-app.fly.dev`, then re-run the workflow. A production build without it cannot connect to multiplayer; there is no PeerJS fallback. Local development supplies its own server automatically.
 
 ## Roadmap
 
