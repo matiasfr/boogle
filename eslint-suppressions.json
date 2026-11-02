@@ -244,11 +244,6 @@
       "count": 1
     }
   },
-  "src/render/sprites.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/render/water-render.ts": {
     "boogle/use-an-entity": {
       "count": 2

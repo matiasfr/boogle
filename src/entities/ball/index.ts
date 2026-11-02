@@ -13,9 +13,7 @@ defineKind('ball', { prePhysics: -90, fixedPre: 45, fixedPost: 15, postPhysics: 
 defineKind('ball-carry', { prePhysics: -70, postPhysics: -280 });
 
 spawn({
-  id: 'ball',
   kind: 'ball',
-  alive: true,
   mesh: ballMesh,
   bodies: [ball.body],
   prePhysics: ({ now }) => resolveBallOwner(now, document.hidden),
@@ -26,9 +24,7 @@ spawn({
 });
 
 spawn({
-  id: 'ball-carry',
   kind: 'ball-carry',
-  alive: true,
   prePhysics() {
     sampleBallPose();
     prepareBall();
