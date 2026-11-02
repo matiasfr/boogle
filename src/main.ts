@@ -14,7 +14,7 @@ import { updateRemotes } from './entities/remote-player/index.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
 import { createStall } from './adapters/mushroom-garden.ts';
-import { runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
+import { onFrame, runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
@@ -35,8 +35,15 @@ createStall();
 installStepHooks({ me, ball, remotes });
 bootMark('props');
 
-// Before the step: remote poses, ball ownership, this player's intent, the ball's kinematic pose. Everything after
-// it (gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks; src/loop.ts lists their order.
+// Once a frame before the step, in this order, because each reads what the last wrote (me.holding, me.yaw): remote poses,
+// ball ownership, this player's intent, the ball's kinematic pose.
+onFrame(({ now }) => updateRemotes(now), { phase: 'prePhysics', order: -100, name: 'updateRemotes' });
+onFrame(({ now }) => resolveBallOwner(now), { phase: 'prePhysics', order: -90, name: 'resolveBallOwner' });
+onFrame(({ dt }) => updateIntent(dt), { phase: 'prePhysics', order: -80, name: 'updateIntent' });
+onFrame(() => prepareBall(), { phase: 'prePhysics', order: -70, name: 'prepareBall' });
+
+// Everything in a frame (intent, gameplay, visual sync, camera, HUD, presence) runs as onFrame hooks around the physics
+// step; src/loop.ts lists their order.
 let last = performance.now();
 let elapsed = 0;
 const ctx = { now: 0, dt: 0, elapsed: 0 }; // one object for every frame's hooks (no per-frame garbage)
@@ -45,16 +52,12 @@ function frame(now = performance.now()) {
   last = now;
   elapsed += dt;
   beginFrame(); // per-section CPU times for ?prof=1 (src/loop.ts)
-  updateRemotes(now);
-  resolveBallOwner(now);
-  updateIntent(dt);
-  prepareBall();
-  mark('main: pre-step');
-  stepPhysics(dt);
-  mark('main: physics');
   ctx.now = now;
   ctx.dt = dt;
   ctx.elapsed = elapsed;
+  runFrame('prePhysics', ctx);
+  stepPhysics(dt);
+  mark('main: physics');
   runFrame('world', ctx);
   runFrame('update', ctx);
   runFrame('late', ctx);
