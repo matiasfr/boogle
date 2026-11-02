@@ -55,6 +55,7 @@
     "decomp": "Files the player brings, shared by engine characters.",
     "pois": "Caves, lighthouse and other places.",
     "island": "The base ground and its shape.",
+    "blueprints": "Static world objects as data: trees and rocks, what they collide with and where they stand, read by the game, headless runs and level-check.",
     "debug": "Dev tools behind URL flags, loaded lazily.",
     "(core)": "main.ts boots the game; loop.ts runs the frame phases.",
     "adapters": "The game side of lockstep state: meshes that follow it, edits submitted.",

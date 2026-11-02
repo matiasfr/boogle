@@ -19,6 +19,7 @@
 - Then more of the game moved into entities: the local player and the camera, other players' avatars, the Boogler, the dino and the guest, and the HUD, pause, hotbar, prompt and conversation screens. Each now brings its own update and cleanup, like more toys arriving in their own boxes. An entity kind that keeps failing is now switched off only after 30 failures in a row, not at the first stumble. [One frame](#story/frame) still runs in the same order.
 - The ball's game state can now run without a browser, so a test can roll it (and pass it between two pretend players) far faster than real time and check it lands where the browser's ball does, like a rehearsal without the stage.
 - A new prototype, a real place to find on foot and connect (`?proto=place`): a village, a gorge and two camps you link by rail. It reuses the rail loop's shared-world edits, so no arrow in the picture changes.
+- Last, only small changes: trees and rocks are now written down as plain data (what each one bumps into and how much ground it takes), like a parts list kept apart from the paint job, so the game and a new level checker read the same list. Their new folder gets a note. Nothing in the picture moved.
 
 ## 2026-10-30
 
