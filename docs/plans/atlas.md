@@ -499,7 +499,7 @@ glance".
   `/atlas/#story/mush` opens on step 1 of the mushroom story; the link in changes.md works; `/atlas/#story/nope`
   opens the default view. `npm run check`.
 
-- [x] **9. Scenario for stills.** `dev/scenarios/run.mjs`: add `base: stack.base` to `t`, plus
+- [x] **9. Scenario for stills.** `dev/scenarios/run.ts`: add `base: stack.base` to `t`, plus
   `async page(pathname, { size = [1280, 900], colorScheme = 'light' } = {})`. It opens `browser.newPage({ viewport,
   colorScheme })`, collects `pageerror` messages into a list the runner checks the same way as `g.errors`, goes to
   `new URL(pathname, stack.base)`, and is closed by the runner. Create `dev/scenarios/atlas.mjs`: open `atlas/` in

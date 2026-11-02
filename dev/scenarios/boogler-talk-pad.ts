@@ -6,7 +6,7 @@
 // does nothing; the D-pad moves the selection (visibly) and repeats while held; B leaves. No petting: there is no pet
 // badge. The shared talk input is src/player/conversation.ts, the pad src/features/gamepad.ts. Serves DESIGN.md 7
 // (telegraph everything) and 8 (designed for drop-in).
-import { TP } from './lib/world.mjs';
+import { TP } from './lib/world.ts';
 
 type Game = {
   eval: (body: string) => Promise<unknown>;

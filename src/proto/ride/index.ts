@@ -152,7 +152,7 @@ function move(dt: number) {
     },
     { phase: 'update', order: 5 },
   );
-  // For the look evals (dev/look/evals/ride.js): put the flatbed somewhere along the route, already moving.
+  // For the look evals (dev/look/evals/ride.ts): put the flatbed somewhere along the route, already moving.
   const place = (s: number, speed = RIDE.cruise, dir = 1) => {
     Object.assign(state, { s, speed, dir, wait: 0 });
     poseAt(s, target);

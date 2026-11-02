@@ -5,7 +5,7 @@ description: Record clips and GIFs of the running game and cut them into trailer
 
 # Clips and videos
 
-Commands built on the look harness (`dev/look/lib.mjs`: Vite, local signaling, headless Chromium). Output
+Commands built on the look harness (`dev/look/lib.ts`: Vite, local signaling, headless Chromium). Output
 goes to `.look/` (gitignored).
 
 | What | Command | Source | Output |

@@ -205,7 +205,7 @@ longer pours; without `v` the loop above is unchanged. Starting numbers from
   bundle's 4 logs out in a fan toward you (up 4-4.5 m/s, out 1.5-2.5 m/s, tumbling), one bounce, a puff of dust,
   120-160 ms lying there, then the magnet takes them: about a second from E to the last tick. Same ops as ever
   (`pile.take`, `src.take`); everything new is Local. Tuning: `window.__magnet.T`. Look evals:
-  `dev/look/evals/haul-magnet-spill.js`, `haul-magnet-sprint.js`.
+  `dev/look/evals/haul-magnet-spill.ts`, `haul-magnet-sprint.ts`.
 
 Every loose log (a spill, a pour, a toss) is a real physics log (half as big again as a pile's piece) that rolls and
 then settles; the counting reuses the existing ops, so nothing new goes on the wire: a log in a ring is a `site.stock`
@@ -221,8 +221,8 @@ machine's start (rec 1: is the chore the gathering?). Copy values includes that 
 Code: [src/player/haul-variant.ts](../../src/player/haul-variant.ts) (the flag), [src/proto/haul/](../../src/proto/haul/index.ts)
 (`loose-logs.ts`, `barrow.ts`, `barrow-mesh.ts`, `toss.ts`, `pickup-feel.ts`, `wave.ts`, `wave-look.ts`, `wave-time.ts`), the chore counter in
 [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts). The barrow is Owner kind (presence `barrow`); loose logs are
-Local. Look evals: `dev/look/evals/haul-barrow-push.js`, `haul-barrow-tip.js`, `haul-toss-ring.js`, `haul-wave-warn.js`,
-`haul-wave-caught.js`, `haul-wave-dash.js`.
+Local. Look evals: `dev/look/evals/haul-barrow-push.ts`, `haul-barrow-tip.ts`, `haul-toss-ring.ts`, `haul-wave-warn.ts`,
+`haul-wave-caught.ts`, `haul-wave-dash.ts`.
 
 ## Prototype: era swap (?proto=era)
 
@@ -293,7 +293,7 @@ the thump was cut in the sound audit) with a ring of dust, then sink into the pi
 When the wagon stands there on the freight tick (one piece per hut every 27 s), the crates are thrown early so they land on that tick, as the ring's count goes up;
 freight that lands while the wagon is elsewhere rides along and hops off 0.8 s after it next stands there (the count
 went up already: only the show waits). Nothing changes when or how much freight counts; with no wagon running (nothing
-laid yet) the pile just grows as before. Look eval: `wt=freight` in dev/look/evals/wagon.js.
+laid yet) the pile just grows as before. Look eval: `wt=freight` in dev/look/evals/wagon.ts.
 
 **Stoking** (`&v=stoke`, src/proto/wagon/stoke.ts; docs/research/roblox-patterns.md, pattern 2: Dead Rails'
 furnace). The loco has a firebox on the back of its cab, facing the flatbed, with a steam gauge above it. Walk up to it
@@ -308,7 +308,7 @@ chimney's chuffs were cut in the sound audit (2026-11-02). The steam is lockstep
 the wagon's place is
 its timetable read at its own clock, which steam runs faster, so every tab sees the same speed. Reset the route
 empties the firebox. The prototype jumps the wagon when the laid count changes (Lay the whole route). Look evals:
-`wt=stoke` and `wt=rundown` in dev/look/evals/wagon.js.
+`wt=stoke` and `wt=rundown` in dev/look/evals/wagon.ts.
 
 Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`, which records the tick and the first
 section it laid in the `opening` state, so a late joiner's wagon runs the same timetable) and Reset the route

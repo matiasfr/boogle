@@ -1,5 +1,5 @@
 {
-  "about": "Pinned by dev/scenarios/world-inputs.mjs (UPDATE_FIXTURE=1).",
+  "about": "Pinned by dev/scenarios/world-inputs.ts (UPDATE_FIXTURE=1).",
   "states": ["mushrooms", "gifts", "roster", "stacks", "piles", "sites", "sources", "bank", "ball", "tune", "opening", "wagon"],
   "ops": [
     "mush.plant",

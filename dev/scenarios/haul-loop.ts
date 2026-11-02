@@ -1,28 +1,16 @@
 // The 0.1 haul loop with two players (docs/plans/0.1-groundwork.md): Bob takes logs from the bundles, walks into the first
 // work site's Track ring so his stack pours itself in, and starts the machine; Alice sees the logs on his back, the
 // plaque and the machine laying track, and both worlds agree. Serves DESIGN.md 4 and 6.
-import { roles, hashesAtOneTick, MET, TP } from './lib/world.mjs';
+import { roles, hashesAtOneTick, MET, TP } from './lib/world.ts';
 
-// The parts of the harness (dev/scenarios/run.mjs, dev/look/lib.mjs) this scenario uses.
-type Game = {
-  eval: (body: string) => Promise<unknown>;
-  waitFor: (expr: string, opts?: { timeout?: number }) => Promise<number>;
-  view: (v: { cam: number[]; look: number[] }) => Promise<void>;
-  still: (label: string) => Promise<unknown>;
-  errors: string[];
-};
-type Run = {
-  open: (o: { name: string; room: string; hud?: boolean }) => Promise<Game>;
-  check: (label: string, ok: boolean, detail?: string) => void;
-  sleep: (ms: number) => Promise<void>;
-};
+import type { T } from './run.ts';
 
 const R = `const { rules } = await import('/src/world/game-world.ts'); const { identity } = await import('/src/player/identity.ts');`;
 
 export default {
   about: 'take logs, carry, pour, run: one section of the railway gets laid and both players see it',
   timeout: 300000,
-  async run(t: Run) {
+  async run(t: T) {
     const room = 'hl' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room });
     const B = await t.open({ name: 'Bob', room, hud: true });

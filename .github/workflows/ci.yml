@@ -82,7 +82,7 @@ jobs:
 
   # Single-player browser scenarios only, one leg each so the slowest sets the wall time. Two tabs drawing in the
   # runner's software WebGPU (SwiftShader) run at a few frames a second and time out at random, so SCENARIO_GATE=pr
-  # makes run.mjs refuse a second player. Multiplayer is covered here by test:net (real rooms, no rendering) and the
+  # makes run.ts refuse a second player. Multiplayer is covered here by test:net (real rooms, no rendering) and the
   # replay unit test; end to end, `smoke` runs on a Mac's GPU before every `npm run ship` (`npm run check:gpu`) and
   # against the live site after every deploy (smoke.yml). The rest run nightly (scenarios-nightly.yml). A flaky leg
   # here gets a better wait (on a condition, not a time), never a skip; one that can't be reliable here moves to the
@@ -115,7 +115,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run scenario -- ${{ matrix.scenario }}
         env:
-          SCENARIO_GATE: pr # one player only; run.mjs refuses a second tab
+          SCENARIO_GATE: pr # one player only; run.ts refuses a second tab
       - if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
