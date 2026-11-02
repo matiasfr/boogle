@@ -14,22 +14,12 @@
       "count": 3
     }
   },
-  "src/features/ball-rest.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/features/boogler.ts": {
     "boogle/use-an-entity": {
       "count": 3
     }
   },
   "src/features/dino.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
-  "src/features/feel.ts": {
     "boogle/use-an-entity": {
       "count": 1
     }
@@ -47,11 +37,6 @@
   "src/features/identity.ts": {
     "boogle/use-an-entity": {
       "count": 1
-    }
-  },
-  "src/features/impact.ts": {
-    "boogle/use-an-entity": {
-      "count": 2
     }
   },
   "src/features/pause.ts": {
