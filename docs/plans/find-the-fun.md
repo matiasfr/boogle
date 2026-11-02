@@ -159,3 +159,9 @@ real slice does.
 - [x] **`?proto=crossing`:** a fast train over a long viaduct to a far greybox island, with the same distance at two
       speeds and a much longer one, to find what "vast" means in seconds and metres.
 - [x] **Playtest 7.**
+
+## 8. Having found a place on foot, do you want to connect it?
+
+- [x] **`?proto=place`:** a slice of Threefold Reach in greybox: a village, a gorge, two camps smoking across it and a
+      spire to steer by. You walk there, plant a stake, haul while the trestle goes up and ride home with the cargo.
+- [ ] **Playtest 8.**

@@ -1,0 +1,23 @@
+/* A real place (?proto=place): the solo tester's panel. */
+.place-proto {
+  position: absolute;
+  left: 12px;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font: 600 13px var(--font-body);
+  color: var(--ink);
+  pointer-events: auto;
+}
+.place-proto button {
+  font: inherit;
+  padding: 6px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+}
