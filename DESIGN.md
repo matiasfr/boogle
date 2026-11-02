@@ -6,7 +6,7 @@ These principles decide arguments. If a feature idea conflicts with one of them,
 
 ## The core loop
 
-**The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
+**The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Junctions unlock parts of the network, and you still haul for each track segment, with the network bringing materials closer. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. Friends can ride what others built; alone, you build to progress. This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
 
 The ball, the frisbee and the other physics toys are optional fun, not the heart of the game. Farming and water aren't part of the core loop: the shared water sim and sand shaping are gone, crops were never built, and the sea is scenery you can swim in.
 
@@ -29,15 +29,15 @@ Toys, mini-games and any farming are invitations, never gates.
 Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
 - *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
 
-### 5. Only the world is the antagonist
-Players can't destroy what other players made. Any threat comes from the environment, and other people's progress is protected.
+### 5. Nothing is the antagonist
+Players can't destroy what other players made, and nothing threatens your progress: no hazards, and nothing decays.
 - *Avoid:* PvP destruction, stealing, griefable shared resources.
 
 ### 6. Communal world, personal rewards
 The world and its network belong to everyone. Anything you *earn* (cosmetics, hats) is yours alone. No shared wallets, so nobody spends what someone else earned.
 
 ### 7. Telegraph everything
-Every environmental event is announced 30–60 seconds ahead with something you can *see* (a wave on the horizon, clouds rolling in), not only a HUD message. A player who just dropped in should immediately understand the shared goal.
+Make the next connection and its payoff visible in the world. Announce consequential changes before they happen, and choose the warning length for the event rather than imposing a universal countdown. A player who just dropped in should immediately understand the shared goal.
 
 ### 8. Designed for drop-in, drop-out
 Assume 1–6 people who arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone should still be pleasant; being joined should make it better.

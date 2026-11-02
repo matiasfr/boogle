@@ -1,6 +1,6 @@
 # Standing design audit: the rail builds the world
 
-*Proposal by Codex (GPT-6-Astra, xhigh), 2 November 2026. Nothing here is a decision or binds anyone until the owner picks; accepted picks go into [boogle-2.md](boogle-2.md).*
+*Proposal by Codex (GPT-6-Astra, xhigh), 2 November 2026. The owner answered its main questions on 2 November; those answers are in [boogle-2.md](boogle-2.md). The rest of this file is a record and binds no one.*
 
 - `SETTLED.md` still says “do not re-open” above the rejected wobbly haul stack and an unresolved promise that every system is ignorable.
 - `PLAN.md` still advertises garden, tide, water and ball-led work; the current `DESIGN.md` explicitly replaces that core.

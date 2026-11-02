@@ -36,7 +36,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 2 | Physics toys are optional fun | One physics toy among several: floats, bounces on mushrooms, is thrown like everything else. |
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
-| 5 | Only the world is the antagonist | No PvP state damage. |
+| 5 | Nothing is the antagonist | No PvP state damage. |
 | 6 | Communal world, personal rewards | Hotbar and Boogler friendship are per player, in localStorage. |
 | 7 | Telegraph everything | Interact prompt, ping markers. (No world events exist yet to telegraph.) |
 | 8 | Drop-in, drop-out | No lobby; host migration; mixed-build reloads. |

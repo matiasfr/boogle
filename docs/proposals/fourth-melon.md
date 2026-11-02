@@ -1,5 +1,7 @@
 # The fourth melon: a brief for the writers
 
+> **Parked (2 November 2026).** A brief for later, once the rail loop is fun; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+
 *Proposal, 1 November 2026. Written for the owner and collaborators who might write the Boogle story. It covers where the gag comes from, what it's for, and three drafts of the reveal. Nothing here is decided, and the melon itself is open to change.*
 
 ## 1. Where it comes from: it's already in the game

@@ -1,5 +1,7 @@
 # Story and finale for Boogle 2.0
 
+> **Parked (2 November 2026).** A brief for later, once the rail loop is fun; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+
 *Proposal, 30 October 2026. A goofy story told across the eight eras of the Boogle 2.0 concept, and three communal finales for 1–6 friends who are not always online together. It builds on [big-walk-and-communal-endings.md](../research/big-walk-and-communal-endings.md); the concept itself is the Boogle 2.0 artifact (the eight eras: castaway, steam wagons, iron and coal, steel and harbour, diesel, electric, monorail, maglev). Ideas marked "inference" go beyond what the sources say. Nothing here is built.*
 
 ## 1. How the story is told

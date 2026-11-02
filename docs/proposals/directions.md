@@ -1,5 +1,7 @@
 # Where Boogle could go: eight directions
 
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+
 *Proposal, 29 October 2026. Broad directions for the game, each with what it draws from, which [DESIGN.md](../../DESIGN.md) principles it serves and bends, a first slice to test it, and a sign it isn't working. They are meant to be mixed. The evidence is in [progression-feel-exploration.md](../research/progression-feel-exploration.md); the lore tree that can tie them together is [boogler-tech-tree.md](boogler-tech-tree.md).*
 
 *Updated 30 October 2026 for `main` at `8b3517c`. Two directions from the newer reports on `main` are now included as G (storm tide, [ambitious-mechanics.md](../research/ambitious-mechanics.md)) and H (restore the island, [communal-progression.md](../research/communal-progression.md)). The owner's decisions in [docs/tech-plan.md](../tech-plan.md) also apply: keep the caves, The Boogler and the video pipeline; the server stack is pending.*

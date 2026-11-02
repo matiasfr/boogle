@@ -38,9 +38,33 @@ These are standing preferences from the thread.
 
 ## Decided
 
+### The audit picks (2 November)
+
+The owner's answers to the standing design audit ([design-audit.md](design-audit.md)). **Where an older entry below disagrees, these win.**
+
+- **Skipping the rail:** friends can ride what others built; alone, you build to progress. This replaces "every system is ignorable" for the rail loop.
+- **Materials:** "playing still produces what builds the island". How play does that is open question 15.
+- **Hauling:** you haul each track segment, and the network brings materials closer.
+- **Helpers:** not decided. Owner: "I'm not sure if in the same form, but I kind of feel like it'd be fun to have little helpers running around and giving life to the world, but maybe they can work as part of the camps".
+- **Goods:** not one material per age; camps can make different goods at once.
+- **Eras:** six: wood, steam, iron and harbour, diesel and concrete, electric (bullet trains with pantographs and overhead wires), and a future train that "doesn't have to be actually an exact monorail".
+- **What ends an era:** reaching a key connection.
+- **The mayor and opening days:** parked until the loop is fun, and never a gate. His existing lines stay.
+- **Som and knacks:** parked until the loop is fun.
+- **First reaching a far island:** the line builds out over the sea, and you ride it.
+- **The network:** preset links, your choice of order, and a last link from Home to the port. So the chain closes into a ring. Which links appear when is still open.
+- **Home:** a busy town at most.
+- **Danger:** no hazards at all. Nothing decays.
+- **While nobody plays:** the network banks one project, and the next step waits for players.
+- **Thanks:** credit people with no order or ranking.
+- **Mini-games pass:** after the rail loop has its answer.
+- **Phones:** best effort, at lower quality. The M4 iPad Pro stays the lowest target.
+- **The dino and the guest:** optional fun for now.
+- **Documents:** this log and [DESIGN.md](../../DESIGN.md) count. PLAN.md, SETTLED.md, the vertical slice and older proposals are marked historical, and the story briefs stay parked.
+
 ### The shape of the game
 
-- **2026-11-02, the game runs closer to 8 hours, and starts with fewer eras** (owner, after the compounding research: "expand the game length more to an 8-hour, closer to an 8-hour experience"; "if we need to start with fewer eras, because we already have so much going on and so many assets, maybe we can just reduce those a little bit in quantity"). The eight eras below are the long list, no longer the plan; which ones remain is open question 14.
+- **2026-11-02, the game runs closer to 8 hours, and starts with fewer eras** (owner, after the compounding research: "expand the game length more to an 8-hour, closer to an 8-hour experience"; "if we need to start with fewer eras, because we already have so much going on and so many assets, maybe we can just reduce those a little bit in quantity"). The eight eras below are the long list, no longer the plan; the audit picks list the six that remain.
 - **The island grows through eight technology eras.** It expands outward (reclaimed land) and new islands rise around it.
   1. **The wood age** (in the game; "castaway camp" is a name for its look only)
   2. Steam wagons
@@ -69,8 +93,8 @@ These are standing preferences from the thread.
 - **2026-11-01, environment previz leads with the real renderer** (painted maps made it "hard to get a real feel"): the look lab's `high` preset and blockouts at the game's camera, with image generation only using those captures as style references. The owner wants more variety and eventually a bigger city on the shore, and islands aren't tied to mini-games.
 - **2026-11-01, the wagon is transportation** (owner, second run-through: "I think it's fine just as a transportation"). The fast pace is fine. Snatch, stoke and grind are cut ("I don't care for" them). Was "riding must be more than standing on a moving platform", see Changed.
 - **2026-11-02, the wagon's show and bench are cut** (owner: "I think we don't need to keep the wagons show or bench variants. I didn't really even notice the bench one. Maybe that could be cool, but I don't know."). No trackside scenes and no seat on the wagon; the seat with its side-on camera is parked in [ideas.md](../ideas.md).
-- **2026-11-02, the rail builds the world: the working direction, being prototyped** (owner: "we could use Rail to connect sort of like resource installations, which would automatically carry resources onto the Rail network ... depositing it into the cities ... which allows them to grow"; "the user task is just building more rails and connecting them and upgrading the trains and the rail network"). The idea, after Death Stranding's auto-pavers and monorails: building infrastructure makes it easier to build more. Connecting an installation puts its goods on the line with no routing or quotas, towns grow from what arrives, and grown towns give upgrades that extend your reach. This takes over from manual resource management. Its details stay open until a prototype says it's fun ([find-the-fun.md](../plans/find-the-fun.md), step 6).
-- **2026-11-02, leaning: junctions unlock the network, and you still haul each track segment** (owner, after `?proto=net`: "I like the idea that at least there's a lot of work happening from the rail network, but maybe it's more that those junctions unlock certain parts of the network, but you still need to haul for the different, like, track segments. I still think Death Stranding had some interesting work there"; verdict "not really sure still"). A lean, not a decision. It narrows "takes over from manual resource management" above: the rail does the bulk work and opens up the network, while laying track stays hands-on. To be tested next.
+- **2026-11-02, the rail builds the world: the working direction, being prototyped** (owner: "we could use Rail to connect sort of like resource installations, which would automatically carry resources onto the Rail network ... depositing it into the cities ... which allows them to grow"; "the user task is just building more rails and connecting them and upgrading the trains and the rail network"). The idea, after Death Stranding's auto-pavers and monorails: building infrastructure makes it easier to build more. Connecting an installation puts its goods on the line with no routing or quotas, towns grow from what arrives, and grown towns give upgrades that extend your reach. The network does the bulk work, and you still haul each track segment (audit picks). Its details stay open until a prototype says it's fun ([find-the-fun.md](../plans/find-the-fun.md), step 6).
+- **2026-11-02, junctions unlock the network, and you still haul each track segment** (owner, after `?proto=net`: "I like the idea that at least there's a lot of work happening from the rail network, but maybe it's more that those junctions unlock certain parts of the network, but you still need to haul for the different, like, track segments. I still think Death Stranding had some interesting work there"; verdict "not really sure still"). Confirmed in the audit picks. The rail does the bulk work and opens up the network, while laying track stays hands-on. Being tested as `?proto=net&v=depot`.
 - **2026-11-02, towns grow, and you can see them** (owner: "making the town visible, as it's going to be a big payoff"; "other towns grow as well that we come across"). Home's town can be seen from the hub and the line, and other towns you reach grow too. The mainland metropolis still doesn't.
 - **2026-11-02, the train is far faster than walking, and islands may be vastly far apart** (owner: "the train actually goes quite fast compared to walking ... the distances between islands are actually pretty vast. I do get that feeling in Death Stranding sometimes, and it was a cool payoff"). A direction to test, with no numbers yet ([find-the-fun.md](../plans/find-the-fun.md), step 7). Earlier scale notes (the next island about 200 m offshore, 20–45 s crossings) are starting points only. It has to live with "a ring's interior is never empty sea" above.
 - **2026-11-02, a crossing starts at about a minute: 1.2 km at 20 m/s** (owner, `?proto=crossing`: "Default was pretty well balanced"). 4 km at 50 m/s was "definitely something cool" but "more like a novelty that would wear off and get annoying later in the game". 50 m/s over the same 1.2 km "felt a little too fast", and "maybe that makes more sense for the end game trains". So far apart, but not 4 km by default; the top speed belongs to the last eras.
@@ -97,10 +121,10 @@ These are standing preferences from the thread.
 
 - **2026-11-01, carrying is a simple back bundle** (haul playtest, solo). Logs sit on the character's back in a compact bundle that fills out rather than towering; no sway, and so no jump spill (nothing would warn you of it). Don't over-index on Death Stranding's carrying. Replaces the wobbly stack, see Changed.
 
-- **"Play is the material"** is the long-term direction (round 2): playing produces what builds the island.
+- **"Play is the material"** is the long-term direction (round 2, reaffirmed in the audit picks): playing produces what builds the island.
   - **For the slice:** no prize piles; venues give personal rewards only (round 7).
   - **Open:** how play feeds progress is left to the mini-games pass (below).
-- **Three things you earn, none of them a shared wallet:**
+- **Three things you earn, none of them a shared wallet** (som and knacks parked, see the audit picks):
   - **shared progress**, the island's;
   - **som**, a personal coin, earned only and spent on looks;
   - **knacks**, personal skill per activity, which unlock options and never power.
@@ -121,8 +145,8 @@ These are standing preferences from the thread.
 - **2026-11-02, the Buddy's look, from the owner's review in the viewer:** no rim light. In idle it looks straight ahead, not down, so check the gaze whenever the head, face or clips change. Shoulders stay soft and round, not sharp. Hats read as a railway conductor's rather than a police officer's: a straight stiff drum and brass trim, not a flared navy crown.
 - **2026-11-02, the player's direction is the Buddy** (`assets/src/buddy.py`, `?proto=hero&body=buddy`, `/character/`): a simple, smooth, slightly plump figure on the mannequin's clips, in the player's colour, with bead eyes and blush and no mouth, hair or clothes yet. The owner is "liking this a lot". Stock character kits were too complex, and full Meshy models fuse hair and clothes into one mesh. The Tracklayer below stays one fixed design, with no customization; whether it's still the player or a separate character is open.
 - **2026-11-02, the player is the Tracklayer** (previz name "the Plumber's Cousin": `.look/previz/hero-options-3`, shot 2; renamed by the owner, with a railway cap and not red by default; replaces the open Bib Buddies/split question). A sculpted, skinned humanoid, about 3.5 heads tall, in the spirit of modern Mario as our own character: a big head, simple dark eyes and no mouth, railway engineer's cap, overalls over a tee, big gloves, chunky boots. It plays the hand-made clips on a humanoid skeleton. The owner chose it because it should scale best to customizable outfits and feel like a good character to be. The player's colour on the cap and overalls is the working assumption; not yet confirmed. Not built yet.
-- **The Boogler is the mayor** (from era 2). His personal friendship ladder stays separate from the economy.
-- **Opening days end each era:**
+- **The Boogler is the mayor** (from era 2; parked, see the audit picks). His personal friendship ladder stays separate from the economy.
+- **Opening days end each era** (parked, see the audit picks):
   - any player can start one (round 7);
   - everyone sees the same scripted ceremony;
   - physics props do the comedy.
@@ -201,10 +225,10 @@ These are standing preferences from the thread.
 
 ## Open questions (round 8 and the architecture review)
 
-1. Keep the short bell countdown before opening day (about 10 s)? Research recommends a ~45 s gathering call (smoke column, a bell that carries; ends early once everyone online is at the platform; solo goes straight to the bell) followed by the 10 s bell ([shared-moments-and-events.md](../research/shared-moments-and-events.md), rec 1). Being tried in the era prototype's round 2.
-2. When does the mini-games design pass happen?
+1. ~~Bell countdown before opening day~~ Opening days are parked (audit picks).
+2. ~~When does the mini-games design pass happen?~~ After the rail loop has its answer (audit picks).
 3. Apply the proposed re-ordering of [architecture.md](../plans/architecture.md) from [boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md)?
-4. ~~Who runs the baseline on a 2021 iPad and a mid-range Android phone?~~ Now the M4 iPad Pro (Decided, 1 November). Do phones stay supported at a lower quality, or drop?
+4. ~~Who runs the baseline on a 2021 iPad and a mid-range Android phone?~~ Now the M4 iPad Pro (Decided, 1 November). Phones stay best effort, at lower quality (audit picks).
 5. Should [net-roadmap.md](../plans/net-roadmap.md) get a note that Boogle 2.0 replaces its creature-and-survival framing?
 6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
 7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
@@ -212,10 +236,12 @@ These are standing preferences from the thread.
 8. ~~Wagon show and bench: cut, or keep?~~ Cut (Decided, 2 November); the wagon is plain transportation.
 9. ~~Next deliverable~~ Prototype the rail loop first (2 November; find-the-fun.md, steps 6 and 7). The eras 1–2 slice and the home redesign get planned together once it answers, and the slice is built after the entity plan's steps 10–12 ([entity-architecture.md](../plans/entity-architecture.md)).
 10. ~~Game length~~ Closer to 8 hours, with fewer eras (Decided, 2 November).
-11. What happens to hauling once the rail delivers? The back bundle got a yes, and after `?proto=net` the owner leans towards still hauling for each track segment (Decided, 2 November). Open: how the network makes that hauling easier, for example a depot near the railhead.
-12. Does "play is the material" still hold? In the rail loop the network produces material and play earns personal rewards, which would also settle how mini-games feed progress. Adopting it reverses round 2.
-13. How do you first reach a far island? "Walk it before the rail does" works on land, but a vast sea needs the line itself to get there first, or a boat.
-14. Which eras remain? Working list of six, not final: wood, steam, iron and harbour, diesel and concrete (owner: "I did really like the aesthetic there", "I'm not sure"), electric as bullet trains with pantographs and overhead wires, and a last age of "future train, bullet train", which "doesn't have to be actually an exact monorail".
+11. ~~What happens to hauling once the rail delivers?~~ You haul each track segment (audit picks). Open: how the network makes that easier; `?proto=net&v=depot` tests a depot near the railhead.
+12. ~~Does "play is the material" still hold?~~ Yes (audit picks); see question 15.
+13. ~~How do you first reach a far island?~~ The line builds out over the sea, and you ride it (audit picks).
+14. ~~Which eras remain?~~ Six (audit picks).
+15. How does play produce what builds the island? For example only hands-on work like hauling, harvesting and exploring, or mini-games as well? Mini-games still never gate progress.
+16. Do helpers come back as life around the camps?
 
 ## Next: find the fun (agreed direction, 1 November)
 
