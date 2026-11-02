@@ -109,11 +109,6 @@
       "count": 3
     }
   },
-  "src/island/terrain.ts": {
-    "boogle/use-an-entity": {
-      "count": 1
-    }
-  },
   "src/main.ts": {
     "boogle/use-an-entity": {
       "count": 2

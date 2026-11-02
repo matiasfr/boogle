@@ -3,7 +3,7 @@ import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray 
 import type { vec4 } from 'three/tsl';
 import { GRID_RES, CELL, HALF, SEABED, COURT } from '../constants.ts';
 import { smoothstep, valueNoise } from '../math.ts';
-import { scene } from '../render/scene.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { PATCH } from '../sim/mushrooms.ts';
 import { island } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
@@ -85,6 +85,8 @@ function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number)
   paintVertex(col, o, k, pos[o * 3]!, h, pos[o * 3 + 2]!, il);
 }
 
+// The ground: an entity for its lifetime alone, with no methods.
+defineKind('terrain', {});
 export function createTerrainMesh() {
   const n = GRID_RES;
   const group = new THREE.Group();
@@ -118,7 +120,7 @@ export function createTerrainMesh() {
       group.add(mesh);
     }
   poiPaint = null;
-  scene.add(group);
+  spawn({ kind: 'terrain', mesh: group });
   freezeStatic(group); // never moves: no per-frame matrix work
   return group;
 }
