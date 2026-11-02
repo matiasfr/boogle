@@ -44,6 +44,23 @@ The world is the readout: no counters or progress bars for goods or stages. The 
 **`&v=haul`** is the same run, except the rail never fills the ring: you haul every section by hand. Comparing them tells
 whether the fun is the rail doing the work or the town growing. It uses the same room, so switching keeps your place.
 
+**`&v=depot`** asks "Does the haul feel good now that the network is helping?", after the owner's lean
+([boogle-2.md](../proposals/boogle-2.md), "junctions unlock the network") and Death Stranding's auto-pavers fed from
+nearby stock ([compounding infrastructure](../research/compounding-infrastructure.md), summary 1, recs 1 and 5). Same run,
+town and camps, and the rail never fills the ring:
+
+1. The first section is hauled by hand from the palms, as above. Bundles more than 45 m from the first stop have moved to
+   the depots, so the later rings aren't served by palms next to them.
+2. When Camp 1 connects, a depot (a plinth and an orange flag) goes up in about 4 s beside the line, 56 m short of the
+   ring. At the village the wagon takes on 4 yellow crates and throws up to 3 off onto the stack as it passes.
+3. Interact at the depot (Take logs) takes a whole section's load in one press: 3 crates, 24 logs on your back, never more
+   than the open ring still wants. Carry it to the ring, about 10 s on foot, and press Start as usual.
+4. Camp 2's depot stands 28 m short of its ring, takes up to 4 crates a pass and goes up already holding a load: about
+   4.5 s on foot. The train still speeds up after the first step-up.
+
+Scripted at iPad size, walking, from the machine's whistle to the ring full: about 28 s for the second section (3 s of it
+waiting for the first crates) and 14 s for the third. The first, by hand on a straight route, takes about 12 s.
+
 **The panel** has Start over and Skip the haul (fills the open ring).
 
 ## Numbers
@@ -56,6 +73,7 @@ whether the fun is the rail doing the work or the town growing. It uses the same
 | Step-ups | 6 wood crates, 6 stone crates, then the line reaching the frontier |
 | Crates to fill a ring | 4 |
 | A working camp makes a crate every | 1.8 s, up to 14 on its pile |
+| `&v=depot`: a crate gives | 8 logs (2 `src.take`s); up to 9 on depot 1, 14 on depot 2 |
 
 ## How it's built
 
@@ -64,4 +82,6 @@ No new lockstep. Laid sections are `rules.sites`; cost and pace are `tune.set`, 
 reload keeps your place and a second tab sees its own town. The stages are one table
 (`src/proto/net/stages.ts`, the shape of `src/proto/era/blocks.ts`). The wagon is `src/proto/wagon/` with its own
 timetable (`src/proto/net/timetable.ts`), because its timetable moves the wagon when the pace changes. Blocks have no
-colliders: you walk through them.
+colliders: you walk through them. `&v=depot` (`src/proto/net/depot.ts`) adds no lockstep either: bundles away from the
+village move to the depots through `haulHooks.moved`, as in the haul prototype's wave, so a load is six `src.take`s at
+once. The crates are Local, and a reload finds a standing depot stocked.

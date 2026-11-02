@@ -4,6 +4,7 @@
 // goods get on the line by themselves, the town grows from what arrives, and the grown town gives back what extends
 // your reach: a faster train, and the rail filling the next work site (docs/research/carrying-and-logistics-play.md,
 // finding 2 and rec 7). `&v=haul` never fills it: you still haul every section by hand, to tell which part is the fun.
+// `&v=depot` never fills it either: the wagon stocks trackside depots and you carry from those (./depot.ts).
 // Serves DESIGN.md 1 (Toys before chores) and 9 (Leave something for the next visitor).
 //
 // What's shared and what isn't: laid sections are the room's (`rules.sites`), the section cost and the train's pace are
@@ -25,6 +26,7 @@ import { protoCount } from '../count.ts';
 import { createTimetable } from './timetable.ts';
 import { drawRails } from './rails.ts';
 import { updateTown, resetTown } from './town.ts';
+import { createDepots } from './depot.ts';
 import { CAMPS, campAt, stopAt, wakeCamp, sleepCamps, updateCamps, buildFrontier } from './camps.ts';
 import {
   deck,
@@ -45,7 +47,7 @@ import {
 
 const { sites } = rules.sites;
 const { tune } = rules.tune;
-const FILLS = protoV('net') !== 'haul'; // step 6's second gift: the variant never gets it
+const FILLS = protoV('net') !== 'haul' && protoV('net') !== 'depot'; // step 6's second gift: the variants never get it
 
 const TUNE = {
   cost: 24, // logs a section costs: a handful of takes
@@ -78,7 +80,8 @@ const KEY = `boogle-net-v1:${getRoomId()}`;
 type Saved = { stage: number; wood: number; stone: number; heap: Kind[]; piles: Kind[][] };
 const village = heap(stopAt(0).x + 4.2, stopAt(0).z + 3, 4);
 const piles = CAMPS.map((c) => heap(c.pile.x, c.pile.z, 3));
-const allHeaps: Heap[] = [village, ...piles];
+const depots = protoV('net') === 'depot' ? createDepots(load, () => drawHeaps(allHeaps)) : null;
+const allHeaps: Heap[] = [village, ...piles, ...(depots?.heaps ?? [])];
 const s = { stage: 0, wood: 0, stone: 0 };
 function restore() {
   try {
@@ -117,6 +120,7 @@ function startOver() {
   s.stage = s.wood = s.stone = 0;
   village.list = [];
   for (const p of piles) p.list = [];
+  depots?.reset();
   drawHeaps(allHeaps);
   sleepCamps();
   resetTown();
@@ -139,6 +143,7 @@ function wake(open: number, running: number, live: boolean) {
     if (!camp) continue;
     const secs = wakeCamp(camp, live);
     built[CAMPS.indexOf(camp)] = performance.now() + secs * 1000;
+    depots?.wake(k, live);
   }
 }
 
@@ -190,8 +195,9 @@ function arrive(stop: number, leaves: number) {
     });
     // Once the village has stepped up, the rail fills the next site: the town's own crates ride out to the railhead.
     if (FILLS) jobs.push({ at: t + 0.7, run: sendFill });
+    if (depots) jobs.push({ at: t + 0.7, run: () => depots.atVillage(topSlot(village, ground)) });
   } else {
-    if (stop === sites.open) jobs.push({ at: t, run: dropFill });
+    if (FILLS && stop === sites.open) jobs.push({ at: t, run: dropFill });
     const camp = campAt(stop);
     if (camp && leaves < 0) jobs.push({ at: t + TUNE.stagger * TUNE.fill + 0.4, run: () => loadGoods(camp.stop) });
   }
@@ -300,6 +306,7 @@ onFrame(
     updateCrates(dt);
     // The wagon's stops
     const w = wagonApi.state;
+    depots?.update(now, w);
     const stop = w ? w.stop : -1;
     if (stop >= 0 && stop !== dwell) arrive(stop, w!.dir);
     dwell = stop;
@@ -354,6 +361,7 @@ window.__net = {
   piles,
   load,
   FILLS,
+  depots,
   fill: () => submitEdit({ op: 'tune.fill', i: 0, j: 0 }),
   lay: () => submitEdit({ op: 'site.run', i: 0, j: 0, s: sites.open }),
   /** Fakes crates delivered, to look at a stage without waiting. */

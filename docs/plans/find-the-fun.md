@@ -150,6 +150,8 @@ real slice does.
 
 - [x] **`?proto=net`:** connect a camp, crates ride to the village, the village steps up and the train speeds up; then
       the rail fills the next work site for you (`&v=haul` keeps hauling by hand, to tell which part is the fun).
+- [x] **`&v=depot`:** the owner's lean after playing it (boogle-2.md, 2026-11-02): junctions unlock the network, you
+      still haul. Each camp connected puts up a depot the wagon stocks; one press, one load, one carry to the ring.
 - [ ] **Playtest 6.**
 
 ## 7. Does a long crossing feel vast?

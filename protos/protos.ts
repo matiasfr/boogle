@@ -74,6 +74,11 @@ export const PROTOS: Proto[] = [
         url: '/?room=proto-net&proto=net&layout=net-line&v=haul',
         what: 'The town still grows and the train still speeds up, but you haul every section by hand.',
       },
+      {
+        name: 'depot',
+        url: '/?room=proto-net&proto=net&layout=net-line&v=depot',
+        what: 'Each camp connected puts up a depot the wagon keeps stocked: one press takes a load, and the next trip is shorter.',
+      },
     ],
   },
   {
@@ -506,6 +511,7 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
+  { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
