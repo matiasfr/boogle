@@ -124,3 +124,10 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Broke: falling through the tracks; the train and track layer aren't solid in places. No stuck spots.
 - After: boogle-2.md (Decided, 2 November); follow-up questions with the owner.
 
+## 2026-11-02 (the fall, `?proto=fall`)
+- Who: Matias, solo; told to the director.
+- Gut: "the idea is very sound. I really enjoyed it."
+- Felt off: the handle "oscillating way too fast" once the cart started (a bug: its rate changed against the clock).
+- Felt off: hoped for more rail before falling off, though "I guess it should be fast".
+- Wanted: the cart already moving while you're on the card, "in place, but perceptually ... traveling along the track", and Jump in is when you fall.
+- After: built that way: the world slides past during the card, and Jump in runs the last stretch to the rail's end.
