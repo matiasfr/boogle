@@ -60,6 +60,9 @@ These are standing preferences from the thread.
 - **2026-11-01, laying a section runs quick** (about 14 s; full run-through: "Yes it's wonderful. Quick feels pretty good"). Fix the jump at the end of the laying animation.
 - **2026-11-01, construction you can watch is how things get built** ("I absolutely love this kind of animation"). The piece-by-piece build leaves the prototype for the game.
 - **2026-11-01, the island and the line get redesigned once activities and locales are clearer** (owner: the current island "is not in line with the overall vision"; the line should be meaningful). The layout lab is parked; lighthouse-line is out. Until then, level work stays greybox.
+- **2026-11-01, the home island is a ground-up redesign, not an extension** (owner: "Everything in the new island should be more intentionally designed"). It's probably bigger than today's ~23,300 m², with Big Walk's environment as the lead reference ("always feels like there's something you're finding"). Design for walking plus the rail, with folds, reveals, traversal unlocks and land reserved for later eras. Don't brief today's layout as the base.
+- **2026-11-01, the rail network is a stepping-stone chain toward the mainland, but not a pure corridor** (owner: "Maybe there's shortcuts or more rails that appear in different places"). One clear frontier direction, with cross-links, branches and loops growing behind it; a ring's interior is never empty sea. Still open: which links appear when, and whether the chain closes into a ring.
+- **2026-11-01, environment previz leads with the real renderer** (painted maps made it "hard to get a real feel"): the look lab's `high` preset and blockouts at the game's camera, with image generation only using those captures as style references. The owner wants more variety and eventually a bigger city on the shore, and islands aren't tied to mini-games.
 - **2026-11-01, riding must be more than standing on a moving platform** (ride: "passably decent … we could one up this"). Research how games make train rides interesting before the next ride pass.
 
 - **2026-11-01, an archipelago, not one big open map.** Islands vary in size (home small and dense, later islands several times larger, the mainland port the one big walkable place). Reaching a new island is an era's payoff, telegraphed by seeing it across the water. Connections are physical (reclaimed land, bridges, causeways you can walk and drive), so late game reads as one connected place. Why: the 29 October playtest found a big island empty; the sea gives natural loading boundaries (architecture-fit, "A world bigger than one island").
@@ -96,6 +99,8 @@ These are standing preferences from the thread.
 
 ### Characters and story
 
+- **2026-11-01, nail the bare hero base before outfits.** Clothes are separate swappable parts (`wear_<slot>_<item>`; slots head, body, hands, feet) and only need to prove the slots work until the base is right. On 2 November the owner chose a separate-head figure, proportioned closer to Ratchet or a Bricktron than lanky, and leans towards no mouth.
+- **Player look: Bib Buddies or a split, still open** (1 November). The owner picked Bib Buddies (coloured bean body, googly eyes, mitten arms, low cream overalls) over the capsule, then proposed the player as an articulated Ratchet-style hero with Bib Buddies as the helpers. Check with the owner before building either.
 - **The Boogler is the mayor** (from era 2). His personal friendship ladder stays separate from the economy.
 - **Opening days end each era:**
   - any player can start one (round 7);
@@ -114,6 +119,7 @@ These are standing preferences from the thread.
 
 ### Look
 
+- **2026-11-01, title and loading art is a generated, rendered image with a small animated accent,** not a screen of flat vector or CSS art (owner, on the low-poly SVG scenes: "I really dont like this aesthetic"; "the whole screen doesn't have to animate"). Show candidates placed in the real screen before building scenes in code.
 - **2026-11-01, the graphics target is the look lab's "high" preset** (he liked it best), to be compared with the toybox look from the owner's character session; the lab's own toybox preset is "just ok".
 - **2026-11-01, the UI that answers leaves the prototype for the game** ("a massive improvement").
 

@@ -4,7 +4,7 @@ Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](
 
 ## Setup
 
-Node 22 or newer (`.nvmrc`). `npm install` (also installs the pre-push hook), then `npm run dev` and open http://localhost:5173. Running our own signaling server locally, and the `?room=` / `?netdebug=1` options, are in [README.md](README.md#multiplayer).
+Node 24 (`.nvmrc`). `npm install` (also installs the pre-push hook), then `npm run dev` and open http://localhost:5173. Running our own signaling server locally, and the `?room=` / `?netdebug=1` options, are in [README.md](README.md#multiplayer).
 
 ## How we work
 
@@ -32,6 +32,6 @@ The playtest is the real test. Whenever something new lands, jump on https://boo
 ## Working with AI agents
 
 - **Claude Code** loads `CLAUDE.md`, which imports `AGENTS.md`. Committed project settings (`.claude/settings.json`) pre-approve routine commands and format/lint every file Claude edits. Skills: `/ship`, `/new-feature <name>`, `/playtest-notes`.
-- **Other agents** (Codex, Cursor, ...) read `AGENTS.md` directly. Change shared rules there, never in `CLAUDE.md`.
+- **Other agents** (Codex, Cursor, ...) read `AGENTS.md` directly. Change shared rules there, never in `CLAUDE.md`. Codex also gets the skills through `.agents/skills`, a link to `.claude/skills`.
 - **On GitHub**, mention `@claude` in an issue or PR ([claude.yml](.github/workflows/claude.yml)). It opens a PR from a `claude/` branch that [automerge.yml](.github/workflows/automerge.yml) squash-merges once CI is green. Add the `no-automerge` label or ask for a draft to review first. [ci-autofix.yml](.github/workflows/ci-autofix.yml) fixes a red `main` and red or conflicting `ship/` and `claude/` branches.
 - Treat AI-written code like any other: play it, skim the diff, and push back on slow or browser-based tests for things a unit test or a playtest covers.
