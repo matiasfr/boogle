@@ -28,7 +28,8 @@
 // A kind can't take a core order; in the feature range (-10 and up) kinds tie as onFrame hooks do, in registration order.
 //
 // Importing an entity: game code imports its state.ts; presentation code (what draws around it) may also import its
-// view.ts; only the glob in src/main.ts imports its index.ts.
+// view.ts; only the glob in src/main.ts imports its index.ts. An entity that runs headless splits index.ts: headless.ts
+// spawns the part with no view, which dev/sim/ loads alone, and index.ts imports that and adds the view as its own kind.
 //
 // Phases, and the hook each one runs on (src/loop.ts has both order tables):
 //   fixedPre     onPreStep    each physics step, 0 to 4 times a frame; ctx.dt is FIXED, now and elapsed are the frame's
@@ -42,7 +43,7 @@ import type { Object3D } from 'three/webgpu';
 import { FIXED } from '../constants.ts';
 import { currentFrame, frameCtx, mark, onFrame, type FrameCtx, type Phase } from '../loop.ts';
 import { addBody, onPostStep, onPreStep, removeBody, type Body } from '../physics/engine.ts';
-import { scene } from '../render/scene.ts';
+import { scene } from '../render/scene-graph.ts';
 import { createWalkers, OFF_AFTER_THROWS, type EntityPhase, type KindOrders } from './walker.ts';
 
 export type { EntityPhase };

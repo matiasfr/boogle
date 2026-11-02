@@ -14,7 +14,7 @@
 //               -80 player: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
 //   world   -300 ball: an owned ball off the island respawns; ball.pose follows the body
 //           -290 player: fall respawn            -280 ball-carry: walking into a slow ball claims it
-//   update  -300 ball: ball mesh                 -290 player: own avatar          -280 remote-player: remote avatars
+//   update  -300 ball-view: ball mesh                -290 player: own avatar          -280 remote-player: remote avatars
 //           -200 camera                          -190 props.ts: clouds            -150 assets.ts: glTF clips
 //           (features: -10 and up)
 //   late    -200 throw.ts: throw preview        -190 hud.ts: HUD                 -20 particles.ts: particles

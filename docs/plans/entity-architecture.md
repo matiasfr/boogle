@@ -111,6 +111,7 @@ src/entities/ball/
   state.ts   body, authority (mine, held), `pose` (today's disp), claim and throw, surf; no scene, DOM or HUD imports
   view.ts    mesh, texture, smoothing
   sync.ts    who owns it, per-peer claims and snapshots, the `b` field, the wire shape
+  headless.ts  spawns state and sync with no view, for `npm run sim`; index.ts imports it and adds the view (step 17)
 ```
 
 Importers use `state.ts`, or they'd pull in the view and the DOM. Rules: one writer of `pose` per frame; view reads state and

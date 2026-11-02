@@ -186,11 +186,14 @@ export function setLocalPresence(source: LocalPresence) {
 }
 export const localPresence = () => local;
 
+/** This tab isn't on screen. A headless run (dev/sim/) has no document, and counts as on screen. */
+export const tabHidden = () => typeof document !== 'undefined' && document.hidden;
+
 // One presence object, refilled every send (the room copies what it sends): same keys in the same order each time, so
 // no new object growing a field at a time 20 times a second.
 const out: Presence = { v: 0, t: 0, n: null, c: null, p: null, r: null, s: null };
 function buildPresence() {
-  out.v = document.hidden ? 0 : 1;
+  out.v = tabHidden() ? 0 : 1;
   out.t = Math.round(performance.now());
   out.n = out.c = out.p = out.r = out.s = null;
   if (local?.entered && local.body) {
