@@ -13,6 +13,7 @@
 - Last update of the day: a new prototype, the rail loop (`?proto=net`), where crates ride the train from camps to a growing village. It reuses the shared-world edits that already exist, like a new board game played with the same pieces, so no arrow in the picture changes.
 - After that, only small fixes landed: the last two loops between files were untangled (the player and cave code now lean on small helper files instead of on each other), and an old hero prototype was retired. Nothing in the picture moved.
 - Late that night, only small changes again: The Boogler can babble as he talks (behind `?proto=babble`, only your tab hears it), the new Buddy body learned to carry, swim and sit, and the physics-step hooks now run in a numbered order instead of whichever signed up first, like a queue with tickets. Nothing in the picture moved.
+- Overnight, only Local changes: The Boogler's babble now plays for everyone, every sound runs through one mixing desk with a volume slider in the pause view, and a page that loads during a deploy reloads once instead of getting stuck. Nothing is shared, so nothing in the picture moved.
 
 ## 2026-10-30
 
