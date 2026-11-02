@@ -1,10 +1,10 @@
 {
   "buddy": {
     "source": "buddy.py",
-    "sourceHash": "d89e4be334b680a4",
-    "outHash": "38ca64cc7dab9d62",
+    "sourceHash": "9c3222236e549ae5",
+    "outHash": "29fdc6cbbb43bba9",
     "rawBytes": 268920,
-    "bytes": 67708,
+    "bytes": 67424,
     "triangles": 9252,
     "animations": [],
     "textures": []
@@ -49,16 +49,6 @@
     ],
     "textures": []
   },
-  "hero2-rig": {
-    "source": "hero2-rig.py",
-    "sourceHash": "488dc2c5bbe260c8",
-    "outHash": "d64ee8d9b5de8af8",
-    "rawBytes": 200200,
-    "bytes": 80472,
-    "triangles": 11288,
-    "animations": [],
-    "textures": []
-  },
   "scaffold-kit": {
     "source": "scaffold-kit.py",
     "sourceHash": "4a239fc3e45106f9",
@@ -70,59 +60,5 @@
       "drop"
     ],
     "textures": []
-  },
-  "standin-robot": {
-    "source": "standin-robot.glb",
-    "sourceHash": "e2b9ce964770fb90",
-    "outHash": "9ac748807bca50c7",
-    "rawBytes": 463988,
-    "bytes": 183572,
-    "triangles": 3237,
-    "animations": [
-      "Dance",
-      "Death",
-      "Idle",
-      "Jump",
-      "No",
-      "Punch",
-      "Running",
-      "Sitting",
-      "Standing",
-      "ThumbsUp",
-      "Walking",
-      "WalkJump",
-      "Wave",
-      "Yes"
-    ],
-    "textures": []
-  },
-  "tracklayer": {
-    "source": "tracklayer.glb",
-    "sourceHash": "f47254c2caa16730",
-    "outHash": "15f139b856d4c616",
-    "rawBytes": 9829992,
-    "bytes": 545640,
-    "triangles": 8264,
-    "animations": [
-      "Armature|clip0|baselayer"
-    ],
-    "textures": [
-      {
-        "name": "normal",
-        "size": [
-          256,
-          256
-        ],
-        "mime": "image/png"
-      },
-      {
-        "name": "texture_0",
-        "size": [
-          256,
-          256
-        ],
-        "mime": "image/png"
-      }
-    ]
   }
 }

@@ -3,49 +3,49 @@
 // target rest. The hips also move, scaled by hip height. Sampled once at load, then played like any other clip.
 import * as THREE from 'three/webgpu';
 
-export const UAL_TO_MESHY: Record<string, string> = {
-  pelvis: 'Hips',
-  spine_01: 'Spine02',
-  spine_02: 'Spine01',
-  spine_03: 'Spine',
-  neck_01: 'neck',
-  Head: 'Head',
-  clavicle_l: 'LeftShoulder',
-  upperarm_l: 'LeftArm',
-  lowerarm_l: 'LeftForeArm',
-  hand_l: 'LeftHand',
-  thigh_l: 'LeftUpLeg',
-  calf_l: 'LeftLeg',
-  foot_l: 'LeftFoot',
-  ball_l: 'LeftToeBase',
-  clavicle_r: 'RightShoulder',
-  upperarm_r: 'RightArm',
-  lowerarm_r: 'RightForeArm',
-  hand_r: 'RightHand',
-  thigh_r: 'RightUpLeg',
-  calf_r: 'RightLeg',
-  foot_r: 'RightFoot',
-  ball_r: 'RightToeBase',
-};
-/** For a figure with the library's own bone names, in other proportions (assets/src/buddy.py). */
-export const UAL_TO_SELF: Record<string, string> = Object.fromEntries(Object.keys(UAL_TO_MESHY).map((k) => [k, k]));
+// The clips' bones, which a target names the same; the hips first. Other bones (a Buddy's eyes) keep still.
+const BONES = [
+  'pelvis',
+  'spine_01',
+  'spine_02',
+  'spine_03',
+  'neck_01',
+  'Head',
+  'clavicle_l',
+  'upperarm_l',
+  'lowerarm_l',
+  'hand_l',
+  'thigh_l',
+  'calf_l',
+  'foot_l',
+  'ball_l',
+  'clavicle_r',
+  'upperarm_r',
+  'lowerarm_r',
+  'hand_r',
+  'thigh_r',
+  'calf_r',
+  'foot_r',
+  'ball_r',
+];
 const FPS = 30;
+const HIP_CALM = 0.5;
 
 /** Both roots at the origin in their rest poses. Returns the clip on the target's bones, and the hips' height ratio. */
 export function retargetClip(
   clip: THREE.AnimationClip,
   src: THREE.Object3D,
   tgt: THREE.Object3D,
-  { map = UAL_TO_MESHY, armOut = 0 }: { map?: Record<string, string>; armOut?: number } = {},
+  { armOut = 0 }: { armOut?: number } = {},
 ) {
   src.updateMatrixWorld(true);
   tgt.updateMatrixWorld(true);
   const q = () => new THREE.Quaternion();
   const worldQ = (o: THREE.Object3D) => o.getWorldQuaternion(q());
-  const pairs = Object.entries(map).map(([s, t]) => {
-    const a = src.getObjectByName(s),
-      b = tgt.getObjectByName(t);
-    if (!a || !b) throw new Error(`retarget: no bone ${a ? t : s}`);
+  const pairs = BONES.map((name) => {
+    const a = src.getObjectByName(name),
+      b = tgt.getObjectByName(name);
+    if (!a || !b) throw new Error(`retarget: no bone ${name}`);
     return { a, b, restA: worldQ(a).invert(), restB: worldQ(b), track: [] as number[] };
   });
   const hips = pairs[0]!;
@@ -83,6 +83,16 @@ export function retargetClip(
     pitch += Math.asin(p.copy(Z).applyQuaternion(worldQ(headPair.a).multiply(headPair.restA)).y) / frames;
   }
   const level = new THREE.Quaternion().setFromAxisAngle(X, pitch);
+  // The library's hips roll and twist to carry a lean body; on a round one that reads as its mass shifting. Half of it
+  // comes off, and half of their sideways sway.
+  const hipMean = new THREE.Quaternion(0, 0, 0, 0);
+  for (let f = 0; f < frames; f++) {
+    sample(Math.min(clip.duration, f / FPS));
+    const h = worldQ(hips.a).multiply(hips.restA).multiply(hips.restB);
+    const sign = h.dot(hipMean) < 0 ? -1 : 1;
+    hipMean.set(hipMean.x + sign * h.x, hipMean.y + sign * h.y, hipMean.z + sign * h.z, hipMean.w + sign * h.w);
+  }
+  hipMean.normalize();
   for (let f = 0; f < frames; f++) {
     const t = Math.min(clip.duration, f / FPS);
     times.push(t);
@@ -94,6 +104,7 @@ export function retargetClip(
       if (armOut && pair.a.name === 'upperarm_l') want.premultiply(out.setFromAxisAngle(Z, armOut));
       if (armOut && pair.a.name === 'upperarm_r') want.premultiply(out.setFromAxisAngle(Z, -armOut));
       if (pair === headPair) want.premultiply(level);
+      if (pair === hips) want.slerp(hipMean, HIP_CALM);
       world.set(pair.b, want);
     }
     // Local = parent's world⁻¹ × this bone's world.
@@ -101,7 +112,9 @@ export function retargetClip(
       const local = parentWorld(pair.b.parent!).clone().invert().multiply(world.get(pair.b)!);
       pair.track.push(local.x, local.y, local.z, local.w);
     }
-    p.copy(hips.a.getWorldPosition(p)).sub(headA).multiplyScalar(ratio).add(headB);
+    p.copy(hips.a.getWorldPosition(p)).sub(headA).multiplyScalar(ratio);
+    p.x *= 1 - HIP_CALM;
+    p.add(headB);
     hipParent.worldToLocal(p);
     hipTrack.push(p.x, p.y, p.z);
   }

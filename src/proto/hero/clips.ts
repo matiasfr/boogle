@@ -1,8 +1,10 @@
-// The hero's default body in ?proto=hero: hand-made animation. Quaternius's Universal Animation Library (CC0,
-// assets/src/hero-clips.json) on its mannequin, with code only choosing and blending clips, to judge the motion apart
-// from any model of ours. Walk, jog and sprint are played by distance at the rate that matches each clip's stride to the
-// ground (measured from the library's root-motion file), so the feet don't slide; they share one phase so a blend
-// between them stays in step. Everything comes from speed and airborne, so remote players need no new presence.
+// Prototype: the hero (?proto=hero). Every avatar plays hand-made animation, Quaternius's Universal Animation Library
+// (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. The default body is the library's own
+// mannequin, for judging motion apart from any model of ours; &body=buddy is the player's direction (assets/src/buddy.py),
+// and &hat=cap or beanie wears one of its `wear_head_` parts. Walk, jog and sprint are played by distance at the rate that
+// matches each clip's stride to the ground (measured from the library's root-motion file), so the feet don't slide; they
+// share one phase so a blend between them stays in step. Everything comes from speed and airborne, so remote players need
+// no new presence. Serves DESIGN.md 1 (moving around is a toy). Sync kind: Local (render only).
 import * as THREE from 'three/webgpu';
 import { COLORS, PLAYER_R } from '../../constants.ts';
 import { clamp } from '../../math.ts';
@@ -11,14 +13,11 @@ import { loadAsset } from '../../render/assets.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
-import { shadeOnce } from '../../player/hero.ts';
 import { startHeroCamera } from './camera.ts';
-import { LOOKS, applyLook, inflate } from './looks.ts';
-import url from '../../../assets/built/hero-clips.glb?url';
-import tracklayerUrl from '../../../assets/built/tracklayer.glb?url';
-import buddyUrl from '../../../assets/built/buddy.glb?url';
-import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from './retarget.ts';
 import { makeLife } from './life.ts';
+import { retargetClip } from './retarget.ts';
+import clipsUrl from '../../../assets/built/hero-clips.glb?url';
+import buddyUrl from '../../../assets/built/buddy.glb?url';
 
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
 // The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
@@ -29,7 +28,10 @@ const JUMP_FROM = 0.3; // s into Jump_Start where the feet leave the ground (its
 const LAND = { for: 0.35, stop: 2.5 }; // s of Jump_Land, and the speed above which you run straight out of it
 const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
 const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land'];
-const look = LOOKS[new URLSearchParams(location.search).get('body') ?? ''] ?? LOOKS.mannequin!;
+const BODIES = {
+  mannequin: { url: clipsUrl, height: 1.75, armOut: 0 },
+  buddy: { url: buddyUrl, height: 0, armOut: (12 * Math.PI) / 180 }, // its body is wider than the mannequin's
+};
 
 type Rig = {
   mixer: THREE.AnimationMixer;
@@ -40,12 +42,8 @@ type Rig = {
   air: boolean;
   airT: number;
   landT: number;
-  scaled: [THREE.Object3D, number][];
-  pelvis: THREE.Object3D;
-  legs: number;
-  spread: [THREE.Object3D, number][];
-  strideK: number; // the stride's scale: the legs', and the whole figure's
-  life?: ReturnType<typeof makeLife>;
+  strideK: number; // the stride's scale: the figure's
+  life: ReturnType<typeof makeLife>;
   lastY: number;
 };
 const rigs = new WeakMap<Avatar, Rig>();
@@ -101,27 +99,21 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   r.acts.Jump_Loop!.time = r.airT % r.acts.Jump_Loop!.getClip().duration;
   r.acts.Jump_Land!.time = r.landT;
   r.mixer.update(0);
-  // After the clips, which also key every bone's scale and the hips' height.
-  for (const [bone, k] of r.scaled) bone.scale.setScalar(k);
-  r.pelvis.position.multiplyScalar(r.legs);
-  for (const [bone, k] of r.spread) bone.position.multiplyScalar(k);
-  if (r.life) r.life.update(dt, (a.position.y - r.lastY) / dt, airborne);
+  r.life.update(dt, (a.position.y - r.lastY) / dt, airborne);
   r.lastY = a.position.y;
 }
 
-// &body=buddy (assets/src/buddy.py, a simple smooth figure in the player's colour) and &body=tracklayer (a fixed design,
-// assets/src/tracklayer.json, made with Meshy): the same clips, retargeted onto each one's own skeleton at load. No rim
-// of light (the owner prefers it off). &hat=cap or beanie wears one of the Buddy's `wear_head_` parts.
-const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the mannequin's
-async function startModel(modelUrl: string, map: Record<string, string>, tint: boolean) {
-  const [clips, model] = await Promise.all([loadAsset(url), loadAsset(modelUrl)]);
-  const hat = 'wear_head_' + new URLSearchParams(location.search).get('hat');
+export async function startClipsHero() {
+  const q = new URLSearchParams(location.search);
+  const body = q.get('body') === 'buddy' ? BODIES.buddy : BODIES.mannequin;
+  const hat = 'wear_head_' + q.get('hat');
+  const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(body.url)]);
   const src = clips.instance();
   const tgt = model.instance();
   let ratio = 1;
   const baked = new Map<string, THREE.AnimationClip>();
   for (const n of NAMES) {
-    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { map, armOut: ARM_OUT });
+    const r = retargetClip(clips.clip(n), src.children[0]!, tgt.children[0]!, { armOut: body.armOut });
     baked.set(n, r.clip);
     ratio = r.ratio;
   }
@@ -135,14 +127,23 @@ async function startModel(modelUrl: string, map: Record<string, string>, tint: b
       m.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
       if (m.name.startsWith('wear_')) m.visible = m.name.startsWith(hat);
       const shared = m.material as THREE.MeshStandardNodeMaterial;
-      if (tint && shared.name === 'M_Main') {
+      if (shared.name === 'M_Main') {
         const own = shared.clone();
         own.color.set(COLORS[colorIdx]!);
         m.material = own;
         a.userData.mat = own as unknown as THREE.MeshStandardMaterial;
       }
     });
-    holder.position.y = -PLAYER_R;
+    let s = 1,
+      floor = 0;
+    if (body.height) {
+      holder.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(holder, true);
+      s = body.height / Math.max(0.01, box.max.y - box.min.y);
+      floor = box.min.y * s;
+    }
+    holder.scale.setScalar(s);
+    holder.position.y = -PLAYER_R - floor;
     holder.rotation.y = Math.PI; // the model faces +z; avatars face -z
     for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
     a.userData.inner.add(holder);
@@ -152,76 +153,6 @@ async function startModel(modelUrl: string, map: Record<string, string>, tint: b
     const w: Record<string, number> = {};
     for (const n of NAMES) {
       const act = mixer.clipAction(baked.get(n)!);
-      act.play();
-      act.timeScale = 0;
-      act.setEffectiveWeight(n === 'Idle_Loop' ? 1 : 0);
-      acts[n] = act;
-      w[n] = n === 'Idle_Loop' ? 1 : 0;
-    }
-    rigs.set(a, {
-      mixer,
-      acts,
-      w,
-      phase: 0,
-      idleT: Math.random() * 2,
-      air: false,
-      airT: 1,
-      landT: 1,
-      scaled: [],
-      pelvis: root.getObjectByName(map.pelvis!)!,
-      legs: 1,
-      spread: [],
-      strideK: ratio,
-      life: makeLife(root, tgt.children[0]!, map),
-      lastY: a.position.y,
-    });
-  };
-  await precompile(model.instance());
-  setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
-  startHeroCamera();
-}
-
-export async function startClipsHero() {
-  const body = new URLSearchParams(location.search).get('body');
-  if (body === 'tracklayer') return startModel(tracklayerUrl, UAL_TO_MESHY, false);
-  if (body === 'buddy') return startModel(buddyUrl, UAL_TO_SELF, true);
-  const kit = await loadAsset(url);
-  shadeOnce(kit.gltf.scene);
-  const dress = (a: Avatar, colorIdx: number) => {
-    if (rigs.has(a)) return;
-    const holder = kit.instance();
-    const root = holder.children[0]!;
-    // Each figure's skin in its player's colour; its joints a shade darker, except the plain mannequin's.
-    let mat: THREE.MeshStandardNodeMaterial | null = null;
-    holder.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
-      m.frustumCulled = false; // skinned: the bind pose's bounds don't follow the clips
-      const shared = m.material as THREE.MeshStandardNodeMaterial;
-      const own = shared.clone();
-      if (shared.name === 'M_Main') {
-        own.color.set(COLORS[colorIdx]!);
-        mat = own;
-      } else if (look !== LOOKS.mannequin) own.color.set(COLORS[colorIdx]!).multiplyScalar(0.72);
-      inflate(own, look.inflate);
-      m.material = own;
-    });
-    const { scaled, pelvis, legs, spread } = applyLook(look, root, mat ?? new THREE.MeshStandardNodeMaterial());
-    holder.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(holder, true);
-    const s = look.height / Math.max(0.01, box.max.y - box.min.y);
-    holder.scale.setScalar(s);
-    holder.position.y = -PLAYER_R - box.min.y * s;
-    holder.rotation.y = Math.PI; // the clips face +z; avatars face -z
-    for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
-    a.userData.inner.add(holder);
-    if (mat) a.userData.mat = mat as unknown as THREE.MeshStandardMaterial;
-    a.userData.leanScale = 0; // the clips lean on their own
-    const mixer = new THREE.AnimationMixer(root);
-    const acts: Record<string, THREE.AnimationAction> = {};
-    const w: Record<string, number> = {};
-    for (const n of NAMES) {
-      const act = mixer.clipAction(kit.clip(n));
       act.play();
       act.timeScale = 0; // animate() sets each clip's time itself
       act.setEffectiveWeight(n === 'Idle_Loop' ? 1 : 0);
@@ -237,15 +168,12 @@ export async function startClipsHero() {
       air: false,
       airT: 1,
       landT: 1,
-      scaled,
-      pelvis,
-      legs,
-      spread,
-      strideK: legs * s,
-      lastY: 0,
+      strideK: ratio * s,
+      life: makeLife(root, tgt.children[0]!),
+      lastY: a.position.y,
     });
   };
-  await precompile(kit.instance());
+  await precompile(model.instance());
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
   startHeroCamera();
 }

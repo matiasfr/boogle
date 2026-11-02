@@ -5,14 +5,12 @@
 import * as THREE from 'three/webgpu';
 import { color, float, normalView, positionViewDirection, uniform, vec3 } from 'three/tsl';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { patchNode } from '../src/render/material-patch.ts';
-import { retargetClip, UAL_TO_MESHY, UAL_TO_SELF } from '../src/proto/hero/retarget.ts';
+import { retargetClip } from '../src/proto/hero/retarget.ts';
 import { makeLife } from '../src/proto/hero/life.ts';
-import tracklayerUrl from '../assets/built/tracklayer.glb?url';
 import buddyUrl from '../assets/built/buddy.glb?url';
 import clipsUrl from '../assets/built/hero-clips.glb?url';
 
@@ -37,13 +35,6 @@ const VIEWS: Record<string, { yaw: number; dist: number; y: number }> = {
   Game: { yaw: Math.PI, dist: 6.5, y: 2.6 }, // about where the game's camera sits
 };
 
-const MODELS: Record<string, { label: string; url: string; map: Record<string, string> }> = {
-  buddy: { label: 'The Buddy', url: buddyUrl, map: UAL_TO_SELF },
-  tracklayer: { label: 'The Tracklayer', url: tracklayerUrl, map: UAL_TO_MESHY },
-};
-const modelName = new URLSearchParams(location.search).get('model') ?? 'buddy';
-const chosen = MODELS[modelName] ?? MODELS.buddy!;
-const modelUrl = chosen.url;
 const HATS: [string, string][] = [
   ['None', ''],
   ["Conductor's cap", 'wear_head_cap'],
@@ -97,10 +88,8 @@ addEventListener('resize', resize);
 resize();
 
 await MeshoptDecoder.ready;
-const loader = new GLTFLoader()
-  .setMeshoptDecoder(MeshoptDecoder)
-  .setKTX2Loader(new KTX2Loader().detectSupport(renderer));
-const [model, clipKit] = await Promise.all([loader.loadAsync(modelUrl), loader.loadAsync(clipsUrl)]);
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const [model, clipKit] = await Promise.all([loader.loadAsync(buddyUrl), loader.loadAsync(clipsUrl)]);
 
 // The game's rim of sky light, as in src/player/hero.ts, here with a switch.
 const rimOn = uniform(1);
@@ -130,13 +119,8 @@ model.scene.traverse((o) => {
   }
   m.material = n;
 });
-const textures = [...materials].flatMap((m) => [m.map, m.normalMap, m.roughnessMap].filter(Boolean)) as THREE.Texture[];
-const texSize = Math.max(...textures.map((t) => (t.image as { width: number }).width), 0);
-const fileKB = async (url: string) => Math.round((await (await fetch(url)).arrayBuffer()).byteLength / 1024);
-const kb = await fileKB(modelUrl);
-$('stats').textContent =
-  `${chosen.label}. ${Math.round(triangles).toLocaleString()} triangles, ${kb.toLocaleString()} KB` +
-  (textures.length ? `, ${new Set(textures).size} textures at ${texSize} px.` : ', no textures.');
+const kb = Math.round((await (await fetch(buddyUrl)).arrayBuffer()).byteLength / 1024);
+$('stats').textContent = `The Buddy. ${Math.round(triangles).toLocaleString()} triangles, ${kb} KB, no textures.`;
 
 const figure = cloneSkinned(model.scene);
 const srcFigure = cloneSkinned(clipKit.scene);
@@ -149,7 +133,7 @@ function bake(armOut: number) {
   baked = new Map(
     CLIPS.map(([, name]) => {
       const clip = clipKit.animations.find((a) => a.name === name)!;
-      return [name, retargetClip(clip, srcFigure, restFigure, { map: chosen.map, armOut }).clip];
+      return [name, retargetClip(clip, srcFigure, restFigure, { armOut }).clip];
     }),
   );
 }
@@ -209,8 +193,6 @@ for (const [label, name] of CLIPS) button('clips', label, () => pick(name)).data
 button('clips', 'Hop', () => (hopT = 0));
 button('clips', 'Blink', () => life.blink());
 for (const name of Object.keys(VIEWS)) button('views', name, () => setView(name));
-for (const [name, m] of Object.entries(MODELS))
-  button('models', m.label, () => (location.search = '?model=' + name)).classList.toggle('on', m === chosen);
 const skin = [...materials].find((m) => m.name === 'M_Main');
 if (skin)
   for (const c of COLOURS) {
@@ -281,7 +263,7 @@ function updateCrowd() {
 }
 $<HTMLInputElement>('crowd').addEventListener('change', updateCrowd);
 
-const life = makeLife(figure, restFigure, chosen.map);
+const life = makeLife(figure, restFigure);
 bake((12 * Math.PI) / 180);
 play('Idle_Loop', 0);
 setRim(0);

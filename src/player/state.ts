@@ -25,7 +25,6 @@ export const me = {
   lostBallAt: -1e9,
   bumpAt: undefined as number | undefined, // last time you walked into someone (src/features/bump.ts)
   wish: new THREE.Vector3(),
-  skid: false, // ?ctl=odyssey: braking to a stop before a pivot (src/physics/physics.ts)
 };
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 6.5 };
 

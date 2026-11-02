@@ -91,31 +91,19 @@ Part of the [game design document](../game-design.md) (as built). Update this fi
 ## Prototype: the hero (`?proto=hero`)
 
 Behind the flag, every avatar plays hand-made animation ([src/proto/hero/clips.ts](../../src/proto/hero/clips.ts)):
-Quaternius's Universal Animation Library (CC0) on its mannequin, as a stand-in to judge motion apart from any model of
-ours. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
+Quaternius's Universal Animation Library (CC0), by default on its mannequin, kept to compare motion apart from any model
+of ours. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
 the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
 6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint.
 
-Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](../../src/proto/hero/looks.ts)):
-`&body=cute`, `ears`, `stout` and `bib`. Each rescales the mannequin's bones, thickens its skin and adds simple parts; the
-hips and stride shrink with the legs.
-
 `&body=buddy` is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to
 the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
-pitch comes off the head (the library's idle looks down about 13°) and its bob stays. It blinks, and in the air
+pitch comes off the head (the library's idle looks down about 13°) and its bob stays. Most of the butt's weight rides on the
+pelvis, and half the clips' hip roll, twist and sway comes off, so its mass stays put at a walk. It blinks, and in the air
 ([src/proto/hero/life.ts](../../src/proto/hero/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next
 jump) and spreads its arms while falling, blended from its vertical speed. `&hat=cap` wears a conductor's cap and `&hat=beanie` a
 beanie, parts on the head bone hidden until worn, each one more draw call or two.
 
-`&body=tracklayer` is a fixed design ([assets/src/tracklayer.json](../../assets/src/tracklayer.json), made with Meshy): 8,264
-triangles, 256 px textures, the same clips retargeted onto its skeleton at load ([src/proto/hero/retarget.ts](../../src/proto/hero/retarget.ts)),
-with the upper arms swung out 12° to clear its wider body. It doesn't take the player's colour yet. boogle.club/character/ shows
-it alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.
-
-`&ctl=odyssey` (any page) tries a modern-Mario controller: you run where you face (turning at most 390°/s, 510°/s at
-sprint), speed builds at 30 m/s² to 7.5 m/s (10.5 sprinting), pulling back past 95° above 4 m/s skids and then pivots, air
-control is 35 m/s², and jumps start at 8.6 m/s plus 0.08 × speed. It read as inertia in play. `&body=keyed` is the
-code-animated hero ([src/proto/hero/platformer.ts](../../src/proto/hero/platformer.ts)), with `&steps=1` for footsteps;
-`&body=standin` and `&body=pill` are earlier figures.
+boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.
