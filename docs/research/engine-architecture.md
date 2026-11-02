@@ -202,10 +202,7 @@ finding. "Today" says what it finds at `39392fac`. Facts come from `npm run atla
   broke the global access patterns ([Ford, translated transcript](https://www.sohu.com/a/148848770_466876)) [F]. In ES
   modules a cycle also makes top-level code depend on evaluation order, and a knot can't be loaded alone in a Node test.
   `src/world/` has to keep running on the server (`server/src/host/world-host.ts`).
-- **Not a problem when:** it's the existing knot: `src/adapters/gifts.ts`, `src/adapters/mushroom-garden.ts`,
-  `src/netplay/net.ts`, `src/physics/ball.ts`, `src/player/{hands,hud,input,player,throw}.ts`, plus
-  `src/pois/caves/{index,decor}.ts`. Untangling it is owner-approved work in
-  [entity-architecture.md](../plans/entity-architecture.md), Part 3; don't propose it separately. Folders import each other: folders
+- **Not a problem when:** folders import each other without a cycle: folders
   aren't layers here (`src/physics/ball.ts` is game code; `engine.ts` and `backend-rapier.ts` import only constants). Fan-in
   is high: `src/loop.ts` 92, `src/render/scene.ts` 81.
 - **Today:** the baseline above. `src/world/` imports only `src/sim/`; `src/net/` imports nothing else in `src/`.

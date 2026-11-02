@@ -7,7 +7,7 @@
 // - players and the ball switch between the ground's colliders and the cave's (collision groups) when they cross
 //   into the cave volume; a safety net puts anything that ends up inside solid rock back where it was;
 // - the camera stays inside the tunnels, the fog closes in and the sky light dims a little (sky.ts `atmosphere`);
-//   the darkness with depth is baked per vertex (aAmb, see ambAt/withCaveAmbient), on the rock and the props alike.
+//   the darkness with depth is baked per vertex (aAmb, ambient.ts), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three/webgpu';
 import {
@@ -33,7 +33,6 @@ import {
   If,
   rand,
 } from 'three/tsl';
-import { patchNode } from '../../render/material-patch.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { precompile } from '../../render/precompile.ts';
 import { groundMat, GROUP, groundProbe, teleport } from '../../physics/physics.ts';
@@ -47,15 +46,11 @@ import { waterField } from '../../physics/water-field.ts';
 import { buildCaveMeshSteps, buildCollarMeshSteps, caveSd } from './mesh.ts';
 import { MOUTHS, POND, ZONE, TUNNEL_R, FLOOR_CUT, SEGMENTS, NODES } from './network.ts';
 import { buildDecor, mouthFrame } from './decor.ts';
+import { ambAt, withCaveAmbient } from './ambient.ts';
 import { freezeStatic } from '../../render/instances.ts';
 
 const ENTER = 1.0; // a body counts as in the cave this far out of a mouth (the cave's floor reaches a bit further)
 const COLLIDER_OUT = 1.6;
-// Ambient light reaching the rock, by distance from the nearest mouth: daylight at the mouth, AMB_DEEP of it from
-// AMB_FAR metres in. Baked into the mesh, so the inside reads dark from outside too (the sky's light is global).
-const AMB_NEAR = 2,
-  AMB_FAR = 14,
-  AMB_DEEP = 0.6;
 const SURFACE_MASK = ~GROUP.CAVE,
   CAVE_MASK = ~GROUP.SCENERY;
 
@@ -154,21 +149,6 @@ function makeGeometry(m: CaveMesh) {
   geo.setAttribute('aAmb', new THREE.BufferAttribute(amb, 1));
   geo.computeBoundingSphere();
   return { geo, colliderIndices: col };
-}
-
-// Ambient (sky) light reaching a point at world (x, z): 1 at the mouths, AMB_DEEP deep in. Fill it into an aAmb vertex
-// attribute for any cave mesh drawn with withCaveAmbient, so it darkens with depth like the rock.
-export function ambAt(x: number, z: number) {
-  let mouthD = Infinity;
-  for (const mo of MOUTHS) mouthD = Math.min(mouthD, Math.hypot(x - mo.x, z - mo.z));
-  return 1 - (1 - AMB_DEEP) * THREE.MathUtils.smoothstep(mouthD, AMB_NEAR, AMB_FAR);
-}
-
-// Scales the sky's ambient (hemisphere) light by the geometry's aAmb attribute; lanterns and the sun are not.
-// aoNode multiplies the indirect diffuse light, which here is only the hemisphere light.
-const aAmb = attribute('aAmb', 'float');
-export function withCaveAmbient<M extends object>(mat: M) {
-  return patchNode(mat, 'aoNode', (prev) => (prev ? prev.mul(aAmb) : aAmb));
 }
 
 // Brickwork for the cellar: mortar lines in world space on whichever plane the surface faces.

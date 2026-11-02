@@ -13,7 +13,7 @@ import { addPart, mergeParts } from '../../render/props.ts';
 import { addLightSource } from '../../render/lights.ts';
 import { mulberry32 } from '../../math.ts';
 import { caveSd } from './mesh.ts';
-import { ambAt, withCaveAmbient } from './index.ts';
+import { ambAt, withCaveAmbient } from './ambient.ts';
 import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT, type CaveNode } from './network.ts';
 import type { Shape } from '../../physics/engine.ts';
 

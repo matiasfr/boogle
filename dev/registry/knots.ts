@@ -4,9 +4,8 @@
 import { readFile } from '../scan/read.ts';
 import type { Source } from './scan.ts';
 
-// Today's knots. This list only shrinks: a file that leaves a knot loses its line here, and
-// docs/plans/entity-architecture.md part 3 takes it to empty. Don't add to it; break the new cycle.
-export const KNOTS: string[][] = [['src/pois/caves/decor.ts', 'src/pois/caves/index.ts']];
+// The knots we allow: none, and it stays that way. Don't add to it; break the new cycle.
+export const KNOTS: string[][] = [];
 
 export type Imports = Map<string, string[]>;
 
