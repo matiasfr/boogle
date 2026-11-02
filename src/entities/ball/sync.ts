@@ -31,4 +31,6 @@ onRemotePresence((r, pr, time) => ballOwner.hear(r.peer, pr.b, time));
 export function resolveBallOwner(now: number, hidden: boolean) {
   const claim = ballOwner.resolve(now, hidden);
   if (claim) ball.held = !!(claim as BallWire).h;
+  // Its holder is gone: nobody holds it, even in a hidden tab that won't adopt it (placeBall would refuse for good).
+  else if (!ball.mine) ball.held = false;
 }
