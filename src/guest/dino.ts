@@ -4,7 +4,7 @@
 // idling// and blinking (showRealDino).
 import * as THREE from 'three';
 import { addPart, mergeParts } from '../render/props.ts';
-import { scene, toScreen } from '../render/scene.ts';
+import { toScreen } from '../render/scene.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { NODES } from '../pois/caves/network.ts';
 import { getSim } from './engine.ts';
@@ -38,7 +38,9 @@ const GREEN = '#46b83a',
   ORANGE = '#ec6a25',
   DARK = '#16202a';
 
-function build() {
+// His group, built the first time it's asked for. src/features/dino.ts spawns the entity that puts it in the world.
+export function dinoGroup() {
+  if (dino.group) return dino.group;
   const parts: THREE.BufferGeometry[] = [];
   const m = new THREE.Matrix4(),
     q = new THREE.Quaternion(),
@@ -88,7 +90,6 @@ function build() {
   dino.head.copy(dino.pos).setY(dino.pos.y + dino.height - 0.15);
   group.position.copy(dino.pos);
   group.rotation.y = Math.atan2(OX, OZ); // facing out of the cave
-  scene.add(group);
   dino.group = group;
   return group;
 }
@@ -116,7 +117,7 @@ export async function showRealDino(rom: RomPieces) {
   const sim = await getSim();
   getAtlas(rom.textures);
   if (dino.real) return;
-  const group = dino.group ?? build();
+  const group = dinoGroup();
   const mesh = createModelMesh();
   group.children[0]!.visible = false;
   group.add(mesh);
@@ -137,7 +138,7 @@ function drawReal(camera: THREE.Camera, now: number, r: Real) {
 const over = new THREE.Vector3(),
   px = { x: 0, y: 0, behind: false };
 export function updateDino(camera: THREE.Camera, now: number) {
-  const group = dino.group ?? build();
+  const group = dinoGroup();
   const t = (now - dino.hopAt) / 1000;
   group.position.y = dino.pos.y + (t < 0.5 ? Math.sin((t / 0.5) * Math.PI) * 0.35 : 0);
   if (dino.real) drawReal(camera, now, dino.real);

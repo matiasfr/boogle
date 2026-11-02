@@ -9,7 +9,8 @@
 // Small and eager: the dino, the controls, presence. The engine, the guest and the models load on first use.
 import './dino.css';
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { me } from '../player/player.ts';
@@ -18,7 +19,7 @@ import { registerInteractable, interactTarget, NO_TARGETS } from '../player/hand
 import { heldId } from '../player/inventory.ts';
 import { registerAction, describeControl, wrapAction } from '../player/controls.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../netplay/net.ts';
-import { dino, dinoSays, updateDino, showRealDino } from '../guest/dino.ts';
+import { dino, dinoGroup, dinoSays, updateDino, showRealDino } from '../guest/dino.ts';
 import { guest } from '../guest/state.ts';
 import { isPose, quantisePose, hasEngine, findEngine, takeEngineFile, ENGINE_EXT } from '../guest/engine.ts';
 import { readRom, ROM_EXT, ROM_SHA1, type RomPieces } from '../guest/rom.ts';
@@ -204,11 +205,18 @@ function anyRemoteGuest() {
 
 // Once loaded, the module draws remote guests and tidies up after those who stop or leave. Without both files a
 // player sees remote guests as their usual avatars.
-onFrame(({ now }) => {
-  updateDino(camera, now);
-  if (module) module.updateRemoteGuests(remotes);
-  else if (ready() && !preloading && anyRemoteGuest())
-    preloading = load()
-      .then((m) => m.loadSim(rom!))
-      .catch(() => (preloading = null));
-});
+defineKind('dino', { update: 0 });
+onStart(() =>
+  spawn({
+    kind: 'dino',
+    mesh: dinoGroup(),
+    update({ now }) {
+      updateDino(camera, now);
+      if (module) module.updateRemoteGuests(remotes);
+      else if (ready() && !preloading && anyRemoteGuest())
+        preloading = load()
+          .then((m) => m.loadSim(rom!))
+          .catch(() => (preloading = null));
+    },
+  }),
+);
