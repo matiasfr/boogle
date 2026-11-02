@@ -98,3 +98,9 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Idea: junctions unlock parts of the network, but you still haul for each track segment; Death Stranding "had some interesting work there".
 - Town: noticed the change for sure, though it's simple greybox and needs fleshing out in the real game.
 - After: the lean is logged (boogle-2.md, Decided, open question 11); the next test keeps hauling, with the network making it easier.
+
+## 2026-11-02 (the depot, `?proto=net&v=depot`)
+- Who: Matias, solo; told to the director.
+- Liked: the animation, and "the idea that the trains are substantively growing the town with the cargo that they get from the rail expansion". "I know that looked cool."
+- Otherwise: "that's really it. I'm not totally sure beyond that." No clear answer on whether the haul feels good with the network helping.
+- After: trains growing the town from cargo is the part that lands. The next test is a real place with a choice, not more hauling variants.
