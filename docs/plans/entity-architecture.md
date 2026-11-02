@@ -1,6 +1,6 @@
 # Plan: stricter flags and a game-entity architecture
 
-> **Status: approved, Parts 1 to 3 done, Part 4 under way, step 12 next (2026-11-02).** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
+> **Status: approved, Parts 1 to 4 done (2026-11-02); Part 5 open.** Design cites [the entity research](../research/entity-architecture.md). Code read at `main` `8c4232d6`. This overrides the advice in
 > [boogle-2-architecture-fit.md](boogle-2-architecture-fit.md) to hold foundation work until after the vertical slice.
 > It doesn't change "instance pools, no ECS library" in [architecture.md](architecture.md). It also overrides "don't
 > propose untangling the knot before the slice" in [engine-architecture.md](../research/engine-architecture.md), check 9.
@@ -262,10 +262,10 @@ Do this before the entity work: it's what delivers the separation.
       as step 11, with `/look` of movement, swimming and respawn. The owner's call (2026-11-02): don't stop here, the owner plays
       at the end. Still to do: split its state and view, and the camera's.
 - [x] **13. The Boogler, as one blob.** `src/boogler/boogler.ts` (726 lines) becomes an entity, staying in its folder, host field
-      `g` unchanged, `lines.ts` untouched. Verify: `/look`, and talking and riding work. Still to do: split its state and view, and move `src/boogler/fx.ts`'s three `scene.add`s (its orb and pops) onto entities.
-- [ ] **14. Remaining game objects, one PR per group:**
-      - Remote players: `updateRemotes` and their `onPreStep` target at `physics.ts:123-135` move, and the `declare module` bridge goes.
-        Then `installStepHooks` and its call in `main.ts` go.
+      `g` unchanged, `lines.ts` untouched. Verify: `/look`, and talking and riding work. Still to do: split its state and view.
+- [x] **14. Remaining game objects, one PR per group:** ([#497](https://github.com/matiasfr/boogle/pull/497), [#499](https://github.com/matiasfr/boogle/pull/499), [#501](https://github.com/matiasfr/boogle/pull/501), [#504](https://github.com/matiasfr/boogle/pull/504), [#505](https://github.com/matiasfr/boogle/pull/505), [#506](https://github.com/matiasfr/boogle/pull/506), [#507](https://github.com/matiasfr/boogle/pull/507), [#508](https://github.com/matiasfr/boogle/pull/508), [#512](https://github.com/matiasfr/boogle/pull/512), [#514](https://github.com/matiasfr/boogle/pull/514), [#515](https://github.com/matiasfr/boogle/pull/515), [#516](https://github.com/matiasfr/boogle/pull/516), [#517](https://github.com/matiasfr/boogle/pull/517))
+      - Remote players: `updateRemotes` and their `onPreStep` target at `physics.ts:123-135` move. Part of the `declare module` bridge
+        remains on `Remote` (`avatar`, `target`, `yaw`, `speed`, `ride`, `player`) because about 15 files read it. `installStepHooks` and its call in `main.ts` went.
       - `src/pois/` windmills, lighthouse and caves. Static scenery uses `spawn` for lifecycle only, which is what chunk
         streaming will need for islands.
       - `src/features/track-machine.ts`, `src/features/hut-build.ts`, and the `src/adapters/mushroom-garden.ts` stall.
@@ -274,8 +274,10 @@ Do this before the entity work: it's what delivers the separation.
         rule in "Entity or system". Verify each with `/look`.
       - Last: `first-run` and `welcome-back`, which gain a real lifetime, then `hud`, `pause`, `hotbar` and `prompt`, one entity per
         screen. If the migration runs long, leave these on the allow-list.
-- [ ] **15. Close out.** Delete the remaining suppressions and any that are left stale. Update `src/loop.ts`'s order table and
+- [x] **15. Close out.** Delete the remaining suppressions and any that are left stale. What remains is on purpose: `src/pois/` (20), which the home redesign replaces, and `src/player/player.ts` (2), its body and avatar arriving at `enterIsland`. Update `src/loop.ts`'s order table and
       comments, `src/render/README.md` if it changed, and `src/README.md`. Verify: `npm run check`, `npm run perf`, `npm run hitches`.
+
+**Waiting:** the player's and Boogler's state and view splits (steps 12 and 13, "still to do") wait for the owner's playthrough.
 
 **Pause or stop when:** the owner reports a feel regression twice in one object (fix the pattern first); the suppression count hasn't
 fallen in two weeks of active work (finish, or call the rest legacy until touched); or the slice needs the hands. With the ratchet in

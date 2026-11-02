@@ -4,26 +4,27 @@
 //                                   registration (import) order
 //     phase 'prePhysics' once a frame, before the physics step (intent, remote poses); core only so far
 //     phase 'world'  right after the physics step (gameplay reacting to physics)
-//     phase 'update' visual sync and camera (core, below -100), then the features (default: most features)
+//     phase 'update' visual sync and camera (core, below -100), then the features
 //     phase 'late'   just before render (HUD, previews, uniforms; presence send and render come last)
 //   onStart(fn)                     once, after input/lobby/network start (right away if that already happened)
 //
-// main.ts runs prePhysics, the physics step, then world, update and late, then renders. The core modules hook in at
-// orders features leave alone (pick an order between these, never equal to one):
+// main.ts runs prePhysics, the physics step, then world, update and late, then renders. Entities (src/entity/entity.ts) run
+// on these same lists: each kind registers one hook per phase it declares, at the order in its defineKind. Their phases map
+// postPhysics to world, update to update, lateUpdate to late, and fixedPre and fixedPost to onPreStep and onPostStep below.
+// Core orders, which features leave alone (pick an order between these, never equal to one; `npm run registry -- --json`
+// lists the features' too). Bare names are kinds, and files are services on a plain hook:
 //   prePhysics  -100 remote-player: remote poses   -90 ball: who owns the ball (can release it: me.holding)
 //               -80 player: intent (reads me.holding, writes me.yaw)   -70 ball-carry: the carried pose (reads both)
 //   world   -300 ball: an owned ball off the island respawns; ball.pose follows the body
 //           -290 player: fall respawn            -280 ball-carry: walking into a slow ball claims it
-//   update  -300 ball-view: ball mesh                -290 player: own avatar          -280 remote-player: remote avatars
-//           -200 camera                          -190 props.ts: clouds            -150 assets.ts: glTF clips
+//   update  -300 ball-view: ball mesh            -290 player: own avatar          -280 remote-player: remote avatars
+//           -200 camera                          -190 cloud                       -150 assets.ts: glTF clips
+//           -60 conversation                     -10 world.ts: lockstep ticks     -5 sky, guest
 //           (features: -10 and up)
-//   late    -200 throw.ts: throw preview        -190 hud.ts: HUD                 -20 particles.ts: particles
+//   late    -200 throw-preview                   -190 hud                         -20 particles.ts: particles
 //           (features: -10 to 2000)
-//           3000 net.ts: presence send           3010 water-render.ts: sea uTime  (then main.ts renders)
-//
-// Entities (src/entity/entity.ts) run on these same lists: each kind registers one hook per phase it declares, at the
-// order in its defineKind. Their phases map postPhysics to world, update to update, lateUpdate to late, and fixedPre and
-// fixedPost to onPreStep and onPostStep below.
+//           2500 adaptive-res.ts   3000 net.ts: presence send   3010 sea: its uTime   (then main.ts renders)
+// After every other hook in a frame phase, entity teardown runs (the end of that phase).
 //
 // The fixed step (src/physics/engine.ts) has its own lists, walked 0 to 4 times a frame around each physics step: lower
 // order first, ties in registration order. The orders below are pinned; moving one is a change of behaviour and gets
@@ -31,14 +32,14 @@
 //   onPreStep   10 platforms.ts: decks move    20 mushroom-garden: a growing cap shoves you   30 feel.ts: jump feel
 //               39 remote-player: body targets  40 player: its controller   45 ball: friction and surf
 //               50 boogler: his body follows him   60 boogler-ride: carry the rider, launches
-//               70 windmills: sails spin       80 caves: the safety net   90 guest/play.ts: the guest's body (lazy)
+//               70 windmills: sails spin       80 caves: the safety net   90 guest: the guest's body (lazy)
 //   onPostStep  10 mushroom-garden: the bounce   15 ball: fall-through net
 //               20 player: its fall-through net, ground contact (coyote)
 //               30 boogler-ride: standing on him
 //
 // New features: add a file in src/features/ that imports what it needs (including its own CSS) and spawns entities
-// (src/entity/entity.ts) or, for a service other things call, uses
-// onFrame/onStart. main.ts loads every file in src/features/ automatically.
+// (src/entity/entity.ts) or, for a service other things call, uses onFrame/onStart. main.ts loads every file in
+// src/features/ automatically.
 //
 // Lazy parts (faster first load): a feature stays a small eager file and loads its heavy or rarely used part with a
 // dynamic import(), e.g. `onStart(() => import('../pois/caves/index.ts'))` (src/features/pois.ts) or

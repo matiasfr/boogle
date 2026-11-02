@@ -1,9 +1,13 @@
 // Cosmetic Boogler effects: hearts floating off his head and the orb he puffs up to launch riders. Local only, so
 // Math.random is fine here.
 import * as THREE from 'three';
-import { scene } from '../render/scene.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { reducedMotion } from '../constants.ts';
 import { boogler, booglerReact, PUFF_MS } from './boogler.ts';
+
+// No methods: The Boogler's update runs updateBooglerFx, right after his pose. The entity is the group's lifetime.
+defineKind('boogler-fx', {});
+const fx = new THREE.Group();
 
 function heartTexture() {
   const c = document.createElement('canvas');
@@ -52,7 +56,7 @@ for (let k = 0; k < MAX_HEARTS; k++) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false }));
   s.visible = false;
   s.renderOrder = 11;
-  scene.add(s);
+  fx.add(s);
   hearts.push({ s, life: 0, max: 1, vx: 0, vy: 0, vz: 0, size: 0.3, sway: 0, delay: 0 });
 }
 
@@ -96,7 +100,7 @@ const orb = new THREE.Mesh(
 );
 orb.visible = false;
 orb.renderOrder = 9;
-scene.add(orb);
+fx.add(orb);
 
 const POP_N = 18;
 const popGeo = new THREE.SphereGeometry(0.09, 8, 6);
@@ -104,9 +108,10 @@ const popMat = new THREE.MeshStandardMaterial({ color: '#efe6ff', emissive: '#b9
 const pops = Array.from({ length: POP_N }, () => {
   const m = new THREE.Mesh(popGeo, popMat);
   m.visible = false;
-  scene.add(m);
+  fx.add(m);
   return { m, v: new THREE.Vector3(), life: 0 };
 });
+spawn({ kind: 'boogler-fx', mesh: fx });
 
 let puffAt = -1e9;
 let popped = true;

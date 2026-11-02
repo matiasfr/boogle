@@ -17,8 +17,10 @@ so hashed file names don't depend on it).
 - `entity/`: the entity core, for anything new in the world or on screen: `entity.ts` (`defineKind`, `spawn`, `despawn`; the
   lifecycle contract is at its top) and `walker.ts`, its pure logic, tested in Node.
 - `entities/`: game objects (docs/plans/entity-architecture.md). `ball/`: the beach ball, the worked example of a
-  long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`); `features/ping.ts` is the short-lived one. `remote-player/`: other players as this tab
-  draws them, avatars, labels, bodies and interpolation, plus riding a shared platform.
+  long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`); `features/ping.ts` is the short-lived one. `player/` and
+  `camera/`: the local player and camera as entities, over `player/`. `remote-player/`: other players as this tab
+  draws them, avatars, labels, bodies and interpolation, plus riding a shared platform. Most other kinds live in the feature
+  that owns them; `npm run registry -- --json` lists them with their orders.
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/heights.ts`
   is the fixed ground's heights (`groundHeight`, `cellX`/`cellZ`), `island/terrain.ts` its mesh.
 - `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react
