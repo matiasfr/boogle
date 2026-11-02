@@ -215,7 +215,7 @@ const S = {
   aLong: 0, // m/s²: how fast the cart is speeding up along its heading (smoothed), for squat and dive
   aLat: 0, // m/s²: the wheels' sideways grip (+ toward the right; smoothed), for body roll
   contact: 1, // 0..1: share of the wheels on the ground (eased), from the suspension
-  camDist: 0, // the zoom you had before you got in
+  camDist: 0, // the distance you had before you got in
 };
 protoActivity(() => (S.seated ? 'driving' : null)); // for the playtest trace
 let trauma = 0; // camera shake, 0..1 (shake = trauma²)
@@ -388,7 +388,7 @@ function board() {
   }
   S.mode = 'driving';
   S.tumble = 0;
-  if (!S.watchUntil) S.camDist = cam.dist; // still watching your own wipeout: keep the zoom from before it
+  if (!S.watchUntil) S.camDist = cam.dist; // still watching your own wipeout: keep the distance from before it
   S.watchUntil = S.againUntil = 0;
   cam.dist = T.camDist;
   if (flat(body.position.x, body.position.z, START.x, START.z) < 4) runHud.ready();
@@ -427,7 +427,7 @@ function getOut(thrown: boolean) {
     b.velocity.set(v.x * 0.5, 2, v.z * 0.5);
   }
   addBody(b);
-  if (!thrown) cam.dist = S.camDist || 6.5; // thrown: after the camera has watched you land
+  if (!thrown) cam.dist = S.camDist || 5.2; // thrown: after the camera has watched you land
   runHud.leave(thrown);
   sendPresence();
 }
@@ -1030,7 +1030,7 @@ onFrame(
             cam.yaw = angleLerp(cam.yaw, Math.atan2(-bv.x, -bv.z), 1 - Math.exp(-dt * 2.5));
           cam.pitch = lerp(cam.pitch, -0.4, 1 - Math.exp(-dt * 2));
         } else {
-          cam.dist = S.camDist || 6.5;
+          cam.dist = S.camDist || 5.2;
           S.watchUntil = 0;
         }
       }

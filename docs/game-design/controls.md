@@ -15,7 +15,6 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
-| Camera distance (`zoom`) | action | none | R3 (4 / 6.5 / 10 m) | none | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Bump the ball up (`bump`) | action | V | RT | Bump | The ball | |
 | Talk, pick up, take (`interact`) | action | E | X (nothing in reach: uses what you hold, like the touch main button) | Grab (the main button; its label follows the target) | Hands | |
@@ -39,7 +38,7 @@ Notes:
   clicks) between two columns of callouts, one per slot and stick, each with a leader line to its button. The callouts
   come from the registry (`listControls`, plus hidden actions such as `slot-prev` / `slot-next` as the detail of the
   shared hotbar row), so a rebound action moves its callout. A slot nobody claims is dimmed and reads Free (today
-  D-pad ↑ and ↓). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
+  R3, D-pad ↑ and ↓). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
   letters; with no pad yet the face buttons are a diamond of four dots with the meant one filled. Situations sit
   above it as chips (LB / RB cycle them on the pad): On foot; Driving when a `driving` row exists (the soapbox,
   `?proto=soapbox`); Talking (A or X says the picked answer, A also skips the typing, B leaves, the D-pad and left
@@ -55,7 +54,7 @@ Notes:
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): D-pad ↑ (D-pad ↓ opens the prototype bar, registered only on
+- **Free pad slots** (`npm run registry -- --json`): R3 and D-pad ↑ (D-pad ↓ opens the prototype bar, registered only on
   prototype pages, src/proto/bar/pad.ts). The update notice borrows the first free one (D-pad ↑) while it is up, so
   AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Bump, Honk and Ping are built by the registry; Jump and the main button are in `index.html`;

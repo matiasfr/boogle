@@ -64,8 +64,8 @@ On any `?proto=` page ([src/proto/moves/](../../src/proto/moves/index.ts); rec 6
 
 ## Camera
 
-Third-person orbit, looking past your right shoulder. Distance 6.5 m by default; pad R3 cycles 4, 6.5 and
-10 m. The wheel, trackpad and pinch don't zoom. Pitch −1.25 to 0.9 rad. Mouse 0.0024 rad/px when locked, 0.005 when dragging unlocked; touch
+Third-person orbit, looking past your right shoulder. One distance, 5.2 m, with no control to change it: the
+wheel, trackpad and pinch don't zoom either. Pitch −1.25 to 0.9 rad. Mouse 0.0024 rad/px when locked, 0.005 when dragging unlocked; touch
 0.006; pad right stick 2.8 rad/s yaw, 1.8 rad/s pitch, 0.15 deadzone. While the mouse is not locked (always on iPad,
 which has no Pointer Lock) a two-finger trackpad scroll turns the camera (0.0035 rad/px yaw, 0.0028 pitch; fingers
 right look right with natural scrolling), and ← → turn it at 2 rad/s instead of stepping sideways. The touch stick
@@ -93,8 +93,7 @@ Part of the [game design document](../game-design.md) (as built). Update this fi
 Every avatar plays hand-made animation ([src/player/buddy/body.ts](../../src/player/buddy/body.ts)): Quaternius's Universal
 Animation Library (CC0). Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
-the camera ([src/player/buddy/camera.ts](../../src/player/buddy/camera.ts), `&cam=old` for the older one) sits at 5.2 m instead of
-6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Solid things can't come between it and you ([src/player/camera-arm.ts](../../src/player/camera-arm.ts)): anything static that you collide with pulls it in at once, then it eases back out (0.12 s, then a 0.3 s time constant), and a slope lifts it first. Things under 1.6 m across, like trunks, only move it when they're right at the lens. What moves doesn't block it. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
+the camera ([src/player/buddy/camera.ts](../../src/player/buddy/camera.ts), `&cam=old` for the older one) sits at the same 5.2 m, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Solid things can't come between it and you ([src/player/camera-arm.ts](../../src/player/camera-arm.ts)): anything static that you collide with pulls it in at once, then it eases back out (0.12 s, then a 0.3 s time constant), and a slope lifts it first. Things under 1.6 m across, like trunks, only move it when they're right at the lens. What moves doesn't block it. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
 
 The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to
@@ -110,6 +109,6 @@ lower, deeper and a little shorter than on the capsule, so its head shows over t
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right
 mitt: a bag of seeds carried down at the hip by the handle, anything else with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
 eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
-being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward; a bump is both forearms up, like a volleyball dig (seen on your own only, as no presence says so). The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head. The camera's zoom control cycles 4, 5.2, 6.5 and 10 m.
+being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward; a bump is both forearms up, like a volleyball dig (seen on your own only, as no presence says so). The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
 
 boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.
