@@ -1,4 +1,4 @@
-// What the fall starts on (?proto=fall): a rail that stops in mid-air, a handcar at its end and a deck of cloud that hides
+// What the fall starts on (?proto=fall): a rail that stops in mid-air, a handcar riding it and a deck of cloud that hides
 // the island below. Code-built greybox. Local: nobody else sees any of it.
 import * as THREE from 'three/webgpu';
 import { SPAWN } from '../../constants.ts';
@@ -26,13 +26,14 @@ const LANDS_PAST = 2; // m past the rail's end you come down, once the air has b
 export const RAIL_END = TARGET.clone()
   .addScaledVector(FWD, -LANDS_PAST)
   .setY(TARGET.y + HEIGHT);
-export const ROLL_DIST = 7; // m the handcar rolls before the rail runs out
+export const ROLL_DIST = 8.5; // m the handcar rolls before the rail runs out
 export const CAR_START = RAIL_END.clone().addScaledVector(FWD, -ROLL_DIST);
 export const DECK_Y = TARGET.y + HEIGHT - 32;
 export const STAND = { back: -0.55, up: 0.72 }; // where you stand on the handcar, from its middle at rail height: at the front
 
 const RAIL_BACK = 130; // m of rail behind the end: it fades into the fog
 const GAUGE = 1.1;
+const SLEEPER_GAP = 0.95;
 const box = new THREE.BoxGeometry(1, 1, 1);
 const m = new THREE.Matrix4();
 const q = new THREE.Quaternion();
@@ -53,14 +54,18 @@ function part(
 const vertexColored = () => new THREE.MeshLambertMaterial({ vertexColors: true });
 
 function buildRail() {
-  const parts: THREE.BufferGeometry[] = [];
-  for (const side of [-1, 1]) part(parts, '#59616b', (side * GAUGE) / 2, 0.06, RAIL_BACK / 2, 0.11, 0.12, RAIL_BACK);
-  for (let z = 0.35; z < RAIL_BACK; z += 0.95) part(parts, '#7a5a3a', 0, -0.05, z, 1.75, 0.13, 0.32);
-  const rail = new THREE.Mesh(mergeParts(parts), vertexColored());
+  const steel: THREE.BufferGeometry[] = [];
+  for (const side of [-1, 1]) part(steel, '#59616b', (side * GAUGE) / 2, 0.06, RAIL_BACK / 2, 0.11, 0.12, RAIL_BACK);
+  const timber: THREE.BufferGeometry[] = [];
+  for (let z = 0.35; z < RAIL_BACK; z += SLEEPER_GAP) part(timber, '#7a5a3a', 0, -0.05, z, 1.75, 0.13, 0.32);
+  const sleepers = new THREE.Mesh(mergeParts(timber), vertexColored());
+  sleepers.castShadow = true;
+  const rail = new THREE.Group();
+  rail.add(new THREE.Mesh(mergeParts(steel), vertexColored()), sleepers);
   rail.position.copy(RAIL_END);
   rail.rotation.y = YAW; // its local -z is forward, so it runs back along +z from the end
-  rail.castShadow = true;
   scene.add(rail);
+  return sleepers;
 }
 
 /** The handcar: origin at rail height, facing -z. `pump` is the seesaw handle, for rocking. */
@@ -96,24 +101,52 @@ function buildDeck() {
     R = 430;
   const puff = new THREE.IcosahedronGeometry(1, 3);
   puff.setAttribute('normal', puff.attributes.position!.clone()); // round, so it reads as cloud and not as rock
-  const puffs = new THREE.InstancedMesh(
+  const mesh = new THREE.InstancedMesh(
     puff,
     new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#e6f0ff', emissiveIntensity: 0.55 }),
     COUNT,
   );
-  puffs.frustumCulled = false;
+  mesh.frustumCulled = false;
+  const puffs: Puff[] = [];
   for (let k = 0; k < COUNT; k++) {
     const a = k * 2.39996, // a sunflower: even cover with no grid to spot
       d = R * Math.sqrt((k + 0.5) / COUNT),
-      r = 18 + Math.random() * 22;
-    p.set(RAIL_END.x + Math.cos(a) * d, DECK_Y + (Math.random() - 0.5) * 14, RAIL_END.z + Math.sin(a) * d);
-    puffs.setMatrixAt(k, m.compose(p, q.identity(), s.set(r, r * 0.5, r)));
+      along = Math.cos(a) * d,
+      across = Math.sin(a) * d;
+    const puff: Puff = {
+      along,
+      across,
+      chord: Math.sqrt(R * R - across * across), // half the disc's length along the line, here
+      y: DECK_Y + (Math.random() - 0.5) * 14,
+      r: 18 + Math.random() * 22,
+    };
+    puffs.push(puff);
+    placePuff(mesh, k, puff);
   }
-  puffs.instanceMatrix.needsUpdate = true;
-  scene.add(puffs);
-  return puffs;
+  scene.add(mesh);
+  return { mesh, puffs };
+}
+type Puff = { along: number; across: number; chord: number; y: number; r: number };
+function placePuff(mesh: THREE.InstancedMesh, k: number, f: Puff) {
+  p.copy(RAIL_END).addScaledVector(FWD, f.along).addScaledVector(RIGHT, f.across).setY(f.y);
+  mesh.setMatrixAt(k, m.compose(p, q.identity(), s.set(f.r, f.r * 0.5, f.r)));
+  mesh.instanceMatrix.needsUpdate = true;
 }
 
-buildRail();
+const sleepers = buildRail();
 export const car = buildCar();
-export const deck = buildDeck();
+const deck = buildDeck();
+export const deckMesh = deck.mesh;
+
+/** The card's treadmill: the handcar stays put and the world slides back under it, so it's already travelling. `travelled`
+ * is metres so far. The rail's steel looks the same anywhere, so only its sleepers move, a sleeper's gap at most. A puff that
+ * has gone out the back of the disc comes round to the front. Jump in stops this and rolls the handcar for real, from this speed. */
+export function slideWorld(travelled: number) {
+  sleepers.position.z = travelled % SLEEPER_GAP;
+  deck.mesh.position.copy(FWD).multiplyScalar(-travelled);
+  deck.puffs.forEach((f, k) => {
+    if (f.along - travelled > -f.chord) return;
+    f.along += 2 * f.chord;
+    placePuff(deck.mesh, k, f);
+  });
+}

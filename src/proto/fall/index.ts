@@ -1,6 +1,6 @@
 // The fall into the world (src/features/proto-fall.ts loads this behind ?proto=fall; docs/game-design/first-run.md). You
-// meet your Buddy on a handcar at the end of a rail above the clouds, with the name-and-colour card beside it. Jump in
-// rolls it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
+// meet your Buddy riding a handcar on a rail above the clouds, with the name-and-colour card beside it. Jump in
+// runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
 // apart; you lie flat with stars, the handcar lands next to you, and the game begins. The rail going nowhere says what the
 // game wants, without words. Serves DESIGN.md 10 (Slapstick over precision) and 7 (Telegraph everything). Local, apart from
 // your body and the existing flops: the prop pieces are this tab's alone.
@@ -21,12 +21,29 @@ import { camera, scene, sky, sun } from '../../render/scene.ts';
 import { SUN_DIR } from '../../render/sun-dir.ts';
 import { protoCount } from '../count.ts';
 import { blastLetters, burst, updateLetters } from './letters.ts';
-import { CAR_START, FWD, HEIGHT, RIGHT, ROLL_DIST, STAND, TARGET, UP, YAW, car, deck, DECK_Y } from './stage.ts';
+import {
+  CAR_START,
+  DECK_Y,
+  FWD,
+  HEIGHT,
+  RIGHT,
+  ROLL_DIST,
+  STAND,
+  TARGET,
+  UP,
+  YAW,
+  car,
+  deckMesh,
+  slideWorld,
+} from './stage.ts';
 
-const ROLL_S = 1.5, // on the rail, speeding up
+const CRUISE = 5, // m/s the handcar is already doing behind the card
+  RELEASE = 10, // m/s as the rail runs out: it speeds up over the last stretch
+  PUMP_RATE = 3.1, // rad/s: about a two-second stroke, the same on the card and on the rail
+  PUMP_SWING = 0.3, // rad
   OFF_END = 0.8, // m the handcar's middle is past the end when it tips and you leave it
   LAUNCH_UP = 4, // m/s: a little hop off the end
-  BLEND_S = 1.3, // the camera swinging from your face to behind you
+  BLEND_S = 1, // the camera swinging from your face to behind you
   FALL_PITCH = -1.05, // looking down past your feet
   REST_PITCH = -0.38, // after the landing
   FUNNEL = { base: 1, perMetre: 0.2, firm: 1.5 }, // how far off the sign you can steer, by height, so you can't miss
@@ -131,11 +148,11 @@ function lightStage(at: THREE.Vector3) {
 // ---------------------------------------------------------------- Jump in: on the rail, then off it
 let rollT = 0;
 const carAt = new THREE.Vector3();
+const ROLL_S = (2 * (ROLL_DIST + OFF_END)) / (CRUISE + RELEASE); // steady speeding up, from CRUISE to RELEASE
 function rollPlace(t: number) {
-  const k = clamp(t / ROLL_S, 0, 1);
-  carAt.copy(CAR_START).addScaledVector(FWD, (ROLL_DIST + OFF_END) * k * k);
+  const k = Math.min(t, ROLL_S);
+  carAt.copy(CAR_START).addScaledVector(FWD, CRUISE * k + (((RELEASE - CRUISE) / ROLL_S) * k * k) / 2);
 }
-const releaseSpeed = (2 * (ROLL_DIST + OFF_END)) / ROLL_S;
 const standAt = new THREE.Vector3();
 
 onEntered(() => {
@@ -165,7 +182,7 @@ onPreStep(() => {
       state = 'fall';
       inputState.held = false;
       me.coyote = 0;
-      b.velocity.set(FWD.x * releaseSpeed * 0.8, LAUNCH_UP, FWD.z * releaseSpeed * 0.8);
+      b.velocity.set(FWD.x * RELEASE * 0.8, LAUNCH_UP, FWD.z * RELEASE * 0.8);
       releaseCar();
     }
   } else if (state === 'fall') {
@@ -189,6 +206,9 @@ onPreStep(() => {
 
 // ---------------------------------------------------------------- the handcar comes too
 const carV = new THREE.Vector3();
+let pumpPhase = 0,
+  travelled = 0,
+  rumble = 0;
 let carFlying = false,
   carDown = false,
   carSpin = 0;
@@ -196,18 +216,27 @@ const CAR_LAND = TARGET.clone().addScaledVector(RIGHT, 3.2).addScaledVector(FWD,
 const carMaxFall = HEIGHT / (HEIGHT / 20 + CAR_LATE_S);
 function releaseCar() {
   carFlying = true;
-  carV.copy(FWD).multiplyScalar(releaseSpeed * 0.6);
+  carV.copy(FWD).multiplyScalar(RELEASE * 0.6);
   carV.y = 1;
 }
 function updateCar(dt: number) {
   const g = car.group;
   if (state === 'card' || state === 'roll') {
-    const pumpRate = state === 'roll' ? 5 + rollT * 8 : 1.3;
-    car.pump.rotation.x = Math.sin(performance.now() * 0.001 * pumpRate) * (state === 'roll' ? 0.4 : 0.05);
+    pumpPhase += dt * PUMP_RATE;
+    car.pump.rotation.x = Math.sin(pumpPhase) * PUMP_SWING;
+    // It rides the sleepers: a small tremble and a slow rock.
+    travelled += dt * CRUISE;
+    rumble = Math.sin((travelled * 2 * Math.PI) / 0.95) * 0.007;
+    g.rotation.x = Math.sin(travelled * 1.3) * 0.009;
+  }
+  if (state === 'card') {
+    slideWorld(travelled);
+    g.position.y = CAR_START.y + rumble;
   }
   if (state === 'roll') {
     rollPlace(rollT);
     g.position.copy(carAt);
+    g.position.y += rumble;
   }
   if (!carFlying || carDown) return;
   carV.y = Math.max(carV.y - 30 * dt, -carMaxFall);
@@ -334,7 +363,7 @@ onFrame(
     updateLetters(now);
     if (state === 'card') {
       updatePreview(dt);
-      standOnCar(buddyAt, car.group.position);
+      standOnCar(buddyAt, CAR_START); // not the handcar's rumble: the camera holds still
       stageShot(buddyAt);
       camera.position.copy(stagePos);
       camera.quaternion.copy(stageQ);
@@ -375,7 +404,7 @@ onFrame(
     // Through the cloud: white for the moment you're in it, and it's gone from above you once you're out.
     const inCloud = 1 - clamp(Math.abs(camera.position.y - DECK_Y) / 15, 0, 1);
     white.style.opacity = String(inCloud * 0.94);
-    if (deck.visible && camera.position.y < DECK_Y - 1) deck.visible = false;
+    if (deckMesh.visible && camera.position.y < DECK_Y - 1) deckMesh.visible = false;
 
     const wantFov = state === 'fall' && !reducedMotion ? FALL_FOV * clamp(-b.velocity.y / 15, 0, 1) : 0;
     const step = (wantFov - fov) * (1 - Math.exp(-dt * 5));
