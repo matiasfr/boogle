@@ -16,6 +16,9 @@ Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, 
 - **Compare to standard engines.** Justify an architecture call by what Unity, Unreal and Godot actually do (their docs), and say where Boogle differs; don't defend a pattern because the code already uses it.
 - **Fold copies into one helper.** When the same small thing has been written several times (like the white-noise buffer, now `src/render/noise.ts`), simplify it into one shared helper when you notice it, as long as it's cheap and doesn't change behaviour.
 - **Prototypes are temporary.** They get removed, so don't over-index on their decisions: no design debates about a prototype's internals, and no reshaping core code around one. A prototype still doesn't change fundamental code outside its own scope without saying so.
+- **Research is fair game.** Learning how existing games solve a problem isn't copying any one of them. No copyright caveats or avoidance guidance in research docs, briefs or repo files.
+- **The owner playtests fast.** An experienced player with little time reads feel within minutes: one gut question and one line on what's new, for prototypes, playtest kits and briefs alike. Agents check edge cases themselves.
+- **Usage is not a reason to hold back.** Do what the work needs: read what's relevant, verify properly, take the deeper fix. Saving tokens or subscription usage never justifies a shallower result, and no one should write guidance that says otherwise.
 - **Decisions live in the repo.** An owner decision or working preference binds every agent unless it's specific to one tool, so it goes in this section or the decision log, not only in one tool's private memory.
 
 ## TypeScript everywhere
@@ -99,7 +102,7 @@ Sandboxed and can't do this (`npm run look` needs a local port, `npm run infligh
 
 ## Tools and skills
 - `.agents/skills` links to `.claude/skills`, so Codex and other agents that read it get the same skills: the workflows plus `threejs-*` (use the WebGPU/TSL parts), `game-feel`, `camera-systems` and `audio-design`. They're written for Claude Code: `/look` is `npm run look`, `/ship` is `npm run ship`, and "Read" a PNG means open the image.
-- `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run verdicts`: the owner's notes from the prototype bar.
+- `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run verdicts`: the owner's notes from the prototype bar; read them from a checkout with the token rather than asking the owner to paste them.
 - One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
 
 ### Codex tasks
@@ -118,7 +121,7 @@ Sandboxed and can't do this (`npm run look` needs a local port, `npm run infligh
 - A new `?proto=` prototype adds or updates its entry in `protos/protos.ts` (the list at boogle.club/protos/) in the same PR (one gut question and one line on what's new: no checklists, the owner plays it and knows), and flips it to `live` when it ships.
 - A change a player can see (a model, a hat, UI, an effect) shows it in its PR: a still from `npm run look` or a scenario (look at it first), uploaded with `scripts/pr-shot.sh <png>...`, which prints Markdown. Paste that into the commit body (`ship` PRs are built from commit messages) or the `gh pr create` body; already merged, `gh pr comment`.
 - Small commits, imperative subject; the body names the DESIGN.md principle served. Then `npm run ship`: rebases on `main`, runs `check` (`-- --gpu` adds `check:gpu`), pushes `ship/<you>-<sha>`. Green CI merges and deploys; red or conflicting, `ci-autofix.yml` pushes up to two fixes, then @mentions you. `-- --wait` waits for `main`.
-- A session that can only push its `claude/<topic>` branch pushes it and opens a non-draft PR; `automerge.yml` squash-merges it when green (draft or `no-automerge` label: nothing merges). Other agents, Codex included, use `npm run ship` rather than opening a PR from their own branch prefix: `ci-autofix.yml` and `inflight` don't see a `codex/*` branch.
+- A session that can only push its `claude/<topic>` branch pushes it and opens a non-draft PR; `automerge.yml` squash-merges it when green (draft or `no-automerge` label: nothing merges). Networking changes don't need a human review for their own sake: run `check:full` and open them as normal PRs, without a draft or that label. Other agents, Codex included, use `npm run ship` rather than opening a PR from their own branch prefix: `ci-autofix.yml` and `inflight` don't see a `codex/*` branch.
 - **Owner gate:** a change shipped by anyone but the owner (`OWNERS` in `automerge.yml`) that touches `src/net/`, `src/netplay/`, `src/world/`, `src/sim/`, `server/`, `scripts/`, `.github/`, `eslint.config.js` or `package*.json` gets the `needs-owner` label and waits for the owner to approve its latest commit; CI and `ci-autofix.yml` still run. Everything else merges itself when green. Keep such changes in their own small PR so the rest of your work isn't held with them. It goes by the recorded shipper, and `npm run ship` on the owner's Mac records the owner, so agents there aren't held and ship on their own.
 - On a rebase conflict keep **both** sides (usually independent features), `git add`, `git rebase --continue`, ship again.
 - Never force-push, skip hooks (`--no-verify`) or push to `main` unless a human asks. Red `main`: fixing it beats starting something new.
