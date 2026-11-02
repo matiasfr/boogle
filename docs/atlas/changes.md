@@ -2,6 +2,7 @@
 
 ## 2026-11-02
 
+- Later the same day, only controls: the hotbar is gone, so you hold one thing at a time, and picking something up tosses what you had a step ahead, like having just two hands. The ball no longer rides on your back; it sits in your hand while you own it. The main button no longer bumps a nearby ball. Nothing shared changed, so nothing in the picture moved.
 - Our server now hosts every room. Tabs used to find each other through the server and then talk directly; now each tab keeps one line open to the server, which passes things along and keeps the island itself, like a board-game café that keeps the board set up between visits. [You join a room](#story/join) is rewritten to match.
 - The shared world now lives on the server. When you plant a mushroom, the edit goes up to the server, gets its tick there, and comes back down to every tab. The island keeps ticking, and saves every couple of seconds, even with nobody online.
 - The Boogler still runs in one player's tab, but now [the server picks that tab](#story/boogler) and picks a new one if it leaves.
