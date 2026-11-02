@@ -8,7 +8,8 @@
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { COLORS, DEFAULT_ROOM } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
@@ -479,6 +480,8 @@ document.addEventListener('pointerlockchange', () => {
   wasLocked = locked;
 });
 
+defineKind('pause', { lateUpdate: 0 });
+
 onStart(() => {
   menuBtn = el('button', 'menu-btn');
   menuBtn.type = 'button';
@@ -491,8 +494,9 @@ onStart(() => {
   const tr = document.querySelector('.hud-tr') ?? document.body;
   tr.append(menuBtn);
   let kind = '';
-  onFrame(
-    () => {
+  spawn({
+    kind: 'pause',
+    lateUpdate() {
       const k = inputKind();
       if (k !== kind) {
         kind = k;
@@ -500,6 +504,5 @@ onStart(() => {
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
     },
-    { phase: 'late' },
-  );
+  });
 });

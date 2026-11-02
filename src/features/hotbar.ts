@@ -9,7 +9,8 @@
 import '../ui/ui-kit.css';
 import './hotbar.css';
 import * as THREE from 'three';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { me, ITEM_HAND } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { inv, SLOTS, heldId, select, type Slot } from '../player/inventory.ts';
@@ -249,8 +250,12 @@ onRemotePresence((r, pr) => {
   r.hd = Number.isInteger(hd) && carryable(GIFTS[hd]) ? GIFTS[hd]!.id : null;
 });
 
-onFrame(({ now }) => {
-  updateHands();
-  updateInHand();
-  if (ui.root) renderHud(now);
+defineKind('hotbar', { update: 0 });
+spawn({
+  kind: 'hotbar',
+  update({ now }) {
+    updateHands();
+    updateInHand();
+    if (ui.root) renderHud(now);
+  },
 });

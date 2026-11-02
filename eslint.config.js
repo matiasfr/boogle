@@ -115,6 +115,8 @@ const entityPlugin = {
 };
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
+  'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object
+  'src/features/proto-soapbox.ts', // prototype wiring: loads ?proto=soapbox, or hides the avatar of a friend driving one
   'src/loop.ts', // onFrame itself, and the profiler
   'src/render/scene.ts', // the scene and its base lights, which shaders and shadows read; entity.ts imports this file
   'src/render/particles.ts', // the particle simulation behind emit()
