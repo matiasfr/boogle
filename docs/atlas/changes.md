@@ -24,6 +24,7 @@
 - Last, only small changes: trees and rocks are now written down as plain data (what each one bumps into and how much ground it takes), like a parts list kept apart from the paint job, so the game and a new level checker read the same list. Their new folder gets a note. Nothing in the picture moved.
 - Then only small changes: the watering can left the item list (every room started fresh for it), and the code that hands a shared object like the ball from tab to tab now tells the object outright who holds it, like a relay baton that says whose hand it is in. [Kicking the ball](#story/ball) travels the same way, and nothing in the picture moved.
 - Last, only controls and a prototype: one main button (RT or a left click) now uses what you hold or, empty-handed, bumps a nearby ball, so the separate bump and camera-zoom controls are gone, like a remote with fewer buttons. A new prototype (`?proto=onehand`) lets you hold just one thing, with no hotbar. Nothing shared changed, so nothing in the picture moved.
+- Last of the day, only a prototype: the fall into the world (`?proto=fall`), where you roll a handcar off the end of a rail above the clouds and tumble into a big wooden BOOGLE sign whose letters you can kick around. It all happens in your tab only, like a cutscene nobody else needs to see, so nothing in the picture moved.
 
 ## 2026-10-30
 
