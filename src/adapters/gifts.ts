@@ -1,5 +1,5 @@
 // Island gifts in the game: things players threw, and the frisbee on the lighthouse deck. Shared state lives in src/world/rules/gifts.ts and changes only through world/sync edits; what
-// you carry is your hotbar (src/player/inventory.ts).
+// you carry is in your hand (src/player/inventory.ts).
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
@@ -13,7 +13,7 @@ import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../sim/gifts.ts';
 import { itemModel } from '../player/item-models.ts';
 import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
-import { inv, take, roomFor } from '../player/inventory.ts';
+import { take } from '../player/inventory.ts';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.ts';
 import { splash } from '../render/splash.ts';
 import type { Item } from '../sim/gifts.ts';
@@ -46,7 +46,7 @@ type Visual = {
 const PICK_DY = 1.6; // metres between your feet and a thing you can still reach
 
 // The gifts, their ops and tick live in world/rules/gifts.ts (lockstep); this module adapts them to meshes, flights,
-// the interact prompt and the hotbar. The layout (perches) is the land's, filled in createGifts3d.
+// the interact prompt and your hand. The layout (perches) is the land's, filled in createGifts3d.
 const { layout } = land;
 const perchSpots: THREE.Vector3[] = []; // world positions, parallel to layout.perches
 export const gifts = rules.gifts.gifts;
@@ -61,8 +61,8 @@ onApplied((e: Edit<Partial<TakeFields & TossFields>>, _tick: number, r: Item | n
   if (e.op === 'gift.take') {
     pending.delete(e.id!);
     if (!r || e.p !== myId()) return;
-    // Only steal your hand if you are not winding up a throw; with no room left it goes back on the ground.
-    if (!take(GIFTS[r.kind]!.id, !me.charging)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
+    // Only steal your hand if you are not winding up a throw: then it goes back on the ground.
+    if (me.charging || !take(GIFTS[r.kind]!.id)) throwItem(r.kind, throwFrom(), new THREE.Vector3(0, 1, 0));
   } else if (e.op === 'gift.toss') {
     const fl = claimFlight(e as Edit<TossFields>);
     if (e.y !== LOST && r) fx.arriving.set(r.id, fl);
@@ -265,7 +265,7 @@ function playerAt() {
 }
 
 // What interacting could do here (see interactTarget in src/player/hands.ts): for each item in reach { id, verb, at, item, run }
-// to pick it up, or { id, verb, at, item, blocked } when your hotbar has no room for it.
+// to pick it up (what you hold lets go).
 const reachAt = new THREE.Vector3();
 export function giftTargets() {
   const p = playerAt();
@@ -281,17 +281,15 @@ export function giftTargets() {
       dz = pos.z - p.z;
     if (Math.abs(p.y - PLAYER_R - pos.y) > PICK_DY || dx * dx + dz * dz >= REACH * REACH) continue;
     out ??= [];
-    const full = inv.slots.filter((s) => !s).length <= pending.size;
-    const at = new THREE.Vector3(pos.x, pos.y + 0.35, pos.z);
-    const t = { id: `item${it.id}`, verb: 'Pick up', at, item: it.id };
-    if (full || roomFor() < 0) out.push({ ...t, blocked: 'Hotbar full' });
-    else
-      out.push({
-        ...t,
-        run: () => {
-          if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
-        },
-      });
+    out.push({
+      id: `item${it.id}`,
+      verb: 'Pick up',
+      at: new THREE.Vector3(pos.x, pos.y + 0.35, pos.z),
+      item: it.id,
+      run: () => {
+        if (submitEdit({ op: 'gift.take', i: it.i, j: it.j, id: it.id })) pending.set(it.id, performance.now());
+      },
+    });
   }
   return out ?? NO_TARGETS;
 }

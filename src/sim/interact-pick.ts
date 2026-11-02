@@ -6,7 +6,7 @@
 //     targets   [{ at: { x, z }, r?, run? | blocked? }]; null entries are skipped
 //     px, pz    where you stand; fx, fz: the unit direction you look along the ground
 //
-// Runnable targets (with `run`) come first: a blocked one ("Hotbar full") wins only when nothing runnable is in reach, so
+// Runnable targets (with `run`) come first: a blocked one ("Full load") wins only when nothing runnable is in reach, so
 // the button does something whenever it can, and the greyed reason still shows when it cannot. Within each group the
 // lowest score wins: the distance, minus `r` (to measure to the edge of something big), minus up to FACING for a target
 // straight ahead (a nudge toward where you look). Ties go to the earlier target.

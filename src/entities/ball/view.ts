@@ -2,7 +2,7 @@
 // writes it.
 import * as THREE from 'three';
 import { BALL_R } from '../../constants.ts';
-import { carryPosition } from '../../player/state.ts';
+import { handPosition } from '../../player/state.ts';
 import { ball } from './state.ts';
 
 function beachBallTexture() {
@@ -38,7 +38,7 @@ export function syncBallMesh(dt: number) {
     ballMesh.position.copy(ball.pose.p);
   }
   if (ball.mine) {
-    if (ball.held) carryPosition(ballMesh.position);
+    if (ball.held) handPosition(ballMesh.position);
     else ballMesh.position.copy(ball.pose.p);
     ballMesh.quaternion.copy(ball.pose.q);
   } else {

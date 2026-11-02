@@ -1,5 +1,5 @@
-// The HUD in use, at desktop size and on an iPad (touch, landscape): the interact prompt over a log bundle, the hotbar
-// with a name tag, the haul chip, a hotbar note in the notification lane plus the update notice, the work-site rings,
+// The HUD in use, at desktop size and on an iPad (touch, landscape): the interact prompt over a log bundle, the held
+// thing's name tag, the haul chip, a hands note in the notification lane plus the update notice, the work-site rings,
 // and the plaque mid-flip after a credited pour. Checks the haul chip ticks up to the confirmed count, a press squashes
 // the prompt, and a run of pours flips the plaque at most once a second. Each leg writes stills (`desk-*`, `ipad-*`).
 // Serves DESIGN.md "Understandable at a glance".
@@ -34,7 +34,7 @@ const BUNDLE = `${R}
   list.sort((a, b) => a.d - b.d);`;
 
 export default {
-  about: 'the HUD at desktop and iPad size: prompt, hotbar, haul chip, notification lane, plaque flip',
+  about: 'the HUD at desktop and iPad size: prompt, name tag, haul chip, notification lane, plaque flip',
   timeout: 300000,
   async run(t: Run) {
     for (const tag of ['desk', 'ipad']) {
@@ -49,7 +49,7 @@ export default {
         query: process.env.HUD_QUERY ?? '',
       });
       await g.waitFor(`window.boogle.me.entered && !!window.boogle.me.body`, { timeout: 30000 });
-      // Something in the hotbar, and logs on your back from bundles other than the one we stand at.
+      // Something in your hand, and logs on your back from bundles other than the one we stand at.
       const b = (await g.eval(`${BUNDLE}
         for (const s of list.slice(1, 4)) window.boogle.sync.submitEdit({ op: 'src.take', i: 0, j: 0, id: s.id });
         return list[0];`)) as { id: number; x: number; z: number; y: number };
@@ -59,7 +59,7 @@ export default {
       t.check(`${tag}: logs on your back`, got >= 0);
       await g.eval(`${TP(b.x - 1.2, b.z + 0.6)} window.boogle.me.yaw = 0;`);
       await g.view({ cam: [b.x - 3.4, b.y + 2.3, b.z + 3.6], look: [b.x - 0.4, b.y + 0.6, b.z] }, 55);
-      await g.eval(`${INV} I.take('frisbee', false); I.select(0);`);
+      await g.eval(`${INV} I.take('frisbee');`);
       {
         const ticked = await g.waitFor(
           `(async () => { ${R} return document.querySelector('.haul-n')?.textContent === String(rules.stacks.count(identity.pid)); })()`,
@@ -69,14 +69,14 @@ export default {
       }
       await g.waitFor(`!document.querySelector('.prompt').hidden`, { timeout: 10000 });
       await g.wait(0.5);
-      t.check(`${tag}: prompt, hotbar and haul chip`, true, await g.still(`${tag}-hud`));
+      t.check(`${tag}: prompt, name tag and haul chip`, true, await g.still(`${tag}-hud`));
       await g.eval(`${INV} H.interactDown(); H.interactUp();`);
       await g.wait(0.08);
       const pressed = await g.eval(`return !!document.querySelector('.prompt-chip.ui-press');`);
       t.check(`${tag}: a press squashes the prompt`, !!pressed);
       await g.eval(`${INV} H.handsNote.text = 'Nothing to plant here'; H.handsNote.until = performance.now() + 8000;`);
       await g.wait(0.6);
-      t.check(`${tag}: hotbar note`, true, await g.still(`${tag}-note`));
+      t.check(`${tag}: hands note`, true, await g.still(`${tag}-note`));
       // Site 0's rings (Track west, Helper east of (11, 6)), seen at a walking angle.
       await g.eval(`${TP(11, 12)}`);
       await g.view({ cam: [11, 7, 12.5], look: [11, 0, 6] }, 55);

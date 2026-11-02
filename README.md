@@ -24,7 +24,7 @@ Use Node 24 (`.nvmrc`). Installation also installs the server dependencies and p
 - `constants.ts`, `math.ts`: shared tuning values, math and noise helpers. `style.css`: base styles.
 - `render/`: renderer, camera, lights, sky, sea shader, props (palms/rocks/clouds), particles, splashes and the shared audio context.
 - `physics/`: the physics facade over Rapier (`engine.ts`), materials and step hooks; the ball and its ownership rules; thrown-item flights.
-- `player/`: the local player and camera, avatar meshes, hands and hotbar, input and the control registry, HUD.
+- `player/`: the local player and camera, avatar meshes, hands and what you hold, input and the control registry, HUD.
 - `netplay/`: `net.ts` (presence, remote players and interpolation) and its pure helpers. `net/ws-room.ts` is the room, one WebSocket to our server (see [src/net/README.md](src/net/README.md)).
 - `adapters/`: game-side halves of the lockstep rules (gifts, mushroom garden, piles). `boogler/`: The Boogler NPC, his talk and friendship.
 - `world/`: shared deterministic state, edit sync and snapshots (see [src/world/README.md](src/world/README.md)). `sim/`: pure simulation logic (mushrooms, gifts, RNG) with unit tests in `test/`.

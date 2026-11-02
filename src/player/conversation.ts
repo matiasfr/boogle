@@ -162,8 +162,8 @@ export function talkHints() {
   return hint(glyph('confirm'), n >= 2 ? 'Answer' : 'Next') + pick + hint(glyph('close'), 'Leave');
 }
 
-// Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (number keys
-// would also switch the hotbar slot, Space would jump) and lets the rest through (H still opens the pause view).
+// Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (Space would
+// jump) and lets the rest through (H still opens the pause view).
 const KEYS = new Set(['Escape', 'KeyE', 'Space', 'Enter', 'NumpadEnter', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS']);
 addEventListener(
   'keydown',

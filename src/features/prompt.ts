@@ -1,6 +1,6 @@
 // The interact prompt: what E (pad X, the touch action button) would act on, marked where it is with the button and the
 // verb, "[E] Pick up" floating over the can, or "[E] Talk" in The Boogler's name tag (a target with show() draws it
-// itself; see registerInteractable in src/player/hands.ts). A full hotbar greys it and says so. Hidden while you wind up a
+// itself; see registerInteractable in src/player/hands.ts). A blocked target greys it and says so. Hidden while you wind up a
 // throw or talk. Serves DESIGN.md 7 (telegraph everything): you see what a press does before you press.
 // It pops in with a sound and squashes when pressed (a head-shake and a deny when the press can't act);
 // docs/research/ui-patterns.md, recs 1-2.

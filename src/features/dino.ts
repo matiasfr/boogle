@@ -3,7 +3,7 @@
 // their own ROM for the guest's animations and textures (src/guest/rom.ts), asked for the first time; the engine
 // (src/guest/engine.ts) is fetched quietly then, and only asked for too if that fails. Without both the dino is just
 // a dino.
-// Serves DESIGN.md 1 (toys before chores): a second way to move around the island, and everything else (hands, hotbar,
+// Serves DESIGN.md 1 (toys before chores): a second way to move around the island, and everything else (hands, held things,
 // ball, friends) still works.
 //
 // Small and eager: the dino, the controls, presence. The engine, the guest and the models load on first use.

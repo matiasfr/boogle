@@ -1,5 +1,5 @@
-// The hotbar and the one interact button (89ce0dd, b22fa8b): walk up to a can, its Pick up prompt, into the hand and
-// the hotbar, thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
+// What you hold and the one interact button (89ce0dd, b22fa8b): walk up to a can, its Pick up prompt, into the hand,
+// thrown; the frisbee on the lighthouse deck, picked up and glided off the hill.
 import type { ClipGame, Shot } from '../clip.ts';
 const INV = `const I = await import('/src/player/inventory.ts'); const H = await import('/src/player/hands.ts');`;
 const TP = (x: number, z: number, y?: number) => `
@@ -19,7 +19,7 @@ const ITEM = `const { CELL, HALF } = await import('/src/constants.ts');
 const press = (g: ClipGame, fn: string) => g.eval(`${INV} H.${fn}();`);
 
 export default {
-  about: 'pick up a frisbee (prompt, hotbar) and throw it; glide the frisbee off the lighthouse deck',
+  about: 'pick up a frisbee (prompt, name tag) and throw it; glide the frisbee off the lighthouse deck',
   async run(c) {
     const g = await c.open({ room: 'cliptoys', hud: 'play' });
     await g.wait(3);

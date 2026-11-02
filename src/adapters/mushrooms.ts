@@ -17,7 +17,7 @@ import { waterField } from '../physics/water-field.ts';
 import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.ts';
 import { itemModel } from '../player/item-models.ts';
-import { take, has, roomFor } from '../player/inventory.ts';
+import { take, has } from '../player/inventory.ts';
 import { createLimiter } from '../sim/social.ts';
 import type { Body } from '../physics/engine.ts';
 import type { Interactable } from '../player/hands.ts';
@@ -360,7 +360,8 @@ export function stallTargets() {
   const dx = w.x - p.x,
     dz = w.z - p.z;
   if (dx * dx + dz * dz >= (REACH + 0.6) * (REACH + 0.6)) return NO_TARGETS;
-  const t = { id: 'stall-seeds', verb: 'Take', at: w.clone().setY(w.y + 0.35) };
-  const out: Interactable[] = [roomFor() < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: () => take('seeds') }];
+  const out: Interactable[] = [
+    { id: 'stall-seeds', verb: 'Take', at: w.clone().setY(w.y + 0.35), run: () => take('seeds') },
+  ];
   return out;
 }

@@ -3,10 +3,10 @@
 The registry in [src/player/controls.ts](../../src/player/controls.ts) is the source of truth: `registerAction` binds a pad
 slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
-binds a key with no pad action of its own (hotbar digits). Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) and the first-run card are generated
+binds a key with no pad action of its own. Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) and the first-run card are generated
 from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
 in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.ts](../../src/features/feel.ts),
-[hotbar.ts](../../src/features/hotbar.ts), [honk.ts](../../src/features/honk.ts),
+[held.ts](../../src/features/held.ts), [honk.ts](../../src/features/honk.ts),
 [ping.ts](../../src/features/ping.ts), [pause.ts](../../src/features/pause.ts), [dino.ts](../../src/features/dino.ts) and [updates.ts](../../src/features/updates.ts).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
@@ -18,7 +18,6 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Talk, pick up, take (`interact`) | action | E | X (only this: nothing in reach, it does nothing) | Grab (the main button; its label follows what it would do) | Hands | |
 | Use what you hold (`use`) | action | Left click | RT | the main button: Throw or Sprout when it has no target | Hands | |
-| Hold from your hotbar (`hotbar`) | described | 1-5 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | RT | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
 | Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action's empty hands) | RT | Grab, when nothing is in reach | Getting around | as the guest |
@@ -35,9 +34,8 @@ Notes:
 - **Gamepad diagram** ([src/player/pad-diagram.ts](../../src/player/pad-diagram.ts), 2026-11-01): the pause view's
   Gamepad tab draws a generic controller (two sticks, D-pad, four face buttons, bumpers, triggers, View / Menu, stick
   clicks) between two columns of callouts, one per slot and stick, each with a leader line to its button. The callouts
-  come from the registry (`listControls`, plus hidden actions such as `slot-prev` / `slot-next` as the detail of the
-  shared hotbar row), so a rebound action moves its callout. A slot nobody claims is dimmed and reads Free (today
-  R3, D-pad ↑, ↓ and →). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
+  come from the registry (`listControls`, plus hidden actions), so a rebound action moves its callout. A slot nobody claims is dimmed and reads Free (today
+  LB, RB, R3, D-pad ↑, ↓ and →). Glyphs and the drawn face buttons follow the pad's brand: Xbox letters, PlayStation shapes, Switch
   letters; with no pad yet the face buttons are a diamond of four dots with the meant one filled. Situations sit
   above it as chips (LB / RB cycle them on the pad): On foot; Driving when a `driving` row exists (the soapbox,
   `?proto=soapbox`); Talking (A or X says the picked answer, A also skips the typing, B leaves, the D-pad and left
@@ -60,7 +58,7 @@ Notes:
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
-  Toss is built by the hotbar feature.
+  Toss is built by [held.ts](../../src/features/held.ts).
 - **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
   steer (no arrow-key camera turn), a two-finger scroll does not look, and `body.seated` shows the driving touch layout:
   Jump takes the vehicle's label, and Toss, Honk and Ping hide.

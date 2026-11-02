@@ -2,12 +2,12 @@
 // (C major pentatonic from C5), quiet (a bus about 8 dB under the master) and short. Motion and legibility rules for the
 // same HUD are in ./ui-kit.css. Local and cosmetic.
 //
-//   uiSound('tick')         hotbar select: one soft, short tone, the same for every slot (Fortnite-style; TICK = false
+//   uiSound('tick')         a new thing in your hand: one soft, short tone (Fortnite-style; TICK = false
 //                           silences it, the slot's bounce still shows the choice)
 //   uiSound('pop')          the interact prompt appears (rate-limited, so walking past palms doesn't chatter)
 //   uiSound('thunk')        a press that did something (Take logs, Pick up): a marimba-like wooden tok on G4 over a
 //                           soft low knock
-//   uiSound('deny')         a press that couldn't ("Hotbar full"): a falling two-note
+//   uiSound('deny')         a press that couldn't ("Can't grow here"): a falling two-note
 //   uiSound('count', dir)   the haul count moved by one: the pitch climbs with the run (falls when dir < 0) and resets
 //                           after a pause
 //   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a quiet split-flap flutter (four
@@ -18,7 +18,7 @@ import { noiseBuffer } from '../render/noise.ts';
 
 export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count' | 'flap';
 
-const TICK = true; // false: the hotbar select is silent
+const TICK = true; // false: a new thing in your hand is silent
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 // Pentatonic step n above (or below) the root.

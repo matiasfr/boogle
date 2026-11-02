@@ -1,4 +1,4 @@
-// What your hands do with the hotbar (src/player/inventory.ts), and the one interact button.
+// What your hands do with what they hold (src/player/inventory.ts), and the one interact button.
 //
 //   useDown/useUp            the main action (click, pad RT): use what is in your hand. A thing (ball, frisbee, ...)
 //                            winds up a throw and flies on release; a bag of seeds sprouts mushrooms ahead of you. Empty
@@ -12,7 +12,7 @@
 //   canThrow()               whether you hold anything (everything held can be thrown)
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands
-//   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
+//   handsNote                { text, until }: why the last use did nothing, for src/features/held.ts to show
 //   emptyHands               { down, up }: what using empty hands does; the guest's punch sets it. down returns true if
 //                            it acted.
 //                            Mouse, pad and the touch main button all reach it.
@@ -30,7 +30,7 @@
 //     verb     the word on the prompt ('Pick up', 'Talk')
 //     at       a world point (THREE.Vector3) where the prompt floats; its x, z also rank the pick
 //     r        metres to measure to the edge of something big (The Boogler), default 0
-//     run      () what the press does; or blocked: why it cannot ('Hotbar full'), shown greyed, and the press does nothing
+//     run      () what the press does; or blocked: why it cannot ('Full load'), shown greyed, and the press does nothing
 //     show     (html) optional: draw the prompt yourself (The Boogler shows it in his name tag) instead of floating it at
 //              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
 //     Other fields are yours (gifts put the item id on theirs).
@@ -44,7 +44,7 @@ import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
-import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
+import { heldId, take, useOne, drop, has, onHandChange, onLetGo } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
 import { sprout } from '../adapters/mushrooms.ts';
 import { giftIndex } from '../sim/gift-catalog.ts';
@@ -65,18 +65,28 @@ const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
 export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
-// The ball's slot is whatever ball ownership says: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
+// The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
 function syncBall() {
   const carried = ball.mine && ball.held;
   if (!carried && has('ball')) drop('ball');
   me.holding = carried && heldId() === 'ball';
 }
-onHotbarChange(() => {
+onHandChange(() => {
   if (me.charging && !canThrow()) me.charging = false;
   syncBall();
 });
 
-// Grab first: the hotbar syncs the ball slot to ownership on every change.
+// What a new thing pushes out of your hand lands a step or two ahead, in reach to swap back, through the same toss
+// everything else uses (the ball through its own throw).
+const DROP = { forward: 2.2, up: 3.2 }; // m/s
+onLetGo((id) => {
+  const { p } = launch(id, 0);
+  const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
+  if (id === 'ball') throwBall(p, v);
+  else throwItem(giftIndex(id), p, v);
+});
+
+// Grab first: every change of hand syncs the ball to ownership.
 function grabTheBall() {
   grabBall();
   take('ball');
@@ -92,8 +102,7 @@ export function registerInteractable(fn: () => Interactable[]) {
 registerInteractable(() => {
   if (!ballInReach() || (ball.mine && ball.held)) return NO_TARGETS;
   const at = ballAt.copy(ball.pose.p).setY(ball.pose.p.y + 0.5);
-  const t = { id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at };
-  return [roomFor() < 0 ? { ...t, blocked: 'Hotbar full' } : { ...t, run: grabTheBall }];
+  return [{ id: 'ball', verb: remoteHoldsBall() ? 'Steal' : 'Grab', at, run: grabTheBall }];
 });
 
 const targets: Interactable[] = []; // reused by every pick
@@ -201,7 +210,7 @@ export function useVerb() {
 
 export const mainVerb = () => mainTarget()?.verb ?? useVerb() ?? 'Grab';
 
-// Every frame, before the hotbar is drawn.
+// Every frame, before what you hold is drawn.
 export function updateHands() {
   syncBall();
 }

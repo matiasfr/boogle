@@ -16,5 +16,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 ## Controls
 - Camera distance as a setting in the pause menu, beside the volume slider, instead of a dedicated control (owner, 2026-11-02)
+- Bring back a hotbar, only if a real gameplay element demands it (owner, 2026-11-02; cut in favour of one thing in your hands)
 
 ## Tooling

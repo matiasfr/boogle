@@ -18,7 +18,7 @@ Four files, nothing else edited:
 4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
-   If other modules (hands, hotbar) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
+   If other modules (hands) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
    feature file, since features cannot import each other. Example: `src/adapters/gifts.ts`.
 
 Run `npm run check:full`. Notes:

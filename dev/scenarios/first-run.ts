@@ -1,5 +1,5 @@
 // The first-run controls card: on a laptop, a small laptop, a phone upright and a phone sideways it is on screen and
-// clear of the other HUD pieces (hotbar, roster, connection pill, menu button, touch stick and buttons), and the close
+// clear of the other HUD pieces (name tag, roster, connection pill, menu button, touch stick and buttons), and the close
 // button dismisses it for good.
 import type { T } from './run.ts';
 
@@ -16,7 +16,7 @@ const LAYOUT = `
   const card = document.querySelector('.first-run');
   if (!card) return { has: false };
   const c = box(card);
-  const others = ['.hotbar-slot', '.hud-tl', '.net', '.menu-btn', '.stick', '.tbtn']
+  const others = ['.held-name', '.hud-tl', '.net', '.menu-btn', '.stick', '.tbtn']
     .flatMap((s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length).map((e) => [s, box(e)]));
   return { has: true, card: [c.l, c.t, c.r, c.b].map(Math.round),
     inView: c.l >= 0 && c.t >= 0 && c.r <= innerWidth && c.b <= innerHeight,

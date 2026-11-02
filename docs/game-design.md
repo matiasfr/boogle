@@ -39,7 +39,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
 | 5 | Nothing is the antagonist | No PvP state damage. |
-| 6 | Communal world, personal rewards | Work sites are shared; hotbar and Boogler friendship are per player, in localStorage. |
+| 6 | Communal world, personal rewards | Work sites are shared; what you hold and Boogler friendship are per player. |
 | 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
 | 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
 | 9 | Leave something for the next visitor | Items, piles, haul stacks and work sites persist in server snapshots. |
@@ -62,7 +62,7 @@ tick of 100 ms (10 per second).
 - [6.1 Beach ball](game-design/ball.md)
 - [6.4 Mushrooms and the seed stand](game-design/mushrooms.md)
 - [6.5 Gifts](game-design/gifts.md)
-- [6.6 Hotbar and items](game-design/hotbar.md)
+- [6.6 What you hold](game-design/held.md)
 - [6.7 Throwing and flight](game-design/throwing.md)
 - [6.8 The Boogler](game-design/boogler.md)
 - [6.9 Social: honk and ping](game-design/social.md)

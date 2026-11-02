@@ -9,7 +9,6 @@ import { clamp } from '../../math.ts';
 import { precompile } from '../../render/precompile.ts';
 import { loadAsset } from '../../render/assets.ts';
 import { me } from '../../player/player.ts';
-import { ballOnBack } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
 import { makeLife, type LifeState } from './life.ts';
@@ -153,7 +152,6 @@ export let bakeMs = 0;
 
 export async function startBuddy() {
   const hat = 'wear_head_' + new URLSearchParams(location.search).get('hat');
-  Object.assign(ballOnBack, { y: 0.5, z: 0.68 }); // low on its back, so its head shows over the ball
   const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(buddyUrl)]);
   const src = clips.instance();
   const tgt = model.instance();

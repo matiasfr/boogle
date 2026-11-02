@@ -3,13 +3,6 @@ import type { ClipGame, Shot } from '../clip.ts';
 const ROOM = 'clipboog';
 const seed = () => {
   localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
-  localStorage.setItem(
-    'boogle.hotbar',
-    JSON.stringify([
-      { id: 'seeds', n: 3 },
-      { id: 'frisbee', n: 1 },
-    ]),
-  );
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d: number, a: number) => `
@@ -55,7 +48,7 @@ export default {
     await g.eval(`document.querySelector('.bd-close')?.click()`);
     await g.wait(0.3);
     // Talk and give a present (he likes seeds).
-    await g.eval(STAND(2, a0));
+    await g.eval(`${STAND(2, a0)} (await import('/src/player/inventory.ts')).take('seeds');`);
     out.push(
       await g.record('boogler-talk', {
         seconds: 7,

@@ -1,5 +1,5 @@
 // Frame hitches: `npm run hitches`. Flies a tour around the island (every view, caves, meadow, lighthouse), steps the
-// sky day -> sunset -> night, fires particles, holds a throw and cycles the hotbar, and records every frame over 33 ms
+// sky day -> sunset -> night, fires particles, holds a throw and swaps what you hold, and records every frame over 33 ms
 // with what was happening: the tour step, the sky time, and whether three's resource counters (programs, geometries,
 // textures) moved that frame, which means a shader compile or an upload landed in it.
 // Run it on a Mac (real GPU, WebGPU on Metal); CI's software WebGPU is too slow to say anything about hitches. Options: `--url http://...` (a running game), `--limit 33` (ms),
@@ -140,11 +140,10 @@ const TOUR = `
   await step('caves', 2500, view(CAVE));
   await step('lighthouse', 2000, view(LIGHT));
   await step('particles', 2500, () => { dbg.set(VIEWS.court.cam, VIEWS.court.look, null); burst(12, 1, 21); });
-  await step('throw preview', 1500, async () => { I.take('frisbee'); I.select(I.slotOf('frisbee')); H.useDown(); });
+  await step('throw preview', 1500, async () => { I.take('frisbee'); H.useDown(); });
   await step('throw release', 1000, () => H.useUp());
-  await step('hotbar', 2500, async () => {
-    for (const id of ['frisbee', 'seeds']) I.take(id);
-    for (let s = 0; s < 6; s++) { I.select(s); await sleep(250); }
+  await step('swap', 2500, async () => {
+    for (const id of ['frisbee', 'seeds', 'frisbee', 'seeds']) { I.take(id); await sleep(500); }
   });
   await step('sunset', 3000, () => { sky.preview(0.55); dbg.set(VIEWS.shore.cam, VIEWS.shore.look, null); });
   await step('sunset overview', 2000, () => dbg.set(VIEWS.overview.cam, VIEWS.overview.look, null));

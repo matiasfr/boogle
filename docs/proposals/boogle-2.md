@@ -39,6 +39,7 @@ These are standing preferences from the thread.
 
 ## Decided
 
+- **The hotbar is cut: one thing in your hands** (2 November, owner, after playing `?proto=onehand`: "No I didn't [miss it] at all. I think in that case we cut it. We can always bring it back if a real gameplay element demands it."). Picking something up replaces what you hold, which lands by you; no slots, no LB, RB or 1-5. What you hold isn't saved.
 - **The ball bump is cut** (2 November): the owner was already unsure of it, and it made the main action conditional. RT and left click use or throw what you hold; with empty hands they do nothing.
 
 ### The audit picks (2 November)
@@ -122,7 +123,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Progress and rewards
 
-- **2026-11-01, resource management stays light, never survival-craft** (owner). The hotbar stays for now, though he isn't sure about it; it may shrink to the few things that need it.
+- **2026-11-01, resource management stays light, never survival-craft** (owner). The hotbar stayed for now, though he wasn't sure about it (changed 2026-11-02: cut, see "Decided" and "Changed").
 - **2026-11-02, harvesting has an action, and the magnet starts sooner** (owner: "we need some kind of action"; the animation "should be quick to do and satisfying"; "there's a delay before the magnetism happens on the resources. Maybe we can have that start sooner once you've pressed X on the resource"). A short swing plays the moment you press, and the pull follows straight after it. Goes into the harvest prototype, with [harvest-feel.md](../research/harvest-feel.md) once it lands.
 - **2026-11-01, resources will be harvested, not picked up** (direction, not built): wood comes from chopping trees and the like; what falls to the ground is collected with the magnet, perhaps differently per resource.
 - **2026-11-01, the back bundle stays the way to haul** ("Default is quite good"). The magnet he loved moves to pickups elsewhere, later, and pulls without a button.
@@ -220,6 +221,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ## Changed
 
+- **2026-11-02:** "the hotbar stays for now" became "one thing in your hands": the owner played `?proto=onehand` and didn't miss it.
 - **2026-11-02:** "eight eras at 1–3 evenings each" became "closer to 8 hours, starting with fewer eras": the owner wants to limit how many assets the game needs.
 - **2026-11-01:** "riding must be more than standing on a moving platform" became "the wagon is transportation": after trying the research's variants, the owner doesn't want extra verbs on the ride.
 - **2026-11-01:** "stations are the fast-travel board" became "only hub stations are fast travel", after the board playtest: every stop being a jump would make riding pointless.

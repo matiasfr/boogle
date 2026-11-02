@@ -30,7 +30,7 @@ jobs:
         scenario:
           - reconnect-edit
           - shared-kinds
-          - hotbar
+          - one-hand
           - interact
           - caves
           - lighthouse
