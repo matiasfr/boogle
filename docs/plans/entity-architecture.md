@@ -316,7 +316,8 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
       and layout files. A check in `npm run check` catches unreachable areas, overlaps and bad slopes, and reports budget overruns.
       Cites `docs/research/level-design.md`.
 - [ ] **21. Input replay.** Record a session's inputs to a file, replay them headless on a new build, and compare state. Unblocked: a run writes `input` and `cam`
-      (`src/player/input-state.ts`, `src/player/state.ts`) and calls `enterIsland()`. It has to place the body itself, since entering picks a random spot.
+      (`src/player/input-state.ts`, `src/player/state.ts`) and calls `enterIsland()`, and `npm run sim -- player` shows that matches the browser exactly, step for step. It has to place the body
+      itself, since entering picks a random spot; to feed input at the frames it was recorded, since a browser frame holds 0 to 2 physics steps; and to run `turnWithDeck`, which is in the view's update, if it rides a deck.
 - [ ] **22. Runtime systems, only when the game needs them.**
       - Streaming and LOD: design before era 3 starts ([architecture.md](architecture.md), phase 4).
       - Animation state machine: with the hero character.
