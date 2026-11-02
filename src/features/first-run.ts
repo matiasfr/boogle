@@ -92,6 +92,7 @@ const walking = () => WALK.some((c) => input.keys.has(c)) || Math.abs(input.stic
 
 function lateUpdate({ dt }: FrameCtx) {
   if (!card || !me.entered) return;
+  if (document.body.classList.contains('fall-air')) return; // the first visit's fall: its clock starts on the ground
   if (modalOpen()) return dismiss(); // the menu has every control in it
   card.hidden = dialogue.open;
   if (card.hidden) return;

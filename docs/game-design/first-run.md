@@ -1,11 +1,11 @@
 # 6.14 Arrival and the first-run card
 
-- **First visit.** With no name saved on this device (`boogle.name`), a small paper card over the island asks for
-  nothing else: the Boogle title, a name box already filled with a friendly random name ("Sunny Otter", "Jolly
-  Puffin", ...), the eight colour swatches (one picked at random) and one big Jump in. Pressing Jump in straight away
-  is fine. The loading screen covers it until the island can be drawn; Jump in reads "Loading island" until then.
-  Pad A presses it. In the Home Screen app, a first visit there (the app's storage starts empty) also offers
-  "Continue in room x · prototype y" under Jump in.
+- **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
+  nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
+  swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
+  until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
+  visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. A `?proto=` or
+  `?play` page, and an automated browser, get the plain card over the island instead, with the Boogle title.
 - **Returning visit.** With a name saved, there is no card: the game goes in on its own as soon as the island can be
   drawn, at the usual spawn (or the room or prototype's own, from the URL), with the saved name and colour. A bare
   launch of the Home Screen app goes straight back to the room or prototype it was last in. The pause view's Leave
@@ -25,14 +25,13 @@
   save, since })`: `save()` says what to remember about the room now, `since(then)` turns last visit's value into a
   line or null. Each room's memory is `boogle.visit.<room>`, written every 5 s while the room's state is known and on
   page hide. Persistent progress, a mailbox or a postcard add their lines here.
-- **Prototype: the fall** (`?proto=fall`, [src/proto/fall/](../../src/proto/fall/); every load replays it, with your saved
-  name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
+- **The fall** ([src/proto/fall/](../../src/proto/fall/); `?proto=fall` replays it on every load, with your saved name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
   it) and no HUD. It takes your colour live and hops when you change it, and your name floats over it as you type. Jump in
   runs it off the end of the rail (about 1.2 s, speeding up to 10 m/s) while the camera swings round from your face to behind you, one shot with no cut.
   You steer on the way down (the usual air control, inside a funnel that closes on the sign, so you can't miss), drop
   through the cloud into the island's daylight, and hit BOOGLE, written in timber and leaning on posts at the spawn. It
   flies apart, you lie flat with stars (1.8 s; any input stands you up after 0.9 s) and the cart lands next to you 0.8 s
-  later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 120 m drop is about 6 s in the air. It's meant for a first visit only (the prototype replays it on every load, for testing); a returning player goes straight in as above. Local: only
+  later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 120 m drop is about 6 s in the air. The controls card waits until you land. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing.
 - **History.** `?proto=arrive` (1 Nov 2026; wordless-onboarding recs 1, 2, 3, 8) tried skipping the lobby on every
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
