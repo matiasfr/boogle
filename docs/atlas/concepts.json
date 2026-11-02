@@ -69,7 +69,7 @@
     "ui": "Shared HUD pieces: the notification lane and UI sounds."
   },
   "boxes": {
-    "you.features": "{features} plug-ins: honk, hotbar, ping, gifts, mushrooms…",
+    "you.features": "{features} plug-ins: honk, held, ping, gifts, mushrooms…",
     "you.registries": "controls · interact · particles",
     "you.loop": "input → physics → world → update → late → draw",
     "you.systems": "player · physics · rendering · characters · places",
