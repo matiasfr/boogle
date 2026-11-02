@@ -19,11 +19,12 @@ import {
   isTyping,
   GROUPS,
 } from '../src/player/controls.ts';
+import type { ControlRow } from '../src/player/controls.ts';
 
-const quiet = (fn) => {
+const quiet = (fn: () => unknown) => {
   const warn = console.warn;
-  const warnings = [];
-  console.warn = (m) => warnings.push(m);
+  const warnings: string[] = [];
+  console.warn = (m: string) => warnings.push(m);
   try {
     fn();
   } finally {
@@ -41,8 +42,8 @@ test('controls: one action per pad slot, clashes stay unbound', () => {
     assert.ok(registerAction('jump', { pad: 'a', label: 'Jump!' })); // re-registering the same id is fine
     assert.equal(registerAction('honk', { pad: 'a' }), false);
     assert.equal(registerAction('ping', { pad: 'nope' }), false);
-    assert.equal(actionForSlot('a').id, 'jump');
-    assert.equal(actionForSlot('a').label, 'Jump!');
+    assert.equal(actionForSlot('a')!.id, 'jump');
+    assert.equal(actionForSlot('a')!.label, 'Jump!');
     assert.ok(registerAction('honk', { pad: 'y' }));
     assert.deepEqual(
       listActions().map((a) => a.id),
@@ -62,15 +63,15 @@ test('controls: one action per pad slot, clashes stay unbound', () => {
 });
 
 test('controls: wrapAction keeps the original handler, the last wrap runs first', () => {
-  const log = [];
+  const log: string[] = [];
   const [padA, padB] = freeSlots(); // other tests in this file hold slots too
   registerAction('hold-test', { pad: padA, down: () => log.push('down'), up: () => log.push('up') });
   assert.ok(wrapAction('hold-test', { down: (next) => (log.push('w1'), next()) }));
   assert.ok(
     wrapAction('hold-test', { down: (next) => (log.push('w2'), next()), up: (next) => (log.push('w2up'), next()) }),
   );
-  actionForSlot(padA).down(); // the pad reaches the wrapped handler through the slot
-  actionById('hold-test').up();
+  actionForSlot(padA)!.down!(); // the pad reaches the wrapped handler through the slot
+  actionById('hold-test')!.up!();
   assert.deepEqual(log, ['w2', 'w1', 'down', 'w2up', 'up']);
 
   // a wrapper may swallow the press; a missing handler is wrapped as a no-op
@@ -78,7 +79,7 @@ test('controls: wrapAction keeps the original handler, the last wrap runs first'
   registerAction('swim-test', { pad: padB, up: () => log.push('up') });
   wrapAction('swim-test', { down: () => log.push('dive') });
   wrapAction('swim-test', { down: (next) => next() });
-  actionById('swim-test').down();
+  actionById('swim-test')!.down!();
   assert.deepEqual(log, ['dive']);
 });
 
@@ -103,7 +104,7 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
   const src = new URL('../src/', import.meta.url);
   const owners = new Map(); // slot -> 'file:id'
   let n = 0;
-  for (const f of readdirSync(src, { recursive: true })) {
+  for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
     if (!/\.[jt]s$/.test(f)) continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     // pad: may sit anywhere in the options object, also after a nested { } such as a touch button spec
@@ -145,9 +146,9 @@ test('controls: listControls sorts by group, then order, then registration; desc
     order: 0,
     context: undefined,
   });
-  assert.equal(listControls().find((c) => c.id === 'lc-late').pad, actionById('lc-late').pad);
+  assert.equal(listControls().find((c) => c.id === 'lc-late')!.pad, actionById('lc-late')!.pad);
   quiet(() => describeControl('lc-first', { label: 'Replaced', group: 'move', keys: ['KeyK'], pad: 'rs' }));
-  assert.equal(listControls().find((c) => c.id === 'lc-first').label, 'Replaced');
+  assert.equal(listControls().find((c) => c.id === 'lc-first')!.label, 'Replaced');
 });
 
 test('controls: guide false hides an action', () => {
@@ -158,14 +159,15 @@ test('controls: guide false hides an action', () => {
 
 test('controls: controlProblems finds gaps in the guide', () => {
   assert.ok(GROUPS.length > 0);
-  const ok = { id: 'a', label: 'A', group: 'move', keys: ['KeyA'], pad: 'ls' };
+  // Rows as a caller might hand them in, missing or mistyped fields included.
+  const ok = { id: 'a', label: 'A', group: 'move', keys: ['KeyA'], pad: 'ls' } as ControlRow;
   assert.deepEqual(controlProblems([ok]), []);
   assert.match(controlProblems([{ ...ok, label: '' }])[0], /a: no label/);
   assert.match(controlProblems([{ ...ok, group: 'nope' }])[0], /group "nope"/);
-  assert.match(controlProblems([{ ...ok, keys: 'KeyA' }])[0], /keys must be an array/);
+  assert.match(controlProblems([{ ...ok, keys: 'KeyA' } as unknown as ControlRow])[0], /keys must be an array/);
   assert.match(controlProblems([{ ...ok, pad: undefined }])[0], /no pad binding/);
   assert.match(controlProblems([{ ...ok, keys: undefined, pad: undefined, touch: 'Go' }])[0], /no pad binding/);
-  const other = { id: 'b', label: 'B', group: 'move', keys: [['KeyA', 'KeyB']], pad: 'rs' };
+  const other = { id: 'b', label: 'B', group: 'move', keys: [['KeyA', 'KeyB']], pad: 'rs' } as ControlRow;
   assert.match(controlProblems([ok, other])[0], /key KeyA is claimed by both a and b/);
   assert.deepEqual(controlProblems([ok, { ...other, context: 'swimming' }]), []);
 });
@@ -175,7 +177,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
   const src = new URL('../src/', import.meta.url);
   const owners = new Map(); // code -> 'file:id'
   let n = 0;
-  for (const f of readdirSync(src, { recursive: true })) {
+  for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
     if (!/\.[jt]s$/.test(f) || f === 'player/controls.ts') continue;
     const text = readFileSync(new URL(f, src), 'utf8');
     const found = [
@@ -197,7 +199,7 @@ test('controls: no two bindings in src/ claim the same key', () => {
 });
 
 test('controls: a key presses its action through one guard', () => {
-  const log = [];
+  const log: string[] = [];
   const pad = freeSlots()[0];
   quiet(() =>
     registerAction('key-test', {
@@ -211,9 +213,9 @@ test('controls: a key presses its action through one guard', () => {
     }),
   );
   // the guide row shows the bound key and the touch label
-  assert.deepEqual(controlById('key-test').keys, ['KeyJ']);
-  assert.equal(controlById('key-test').touch, 'Jay');
-  const field = { closest: (sel) => (sel.includes('input') ? {} : null) };
+  assert.deepEqual(controlById('key-test')!.keys, ['KeyJ']);
+  assert.equal(controlById('key-test')!.touch, 'Jay');
+  const field = { closest: (sel: string) => (sel.includes('input') ? {} : null) } as unknown as EventTarget;
   assert.ok(keyEvent({ type: 'keydown', code: 'KeyJ' }));
   assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ', repeat: true }), false);
   assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ', ctrlKey: true }), false);
@@ -237,7 +239,7 @@ test('controls: a key presses its action through one guard', () => {
   quiet(() => registerAction('key-test', { pad, key: ['KeyK', 'KeyL'], label: 'Key test', group: 'menu' }));
   assert.equal(keyEvent({ type: 'keydown', code: 'KeyJ' }), false);
   assert.ok(keyEvent({ type: 'keydown', code: 'KeyL' }));
-  assert.deepEqual(controlById('key-test').keys, ['KeyK', 'KeyL']);
+  assert.deepEqual(controlById('key-test')!.keys, ['KeyK', 'KeyL']);
   onKey('KeyJ', { owner: 'other', down: () => log.push('other') });
   keyEvent({ type: 'keydown', code: 'KeyJ' });
   assert.deepEqual(log, ['other']);
@@ -254,6 +256,6 @@ test('controls: an action with a context keeps it, so it may share a key (guest-
     group: 'move',
     context: 'as x',
   });
-  assert.equal(actionById('ctx-crouch-test').context, 'as x');
+  assert.equal(actionById('ctx-crouch-test')!.context, 'as x');
   assert.ok(!controlProblems().some((p) => p.includes('ctx-')), JSON.stringify(controlProblems()));
 });

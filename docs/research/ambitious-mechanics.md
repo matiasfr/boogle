@@ -121,7 +121,7 @@ VALIDATION (required)
 - `npm run check` green before every push. Run `npm run check:full` at least once at the end (proto state touches sync).
 - Add `dev/scenarios/storm-tide.mjs` with two networked players in one room using `?tidefast=1`: assert both peers report identical sea level and world hash after a full cycle; a shoreline wall erodes; a smash edit opens a breach and water flows through; a squall adds water inside its footprint; the crate appears at king tide and both peers see it; report fps. Run it with `npm run scenario -- storm-tide` until it passes.
 - Produce stills with `npm run look` (e.g. `--view mouth`, `--view overview`, and a custom `--cam/--look` on the shoreline) during warning, high tide, a squall and the crate; read the images and iterate on visibility of every telegraph. Do not commit ad-hoc Playwright scripts as tests and do not commit the PNGs unless small and placed under dev/.
-- Determinism tests live in test/*.test.mjs, node:test, pure logic only, each file well under a second (shrink grids and tick counts).
+- Determinism tests live in test/*.test.ts, node:test, pure logic only, each file well under a second (shrink grids and tick counts).
 - Performance guard: keep the tide amplitude modest, cap per-tick slump/erosion work, and if the scenario fps drops sharply vs `?proto=0`, reduce caps before adding features.
 
 COMMITS

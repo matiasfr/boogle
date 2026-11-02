@@ -306,7 +306,7 @@ async function start() {
   const lineup = Number(q.get('lineup'));
   if (lineup > 0) {
     const { scene } = await import('../../render/scene.ts');
-    const { groundHeight } = await import('../../adapters/terrain.ts');
+    const { groundHeight } = await import('../../island/terrain.ts');
     const { SPAWN } = await import('../../constants.ts');
     const row: Avatar[] = [];
     for (let i = 0; i < 8; i++) {
@@ -335,4 +335,69 @@ async function start() {
   }
 }
 
-void start(); // gated by src/features/proto-hero.ts
+// &body=standin: a stand-in body with hand-made clips (Quaternius's RobotExpressive, CC0; assets/src/standin-robot.json),
+// for judging how the controller feels (?ctl=odyssey against today's) apart from the hero's own animation. Idle, walk
+// and run blend by speed, each played at the rate that matches its stride to the ground; in the air, a held jump pose.
+// Its own clips lean and bounce, so feel.ts's whole-body lean and the avatar bob are off for it.
+const STANDIN = { height: 1.75, walk: 2.2, run: 5.2, walkMax: 3.2 }; // m, m/s the clips cover at rate 1 (eyeballed)
+async function startStandin() {
+  const { loadAsset } = await import('../../render/assets.ts');
+  const { default: url } = await import('../../../assets/built/standin-robot.glb?url');
+  const kit = await loadAsset(url);
+  type Stand = { mixer: THREE.AnimationMixer; acts: Record<string, THREE.AnimationAction> };
+  const stands = new WeakMap<Avatar, Stand>();
+  const dress = (a: Avatar, colorIdx: number) => {
+    if (stands.has(a)) return;
+    const holder = kit.instance();
+    holder.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(holder, true); // precise: the skinned mesh's posed vertices
+    const s = STANDIN.height / Math.max(0.01, box.max.y - box.min.y);
+    holder.scale.setScalar(s);
+    holder.position.y = -PLAYER_R - box.min.y * s;
+    holder.rotation.y = Math.PI; // the clips face +z; avatars face -z
+    holder.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && (m.material as THREE.MeshStandardMaterial).name?.startsWith('Main')) {
+        m.material = (m.material as THREE.MeshStandardMaterial).clone();
+        (m.material as THREE.MeshStandardMaterial).color.set(COLORS[colorIdx]);
+      }
+    });
+    for (const child of a.userData.inner.children) child.visible = false;
+    a.userData.inner.add(holder);
+    a.userData.leanScale = 0;
+    const mixer = new THREE.AnimationMixer(holder.children[0]);
+    const acts: Record<string, THREE.AnimationAction> = {};
+    for (const n of ['Idle', 'Walking', 'Running', 'Jump']) {
+      acts[n] = mixer.clipAction(kit.clip(n));
+      acts[n].play();
+      acts[n].setEffectiveWeight(n === 'Idle' ? 1 : 0);
+    }
+    stands.set(a, { mixer, acts });
+  };
+  const animate = (a: Avatar, speed: number, airborne: boolean, dt: number) => {
+    const st = stands.get(a);
+    if (!st) return;
+    const inner = a.userData.inner;
+    inner.position.y = 0;
+    inner.rotation.x = 0;
+    inner.scale.set(1, 1, 1);
+    const { acts } = st;
+    const walk = clamp(speed / 0.6, 0, 1) * (1 - clamp((speed - STANDIN.walkMax) / 1.2, 0, 1));
+    const run = clamp((speed - STANDIN.walkMax) / 1.2, 0, 1);
+    const air = airborne ? 1 : 0;
+    acts.Idle.setEffectiveWeight((1 - walk - run) * (1 - air));
+    acts.Walking.setEffectiveWeight(walk * (1 - air));
+    acts.Running.setEffectiveWeight(run * (1 - air));
+    acts.Jump.setEffectiveWeight(air);
+    acts.Walking.timeScale = Math.max(0.3, speed / STANDIN.walk);
+    acts.Running.timeScale = Math.max(0.5, speed / STANDIN.run);
+    acts.Jump.timeScale = 0;
+    if (airborne) acts.Jump.time = 0.45; // mid-air in the clip
+    st.mixer.update(dt);
+  };
+  setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
+}
+
+// gated by src/features/proto-hero.ts
+if (q.get('body') === 'standin') void startStandin();
+else void start();

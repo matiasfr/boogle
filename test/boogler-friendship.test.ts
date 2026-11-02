@@ -50,14 +50,14 @@ test('gifts score by taste, halve on repeats and stop at the window cap', () => 
   const seeds = giftIndex('seeds'),
     can = giftIndex('can'),
     frisbee = giftIndex('frisbee');
-  assert.equal(giveGift(f, seeds, t).pts, TASTE_PTS.like);
-  assert.equal(giveGift(f, seeds, t).pts, Math.round(TASTE_PTS.like / 2));
-  assert.equal(giveGift(f, can, t).pts, TASTE_PTS.meh);
-  assert.equal(giveGift(f, frisbee, t).pts, TASTE_PTS.like);
-  const capped = giveGift(f, frisbee, t);
+  assert.equal(giveGift(f, seeds, t)!.pts, TASTE_PTS.like);
+  assert.equal(giveGift(f, seeds, t)!.pts, Math.round(TASTE_PTS.like / 2));
+  assert.equal(giveGift(f, can, t)!.pts, TASTE_PTS.meh);
+  assert.equal(giveGift(f, frisbee, t)!.pts, TASTE_PTS.like);
+  const capped = giveGift(f, frisbee, t)!;
   assert.equal(capped.capped, true);
   assert.equal(capped.pts, 0);
-  assert.equal(giveGift(f, frisbee, t + RULES.giftWindow).capped, false);
+  assert.equal(giveGift(f, frisbee, t + RULES.giftWindow)!.capped, false);
   assert.equal(giveGift(f, 9999, t), null);
 });
 
@@ -87,7 +87,7 @@ test('enough kick-offs make him wary; time and gifts forgive', () => {
 
   kickedOff(f, (t += RULES.kickDecay));
   assert.equal(isWary(f, t), true);
-  const r = giveGift(f, giftIndex('seeds'), t);
+  const r = giveGift(f, giftIndex('seeds'), t)!;
   assert.equal(r.forgave, true);
   assert.equal(isWary(f, t), false);
 });

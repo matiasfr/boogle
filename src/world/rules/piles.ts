@@ -71,7 +71,7 @@ export function install(sync: SyncView, land: Land, rules: { stacks: StacksApi }
 
 // Replay-test generators (./README.md): put some of your stack down near the court (often onto an existing pile), take
 // part or all of a pile. (Stacks only fill from piles, sources and so on, so the first pile comes from a later module's
-// overflow or a spill; the replay seeds one with a test-only drop, see test/world-replay.test.mjs.)
+// overflow or a spill; the replay seeds one with a test-only drop, see test/world-replay.test.ts.)
 export const edits = {
   'pile.drop': (r: Stream) =>
     r.chance(JUNK) ? bad(r, 'pile.drop') : { op: 'pile.drop', i: r.int(210, 216), j: r.int(185, 191), n: r.int(1, 6) },

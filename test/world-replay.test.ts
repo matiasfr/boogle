@@ -7,53 +7,76 @@ import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
 import { RULES, installRules } from '../src/world/rules/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { homeLand } from './helpers/land.mjs';
-import { makeNet, run, live } from './helpers/net.mjs';
+import { homeLand } from './helpers/land.ts';
+import { makeNet, run, live } from './helpers/net.ts';
+import type { FakeNet } from './helpers/net.ts';
+import type { Edit, Land, Rules, Stream } from '../src/world/rules/types.ts';
+
+/** What a rules module offers this test: edit generators by op, and invariants over its API. */
+type Gen = (r: Stream, view: { rules: Rules; land: Land; tick: number }) => Record<string, unknown> | null | undefined;
+type RuleModule = {
+  name: keyof Rules;
+  edits?: Record<string, Gen>;
+  invariants?: (api: unknown, rules: Rules) => string | null;
+};
+const MODULES = RULES as unknown as readonly RuleModule[];
 
 const SEED = 0xb2b3;
 const RECORD_EVERY = 10; // ticks between recorded state hashes
 
-function strHash(s) {
+function strHash(s: string) {
   let h = 2166136261;
   for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619);
   return h >>> 0;
 }
-function stream(seed) {
+function stream(seed: number): Stream {
   const next = mulberry32(seed | 0);
-  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
-  return { next, int, pick: (a) => a[int(0, a.length - 1)], chance: (p) => next() < p };
+  const int = (lo: number, hi: number) => lo + Math.floor(next() * (hi - lo + 1));
+  return { next, int, pick: (a) => a[int(0, a.length - 1)], chance: (p: number) => next() < p };
 }
-const generators = Object.assign({}, ...RULES.map((m) => m.edits ?? {}));
+const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => m.edits ?? {}));
 
 // One tab. Its env (the host-only canPlantAt) differs per peer: it must not reach shared state. protoRoom: a playtest
 // room, so the tune ops and the open.lay shortcut run too.
-function makePeer(seed, net, id, host) {
+function makePeer(seed: number, net: FakeNet | null, id: string, host?: boolean) {
   const salt = strHash(id);
-  const s = createSync({ env: { canPlantAt: (i, j) => (i * 7 + j * 13 + salt) % 5 !== 0, protoRoom: true } });
+  const s = createSync({
+    env: { canPlantAt: (i: number, j: number) => (i * 7 + j * 13 + salt) % 5 !== 0, protoRoom: true },
+  });
   const rules = installRules(s, homeLand());
-  const x = { id, s, rules, r: stream(seed ^ salt), applied: new Map(), hashes: new Map() };
-  s.onApplied((e) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));
+  const x = {
+    id,
+    s,
+    rules,
+    r: stream(seed ^ salt),
+    applied: new Map<string, number>(),
+    hashes: new Map<number, string>(),
+    p: { alive: true } as { alive: boolean; host?: boolean },
+  };
+  s.onApplied((e: Edit) => x.applied.set(e.op, (x.applied.get(e.op) ?? 0) + 1));
   s.onAfterTick((t) => {
     if (t % RECORD_EVERY === 0 && !x.hashes.has(t)) x.hashes.set(t, JSON.stringify(s.stateHashes()));
   });
   if (net) {
-    x.p = net.add(id, host);
-    s.attachWorld(x.p.room, { roomId: 'replay', host, storage: null, now: () => 1000 });
+    const p = net.add(id, host);
+    x.p = p;
+    s.attachWorld(p.room, { roomId: 'replay', host, storage: null, now: () => 1000 });
   } else {
     s.setSelfId(id);
-    x.p = { alive: true };
   }
   return x;
 }
 
-function checkInvariants(x) {
-  for (const m of RULES) {
+type Peer = ReturnType<typeof makePeer>;
+
+function checkInvariants(x: Peer) {
+  for (const m of MODULES) {
     const why = m.invariants?.(x.rules[m.name], x.rules);
     assert.equal(why ?? null, null, `${x.id}: ${m.name} invariant broken at tick ${x.s.world.tick}: ${why}`);
   }
 }
 
-async function replay(seed) {
+async function replay(seed: number) {
   const net = makeNet();
   const peers = [makePeer(seed, net, 'h', true), makePeer(seed, net, 'c1', false), makePeer(seed, net, 'c2', false)];
   // A head start, the same on every peer before tick 1 (clients replace it with the host's snapshot anyway): piles of
@@ -79,7 +102,7 @@ async function replay(seed) {
 
   let submitted = 0;
   // `frames` frames of 50 ms; on each, a random live peer submits one generated edit of a random op (or `only`).
-  async function play(frames, only) {
+  async function play(frames: number, only?: string) {
     for (let f = 0; f < frames; f++) {
       const x = master.pick(live(peers));
       const op = only ?? master.pick(mixed);
@@ -104,7 +127,7 @@ async function replay(seed) {
   await play(30);
   // The ?proto=lay shortcuts, scripted by the host so the seeded stream stays as it was: reset the haul, fill the ring
   // and start the machine.
-  const h0 = live(peers).find((x) => x.p.host);
+  const h0 = live(peers).find((x) => x.p.host)!;
   for (const e of [{ op: 'tune.reset' }, { op: 'tune.fill' }, { op: 'site.run', s: 0 }]) {
     assert.ok(h0.s.submitEdit({ i: 0, j: 0, ...e }), `lay leg: ${e.op} refused`);
     await run(net, peers, 10);
@@ -119,7 +142,7 @@ async function replay(seed) {
   await run(net, peers, 10); // settle: every stamped edit applied everywhere
 
   // A fresh tab reloads the new host's snapshot through JSON and ticks alone, in step with the room.
-  const host = live(peers).find((x) => x.p.host);
+  const host = live(peers).find((x) => x.p.host)!;
   const tab = makePeer(seed, null, 'tab');
   assert.equal(tab.s.loadSnapshot(JSON.parse(JSON.stringify(host.s.snapshot()))), true);
   await run(net, peers, 2 * 2 * RECORD_EVERY); // 20 ticks: two recorded ones

@@ -2,7 +2,7 @@ import './style.css';
 import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
 import { precompile, shadersMark } from './render/precompile.ts';
-import { createTerrainMesh } from './adapters/terrain.ts';
+import { createTerrainMesh } from './island/terrain.ts';
 import { createWaterMesh } from './render/water-render.ts';
 import { installStepHooks } from './physics/physics.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';

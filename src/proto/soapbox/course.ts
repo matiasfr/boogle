@@ -3,7 +3,7 @@
 // palm slalom and bay shore after it were 8 s of kicking along). Marked with cones on both sides and start and finish
 // boards that lie on the ground, nothing tall the chase camera could clip. World metres (x, z).
 import * as THREE from 'three/webgpu';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { scene } from '../../render/scene.ts';
 
 /** The racing line, start to finish. */

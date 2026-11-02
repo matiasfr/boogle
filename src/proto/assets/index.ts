@@ -9,7 +9,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
 import { precompile } from '../../render/precompile.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { SPAWN } from '../../constants.ts';
 import { registerAsset } from '../../render/asset-manifest.ts';
 import kitUrl from '../../../assets/built/scaffold-kit.glb?url';

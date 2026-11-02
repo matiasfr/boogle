@@ -2,12 +2,13 @@
 // src/world/home-land.json, which dev/scenarios/world-inputs.mjs checks against the running game. The state and op
 // order stay in test/fixtures/world-inputs.json.
 import fs from 'node:fs';
+import type { Land } from '../../src/world/rules/types.ts';
 
 export const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/world-inputs.json', import.meta.url), 'utf8'));
 export const landFile = JSON.parse(fs.readFileSync(new URL('../../src/world/home-land.json', import.meta.url), 'utf8'));
 
 // Built once per process; treat it as read-only.
-let home = null;
+let home: Land | null = null;
 export function homeLand() {
   home ??= { n: landFile.n, layout: landFile.layout };
   return home;

@@ -1,6 +1,6 @@
 // Registry scan: every name in src/ that two agents could pick at once, found statically, and the rules that keep
 // mixed-build rooms working when one PR adds to them (AGENTS.md, "Shared registries" and "Mixed builds").
-// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.ts feeds it the tree and main's tree; test/registry.test.mjs
+// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.ts feeds it the tree and main's tree; test/registry.test.ts
 // feeds it snippets.
 //
 //   scanSources(files)        files: [{ path, text }] -> registry (shape below)
@@ -110,7 +110,11 @@ export function shapeOf(v: unknown): string {
   return typeof v;
 }
 
-export function compareRegistries(base: Registry, head: Registry): { errors: string[]; notes: string[] } {
+type Comparable = Pick<Registry, 'ns' | 'rules' | 'ops' | 'presence' | 'messages'> & {
+  states?: Record<string, Pick<StateInfo, 'version' | 'shape'>>;
+};
+
+export function compareRegistries(base: Comparable, head: Comparable): { errors: string[]; notes: string[] } {
   const errors: string[] = [];
   const notes: string[] = [];
   // A new world namespace (src/world/namespace.ts) is a clean break: old tabs never meet this world, so main's rules,

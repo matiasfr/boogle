@@ -54,7 +54,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       of every op (each rules module exports an edit generator; the test fails if a registered op has none), kills the
       host midway, adds a late joiner, reloads a snapshot, and requires identical per-state hashes everywhere. Under a
       second.
-      *2026-10-30:* `test/world-replay.test.mjs` (two runs of the same seed, about 0.5 s on a loaded box). Modules
+      *2026-10-30:* `test/world-replay.test.ts` (two runs of the same seed, about 0.5 s on a loaded box). Modules
       also export `invariants` (sand and water conserved, gift ids unique, mushroom spacing). Injected bugs it caught:
       `Math.random` in `mush.plant`'s apply, a counter shared across peers in `gift.take`'s apply, and a slosh gated
       on the per-peer clock (after the slosh generator moved off the pinned open sea, where the pin erased any effect).
@@ -64,7 +64,7 @@ and code splitting (C3) touch import paths everywhere, so they go last, in one q
       *2026-10-30:* snapshots carry `vers` (missing = 0). Each state loads inside try/catch: a bad one starts fresh,
       counts in `stats.loadErrors` and reports `onSnapFail({ from: 'state' })`. A state from a newer build is skipped
       and the tab stops persisting. `test/fixtures/snap-pre-version.json` (captured before versions) must keep loading
-      to its hashes (`test/world-snapshots.test.mjs`). The 129-cell grid fixture was dropped with the migration itself
+      to its hashes (`test/world-snapshots.test.ts`). The 129-cell grid fixture was dropped with the migration itself
       (owner decision below): those saves now load fresh sand and mushrooms; their loose items (gifts without `v`)
       stay at the old cells, now far-corner sea, until they rot. Every state is still at version 0.
 

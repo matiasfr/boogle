@@ -9,7 +9,7 @@ else (meshes, sounds, input, inventory), reading the rules' API and reacting thr
 
 Four files, nothing else edited:
 
-1. `src/sim/<x>.js` plus `test/<x>.test.mjs`: the pure logic (typed arrays, integers, seeded `mulberry32`), with a
+1. `src/sim/<x>.ts` plus `test/<x>.test.ts`: the pure logic (typed arrays, integers, seeded `mulberry32`), with a
    test that the same inputs give the same hash and that serialize/load round-trips.
 2. `src/world/rules/<x>.js`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
@@ -62,11 +62,11 @@ Rules:
 - A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
   `migrate[v]` step for older saves
   (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v02.json` is one, checked by
-  `test/world-snapshots.test.mjs`).
+  `test/world-snapshots.test.ts`).
 
 ## Edit generators and invariants
 
-`test/world-replay.test.mjs` runs a host and two clients on the real rules and the home land, feeds them a seeded
+`test/world-replay.test.ts` runs a host and two clients on the real rules and the home land, feeds them a seeded
 stream of every registered op, kills the host midway, adds a late joiner after a toss, reloads a JSON snapshot in a
 fresh tab, and requires every peer to hash every state the same at every shared tick, every invariant to hold, and a
 second run with the same seed to give the same result. It fails when a registered op has no generator, or when no

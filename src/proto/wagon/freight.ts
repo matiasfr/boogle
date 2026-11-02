@@ -15,7 +15,7 @@ import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { world, TICK_MS } from '../../world/sync.ts';
 import { sharedSeconds } from '../../netplay/shared-time.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { reducedMotion } from '../../constants.ts';
 import { ROUTE, TRACK, RING_R, ringAt } from '../../sim/route.ts';
 import { HELPER_EVERY } from '../../sim/sites.ts';

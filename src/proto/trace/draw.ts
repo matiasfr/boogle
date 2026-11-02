@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { onStart } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { SEA } from '../../constants.ts';
 import { ACTIVITY_COLORS, cardFor, markColor, sittings, urlParam, type Sitting } from '../../../protos/store.ts';
 

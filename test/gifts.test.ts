@@ -18,7 +18,7 @@ import {
 import { GIFTS, giftIndex, carryable } from '../src/sim/gift-catalog.ts';
 
 const layout = () => ({ perches: [{ i: 200, j: 150, kind: giftIndex('frisbee') }] });
-const run = (s, from, to) => {
+const run = (s: ReturnType<typeof createGifts>, from: number, to: number) => {
   for (let t = from; t <= to; t++) tickGifts(s, t);
 };
 
@@ -55,7 +55,7 @@ test('a perch holds its item and refills PERCH_REFILL ticks after it is taken', 
 test('thrown things land where they were thrown and rot after LIFE ticks', () => {
   const s = createGifts({});
   const can = giftIndex('can');
-  const it = tossItem(s, can, 7, 9, 2950, 100);
+  const it = tossItem(s, can, 7, 9, 2950, 100)!;
   assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [can, 7, 9, 2950, SRC.TOSS]);
   assert.equal(tossItem(s, can, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
   assert.equal(tossItem(s, giftIndex('ball'), 7, 9, ON_GROUND, 100), null, 'the beach ball is never a ground item');
@@ -70,15 +70,15 @@ test('a full island sweeps away the oldest thrown thing to make room', () => {
   const s = createGifts({});
   const can = giftIndex('can');
   for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, can, k, 0, ON_GROUND, k);
-  const it = tossItem(s, can, 99, 0, ON_GROUND, 500);
+  const it = tossItem(s, can, 99, 0, ON_GROUND, 500)!;
   assert.equal(s.items.length, MAX_ITEMS);
   assert.equal(s.items[0].i, 1);
-  assert.equal(s.items.at(-1).id, it.id);
+  assert.equal(s.items.at(-1)!.id, it.id);
 });
 
 test('taking an item works once', () => {
   const s = createGifts({});
-  const it = tossItem(s, giftIndex('can'), 5, 5, ON_GROUND, 5);
+  const it = tossItem(s, giftIndex('can'), 5, 5, ON_GROUND, 5)!;
   assert.equal(takeItem(s, it.id)?.id, it.id);
   assert.equal(takeItem(s, it.id), null);
 });
@@ -93,7 +93,7 @@ test('snapshot round-trips and hashes match', () => {
   const a = createGifts(layout());
   run(a, 1, 2000);
   tossItem(a, giftIndex('can'), 30, 31, 1210, 2001);
-  takeItem(a, a.items.find((it) => it.src === SRC.PERCH).id, 2001);
+  takeItem(a, a.items.find((it) => it.src === SRC.PERCH)!.id, 2001);
   const json = JSON.parse(JSON.stringify(serializeGifts(a)));
   assert.deepEqual(Object.keys(json).sort(), ['it', 'n', 'pa']);
   const b = createGifts(layout());

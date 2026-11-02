@@ -6,8 +6,8 @@ import { offlineGap, offlineFreight, MS_PER_TICK, MIN_GAP_MS } from '../src/sim/
 import { TICK_MS, createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import { HELPER_EVERY } from '../src/sim/sites.ts';
-import { homeLand } from './helpers/land.mjs';
-import { makeNet, run } from './helpers/net.mjs';
+import { homeLand } from './helpers/land.ts';
+import { makeNet, run } from './helpers/net.ts';
 import type { WorldRoom } from '../src/world/sync.ts';
 
 test('the gap is wall time not covered by ticks or earlier wakes, never negative', () => {

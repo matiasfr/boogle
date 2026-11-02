@@ -5,7 +5,7 @@ const H = await import('/dev/look/evals/haul-pilot.ts');
 const { rules } = await import('/src/world/game-world.ts');
 const { submitEdit } = await import('/src/world/sync.ts');
 const { identity } = await import('/src/player/identity.ts');
-const { cellX, cellZ, groundHeight } = await import('/src/adapters/terrain.ts');
+const { cellX, cellZ, groundHeight } = await import('/src/island/terrain.ts');
 for (let k = 0; k < 100 && !identity.pid; k++) await new Promise((r) => setTimeout(r, 100));
 const list = rules.sources.list();
 let id = -1,

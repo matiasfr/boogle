@@ -1,5 +1,5 @@
 // Presence fields, kept pure (no three.js, no DOM) so the rules that stop stale values from lingering are unit-tested
-// (test/presence-fields.test.mjs). net.ts builds every presence packet with these; features use its hooks instead.
+// (test/presence-fields.test.ts). net.ts builds every presence packet with these; features use its hooks instead.
 //
 //   addField(fields, key, get, core)    appends [key, get] to fields unless `core` (the caller's own keys) or an earlier
 //                                       field has the key: core keys and earlier fields win. False when it was refused.

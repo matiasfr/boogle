@@ -20,7 +20,7 @@
 | Boogle 2.0 needs | What exists | Where |
 | --- | --- | --- |
 | The island grows while nobody plays | The server hosts every room and saves it to disk; the helper bank runs offline | `server/src/host/`, [server-host.md](server-host.md), `src/sim/bank.ts` |
-| Shared projects, eras, order of events | Pure, replay-tested lockstep rules that run the same on the server and in tabs | `src/sim/`, `src/world/rules/`, `test/world-replay.test.mjs` |
+| Shared projects, eras, order of events | Pure, replay-tested lockstep rules that run the same on the server and in tabs | `src/sim/`, `src/world/rules/`, `test/world-replay.test.ts` |
 | Timetabled, ride-only trains | Scripted runs as a pure function of the tick: any number of trains costs no network traffic | `src/sim/scripted-run.ts` (`runAt`) |
 | Personal coin, knacks, hats | A stable player id across visits, and a roster of who's in the room | `src/player/identity.ts`, `src/world/rules/roster.ts` |
 | Physics comedy, vehicles | Rapier (6× faster steps than cannon-es, ~2 KB garbage per step) behind a facade with kinematic bodies | `src/physics/engine.ts`, [rapier.md](done/rapier.md) |

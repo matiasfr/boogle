@@ -15,7 +15,7 @@ Everything players can change and everyone must agree on (mushrooms, items) live
 
 Pure sim logic lives in `../sim/` (mushrooms, gifts, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
-tests install the rules on their own sync instances (`test/helpers/net.mjs`).
+tests install the rules on their own sync instances (`test/helpers/net.ts`).
 
 ## Contract (`sync.ts`)
 
@@ -63,7 +63,7 @@ registry()                   // { ops, states }: registered keys in order
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
 
-Grid cells use the heightfield indexing from `src/adapters/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
+Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
 Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 
@@ -96,6 +96,6 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 
 `home-land.json` holds the land the rules run on: the grid size `n`, the gifts layout (palm cells, the log spots, and perch cells) and
 `plant`, where a seed may grow (run lengths over cell `i * n + j`, alternating, starting with unplantable). The server
-and Node tests read it (`test/helpers/land.mjs`); `dev/scenarios/world-inputs.mjs` checks it against the running game
+and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.mjs` checks it against the running game
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` (in an empty garden) when a tree, rock or POI
 moves on purpose.

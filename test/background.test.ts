@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createBackgroundAdvance } from '../src/world/background.ts';
 
 test('background advance: slices elapsed time, caps catch-up, does not double count', () => {
-  const calls = [];
+  const calls: number[] = [];
   const adv = createBackgroundAdvance((dt) => calls.push(dt), 0);
   adv(1000, true);
   assert.ok(calls.every((d) => d <= 0.4 + 1e-9));

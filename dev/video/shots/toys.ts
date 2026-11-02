@@ -4,7 +4,7 @@ import type { ClipGame, Shot } from '../clip.ts';
 const INV = `const I = await import('/src/player/inventory.ts'); const H = await import('/src/player/hands.ts');`;
 const TP = (x: number, z: number, y?: number) => `
   const { teleport } = await import('/src/physics/physics.ts');
-  const { groundHeight } = await import('/src/adapters/terrain.ts');
+  const { groundHeight } = await import('/src/island/terrain.ts');
   const b = window.boogle.me.body;
   teleport(b, ${x}, ${y ?? `groundHeight(${x}, ${z}) + 0.6`}, ${z});
   b.velocity.set(0, 0, 0);`;

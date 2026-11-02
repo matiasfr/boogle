@@ -1,5 +1,5 @@
 // Shared pieces of the rules modules' edit generators (`export const edits`), which feed the replay test
-// (test/world-replay.test.mjs). Never used by the game. `r` is the test's seeded stream:
+// (test/world-replay.test.ts). Never used by the game. `r` is the test's seeded stream:
 // { int(lo, hi) inclusive, pick(array), chance(p), next() in [0, 1) }.
 
 // About a fifth of generated edits are junk, to prove validation holds and nothing throws or desyncs.

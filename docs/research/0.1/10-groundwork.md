@@ -164,7 +164,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Result:** `RULES = [mushrooms, gifts]` and the doors open for appending.
 - **Files:** `net.js`, `rules/index.ts`, the retired files, test fixtures, `multiplayer.md` 8.3–8.5, the `rules/README.md`
   modules table.
-- **Tests:** `check:full`. Update `world-snapshots.test.mjs` and `world-replay.test.mjs` (fewer modules).
+- **Tests:** `check:full`. Update `world-snapshots.test.ts` and `world-replay.test.ts` (fewer modules).
 - **Risks:**
   - Everyone loses mushrooms and the Boogler friendship key unless it stays on `getRoomId()`. Lean: let it stay.
   - Any bookmarked `?room=` still works.
@@ -179,18 +179,18 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 - **Presence `u`** (`addPresenceField`).
 - **Kind:** Lockstep (roster) + Owner (`u`) + a sync-level wire change.
 - **Tests:**
-  - `test/roster.test.mjs`: round-trip, hash, name sanitizing, cap.
-  - `world-sync.test.mjs`: the host ignores a client-supplied `u`, and `u` survives a host migration.
+  - `test/roster.test.ts`: round-trip, hash, name sanitizing, cap.
+  - `world-sync.test.ts`: the host ignores a client-supplied `u`, and `u` survives a host migration.
   - A `dev/peer-test/` check if option (i) is chosen.
   - `check:full`.
 - **Risks:**
   - The race between `w:id` and the first edit after a migration. Held edits are released after `becomeClient`, so send
     `w:id` before `releaseHeld`.
-  - The test helper `test/helpers/net.mjs` needs pids.
+  - The test helper `test/helpers/net.ts` needs pids.
 
 ### M3. Ground piles (S–M)
 
-- **Files:** `src/sim/piles.js` + `test/piles.test.mjs`; `rules/piles.js`; adapter `src/adapters/piles.js` (hands and
+- **Files:** `src/sim/piles.js` + `test/piles.test.ts`; `rules/piles.js`; adapter `src/adapters/piles.js` (hands and
   the stack read it).
 - **Ops:**
   - `pile.drop {i, j, k, n}`: k is the material kind; it merges into a pile of the same kind within 2 cells.
@@ -294,7 +294,7 @@ later milestone ships to a live room with mixed builds**, so the rules go back t
 
 ### M9. Snapshot budget check (S)
 
-- Add `test/world-size.test.mjs`. It fills every state to its caps (256 roster entries, every site's plaques, every
+- Add `test/world-size.test.ts`. It fills every state to its caps (256 roster entries, every site's plaques, every
   pile and taken-set) and asserts the serialized snapshot is under 60 KB.
 - Report the size in `worldStatus()` so telemetry can watch it.
 

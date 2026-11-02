@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
-import { groundHeight } from '../../adapters/terrain.ts';
+import { groundHeight } from '../../island/terrain.ts';
 import { angleLerp } from '../../math.ts';
 import { BODY, addBody, createBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
