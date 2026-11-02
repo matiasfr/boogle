@@ -8,6 +8,9 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 ## The Boogler
 
+## Trains
+- A seat on the wagon with a side-on camera, the island sliding by; the bench variant was cut, but it "could be cool" (owner, 2026-11-02)
+
 ## Multiplayer
 - Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
 

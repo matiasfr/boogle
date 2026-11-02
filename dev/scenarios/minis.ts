@@ -1,6 +1,6 @@
-// Mini-game toys (?proto=minis, docs/game-design/minis.md), solo: a ball thrown into the topple stack knocks crates off
-// and the count goes up; one hole of ball golf, teed off and finished with a lob into the bucket; a hop run down the
-// mushroom line that overshoots and lands in the sand. A motion sheet of each. Serves DESIGN.md 1, 2 and 10.
+// Mini-game toys (?proto=minis, docs/game-design/minis.md), solo: one hole of ball golf, teed off and finished with a lob
+// into the bucket; a hop run down the mushroom line that overshoots and lands in the sand. A motion sheet of each.
+// Serves DESIGN.md 1, 2 and 10.
 import { TP } from './lib/world.ts';
 
 // The parts of the harness (dev/scenarios/run.ts, dev/look/lib.ts) this scenario uses.
@@ -32,7 +32,7 @@ const THROW = (x: number, y: string, z: number, v: string) => `
   B.throwBall({ x: ${x}, y: ${y}, z: ${z} }, ${v});`;
 
 export default {
-  about: 'solo: a ball knocks the topple stack, a golf hole goes in, a hop run fails in the sand',
+  about: 'solo: a golf hole goes in, a hop run fails in the sand',
   timeout: 240000,
   async run(t: Run) {
     const room = 'minis' + Math.random().toString(36).slice(2, 6);
@@ -40,32 +40,6 @@ export default {
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 90000 });
     await g.eval(`document.querySelector('.first-run-close')?.click(); await ${M('index')}.loaded;`);
     await g.eval(`localStorage.clear();`);
-
-    // ---- Topple: a hard throw at the middle of the stack from 6 m.
-    await g.eval(TP(17.4, 28.2));
-    await g.view({ cam: [12.5, 7.5, 27.5], look: [21, 2.6, 33] });
-    await t.sleep(1200);
-    const before = await g.still('topple-set');
-    t.check('still: the stack, set', true, before);
-    await g.eval(
-      THROW(17.6, 'T.groundHeight(17.6, 28.6) + 1.3', 28.6, `{ x: (21 - 17.6) * 3.4, y: 2.5, z: (33 - 28.6) * 3.4 }`),
-    );
-    const topple = await g.motion('topple', { frames: 8, seconds: 2.8 });
-    t.check('motion: the topple', true, topple.sheet);
-    const fallen = (await g.eval(`return ${M('topple')}.toppleState();`)) as { fallen: number; shots: number };
-    t.check('crates fell and the shot counted', fallen.fallen > 0 && fallen.shots === 1, JSON.stringify(fallen));
-    const scored = await g.waitFor(
-      `import('/src/proto/minis/topple.ts').then((m) => m.toppleState().mode !== 'live')`,
-      {
-        timeout: 15000,
-      },
-    );
-    t.check('the round scores and the stack rebuilds', scored >= 0);
-    await t.sleep(400);
-    const rebuild = await g.motion('topple-rebuild', { frames: 6, seconds: 1.5 });
-    t.check('motion: the rebuild', true, rebuild.sheet);
-    const best = (await g.eval(`return ${M('topple')}.toppleState().best;`)) as number | null;
-    t.check('a best is kept', best !== null && best >= 100, String(best));
 
     // ---- Golf: tee off, one long throw west, then a lob into the bucket from 3 m.
     await g.eval(`${TP(1.8, 18.4)} ${M('golf')}.teeOff();`);

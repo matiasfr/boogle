@@ -67,6 +67,7 @@ These are standing preferences from the thread.
 - **2026-11-01, the rail network is a stepping-stone chain toward the mainland, but not a pure corridor** (owner: "Maybe there's shortcuts or more rails that appear in different places"). One clear frontier direction, with cross-links, branches and loops growing behind it; a ring's interior is never empty sea. Still open: which links appear when, and whether the chain closes into a ring. The owner also liked the ring line, except that "it was very sparse in the middle": whether the chain closes into a ring with a full middle is still open.
 - **2026-11-01, environment previz leads with the real renderer** (painted maps made it "hard to get a real feel"): the look lab's `high` preset and blockouts at the game's camera, with image generation only using those captures as style references. The owner wants more variety and eventually a bigger city on the shore, and islands aren't tied to mini-games.
 - **2026-11-01, the wagon is transportation** (owner, second run-through: "I think it's fine just as a transportation"). The fast pace is fine. Snatch, stoke and grind are cut ("I don't care for" them). Was "riding must be more than standing on a moving platform", see Changed.
+- **2026-11-02, the wagon's show and bench are cut** (owner: "I think we don't need to keep the wagons show or bench variants. I didn't really even notice the bench one. Maybe that could be cool, but I don't know."). No trackside scenes and no seat on the wagon; the seat with its side-on camera is parked in [ideas.md](../ideas.md).
 
 - **2026-11-01, an archipelago, not one big open map.** Islands vary in size (home small and dense, later islands several times larger, the mainland port the one big walkable place). Reaching a new island is an era's payoff, telegraphed by seeing it across the water. Connections are physical (reclaimed land, bridges, causeways you can walk and drive), so late game reads as one connected place. Why: the 29 October playtest found a big island empty; the sea gives natural loading boundaries (architecture-fit, "A world bigger than one island").
 
@@ -187,7 +188,7 @@ These are standing preferences from the thread.
 6. ~~Island layout~~ started 1 November as the layout lab ([island-layout.md](island-layout.md), once it exists).
 7. A character look track alongside the prototypes (concept art, then Blender modelling and rigging of the player and The Boogler), kept off the game until a look is picked? (Proposed 1 November; see find-the-fun.md, "Depth tracks".)
 
-8. Wagon show and bench: cut, or keep? The owner hasn't ruled; the wagon is otherwise plain transportation.
+8. ~~Wagon show and bench: cut, or keep?~~ Cut (Decided, 2 November); the wagon is plain transportation.
 9. Next deliverable: the director recommends planning the eras 1–2 slice (haul → build → lay → ride) together with the home island redesign, so the line means something. Waiting on the owner.
 
 ## Next: find the fun (agreed direction, 1 November)

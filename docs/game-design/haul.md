@@ -295,26 +295,6 @@ freight that lands while the wagon is elsewhere rides along and hops off 0.8 s a
 went up already: only the show waits). Nothing changes when or how much freight counts; with no wagon running (nothing
 laid yet) the pile just grows as before. Look eval: `wt=freight` in dev/look/evals/wagon.ts.
 
-**Riding variants** (docs/research/train-riding.md, recs 1-3): `show` and `bench` are calm plus one thing each,
-to compare against calm in one sitting. They switch live on the playlist, and only show while it is on the wagon's step.
-Look eval: dev/look/evals/wagon-ride.ts.
-
-- **`&v=show`** (src/proto/wagon/show.ts, Local, silent): greybox scenes beside the line, fired by the wagon's place in
-  the timetable, so every tab sees the same show at the same moment. Going out, a crane 12 m along (4.5 m right of the
-  line) swings a plank over the rails as the train leaves the first stop, holds it 5 m up while the loco passes under,
-  and clears it (8 s). Coming back, someone at a plank crossing 27 m along, 2.5 m to the side, waves as the train pulls
-  away from the third stop; its tail blows their hat off, and they pick it up (about 7 s). Both ways, twenty gulls on the
-  grass 47 m along on the sea side lift as the train leaves the stop before them, wheel away, and glide back to land
-  (11 s; the line never reaches the sand, so they sit on the grass). The stretch from Palm Walk to the third stop going
-  out has nothing on it on purpose, and so does Palm Walk to the first stop coming back. Props have no colliders.
-- **`&v=bench`** (src/proto/wagon/bench.ts): a back-to-back bench on each flatbed (the rear one's is short, ahead of the
-  crates), no collider. The interact button sits you on the seat on your side ("Sit"); Interact or Jump stands you up,
-  in front of your seat, moving with the deck. Seated, the camera eases round in 0.9 s to look out over your shoulder,
-  side-on and turned 6° towards where the train is going: level, no roll, following the car's level frame with its
-  height through a 2 Hz low-pass, so the deck's bumps don't reach it. Looking around pans up to 70° and eases back after
-  2 s idle. Owner sync: presence `seat` = [car, side], missing while you stand. Other tabs draw you sitting on their copy
-  of that bench, and show the benches while anyone sits, whatever variant they play.
-
 Solo shortcuts: in a `proto-` room the panel's Lay the whole route (`open.lay`, which records the tick and the first
 section it laid in the `opening` state, so a late joiner's wagon runs the same timetable) and Reset the route
 (`tune.reset`);

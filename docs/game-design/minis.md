@@ -1,25 +1,11 @@
 # 6.21 Prototype: mini-game toys (`?proto=minis`)
 
-*Three toys from the shortlist in [minigames-and-physics-minigames.md](../research/minigames-and-physics-minigames.md)
-(3, 5 and 6), built to inform the pending mini-games design pass. Each is a place with a prop near the court, not a
+*Two toys from the shortlist in [minigames-and-physics-minigames.md](../research/minigames-and-physics-minigames.md)
+(5 and 6), built to inform the pending mini-games design pass. Each is a place with a prop near the court, not a
 mode: walk up, play, walk away. No rewards; nothing gates anything. Serves DESIGN.md 1 (Toys before chores), 2 (Physics
 toys first) and 10 (Slapstick over precision). Gut question: "Which of these would you play again unprompted?"
-`&v=topple`, `&v=golf` or `&v=hop` shows one; no `v` shows all three. Without the flag nothing loads
+`&v=golf` or `&v=hop` shows one; no `v` shows both. Without the flag nothing loads
 (`src/features/proto-minis.ts` imports `src/proto/minis/` only with it).*
-
-## Topple stack (east of the court, by the palms)
-
-- Six painted crates (0.8 m, red, yellow, blue) in a 3-2-1 pyramid on a stump at (21, 33), facing the court. Knock them
-  off with the ball (a throw or a bump) or your body. A big count (`3/6`) floats over the stump, with your shots under it.
-- A crate counts as fallen once it drops below the stump top or leaves its edge. 4 s after the last one falls (and
-  everything is still), the round scores: most crates, then fewest shots. Your best (`best 6 in 2 shots`) is kept in
-  localStorage; a new one gets confetti and a fanfare. Then the crates vanish in a puff and drop back one by one.
-  Shots that topple nothing reset quietly once all is still.
-- **Shots:** each throw or bump of the ball within 35 m, and each body shove (one per second).
-- **Feel:** the ball's designed hit: a crate it touches also takes 55% of the ball's velocity and 1.6 m/s of lift (crates
-  are 0.7 kg), so a good throw clears half the stack. Each crate impact knocks (a synthesized wood thunk) and puffs
-  dust; a big one holds the drawn crates for 45–80 ms (hit-stop; physics never pauses). Each fall pops one step up a
-  pentatonic scale and punches the count.
 
 ## Ball golf, one hole (tee at the court's west edge)
 
@@ -46,23 +32,22 @@ toys first) and 10 (Slapstick over precision). Gut question: "Which of these wou
 
 ## Sync
 
-Local, all of it: the crates, the bucket, the mushrooms, the counts and the bests are this tab's own; another player's
-ball or body is not simulated against your crates. The only shared thing is the beach ball (Owner, as always).
+Local, all of it: the bucket, the mushrooms, the counts and the bests are this tab's own. The only shared thing is the beach ball (Owner, as always).
 
 ## Look at it
 
-`npm run scenario -- minis`: a throw into the stack, a tee-off and a lob into the bucket, a hop run that overshoots into
+`npm run scenario -- minis`: a tee-off and a lob into the bucket, a hop run that overshoots into
 the sand, each as a motion sheet in `.look/scenarios/minis/`.
 
 ## Files
 
-[src/proto/minis/](../../src/proto/minis/) (`topple.ts`, `golf.ts`, `hop.ts`, `common.ts`: labels, bests, sounds,
+[src/proto/minis/](../../src/proto/minis/) (`golf.ts`, `hop.ts`, `common.ts`: labels, bests, sounds,
 confetti and your ball shots), [src/features/proto-minis.ts](../../src/features/proto-minis.ts),
 [dev/scenarios/minis.ts](../../dev/scenarios/minis.ts).
 
 ## Not built
 
-Ghosts, friends' flags, group scoring, the other shortlist games (soapbox ghost, court pips, Boogler launch, cart
+Ghosts, friends' flags, group scoring, the other shortlist games (topple stack, retired 2026-11-01; soapbox ghost, court pips, Boogler launch, cart
 pile-up, frisbee ring), and any reward.
 
 ---
