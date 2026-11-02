@@ -26,12 +26,12 @@
   line or null. Each room's memory is `boogle.visit.<room>`, written every 5 s while the room's state is known and on
   page hide. Persistent progress, a mailbox or a postcard add their lines here.
 - **Prototype: the fall** (`?proto=fall`, [src/proto/fall/](../../src/proto/fall/); every load replays it, with your saved
-  name). Your Buddy rides a handcar along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and the handle rocks on a two-second stroke), with the card beside it (no logo on
+  name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
   it) and no HUD. It takes your colour live and hops when you change it, and your name floats over it as you type. Jump in
   runs it off the end of the rail (about 1.2 s, speeding up to 10 m/s) while the camera swings round from your face to behind you, one shot with no cut.
   You steer on the way down (the usual air control, inside a funnel that closes on the sign, so you can't miss), drop
   through the cloud into the island's daylight, and hit BOOGLE, written in timber and leaning on posts at the spawn. It
-  flies apart, you lie flat with stars (1.8 s; any input stands you up after 0.9 s) and the handcar lands next to you 0.8 s
+  flies apart, you lie flat with stars (1.8 s; any input stands you up after 0.9 s) and the cart lands next to you 0.8 s
   later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's
   usual 20 m/s, so 120 m is about 6 s in the air (`&v=short` 60 m, about 3.5 s; `&v=long` 200 m, about 10 s). Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing.
