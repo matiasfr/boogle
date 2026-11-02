@@ -1,7 +1,7 @@
 // Prototype: the hero (?proto=hero). Every avatar plays hand-made animation, Quaternius's Universal Animation Library
-// (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. The default body is the library's own
-// mannequin, for judging motion apart from any model of ours; &body=buddy is the player's direction (assets/src/buddy.py),
-// and &hat=cap or beanie wears one of its `wear_head_` parts. Walk, jog and sprint are played by distance at the rate that
+// (CC0, assets/src/hero-clips.json), with code only choosing and blending clips. The body is the Buddy (assets/src/buddy.py),
+// and &hat=cap or beanie wears one of its `wear_head_` parts; &body=mannequin is the library's own figure, for judging
+// motion apart from our model. Walk, jog and sprint are played by distance at the rate that
 // matches each clip's stride to the ground (measured from the library's root-motion file), so the feet don't slide; they
 // share one phase so a blend between them stays in step. Everything comes from speed and airborne, so remote players need
 // no new presence. Serves DESIGN.md 1 (moving around is a toy). Sync kind: Local (render only).
@@ -105,7 +105,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
 
 export async function startClipsHero() {
   const q = new URLSearchParams(location.search);
-  const body = q.get('body') === 'buddy' ? BODIES.buddy : BODIES.mannequin;
+  const body = q.get('body') === 'mannequin' ? BODIES.mannequin : BODIES.buddy;
   const hat = 'wear_head_' + q.get('hat');
   const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(body.url)]);
   const src = clips.instance();
