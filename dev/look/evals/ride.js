@@ -1,4 +1,4 @@
-// Riding the ?proto=ride flatbed (src/features/proto-ride.ts): puts you on the deck, already moving, and hands the
+// Riding the ?proto=ride flatbed (src/proto/ride/index.ts): puts you on the deck, already moving, and hands the
 // camera back to the game's follow camera. Pick a shot with the query (BOOGLE_QUERY):
 //   proto=ride&ridetest=stand[&ridespeed=6]   stand still on a straight
 //   proto=ride&ridetest=corner                 stand through the first corner
