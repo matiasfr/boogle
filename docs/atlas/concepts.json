@@ -44,6 +44,7 @@
   },
   "folders": {
     "features": "Self-contained plug-ins. Each hooks the frame loop and the shared registries.",
+    "entities": "Game objects: other players as this tab draws them, with interpolation.",
     "player": "The local player, camera, input and the controls registry.",
     "physics": "Rapier physics world, the beach ball, thrown items, water.",
     "render": "Scene, sky, sea, particles, the audio context.",
@@ -59,7 +60,7 @@
     "world": "Edit sync, snapshots and hashing.",
     "world/rules": "One module per lockstep system, in an append-only order.",
     "sim": "Pure deterministic logic, unit-tested.",
-    "netplay": "Presence fields, remote players, interpolation.",
+    "netplay": "Presence fields, the remotes table, peer lifecycle hooks.",
     "net": "The room interface over one WebSocket to our server.",
     "server": "Hosts every room on Fly: relays presence and messages, runs the shared world and saves it.",
     "proto": "Prototypes behind ?proto= flags and the prototype bar, loaded only when asked for.",

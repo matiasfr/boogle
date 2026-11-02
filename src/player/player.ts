@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
-import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, SUN_DIR, DEFAULT_NAME, reducedMotion } from '../constants.ts';
+import { SPAWN, BALL_SPAWN, PLAYER_R, SEA, DEFAULT_NAME, reducedMotion } from '../constants.ts';
+import { SUN_DIR } from '../render/sun-dir.ts';
 import { angleLerp, sanitizeName } from '../math.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { scene, camera, sun, sky } from '../render/scene.ts';
@@ -7,7 +8,8 @@ import { teleport, ODYSSEY } from '../physics/physics.ts';
 import { addBody, type Body } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
 import { makeAvatar, makePlayerBody, animateAvatar, type Avatar } from './avatars.ts';
-import { sendPresence } from '../netplay/net.ts';
+import '../entities/remote-player/index.ts'; // ahead of the ball, which imports us: `riding` stays the first field
+import { sendPresence, setLocalPresence } from '../netplay/net.ts';
 import { dom, renderPeople } from './hud.ts';
 import { input, inputState } from './input.ts';
 import { onFrame } from '../loop.ts';
@@ -34,6 +36,7 @@ export const me = {
   wish: new THREE.Vector3(),
   skid: false, // ?ctl=odyssey: braking to a stop before a pivot (src/physics/physics.ts)
 };
+setLocalPresence(me);
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 6.5 };
 
 export function camForward(out = new THREE.Vector3()) {
@@ -186,7 +189,8 @@ onFrame(
   { phase: 'world', order: -290 },
 );
 
-// update -290, after the ball mesh (ball.ts, -300), before remote avatars (net.ts, -280): the avatar follows the body.
+// update -290, after the ball mesh (ball.ts, -300), before remote avatars (remote-player, -280): the avatar follows the
+// body.
 // A deck you ride turns you and the camera with it, and you walk at your speed on the deck, not over the ground.
 onFrame(
   ({ dt }) => {

@@ -26,7 +26,8 @@ import {
   positionWorld,
   cameraPosition,
 } from 'three/tsl';
-import { GRID_RES, HALF, CELL, SUN_DIR } from '../constants.ts';
+import { GRID_RES, HALF, CELL } from '../constants.ts';
+import { SUN_DIR } from './sun-dir.ts';
 import { clamp } from '../math.ts';
 import { heights } from '../island/terrain.ts';
 import { scene } from './scene.ts';
@@ -54,7 +55,7 @@ const heightTex = (() => {
 export const seaRipples = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); // x, z, start time, strength
 export const seaU = {
   uTime: uniform(0),
-  uSun: uniform(SUN_DIR), // the key light's direction (constants.ts), mutated in place by sky.ts
+  uSun: uniform(SUN_DIR), // the key light's direction (sun-dir.ts), mutated in place by sky.ts
   uSky: uniform(new THREE.Color('#a9dcf3')),
   uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.ts)
   uSpecCol: uniform(new THREE.Color(1.0, 0.97, 0.88)), // glint colour of the key light (sun or moon)

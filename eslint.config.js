@@ -9,6 +9,7 @@ const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) 
 }));
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
 const rulesMessage = 'src/world/rules/ is lockstep only: src/sim/, ../grid.js and sibling rules (see its README).';
+const netplayMessage = 'src/netplay/ is infrastructure: expose a hook and let the game side subscribe (see net.ts).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
 const RULES_GLOBALS = [
   'window',
@@ -187,6 +188,38 @@ export default [
         },
       ],
       'no-restricted-globals': ['error', 'window', 'document', 'navigator', 'localStorage'],
+    },
+  },
+  // Game networking is infrastructure: it never reaches up into what it carries (docs/plans/entity-architecture.md,
+  // "Layers"). identity.ts is the one exception: it lives in player/, but imports only src/sim/ and src/net/ and holds
+  // the id and key a room join needs. The core rule also counts `import type`; net.ts needs none of these.
+  {
+    files: ['src/netplay/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [...rapierBans, { name: 'three', message: netplayMessage }],
+          patterns: [
+            {
+              group: [
+                'three/*',
+                '**/render/**',
+                '**/physics/**',
+                '**/player/**',
+                '!**/player/identity.ts',
+                '**/entities/**',
+                '**/boogler/**',
+                '**/features/**',
+              ],
+              message: netplayMessage,
+            },
+            syncBan,
+            protoBan,
+            debugBan,
+          ],
+        },
+      ],
     },
   },
   {

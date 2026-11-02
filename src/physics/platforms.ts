@@ -8,8 +8,8 @@
 //               so the carry below reads this step's motion, never last step's)
 //     id, shared  shared: true when every tab computes this platform's pose identically (the wagon's cars, from
 //               shared time), with a stable id ('wagon:car1'). A rider on one sends their offset in its frame
-//               (presence key `riding`, src/netplay/net.ts) and other tabs draw them on their own copy, so they stay
-//               put on the deck instead of trailing it by the presence delay.
+//               (presence key `riding`, src/entities/remote-player/) and other tabs draw them on their own copy, so
+//               they stay put on the deck instead of trailing it by the presence delay.
 //   platformById(id), toPlatform(p, pos, yaw, out), fromPlatform(p, local, interpolated, out): that frame's maths
 //   carry       the velocity the player's steering is relative to (src/physics/physics.ts adds it to the target):
 //               the deck point under you while you stand on it, kept through the air when you jump or walk off, and

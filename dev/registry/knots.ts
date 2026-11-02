@@ -10,7 +10,6 @@ export const KNOTS: string[][] = [
   [
     'src/adapters/gifts.ts',
     'src/adapters/mushroom-garden.ts',
-    'src/netplay/net.ts',
     'src/physics/ball.ts',
     'src/player/hands.ts',
     'src/player/hud.ts',

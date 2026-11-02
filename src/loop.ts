@@ -11,7 +11,7 @@
 // modules then hook in at orders features leave alone (pick an order between these, never equal to one):
 //   world   -300 ball.ts: an owned ball off the island respawns; ball.disp follows the body
 //           -290 player.ts: fall respawn         -280 ball.ts: walking into a slow ball claims it
-//   update  -300 ball.ts: ball mesh              -290 player.ts: own avatar       -280 net.ts: remote avatars
+//   update  -300 ball.ts: ball mesh              -290 player.ts: own avatar       -280 remote-player: remote avatars
 //           -200 player.ts: camera               -190 props.ts: clouds            -150 assets.ts: glTF clips
 //           (features: -10 and up)
 //   late    -200 throw.ts: throw preview        -190 hud.ts: HUD                 -20 particles.ts: particles
