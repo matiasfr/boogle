@@ -396,16 +396,10 @@ export const PROTOS: Proto[] = [
     },
     url: '/?proto=minis',
     question: 'Which of these would you play again unprompted?',
-    what: 'Three places with a prop around the court: a crate stack on a stump (east), one hole of ball golf (tee at the court’s west edge), a mushroom hop line (south-west). Bests stay in this browser.',
+    what: 'Two places with a prop around the court: one hole of ball golf (tee at the court’s west edge), a mushroom hop line (south-west). Bests stay in this browser.',
     since: '2026-11-01',
-    spawn: { x: 15.9, z: 26.2, yaw: -2.28 }, // the topple stump first; each variant takes you to its own toy
+    spawn: { x: 7, z: 26, yaw: 1.94 }, // the hop line first (hop leads); each variant takes you to its own toy
     variants: [
-      {
-        name: 'topple',
-        url: '/?proto=minis&v=topple',
-        what: 'Knock six crates off the stump with the ball or your body; it rebuilds itself 4 s after the last falls.',
-        spawn: { x: 15.9, z: 26.2, yaw: -2.28 }, // on the court side of the stump, the crates just right of you
-      },
       {
         name: 'golf',
         url: '/?proto=minis&v=golf',
