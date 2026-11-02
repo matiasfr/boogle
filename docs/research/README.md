@@ -67,4 +67,6 @@ Deep-research reports from 2026-10-29. Each has its working notes (sources, code
 - [sunshine-look.md](sunshine-look.md) (2026-11-01): verified Sunshine water tricks and evidence gaps, later-game references, and a TSL sea recipe for crossing shots 2/3/5; saturated palettes under Neutral, stable glitter at 20 m/s, contact foam and an explicit M4 iPad test budget; eleven recommendations ordered by gain per cost.
 - [third-person-camera.md](third-person-camera.md) (2026-11-02): platformer, exploration and co-op camera precedents; verified versus estimated lens numbers, direct follow and jump smoothing, mouse/stick/touch authority, volume collision, loads, train/deck and soapbox framing, motion comfort and twelve ranked Boogle experiments.
 
+- [eight-hour-pacing.md](eight-hour-pacing.md) (2026-11-02): verified and provisional pacing evidence from compact adventures, co-op campaigns and factory openings; completion-data limits, friend evenings and missed sessions; a six-era, twelve-link budget, hour-by-hour curve, hand-checkable solo/group model and eleven recommendations with smallest tests.
+
 New report: add a file here named by topic, start it with an italic date-and-scope line, keep it to what was checked, and add a line to this list.
