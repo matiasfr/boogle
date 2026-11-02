@@ -36,7 +36,7 @@ import {
 } from '../../physics/engine.ts';
 import { scene, camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { propsNearFade } from '../../render/props.ts';
+import { enablePropsNearFade, propsNearFade } from '../../render/props.ts';
 import { me, cam, camConstraints, camForward } from '../../player/player.ts';
 import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
@@ -939,6 +939,7 @@ const CAM_IN = 9, // m/s: the fastest the distance closes, and opens again
   CAM_OUT = 5;
 const CAM_SIDE = 0.8; // m either side of the centre ray: something narrower than 1.6 m doesn't pull the camera in
 const PROPS_FADE = 3; // m from the lens where trees, fronds and rocks start to dither away while seated
+enablePropsNearFade(); // this module loads only with the prototype on (src/features/proto-soapbox.ts)
 // How far along `dir` (length `len`) a ray from camFrom, offset (sx, sz), gets before scenery; `len` if clear.
 function clearTo(dir: THREE.Vector3, len: number, sx: number, sz: number) {
   rayA.set(camFrom.x + sx, camFrom.y, camFrom.z + sz);
