@@ -104,7 +104,7 @@ const button = (cls: string, text: string, fn: () => void) => {
 
 // The island's step is a chapter (a Start here link, or the playlist was left there): go to its page.
 if (ON_ISLAND && card && !onIsland(card)) {
-  location.replace(pageUrl(card, playState().v[card.id] ?? steps[at].legs[0]));
+  location.replace(pageUrl(card, playState().v[card.id] ?? steps[at]!.legs[0]!));
   card = undefined;
 }
 
@@ -187,9 +187,9 @@ if (card) {
   function go(i: number) {
     if (!steps.length) return;
     i = (i + steps.length) % steps.length;
-    const s = steps[i];
+    const s = steps[i]!;
     const p = s.card;
-    const v = playState().v[p.id] ?? s.legs[0];
+    const v = playState().v[p.id] ?? s.legs[0]!;
     savePlay({ step: p.id, v: { [p.id]: v } });
     flushCounts();
     if (!ON_ISLAND || !onIsland(p)) {
