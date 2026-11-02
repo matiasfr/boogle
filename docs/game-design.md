@@ -33,8 +33,8 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | # | Principle | What it means in practice today |
 |---|---|---|
 | 1 | Toys before chores | Ball, throwing and the Boogler have no score. |
-| 2 | Physics toys first | One physics toy among several: floats, bounces on mushrooms, is thrown like everything else. |
-| 3 | Farming is never required | Mushrooms are optional; nothing is gated on them. |
+| 2 | Physics toys are optional fun | One physics toy among several: floats, bounces on mushrooms, is thrown like everything else. |
+| 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic | Shared mushrooms and items; the honk chord needs 3 people but no coordination. |
 | 5 | Only the world is the antagonist | No PvP state damage. |
 | 6 | Communal world, personal rewards | Hotbar and Boogler friendship are per player, in localStorage. |
