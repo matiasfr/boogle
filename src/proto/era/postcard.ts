@@ -13,8 +13,8 @@ const COURT_CAM = { at: [12, 9, 36], look: [12, 3, 4] }; // the court in front, 
 const SHOW_S = 14;
 
 const cam = new THREE.PerspectiveCamera(55, W / H, 0.5, 900);
-cam.position.set(COURT_CAM.at[0], COURT_CAM.at[1], COURT_CAM.at[2]);
-cam.lookAt(COURT_CAM.look[0], COURT_CAM.look[1], COURT_CAM.look[2]);
+cam.position.set(COURT_CAM.at[0]!, COURT_CAM.at[1]!, COURT_CAM.at[2]);
+cam.lookAt(COURT_CAM.look[0]!, COURT_CAM.look[1]!, COURT_CAM.look[2]!);
 
 let hdr: THREE.RenderTarget | null = null,
   out: THREE.RenderTarget | null = null,
@@ -42,7 +42,7 @@ async function rowsTopDown(): Promise<boolean> {
   const px = (await renderer.readRenderTargetPixelsAsync(probe, 0, 0, 4, 4)) as Uint8Array;
   probe.dispose();
   m.dispose();
-  return (topDown = px[0] > 127);
+  return (topDown = px[0]! > 127);
 }
 
 async function still(): Promise<string | null> {
