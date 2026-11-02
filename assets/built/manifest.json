@@ -21,6 +21,16 @@
     ],
     "textures": []
   },
+  "hero2-rig": {
+    "source": "hero2-rig.py",
+    "sourceHash": "488dc2c5bbe260c8",
+    "outHash": "d64ee8d9b5de8af8",
+    "rawBytes": 200200,
+    "bytes": 80472,
+    "triangles": 11288,
+    "animations": [],
+    "textures": []
+  },
   "scaffold-kit": {
     "source": "scaffold-kit.py",
     "sourceHash": "4a239fc3e45106f9",

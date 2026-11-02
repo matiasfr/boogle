@@ -337,7 +337,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?proto=hero',
     question: 'Does running and jumping as this character feel good enough to keep it?',
-    what: 'Every player is the jointed hero. Movement pass 2: it leans from the body, not the whole figure, its stride grows with speed with feet planted, bob locked to the footfalls, arms pumping, air poses, a skid on reversals. Compare with &lean=old, &stride=old, &airpose=old, &skid=old; try ?air=35 for more air control. &ctl=odyssey: a modern-Mario controller (run where you face, turns carve arcs, speed builds, pull back to skid and pivot, more air control). &body=standin swaps in a CC0 robot with hand-made run clips, to judge the controller on its own.',
+    what: 'Every player is the new hero: big head, stout body, long arms, legs with knees, no mouth, a hand-keyed run and new air poses. &ctl=odyssey tries a modern-Mario controller. &body=standin (a robot with pro clips) or &body=pill (the first figure) to compare.',
     since: '2026-11-01',
     chapter: 'it swaps your body for every toy, so it is judged on its own',
   },
@@ -449,7 +449,8 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'board', variant: 'plaque', why: 'Do hubs-only jumps make you want to ride between stops?' },
   { id: 'look', variant: 'high', why: 'High or toybox: which look should Boogle aim for?' },
   { id: 'look', variant: 'toybox', why: 'High or toybox: which look should Boogle aim for?' },
-  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },];
+  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
+];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
 export const onIsland = (p: Proto) => (ISLAND as readonly string[]).includes(p.id);
