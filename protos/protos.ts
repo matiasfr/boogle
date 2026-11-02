@@ -133,6 +133,21 @@ export const PROTOS: Proto[] = [
         what: 'Lively at double the speed (6.5 m/s): the island rushes past; jump off and you skid in a dust trail.',
       },
       {
+        name: 'show',
+        url: '/?room=proto-wagon&proto=wagon&v=show',
+        what: 'Calm, plus three trackside scenes: a crane swings a plank over the line going out, gulls lift both ways, someone at a crossing waves and loses their hat coming back. Notice whether you stay on to see what comes next.',
+      },
+      {
+        name: 'bench',
+        url: '/?room=proto-wagon&proto=wagon&v=bench',
+        what: 'Calm, plus a bench on each flatbed: E sits you, the camera eases side-on and steadies, and the island slides by. Notice whether you just sit and watch.',
+      },
+      {
+        name: 'snatch',
+        url: '/?room=proto-wagon&proto=wagon&v=snatch',
+        what: 'Calm, plus a mail bag on a lineside arm: hold E as you pass to grab it, then look at the hopper further on and press to throw. Earns nothing. Notice whether you go round to try it again.',
+      },
+      {
         name: 'stoke',
         url: '/?room=proto-wagon&proto=wagon&v=stoke',
         what: 'Crawls at walking pace until you feed it: carry logs to the loco, E at the firebox, and it speeds up to 6.5 m/s.',
@@ -438,6 +453,9 @@ export type PlaytestStep = {
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'wagon', why: 'Would you ride it twice for no reason?' },
+  { id: 'wagon', variant: 'show', why: 'Did you stay on to see what came next?' },
+  { id: 'wagon', variant: 'bench', why: 'Did you sit down and just watch the island go by?' },
+  { id: 'wagon', variant: 'snatch', why: 'Did you go round again to try it once more?' },
   { id: 'wagon', variant: 'fast', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'stoke', why: 'Would you ride it twice for no reason?' },
   { id: 'soapbox', why: 'Is driving fun?' },
