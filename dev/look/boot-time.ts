@@ -184,7 +184,7 @@ for (let run = 0; run < RUNS; run++) {
 const median = (xs: number[]) => {
   if (!xs.length) return NaN;
   const s = [...xs].sort((a, b) => a - b);
-  return s[Math.floor(s.length / 2)];
+  return s[Math.floor(s.length / 2)]!;
 };
 console.log(
   `\n${SAFARI ? 'Safari' : 'Chrome'}, sw=${SW}, latency=${LATENCY}ms, ${RUNS} cold + ${RUNS * WARM} warm; medians in ms`,

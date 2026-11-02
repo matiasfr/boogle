@@ -51,7 +51,7 @@ const at = args.findIndex((a) => a === '--url' || a.startsWith('--url='));
 let url: string | null = process.env.LOOK_URL || null;
 if (at >= 0) {
   const [flag] = args.splice(at, 1);
-  url = flag === '--url' ? args.splice(at, 1)[0] : flag.slice('--url='.length);
+  url = flag === '--url' ? (args.splice(at, 1)[0] ?? null) : flag!.slice('--url='.length);
   if (!url || url.startsWith('--')) {
     console.error('--url needs a value: --url <game> or --url=<game>');
     process.exit(2);
@@ -84,7 +84,7 @@ try {
     const t: T = {
       out,
       async page(pathname, { size = [1280, 900], colorScheme = 'light' } = {}) {
-        const page = await br.newPage({ viewport: { width: size[0], height: size[1] }, colorScheme });
+        const page = await br.newPage({ viewport: { width: size[0]!, height: size[1]! }, colorScheme });
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
         pages.push({ page, errors, name: pathname });

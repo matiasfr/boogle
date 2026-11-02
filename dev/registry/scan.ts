@@ -155,7 +155,7 @@ export function compareRegistries(base: Comparable, head: Comparable): { errors:
         notes.push(`${what} '${k}' is gone; older tabs may still send it (fine if nothing reads it)`);
     }
     for (const k of Object.keys(head[field] ?? {})) {
-      if (!base[field]?.[k]) notes.push(`new ${what} '${k}' (${head[field][k].join(', ')})`);
+      if (!base[field]?.[k]) notes.push(`new ${what} '${k}' (${head[field][k]!.join(', ')})`);
     }
   }
   for (const k of headRules.slice(baseRules.length)) notes.push(`new rules module '${k}' (appended)`);

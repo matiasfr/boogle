@@ -65,8 +65,8 @@ export function walk(path: [number, number][], { sprint = false, seconds = 8 } =
   return new Promise<void>((done) => {
     const step = () => {
       const p = me.body!.position;
-      while (wp < path.length - 1 && Math.hypot(path[wp][0] - p.x, path[wp][1] - p.z) < 1.2) wp++;
-      const [tx, tz] = path[wp];
+      while (wp < path.length - 1 && Math.hypot(path[wp]![0] - p.x, path[wp]![1] - p.z) < 1.2) wp++;
+      const [tx, tz] = path[wp]!;
       const last = wp === path.length - 1 && Math.hypot(tx - p.x, tz - p.z) < 0.6;
       cam.yaw = Math.atan2(-(tx - p.x), -(tz - p.z));
       input.stickX = 0;

@@ -37,5 +37,5 @@ test('coarseUa gives browser, major version and system only', () => {
     ['Mozilla/5.0 (Android 14; Mobile; rv:132.0) Gecko/132.0 Firefox/132.0', 'Firefox 132 Android'],
     ['curl/8.5.0', 'other other'],
   ];
-  for (const [ua, want] of cases) assert.equal(coarseUa(ua), want);
+  for (const [ua, want] of cases) assert.equal(coarseUa(ua!), want);
 });

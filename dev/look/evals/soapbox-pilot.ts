@@ -79,12 +79,12 @@ export async function drive(plan: Plan) {
     const t = (now - t0) / 1000;
     const v = box.body.velocity;
     const speed = Math.hypot(v.x, v.z);
-    while (wp < path.length - 1 && Math.hypot(path[wp][0] - p.x, path[wp][1] - p.z) < 4) wp++;
+    while (wp < path.length - 1 && Math.hypot(path[wp]![0] - p.x, path[wp]![1] - p.z) < 4) wp++;
     const [tx, tz] = path[wp];
     const err = wrap(Math.atan2(-(tx - p.x), -(tz - p.z)) - box.S.heading);
     let steer = Math.max(-1, Math.min(1, -err * 2.5));
     // how sharp the corner at the next waypoint is, and how far off it is: brake (or drift) into the sharp ones
-    const nx = path[Math.min(wp + 1, path.length - 1)];
+    const nx = path[Math.min(wp + 1, path.length - 1)]!;
     const turn = Math.abs(wrap(Math.atan2(-(nx[0] - tx), -(nx[1] - tz)) - Math.atan2(-(tx - p.x), -(tz - p.z))));
     const dist = Math.hypot(tx - p.x, tz - p.z);
     const sharp = turn > 1.3 && dist < 9 + speed * 0.4;

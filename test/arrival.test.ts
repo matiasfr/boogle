@@ -63,5 +63,5 @@ test('names read naturally', () => {
 });
 
 test('a friendly name is never empty', () => {
-  for (let k = 0; k < 20; k++) assert.ok(A.friendlyName().length > 0);
+  for (let k = 0; k < 20; k++) assert.ok(A.friendlyName()!.length > 0);
 });

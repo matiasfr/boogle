@@ -42,8 +42,8 @@ function fakePad() {
   };
   const w = window as unknown as Record<string, unknown>;
   const set = (i: number, on: boolean) => {
-    pad.buttons[i].pressed = pad.buttons[i].touched = on;
-    pad.buttons[i].value = on ? 1 : 0;
+    pad.buttons[i]!.pressed = pad.buttons[i]!.touched = on;
+    pad.buttons[i]!.value = on ? 1 : 0;
   };
   w.__padSet = set;
   w.__dpad = (dir: string) => {
@@ -56,7 +56,7 @@ function fakePad() {
     if (shape === 'standard') set(12 + ['up', 'down', 'left', 'right'].indexOf(dir), true);
     else if (shape === 'axes')
       pad.axes[dir === 'up' || dir === 'down' ? 7 : 6] = dir === 'up' || dir === 'left' ? -1 : 1;
-    else pad.axes[9] = -1 + ({ up: 0, right: 2, down: 4, left: 6 } as Record<string, number>)[dir] * (2 / 7);
+    else pad.axes[9] = -1 + ({ up: 0, right: 2, down: 4, left: 6 } as Record<string, number>)[dir]! * (2 / 7);
   };
   w.__padShape = 'standard';
   navigator.getGamepads = () => [pad] as unknown as (Gamepad | null)[];

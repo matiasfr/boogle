@@ -100,13 +100,13 @@ if (test === 'stoke' || test === 'rundown') {
     console.log('rundown: stoked at stop', W.state.stop, JSON.stringify(W.steam));
     // a wide camera off to the side of the whole line (back: m from its middle, up: m high), after the harness's own
     const { ROUTE } = (await import('/src/sim/route.ts' as string)) as typeof import('../../../src/sim/route.ts');
-    const a = ROUTE[0],
-      b = ROUTE[ROUTE.length - 1].to;
-    const mx = (a.x + b[0]) / 2,
-      mz = (a.z + b[1]) / 2,
-      len = Math.hypot(b[0] - a.x, b[1] - a.z);
-    const px = -(b[1] - a.z) / len,
-      pz = (b[0] - a.x) / len,
+    const a = ROUTE[0]!,
+      b = ROUTE[ROUTE.length - 1]!.to;
+    const mx = (a.x + b[0]!) / 2,
+      mz = (a.z + b[1]!) / 2,
+      len = Math.hypot(b[0]! - a.x, b[1]! - a.z);
+    const px = -(b[1]! - a.z) / len,
+      pz = (b[0]! - a.x) / len,
       back = num('back', 30) * (q.get('side') === 'west' ? -1 : 1),
       my = groundHeight(mx, mz);
     setTimeout(() => window.__debugCam!.set([mx + px * back, my + num('up', 18), mz + pz * back], [mx, my, mz]), 400);
@@ -115,7 +115,7 @@ if (test === 'stoke' || test === 'rundown') {
     await until(() => W.state?.stop >= 0, 60000);
     await until(() => W.state?.stop < 0, 60000);
     await sleep(num('after', 1500));
-    const c1 = W.cars[1];
+    const c1 = W.cars[1]!;
     const p = c1.body.position,
       yaw = Math.atan2(2 * c1.body.quaternion.w * c1.body.quaternion.y, 1 - 2 * c1.body.quaternion.y ** 2);
     // the flatbed's front end, toward the loco (+z in the car's frame), `side` m to its right (+x)
@@ -170,7 +170,7 @@ if (test === 'freight') {
       throw new Error('no logs: needs --room proto-wagon');
     edit({ op: 'site.stock', s: 0, ring: 1, n: 1 });
     edit({ op: 'tune.fill' });
-    if (!(await until(() => sites.list[0].helpers > 0 && rules.sites.canRun(0)))) throw new Error('no hut, no fill');
+    if (!(await until(() => sites.list[0]!.helpers > 0 && rules.sites.canRun(0)))) throw new Error('no hut, no fill');
     edit({ op: 'site.run', s: 0 });
     if (!(await until(() => sites.open === 1, 40000))) throw new Error('section 0 was not laid');
   }
@@ -194,7 +194,7 @@ if (test === 'freight') {
     JSON.stringify({ T, tick: world.tick, stop: W.state?.stop, helpers: rules.sites.helpers() }),
   );
 }
-const c = W.cars[1];
+const c = W.cars[1]!;
 if (test !== 'freight' && test !== 'stoke' && test !== 'rundown') {
   W.seekPhase(ph);
   await sleep(200);
@@ -235,7 +235,7 @@ if (test !== 'freight' && test !== 'stoke' && test !== 'rundown') {
         () => {
           const f = camForward();
           const dirs = { KeyW: f.x, KeyS: -f.x, KeyD: -f.z, KeyA: f.z }; // right of forward (fx, fz) is (-fz, fx)
-          key = Object.entries(dirs).sort((a, b) => (b[1] - a[1]) * (q.get('jdir') === 'west' ? -1 : 1))[0][0];
+          key = Object.entries(dirs).sort((a, b) => (b[1] - a[1]) * (q.get('jdir') === 'west' ? -1 : 1))[0]![0];
           input.keys.add(key);
           me.jumpQueued = 0.15;
           me.jumpHeld = true;

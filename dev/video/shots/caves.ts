@@ -18,9 +18,9 @@ const AIM = (x: number, z: number) => `
   cam.yaw += d * 0.12; cam.pitch = -0.12;
   return Math.hypot(${x} - p.x, ${z} - p.z);`;
 const ring = (c: number[], a: number, d: number, h: number) => [
-  c[0] + Math.cos(a) * d,
-  c[1] + h,
-  c[2] + Math.sin(a) * d,
+  c[0]! + Math.cos(a) * d,
+  c[1]! + h,
+  c[2]! + Math.sin(a) * d,
 ];
 
 export default {
@@ -58,7 +58,7 @@ export default {
             walking = true;
           }
           if (!walking) return;
-          const d = await g.eval(AIM(...route[w]));
+          const d = await g.eval(AIM(...route[w]!));
           if (d < 1.2 && ++w >= route.length) {
             await g.up('KeyW');
             walking = false;

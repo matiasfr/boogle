@@ -38,7 +38,7 @@ for (let j = 0; j < N; j++)
   for (let i = 0; i < N; i++) {
     const x = -HALF + (i + 0.5) * SCALE,
       z = -HALF + (j + 0.5) * SCALE;
-    const v = h[j * N + i];
+    const v = h[j * N + i]!;
     let c: number[];
     if (v <= 0) {
       const t = Math.min(1, -v / 7.5);
@@ -51,8 +51,8 @@ for (let j = 0; j < N; j++)
         c = [110 + 120 * t, 180 - 40 * t, 80 + 130 * t];
       }
       const p = island.paintAt(x, z);
-      if (p) for (let k = 0; k < 3; k++) c[k] += (p[k] * 255 - c[k]) * p[3];
-      const right = i + 1 < N ? h[j * N + i + 1] : v;
+      if (p) for (let k = 0; k < 3; k++) c[k]! += (p[k]! * 255 - c[k]!) * p[3]!;
+      const right = i + 1 < N ? h[j * N + i + 1]! : v;
       if (Math.floor(v / 3) !== Math.floor(right / 3)) c = c.map((q) => q * 0.72); // 3 m contours
     }
     if (PROTOS) {
@@ -106,7 +106,7 @@ if (PROTOS) {
     j1 = 0;
   for (let j = 0; j < N; j++)
     for (let i = 0; i < N; i++)
-      if (h[j * N + i] > 0) {
+      if (h[j * N + i]! > 0) {
         i0 = Math.min(i0, i);
         i1 = Math.max(i1, i);
         j0 = Math.min(j0, j);

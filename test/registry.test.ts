@@ -71,8 +71,8 @@ test('a message type sent from two files fails; a receiver-only file does not co
   ]);
   assert.deepEqual(Object.keys(reg.messages).sort(), ['beep', 'honk']);
   assert.deepEqual(checkRegistry(reg), []);
-  (reg.messages as Names).honk.push('src/features/copy.js');
-  assert.match(checkRegistry(reg)[0], /message type 'honk'/);
+  (reg.messages as Names).honk!.push('src/features/copy.js');
+  assert.match(checkRegistry(reg)[0]!, /message type 'honk'/);
 });
 
 test('pad slots: registerAction claims, describeControl does not, one slot must stay free', () => {
@@ -101,8 +101,8 @@ test('feature onFrame orders stay in the feature range and off core orders', () 
   ]);
   const errors = checkRegistry(reg);
   assert.equal(errors.length, 2);
-  assert.match(errors[0], /a\.js:2: onFrame late order 3000 equals core/);
-  assert.match(errors[1], /b\.js:1: features use onFrame order -10 and up/);
+  assert.match(errors[0]!, /a\.js:2: onFrame late order 3000 equals core/);
+  assert.match(errors[1]!, /b\.js:1: features use onFrame order -10 and up/);
 });
 
 const rulesReg = (
@@ -120,8 +120,8 @@ const rulesReg = (
 test('RULES must keep main as a prefix', () => {
   const base = rulesReg(['terrain', 'gifts'], {});
   assert.deepEqual(compareRegistries(base, rulesReg(['terrain', 'gifts', 'tide'], {})).errors, []);
-  assert.match(compareRegistries(base, rulesReg(['terrain', 'tide', 'gifts'], {})).errors[0], /RULES order changed/);
-  assert.match(compareRegistries(base, rulesReg(['terrain'], {})).errors[0], /RULES order changed/);
+  assert.match(compareRegistries(base, rulesReg(['terrain', 'tide', 'gifts'], {})).errors[0]!, /RULES order changed/);
+  assert.match(compareRegistries(base, rulesReg(['terrain'], {})).errors[0]!, /RULES order changed/);
 });
 
 test("a new world namespace is a clean break: main's rules, ops and states bind nothing", () => {
@@ -141,7 +141,7 @@ test('states: no removal, no version going down, no shape change without a versi
   const same = rulesReg([], { g: s(0, { it: [], v: 2 }), m: s(1, { m: 3 }) }, { 'g.take': 'g' });
   assert.deepEqual(compareRegistries(base, same).errors, []);
   const reshaped = rulesReg([], { g: s(0, { v: 1, items: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
-  assert.match(compareRegistries(base, reshaped).errors[0], /state 'g' saves a different shape .* bump `version`/s);
+  assert.match(compareRegistries(base, reshaped).errors[0]!, /state 'g' saves a different shape .* bump `version`/s);
   const bumped = rulesReg([], { g: s(1, { v: 1, items: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
   assert.deepEqual(compareRegistries(base, bumped).errors, []);
   const gone = rulesReg([], { g: s(0, { v: 1, it: [] }), m: s(0, { m: 0 }) }, {});

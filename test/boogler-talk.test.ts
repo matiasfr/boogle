@@ -105,7 +105,7 @@ test('a stranger cannot ask about his mother yet', () => {
 test('finishing a chapter teaches it once and ends the talk with a line over his head', () => {
   const f = createFriend();
   const t = openTalk(f, ctx());
-  pickTalk(t, optIndex(t, THREADS.home.ask[0]));
+  pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
   let out: Talk['out'] | null = null;
   for (let steps = 0; talkView(t) && steps < 10; steps++) out = pickTalk(t, 0);
   assert.equal(talkView(t), null);
@@ -113,7 +113,7 @@ test('finishing a chapter teaches it once and ends the talk with a line over his
   assert.ok(f.pts >= RULES.chapterPts);
   assert.ok(AFTER.map((s) => s.replace('{name}', 'Ideen')).includes(out!.bubble!), out!.bubble!);
   const again = openTalk(f, ctx());
-  assert.ok(talkView(again)!.opts.includes(THREADS.home.ask[1]), 'next time, the next chapter is offered');
+  assert.ok(talkView(again)!.opts.includes(THREADS.home.ask[1]!), 'next time, the next chapter is offered');
   assert.equal(threadState(f, 'home').next!.id, 'home1');
 });
 
@@ -122,7 +122,7 @@ test('bye is one press, and his farewell is a bubble', () => {
   const t = openTalk(f, ctx());
   const out = pickTalk(t, talkView(t)!.opts.length - 1);
   assert.equal(talkView(t), null);
-  assert.equal(out.bubble, FAREWELL[0].replace('{name}', 'Ideen'));
+  assert.equal(out.bubble, FAREWELL[0]!.replace('{name}', 'Ideen'));
 });
 
 test('small talk ends the talk', () => {
@@ -137,14 +137,14 @@ test('small talk ends the talk', () => {
 test('walking off mid-chapter bookmarks it, and asking again picks it back up', () => {
   const f = createFriend();
   const t = openTalk(f, ctx());
-  pickTalk(t, optIndex(t, THREADS.home.ask[0]));
+  pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
   pickTalk(t, 0); // home0 a -> b
   const at = talkView(t)!.say;
-  assert.equal(leaveTalk(t), FAREWELL[0].replace('{name}', 'Ideen'));
+  assert.equal(leaveTalk(t), FAREWELL[0]!.replace('{name}', 'Ideen'));
   assert.equal(f.flags['at.home'], 'home0.b');
   const back = loadFriend(serializeFriend(f)); // and it survives a reload
   const t2 = openTalk(back, ctx());
-  pickTalk(t2, optIndex(t2, THREADS.home.ask[0]));
+  pickTalk(t2, optIndex(t2, THREADS.home.ask[0]!));
   const say = talkView(t2)!.say;
   assert.ok(say.endsWith(at), say);
   assert.ok(
@@ -154,13 +154,13 @@ test('walking off mid-chapter bookmarks it, and asking again picks it back up', 
   assert.equal(back.flags['at.home'], undefined);
   // Leaving on the first line, or a bookmark for a chapter already learned, starts afresh.
   const t3 = openTalk(back, ctx());
-  pickTalk(t3, optIndex(t3, THREADS.home.ask[0]));
+  pickTalk(t3, optIndex(t3, THREADS.home.ask[0]!));
   leaveTalk(t3);
   assert.equal(back.flags['at.home'], undefined);
   back.flags['at.home'] = 'home9.zz';
   const t4 = openTalk(back, ctx());
-  pickTalk(t4, optIndex(t4, THREADS.home.ask[0]));
-  assert.equal(talkView(t4)!.say, THREADS.home.chapters[0].nodes.a.say);
+  pickTalk(t4, optIndex(t4, THREADS.home.ask[0]!));
+  assert.equal(talkView(t4)!.say, THREADS.home.chapters[0]!.nodes.a.say);
 });
 
 test('a cross Boogler says no goodbye when you walk off', () => {
@@ -177,7 +177,7 @@ test('asking ahead of the friendship gets deflected, and pushing makes him go qu
   const t = openTalk(f, c);
   let quiet = false;
   for (let k = 0; k < 5 && !quiet; k++) {
-    pickTalk(t, optIndex(t, THREADS.home.ask[1]));
+    pickTalk(t, optIndex(t, THREADS.home.ask[1]!));
     const v = talkView(t)!;
     assert.equal(v.mood === 'worry' || v.mood === 'grump', true);
     const push = optIndex(t, 'tell me');
@@ -254,9 +254,9 @@ test('the kick-off talk ends after one exchange', () => {
 
 test('reaching a new level is reported to the caller', () => {
   const f = createFriend();
-  addPts(f, LEVELS[1].at - 1);
+  addPts(f, LEVELS[1]!.at - 1);
   const t = openTalk(f, ctx());
-  pickTalk(t, optIndex(t, THREADS.home.ask[0]));
+  pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
   let up = 0;
   for (let k = 0; k < 10 && !up; k++) up = pickTalk(t, 0).levelUp || up;
   assert.equal(up, 1);
@@ -265,7 +265,7 @@ test('reaching a new level is reported to the caller', () => {
 
 test('names are filled in', () => {
   const f = createFriend();
-  addPts(f, LEVELS[2].at);
+  addPts(f, LEVELS[2]!.at);
   for (let s = 0; s < 6; s++) {
     const v = talkView(openTalk(f, ctx({ rng: mulberry32(s) })))!;
     assert.ok(!v.say.includes('{name}'));
@@ -280,7 +280,7 @@ test('a finished thread retells one of its chapters, a different one each time, 
   let last = null;
   for (let k = 0; k < 6; k++) {
     const t = openTalk(f, ctx({ now: 1e6 + k, rng: mulberry32(k) }));
-    pickTalk(t, optIndex(t, THREADS.home.ask[2]));
+    pickTalk(t, optIndex(t, THREADS.home.ask[2]!));
     const say = talkView(t)!.say;
     assert.ok(firsts.includes(say), say);
     assert.notEqual(say, last);

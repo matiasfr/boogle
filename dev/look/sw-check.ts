@@ -56,9 +56,9 @@ const types: Record<string, string> = {
 };
 const site = http.createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://x');
-  let file = path.join(dirs[serving], url.pathname === '/' ? 'index.html' : url.pathname);
-  if (!file.startsWith(dirs[serving]) || !fs.existsSync(file) || fs.statSync(file).isDirectory())
-    file = path.join(dirs[serving], 'index.html');
+  let file = path.join(dirs[serving]!, url.pathname === '/' ? 'index.html' : url.pathname);
+  if (!file.startsWith(dirs[serving]!) || !fs.existsSync(file) || fs.statSync(file).isDirectory())
+    file = path.join(dirs[serving]!, 'index.html');
   if (url.pathname.startsWith('/assets/')) assetHits.push(url.pathname);
   const hashed = url.pathname.startsWith('/assets/');
   res.writeHead(200, {

@@ -83,7 +83,7 @@ test('malformed snapshots and states never throw; bad states start fresh and the
   for (let k = 0; k < JUNK.length; k++) {
     // every state gets a junk value (each sees every one over the loop), and every third round junk versions too
     const data = Object.fromEntries(keys.map((key, n) => [key, JUNK[(k + n) % JUNK.length]]));
-    const vers = k % 3 === 0 ? { [keys[k % keys.length]]: 'x', [keys[(k + 1) % keys.length]]: -2 } : undefined;
+    const vers = k % 3 === 0 ? { [keys[k % keys.length]!]: 'x', [keys[(k + 1) % keys.length]!]: -2 } : undefined;
     assert.doesNotThrow(() => s.loadSnapshot({ tick: 9, seed: 1, epochMs: 0, data, ...(vers ? { vers } : {}) }));
     assert.doesNotThrow(() => s.updateWorld(0.2), `ticking after junk round ${k}`);
     assert.doesNotThrow(() => s.snapshot());

@@ -27,7 +27,7 @@ list.forEach((p, k) => {
     id = k;
   }
 });
-const p = list[id];
+const p = list[id]!;
 const bx = cellX(p.i) + 0.9,
   bz = cellZ(p.j) + 0.4,
   gy = groundHeight(bx, bz);

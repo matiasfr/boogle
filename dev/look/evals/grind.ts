@@ -33,16 +33,16 @@ const until = async (fn: () => unknown, ms = 8000) => {
 // The line as the wagon measures it: the point d m along, and its direction.
 function lineAt(d: number) {
   for (const r of ROUTE) {
-    const len = Math.round(Math.hypot(r.to[0] - r.x, r.to[1] - r.z) * 100) / 100;
-    const ux = (r.to[0] - r.x) / len,
-      uz = (r.to[1] - r.z) / len;
+    const len = Math.round(Math.hypot(r.to[0]! - r.x, r.to[1]! - r.z) * 100) / 100;
+    const ux = (r.to[0]! - r.x) / len,
+      uz = (r.to[1]! - r.z) / len;
     if (d <= len || r === ROUTE[ROUTE.length - 1]) return { x: r.x + ux * d, z: r.z + uz * d, ux, uz };
     d -= len;
   }
   throw new Error('no route');
 }
 const lineLength = (laid: number) =>
-  ROUTE.slice(0, laid).reduce((t, r) => t + Math.round(Math.hypot(r.to[0] - r.x, r.to[1] - r.z) * 100) / 100, 0);
+  ROUTE.slice(0, laid).reduce((t, r) => t + Math.round(Math.hypot(r.to[0]! - r.x, r.to[1]! - r.z) * 100) / 100, 0);
 
 function press(ms: number) {
   me.jumpQueued = 0.15;

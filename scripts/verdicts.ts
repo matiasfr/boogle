@@ -132,7 +132,7 @@ if (md) {
       console.log(`- Prototype: ${p?.title ?? id}${p ? ` (\`${p.url}\`)` : ''}`);
       // Newest per variant is the verdict that stands; older ones were changed minds.
       for (const r of group(rs, (r) => r.detail.variant).values()) {
-        const d = r[0].detail;
+        const d = r[0]!.detail;
         console.log(`- ${p?.question ?? 'Verdict:'} ${answer(d)}`);
         if (countsLine(d.counts)) console.log(`- Did: ${countsLine(d.counts)}`);
         if (d.trace) console.log(`- Last sitting: ${d.trace}`);

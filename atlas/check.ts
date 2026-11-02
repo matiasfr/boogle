@@ -12,8 +12,8 @@ const CHANGES = 'docs/atlas/changes.md';
 function validDate(s: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (!m) return false;
-  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+  const d = new Date(Date.UTC(+m[1]!, +m[2]! - 1, +m[3]!));
+  return d.getUTCFullYear() === +m[1]! && d.getUTCMonth() === +m[2]! - 1 && d.getUTCDate() === +m[3]!;
 }
 
 // Folders that exist in the facts but have no note in concepts.json "folders": a to-do list, not errors.
@@ -153,7 +153,7 @@ function checkChanges(out: string[], text: string | undefined, stories: Set<stri
     out.push(`${CHANGES}: missing or empty (start it with "# What changed")`);
     return;
   }
-  if (text.split('\n')[0].trim() !== '# What changed') out.push(`${CHANGES}: the first line must be "# What changed"`);
+  if (text.split('\n')[0]!.trim() !== '# What changed') out.push(`${CHANGES}: the first line must be "# What changed"`);
   let prev = null;
   for (const e of parseChanges(text)) {
     if (!validDate(e.date)) out.push(`${CHANGES}: "## ${e.date}" is not a valid YYYY-MM-DD date`);

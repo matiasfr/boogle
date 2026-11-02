@@ -120,7 +120,7 @@ try {
   await waitFor(async () => (await Promise.all(all.map(world))).every((w) => w.status.ready), 5000);
   await ev(A.page, ([i, j]: number[]) => window.T.plant(i, j), cells[0]);
   const plantMs = await waitFor(
-    async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0])))).every(Boolean),
+    async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0]!)))).every(Boolean),
     3000,
   );
   check('a plant reaches every page within 1 s', plantMs >= 0 && plantMs < 1000, plantMs + ' ms');
@@ -128,7 +128,7 @@ try {
 
   // 5. a late joiner gets the plot from a snapshot; past the cap a page is turned away
   let D = await open('D');
-  check('late joiner D has the plot', (await waitFor(() => hasPlot(D, cells[0]), 3000)) >= 0);
+  check('late joiner D has the plot', (await waitFor(() => hasPlot(D, cells[0]!), 3000)) >= 0);
   const E = await open('E');
   const refusal = E.selfId as { error?: string; max?: number };
   check(
@@ -178,7 +178,7 @@ try {
   check('pages reconnect within 5 s of a restart', backMs >= 0, backMs + ' ms');
   check(
     'the plot survives the restart',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0])))).every(Boolean), 3000)) >= 0,
+    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[0]!)))).every(Boolean), 3000)) >= 0,
   );
   await sleep(500);
   const after = (await world(B)).tick;
@@ -186,7 +186,7 @@ try {
   await ev(B.page, ([i, j]: number[]) => window.T.plant(i, j), cells[1]);
   check(
     'an edit after the restart reaches everyone',
-    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[1])))).every(Boolean), 3000)) >= 0,
+    (await waitFor(async () => (await Promise.all(all.map((p) => hasPlot(p, cells[1]!)))).every(Boolean), 3000)) >= 0,
   );
 
   // 8. a crash (no final save): pages resync to the last periodic save and agree again

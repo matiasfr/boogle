@@ -184,12 +184,12 @@ await browser.close();
 const inputs = parts.flatMap((p) => ['-i', p.file]);
 let chain = '',
   prev = '0:v',
-  t = parts[0].sec;
+  t = parts[0]!.sec;
 for (let k = 1; k < parts.length; k++) {
   const o = `x${k}`;
   chain += `[${prev}][${k}:v]xfade=transition=fade:duration=${FADE}:offset=${(t - FADE).toFixed(3)}[${o}];`;
   prev = o;
-  t += parts[k].sec - FADE;
+  t += parts[k]!.sec - FADE;
 }
 const total = t;
 // Where each segment starts in the joined video (for the music's quiet stretches).

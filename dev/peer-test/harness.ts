@@ -73,7 +73,7 @@ export async function startWeb(entry: string) {
     platform: 'browser',
     logLevel: 'warning',
   });
-  const js = built.outputFiles[0].text;
+  const js = built.outputFiles[0]!.text;
   const web = http
     .createServer((req, res) => {
       if (req.url!.startsWith('/bundle.js')) {

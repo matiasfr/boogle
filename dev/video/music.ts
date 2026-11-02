@@ -26,23 +26,23 @@ export function music(seconds: number, bpm: number, quiet: [number, number][] = 
   for (let s = 0; s < n; s++) {
     const t = s / SR,
       b = Math.floor(t / bar),
-      ch = chords[b % 4],
+      ch = chords[b % 4]!,
       inBar = t - b * bar,
       inBeat = t % beat,
       eighth = Math.floor(t / (beat / 2)),
       inEighth = t % (beat / 2),
-      drums = t >= bar * 2 && t < seconds - bar && !rests.some(([a, b]) => t >= a && t < b);
+      drums = t >= bar * 2 && t < seconds - bar && !rests.some(([a, b]) => t >= a! && t < b!);
     let pad = 0;
     for (const m of ch) pad += Math.sin(2 * Math.PI * hz(m) * t) + 0.4 * Math.sin(2 * Math.PI * hz(m) * 1.003 * t);
     lp += 0.08 * (pad - lp);
     const padV = lp * 0.045 * Math.min(1, inBar / 0.25);
-    const arpM = ch[[0, 1, 2, 1, 2, 0, 1, 2][eighth % 8]] + 12;
+    const arpM = ch[[0, 1, 2, 1, 2, 0, 1, 2][eighth % 8]!]! + 12;
     const ph = (hz(arpM) * t) % 1;
     arps[s] = (4 * Math.abs(ph - 0.5) - 1) * Math.exp(-9 * inEighth) * 0.07;
-    const arp = arps[s] + (s >= echo ? arps[s - echo] * 0.3 : 0);
+    const arp = arps[s]! + (s >= echo ? arps[s - echo]! * 0.3 : 0);
     const bassOn = inBeat < beat * 0.9 && Math.floor(inBar / beat) % 2 === 0;
     const bass = bassOn
-      ? Math.tanh(1.6 * Math.sin(2 * Math.PI * hz(ch[0] - 24) * t)) * Math.exp(-2 * inBeat) * 0.16
+      ? Math.tanh(1.6 * Math.sin(2 * Math.PI * hz(ch[0]! - 24) * t)) * Math.exp(-2 * inBeat) * 0.16
       : 0;
     let dr = 0;
     if (drums) {

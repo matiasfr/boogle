@@ -9,7 +9,7 @@ test('sample interpolates between the two snapshots around t', () => {
   s.push(200, { x: 10 });
   s.push(300, { x: 20 });
   const r = s.sample(250)!;
-  assert.deepEqual([r.a.x, r.b.x, r.u, r.over], [10, 20, 0.5, 0]);
+  assert.deepEqual([r.a!.x, r.b!.x, r.u, r.over], [10, 20, 0.5, 0]);
   assert.equal(s.length, 2); // older samples are dropped once passed
 });
 

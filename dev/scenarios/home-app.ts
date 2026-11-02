@@ -115,7 +115,7 @@ export default {
     };
     t.check(
       'a viewport 24 px short of the screen: the canvas and its drawing buffer still span the 820 px screen',
-      short.inner === 796 && short.appH.trim() === '820px' && short.canvas[0] === 820 && short.canvas[1] >= 819,
+      short.inner === 796 && short.appH.trim() === '820px' && short.canvas[0] === 820 && short.canvas[1]! >= 819,
       JSON.stringify(short),
     );
     await g.page.setViewportSize({ width: 1180, height: 820 });

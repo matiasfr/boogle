@@ -88,6 +88,10 @@ function baseTree(ref: string): string | null {
 
 const args = process.argv.slice(2);
 const baseRef = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'origin/main';
+if (baseRef === undefined) {
+  console.error('registry: --base needs a ref');
+  process.exit(1);
+}
 const head = await registryOf(ROOT);
 
 if (args.includes('--json')) {

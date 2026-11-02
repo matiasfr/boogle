@@ -11,7 +11,7 @@ import { LAYERS } from './layout.ts';
 import type { Cite, FileFacts, Facts, Hook, Kind, Layer, Model, ModelFile, Narrative } from './types.ts';
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-export const esc = (s: unknown): string => String(s).replace(/[&<>"]/g, (c) => ESCAPES[c]);
+export const esc = (s: unknown): string => String(s).replace(/[&<>"]/g, (c) => ESCAPES[c]!);
 
 // A path without its extension: a module keeps its place in the atlas when it moves from .js to .ts, so cites and
 // links compare this way.
@@ -22,7 +22,7 @@ export function dirOf(path: string): string {
   const p = path.replace(/^src\//, '').split('/');
   if (p.length === 1) return '(core)';
   if (p[0] === 'world' && p[1] === 'rules') return 'world/rules';
-  return p[0];
+  return p[0]!;
 }
 
 // The lockstep wire messages (w:edit, w:hash, ...) belong to the lock channel; every other message type is a one-off.
@@ -40,10 +40,10 @@ export function kindOf(file: Partial<FileFacts>): Kind {
 
 // An unknown folder falls back to "Game systems", so a new src/<folder>/ never crashes the page.
 export function layerOf(dir: string): Layer {
-  return LAYERS.find((L) => L.dirs.includes(dir)) ?? LAYERS[1];
+  return LAYERS.find((L) => L.dirs.includes(dir)) ?? LAYERS[1]!;
 }
 
-export const layerById = (id: string): Layer => LAYERS.find((L) => L.id === id) ?? LAYERS[1];
+export const layerById = (id: string): Layer => LAYERS.find((L) => L.id === id) ?? LAYERS[1]!;
 
 export const sumLoc = (list: { loc: number }[]): number => list.reduce((n, f) => n + f.loc, 0);
 
@@ -62,7 +62,7 @@ export function buildModel(facts: Facts): Model {
   for (const x of files) for (const i of x.uses) byPath.get(i)?.users.push(x.f);
   const dirs: Record<string, ModelFile[]> = {};
   for (const x of files) (dirs[x.dir] ||= []).push(x);
-  for (const d in dirs) dirs[d].sort((a, b) => b.loc - a.loc || a.f.localeCompare(b.f));
+  for (const d in dirs) dirs[d]!.sort((a, b) => b.loc - a.loc || a.f.localeCompare(b.f));
   const featureCount = files.filter((x) => /^src\/features\/[^/]+\.[jt]s$/.test(x.f)).length;
   return { facts, files, byPath, byBare, dirs, featureCount };
 }
@@ -127,13 +127,13 @@ export function resolveCite(cite: unknown, model: Model): { files: string[]; err
   try {
     if (!cite || typeof cite !== 'object' || Array.isArray(cite)) return { files: [], error: 'cite must be an object' };
     const keys = Object.keys(cite).filter((k) => k !== 'symbol');
-    if (keys.length !== 1 || !CITE_KEYS.includes(keys[0])) {
+    if (keys.length !== 1 || !CITE_KEYS.includes(keys[0]!)) {
       return {
         files: [],
         error: `cite must have exactly one of ${CITE_KEYS.join(', ')} (got ${keys.join(', ') || 'none'})`,
       };
     }
-    const key = keys[0];
+    const key = keys[0]!;
     const v = (cite as Record<string, unknown>)[key];
     if (typeof v !== 'string' || !v) return { files: [], error: `cite ${key} must be a non-empty string` };
     const symbol = (cite as Cite).symbol;
@@ -191,7 +191,7 @@ export function searchIndex(model: Model, narrative?: Narrative): SearchEntry[] 
     ...Object.keys(model.dirs).map((d) => ({
       key: 'd:' + d,
       label: d + '/',
-      hint: model.dirs[d].length + ' files',
+      hint: model.dirs[d]!.length + ' files',
       kind: null,
       text: d,
     })),

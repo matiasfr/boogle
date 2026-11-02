@@ -20,7 +20,7 @@ import { TRACK, HELPER, AGES } from '../src/sim/route.ts';
 test('defaults are the constants; an untuned room saves and hashes nothing', () => {
   const t = createTune();
   assert.equal(t.v.hard, HARD_CAP);
-  assert.equal(t.v.cost0, AGES[0].cost);
+  assert.equal(t.v.cost0, AGES[0]!.cost);
   assert.deepEqual(serializeTune(t), {});
   assert.equal(hashTune(t), FNV_SEED);
   setTune(t, 'hard', 30);
