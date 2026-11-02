@@ -1,6 +1,6 @@
 // The character viewer (/character/): the player's character alone, away from the game, for iterating on the model, its
 // rendering and its animations, and the start of a customization screen. The same renderer, tone mapping, sun and sky
-// light as src/render/scene.ts, and the same clips and retargeting as ?proto=hero (src/proto/hero/). Serves DESIGN.md
+// light as src/render/scene.ts, and the same clips and retargeting as the game (src/player/buddy/). Serves DESIGN.md
 // "How we work": see a change at a glance.
 import * as THREE from 'three/webgpu';
 import { color, float, normalView, positionViewDirection, uniform, vec3 } from 'three/tsl';
@@ -9,8 +9,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { patchNode } from '../src/render/material-patch.ts';
-import { retargetClip } from '../src/proto/hero/retarget.ts';
-import { makeLife, type LifeState } from '../src/proto/hero/life.ts';
+import { retargetClip } from '../src/player/buddy/retarget.ts';
+import { makeLife, type LifeState } from '../src/player/buddy/life.ts';
 import buddyUrl from '../assets/built/buddy.glb?url';
 import clipsUrl from '../assets/built/hero-clips.glb?url';
 

@@ -75,7 +75,7 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: a coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)).
+- Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows until the Buddy loads, or if it can't.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
 - Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage
@@ -88,13 +88,12 @@ you enter, it slowly circles the island.
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.
 
-## Prototype: the hero (`?proto=hero`)
+## The Buddy and the follow camera
 
-Behind the flag, every avatar plays hand-made animation ([src/proto/hero/clips.ts](../../src/proto/hero/clips.ts)):
-Quaternius's Universal Animation Library (CC0), on the Buddy; `&body=mannequin` plays it on the library's own figure, to
-compare motion apart from our model. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
+Every avatar plays hand-made animation ([src/player/buddy/body.ts](../../src/player/buddy/body.ts)): Quaternius's Universal
+Animation Library (CC0). Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
-the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
+the camera ([src/player/buddy/camera.ts](../../src/player/buddy/camera.ts), `&cam=old` for the older one) sits at 5.2 m instead of
 6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
 
 The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
@@ -102,16 +101,15 @@ smooth skin blended by a voxel remesh, with softened weights, soft shading (the 
 the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
 pitch comes off the head (the library's idle looks down about 13°) and its bob stays. Most of the butt's weight rides on the
 pelvis, and half the clips' hip roll, twist and sway comes off, so its mass stays put at a walk. It blinks, and in the air
-([src/proto/hero/life.ts](../../src/proto/hero/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next
+([src/player/buddy/life.ts](../../src/player/buddy/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next
 jump) and spreads its arms while falling, blended from its vertical speed. `&hat=cap` wears a conductor's cap and `&hat=beanie` a
 beanie, parts on the head bone hidden until worn, each one more draw call or two.
 
-The rest of the game fits this body behind the flag (`&buddy` adds it to any other prototype). A haul bundle rides its spine,
+The rest of the game fits this body. A haul bundle rides its spine,
 lower, deeper and a little shorter than on the capsule, so its head shows over the top from the follow camera. It leans
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right
 mitt: the can and seeds carried down at the hip by the handle (the can lifts to pour), anything else with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
 eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
-being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward; a bump is both forearms up, like a volleyball dig (seen on your own only, as no presence says so). The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head. The capsule is unchanged and still
-the body in normal play.
+being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward; a bump is both forearms up, like a volleyball dig (seen on your own only, as no presence says so). The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head. The camera's zoom control cycles 4, 5.2, 6.5 and 10 m.
 
 boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.

@@ -368,24 +368,16 @@ export const PROTOS: Proto[] = [
     id: 'hero',
     title: 'Play as the hero',
     step: 'depth',
-    status: 'live',
-    url: '/?proto=hero',
+    status: 'graduated',
+    answer: {
+      on: '2026-11-02',
+      verdict: 'Yeah, I’m liking this a lot. Let’s ship it.',
+      next: 'Done: the Buddy is the player’s body, with ?body=capsule for the old one, and its camera is the follow camera.',
+    },
+    url: '/',
     question: 'Does this feel like the character you want to play as?',
     what: 'The Buddy, a simple, slightly plump figure in your colour, with today’s direct controller and a closer camera. New: logs on its back with both hands at its chest, items in its hand, swimming, sitting and flopping fitted to its body.',
     since: '2026-11-01',
-    variants: [
-      {
-        name: 'conductor',
-        url: '/?proto=hero&hat=cap&v=conductor',
-        what: 'The Buddy in a conductor’s cap, the first hat.',
-      },
-      {
-        name: 'mannequin',
-        url: '/?proto=hero&body=mannequin&v=mannequin',
-        what: 'The same motion on the clip library’s plain mannequin, to compare.',
-      },
-    ],
-    chapter: 'it swaps your body for every toy, so it is judged on its own',
   },
   {
     id: 'minis',
@@ -515,7 +507,6 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
-  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */

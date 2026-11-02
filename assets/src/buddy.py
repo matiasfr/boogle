@@ -1,4 +1,4 @@
-# The Buddy: a simple, slightly plump figure for the hand-made clips (src/proto/hero/clips.ts). One smooth skin: rounded
+# The Buddy: a simple, slightly plump figure for the hand-made clips (src/player/buddy/body.ts). One smooth skin: rounded
 # shapes are blended into a single watertight mesh by a voxel remesh, reduced, and bound to the skeleton with automatic
 # weights, softened, so joints bend without seams; the head and mitts stay rigid so they keep their shape. The face is
 # one more mesh in vertex colours, moulded to the head, on the Head bone and two eye bones (scaling one blinks). No mouth

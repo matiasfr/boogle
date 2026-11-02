@@ -1,4 +1,4 @@
-// The hero's follow camera (&cam=old for today's). Closer than the default, and across the ground it stays locked to
+// The follow camera (&cam=old for the older one). Closer than that one was, and across the ground it stays locked to
 // the body: a trailing camera read as inertia in play. In the air it follows height softly, so a jump rises in the
 // frame instead of the world sinking. Sprinting widens the view a touch. Distance and widening are the owner's pick from
 // comparing 5.2, 5.8 and 6.5 m and 0, 3 and 5 degrees (docs/research/third-person-camera.md). Local, render only; other
@@ -9,19 +9,19 @@ import { cam, camConstraints, me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';
 
 const CAM = {
-  dist: 5.2, // m (the default is 6.5)
+  dist: 5.2, // m (it was 6.5)
   lagHeight: 0.1, // s it trails height on the ground
   lagAir: 0.2, // s it trails height in the air
   maxY: 1.4, // m
   sprintFov: 5, // degrees wider at a sprint
 };
 
-export function startHeroCamera() {
+export function startFollowCamera() {
   if (new URLSearchParams(location.search).get('cam') === 'old') return;
   cam.dist = CAM.dist;
-  const baseFov = camera.fov;
   let y = NaN,
-    last = 0;
+    last = 0,
+    widened = 0; // degrees of the lens that are this camera's: other modes (a vehicle) set theirs too
   camConstraints.push((look, pos) => {
     const b = me.body;
     if (!b || reducedMotion) return false;
@@ -36,9 +36,11 @@ export function startHeroCamera() {
     pos.y += dy;
     // Speed over what you stand on: a train's speed isn't you sprinting.
     const v = Math.hypot(b.velocity.x - carry.x, b.velocity.z - carry.z);
-    const want = baseFov + CAM.sprintFov * Math.max(0, Math.min(1, (v - 6.5) / 3));
-    if (Math.abs(camera.fov - want) > 0.02) {
-      camera.fov += (want - camera.fov) * (1 - Math.exp(-dt * 5));
+    const want = CAM.sprintFov * Math.max(0, Math.min(1, (v - 6.5) / 3));
+    if (Math.abs(widened - want) > 0.02) {
+      const step = (want - widened) * (1 - Math.exp(-dt * 5));
+      widened += step;
+      camera.fov += step;
       camera.updateProjectionMatrix();
     }
     return false;
