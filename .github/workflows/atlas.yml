@@ -7,6 +7,8 @@ name: Atlas upkeep
 # Runs daily, after any merge (automerge.yml dispatches it), after a direct push to main that touches the sync code,
 # and by hand from the Actions tab (`force` skips the gate). `npm run atlas -- --gate` decides whether a run is worth
 # it (dev/atlas/git.ts); it needs Node (a TypeScript file) but no `npm ci`.
+# The schedule only dispatches the daily pass: a scheduled run's actor is github-actions[bot], and Claude's token
+# exchange refuses that actor (401) on a schedule but accepts it on a dispatch.
 
 on:
   schedule:
@@ -15,6 +17,10 @@ on:
     inputs:
       force:
         description: Skip the gate (and the debounce)
+        type: boolean
+        default: false
+      daily:
+        description: Run as the daily pass (any src or server commit is worth a run)
         type: boolean
         default: false
   push:
@@ -31,16 +37,26 @@ permissions:
   actions: read
   id-token: write # claude-code-action
 
-# One running and one pending run (a newer pending run replaces the older), so a burst of merges is at most two runs,
-# and Claude is never killed mid-push.
-concurrency:
-  group: atlas
-  cancel-in-progress: false
-
 jobs:
+  dispatch-daily:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run atlas.yml --repo "$GITHUB_REPOSITORY" --ref main -f daily=true
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   atlas:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # One running and one pending run (a newer pending run replaces the older), so a burst of merges is at most two
+    # runs, and Claude is never killed mid-push.
+    concurrency:
+      group: atlas
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,7 +73,7 @@ jobs:
       - name: Gate
         id: gate
         env:
-          EVENT: ${{ github.event_name }}
+          EVENT: ${{ inputs.daily && 'schedule' || github.event_name }}
           FORCE: ${{ inputs.force }}
         run: |
           out=$(node dev/atlas/cli.ts --gate --event "$EVENT")
@@ -91,7 +107,7 @@ jobs:
 
       # Let a burst of merges settle: one run covers them all. Then take main's tip, so Claude sees all of them.
       - name: Debounce
-        if: steps.prs.outputs.go == '1' && github.event_name != 'schedule' && inputs.force != true
+        if: steps.prs.outputs.go == '1' && inputs.daily != true && inputs.force != true
         run: |
           sleep 600
           git pull --ff-only
@@ -107,6 +123,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: github-actions # automerge.yml's dispatches; the action refuses a bot actor otherwise
           show_full_output: true # Claude's messages in the log, to see why a run stopped
           claude_args: >-
             --model claude-opus-5-5
