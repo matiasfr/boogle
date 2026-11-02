@@ -49,7 +49,7 @@ export function createStore(cfg: { dataDir: string; maxRooms: number }) {
       await fs.mkdir(cfg.dataDir, { recursive: true });
       for (const f of await fs.readdir(cfg.dataDir)) {
         const m = /^([a-z0-9-]{1,32})\.json$/.exec(f);
-        if (m) knownRooms.add(m[1]);
+        if (m) knownRooms.add(m[1]!);
       }
     },
     async read(id: string): Promise<RoomDoc | null> {
