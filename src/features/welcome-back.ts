@@ -97,13 +97,15 @@ onFrame(
   ({ now }: { now: number }) => {
     if (!me.entered) return;
     if (!enteredAt) enteredAt = now;
-    const ready = known();
-    if (!shown && (ready || now - enteredAt > WAIT_MS)) {
-      shown = true;
-      show(ready ? welcomeLines(then) : []);
+    if (!shown) {
+      const ready = known();
+      if (ready || now - enteredAt > WAIT_MS) {
+        shown = true;
+        show(ready ? welcomeLines(then) : []);
+      }
     }
     // Remember the room only once it is known (and after the welcome read the old memory).
-    if (shown && ready && now - savedAt > SAVE_MS) {
+    if (shown && now - savedAt > SAVE_MS && known()) {
       savedAt = now;
       rememberVisit(room);
     }

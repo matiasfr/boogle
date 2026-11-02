@@ -17,6 +17,9 @@ const THIN_NEAR = 0.7; // m back from the lens where thin things count
 const HOLD_MS = 120; // how long it stays pulled in before easing out, so passing things don't make it pump
 const RECOVER = 0.3; // s: its time constant easing out
 const SETTLED = 0.01; // m
+// The two sweeps' options, kept: a camera runs this every frame (npm run hitches). sweepSphere doesn't hold on to them.
+const SOLID = { mask: 0, thin: 'skip' as const },
+  THIN = { mask: 0, thin: 'only' as const };
 
 export type Glide = { in: number; out: number; maxIn: number; maxOut: number }; // per s, per s, m/s, m/s
 export type CameraArm = {
@@ -55,12 +58,13 @@ export function makeCameraArm({ min = 0, glide }: { min?: number; glide?: Glide 
       const r = lensRadius();
 
       let safe = full;
-      const solid = sweepSphere(from, to, r, { mask, thin: 'skip' });
+      SOLID.mask = THIN.mask = mask;
+      const solid = sweepSphere(from, to, r, SOLID);
       if (solid >= 0) safe = solid;
       const start = Math.max(0, safe - THIN_NEAR);
       a.copy(from).addScaledVector(dir, start);
       b.copy(from).addScaledVector(dir, safe);
-      const thin = sweepSphere(a, b, r, { mask, thin: 'only' });
+      const thin = sweepSphere(a, b, r, THIN);
       if (thin >= 0) safe = start + thin;
       safe = Math.min(full, Math.max(safe, min));
 
