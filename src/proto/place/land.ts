@@ -10,8 +10,9 @@ import { mulberry32 } from '../../sim/rng.ts';
 import { smoothstep } from '../../math.ts';
 import {
   ARMS,
+  FAR,
   GORGE,
-  HEAP,
+  GROVES,
   LINES,
   LINKS,
   LOBE,
@@ -21,6 +22,7 @@ import {
   VILLAGE,
   lineAt,
   railY,
+  YARD,
   type LinePoint,
 } from './layout.ts';
 
@@ -163,16 +165,17 @@ function bake() {
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) heights[at(i, j)] = ground(cellX(i), cellZ(j));
   pad(VILLAGE.x, VILLAGE.z, VILLAGE.y, VILLAGE.r, 18);
   for (const l of LINKS) pad(l.camp.x, l.camp.z, l.camp.y, 34, 22);
-  pad(HEAP.x, HEAP.z, VILLAGE.y, 26, 10);
+  pad(-82, 2, VILLAGE.y, 26, 10);
+  pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
   // Rail on the land: a cutting or low bank along it, none in the gorge (that's what the trestle's for).
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   for (const line of Object.values(LINES)) {
     const samples: [number, number, number][] = [];
     for (let s = -12; s <= line.len + 8; s += 1) {
       lineAt(line, s, P);
-      samples.push([P.x, P.z, railY(line, s) - 0.35]);
+      samples.push([P.x, P.z, railY(line, s) - 0.08]);
     }
-    strip(samples, 5, 9, false, (x, z) => gorgeD(x, z) < GORGE.bank + GORGE.wall + 2);
+    strip(samples, 4, 8, false, (x, z) => gorgeD(x, z) < GORGE.bank + GORGE.wall + 2);
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
   PATHS.forEach((p) => {
@@ -186,7 +189,7 @@ function bake() {
         samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
       }
     });
-    strip(samples, 2.6, 5.2, true);
+    strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
   });
 }
 bake();
@@ -221,7 +224,7 @@ function buildMesh() {
     GRASS2 = new THREE.Color('#5ea241'),
     ROCK = new THREE.Color('#a08a70'),
     ROCK_LOW = new THREE.Color('#6d6f78'),
-    DIRT = new THREE.Color('#cfa767'),
+    DIRT = new THREE.Color('#e0b271'),
     BANK = new THREE.Color('#8e9a78');
   for (let j = 0; j < N; j++)
     for (let i = 0; i < N; i++) {
@@ -239,7 +242,7 @@ function buildMesh() {
       );
       if (h < 3.2) c.lerp(gorgeD(x, z) < 18 ? BANK : SAND, smoothstep(3.2, 1.6, h));
       c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope));
-      c.lerp(DIRT, pathMask[k]! * 0.92);
+      c.lerp(DIRT, pathMask[k]!);
       col.set([c.r, c.g, c.b], k * 3);
     }
   const idx: number[] = [];
@@ -276,15 +279,28 @@ function buildMesh() {
 }
 
 export function addStatic(shape: Shape, position: { x: number; y: number; z: number }, rotation?: THREE.Quaternion) {
-  addBody(
-    createBody({
-      material: groundMat,
-      group: GROUP.SCENERY,
-      position,
-      ...(rotation ? { rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w } } : {}),
-      shapes: [shape],
-    }),
-  );
+  const body = createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position,
+    ...(rotation ? { rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w } } : {}),
+    shapes: [shape],
+  });
+  addBody(body);
+  return body;
+}
+
+/** A solid slab between two world points, top at y, with nothing drawn: built track's walkable top. */
+export function slab(ax: number, az: number, bx: number, bz: number, topA: number, topB: number, width: number) {
+  const dx = bx - ax,
+    dz = bz - az,
+    dy = topB - topA,
+    len = Math.hypot(dx, dz),
+    full = Math.hypot(len, dy),
+    thick = 0.4;
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
+  const c = { x: (ax + bx) / 2, y: (topA + topB) / 2 - thick / 2, z: (az + bz) / 2 };
+  return addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 + 0.05 }, c, q);
 }
 
 /** A solid box between two world points, top at y. */
@@ -392,6 +408,7 @@ function buildTrees() {
       h = heights[at(i, j)]!;
     if (h < 4 || clearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
     if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < 30) continue;
+    if (GROVES.some((g) => Math.hypot(x - g.x, z - g.z) < g.r + 6)) continue; // the groves' trees are the ones you chop
     // Groves, not a scatter: a slow field thins most of the land out, and the ridge is the densest.
     const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
     if (grove < 0.15 + rng() * 0.25) continue;
@@ -420,9 +437,42 @@ function buildTrees() {
   }
 }
 
+// ---------------------------------------------------------------- what stands across the sea
+// Too far to reach: a dark island with a broken ring on it and a bright shard in the ring's middle, hazy over a kilometre.
+function buildFar() {
+  const X = FAR.x + ORIGIN.x,
+    Z = FAR.z + ORIGIN.z;
+  const LAND = '#4a4d5c',
+    LAND2 = '#3b3e4c';
+  const hills: [dx: number, dz: number, r: number, h: number, color: string][] = [
+    [0, 0, 340, 70, LAND],
+    [-170, 60, 170, 120, LAND2],
+    [190, 30, 190, 95, LAND2],
+    [40, -90, 130, 150, LAND],
+  ];
+  for (const [dx, dz, r, h, color] of hills) {
+    const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), FLAT(color));
+    m.position.set(X + dx, h / 2 - 4, Z + dz);
+    m.rotation.y = dx;
+    scene.add(m);
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(120, 13, 6, 22, Math.PI * 1.45), FLAT('#2c2e3a'));
+  ring.position.set(X + 10, 120, Z);
+  ring.rotation.set(0, -0.3, 0.45);
+  scene.add(ring);
+  const shard = new THREE.Mesh(
+    new THREE.OctahedronGeometry(38, 0),
+    new THREE.MeshStandardNodeMaterial({ color: '#7fd0ff', emissive: '#58c8ff', emissiveIntensity: 1.6 }),
+  );
+  shard.scale.set(0.55, 1.5, 0.55);
+  shard.position.set(X + 10, 140, Z);
+  scene.add(shard);
+}
+
 export function buildLand() {
   buildMesh();
   buildSpire();
   buildBridges();
   buildTrees();
+  buildFar();
 }

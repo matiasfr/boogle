@@ -167,3 +167,9 @@ real slice does.
 - [x] **`?proto=place`:** a slice of Threefold Reach in greybox: a village, a gorge, two camps smoking across it and a
       spire to steer by. You walk there, plant a stake, haul while the trestle goes up and ride home with the cargo.
 - [x] **Playtest 8.** Yes, but it wasn't clear what connecting would do ([playtests.md](../playtests.md), 2 November).
+
+## 9. Does carrying materials out to the track feel like building something?
+
+- [x] **`?proto=place`, second round:** a sign at the village, a stranded track layer to wake, chop, three auto-paver
+      stations along the route, the same logs laid as sleepers, and a forge your cargo builds, whose rails start line 2.
+- [ ] **Playtest 9.**

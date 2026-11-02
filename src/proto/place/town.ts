@@ -1,5 +1,5 @@
 // The village of ?proto=place and what the camps do to it: timber builds the north side (halls and a clock tower), stone
-// the south side (streets and a keep), so choosing a camp is choosing what you want to see grow. Rows are the shape of
+// the south side (streets and a keep). Rows are the shape of
 // src/proto/net/stages.ts and rise the way src/proto/net/town.ts does: rippling from the middle, the landmark last, then
 // fireworks. The owner's "trains growing the town" is the part that landed (docs/playtests.md, the depot entry). Local.
 import * as THREE from 'three/webgpu';
@@ -10,7 +10,7 @@ import { blockBoxes, draw, makeSet, type BoxSet, type Smoke } from '../net/boxes
 import { easeBack, LANDMARK_AFTER, puff, RIPPLE_MPS, shell, SHELLS, smooth, soot } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
 import { H } from './land.ts';
-import { VILLAGE, toWorld, type LinkSpec } from './layout.ts';
+import { VILLAGE, toWorld, type LineSpec } from './layout.ts';
 
 const WOOD = '#8a6a48',
   THATCH = '#c9a86a',
@@ -90,27 +90,27 @@ const CAMPFIRE: Block[] = [
   { kind: 'campfire', x: toWorld(-101), z: 13, w: 1, h: 0.6, d: 1, color: '#e8742c', chimney: { h: 0 } },
   { kind: 'log seat', x: toWorld(-99), z: 13, w: 0.5, h: 0.35, d: 1.7, color: '#6b4a2b' },
 ];
-const HUTS_N = [hut(-108, 0, 0.2), hut(-100, -3, -0.3), hut(-92, 2, 0.1), hut(-114, 5, 0.3)];
+const HUTS_N = [hut(-108, 0, 0.2), hut(-104, 8, -0.3), hut(-118, 8, 0.1), hut(-114, -4, 0.3)];
 const HUTS_S = [hut(-108, 26, -0.2), hut(-98, 28, 0.15), hut(-90, 24, 0.3), hut(-115, 18, 0.1)];
-const KEPT = [hut(-96, 8, 0.1), ...CAMPFIRE];
+const KEPT = [hut(-90, 20, 0.1), ...CAMPFIRE];
 
 /** The steps: `wood` on the village's north side, `stone` on its south. */
 const STEPS: Record<'wood' | 'stone', Block[][]> = {
   wood: [
     [
-      tower('clock shaft', -98, -14, 0, 4.5, 21, WHITE),
-      tower('clock face', -98, -14, 21, 5.6, 3.6, GOLD),
-      tower('clock roof', -98, -14, 24.6, 6.6, 1, RED),
-      tower('clock spire', -98, -14, 25.6, 2.4, 6, RED),
+      tower('clock shaft', -104, -18, 0, 4.5, 21, WHITE),
+      tower('clock face', -104, -18, 21, 5.6, 3.6, GOLD),
+      tower('clock roof', -104, -18, 24.6, 6.6, 1, RED),
+      tower('clock spire', -104, -18, 25.6, 2.4, 6, RED),
       hall(-112, -8, 7, 6, 6, 0.1, true),
-      hall(-88, -10, 7, 6, 6, -0.15),
-      hall(-105, 1, 6, 5, 6, 0.1),
-      hall(-90, 1, 6, 6, 7, 0.05, true),
+      hall(-88, -30, 7, 6, 6, -0.15),
+      hall(-124, -8, 6, 5, 6, 0.1),
+      hall(-112, 12, 6, 6, 7, 0.05, true),
       hall(-118, 2, 6, 5, 5, -0.2),
       {
         kind: 'station',
-        x: toWorld(-72),
-        z: -13,
+        x: toWorld(-59),
+        z: 2,
         w: 3,
         h: 3.2,
         d: 9,
@@ -121,8 +121,8 @@ const STEPS: Record<'wood' | 'stone', Block[][]> = {
     [
       hall(-120, -18, 8, 8, 7, 0.15, true),
       hall(-108, -24, 8, 7, 6, -0.1),
-      hall(-84, -24, 7, 9, 7, 0.1),
-      hall(-74, -8, 7, 6, 6, -0.2, true),
+      hall(-72, -28, 7, 9, 7, 0.1),
+      hall(-56, -2, 7, 6, 6, -0.2, true),
       hall(-96, -32, 9, 10, 8),
       {
         kind: 'water tower',
@@ -195,7 +195,7 @@ export function rise(part: Part) {
   rises.push({ part, t: 0, end: endOf(part) + 0.1, puffed: new Set(), show: true });
 }
 const shells: { t: number; x: number; y: number; z: number; c: THREE.Color }[] = [];
-function fireworks(top: { x: number; y: number; z: number }) {
+export function fireworks(top: { x: number; y: number; z: number }) {
   for (let k = 0; k < 6; k++)
     shells.push({
       t: k * 0.45,
@@ -320,17 +320,17 @@ function chimney(c: Smoke) {
 
 // ---------------------------------------------------------------- the camps' buildings
 const X = (x: number) => toWorld(x);
-export function campBlocks(spec: LinkSpec): { asleep: Block[]; awake: Block[] } {
+export function campBlocks(spec: LineSpec): { asleep: Block[]; awake: Block[] } {
   const { x, z } = spec.camp;
   if (spec.kind === 'wood')
     return {
       asleep: [
-        { kind: 'kiln', x: X(x + 10), z: z - 12, w: 3.4, h: 5, d: 3.4, color: BRICK },
-        { kind: 'kiln stack', x: X(x + 10), z: z - 12, y: 5, w: 1.6, h: 7, d: 1.6, color: IRON },
+        { kind: 'kiln', x: X(x + 10), z: z - 16, w: 3.4, h: 5, d: 3.4, color: BRICK },
+        { kind: 'kiln stack', x: X(x + 10), z: z - 16, y: 5, w: 1.6, h: 7, d: 1.6, color: IRON },
         {
           kind: 'camp shed',
           x: X(x - 2),
-          z: z - 14,
+          z: z - 18,
           w: 5,
           h: 2.5,
           d: 4,
@@ -341,21 +341,21 @@ export function campBlocks(spec: LinkSpec): { asleep: Block[]; awake: Block[] } 
       awake: [
         {
           kind: 'sawmill frame',
-          x: X(x + 2),
-          z: z - 3,
+          x: X(x + 34),
+          z: z + 16,
           w: 12,
           h: 4.5,
           d: 7,
           color: TIMBER,
           pitch: { rise: 3.6, color: RED, over: 1 },
         },
-        { kind: 'mill wheel', x: X(x + 10), z: z - 2, w: 1.4, h: 6, d: 6, color: WOOD },
-        { kind: 'log stack', x: X(x - 8), z: z - 8, w: 7, h: 2.4, d: 3, color: '#8a6236' },
-        { kind: 'log stack', x: X(x - 8), z: z + 1, w: 6, h: 3, d: 3, color: '#9a7446' },
+        { kind: 'mill wheel', x: X(x + 42), z: z + 17, w: 1.4, h: 6, d: 6, color: WOOD },
+        { kind: 'log stack', x: X(x + 26), z: z + 24, w: 7, h: 2.4, d: 3, color: '#8a6236' },
+        { kind: 'log stack', x: X(x + 34), z: z + 28, w: 6, h: 3, d: 3, color: '#9a7446' },
         {
           kind: 'hall',
-          x: X(x + 14),
-          z: z - 12,
+          x: X(x + 40),
+          z: z + 28,
           w: 7,
           h: 5,
           d: 6,
