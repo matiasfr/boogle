@@ -25,6 +25,8 @@ export function enterIsland() {
   const x = SPAWN.x + Math.cos(ang) * rr;
   const z = SPAWN.z + Math.sin(ang) * rr;
   const y = groundHeight(x, z) + PLAYER_R + 0.6;
+  // By hand, not through the player entity's mesh and bodies: the entity spawns at load and these arrive here. Left for
+  // the player's state and view split (docs/plans/entity-architecture.md, step 12).
   me.body = makePlayerBody(false);
   teleport(me.body, x, y, z);
   addBody(me.body);
