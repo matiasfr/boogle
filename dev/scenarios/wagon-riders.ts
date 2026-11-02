@@ -1,4 +1,4 @@
-// A rider on another tab stays on the wagon's deck (src/netplay/net.ts, "riding a shared platform"): Bob stands on the
+// A rider on another tab stays on the wagon's deck (src/entities/remote-player/, "riding"): Bob stands on the
 // middle car (`wagon:car1`: the last one's solid crates leave no clear spot) from a stop, through the departure, a
 // corner at the next station and the stop there; Alice watches. Her copy of Bob is drawn in the car's frame, so his
 // offset on the deck she draws barely moves, while his world presence (what was drawn before) trails the deck by the

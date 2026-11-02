@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export const FIXED = 1 / 60;
 export const GRAVITY = 18;
 // The grid, sea levels and COURT live in the pure src/world/grid.ts (the shared sim and Node tests read it).
@@ -15,7 +13,6 @@ export const SEND_MS = 50;
 export const INTERP_MS = 120;
 export const SPAWN = { x: 14, z: 26 };
 export const BALL_SPAWN = { x: 12, z: 20 };
-export const SUN_DIR = new THREE.Vector3(0.45, 0.78, 0.32).normalize();
 export const FOG_HEX = '#bfe6f5';
 export const FOG_NEAR = 110;
 export const FOG_FAR = 520;

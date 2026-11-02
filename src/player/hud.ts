@@ -1,7 +1,7 @@
 import { COLORS } from '../constants.ts';
 import { me, enterIsland } from './player.ts';
 import { chargeOf } from './throw-curve.ts'; // not throw.ts: that imports player.ts, which imports us
-import { net, remotes } from '../netplay/net.ts';
+import { net, remotes, onNetState, onPeopleChanged } from '../netplay/net.ts';
 import { inputState, requestLock } from './input.ts';
 import { canvas } from '../render/scene.ts';
 import { interactTarget, useVerb } from './hands.ts';
@@ -103,6 +103,11 @@ export function renderPeople() {
   else if (net.state === 'connecting') dom.netLabel.textContent = 'Connecting';
   else dom.netLabel.textContent = `Live · ${count} on the island`;
 }
+onPeopleChanged(renderPeople);
+onNetState((state) => {
+  if (dom.netEl) dom.netEl.dataset.state = state;
+  renderPeople();
+});
 
 // ---------------------------------------------------------------- lobby
 // The name-and-colour card shows on a first visit only (src/player/arrival.ts): a returning player skips it and goes

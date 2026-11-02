@@ -10,8 +10,11 @@ Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `lo
   lockstep rules modules.
 - `sim/`: pure, deterministic logic (no three.js, no DOM), unit-tested in `test/`.
 - `net/`: the room interface, a WebSocket to our server, which hosts every room (see [net/README.md](net/README.md)).
-- `netplay/`: game networking on top of the room: `net.ts` (presence, remote players, interpolation) and its pure
-  helpers (snapshot buffer, presence fields, build tags, report scrubbing, smooth shared time).
+- `netplay/`: game networking on top of the room: `net.ts` (presence, the remotes table, peer lifecycle hooks; pure
+  infrastructure, lint-enforced) and its pure helpers (snapshot buffer, presence fields, build tags, report scrubbing,
+  smooth shared time).
+- `entities/`: game objects (docs/plans/entity-architecture.md). `remote-player/`: other players as this tab draws them,
+  avatars, labels, bodies and interpolation, plus riding a shared platform.
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/terrain.ts`
   is the fixed ground's heightfield and mesh (`groundHeight`, `cellX`/`cellZ`).
 - `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react

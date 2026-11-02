@@ -14,7 +14,7 @@ else {
     if (pr.soapbox) driving.add(r.peer);
     else if (driving.delete(r.peer) && r.avatar) r.avatar.visible = true;
   });
-  // after net.ts's remote avatars (update -280)
+  // after the remote avatars (remote-player, update -280)
   onFrame(
     () => {
       for (const peer of driving) {

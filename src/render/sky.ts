@@ -6,7 +6,7 @@
 // down), a deep-blue sky and a raised ambient, so terrain, paths and players read at a glance and the things that
 // glow still stand out.
 //
-// SUN_DIR (constants.ts) is the key light's direction, read by the shadow-casting light in player.ts and the water's
+// SUN_DIR (sun-dir.ts) is the key light's direction, read by the shadow-casting light in player.ts and the water's
 // glints. This module points it at the sun by day and at the moon by night.
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
@@ -36,7 +36,8 @@ import {
   time,
   positionGeometry,
 } from 'three/tsl';
-import { SUN_DIR, FOG_NEAR, FOG_FAR } from '../constants.ts';
+import { FOG_NEAR, FOG_FAR } from '../constants.ts';
+import { SUN_DIR } from './sun-dir.ts';
 import { lerp, smoothstep } from '../math.ts';
 import { renderer, scene, camera, sun, sky } from './scene.ts';
 import { seaU } from './water-render.ts';
