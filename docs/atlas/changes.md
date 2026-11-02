@@ -16,6 +16,9 @@
 - Overnight, only Local changes: The Boogler's babble now plays for everyone, every sound runs through one mixing desk with a volume slider in the pause view, and a page that loads during a deploy reloads once instead of getting stuck. Nothing is shared, so nothing in the picture moved.
 - After that, the beach ball and the pings became "entities": each one is a self-contained object that knows how to update, draw and clean up after itself, like a toy that comes in its own box with its own instructions. The ball moved to its own folder; [kicking the ball](#story/ball) still travels the same way. Everyone's avatar is now the Buddy. Nothing shared changed shape, so no arrow in the picture moved.
 - Then only small fixes: each page now carries its build name in a label on the page itself, not baked into the code files, so a deploy that changes nothing else no longer makes returning players download the same code again. A new entity also gets its "alive" flag and id filled in for it. Nothing in the picture moved.
+- Then more of the game moved into entities: the local player and the camera, other players' avatars, the Boogler, the dino and the guest, and the HUD, pause, hotbar, prompt and conversation screens. Each now brings its own update and cleanup, like more toys arriving in their own boxes. An entity kind that keeps failing is now switched off only after 30 failures in a row, not at the first stumble. [One frame](#story/frame) still runs in the same order.
+- The ball's game state can now run without a browser, so a test can roll it (and pass it between two pretend players) far faster than real time and check it lands where the browser's ball does, like a rehearsal without the stage.
+- A new prototype, a real place to find on foot and connect (`?proto=place`): a village, a gorge and two camps you link by rail. It reuses the rail loop's shared-world edits, so no arrow in the picture changes.
 
 ## 2026-10-30
 
