@@ -62,8 +62,8 @@ function stopFor(laid: number, open: number): number {
   let best = -1,
     bestD = HOP.near;
   for (let k = 0; k <= laid; k++) {
-    const p = k < laid ? { x: ROUTE[k].x, z: ROUTE[k].z } : { x: ROUTE[laid - 1].to[0], z: ROUTE[laid - 1].to[1] };
-    const d = Math.hypot(p.x - r.x, p.z - r.z);
+    const p = k < laid ? { x: ROUTE[k]!.x, z: ROUTE[k]!.z } : { x: ROUTE[laid - 1]!.to[0], z: ROUTE[laid - 1]!.to[1] };
+    const d = Math.hypot(p.x! - r.x, p.z! - r.z);
     if (d < bestD) {
       best = k;
       bestD = d;
@@ -79,7 +79,7 @@ function drop(w: FreightWagon, open: number, n: number, lead: number, late: bool
   const r = ringAt(open, TRACK);
   log.push({ tick: world.tick, n, late });
   for (let k = 0; k < Math.min(n, HOP.max); k++) {
-    const c = CRATES[k % CRATES.length];
+    const c = CRATES[k % CRATES.length]!;
     const mesh = pool.pop() ?? new THREE.Mesh(crateGeo, crateMat);
     mesh.castShadow = true;
     mesh.scale.setScalar(c.sz);
@@ -109,7 +109,7 @@ export function wagonFreight(w: FreightWagon): void {
   onFrame(
     ({ dt, now }) => {
       const open = sites.open;
-      const site = sites.list[open];
+      const site = sites.list[open]!;
       const laid = w.laid();
       const stop = site ? stopFor(laid, open) : -1;
       if (owedFor !== open) {
@@ -154,7 +154,7 @@ export function wagonFreight(w: FreightWagon): void {
       } else standSince = -1;
 
       for (let k = hops.length - 1; k >= 0; k--) {
-        const h = hops[k];
+        const h = hops[k]!;
         h.t += dt;
         const m = h.mesh;
         if (h.t < 0) continue;

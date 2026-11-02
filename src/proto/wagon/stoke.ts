@@ -92,7 +92,7 @@ export function wagonStoke(fire: Firebox, shown: () => boolean): void {
         .normalize();
       // the logs' arcs: up from the stoker's hands, down into the mouth, a flare and a burst of sparks on landing
       for (let k = flying.length - 1; k >= 0; k--) {
-        const f = flying[k];
+        const f = flying[k]!;
         f.t += dt;
         const u = f.t / FLY.flight;
         if (u < 0) continue;
