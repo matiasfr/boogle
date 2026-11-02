@@ -1,4 +1,4 @@
-// What the wagon's riding variants (./show.ts, ./bench.ts, ./snatch.ts; docs/research/train-riding.md, recs 1-3) read
+// What the wagon's riding variants (./show.ts, ./bench.ts; docs/research/train-riding.md, recs 1-3) read
 // from the wagon (./index.ts): its cars and where the timetable has it now, and the line as a polyline. Local: all of
 // it follows from the shared tick, so every tab sees the same train in the same place.
 import type * as THREE from 'three/webgpu';
