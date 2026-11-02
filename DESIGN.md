@@ -1,47 +1,49 @@
 # Boogle design principles
 
-Boogle is a drop-in island for a handful of friends: toys to throw, bounce and knock over, and a shared garden that keeps growing while nobody is online.
+Boogle is a drop-in world for a handful of friends: you connect an archipelago by rail, and it grows because of what you connect. Toys to throw and bounce are there to mess with along the way.
 
-These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [PLAN.md](PLAN.md) says *what* we're building next; this file says *how we decide*. The evidence behind these principles (precedents from Townscaper, Animal Crossing, Timberborn, From Dust, Noita, Factorio and others, plus a ranked idea list) is in [docs/research/water-farming-multiplayer.md](docs/research/water-farming-multiplayer.md).
+These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) records where the game is heading, and its decisions win over anything older; this file says *how we decide*. The research behind the rail loop is in [docs/research/compounding-infrastructure.md](docs/research/compounding-infrastructure.md), [rail-as-play.md](docs/research/rail-as-play.md) and [vast-world-scale.md](docs/research/vast-world-scale.md).
 
 ## The core loop
 
-**Water is the glue between the ball and the farm.** Crops grow where the soil is wet. The tide is the shared threat. The ball floats, splashes and waters. Sand shaping is removed for now (2026-10-30), to clear room around the ball, and so is the shared water sim; the sea stays. The garden persists, so the next visitor finds what the last one left.
+**The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
+
+The ball, the frisbee and the other physics toys are optional fun, not the heart of the game. Farming and water aren't part of the core loop: the shared water sim and sand shaping are gone, crops were never built, and the sea is scenery you can swim in.
 
 ## Play principles
 
 ### 1. Toys before chores
-Every system must be fun to mess with before it has goals. Splash and throw should feel good with nothing to achieve. If a mechanic is only fun because of its reward, it isn't ready.
-- *Test:* would someone fiddle with this for a minute with no score, no crops and no tide?
+Every system must be fun to mess with before it has goals. Laying track, riding and throwing should feel good with nothing to achieve. If a mechanic is only fun because of its reward, it isn't ready.
+- *Test:* would someone fiddle with this for a minute with no score and no quota?
 - *Avoid:* scores, timers or quotas as the reason to do something.
 
-### 2. Physics toys first
-Things you can throw, bounce and knock over are at the heart of the island: the beach ball, the frisbee, whatever you pick up, the mushrooms you bounce on. New systems should usually add to them or play with them rather than replace them.
-- *Test:* does this give the toys something new to do, or at least leave them alone?
+### 2. Physics toys are optional fun
+Things you can throw, bounce and knock over make the world fun to be in: the beach ball, the frisbee, whatever you pick up, the mushrooms you bounce on. They're optional, and nothing depends on them. New systems can leave them alone.
+- *Test:* does this break a toy that's already there? (The ball never produces income.)
 
-### 3. Farming is never required
-Someone who only wants to throw things around should have a great time. Farming, building and tide defense are invitations, never gates.
-- *Avoid:* locking movement, areas or toys behind farming progress.
+### 3. Side activities are never required
+Toys, mini-games and any farming are invitations, never gates.
+- *Avoid:* locking progress, movement or areas behind a side activity.
 
 ### 4. Cooperation is automatic, not negotiated
-Helping should happen just by playing near each other: watering anyone's plant helps it, and more different visitors make the garden grow faster. Nobody should need to coordinate in chat to contribute.
+Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
 - *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
 
 ### 5. Only the world is the antagonist
-Players can't destroy what other players made. Threats come from the environment: tide, drought, salt water. Crops and other people's progress are protected.
-- *Avoid:* PvP crop destruction, stealing, griefable shared resources.
+Players can't destroy what other players made. Any threat comes from the environment, and other people's progress is protected.
+- *Avoid:* PvP destruction, stealing, griefable shared resources.
 
 ### 6. Communal world, personal rewards
-The island and garden belong to everyone. Anything you *earn* (cosmetics, ball skins, hats, seed types) is yours alone. No shared wallets, so nobody spends what someone else earned.
+The world and its network belong to everyone. Anything you *earn* (cosmetics, hats) is yours alone. No shared wallets, so nobody spends what someone else earned.
 
 ### 7. Telegraph everything
 Every environmental event is announced 30–60 seconds ahead with something you can *see* (a wave on the horizon, clouds rolling in), not only a HUD message. A player who just dropped in should immediately understand the shared goal.
 
 ### 8. Designed for drop-in, drop-out
-Assume 1–6 people who arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone on the island should still be pleasant; being joined should make it better.
+Assume 1–6 people who arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone should still be pleasant; being joined should make it better.
 
 ### 9. Leave something for the next visitor
-Progress persists between sessions. Growth is computed from elapsed time, so the garden changes while everyone is away. Returning players should notice what happened since they left.
+Progress persists between sessions, and the world can keep changing while everyone is away. Returning players should notice what happened since they left.
 
 ### 10. Slapstick over precision
 Loose physics, splashes and tumbling toys are features. Prefer mechanics that produce funny moments between players over ones that reward precise execution.
