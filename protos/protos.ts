@@ -351,19 +351,39 @@ export const PROTOS: Proto[] = [
     step: 'depth',
     status: 'live',
     url: '/?proto=hero',
-    question: 'Does running and jumping feel right with hand-made animation?',
-    what: 'Hand-made run, sprint and jump clips on a stand-in mannequin, with today’s direct controller and a closer camera. It tests the motion alone: judge how it moves, not how it looks.',
+    question: 'Which of these characters would you want to play as, and does the motion feel right?',
+    what: 'Hand-made run, sprint and jump clips with today’s direct controller and a closer camera, on quick test figures: the mannequin (default) and the buttons below, plus one finished robot. Judge silhouette and motion; the figures aren’t final art.',
     since: '2026-11-01',
     variants: [
       {
         name: 'cute',
         url: '/?proto=hero&body=cute&v=cute',
-        what: 'The same clips on a smaller, big-headed figure: can this motion carry over to a cuter character?',
+        what: 'Small and big-headed, short legs, big hands and feet.',
+      },
+      {
+        name: 'ears',
+        url: '/?proto=hero&body=ears&v=ears',
+        what: 'Athletic and long-legged, in the spirit of Ratchet, with tall ears.',
+      },
+      {
+        name: 'stout',
+        url: '/?proto=hero&body=stout&v=stout',
+        what: 'A barrel of a body on short legs, long arms and big hands, in the spirit of a Bricktron.',
+      },
+      {
+        name: 'bib',
+        url: '/?proto=hero&body=bib&v=bib',
+        what: 'Bib Buddies: a one-piece bean with overalls and a cap.',
+      },
+      {
+        name: 'robot',
+        url: '/?proto=hero&body=standin&v=robot',
+        what: 'A chunky robot with its own hand-made model and clips: a finished little character, for comparison.',
       },
       {
         name: 'odyssey',
         url: '/?proto=hero&ctl=odyssey&v=odyssey',
-        what: 'The same clips with the modern-Mario controller (run where you face, speed builds).',
+        what: 'The mannequin with the modern-Mario controller (run where you face, speed builds).',
       },
       {
         name: 'keyed',

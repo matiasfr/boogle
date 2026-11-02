@@ -396,6 +396,7 @@ async function startStandin() {
     st.mixer.update(dt);
   };
   setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
+  (await import('./camera.ts')).startHeroCamera();
 }
 
 // gated by src/features/proto-hero.ts
