@@ -102,6 +102,10 @@ These are standing preferences from the thread.
 - **2026-11-01, tweak, with references:** hotbar tick (single tone or none; Fortnite), the "it worked" thunk, plaque flap, ping and ball boing (more subtle), double-jump whoop (more subtle; Fortnite), pickup thock and the magnet burst (Ratchet & Clank bolts: a deep dive), the haul count (towards Ratchet & Clank), the wood-age ambience (less white noise, more chill; go deeper).
 - **2026-11-01, honks form chords on their own:** a honk isn't always the same note; players' honks should land as a chord together.
 
+### Look
+
+- **2026-11-01, night stays light, moonlit** (owner: "night mode feels too dark, it should feel light still maybe moonlit"). A cool, bright moonlight you can play by, not darkness. **The sun and moon lose their faces** (owner: "they can be a bit more real").
+
 ### Controls
 
 - **2026-11-01, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
