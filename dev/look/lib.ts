@@ -49,7 +49,9 @@ export async function startStack({
 }: { url?: string | null; root?: string } = {}): Promise<Stack> {
   if (url) return { base: url, close: async () => {} };
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
-  const server = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {} }));
+  // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
+  const env = { DATA_DIR: dataDir, SERVER_ROOMS: '*', UPGRADES_PER_MIN: '1000000', MAX_HOSTED_ROOMS: '1000' };
+  const server = createService(loadConfig(env, { log: () => {} }));
   const sigPort = await server.listen(0);
   const port = await freePort();
   const vite = spawn(

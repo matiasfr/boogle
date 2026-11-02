@@ -64,6 +64,9 @@ export default {
     t.check('Esc closes the dialog', closed >= 0);
 
     t.check('talking fetched the hosted engine once', wasm.length === 1, wasm.join(', '));
+    // The stub above answers 404 on purpose, once, and the browser logs that.
+    const stubbed = g.consoleErrors.findIndex((e) => e.includes('status of 404'));
+    if (stubbed >= 0) g.consoleErrors.splice(stubbed, 1);
     t.check('no page errors', g.errors.length === 0, g.errors.join(' | '));
   },
 };

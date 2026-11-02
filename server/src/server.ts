@@ -75,6 +75,7 @@ export function loadConfig(
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
+    upgradesPerMin: Number(env.UPGRADES_PER_MIN) || 20, // room sockets per IP
     log: (...a: unknown[]) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -91,6 +92,7 @@ export type ServerConfig = {
   reportToken: string;
   serverRooms: string[];
   maxPlayers: number;
+  upgradesPerMin: number;
   serverSaveMs: number;
   roomIdleMs: number;
   maxHostedRooms: number;
