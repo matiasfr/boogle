@@ -67,14 +67,14 @@ function inflight() {
   for (const ref of refs) {
     const [name, at, author] = ref.split('\t');
     if (now - Number(at) > WEEK) continue;
-    const tip = git('rev-parse', name);
+    const tip = git('rev-parse', name!);
     if (tip === me || done.has(tip) || isAncestor(tip, 'origin/main')) continue;
     if (isAncestor(tip, 'HEAD')) continue; // already in this checkout
     const files = lines(git('diff', '--name-only', `origin/main...${tip}`));
     if (!files.length || landed(tip, files)) continue;
     rows.push({
-      name: name.replace(/^origin\//, ''),
-      author,
+      name: name!.replace(/^origin\//, ''),
+      author: author!,
       at: Number(at),
       files,
       overlap: files.filter((f) => mine.has(f)),

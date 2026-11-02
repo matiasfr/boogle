@@ -273,9 +273,9 @@ try {
   );
   // Allocation: the heap only grows between GCs, so the positive deltas add up to what was allocated.
   for (let k = 1; k < frames.length; k++) {
-    const d = (frames[k].heap ?? 0) - (frames[k - 1].heap ?? 0);
-    frames[k].alloc = frames[k].heap && frames[k - 1].heap && d > 0 ? d : 0;
-    frames[k].gc = frames[k].heap && frames[k - 1].heap && d < -65536 ? 1 : 0;
+    const d = (frames[k]!.heap ?? 0) - (frames[k - 1]!.heap ?? 0);
+    frames[k]!.alloc = frames[k]!.heap && frames[k - 1]!.heap && d > 0 ? d : 0;
+    frames[k]!.gc = frames[k]!.heap && frames[k - 1]!.heap && d < -65536 ? 1 : 0;
   }
   const by = new Map<
     string,

@@ -41,7 +41,7 @@ export default {
       }
       t.check(
         `${id}: the bar only moves forward`,
-        seen.every((v, i) => !i || v >= seen[i - 1]),
+        seen.every((v, i) => !i || v >= seen[i - 1]!),
         seen.join(' '),
       );
       await p.waitForSelector('#enter:not([disabled])', { timeout: 180000 });

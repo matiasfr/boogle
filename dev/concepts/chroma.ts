@@ -20,20 +20,20 @@ export const LOOSE = 90;
 export function parseHex(hex: string | undefined): number[] {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
   if (!m) throw new Error(`not a #rrggbb colour: ${hex}`);
-  const n = parseInt(m[1], 16);
+  const n = parseInt(m[1]!, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
 const diff = (d: Uint8Array, i: number, k: ArrayLike<number>) =>
-  Math.abs(d[i] - k[0]) + Math.abs(d[i + 1] - k[1]) + Math.abs(d[i + 2] - k[2]);
+  Math.abs(d[i]! - k[0]!) + Math.abs(d[i + 1]! - k[1]!) + Math.abs(d[i + 2]! - k[2]!);
 
 // How far a pixel leans towards the key: mean of the key's strong channels minus mean of its weak ones. For magenta,
 // (R + B) / 2 - G; for green, G - (R + B) / 2. Pure key scores 255, neutral grey 0, the key's complement negative.
 function leaner(key: number[]) {
-  const hi = [0, 1, 2].filter((c) => key[c] >= 128);
-  const lo = [0, 1, 2].filter((c) => key[c] < 128);
+  const hi = [0, 1, 2].filter((c) => key[c]! >= 128);
+  const lo = [0, 1, 2].filter((c) => key[c]! < 128);
   const mean = (d: Uint8Array, i: number, cs: number[]) =>
-    cs.length ? cs.reduce((s, c) => s + d[i + c], 0) / cs.length : 0;
+    cs.length ? cs.reduce((s, c) => s + d[i + c]!, 0) / cs.length : 0;
   return (d: Uint8Array, i: number) => mean(d, i, hi) - mean(d, i, lo);
 }
 
@@ -77,7 +77,7 @@ function inside(d: Uint8Array, rim: Uint8Array, p: number, w: number, h: number,
     for (let x = Math.max(0, x0 - r); x <= Math.min(w - 1, x0 + r); x++) {
       const o = y * w + x;
       if (rim[o] || !d[o * 4 + 3]) continue;
-      for (let c = 0; c < 3; c++) sum[c] += d[o * 4 + c];
+      for (let c = 0; c < 3; c++) sum[c]! += d[o * 4 + c]!;
       count++;
     }
   }
@@ -86,11 +86,11 @@ function inside(d: Uint8Array, rim: Uint8Array, p: number, w: number, h: number,
 
 // Fit pixel i as bg + a * (subject - bg): returns the subject share a (0..1) and how far the pixel is off that line.
 function blend(d: Uint8Array, i: number, subject: number[], bg: number[]) {
-  const u = subject.map((v, c) => v - bg[c]);
-  const uu = u[0] * u[0] + u[1] * u[1] + u[2] * u[2];
+  const u = subject.map((v, c) => v - bg[c]!);
+  const uu = u[0]! * u[0]! + u[1]! * u[1]! + u[2]! * u[2]!;
   if (uu < 900) return null;
-  const a = Math.min(1, Math.max(0, u.reduce((s, v, c) => s + v * (d[i + c] - bg[c]), 0) / uu));
-  const off = [0, 1, 2].reduce((s, c) => s + Math.abs(d[i + c] - (bg[c] + a * u[c])), 0);
+  const a = Math.min(1, Math.max(0, u.reduce((s, v, c) => s + v * (d[i + c]! - bg[c]!), 0) / uu));
+  const off = [0, 1, 2].reduce((s, c) => s + Math.abs(d[i + c]! - (bg[c]! + a * u[c]!)), 0);
   return { a, off };
 }
 
@@ -108,7 +108,7 @@ export function keyOut(
   const bgSum = [0, 0, 0];
   for (let p = 0; p < n; p++) {
     if (diff(d, p * 4, key) <= tight) {
-      for (let c = 0; c < 3; c++) bgSum[c] += d[p * 4 + c];
+      for (let c = 0; c < 3; c++) bgSum[c]! += d[p * 4 + c]!;
       d[p * 4 + 3] = 0;
       queue.push(p);
     }
@@ -116,7 +116,7 @@ export function keyOut(
   // The background the model actually painted, which is rarely the exact key.
   const bg = queue.length ? bgSum.map((v) => v / queue.length) : key;
   for (let q = 0; q < queue.length; q++) {
-    neighbours(queue[q], w, h, (p) => {
+    neighbours(queue[q]!, w, h, (p) => {
       const i = p * 4;
       if (d[i + 3] && diff(d, i, key) <= loose && lean(d, i) >= 80) {
         d[i + 3] = 0;
@@ -132,8 +132,8 @@ export function keyOut(
     if (!subject) continue;
     const fit = blend(src, p * 4, subject, bg);
     if (!fit || fit.a > 0.97 || fit.off > 60) continue;
-    for (let c = 0; c < 3; c++) d[p * 4 + c] = Math.round(subject[c]);
-    d[p * 4 + 3] = Math.round(src[p * 4 + 3] * fit.a);
+    for (let c = 0; c < 3; c++) d[p * 4 + c] = Math.round(subject[c]!);
+    d[p * 4 + 3] = Math.round(src[p * 4 + 3]! * fit.a);
   }
   return { width: w, height: h, data: bleed({ width: w, height: h, data: d }).data };
 }
@@ -250,7 +250,7 @@ export function trimSquare(
 // 2.4 with no visible line; well above 3 shows one when the texture repeats.
 export function seamScore(img: Img): number {
   const { width: w, height: h, data: d } = img;
-  const step = (a: number, b: number) => diff(d, a * 4, [d[b * 4], d[b * 4 + 1], d[b * 4 + 2]]);
+  const step = (a: number, b: number) => diff(d, a * 4, [d[b * 4]!, d[b * 4 + 1]!, d[b * 4 + 2]!]);
   let seam = 0;
   let inner = 0;
   for (let y = 0; y < h; y++) {

@@ -43,7 +43,14 @@ const opt: {
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
   const a = argv[k];
-  const v = () => argv[++k];
+  const v = () => {
+    const value = argv[++k];
+    if (value === undefined) {
+      console.error(a + ' needs a value');
+      process.exit(2);
+    }
+    return value;
+  };
   if (a === '--view') opt.view = v();
   else if (a === '--cam') opt.cam = v().split(',').map(Number);
   else if (a === '--look') opt.look = v().split(',').map(Number);

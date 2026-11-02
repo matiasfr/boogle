@@ -22,7 +22,7 @@ if (!count) console.log(`Since ${since}: ${rows.length} commits on origin/main\n
 let game = 0;
 for (const row of rows) {
   const [hash, author, subject] = row.split('\t');
-  const files = git('show', '--format=', '--name-status', hash).split('\n').filter(Boolean);
+  const files = git('show', '--format=', '--name-status', hash!).split('\n').filter(Boolean);
   const player = files.filter((f) => PLAYER.test(f.split('\t').at(-1)!));
   const added = player.filter((f) => f.startsWith('A')).map((f) => f.split('\t').at(-1));
   const mark = player.length ? (added.length ? '+' : '*') : ' ';

@@ -61,19 +61,19 @@ for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) base[j * N + i] = Math.r
 // Paint: a palette of colours, cells hold palette index * 16 + strength (0..15); 0 = no paint.
 const palette: string[] = [];
 const paintCode = (p: number[] | null | undefined): number => {
-  if (!p || p[3] < 0.04) return 0;
+  if (!p || p[3]! < 0.04) return 0;
   const hex =
     '#' +
     [0, 1, 2]
       .map((k) =>
-        Math.round(Math.min(1, Math.max(0, p[k])) * 15)
+        Math.round(Math.min(1, Math.max(0, p[k]!)) * 15)
           .toString(16)
           .repeat(2),
       )
       .join('');
   let k = palette.indexOf(hex);
   if (k < 0) k = palette.push(hex) - 1;
-  return (k + 1) * 16 + Math.min(15, Math.round(p[3] * 15));
+  return (k + 1) * 16 + Math.min(15, Math.round(p[3]! * 15));
 };
 const basePaint = new Array<number>(N * N);
 for (let j = 0; j < N; j++)
@@ -105,7 +105,7 @@ const pois = sites.map((s) => {
       const i = si + a,
         j = sj + b;
       const inside = i >= 0 && j >= 0 && i < N && j < N;
-      dh.push(inside ? Math.round(h(cx(i), cz(j)) * 10) - base[j * N + i] : 0);
+      dh.push(inside ? Math.round(h(cx(i), cz(j)) * 10) - base[j * N + i]! : 0);
       paint.push(inside ? paintCode(isl.paintAt(cx(i), cz(j))) : 0);
     }
   return { ...poi, patch: { i: si, j: sj, r: R, dh, paint } };
@@ -147,7 +147,7 @@ const json = {
   ring: RING_R,
   trees: land.layout.trees.map(atCell),
   perches: land.layout.perches.map(atCell),
-  speeds: { sprint: +sp[1], walk: +sp[2], swim: +sp[3] },
+  speeds: { sprint: +sp[1]!, walk: +sp[2]!, swim: +sp[3]! },
   view: { fogNear: FOG_NEAR, fogFar: FOG_FAR, eye: 1.6 }, // how far you can see (src/render/scene.ts fog)
   wagon: { cruise: WAGON_CRUISE, accel: WAGON_ACCEL, dwell: WAGON_DWELL, msPerTick: MS_PER_TICK },
 };
