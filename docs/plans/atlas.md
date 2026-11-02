@@ -143,12 +143,12 @@ docs/atlas/
   concepts.json
   stories/frame.json honk.json ball.json mush.json boogler.json join.json
   changes.md
-test/atlas.test.mjs          pure logic only, on in-memory fixtures; never reads docs/atlas/ or src/
+test/atlas.test.ts          pure logic only, on in-memory fixtures; never reads docs/atlas/ or src/
 dev/scenarios/atlas.mjs      nightly stills of every view, light and dark
 .github/workflows/atlas.yml  the upkeep agent
 ```
 
-"PURE" means no DOM, d3 or `import.meta` at module level, so `test/atlas.test.mjs` and `dev/atlas/cli.mjs` can import
+"PURE" means no DOM, d3 or `import.meta` at module level, so `test/atlas.test.ts` and `dev/atlas/cli.mjs` can import
 these files in Node.
 
 ### Facts schema (`extractFacts` output, `schema: 1`)
@@ -329,7 +329,7 @@ glance".
 - [x] **0. Set up a clean worktree.** The main checkout has unrelated uncommitted work: `package.json` and
   `package-lock.json` (a `pngjs` devDependency hunk), `DESIGN.md` (a new "Code first, images by approval" section),
   `.claude/skills/concept-art/SKILL.md`, `dev/concepts/generate.mjs`, and untracked `dev/concepts/assets.json`,
-  `dev/concepts/chroma.mjs` and `test/chroma.test.mjs` (which `npm run check` would pick up). **Never commit those
+  `dev/concepts/chroma.mjs` and `test/chroma.test.ts` (which `npm run check` would pick up). **Never commit those
   hunks or files.** `npm run ship` also refuses to run with uncommitted changes. So work in a worktree:
   `git fetch origin main && git worktree add .claude/worktrees/atlas -b atlas origin/main` (`.claude/worktrees/` is
   gitignored), then `npm ci` inside it. Copy the prototype in, without committing it:
@@ -363,7 +363,7 @@ glance".
     `extractFacts({ root, git = true, sources })`, `gitFacts(root)` and a private `walk(node, fn)`, following "Facts
     schema" above. Imports: `acorn`, `node:fs`, `node:path` (use `path.posix` for repo paths), `node:child_process`
     (`execFileSync`, only in `gitFacts`).
-  - Create `test/atlas.test.mjs`. **Pure logic on in-memory fixtures only: it never reads `docs/atlas/` or `src/`.**
+  - Create `test/atlas.test.ts`. **Pure logic on in-memory fixtures only: it never reads `docs/atlas/` or `src/`.**
     - `'extractFile reads every registration kind'`: a template-string fixture at path `src/features/sample.js`
       containing a leading `//` comment; `import { a } from '../x/y.js'`; `import './sample.css'` (ignored);
       `export { b } from './z.js'`; `onStart(() => import('../lazy/part.js'))`; `addPresenceField('zz', () => null)`;
@@ -378,7 +378,7 @@ glance".
     - `'extractFile survives a syntax error'`: `'const = ;'` gives a record with `parseError` set and empty arrays.
     - `'extractFacts is deterministic'`: two `extractFacts({ git: false, sources: [three fixtures, unsorted] })` runs
       are `deepEqual`, the files come back sorted by path, and `imports` resolve between the fixtures.
-  - Verify: `node --test test/atlas.test.mjs` (well under a second), then `npm run check`.
+  - Verify: `node --test test/atlas.test.ts` (well under a second), then `npm run check`.
 
 - [x] **3. `npm run atlas` CLI.** Create `dev/atlas/cli.mjs`. Default mode: `extractFacts({ root, git: true })`, write
   `.look/atlas/facts.json`, and print one summary line (files, lines, ops, states, presence keys, host fields, message
@@ -415,7 +415,7 @@ glance".
   - CLI: add `--check`. It reads `docs/atlas/concepts.json`, `docs/atlas/stories/*.json`, `docs/atlas/changes.md` and
     `src/main.ts`, runs `parseNarrative` then `checkAtlas`, prints the problems grouped by file plus the folder "to
     do" list, ends with `N problems`, and exits 0.
-  - Extend `test/atlas.test.mjs` (fixtures only):
+  - Extend `test/atlas.test.ts` (fixtures only):
     - `'checkAtlas passes a good narrative'`: a minimal in-memory facts object (two files) and a narrative that covers
       every BOX concept give `[]`.
     - One test per problem, each asserting that exactly one message matches a regex: unknown file, unknown symbol,
@@ -519,7 +519,7 @@ glance".
     added, and keys added and removed for ops, states, owner, host, msgs, actions and routes; (4) folders without a
     note. `factsAt` lists files with `git ls-tree -r --name-only <ref> -- src server/src` and reads each with
     `git show <ref>:<path>`, passing them as `sources` (about 130 calls, under 2 s). It exits 0. Test `diffFacts` in
-    `test/atlas.test.mjs` on two small in-memory facts objects.
+    `test/atlas.test.ts` on two small in-memory facts objects.
   - Create `dev/atlas/agent-prompt.md` for an unattended run, telling the agent to:
     1. Read AGENTS.md, `docs/atlas/README.md`, and DESIGN.md's "Understandable at a glance" and "Pick how each
        feature shares state".
@@ -596,7 +596,7 @@ glance".
 
 - **Unrelated uncommitted work** in the main checkout: `package.json` and `package-lock.json` already have a `pngjs`
   hunk; `DESIGN.md` (the user's new section), the concept-art skill and `dev/concepts/generate.mjs` are modified;
-  `test/chroma.test.mjs`, `dev/concepts/chroma.mjs` and `dev/concepts/assets.json` are untracked. Installing acorn or
+  `test/chroma.test.ts`, `dev/concepts/chroma.mjs` and `dev/concepts/assets.json` are untracked. Installing acorn or
   d3 there would mix lockfile hunks, and `npm run ship` refuses to run with a dirty tree. Step 0's worktree avoids all
   of this. Never `git add -A`, never stage those files, never stash or reset them.
 - **DESIGN.md merge:** the new principle goes *before* "Small and readable", and the user's uncommitted section goes

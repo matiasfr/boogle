@@ -100,7 +100,7 @@ so older builds still draw the guest, then drop it.
 ## Steps (when the second character lands)
 
 1. `src/decomp/rom.js` and `src/decomp/engine.js` out of `src/guest/`. Keep the store keys so saved files survive.
-   Extend `test/guest-rom.test.mjs`.
+   Extend `test/guest-rom.test.ts`.
 2. `src/decomp/triangles.js` out of `src/guest/collision.ts`.
 3. `src/player/drive.js` out of `src/guest/play.ts`; the guest becomes a `step` function.
 4. Registry + `src/features/decomp.js`.

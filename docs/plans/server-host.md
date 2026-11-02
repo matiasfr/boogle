@@ -339,7 +339,7 @@ uses `import.meta.glob`). The rules need only `land = { n, layout }` (the README
 them on the layout pinned in `test/fixtures/world-inputs.json`. Step 2 moves `n` and `layout` to
 `src/world/home-land.json` and adds `plant`, a run-length mask of `canPlantAt(i, j)` over `g = i * n + j` (runs
 alternate, starting with unplantable), all written and checked by `dev/scenarios/world-inputs.mjs` in the running
-game. The fixture keeps `states` and `ops`. `test/helpers/land.mjs` (and so the replay test and `npm run registry`)
+game. The fixture keeps `states` and `ops`. `test/helpers/land.ts` (and so the replay test and `npm run registry`)
 reads the new file.
 
 ### Fly
@@ -391,7 +391,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     ~10 lines in the page). With `UPDATE_FIXTURE=1` write `src/world/home-land.json` = `{ about, n, layout, plant }`
     (Prettier-formatted, as today) and the fixture `test/fixtures/world-inputs.json` = `{ about, states, ops }`.
     Without it, compare grid size, state and op order, layout, and the mask (report the plantable cell counts).
-  - `test/helpers/land.mjs`: read `n` and `layout` from `src/world/home-land.json`; export `fixture` unchanged for
+  - `test/helpers/land.ts`: read `n` and `layout` from `src/world/home-land.json`; export `fixture` unchanged for
     `states`/`ops`.
   - `src/world/README.md` and `src/world/rules/README.md`: mention `home-land.json` (what reads it, how to regenerate).
   - Verify: `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, then `npm run scenario -- world-inputs` passes;
@@ -404,7 +404,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - `checkHash(tick, h, hs)`: when `hs` is an object, compare `mine[k] === hs[k]` over the keys both have, minus
     `skipped`; fall back to `worldHash() === h` only when `hs` is missing. `subsystems` lists the compared keys only.
     Keep sending `h` (older tabs use it). Update the header comment.
-  - Tests in `test/world-sync.test.mjs` (helpers in `test/helpers/net.mjs`):
+  - Tests in `test/world-sync.test.ts` (helpers in `test/helpers/net.ts`):
     - "a client re-pins to a new host right after its room reconnects": peers h1 (host), h2, c; `net.setUp(c, false)`,
       `net.killHost()` (h2 hosts), run 10 frames, `net.setUp(c, true)`, run 10 frames (500 ms < `HOST_STALE_MS`):
       `c.s.worldStatus().hostId === 'h2'`, and an edit c submits next is applied on h2.
@@ -425,7 +425,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
     `persist(false, true)` before `becomeClient()`. `persist(unloading, handoff)`: with `handoff`, skip the
     `lastSavedHash` check and send `POST /rooms/<id>/handoff` (same body, bodies under 1,000,000 chars) instead of PUT.
   - Header comment and `src/world/README.md` ("Other exports"): `saveMs`, `saveNow`, `adoptSnapshot`, handoff.
-  - Tests (`test/world-sync.test.mjs`; add `net.demote(p)` to the helper: sets `p.host = false` and calls its host
+  - Tests (`test/world-sync.test.ts`; add `net.demote(p)` to the helper: sets `p.host = false` and calls its host
     handlers with false):
     - "saveMs sets how often a host saves": fake storage, `saveMs: 1000`, 25 frames: one `setItem`.
     - "saveNow writes at once and skips an unchanged world".
@@ -451,7 +451,7 @@ Each step is one PR (`npm run ship`). Steps 3, 4, 5, 6, 7, 8 and 9 touch `src/ne
   - Create `ids.js` and `ws-wire.js` as in Design. `peer-room.js` imports `SELF_ID`, `okId`, `safeRoom`,
     `peerHostId` from `ids.js` (delete its copies) and adds `transport: 'peer'`, `isLead: () => isHostNow`,
     `onLeadChange(h)` (registered with the host handlers).
-  - `test/net-wire.test.mjs`: `decode` rejects non-objects, arrays and missing `t`; `roomUrl` maps http->ws and
+  - `test/net-wire.test.ts`: `decode` rejects non-objects, arrays and missing `t`; `roomUrl` maps http->ws and
     https->wss; `peerHostId('beach') === 'boogle-beach-host'` and `peerHostId('a-b') === 'boogle-a_2db-host'`;
     `okId('server')` is true (so the server must reserve it explicitly).
   - `src/net/README.md`: the three new members.

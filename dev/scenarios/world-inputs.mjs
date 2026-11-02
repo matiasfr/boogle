@@ -3,7 +3,7 @@
 // Node tests run the rules on; the state and op order in test/fixtures/world-inputs.json.
 // It checks, in the running game: the grid size, the state key order (snapshot, load and hash order), the op order
 // (once sync has registry()) and the gifts layout (trees, perches), which Node tests run the rules on
-// (test/helpers/land.mjs). The ground's heights are not an input: no rule reads them.
+// (test/helpers/land.ts). The ground's heights are not an input: no rule reads them.
 // A change in any of them means peers on different builds disagree, so update the fixture only on purpose:
 // `UPDATE_FIXTURE=1 npm run scenario -- world-inputs`, and say why in the commit. Serves "Determinism from day one".
 import fs from 'node:fs';

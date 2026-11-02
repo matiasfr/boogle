@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addField, mergeFields, hostField } from '../src/netplay/presence-fields.ts';
+import type { Field, Presence } from '../src/netplay/presence-fields.ts';
 
 // The room's presence(patch) rule (src/net/ws-room.ts): merge onto what we sent before, null deletes the key.
-function applyPatch(mine, patch) {
+function applyPatch(mine: Presence, patch: Presence) {
   const next = { ...mine };
   for (const [k, v] of Object.entries(patch)) {
     if (v === null) delete next[k];
@@ -29,8 +30,8 @@ test('a getter that returns null or undefined, or throws, sends key: null so the
 });
 
 test('a field that stops is gone from the published presence, not repeated forever', () => {
-  let kd = 30;
-  const fields = [['kd', () => kd]];
+  let kd: number | null = 30;
+  const fields: Field[] = [['kd', () => kd]];
   let mine = applyPatch({}, mergeFields({ t: 1 }, fields));
   assert.equal(mine.kd, 30);
   kd = null;
@@ -40,7 +41,7 @@ test('a field that stops is gone from the published presence, not repeated forev
 });
 
 test('fields never take core keys or an earlier field', () => {
-  const fields = [];
+  const fields: Field[] = [];
   const core = ['v', 'p'];
   assert.equal(
     addField(fields, 'p', () => 'feature', core),
@@ -58,8 +59,8 @@ test('fields never take core keys or an earlier field', () => {
 });
 
 test("a reused presence object keeps its keys in order and takes each send's values", () => {
-  let kd = 30;
-  const fields = [
+  let kd: number | null = 30;
+  const fields: Field[] = [
     ['a', () => 1],
     ['kd', () => kd],
   ];
@@ -76,7 +77,7 @@ test("a reused presence object keeps its keys in order and takes each send's val
 
 test('a host field publishes only while host, and hears only real values', () => {
   let host = false;
-  const heard = [];
+  const heard: unknown[] = [];
   const h = hostField(
     () => ({ p: [1, 2] }),
     (v, time, peer) => heard.push([v, time, peer]),

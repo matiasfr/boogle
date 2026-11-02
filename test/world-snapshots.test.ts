@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import fs from 'node:fs';
-import { homeLand } from './helpers/land.mjs';
+import { homeLand } from './helpers/land.ts';
 
 const v02 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v02.json', import.meta.url), 'utf8'));
 
@@ -16,7 +16,7 @@ function peer() {
   installRules(s, homeLand());
   return s;
 }
-const copy = (v) => JSON.parse(JSON.stringify(v));
+const copy = (v: unknown) => JSON.parse(JSON.stringify(v));
 
 // A world with something in it: a planted mushroom and a watering can on the ground.
 function played() {

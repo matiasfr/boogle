@@ -7,7 +7,7 @@ import { ESLint } from 'eslint';
 import { LOCKSTEP_FILES } from '../eslint.config.js';
 
 const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
-const lint = async (code, filePath = 'src/sim/lint-probe.js') => {
+const lint = async (code: string, filePath = 'src/sim/lint-probe.js') => {
   const [result] = await eslint.lintText(code, { filePath });
   return result.messages.map((m) => m.ruleId);
 };
