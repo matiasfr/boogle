@@ -102,7 +102,7 @@ Looks for comparing silhouettes under the same clips ([src/proto/hero/looks.ts](
 hips and stride shrink with the legs.
 
 `&body=buddy` is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
-smooth skin blended by a voxel remesh, with softened weights and a head and mitts that hold their shape, plus a face moulded to
+smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to
 the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
 pitch comes off the head (the library's idle looks down about 13°) and its bob stays. It blinks, and in the air
 ([src/proto/hero/life.ts](../../src/proto/hero/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next

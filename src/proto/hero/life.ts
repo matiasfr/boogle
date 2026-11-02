@@ -2,20 +2,23 @@
 // held pose; rising it tucks a knee and reaches up with the other arm, and falling it spreads its arms, each blended from
 // how fast it's moving up or down, so a remote player needs no new presence. Runs after the mixer, which rewrites these
 // bones each frame. Offsets are about the figure's own axes as seen from the parent bone at rest, so they read the same
-// on any skeleton: it faces +z, left is +x; +x swings a limb back and -x forward, +z swings the left arm out.
+// on any skeleton: it faces +z, left is +x; +x swings a limb back and -x forward, +z swings the left arm out, +y opens
+// the left elbow (a forearm's parent is the arm's T-pose).
 import * as THREE from 'three/webgpu';
 import { clamp } from '../../math.ts';
 
-type Offset = [bone: string, axis: 'x' | 'z', degrees: number];
+type Offset = [bone: string, axis: 'x' | 'y' | 'z', degrees: number];
 const RISE: Offset[] = [
   ['thigh_l', 'x', -45],
   ['calf_l', 'x', 42],
   ['thigh_r', 'x', 12],
   ['calf_r', 'x', 22],
-  ['upperarm_r', 'x', -40],
-  ['upperarm_r', 'z', -30],
-  ['upperarm_l', 'x', 28],
-  ['upperarm_l', 'z', 20],
+  ['upperarm_r', 'x', -30],
+  ['upperarm_r', 'z', -35],
+  ['lowerarm_r', 'y', -60], // the clip's elbows are bent: opened, or the mitts come up by the face
+  ['upperarm_l', 'x', 12],
+  ['upperarm_l', 'z', 22],
+  ['lowerarm_l', 'y', 55],
   ['spine_02', 'x', -5],
 ];
 const FALL: Offset[] = [
@@ -39,7 +42,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D, map: Record
   const eyes = ['eye_l', 'eye_r'].map((n) => root.getObjectByName(n)).filter(Boolean) as THREE.Object3D[];
   rest.updateMatrixWorld(true);
   const parentRest = new Map<string, THREE.Quaternion>();
-  const axes = { x: new THREE.Vector3(1, 0, 0), z: new THREE.Vector3(0, 0, 1) };
+  const axes = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
   const bake = (offsets: Offset[], flip: boolean) =>
     offsets.flatMap(([bone, axis, deg]) => {
       const name = map[flip ? mirror(bone) : bone]!;
@@ -50,7 +53,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D, map: Record
         parentRest.set(name, still.parent!.getWorldQuaternion(new THREE.Quaternion()).invert());
       const local = axes[axis].clone().applyQuaternion(parentRest.get(name)!);
       // A mirrored swing out reverses; a swing back and forth doesn't.
-      const rad = (((flip && axis === 'z' ? -1 : 1) * deg) / 180) * Math.PI;
+      const rad = (((flip && axis !== 'x' ? -1 : 1) * deg) / 180) * Math.PI;
       return [{ live, q: new THREE.Quaternion().setFromAxisAngle(local, rad) }];
     });
   const poses = [false, true].map((flip) => ({ rise: bake(RISE, flip), fall: bake(FALL, flip) }));

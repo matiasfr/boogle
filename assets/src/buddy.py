@@ -17,6 +17,7 @@ scene = bpy.context.scene
 
 VOXEL = 0.011  # m: the blend's detail
 TRIS = 5000  # target for the skin
+NORMAL_BLUR = 14  # passes of smoothing behind the skin's shading
 
 
 def linear(hex_srgb):
@@ -159,7 +160,7 @@ def seam(co):
     shoulder = smoothstep(0.34, 0.26, x) * smoothstep(0.09, 0.16, x) * smoothstep(0.86, 0.95, z) * smoothstep(1.16, 1.08, z)
     wrist = smoothstep(0.54, 0.58, x) * smoothstep(0.64, 0.6, x) * smoothstep(0.86, 0.92, z)
     crotch = smoothstep(0.24, 0.12, x) * smoothstep(0.5, 0.58, z) * smoothstep(0.76, 0.68, z)
-    belly = 0.55 * smoothstep(0.34, 0.24, x) * smoothstep(0.62, 0.7, z) * smoothstep(1.02, 0.94, z)
+    belly = 0.8 * smoothstep(0.34, 0.24, x) * smoothstep(0.62, 0.7, z) * smoothstep(1.02, 0.94, z)
     return max(neck, shoulder, wrist, crotch, belly)
 
 
@@ -178,6 +179,21 @@ bpy.ops.object.modifier_apply(modifier='reduce')
 me.materials.append(BODY)
 for p in me.polygons:
     p.use_smooth = True
+# Soft shading: the normals of a much smoother copy, so small lumps stop catching the light while the outline stays.
+blur = me.copy()
+links = [[] for _ in blur.vertices]
+for e in blur.edges:
+    a, b = e.vertices
+    links[a].append(b)
+    links[b].append(a)
+pos = [v.co.copy() for v in blur.vertices]
+for _ in range(NORMAL_BLUR):
+    pos = [p * 0.4 + sum((pos[j] for j in links[i]), Vector()) * (0.6 / max(1, len(links[i]))) for i, p in enumerate(pos)]
+for v, p in zip(blur.vertices, pos):
+    v.co = p
+blur.update()
+me.normals_split_custom_set_from_vertices([v.normal.copy() for v in blur.vertices])
+bpy.data.meshes.remove(blur)
 
 # Bind with automatic weights.
 bpy.ops.object.select_all(action='DESELECT')
@@ -334,17 +350,17 @@ WHITE_C, DARK = (1.0, 1.0, 1.0), (0.2, 0.2, 0.22)
 # band and badge. `_trim` is worn with it.
 cap, trim = Soup(), Soup()
 BRASS, PEAK_C = linear('d9a93a'), linear('17120f')
-Z0, TOP = 0.122, 0.272  # the top clears the head's crown (0.27), tilted or not
+Z0, TOP = 0.122, 0.305  # the top clears the head's crown (0.27), tilted or not
 rx, ry, _ = head_ring(Z0, 0.011)
-rings(cap, [head_ring(0.1, -0.012), (rx, ry, Z0), (rx + 0.006, ry + 0.006, TOP), (rx + 0.002, ry + 0.002, TOP + 0.012), (rx - 0.012, ry - 0.012, TOP + 0.018), (0.08, 0.075, TOP + 0.021)], WHITE_C)
-for z0, z1 in ((0.132, 0.145), (0.25, 0.26)):
+rings(cap, [head_ring(0.1, -0.012), (rx, ry, Z0), (rx + 0.018, ry + 0.018, TOP), (rx + 0.014, ry + 0.014, TOP + 0.012), (rx, ry, TOP + 0.018), (0.08, 0.075, TOP + 0.021)], WHITE_C)
+for z0, z1 in ((0.132, 0.145), (0.272, 0.282)):
     t0, t1 = (z0 - Z0) / (TOP - Z0), (z1 - Z0) / (TOP - Z0)
-    rings(trim, [(rx + 0.006 * t0 - 0.004, ry + 0.006 * t0 - 0.004, z0), (rx + 0.006 * t0 + 0.0025, ry + 0.006 * t0 + 0.0025, z0 + 0.001), (rx + 0.006 * t1 + 0.0025, ry + 0.006 * t1 + 0.0025, z1 - 0.001), (rx + 0.006 * t1 - 0.004, ry + 0.006 * t1 - 0.004, z1)], BRASS, close=False)
+    rings(trim, [(rx + 0.018 * t0 - 0.004, ry + 0.018 * t0 - 0.004, z0), (rx + 0.018 * t0 + 0.0025, ry + 0.018 * t0 + 0.0025, z0 + 0.001), (rx + 0.018 * t1 + 0.0025, ry + 0.018 * t1 + 0.0025, z1 - 0.001), (rx + 0.018 * t1 - 0.004, ry + 0.018 * t1 - 0.004, z1)], BRASS, close=False)
 badge = bmesh.new()
-ball(badge, (0, -(ry + 0.004), 0.2), (0.03, 0.009, 0.034), 14)
+ball(badge, (0, -(ry + 0.011), 0.21), (0.03, 0.009, 0.034), 14)
 trim.add([tuple(v.co) for v in badge.verts], [[v.index for v in f.verts] for f in badge.faces], BRASS)
 badge.free()
-PEAK = 0.1
+PEAK = 0.125
 top, bot = [], []
 N, M = 28, 5
 for i in range(N + 1):
@@ -355,7 +371,7 @@ for i in range(N + 1):
     d = Vector((x0, y0, 0)).normalized()
     for j in range(M + 1):
         t = j / M
-        p = Vector((x0, y0, Z0 + 0.012)) + d * (w * t - 0.008) + Vector((0, 0, -0.22 * w * t))
+        p = Vector((x0, y0, Z0 + 0.012)) + d * (w * t - 0.008) + Vector((0, 0, -0.3 * w * t))
         top.append((p.x, p.y, p.z))
         bot.append((p.x, p.y, p.z - 0.01 * (1 - t * t) ** 0.5))
 faces = []
