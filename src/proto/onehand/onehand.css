@@ -1,0 +1,4 @@
+/* No hotbar on screen; the held thing's name and what its button does still fade in. */
+.hotbar-slots {
+  display: none;
+}
