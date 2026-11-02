@@ -130,4 +130,5 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Felt off: the handle "oscillating way too fast" once the cart started (a bug: its rate changed against the clock).
 - Felt off: hoped for more rail before falling off, though "I guess it should be fast".
 - Wanted: the cart already moving while you're on the card, "in place, but perceptually ... traveling along the track", and Jump in is when you fall.
-- After: built that way: the world slides past during the card, and Jump in runs the last stretch to the rail's end.
+- Wondered whether the cart needs a handle at all, maybe "almost like a mine cart"; then "it doesn't have to be a full minecart. I like that the platform is flat enough that you can see the character jump and switch colors".
+- After: built that way: the world slides past during the card, Jump in runs the last stretch to the rail's end, and the handcar became a flat trolley with no handle.

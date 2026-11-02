@@ -1,4 +1,4 @@
-// What the fall starts on (?proto=fall): a rail that stops in mid-air, a handcar riding it and a deck of cloud that hides
+// What the fall starts on (?proto=fall): a rail that stops in mid-air, a trolley riding it and a deck of cloud that hides
 // the island below. Code-built greybox. Local: nobody else sees any of it.
 import * as THREE from 'three/webgpu';
 import { SPAWN } from '../../constants.ts';
@@ -26,10 +26,10 @@ const LANDS_PAST = 2; // m past the rail's end you come down, once the air has b
 export const RAIL_END = TARGET.clone()
   .addScaledVector(FWD, -LANDS_PAST)
   .setY(TARGET.y + HEIGHT);
-export const ROLL_DIST = 8.5; // m the handcar rolls before the rail runs out
+export const ROLL_DIST = 8.5; // m the cart rolls before the rail runs out
 export const CAR_START = RAIL_END.clone().addScaledVector(FWD, -ROLL_DIST);
 export const DECK_Y = TARGET.y + HEIGHT - 32;
-export const STAND = { back: -0.55, up: 0.72 }; // where you stand on the handcar, from its middle at rail height: at the front
+export const STAND = { back: -0.2, up: 0.69 }; // where you stand on the cart's deck, from its middle at rail height
 
 const RAIL_BACK = 130; // m of rail behind the end: it fades into the fog
 const GAUGE = 1.1;
@@ -68,31 +68,33 @@ function buildRail() {
   return sleepers;
 }
 
-/** The handcar: origin at rail height, facing -z. `pump` is the seesaw handle, for rocking. */
+/** The cart: a track layer's trolley, origin at rail height, facing -z. A flat open deck, so your whole Buddy shows, feet
+ * and hops included, with a few sleepers on the back for the job it's on. */
 function buildCar() {
   const parts: THREE.BufferGeometry[] = [];
-  part(parts, '#a9825a', 0, 0.62, 0, 1.7, 0.14, 2.7); // deck
-  part(parts, '#5e4630', 0, 0.48, 0, 1.2, 0.14, 2.3); // frame
-  part(parts, '#59616b', 0, 1.05, 0.75, 0.16, 0.85, 0.16); // post, behind you
+  const planks = ['#a9825a', '#9c7650', '#b48c62', '#a07a52', '#ad865d'];
+  planks.forEach((c, k) => part(parts, c, -0.72 + k * 0.36, 0.62, 0, 0.34, 0.14, 2.7)); // the deck
+  part(parts, '#3a3f46', 0, 0.48, 0, 1.25, 0.14, 2.35); // its iron frame
+  for (const z of [-1.42, 1.42]) part(parts, '#3a3f46', 0, 0.5, z, 1.1, 0.16, 0.14); // buffer beams
+  for (const [x, y] of [
+    [-0.42, 0.76],
+    [0.42, 0.76],
+    [0, 0.9],
+  ] as const)
+    part(parts, '#7a5a3a', x, y, 0.98, 0.8, 0.14, 0.32); // sleepers, stacked across the back
   const body = new THREE.Mesh(mergeParts(parts), vertexColored());
   body.castShadow = true;
   const wheel = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 14).rotateZ(Math.PI / 2);
   const wheelParts: THREE.BufferGeometry[] = [];
   for (const x of [-GAUGE / 2, GAUGE / 2])
     for (const z of [-0.85, 0.85]) addPart(wheelParts, wheel, m.makeTranslation(x, 0.3, z), '#3a3f46');
-  const wheels = new THREE.Mesh(mergeParts(wheelParts), vertexColored());
-  const pumpParts: THREE.BufferGeometry[] = [];
-  part(pumpParts, '#c7513f', 0, 0, 0, 0.1, 0.1, 1.9); // the beam
-  for (const z of [-0.95, 0.95]) part(pumpParts, '#c7513f', 0, 0, z, 1, 0.1, 0.1); // its handles
-  const pump = new THREE.Mesh(mergeParts(pumpParts), vertexColored());
-  pump.position.set(0, 1.5, 0.75);
   const group = new THREE.Group();
-  group.add(body, wheels, pump);
+  group.add(body, new THREE.Mesh(mergeParts(wheelParts), vertexColored()));
   group.position.copy(CAR_START);
   group.rotation.order = 'YXZ';
   group.rotation.y = YAW;
   scene.add(group);
-  return { group, pump };
+  return { group };
 }
 
 /** A flat-shaded puffy deck, one draw call: wide enough that you see no edge of it through the fog. */
@@ -138,9 +140,9 @@ export const car = buildCar();
 const deck = buildDeck();
 export const deckMesh = deck.mesh;
 
-/** The card's treadmill: the handcar stays put and the world slides back under it, so it's already travelling. `travelled`
+/** The card's treadmill: the cart stays put and the world slides back under it, so it's already travelling. `travelled`
  * is metres so far. The rail's steel looks the same anywhere, so only its sleepers move, a sleeper's gap at most. A puff that
- * has gone out the back of the disc comes round to the front. Jump in stops this and rolls the handcar for real, from this speed. */
+ * has gone out the back of the disc comes round to the front. Jump in stops this and rolls the cart for real, from this speed. */
 export function slideWorld(travelled: number) {
   sleepers.position.z = travelled % SLEEPER_GAP;
   deck.mesh.position.copy(FWD).multiplyScalar(-travelled);
