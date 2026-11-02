@@ -299,10 +299,10 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
       - Dropped: automatic rollback (owner, 2026-11-02: not a live service yet; revisit before public playtests).
       - Dropped: `max-lines`, `complexity` and a duplication tool. The report lists file length under "Don't flag" (DESIGN.md
         chose plain modules), and its reviewer reads for duplicate paths (check 10).
-- [ ] **17. Headless runtime.** Run entity state and Rapier in Node, without three.js scene code or a GPU, faster than real
-      time. Step 10's Node import test starts this: `constants.ts:26` (`matchMedia`) and `physics.ts:20` (`location.search`) fail it
-      today, while `three` itself loads in Node. Module-level `ball` and `me` mean one world per process, so two-player runs need two
-      processes or workers. Add `npm run sim -- <name>` and port one multiplayer scenario to prove it.
+- [x] **17. Headless runtime.** ([#519](https://github.com/matiasfr/boogle/pull/519), [#520](https://github.com/matiasfr/boogle/pull/520), [#522](https://github.com/matiasfr/boogle/pull/522)) `npm run sim -- <name>` ([dev/sim/README.md](../../dev/sim/README.md)) runs entity state and Rapier in Node with no scene code or GPU. Works: the same Rapier WASM,
+      the real ground, the ball at about 800x real time and within 1 mm of the browser on land, the lockstep rules, and a two-process ball hand-off through a real local server.
+      An entity joins by having a `headless.ts`, with its view left to `index.ts` as its own kind. Not yet: the player (one blob with its mesh, so `me.body` is null), every other
+      entity, most features, and static colliders other than the ground, which are built with what draws them.
 - [ ] **18. Replication component.** `sync.ts` minus the ball's wire shape: the claim rule, latest claim and snapshots per peer, the
       orphan pick, the mode switch, and sampling into `pose` with the extrapolation cap. `held`, carry, surf and respawn stay with the
       object, and `snap` is an additive field. Entity `id` isn't a network id. Presence keys stay literal. Verify: `check:full`,
