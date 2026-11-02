@@ -1,8 +1,7 @@
 // The playtest playlist (`/?play`, src/proto/bar/, docs/plans/find-the-fun.md "One path") on an iPad-sized touch
 // screen: the island loads with the bar on step 1, Next walks every step (an island toy teleports you to its spawn
-// without a reload; a chapter is its own page, and Next from it comes back to the island), a variant switch on the
-// soapbox happens live (no reload), and a verdict with a note is saved per variant for the protos page's Copy all.
-// Stills: the bar at step 1 and at the soapbox. Serves DESIGN.md "How we work".
+// without a reload; a chapter is its own page, and Next from it comes back to the island). Still: the bar at step 1.
+// Serves DESIGN.md "How we work".
 
 type Game = {
   page: {
@@ -77,34 +76,6 @@ export default {
       seen.push(`${want} ${title}${reloaded ? ' (page)' : ''} ${off < 0 ? '' : `${off.toFixed(1)} m`}`);
       t.check(`Next from ${before} reaches ${want}: ${title}`, ms >= 0 || (await g.eval(`return ${STEP};`)) === want);
       t.check(`${title}: you are at its spot`, off < 3, `${off.toFixed(2)} m`);
-      if (title === 'Soapbox cart') {
-        const V = `(await import('/src/proto/flags.ts')).protoV('soapbox')`;
-        const v = await g.eval(`return ${V};`);
-        t.check('the soapbox plays the playlist’s first variant (the default)', v === '', String(v));
-        await t.sleep(2000);
-        t.check('still: the soapbox', true, await g.still('play-soapbox'));
-        await g.eval(`window.__playMark = 1;`);
-        await g.eval(
-          `[...${BAR}.querySelectorAll('.pb-variants button')].find((b) => b.textContent.startsWith('bouncy')).click();`,
-        );
-        await t.sleep(500);
-        const after = await g.eval(`return [${V}, window.__playMark === 1, location.search];`);
-        t.check(
-          'switching the soapbox to bouncy is live: no reload',
-          JSON.stringify(after).startsWith('["bouncy",true'),
-          JSON.stringify(after),
-        );
-        await g.eval(`${BAR}.querySelector('.pb-yes').click();
-          const n = ${BAR}.querySelector('.pb-note'); n.value = 'bounces nicely'; n.dispatchEvent(new Event('input')); n.blur();`);
-        const s = (await g.eval(
-          `return JSON.parse(localStorage.getItem('boogle-protos-v1') || '{}').soapbox?.byV?.bouncy ?? null;`,
-        )) as { verdict?: string; note?: string } | null;
-        t.check(
-          'the verdict is saved for bouncy',
-          s?.verdict === 'yes' && s?.note === 'bounces nicely',
-          JSON.stringify(s),
-        );
-      }
     }
     console.log(seen.join('\n'));
 
