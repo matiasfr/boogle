@@ -82,3 +82,12 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Ride: still fine. Board: poles fine to start with. Look: what we have is okay, may iterate.
 - Hero: could see this rig working with a different model; the aerial animations didn't feel great (his other session's track).
 - After: snatch, stoke and grind cut; the soapbox stays and keeps driving after the run (boogle-2.md, Decided).
+
+## 2026-11-02 (the long crossing)
+- Who: Matias, solo, `?proto=crossing`; told to the director.
+- Vast (4 km at 50 m/s): "definitely something cool", but "more like a novelty that would wear off and get annoying later in the game".
+- Express (1.2 km at 50 m/s): "a little too fast"; maybe it makes more sense for the end-game trains.
+- Default (1.2 km at 20 m/s): "pretty well balanced", a good compromise. The time felt more like Vast.
+- Wanted: press X or square to sit on the train. He wasn't falling off, but sitting would feel safe and more relaxing.
+- Felt off: it's greybox, but the world needs to be a lot more beautiful, through rendering settings in the future.
+- After: a crossing starts at about a minute, top speed goes to the end-game trains, and sitting is decided (boogle-2.md, Decided).

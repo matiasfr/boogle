@@ -457,7 +457,13 @@ export const PROTOS: Proto[] = [
     id: 'crossing',
     title: 'The long crossing',
     step: 7,
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-02',
+      verdict:
+        'Default was pretty well balanced; Vast felt like a novelty that would wear off, and Express a little too fast.',
+      next: 'A crossing starts at about a minute (1.2 km at 20 m/s), the top speed is for the end-game trains, and you can sit on the train.',
+    },
     url: '/?room=proto-crossing&proto=crossing',
     question: 'Does the crossing feel vast in a good way, and would you ride it again?',
     what: 'A train over a long viaduct to an island you can see from the start. Step on a flatbed and ride; a walkway runs beside the rails if you’d rather.',
@@ -500,7 +506,6 @@ export type PlaytestStep = {
 export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'soapbox', why: 'Do you keep driving after the finish?' },
   { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
-  { id: 'crossing', why: 'How far is vast, in seconds and metres?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
