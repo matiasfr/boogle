@@ -95,8 +95,7 @@ Quaternius's Universal Animation Library (CC0), on the Buddy; `&body=mannequin` 
 compare motion apart from our model. Idle, walk (to 2 m/s), jog (from 3.2) and sprint (from 8.5) blend by speed and play by distance at each clip's
 stride (1.3, 5 and 5.5 m per cycle), so feet keep to the ground; it needs no new presence. The controller is today's, and
 the camera ([src/proto/hero/camera.ts](../../src/proto/hero/camera.ts), `&cam=old` for today's) sits at 5.2 m instead of
-6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. `&camtest` compares
-5.2, 5.8 and 6.5 m and 0°, 3° and 5° of widening live, with buttons or the , and . keys (`&camd=` and `&camw=` set them from the address). Widening goes by your speed over what you stand on, so a train doesn't trigger it.
+6.5, stays locked across the ground, follows height softly in the air (0.2 s) and widens up to 5° at a sprint. Widening goes by your speed over what you stand on, so a train doesn't trigger it.
 
 The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to

@@ -380,11 +380,6 @@ export const PROTOS: Proto[] = [
         what: 'The Buddy in a conductor’s cap, the first hat.',
       },
       {
-        name: 'camera',
-        url: '/?proto=hero&camtest=1&v=camera',
-        what: 'Compare camera distances and sprint widening live: the buttons at the right, or the , and . keys. Which keeps you most in control while still showing where you’re going?',
-      },
-      {
         name: 'mannequin',
         url: '/?proto=hero&body=mannequin&v=mannequin',
         what: 'The same motion on the clip library’s plain mannequin, to compare.',
