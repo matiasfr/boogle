@@ -8,6 +8,8 @@
 - New story: [opening day starts](#story/opening). One stamped tick starts a whole scripted moment (the gathering call, the bell, the era change), so every tab and every late joiner sees the same thing without anything else being sent.
 - Two new folders get notes: prototypes (everything behind `?proto=`) and shared HUD pieces.
 - Later the same day, only small fixes landed: the code now double-checks every list lookup before trusting it, like checking a drawer isn't empty before reaching in. Nothing in the picture moved.
+- Later still: three prototype toys were cut (the wheelbarrow, the ride flatbed and the toppling stack), so two presence keys they used (`barrow`, `seat`) are gone. A new prototype, the long train crossing, is Local only: it shares nothing, so no arrow in the picture changes.
+- The checks now guard the borders between parts, like walls between rooms: the shared world and the network code can't reach into drawing or the player, and two files can't lean on each other in a loop.
 
 ## 2026-10-30
 
