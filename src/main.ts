@@ -14,7 +14,7 @@ import { updateRemotes } from './entities/remote-player/index.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
 import { createStall } from './adapters/mushroom-garden.ts';
-import { onFrame, runFrame, runStart, beginFrame, mark, endFrame } from './loop.ts';
+import { onFrame, runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from './loop.ts';
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
@@ -46,7 +46,6 @@ onFrame(() => prepareBall(), { phase: 'prePhysics', order: -70, name: 'prepareBa
 // step; src/loop.ts lists their order.
 let last = performance.now();
 let elapsed = 0;
-const ctx = { now: 0, dt: 0, elapsed: 0 }; // one object for every frame's hooks (no per-frame garbage)
 function frame(now = performance.now()) {
   const dt = Math.max(0, Math.min((now - last) / 1000, 0.05)); // a first rAF stamp can predate `last` (play())
   last = now;

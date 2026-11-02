@@ -21,6 +21,10 @@
 //           (features: -10 to 2000)
 //           3000 net.ts: presence send           3010 water-render.ts: sea uTime  (then main.ts renders)
 //
+// Entities (src/entity/entity.ts) run on these same lists: each kind registers one hook per phase it declares, at the
+// order in its defineKind. Their phases map postPhysics to world, update to update, lateUpdate to late, and fixedPre and
+// fixedPost to onPreStep and onPostStep below.
+//
 // The fixed step (src/physics/engine.ts) has its own lists, walked 0 to 4 times a frame around each physics step: lower
 // order first, ties in registration order. The orders below are pinned; moving one is a change of behaviour and gets
 // its own commit. No order means 1000: prototypes and anything unnumbered run after all of these.
@@ -42,6 +46,8 @@
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
 
 export type FrameCtx = { now: number; dt: number; elapsed: number };
+/** The one object every hook of every frame gets (no per-frame garbage); main.ts fills it before prePhysics. */
+export const frameCtx: FrameCtx = { now: 0, dt: 0, elapsed: 0 };
 export type Phase = 'prePhysics' | 'world' | 'update' | 'late';
 type Hook = { fn: (ctx: FrameCtx) => void; order: number; name: string };
 type Section = { name: string; ring: Float32Array; last: number };
