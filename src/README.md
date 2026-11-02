@@ -21,6 +21,7 @@ so hashed file names don't depend on it).
   `camera/`: the local player and camera as entities, over `player/`. `remote-player/`: other players as this tab
   draws them, avatars, labels, bodies and interpolation, plus riding a shared platform. Most other kinds live in the feature
   that owns them; `npm run registry -- --json` lists them with their orders.
+- `blueprints/`: static world objects as pure data, kept apart from how they're drawn (`blueprint.ts`; `props.ts`: the palms, round trees and rocks, and where they go). `entities/props/` makes their colliders, `render/props.ts` draws them.
 - `island/`, `pois/`: the island's base ground and its points of interest (caves, lighthouse, ...); `island/heights.ts`
   is the fixed ground's heights (`groundHeight`, `cellX`/`cellZ`), `island/terrain.ts` its mesh.
 - `adapters/`: the game side of lockstep state: gifts, mushroom garden, piles. They submit edits and react
