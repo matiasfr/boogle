@@ -37,7 +37,7 @@ async function build() {
   const { loadHeroKit, OUTFITS } = await import('../../player/hero.ts');
   const hero = (await loadHeroKit()).make('#1fbfc4', q.has('hero') ? undefined : 'work');
   const { holder, pupils } = hero;
-  const root = holder.children[0];
+  const root = holder.children[0]!;
   const y = groundHeight(AT.x, AT.z);
   holder.position.set(AT.x, y, AT.z);
   scene.add(holder);
@@ -65,7 +65,7 @@ async function build() {
         verb: 'Change clothes',
         at,
         run: () => {
-          hero.dress(OUTFITS[(OUTFITS.indexOf(hero.outfit) + 1) % OUTFITS.length]);
+          hero.dress(OUTFITS[(OUTFITS.indexOf(hero.outfit) + 1) % OUTFITS.length]!);
           waveT = 0;
           wave.reset().play();
         },
@@ -86,7 +86,7 @@ async function build() {
       yaw += d * Math.min(1, dt * 3);
       holder.rotation.y = yaw;
       const look = THREE.MathUtils.clamp(d, -0.5, 0.5);
-      pupils.forEach((pu, i) => pu.position.set(pupilRest[i].x - look * 0.06, pupilRest[i].y, pupilRest[i].z));
+      pupils.forEach((pu, i) => pu.position.set(pupilRest[i]!.x - look * 0.06, pupilRest[i]!.y, pupilRest[i]!.z));
 
       // The code pose: breathing (a small squash on the hips), a sway, arms hanging with a little swing.
       const breath = Math.sin(t * 2.2);
@@ -101,13 +101,13 @@ async function build() {
 
       // The authored clip over the code pose: the mixer writes the clip's pose, then each bone blends from the code
       // pose towards it by the fade weight.
-      bones.forEach((b, i) => codeQ[i].copy(b.quaternion));
+      bones.forEach((b, i) => codeQ[i]!.copy(b.quaternion));
       waveT += dt;
       mixer.update(dt);
       const dur = wave.getClip().duration;
       const w = Math.min(1, waveT / FADE_IN, Math.max(0, (dur - waveT) / FADE_OUT));
       // (slerpQuaternions copies its first argument into the target first, so the clip pose needs its own copy)
-      bones.forEach((b, i) => b.quaternion.slerpQuaternions(codeQ[i], clipQ.copy(b.quaternion), w));
+      bones.forEach((b, i) => b.quaternion.slerpQuaternions(codeQ[i]!, clipQ.copy(b.quaternion), w));
       if (waveT >= dur) waveT = -1;
     },
     { phase: 'update', order: 41 },
