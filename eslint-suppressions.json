@@ -1,0 +1,257 @@
+{
+  "src/adapters/gifts.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/adapters/mushroom-garden.ts": {
+    "boogle/use-an-entity": {
+      "count": 4
+    }
+  },
+  "src/boogler/boogler.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/boogler/fx.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/entities/remote-player/index.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/features/ball-rest.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/blob-shadows.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/boogler.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/features/critter-fireflies.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/critter-fish.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/critter-gulls.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/day-night.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/dino.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/feel.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/first-run.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/gifts.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/haul-stack.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/honk.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/hotbar.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/hut-build.ts": {
+    "boogle/use-an-entity": {
+      "count": 4
+    }
+  },
+  "src/features/identity.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/impact.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/features/log-sources.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/mushroom-garden.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/pause.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/piles.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/prompt.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/proto-soapbox.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/splash.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/track-machine.ts": {
+    "boogle/use-an-entity": {
+      "count": 4
+    }
+  },
+  "src/features/welcome-back.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/features/work-sites.ts": {
+    "boogle/use-an-entity": {
+      "count": 6
+    }
+  },
+  "src/guest/dino.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/guest/play.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/island/terrain.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/main.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/physics/physics.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/player/conversation.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/player/hud.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/player/player.ts": {
+    "boogle/use-an-entity": {
+      "count": 5
+    }
+  },
+  "src/player/throw.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/pois/caves/decor.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  },
+  "src/pois/caves/index.ts": {
+    "boogle/use-an-entity": {
+      "count": 4
+    }
+  },
+  "src/pois/lighthouse/index.ts": {
+    "boogle/use-an-entity": {
+      "count": 8
+    }
+  },
+  "src/pois/windmills/index.ts": {
+    "boogle/use-an-entity": {
+      "count": 6
+    }
+  },
+  "src/render/haul-pieces.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/render/props.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/render/scene.ts": {
+    "boogle/use-an-entity": {
+      "count": 3
+    }
+  },
+  "src/render/sky.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/render/sprites.ts": {
+    "boogle/use-an-entity": {
+      "count": 1
+    }
+  },
+  "src/render/water-render.ts": {
+    "boogle/use-an-entity": {
+      "count": 2
+    }
+  }
+}

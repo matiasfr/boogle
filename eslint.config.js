@@ -91,6 +91,40 @@ const DOORS = [
 ];
 const doorRule = ({ selector, message }) => ({ selector, message });
 
+// The entity ratchet (docs/plans/entity-architecture.md, step 11): new things in the world or on screen are entities.
+// Today's offenders are listed in eslint-suppressions.json, generated, which can only shrink: a file adding one more
+// fails, and a file with one fewer fails until `npm run lint -- --prune-suppressions`. Its own rule, so that file's counts
+// mean this and nothing else.
+const ENTITY_MESSAGE =
+  'A thing in the world or on screen is an entity: copy src/entities/ball (long-lived) or src/features/ping.ts (short-lived). A service other things call goes on the allow-list in eslint.config.js.';
+const entityPlugin = {
+  rules: {
+    'use-an-entity': {
+      meta: { type: 'suggestion', schema: [], messages: { useAnEntity: ENTITY_MESSAGE } },
+      create: (context) => ({
+        CallExpression(node) {
+          const c = node.callee;
+          const bare = c.type === 'Identifier' && (c.name === 'onFrame' || c.name === 'addBody');
+          const sceneAdd =
+            c.type === 'MemberExpression' && c.object.name === 'scene' && c.property.name === 'add' && !c.computed;
+          if (bare || sceneAdd) context.report({ node, messageId: 'useAnEntity' });
+        },
+      }),
+    },
+  },
+};
+// The services that stay on onFrame ("Entity or system" in that plan).
+const ENTITY_SERVICES = [
+  'src/loop.ts', // onFrame itself, and the profiler
+  'src/render/particles.ts', // the particle simulation behind emit()
+  'src/render/lights.ts', // the lights pool
+  'src/render/assets.ts', // the glTF animation mixer
+  'src/netplay/net.ts', // the presence send
+  'src/features/world.ts', // the lockstep tick driver
+  'src/features/gamepad.ts', // gamepad polling
+  'src/features/adaptive-res.ts', // adaptive resolution
+];
+
 export default [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   js.configs.recommended,
@@ -281,6 +315,12 @@ export default [
     files: door.allow,
     rules: { 'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule)] },
   })),
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/proto/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES],
+    plugins: { boogle: entityPlugin },
+    rules: { 'boogle/use-an-entity': 'error' },
+  },
   // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
   {
     files: ['src/physics/backend-*.ts'],

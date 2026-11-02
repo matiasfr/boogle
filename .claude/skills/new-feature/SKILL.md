@@ -1,6 +1,6 @@
 ---
 name: new-feature
-description: Scaffold a new plug-in feature in src/features/ (auto-loaded, own CSS and DOM, frame hooks from src/loop.ts). Use when adding a self-contained feature to the game.
+description: Scaffold a new plug-in feature in src/features/ (auto-loaded, own CSS and DOM, entities from src/entity/entity.ts). Use when adding a self-contained feature to the game.
 argument-hint: '<name> [what it does]'
 ---
 
@@ -14,7 +14,11 @@ AGENTS.md has the rules; this is the order to apply them in.
 3. Copy the shape of a small plug-in: `src/features/honk.ts` (an action + room messages), `src/features/bump.ts` (an
    action on Owner state), `src/features/gifts.ts` (interactables + a lockstep adapter). Create `src/features/$0.ts` (TypeScript, strict; AGENTS.md)
    with a header comment saying what it does, which sync kind each piece of state uses and the principle it serves;
-   `import './$0.css'` only if it needs styles; DOM built in JS; `onFrame`/`onStart` from `src/loop.ts`.
+   `import './$0.css'` only if it needs styles; DOM built in JS; `onStart` from `src/loop.ts`.
+   A thing in the world or on screen with its own lifetime is an entity (`src/entity/entity.ts`): `defineKind` and `spawn`,
+   copying `src/features/ping.ts` (many short-lived ones, in this file) or `src/entities/ball/` (long-lived, its own folder:
+   `index.ts`, `state.ts`, `view.ts`, `sync.ts`). Lint fails a new `onFrame`, `addBody` or `scene.add` outside the services
+   on the allow-list in `eslint.config.js`.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (pick from
    `freeSlots()`), `registerInteractable` for things the interact button acts on, `emit` for particles,
    `addPresenceField`/`addHostField` for shared values (getter returns `null` when off).

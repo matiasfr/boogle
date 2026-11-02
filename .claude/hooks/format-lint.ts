@@ -1,6 +1,8 @@
 // Claude Code PostToolUse hook (see .claude/settings.json): after Claude edits a file, run Prettier on it and,
 // for JS, ESLint. Keeps formatting consistent so concurrent edits merge cleanly. Lint errors go back to Claude
-// (exit 2) without blocking; anything unexpected (no node_modules yet, odd path) is skipped silently.
+// (exit 2) without blocking; anything unexpected (no node_modules yet, odd path) is skipped silently. Bulk suppressions
+// apply here as in `npm run lint` (eslint-suppressions.json, found from cwd), except that one going stale mid-edit isn't an
+// error yet: `npm run lint` catches that when you ship.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -30,7 +32,7 @@ const run = (tool: string, args: string[]) =>
 run('prettier', ['--write', '--log-level', 'silent', '--ignore-unknown', file]);
 
 if (/\.(m?js|ts)$/.test(file) && existsSync(join(bin, 'node_modules/.bin/eslint'))) {
-  const r = run('eslint', ['--quiet', '--no-warn-ignored', file]);
+  const r = run('eslint', ['--quiet', '--no-warn-ignored', '--pass-on-unpruned-suppressions', file]);
   if (r.status === 1) {
     process.stderr.write(`ESLint errors (fix them before you finish; fine to ignore mid-edit):\n${r.stdout}`);
     process.exit(2);

@@ -36,7 +36,8 @@
 //               20 physics.ts: this player's fall-through net, ground contact (coyote)
 //               30 boogler/play.ts: standing on him
 //
-// New features: add a file in src/features/ that imports what it needs (including its own CSS) and calls
+// New features: add a file in src/features/ that imports what it needs (including its own CSS) and spawns entities
+// (src/entity/entity.ts) or, for a service other things call, uses
 // onFrame/onStart. main.ts loads every file in src/features/ automatically.
 //
 // Lazy parts (faster first load): a feature stays a small eager file and loads its heavy or rarely used part with a
