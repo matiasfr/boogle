@@ -34,8 +34,8 @@ test('chroma: keys out the background and its halo, keeps the subject, bleeds it
   assert.equal(px(cut, 4, 4)[3], 255);
   // The pink ring leans only slightly towards magenta, so it survives the loose pass but loses its tint.
   const ring = px(cut, 2, 4);
-  assert.ok(ring[3] > 0 && ring[3] < 255);
-  assert.ok(ring[0] - ring[1] < 55 && ring[2] - ring[1] < 55);
+  assert.ok(ring[3]! > 0 && ring[3]! < 255);
+  assert.ok(ring[0]! - ring[1]! < 55 && ring[2]! - ring[1]! < 55);
   // Transparent pixels carry the nearest opaque colour, not magenta.
   assert.notDeepEqual(px(cut, 0, 0).slice(0, 3), MAGENTA);
   const c = check(img, cut, MAGENTA);

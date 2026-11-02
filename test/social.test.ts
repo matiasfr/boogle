@@ -50,17 +50,17 @@ test('chord needs 3 different players within a second', () => {
 
 test('honk pitch is stable per colour', () => {
   assert.equal(honkFreq(2), honkFreq(2));
-  assert.ok(honkFreq(5) > honkFreq(0));
+  assert.ok(honkFreq(5)! > honkFreq(0)!);
   for (const [k, s] of [0, 2, 4, 7, 9, 12, 14, 16].entries()) {
     const want = 261.63 * 2 ** (s / 12); // major pentatonic from C4
-    assert.ok(Math.abs(honkFreq(k) - want) <= 0.01, `honkFreq(${k}) = ${honkFreq(k)}, want ${want}`);
+    assert.ok(Math.abs(honkFreq(k)! - want) <= 0.01, `honkFreq(${k}) = ${honkFreq(k)}, want ${want}`);
     assert.equal(honkFreq(k + 8), honkFreq(k));
   }
 });
 
 test('honks take tones from one shared chord', () => {
   for (const t of [0, HONK_CHORD_S * 1.5, HONK_CHORD_S * 2.2, HONK_CHORD_S * 3.9, HONK_CHORD_S * 7]) {
-    const chord = honkChord(t);
+    const chord = honkChord(t)!;
     for (let c = 0; c < 8; c++)
       for (let v = 0; v < 4; v++) {
         const [f, f2] = honkNotes(c, t, v);

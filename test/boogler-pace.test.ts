@@ -21,7 +21,7 @@ function talk(f: ReturnType<typeof createFriend>, now: number, rng: () => number
   for (const id of ORDER) {
     const s = threadState(f, id);
     if (!s.next || s.next.lvl > levelOf(f.pts)) continue;
-    const at = opts.indexOf(THREADS[id].ask[s.started ? 1 : 0]);
+    const at = opts.indexOf(THREADS[id].ask[s.started ? 1 : 0]!);
     if (at >= 0) {
       choice = at;
       break;

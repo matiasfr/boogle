@@ -37,7 +37,7 @@ function makePeer(net: FakeNet, id: string, host: boolean, opts: PeerOpts = {}) 
   s.registerOp<V>('add', {
     validate: (e) => e.i >= 0 && e.i < 4 && e.j >= 0 && e.j < 4 && Number.isInteger(e.v),
     apply: (e) => {
-      grid[e.i * 4 + e.j] += e.v;
+      grid[e.i * 4 + e.j]! += e.v;
       log.push(`${e.p}:${e.v}`);
     },
   });
@@ -49,14 +49,14 @@ function makePeer(net: FakeNet, id: string, host: boolean, opts: PeerOpts = {}) 
       return true;
     },
     apply: (e) => {
-      grid[e.i * 4 + e.j] += e.v;
+      grid[e.i * 4 + e.j]! += e.v;
       log.push(`${e.p}:${e.v}`);
     },
   });
   s.registerOp<{ u: string }>('mark', { apply: (e) => log.push(`${e.p}=${e.u}`) }); // who sent it, as the host stamped it
   s.registerOp<V>('gate', {
     validate: (e, ctx) => (ctx.env.allow as Allow)(e.v),
-    apply: (e) => (grid[e.i * 4 + e.j] += e.v),
+    apply: (e) => (grid[e.i * 4 + e.j]! += e.v),
   });
   extra?.(s); // more states or ops on this peer only, registered before it attaches
   const p = net.add(id, host, pid ?? id);
@@ -91,31 +91,31 @@ test('edits from all peers converge in identical order', async () => {
   assert.ok(clients.every((c) => c.s.worldStatus().ready));
   for (let k = 0; k < 6; k++) {
     host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
-    clients[0].s.submitEdit({ op: 'add', i: 1, j: 1, v: 10 });
-    clients[1].s.submitEdit({ op: 'add', i: 0, j: 0, v: 100, p: 'forged' });
+    clients[0]!.s.submitEdit({ op: 'add', i: 1, j: 1, v: 10 });
+    clients[1]!.s.submitEdit({ op: 'add', i: 0, j: 0, v: 100, p: 'forged' });
     await run(net, all, 3);
   }
   await run(net, all, 60);
   assert.equal(host.grid[0], 606);
-  assert.equal(clients[1].grid[0], 606);
+  assert.equal(clients[1]!.grid[0], 606);
   assert.ok(same(all));
-  assert.deepEqual(clients[0].log, host.log);
-  assert.deepEqual(clients[1].log, host.log);
+  assert.deepEqual(clients[0]!.log, host.log);
+  assert.deepEqual(clients[1]!.log, host.log);
   assert.ok(!host.log.some((l) => l.startsWith('forged')), 'p comes from the real sender');
-  assert.ok(Math.abs(clients[0].s.world.tick - host.s.world.tick) <= 6);
+  assert.ok(Math.abs(clients[0]!.s.world.tick - host.s.world.tick) <= 6);
 });
 
 test("the host stamps each edit with its sender's pid (u), never one the edit claims", async () => {
   const net = makeNet();
   const all = [makePeer(net, 'h', true, { pid: 'pidh' }), makePeer(net, 'c0', false, { pid: 'pid0' })];
   await run(net, all, 60);
-  all[1].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pidh' });
-  all[0].s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pid0' });
+  all[1]!.s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pidh' });
+  all[0]!.s.submitEdit({ op: 'mark', i: 0, j: 0, u: 'pid0' });
   await run(net, all, 20);
-  assert.deepEqual(all[0].log.sort(), ['c0=pid0', 'h=pidh']);
-  assert.deepEqual(all[1].log.sort(), all[0].log);
-  assert.equal(all[0].s.pidOf('c0'), 'pid0');
-  assert.equal(all[1].s.pidOf('h'), 'pidh');
+  assert.deepEqual(all[0]!.log.sort(), ['c0=pid0', 'h=pidh']);
+  assert.deepEqual(all[1]!.log.sort(), all[0]!.log);
+  assert.equal(all[0]!.s.pidOf('c0'), 'pid0');
+  assert.equal(all[1]!.s.pidOf('h'), 'pidh');
 });
 
 test('an edit from a session the room has no pid for is rejected', async () => {
@@ -125,17 +125,17 @@ test('an edit from a session the room has no pid for is rejected', async () => {
   const ghost = net.add('ghost', false, null); // a raw room the server bound to no player
   ghost.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
   await run(net, all, 20);
-  assert.deepEqual(all[0].log, []);
+  assert.deepEqual(all[0]!.log, []);
   const known = net.add('known', false, 'pidg');
   known.room.send({ t: 'w:edit', e: { op: 'mark', i: 0, j: 0, u: 'pidh' } });
   await run(net, all, 20);
-  assert.deepEqual(all[0].log, ['known=pidg']);
+  assert.deepEqual(all[0]!.log, ['known=pidg']);
 });
 
 test('host rejects invalid edits', async () => {
   const { net, host, clients, all } = await setup(1);
-  clients[0].s.submitEdit({ op: 'add', i: 9, j: 0, v: 1 });
-  clients[0].s.submitEdit({ op: 'add', i: 0, j: 0, v: 1.5 });
+  clients[0]!.s.submitEdit({ op: 'add', i: 9, j: 0, v: 1 });
+  clients[0]!.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1.5 });
   await run(net, all, 30);
   assert.equal(
     host.grid.reduce((a, b) => a + b),
@@ -159,23 +159,23 @@ test('late joiner converges via snapshot (incl. in-flight edits)', async () => {
 
 test('injected desync is detected by hash and repaired', async () => {
   const { net, host, clients, all } = await setup();
-  clients[1].grid[5] = 999;
+  clients[1]!.grid[5] = 999;
   const seen: { keys: string[] }[] = [];
-  clients[1].s.onDesync((d) => seen.push(d));
+  clients[1]!.s.onDesync((d) => seen.push(d));
   await run(net, all, 120);
-  assert.ok(seen.length >= 1 && seen[0].keys.length === 1, JSON.stringify(seen)); // names the diverged state
-  assert.equal(clients[1].grid[5], 0);
-  assert.ok(clients[1].s.worldStatus().resyncs >= 1);
+  assert.ok(seen.length >= 1 && seen[0]!.keys.length === 1, JSON.stringify(seen)); // names the diverged state
+  assert.equal(clients[1]!.grid[5], 0);
+  assert.ok(clients[1]!.s.worldStatus().resyncs >= 1);
   assert.ok(same(all));
   assert.equal(host.s.worldStatus().hashBad, 0);
 });
 
 test('an edit submitted while the room is reconnecting still reaches the host', async () => {
   const { net, host, clients, all } = await setup(1);
-  net.setUp(clients[0].p, false);
-  assert.ok(clients[0].s.submitEdit({ op: 'add', i: 2, j: 1, v: 9 }));
+  net.setUp(clients[0]!.p, false);
+  assert.ok(clients[0]!.s.submitEdit({ op: 'add', i: 2, j: 1, v: 9 }));
   await run(net, all, 20);
-  net.setUp(clients[0].p, true);
+  net.setUp(clients[0]!.p, true);
   await run(net, all, 60);
   assert.equal(host.grid[9], 9);
   assert.ok(same(all));
@@ -183,10 +183,10 @@ test('an edit submitted while the room is reconnecting still reaches the host', 
 
 test('edits held while reconnecting are all accepted by a rate-limited op, in order', async () => {
   const { net, host, clients, all } = await setup(1);
-  net.setUp(clients[0].p, false);
-  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v: v * 10 ** v }));
+  net.setUp(clients[0]!.p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0]!.s.submitEdit({ op: 'slow', i: 0, j: 2, v: v * 10 ** v }));
   await run(net, all, 10);
-  net.setUp(clients[0].p, true);
+  net.setUp(clients[0]!.p, true);
   await run(net, all, 60);
   assert.equal(host.grid[2], 43210);
   assert.deepEqual(host.log, ['c0:10', 'c0:200', 'c0:3000', 'c0:40000']);
@@ -195,17 +195,17 @@ test('edits held while reconnecting are all accepted by a rate-limited op, in or
 
 test('a fresh edit after a reconnect replaces the held backlog and goes out in the next slot', async () => {
   const { net, host, clients, all } = await setup(1);
-  net.setUp(clients[0].p, false);
-  for (let v = 1; v <= 4; v++) assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v }));
+  net.setUp(clients[0]!.p, false);
+  for (let v = 1; v <= 4; v++) assert.ok(clients[0]!.s.submitEdit({ op: 'slow', i: 0, j: 2, v }));
   await run(net, all, 10);
-  net.setUp(clients[0].p, true);
+  net.setUp(clients[0]!.p, true);
   await run(net, all, 1); // the first held edit goes out
   for (let v = 5; v <= 8; v++) {
-    assert.ok(clients[0].s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held button
+    assert.ok(clients[0]!.s.submitEdit({ op: 'slow', i: 0, j: 2, v })); // like a held button
     await run(net, all, 5);
   }
   await run(net, all, 60);
-  assert.equal(clients[0].s.worldStatus().heldDropped, 3);
+  assert.equal(clients[0]!.s.worldStatus().heldDropped, 3);
   // 5 waits for the slot after 1 instead of taking its rate-limit slot. 6 comes on the button's own repeat, which can be
   // too soon after 5 for the host's rate limit: at most that one live edit is lost.
   assert.deepEqual(host.log.slice(0, 2), ['c0:1', 'c0:5']);
@@ -215,7 +215,7 @@ test('a fresh edit after a reconnect replaces the held backlog and goes out in t
 
 test('live input after a reconnect is back to normal latency', async () => {
   const { net, host, clients, all } = await setup(1);
-  const c = clients[0];
+  const c = clients[0]!;
   let v = 0;
   const press = async () => {
     assert.ok(c.s.submitEdit({ op: 'slow', i: 0, j: 2, v: ++v }));
@@ -230,7 +230,7 @@ test('live input after a reconnect is back to normal latency', async () => {
   const live = host.log.slice(host.log.indexOf('c0:17')).map((l) => Number(l.slice(3)));
   assert.ok(live.length >= 19, 'live edits are accepted (at most one lost to the rate limit after the delayed one)');
   assert.ok(
-    live.every((x, k) => k === 0 || x > live[k - 1]),
+    live.every((x, k) => k === 0 || x > live[k - 1]!),
     'in order',
   );
   assert.ok(same(all));
@@ -238,25 +238,25 @@ test('live input after a reconnect is back to normal latency', async () => {
 
 test('an edit held past the age limit is dropped and counted', async () => {
   const { net, host, clients, all } = await setup(1);
-  net.setUp(clients[0].p, false);
-  clients[0].s.submitEdit({ op: 'add', i: 2, j: 3, v: 8 });
+  net.setUp(clients[0]!.p, false);
+  clients[0]!.s.submitEdit({ op: 'add', i: 2, j: 3, v: 8 });
   await run(net, all, 120); // 6 s
-  net.setUp(clients[0].p, true);
+  net.setUp(clients[0]!.p, true);
   await run(net, all, 60);
   assert.equal(host.grid[11], 0);
-  assert.equal(clients[0].s.worldStatus().heldDropped, 1);
+  assert.equal(clients[0]!.s.worldStatus().heldDropped, 1);
   assert.ok(same(all));
 });
 
 test("unloadable snapshots are reported (peer chunk, the host's save)", async () => {
   const { net, clients, all } = await setup(1);
   const seen: unknown[] = [];
-  clients[0].s.onSnapFail(() => {
+  clients[0]!.s.onSnapFail(() => {
     throw new Error('a broken listener does not turn one failure into two');
   });
-  clients[0].s.onSnapFail((f) => seen.push(f));
-  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 99, n: 1, k: 0, s: '{nope' }, 'h');
-  for (const h of clients[0].p.msg) h({ t: 'w:snap', to: 'c0', id: 98, n: 1, k: 0, s: '{"snap":1}' }, 'h');
+  clients[0]!.s.onSnapFail((f) => seen.push(f));
+  for (const h of clients[0]!.p.msg) h({ t: 'w:snap', to: 'c0', id: 99, n: 1, k: 0, s: '{nope' }, 'h');
+  for (const h of clients[0]!.p.msg) h({ t: 'w:snap', to: 'c0', id: 98, n: 1, k: 0, s: '{"snap":1}' }, 'h');
   await run(net, all, 2);
   assert.deepEqual(seen, [
     { from: 'peer', reason: 'parse' },
@@ -387,7 +387,7 @@ test('onAfterTick runs after every onTick handler and before the host sends its 
   await run(net, all, 50);
   const h = log.findIndex((l) => l.startsWith('hash'));
   assert.ok(h >= 2, log.join());
-  const t = log[h].slice(5);
+  const t = log[h]!.slice(5);
   assert.deepEqual(log.slice(h - 2, h + 1), [`tick ${t}`, `after ${t}`, `hash ${t}`]);
   assert.ok(log.every((l, k) => !l.startsWith('tick') || log[k + 1] === `after ${l.slice(5)}`));
 });

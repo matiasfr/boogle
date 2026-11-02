@@ -55,7 +55,7 @@ const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
   piles: () => [
     ({ rules }) => {
       rules.piles.drop(212, 188, 0, 9); // a pile to start from, the same on both peers (nothing else makes one yet)
-      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0].id, n: 6 };
+      return { op: 'pile.take', i: 212, j: 188, id: rules.piles.piles.list[0]!.id, n: 6 };
     },
     { op: 'pile.drop', i: 214, j: 188, n: 2 },
   ],
@@ -100,7 +100,7 @@ function play(x: Peer) {
       edits.push(e);
       tick(x, 3);
     }
-    x.after[m.name] = x.s.stateHashes()[m.name];
+    x.after[m.name] = x.s.stateHashes()[m.name]!;
   }
   return edits;
 }
@@ -180,7 +180,7 @@ test('rules import only pure modules (no three.js, DOM or constants.js)', () => 
     for (const [, a, b] of src.matchAll(
       /^\s*(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm,
     )) {
-      const spec = a ?? b;
+      const spec = a ?? b!;
       assert.ok(spec.startsWith('.'), `${url.pathname} imports the package ${spec}`);
       visit(new URL(spec, url));
     }

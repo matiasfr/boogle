@@ -43,11 +43,11 @@ test('seed stays buried until watered, then grows to full in GROW_TICKS', () => 
   const g = createGarden();
   plant(g, i0, j0);
   for (let t = 0; t < 100; t++) tickGarden(g);
-  assert.equal(g.plots[0].g, 0);
+  assert.equal(g.plots[0]!.g, 0);
   assert.equal(water(g, i0, j0), true);
   assert.equal(water(g, i0, j0), false);
   for (let t = 0; t < GROW_TICKS * 2; t++) tickGarden(g);
-  assert.equal(g.plots[0].g, GROW_TICKS);
+  assert.equal(g.plots[0]!.g, GROW_TICKS);
 });
 
 test('snapshot round-trips and hashes match', () => {

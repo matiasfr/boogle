@@ -14,8 +14,8 @@ test('rings take up to their cost; a full Helper ring builds the hut and closes'
   assert.equal(ringRoom(st, 0, TRACK), costOf(0, TRACK) - 50);
   const r = stock(st, 0, HELPER, 1, costOf(0, HELPER));
   assert.equal(r.built, true);
-  assert.equal(st.list[0].helpers, 1);
-  assert.equal(st.list[0].stock[HELPER], 0);
+  assert.equal(st.list[0]!.helpers, 1);
+  assert.equal(st.list[0]!.stock[HELPER], 0);
   assert.equal(ringRoom(st, 0, HELPER), 0);
 });
 
@@ -23,10 +23,10 @@ test('plaque points: 1 point per 1% of a section, remainders carried so 60 singl
   const st = createSites();
   for (let k = 0; k < 60; k++) stock(st, 0, TRACK, 3, 1);
   assert.equal(pointsOf(st, 3), 100);
-  assert.deepEqual(st.list[0].plaque, [[3, 100, 0]]);
+  assert.deepEqual(st.list[0]!.plaque, [[3, 100, 0]]);
   stock(st, 1, TRACK, 3, 1);
   assert.equal(pointsOf(st, 3), 101, 'one log is 1.67 points: 1 now, the rest carried');
-  assert.equal(st.list[1].plaque[0][2], 40);
+  assert.equal(st.list[1]!.plaque[0]![2], 40);
 });
 
 test('tiers follow points and only rise with them', () => {
@@ -91,8 +91,8 @@ test('a run lays its section, credits the starter, refills sources and opens the
   assert.equal(st.open, 3);
   assert.equal(rules.sites.age(), 1, 'the wood age is over');
   assert.equal(rules.stacks.count('ana'), 0, 'the leftover logs poured themselves');
-  assert.equal(st.list[2].poured, 12);
-  assert.equal(st.list[2].plaque.find((r) => r[0] === 0)?.[1], 20 + RUN_BONUS);
+  assert.equal(st.list[2]!.poured, 12);
+  assert.equal(st.list[2]!.plaque.find((r) => r[0] === 0)?.[1], 20 + RUN_BONUS);
   assert.equal(rules.sources.charges(0), 0, 'no iron sources yet');
 });
 
@@ -106,7 +106,7 @@ test('two starts stamped for the same run: the first one counts', () => {
   s.setPid('bo');
   assert.equal(s.submitEdit({ op: 'site.run', i: 0, j: 0, s: 0 }), true, 'both pass validate before either applies');
   s.updateWorld(0.1);
-  const site = rules.sites.sites.list[0];
+  const site = rules.sites.sites.list[0]!;
   assert.equal(site.starter, rules.roster.indexOf('ana'));
   assert.equal(site.t0, 1);
 });
@@ -125,7 +125,7 @@ test('tune.fill fills the ring with no credit, and the run lays the section', ()
   const st = rules.sites.sites;
   step({ op: 'tune.fill', i: 0, j: 0 });
   assert.equal(rules.sites.canRun(0), true);
-  assert.equal(st.list[0].plaque.length, 0, 'a fill is freight: no credit');
+  assert.equal(st.list[0]!.plaque.length, 0, 'a fill is freight: no credit');
   step({ op: 'site.run', i: 0, j: 0, s: 0 });
   step(null, lengthOf(MACHINE_RUN) - 2);
   assert.equal(st.open, 0, 'still laying');
