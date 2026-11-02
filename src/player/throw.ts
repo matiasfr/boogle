@@ -9,7 +9,7 @@ import { groundHeight } from '../island/terrain.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
-import { onFrame } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { me, camForward, handPosition, throwFrom } from './state.ts';
 import { heldId } from './inventory.ts';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';
@@ -89,4 +89,5 @@ function updatePreview() {
 }
 
 // late -200, first in late, before the HUD (hud.ts, -190).
-onFrame(updatePreview, { phase: 'late', order: -200 });
+defineKind('throw-preview', { lateUpdate: -200 });
+spawn({ kind: 'throw-preview', mesh: preview, lateUpdate: updatePreview });
