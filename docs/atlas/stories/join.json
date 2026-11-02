@@ -6,27 +6,32 @@
   "steps": [
     {
       "go": [["you.netplay", "server"]],
-      "text": "Your tab asks the server to introduce it to the room.",
-      "code": "/peerjs signaling",
+      "text": "Your tab opens one WebSocket to the server. The server checks the room, your player id and the player cap.",
+      "code": "createWsRoom({ roomId, server, pid, key })",
       "cite": [
         {
-          "route": "USE /peerjs"
+          "file": "src/net/ws-room.ts",
+          "symbol": "createWsRoom"
         }
       ]
     },
     {
-      "go": [["server", "fr.netplay"]],
-      "text": "The server connects you to the other tabs, then steps aside. From here on tabs talk directly.",
-      "code": "src/net/peer-room.ts (PeerJS, WebRTC)",
+      "go": [["server", "you.netplay"]],
+      "text": "The server welcomes you and lists who is in the room. From here on it relays presence and messages between tabs.",
+      "code": "{ t: 'welcome' } · { t: 'list' }",
       "cite": [
         {
-          "file": "src/net/peer-room.ts"
+          "message": "welcome"
+        },
+        {
+          "file": "server/src/host/hosted-room.ts",
+          "symbol": "createHostedRoom"
         }
       ]
     },
     {
-      "go": [["fr.world", "lane:lock", "you.world"]],
-      "text": "The host sends you a snapshot of the shared world. You apply edits from that tick on.",
+      "go": [["server", "you.world"]],
+      "text": "The server runs the shared world itself and sends you a snapshot of it. You apply edits from that tick on.",
       "code": "{ t: 'w:snap' } chunks",
       "cite": [
         {
@@ -35,12 +40,17 @@
       ]
     },
     {
-      "go": [["fr.world", "server"]],
-      "text": "The host also saves the world to the server every 30 s or so, so the island survives when everyone leaves.",
-      "code": "PUT /rooms/:roomId/snapshot",
+      "hl": ["server"],
+      "text": "The server saves the world to its own disk every 2 s when it changed, so the island survives, and keeps ticking, when everyone leaves.",
+      "code": "createWorldHost({ roomId, store, saveMs })",
       "cite": [
         {
-          "route": "PUT /rooms/:roomId/snapshot"
+          "file": "server/src/host/world-host.ts",
+          "symbol": "createWorldHost"
+        },
+        {
+          "file": "server/src/store.ts",
+          "symbol": "createStore"
         }
       ]
     }

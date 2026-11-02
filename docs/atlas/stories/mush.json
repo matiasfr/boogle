@@ -29,8 +29,8 @@
       ]
     },
     {
-      "go": [["you.world", "lane:lock", "fr.world"]],
-      "text": "The edit travels to the host. The host checks it and stamps it with a tick number.",
+      "go": [["you.world", "server"]],
+      "text": "The edit travels to the server, which hosts the world. It checks the edit and stamps it with a tick number.",
       "code": "validate(edit, ctx) · host only",
       "cite": [
         {
@@ -42,8 +42,11 @@
       ]
     },
     {
-      "go": [["fr.world", "lane:lock", "you.world"]],
-      "text": "The host sends the stamped edit to every tab, itself included.",
+      "go": [
+        ["server", "you.world"],
+        ["server", "fr.world"]
+      ],
+      "text": "The server sends the stamped edit to every tab, yours included.",
       "code": "{ t: 'w:edits', list }",
       "cite": [
         {
@@ -75,8 +78,8 @@
       ]
     },
     {
-      "go": [["fr.world", "lane:lock", "you.world"]],
-      "text": "Every so often the host sends a hash of the world. A tab that disagrees asks for a fresh copy.",
+      "go": [["server", "you.world"]],
+      "text": "Every so often the server sends a hash of the world. A tab that disagrees asks for a fresh copy.",
       "code": "{ t: 'w:hash' } → { t: 'w:need' }",
       "cite": [
         {

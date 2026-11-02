@@ -1,7 +1,7 @@
 {
   "intro": {
     "title": "Boogle in one picture",
-    "lead": "Every player runs the whole game in their own browser tab. There is no game server: tabs talk directly, and one of them is the host.",
+    "lead": "Every player runs the whole game in their own browser tab. Our server hosts every room: it relays between tabs, runs the shared world, and picks one tab as the host.",
     "question": "So the key question for any feature is how its state is shared. There are five answers, and the colours everywhere in this atlas follow them:",
     "foot": "Cheapest first: pick the simplest one that works.",
     "ways": [
@@ -33,7 +33,7 @@
     },
     "lock": {
       "name": "Lockstep",
-      "d": "Ops are edits the host orders and every peer applies; states are snapshotted and hashed.",
+      "d": "Ops are edits the server orders and every tab applies; states are snapshotted and hashed.",
       "tag": "ordered · persisted"
     },
     "msg": {
@@ -54,14 +54,16 @@
     "pois": "Caves, lighthouse and other places.",
     "island": "The base ground and its shape.",
     "debug": "Dev tools behind URL flags, loaded lazily.",
-    "(core)": "main.js boots the game; loop.js runs the frame phases.",
+    "(core)": "main.ts boots the game; loop.ts runs the frame phases.",
     "adapters": "The game side of lockstep state: meshes that follow it, edits submitted.",
     "world": "Edit sync, snapshots and hashing.",
     "world/rules": "One module per lockstep system, in an append-only order.",
     "sim": "Pure deterministic logic, unit-tested.",
     "netplay": "Presence fields, remote players, interpolation.",
-    "net": "The room interface over PeerJS.",
-    "server": "Signaling and the snapshot store on Fly."
+    "net": "The room interface over one WebSocket to our server.",
+    "server": "Hosts every room on Fly: relays presence and messages, runs the shared world and saves it.",
+    "proto": "Prototypes behind ?proto= flags and the prototype bar, loaded only when asked for.",
+    "ui": "Shared HUD pieces: the notification lane and UI sounds."
   },
   "boxes": {
     "you.features": "{features} plug-ins: honk, hotbar, ping, gifts, mushroom garden…",
@@ -77,7 +79,7 @@
     "fr.netplay": "presence and the room",
     "fr.world": "the same copy, kept in step",
     "fr.screen": "three.js draws it",
-    "server": "introductions · saves · problem reports"
+    "server": "hosts rooms · runs the world · saves · problem reports"
   },
   "concepts": [
     {
@@ -98,11 +100,11 @@
     {
       "id": "features",
       "title": "Features",
-      "one": "Each file in src/features is one thing a player can see or do. main.js loads them all.",
+      "one": "Each file in src/features is one thing a player can see or do. main.ts loads them all.",
       "like": "Apps on a phone: each one is self-contained and plugs into the same system services.",
       "rules": [
         "A feature never imports another feature; shared code moves into src/.",
-        "It joins the game through the frame loop and the registries, not by editing main.js.",
+        "It joins the game through the frame loop and the registries, not by editing main.ts.",
         "Heavy or rarely used parts load later with import()."
       ],
       "code": [{ "dir": "src/features" }]
@@ -159,7 +161,7 @@
       "one": "The island state everyone must agree on exactly: mushrooms, gifts, prototype flags. It persists.",
       "like": "Chess by post: players send moves, never the board, and everyone replays the same moves in the same order.",
       "rules": [
-        "Tabs send edits, not state. The host puts them in order and stamps a tick.",
+        "Tabs send edits, not state. The server puts them in order and stamps a tick.",
         "Every tab applies the same edits with the same deterministic code, then compares hashes.",
         "Effects (sounds, splashes) happen after an edit is applied, never before.",
         "No Math.random, clocks, sin or cos in this code."
@@ -172,7 +174,7 @@
       "one": "Connects your tab to the room: sends your presence 20 times a second and shows the other players.",
       "like": "A radio: everyone broadcasts a few numbers about themselves; you hear the latest from each.",
       "rules": [
-        "Presence is a few numbers per player under a short key, latest wins.",
+        "Presence is a few numbers per player under a key that names the feature, latest wins.",
         "Others are drawn 120 ms in the past so their motion stays smooth.",
         "A missing key means “off”: clear it when the thing stops."
       ],
@@ -190,11 +192,13 @@
     {
       "id": "server",
       "title": "Server",
-      "one": "A small service that introduces tabs to each other, keeps the island’s save, and collects problem reports. It does not run the game.",
-      "like": "A promoter: gets everyone into the venue, then steps aside while the show runs.",
+      "one": "Our service that hosts every room: it relays presence and messages, runs the shared world, saves it to its own disk, and collects problem reports.",
+      "like": "The house at a board-game café: it keeps the board, rules on every move, and leaves the board set up when everyone goes home.",
       "rules": [
-        "Signaling: tabs find each other through it, then talk directly.",
-        "Only the host saves the shared world there, every 30 s or so."
+        "Every room goes through one WebSocket per tab; the island keeps ticking while nobody is online.",
+        "It orders and stamps every edit, and saves the world every 2 s when it changed.",
+        "It picks the lead tab that runs host fields such as the Boogler.",
+        "The game talks only to the room interface in src/net, never to the WebSocket."
       ],
       "code": [{ "dir": "server" }]
     }
