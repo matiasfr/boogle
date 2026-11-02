@@ -74,16 +74,6 @@ export const PROTOS: Proto[] = [
     values: true,
     variants: [
       {
-        name: 'barrow',
-        url: '/?room=proto-haul-barrow&proto=haul&v=barrow',
-        what: 'A wheelbarrow that holds 150 (E to push); too fast downhill and it spills. Tip it into the ring.',
-      },
-      {
-        name: 'toss',
-        url: '/?room=proto-haul-toss&proto=haul&v=toss',
-        what: 'Hold click near the site: your logs fly into the ring by handfuls.',
-      },
-      {
         name: 'wave',
         url: '/?room=proto-haul-wave&proto=haul&v=wave',
         what: 'The best bundles sit on a sandbar a wave sweeps every minute or so. Get back above the stakes in time.',

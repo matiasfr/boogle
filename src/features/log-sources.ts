@@ -64,18 +64,14 @@ registerInteractable(() => {
     if (dx * dx + dz * dz >= REACH_LOGS * REACH_LOGS) continue;
     if (rules.sources.charges(id) <= 0 || now - (pending.get(id) ?? -1e9) < 1500) continue;
     spot(p, bundleAt);
-    const t = { id: `logs${id}`, verb: 'Take logs', at: new THREE.Vector3(bundleAt.x, bundleAt.y + 0.5, bundleAt.z) };
-    const blocked = haulHooks.takeBlocked(bundleAt.x, bundleAt.z); // a haul variant's rule (the barrow must be near)
-    (out ??= []).push(
-      blocked
-        ? { ...t, blocked }
-        : {
-            ...t,
-            run: () => {
-              if (submitEdit({ op: 'src.take', i: p.i, j: p.j, id })) pending.set(id, performance.now());
-            },
-          },
-    );
+    (out ??= []).push({
+      id: `logs${id}`,
+      verb: 'Take logs',
+      at: new THREE.Vector3(bundleAt.x, bundleAt.y + 0.5, bundleAt.z),
+      run: () => {
+        if (submitEdit({ op: 'src.take', i: p.i, j: p.j, id })) pending.set(id, performance.now());
+      },
+    });
   }
   return out ?? NO_TARGETS;
 });
