@@ -189,7 +189,7 @@ resetBtn.addEventListener('click', () => {
 });
 defaultsBtn.addEventListener('click', () => {
   Object.assign(haulFeel, HAUL_FEEL_DEFAULTS);
-  LOCAL.forEach((k, n) => localRows[n].set(haulFeel[k.key]));
+  LOCAL.forEach((k, n) => localRows[n]!.set(haulFeel[k.key]));
   if (proto) for (const t of TUNABLES) sendTune(t.key, t.def);
   say('Back to the shipped numbers.');
 });
@@ -217,7 +217,7 @@ onFrame(
     // the chore counter runs whether or not the panel is open
     const site = rules.sites.sites.open;
     if (site !== chores.site) choresReset(site);
-    const running = rules.sites.sites.list[site]?.t0 >= 0;
+    const running = (rules.sites.sites.list[site]?.t0 ?? -1) >= 0;
     if (running && chores.t0 && !chores.t1) chores.t1 = performance.now();
     const p = me.entered ? me.body?.position : null;
     if (p) {
@@ -233,7 +233,7 @@ onFrame(
     if (tune.rev === drawn && !settled) return;
     drawn = tune.rev;
     TUNABLES.forEach((t, n) => {
-      const r = roomRows[n];
+      const r = roomRows[n]!;
       if (pending.has(t.key) || document.activeElement === r.num || document.activeElement === r.range) return;
       r.set(tune.v[t.key]);
     });

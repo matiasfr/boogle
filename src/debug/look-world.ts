@@ -234,7 +234,7 @@ function noiseTexture() {
         j = Math.floor(fy);
       const u = smoothstep(0, 1, fx - i),
         w = smoothstep(0, 1, fy - j);
-      const at = (a: number, b: number) => v[((b % period) * period + (a % period)) % v.length];
+      const at = (a: number, b: number) => v[((b % period) * period + (a % period)) % v.length]!;
       const top = at(i, j) + (at(i + 1, j) - at(i, j)) * u;
       const bot = at(i, j + 1) + (at(i + 1, j + 1) - at(i, j + 1)) * u;
       return top + (bot - top) * w;
@@ -247,8 +247,8 @@ function noiseTexture() {
   for (let y = 0; y < S; y++)
     for (let x = 0; x < S; x++) {
       const o = (y * S + x) * 4;
-      data[o] = Math.round((r[0](x, y) * 0.55 + r[1](x, y) * 0.3 + r[2](x, y) * 0.15) * 255);
-      data[o + 1] = Math.round((g[0](x, y) * 0.65 + g[1](x, y) * 0.35) * 255);
+      data[o] = Math.round((r[0]!(x, y) * 0.55 + r[1]!(x, y) * 0.3 + r[2]!(x, y) * 0.15) * 255);
+      data[o + 1] = Math.round((g[0]!(x, y) * 0.65 + g[1]!(x, y) * 0.35) * 255);
       data[o + 2] = 128;
       data[o + 3] = 255;
     }
@@ -486,13 +486,13 @@ function groundTexture() {
   const data = new Uint16Array(n * n * 2);
   for (let j = 0; j < n; j++)
     for (let i = 0; i < n; i++) {
-      const h = heights[i][j];
+      const h = heights[i]![j]!;
       const ie = Math.min(n - 1, i + 1),
         iw = Math.max(0, i - 1),
         jn = Math.max(0, j - 1),
         js = Math.min(n - 1, j + 1);
-      const dx = (heights[ie][j] - heights[iw][j]) / (2 * CELL),
-        dz = (heights[i][jn] - heights[i][js]) / (2 * CELL);
+      const dx = (heights[ie]![j]! - heights[iw]![j]!) / (2 * CELL),
+        dz = (heights[i]![jn]! - heights[i]![js]!) / (2 * CELL);
       const ny = 1 / Math.hypot(dx, 1, dz);
       const x = i * CELL - HALF,
         z = HALF - j * CELL;
@@ -500,7 +500,7 @@ function groundTexture() {
       m *= smoothstep(COURT.r + 0.5, COURT.r + 2.5, Math.hypot(x - COURT.x, z - COURT.z));
       if (i >= PATCH.i0 - 2 && i <= PATCH.i0 + PATCH.w + 1 && j >= PATCH.j0 - 2 && j <= PATCH.j0 + PATCH.h + 1) m = 0;
       const paint = island.paintAt(x, z);
-      if (paint) m *= 1 - Math.min(1, paint[3] * 1.5);
+      if (paint) m *= 1 - Math.min(1, paint[3]! * 1.5);
       // texture row v = (z + HALF) / SIZE, column u = (x + HALF) / SIZE
       const o = ((n - 1 - j) * n + i) * 2;
       data[o] = THREE.DataUtils.toHalfFloat(h);
@@ -519,7 +519,7 @@ function makeGrass() {
   const W = [0.07, 0.055, 0.03];
   for (let s = 0; s < 3; s++) {
     const y = s / 3;
-    pos.push(-W[s], y, 0, W[s], y, 0);
+    pos.push(-W[s]!, y, 0, W[s]!, y, 0);
     uvs.push(0, y, 1, y);
   }
   pos.push(0, 1, 0);
