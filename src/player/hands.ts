@@ -99,8 +99,8 @@ function pickNow() {
   const p = me.body.interpolatedPosition;
   targets.length = 0; // (a provider that threw last time left some)
   for (let k = 0; k < providers.length; k++) {
-    const some = providers[k]();
-    for (let m = 0; m < some.length; m++) targets.push(some[m]);
+    const some = providers[k]!();
+    for (let m = 0; m < some.length; m++) targets.push(some[m]!);
   }
   const t = pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
   targets.length = 0;

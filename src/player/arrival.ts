@@ -149,7 +149,7 @@ const NAMES = [
   'Merry Moth',
   'Swift Tern',
 ];
-export const friendlyName = () => NAMES[Math.floor(Math.random() * NAMES.length)];
+export const friendlyName = () => NAMES[Math.floor(Math.random() * NAMES.length)]!;
 
 export function leaveIsland() {
   try {

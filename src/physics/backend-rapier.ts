@@ -110,9 +110,9 @@ function colliderDesc(s: Shape): RAPIER.ColliderDesc | null {
     );
   // Rapier's heightfield is centred on its collider, rows along +z, columns along +x, column-major.
   const nx = s.heights.length - 1,
-    nz = s.heights[0].length - 1;
+    nz = s.heights[0]!.length - 1;
   const data = new Float32Array((nx + 1) * (nz + 1));
-  for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) data[nz - j + i * (nz + 1)] = s.heights[i][j];
+  for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) data[nz - j + i * (nz + 1)] = s.heights[i]![j]!;
   return r.ColliderDesc.heightfield(nz, nx, data, { x: nx * s.cell, y: 1, z: nz * s.cell }).setTranslation(
     (nx * s.cell) / 2,
     0,

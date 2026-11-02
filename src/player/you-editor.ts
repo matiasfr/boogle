@@ -16,7 +16,7 @@ function save() {
   } catch {
     // not remembered past this visit
   }
-  me.avatar?.userData.mat.color.set(COLORS[me.colorIdx]);
+  me.avatar?.userData.mat.color.set(COLORS[me.colorIdx]!);
   renderPeople(); // the Room page's list follows on its own (it watches who is on the island)
 }
 

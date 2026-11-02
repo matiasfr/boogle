@@ -12,7 +12,7 @@
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 /** C major pentatonic, step n above (or below) C5. */
-export const pentatonic = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 5) + 5) % 5];
+export const pentatonic = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 5) + 5) % 5]!;
 
 export type Clink = {
   at: number; // AudioContext time
@@ -80,8 +80,8 @@ function hit(
   ] as const) {
     if (w < 0.03) continue;
     for (let k = 0; k < set.ratio.length; k++) {
-      const r = k ? set.ratio[k] * (1 + rnd(0.015)) : 1;
-      mode(ctx, dest, at, f * r, level * w * set.gain[k], ring * set.ring[k]);
+      const r = k ? set.ratio[k]! * (1 + rnd(0.015)) : 1;
+      mode(ctx, dest, at, f * r, level * w * set.gain[k]!, ring * set.ring[k]!);
     }
   }
 }

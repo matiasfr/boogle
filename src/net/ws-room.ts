@@ -184,7 +184,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
         call(connHandlers, false);
       }
       if (closed || stopped) return;
-      const backoff = graceful ? 500 + Math.random() * 1000 : jitter(BACKOFF[Math.min(attempt++, BACKOFF.length - 1)]);
+      const backoff = graceful ? 500 + Math.random() * 1000 : jitter(BACKOFF[Math.min(attempt++, BACKOFF.length - 1)]!);
       const delay = Math.max(backoff, pausedUntil - performance.now());
       log('reconnecting in', Math.round(delay), 'ms');
       reconnectTimer = setTimeout(() => open(), delay);

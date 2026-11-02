@@ -21,7 +21,7 @@ const SHADES = ['clay', 'matte', 'plastic'] as const; // the first of each list 
 const q = new URLSearchParams(location.search);
 export const pick = <T extends string>(list: readonly T[], key: string) => {
   const v = q.get(key) as T | null;
-  return v && list.includes(v) ? v : list[0];
+  return v && list.includes(v) ? v : list[0]!;
 };
 export const eyes = pick(EYES, 'eyes');
 const shade = pick(SHADES, 'shade');
@@ -107,7 +107,7 @@ export function loadHeroKit(): Promise<HeroKit> {
     return {
       make(hex, start = pick(OUTFITS, 'hero')) {
         const holder = rig.instance('hero');
-        const root = holder.children[0];
+        const root = holder.children[0]!;
         const find = (n: string) => {
           const b = root.getObjectByName(n);
           if (!b) throw new Error('hero: no node ' + n);

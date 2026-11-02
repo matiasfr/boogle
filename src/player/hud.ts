@@ -78,7 +78,7 @@ export function renderPeople() {
     const li = document.createElement('li');
     const dot = document.createElement('span');
     dot.className = 'dot';
-    dot.style.background = COLORS[colorIdx];
+    dot.style.background = COLORS[colorIdx]!;
     const label = document.createElement('span');
     label.textContent = name;
     li.append(dot, label);

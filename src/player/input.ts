@@ -245,7 +245,7 @@ export function initInput() {
 
   // Gamepad layout for the built-in controls (src/player/controls.ts; features register their own).
   const ZOOMS = [4, 6.5, 10];
-  const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]);
+  const zoomStep = () => (cam.dist = ZOOMS.find((d) => d > cam.dist + 0.1) ?? ZOOMS[0]!);
   describeControl('move', {
     label: 'Move',
     detail: { kbm: 'The arrow keys walk too; ← → step sideways while the mouse is locked' },

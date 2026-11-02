@@ -201,7 +201,7 @@ onRemotePresence((r, pr, time) => {
       prev: { x: 0, y: 0, z: 0, yaw: NaN },
     };
   r.ride.leaving = false;
-  r.ride.snaps.push(time, { l: [x, y, z], r: yaw });
+  r.ride.snaps.push(time, { l: [x!, y!, z!], r: yaw! });
 });
 const rideAt: Local = { x: 0, y: 0, z: 0, yaw: 0 },
   rideV = new THREE.Vector3();
@@ -219,9 +219,9 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   const s = p && ride.snaps.sample(rt);
   if (p && s) {
     const { a, b, u } = s;
-    ride.l.x = lerp(a.l[0], b.l[0], u);
-    ride.l.y = lerp(a.l[1], b.l[1], u);
-    ride.l.z = lerp(a.l[2], b.l[2], u);
+    ride.l.x = lerp(a.l[0]!, b.l[0]!, u);
+    ride.l.y = lerp(a.l[1]!, b.l[1]!, u);
+    ride.l.z = lerp(a.l[2]!, b.l[2]!, u);
     ride.l.yaw = angleLerp(a.r, b.r, u);
     fromPlatform(p, ride.l, interpolated, rideAt);
     if (!interpolated) {
@@ -502,7 +502,7 @@ export function updateRemotes(now: number) {
   for (const r of remotes.values()) {
     if (r.entered && r.snaps.length) {
       const s = r.snaps.sample(rt)!;
-      r.target.set(lerp(s.a.p[0], s.b.p[0], s.u), lerp(s.a.p[1], s.b.p[1], s.u), lerp(s.a.p[2], s.b.p[2], s.u));
+      r.target.set(lerp(s.a.p[0]!, s.b.p[0]!, s.u), lerp(s.a.p[1]!, s.b.p[1]!, s.u), lerp(s.a.p[2]!, s.b.p[2]!, s.u));
       r.yaw = angleLerp(s.a.r, s.b.r, s.u);
       r.state = s.b.s;
       placeRider(r, rt, false);
@@ -515,7 +515,7 @@ export function updateRemotes(now: number) {
         teleport(r.body, r.target.x, r.target.y, r.target.z);
         addBody(r.body);
       }
-      r.avatar.userData.mat.color.set(COLORS[r.colorIdx]);
+      r.avatar.userData.mat.color.set(COLORS[r.colorIdx]!);
       if (r.labelText !== r.name) {
         if (r.label) {
           r.avatar.remove(r.label);

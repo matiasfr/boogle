@@ -38,7 +38,7 @@ const heightTex = (() => {
   for (let j = 0; j < GRID_RES; j++)
     for (let i = 0; i < GRID_RES; i++) {
       const k = (j * GRID_RES + i) * 4;
-      const v = Math.round(clamp((heights[i][j] + 10) / 20, 0, 1) * 65535);
+      const v = Math.round(clamp((heights[i]![j]! + 10) / 20, 0, 1) * 65535);
       data[k] = v >> 8;
       data[k + 1] = v & 255;
       data[k + 3] = 255;

@@ -245,14 +245,14 @@ function updateBallDisplayFromRemote() {
   const { a, b, u, over } = s;
   const ex = Math.min(over, 150) / 1000;
   ball.disp.p.set(
-    lerp(a.p[0], b.p[0], u) + b.v[0] * ex,
-    lerp(a.p[1], b.p[1], u) + b.v[1] * ex,
-    lerp(a.p[2], b.p[2], u) + b.v[2] * ex,
+    lerp(a.p[0]!, b.p[0]!, u) + b.v[0]! * ex,
+    lerp(a.p[1]!, b.p[1]!, u) + b.v[1]! * ex,
+    lerp(a.p[2]!, b.p[2]!, u) + b.v[2]! * ex,
   );
-  tmpQa.set(a.q[0], a.q[1], a.q[2], a.q[3]).normalize();
-  tmpQb.set(b.q[0], b.q[1], b.q[2], b.q[3]).normalize();
+  tmpQa.set(a.q[0]!, a.q[1]!, a.q[2]!, a.q[3]!).normalize();
+  tmpQb.set(b.q[0]!, b.q[1]!, b.q[2]!, b.q[3]!).normalize();
   ball.disp.q.slerpQuaternions(tmpQa, tmpQb, u);
-  ball.disp.v.set(b.v[0], b.v[1], b.v[2]);
+  ball.disp.v.set(b.v[0]!, b.v[1]!, b.v[2]!);
 }
 
 export function prepareBall() {

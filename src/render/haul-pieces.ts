@@ -39,7 +39,7 @@ export const onFly = (fn: FlyFn): void => void flyFns.push(fn);
 export const fly: FlyFn = (from, n, spill = false) => flyFns.forEach((fn) => fn(from, n, spill));
 
 const colors = TINT.map((h) => new THREE.Color(h));
-export const pieceColor = (k: number): THREE.Color => colors[k] ?? colors[0];
+export const pieceColor = (k: number): THREE.Color => colors[k] ?? colors[0]!;
 
 // A deterministic heap: piece m of a pile sits in a loose cross-hatched stack (4 per layer, alternating direction).
 const q = new THREE.Quaternion(),

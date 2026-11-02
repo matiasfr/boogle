@@ -106,8 +106,8 @@ async function draw(id: string) {
     for (let x = 0; x < ICON; x++) {
       const i = from + x * 4,
         to = (y * ICON + x) * 4,
-        a = px[i + 3];
-      for (let k = 0; k < 3; k++) img.data[to + k] = a ? Math.min(255, Math.round((px[i + k] * 255) / a)) : 0;
+        a = px[i + 3]!;
+      for (let k = 0; k < 3; k++) img.data[to + k] = a ? Math.min(255, Math.round((px[i + k]! * 255) / a)) : 0;
       img.data[to + 3] = a;
     }
   }

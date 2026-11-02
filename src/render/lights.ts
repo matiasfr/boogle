@@ -38,9 +38,9 @@ type Pick = { s: LightSource | null; on: number; score: number };
 const picks: Pick[] = Array.from({ length: POOL }, () => ({ s: null, on: 0, score: 0 }));
 onFrame(
   () => {
-    for (let k = 0; k < POOL; k++) picks[k].s = null;
+    for (let k = 0; k < POOL; k++) picks[k]!.s = null;
     for (let i = 0; i < sources.length; i++) {
-      const s = sources[i];
+      const s = sources[i]!;
       const on = s.on ? s.on() : 1;
       if (on <= 0.01) continue;
       const d2 = s.position.distanceToSquared(camera.position);
@@ -48,18 +48,18 @@ onFrame(
       if (d2 > reach * reach) continue;
       const score = (s.intensity * on) / (1 + d2);
       let k = POOL;
-      while (k > 0 && (!picks[k - 1].s || score > picks[k - 1].score)) k--;
+      while (k > 0 && (!picks[k - 1]!.s || score > picks[k - 1]!.score)) k--;
       if (k >= POOL) continue;
-      const p = picks[POOL - 1]; // the one that drops out makes room
-      for (let m = POOL - 1; m > k; m--) picks[m] = picks[m - 1];
+      const p = picks[POOL - 1]!; // the one that drops out makes room
+      for (let m = POOL - 1; m > k; m--) picks[m] = picks[m - 1]!;
       picks[k] = p;
       p.s = s;
       p.on = on;
       p.score = score;
     }
     for (let k = 0; k < POOL; k++) {
-      const l = pool[k],
-        p = picks[k],
+      const l = pool[k]!,
+        p = picks[k]!,
         s = p.s;
       if (!s) {
         l.intensity = 0;

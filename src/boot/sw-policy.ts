@@ -12,7 +12,7 @@ export const cacheName = (build: string) => CACHE_PREFIX + build;
 /** Whether the worker answers this request from its cache: a same-scope GET of a hashed build file. */
 export function cacheable(method: string, url: string, scope: string) {
   if (method !== 'GET' || !url.startsWith(scope)) return false;
-  const path = url.slice(scope.length).split(/[?#]/)[0];
+  const path = url.slice(scope.length).split(/[?#]/)[0]!;
   return path.startsWith('assets/') && !path.endsWith('/');
 }
 
