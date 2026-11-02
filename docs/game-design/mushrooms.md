@@ -12,7 +12,6 @@
   [right, ahead] of you: (0, 4.5), (−4.5, 8), (4, 9.5), (−2, 13.5), (3, 16.5), each jittered ±0.4. Cap radius 1.9 m,
   stem 0.85 m. Player bounce 15 m/s.
 - **Files.** [src/adapters/mushrooms.ts](../../src/adapters/mushrooms.ts), [src/features/mushrooms.ts](../../src/features/mushrooms.ts).
-- **Known issues and limits.** The Boogler's small talk still describes burying and watering (see [items](items.md)).
 
 ---
 

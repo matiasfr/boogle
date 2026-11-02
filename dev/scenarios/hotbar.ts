@@ -41,7 +41,7 @@ export default {
     );
 
     // A tossed item: walk up, grab it, and it is in your hand.
-    await g.eval(`${toss(2, 5)};`); // a frisbee
+    await g.eval(`${toss(1, 5)};`); // a frisbee
     await g.waitFor(TOSSED, { timeout: EDIT_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));

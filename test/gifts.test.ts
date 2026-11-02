@@ -27,7 +27,7 @@ test('same ticks and edits give the same island on every client', () => {
     b = createGifts(layout());
   for (const s of [a, b]) {
     run(s, 1, 3000);
-    tossItem(s, giftIndex('can'), 30, 31, ON_GROUND, 3001);
+    tossItem(s, giftIndex('frisbee'), 30, 31, ON_GROUND, 3001);
     takeItem(s, s.items[0]!.id);
     run(s, 3002, 5000);
   }
@@ -54,12 +54,12 @@ test('a perch holds its item and refills PERCH_REFILL ticks after it is taken', 
 
 test('thrown things land where they were thrown and rot after LIFE ticks', () => {
   const s = createGifts({});
-  const can = giftIndex('can');
-  const it = tossItem(s, can, 7, 9, 2950, 100)!;
-  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [can, 7, 9, 2950, SRC.TOSS]);
-  assert.equal(tossItem(s, can, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
+  const frisbee = giftIndex('frisbee');
+  const it = tossItem(s, frisbee, 7, 9, 2950, 100)!;
+  assert.deepEqual([it.kind, it.i, it.j, it.y, it.src], [frisbee, 7, 9, 2950, SRC.TOSS]);
+  assert.equal(tossItem(s, frisbee, 7, 9, -2, 100), null, 'only perches use ON_PERCH');
   assert.equal(tossItem(s, giftIndex('ball'), 7, 9, ON_GROUND, 100), null, 'the beach ball is never a ground item');
-  assert.equal(tossItem(s, can, -1, 9, ON_GROUND, 100), null);
+  assert.equal(tossItem(s, frisbee, -1, 9, ON_GROUND, 100), null);
   run(s, 101, 100 + LIFE - 1);
   assert.equal(s.items.length, 1);
   run(s, 100 + LIFE, 100 + LIFE);
@@ -68,9 +68,9 @@ test('thrown things land where they were thrown and rot after LIFE ticks', () =>
 
 test('a full island sweeps away the oldest thrown thing to make room', () => {
   const s = createGifts({});
-  const can = giftIndex('can');
-  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, can, k, 0, ON_GROUND, k);
-  const it = tossItem(s, can, 99, 0, ON_GROUND, 500)!;
+  const frisbee = giftIndex('frisbee');
+  for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, frisbee, k, 0, ON_GROUND, k);
+  const it = tossItem(s, frisbee, 99, 0, ON_GROUND, 500)!;
   assert.equal(s.items.length, MAX_ITEMS);
   assert.equal(s.items[0]!.i, 1);
   assert.equal(s.items.at(-1)!.id, it.id);
@@ -78,21 +78,21 @@ test('a full island sweeps away the oldest thrown thing to make room', () => {
 
 test('taking an item works once', () => {
   const s = createGifts({});
-  const it = tossItem(s, giftIndex('can'), 5, 5, ON_GROUND, 5)!;
+  const it = tossItem(s, giftIndex('frisbee'), 5, 5, ON_GROUND, 5)!;
   assert.equal(takeItem(s, it.id)?.id, it.id);
   assert.equal(takeItem(s, it.id), null);
 });
 
 test('ground items never exceed MAX_ITEMS', () => {
   const s = createGifts({});
-  for (let k = 0; k < MAX_ITEMS + 20; k++) tossItem(s, giftIndex('can'), k, 5, ON_GROUND, 1);
+  for (let k = 0; k < MAX_ITEMS + 20; k++) tossItem(s, giftIndex('frisbee'), k, 5, ON_GROUND, 1);
   assert.equal(s.items.length, MAX_ITEMS);
 });
 
 test('snapshot round-trips and hashes match', () => {
   const a = createGifts(layout());
   run(a, 1, 2000);
-  tossItem(a, giftIndex('can'), 30, 31, 1210, 2001);
+  tossItem(a, giftIndex('frisbee'), 30, 31, 1210, 2001);
   takeItem(a, a.items.find((it) => it.src === SRC.PERCH)!.id, 2001);
   const json = JSON.parse(JSON.stringify(serializeGifts(a)));
   assert.deepEqual(Object.keys(json).sort(), ['it', 'n', 'pa']);
@@ -161,11 +161,11 @@ test('load drops bad items and survives garbage', () => {
   }
 });
 
-test('only the ball and what nothing hands out are not carryable', () => {
-  for (const g of GIFTS) assert.equal(carryable(g), g.id !== 'ball' && g.id !== 'can', g.id);
+test('only the ball is not carryable', () => {
+  for (const g of GIFTS) assert.equal(carryable(g), g.id !== 'ball', g.id);
   assert.deepEqual(
     GIFTS.map((g) => g.id),
-    ['seeds', 'can', 'frisbee', 'ball'],
+    ['seeds', 'frisbee', 'ball'],
   );
   assert.ok(GIFTS.filter(carryable).every((g) => g.name && g.taste && g.line));
 });

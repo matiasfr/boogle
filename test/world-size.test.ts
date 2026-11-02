@@ -31,7 +31,7 @@ test('a world filled to every cap serializes under 60 KB', () => {
     site.plaque = Array.from({ length: MAX_PLAYERS }, (_, k) => [k, 99999, 59]);
   }
   const g = rules.gifts.gifts;
-  for (let k = 0; k < MAX_ITEMS; k++) tossItem(g, k % 3, 200 + k, 200, 12345, 9999999);
+  for (let k = 0; k < MAX_ITEMS; k++) tossItem(g, k % 2, 200 + k, 200, 12345, 9999999);
   rules.bank.bank.ms = 9_999_999_999;
   rules.ball.ball.p = [-25500, 19999, 25500];
   rules.ball.ball.at = 99_999_999;

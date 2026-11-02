@@ -48,11 +48,11 @@ test('gifts score by taste, halve on repeats and stop at the window cap', () => 
   const f = createFriend();
   const t = 1e6;
   const seeds = giftIndex('seeds'),
-    can = giftIndex('can'),
+    ball = giftIndex('ball'),
     frisbee = giftIndex('frisbee');
   assert.equal(giveGift(f, seeds, t)!.pts, TASTE_PTS.like);
   assert.equal(giveGift(f, seeds, t)!.pts, Math.round(TASTE_PTS.like! / 2));
-  assert.equal(giveGift(f, can, t)!.pts, TASTE_PTS.meh);
+  assert.equal(giveGift(f, ball, t)!.pts, TASTE_PTS.meh);
   assert.equal(giveGift(f, frisbee, t)!.pts, TASTE_PTS.like);
   const capped = giveGift(f, frisbee, t)!;
   assert.equal(capped.capped, true);
@@ -67,10 +67,10 @@ test('a stored gift in the old index format is dropped on load', () => {
     gifts: [
       { kind: 3, at: 5 },
       { id: 'nonsense', at: 5 },
-      { id: 'can', at: 7 },
+      { id: 'frisbee', at: 7 },
     ],
   });
-  assert.deepEqual(loadFriend(old).gifts, [{ id: 'can', at: 7 }]);
+  assert.deepEqual(loadFriend(old).gifts, [{ id: 'frisbee', at: 7 }]);
 });
 
 test('enough kick-offs make him wary; time and gifts forgive', () => {

@@ -890,7 +890,7 @@ export const SMALL_TALK = [
     lvl: 0,
     nodes: {
       a: {
-        say: 'Have you seen the mushrooms by the stall? You bury a seed, you water it, it grows into a trampoline. Amazing product. Terrible pricing.',
+        say: 'Have you seen the mushrooms from the stall? One bag of seeds, and pop! Five trampolines. Amazing product. Terrible pricing.',
         opts: [
           { say: 'Terrible pricing?', to: 'b' },
           { say: "They're super fun.", to: 'b', pts: 1 },
