@@ -42,6 +42,8 @@ const FADE = { in: 0.07, out: 0.09, arm: 0.1, load: 0.2 }; // s
 const BLINK = { closed: 0.1, every: 2, more: 3.5 }; // s; `every` + up to `more` between blinks
 const HELD_SCALE = 0.82; // things in hand, made for the capsule's bulk
 const HANG_HOLD = 0.8;
+const DIG_MS = 260,
+  RELEASE_MS = 240;
 const LOAD_LEAN = { base: 5, full: 11, at: 16 }; // degrees forward with any load, and at this many logs
 
 // Arm poses for the figure's left arm, mirrored for the right: where the upper arm and the forearm point, in its frame.
@@ -51,6 +53,9 @@ const ARMS = {
   hold: { upper: [0.18, -0.9, 0.34], lower: [-0.05, 0.08, 1] }, // something small held out in front
   hang: { upper: [0.38, -0.9, -0.05], lower: [0.12, -0.55, 0.82] }, // something with a handle, carried at the hip
   rest: { upper: [0.4, -0.9, 0.12], lower: [0.22, -0.95, 0.2] }, // seated, hands down at its sides
+  windup: { upper: [0.75, 0.35, -0.55], lower: [0.1, 0.95, 0.2] }, // about to throw, the hand up behind its shoulder
+  release: { upper: [0.35, 0.35, 0.87], lower: [0.1, -0.1, 1] }, // and after it, the arm flung forward
+  dig: { upper: [0.25, -0.2, 0.95], lower: [-0.3, 0.42, 0.85] }, // a bump: both forearms up in front, a volleyball dig
   reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
   sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
 } satisfies Record<string, { upper: V3; lower: V3 }>;
@@ -67,6 +72,8 @@ export type LifeState = {
   hold: 'item' | 'hang' | 'ball' | null;
   seated: boolean;
   down: number; // 0..1: how far flopped over (src/features/impact.ts)
+  charging?: boolean; // winding up a throw (your own only: no presence says so)
+  bumpAt?: number; // performance.now() of your last bump
 };
 
 export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
@@ -126,6 +133,8 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
     q = new THREE.Quaternion();
   let socket: { hand: THREE.Object3D; hold: THREE.Quaternion; hang: THREE.Quaternion } | null = null;
 
+  let wasCharging = false,
+    releasedAt = -1e9;
   let air = 0,
     wasAir = false,
     side = 0,
@@ -181,6 +190,11 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
       if (s.down > 0.01) for (const o of sprawl) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, s.down));
 
       // Arms: each takes one pose at a time, faded in over the clip.
+      const now = performance.now();
+      if (wasCharging && !s.charging) releasedAt = now;
+      wasCharging = !!s.charging;
+      const digging = now - (s.bumpAt ?? -1e9) < DIG_MS,
+        releasing = now - releasedAt < RELEASE_MS;
       const k = 1 - Math.exp(-dt / FADE.arm);
       arms.forEach((arm, i) => {
         const right = i === 1;
@@ -189,15 +203,21 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
             ? 'sprawl'
             : s.seated
               ? 'rest'
-              : s.hold === 'ball'
-                ? 'reach'
-                : s.hold === 'item' && right
-                  ? 'hold'
-                  : s.hold === 'hang' && right
-                    ? 'hang'
-                    : s.load
-                      ? 'strap'
-                      : null;
+              : digging
+                ? 'dig'
+                : s.charging && right
+                  ? 'windup'
+                  : releasing && right
+                    ? 'release'
+                    : s.hold === 'ball'
+                      ? 'reach'
+                      : s.hold === 'item' && right
+                        ? 'hold'
+                        : s.hold === 'hang' && right
+                          ? 'hang'
+                          : s.load
+                            ? 'strap'
+                            : null;
         for (const n of NAMES) {
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;
           const w = arm.w[n] * (n === 'hang' ? HANG_HOLD : 1); // a little of the walk's swing stays in a hanging arm

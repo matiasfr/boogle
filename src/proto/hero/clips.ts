@@ -11,6 +11,7 @@ import { clamp } from '../../math.ts';
 import { precompile } from '../../render/precompile.ts';
 import { loadAsset } from '../../render/assets.ts';
 import { me } from '../../player/player.ts';
+import { ballOnBack } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
 import { startHeroCamera } from './camera.ts';
@@ -120,6 +121,8 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
     hold: seated ? null : (u.holdKind ?? null),
     seated,
     down: u.flopAmt ?? 0,
+    charging: a === me.avatar && me.charging,
+    bumpAt: a === me.avatar ? me.bumpAt : undefined,
   });
   r.lastY = a.position.y;
 }
@@ -127,6 +130,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
 export async function startClipsHero() {
   const q = new URLSearchParams(location.search);
   const body = q.get('body') === 'mannequin' ? BODIES.mannequin : BODIES.buddy;
+  Object.assign(ballOnBack, { y: 0.5, z: 0.68 }); // low on its back, so its head shows over the ball
   const hat = 'wear_head_' + q.get('hat');
   const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(body.url)]);
   const src = clips.instance();
