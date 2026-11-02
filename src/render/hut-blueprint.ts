@@ -34,7 +34,7 @@ const W = 2.4, // footprint along x
   RISE = 0.62, // roof: ridge above the eaves
   EAVE = D / 2 + 0.3, // roof overhang along z
   PITCH = Math.atan2(RISE, EAVE);
-const corners = [
+const corners: [number, number][] = [
   [-1, -1],
   [1, -1],
   [1, 1],

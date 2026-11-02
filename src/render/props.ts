@@ -30,7 +30,7 @@ export function addPart(
   const g = geo.index ? geo.toNonIndexed() : geo.clone();
   g.applyMatrix4(matrix);
   const c = new THREE.Color(color);
-  const n = g.attributes.position.count;
+  const n = g.attributes.position!.count;
   const col = new Float32Array(n * 3);
   for (let k = 0; k < n; k++) {
     col[k * 3] = c.r;
@@ -42,16 +42,16 @@ export function addPart(
 }
 export function mergeParts(parts: THREE.BufferGeometry[]) {
   let total = 0;
-  for (const g of parts) total += g.attributes.position.count;
+  for (const g of parts) total += g.attributes.position!.count;
   const pos = new Float32Array(total * 3),
     nrm = new Float32Array(total * 3),
     col = new Float32Array(total * 3);
   let off = 0;
   for (const g of parts) {
-    pos.set(g.attributes.position.array, off * 3);
-    nrm.set(g.attributes.normal.array, off * 3);
-    col.set(g.attributes.color.array, off * 3);
-    off += g.attributes.position.count;
+    pos.set(g.attributes.position!.array, off * 3);
+    nrm.set(g.attributes.normal!.array, off * 3);
+    col.set(g.attributes.color!.array, off * 3);
+    off += g.attributes.position!.count;
   }
   const out = new THREE.BufferGeometry();
   out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -89,7 +89,7 @@ export function blockedAt(x: number, z: number, pad = 0) {
       const near = buckets.get(bkey(a, b));
       if (!near) continue;
       for (let k = 0; k < near.length; k++) {
-        const o = near[k];
+        const o = near[k]!;
         const r = o.r + pad;
         if ((o.x - x) ** 2 + (o.z - z) ** 2 < r * r) return true;
       }
@@ -207,7 +207,7 @@ function addBroadleaf(parts: THREE.BufferGeometry[], x: number, h: number, z: nu
       q,
       sc.set(r, r * 0.85, r),
     );
-    addPart(parts, blobGeo, m, greens[k]);
+    addPart(parts, blobGeo, m, greens[k]!);
   }
   merge([
     { x, y: h + 0.4, z, r: 0.3 },
@@ -364,7 +364,7 @@ export function createClouds() {
 
 function updateClouds(dt: number) {
   for (let k = 0; k < clouds.length; k++) {
-    const c = clouds[k];
+    const c = clouds[k]!;
     c.position.x += dt * 1.2;
     if (c.position.x > 340) c.position.x = -340;
   }

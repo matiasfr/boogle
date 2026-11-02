@@ -15,7 +15,7 @@ let elapsedNow = 0;
 // seaRipples: x, z, start time, strength (0 = unused); the sea shader's ripple array sets how many
 let rippleCursor = 0;
 function addRipple(x: number, z: number, strength: number) {
-  seaRipples[rippleCursor].set(x, z, elapsedNow, strength);
+  seaRipples[rippleCursor]!.set(x, z, elapsedNow, strength);
   rippleCursor = (rippleCursor + 1) % seaRipples.length;
 }
 

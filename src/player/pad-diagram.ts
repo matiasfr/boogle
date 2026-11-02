@@ -63,7 +63,7 @@ const talkSet = (): Callout[] => [
 
 export function padContexts(list = listControls()): [string, string][] {
   const have = new Set(list.filter((c) => slotsOf(c).length).map((c) => c.context));
-  return ['foot', 'driving', 'talking'].filter((k) => k === 'foot' || have.has(k)).map((k) => [k, TITLES[k]]);
+  return ['foot', 'driving', 'talking'].filter((k) => k === 'foot' || have.has(k)).map((k) => [k, TITLES[k]!]);
 }
 
 // One callout per slot and stick for a context set.
@@ -106,7 +106,7 @@ const FILL: Record<string, Record<string, [string, string]>> = {
 const FACE_AT: Record<string, Point> = { y: [350, 98], x: [320, 128], b: [380, 128], a: [350, 158] };
 
 function face(slot: string) {
-  const [cx, cy] = FACE_AT[slot];
+  const [cx, cy] = FACE_AT[slot]!;
   const colors = FILL[brand()]?.[slot];
   const fill = colors ? colors[0] : 'var(--paper)';
   const text = colors ? `<text x="${cx}" y="${cy + 6}" style="fill:${colors[1]}">${padText(slot)}</text>` : '';
@@ -146,7 +146,7 @@ function controllerSvg() {
 const dots = (slot: string) => {
   const at: Record<string, Point> = { y: [12, 4.5], x: [4.5, 12], b: [19.5, 12], a: [12, 19.5] };
   const c = FACE.map((s) => {
-    const [x, y] = at[s];
+    const [x, y] = at[s]!;
     return `<circle cx="${x}" cy="${y}" r="3.6" class="${s === slot ? 'on' : ''}"/>`;
   }).join('');
   return `<svg class="g pd-dots" viewBox="0 0 24 24" role="img" aria-label="${POS[slot]} face button">${c}</svg>`;
@@ -173,7 +173,7 @@ function calloutEl(c: Callout | undefined, slot: string) {
   if (detail || STICK[slot]) {
     const d = document.createElement('span');
     d.className = 'pd-detail';
-    d.textContent = detail || STICK[slot];
+    d.textContent = detail || STICK[slot]!;
     text.append(d);
     if (detail) el.title = detail;
   }
@@ -193,7 +193,7 @@ function drawLines(root: HTMLElement) {
   const map = ([x, y]: Point): Point => [pad.left - box.left + x * k, pad.top - box.top + y * k];
   const paths: SVGElement[] = [];
   for (const call of root.querySelectorAll<HTMLElement>('.pd-call')) {
-    const spot = SPOTS[call.dataset.slot!];
+    const spot = SPOTS[call.dataset.slot!]!;
     const g = call.querySelector('.pd-glyph')!.getBoundingClientRect();
     const left = spot.side === 'l';
     const start: Point = [(left ? g.right + 6 : g.left - 6) - box.left, g.top + g.height / 2 - box.top];
@@ -228,9 +228,9 @@ export function renderPadDiagram(context = 'foot') {
   cols.l.className = 'pd-col pd-left';
   cols.r.className = 'pd-col pd-right';
   // Sorted top to bottom by where each line first turns, so the lines fan out without crossing.
-  const turn = (slot: string) => (SPOTS[slot].via?.[0] ?? SPOTS[slot].at)[1];
+  const turn = (slot: string) => (SPOTS[slot]!.via?.[0] ?? SPOTS[slot]!.at)[1];
   const order = Object.keys(SPOTS).sort((a, b) => turn(a) - turn(b));
-  for (const slot of order) cols[SPOTS[slot].side].append(calloutEl(set.get(slot), slot));
+  for (const slot of order) cols[SPOTS[slot]!.side].append(calloutEl(set.get(slot), slot));
   const mid = document.createElement('div');
   mid.className = 'pd-mid-col';
   mid.innerHTML = controllerSvg();

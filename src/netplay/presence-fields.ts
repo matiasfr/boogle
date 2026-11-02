@@ -21,11 +21,11 @@ export function mergeFields(pr: Presence, fields: readonly Field[]) {
   for (let i = 0; i < fields.length; i++) {
     let v = null;
     try {
-      v = fields[i][1]();
+      v = fields[i]![1]();
     } catch {
       // a broken feature must not break presence
     }
-    pr[fields[i][0]] = v ?? null;
+    pr[fields[i]![0]] = v ?? null;
   }
   return pr;
 }

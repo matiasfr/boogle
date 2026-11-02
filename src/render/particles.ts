@@ -168,6 +168,6 @@ onFrame(
 export function particleCounts() {
   const now = performance.now();
   let n = 0;
-  for (let k = 0; k < MAX; k++) if (deathAt[k] > now) n++;
+  for (let k = 0; k < MAX; k++) if (deathAt[k]! > now) n++;
   return { soft: n };
 }

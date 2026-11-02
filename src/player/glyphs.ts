@@ -84,7 +84,7 @@ const KEY_TEXT: Record<string, string> = {
 const keyText = (code: string) => {
   if (KEY_TEXT[code]) return KEY_TEXT[code];
   const m = /^(?:Key|Digit|Numpad)(.+)$/.exec(code);
-  return m ? m[1] : code;
+  return m ? m[1]! : code;
 };
 const plus = '<span class="g-plus">+</span>';
 
@@ -117,7 +117,7 @@ export function padGlyph(slot: string) {
 }
 
 function padGlyphFor(action: string) {
-  if (action in PAD_FIXED) return PAD_FIXED[action]();
+  if (action in PAD_FIXED) return PAD_FIXED[action]!();
   const slots = [controlById(action)?.pad].flat().filter((p): p is string => !!p);
   return slots.map((p) => padGlyph(p)).join('');
 }
@@ -126,7 +126,7 @@ export function glyph(action: string) {
   const kind = inputKind();
   if (kind === 'touch') return '';
   if (kind === 'pad') return padGlyphFor(action);
-  if (action in KBM) return KBM[action];
+  if (action in KBM) return KBM[action]!;
   const first = controlById(action)?.keys?.[0];
   return first === undefined ? '' : keyGlyph(first);
 }

@@ -61,14 +61,14 @@ function record(name: string, ms: number) {
     sections.set(name, (s = { name, ring: new Float32Array(WINDOW), last: 0 }));
     list.push(s);
   }
-  s.ring[slot] += ms;
+  s.ring[slot]! += ms;
   s.last += ms;
 }
 export function beginFrame() {
   slot = (slot + 1) % WINDOW;
   for (let k = 0; k < list.length; k++) {
-    list[k].ring[slot] = 0;
-    list[k].last = 0;
+    list[k]!.ring[slot] = 0;
+    list[k]!.last = 0;
   }
   cursor = frameStart = performance.now();
   frameId = ++frames;
@@ -85,7 +85,7 @@ export function endFrame(name: string) {
   record('frame', last.ms);
   last.topMs = 0;
   for (let k = 0; k < list.length; k++) {
-    const s = list[k];
+    const s = list[k]!;
     if (s.name !== 'frame' && s.last > last.topMs) {
       last.topMs = s.last;
       last.top = s.name;
@@ -100,7 +100,7 @@ export const prof = {
       const sorted = Float32Array.from(ring).sort();
       const avg = sorted.reduce((a, b) => a + b, 0) / WINDOW;
       const r = (x: number) => Math.round(x * 1000) / 1000;
-      rows.push({ name, avg: r(avg), p95: r(sorted[Math.floor(WINDOW * 0.95)]), max: r(sorted[WINDOW - 1]) });
+      rows.push({ name, avg: r(avg), p95: r(sorted[Math.floor(WINDOW * 0.95)]!), max: r(sorted[WINDOW - 1]!) });
     }
     return rows.sort((a, b) => b.avg - a.avg).slice(0, n + 1);
   },
@@ -121,8 +121,8 @@ export function onStart(fn: () => void) {
 export function runFrame(phase: Phase, ctx: FrameCtx) {
   const list = hooks[phase];
   for (let k = 0; k < list.length; k++) {
-    list[k].fn(ctx);
-    mark(list[k].name);
+    list[k]!.fn(ctx);
+    mark(list[k]!.name);
   }
 }
 export function runStart() {

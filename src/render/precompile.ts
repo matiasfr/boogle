@@ -142,7 +142,10 @@ let warmStart = 0;
 export function shadersMark() {
   const p = (
     renderer as unknown as {
-      _pipelines?: { caches: Map<unknown, unknown>; programs: Record<string, Map<unknown, unknown>> };
+      _pipelines?: {
+        caches: Map<unknown, unknown>;
+        programs: Record<'vertex' | 'fragment' | 'compute', Map<unknown, unknown>>;
+      };
     }
   )._pipelines;
   bootMark('shaders', {
@@ -162,7 +165,7 @@ export async function precompile(root: THREE.Object3D | null = null, onProgress:
   await compile(scene);
   onProgress(2 / parts);
   for (let i = 0; i < warmups.length; i++) {
-    const made = await warmups[i]();
+    const made = await warmups[i]!();
     if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
     onProgress((i + 3) / parts);
   }

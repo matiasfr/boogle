@@ -21,7 +21,7 @@ const TICK = true; // false: the hotbar select is silent
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 // Pentatonic step n above (or below) the root.
-const note = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 5) + 5) % 5];
+const note = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 5) + 5) % 5]!;
 const GAP: Record<UiSound, number> = { tick: 30, pop: 220, thunk: 80, deny: 250, count: 35, flap: 240 }; // ms between plays
 const last: Record<string, number> = {};
 let run = 0;

@@ -78,7 +78,7 @@ export function clank(x: number, z: number): void {
     [1, 1],
     [2.76, 0.6],
     [5.4, 0.3],
-  ]) {
+  ] as const) {
     const o = ctx.createOscillator();
     o.type = 'triangle';
     o.frequency.value = f * mul;

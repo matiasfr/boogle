@@ -25,8 +25,8 @@ export function createSnaps<S extends object = Record<string, unknown>>(max = 40
     },
     sample(t: number) {
       if (!list.length) return null;
-      while (list.length > 2 && list[1].time <= t) list.shift();
-      const a = list[0],
+      while (list.length > 2 && list[1]!.time <= t) list.shift();
+      const a = list[0]!,
         b = list[1];
       if (!b || t <= a.time) return { a, b: a, u: 0, over: Math.max(0, t - a.time) };
       return { a, b, u: Math.min(1, (t - a.time) / Math.max(1, b.time - a.time)), over: Math.max(0, t - b.time) };
