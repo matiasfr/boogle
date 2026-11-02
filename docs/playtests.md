@@ -139,3 +139,15 @@ One short entry per session: date, who (first names), what was new, what was fun
 - "It looks pretty great. Definitely better."
 - After: it becomes the default in the next round of `?proto=place`; to-dos in [look-pass.md](plans/look-pass.md). Station feedback still to come.
 
+## 2026-11-02 (the stations, `?proto=place`, second round)
+- Who: Matias, solo, iPad + controller; answered on a feedback page.
+- Gut question: yes, "it felt like my work became the track". "We're definitely closer" than last round.
+- Liked: chop ("satisfying, keep it"); the logs stacking in the frame; the track layer's physicality, riding it and standing on it on purpose; the forge ("pretty awesome"). Line 2 felt like the network paying off. Would have kept playing to reach the far island. Best moments: chopping and completing the first rail segment.
+- Felt off: the sign was heavy-handed, and a small prompt is enough. Waking the machine needs more drama. The first-line celebration barely registered. It dragged a little at station 3 and on the last line's carrying; "I need more motivation", no clear fix yet. Trestle walk: nice, not a highlight.
+- Rails from home: felt like an errand. Carrying them physically was cool, but "why I was going back" is an open question; maybe carry capacity, maybe easier with friends.
+- Town: had to go and look for what cargo built. The town's buildings feel loose beside the forge and need scaffolding. Numbers didn't mean much yet. The world still feels kind of dead, even compared to the starting island.
+- Kept: the turntable, hopping villagers, axe and beacon. The beacon read as a giant floating crystal, hinting at a fantasy element, "which is cool".
+- Broke: nothing literal, but walking through the town "like it's all billboard" feels weird.
+- Unclear: the answer on continuing reads "I didn't want to keep going", then "I was interested in continuing"; taken as wanting to continue, to confirm.
+- After: boogle-2.md (Decided, 2 November).
+

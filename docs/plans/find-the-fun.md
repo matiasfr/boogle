@@ -172,4 +172,4 @@ real slice does.
 
 - [x] **`?proto=place`, second round:** a sign at the village, a stranded track layer to wake, chop, three auto-paver
       stations along the route, the same logs laid as sleepers, and a forge your cargo builds, whose rails start line 2.
-- [ ] **Playtest 9.**
+- [x] **Playtest 9.** Yes: "it felt like my work became the track" ([playtests.md](../playtests.md), 2 November).
