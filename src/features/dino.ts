@@ -141,8 +141,8 @@ registerInteractable(() => {
   return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: talk }];
 });
 
-// B (punch, kick, dive) is the main action (click, pad RT, the touch main button with nothing to act on) with empty hands:
-// it takes the place of a bump, and the interact button (E, pad X) still grabs.
+// B (punch, kick, dive) is the main action (click, pad RT, the touch main button with nothing to act on) with empty hands;
+// the interact button (E, pad X) still grabs.
 emptyHands.down = () => {
   if (!guest.active) return false;
   guest.b = true;

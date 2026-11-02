@@ -125,7 +125,6 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   lifeState.seated = seated;
   lifeState.down = u.flopAmt ?? 0;
   lifeState.charging = a === me.avatar && me.charging;
-  lifeState.bumpAt = a === me.avatar ? me.bumpAt : undefined;
   r.life.update(dt, lifeState);
   r.lastY = a.position.y;
 }

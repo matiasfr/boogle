@@ -39,6 +39,8 @@ These are standing preferences from the thread.
 
 ## Decided
 
+- **The ball bump is cut** (2 November): the owner was already unsure of it, and it made the main action conditional. RT and left click use or throw what you hold; with empty hands they do nothing.
+
 ### The audit picks (2 November)
 
 The owner's answers to the standing design audit ([design-audit.md](design-audit.md)). **Where an older entry below disagrees, these win.**

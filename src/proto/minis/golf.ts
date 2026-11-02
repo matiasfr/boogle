@@ -1,6 +1,6 @@
 // Ball golf, one hole (?proto=minis, research shortlist 5): a tee mat at the court's west edge, a striped bucket with a
 // tall flag about 36 m west past the palms. Tee off (Interact at the tee) puts the beach ball on the tee; every throw
-// and bump of it is a stroke, and carrying it counts a stroke every 3 m. The count floats over the ball; the bucket
+// of it is a stroke, and carrying it counts a stroke every 3 m. The count floats over the ball; the bucket
 // scores it against par and your best. Local: your strokes and best; the ball itself is still the shared one.
 import * as THREE from 'three/webgpu';
 import { createBody, addBody, teleport, material, type Shape } from '../../physics/engine.ts';

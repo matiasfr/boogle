@@ -55,7 +55,7 @@ Things the browser has and a headless world doesn't. A session that meets one di
 - **The Boogler.** He bumps you and the ball, you can ride him, and he wanders by the spawn. Talking to him is listed as skipped, and `held` plays back as input, so you stand still as you did.
 - **POI structures, the stall, mushrooms and their bounce, caves and their ponds, moving decks.** `turnWithDeck` runs after every frame as the view would, but there's no deck to turn you yet.
 - **Other players.** The file says how many there were; a replay prints it. Ball ownership changes play back, a remote ball's movement doesn't.
-- **Features that push you or the ball.** Punching, diving, ground pound, bumping the ball, being knocked flat. Presses with no effect here are listed as skipped.
+- **Features that push you or the ball.** Punching, diving, ground pound, being knocked flat. Presses with no effect here are listed as skipped.
 - **The hotbar.** Only the ball. A slot change is listed as skipped, and the throw from the touch Toss button isn't recorded at all.
 
 The recording lands input at frame starts. A press made inside a frame's hooks lands on the next frame, and the touch grab button's throw can be a tick of the clock off (100 us of charge). A replay runs on the recorded `dt`s and the recorded physics clock, so sea state and the steps per frame match.

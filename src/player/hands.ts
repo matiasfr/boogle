@@ -2,19 +2,19 @@
 //
 //   useDown/useUp            the main action (click, pad RT): use what is in your hand. A thing (ball, frisbee, ...)
 //                            winds up a throw and flies on release; a bag of seeds sprouts mushrooms ahead of you. Empty
-//                            hands bump a ball in reach (src/player/bump.ts), and otherwise do nothing.
+//                            hands do nothing.
 //   interactDown/interactUp  E, pad X: act on interactTarget(), and only on it; nothing while a throw winds up, and the
 //                            release never throws.
-//   touchDown                the touch main button, the one button for both: acts on interactTarget() when it can, except
-//                            that a ball in the air gets bumped rather than grabbed; otherwise uses
+//   touchDown                the touch main button, the one button for both: acts on interactTarget() when it can;
+//                            otherwise uses
 //   mainVerb()               what touchDown would do, for the button's label
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
 //   canThrow()               whether you hold anything (everything held can be thrown)
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands
 //   handsNote                { text, until }: why the last use did nothing, for the hotbar to show
-//   emptyHands               { down, up }: what using empty hands does before it falls back to bumping; the guest's
-//                            punch sets it. down returns true if it acted.
+//   emptyHands               { down, up }: what using empty hands does; the guest's punch sets it. down returns true if
+//                            it acted.
 //                            Mouse, pad and the touch main button all reach it.
 //   onInteractPress(fn)      fn(target, ran) on every interact press (not mid-throw): for press feedback in the HUD
 //
@@ -44,7 +44,6 @@ import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
-import { bump, canBump, ballInTheAir } from './bump.ts';
 import { heldId, take, useOne, drop, has, roomFor, onHotbarChange } from './inventory.ts';
 import { throwItem } from '../adapters/gifts.ts';
 import { sprout } from '../adapters/mushrooms.ts';
@@ -173,7 +172,7 @@ export function releaseThrow() {
 export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
-  if (!id) return emptyHands.down() || bump();
+  if (!id) return emptyHands.down();
   if (id === 'seeds') return sprout() ? !!useOne() : deny("Can't grow here");
   return windUp();
 }
@@ -187,7 +186,7 @@ export const interactUp = () => {
 };
 function mainTarget() {
   const t = me.charging ? null : interactTarget();
-  return t?.run && !(t.id === 'ball' && !heldId() && canBump() && ballInTheAir()) ? t : null;
+  return t?.run ? t : null;
 }
 export function touchDown() {
   const t = mainTarget();
@@ -200,7 +199,7 @@ export function useVerb() {
   return id ? (USE_VERB[id] ?? 'Throw') : null;
 }
 
-export const mainVerb = () => mainTarget()?.verb ?? useVerb() ?? (canBump() ? 'Bump' : 'Grab');
+export const mainVerb = () => mainTarget()?.verb ?? useVerb() ?? 'Grab';
 
 // Every frame, before the hotbar is drawn.
 export function updateHands() {

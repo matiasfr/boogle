@@ -15,7 +15,7 @@ different systems don't touch the same file. A new system adds its file and one 
 
 Boogle is a drop-in browser island for up to 8 friends. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
-and The Boogler. Returning players go straight in with their saved identity. In the base game you can throw, bump and chase the ball;
+and The Boogler. Returning players go straight in with their saved identity. In the base game you can throw and chase the ball;
 throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and

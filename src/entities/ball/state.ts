@@ -120,12 +120,6 @@ export function throwBall(p: { x: number; y: number; z: number }, vel: { x: numb
   sendPresence();
 }
 
-// A hit changes the ball's velocity now (src/player/bump.ts): the pose follows at once, for whoever reads it this frame.
-export function setBallVelocity(x: number, y: number, z: number) {
-  ball.body.velocity.set(x, y, z);
-  ball.pose.v.set(x, y, z);
-}
-
 // Puts the ball down at a saved spot (src/features/ball-rest.ts). A live ball elsewhere, or one in someone's hands,
 // wins: then nothing moves and this returns false.
 export function placeBall(x: number, y: number, z: number) {

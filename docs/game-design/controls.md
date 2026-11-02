@@ -17,7 +17,7 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Talk, pick up, take (`interact`) | action | E | X (only this: nothing in reach, it does nothing) | Grab (the main button; its label follows what it would do) | Hands | |
-| Use what you hold, or bump the ball (`use`) | action | Left click | RT | the main button: Throw, Sprout or Bump when it has no target, or the ball is in the air | Hands | |
+| Use what you hold (`use`) | action | Left click | RT | the main button: Throw or Sprout when it has no target | Hands | |
 | Hold from your hotbar (`hotbar`) | described | 1-5 (same key again: empty hands) | LB / RB (`slot-prev`, `slot-next`, hidden actions) | Tap a slot | Hands | |
 | Throw what you hold (`toss`) | described | (use) | RT | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
@@ -49,10 +49,9 @@ Notes:
 - **Face buttons** (2026-11-02, owner's iPad + controller playtest; research in
   [cross-device-input.md](../research/cross-device-input.md), section 8): A jumps and confirms, **X / □ acts on what's
   in front of you** (Talk, Pick up, Take, Get in), **B / ○ is back** everywhere, Y honks. **RT and the left click are one
-  main action** (2026-11-02): holding something it uses or throws it, hold to charge; with empty hands it bumps a ball in
-  reach (3.4 m), and otherwise does nothing. To grab the ball, talk or pick something up, it's E / X. Touch has one
-  button for both, so its label says what it would do: a target in reach (Talk, Pick up, Grab) wins, except that a ball in
-  the air, or one past grab reach, is Bump; then Throw or Sprout for what you hold. Slots are positions in the standard mapping; prompts name them for the
+  main action** (2026-11-02): holding something it uses or throws it, hold to charge; with empty hands it does nothing (the ball bump, a volleyball dig, was cut the same day).
+  To grab the ball, talk or pick something up, it's E / X. Touch has one
+  button for both, so its label says what it would do: a target in reach (Talk, Pick up, Grab, a ball resting or in the air) wins; then Throw or Sprout for what you hold. Slots are positions in the standard mapping; prompts name them for the
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
