@@ -7,13 +7,11 @@ name: Smoke
 # (screenshots are its artifact).
 
 on:
-  # After each deploy of main, so a build that breaks the live site (WebGPU on a real CDN, the Fly server) is caught
-  # within minutes instead of the next morning.
-  workflow_run:
-    workflows: ['Deploy to GitHub Pages']
-    types: [completed]
   schedule:
     - cron: '37 9 * * *' # daily, 09:37 UTC
+  # deploy.yml dispatches this after each deploy of main, so a build that breaks the live site (WebGPU on a real CDN,
+  # the Fly server) is caught within minutes instead of the next morning. Not workflow_run: it never fired here, probably
+  # GitHub's three-level limit on those chains (CI, then automerge.yml, then the deploy it dispatches).
   workflow_dispatch:
     inputs:
       url:
@@ -30,8 +28,8 @@ concurrency:
 
 jobs:
   live:
-    # Forks have no live site of their own here; a failed deploy has nothing new to check.
-    if: github.repository == 'matiasfr/boogle' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    # Forks have no live site of their own here.
+    if: github.repository == 'matiasfr/boogle'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

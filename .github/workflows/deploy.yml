@@ -56,3 +56,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Check the live site with what just went out (smoke.yml says why this is a dispatch). Needs deploy, so a failed
+  # deploy starts nothing. In a burst of merges GitHub keeps only the newest waiting run of the smoke group.
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run smoke.yml --repo "$GITHUB_REPOSITORY" --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
