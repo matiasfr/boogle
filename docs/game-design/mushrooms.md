@@ -4,7 +4,7 @@
   pop up in a loose zig-zag ahead of you, on whatever spots are dry and open, and the bag is spent. They bounce players
   and the ball, and wilt away after 20 s. Where nothing can grow it says so and you keep the bag. A bag can also be
   thrown like anything else, or given to The Boogler, who likes it. Mushrooms are a toy: nothing is gated on them.
-- **Controls.** E / pad X "Take" at the stand; click / pad X (nothing in reach) / D-pad → "Sprout" with the bag in hand.
+- **Controls.** E / pad X "Take" at the stand; click / pad RT "Sprout" with the bag in hand.
 - **Sync kind.** Local, started by a one-off message `{ t: 'mush', s: [x, z, ...] }` (validated; you can send one a second, and tabs accept one per 0.8 s per
   sender): each tab draws its own mushrooms and colliders. Nothing is saved; someone joining after the message misses
   that cluster, and it is gone in 20 s anyway. A mushroom's collider waits until you are not standing in it.

@@ -26,22 +26,22 @@ it (and otherwise only hides a remote driver; see Sync).*
   or ↑, or the stick pushed forward; **brake, then reverse** from a crawl is LT (analog), S or ↓, or the stick pulled
   back. The most of each input counts; throttle and brake together cancel. The motor pulls 12 m/s² from a standstill,
   falling to nothing at 13 m/s (the hill takes you past it); reverse tops out at 5 m/s. While seated RT and LT do only
-  this: Bump and the guest's crouch wait until you get out (`wrapAction`). **In the air** throttle lifts the nose and
+  this: the main action and the guest's crouch wait until you get out (`wrapAction`). **In the air** throttle lifts the nose and
   brake drops it (real RC jumping), damped so it never tumbles; on landing the angle goes into the springs, so a
   nose-first landing slams the front. **Jump** (Space, pad A, touch Jump) is
   the handbrake while moving, and hops you out once stopped. The arrow keys only steer here (no arrow-key camera turn)
   and a two-finger scroll does not look: the chase camera owns the view. A stick pulled back brakes only past 0.35 of
   its travel (a bowtie dead zone; steering keeps the stick's own 0.12), so a thumb drifting down doesn't stop the cart.
 - **Driving touch layout** while seated: the main button reads **Get out** (or Back to the top), Jump reads
-  **Drift / Brake**, and Bump, Toss, Honk and Ping hide.
+  **Drift / Brake**, and Toss, Honk and Ping hide.
 - **Drift boost** (all three variants): holding the handbrake on the ground charges a drift, faster with the stick
   held hard (0.7 or more) into the slide (Mario Kart's counter: 5 a step, 2 otherwise, at 60 steps a second). The rear
   wheels' sparks tell the charge: yellow, then **blue** at 120 (0.4 s at best: "ready"), then **pink** at
   240 (0.8 s: "big"). Let go of the handbrake whenever you like (no timing window): ready pushes you
   +3 m/s forward over 0.35 s, big +5 m/s over 0.6 s, as acceleration that drag takes back; a burst and a jet of sparks
   in the tier's colour and a field-of-view kick (+5° or +9°). The default and grip get 0.75x those speeds,
-  drifty the full. A bump in the middle of a drift keeps the charge (it just stops growing in the air). An empty-handed click does nothing while seated (it would
-  otherwise get you out); holding something, the click still throws it from the cart.
+  drifty the full. A bump in the middle of a drift keeps the charge (it just stops growing in the air). An empty-handed click does nothing while seated;
+  holding something, the click still throws it from the cart.
 - **The run:** seated on the start, the HUD shows "Ready". The clock starts once you have rolled 3 m and stops on the
   finish line; your best time is kept in localStorage (`boogle.soapbox.best`) and shown beside it, with "New best!" when
   you beat it. A wipeout ends the run ("Wipeout!"); getting out ends it quietly. No prize, no hat. Each finished run

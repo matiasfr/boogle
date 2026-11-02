@@ -15,7 +15,7 @@
 - **How it plays.** While you are the guest, the engine runs at 30 Hz inside the physics step and your body turns
   kinematic and follows it, so the camera, interact targets, the ball and presence keep working. The engine collides
   with the terrain and every static body within 5 m, using the body's collision mask (so the caves work). Jump is
-  Space or pad A; punch, kick and dive are click, pad D-pad → or pad X with nothing in reach, with empty hands (near the ball, click punches and E / pad X grab);
+  Space or pad A; punch, kick and dive are click or pad RT with empty hands (E / pad X still grabs and talks);
   crouch, ground pound, long jump and backflip use Shift or LT.
 - **Sync kind.** Owner: presence `mr` carries your guest's pose (24 numbers). Other players with both files see your
   guest; without them they see your usual avatar.

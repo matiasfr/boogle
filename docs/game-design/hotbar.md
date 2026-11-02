@@ -4,7 +4,7 @@
   start empty-handed. Pick-ups go into a free slot; the ball takes a slot while you
   hold it and leaves when ownership does. Using what you hold: a bag of seeds sprouts mushrooms, anything
   else winds up a throw. A full hotbar greys the prompt ("Hotbar full").
-- **Controls.** 1-5 (same key again for empty hands), pad LB / RB, tap a slot; use (click / X); Toss on touch.
+- **Controls.** 1-5 (same key again for empty hands), pad LB / RB, tap a slot; use (click / pad RT); Toss on touch.
 - **Sync kind.** Local for the contents (localStorage `boogle.hotbar`); Owner for what is in your hand (presence `hd`,
   a catalog index or −1). Items cross into the world only through `gift.take` and `gift.toss`.
 - **On touch.** Only filled slots show; in portrait they make a column on the right. Toss appears only when the main

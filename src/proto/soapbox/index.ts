@@ -43,6 +43,7 @@ import { input, setSeated } from '../../player/input.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { heldId } from '../../player/inventory.ts';
 import { describeControl, wrapAction } from '../../player/controls.ts';
+import { inputKind } from '../../player/glyphs.ts';
 import { remotes, addPresenceField, onRemotePresence, sendPresence } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
 import { onFrame, onStart } from '../../loop.ts';
@@ -510,11 +511,10 @@ registerInteractable(() => {
 });
 
 onStart(() => {
-  // Clicking (to grab the mouse) with empty hands would get you out: seated, an empty-handed click does nothing.
-  wrapAction('use', { down: (next) => (S.seated && !heldId() ? undefined : next()) });
   // RT and LT are the throttle and brake while seated (vehicle-feel.md, RC cars 4), read as analog values from
-  // input.triggerR / triggerL; their own actions (Bump, the guest's crouch) wait until you get out.
-  wrapAction('bump', { down: (next) => (S.seated ? undefined : next()) });
+  // input.triggerR / triggerL; their own actions (the main action, the guest's crouch) wait until you get out. A click
+  // still throws what you hold from the cart; with empty hands (to grab the mouse) it does nothing.
+  wrapAction('use', { down: (next) => (S.seated && (!heldId() || inputKind() === 'pad') ? undefined : next()) });
   wrapAction('guest-crouch', { down: (next) => (S.seated ? undefined : next()) });
   describeControl('soapbox-steer', {
     label: 'Steer the cart',

@@ -20,7 +20,6 @@ import { physicsClock } from '../physics/engine.ts';
 import { actionForSlot, isTyping, PAD, wrapAction, type Action } from '../player/controls.ts';
 import { dom } from '../player/dom.ts';
 import { interactTarget } from '../player/hands.ts';
-import { heldId } from '../player/inventory.ts';
 import { input, inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/state.ts';
 import { aimPoint, chargeAmount } from '../player/throw.ts';
@@ -126,9 +125,8 @@ function changesSince() {
 function note(id: string, down: 0 | 1, data?: PressData) {
   if (rec) pending.push(data ? [id, down, data] : [id, down]);
 }
-// What a press would act on, only when it can (not winding up, nothing blocked). `use` only reaches it with empty hands.
-function pressData(emptyHandsOnly: boolean): PressData | undefined {
-  if (emptyHandsOnly && heldId()) return undefined;
+// What a press would act on, only when it can (not winding up, nothing blocked).
+function pressData(): PressData | undefined {
   const t = me.charging ? null : interactTarget();
   return t?.run ? { t: t.id } : undefined;
 }
@@ -139,7 +137,7 @@ function releaseData(): PressData | undefined {
   return { c: chargeAmount(), aim: [x, y, z] };
 }
 
-// Only the outermost press of a chain: the pad's X is `interact`, which can call `use`.
+// Only the outermost press of a chain.
 let depth = 0;
 const pass = (next: () => void) => {
   depth++;
@@ -157,7 +155,7 @@ function wrapNewActions() {
     wrapped.add(action);
     wrapAction(action.id, {
       down(next) {
-        if (!depth) note(action.id, 1, pressData(action.id === 'use'));
+        if (!depth) note(action.id, 1, action.id === 'use' ? undefined : pressData());
         pass(next);
       },
       up(next) {
@@ -184,7 +182,7 @@ addEventListener(
     if (e.code === 'Space')
       note('jump', 1); // repeats too: holding Space queues the next jump
     else if (e.repeat || MOVE_KEYS.test(e.code)) return;
-    else if (e.code === 'KeyE') note('e', 1, pressData(false));
+    else if (e.code === 'KeyE') note('e', 1, pressData());
     else if (e.code === 'KeyR') note('respawn', 1);
     else note(`key:${e.code}`, 1);
   },
@@ -203,7 +201,7 @@ const onButton = (el: HTMLElement, ev: string, fn: () => void) => el.addEventLis
 onButton(dom.jumpBtn, 'pointerdown', () => note('jump', 1));
 onButton(dom.jumpBtn, 'pointerup', () => note('jump', 0));
 onButton(dom.jumpBtn, 'pointercancel', () => note('jump', 0));
-onButton(dom.grabBtn, 'pointerdown', () => note('touch', 1, pressData(false)));
+onButton(dom.grabBtn, 'pointerdown', () => note('touch', 1, pressData()));
 onButton(dom.grabBtn, 'pointerup', () => note('touch', 0, releaseData()));
 
 onFrame(

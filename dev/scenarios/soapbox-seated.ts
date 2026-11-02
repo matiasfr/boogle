@@ -1,5 +1,5 @@
 // Seated in the soapbox on an iPad-sized touch screen (research/cross-device-input.md recs 7, 11, 15): the driving
-// touch layout (main button "Get out", Jump "Drift / Brake", Bump/Toss/Honk/Ping hidden), ← steers instead of turning
+// touch layout (main button "Get out", Jump "Drift / Brake", Toss/Honk/Ping hidden), ← steers instead of turning
 // the camera, a two-finger scroll does not look, and getting out restores the walking layout. Serves DESIGN.md 1
 // (Toys before chores) and 8 (Designed for drop-in, drop-out).
 type Page = {
@@ -27,8 +27,8 @@ type Run = {
 // Which touch buttons show, and the labels of the two fixed ones.
 const LAYOUT = `const shown = (sel) => { const b = document.querySelector('#touch ' + sel); return !!b && getComputedStyle(b).display !== 'none'; };
   return { grab: document.getElementById('btn-grab').textContent, jump: document.getElementById('btn-jump').textContent,
-    bump: shown('.bump'), honk: shown('.honk-btn'), ping: shown('.ping-btn'), toss: shown('.toss') };`;
-type Layout = { grab: string; jump: string; bump: boolean; honk: boolean; ping: boolean; toss: boolean };
+    honk: shown('.honk-btn'), ping: shown('.ping-btn'), toss: shown('.toss') };`;
+type Layout = { grab: string; jump: string; honk: boolean; ping: boolean; toss: boolean };
 
 export default {
   about: 'soapbox seated: driving touch layout, arrows only steer, scroll does not look, getting out restores it',
@@ -39,7 +39,7 @@ export default {
     await g.waitFor(`window.boogle?.me?.entered && !!window.__soapbox`, { timeout: 90000 });
     await g.eval(`document.querySelector('.first-run-close')?.click(); document.querySelector('.pb-close')?.click();`);
     const walking = (await g.eval(LAYOUT)) as Layout;
-    t.check('walking: Jump reads Jump, Bump shows', walking.jump === 'Jump' && walking.bump, JSON.stringify(walking));
+    t.check('walking: Jump reads Jump, Honk shows', walking.jump === 'Jump' && walking.honk, JSON.stringify(walking));
 
     await g.eval(`window.__soapbox.board();`);
     await t.sleep(500);
@@ -50,11 +50,7 @@ export default {
       /Get out|Back to the top/.test(seat.grab) && seat.jump === 'Drift / Brake',
       JSON.stringify(seat),
     );
-    t.check(
-      'driving layout: Bump, Honk, Ping and Toss hide',
-      !seat.bump && !seat.honk && !seat.ping && !seat.toss,
-      JSON.stringify(seat),
-    );
+    t.check('driving layout: Honk, Ping and Toss hide', !seat.honk && !seat.ping && !seat.toss, JSON.stringify(seat));
     t.check('still: driving touch layout at 1194x834', true, await g.still('soapbox-seated-touch'));
 
     // ← steers the cart and does not add the 2 rad/s arrow turn. The cart rolls off the start and the chase camera
@@ -87,7 +83,7 @@ export default {
     const after = (await g.eval(LAYOUT)) as Layout;
     t.check(
       'out: the walking layout is back',
-      after.jump === 'Jump' && after.bump && !(await g.eval(`return document.body.classList.contains('seated');`)),
+      after.jump === 'Jump' && after.honk && !(await g.eval(`return document.body.classList.contains('seated');`)),
       JSON.stringify(after),
     );
   },

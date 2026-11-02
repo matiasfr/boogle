@@ -161,8 +161,7 @@ function nameTag(s: Slot | null | undefined, kind: string) {
   if (!s) return '';
   const verb = useVerb();
   if (!verb || kind === 'touch') return `<span>${label(s)}</span>`;
-  // On a pad X uses what you hold whenever nothing is in reach (its prompt shows when something is).
-  return `<span>${label(s)}</span><span class="hotbar-use">${glyph(kind === 'pad' ? 'interact' : 'use')}${verb}</span>`;
+  return `<span>${label(s)}</span><span class="hotbar-use">${glyph('use')}${verb}</span>`;
 }
 
 function renderHud(now: number) {
@@ -223,7 +222,7 @@ onStart(() => {
   describeControl('toss', {
     label: 'Throw what you hold',
     detail: { touch: 'Shows up when the main button does something else' },
-    pad: 'right',
+    pad: 'rt',
     touch: 'Toss',
     group: 'hands',
     order: 3,

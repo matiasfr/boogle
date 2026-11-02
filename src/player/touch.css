@@ -1,7 +1,7 @@
 /* Tablets (both sides at least 700 CSS px: an iPad either way up, never a phone): the touch buttons grow toward the
    24 mm target of XAG 107 (research/cross-device-input.md rec 8; about 125 CSS px on the M4 iPad Pro), and the stick
    ring follows its larger travel (60 px, src/player/input.ts). zoom scales each button's size, label and offsets
-   together, so the hand-placed cluster (style.css, bump, ping, honk, toss) keeps its shape. */
+   together, so the hand-placed cluster (style.css, ping, honk, toss) keeps its shape. */
 @media (min-width: 700px) and (min-height: 700px) {
   .touch .tbtn {
     zoom: 1.45;
@@ -26,7 +26,6 @@
 /* The driving layout (rec 11), while seated in a vehicle (setSeated, src/player/input.ts): the stick steers, Grab is
    "Get out" (the vehicle's interactable), Jump carries the vehicle's label, and what does nothing seated hides
    (#touch outranks the features' own show rules, like the toss button's). */
-body.seated #touch .tbtn.bump,
 body.seated #touch .tbtn.toss,
 body.seated #touch .tbtn.honk-btn,
 body.seated #touch .tbtn.ping-btn {

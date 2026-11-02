@@ -1,7 +1,7 @@
 // Button glyphs for on-screen prompts, drawn for the input in use: keycaps and the mouse on a computer, face buttons
 // and triggers on a gamepad (body.gamepad), nothing on touch (body.touch), where the buttons carry their own labels.
 //
-//   glyph(action)   HTML for one control: 'interact' (E / X), 'use' (click / D-pad →), 'close' (Esc / B),
+//   glyph(action)   HTML for one control: 'interact' (E / X), 'use' (click / RT), 'close' (Esc / B),
 //                   'confirm' (E / A); '' when the input has no glyph for it
 //   inputKind()     'pad' | 'touch' | 'kbm'
 //   padBrand()      'xbox' | 'ps' | 'nintendo': body[data-pad], set by src/features/gamepad.ts from the pad's id. Slots
