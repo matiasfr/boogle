@@ -339,6 +339,11 @@ export function stepFixed() {
   interpolate(1);
 }
 export const physicsTime = () => time;
+export const physicsClock = () => ({ time, acc });
+export function setPhysicsClock(clock: { time: number; acc: number }) {
+  time = clock.time;
+  acc = clock.acc;
+}
 export const stepAlpha = () => lastAlpha;
 export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) => void) {
   for (const b of bodies) if (b.kind === 'static' && b.group & mask) fn(b as unknown as Body, b.shapes);

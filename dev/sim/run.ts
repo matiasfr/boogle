@@ -13,6 +13,7 @@ const NOT_RUNS = new Set([
   'ball-handoff-peer',
   'player-browser',
   'player-course',
+  'replay-record',
 ]);
 const runs = fs
   .readdirSync(here)
