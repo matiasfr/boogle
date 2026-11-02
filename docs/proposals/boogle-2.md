@@ -102,6 +102,7 @@ These are standing preferences from the thread.
 ### Characters and story
 
 - **2026-11-01, nail the bare hero base before outfits.** Clothes are separate swappable parts (`wear_<slot>_<item>`; slots head, body, hands, feet) and only need to prove the slots work until the base is right. On 2 November the owner chose a separate-head figure, proportioned closer to Ratchet or a Bricktron than lanky, and leans towards no mouth.
+- **2026-11-02, the controls and motion are right on the mannequin; only the animation polish and the look remain.** The owner "really, really" likes how `?proto=hero` controls: today's direct controller (the modern-Mario one's inertia felt less in control), the closer camera, and hand-made clips (Quaternius's CC0 library) on a humanoid skeleton. Code-built figures and agent-authored run cycles didn't satisfy, and the quick test figures on these clips (cute, ears, stout, bib) didn't land either. Next: previz of properly modelled characters that can play these clips.
 - **Player look: Bib Buddies or a split, still open** (1 November). The owner picked Bib Buddies (coloured bean body, googly eyes, mitten arms, low cream overalls) over the capsule, then proposed the player as an articulated Ratchet-style hero with Bib Buddies as the helpers. Check with the owner before building either.
 - **The Boogler is the mayor** (from era 2). His personal friendship ladder stays separate from the economy.
 - **Opening days end each era:**
