@@ -85,7 +85,7 @@ The day/night palettes live in [`sky.ts`](sky.ts) (`C`, `L`).
   scenario fails if a player's renderer isn't WebGPU. Every run
   prints the backend and any `THREE.` console errors (`gfx errors`); a "Material ... is not compatible" error means
   a material slipped through as WebGL-only.
-- `?prof=1` (any build, live site included) overlays the frame's main-thread CPU per section: each `onFrame` hook by
+- `?prof=1` (any build, live site included) overlays the frame's main-thread CPU per section: each entity kind and phase, each `onFrame` hook by
   module, plus `main: physics` and `main: render (CPU)`; `window.boogle.prof.table()` returns the same rows. Its
   top row is the GPU's time per frame (every render pass, from WebGPU timestamp queries: `?prof=1` turns three's
   `trackTimestamp` on, so the numbers include its small cost), the only GPU timer on an iPad. It also logs the

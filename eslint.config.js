@@ -113,11 +113,14 @@ const entityPlugin = {
     },
   },
 };
+// src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted (src/player/player.ts
+// says why its two wait).
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
   'src/features/identity.ts', // keeps this player's name and colour on the room's roster; no screen and no object
   'src/features/proto-soapbox.ts', // prototype wiring: loads ?proto=soapbox, or hides the avatar of a friend driving one
   'src/loop.ts', // onFrame itself, and the profiler
+  'src/physics/physics.ts', // the static ground and spheres: fixed collision, no mesh, no frame work and no end
   'src/render/scene.ts', // the scene and its base lights, which shaders and shadows read; entity.ts imports this file
   'src/render/particles.ts', // the particle simulation behind emit()
   'src/render/sprites.ts', // instancedSprite, behind particles, fireflies and the throw preview
