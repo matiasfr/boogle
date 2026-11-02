@@ -39,7 +39,9 @@ export default {
     const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
     const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
     const sent = await client.eval(`return ${toss(1, 'Date.now() % 1000')};`);
-    const landed = await host.waitFor(item, { timeout: 60000 });
+    // A long wait: at about a frame a second (smoke.yml's software WebGPU) a tab's world clock gains 2.5 ticks a frame
+    // (src/world/sync.ts, MAX_STEPS on a 50 ms dt), so the host applies a toss it has already received 80 s or more late.
+    const landed = await host.waitFor(item, { timeout: 180000 });
     t.check("one tab's toss reaches the other", landed >= 0, `${landed} ms; sent ${sent}`);
 
     // The client throws the ball: it takes ownership and the host watches it fly.

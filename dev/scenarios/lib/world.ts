@@ -25,19 +25,24 @@ export async function roles(A: Game, B: Game) {
   return { modes, ok, host, client };
 }
 
-// Both tabs hash every state at the end of the same tick, a second ahead; a resync can skip it, so retry.
+// Both tabs hash every state at the end of the same tick. A software-rendered tab (smoke.yml) can take seconds to answer
+// and a resync can skip a tick, so this marks one tick a second for the next 30 s and compares the first both reached.
 export async function hashesAtOneTick(host: Game, client: Game) {
+  const now = `return window.boogle.sync.world.tick;`;
+  const start = Math.max(await host.eval(now), await client.eval(now)) + 10;
+  const ticks = Array.from({ length: 30 }, (_, k) => start + k * 10);
+  const list = JSON.stringify(ticks);
+  for (const g of [host, client]) await g.eval(`for (const t of ${list}) window.boogle.sync.markHashes(t);`);
+  const read = `return ${list}.map((t) => window.boogle.sync.hashesAt(t));`;
   let a: unknown = null,
     b: unknown = null,
-    tick = 0;
-  for (let k = 0; k < 3 && !(a && b); k++) {
-    tick = (await host.eval(`return window.boogle.sync.world.tick;`)) + 10;
-    for (const g of [host, client]) await g.eval(`window.boogle.sync.markHashes(${tick});`);
-    const got = `window.boogle.sync.hashesAt(${tick}) || window.boogle.sync.world.tick > ${tick} + 5`;
-    await host.waitFor(got, { timeout: 60000 });
-    await client.waitFor(got, { timeout: 60000 });
-    a = await host.eval(`return window.boogle.sync.hashesAt(${tick});`);
-    b = await client.eval(`return window.boogle.sync.hashesAt(${tick});`);
+    tick = start;
+  for (const t0 = Date.now(); !(a && b) && Date.now() - t0 < 120000;) {
+    const as = await host.eval(read);
+    const bs = await client.eval(read);
+    const k = ticks.findIndex((_, k) => as[k] && bs[k]);
+    if (k < 0) await new Promise((r) => setTimeout(r, 200));
+    else [tick, a, b] = [ticks[k]!, as[k], bs[k]];
   }
   return {
     same: !!a && !!b && JSON.stringify(a) === JSON.stringify(b),
