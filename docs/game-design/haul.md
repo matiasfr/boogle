@@ -105,13 +105,14 @@ long nobody hosted (wall clock against the save's tick), and the huts' freight f
 27 s) lands in the open Track ring, capped at one section. The machine still waits for a player to start it. Absences
 under a minute bank nothing.
 
-**The machine.** A little red steam loco with a sleeper chute at the front parks a few metres up the open section.
-Started, it backs onto the railhead while warming up (fast chuffs, a shudder), then crawls the section dropping
+**The machine.** A little red steam loco with a sleeper chute at the front waits on the railhead, its chute at the
+open section's start. Started, it warms up where it stands (fast chuffs, a shudder), then crawls the section dropping
 sleepers off its chute one by one: each thumps down with a ring of dust and the machine bumps, every other one a rail
 clanks down with sparks, the funnel chuffs as it goes and the Track ring's pile shrinks. It whistles and steams at the
-end, then rolls up to park on the next section. Its deck is a platform: hop on and ride it. Once the whole route is
+end, already on the next section's railhead, so it doesn't move again until the next start: a rider stays on through
+the end of a run. Its deck is a platform: hop on and ride it. Once the whole route is
 laid it sinks away. With the ?proto=wagon train standing at the end of the line (its loco overhangs the railhead by
-about 5 m), the machine waits just ahead of the loco's nose instead of backing into it, and drops back to the head
+about 5 m), the machine waits just ahead of the loco's nose instead, and drops back to the head
 as the train pulls away (drawn only: the run's timing is the same). With a faked laid count (the wagon panel's +,
 `?laid=N`) the train runs on over the open section, so the machine sinks into the ground until it is back off it
 (it is solid, and would sweep riders off the decks).
