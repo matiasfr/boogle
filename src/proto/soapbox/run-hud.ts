@@ -15,6 +15,7 @@ export type RunHud = ReturnType<typeof createRunHud>;
 
 const KEY = 'boogle.soapbox.best';
 const fmt = (s: number) => s.toFixed(2);
+const FINISH_MS = 6000; // how long the finish time stays up while you drive on
 // the split against the ghost, to the hundredth: '+0.40 s' slower, '−0.40 s' ahead
 const fmtSplit = (s: number) => {
   const r = Math.round(s * 100) / 100;
@@ -74,9 +75,24 @@ export function createRunHud() {
       hideAt = 0;
       show('Ready', ['Roll off the hill to start', bestNote()].filter(Boolean).join(' · '), 'is-ready');
     },
+    /** On the start with no run on (driven back to it): ready for a new one. */
+    rearm() {
+      if (run.state === 'idle' || run.state === 'done') this.ready();
+    },
     off() {
       run.state = 'idle';
       el.hidden = true;
+    },
+    /** The finish time is still up: the moment Interact means "again" even while you roll on. */
+    finishShowing() {
+      return run.state === 'done' && !el.hidden;
+    },
+    /** Each frame: hide a message whose time is up. */
+    fade() {
+      if (hideAt && performance.now() > hideAt) {
+        hideAt = 0;
+        el.hidden = true;
+      }
     },
     leave(thrown: boolean) {
       if (run.state === 'running' && thrown) {
@@ -90,10 +106,6 @@ export function createRunHud() {
     },
     // Each frame while seated: where the cart is and the physics clock.
     tick(x: number, z: number, now: number) {
-      if (hideAt && performance.now() > hideAt) {
-        hideAt = 0;
-        el.hidden = true;
-      }
       if (!route) return;
       if (run.state === 'ready' && route.started(x, z)) {
         run.state = 'running';
@@ -117,6 +129,7 @@ export function createRunHud() {
           protoCount('runs');
           const vs = route.done?.(t) ?? null;
           show(fmt(t), pb ? 'New best!' : bestNote(), pb ? 'is-best' : 'is-done', vs === null ? '' : fmtSplit(vs));
+          later(FINISH_MS);
         } else if (t > 60) {
           run.state = 'idle';
           el.hidden = true;
