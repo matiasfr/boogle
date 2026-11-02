@@ -34,12 +34,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
     rollupOptions: {
       // The atlas (/atlas/) is a second page; d3 is imported only from atlas/, so it stays out of the game's chunks.
-      // The prototype list (/protos/, protos/protos.ts) is a third, the character viewer (/character/) a fourth.
+      // The prototype list (/protos/, protos/protos.ts) is a third, the character viewer (/character/) a fourth, and the menu Leave goes to (/menu/) a fifth.
       input: {
         main: resolve('index.html'),
         atlas: resolve('atlas/index.html'),
         protos: resolve('protos/index.html'),
         character: resolve('character/index.html'),
+        menu: resolve('menu/index.html'),
       },
       output: {
         manualChunks(id) {

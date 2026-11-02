@@ -19,3 +19,13 @@
 .pause .pause-swatch[aria-pressed='true'] {
   border-color: currentColor;
 }
+.pause-fresh {
+  margin-top: 4px;
+}
+.pause-fresh-warn {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--ink-soft);
+}

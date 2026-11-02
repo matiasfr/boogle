@@ -1,6 +1,6 @@
 // The pause view: a local overlay with Resume, Controls (the generated guide, src/player/guide.ts; on the Gamepad tab a
 // drawn controller with a set per situation, src/player/pad-diagram.ts, or the list), Room (who is here, an invite link,
-// and You: your name and colour, src/player/you-editor.ts) and Leave (back to the name-and-colour card).
+// and You: your name and colour, src/player/you-editor.ts) and Leave (out to the menu page, with the game stopped).
 // The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
 // player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.

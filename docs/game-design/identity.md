@@ -6,8 +6,11 @@
   random colour are already there; [first-run.md](first-run.md)), and every later visit goes straight in with them.
 - **Changing them.** The pause view's Room page has a You section: a name box and the colour swatches, saved as you
   type or tap. The roster, the HUD list, your avatar, the floating name over you and plaque lines follow (presence on
-  its next beat; `who.set` within 3 s, [src/features/identity.ts](../../src/features/identity.ts)). Leave also brings
-  back the first-visit card once.
+  its next beat; `who.set` within 3 s, [src/features/identity.ts](../../src/features/identity.ts)).
+- **Starting fresh.** Under those, Start fresh turns into "Yes, start fresh" with a warning for 6 s; pressing it again forgets
+  you on this device (name, colour, pid and key, room memories, The Boogler's friendship, mini-game and soapbox bests) and
+  reloads into the first visit's fall. Settings and the controls cards you've seen stay. It's a new player: the island keeps
+  everything, and your old plaque lines keep your old name. There's no undo.
 - **No rank on the player.** Contribution tiers ([haul.md](haul.md)) stay as data; nothing shows them until rewards
   are designed (owner, 2 Nov 2026).
 - **Sync kind.** Local storage for this browser; presence (`name`, colour) and the lockstep roster carry them to others.
