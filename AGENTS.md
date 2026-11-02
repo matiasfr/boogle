@@ -14,6 +14,7 @@ Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, 
 - **Use references by name.** When the owner points at a game or character, work out the features they're responding to (proportions, clothes, a mechanic's feel) and use those, naming the reference in briefs and docs: "the stubby proportions of Castle Story's Bricktrons, as our own character", not a vague paraphrase. Don't recreate the thing itself.
 - **Research before deep facets.** A facet with real depth (level design, vehicle handling, rendering, construction, pipelines) starts with research into how games solve it: web sources, GDC talks, postmortems, in `docs/research/<topic>.md` with sources and numbered recommendations. Builders cite it.
 - **Compare to standard engines.** Justify an architecture call by what Unity, Unreal and Godot actually do (their docs), and say where Boogle differs; don't defend a pattern because the code already uses it.
+- **Fold copies into one helper.** When the same small thing has been written several times (like the white-noise buffer, now `src/render/noise.ts`), simplify it into one shared helper when you notice it, as long as it's cheap and doesn't change behaviour.
 - **Decisions live in the repo.** A new owner decision that should bind every agent goes in this section or the decision log, not only in one tool's private memory.
 
 ## TypeScript everywhere

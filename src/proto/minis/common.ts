@@ -3,6 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
 import { ball } from '../../physics/ball.ts';
 import { me } from '../../player/player.ts';
@@ -86,15 +87,9 @@ export function saveBest(key: string, v: number) {
 }
 
 // ---------------------------------------------------------------- sounds
-let noiseBuf: AudioBuffer | null = null;
 function noise(ctx: AudioContext) {
-  if (!noiseBuf) {
-    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-  }
   const s = ctx.createBufferSource();
-  s.buffer = noiseBuf;
+  s.buffer = noiseBuffer(ctx, 0.5);
   return s;
 }
 // Quieter the further the camera is from (x, z).

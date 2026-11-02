@@ -2,7 +2,10 @@
 // Web Audio nodes (a saw through three parallel vowel filters) performs it. The plan is seeded by the line, so the same
 // line in the same mood always comes out the same. Its numbers start from docs/research/npc-babble-voices.md (sections
 // 4, 7 and 9). Cosmetic and local; never read by the sim. A new speaker is a new VoiceSpec.
-import { duckForVoice, getAudio } from './audio.ts';
+import { dbToGain, duckForVoice, getAudio } from './audio.ts';
+import { noiseBuffer } from './noise.ts';
+import { hash2 } from '../math-pure.ts';
+import { FNV_SEED, foldStr } from '../sim/hash.ts';
 
 /** One line being spoken as it types. It owns the typing clock, so sound and text stay together. */
 export type LineSpeech = {
@@ -18,9 +21,7 @@ export type VoiceSpec = {
   brightnessHz: number;
   cps: number; // characters typed per second
   grainMs: readonly [number, number];
-  gainDb: number;
   vowels: readonly [number, number, number, number, number]; // a e i o u: the voice's mouth, weights adding to 1
-  everyLetter?: boolean; // a sound per letter rather than per syllable
 };
 
 type Kind = 'open' | 'stop' | 'hiss' | 'soft';
@@ -37,7 +38,7 @@ const VOWELS = [
 ] as const;
 const VOWEL_OF: Record<string, number> = { a: 0, e: 1, i: 2, y: 2, o: 3, u: 4 };
 const WIDEN = 1.6; // wider than the tables: narrow bands would miss the harmonics of a low voice
-const MIN_GAP = 83; // ms between syllables: 12 a second at most (not for everyLetter)
+const MIN_GAP = 83; // ms between syllables: 12 a second at most
 const RELEASE = 0.012; // s
 const HORIZON = 100; // ms scheduled ahead
 const MAKEUP = 0.9; // the dry voice peaks near -6 dBFS
@@ -47,19 +48,9 @@ const MOODS: Record<string, { semis: number; pace: number; range: number; grain:
   grump: { semis: -2, pace: 0.85, range: 0.8, grain: 0.85, skip: 0 },
   worry: { semis: 0, pace: 0.9, range: 0.6, grain: 1, skip: 0.12 },
 };
-const dbToGain = (db: number) => 10 ** (db / 20);
 
-function hashText(text: string) {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
-  return h >>> 0;
-}
-// The n-th number of a seeded series, 0..1, so a frame stall or a skipped sound can't change the rest.
-function rand(seed: number, n: number) {
-  let x = Math.imul(seed ^ Math.imul(n + 1, 0x9e3779b9), 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
-}
+// The n-th number of a line's seeded series, 0..1, so a frame stall or a skipped sound can't change the rest.
+const rand = hash2;
 
 const baseLetter = (c: string) => (c.normalize('NFD')[0] ?? c).toLowerCase();
 const vowelOf = (c: string) => VOWEL_OF[baseLetter(c)];
@@ -84,7 +75,7 @@ function pauseAfter(text: string, i: number) {
 }
 
 // Where a word's sounds start: its first letter, then each later vowel group (a silent final e says nothing).
-function onsets(word: string, everyLetter: boolean) {
+function onsets(word: string) {
   const out: { i: number; lead: string; vowel: string | undefined }[] = [];
   const letters = [...word.matchAll(/\p{L}|\p{N}/gu)].map((m) => m.index);
   for (let n = 0; n < letters.length; n++) {
@@ -93,7 +84,7 @@ function onsets(word: string, everyLetter: boolean) {
     const v = vowelOf(c) !== undefined;
     const prevV = n > 0 && vowelOf(word[letters[n - 1]!]!) !== undefined;
     const silent = baseLetter(c) === 'e' && n === letters.length - 1 && out.length > 0;
-    if (everyLetter || n === 0 || (v && !prevV && !silent)) {
+    if (n === 0 || (v && !prevV && !silent)) {
       out.push({ i, lead: v && n > 0 ? word[letters[n - 1]!]! : c, vowel: v ? c : undefined });
     }
   }
@@ -104,7 +95,7 @@ function onsets(word: string, everyLetter: boolean) {
 
 export function buildPlan(text: string, mood: string, v: VoiceSpec): Plan {
   const m = MOODS[mood] ?? MOODS.smile!;
-  const seed = hashText(`${mood}|${text}`);
+  const seed = foldStr(FNV_SEED, `${mood}|${text}`);
   const step = 1000 / (v.cps * m.pace);
   const revealAt = new Float32Array(text.length);
   let t = 0;
@@ -121,10 +112,10 @@ export function buildPlan(text: string, mood: string, v: VoiceSpec): Plan {
     const words = [...sentence[0].matchAll(/[\p{L}\p{N}]+(?:['’]\p{L}+)*/gu)];
     for (const w of words) {
       const shout = w[0].length > 1 && w[0] === w[0].toUpperCase() && /\p{L}/u.test(w[0]);
-      for (const o of onsets(w[0], !!v.everyLetter)) {
+      for (const o of onsets(w[0])) {
         const at = revealAt[sentence.index + w.index + o.i]!;
         const last = syllables[syllables.length - 1];
-        if (!v.everyLetter && last && at - last.at < MIN_GAP) continue;
+        if (last && at - last.at < MIN_GAP) continue;
         if (rand(seed, n++) < m.skip) continue;
         const letter = o.vowel ? vowelOf(o.vowel)! : -1;
         syllables.push({
@@ -132,10 +123,9 @@ export function buildPlan(text: string, mood: string, v: VoiceSpec): Plan {
           ms: 0,
           vowel: letter >= 0 && rand(seed, n++) < 0.6 ? letter : pickVowel(v.vowels, rand(seed, n++)),
           kind: kindOf(o.lead),
-          semis: (rand(seed, n++) * 2 - 1) * v.rangeSemis * m.range,
+          semis: (rand(seed, n++) * 2 - 1) * v.rangeSemis * m.range + (shout ? 1 : 0),
           db: shout ? 1.5 : 0,
         });
-        if (shout) syllables[syllables.length - 1]!.semis += 1;
       }
     }
     // The contour: a fall across the sentence, then its ending (a question lifts, a statement drops).
@@ -165,18 +155,6 @@ function pickVowel(weights: readonly number[], x: number) {
   return 0;
 }
 
-const noises = new WeakMap<BaseAudioContext, AudioBuffer>();
-function noiseFor(ctx: BaseAudioContext) {
-  let b = noises.get(ctx);
-  if (!b) {
-    b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.05), ctx.sampleRate);
-    const d = b.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    noises.set(ctx, b);
-  }
-  return b;
-}
-
 // One voice's nodes. Reused for a whole line, gone when it ends.
 export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) {
   const osc = ctx.createOscillator();
@@ -186,10 +164,8 @@ export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) 
   const bright = ctx.createBiquadFilter();
   bright.type = 'lowpass';
   bright.frequency.value = v.brightnessHz;
-  const level = ctx.createGain();
-  level.gain.value = dbToGain(v.gainDb);
   const cut = ctx.createGain();
-  env.connect(bright).connect(level).connect(cut).connect(out);
+  env.connect(bright).connect(cut).connect(out);
   const bands = [0, 1, 2].map(() => {
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
@@ -197,13 +173,13 @@ export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) 
     osc.connect(filter).connect(gain).connect(env);
     return { filter, gain };
   });
-  const nodes = [osc, env, bright, level, cut, ...bands.flatMap((b) => [b.filter, b.gain])];
+  const nodes = [osc, env, bright, cut, ...bands.flatMap((b) => [b.filter, b.gain])];
   osc.onended = () => nodes.forEach((n) => n.disconnect());
   osc.start();
 
   function consonant(t: number, kind: Kind) {
     const src = ctx.createBufferSource();
-    src.buffer = noiseFor(ctx);
+    src.buffer = noiseBuffer(ctx, 0.05);
     const f = ctx.createBiquadFilter();
     f.type = 'bandpass';
     f.Q.value = 1.2;
@@ -262,7 +238,7 @@ export function speak(text: string, mood: string, v: VoiceSpec): LineSpeech {
   let shown = 0;
   let next = 0;
   let lane: ReturnType<typeof createLane> | null = null;
-  let ctx: AudioContext | null = null;
+  let audio: ReturnType<typeof getAudio> = null;
   let zero = 0; // audio time at ms = 0
   let done = false;
   return {
@@ -273,14 +249,13 @@ export function speak(text: string, mood: string, v: VoiceSpec): LineSpeech {
     update(ms) {
       if (done) return;
       if (!lane) {
-        const audio = getAudio('voice');
+        audio = getAudio('voice');
         if (!audio) return;
         lane = createLane(audio.ctx, audio.out, v);
-        ctx = audio.ctx;
-        zero = ctx.currentTime - ms / 1000;
+        zero = audio.ctx.currentTime - ms / 1000;
         duckForVoice(true);
       }
-      const now = ctx!.currentTime;
+      const now = audio!.ctx.currentTime;
       for (; next < syllables.length && syllables[next]!.at <= ms + HORIZON; next++) {
         const s = syllables[next]!;
         const t = zero + s.at / 1000;
@@ -297,7 +272,7 @@ export function speak(text: string, mood: string, v: VoiceSpec): LineSpeech {
       if (done) return;
       done = true;
       if (lane) {
-        lane.stop(ctx!.currentTime);
+        lane.stop(audio!.ctx.currentTime);
         duckForVoice(false);
       }
     },

@@ -13,6 +13,7 @@ import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input.ts';
 import { emit } from '../../render/particles.ts';
 import { getAudio } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 import { ON_ISLAND, PROTO, currentStep, onStep, onVariant, protoV } from '../flags.ts';
 import { protoCount } from '../count.ts';
 
@@ -71,20 +72,14 @@ onPreStep(() => {
 const PUFF = new THREE.Color('#f4efe4');
 // The second jump's sound: an air puff (Fortnite-style), not a pitched whoop. Band-passed noise whose centre rises a
 // little, a soft swell and a short fade, with a faint low thump for the push; quiet, under the world.
-let air: AudioBuffer | null = null;
 export function whoop() {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
-  if (air?.sampleRate !== ctx.sampleRate) {
-    air = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.25), ctx.sampleRate);
-    const d = air.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  }
   const t = ctx.currentTime + 0.005;
   const j = 0.94 + Math.random() * 0.12;
   const n = ctx.createBufferSource();
-  n.buffer = air;
+  n.buffer = noiseBuffer(ctx, 0.25);
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
   bp.Q.value = 1.1;

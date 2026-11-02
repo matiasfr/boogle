@@ -14,6 +14,7 @@
 //                           tiny card clicks, no pitched pip), at vol (0-1, by distance from the plaque)
 import { getAudio } from '../render/audio.ts';
 import { clink } from '../render/clink.ts';
+import { noiseBuffer } from '../render/noise.ts';
 
 export type UiSound = 'tick' | 'pop' | 'thunk' | 'deny' | 'count' | 'flap';
 
@@ -27,15 +28,11 @@ const last: Record<string, number> = {};
 let run = 0;
 
 let bus: GainNode | null = null;
-let noise: AudioBuffer | null = null;
 function busFor(ctx: AudioContext, out: AudioNode): GainNode {
   if (bus?.context !== ctx) {
     bus = ctx.createGain();
     bus.gain.value = 0.4; // about -8 dB: UI sits under the world
     bus.connect(out);
-    noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.05), ctx.sampleRate);
-    const d = noise.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
   return bus;
 }
@@ -99,7 +96,7 @@ export function uiSound(kind: UiSound, arg = 0): void {
       blip(ctx, out, { type: 'sine', f0: f * 4, at, dur: 0.035, peak: 0.1, attack: 0.001 });
       blip(ctx, out, { type: 'sine', f0: 170 * j, f1: 85 * j, at, dur: 0.09, peak: 0.38, attack: 0.002 });
       const n = ctx.createBufferSource();
-      n.buffer = noise;
+      n.buffer = noiseBuffer(ctx, 0.05);
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass';
       bp.frequency.value = 2600 * j;
@@ -124,7 +121,7 @@ export function uiSound(kind: UiSound, arg = 0): void {
       for (let k = 0; k < 4; k++) {
         const t0 = at + k * 0.024 + (Math.random() - 0.5) * 0.004;
         const n = ctx.createBufferSource();
-        n.buffer = noise;
+        n.buffer = noiseBuffer(ctx, 0.05);
         const bp = ctx.createBiquadFilter();
         bp.type = 'bandpass';
         bp.frequency.value = (2200 - k * 180) * j;

@@ -12,6 +12,7 @@
 // a snap the ladder lands on the beat and in the current chord, as Peggle's pegs do (none does today). Local and
 // cosmetic.
 import { getAudio, onBeat } from '../../render/audio.ts';
+import { noiseBuffer } from '../../render/noise.ts';
 import { clink, pentatonic } from '../../render/clink.ts';
 
 const note = (n: number): number => pentatonic(n + 5); // from C6
@@ -25,7 +26,6 @@ let step = -1,
   lastAt = -1e9,
   pan = 1;
 const voices: { g: GainNode; end: number }[] = [];
-let noise: AudioBuffer | null = null;
 
 function voice(ctx: AudioContext, out: AudioNode, at: number, dur: number, p: number): GainNode {
   for (let k = voices.length - 1; k >= 0; k--) if (voices[k]!.end < ctx.currentTime) voices.splice(k, 1);
@@ -64,14 +64,9 @@ export function whooshIn(n: number): void {
   const a = getAudio('ui');
   if (!a || n <= 0) return;
   const { ctx, out } = a;
-  if (!noise || noise.sampleRate !== ctx.sampleRate) {
-    noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.3), ctx.sampleRate);
-    const d = noise.getChannelData(0);
-    for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-  }
   const t = ctx.currentTime + 0.01;
   const src = ctx.createBufferSource();
-  src.buffer = noise;
+  src.buffer = noiseBuffer(ctx, 0.3);
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
   bp.Q.value = 1.6;

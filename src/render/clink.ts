@@ -8,6 +8,7 @@
 //   3. sparkle: the bounce, a quieter second strike 25-45 ms later ("ting-ting"), an octave up unless asked otherwise.
 // Each hit varies a little: fundamental ±6 cents (it stays in tune), the inharmonic modes ±1.5 %, level ±1.5 dB, the
 // bounce's delay. Local and cosmetic.
+import { noiseBuffer } from './noise.ts';
 
 const ROOT = 523.25; // C5
 const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
@@ -28,7 +29,6 @@ export type Clink = {
 const METAL = { ratio: [1, 2.756, 5.404, 8.933], gain: [1, 0.5, 0.3, 0.16], ring: [1, 0.5, 0.28, 0.16] };
 const WOOD = { ratio: [1, 3.93, 9.2], gain: [1, 0.28, 0.1], ring: [1, 0.35, 0.15] };
 
-let noise: AudioBuffer | null = null;
 const rnd = (a: number) => (Math.random() * 2 - 1) * a;
 
 function mode(ctx: BaseAudioContext, dest: AudioNode, at: number, f: number, peak: number, ring: number): void {
@@ -46,13 +46,8 @@ function mode(ctx: BaseAudioContext, dest: AudioNode, at: number, f: number, pea
 }
 
 function strike(ctx: BaseAudioContext, dest: AudioNode, at: number, peak: number, metal: number): void {
-  if (!noise || noise.sampleRate !== ctx.sampleRate) {
-    noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.03), ctx.sampleRate);
-    const d = noise.getChannelData(0);
-    for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
-  }
   const n = ctx.createBufferSource();
-  n.buffer = noise;
+  n.buffer = noiseBuffer(ctx, 0.03);
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
   bp.frequency.value = (1800 + 5200 * metal) * (1 + rnd(0.1));
