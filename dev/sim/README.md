@@ -11,9 +11,10 @@
 - `drop`: Rapier alone, a ball dropped on a floor.
 - `ball`: the ball thrown, settling, respawned off the island and floating, checked against numbers from the real game.
 - `ball-tree`: the ball thrown at a palm, bouncing off a trunk whose colliders come from pure data (`src/blueprints/`).
+- `player`: the local player walking, sprinting, stopping, jumping, hopping, swimming and caught by the fall-through net, every sample checked against the real game.
 - `ball-handoff`: two players in two processes through the real local server (no browser, in real time, about 8 s): picking up an orphaned ball, a steal, a throw the other follows, a lockstep edit, the owner leaving.
 
-`ball-course.ts` is the course itself, with no Node or browser API. `node dev/sim/ball-browser.ts` runs that same file in the real game on the GPU and rewrites `ball-browser.json`: do that after changing the ball's physics, the ground or the course. A difference you didn't mean is a bug in the headless world, or in your change.
+`ball-course.ts` is the course itself, with no Node or browser API. `node dev/sim/ball-browser.ts` runs that same file in the real game on the GPU and rewrites `ball-browser.json`: do that after changing the ball's physics, the ground or the course. A difference you didn't mean is a bug in the headless world, or in your change. `player-course.ts` and `player-browser.ts` are the same pair for the player.
 
 ## What's in it: `npm run inspect`
 

@@ -1,8 +1,6 @@
 // Controller feel pass. The body setup stays as it is (dynamic physics body, steered horizontal
 // velocity, ledge grace, jump buffer); this file reshapes what happens around it:
-//   - jump: heavier fall, a short hop when you let go early, a little float at the apex while held, and jumps add to
-//     an upward bounce instead of replacing it (src/entities/player/state.ts), so mushroom bounces chain
-//   - ground snap: running over a crest no longer launches you (recently grounded, ground just below, no jump)
+//   - the jump's shape and the ground snap are the controller's: shapeJump in src/entities/player/state.ts
 //   - braking: a harder brake than turn (src/entities/player/state.ts) with a dust skid
 //   - a spring layer on every avatar (render only): landing squash scaled by fall speed, takeoff stretch, lean toward
 //     acceleration (braking rocks back, turns bank)
@@ -14,30 +12,14 @@ import { onFrame } from '../loop.ts';
 import { clamp } from '../math.ts';
 import { emit } from '../render/particles.ts';
 import { springStep, damp, dampK, halfLifeOf, type Spring } from '../render/motion.ts';
-import { GROUP } from '../physics/physics.ts';
-import { onPreStep, raycastClosest, rayHit, getMask, type Body } from '../physics/engine.ts';
-import { GRAVITY, PLAYER_MASS, PLAYER_R, reducedMotion } from '../constants.ts';
-import { waterField } from '../physics/water-field.ts';
+import { PLAYER_R, reducedMotion } from '../constants.ts';
 import { carry } from '../physics/platforms.ts';
+import { JUMP, MOVE } from '../entities/player/state.ts';
 import { me } from '../player/player.ts';
 import { protoMark } from '../proto/mark.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)
-const JUMP = {
-  fallGravity: 1.7, // x gravity while falling
-  cutGravity: 2.5, // x gravity while rising after the jump button was released (short hop)
-  apexGravity: 0.5, // x gravity near the top while the button is held
-  apexSpeed: 1.6, // m/s: "near the top"
-};
-const MOVE = {
-  snapMaxGap: 0.45, // m: ground this close below the feet pulls you back down after a crest
-  // m/s: rising faster than this is a launch (a mushroom cap, a bounce pad), never a crest. Walking or sprinting over
-  // a crest rises a few m/s at most; the slowest mushroom bounce is about 9. Without it the snap's ray found the cap
-  // you had just bounced off and cancelled the bounce every step, so you sat on the cap twitching.
-  snapMaxVy: 6,
-  skidSpeed: 4, // m/s: braking faster than this kicks up dust
-};
 const SPRING = {
   // The squash spring is integrated exactly (src/render/motion.ts), so it bounces the same at 20 fps as at 120. These
   // four numbers reproduce the old Euler-stepped spring (k 260, damping 14, kicks 0.45 and 3) at 60 fps.
@@ -62,45 +44,6 @@ const FLOP = {
 };
 const HOLD_CAP_MS = 120;
 const KINDS = ['splat', 'stomp', 'bonk', 'tumble']; // append only: an old tab ignores an index it doesn't know
-
-// ---------------------------------------------------------------- physics: jump shape, snap
-const ray = { to: { x: 0, y: 0, z: 0 }, hit: rayHit() };
-const floorGap = (b: Body) => {
-  ray.to.x = b.position.x;
-  ray.to.y = b.position.y - PLAYER_R - MOVE.snapMaxGap;
-  ray.to.z = b.position.z;
-  const mask = getMask(b) & (GROUP.SCENERY | GROUP.CAVE); // static floors only, never your own body
-  return raycastClosest(b.position, ray.to, { mask, skipBackfaces: true }, ray.hit)
-    ? ray.hit.distance - PLAYER_R
-    : Infinity;
-};
-let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
-onPreStep(
-  () => {
-    const b = me.body;
-    if (!b) return;
-    const vy = b.velocity.y;
-    const surf = waterField.surfaceAt(b.position.x, b.position.z);
-    const under = surf - (b.position.y + 0.35) > 0;
-    // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
-    if (vy <= 0) jumpActive = false;
-    if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
-    if (!under) {
-      let g = 1;
-      if (vy < 0) g = JUMP.fallGravity;
-      else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
-      else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
-      b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
-      // ground snap: just left the ground over a crest without jumping, ground right below: stay on it. The gap is to
-      // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
-      if (!jumpActive && me.coyote > 0 && vy > 0.4 && vy < MOVE.snapMaxVy) {
-        const gap = floorGap(b);
-        if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
-      }
-    }
-  },
-  { order: 30 },
-);
 
 // ---------------------------------------------------------------- my flops
 type Flop = { kind: string; until: number };
