@@ -123,7 +123,7 @@ export function updateIntent(dt: number) {
 // ?ctl=odyssey facing (Odyssey's numbers: smo.wiki, Running): turn at most 390°/s below top speed and 510°/s at it; at
 // a standstill or in the air turn fast; past 95° from where you're running at speed, skid (physics brakes you) and
 // pivot to the stick once nearly stopped.
-const TURN = { slow: 390, fast: 510, still: 1440, skidAngle: 95, skidSpeed: 4, pivotSpeed: 1.5 }; // degrees/s, m/s
+const TURN = { slow: 390, fast: 510, still: 1440, air: 540, skidAngle: 95, skidSpeed: 4, pivotSpeed: 1.5 }; // degrees/s, m/s
 function odysseyTurn(target: number, dt: number) {
   const v = me.body!.velocity;
   const hv = Math.hypot(v.x - carry.x, v.z - carry.z);
@@ -137,7 +137,8 @@ function odysseyTurn(target: number, dt: number) {
     me.yaw = target; // the pivot
     return;
   }
-  const rate = (!ground || hv < TURN.pivotSpeed ? TURN.still : hv > 9 ? TURN.fast : TURN.slow) * (Math.PI / 180);
+  const rate =
+    (!ground ? TURN.air : hv < TURN.pivotSpeed ? TURN.still : hv > 9 ? TURN.fast : TURN.slow) * (Math.PI / 180);
   me.yaw += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
 }
 
