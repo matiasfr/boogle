@@ -188,7 +188,7 @@ onFrame(
     }
     pool.end();
   },
-  { phase: 'update' },
+  { phase: 'update', order: 1 },
 );
 
 window.__fish = {

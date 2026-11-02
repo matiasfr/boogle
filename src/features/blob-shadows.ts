@@ -40,5 +40,5 @@ onFrame(
     put(ballMesh.position, BALL_R * 1.3);
     pool.end();
   },
-  { phase: 'late' },
+  { phase: 'late', order: -1 },
 );

@@ -235,7 +235,7 @@ onFrame(
     bodyPool.end();
     wingPool.end();
   },
-  { phase: 'update' },
+  { phase: 'update', order: 2 },
 );
 
 window.__gulls = G;
