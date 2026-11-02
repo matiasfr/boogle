@@ -33,8 +33,9 @@ ground.frustumCulled = false;
 scene.add(ground);
 ground.setColorAt(0, new THREE.Color('#ffffff'));
 
-export type Heap = { x: number; z: number; base: number; list: Kind[] };
-export const heap = (x: number, z: number, base: number): Heap => ({ x, z, base, list: [] });
+// `y`: the ground under it, for a heap off the island's grid (?proto=place).
+export type Heap = { x: number; z: number; base: number; list: Kind[]; y?: number };
+export const heap = (x: number, z: number, base: number, y?: number): Heap => ({ x, z, base, list: [], y });
 
 // A pyramid: `base` x `base` crates, then one smaller on top of it, and so on; past its top another pyramid beside it.
 function slotOf(h: Heap, n: number, out: THREE.Vector3): THREE.Vector3 {
@@ -57,7 +58,7 @@ function slotOf(h: Heap, n: number, out: THREE.Vector3): THREE.Vector3 {
   const step = SIZE * 1.04;
   const x = h.x + (ix - (side - 1) / 2) * step + shift * (h.base + 0.5) * step,
     z = h.z + (iz - (side - 1) / 2) * step;
-  return out.set(x, groundHeight(h.x, h.z) + (layer + 0.5) * SIZE, z);
+  return out.set(x, (h.y ?? groundHeight(h.x, h.z)) + (layer + 0.5) * SIZE, z);
 }
 
 const m4 = new THREE.Matrix4(),

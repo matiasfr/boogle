@@ -84,6 +84,7 @@ tick of 100 ms (10 per second).
 - [6.25 HUD feedback: sounds, motion, notices](game-design/hud.md)
 - [6.26 Prototype: the long crossing (`?proto=crossing`)](game-design/crossing.md)
 - [6.27 Prototype: the line feeds the town (`?proto=net`)](game-design/net.md)
+- [6.28 Prototype: a real place (`?proto=place`)](game-design/place.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
