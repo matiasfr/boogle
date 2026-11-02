@@ -5,7 +5,7 @@ folder map in [src/README.md](../../src/README.md).
 
 - **Stack.** three.js 0.187 (`WebGPURenderer`, WebGPU only; shaders in TSL, see
   [src/render/README.md](../../src/render/README.md)), Rapier 0.19.3 (physics, WASM, loaded behind the splash), WebSocket to our server (`ws` 8 on Node 24), TypeScript (strict, converting from JavaScript), bundled with Vite ([package.json](../../package.json));
-  the build splits three into a vendor chunk; Rapier is its own chunk and WASM file ([vite.config.js](../../vite.config.js)).
+  the build splits three into a vendor chunk; Rapier is its own chunk and WASM file ([vite.config.ts](../../vite.config.ts)).
   The server ([server/README.md](../../server/README.md)) is Node with Express and `ws`, and runs hosted
   rooms with the game's own `src/world/` and `src/sim/` code (section 8).
 - **Layout.** `src/` is grouped by domain: `features/` (auto-loaded plug-ins), `world/` and `world/rules/` (lockstep),

@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
+import type { Rollup } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atlasFacts } from './dev/atlas/vite-plugin.ts';
 import { build as esbuild } from 'esbuild';
+import type { Service, createService as CreateService, loadConfig as LoadConfig } from './server/src/server.ts';
 
-const resolve = (p) => fileURLToPath(new URL(p, import.meta.url));
+const resolve = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 // BASE=/boogle/ when building for GitHub Pages (served from a subpath).
 // VITE_BUILD (the commit, set by deploy.yml) names the build; without it this is a dev build. The client reads it as
@@ -17,7 +19,7 @@ const swOff = process.env.BOOGLE_SW === 'off';
 // Lazy chunks the first frame waits for, precached with the page's static imports (docs/plans/loading.md).
 const FIRST_DYNAMIC = [/\/src\/main\.ts$/, /rapier3d-simd/];
 
-let localServer = null; // the dev server's own game server (boogle-local-server below)
+let localServer: Service | null = null; // the dev server's own game server (boogle-local-server below)
 
 export default defineConfig({
   base: process.env.BASE || '/',
@@ -49,7 +51,7 @@ export default defineConfig({
       // Names each onFrame hook after its module, for the profiler (src/loop.ts): `onFrame(` becomes
       // `onFrame.in('features/foo.js')(`, in dev and build alike.
       name: 'boogle-hook-names',
-      transform(code, id) {
+      transform(code: string, id: string) {
         const m = id.match(/\/src\/(.+\.[jt]s)$/);
         if (!m || /^loop\.[jt]s$/.test(m[1]) || !code.includes('onFrame(')) return null;
         return { code: code.replace(/\bonFrame\(/g, `onFrame.in(${JSON.stringify(m[1])})(`), map: null };
@@ -65,9 +67,10 @@ export default defineConfig({
         if (process.env.VITE_BOOGLE_SERVER) return;
         // Imported from a computed URL so the config bundler leaves it alone: the server's packages live in
         // server/node_modules (installed by the root postinstall).
-        const { createService, loadConfig } = await import(pathToFileURL(resolve('server/src/server.js')).href);
+        const { createService, loadConfig }: { createService: typeof CreateService; loadConfig: typeof LoadConfig } =
+          await import(pathToFileURL(resolve('server/src/server.ts')).href);
         const env = { DATA_DIR: resolve('.boogle-data'), SERVER_ROOMS: '*' };
-        localServer = createService(loadConfig(env, { log: (...a) => console.log('[server]', ...a) }));
+        localServer = createService(loadConfig(env, { log: (...a: unknown[]) => console.log('[server]', ...a) }));
         const port = await localServer.listen(0);
         // Same host as the page, so a phone on the LAN (vite --host) reaches it too.
         return {
@@ -93,8 +96,8 @@ export default defineConfig({
       name: 'boogle-sw',
       apply: 'build',
       async generateBundle(_, bundle) {
-        const first = new Set();
-        const add = (file) => {
+        const first = new Set<string>();
+        const add = (file: string) => {
           const c = bundle[file];
           if (!c || first.has(file)) return;
           first.add(file);
@@ -103,7 +106,10 @@ export default defineConfig({
             first.add(f);
           c.imports.forEach(add);
           for (const d of c.dynamicImports)
-            if (FIRST_DYNAMIC.some((re) => re.test(bundle[d]?.facadeModuleId ?? ''))) add(d);
+            if (
+              FIRST_DYNAMIC.some((re) => re.test((bundle[d] as Rollup.OutputChunk | undefined)?.facadeModuleId ?? ''))
+            )
+              add(d);
         };
         for (const c of Object.values(bundle))
           if (c.type === 'chunk' && c.isEntry && c.facadeModuleId?.endsWith('/index.html') && c.name === 'main')

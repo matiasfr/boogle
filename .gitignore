@@ -138,7 +138,6 @@ dist
 !.yarn/versions
 
 # Vite files
-vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
@@ -159,5 +158,5 @@ CLAUDE.local.md
 # npm run look output
 .look/
 
-# The dev server's own game server saves (vite.config.js, boogle-local-server)
+# The dev server's own game server saves (vite.config.ts, boogle-local-server)
 .boogle-data/

@@ -1,19 +1,46 @@
 import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
+import type { RoomHost } from './host/rooms.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REPORT_KINDS = new Set(['error', 'desync', 'snapshot', 'connect', 'playtest']);
+const REPORT_KINDS = new Set<unknown>(['error', 'desync', 'snapshot', 'connect', 'playtest']);
 const REPORT_BATCH = 10; // reports per POST
 const REPORT_KEEP_DAYS = 30;
 
-function parseTrustProxy(v) {
+// POST /report (wire shape): one report, or an array of up to REPORT_BATCH, as sent by the client's telemetry
+// (navigator.sendBeacon, text/plain JSON) and the prototype bar. Stored as one JSON line each, with `at` added.
+export type ReportKind = 'error' | 'desync' | 'snapshot' | 'connect' | 'playtest';
+export type ReportDetail = string | Record<string, string | number | boolean | null> | PlaytestDetail | null;
+export type Report = {
+  room: string;
+  kind: ReportKind;
+  detail: ReportDetail;
+  tick?: number;
+  build?: string;
+  ua?: string;
+};
+export type PlaytestVerdict = 'yes' | 'no' | 'cant';
+export type PlaytestDetail = {
+  proto: string;
+  verdict: PlaytestVerdict;
+  variant: string;
+  note: string;
+  trace?: string;
+  values?: string;
+  build?: string;
+  counts?: Record<string, number>;
+};
+
+function parseTrustProxy(v: string | undefined): boolean | number | string {
   if (v === undefined || v === '') return 1; // one hop: Fly / Render / Railway
   if (v === 'true') return true;
   if (v === 'false') return false;
@@ -21,7 +48,7 @@ function parseTrustProxy(v) {
   return v;
 }
 
-function list(v) {
+function list(v: string | undefined) {
   return (v || '')
     .split(',')
     .map((s) => s.trim())
@@ -29,7 +56,10 @@ function list(v) {
 }
 
 /** Read config from env, with overrides (used by tests). */
-export function loadConfig(env = process.env, overrides = {}) {
+export function loadConfig(
+  env: Record<string, string | undefined> = process.env,
+  overrides: Partial<ServerConfig> = {},
+): ServerConfig {
   const origins = list(env.ALLOWED_ORIGINS);
   return {
     port: Number(env.PORT ?? 9000),
@@ -45,21 +75,43 @@ export function loadConfig(env = process.env, overrides = {}) {
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
-    log: (...a) => console.log(new Date().toISOString(), ...a),
+    log: (...a: unknown[]) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
 }
 
+export type ServerConfig = {
+  port: number;
+  dataDir: string;
+  allowedOrigins: string[];
+  maxRooms: number;
+  trustProxy: boolean | number | string;
+  reportRatePerMin: number;
+  reportMaxBytesPerDay: number;
+  reportToken: string;
+  serverRooms: string[];
+  maxPlayers: number;
+  serverSaveMs: number;
+  roomIdleMs: number;
+  maxHostedRooms: number;
+  log: (...a: unknown[]) => void;
+  // Test-only timing overrides, passed through to the room host (./host/hosted-room.ts, HostCfg).
+  reconnectGraceMs?: number;
+  deadMs?: number;
+  leadHiddenMs?: number;
+  housekeepMs?: number;
+};
+
 /** Simple in-memory token bucket keyed by string. */
-function createRateLimiter({ perMinute }) {
-  const buckets = new Map();
+function createRateLimiter({ perMinute }: { perMinute: number }) {
+  const buckets = new Map<string, { tokens: number; t: number }>();
   const refillPerMs = perMinute / 60000;
   const sweep = setInterval(() => {
     const now = Date.now();
     for (const [k, b] of buckets) if (now - b.t > 120000) buckets.delete(k);
   }, 60000);
   sweep.unref();
-  const middleware = (req, res, next) => {
+  const middleware = (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
     const key = req.ip || 'unknown';
     let b = buckets.get(key);
@@ -74,29 +126,30 @@ function createRateLimiter({ perMinute }) {
     b.tokens -= 1;
     next();
   };
-  middleware.stop = () => clearInterval(sweep);
-  return middleware;
+  return Object.assign(middleware, { stop: () => clearInterval(sweep) });
 }
 
 // One client report, cleaned: known kind, short strings, `detail` a string or a flat object of primitives.
 // Returns null if it can't be salvaged. Nothing from the request itself (IP, headers) is kept.
-const cut = (v, n) => (typeof v === 'string' ? v.slice(0, n) : undefined);
-function cleanReport(r) {
+const cut = (v: unknown, n: number) => (typeof v === 'string' ? v.slice(0, n) : undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON, checked field by field
+function cleanReport(r: any): Report | null {
   if (!r || typeof r !== 'object' || Array.isArray(r) || !REPORT_KINDS.has(r.kind)) return null;
   if (typeof r.room !== 'string' || !ROOM_ID_RE.test(r.room)) return null;
-  let detail = cut(r.detail, 500);
+  let detail: ReportDetail | undefined = cut(r.detail, 500);
   if (r.kind === 'playtest') {
     detail = cleanPlaytest(r.detail);
     if (!detail) return null;
   } else if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
-    detail = {};
+    const flat: Record<string, string | number | boolean | null> = {};
     for (const [k, v] of Object.entries(r.detail).slice(0, 12)) {
-      if (typeof v === 'string') detail[k.slice(0, 32)] = v.slice(0, 200);
+      if (typeof v === 'string') flat[k.slice(0, 32)] = v.slice(0, 200);
       else if (typeof v === 'boolean' || v === null || (typeof v === 'number' && Number.isFinite(v)))
-        detail[k.slice(0, 32)] = v;
+        flat[k.slice(0, 32)] = v;
     }
+    detail = flat;
   }
-  const out = { room: r.room, kind: r.kind, detail: detail ?? null };
+  const out: Report = { room: r.room, kind: r.kind, detail: detail ?? null };
   if (Number.isSafeInteger(r.tick)) out.tick = r.tick;
   if (typeof r.build === 'string') out.build = cut(r.build, 40);
   if (typeof r.ua === 'string') out.ua = cut(r.ua, 60);
@@ -106,19 +159,26 @@ function cleanReport(r) {
 // A playtest verdict from the prototype bar (src/proto/bar/), read back by `npm run verdicts`. Its own shape: the
 // verdict is one of the bar's three, the note may run to 1000 chars, and `counts` is the one nested object (the bar's
 // behaviour counters, name -> number). `proto` (the card id in protos/protos.ts) and `verdict` are required.
-const PLAYTEST_VERDICTS = new Set(['yes', 'no', 'cant']);
-function cleanPlaytest(d) {
+const PLAYTEST_VERDICTS = new Set<unknown>(['yes', 'no', 'cant']);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON, checked field by field
+function cleanPlaytest(d: any): PlaytestDetail | null {
   if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
   if (typeof d.proto !== 'string' || !/^[a-z0-9-]{1,40}$/.test(d.proto) || !PLAYTEST_VERDICTS.has(d.verdict))
     return null;
-  const out = { proto: d.proto, verdict: d.verdict, variant: cut(d.variant, 40) ?? '', note: cut(d.note, 1000) ?? '' };
+  const out: PlaytestDetail = {
+    proto: d.proto,
+    verdict: d.verdict,
+    variant: cut(d.variant, 40) ?? '',
+    note: cut(d.note, 1000) ?? '',
+  };
   if (typeof d.trace === 'string') out.trace = cut(d.trace, 300);
   if (typeof d.values === 'string') out.values = cut(d.values, 300);
   if (typeof d.build === 'string') out.build = cut(d.build, 40);
   if (d.counts && typeof d.counts === 'object' && !Array.isArray(d.counts)) {
-    out.counts = {};
+    const counts: Record<string, number> = {};
     for (const [k, v] of Object.entries(d.counts).slice(0, 12))
-      if (typeof v === 'number' && Number.isFinite(v)) out.counts[k.slice(0, 32)] = v;
+      if (typeof v === 'number' && Number.isFinite(v)) counts[k.slice(0, 32)] = v;
+    out.counts = counts;
   }
   return out;
 }
@@ -127,14 +187,14 @@ function cleanPlaytest(d) {
  * Build (but don't start listening) the service.
  * Returns { app, server, listen(port), close({ save }), config, roomHost() }.
  */
-export function createService(cfg) {
+export function createService(cfg: ServerConfig) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', cfg.trustProxy);
 
   // ---- CORS (all endpoints) ----
   const anyOrigin = cfg.allowedOrigins.includes('*');
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.get('origin');
     if (anyOrigin) {
       res.set('Access-Control-Allow-Origin', '*');
@@ -152,14 +212,14 @@ export function createService(cfg) {
   });
 
   // ---- health ----
-  app.get('/healthz', (_req, res) => res.type('text/plain').send('ok'));
+  app.get('/healthz', (_req: Request, res: Response) => res.type('text/plain').send('ok'));
 
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);
   const { readIfExists, withLock } = store;
-  let roomHost = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
+  let roomHost: RoomHost | null = null; // the server-hosted rooms (./host/rooms.ts), made in listen() once the store is ready
 
-  const validRoom = (req, res, next) => {
+  const validRoom = (req: Request<{ roomId: string }>, res: Response, next: NextFunction) => {
     if (!ROOM_ID_RE.test(req.params.roomId)) return res.status(400).json({ error: 'invalid roomId' });
     next();
   };
@@ -187,37 +247,39 @@ export function createService(cfg) {
   // (navigator.sendBeacon) so no CORS preflight is needed. The first write of a new day deletes files older than
   // REPORT_KEEP_DAYS.
   const reportDir = path.join(cfg.dataDir, 'reports');
-  const daySizes = new Map(); // day -> bytes written (read from disk on first use)
-  const reportFile = (day) => path.join(reportDir, `${day}.jsonl`);
+  const daySizes = new Map<string, number>(); // day -> bytes written (read from disk on first use)
+  const reportFile = (day: string) => path.join(reportDir, `${day}.jsonl`);
 
-  async function pruneReports(day) {
+  async function pruneReports(day: string) {
     const oldest = new Date(Date.parse(day) - REPORT_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
-    for (const name of await fs.readdir(reportDir).catch(() => [])) {
+    for (const name of await fs.readdir(reportDir).catch((): string[] => [])) {
       const d = /^(\d{4}-\d{2}-\d{2})\.jsonl$/.exec(name)?.[1];
       if (d && d < oldest) await fs.rm(path.join(reportDir, name), { force: true });
     }
   }
 
-  async function daySize(day) {
+  async function daySize(day: string): Promise<number> {
     if (!daySizes.has(day)) {
       daySizes.clear(); // only today's counter matters
-      await pruneReports(day).catch((e) => cfg.log('report prune failed', e.message));
+      await pruneReports(day).catch((e: Error) => cfg.log('report prune failed', e.message));
       try {
         daySizes.set(day, (await fs.stat(reportFile(day))).size);
       } catch (e) {
-        if (e.code !== 'ENOENT') throw e;
+        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
         daySizes.set(day, 0);
       }
     }
-    return daySizes.get(day);
+    return daySizes.get(day)!;
   }
 
   app.post(
     '/report',
     createRateLimiter({ perMinute: cfg.reportRatePerMin }),
     express.json({ limit: '8kb', type: ['application/json', 'text/plain'] }),
-    async (req, res, next) => {
-      const list = (Array.isArray(req.body) ? req.body : [req.body]).slice(0, REPORT_BATCH).map(cleanReport);
+    async (req: Request, res: Response, next: NextFunction) => {
+      const list: (Report | null)[] = (Array.isArray(req.body) ? req.body : [req.body])
+        .slice(0, REPORT_BATCH)
+        .map(cleanReport);
       if (!list.length || list.includes(null)) {
         return res.status(400).json({ error: `body must be a report { room, kind, detail } or an array of them` });
       }
@@ -243,7 +305,7 @@ export function createService(cfg) {
   );
 
   // Read back one day's reports. Exists only when REPORT_TOKEN is set; needs `Authorization: Bearer <token>`.
-  app.get('/reports', async (req, res, next) => {
+  app.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
     if (!cfg.reportToken) return res.status(404).json({ error: 'not found' });
     const given = Buffer.from(req.get('authorization') || '');
     const want = Buffer.from(`Bearer ${cfg.reportToken}`);
@@ -266,9 +328,9 @@ export function createService(cfg) {
   routeUpgrades(server, { roomHost: () => roomHost });
 
   // ---- errors ----
-  app.use((req, res) => res.status(404).json({ error: 'not found' }));
-  // eslint-disable-next-line no-unused-vars
-  app.use((err, _req, res, _next) => {
+  app.use((_req: Request, res: Response) => res.status(404).json({ error: 'not found' }));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any -- express needs 4 params
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload too large' });
     if (err.type === 'entity.parse.failed' || err instanceof SyntaxError)
       return res.status(400).json({ error: 'invalid JSON' });
@@ -285,16 +347,16 @@ export function createService(cfg) {
     async listen(port = cfg.port) {
       await store.init();
       roomHost ??= createRoomHost(cfg, store);
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
         server.listen(port, () => resolve());
       });
-      return server.address().port;
+      return (server.address() as AddressInfo).port;
     },
-    // The hosted rooms first (bye, save, close 1012), so index.js's shutdown needs nothing else.
+    // The hosted rooms first (bye, save, close 1012), so index.ts's shutdown needs nothing else.
     async close({ save = true } = {}) {
       await roomHost?.close({ save });
-      return new Promise((resolve) => {
+      return new Promise<void>((resolve) => {
         const force = setTimeout(() => {
           server.closeAllConnections?.();
           resolve();
@@ -309,3 +371,5 @@ export function createService(cfg) {
     },
   };
 }
+
+export type Service = ReturnType<typeof createService>;

@@ -108,7 +108,7 @@ pipelines differently (Metal, no shared blob cache), so the GPU part of the warm
 
 ### a. Service worker (built)
 
-`src/boot/sw-worker.ts`, built to `dist/sw.js` by `vite.config.js` ('boogle-sw', bundled with esbuild, which Vite
+`src/boot/sw-worker.ts`, built to `dist/sw.js` by `vite.config.ts` ('boogle-sw', bundled with esbuild, which Vite
 already depends on). Registered by `src/boot/sw.ts` once the game is interactive and in a room, so its precache never
 competes with the boot.
 
@@ -231,7 +231,7 @@ as data, far islands as impostors (`THREE.LOD`), load and unload by distance, wa
 - `src/boot/timeline.ts`: `bootMark`, `bootSpan`, `bootLine`, `bootDone`; marks in `src/main.ts`; WGSL and
   shader-module timing in `src/render/precompile.ts` (wrapping three's private `_createNodeBuilder` and
   `createProgram`; reads 0 if they move). `?prof=1` shows the phases and logs the line; `window.boogle.boot.line()`.
-- `src/boot/sw-worker.ts`, `src/boot/sw-policy.ts`, `src/boot/sw.ts`, the 'boogle-sw' plugin in `vite.config.js`.
+- `src/boot/sw-worker.ts`, `src/boot/sw-policy.ts`, `src/boot/sw.ts`, the 'boogle-sw' plugin in `vite.config.ts`.
 - `src/render/asset-manifest.ts`, `loadAssetById` in `src/render/assets.ts`, today's three models registered.
 - `dev/look/boot-time.ts`, `dev/look/sw-check.ts`, `test/loading.test.ts`.
 - No change to what is drawn or when: the same modules load in the same order (one new 1 KB chunk, the manifest), and

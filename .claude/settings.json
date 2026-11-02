@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/format-lint.mjs\"; [ ! -f \"$f\" ] || node \"$f\"",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/format-lint.ts\"; [ ! -f \"$f\" ] || node \"$f\"",
             "timeout": 30
           }
         ]

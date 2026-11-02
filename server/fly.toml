@@ -1,7 +1,7 @@
 # Replace the app name (must be globally unique): fly launch --no-deploy --copy-config --name <yours>
 # (or leave it and set the FLY_APP repo variable for .github/workflows/deploy-server.yml).
 app = "boogle-server"
-# A graceful stop says bye to every tab, saves every room and closes the sockets (server/src/index.js on SIGTERM).
+# A graceful stop says bye to every tab, saves every room and closes the sockets (server/src/index.ts on SIGTERM).
 kill_signal = "SIGTERM"
 kill_timeout = 10
 # TODO: pick the region nearest most players. A volume is region-bound: moving means a new volume in the new region,

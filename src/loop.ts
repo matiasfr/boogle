@@ -40,7 +40,7 @@ let started = false;
 
 // Profiling, always on (two performance.now() calls per hook, a few µs a frame). Every hook and main.ts's own
 // sections (pre-step, physics, render) keep their last WINDOW frames of CPU time. A hook's name is its module path
-// (vite.config.js passes it in through onFrame.in), or `name` in its options, else its phase and order.
+// (vite.config.ts passes it in through onFrame.in), or `name` in its options, else its phase and order.
 //   prof.table(n)   the n most expensive sections: { name, avg, p95, max } in ms over the window, plus 'frame' (total)
 //   prof.last       the frame just finished: { ms, top, topMs } (its slowest section), for the hitch log
 // main.ts marks its sections: beginFrame(), mark(name) after each, endFrame(name) after render.
@@ -112,7 +112,7 @@ export function onFrame(fn: (ctx: FrameCtx) => void, { phase = 'update', order =
   list.push({ fn, order, name: name ?? `${phase} ${order}` });
   list.sort((a, b) => a.order - b.order);
 }
-// vite.config.js rewrites `onFrame(` in each module under src/ to `onFrame.in('<path>')(`, so hooks carry their file.
+// vite.config.ts rewrites `onFrame(` in each module under src/ to `onFrame.in('<path>')(`, so hooks carry their file.
 onFrame.in = (file: string) => (fn: (ctx: FrameCtx) => void, opts?: FrameOpts) => onFrame(fn, { name: file, ...opts });
 export function onStart(fn: () => void) {
   if (started) fn();

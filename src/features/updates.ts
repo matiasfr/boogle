@@ -1,6 +1,6 @@
 // Mixed builds. main auto-deploys while friends keep tabs open for hours, and a tab on an older build can misread
 // what newer tabs send (or send what they no longer expect). This tab checks the deployed build (version.json, written
-// by vite.config.js) on start, every CHECK_MS and when it comes back into view. When a newer one is out:
+// by vite.config.ts) on start, every CHECK_MS and when it comes back into view. When a newer one is out:
 //   - a hidden tab (nobody is playing in it) reloads right away;
 //   - a visible tab shows a sticky notice with a Reload button in the shared lane (src/ui/notify.ts), and reloads the
 //     next time it is hidden.

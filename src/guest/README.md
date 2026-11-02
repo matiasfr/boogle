@@ -34,11 +34,11 @@ For agents changing this feature or adding another character like it. The player
 | `model.ts` | lazy | Meshes from the engine's vertex buffer, with the atlas and the combiner shader |
 | `collision.ts` | lazy | Terrain and static bodies as triangles around the guest, for the engine |
 | `../decomp/` | eager | Shared by any such character: `files-dialog.ts`, `store.ts` |
-| `native/guest/` | build only | The C glue and `build.mjs`; see its README |
+| `native/guest/` | build only | The C glue and `build.ts`; see its README |
 
 ## Set up locally
 
-1. Get an engine. Either build one (`GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs`, see
+1. Get an engine. Either build one (`GUEST_DECOMP=/path/to/checkout node native/guest/build.ts`, see
    `native/guest/README.md`) or ask the owner for a local build. It goes in `native/guest/out/engine.wasm`, which git
    ignores. Its exports must be the `guest_*` names `engine.ts` lists in `NEEDS`, because a build from before the
    rename is refused.
@@ -64,7 +64,7 @@ For agents changing this feature or adding another character like it. The player
   `NEEDS`.
 - **The pose (`mr`).** It is a wire format, so other builds read it. Keep its shape, or add a new presence key
   (AGENTS.md "Mixed builds"). `isPose` and `quantisePose` are the only places that know the layout.
-- **The texture table.** `textures.ts` and `TEXTURE_FILES` in `build.mjs` must stay in the same order. The build
+- **The texture table.** `textures.ts` and `TEXTURE_FILES` in `build.ts` must stay in the same order. The build
   throws if their lengths differ.
 - **Saved files.** IndexedDB `boogle-decomp` / `files`, keys `guest-engine` and `guest-rom`. If the cut ROM data
   changes shape, use a new key so old saves are asked for again rather than misread.
