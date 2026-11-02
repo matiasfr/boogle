@@ -1,11 +1,16 @@
 // Every prototype the owner can playtest, for boogle.club/protos/ and the playlist on the `?play` island
 // (docs/plans/find-the-fun.md, "One path"). A new `?proto=` prototype adds or updates its entry here in the same PR,
 // flips it to 'live' when it ships (AGENTS.md, "Shipping"), and either joins the island (ISLAND in src/proto/flags.ts,
-// its loader asking `protoOn`) or says why it is a `chapter`. Live first on the page, then building, then retired;
-// order within a status is the order below.
+// its loader asking `protoOn`) or says why it is a `chapter`. Live first on the page, then building; graduated,
+// answered and parked cards go in the page's compact Answered list with the owner's verdict; retired last. Order
+// within a status is the order below.
 import { ISLAND } from '../src/proto/flags.ts';
 
-export type ProtoStatus = 'live' | 'building' | 'retired';
+/** live: still asking. graduated: a yes, and it moves into the game. answered: the question has its answer (it may
+ * come back later in another form). parked: can't be answered yet (it waits for something). retired: ended (`retired`). */
+export type ProtoStatus = 'live' | 'building' | 'graduated' | 'answered' | 'parked' | 'retired';
+/** The statuses the protos page lists under Answered, each card with its `answer`. */
+export const ANSWERED: ProtoStatus[] = ['graduated', 'answered', 'parked'];
 
 export type Spawn = { x: number; z: number; yaw: number };
 
@@ -27,6 +32,8 @@ export type Proto = {
   note?: string;
   /** The prototype has a "Copy values" button whose line belongs in the playtest entry. */
   values?: boolean;
+  /** The default take in one line, shown on the bar under the variant buttons while it plays (variants: their `what`). */
+  defaultWhat?: string;
   /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. A variant's
    * own `spawn` replaces the card's when that variant is playing. */
   variants?: { name: string; url: string; what: string; spawn?: Spawn }[];
@@ -37,6 +44,8 @@ export type Proto = {
    * trace's activities ('riding', 'driving', 'carrying'). Only it counts, so on the island another toy's ride or carry
    * isn't this card's verb. Left out, the first ride, drive or carry is. */
   verb?: string;
+  /** A graduated, answered or parked card: the day, the owner's verdict in his words (one line) and what happens next. */
+  answer?: { on: string; verdict: string; next: string };
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
   /** Why a live prototype can't share the `?play` island (it reshapes the world or clashes with another toy): the
@@ -49,7 +58,12 @@ export const PROTOS: Proto[] = [
     id: 'haul',
     title: 'The haul',
     step: 1,
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Default is quite good.',
+      next: 'The back bundle stays the way to haul; the magnet he loved moves to pickups later, pulling without a button.',
+    },
     url: '/?room=proto-haul&proto=haul',
     question: 'Which way of moving logs is the most fun?',
     what: "Logs on your back from the palm bundles, poured into the rail's work site. Tuning panel top right.",
@@ -102,7 +116,8 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-wagon&proto=wagon',
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
-    what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed.',
+    what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed. On the island the step puts you on its deck.',
+    defaultWhat: 'Calm: 3 m/s, a gentle sway over the joints, light smoke.',
     since: '2026-11-01',
     spawn: { x: 13, z: -9, yaw: 3.0 }, // at the second station (Palm Walk), the wagon coming up the line towards you
     verb: 'riding',
@@ -110,17 +125,17 @@ export const PROTOS: Proto[] = [
       {
         name: 'lively',
         url: '/?room=proto-wagon&proto=wagon&v=lively',
-        what: 'Rockier and bouncier over the joints, more smoke, a camera jolt per joint while riding.',
+        what: 'Same 3 m/s, but the deck rocks and dips at every rail joint, your view jolts, more smoke.',
       },
       {
         name: 'fast',
         url: '/?room=proto-wagon&proto=wagon&v=fast',
-        what: 'Lively at about double the speed (6.5 m/s, sets the room’s pace); jumping off slides you in a dust trail.',
+        what: 'Lively at double the speed (6.5 m/s): the island rushes past; jump off and you skid in a dust trail.',
       },
       {
         name: 'stoke',
         url: '/?room=proto-wagon&proto=wagon&v=stoke',
-        what: 'Feed the firebox logs (E at the loco): steam is speed, about 6.5 m/s fed, walking pace cold.',
+        what: 'Crawls at walking pace until you feed it: carry logs to the loco, E at the firebox, and it speeds up to 6.5 m/s.',
       },
       {
         name: 'grind',
@@ -133,7 +148,12 @@ export const PROTOS: Proto[] = [
     id: 'moves',
     title: 'Double jump and glide',
     step: 'depth',
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Yes but not from the start.',
+      next: 'Double jump and glide become unlocks later, for platforming.',
+    },
     url: '/?proto=moves&jump2=1&glide=1',
     question: 'Do you jump twice just because you can, and does the glide make the island feel smaller?',
     what: 'Press jump again in the air for a second jump; hold it to glide down slowly.',
@@ -152,7 +172,12 @@ export const PROTOS: Proto[] = [
     id: 'lay',
     title: 'Laying a section',
     step: 3,
-    status: 'live',
+    status: 'graduated',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Yes it’s wonderful. Quick feels pretty good.',
+      next: 'Quick laying (about 14 s) goes into the game; fix the jump at the end of the run.',
+    },
     url: '/?room=proto-lay&proto=lay&v=crawl',
     question: 'Is laying a section satisfying or dead time?',
     what: 'Fill the Track ring (top left), Start the machine (E): today’s 50 s run with thumping sleepers, clanking rails and chuffs. Hop on its deck to ride.',
@@ -175,7 +200,12 @@ export const PROTOS: Proto[] = [
     id: 'era',
     title: 'Era swap (greybox)',
     step: 4,
-    status: 'live',
+    status: 'parked',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Not sure we have enough depth to tell meaningfully.',
+      next: 'Asked again once eras 1–2 have real level design.',
+    },
     url: '/?room=proto-era&proto=era',
     question: 'From the court, can you tell at a glance which era it is?',
     what: 'Lay all sections, start opening day at the lighthouse platform: a gathering call (smoke, a tolling bell, a ring that burns down) until everyone is there, the 10 s bell, then blocks, sky, fog and sound change together, two old huts stay, and a before/after postcard comes up.',
@@ -206,7 +236,12 @@ export const PROTOS: Proto[] = [
     id: 'build',
     title: 'Construction you can watch',
     step: 'depth',
-    status: 'live',
+    status: 'graduated',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'I absolutely love this kind of animation.',
+      next: 'Construction you can watch is how things get built in the game.',
+    },
     url: '/?room=proto-build&proto=build',
     question: 'Is watching it go up satisfying?',
     what: 'Press Pour 10 logs (top left) four times and watch the helper hut go up. New: a ghost of the hut, pieces flying in to a beat with a rising tune, and a scaffold you can kick over.',
@@ -217,7 +252,12 @@ export const PROTOS: Proto[] = [
     id: 'uisfx',
     title: 'UI that answers',
     step: 'depth',
-    status: 'live',
+    status: 'graduated',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Yeah this is a massive improvement.',
+      next: 'The UI that answers goes into the game.',
+    },
     url: '/?proto=uisfx',
     question: 'Does the UI feel alive and satisfying without getting in the way?',
     what: 'HUD sounds (hotbar tick, prompt pop, take thunk, full deny, haul count), presses that squash, a haul count that ticks up, bigger text on darker glass. Compare with plain /.',
@@ -283,7 +323,12 @@ export const PROTOS: Proto[] = [
     id: 'assets',
     title: 'Blender kit vs code',
     step: 'depth',
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'Both are great; I could tell the Blender one by the plank texture and bevel.',
+      next: 'The asset pipeline is proven.',
+    },
     url: '/?proto=assets',
     question: 'Can you tell the Blender-made scaffold from the code-built one?',
     what: 'Two scaffold bays rise by spawn: left from a Blender kit with a glTF drop clip, right built in code. Between them a jointed hero rigged by a Blender script: walk up and press Interact to change its outfit (work, castaway, bare), and it waves. &hero=castaway or &hero=bare starts in one; &eyes=googly|flat|bead and &shade=matte|plastic|clay try looks. ?proto=look&look=toybox&hero=bare shows it under the look lab’s presets.',
@@ -306,7 +351,12 @@ export const PROTOS: Proto[] = [
     id: 'minis',
     title: 'Mini-game toys',
     step: 'depth',
-    status: 'live',
+    status: 'answered',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'I liked hop the most.',
+      next: 'Topple is retired (not engaging), hop leads (platforming as a mini-game), golf comes later in the mini-games pass.',
+    },
     url: '/?proto=minis',
     question: 'Which of these would you play again unprompted?',
     what: 'Three places with a prop around the court: a crate stack on a stump (east), one hole of ball golf (tee at the court’s west edge), a mushroom hop line (south-west). Bests stay in this browser.',
@@ -337,7 +387,12 @@ export const PROTOS: Proto[] = [
     id: 'layout',
     title: 'Island layout',
     step: 'depth',
-    status: 'live',
+    status: 'parked',
+    answer: {
+      on: '2026-11-01',
+      verdict: 'The current island is not in line with the overall vision.',
+      next: 'Parked until the island is redesigned around its activities and locales; lighthouse-line is out.',
+    },
     url: '/?room=proto-layout&proto=layout&v=lighthouse-line&layout=lighthouse-line',
     question: 'Which layout feels best to walk?',
     what: 'Walk a layout option in greybox: lighthouse-line (recommended), east-bay or west-cove. Compare them on the map at claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT.',
@@ -388,26 +443,16 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'haul', why: 'Is moving logs fun with no goal, and which way?' },
-  { id: 'haul', variant: 'barrow', why: 'Is moving logs fun with no goal, and which way?' },
-  { id: 'haul', variant: 'toss', why: 'Is moving logs fun with no goal, and which way?' },
-  { id: 'haul', variant: 'wave', why: 'Is moving logs fun with no goal, and which way?' },
+  { id: 'wagon', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'fast', why: 'Would you ride it twice for no reason?' },
   { id: 'wagon', variant: 'stoke', why: 'Would you ride it twice for no reason?' },
   { id: 'soapbox', variant: 'drifty', why: 'Would you do another run?' },
-  { id: 'era', why: 'Does the island change enough?' },
-  { id: 'lay', variant: 'quick', why: 'Is laying a section satisfying or dead time?' },
-  { id: 'lay', variant: 'push', why: 'Is laying a section satisfying or dead time?' },
-  { id: 'build', why: 'Is watching it go up satisfying?' },
-  { id: 'minis', why: 'Which would you play again unprompted?' },
-  { id: 'look', why: 'Which look should Boogle aim for?', later: true },
-  { id: 'uisfx', why: 'Does the UI feel alive without getting in the way?', later: true },
-  { id: 'layout', why: 'Which layout feels best to walk?', later: true },
-  { id: 'board', why: 'Does the island feel connected and quick to cross?', later: true },
-  { id: 'assets', why: 'Can you tell the Blender scaffold from the code one?', later: true },
-  { id: 'hero', why: 'Does running as the hero feel good enough to keep?', later: true },
-  { id: 'moves', why: 'Do you jump twice just because you can?', later: true },
-  { id: 'ride', why: 'Would you ride the flatbed twice for no reason?', later: true },
+  { id: 'ride', why: 'Would you ride the flatbed twice for no reason?' },
+  { id: 'board', why: 'Does the island feel connected and quick to cross? Hop or ride?' },
+  { id: 'board', variant: 'ride', why: 'Does the island feel connected and quick to cross? Hop or ride?' },
+  { id: 'look', variant: 'high', why: 'High or toybox: which look should Boogle aim for?' },
+  { id: 'look', variant: 'toybox', why: 'High or toybox: which look should Boogle aim for?' },
+  { id: 'hero', why: 'Does running as the hero feel good enough to keep?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */

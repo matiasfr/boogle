@@ -2,16 +2,16 @@
 // shares the island or says why it is a chapter, the playlist reaches every live card, and island toys have a spot.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROTOS, PLAYTEST_ORDER, playlist, onIsland } from '../protos/protos.ts';
+import { ANSWERED, PROTOS, PLAYTEST_ORDER, playlist, onIsland } from '../protos/protos.ts';
 import { ISLAND } from '../src/proto/flags.ts';
 
 const live = PROTOS.filter((p) => p.status === 'live');
 
-test('every island toy is a live card, and every other live card is a chapter with a reason', () => {
+test('every island toy is a live or answered card, and every other live card is a chapter with a reason', () => {
   for (const id of ISLAND)
     assert.ok(
-      live.some((p) => p.id === id),
-      `${id} is not a live card`,
+      PROTOS.some((p) => p.id === id && (p.status === 'live' || ANSWERED.includes(p.status))),
+      `${id} is not a live or answered card`,
     );
   for (const p of live) assert.ok(onIsland(p) !== !!p.chapter, `${p.id}: on the island xor a chapter`);
 });
@@ -48,4 +48,9 @@ test('variant names are unique per card and the variant urls name their variant'
     for (const v of p.variants ?? [])
       assert.equal(new URLSearchParams(v.url.split('?')[1]).get('v'), v.name, `${p.id}/${v.name}: add &v=${v.name}`);
   }
+});
+
+test("graduated, answered and parked cards carry the owner's verdict and what comes next", () => {
+  for (const p of PROTOS.filter((q) => ANSWERED.includes(q.status)))
+    assert.ok(p.answer?.verdict && p.answer.next && p.answer.on, `${p.id}: add its answer`);
 });
