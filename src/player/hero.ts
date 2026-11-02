@@ -67,7 +67,7 @@ export type Hero = {
 // - clay: soft and chalky (Fall Guys' fuzzy jelly): roughness 0.9, shade lifted by a little of its own colour, and a
 //   warm edge, as if light scattered through it.
 // Eye whites glow a little too: warm sun and grading tint them peach (eggs, not eyes).
-function shadeOnce(root: THREE.Object3D) {
+export function shadeOnce(root: THREE.Object3D) {
   const edge = float(1).sub(normalView.dot(positionViewDirection).saturate());
   const rim = edge
     .pow(shade === 'plastic' ? 2.5 : 3)
