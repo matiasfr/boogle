@@ -247,7 +247,8 @@ function step(v: View, s: number, sec: number): void {
   v.ghost = f > 0 && !built;
   if (f === 0) v.notes.fill(0);
   let busy = v.queue.length > 0;
-  HUT_BUILD.forEach((p, k) => {
+  for (let k = 0; k < HUT_BUILD.length; k++) {
+    const p = HUT_BUILD[k]!;
     const want = shows(p, f) && !(p.kind === 'scaffold' && built);
     const st = v.state[k];
     if (want && st === GONE) {
@@ -268,7 +269,7 @@ function step(v: View, s: number, sec: number): void {
       }
     }
     if (v.state[k] === UP && sec - v.t[k]! < DONE) busy = true;
-  });
+  }
   // Send the next piece in line up; a longer queue goes a little faster, and a new phase waits a beat.
   if (v.queue.length && sec >= v.next) {
     const k = v.queue.shift()!;
@@ -413,9 +414,11 @@ onFrame(
     const sec = now / 1000;
     let c = 0,
       g = 0;
-    views.forEach((v, s) => {
+    for (let s = 0; s < views.length; s++) {
+      const v = views[s]!;
       step(v, s, sec);
-      HUT_BUILD.forEach((p, k) => {
+      for (let k = 0; k < HUT_BUILD.length; k++) {
+        const p = HUT_BUILD[k]!;
         if (v.ghost && p.kind !== 'scaffold' && !(v.state[k] === UP && v.landed[k])) {
           ghost.setMatrixAt(
             g++,
@@ -426,11 +429,11 @@ onFrame(
             ),
           );
         }
-        if (!place(v, p, k, sec)) return;
+        if (!place(v, p, k, sec)) continue;
         mesh.setMatrixAt(c, m4);
         mesh.setColorAt(c++, colorOf[p.kind]);
-      });
-    });
+      }
+    }
     mesh.count = c;
     mesh.visible = c > 0;
     mesh.instanceMatrix.needsUpdate = true;

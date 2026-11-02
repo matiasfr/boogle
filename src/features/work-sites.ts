@@ -281,25 +281,32 @@ function pour(now: number): void {
   }
 }
 
-let drawn = '';
+let drawnRev = -1,
+  drawnNames = -1,
+  drawnTune = -1,
+  drawnRun: number | null = null;
 onFrame(
   ({ now }: { now: number }) => {
     // Redraw on any change to the sites (pours, freight, runs, loads) or a rename. The machine and the railway it lays
     // are src/features/track-machine.ts.
     const open = sites.list[sites.open];
     const run = (open?.t0 ?? -1) >= 0 ? rules.sites.run(sites.open, world.tick).total >> 5 : -1; // a running pile shrinks
-    const key = `${sites.rev}/${names}/${rules.tune.tune.rev}/${run}`;
-    if (key !== drawn) redraw();
-    drawn = key;
+    const tuneRev = rules.tune.tune.rev;
+    if (sites.rev !== drawnRev || names !== drawnNames || tuneRev !== drawnTune || run !== drawnRun) redraw();
+    drawnRev = sites.rev;
+    drawnNames = names;
+    drawnTune = tuneRev;
+    drawnRun = run;
     // plaque rows mid-flip, and the board's little swell while they turn
-    flaps.forEach((f, s) => {
-      if (!f.size && swell[s] === 1) return;
+    for (let s = 0; s < flaps.length; s++) {
+      const f = flaps[s]!;
+      if (!f.size && swell[s] === 1) continue;
       paint(views[s]!.plaque, plaqueLines[s]!, undefined, f, now);
       let k = 0;
       for (const x of f.values())
         k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));
       swell[s] = 1 + 0.05 * k;
-    });
+    }
     pour(now);
   },
   { phase: 'update', order: 34 },
@@ -307,10 +314,11 @@ onFrame(
 // Signs and plaques make way for a close camera (placed by now this frame).
 onFrame(
   () => {
-    views.forEach((v, s) => {
-      for (const l of v.ringLabels) fadeNear(l.sprite, camera, 2.4, 0.6);
+    for (let s = 0; s < views.length; s++) {
+      const v = views[s]!;
+      for (let k = 0; k < v.ringLabels.length; k++) fadeNear(v.ringLabels[k]!.sprite, camera, 2.4, 0.6);
       fadeNear(v.plaque.sprite, camera, 2.6, 1.3, swell[s]);
-    });
+    }
   },
   { phase: 'late', order: 34 },
 );

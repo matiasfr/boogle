@@ -12,7 +12,7 @@ import { me } from '../../player/player.ts';
 import { ballOnBack } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
 import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
-import { makeLife } from './life.ts';
+import { makeLife, type LifeState } from './life.ts';
 import { retargetClip } from './retarget.ts';
 import clipsUrl from '../../../assets/built/hero-clips.glb?url';
 import buddyUrl from '../../../assets/built/buddy.glb?url';
@@ -29,6 +29,7 @@ const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
 const SWIM = { idle: 'Swim_Idle_Loop', fwd: 'Swim_Fwd_Loop', fwdFrom: 0.4, fwdTo: 1.6, rate: 0.45, lift: 0.98 }; // m/s; m
 const SEAT = 'Driving_Loop';
 const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land', SWIM.idle, SWIM.fwd, SEAT];
+const LOOPS = [SWIM.idle, SWIM.fwd, SEAT]; // on the idle clock
 const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the clips' figure
 
 type Rig = {
@@ -45,6 +46,9 @@ type Rig = {
   lastY: number;
 };
 const rigs = new WeakMap<Avatar, Rig>();
+// animate's scratch, kept so a frame allocates nothing (npm run hitches). Neither outlives the call.
+const want = Object.fromEntries(NAMES.map((n) => [n, 0])) as Record<string, number>;
+const lifeState: LifeState = { vy: 0, airborne: false, load: 0, hold: null, seated: false, down: 0 };
 
 function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
@@ -66,7 +70,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   const toJog = clamp((v - BLEND.walkTo) / (BLEND.jogFrom - BLEND.walkTo), 0, 1),
     toSprint = clamp((v - BLEND.jogTo) / (BLEND.sprintFrom - BLEND.jogTo), 0, 1);
   const move = clamp(v / BLEND.idleTo, 0, 1);
-  const want: Record<string, number> = {};
+  for (let k = 0; k < NAMES.length; k++) want[NAMES[k]!] = 0;
   const landing = r.landT < LAND.for && v < LAND.stop;
   const seated = performance.now() - (a.userData.seatedAt ?? -1e9) < 200;
   if (seated) want[SEAT] = 1;
@@ -86,8 +90,9 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
     want.Sprint_Loop = move * toSprint;
   }
   const k = 1 - Math.exp(-dt / (airborne ? FADE.air : FADE.ground));
-  for (const n of NAMES) {
-    r.w[n]! += ((want[n] ?? 0) - r.w[n]!) * k;
+  for (let j = 0; j < NAMES.length; j++) {
+    const n = NAMES[j]!;
+    r.w[n]! += (want[n]! - r.w[n]!) * k;
     r.acts[n]!.setEffectiveWeight(r.w[n]!);
   }
 
@@ -98,26 +103,27 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
     r.strideK * (STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog);
   r.phase = (r.phase + (v * dt) / stride) % 1;
   if (v < BLEND.idleTo) r.phase = 0;
-  for (const n of LOCO) r.acts[n]!.time = r.phase * r.acts[n]!.getClip().duration;
+  for (let j = 0; j < LOCO.length; j++) r.acts[LOCO[j]!]!.time = r.phase * r.acts[LOCO[j]!]!.getClip().duration;
   r.idleT += dt;
   r.acts.Idle_Loop!.time = r.idleT % r.acts.Idle_Loop!.getClip().duration;
   r.acts.Jump_Start!.time = Math.min(JUMP_FROM + r.airT, r.acts.Jump_Start!.getClip().duration);
   r.acts.Jump_Loop!.time = r.airT % r.acts.Jump_Loop!.getClip().duration;
   r.acts.Jump_Land!.time = r.landT;
-  for (const n of [SWIM.idle, SWIM.fwd, SEAT])
+  for (let j = 0; j < LOOPS.length; j++) {
+    const n = LOOPS[j]!;
     r.acts[n]!.time = (r.idleT * (n === SWIM.fwd ? 1 + v * SWIM.rate : 1)) % r.acts[n]!.getClip().duration;
+  }
   r.mixer.update(0);
   const u = a.userData;
-  r.life.update(dt, {
-    vy: (a.position.y - r.lastY) / dt,
-    airborne: airborne && !seated,
-    load: seated ? 0 : (u.load ?? 0),
-    hold: seated ? null : (u.holdKind ?? null),
-    seated,
-    down: u.flopAmt ?? 0,
-    charging: a === me.avatar && me.charging,
-    bumpAt: a === me.avatar ? me.bumpAt : undefined,
-  });
+  lifeState.vy = (a.position.y - r.lastY) / dt;
+  lifeState.airborne = airborne && !seated;
+  lifeState.load = seated ? 0 : (u.load ?? 0);
+  lifeState.hold = seated ? null : (u.holdKind ?? null);
+  lifeState.seated = seated;
+  lifeState.down = u.flopAmt ?? 0;
+  lifeState.charging = a === me.avatar && me.charging;
+  lifeState.bumpAt = a === me.avatar ? me.bumpAt : undefined;
+  r.life.update(dt, lifeState);
   r.lastY = a.position.y;
 }
 

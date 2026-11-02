@@ -131,6 +131,13 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
   }));
   const id = new THREE.Quaternion(),
     q = new THREE.Quaternion();
+  // A frame allocates nothing here: plain loops, no closures or iterators (npm run hitches).
+  const premultiplyAll = (bones: ReturnType<typeof bake>, t: number) => {
+    for (let k = 0; k < bones.length; k++) {
+      const o = bones[k]!;
+      o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, t));
+    }
+  };
   let socket: { hand: THREE.Object3D; hold: THREE.Quaternion; hang: THREE.Quaternion } | null = null;
 
   let wasCharging = false,
@@ -172,8 +179,8 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
         const pose = poses[side]!;
         const rise = air * clamp(s.vy / RISE_AT, 0, 1),
           fall = air * clamp(-s.vy / FALL_AT, 0, 1);
-        for (const o of pose.rise) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, rise));
-        for (const o of pose.fall) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, fall));
+        premultiplyAll(pose.rise, rise);
+        premultiplyAll(pose.fall, fall);
       }
 
       // Bent under a load, the head staying level.
@@ -187,7 +194,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
         lean.head.quaternion.premultiply(q.setFromAxisAngle(lean.back, -rad));
       }
 
-      if (s.down > 0.01) for (const o of sprawl) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, s.down));
+      if (s.down > 0.01) premultiplyAll(sprawl, s.down);
 
       // Arms: each takes one pose at a time, faded in over the clip.
       const now = performance.now();
@@ -196,7 +203,8 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
       const digging = now - (s.bumpAt ?? -1e9) < DIG_MS,
         releasing = now - releasedAt < RELEASE_MS;
       const k = 1 - Math.exp(-dt / FADE.arm);
-      arms.forEach((arm, i) => {
+      for (let i = 0; i < arms.length; i++) {
+        const arm = arms[i]!;
         const right = i === 1;
         const want: ArmPose | null =
           s.down > 0.3
@@ -218,7 +226,8 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
                           : s.load
                             ? 'strap'
                             : null;
-        for (const n of NAMES) {
+        for (let j = 0; j < NAMES.length; j++) {
+          const n = NAMES[j]!;
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;
           const w = arm.w[n] * (n === 'hang' ? HANG_HOLD : 1); // a little of the walk's swing stays in a hanging arm
           if (w < 0.005) continue;
@@ -227,7 +236,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
           arm.lower.quaternion.slerp(p.lower, w);
           arm.hand.quaternion.slerp(p.hand, w);
         }
-      });
+      }
 
       if (socket) socket.hand.quaternion.slerpQuaternions(socket.hold, socket.hang, arms[1]!.w.hang);
 
@@ -238,7 +247,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
       }
       blinkT += dt;
       const shut = blinkT < BLINK.closed ? 1 - Math.abs((blinkT / BLINK.closed) * 2 - 1) : 0;
-      for (const e of eyes) e.scale.y = 1 - 0.88 * shut;
+      for (let k = 0; k < eyes.length; k++) eyes[k]!.scale.y = 1 - 0.88 * shut;
     },
   };
 }
