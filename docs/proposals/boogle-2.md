@@ -149,6 +149,7 @@ These are standing preferences from the thread.
 
 ### Process
 
+- **2026-11-02, no automatic rollback yet** (owner: "we're not a live service yet"). Live smoke opens an issue and a person or agent fixes forward. Revisit before public playtests.
 - **2026-11-01, migrate to game entities now, ahead of the slice** (owner: "I think we're in trouble here if we don't make this organizational change now"; "we're basically building a headless engine for agentic coding"; no level editor, because levels are made agentically). Strict compiler flags are on. Gameplay objects, the camera and UI move to a `GameEntity` shape with a shared lifecycle, and simulation, presentation and infrastructure get lint-enforced boundaries: [entity-architecture.md](../plans/entity-architecture.md). Engine services stay as systems on `onFrame`, as in Unity, Unreal and Godot. Prototypes get the flag fixes and become entities only when promoted. Overrides "no foundation work before the slice" in [boogle-2-architecture-fit.md](../plans/boogle-2-architecture-fit.md); still no ECS.
 
 - **2026-11-01, start the asset pipeline now** (owner), ahead of the first authored model: glTF with meshopt or Draco geometry and KTX2 (Basis Universal) textures, ready for Blender (and Blender MCP) to feed it, including animated construction (scaffolding, pieces). Code stays the default where code is quicker or better; the split is written in [asset-pipeline.md](../plans/asset-pipeline.md). Was "when the first authored model lands" (architecture-fit, phase 5), see Changed.
