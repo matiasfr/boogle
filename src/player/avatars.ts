@@ -12,13 +12,26 @@ const pupilMat = new THREE.MeshStandardMaterial({ color: '#13243f', roughness: 0
 const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
 
 /** What animateAvatar keeps on an avatar (group.userData). */
-/** leanScale: how much of feel.ts's whole-body lean this avatar takes (1 when unset; a skin with its own lean sets 0). */
+/**
+ * leanScale: how much of feel.ts's whole-body lean this avatar takes (1 when unset; a skin with its own lean sets 0).
+ * What a skin offers the game (unset on the capsule): loadFit, how a haul bundle sits on this body (src/features/haul-stack.ts);
+ * handSocket, where held things hang (src/features/hotbar.ts); flopY, the inner group's height lying flat (src/features/impact.ts).
+ * What the game tells a skin: load, pieces carried; holdKind, what's in hand; flopAmt, 0..1 flopped over; seatedAt, when it
+ * was last seated in a vehicle. All render only.
+ */
 export type AvatarData = {
   inner: THREE.Group;
   mat: THREE.MeshStandardMaterial;
   phase: number;
   colorIdx: number;
   leanScale?: number;
+  loadFit?: { frame: THREE.Object3D; back: number; floor: number; len: number; round: boolean };
+  handSocket?: THREE.Object3D;
+  flopY?: number;
+  load?: number;
+  holdKind?: 'item' | 'ball' | null;
+  flopAmt?: number;
+  seatedAt?: number;
 };
 export type Avatar = THREE.Group & { userData: AvatarData };
 
@@ -30,7 +43,7 @@ export type Avatar = THREE.Group & { userData: AvatarData };
  */
 export type AvatarSkin = {
   dress(a: Avatar, colorIdx: number): void;
-  animate(a: Avatar, speed: number, airborne: boolean, dt: number): void;
+  animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean): void;
 };
 let skin: AvatarSkin | null = null;
 export function setAvatarSkin(s: AvatarSkin, existing: (Avatar | null | undefined)[]) {
@@ -60,7 +73,7 @@ export function makeAvatar(colorIdx: number): Avatar {
   return group as Avatar;
 }
 
-export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, dt: number) {
+export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, dt: number, swimming = false) {
   const u = avatar.userData;
   const moving = clamp(speed / 5, 0, 1.6);
   u.phase += dt * (4 + speed * 1.6);
@@ -68,7 +81,7 @@ export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, 
   u.inner.rotation.x = lerp(u.inner.rotation.x, -0.16 * Math.min(moving, 1), 1 - Math.exp(-dt * 10));
   const squash = airborne ? 1.05 : 1 - Math.abs(Math.cos(u.phase)) * 0.04 * moving;
   u.inner.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
-  skin?.animate(avatar, speed, airborne, dt);
+  skin?.animate(avatar, speed, airborne, dt, swimming);
 }
 
 export function makeLabel(text: string) {

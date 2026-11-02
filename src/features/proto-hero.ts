@@ -3,4 +3,6 @@
 // Serves DESIGN.md 1 (moving around is a toy). Sync kind: Local (render only).
 import { protoOn } from '../proto/flags.ts';
 
-if (protoOn('hero')) void import('../proto/hero/clips.ts').then((m) => m.startClipsHero());
+// &buddy puts the same body into any other prototype, to see how it fits there.
+if (protoOn('hero') || new URLSearchParams(location.search).has('buddy'))
+  void import('../proto/hero/clips.ts').then((m) => m.startClipsHero());

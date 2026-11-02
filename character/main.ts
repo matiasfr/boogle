@@ -10,7 +10,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { patchNode } from '../src/render/material-patch.ts';
 import { retargetClip } from '../src/proto/hero/retarget.ts';
-import { makeLife } from '../src/proto/hero/life.ts';
+import { makeLife, type LifeState } from '../src/proto/hero/life.ts';
 import buddyUrl from '../assets/built/buddy.glb?url';
 import clipsUrl from '../assets/built/hero-clips.glb?url';
 
@@ -23,6 +23,16 @@ const CLIPS: [string, string][] = [
   ['Jump', 'Jump_Start'],
   ['Air', 'Jump_Loop'],
   ['Land', 'Jump_Land'],
+  ['Swim', 'Swim_Idle_Loop'],
+  ['Swim fwd', 'Swim_Fwd_Loop'],
+  ['Seated', 'Driving_Loop'],
+];
+const POSES: [string, Partial<LifeState>][] = [
+  ['Free', {}],
+  ['Carrying', { load: 16 }],
+  ['Item', { hold: 'item' }],
+  ['Ball', { hold: 'ball' }],
+  ['Knocked', { down: 1 }],
 ];
 const HEIGHT = 0.95; // m the camera looks at
 const VIEWS: Record<string, { yaw: number; dist: number; y: number }> = {
@@ -35,6 +45,7 @@ const VIEWS: Record<string, { yaw: number; dist: number; y: number }> = {
   Game: { yaw: Math.PI, dist: 6.5, y: 2.6 }, // about where the game's camera sits
 };
 
+const q0 = new URLSearchParams(location.search);
 const HATS: [string, string][] = [
   ['None', ''],
   ["Conductor's cap", 'wear_head_cap'],
@@ -264,6 +275,15 @@ function updateCrowd() {
 $<HTMLInputElement>('crowd').addEventListener('change', updateCrowd);
 
 const life = makeLife(figure, restFigure);
+let armPose: Partial<LifeState> = {};
+for (const [label, s] of POSES) {
+  const b = button('poses', label, () => {
+    armPose = s;
+    for (const c of $('poses').children) c.classList.toggle('on', c === b);
+  });
+}
+const heldPose = POSES.find(([label]) => label.toLowerCase() === q0.get('pose'));
+if (heldPose) armPose = heldPose[1];
 bake((12 * Math.PI) / 180);
 play('Idle_Loop', 0);
 setRim(0);
@@ -290,6 +310,7 @@ Object.assign(window, {
     figure,
     mixer,
     restFigure,
+    rebake: () => bake((12 * Math.PI) / 180), // how long the clips take to retarget, at load
     camera,
     controls,
     get action() {
@@ -302,7 +323,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(0.05, clock.getDelta());
   const jump = hopT >= 0 ? hop(dt) : { vy: 0, inAir: false };
   mixer.update(dt);
-  life.update(dt, jump.vy, jump.inAir);
+  life.update(dt, { vy: jump.vy, airborne: jump.inAir, load: 0, hold: null, down: 0, ...armPose });
   if (q.get('blink')) for (const n of ['eye_l', 'eye_r']) figure.getObjectByName(n)!.scale.y = Number(q.get('blink'));
   for (const m of crowdMixers) m.update(dt);
   if (spin.checked) figure.rotation.y += dt * 0.8;

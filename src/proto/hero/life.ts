@@ -1,9 +1,9 @@
-// What the Buddy does on top of its clips: blinks, and throws its limbs around in the air. The library's jump is a stiff
-// held pose; rising it tucks a knee and reaches up with the other arm, and falling it spreads its arms, each blended from
-// how fast it's moving up or down, so a remote player needs no new presence. Runs after the mixer, which rewrites these
-// bones each frame. Offsets are about the figure's own axes as seen from the parent bone at rest, so they read the same
-// on any skeleton: it faces +z, left is +x; +x swings a limb back and -x forward, +z swings the left arm out, +y opens
-// the left elbow (a forearm's parent is the arm's T-pose).
+// What the Buddy does on top of its clips, all from what's happening and no new presence. It blinks; in the air it tucks a
+// knee and reaches up while rising, and spreads its arms while falling (the library's jump is a stiff held pose). Carrying
+// or holding something, its arms take a pose of their own, so the legs keep the clip's walk. Runs after the mixer, which
+// rewrites these bones each frame. Offsets are about the figure's own axes as seen from the parent bone at rest: it faces
+// +z, left is +x; +x swings a limb back and -x forward, +z swings the left arm out, +y opens the left elbow (a forearm's
+// parent is the arm's T-pose). Sockets are where the game hangs what the figure carries.
 import * as THREE from 'three/webgpu';
 import { clamp } from '../../math.ts';
 
@@ -30,32 +30,93 @@ const FALL: Offset[] = [
   ['upperarm_r', 'z', -38],
   ['spine_02', 'x', 4],
 ];
+const SPRAWL: Offset[] = [
+  ['thigh_l', 'z', 20],
+  ['thigh_r', 'z', -20],
+  ['calf_l', 'x', 12],
+  ['calf_r', 'x', 18],
+];
 const RISE_AT = 4, // m/s where the rising pose is full
   FALL_AT = 6;
-const FADE = { in: 0.07, out: 0.09 }; // s
+const FADE = { in: 0.07, out: 0.09, arm: 0.1, load: 0.2 }; // s
 const BLINK = { closed: 0.1, every: 2, more: 3.5 }; // s; `every` + up to `more` between blinks
+const LOAD_LEAN = { base: 5, full: 11, at: 16 }; // degrees forward with any load, and at this many logs
+
+// Arm poses for the figure's left arm, mirrored for the right: where the upper arm and the forearm point, in its frame.
+type V3 = [number, number, number];
+const ARMS = {
+  strap: { upper: [0.42, -0.9, -0.05], lower: [-0.45, 0.42, 0.8] }, // gripping the bundle's ropes at the chest
+  hold: { upper: [0.18, -0.9, 0.34], lower: [-0.05, 0.08, 1] }, // something small held out in front
+  reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
+  sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
+} satisfies Record<string, { upper: V3; lower: V3 }>;
+type ArmPose = keyof typeof ARMS;
 
 const mirror = (name: string) => name.replace(/_l$/, '\0').replace(/_r$/, '_l').replace('\0', '_r');
+const rot = (from: THREE.Vector3, to: V3) =>
+  new THREE.Quaternion().setFromUnitVectors(from, new THREE.Vector3(...to).normalize());
+
+export type LifeState = {
+  vy: number;
+  airborne: boolean;
+  load: number; // pieces on its back
+  hold: 'item' | 'ball' | null;
+  down: number; // 0..1: how far flopped over (src/features/impact.ts)
+};
 
 export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
   const eyes = ['eye_l', 'eye_r'].map((n) => root.getObjectByName(n)).filter(Boolean) as THREE.Object3D[];
   rest.updateMatrixWorld(true);
-  const parentRest = new Map<string, THREE.Quaternion>();
+  const named = (n: string) => root.getObjectByName(n)!,
+    still = (n: string) => rest.getObjectByName(n)!;
+  const restQ = (o: THREE.Object3D) => o.getWorldQuaternion(new THREE.Quaternion());
   const axes = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
   const bake = (offsets: Offset[], flip: boolean) =>
-    offsets.flatMap(([bone, axis, deg]) => {
+    offsets.map(([bone, axis, deg]) => {
       const name = flip ? mirror(bone) : bone;
-      const live = root.getObjectByName(name),
-        still = rest.getObjectByName(name);
-      if (!live || !still) return [];
-      if (!parentRest.has(name))
-        parentRest.set(name, still.parent!.getWorldQuaternion(new THREE.Quaternion()).invert());
-      const local = axes[axis].clone().applyQuaternion(parentRest.get(name)!);
+      const local = axes[axis].clone().applyQuaternion(restQ(still(name).parent!).invert());
       // A mirrored swing out reverses; a swing back and forth doesn't.
       const rad = (((flip && axis !== 'x' ? -1 : 1) * deg) / 180) * Math.PI;
-      return [{ live, q: new THREE.Quaternion().setFromAxisAngle(local, rad) }];
+      return { live: named(name), q: new THREE.Quaternion().setFromAxisAngle(local, rad) };
     });
   const poses = [false, true].map((flip) => ({ rise: bake(RISE, flip), fall: bake(FALL, flip) }));
+  const sprawl = bake(SPRAWL, false);
+  const lean = {
+    spine: named('spine_01'),
+    head: named('Head'),
+    fwd: axes.x.clone().applyQuaternion(restQ(still('spine_01').parent!).invert()),
+    back: axes.x.clone().applyQuaternion(restQ(still('Head').parent!).invert()),
+  };
+
+  // An arm pose as local rotations: each bone's world rest rotation, turned so it points the pose's way.
+  const armPose = (side: 'l' | 'r', pose: ArmPose) => {
+    const m = side === 'l' ? 1 : -1;
+    const [ux, uy, uz] = ARMS[pose].upper,
+      [lx, ly, lz] = ARMS[pose].lower;
+    const along = new THREE.Vector3(m, 0, 0); // the arm's T-pose
+    const turnU = rot(along, [m * ux, uy, uz]),
+      turnL = rot(along, [m * lx, ly, lz]);
+    const u = still('upperarm_' + side),
+      l = still('lowerarm_' + side),
+      h = still('hand_' + side);
+    const worldU = turnU.clone().multiply(restQ(u)),
+      worldL = turnL.clone().multiply(restQ(l)),
+      worldH = turnL.clone().multiply(restQ(h));
+    return {
+      upper: restQ(u.parent!).invert().multiply(worldU),
+      lower: worldU.clone().invert().multiply(worldL),
+      hand: worldL.clone().invert().multiply(worldH),
+      worldH,
+    };
+  };
+  const NAMES = Object.keys(ARMS) as ArmPose[];
+  const arms = (['l', 'r'] as const).map((side) => ({
+    upper: named('upperarm_' + side),
+    lower: named('lowerarm_' + side),
+    hand: named('hand_' + side),
+    pose: Object.fromEntries(NAMES.map((n) => [n, armPose(side, n)])) as Record<ArmPose, ReturnType<typeof armPose>>,
+    w: Object.fromEntries(NAMES.map((n) => [n, 0])) as Record<ArmPose, number>,
+  }));
   const id = new THREE.Quaternion(),
     q = new THREE.Quaternion();
 
@@ -63,22 +124,78 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
     wasAir = false,
     side = 0,
     nextBlink = BLINK.every + Math.random() * BLINK.more,
-    blinkT = 1;
+    blinkT = 1,
+    leanNow = 0;
   return {
     blink() {
       blinkT = 0;
     },
-    update(dt: number, vy: number, airborne: boolean) {
-      if (airborne && !wasAir) side = 1 - side; // the other knee on the next jump
-      wasAir = airborne;
-      air += ((airborne ? 1 : 0) - air) * (1 - Math.exp(-dt / (airborne ? FADE.in : FADE.out)));
+    /** Sockets, in the avatar's inner group: `toInner` is the rest figure's placement there. */
+    sockets(toInner: THREE.Matrix4) {
+      const back = new THREE.Object3D(); // reads as the inner group at rest, but rides the back
+      const spine = still('spine_02');
+      new THREE.Matrix4()
+        .multiplyMatrices(toInner, spine.matrixWorld)
+        .invert()
+        .decompose(back.position, back.quaternion, back.scale);
+      named('spine_02').add(back);
+      const hand = new THREE.Object3D(); // the mitt's middle, axes as the inner group's while the arm is in `hold`
+      const held = arms[1]!.pose.hold.worldH;
+      hand.position.set(0, 0.09, 0);
+      hand.quaternion.copy(held).invert().multiply(new THREE.Quaternion().setFromRotationMatrix(toInner));
+      named('hand_r').add(hand);
+      return { back, hand };
+    },
+    update(dt: number, s: LifeState) {
+      if (s.airborne && !wasAir) side = 1 - side; // the other knee on the next jump
+      wasAir = s.airborne;
+      air += ((s.airborne ? 1 : 0) - air) * (1 - Math.exp(-dt / (s.airborne ? FADE.in : FADE.out)));
       if (air > 0.01) {
         const pose = poses[side]!;
-        const rise = air * clamp(vy / RISE_AT, 0, 1),
-          fall = air * clamp(-vy / FALL_AT, 0, 1);
+        const rise = air * clamp(s.vy / RISE_AT, 0, 1),
+          fall = air * clamp(-s.vy / FALL_AT, 0, 1);
         for (const o of pose.rise) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, rise));
         for (const o of pose.fall) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, fall));
       }
+
+      // Bent under a load, the head staying level.
+      const wantLean = s.load
+        ? LOAD_LEAN.base + (LOAD_LEAN.full - LOAD_LEAN.base) * Math.min(1, s.load / LOAD_LEAN.at)
+        : 0;
+      leanNow += (wantLean - leanNow) * (1 - Math.exp(-dt / FADE.load));
+      if (leanNow > 0.05) {
+        const rad = (leanNow * Math.PI) / 180;
+        lean.spine.quaternion.premultiply(q.setFromAxisAngle(lean.fwd, rad));
+        lean.head.quaternion.premultiply(q.setFromAxisAngle(lean.back, -rad));
+      }
+
+      if (s.down > 0.01) for (const o of sprawl) o.live.quaternion.premultiply(q.slerpQuaternions(id, o.q, s.down));
+
+      // Arms: each takes one pose at a time, faded in over the clip.
+      const k = 1 - Math.exp(-dt / FADE.arm);
+      arms.forEach((arm, i) => {
+        const right = i === 1;
+        const want: ArmPose | null =
+          s.down > 0.3
+            ? 'sprawl'
+            : s.hold === 'ball'
+              ? 'reach'
+              : s.hold === 'item' && right
+                ? 'hold'
+                : s.load
+                  ? 'strap'
+                  : null;
+        for (const n of NAMES) {
+          arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;
+          const w = arm.w[n];
+          if (w < 0.005) continue;
+          const p = arm.pose[n];
+          arm.upper.quaternion.slerp(p.upper, w);
+          arm.lower.quaternion.slerp(p.lower, w);
+          arm.hand.quaternion.slerp(p.hand, w);
+        }
+      });
+
       nextBlink -= dt;
       if (nextBlink <= 0) {
         nextBlink = BLINK.every + Math.random() * BLINK.more;

@@ -11,18 +11,21 @@
   },
   "hero-clips": {
     "source": "hero-clips.glb",
-    "sourceHash": "7198a9487347dd95",
-    "outHash": "7bdee5511d3820b5",
-    "rawBytes": 6590900,
-    "bytes": 428048,
+    "sourceHash": "bf759576a4da88a7",
+    "outHash": "538c1090d2436154",
+    "rawBytes": 6654148,
+    "bytes": 558248,
     "triangles": 13744,
     "animations": [
+      "Driving_Loop",
       "Idle_Loop",
       "Jog_Fwd_Loop",
       "Jump_Land",
       "Jump_Loop",
       "Jump_Start",
       "Sprint_Loop",
+      "Swim_Fwd_Loop",
+      "Swim_Idle_Loop",
       "Walk_Loop"
     ],
     "textures": []

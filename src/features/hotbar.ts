@@ -46,13 +46,23 @@ function heldModel(id: string) {
 }
 
 function setHeld(avatar: THREE.Object3D, id: string | null | undefined): THREE.Group | null {
-  const u = avatar.userData as { heldId?: string | null; held?: THREE.Group | null };
+  const u = avatar.userData as {
+    heldId?: string | null;
+    held?: THREE.Group | null;
+    handSocket?: THREE.Object3D;
+    holdKind?: 'item' | 'ball' | null;
+  };
   const want = id && id !== 'ball' ? id : null;
+  u.holdKind = id === 'ball' ? 'ball' : want ? 'item' : null;
   if (u.heldId !== want) {
-    if (u.held) avatar.remove(u.held);
+    u.held?.removeFromParent();
     u.heldId = want;
     u.held = want ? heldModel(want) : null;
-    if (u.held) avatar.add(u.held);
+    if (u.held) {
+      // On a body with a hand of its own (AvatarData.handSocket) it hangs from that, not from a spot beside the figure.
+      (u.handSocket ?? avatar).add(u.held);
+      if (u.handSocket) u.held.position.set(0, 0, 0);
+    }
   }
   return u.held ?? null;
 }
