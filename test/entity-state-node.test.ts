@@ -12,10 +12,10 @@ import path from 'node:path';
 const root = path.join(import.meta.dirname, '..');
 const states = fs
   .readdirSync(path.join(root, 'src/entities'))
-  .map((dir) => path.join(root, 'src/entities', dir, 'state.ts'))
+  .flatMap((dir) => ['state.ts', 'headless.ts'].map((file) => path.join(root, 'src/entities', dir, file)))
   .filter((file) => fs.existsSync(file));
 
-test('every entity state.ts imports in Node', async () => {
+test('every entity state.ts and headless.ts imports in Node', async () => {
   const { physicsReady } = await import('../src/physics/engine.ts');
   await physicsReady;
   for (const file of states) await import(file);

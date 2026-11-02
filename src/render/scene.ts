@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { pass } from 'three/tsl';
 import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
+import { scene } from './scene-graph.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -76,7 +77,7 @@ renderer.onDeviceLost = (info) => {
     });
 };
 
-export const scene = new THREE.Scene();
+export { scene };
 scene.fog = new THREE.Fog(FOG_HEX, FOG_NEAR, FOG_FAR);
 export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 

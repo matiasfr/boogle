@@ -198,7 +198,7 @@ async function measureHooks(g: Game) {
     owner.set(n.id, hook);
     n.children.forEach((ch) => mark(ch, hook));
   };
-  // Every kind shares one walker, so its frame says nothing: an entity's row is the method it calls, named `ball update`.
+  // Every kind shares one walker, so its frame says nothing: an entity's row is the method it calls, named `ball-view update`.
   // Fixed-step walks count here too, though they run under the physics step and not under runFrame. A method the JIT
   // inlined into the walker stays on the walker's own row: the profiler sees physical frames only.
   const isWalker = (c: CallFrame) => c.url.includes('/src/entity/walker.ts');
