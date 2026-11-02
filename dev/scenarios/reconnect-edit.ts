@@ -5,7 +5,7 @@
 // Run it after changing held edits in src/world/sync.ts, reconnects in src/net/ws-room.ts, or src/netplay/net.ts
 // attach/fail. Window handles only (window.boogle.sync, src/features/debug-handle.ts), so `--url` works too. Not in the
 // nightly smoke: a forced drop adds timing flakiness to a job that files issues.
-import { toss, TOSSED, MET, roles, hashesAtOneTick } from './lib/world.ts';
+import { toss, TOSSED, TOSS_WAIT_MS, MET, roles, hashesAtOneTick } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
@@ -52,7 +52,7 @@ export default {
     const after = await roles(A, B);
     t.check('the tab is live again on the server', up >= 0 && after.ok, `${up} ms; ${after.modes.join(',')}`);
 
-    const landed = await other.waitFor(TOSSED, { timeout: 30000 });
+    const landed = await other.waitFor(TOSSED, { timeout: TOSS_WAIT_MS });
     const st = await client.eval(`return window.boogle.sync.worldStatus();`);
     t.check(
       'the held toss reaches the other tab',

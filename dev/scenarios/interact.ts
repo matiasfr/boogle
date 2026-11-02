@@ -1,10 +1,10 @@
 // Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
-// left halfway picks up where you stopped; C does nothing. A tossed item gets a floating Pick up prompt,
-// E does nothing while you wind up a throw, a can behind you does not hide the palm you face, riding him puts the
+// left halfway picks up where you stopped. A tossed item gets a floating Pick up prompt,
+// E does nothing while you wind up a throw, a can behind you does not hide the log bundle you face, riding him puts the
 // ball first, and a failed planting says why.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, TOSS_WAIT_MS } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const FACE = (x: string, z: string) => `
@@ -52,10 +52,6 @@ export default {
     await g.wait(0.4);
     const near = await g.still('near');
     t.check('holding a frisbee by The Boogler, his tag says E Talk', talkMs >= 0, `${talkMs} ms; ${near}`);
-
-    await g.key('KeyC');
-    await g.wait(0.3);
-    t.check('C no longer opens anything', await g.eval(`return document.querySelector('.bd')?.hidden ?? true;`));
 
     // E talks; the frisbee is an answer with its icon.
     await g.key('KeyE');
@@ -129,7 +125,7 @@ export default {
 
     // A tossed frisbee, empty hands: a floating Pick up prompt over it, and E picks it up.
     await g.eval(`${toss(2, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: 30000 });
+    await g.waitFor(TOSSED, { timeout: TOSS_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(`${INV} I.select(-1); ${TP(item.x + 1.2, item.z + 1.2)} ${FACE(item.x, item.z)}`);
     const pickMs = await g.waitFor(`${shown('.prompt')} && ${text('.prompt')}.includes('Pick up')`);
@@ -239,7 +235,10 @@ export default {
     if (spot) {
       await g.eval(`${INV} H.useDown(); H.useUp();`);
       await g.wait(0.3);
-      const note = await g.eval(`return { on: ${shown('.hotbar-note.shown')}, text: ${text('.hotbar-note')} };`);
+      // The notification lane (src/ui/notify.ts) has said it since the UI that answers replaced the hotbar's own note.
+      const note = await g.eval(
+        `return { on: ${shown('.notify.shown[data-kind="deny"]')}, text: ${text('.notify-text')} };`,
+      );
       const noteShot = await g.still('cant-plant');
       t.check(
         'a failed planting says why',

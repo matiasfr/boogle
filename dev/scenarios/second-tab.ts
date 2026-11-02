@@ -46,7 +46,10 @@ export default {
     const B = await A.ctx.newPage(); // same context: same localStorage, so the same pid
     await B.setViewportSize(A.page.viewportSize()!);
     await B.goto(A.page.url());
-    await B.waitForSelector('#enter:not([disabled])', { timeout: 180000 }); // loaded: game modules can be imported
+    // Loaded, so game modules can be imported. Attached, not visible: a returning visit goes straight in
+    // (src/player/arrival.ts), past the lobby.
+    const loaded = { state: 'attached', timeout: 180000 } as const;
+    await B.waitForSelector('#enter:not([disabled])', loaded);
     t.check('the second tab is live', (await until(B, live, 30000)) >= 0);
     const toldMs = await until(A.page, told, 5000);
     const shot = `${A.out}/first-elsewhere.png`;
@@ -60,7 +63,7 @@ export default {
     t.check('the first tab does not come back by itself', told(await state(A.page)));
 
     await A.page.click('.elsewhere button');
-    await A.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
+    await A.page.waitForSelector('#enter:not([disabled])', loaded);
     t.check('Play here: the first tab is live again', (await until(A.page, live, 60000)) >= 0);
     t.check('and the second tab is told', (await until(B, told, 5000)) >= 0);
     await B.close();

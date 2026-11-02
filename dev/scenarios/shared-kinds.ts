@@ -7,6 +7,7 @@ import type { Game } from '../look/lib.ts';
 type Kind = 'player' | 'ball' | 'boogler';
 export default {
   about: 'two players: each draws the other, the ball and the Boogler where the latest presence puts them',
+  timeout: 300000, // two tabs on the nightly runner's software WebGPU; the default is 120 s
   async run(t: T) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const A = await t.open({ name: 'Alice', room, size: [192, 120] });
@@ -34,8 +35,10 @@ export default {
     const heard = { player: 0, ball: 0, boogler: 0 };
     let walked = 0,
       last = null;
-    // Keep sampling (capped) until the client has seen him walk 2 m: an idle Boogler tests no Host interpolation.
-    for (let k = 0; k < 8 || (walked < 2 && k < 40); k++) {
+    // Keep sampling (capped) until the client has seen him walk 2 m: an idle Boogler tests no Host interpolation. A slow
+    // tab's clock runs far behind real time (the nightly runner: 1 m in 40 samples), so the cap is time, not samples.
+    const t0 = Date.now();
+    for (let k = 0; k < 8 || (walked < 2 && Date.now() - t0 < 180000); k++) {
       await t.sleep(600);
       for (const [tab, keys] of [
         [host, ['player', 'ball']],
