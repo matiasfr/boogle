@@ -1,7 +1,8 @@
 // The fall into the world (src/features/fall.ts loads this on a first visit or ?proto=fall; docs/game-design/first-run.md). You
 // meet your Buddy riding a flat trolley on a rail above the clouds, with the name-and-colour card beside it. Jump in
-// runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
-// apart; you lie flat with stars, the cart lands next to you, and the game begins. The rail going nowhere says what the
+// runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE title hanging in the
+// sky. It breaks up and the letters fall with you; you lie flat with stars, they and the cart come down around you, and the
+// game begins. The rail going nowhere says what the
 // game wants, without words. Serves DESIGN.md 10 (Slapstick over precision) and 7 (Telegraph everything). Local, apart from
 // your body and the existing flops: the prop pieces are this tab's alone.
 import './fall.css';
@@ -19,7 +20,7 @@ import { getAudio } from '../render/audio.ts';
 import { emit } from '../render/particles.ts';
 import { camera, sky, sun } from '../render/scene.ts';
 import { SUN_DIR } from '../render/sun-dir.ts';
-import { AIR, TITLE_Y, blastLetters, burst, fallWithYou, hitTitle } from './letters.ts';
+import { TITLE_Y, blastLetters, burst, fallWithYou, hitTitle } from './letters.ts';
 import {
   CAR_START,
   DECK_Y,
@@ -46,7 +47,7 @@ const CRUISE = 5, // m/s the cart is already doing behind the card
   FALL_PITCH = -1.05, // looking down past your feet
   TITLE_PITCH = -1.22, // steeper while the title's coming up, so it reads in the middle of the screen
   REST_PITCH = -0.38, // after the landing
-  FUNNEL = { base: 1, perMetre: 0.2, firm: 1.5 }, // how far off the sign you can steer, by height, so you can't miss
+  FUNNEL = { base: 1, perMetre: 0.2, firm: 1.5 }, // how far off the title you can steer, by height, so you can't miss
   DOWN_MS = 1800, // flat with stars. Under 2000: presence `kd` ignores more
   GET_UP_MS = 900, // the soonest any input stands you up
   CAR_LATE_S = 0.8, // how long after you it lands
@@ -194,10 +195,8 @@ function holdOrSteer() {
     const dx = b.position.x - TARGET.x,
       dz = b.position.z - TARGET.z,
       d = Math.hypot(dx, dz);
-    // `&v=air`: it closes on the title in the sky, and stays loose under it.
-    const r = AIR
-      ? FUNNEL.base + Math.max(0, b.position.y - TITLE_Y) * FUNNEL.perMetre + (titleHit ? 2 : 0)
-      : FUNNEL.base + Math.max(0, b.position.y - TARGET.y) * FUNNEL.perMetre;
+    // It closes on the title in the sky, and stays loose under it.
+    const r = FUNNEL.base + Math.max(0, b.position.y - TITLE_Y) * FUNNEL.perMetre + (titleHit ? 2 : 0);
     if (d > r) {
       const nx = dx / d,
         nz = dz / d,
@@ -397,9 +396,9 @@ const director = spawn({
     blendCamera(dt);
 
     if (state === 'fall') {
-      if (AIR && !titleHit && b.position.y <= TITLE_Y) smashTitle();
+      if (!titleHit && b.position.y <= TITLE_Y) smashTitle();
       if (titleHit) fallWithYou(b.interpolatedPosition, dt);
-      const pitch = AIR && !titleHit ? TITLE_PITCH : FALL_PITCH;
+      const pitch = titleHit ? FALL_PITCH : TITLE_PITCH;
       cam.pitch += (pitch - cam.pitch) * (1 - Math.exp(-dt * 2.4));
       if (b.position.y - TARGET.y > 8 && !reducedMotion)
         for (let k = 0; k < 3; k++)
