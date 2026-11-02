@@ -100,3 +100,7 @@ export const entityMethods: () => Record<string, (ctx: FrameCtx) => void> = walk
 export const defineKind: (kind: string, orders: KindOrders) => void = walkers.defineKind;
 export const spawn: <T extends GameEntity>(entity: T) => T = walkers.spawn;
 export const despawn: (entity: GameEntity) => void = walkers.despawn;
+
+let lastId = 0;
+/** An id for one of many short-lived entities: `ping-12`. Local, never a network id. */
+export const nextId = (kind: string) => `${kind}-${++lastId}`;

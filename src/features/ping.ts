@@ -4,7 +4,7 @@
 // { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
-import { scene, camera, toScreen, view } from '../render/scene.ts';
+import { camera, toScreen, view } from '../render/scene.ts';
 import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { clamp } from '../math.ts';
@@ -12,7 +12,8 @@ import { me, camForward } from '../player/player.ts';
 import { ball } from '../entities/ball/state.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, despawn, nextId, spawn, type GameEntity } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
 import { PING_KINDS, validatePing, createLimiter, honkFreq, type Ping } from '../sim/social.ts';
 
@@ -91,23 +92,23 @@ function pingNow() {
 }
 
 // ---------------------------------------------------------------- markers
+const EDGE_X = 100,
+  EDGE_Y = 84;
+const over = new THREE.Vector3(),
+  onScreen = { x: 0, y: 0, behind: false };
 const layer = document.createElement('div');
 layer.className = 'ping-layer';
-type Shown = Ping & {
-  born: number;
-  el: HTMLElement;
-  arrow: HTMLElement;
-  dist: HTMLElement;
-  ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
-  lastDist: string;
-};
-const pings = new Map<string, Shown>(); // sender -> what is drawn
+const pings = new Map<string, GameEntity>(); // sender -> what is drawn
 
 const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 
+// Each ping is an entity, the worked example of a short-lived one: its ring is its mesh, it despawns when its time is up,
+// and dispose takes away what the core doesn't own (src/entities/ball/ is the long-lived example).
+defineKind('ping', { lateUpdate: 0 });
+
 function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boolean) {
   const old = pings.get(from);
-  if (old) removePing(from, old);
+  if (old) despawn(old);
   const color = COLORS[colorIdx] ?? COLORS[0]!;
   const el = document.createElement('div');
   el.className = 'ping';
@@ -131,15 +132,63 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   );
   ring.renderOrder = 12;
   ring.position.set(p.x, p.y + 0.08, p.z);
-  scene.add(ring);
-  pings.set(from, { ...p, born: performance.now(), el, arrow, dist, ring, lastDist: '' });
+  const born = performance.now();
+  let lastDist = '';
+  const entity: GameEntity = spawn({
+    id: nextId('ping'),
+    kind: 'ping',
+    alive: true,
+    mesh: ring,
+    lateUpdate({ now }) {
+      const age = now - born;
+      if (age > TUNE.lifeMs) {
+        despawn(entity);
+        pings.delete(from);
+        return;
+      }
+      const fade = Math.min(1, (TUNE.lifeMs - age) / TUNE.fadeMs);
+      el.style.opacity = fade.toFixed(2);
+      // The ground ring pulses outward a couple of times, then rests.
+      const pulse = reducedMotion ? 1 : 1 + 0.35 * Math.sin(age * 0.008) * Math.exp(-age / 1500);
+      ring.scale.setScalar(pulse * Math.min(1, 0.3 + age / 200));
+      ring.material.opacity = 0.9 * fade;
+
+      const w = view.w,
+        h = view.h;
+      const { x: px, y: py, behind } = toScreen(over.set(p.x, p.y + 1.4, p.z), onScreen, w, h);
+      // Behind the camera the projection comes out mirrored through the centre; mirror it back to aim the pointer.
+      const sx = behind ? w - px : px,
+        sy = behind ? h - py : py;
+      const on = !behind && sx > 40 && sx < w - 40 && sy > 50 && sy < h - 40;
+      el.classList.toggle('off', !on);
+      let x = sx,
+        y = sy;
+      if (!on) {
+        let dx = sx - w / 2,
+          dy = sy - h / 2;
+        const len = Math.hypot(dx, dy) || 1;
+        dx /= len;
+        dy /= len;
+        const hw = Math.max(1, w / 2 - EDGE_X),
+          hh = Math.max(1, h / 2 - EDGE_Y);
+        const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+        x = w / 2 + dx * t;
+        y = h / 2 + dy * t;
+        arrow.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad) translateX(54px)`;
+      }
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      if (!on && me.body) {
+        const text = `${Math.round(Math.hypot(p.x - me.body.position.x, p.z - me.body.position.z))} m`;
+        if (text !== lastDist) dist.textContent = lastDist = text;
+      }
+    },
+    dispose() {
+      el.remove();
+      ring.material.dispose();
+    },
+  });
+  pings.set(from, entity);
   chime(colorIdx, p.k, own);
-}
-function removePing(from: string, p: Shown) {
-  p.el.remove();
-  scene.remove(p.ring);
-  p.ring.material.dispose();
-  pings.delete(from);
 }
 
 export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
@@ -164,55 +213,6 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
     o.start(t0);
     o.stop(t0 + 0.2);
   });
-}
-
-const EDGE_X = 100,
-  EDGE_Y = 84;
-const over = new THREE.Vector3(),
-  onScreen = { x: 0, y: 0, behind: false };
-function updatePings(now: number) {
-  const w = view.w,
-    h = view.h;
-  for (const [from, p] of pings) {
-    const age = now - p.born;
-    if (age > TUNE.lifeMs) {
-      removePing(from, p);
-      continue;
-    }
-    const fade = Math.min(1, (TUNE.lifeMs - age) / TUNE.fadeMs);
-    p.el.style.opacity = fade.toFixed(2);
-    // The ground ring pulses outward a couple of times, then rests.
-    const pulse = reducedMotion ? 1 : 1 + 0.35 * Math.sin(age * 0.008) * Math.exp(-age / 1500);
-    p.ring.scale.setScalar(pulse * Math.min(1, 0.3 + age / 200));
-    p.ring.material.opacity = 0.9 * fade;
-
-    const { x: px, y: py, behind } = toScreen(over.set(p.x, p.y + 1.4, p.z), onScreen, w, h);
-    // Behind the camera the projection comes out mirrored through the centre; mirror it back to aim the pointer.
-    const sx = behind ? w - px : px,
-      sy = behind ? h - py : py;
-    const on = !behind && sx > 40 && sx < w - 40 && sy > 50 && sy < h - 40;
-    p.el.classList.toggle('off', !on);
-    let x = sx,
-      y = sy;
-    if (!on) {
-      let dx = sx - w / 2,
-        dy = sy - h / 2;
-      const len = Math.hypot(dx, dy) || 1;
-      dx /= len;
-      dy /= len;
-      const hw = Math.max(1, w / 2 - EDGE_X),
-        hh = Math.max(1, h / 2 - EDGE_Y);
-      const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
-      x = w / 2 + dx * t;
-      y = h / 2 + dy * t;
-      p.arrow.style.transform = `rotate(${Math.atan2(dy, dx).toFixed(3)}rad) translateX(54px)`;
-    }
-    p.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-    if (!on && me.body) {
-      const text = `${Math.round(Math.hypot(p.x - me.body.position.x, p.z - me.body.position.z))} m`;
-      if (text !== p.lastDist) p.dist.textContent = p.lastDist = text;
-    }
-  }
 }
 
 // ---------------------------------------------------------------- wiring
@@ -246,5 +246,3 @@ onStart(() => {
     down: pingNow,
   });
 });
-
-onFrame(({ now }) => updatePings(now), { phase: 'late' });
