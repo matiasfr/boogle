@@ -45,7 +45,7 @@ are optional; on a slow sandbox, push and read CI.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
-`reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly run: run it
+`reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly smoke (it runs in `scenarios-nightly.yml`): run it
 after changing held edits in `src/world/sync.ts`, reconnects in `src/net/ws-room.ts` or `src/netplay/net.ts` attach/fail.
 
 ```js

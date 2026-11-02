@@ -10,6 +10,10 @@ import type { Game } from '../../look/lib.ts';
 export const toss = (k = 1, n: number | string = 7) =>
   `window.boogle.sync.submitEdit({ op: 'gift.toss', i: 230, j: 205, k: ${k}, y: -1, n: ${n}, l: [0, 100, 0, 0, 0, 0] })`;
 export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205)`;
+// How long to wait for a tab to apply a toss. At about a frame a second (a CI runner's software WebGPU) a tab's world
+// clock gains 2.5 ticks a frame (src/world/sync.ts, MAX_STEPS on a 50 ms dt), so it applies one it has already received
+// 80 s or more late. On a real GPU it lands at once and the wait returns.
+export const TOSS_WAIT_MS = 180000;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
 const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode + (w.hostId === 'server' ? '@server' : ''); })()`;
 const LEAD = `window.boogle.net.room.isLead()`;

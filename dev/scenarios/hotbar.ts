@@ -3,7 +3,7 @@
 // in anywhere and a growing mushroom shoves you aside; the frisbee on the lighthouse deck glides far. On a phone: only
 // filled slots show (none to start), Toss shows only for a throwable thing the main button would not throw, and the
 // bar clears the HUD.
-import { TP, INV, toss, TOSSED, TOSSED_ITEM } from './lib/world.ts';
+import { TP, INV, toss, TOSSED, TOSSED_ITEM, TOSS_WAIT_MS } from './lib/world.ts';
 import type { T } from './run.ts';
 
 const AIM = (yaw: number | string, pitch: number | string = 0) =>
@@ -41,7 +41,7 @@ export default {
 
     // A tossed item: walk up, grab it, and it is in your hand.
     await g.eval(`${toss(2, 5)};`); // a frisbee
-    await g.waitFor(TOSSED, { timeout: 30000 });
+    await g.waitFor(TOSSED, { timeout: TOSS_WAIT_MS });
     const item = await g.eval(TOSSED_ITEM);
     await g.eval(TP(item.x + 0.6, item.z));
     await g.wait(0.5);
