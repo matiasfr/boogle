@@ -276,6 +276,8 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 14. ~~Which eras remain?~~ Six (audit picks).
 15. What do mini-games reward, and do rarities, incremental or gacha mechanics belong? The owner is interested; nothing is designed, and som and knacks stay parked until then.
 16. Do helpers come back as life around the camps? The owner likes little guys running around, cuter than The Boogler (Decided, 2 November); what they do is still open.
+17. What becomes of today's island when the rail chapter becomes the game? The owner: it "has emotional appeal from the beginning of the game, because it feels sort of approachable in its size. Maybe there's some way players start there, but maybe not. And it's just a sort of Easter egg or a place that you can get to later in the game and discover, especially since it has the guest Easter egg." Director's suggestion: make it the first far island you build out to, keeping its toys and the guest. Not decided.
+18. Where does The Boogler appear? The owner: "maybe the Boogler will make sense to appear in different places ... at different times, because he'll be central to the sort of narrative of the game". Not designed; the mayor stays parked and his lines stay.
 
 ## Next: find the fun (agreed direction, 1 November)
 
