@@ -8,11 +8,11 @@
 // hear near it, at most once every FLIP_GAP_MS while you keep pouring (docs/research/ui-patterns.md, rec 5: shared news
 // in the world first). Signs and
 // plaques shrink and fade as the camera comes within a few metres (src/render/near-fade.ts), so standing at a site or
-// riding the machine past one keeps the view clear.
+// riding the machine past one keeps the view clear. One entity: every section's rings, signs and plaque, in one group.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
-import { onFrame } from '../loop.ts';
-import { scene, camera } from '../render/scene.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
+import { camera } from '../render/scene.ts';
 import { fadeNear } from '../render/near-fade.ts';
 import { onApplied, submitEdit, world } from '../world/sync.ts';
 import { registerInteractable, NO_TARGETS } from '../player/hands.ts';
@@ -119,6 +119,7 @@ function paint(l: Label, lines: string[], bg = 'rgba(40, 26, 12, 0.72)', flaps?:
   l.tex.needsUpdate = true;
 }
 
+const site = new THREE.Group();
 const views = ROUTE.map((sec, s) => {
   const v = {
     rings: [] as THREE.Mesh[],
@@ -130,12 +131,12 @@ const views = ROUTE.map((sec, s) => {
     const y = groundHeight(p.x, p.z) + 0.06;
     const mesh = new THREE.Mesh(ringGeos[ring], ringMat[ring]);
     mesh.position.set(p.x, y, p.z);
-    scene.add(mesh);
+    site.add(mesh);
     v.rings.push(mesh);
     const l = label();
     l.sprite.scale.set(2.4, 0.6, 1);
     l.sprite.position.set(p.x, y + 1.6, p.z);
-    scene.add(l.sprite);
+    site.add(l.sprite);
     v.ringLabels.push(l);
     if (NO_HELPER && ring === HELPER) mesh.visible = l.sprite.visible = false;
   }
@@ -145,10 +146,10 @@ const views = ROUTE.map((sec, s) => {
   const y = groundHeight(px, pz);
   const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.6, 0.14), postMat);
   post.position.set(px, y + 0.8, pz);
-  scene.add(post);
+  site.add(post);
   v.plaque.sprite.scale.set(2.6, 1.3, 1);
   v.plaque.sprite.position.set(px, y + 2.2, pz);
-  scene.add(v.plaque.sprite);
+  site.add(v.plaque.sprite);
   return v;
 });
 
@@ -282,8 +283,11 @@ function pour(now: number): void {
 }
 
 let drawn = '';
-onFrame(
-  ({ now }: { now: number }) => {
+defineKind('work-sites', { update: 34, lateUpdate: 34 });
+spawn({
+  kind: 'work-sites',
+  mesh: site,
+  update({ now }) {
     // Redraw on any change to the sites (pours, freight, runs, loads) or a rename. The machine and the railway it lays
     // are src/features/track-machine.ts.
     const open = sites.list[sites.open];
@@ -302,15 +306,11 @@ onFrame(
     });
     pour(now);
   },
-  { phase: 'update', order: 34 },
-);
-// Signs and plaques make way for a close camera (placed by now this frame).
-onFrame(
-  () => {
+  // Signs and plaques make way for a close camera (placed by now this frame).
+  lateUpdate() {
     views.forEach((v, s) => {
       for (const l of v.ringLabels) fadeNear(l.sprite, camera, 2.4, 0.6);
       fadeNear(v.plaque.sprite, camera, 2.6, 1.3, swell[s]);
     });
   },
-  { phase: 'late', order: 34 },
-);
+});

@@ -3,12 +3,12 @@
 // section dropping sleepers one by one off its front (each thumps down with dust; every other one a rail clanks) and
 // whistles at the end. You can ride its deck (a platform, src/physics/platforms.ts).
 // Serves DESIGN.md 1 (Toys before chores: construction you can watch and ride) and 10 (Slapstick over precision).
-// Lockstep sites (read only), Local view, sounds and platform.
+// Lockstep sites (read only), Local view, sounds and platform. One entity: the machine, its body and the rails it lays.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
 import { attribute, positionLocal, uniform } from 'three/tsl';
-import { onFrame } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import type { FrameCtx } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { ROUTE } from '../sim/route.ts';
@@ -19,7 +19,7 @@ import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 import { chuff, thump, clank, whistle } from '../render/machine-sfx.ts';
 import { angleLerp } from '../math.ts';
-import { BODY, addBody, createBody, physicsReady, stepAlpha, type Body } from '../physics/engine.ts';
+import { BODY, createBody, physicsReady, stepAlpha, type Body } from '../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../physics/physics.ts';
 import { registerPlatform, platformById, yawOf, type Platform } from '../physics/platforms.ts';
 
@@ -52,7 +52,6 @@ rails.count = 0;
 rails.visible = false;
 rails.frustumCulled = false;
 rails.castShadow = true;
-if (!protoOn('net')) scene.add(rails); // its 85 m legs need rails that follow the ground (src/proto/net/rails.ts)
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e3 = new THREE.Euler(),
@@ -215,7 +214,6 @@ const BRASS: Finish = { color: '#d9a441', rough: 0.35, metal: 0.8, flat: false }
 const root = new THREE.Group(); // placed at the body
 const look = new THREE.Group(); // shudders and squashes inside it
 root.add(look);
-scene.add(root);
 
 const squashU = uniform(0); // the bump when a sleeper lands; the boiler and funnel swell with it
 const parts: THREE.BufferGeometry[] = [],
@@ -351,36 +349,15 @@ function aim(tick: number): void {
 }
 
 // The drawn pose chases the goal; the body follows the drawn pose (a kinematic platform, so riders are carried).
-const pose = { x: 0, y: 0, z: 0, yaw: 0, ready: false };
-let body: Body | null = null,
+const pose = { x: 0, y: 0, z: 0, yaw: 0 };
+let body: Body,
   platform: Platform | null = null;
 function move(dt: number) {
-  const b = body!;
+  const b = body;
   st.prevYaw = yawOf(b.quaternion);
   b.velocity.set((pose.x - b.position.x) / dt, (pose.y - b.position.y) / dt, (pose.z - b.position.z) / dt);
   b.angularVelocity.set(0, (angleLerp(st.prevYaw, pose.yaw, 1) - st.prevYaw) / dt, 0);
 }
-void physicsReady.then(() => {
-  aim(sharedSeconds() * 10);
-  Object.assign(pose, { x: goal.x, y: goal.y, z: goal.z, yaw: goal.yaw, ready: true });
-  body = createBody({
-    type: BODY.KINEMATIC,
-    material: groundMat,
-    mask: NOT_SCENERY,
-    position: { x: pose.x, y: pose.y, z: pose.z },
-    rotation: { x: 0, y: Math.sin(pose.yaw / 2), z: 0, w: Math.cos(pose.yaw / 2) },
-    shapes: [
-      { kind: 'box', hx: M.hx, hy: M.hy, hz: M.hz },
-      { kind: 'box', hx: 0.45, hy: 0.45, hz: 0.65, offset: { x: 0, y: 0.6, z: -0.75 } }, // the boiler
-      // the back: a flat wall from the wheels to the push bar, so a pusher leans on it instead of climbing the deck
-      { kind: 'box', hx: M.hx, hy: 0.45, hz: 0.08, offset: { x: 0, y: 0.15, z: -M.hz - 0.04 } },
-    ],
-  });
-  addBody(body);
-  st.prevYaw = pose.yaw;
-  platform = { body, hx: M.hx, hz: M.hz, top: M.hy, move };
-  registerPlatform(platform);
-});
 
 // ---------------------------------------------------------------- the frame
 let lastName = '';
@@ -408,93 +385,116 @@ function puff(heavy: number): void {
     });
 }
 
-onFrame(
-  ({ now, dt }: { now: number; dt: number }) => {
-    const tick = sharedSeconds() * 10; // shared time in ticks (TICK_MS = 100)
-    aim(tick);
-    const live = goal.running && goal.name === 'lay';
-    drawRailway(tick, now, live);
-    if (!pose.ready) return;
-    // chase the goal; a big jump (a load, a reset) snaps
-    const k = 1 - Math.exp(-dt * TUNE.follow);
-    if (Math.hypot(goal.x - pose.x, goal.z - pose.z) > 6) {
-      pose.x = goal.x;
-      pose.y = goal.y;
-      pose.z = goal.z;
-    }
-    const px = pose.x,
-      pz = pose.z;
-    pose.x += (goal.x - pose.x) * k;
-    pose.y += (goal.y - pose.y) * k;
-    pose.z += (goal.z - pose.z) * k;
-    pose.yaw = angleLerp(pose.yaw, goal.yaw, k);
-    const moved = Math.hypot(pose.x - px, pose.z - pz);
-    if (body) {
-      const ip = body.interpolatedPosition;
-      root.position.set(ip.x, ip.y, ip.z);
-      root.rotation.y = angleLerp(st.prevYaw, yawOf(body.quaternion), stepAlpha());
-    }
-    if (moved > 0) {
-      st.spin = (st.spin + moved / 0.25) % (Math.PI * 2);
-      spinWheels();
-    }
-    root.visible = !goal.gone;
+function frame({ now, dt }: FrameCtx): void {
+  const tick = sharedSeconds() * 10; // shared time in ticks (TICK_MS = 100)
+  aim(tick);
+  const live = goal.running && goal.name === 'lay';
+  drawRailway(tick, now, live);
+  // chase the goal; a big jump (a load, a reset) snaps
+  const k = 1 - Math.exp(-dt * TUNE.follow);
+  if (Math.hypot(goal.x - pose.x, goal.z - pose.z) > 6) {
+    pose.x = goal.x;
+    pose.y = goal.y;
+    pose.z = goal.z;
+  }
+  const px = pose.x,
+    pz = pose.z;
+  pose.x += (goal.x - pose.x) * k;
+  pose.y += (goal.y - pose.y) * k;
+  pose.z += (goal.z - pose.z) * k;
+  pose.yaw = angleLerp(pose.yaw, goal.yaw, k);
+  const moved = Math.hypot(pose.x - px, pose.z - pz);
+  const ip = body.interpolatedPosition;
+  root.position.set(ip.x, ip.y, ip.z);
+  root.rotation.y = angleLerp(st.prevYaw, yawOf(body.quaternion), stepAlpha());
+  if (moved > 0) {
+    st.spin = (st.spin + moved / 0.25) % (Math.PI * 2);
+    spinWheels();
+  }
+  root.visible = !goal.gone;
 
-    // phases: warm shudders and chuffs fast; lay chuffs by distance; whistle steams
-    if (goal.name !== lastName) {
-      if (goal.name === 'warm') puff(1);
-      if (goal.name === 'whistle') {
-        puffAt.copy(FUNNEL_TOP);
-        look.localToWorld(puffAt);
-        whistle(puffAt.x, puffAt.z);
-      }
-      lastName = goal.name;
-    }
-    st.sinceChuff += dt;
-    st.travelled += moved;
-    const shudder = goal.name === 'warm' ? 0.035 : goal.name === 'lay' ? 0.01 : 0;
-    if (shudder) look.position.set((Math.random() - 0.5) * shudder, (Math.random() - 0.5) * shudder, 0);
-    else if (look.position.x || look.position.y) look.position.set(0, 0, 0);
-    let heavy = -1;
-    if (goal.name === 'warm' && st.sinceChuff > 0.22) heavy = 0.8;
-    else if (goal.name === 'lay' && st.travelled > TUNE.chuffEvery) heavy = 0.2;
-    else if (goal.name === 'lay' && st.sinceChuff > 1.6) heavy = 0;
-    if (heavy >= 0) {
-      puff(heavy);
-      st.sinceChuff = st.travelled = 0;
-    }
-    if (goal.name === 'whistle' && st.sinceChuff > 0.05) {
-      st.sinceChuff = 0;
+  // phases: warm shudders and chuffs fast; lay chuffs by distance; whistle steams
+  if (goal.name !== lastName) {
+    if (goal.name === 'warm') puff(1);
+    if (goal.name === 'whistle') {
       puffAt.copy(FUNNEL_TOP);
       look.localToWorld(puffAt);
-      emit({
-        x: puffAt.x,
-        y: puffAt.y + 0.1,
-        z: puffAt.z,
-        vx: (Math.random() - 0.5) * 0.8,
-        vy: 5 + Math.random() * 2,
-        vz: (Math.random() - 0.5) * 0.8,
-        life: 0.9,
-        size: 0.2,
-        color: STEAM,
-        alpha: 0.8,
-        drag: 2,
-        grow: [0.5, 3.5],
-        fade: 0.6,
-      });
+      whistle(puffAt.x, puffAt.z);
     }
-    if (st.squash > 0 || squashU.value !== 0) {
-      st.squash = Math.max(0, st.squash - dt * 7);
-      look.scale.set(1 + st.squash * 0.04, 1 - st.squash * 0.07, 1 + st.squash * 0.03);
-      squashU.value = st.squash; // a uniform's value is a boxed field: written only while it bumps
-    }
+    lastName = goal.name;
+  }
+  st.sinceChuff += dt;
+  st.travelled += moved;
+  const shudder = goal.name === 'warm' ? 0.035 : goal.name === 'lay' ? 0.01 : 0;
+  if (shudder) look.position.set((Math.random() - 0.5) * shudder, (Math.random() - 0.5) * shudder, 0);
+  else if (look.position.x || look.position.y) look.position.set(0, 0, 0);
+  let heavy = -1;
+  if (goal.name === 'warm' && st.sinceChuff > 0.22) heavy = 0.8;
+  else if (goal.name === 'lay' && st.travelled > TUNE.chuffEvery) heavy = 0.2;
+  else if (goal.name === 'lay' && st.sinceChuff > 1.6) heavy = 0;
+  if (heavy >= 0) {
+    puff(heavy);
+    st.sinceChuff = st.travelled = 0;
+  }
+  if (goal.name === 'whistle' && st.sinceChuff > 0.05) {
+    st.sinceChuff = 0;
+    puffAt.copy(FUNNEL_TOP);
+    look.localToWorld(puffAt);
+    emit({
+      x: puffAt.x,
+      y: puffAt.y + 0.1,
+      z: puffAt.z,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: 5 + Math.random() * 2,
+      vz: (Math.random() - 0.5) * 0.8,
+      life: 0.9,
+      size: 0.2,
+      color: STEAM,
+      alpha: 0.8,
+      drag: 2,
+      grow: [0.5, 3.5],
+      fade: 0.6,
+    });
+  }
+  if (st.squash > 0 || squashU.value !== 0) {
+    st.squash = Math.max(0, st.squash - dt * 7);
+    look.scale.set(1 + st.squash * 0.04, 1 - st.squash * 0.07, 1 + st.squash * 0.03);
+    squashU.value = st.squash; // a uniform's value is a boxed field: written only while it bumps
+  }
 
-    // the sleepers waiting by the chute: fewer as the section fills
-    const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s]!.len)) : 4;
-    if (left !== loadShown) commitPieces(load, (loadShown = left));
-  },
-  { phase: 'update', order: 35 },
-);
+  // the sleepers waiting by the chute: fewer as the section fills
+  const left = goal.running ? Math.ceil(4 * (1 - goal.d / LINES[goal.s]!.len)) : 4;
+  if (left !== loadShown) commitPieces(load, (loadShown = left));
+}
+
+defineKind('track-machine', { update: 35 });
+
+const machine = new THREE.Group();
+machine.add(root);
+if (!protoOn('net')) machine.add(rails); // its 85 m legs need rails that follow the ground (src/proto/net/rails.ts)
+
+// Spawned once physics is in, before the first frame (main.ts waits for it too): the body starts where the goal is.
+void physicsReady.then(() => {
+  aim(sharedSeconds() * 10);
+  Object.assign(pose, { x: goal.x, y: goal.y, z: goal.z, yaw: goal.yaw });
+  body = createBody({
+    type: BODY.KINEMATIC,
+    material: groundMat,
+    mask: NOT_SCENERY,
+    position: { x: pose.x, y: pose.y, z: pose.z },
+    rotation: { x: 0, y: Math.sin(pose.yaw / 2), z: 0, w: Math.cos(pose.yaw / 2) },
+    shapes: [
+      { kind: 'box', hx: M.hx, hy: M.hy, hz: M.hz },
+      { kind: 'box', hx: 0.45, hy: 0.45, hz: 0.65, offset: { x: 0, y: 0.6, z: -0.75 } }, // the boiler
+      // the back: a flat wall from the wheels to the push bar, so a pusher leans on it instead of climbing the deck
+      { kind: 'box', hx: M.hx, hy: 0.45, hz: 0.08, offset: { x: 0, y: 0.15, z: -M.hz - 0.04 } },
+    ],
+  });
+  st.prevYaw = pose.yaw;
+  platform = { body, hx: M.hx, hz: M.hz, top: M.hy, move };
+  registerPlatform(platform);
+  spawn({ kind: 'track-machine', mesh: machine, bodies: [body], update: frame });
+});
 
 // For the look evals: where the machine is.
 export const trackMachine = { pose, goal, platform: () => platform };
