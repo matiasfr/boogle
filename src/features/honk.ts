@@ -7,12 +7,13 @@
 // none, heard as 0), rate limited on receipt.
 import './honk.css';
 import * as THREE from 'three';
-import { scene, camera } from '../render/scene.ts';
+import { camera } from '../render/scene.ts';
 import { COLORS } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio, onBeat } from '../render/audio.ts';
-import { onFrame, onStart } from '../loop.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
 import { createLimiter, createChordDetector, honkNotes, honkShape, HONK_SHAPES } from '../sim/social.ts';
 import { sharedSeconds } from '../netplay/shared-time.ts';
@@ -192,6 +193,7 @@ function popNote(avatar: THREE.Object3D | null | undefined, colorIdx: number) {
   notes.push({ sprite, avatar, age: 0 });
 }
 
+const sparkles = new THREE.Group(); // the sparks: the notes ride their avatars
 const sparks: { sprite: THREE.Sprite; vx: number; vy: number; vz: number; age: number; life: number; s: number }[] = [];
 function sparkleOver(avatar: THREE.Object3D | null | undefined) {
   if (!avatar) return;
@@ -206,7 +208,7 @@ function sparkleOver(avatar: THREE.Object3D | null | undefined) {
     sprite.position.set(base.x, base.y + 2.5, base.z);
     const s = 0.25 + Math.random() * 0.3;
     sprite.scale.set(s, s, 1);
-    scene.add(sprite);
+    sparkles.add(sprite);
     sparks.push({
       sprite,
       vx: Math.cos(a) * sp,
@@ -219,7 +221,7 @@ function sparkleOver(avatar: THREE.Object3D | null | undefined) {
   }
   while (sparks.length > 160) {
     const o = sparks.shift()!;
-    scene.remove(o.sprite);
+    sparkles.remove(o.sprite);
     o.sprite.material.dispose();
   }
 }
@@ -246,7 +248,7 @@ function update(dt: number) {
     const p = sparks[k]!;
     p.age += dt;
     if (p.age >= p.life) {
-      scene.remove(p.sprite);
+      sparkles.remove(p.sprite);
       p.sprite.material.dispose();
       sparks.splice(k, 1);
       continue;
@@ -262,7 +264,8 @@ function update(dt: number) {
     p.sprite.material.rotation = p.age * 4;
   }
 }
-onFrame(({ dt }) => update(dt), { phase: 'late' });
+defineKind('honk', { lateUpdate: 1 }); // not 0: ping has it, and only these sprites read this
+spawn({ kind: 'honk', mesh: sparkles, lateUpdate: ({ dt }) => update(dt) });
 
 // ---------------------------------------------------------------- honks
 // who: 'me' or a remote's peer id; v: the honk's shape (HONK_SHAPES).

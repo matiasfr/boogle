@@ -6,10 +6,10 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL, HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
 import { heights, groundHeight, cellX, cellZ } from '../island/terrain.ts';
-import { scene } from '../render/scene.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { obstacles } from '../render/props.ts';
 import { groundMat, GROUP } from '../physics/physics.ts';
-import { material, createBody, setShapes, addBody, onPreStep, onPostStep, forEachContact } from '../physics/engine.ts';
+import { material, createBody, setShapes, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/state.ts';
 import { setEnv, onApplied, submitEdit } from '../world/sync.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -78,12 +78,13 @@ onApplied((e: { op: string; i: number; j: number }, _t: number, r: unknown) => {
 const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
 
 const capBodies = new Map<Body, Visual>(); // body -> visual
+defineKind('mushroom-cap', {}); // no methods: a cap's collider, which comes long after its plot, for its lifetime
 
 // Physics shapes cannot scale, so a growing mushroom gets fresh ones every few percent of growth.
 function shapeBody(v: Visual, s: number) {
   if (!v.body) {
     v.body = createBody({ material: mushroomMat, group: GROUP.SCENERY, position: v.root.position });
-    addBody(v.body);
+    spawn({ kind: 'mushroom-cap', bodies: [v.body] });
     capBodies.set(v.body, v);
   }
   setShapes(v.body!, [
@@ -107,21 +108,18 @@ function shapeBody(v: Visual, s: number) {
   v.bodyS = s;
 }
 
-onPostStep(
-  () => {
-    const b = me.body;
-    if (!b) return;
-    forEachContact(b, (nx, ny, nz, other) => {
-      const vis = capBodies.get(other);
-      if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
-      b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
-      me.coyote = 0;
-      vis.squishAt = performance.now();
-      return true;
-    });
-  },
-  { order: 10 },
-);
+export function bounceOffCaps() {
+  const b = me.body;
+  if (!b) return;
+  forEachContact(b, (nx, ny, nz, other) => {
+    const vis = capBodies.get(other);
+    if (!vis || b.position.y < other.position.y + STEM_H * vis.bodyS) return false;
+    b.velocity.y = BOUNCE_SPEED * (0.55 + 0.45 * Math.min(1, vis.bodyS));
+    me.coyote = 0;
+    vis.squishAt = performance.now();
+    return true;
+  });
+}
 
 // A mushroom growing into you shoves you out from under its cap (you ride up and bounce if you are on top). The shove
 // works from the size it is drawn at (v.drawS), and its collider doesn't grow while you are under it (updateGarden), so
@@ -141,28 +139,25 @@ function overlaps(b: Body, v: Visual, s: number) {
   if (b.position.y + HEAD_OFFSET + PLAYER_R < base.y) return false;
   return Math.hypot(b.position.x - base.x, b.position.z - base.z) < CAP_R * s + PLAYER_R + 0.05;
 }
-onPreStep(
-  () => {
-    const b = me.body;
-    if (!b) return;
-    for (const v of visuals.values()) {
-      const s = v.drawS ?? 0;
-      if (s < MIN_BODY || v.shown >= 1) continue;
-      const d = underCap(b, v, s);
-      if (!d) continue;
-      const base = v.root.position;
-      const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
-        nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
-      const out = b.velocity.x * nx + b.velocity.z * nz;
-      if (out >= PUSH) continue;
-      b.velocity.x += nx * (PUSH - out);
-      b.velocity.z += nz * (PUSH - out);
-      b.velocity.y = Math.max(b.velocity.y, 2.5);
-      v.squishAt = performance.now();
-    }
-  },
-  { order: 20 },
-);
+export function shoveFromUnderCaps() {
+  const b = me.body;
+  if (!b) return;
+  for (const v of visuals.values()) {
+    const s = v.drawS ?? 0;
+    if (s < MIN_BODY || v.shown >= 1) continue;
+    const d = underCap(b, v, s);
+    if (!d) continue;
+    const base = v.root.position;
+    const nx = d > 0.01 ? (b.position.x - base.x) / d : 1,
+      nz = d > 0.01 ? (b.position.z - base.z) / d : 0;
+    const out = b.velocity.x * nx + b.velocity.z * nz;
+    if (out >= PUSH) continue;
+    b.velocity.x += nx * (PUSH - out);
+    b.velocity.z += nz * (PUSH - out);
+    b.velocity.y = Math.max(b.velocity.y, 2.5);
+    v.squishAt = performance.now();
+  }
+}
 
 // ---------------------------------------------------------------- meshes
 const capProfile = [
@@ -214,6 +209,8 @@ function makeMushroomMesh() {
 }
 
 const visuals = new Map<string, Visual>(); // "i,j" -> its meshes
+// Every plot's meshes: the mesh of the one `mushroom-garden` entity (src/features/mushroom-garden.ts).
+export const plots = new THREE.Group();
 
 function makeVisual(p: { i: number; j: number }): Visual {
   const root = new THREE.Group();
@@ -225,7 +222,7 @@ function makeVisual(p: { i: number; j: number }): Visual {
   const shroom = makeMushroomMesh();
   shroom.scale.setScalar(0.001);
   root.add(mound, sprout, shroom);
-  scene.add(root);
+  plots.add(root);
   return { root, mound, sprout, shroom, body: null, bodyS: 0, shown: 0, squishAt: 0 };
 }
 
@@ -323,23 +320,22 @@ function signMaterial() {
   return new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 });
 }
 
+defineKind('mushroom-stall', {}); // no methods: it just stands there
 export function createStall() {
   const y = groundHeight(STALL.x, STALL.z) - 0.05;
   stall.position.set(STALL.x, y, STALL.z);
   stall.rotation.y = STALL.yaw;
-  scene.add(stall);
+  const body = createBody({
+    material: groundMat,
+    group: GROUP.SCENERY,
+    position: { x: STALL.x, y, z: STALL.z },
+    rotation: { x: 0, y: Math.sin(STALL.yaw / 2), z: 0, w: Math.cos(STALL.yaw / 2) },
+    shapes: [{ kind: 'box', hx: 1.4, hy: 0.5, hz: 0.45, offset: { x: 0, y: 0.5, z: 0 } }],
+  });
+  spawn({ kind: 'mushroom-stall', mesh: stall, bodies: [body] });
   stall.updateMatrixWorld(true);
   for (const p of pickups) p.world = stall.localToWorld(p.local.clone());
 
-  addBody(
-    createBody({
-      material: groundMat,
-      group: GROUP.SCENERY,
-      position: { x: STALL.x, y, z: STALL.z },
-      rotation: { x: 0, y: Math.sin(STALL.yaw / 2), z: 0, w: Math.cos(STALL.yaw / 2) },
-      shapes: [{ kind: 'box', hx: 1.4, hy: 0.5, hz: 0.45, offset: { x: 0, y: 0.5, z: 0 } }],
-    }),
-  );
   obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
 }
 

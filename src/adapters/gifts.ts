@@ -4,7 +4,6 @@ import { land, rules } from '../world/game-world.ts'; // first: the lockstep rul
 import * as THREE from 'three';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from '../island/terrain.ts';
-import { scene } from '../render/scene.ts';
 import { me, throwFrom } from '../player/state.ts';
 import { net } from '../netplay/net.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
@@ -54,6 +53,8 @@ const perchSpots: THREE.Vector3[] = []; // world positions, parallel to layout.p
 export const gifts = rules.gifts.gifts;
 const myId = () => net.room?.selfId ?? 'local';
 
+// Everything drawn here, flying or on the ground: the mesh of the one `gifts` entity (src/features/gifts.ts).
+export const giftObjects = new THREE.Group();
 const fx = { leaving: [] as { v: Visual; t: number }[], arriving: new Map<number, Flight>() };
 
 // The effects of each gift op, from what its apply returned (r): the item that was taken or landed.
@@ -119,7 +120,7 @@ function startFlight(kind: number, p: THREE.Vector3, v: THREE.Vector3, nonce: nu
   const path = flyPath(p, v, glide);
   const mesh = kind === SEEDS ? new THREE.Mesh(seedGeo, seedMat) : itemModel(GIFTS[kind]!.id);
   mesh.position.copy(p);
-  scene.add(mesh);
+  giftObjects.add(mesh);
   const fl = { mesh, glide, nonce, t0: performance.now(), done: false, ...path };
   flights.push(fl);
   return fl;
@@ -134,7 +135,7 @@ function claimFlight(e: Edit<TossFields>) {
 
 function endFlight(fl: Flight) {
   fl.done = true;
-  scene.remove(fl.mesh);
+  giftObjects.remove(fl.mesh);
   flights.splice(flights.indexOf(fl), 1);
   if (fl.lost) splash(fl.rest.x, fl.rest.z, 0.5, waterField.surfaceAt(fl.rest.x, fl.rest.z));
 }
@@ -194,7 +195,7 @@ function makeVisual(it: Item): Visual {
     sparkle.position.y = 0.6;
     root.add(sparkle);
   }
-  scene.add(root);
+  giftObjects.add(root);
   const flight = fx.arriving.get(it.id) ?? null;
   fx.arriving.delete(it.id);
   return { root, sparkle, phase: it.id * 1.7, y: null, vy: 0, flight, slide: 1, seen: 0 };
@@ -251,7 +252,7 @@ function updateItems(dt: number, now: number, target: number | null) {
     const l = fx.leaving[k]!;
     l.t += dt / 0.22;
     if (l.t >= 1 || reducedMotion) {
-      scene.remove(l.v.root);
+      giftObjects.remove(l.v.root);
       fx.leaving.splice(k, 1);
       continue;
     }
