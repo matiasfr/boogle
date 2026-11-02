@@ -248,9 +248,8 @@ Step 16 can start at any time, one PR per guard. Steps 17-21 follow step 12, bec
       - Nightly counts on SwiftShader as a JSON artifact: draw calls, shadow draws, shader programs, first-load gzip, hook
         objects. Counts only, since headless times mean nothing. Nobody has tried this in Actions yet.
       - Live error triage: group `/report` errors and desyncs by build, and open an issue when a build brings a new one.
-      - Automatic rollback: a failed live smoke test redeploys the last good build. It changes the deploy flow, so the
-        owner approves its design first.
       - Visual diffs: compare stills at fixed poses, advisory only.
+      - Dropped: automatic rollback (owner, 2026-11-02: not a live service yet; revisit before public playtests).
       - Dropped: `max-lines`, `complexity` and a duplication tool. The report lists file length under "Don't flag" (DESIGN.md
         chose plain modules), and its reviewer reads for duplicate paths (check 10).
 - [ ] **17. Headless runtime.** Run entity state and Rapier in Node, without three.js scene code or a GPU, faster than real
