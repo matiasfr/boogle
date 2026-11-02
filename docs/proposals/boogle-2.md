@@ -50,7 +50,7 @@ These are standing preferences from the thread.
   6. Electric
   7. Monorail city
   8. Maglev
-- **Steam comes early and keeps getting better.** The industrial eras (3–5) are grimy and smoky, but goofy. The electric era clears the air.
+- **Steam comes early and keeps getting better.** The industrial eras are grimy and smoky, but goofy. **2026-11-02, electric doesn't have to clear the air much** (owner: "I don't think we need to have the air clear with electric that much"); it was "the electric era clears the air".
 - **The mainland port city** is visible from the start, reachable at the end, and you can walk around it.
 - **2026-11-01, home grows; the metropolis doesn't** (owner: "the starting area should evolve over time and grow", and "closer to the end game, you get to reach more of an existing metropolis ... we wouldn't have to evolve it over time up close or anything. We would just build it as its more final state"). The mainland is one build in its final state, with no era versions up close; era work goes into home and the islands. How big home gets by the late eras, and what "monorail city" means there, is still open.
 - **2026-11-01, islands aren't tied to mini-games** (owner: "I don't want to tie certain levels to different mini games. That was more just an aside thought"). Places are designed on their own terms, for variety.
