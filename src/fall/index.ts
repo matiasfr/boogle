@@ -1,4 +1,4 @@
-// The fall into the world (src/features/proto-fall.ts loads this on a first visit or ?proto=fall; docs/game-design/first-run.md). You
+// The fall into the world (src/features/fall.ts loads this on a first visit or ?proto=fall; docs/game-design/first-run.md). You
 // meet your Buddy riding a flat trolley on a rail above the clouds, with the name-and-colour card beside it. Jump in
 // runs it off the end: one shot, no cut. You steer on the way down, through the cloud, into the BOOGLE sign, which flies
 // apart; you lie flat with stars, the cart lands next to you, and the game begins. The rail going nowhere says what the
@@ -6,21 +6,20 @@
 // your body and the existing flops: the prop pieces are this tab's alone.
 import './fall.css';
 import * as THREE from 'three/webgpu';
-import { COLORS, FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
-import { onEntered } from '../../entities/player/state.ts';
-import { groundHeight } from '../../island/heights.ts';
-import { onFrame } from '../../loop.ts';
-import { clamp, smoothstep } from '../../math.ts';
-import { onPreStep, teleport } from '../../physics/engine.ts';
-import { animateAvatar, makeAvatar, makeLabel, type Avatar } from '../../player/avatars.ts';
-import { input, inputState } from '../../player/input-state.ts';
-import { cam, me } from '../../player/player.ts';
-import { getAudio } from '../../render/audio.ts';
-import { emit } from '../../render/particles.ts';
-import { camera, scene, sky, sun } from '../../render/scene.ts';
-import { SUN_DIR } from '../../render/sun-dir.ts';
-import { protoCount } from '../count.ts';
-import { blastLetters, burst, updateLetters } from './letters.ts';
+import { COLORS, FIXED, PLAYER_R, reducedMotion } from '../constants.ts';
+import { onEntered } from '../entities/player/state.ts';
+import { groundHeight } from '../island/heights.ts';
+import { clamp, smoothstep } from '../math.ts';
+import { defineKind, despawn, spawn } from '../entity/entity.ts';
+import { teleport } from '../physics/engine.ts';
+import { animateAvatar, makeAvatar, makeLabel, type Avatar } from '../player/avatars.ts';
+import { input, inputState } from '../player/input-state.ts';
+import { cam, me } from '../player/player.ts';
+import { getAudio } from '../render/audio.ts';
+import { emit } from '../render/particles.ts';
+import { camera, sky, sun } from '../render/scene.ts';
+import { SUN_DIR } from '../render/sun-dir.ts';
+import { blastLetters, burst } from './letters.ts';
 import {
   CAR_START,
   DECK_Y,
@@ -33,7 +32,9 @@ import {
   UP,
   YAW,
   car,
-  deckMesh,
+  carProp,
+  clearDeck,
+  clearRail,
   slideWorld,
 } from './stage.ts';
 
@@ -48,6 +49,8 @@ const CRUISE = 5, // m/s the cart is already doing behind the card
   DOWN_MS = 1800, // flat with stars. Under 2000: presence `kd` ignores more
   GET_UP_MS = 900, // the soonest any input stands you up
   CAR_LATE_S = 0.8, // how long after you it lands
+  CLEAR_AFTER_S = 40, // the cart lies where it landed this long
+  CART_FADE_S = 4, // and shrinks away over the last of it
   FALL_FOV = 10; // degrees wider on the way down
 
 type State = 'card' | 'roll' | 'fall' | 'down' | 'done';
@@ -60,6 +63,9 @@ document.body.append(white);
 
 // ---------------------------------------------------------------- your Buddy on the card
 // Not the player yet (me.entered would start the game): another avatar in your colour, swapped for you on Jump in.
+defineKind('fall-preview', { update: 15 });
+const previewHolder = new THREE.Group();
+const previewProp = spawn({ kind: 'fall-preview', mesh: previewHolder, update: ({ dt }) => updatePreview(dt) });
 let preview: Avatar | null = null;
 let label: THREE.Sprite | null = null;
 let labelText = '';
@@ -81,10 +87,10 @@ function updatePreview(dt: number) {
   // The Buddy dresses avatars only once it has loaded; until then this is a capsule.
   if (retry <= 0 && !preview?.userData.handSocket) {
     retry = 0.25;
-    if (preview) scene.remove(preview);
+    preview?.removeFromParent();
     preview = makeAvatar(me.colorIdx);
     preview.rotation.y = YAW;
-    scene.add(preview);
+    previewHolder.add(preview);
     label = null;
     labelText = '';
     shownColor = -1;
@@ -156,8 +162,7 @@ const standAt = new THREE.Vector3();
 onEntered(() => {
   state = 'roll';
   document.body.classList.remove('fall-stage');
-  if (preview) scene.remove(preview);
-  preview = null;
+  despawn(previewProp);
   inputState.held = true;
   standOnCar(standAt, CAR_START);
   teleport(me.body!, standAt.x, standAt.y, standAt.z);
@@ -165,7 +170,7 @@ onEntered(() => {
   me.yaw = cam.yaw = YAW;
 });
 
-onPreStep(() => {
+function holdOrSteer() {
   const b = me.body;
   if (!b) return;
   if (state === 'roll') {
@@ -200,7 +205,7 @@ onPreStep(() => {
       }
     }
   }
-});
+}
 
 // ---------------------------------------------------------------- the cart comes too
 const carV = new THREE.Vector3();
@@ -298,6 +303,7 @@ function thump(strength: number) {
 
 const hit = new THREE.Vector3();
 let downSince = 0;
+let clearProps = 0;
 function land(now: number) {
   state = 'down';
   document.body.classList.remove('fall-air');
@@ -310,7 +316,8 @@ function land(now: number) {
   burst(hit, 34, 30);
   shake = reducedMotion ? 0 : 1;
   thump(1);
-  protoCount('falls');
+  clearRail();
+  clearProps = now + CLEAR_AFTER_S * 1000;
 }
 
 const pressing = () => input.keys.size > 0 || Math.abs(input.stickX) + Math.abs(input.stickY) > 0.25;
@@ -322,6 +329,7 @@ const followAim = new THREE.Vector3();
 const focus = new THREE.Vector3();
 const from = new THREE.Vector3();
 const to = new THREE.Vector3();
+let outOfCloud = false;
 let blendT = 0,
   fov = 0,
   restT = 0;
@@ -352,10 +360,14 @@ function blendCamera(dt: number) {
   camera.lookAt(followAim.lerp(stageLook, 1 - e));
 }
 
-onFrame(
-  ({ now, dt }) => {
+// The director: runs the whole fall, then takes itself and the cart away. Its camera comes after every other camera.
+defineKind('fall', { fixedPre: 1000, lateUpdate: 1200 });
+const director = spawn({
+  kind: 'fall',
+  fixedPre: holdOrSteer,
+  describe: () => ({ state, height: HEIGHT }),
+  lateUpdate({ now, dt }) {
     updateCar(dt);
-    updateLetters(now);
     if (state === 'card') {
       updatePreview(dt);
       standOnCar(buddyAt, CAR_START); // not the cart's rumble: the camera holds still
@@ -399,7 +411,10 @@ onFrame(
     // Through the cloud: white for the moment you're in it, and it's gone from above you once you're out.
     const inCloud = 1 - clamp(Math.abs(camera.position.y - DECK_Y) / 15, 0, 1);
     white.style.opacity = String(inCloud * 0.94);
-    if (deckMesh.visible && camera.position.y < DECK_Y - 1) deckMesh.visible = false;
+    if (!outOfCloud && camera.position.y < DECK_Y - 1) {
+      outOfCloud = true;
+      clearDeck();
+    }
 
     const wantFov = state === 'fall' && !reducedMotion ? FALL_FOV * clamp(-b.velocity.y / 15, 0, 1) : 0;
     const step = (wantFov - fov) * (1 - Math.exp(-dt * 5));
@@ -415,6 +430,11 @@ onFrame(
       shake *= Math.exp(-dt * 6);
     }
     sky.position.copy(camera.position);
+    if (clearProps) car.group.scale.setScalar(clamp((clearProps - now) / (CART_FADE_S * 1000), 0, 1));
+    if (clearProps && now > clearProps) {
+      despawn(carProp);
+      despawn(director);
+      white.remove();
+    }
   },
-  { phase: 'late', order: 1200 },
-);
+});
