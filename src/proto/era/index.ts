@@ -38,7 +38,7 @@ const CROSS_S = 4; // seconds the sky and fog take to cross over to the new era
 const AFTER_S = 4.5; // seconds after the swap starts that the "after" still is taken (the ripple and sky change are done)
 const PUFFS_PER_S = 5; // per chimney
 
-const END = ROUTE[ROUTE.length - 1].to; // the platform: the far end of the route
+const END = ROUTE[ROUTE.length - 1]!.to; // the platform: the far end of the route
 const { opening } = rules.opening;
 
 // ---------------------------------------------------------------- boxes
@@ -127,7 +127,7 @@ function buntingBoxes({ from, to, h }: Bunting): Box[] {
       sag = Math.sin(u * Math.PI) * 0.5;
     const x = ax + (bx - ax) * u,
       z = az + (bz - az) * u;
-    out.push(at(x, ya + (yb - ya) * u + h - 0.45 - sag, z, 0.04, 0.4, 0.42, FLAG_COLORS[k % FLAG_COLORS.length]));
+    out.push(at(x, ya + (yb - ya) * u + h - 0.45 - sag, z, 0.04, 0.4, 0.42, FLAG_COLORS[k % FLAG_COLORS.length]!));
   }
   return out;
 }
@@ -136,13 +136,13 @@ function wagonMarks(): Box[] {
   const out: Box[] = [];
   for (const sec of ROUTE) {
     const [bx, bz] = sec.to;
-    const len = Math.hypot(bx - sec.x, bz - sec.z);
-    const nx = (bz - sec.z) / len,
-      nz = -(bx - sec.x) / len; // to the side of the line
-    const yaw = Math.atan2(bx - sec.x, bz - sec.z);
+    const len = Math.hypot(bx! - sec.x, bz! - sec.z);
+    const nx = (bz! - sec.z) / len,
+      nz = -(bx! - sec.x) / len; // to the side of the line
+    const yaw = Math.atan2(bx! - sec.x, bz! - sec.z);
     for (let d = 0; d < len; d += WAGON_MARK.every) {
-      const x = sec.x + ((bx - sec.x) * d) / len + nx * WAGON_MARK.off,
-        z = sec.z + ((bz - sec.z) * d) / len + nz * WAGON_MARK.off;
+      const x = sec.x + ((bx! - sec.x) * d) / len + nx * WAGON_MARK.off,
+        z = sec.z + ((bz! - sec.z) * d) / len + nz * WAGON_MARK.off;
       out.push(box(x, z, place(0, 0, 0, WAGON_MARK.w, WAGON_MARK.h, WAGON_MARK.w, yaw), WAGON_MARK.color, true));
       out.push(box(x, z, place(0, 0.02, 0, 0.6, 0.06, WAGON_MARK.every * 0.6, yaw), WAGON_MARK.color));
     }
@@ -154,9 +154,9 @@ function platformBoxes(): Box[] {
     bx = PLATFORM.w / 2 - 0.4,
     top = PLATFORM.h;
   return [
-    box(x, z, place(0, 0, 0, PLATFORM.w, PLATFORM.h, PLATFORM.d, 0), PLATFORM.color),
-    box(x, z, place(bx, top, 0, 0.25, BELL_POST.h, 0.25, 0), BELL_POST.color),
-    box(x, z, place(bx, top + BELL_POST.h - 1, 0, 0.7, 0.7, 0.7, 0), BELL_POST.bell),
+    box(x!, z!, place(0, 0, 0, PLATFORM.w, PLATFORM.h, PLATFORM.d, 0), PLATFORM.color),
+    box(x!, z!, place(bx, top, 0, 0.25, BELL_POST.h, 0.25, 0), BELL_POST.color),
+    box(x!, z!, place(bx, top + BELL_POST.h - 1, 0, 0.7, 0.7, 0.7, 0), BELL_POST.bell),
   ];
 }
 // The first site's helper hut, built (the hut blueprint without its scaffolding): it stands in every era.
@@ -204,8 +204,8 @@ const chimneys: Smoke[] = []; // era 2's smoking chimneys
 function build(): void {
   const none: Smoke[] = [];
   const boxes = (e: number, keep: boolean, smokes: Smoke[]) => [
-    ...ERAS[e].blocks.filter((b) => !!b.keep === keep).flatMap((b) => blockBoxes(b, smokes)),
-    ...(keep ? [] : ERAS[e].bunting.flatMap(buntingBoxes)),
+    ...ERAS[e]!.blocks.filter((b) => !!b.keep === keep).flatMap((b) => blockBoxes(b, smokes)),
+    ...(keep ? [] : ERAS[e]!.bunting.flatMap(buntingBoxes)),
   ];
   era1 = makeSet(boxes(1, false, none));
   era2 = makeSet([...boxes(2, false, chimneys), ...wagonMarks()]);
@@ -224,8 +224,8 @@ const promptAt = new THREE.Vector3();
 registerInteractable(() => {
   if (!me.entered || !me.body || opening.t0 >= 0) return [];
   const pos = me.body.position;
-  if (Math.hypot(pos.x - END[0], pos.z - END[1]) > REACH) return [];
-  promptAt.set(END[0], groundHeight(END[0], END[1]) + 1.6, END[1]);
+  if (Math.hypot(pos.x - END[0]!, pos.z - END[1]!) > REACH) return [];
+  promptAt.set(END[0]!, groundHeight(END[0]!, END[1]!) + 1.6, END[1]);
   const t = { id: 'opening-day', verb: 'Start opening day', at: promptAt };
   return [
     rules.opening.ready()
@@ -308,7 +308,7 @@ onFrame(
         draw(era2!, () => (era === 2 ? 1 : 0));
         forgetPostcard();
       } else {
-        hud.innerHTML = `Opening day!<small>Era 2: ${ERAS[2].name}</small>`;
+        hud.innerHTML = `Opening day!<small>Era 2: ${ERAS[2]!.name}</small>`;
         hud.className = 'era-count era-done';
         hud.hidden = false;
         saidAt = sec;
@@ -318,12 +318,12 @@ onFrame(
     if (swapAt >= 0) {
       const t = sec - swapAt;
       mix = Math.min(1, t / CROSS_S);
-      draw(era1!, (k) => 1 - Math.min(1, Math.max(0, (t - era1!.delay[k]) / (POP_S * 0.6))));
+      draw(era1!, (k) => 1 - Math.min(1, Math.max(0, (t - era1!.delay[k]!) / (POP_S * 0.6))));
       draw(era2!, (k) => {
-        const u = (t - era2!.delay[k]) / POP_S;
-        if (u > 0 && !puffed.has(k) && era2!.boxes[k].tall) {
+        const u = (t - era2!.delay[k]!) / POP_S;
+        if (u > 0 && !puffed.has(k) && era2!.boxes[k]!.tall) {
           puffed.add(k);
-          puff(era2!.boxes[k]);
+          puff(era2!.boxes[k]!);
         }
         return u <= 0 ? 0 : u >= 1 ? 1 : easeBack(u);
       });
@@ -336,7 +336,7 @@ onFrame(
     updateAmbience();
     if (snapNow) {
       snapNow = false;
-      snapAfter(ERAS[2].name);
+      snapAfter(ERAS[2]!.name);
     }
 
     const r = rules.opening.bell(tick);
