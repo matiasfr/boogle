@@ -319,13 +319,6 @@ const PAGES: Page[] = [
           650,
         ),
       },
-      {
-        id: 'double-jump',
-        group: 'Moves (&jump2=1)',
-        title: 'Double jump',
-        when: 'The second jump in the air (any ?proto= page with &jump2=1): a quiet puff of air, three of them.',
-        body: seq(`const { whoop } = await import('/src/proto/moves/index.ts');`, Array(3).fill(`whoop();`), 550),
-      },
     ],
   },
   {
@@ -515,19 +508,6 @@ const PAGES: Page[] = [
             await until(() => rules.opening.era(world.tick) === 2, 60000);
             await sleep(26000);
           }, { tail: 0.5 });`,
-      },
-    ],
-  },
-  {
-    key: 'board',
-    query: 'proto=board',
-    takes: [
-      {
-        id: 'board-whoosh',
-        group: 'Board (?proto=board)',
-        title: 'Fast-travel whoosh',
-        when: 'Picking a station on the departures board (&v=hop): the whoosh behind the fade.',
-        body: seq(`const { whoosh } = await import('/src/proto/board/index.ts');`, [`whoosh();`, `whoosh();`], 900),
       },
     ],
   },

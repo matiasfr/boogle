@@ -62,28 +62,31 @@ function card(p: Proto): HTMLElement {
   if (p.answer) head.append(el('p', 'note', `“${p.answer.verdict}” ${p.answer.next}`));
   c.append(head);
 
-  const play = el('a', 'btn play', 'Play');
-  const ph = p.url.match(PLACEHOLDER);
-  const setHref = (name: string) => {
-    play.href = href(p, name);
-    play.classList.toggle('off', !!ph && !name.trim());
-  };
-  if (!touch) play.target = '_blank';
-  if (ph) {
-    const nameIn = el('input', 'name');
-    nameIn.placeholder = `${ph[1]}`;
-    nameIn.value = s.name;
-    nameIn.setAttribute('aria-label', ph[1]!);
-    nameIn.addEventListener('input', () => {
-      save(p.id, { name: nameIn.value });
-      setHref(nameIn.value);
-    });
-    const row = el('div', 'playrow');
-    row.append(nameIn, play);
-    c.append(row);
-  } else c.append(play);
-  setHref(s.name);
-  c.append(el('p', 'url', p.url));
+  if (p.archived) c.append(el('p', 'note', `Archived: git tag ${p.archived}.`));
+  else {
+    const play = el('a', 'btn play', 'Play');
+    const ph = p.url.match(PLACEHOLDER);
+    const setHref = (name: string) => {
+      play.href = href(p, name);
+      play.classList.toggle('off', !!ph && !name.trim());
+    };
+    if (!touch) play.target = '_blank';
+    if (ph) {
+      const nameIn = el('input', 'name');
+      nameIn.placeholder = `${ph[1]}`;
+      nameIn.value = s.name;
+      nameIn.setAttribute('aria-label', ph[1]!);
+      nameIn.addEventListener('input', () => {
+        save(p.id, { name: nameIn.value });
+        setHref(nameIn.value);
+      });
+      const row = el('div', 'playrow');
+      row.append(nameIn, play);
+      c.append(row);
+    } else c.append(play);
+    setHref(s.name);
+    c.append(el('p', 'url', p.url));
+  }
   if (p.variants?.length) {
     const row = el('div', 'variants');
     for (const v of p.variants) {
@@ -233,6 +236,7 @@ function answered(): HTMLElement {
     head.append(el('strong', 'badge', p.status), ' ', el('strong', '', p.title));
     li.append(head);
     if (p.answer) li.append(el('q', 'a-verdict', p.answer.verdict), el('p', 'a-next', p.answer.next));
+    if (p.archived) li.append(el('p', 'a-next', `Archived: git tag ${p.archived}.`));
     ul.append(li);
   }
   wrap.append(ul);

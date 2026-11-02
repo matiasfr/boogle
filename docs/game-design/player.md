@@ -56,11 +56,6 @@ the deck's turn turns you and the camera, and you stay snapped to its floor. Lan
 moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
 ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
-## Prototype: double jump and glide (&jump2=1, &glide=1)
-
-On any `?proto=` page ([src/proto/moves/](../../src/proto/moves/index.ts); rec 6 of the same research). With
-`&jump2=1` a jump press in the air sets your upward speed to max(current, 0) + 6.0 m/s, once per airtime (landing gives it back), with a puff ring and a quiet puff of air (band-passed noise, no pitch). With `&glide=1`, holding jump after an air press
-(the double jump's, or a fresh one) caps your fall at 4 m/s, trailing two contrails. Same button; no new controls.
 
 ## Camera
 

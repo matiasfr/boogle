@@ -47,6 +47,8 @@ export type Proto = {
   /** A graduated, answered or parked card: the day, the owner's verdict in his words (one line) and what happens next.
    * A live card has one when its first question is settled and it is back asking something new. */
   answer?: { on: string; verdict: string; next: string };
+  /** Removed from `main` and saved under this git tag (`archive/<name>`): there's nothing to play. */
+  archived?: string;
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
   /** Why a live prototype can't share the `?play` island (it reshapes the world or clashes with another toy): the
@@ -202,6 +204,7 @@ export const PROTOS: Proto[] = [
   },
   {
     id: 'moves',
+    archived: 'archive/moves',
     title: 'Double jump and glide',
     step: 'depth',
     status: 'answered',
@@ -215,14 +218,6 @@ export const PROTOS: Proto[] = [
     what: 'Press jump again in the air for a second jump; hold it to glide down slowly.',
     verb: 'second jumps',
     since: '2026-11-01',
-    note: 'Works on any ?proto= page: add &jump2=1 and/or &glide=1 to its address. On the island: on at this step only.',
-    variants: [
-      {
-        name: 'jump2',
-        url: '/?proto=moves&jump2=1&v=jump2',
-        what: 'The second jump alone, no glide.',
-      },
-    ],
   },
   {
     id: 'lay',
@@ -331,6 +326,7 @@ export const PROTOS: Proto[] = [
   },
   {
     id: 'board',
+    archived: 'archive/board',
     title: 'Departures board',
     step: 3,
     status: 'answered',
@@ -343,11 +339,11 @@ export const PROTOS: Proto[] = [
     question: 'Do hubs-only jumps make you want to ride between stops?',
     what: 'Only hubs (Court and Lighthouse, the two ends) jump: their big board takes you to the other hub, or tells you which wagon to ride to a stop. Stops have a small sign. The wagon runs fast.',
     since: '2026-11-01',
-    note: 'Press “Lay the whole route” first. &laid=1 or 2 tries a shorter line.',
     verb: 'trips',
   },
   {
     id: 'groove',
+    archived: 'archive/groove',
     title: 'The groove',
     step: 'depth',
     status: 'retired',
