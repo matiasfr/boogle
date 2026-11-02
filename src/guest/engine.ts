@@ -1,4 +1,4 @@
-// The guest engine: the guest's simulation and the guest and dino models, a wasm built by native/guest/build.mjs.
+// The guest engine: the guest's simulation and the guest and dino models, a wasm built by native/guest/build.ts.
 // Never bundled: it comes from the owner's hosted build (ENGINE_URL, fetched quietly the first time a player talks to
 // the dino), a file the player picked, or on a local dev build VITE_DINO_ENGINE_URL; this browser keeps it
 // (src/decomp/store.ts). Without one the feature stays dormant.

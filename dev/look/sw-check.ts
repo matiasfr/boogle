@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { spawnSync } from 'node:child_process';
-import { createService, loadConfig } from '../../server/src/server.js';
+import { createService, loadConfig } from '../../server/src/server.ts';
 import { launch, root, sleep } from './lib.ts';
 
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-sw-'));

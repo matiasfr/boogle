@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import type { Browser, BrowserContext, Page } from 'playwright';
-import { createService, loadConfig } from '../../server/src/server.js';
+import { createService, loadConfig } from '../../server/src/server.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');

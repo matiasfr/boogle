@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createService, loadConfig } from '../src/server.js';
+import { createService, loadConfig } from '../src/server.ts';
 import { loadHomeLand } from '../src/host/land.ts';
 import { PATCH } from '../../src/sim/mushrooms.ts';
 

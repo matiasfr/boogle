@@ -174,7 +174,7 @@ export default [
     },
   },
   {
-    files: ['eslint.config.js', 'vite.config.js', 'native/**/*.mjs'],
+    files: ['eslint.config.js', 'vite.config.ts', 'native/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   {

@@ -17,4 +17,4 @@ ENV DATA_DIR=/data PORT=9000
 EXPOSE 9000
 # A Fly volume mounts over /data owned by root: hand it to the node user, then run as node (not root). Started as
 # non-root already (docker run --user, some hosts): just run.
-CMD ["sh", "-c", "[ \"$(id -u)\" != 0 ] && exec node server/src/index.js; chown node:node \"$DATA_DIR\" 2>/dev/null || true; exec su-exec node node server/src/index.js"]
+CMD ["sh", "-c", "[ \"$(id -u)\" != 0 ] && exec node server/src/index.ts; chown node:node \"$DATA_DIR\" 2>/dev/null || true; exec su-exec node node server/src/index.ts"]

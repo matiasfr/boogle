@@ -1,5 +1,5 @@
 // Room snapshots on disk: one JSON file per room in cfg.dataDir, written atomically (temp file + rename) one write at a
-// time per room. Used by the snapshot endpoints (server.js) and, later, the server host (docs/plans/server-host.md).
+// time per room. Used by the snapshot endpoints (server.ts) and, later, the server host (docs/plans/server-host.md).
 //
 //   const store = createStore({ dataDir, maxRooms })
 //   await store.init()                    create the directory and learn the rooms already saved

@@ -2,7 +2,7 @@
 // from a local checkout of the upstream decompilation (README.md says which) with the shim in this folder. Nothing it
 // builds is committed or deployed; the player brings it (src/guest/engine.ts).
 //
-//   GUEST_DECOMP=/path/to/checkout node native/guest/build.mjs
+//   GUEST_DECOMP=/path/to/checkout node native/guest/build.ts
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, rmSync, existsSync, statSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
@@ -17,7 +17,7 @@ if (!decomp || !existsSync(join(decomp, 'src/game/mario.c'))) {
   process.exit(1);
 }
 const out = join(here, 'out/engine.wasm'); // gitignored
-const tool = (name, brewPath) => (existsSync(brewPath) ? brewPath : name);
+const tool = (name: string, brewPath: string) => (existsSync(brewPath) ? brewPath : name);
 const CLANG = process.env.CLANG ?? tool('clang', '/opt/homebrew/opt/llvm/bin/clang');
 const WASM_LD = process.env.WASM_LD ?? tool('wasm-ld', '/opt/homebrew/opt/lld/bin/wasm-ld');
 
@@ -101,13 +101,13 @@ const flags = [
   `-I${decomp}`,
 ];
 
-const objects = [];
+const objects: string[] = [];
 for (const src of [...DECOMP_SOURCES.map((s) => join(decomp, s)), ...SHIM_SOURCES.map((s) => join(here, s))]) {
   const obj = join(work, `${objects.length}-${basename(src)}.o`);
   execFileSync(CLANG, [...flags, '-c', src, '-o', obj], { stdio: 'inherit' });
   objects.push(obj);
 }
-const extra = process.env.ALLOW_UNDEFINED ? ['--allow-undefined'] : [];
+const extra: string[] = process.env.ALLOW_UNDEFINED ? ['--allow-undefined'] : [];
 execFileSync(
   WASM_LD,
   [

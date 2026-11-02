@@ -1,4 +1,4 @@
-import { createService, loadConfig } from './server.js';
+import { createService, loadConfig } from './server.ts';
 
 const cfg = loadConfig();
 const svc = createService(cfg);
@@ -6,7 +6,7 @@ const port = await svc.listen();
 cfg.log(`boogle-server listening on :${port} (data: ${cfg.dataDir}, origins: ${cfg.allowedOrigins.join(',')})`);
 
 let stopping = false;
-async function shutdown(signal) {
+async function shutdown(signal: string) {
   if (stopping) return;
   stopping = true;
   cfg.log(`${signal} received, shutting down`);
