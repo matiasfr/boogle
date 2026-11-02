@@ -11,6 +11,7 @@
 - Later still: three prototype toys were cut (the wheelbarrow, the ride flatbed and the toppling stack), so two presence keys they used (`barrow`, `seat`) are gone. A new prototype, the long train crossing, is Local only: it shares nothing, so no arrow in the picture changes.
 - The checks now guard the borders between parts, like walls between rooms: the shared world and the network code can't reach into drawing or the player, and two files can't lean on each other in a loop.
 - Last update of the day: a new prototype, the rail loop (`?proto=net`), where crates ride the train from camps to a growing village. It reuses the shared-world edits that already exist, like a new board game played with the same pieces, so no arrow in the picture changes.
+- After that, only small fixes landed: the last two loops between files were untangled (the player and cave code now lean on small helper files instead of on each other), and an old hero prototype was retired. Nothing in the picture moved.
 
 ## 2026-10-30
 
