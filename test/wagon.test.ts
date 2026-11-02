@@ -11,7 +11,7 @@ const EPS = 1e-9;
 
 // Where stop k is: section k's site, or the far end of the last laid section.
 const stopAt = (laid: number, k: number): { x: number; z: number } =>
-  k < laid ? { x: ROUTE[k].x, z: ROUTE[k].z } : { x: ROUTE[k - 1].to[0], z: ROUTE[k - 1].to[1] };
+  k < laid ? { x: ROUTE[k]!.x, z: ROUTE[k]!.z } : { x: ROUTE[k - 1]!.to[0]!, z: ROUTE[k - 1]!.to[1]! };
 
 test('nothing laid: no wagon', () => {
   assert.equal(wagonAt(0, 0), null);
@@ -49,8 +49,8 @@ test('periodic, and t0 shifts the timetable', () => {
 test('never leaves the laid part, and reaches both ends', () => {
   for (const laid of LAIDS) {
     const end = ROUTE.slice(0, laid).reduce((d, r) => {
-      const ex = r.to[0] - r.x;
-      const ez = r.to[1] - r.z;
+      const ex = r.to[0]! - r.x;
+      const ez = r.to[1]! - r.z;
       return d + Math.round(Math.sqrt(ex * ex + ez * ez) * 100);
     }, 0);
     let min = Infinity;
@@ -58,10 +58,10 @@ test('never leaves the laid part, and reaches both ends', () => {
     for (let t = 0; t < wagonCycle(laid); t += 0.5) {
       const w = wagonAt(laid, t)!;
       assert.ok(w.section >= 0 && w.section < laid, `laid ${laid} t ${t} section ${w.section}`);
-      const r = ROUTE[w.section];
+      const r = ROUTE[w.section]!;
       // On its section's segment: between its two ends, on the line through them.
-      const ex = r.to[0] - r.x;
-      const ez = r.to[1] - r.z;
+      const ex = r.to[0]! - r.x;
+      const ez = r.to[1]! - r.z;
       const f = ((w.x - r.x) * ex + (w.z - r.z) * ez) / (ex * ex + ez * ez);
       assert.ok(f >= -EPS && f <= 1 + EPS, `laid ${laid} t ${t} f ${f}`);
       assert.ok(Math.abs((w.x - r.x) * ez - (w.z - r.z) * ex) < 1e-6);

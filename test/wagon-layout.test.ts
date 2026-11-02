@@ -9,7 +9,7 @@ import { wagonAt, wagonStandsAt, wagonCycle } from '../src/sim/wagon.ts';
 test('wagonStandsAt follows the shipped line, whatever ?layout= did to ROUTE', () => {
   const shipped = ROUTE.map((r) => ({ x: r.x, z: r.z, to: [r.to[0], r.to[1]] }));
   // A layout walk, before anything has asked the wagon module where the line is: every section twice as long.
-  ROUTE.forEach((r) => Object.assign(r, { to: [r.x + (r.to[0] - r.x) * 2, r.z + (r.to[1] - r.z) * 2] }));
+  ROUTE.forEach((r) => Object.assign(r, { to: [r.x + (r.to[0]! - r.x) * 2, r.z + (r.to[1]! - r.z) * 2] }));
   const standing = (laid: number) => {
     const out: boolean[] = [];
     for (let t = 0; t < 3000; t += 0.5) out.push(wagonStandsAt(laid, t));

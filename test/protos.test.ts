@@ -36,8 +36,8 @@ test('island toys have a spot of their own (moves goes with you)', () => {
   for (const { id, s } of spots) assert.ok(s, `${id} has no spawn`);
   for (let a = 0; a < spots.length; a++)
     for (let b = a + 1; b < spots.length; b++) {
-      const d = Math.hypot(spots[a].s!.x - spots[b].s!.x, spots[a].s!.z - spots[b].s!.z);
-      assert.ok(d > 2, `${spots[a].id} and ${spots[b].id} start on the same spot`);
+      const d = Math.hypot(spots[a]!.s!.x - spots[b]!.s!.x, spots[a]!.s!.z - spots[b]!.s!.z);
+      assert.ok(d > 2, `${spots[a]!.id} and ${spots[b]!.id} start on the same spot`);
     }
 });
 

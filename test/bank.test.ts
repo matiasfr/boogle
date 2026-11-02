@@ -68,9 +68,9 @@ test("a host that loads an hour-old save banks the gap once; a client's wake is 
   await run(net, all, 40);
   assert.equal(host.rules.bank.ms(), 3_600_000);
   assert.equal(client.rules.bank.ms(), 3_600_000);
-  const track = host.rules.sites.sites.list[0].stock[0];
+  const track = host.rules.sites.sites.list[0]!.stock[0];
   assert.equal(track, Math.min(60, Math.floor(3_600_000 / (HELPER_EVERY * TICK_MS))), 'an hour of one hut');
-  assert.equal(host.rules.sites.sites.list[0].t0, -1, 'the machine waits for a player');
+  assert.equal(host.rules.sites.sites.list[0]!.t0, -1, 'the machine waits for a player');
   client.s.submitEdit({ op: 'bank.wake', i: 0, j: 0, ms: 3_600_000 });
   await run(net, all, 20);
   assert.equal(host.rules.bank.ms(), 3_600_000, 'a replayed wake is refused');

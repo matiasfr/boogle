@@ -25,9 +25,9 @@ const MIN = 60000;
 test('levels follow the thresholds and report going up', () => {
   const f = createFriend();
   assert.equal(levelOf(0), 0);
-  assert.equal(levelOf(LEVELS[2].at), 2);
+  assert.equal(levelOf(LEVELS[2]!.at), 2);
   assert.equal(levelOf(1e9), LEVELS.length - 1);
-  assert.equal(addPts(f, LEVELS[1].at - 1), 0);
+  assert.equal(addPts(f, LEVELS[1]!.at - 1), 0);
   assert.equal(addPts(f, 1), 1);
   assert.equal(addPts(f, -1e6), 0);
   assert.equal(f.pts, 0);
@@ -51,7 +51,7 @@ test('gifts score by taste, halve on repeats and stop at the window cap', () => 
     can = giftIndex('can'),
     frisbee = giftIndex('frisbee');
   assert.equal(giveGift(f, seeds, t)!.pts, TASTE_PTS.like);
-  assert.equal(giveGift(f, seeds, t)!.pts, Math.round(TASTE_PTS.like / 2));
+  assert.equal(giveGift(f, seeds, t)!.pts, Math.round(TASTE_PTS.like! / 2));
   assert.equal(giveGift(f, can, t)!.pts, TASTE_PTS.meh);
   assert.equal(giveGift(f, frisbee, t)!.pts, TASTE_PTS.like);
   const capped = giveGift(f, frisbee, t)!;
@@ -75,7 +75,7 @@ test('a stored gift in the old index format is dropped on load', () => {
 
 test('enough kick-offs make him wary; time and gifts forgive', () => {
   const f = createFriend();
-  addPts(f, LEVELS[3].at);
+  addPts(f, LEVELS[3]!.at);
   let t = 1e6;
   for (let k = 1; k < RULES.waryAt; k++) assert.equal(kickedOff(f, (t += 1000)).wary, false);
   const last = kickedOff(f, (t += 1000));
@@ -95,7 +95,7 @@ test('enough kick-offs make him wary; time and gifts forgive', () => {
 test('ride patience grows with friendship', () => {
   const f = createFriend();
   const lo = rideLimit(f, 0);
-  addPts(f, LEVELS[4].at);
+  addPts(f, LEVELS[4]!.at);
   assert.ok(rideLimit(f, 0) > lo);
 });
 

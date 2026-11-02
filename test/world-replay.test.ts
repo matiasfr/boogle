@@ -32,7 +32,7 @@ function strHash(s: string) {
 function stream(seed: number): Stream {
   const next = mulberry32(seed | 0);
   const int = (lo: number, hi: number) => lo + Math.floor(next() * (hi - lo + 1));
-  return { next, int, pick: (a) => a[int(0, a.length - 1)], chance: (p: number) => next() < p };
+  return { next, int, pick: (a) => a[int(0, a.length - 1)]!, chance: (p: number) => next() < p };
 }
 const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => m.edits ?? {}));
 
@@ -87,11 +87,11 @@ async function replay(seed: number) {
       [230, 0],
       [250, 1],
     ])
-      x.rules.piles.drop(i, 188, k, 64);
+      x.rules.piles.drop(i!, 188, k!, 64);
     x.rules.sites.addFreight(60);
   }
   const master = stream(seed);
-  const ops = peers[0].s.registry().ops;
+  const ops = peers[0]!.s.registry().ops;
   // Opening day closes the route for good, so its ops play on their own near the end rather than in the random mix.
   // The wagon's stoke plays in its own leg at the end too, so the seeded stream of the older ops stays as it was (its
   // clock ticks through every leg, the late joiner and the reload all the same).
@@ -106,7 +106,7 @@ async function replay(seed: number) {
     for (let f = 0; f < frames; f++) {
       const x = master.pick(live(peers));
       const op = only ?? master.pick(mixed);
-      const e = generators[op](x.r, { rules: x.rules, land: homeLand(), tick: x.s.world.tick });
+      const e = generators[op]!(x.r, { rules: x.rules, land: homeLand(), tick: x.s.world.tick });
       if (e) {
         x.s.submitEdit(e);
         submitted++;

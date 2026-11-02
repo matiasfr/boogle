@@ -28,7 +28,7 @@ test('same ticks and edits give the same island on every client', () => {
   for (const s of [a, b]) {
     run(s, 1, 3000);
     tossItem(s, giftIndex('can'), 30, 31, ON_GROUND, 3001);
-    takeItem(s, s.items[0].id);
+    takeItem(s, s.items[0]!.id);
     run(s, 3002, 5000);
   }
   assert.equal(hashGifts(a), hashGifts(b));
@@ -45,7 +45,7 @@ test('a perch holds its item and refills PERCH_REFILL ticks after it is taken', 
   );
   run(s, 2, LIFE + 10);
   assert.equal(on().length, 1, 'a perch item never rots');
-  takeItem(s, on()[0].id, 20000);
+  takeItem(s, on()[0]!.id, 20000);
   run(s, 20001, 20000 + PERCH_REFILL - 1);
   assert.equal(on().length, 0);
   run(s, 20000 + PERCH_REFILL, 20000 + PERCH_REFILL);
@@ -72,7 +72,7 @@ test('a full island sweeps away the oldest thrown thing to make room', () => {
   for (let k = 0; k < MAX_ITEMS; k++) tossItem(s, can, k, 0, ON_GROUND, k);
   const it = tossItem(s, can, 99, 0, ON_GROUND, 500)!;
   assert.equal(s.items.length, MAX_ITEMS);
-  assert.equal(s.items[0].i, 1);
+  assert.equal(s.items[0]!.i, 1);
   assert.equal(s.items.at(-1)!.id, it.id);
 });
 

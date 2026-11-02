@@ -20,7 +20,7 @@ test('a drop near a same-kind pile joins it; another kind or a far spot makes a 
   dropPile(s, 100, 100, 0, 5);
   dropPile(s, 102, 99, 0, 3);
   assert.equal(s.list.length, 1);
-  assert.equal(s.list[0].n, 8);
+  assert.equal(s.list[0]!.n, 8);
   dropPile(s, 100, 100, 1, 4); // ore beside logs
   dropPile(s, 110, 100, 0, 2);
   assert.equal(s.list.length, 3);
@@ -33,8 +33,8 @@ test('past PILE_CAP the rest spills into a new pile beside it; nothing is lost',
   const r = dropPile(s, 50, 50, 0, 10);
   assert.equal(r.placed, 10);
   assert.equal(s.list.length, 2);
-  assert.equal(s.list[0].n, PILE_CAP);
-  assert.notDeepEqual([s.list[1].i, s.list[1].j], [50, 50]);
+  assert.equal(s.list[0]!.n, PILE_CAP);
+  assert.notDeepEqual([s.list[1]!.i, s.list[1]!.j], [50, 50]);
   assert.equal(totalOf(s, 0), PILE_CAP + 8);
 });
 
@@ -54,7 +54,7 @@ test('a full room merges into the nearest same-kind pile; another kind has no ro
 test('takes are partial; an emptied pile goes', () => {
   const s = createPiles();
   dropPile(s, 5, 5, 0, 6);
-  const id = s.list[0].id;
+  const id = s.list[0]!.id;
   assert.deepEqual(takePile(s, id, 4), { id, k: 0, n: 4 });
   assert.deepEqual(takePile(s, id, 9), { id, k: 0, n: 2 });
   assert.equal(s.list.length, 0);
@@ -88,7 +88,7 @@ test('room() is exact: a drop where every spot is taken and no same-kind pile ex
     [-1, -1],
     [1, -1],
   ])
-    dropPile(s, 50 + di * 3, 50 + dj * 3, 1, 1); // ore piles far enough apart not to merge
+    dropPile(s, 50 + di! * 3, 50 + dj! * 3, 1, 1); // ore piles far enough apart not to merge
   const t = createPiles();
   for (const [di, dj] of [
     [0, 0],
@@ -101,7 +101,7 @@ test('room() is exact: a drop where every spot is taken and no same-kind pile ex
     [-1, -1],
     [1, -1],
   ])
-    t.list.push({ id: t.nextId++, i: 50 + di, j: 50 + dj, k: 1, n: 1 });
+    t.list.push({ id: t.nextId++, i: 50 + di!, j: 50 + dj!, k: 1, n: 1 });
   assert.equal(room(t, 50, 50, 0, 4), 0);
   assert.equal(dropPile(t, 50, 50, 0, 4).placed, 0);
   assert.equal(room(s, 50, 50, 0, 4), 4);

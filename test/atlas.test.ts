@@ -130,8 +130,8 @@ test('a module keeps its facts when it moves from .js to .ts', () => {
 test('lockstep globs accept {js,ts} choices', () => {
   const sources = [{ path: 'src/sim/a.ts', text: 'export const a = 1;\n' }];
   const globs = ['src/sim/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
-  assert.equal(extractFacts({ git: false, sources, lockstep: globs }).files[0].lockstep, true);
-  assert.equal(extractFacts({ git: false, sources, lockstep: ['src/world/grid.{js,ts}'] }).files[0].lockstep, false);
+  assert.equal(extractFacts({ git: false, sources, lockstep: globs }).files[0]!.lockstep, true);
+  assert.equal(extractFacts({ git: false, sources, lockstep: ['src/world/grid.{js,ts}'] }).files[0]!.lockstep, false);
 });
 
 test('extractFacts is deterministic', () => {
@@ -147,8 +147,8 @@ test('extractFacts is deterministic', () => {
     one.files.map((f) => f.f),
     ['src/a.js', 'src/b.js', 'src/features/c.js'],
   );
-  assert.deepEqual(one.files[1].imports, ['src/a.js']);
-  assert.deepEqual(one.files[2].imports, ['src/b.js']);
+  assert.deepEqual(one.files[1]!.imports, ['src/a.js']);
+  assert.deepEqual(one.files[2]!.imports, ['src/b.js']);
   assert.equal(one.git, null);
 });
 
@@ -229,19 +229,19 @@ test('checkAtlas names each problem once', () => {
     edit(g);
     only(report(g), re);
   };
-  const cite = (g: Good, c: Cite) => (g.stories[0].steps[0].cite = [c]);
+  const cite = (g: Good, c: Cite) => (g.stories[0]!.steps[0]!.cite = [c]);
   run((g) => cite(g, { file: 'src/nope.js' }), /mush\.json step 1: .*src\/nope\.js does not exist/);
   run((g) => cite(g, { file: 'src/features/honk.ts', symbol: 'zzz' }), /has no symbol zzz/);
   run((g) => cite(g, { op: 'mush.nope' }), /no file registers op mush\.nope/);
   run((g) => cite(g, { op: 'mush.plant', state: 'mushrooms' }), /exactly one of/);
-  run((g) => (g.stories[0].steps[0].go = [['you.features', 'nowhere']]), /unknown box or lane "nowhere" in go/);
-  run((g) => (g.stories[0].steps[0].go = [['you.features', 'lane:zzz']]), /unknown box or lane "lane:zzz"/);
-  run((g) => (g.stories[0].steps[1].hl = ['nope.box']), /unknown box "nope\.box" in hl/);
+  run((g) => (g.stories[0]!.steps[0]!.go = [['you.features', 'nowhere']]), /unknown box or lane "nowhere" in go/);
+  run((g) => (g.stories[0]!.steps[0]!.go = [['you.features', 'lane:zzz']]), /unknown box or lane "lane:zzz"/);
+  run((g) => (g.stories[0]!.steps[1]!.hl = ['nope.box']), /unknown box "nope\.box" in hl/);
   run(
     (g) => (g.concepts.concepts = g.concepts.concepts.filter((c) => c.id !== 'server')),
     /BOX server: unknown concept "server"/,
   );
-  run((g) => (g.stories[0]._file = 'docs/atlas/stories/other.json'), /must equal the file name "other"/);
+  run((g) => (g.stories[0]!._file = 'docs/atlas/stories/other.json'), /must equal the file name "other"/);
   run(
     (g) => (g.changes = '# What changed\n\n## 2026-10-01\n\n- a\n\n## 2026-10-02\n\n- b\n'),
     /## 2026-10-02 comes after ## 2026-10-01/,
@@ -317,7 +317,7 @@ test('changes parse and render, escaping everything', () => {
     '# What changed\n\n## 2026-10-30\n\nHello <b>x</b> `a<b`\n\n- [go](#story/mush) [dead](#story/no)\n',
   );
   assert.equal(entries.length, 1);
-  assert.equal(entries[0].date, '2026-10-30');
+  assert.equal(entries[0]!.date, '2026-10-30');
   const html = renderChanges(entries, { stories: new Set(['mush']), concepts: new Set() });
   assert.match(html, /&lt;b&gt;x&lt;\/b&gt;/);
   assert.match(html, /<code>a&lt;b<\/code>/);
@@ -378,5 +378,5 @@ test('hooks are core by reserved order, and lockstep comes from the lint globs',
     [false, true, true],
   );
   const feat = extractFile('src/features/x.js', 'onFrame(a, { order: -200 });').frames;
-  assert.equal(feat[0].core, false);
+  assert.equal(feat[0]!.core, false);
 });

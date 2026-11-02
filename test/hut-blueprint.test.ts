@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { HUT_BUILD, PHASES, PHASE_OF, buildFraction, shows } from '../src/render/hut-blueprint.ts';
 
 test('pieces are listed in the order they appear, scaffold first, the last at completion', () => {
-  HUT_BUILD.forEach((p, k) => k && assert.ok(p.at >= HUT_BUILD[k - 1].at, `piece ${k} out of order`));
-  assert.equal(HUT_BUILD[0].kind, 'scaffold');
+  HUT_BUILD.forEach((p, k) => k && assert.ok(p.at >= HUT_BUILD[k - 1]!.at, `piece ${k} out of order`));
+  assert.equal(HUT_BUILD[0]!.kind, 'scaffold');
   assert.equal(HUT_BUILD.at(-1)!.at, 1);
   assert.ok(HUT_BUILD.every((p) => p.at >= 0 && p.at <= 1 && p.w > 0 && p.h > 0 && p.d > 0));
 });
@@ -22,6 +22,6 @@ test('the stage follows the stock: nothing when empty, more as it fills, everyth
 
 test('the phases come in order: no piece goes back a phase', () => {
   const ix = HUT_BUILD.map((p) => PHASES.indexOf(PHASE_OF[p.kind]));
-  ix.forEach((n, k) => assert.ok(n >= 0 && (k === 0 || n >= ix[k - 1]), `piece ${k} goes back a phase`));
+  ix.forEach((n, k) => assert.ok(n >= 0 && (k === 0 || n >= ix[k - 1]!), `piece ${k} goes back a phase`));
   assert.equal(ix.at(-1), PHASES.length - 1, 'the last piece tops out');
 });
