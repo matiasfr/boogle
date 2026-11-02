@@ -75,7 +75,7 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows until the Buddy loads, or if it can't.
+- Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows if the Buddy can't load, or hasn't within the loading screen's 8 s.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
 - Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage

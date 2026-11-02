@@ -32,6 +32,7 @@ import {
 } from 'three/tsl';
 import { renderer, scene } from './scene.ts';
 import { onFrame } from '../loop.ts';
+import { warmUp } from './precompile.ts';
 
 const MAX = 720; // slots
 const SPAWN = 256; // particles one frame can emit (more are dropped)
@@ -84,6 +85,9 @@ const updatePass = Fn(() => {
   out.assign(vec4(pl.xyz, pl.w.greaterThan(0).select(size, 0)));
   drawCol.element(instanceIndex).assign(vec4(ca.xyz, alpha));
 })().compute(MAX);
+
+// The first dust of a session would build both passes mid-frame.
+warmUp(() => renderer.compileComputeAsync([spawnPass, updatePass]));
 
 // ---------------------------------------------------------------- soft dots
 const softMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, fog: false });

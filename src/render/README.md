@@ -33,7 +33,8 @@ Vulkan). How the migration went: [docs/plans/done/webgpu-migration.md](../../doc
   `pipeline.needsUpdate = true`. Each full-screen effect costs fill on phones: measure it on a real device, and plan
   for a quality setting rather than turning it on for everyone.
 - [`features/adaptive-res.ts`](../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
-  `min(devicePixelRatio, 2)` from the frame time. Don't call `setPixelRatio` elsewhere.
+  `min(devicePixelRatio, 2)` from the frame time, starting where this device last settled. Don't call `setPixelRatio`
+  elsewhere.
 
 ## Colour
 

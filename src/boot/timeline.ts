@@ -16,7 +16,7 @@
 //
 // Phases, in boot order: html (the HTML parsed: domInteractive), entry (this module ran), modules (every eager game
 // module evaluated, src/main.ts), rapier (physics WASM in), gpu (the WebGPU device), terrain and props (meshes built),
-// shaders (the warm-up done), first (one frame drawn), interactive ("Jump in" enabled and the loading screen gone),
+// shaders (the warm-up done), first (one frame drawn and finished on the GPU), interactive ("Jump in" enabled and the loading screen gone),
 // room (joined a room on our server; it races the GPU, so it can come before or after).
 
 import { BUILD } from '../build-id.ts';
