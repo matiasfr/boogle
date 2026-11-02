@@ -3,7 +3,7 @@ name: Patch video
 # Every morning (Pacific): if enough player-visible features landed since the last patch video (the newest video-* release), Claude
 # records them, has the cut reviewed, and opens a claude/* PR with any new shots (automerge.yml merges it). The edit
 # list is a working file in .look/, never committed: the release keeps the video. Then this workflow publishes the
-# video as a release with a share page (dev/video/publish.mjs) and posts the link in the "Patch videos" issue,
+# video as a release with a share page (dev/video/publish.ts) and posts the link in the "Patch videos" issue,
 # mentioning the owner. Procedure: .claude/skills/video/SKILL.md, "Patch video loop".
 # Run it by hand from the Actions tab; `force` skips the cheap commit-count gate (Claude still judges the features).
 
@@ -44,10 +44,10 @@ jobs:
       - name: Count game commits since the last video
         id: gate
         run: |
-          n=$(node dev/video/changes.mjs --count)
+          n=$(node dev/video/changes.ts --count)
           echo "commits=$n" >> "$GITHUB_OUTPUT"
           echo "$n commits touch game files since the last video (need $MIN_COMMITS)"
-          node dev/video/changes.mjs >> "$GITHUB_STEP_SUMMARY" || true
+          node dev/video/changes.ts >> "$GITHUB_STEP_SUMMARY" || true
           if [ "$n" -ge "$MIN_COMMITS" ] || [ "${{ inputs.force }}" = "true" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; fi
 
       - uses: actions/setup-node@v4
@@ -113,7 +113,7 @@ jobs:
       - name: Publish
         id: publish
         if: steps.gate.outputs.go && hashFiles('.look/publish.json') != ''
-        run: node dev/video/publish.mjs --from .look/publish.json
+        run: node dev/video/publish.ts --from .look/publish.json
 
       - name: Send the link
         if: steps.publish.outputs.url

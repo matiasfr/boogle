@@ -1,6 +1,6 @@
 // Registry scan: every name in src/ that two agents could pick at once, found statically, and the rules that keep
 // mixed-build rooms working when one PR adds to them (AGENTS.md, "Shared registries" and "Mixed builds").
-// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.mjs feeds it the tree and main's tree; test/registry.test.ts
+// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.ts feeds it the tree and main's tree; test/registry.test.ts
 // feeds it snippets.
 //
 //   scanSources(files)        files: [{ path, text }] -> registry (shape below)
@@ -14,24 +14,40 @@
 //   padSlots: [slot]                 PAD in src/player/controls.ts
 //   frames:   [{ path, phase, order }]  onFrame hooks with a literal order (path is file:line)
 //   parseErrors: [string]            only when a file could not be parsed
-//   rules, ops, states               filled in by check.mjs from a real install (names, versions, saved shapes)
+//   rules, ops, states               filled in by check.ts from a real install (names, versions, saved shapes)
 //   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
 // }
 
 import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.ts';
 
+export type Source = { path: string; text: string };
+export type FrameHook = { path: string; phase: string; order: number };
+export type StateInfo = { module: string; version: number; shape?: string };
+export type Registry = {
+  presence: Record<string, string[]>;
+  messages: Record<string, string[]>;
+  pads: Record<string, string[]>;
+  padSlots: string[];
+  frames: FrameHook[];
+  parseErrors?: string[];
+  rules?: string[];
+  ops?: Record<string, string>;
+  states?: Record<string, StateInfo>;
+  ns?: string;
+};
+
 const CORE_PRESENCE_FILE = 'src/netplay/net';
 // Paths compare without their extension, so a module keeps its registry identity when it moves from .js to .ts.
-const bare = (p) => p.replace(/\.[jt]s$/, '');
+const bare = (p: string) => p.replace(/\.[jt]s$/, '');
 
-const add = (map, key, who) => (map[key] ??= []).push(who);
+const add = (map: Record<string, string[]>, key: string, who: string) => (map[key] ??= []).push(who);
 
 // The registry as one projection of dev/scan/read.ts, the reader the atlas uses too: a message type belongs to the
 // files that *send* it (`.send(` plus `t: '...'`), never to a receiver; the room layer's own protocol (src/net/) is
 // not a name two agents can pick; presence includes the core keys of buildPresence; a hook is core by order
 // (isCoreHook). A file the reader cannot parse is an error, not a silent skip.
-export function scanSources(files) {
-  const reg = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
+export function scanSources(files: Source[]): Registry {
+  const reg: Registry = { presence: {}, messages: {}, pads: {}, padSlots: [], frames: [] };
   for (const { path, text } of files) {
     const r = readFile(path, text);
     if (r.parseError) (reg.parseErrors ??= []).push(`${path}: ${r.parseError}`);
@@ -41,15 +57,16 @@ export function scanSources(files) {
     for (const a of r.actions) if (a.pad !== null) add(reg.pads, a.pad, `${path}:${a.id ?? '?'}`);
     if (bare(path) === 'src/player/controls') reg.padSlots = r.padSlots;
     for (const f of r.frames) {
-      if (f.explicit) reg.frames.push({ path: `${path}:${f.line}`, phase: f.phase ?? 'update', order: f.order });
+      if (f.explicit)
+        reg.frames.push({ path: `${path}:${f.line}`, phase: f.phase ?? 'update', order: f.order as number });
     }
   }
   return reg;
 }
 
-const isFeature = (p) => p.startsWith('src/features/');
+const isFeature = (p: string) => p.startsWith('src/features/');
 
-export function checkRegistry(reg) {
+export function checkRegistry(reg: Registry): string[] {
   const errors = [...(reg.parseErrors ?? []).map((e) => `${e} (the registry cannot read this file)`)];
   for (const [key, who] of Object.entries(reg.presence)) {
     if (who.length > 1) errors.push(`presence key '${key}' is used twice: ${who.join(', ')}. Pick an untaken key.`);
@@ -77,24 +94,29 @@ export function checkRegistry(reg) {
 }
 
 // Shape of a saved value, for spotting a format change without a version bump: object keys and leaf types.
-export function shapeOf(v) {
+export function shapeOf(v: unknown): string {
   if (v === null) return 'null';
   if (Array.isArray(v)) {
     const kinds = [...new Set(v.map(shapeOf))].sort();
     return `[${kinds.join('|')}]`;
   }
   if (typeof v === 'object') {
-    return `{${Object.keys(v)
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o)
       .sort()
-      .map((k) => `${k}:${shapeOf(v[k])}`)
+      .map((k) => `${k}:${shapeOf(o[k])}`)
       .join(',')}}`;
   }
   return typeof v;
 }
 
-export function compareRegistries(base, head) {
-  const errors = [];
-  const notes = [];
+type Comparable = Pick<Registry, 'ns' | 'rules' | 'ops' | 'presence' | 'messages'> & {
+  states?: Record<string, Pick<StateInfo, 'version' | 'shape'>>;
+};
+
+export function compareRegistries(base: Comparable, head: Comparable): { errors: string[]; notes: string[] } {
+  const errors: string[] = [];
+  const notes: string[] = [];
   // A new world namespace (src/world/namespace.ts) is a clean break: old tabs never meet this world, so main's rules,
   // ops and states bind nothing here.
   const fresh = (base.ns ?? null) !== (head.ns ?? null);
@@ -127,7 +149,7 @@ export function compareRegistries(base, head) {
   for (const [what, field] of [
     ['presence key', 'presence'],
     ['message type', 'messages'],
-  ]) {
+  ] as const) {
     for (const k of Object.keys(base[field] ?? {})) {
       if (!head[field]?.[k])
         notes.push(`${what} '${k}' is gone; older tabs may still send it (fine if nothing reads it)`);

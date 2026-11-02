@@ -16,9 +16,32 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { run } from '../look/lib.ts';
-import { music } from './music.mjs';
+import { music } from './music.ts';
 
-const { chromium } = createRequire(import.meta.url)('playwright');
+const { chromium } = createRequire(import.meta.url)('playwright') as typeof import('playwright');
+
+type Card = { kicker?: string; title: string; sub?: string; list?: string[]; foot?: string };
+type Caption = { title: string; sub?: string; tag?: string; top?: boolean };
+type Segment = {
+  card?: Card;
+  seconds?: number;
+  bg?: string;
+  bgFrom?: number;
+  clip?: string;
+  from?: number;
+  to?: number;
+  speed?: number;
+  caption?: Caption;
+  quiet?: boolean;
+};
+type Reel = {
+  size?: [number, number];
+  fps?: number;
+  fade?: number;
+  music?: boolean;
+  bpm?: number;
+  segments: Segment[];
+};
 const reels = path.resolve('.look/reels');
 const arg = process.argv[2] || '';
 // A bare name is .look/reels/<name>.mjs; anything with a slash or .mjs is a path.
@@ -28,7 +51,7 @@ if (!arg || !fs.existsSync(file)) {
   console.error(`npm run reel -- <name | path/to/reel.mjs>   reels: ${all.map((f) => f.slice(0, -4)).join(', ')}`);
   process.exit(2);
 }
-const reel = (await import(file)).default;
+const reel: Reel = (await import(file)).default;
 const name = path.basename(file, '.mjs');
 const [W, H] = reel.size || [1280, 720];
 const FPS = reel.fps || 30;
@@ -39,7 +62,8 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
 // ---------------------------------------------------------------- overlays (HTML -> transparent PNG)
-const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const esc = (s: unknown) =>
+  String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c as '&']);
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@600;800&family=Lilita+One&display=swap');
   * { margin: 0; box-sizing: border-box; }
@@ -72,20 +96,20 @@ const CSS = `
     letter-spacing: 0.16em; text-transform: uppercase; box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
   .brand { position: absolute; top: ${H * 0.045}px; left: ${W * 0.035}px; font-size: ${H * 0.04}px;
     text-shadow: 0 3px 0 #0f9fc0; opacity: 0.95; }`;
-const cardHtml = (c) => `<div class="card">
+const cardHtml = (c: Card) => `<div class="card">
   ${c.kicker ? `<div class="kicker">${esc(c.kicker)}</div>` : ''}
   <div class="title display">${esc(c.title)}</div>
   ${c.sub ? `<div class="sub">${esc(c.sub)}</div>` : ''}
   ${c.list ? `<ul class="list">${c.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
   ${c.foot ? `<div class="foot">${esc(c.foot)}</div>` : ''}</div>`;
-const lowerHtml = (c) => `${c.top ? '' : '<div class="brand display">Boogle</div>'}
+const lowerHtml = (c: Caption) => `${c.top ? '' : '<div class="brand display">Boogle</div>'}
   ${c.tag ? `<div class="tag">${esc(c.tag)}</div>` : ''}
   <div class="lower${c.top ? ' top' : ''}"><div class="bar"></div><div class="t display">${esc(c.title)}</div>
   ${c.sub ? `<div class="s">${esc(c.sub)}</div>` : ''}</div>`;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: W, height: H } });
-async function png(html, file) {
+async function png(html: string, file: string) {
   await page.setContent(`<!doctype html><style>${CSS}</style><body>${html}</body>`, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: file, omitBackground: true });
@@ -93,15 +117,15 @@ async function png(html, file) {
 }
 
 // ---------------------------------------------------------------- segments
-const dur = (file) =>
+const dur = (file: string) =>
   Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]));
-const clipPath = (n) => {
+const clipPath = (n: string) => {
   const p = path.join(clips, n + '.mp4');
   if (!fs.existsSync(p)) throw new Error(`missing clip ${n}: record it with npm run clip`);
   return p;
 };
 const enc = ['-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS)];
-const parts = [];
+const parts: { file: string; sec: number }[] = [];
 for (const [k, s] of reel.segments.entries()) {
   const file = path.join(out, `seg${String(k).padStart(2, '0')}.mp4`);
   const fit = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,fps=${FPS}`;
@@ -133,7 +157,7 @@ for (const [k, s] of reel.segments.entries()) {
     ]);
     parts.push({ file, sec });
   } else {
-    const src = clipPath(s.clip);
+    const src = clipPath(s.clip!);
     const speed = s.speed || 1;
     const from = s.from || 0;
     const to = s.to ?? dur(src);
@@ -152,7 +176,7 @@ for (const [k, s] of reel.segments.entries()) {
     await run('ffmpeg', [...args, '-filter_complex', filters.join(';'), '-map', `[${last}]`, ...enc, file]);
     parts.push({ file, sec });
   }
-  console.log(`  ${path.basename(file)}  ${parts.at(-1).sec.toFixed(2)} s  ${s.clip || s.card.title}`);
+  console.log(`  ${path.basename(file)}  ${parts.at(-1)!.sec.toFixed(2)} s  ${s.clip || s.card!.title}`);
 }
 await browser.close();
 
@@ -170,7 +194,9 @@ for (let k = 1; k < parts.length; k++) {
 const total = t;
 // Where each segment starts in the joined video (for the music's quiet stretches).
 const starts = parts.map((_, k) => parts.slice(0, k).reduce((a, p) => a + p.sec - FADE, 0));
-const quiet = reel.segments.flatMap((s, k) => (s.quiet ? [[starts[k], starts[k] + parts[k].sec]] : []));
+const quiet = reel.segments.flatMap((s, k): [number, number][] =>
+  s.quiet ? [[starts[k]!, starts[k]! + parts[k]!.sec]] : [],
+);
 chain += `[${prev}]fade=in:st=0:d=0.5,fade=out:st=${(total - 0.8).toFixed(3)}:d=0.8[v]`;
 const video = path.resolve('.look/reels', name + '.mp4');
 const audio = [];

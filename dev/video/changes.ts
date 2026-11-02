@@ -1,10 +1,10 @@
 // What changed since the last video: `npm run video:changes [-- --since <ref>]`. Lists main's commits since the newest
-// video-* tag (made by dev/video/publish.mjs) and flags the ones that touch what a player sees, so an agent can judge
+// video-* tag (made by dev/video/publish.ts) and flags the ones that touch what a player sees, so an agent can judge
 // whether there's enough for a new patch video (.claude/skills/video/SKILL.md, "Patch video loop"). `--count` prints
 // only the number of commits that touch game files (the cheap gate in .github/workflows/patch-video.yml).
 import { execFileSync } from 'node:child_process';
 
-const git = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
+const git = (...a: string[]) => execFileSync('git', a, { encoding: 'utf8' }).trim();
 const argv = process.argv.slice(2);
 git('fetch', '-q', '--tags', 'origin');
 const at = argv.indexOf('--since');
@@ -23,7 +23,7 @@ let game = 0;
 for (const row of rows) {
   const [hash, author, subject] = row.split('\t');
   const files = git('show', '--format=', '--name-status', hash).split('\n').filter(Boolean);
-  const player = files.filter((f) => PLAYER.test(f.split('\t').at(-1)));
+  const player = files.filter((f) => PLAYER.test(f.split('\t').at(-1)!));
   const added = player.filter((f) => f.startsWith('A')).map((f) => f.split('\t').at(-1));
   const mark = player.length ? (added.length ? '+' : '*') : ' ';
   if (player.length) game++;

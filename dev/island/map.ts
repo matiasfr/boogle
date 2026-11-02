@@ -8,7 +8,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
-globalThis.matchMedia ??= () => ({ matches: false }); // src/constants.ts reads it at import time
+globalThis.matchMedia ??= (() => ({ matches: false })) as unknown as typeof matchMedia; // src/constants.ts reads it at import time
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // The same sites, in the same order, as the game composes. src/island/index.ts finds them with Vite's
@@ -20,7 +20,7 @@ const keys = fs
   .map((d) => '../pois/' + d.name + '/site.ts')
   .sort();
 const sites = await Promise.all(
-  keys.map(async (key) => ({ id: key.split('/').at(-2), ...(await import(new URL(key, islandDir))).default })),
+  keys.map(async (key) => ({ id: key.split('/').at(-2)!, ...(await import(new URL(key, islandDir).href)).default })),
 );
 const { createIsland } = await import('../../src/island/stamps.ts');
 const island = createIsland(sites);
@@ -39,7 +39,7 @@ for (let j = 0; j < N; j++)
     const x = -HALF + (i + 0.5) * SCALE,
       z = -HALF + (j + 0.5) * SCALE;
     const v = h[j * N + i];
-    let c;
+    let c: number[];
     if (v <= 0) {
       const t = Math.min(1, -v / 7.5);
       c = [40 - 25 * t, 150 - 70 * t, 205 - 50 * t];
@@ -74,10 +74,10 @@ for (let j = 0; j < N; j++)
   }
 
 // Minimal PNG encoder (RGB, no filtering).
-function png(w, hgt, data) {
+function png(w: number, hgt: number, data: Buffer) {
   const raw = Buffer.alloc((w * 3 + 1) * hgt);
   for (let y = 0; y < hgt; y++) data.copy(raw, y * (w * 3 + 1) + 1, y * w * 3, (y + 1) * w * 3);
-  const chunk = (type, body) => {
+  const chunk = (type: string, body: Buffer) => {
     const len = Buffer.alloc(4);
     len.writeUInt32BE(body.length);
     const tb = Buffer.concat([Buffer.from(type), body]);
@@ -112,7 +112,7 @@ if (PROTOS) {
         j0 = Math.min(j0, j);
         j1 = Math.max(j1, j);
       }
-  const snap = (m, f) => f(m / 10) * 10;
+  const snap = (m: number, f: (x: number) => number) => f(m / 10) * 10;
   const x0 = Math.max(-HALF, snap(-HALF + i0 - MARGIN, Math.floor)),
     x1 = Math.min(HALF, snap(-HALF + i1 + 1 + MARGIN, Math.ceil));
   const z0 = Math.max(-HALF, snap(-HALF + j0 - MARGIN, Math.floor)),

@@ -1,10 +1,11 @@
 // Critters (924924d): run at the gulls and they burst off the sand, drop the ball on the fish school and it scatters,
 // fireflies over the mushroom garden at night.
-import { STAND } from './_stand.mjs';
+import type { Shot } from '../clip.ts';
+import { STAND } from './_stand.ts';
 
-const SKY = (frac, phase = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
+const SKY = (frac: number, phase: number | null = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
-const RUN = (x, z, on) => `
+const RUN = (x: number, z: number, on: boolean) => `
   const { input } = await import('/src/player/input.ts');
   const { cam } = await import('/src/player/player.ts');
   const p = window.boogle.me.body.position;
@@ -93,7 +94,7 @@ export default {
     await g.eval(STAND(spot[0] + 14, spot[1] - 14));
     await g.eval(SHALLOWS);
     await g.wait(1);
-    let cx, cy, cz;
+    let cx: number, cy: number, cz: number;
     out.push(
       await g.record('critters-fish', {
         seconds: 5.5,
@@ -149,4 +150,4 @@ export default {
     );
     return out;
   },
-};
+} satisfies Shot;

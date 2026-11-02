@@ -10,14 +10,14 @@ goes to `.look/` (gitignored).
 
 | What | Command | Source | Output |
 | --- | --- | --- | --- |
-| Record clips | `npm run clip -- <shot>... [--gif]` | `dev/video/shots/<shot>.mjs` | `.look/clips/<label>.mp4` (+ `.gif`) |
+| Record clips | `npm run clip -- <shot>... [--gif]` | `dev/video/shots/<shot>.ts` | `.look/clips/<label>.mp4` (+ `.gif`) |
 | Cut a video | `npm run reel -- <name>` | `.look/reels/<name>.mjs` (never committed) | `.look/reels/<name>.mp4` |
 | What's new since the last video | `npm run video:changes` | git log since the newest `video-*` tag | a flagged list |
 | Publish and get a share link | `npm run video:publish -- <mp4> --title ...` | a finished video | a GitHub release + share page |
 
 Shots are committed and reused from video to video. Edit lists (reels) are one-off working files in `.look/reels/`:
 once a video is published its release keeps the mp4, so the edit list is never committed. `npm run clip` also takes a
-path to a shot kept outside the repo (`npm run clip -- .look/wip/x.mjs`): use that for one-off or prototype-branch
+path to a shot kept outside the repo (`npm run clip -- .look/wip/x.ts`): use that for one-off or prototype-branch
 footage that shouldn't be committed.
 
 ## 1. Record: `npm run clip`
@@ -28,13 +28,15 @@ symlinked; the harness itself still comes from this checkout).
 Clips are smooth whatever the render speed: the page clock is faked and each frame advances it by exactly 1/fps
 before the screenshot. Real GPU on a Mac renders at ~60 fps, so recording runs at about real time.
 
-A shot (`dev/video/shots/island.mjs` is the simplest example) drives the game the way a player or a scenario does:
+A shot (`dev/video/shots/island.ts` is the simplest example) drives the game the way a player or a scenario does:
 `window.boogle` (me, ball, net, remotes, `sync`), the controls registry (`actionById(id).down()` from
 `/src/player/controls.ts`, the same press as a key or pad button), real input (`g.key`) and `submitEdit` for shared edits.
 Reach into a game module only for what nothing public offers (a debug pose, a tuning table), so a refactor of game
 internals doesn't break the shots:
 
-```js
+```ts
+import type { Shot } from '../clip.ts';
+
 export default {
   about: 'one line',
   query: 'tidefast=1', // extra URL params for every player
@@ -43,7 +45,7 @@ export default {
     await g.wait(3); // page time passes (virtual once recording started)
     return [await g.record('x-intro', { seconds: 6, each: c.move('overview', { cam: [0, 9, 30], look: [0, 1, 0] }, 6) })];
   },
-};
+} satisfies Shot;
 ```
 
 - `c.open(opts)`: a player (`Game`, see the look skill) with the clock installed. `hud: false` hides the HUD,
@@ -93,8 +95,8 @@ Card fields: `kicker`, `title`, `sub`, `list`, `foot`. Caption fields: `title`, 
 
 `caption.tag` adds a pill in the top right (e.g. "Coming soon"); `caption.top` moves the caption up when the game's
 own UI fills the bottom (dialogue boxes). `quiet: true` on a segment drops the drums while it plays. Cards and
-captions are HTML in the game's fonts and colours (`dev/video/reel.mjs`); the backing track is synthesized
-(`dev/video/music.mjs`) and loudness-normalized. Put each payoff inside its caption's on-screen time, keep segments
+captions are HTML in the game's fonts and colours (`dev/video/reel.ts`); the backing track is synthesized
+(`dev/video/music.ts`) and loudness-normalized. Put each payoff inside its caption's on-screen time, keep segments
 3-8 s, and make a contact sheet of the final video (`fps=1/2.5,...tile=6x5`) before sharing it. Over 30 MB, also
 make a smaller copy (`-crf 23`) for sending.
 
@@ -106,13 +108,13 @@ npm run video:publish -- .look/reels/x.mp4 --title "Patch notes: Nov 5" --summar
 ```
 
 Hosting: the video file lives on a GitHub release `video-<date>` (video.mp4 about 15-25 MB, poster.jpg, meta.json),
-never in git. The Pages deploy (`.github/workflows/deploy.yml` runs `dev/video/site.mjs`) turns every `video-*`
+never in git. The Pages deploy (`.github/workflows/deploy.yml` runs `dev/video/site.ts`) turns every `video-*`
 release into a share page at `https://boogle.club/updates/<tag>/` (player, link-preview tags, a "Play
 Boogle" button) and an index at `/updates/`. The script starts that deploy, waits for the page to answer, and prints
 the share link. `--dry` makes the files under `.look/publish/<tag>/` without releasing. Publishing is public: only
 publish when asked to (or by the patch video loop below). Pages has a 1 GB site limit: past about 40 videos, delete
 old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` into `<dir>/updates/`, run
-`node dev/video/site.mjs <dir>` and serve `<dir>`.
+`node dev/video/site.ts <dir>` and serve `<dir>`.
 
 ## 5. Patch video loop
 

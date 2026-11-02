@@ -1,6 +1,6 @@
 // Publish a finished video: `npm run video:publish -- <video.mp4> --title "..." [--summary "..."] [--feature "..."]...
 // [--target <commit>] [--from request.json] [--dry]`. Makes a share-sized copy (H.264, about 15-25 MB) and a poster frame, then creates a GitHub release
-// `video-<date>` with video.mp4, poster.jpg and meta.json. The deploy workflow (dev/video/site.mjs) turns every
+// `video-<date>` with video.mp4, poster.jpg and meta.json. The deploy workflow (dev/video/site.ts) turns every
 // video-* release into a share page at https://<owner>.github.io/<repo>/updates/<tag>/. This script starts that
 // deploy, waits until the page is live and prints the share link. The tag marks the last commit the video covers
 // (--target, default main's tip): `npm run video:changes` starts from there. See .claude/skills/video/SKILL.md.
@@ -10,7 +10,14 @@ import { execFileSync } from 'node:child_process';
 import { run } from '../look/lib.ts';
 
 const argv = process.argv.slice(2);
-const opt = { file: null, title: null, summary: '', features: [], target: null, dry: false };
+const opt = {
+  file: null as string | null,
+  title: null as string | null,
+  summary: '',
+  features: [] as string[],
+  target: null as string | null,
+  dry: false,
+};
 for (let k = 0; k < argv.length; k++) {
   const a = argv[k];
   if (a === '--title') opt.title = argv[++k];
@@ -33,7 +40,7 @@ if (!opt.file || !opt.title || !fs.existsSync(opt.file)) {
   process.exit(2);
 }
 
-const sh = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
+const sh = (cmd: string, args: string[]) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
 const [owner, repo] = sh('gh', ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']).split('/');
 const date = new Date().toISOString().slice(0, 10);
 const tags = new Set(

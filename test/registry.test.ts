@@ -1,7 +1,7 @@
-// The registry scan (dev/registry/scan.mjs): clashes inside one tree, and what a change does to main's registry.
+// The registry scan (dev/registry/scan.ts): clashes inside one tree, and what a change does to main's registry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.mjs';
+import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.ts';
 
 // Name -> the files that claim it, as scanSources builds each map.
 type Names = Record<string, string[]>;
@@ -105,7 +105,11 @@ test('feature onFrame orders stay in the feature range and off core orders', () 
   assert.match(errors[1], /b\.js:1: features use onFrame order -10 and up/);
 });
 
-const rulesReg = (rules: string[], states: Record<string, unknown>, ops: Record<string, string> = {}) => ({
+const rulesReg = (
+  rules: string[],
+  states: Record<string, { version: number; shape?: string }>,
+  ops: Record<string, string> = {},
+) => ({
   rules,
   states,
   ops,

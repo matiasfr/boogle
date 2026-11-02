@@ -1,7 +1,6 @@
 {
   // TypeScript everywhere (AGENTS.md, "TypeScript"): strict, type-stripped as-is by Vite and by Node 24 (tests, tools),
   // so only erasable syntax (no enums, namespaces or parameter properties) and imports name their `.ts` file.
-  // JavaScript not yet converted is allowed in, inferred but not checked.
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -10,8 +9,6 @@
     "types": ["vite/client", "node"],
     "strict": true,
     "noEmit": true,
-    "allowJs": true,
-    "checkJs": false,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,

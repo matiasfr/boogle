@@ -134,7 +134,7 @@ export function extractFacts({
 }
 
 // The facts as they were at a git ref, for `npm run atlas -- --changes`: the ref's src/ and server/src/ unpacked with
-// one `git archive` into a temp dir (as baseTree in dev/registry/check.mjs does), then read like the working tree.
+// one `git archive` into a temp dir (as baseTree in dev/registry/check.ts does), then read like the working tree.
 export function factsAt(root: string, ref: string): Facts {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-atlas-'));
   try {
