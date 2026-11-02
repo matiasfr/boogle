@@ -51,8 +51,8 @@ const route: Pose[] = [];
       [-1, 1],
       [-1, -1],
     ]) {
-      const ox = a * DECK.hx,
-        oz = b * DECK.hz,
+      const ox = a! * DECK.hx,
+        oz = b! * DECK.hz,
         c = Math.cos(p.yaw),
         s = Math.sin(p.yaw);
       g = Math.max(g, groundHeight(p.x + ox * c + oz * s, p.z - ox * s + oz * c));
@@ -64,9 +64,9 @@ const route: Pose[] = [];
   route.forEach((p, k) => {
     let sum = 0,
       n = 0;
-    for (let j = Math.max(0, k - W); j <= Math.min(route.length - 1, k + W); j++, n++) sum += under[j];
+    for (let j = Math.max(0, k - W); j <= Math.min(route.length - 1, k + W); j++, n++) sum += under[j]!;
     p.y = sum / n;
-    lift = Math.max(lift, under[k] - p.y);
+    lift = Math.max(lift, under[k]! - p.y);
   });
   for (const p of route) p.y += lift + RIDE.clearance;
 }
@@ -75,8 +75,8 @@ function poseAt(s: number, out: Pose) {
   const f = Math.min(route.length - 1.000001, Math.max(0, s / STEP)),
     k = Math.floor(f),
     u = f - k;
-  const a = route[k],
-    b = route[k + 1];
+  const a = route[k]!,
+    b = route[k + 1]!;
   out.x = a.x + (b.x - a.x) * u;
   out.y = a.y + (b.y - a.y) * u;
   out.z = a.z + (b.z - a.z) * u;
