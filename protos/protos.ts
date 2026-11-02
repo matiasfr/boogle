@@ -80,11 +80,6 @@ export const PROTOS: Proto[] = [
     since: '2026-11-02',
     verb: 'falls',
     chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
-    defaultWhat: 'About 6 s in the air.',
-    variants: [
-      { name: 'short', url: '/?room=proto-fall&proto=fall&tod=0.2&v=short', what: 'About 3.5 s in the air.' },
-      { name: 'long', url: '/?room=proto-fall&proto=fall&tod=0.2&v=long', what: 'About 10 s in the air.' },
-    ],
   },
   {
     id: 'place',

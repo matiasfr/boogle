@@ -6,11 +6,10 @@ import { groundHeight } from '../../island/heights.ts';
 import { cam } from '../../player/player.ts';
 import { addPart, mergeParts } from '../../render/props.ts';
 import { scene } from '../../render/scene.ts';
-import { protoV } from '../flags.ts';
 
-/** Metres from the rail down to the ground. With the player's 20 m/s fall cap: about 3.5, 6 and 10 s in the air. */
-const HEIGHTS: Record<string, number> = { '': 120, short: 60, long: 200 };
-export const HEIGHT = HEIGHTS[protoV('fall')] ?? HEIGHTS['']!;
+/** Metres from the rail down to the ground: about 6 s in the air, at the player's 20 m/s fall cap. It's long because it
+ * only happens once, on a first visit; a returning player goes straight in. */
+export const HEIGHT = 120;
 
 // The whole shot lines up with the camera's starting direction: the line runs forward, the sign reads left to right.
 export const YAW = cam.yaw;
@@ -29,7 +28,7 @@ export const RAIL_END = TARGET.clone()
 export const ROLL_DIST = 8.5; // m the cart rolls before the rail runs out
 export const CAR_START = RAIL_END.clone().addScaledVector(FWD, -ROLL_DIST);
 export const DECK_Y = TARGET.y + HEIGHT - 32;
-export const STAND = { back: -0.2, up: 0.69 }; // where you stand on the cart's deck, from its middle at rail height
+export const STAND = { back: 0, up: 0.69 }; // where you stand on the cart's deck, from its middle at rail height
 
 const RAIL_BACK = 130; // m of rail behind the end: it fades into the fog
 const GAUGE = 1.1;
@@ -68,20 +67,14 @@ function buildRail() {
   return sleepers;
 }
 
-/** The cart: a track layer's trolley, origin at rail height, facing -z. A flat open deck, so your whole Buddy shows, feet
- * and hops included, with a few sleepers on the back for the job it's on. */
+/** The cart: a track layer's trolley, origin at rail height, facing -z. Planks on wheels, with a flat open deck, so your
+ * whole Buddy shows, feet and hops included. */
 function buildCar() {
   const parts: THREE.BufferGeometry[] = [];
   const planks = ['#a9825a', '#9c7650', '#b48c62', '#a07a52', '#ad865d'];
   planks.forEach((c, k) => part(parts, c, -0.72 + k * 0.36, 0.62, 0, 0.34, 0.14, 2.7)); // the deck
   part(parts, '#3a3f46', 0, 0.48, 0, 1.25, 0.14, 2.35); // its iron frame
   for (const z of [-1.42, 1.42]) part(parts, '#3a3f46', 0, 0.5, z, 1.1, 0.16, 0.14); // buffer beams
-  for (const [x, y] of [
-    [-0.42, 0.76],
-    [0.42, 0.76],
-    [0, 0.9],
-  ] as const)
-    part(parts, '#7a5a3a', x, y, 0.98, 0.8, 0.14, 0.32); // sleepers, stacked across the back
   const body = new THREE.Mesh(mergeParts(parts), vertexColored());
   body.castShadow = true;
   const wheel = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 14).rotateZ(Math.PI / 2);
