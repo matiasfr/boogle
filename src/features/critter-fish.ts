@@ -15,8 +15,8 @@ import {
   max,
   time,
 } from 'three/tsl';
-import { onFrame, onStart } from '../loop.ts';
-import { scene } from '../render/scene.ts';
+import { onStart } from '../loop.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 import { ballMesh } from '../entities/ball/view.ts';
@@ -66,7 +66,6 @@ patchNode(mat, 'positionNode', (prev) =>
   ),
 );
 fish.visible = false;
-scene.add(fish);
 
 const P = Array.from({ length: FISH.count }, () => ({ x: 0, y: 0, z: 0, vx: 0, vz: 0, scare: 0 }));
 let home: { x: number; z: number } | null = null;
@@ -97,8 +96,11 @@ onStart(() => {
 let lastBallY = 0;
 const scares: { x: number; z: number }[] = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
-onFrame(
-  ({ dt }) => {
+defineKind('fish', { update: 1 });
+spawn({
+  kind: 'fish',
+  mesh: fish,
+  update: ({ dt }) => {
     fish.visible = !!home;
     if (!fish.visible || dt <= 0) return;
     const hm = home!;
@@ -188,8 +190,7 @@ onFrame(
     }
     pool.end();
   },
-  { phase: 'update' },
-);
+});
 
 window.__fish = {
   P,
