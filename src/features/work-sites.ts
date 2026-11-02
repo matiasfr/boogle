@@ -166,17 +166,17 @@ const PUFF = new THREE.Color('#ffe7a8');
 onApplied((e: { op: string; s: number }, _tick: number, r: { pts?: number } | null) => {
   if (e.op === 'site.stock' && r?.pts) credited.add(e.s);
 });
-export const flapping = (s: number): boolean => flaps[s]?.size > 0; // for dev/scenarios/ui-kit.ts
+export const flapping = (s: number): boolean => (flaps[s]?.size ?? 0) > 0; // for dev/scenarios/ui-kit.ts
 // Turn over the plaque rows that changed, with a puff over the board and a clack as loud as you are near.
 function flipPlaque(s: number, before: string[], after: string[], now: number): void {
-  if (now - lastFlip[s] < FLIP_GAP_MS) return;
+  if (now - lastFlip[s]! < FLIP_GAP_MS) return;
   let n = 0;
   for (let k = 1; k < after.length; k++) {
-    if (after[k] !== before[k]) flaps[s].set(k, { old: before[k] ?? '', at: now + 70 * n++ });
+    if (after[k] !== before[k]) flaps[s]!.set(k, { old: before[k] ?? '', at: now + 70 * n++ });
   }
   if (!n) return;
   lastFlip[s] = now;
-  const sp = views[s].plaque.sprite.position;
+  const sp = views[s]!.plaque.sprite.position;
   for (let q = 0; q < 8; q++) {
     const a = (q / 8) * Math.PI * 2 + Math.random() * 0.5;
     emit({
@@ -216,12 +216,12 @@ function ringLine(x: Site, s: number, ring: number, k: number): string {
 function redraw() {
   let c = 0;
   sites.list.forEach((x, s) => {
-    const v = views[s];
+    const v = views[s]!;
     const open = s === sites.open;
-    const k = materialOf(ROUTE[s].age);
+    const k = materialOf(ROUTE[s]!.age);
     for (const ring of [TRACK, HELPER]) {
-      v.rings[ring].material = open ? ringMat[ring] : doneMat;
-      paint(v.ringLabels[ring], [ring === TRACK ? 'Track' : 'Helper hut', ringLine(x, s, ring, k)]);
+      v.rings[ring]!.material = open ? ringMat[ring]! : doneMat;
+      paint(v.ringLabels[ring]!, [ring === TRACK ? 'Track' : 'Helper hut', ringLine(x, s, ring, k)]);
     }
     // sleepers stacked in the Track ring as it fills
     const p = ringAt(s, TRACK);
@@ -241,7 +241,7 @@ function redraw() {
       .slice(0, 4)
       .map((r) => `${rules.roster.nameOf(r[0]) || '?'}  ${r[1]}`);
     const lines = [`Section ${s + 1}`, ...(rows.length ? rows : ['—'])];
-    if (credited.delete(s) && plaqueLines[s].length) flipPlaque(s, plaqueLines[s], lines, performance.now());
+    if (credited.delete(s) && plaqueLines[s]!.length) flipPlaque(s, plaqueLines[s]!, lines, performance.now());
     plaqueLines[s] = lines;
     paint(v.plaque, lines, undefined, flaps[s], performance.now());
   });
@@ -267,7 +267,7 @@ function pour(now: number): void {
   if (pourByHand) return; // the barrow and toss variants bring logs another way (src/proto/haul/)
   if (!me.entered || !me.body || !identity.pid || now - lastPour < haulFeel.pourMs) return;
   const s = sites.open;
-  if (s >= ROUTE.length || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s].age)) return;
+  if (s >= ROUTE.length || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s]!.age)) return;
   const pos = me.body.position;
   for (const ring of [TRACK, HELPER]) {
     const p = ringAt(s, ring);
@@ -285,14 +285,14 @@ onFrame(
     // Redraw on any change to the sites (pours, freight, runs, loads) or a rename. The machine and the railway it lays
     // are src/features/track-machine.ts.
     const open = sites.list[sites.open];
-    const run = open?.t0 >= 0 ? rules.sites.run(sites.open, world.tick).total >> 5 : -1; // a running pile shrinks
+    const run = (open?.t0 ?? -1) >= 0 ? rules.sites.run(sites.open, world.tick).total >> 5 : -1; // a running pile shrinks
     const key = `${sites.rev}/${names}/${rules.tune.tune.rev}/${run}`;
     if (key !== drawn) redraw();
     drawn = key;
     // plaque rows mid-flip, and the board's little swell while they turn
     flaps.forEach((f, s) => {
       if (!f.size && swell[s] === 1) return;
-      paint(views[s].plaque, plaqueLines[s], undefined, f, now);
+      paint(views[s]!.plaque, plaqueLines[s]!, undefined, f, now);
       let k = 0;
       for (const x of f.values())
         k = Math.max(k, Math.sin(Math.PI * Math.min(1, Math.max(0, (now - x.at) / flapFeel.ms))));

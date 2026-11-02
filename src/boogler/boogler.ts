@@ -156,7 +156,7 @@ function pickTarget() {
     // Off to see a POI (or somewhere random), standing a little way from it.
     const spots = island.keepOut;
     if (spots.length && rng() < 0.7) {
-      const k = spots[Math.floor(rng() * spots.length)];
+      const k = spots[Math.floor(rng() * spots.length)]!;
       const a = rng() * Math.PI * 2;
       trip = { x: k.x + Math.cos(a) * (k.r + 6), z: k.z + Math.sin(a) * (k.r + 6) };
     } else
@@ -236,7 +236,7 @@ function think(dt: number) {
     ridden = false;
   visitors();
   for (let k = 0; k < seenCount; k++) {
-    const v = seen[k];
+    const v = seen[k]!;
     const d = Math.sqrt((v.x - sim.x) * (v.x - sim.x) + (v.z - sim.z) * (v.z - sim.z));
     if (d < nearestD && d > 0.5) {
       nearest = v;
@@ -308,12 +308,12 @@ function publish() {
 function hear(v: unknown, time: number, peer: string) {
   const g = v as Wire | null;
   if (!g || !finiteArr(g.p, 2) || !Number.isFinite(g.r)) return;
-  if (Math.abs(g.p[0]) > HALF || Math.abs(g.p[1]) > HALF) return;
+  if (Math.abs(g.p[0]!) > HALF || Math.abs(g.p[1]!) > HALF) return;
   if (peer !== src) {
     src = peer;
     snaps.clear();
   }
-  snaps.push(time, { x: g.p[0], z: g.p[1], r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
+  snaps.push(time, { x: g.p[0]!, z: g.p[1]!, r: g.r, w: g.w === 1, m: Number.isInteger(g.m) ? g.m : MODE.CALM });
   lastSnapAt = performance.now();
 }
 
@@ -321,11 +321,11 @@ function sampleSnaps(t: number) {
   const s = snaps.sample(t);
   if (!s) return;
   const { a, b, u } = s;
-  target.x = lerp(a.x, b.x, u);
-  target.z = lerp(a.z, b.z, u);
-  target.yaw = angleLerp(a.r, b.r, u);
-  target.walking = b.w;
-  target.mode = b.m;
+  target.x = lerp(a!.x, b!.x, u);
+  target.z = lerp(a!.z, b!.z, u);
+  target.yaw = angleLerp(a!.r, b!.r, u);
+  target.walking = b!.w;
+  target.mode = b!.m;
 }
 
 // ---------------------------------------------------------------- model
@@ -608,7 +608,7 @@ function animate(dt: number, now: number) {
   parts.inner.rotation.z = s * 0.06 * w;
 
   for (let k = 0; k < parts.feet.length; k++) {
-    const f = parts.feet[k];
+    const f = parts.feet[k]!;
     const ph = k ? -s : s;
     f.position.set(
       f.userData.base.x,
@@ -617,7 +617,7 @@ function animate(dt: number, now: number) {
     );
   }
   for (let k = 0; k < parts.hands.length; k++) {
-    const h = parts.hands[k];
+    const h = parts.hands[k]!;
     const ph = k ? s : -s;
     h.position.set(
       h.userData.base.x + (hopY > 0 ? Math.sign(h.userData.base.x) * hopY * 0.25 : 0),

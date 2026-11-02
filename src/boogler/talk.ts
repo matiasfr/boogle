@@ -129,7 +129,7 @@ export function openTalk(f: Friend, ctx: TalkCtx) {
   else if (isWary(f, ctx.now)) t.node = waryNode(t);
   else {
     t.cold = false;
-    t.node = menuNode(t, pick(t, GREETINGS[levelOf(f.pts)]));
+    t.node = menuNode(t, pick(t, GREETINGS[levelOf(f.pts)]!));
   }
   return t;
 }
@@ -168,7 +168,7 @@ function gain(t: Talk, n: number) {
   if (up) t.out.levelUp = up;
 }
 
-const pick = <T>(t: Talk, list: readonly T[]): T => list[Math.floor(t.ctx.rng() * list.length) % list.length];
+const pick = <T>(t: Talk, list: readonly T[]): T => list[Math.floor(t.ctx.rng() * list.length) % list.length]!;
 const end = () => null;
 const tooNosy = (t: Talk) => {
   t.cold = true;
@@ -178,7 +178,7 @@ const tooNosy = (t: Talk) => {
     'grump',
   );
 };
-const farewell = (t: Talk) => fill(t, FAREWELL[levelOf(t.f.pts)]);
+const farewell = (t: Talk) => fill(t, FAREWELL[levelOf(t.f.pts)]!);
 // Ends the talk with a line over his head.
 const closeWith = (t: Talk, say: string) => {
   t.out.bubble = fill(t, say);
@@ -195,7 +195,7 @@ function fill(t: Talk, s: string) {
 
 // ---------------------------------------------------------------- menu
 export function threadState(f: Friend, id: string) {
-  const th = threads[id];
+  const th = threads[id]!;
   const next = th.chapters.find((c) => !f.learned.includes(c.id)) ?? null;
   const started = th.chapters.some((c) => f.learned.includes(c.id)) || (id === 'mom' && !!f.flags.mom);
   return { next, started, done: !next };
@@ -211,11 +211,11 @@ function menuNode(t: Talk, say: string) {
   for (const id of THREAD_ORDER) {
     if (!threadVisible(f, id)) continue;
     const s = threadState(f, id);
-    const ask = threads[id].ask[s.done ? 2 : s.started ? 1 : 0];
+    const ask = threads[id]!.ask[s.done ? 2 : s.started ? 1 : 0]!;
     opts.push(opt(ask, () => enterThread(t, id)));
   }
   opts.push(...giftOpts(t, wrapUp(t)));
-  opts.push(opt(pick(t, BYE), () => closeWith(t, FAREWELL[levelOf(f.pts)])));
+  opts.push(opt(pick(t, BYE), () => closeWith(t, FAREWELL[levelOf(f.pts)]!)));
   return node(say, opts);
 }
 
@@ -223,7 +223,7 @@ const backToMenu = (t: Talk) => () => menuNode(t, pick(t, AFTER));
 
 function enterThread(t: Talk, id: string) {
   const { f, ctx } = t;
-  const th = threads[id];
+  const th = threads[id]!;
   const s = threadState(f, id);
   if (s.done) {
     // He tells one of its chapters again (never the one he retold last), so the answers you skipped the first time,
@@ -249,9 +249,9 @@ function enterThread(t: Talk, id: string) {
     return node(
       pick(t, th.deflect),
       [
-        opt(DEFLECT_OPTS[0], backToMenu(t)),
+        opt(DEFLECT_OPTS[0]!, backToMenu(t)),
         opt(
-          DEFLECT_OPTS[1],
+          DEFLECT_OPTS[1]!,
           () =>
             node(
               pick(t, PUSHED),
@@ -271,7 +271,7 @@ function enterThread(t: Talk, id: string) {
   const key = bookmarkKey(id);
   const [chId, at] = String(f.flags[key] ?? '').split('.');
   delete f.flags[key];
-  const resume = chId === next.id && at in next.nodes;
+  const resume = chId === next.id && at !== undefined && at in next.nodes;
   const n = chapterNode(
     t,
     next,
@@ -299,7 +299,7 @@ function chapterNode(
   scoring = true,
   thread: string | null = null,
 ): TalkNode {
-  const n = ch.nodes[id];
+  const n = ch.nodes[id]!;
   const opts = n.opts.map((o) =>
     opt(
       o.say,
@@ -351,9 +351,9 @@ const giftReplies = (t: Talk, list: readonly string[]) => (t.ctx.mario ? MARIO_G
 
 function giveNode(t: Talk, kind: number, after: () => TalkNode | null) {
   const { f, ctx } = t;
-  if (GIFTS[kind].key)
+  if (GIFTS[kind]!.key)
     return node(
-      GIFTS[kind].line,
+      GIFTS[kind]!.line,
       giftReplies(t, GIFT_KEPT_OPTS).map((s) => opt(s, after)),
       'smile',
     );
@@ -361,7 +361,7 @@ function giveNode(t: Talk, kind: number, after: () => TalkNode | null) {
   const r = giveGift(f, kind, ctx.now)!; // GIFTS[kind] exists: checked above
   t.out.gave = { kind, taste: r.taste };
   if (r.levelUp) t.out.levelUp = r.levelUp;
-  let say = GIFTS[kind].line;
+  let say = GIFTS[kind]!.line;
   if (r.capped) say = `${say} ${GIFT_CAPPED}`;
   else if (r.repeat) say = `${say} ${GIFT_REPEAT}`;
   if (r.forgave) say = `${GIFT_FORGAVE} ${say}`;
@@ -370,7 +370,7 @@ function giveNode(t: Talk, kind: number, after: () => TalkNode | null) {
   const next = isWary(f, ctx.now) && !ctx.mario ? end : after;
   return node(
     say,
-    giftReplies(t, (GIFT_OPTS as Record<string, string[]>)[r.taste!]).map((s) => opt(s, next)),
+    giftReplies(t, (GIFT_OPTS as Record<string, string[]>)[r.taste!]!).map((s) => opt(s, next)),
     mood,
   );
 }
@@ -379,7 +379,7 @@ function giveNode(t: Talk, kind: number, after: () => TalkNode | null) {
 function kickNode(t: Talk) {
   const { f } = t;
   const k = Math.max(1, f.kicks);
-  const say = k <= KICK.length ? KICK[k - 1] : pick(t, KICK_MORE);
+  const say = k <= KICK.length ? KICK[k - 1]! : pick(t, KICK_MORE);
   const wary = f.kicks >= RULES.waryAt;
   return node(
     say,

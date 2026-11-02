@@ -61,7 +61,7 @@ onStart(() => {
       sorted.set(gpu);
       const s = sorted.subarray(0, gpuN).sort();
       const avg = s.reduce((a, b) => a + b, 0) / gpuN;
-      gpuRow = `${ms(avg)} ${ms(s[Math.floor(gpuN * 0.95)])}  GPU, all passes\n`;
+      gpuRow = `${ms(avg)} ${ms(s[Math.floor(gpuN * 0.95)]!)}  GPU, all passes\n`;
     }
     el.textContent =
       bootRow + '   avg    p95  ms\n' + gpuRow + rows.map((r) => `${ms(r.avg)} ${ms(r.p95)}  ${r.name}`).join('\n');

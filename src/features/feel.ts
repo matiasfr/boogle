@@ -121,7 +121,7 @@ onRemotePresence((r, pr) => {
   if (left !== undefined && left === r.flLast) return;
   r.flLast = left;
   if (Array.isArray(f) && KINDS[f[0]] && Number.isFinite(f[1]) && f[1] > 0 && f[1] <= 2000)
-    r.flop = { kind: KINDS[f[0]], until: performance.now() + f[1] };
+    r.flop = { kind: KINDS[f[0]]!, until: performance.now() + f[1] };
 });
 
 // ---------------------------------------------------------------- dust (skids, splats; the shared pool, src/render/particles.ts)

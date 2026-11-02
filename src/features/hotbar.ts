@@ -90,8 +90,8 @@ const ui = {
 };
 const label = (s: Slot | null | undefined) => {
   if (!s) return '';
-  const name = s.id === 'ball' ? 'Beach ball' : GIFTS[giftIndex(s.id)].name;
-  const cap = name[0].toUpperCase() + name.slice(1);
+  const name = s.id === 'ball' ? 'Beach ball' : GIFTS[giftIndex(s.id)]!.name;
+  const cap = name[0]!.toUpperCase() + name.slice(1);
   return s.id === 'seeds' ? `Mushroom seeds ×${s.n}` : cap;
 };
 
@@ -168,7 +168,7 @@ function renderHud(now: number) {
     ui.version = inv.version;
     ui.kind = kind;
     inv.slots.forEach((s, k) => {
-      const b = ui.slots[k];
+      const b = ui.slots[k]!;
       const img = b.querySelector('img')!;
       b.classList.toggle('on', k === inv.sel);
       b.hidden = !s && kind === 'touch';
@@ -234,7 +234,7 @@ addPresenceField('hd', () => {
 onRemotePresence((r, pr) => {
   // An unknown or uncarryable index shows as empty hands.
   const hd = pr.hd as number;
-  r.hd = Number.isInteger(hd) && carryable(GIFTS[hd]) ? GIFTS[hd].id : null;
+  r.hd = Number.isInteger(hd) && carryable(GIFTS[hd]) ? GIFTS[hd]!.id : null;
 });
 
 onFrame(({ now }) => {

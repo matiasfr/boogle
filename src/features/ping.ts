@@ -108,7 +108,7 @@ const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boolean) {
   const old = pings.get(from);
   if (old) removePing(from, old);
-  const color = COLORS[colorIdx] ?? COLORS[0];
+  const color = COLORS[colorIdx] ?? COLORS[0]!;
   const el = document.createElement('div');
   el.className = 'ping';
   el.style.setProperty('--c', color);
@@ -146,7 +146,7 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
-  const f = honkFreq(colorIdx) * 2;
+  const f = honkFreq(colorIdx)! * 2;
   const t = ctx.currentTime + 0.005;
   const notes = kind === 'ball' ? [f, f * 1.5] : [f, f * 1.25];
   notes.forEach((hz, k) => {

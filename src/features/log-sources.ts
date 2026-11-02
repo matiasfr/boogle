@@ -58,7 +58,7 @@ registerInteractable(() => {
   let out: Interactable[] | null = null; // made only when a bundle is in reach: asked every frame
   for (let id = 0; id < list.length; id++) {
     if (haulHooks.moved(id)) continue; // a haul variant draws and takes this one elsewhere (the wave's sandbar)
-    const p = list[id];
+    const p = list[id]!;
     const dx = cellX(p.i) + 0.9 - pos.x, // spot()'s x, z: the ground height only for a bundle in reach
       dz = cellZ(p.j) + 0.4 - pos.z;
     if (dx * dx + dz * dz >= REACH_LOGS * REACH_LOGS) continue;

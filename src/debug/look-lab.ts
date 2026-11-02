@@ -160,8 +160,8 @@ async function bench({ batch = 20, reps = 7, dpr = 0 } = {}) {
   const fix = (v: number) => Math.round(v * 100) / 100;
   return {
     layers: [...on],
-    ms: { median: fix(ms[Math.floor(ms.length / 2)]), min: fix(ms[0]), max: fix(ms[ms.length - 1]) },
-    cpuMs: fix(cpu.sort((x, y) => x - y)[Math.floor(cpu.length / 2)]), // encoding alone; ms near this means CPU-bound
+    ms: { median: fix(ms[Math.floor(ms.length / 2)]!), min: fix(ms[0]!), max: fix(ms[ms.length - 1]!) },
+    cpuMs: fix(cpu.sort((x, y) => x - y)[Math.floor(cpu.length / 2)]!), // encoding alone; ms near this means CPU-bound
     calls,
     tris,
     px: `${size.x}x${size.y}`,
