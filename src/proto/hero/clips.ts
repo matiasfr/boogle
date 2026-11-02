@@ -25,7 +25,7 @@ const JUMP_FROM = 0.3; // s into Jump_Start where the feet leave the ground (its
 const LAND = { for: 0.35, stop: 2.5 }; // s of Jump_Land, and the speed above which you run straight out of it
 const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
 const NAMES = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land'];
-const look = LOOKS[new URLSearchParams(location.search).get('body') ?? ''] ?? LOOKS.mannequin;
+const look = LOOKS[new URLSearchParams(location.search).get('body') ?? ''] ?? LOOKS.mannequin!;
 
 type Rig = {
   mixer: THREE.AnimationMixer;
@@ -79,8 +79,8 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
   }
   const k = 1 - Math.exp(-dt / (airborne ? FADE.air : FADE.ground));
   for (const n of NAMES) {
-    r.w[n] += ((want[n] ?? 0) - r.w[n]) * k;
-    r.acts[n].setEffectiveWeight(r.w[n]);
+    r.w[n]! += ((want[n] ?? 0) - r.w[n]!) * k;
+    r.acts[n]!.setEffectiveWeight(r.w[n]!);
   }
 
   // The stride is the blend of the clips' strides, so the feet keep to the ground through a blend.
@@ -88,12 +88,12 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number) {
     r.strideK * (STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog);
   r.phase = (r.phase + (v * dt) / stride) % 1;
   if (v < BLEND.idleTo) r.phase = 0;
-  for (const n of LOCO) r.acts[n].time = r.phase * r.acts[n].getClip().duration;
+  for (const n of LOCO) r.acts[n]!.time = r.phase * r.acts[n]!.getClip().duration;
   r.idleT += dt;
-  r.acts.Idle_Loop.time = r.idleT % r.acts.Idle_Loop.getClip().duration;
-  r.acts.Jump_Start.time = Math.min(JUMP_FROM + r.airT, r.acts.Jump_Start.getClip().duration);
-  r.acts.Jump_Loop.time = r.airT % r.acts.Jump_Loop.getClip().duration;
-  r.acts.Jump_Land.time = r.landT;
+  r.acts.Idle_Loop!.time = r.idleT % r.acts.Idle_Loop!.getClip().duration;
+  r.acts.Jump_Start!.time = Math.min(JUMP_FROM + r.airT, r.acts.Jump_Start!.getClip().duration);
+  r.acts.Jump_Loop!.time = r.airT % r.acts.Jump_Loop!.getClip().duration;
+  r.acts.Jump_Land!.time = r.landT;
   r.mixer.update(0);
   // After the clips, which also key every bone's scale and the hips' height.
   for (const [bone, k] of r.scaled) bone.scale.setScalar(k);
@@ -107,7 +107,7 @@ export async function startClipsHero() {
   const dress = (a: Avatar, colorIdx: number) => {
     if (rigs.has(a)) return;
     const holder = kit.instance();
-    const root = holder.children[0];
+    const root = holder.children[0]!;
     // Each figure's skin in its player's colour; its joints a shade darker, except the plain mannequin's.
     let mat: THREE.MeshStandardNodeMaterial | null = null;
     holder.traverse((o) => {
@@ -117,9 +117,9 @@ export async function startClipsHero() {
       const shared = m.material as THREE.MeshStandardNodeMaterial;
       const own = shared.clone();
       if (shared.name === 'M_Main') {
-        own.color.set(COLORS[colorIdx]);
+        own.color.set(COLORS[colorIdx]!);
         mat = own;
-      } else if (look !== LOOKS.mannequin) own.color.set(COLORS[colorIdx]).multiplyScalar(0.72);
+      } else if (look !== LOOKS.mannequin) own.color.set(COLORS[colorIdx]!).multiplyScalar(0.72);
       inflate(own, look.inflate);
       m.material = own;
     });
