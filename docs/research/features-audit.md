@@ -41,15 +41,29 @@ additional recommendations.
   same shadow-on/off counter method used by perf. A local Vite build reproduced counts' first-load gzip procedure.
   This is a policy/interface limitation, not a falsely claimed failed sandbox attempt.
 - Actual adapter: **Apple, metal-3, non-fallback**, HeadlessChrome 156.0.8078.4, WebGPU. These are **not SwiftShader**
-  numbers. `ps` and `sysctl` were denied by the sandbox; the chip model and other agents' render activity could not be
-  verified. The broker serializes this job's requests, but **exclusive GPU use was not established**. Treat timings as
-  descriptive samples, not M1 Max budgets or controlled benchmarks. No M4 iPad measurement was made.
+  numbers. The original audit could not verify the chip via sandboxed `ps`/`sysctl`; the subsequent hardware run below
+  identifies an **M1 Max**, with other jobs running. **Exclusive GPU use was not established**. Treat timings as
+  descriptive samples, not controlled budgets. No M4 iPad measurement was made.
 - All three runtime captures used 960×600, DPR 1, `dpr=fixed`, 4× MSAA, a 2048² shadow map and the existing harness HUD.
   Each waited for at least 300 completed real-time frames before reading the profiler's last 240. Pages were not
   cross-origin isolated; individual timer samples are quantized around 0.1 ms. Means printed to 0.001 ms do not imply
-  microsecond measurement precision. No GPU timestamp benchmark or browser allocation/layout/DSP trace was collected.
+  microsecond measurement precision. The original captures had no GPU timestamp benchmark; the subsequent hardware
+  run below adds GPU timings. No browser allocation/layout/DSP trace was collected.
 - Broker manifests record unchanged tested source trees before/after. The broker's trusted harness had pre-existing
   dirty files, identical before/after each run; this audit did not edit them. Report-only changes do not change game code.
+
+### Subsequent hardware measurements
+
+Taken afterwards with `npm run perf -- --hardware`, at **1728×1000, DPR 1, on an M1 Max**, using the **spawn camera,
+with other jobs running**. These supplied measurements are separate from the original broker captures, not a controlled
+before/after comparison or a rerun by this documentation correction.
+
+| Scene  | CPU avg / p95 ms | GPU avg / p95 ms | Calls | Shadow calls | Triangles | Programs |
+| ------ | ---------------- | ---------------- | ----- | ------------ | --------- | -------- |
+| Island | 1.49 / 1.85      | 2.90 / 3.38      | 136   | 46           | 222k      | 94       |
+| Place  | 2.83 / 3.35      | 3.15 / 5.18      | 244   | 71           | 645k      | 153      |
+
+The unmeasured risks are **DPR 2, iPad, 8 players, burst moments and water**. These spawn samples do not settle them.
 
 ### Evidence index
 
@@ -136,7 +150,7 @@ is a different question. File names below are under `src/features/`; counts incl
 | track-machine.ts     | 501 | World/critter content    | Machine/rails/sleepers/body/platform; possible implementation extraction        |
 | updates.ts           |  97 | Infrastructure/telemetry | Mixed-build notice/reload; keep                                                 |
 | wake-lock.ts         |  36 | Infrastructure/telemetry | Browser lifecycle integration; keep                                             |
-| walk-layout.ts       |  27 | Infrastructure/telemetry | Layout debugging/home-state pinning; preserve ordering                          |
+| walk-layout.ts       |  27 | Infrastructure/telemetry | Debug-flag-only layout pinning; inactive without `?layout=`                     |
 | welcome-back.ts      | 126 | UI/HUD                   | Return card and room memory; keep                                               |
 | work-sites.ts        | 327 | Adapter                  | State to rings/plaques/pours; keep                                              |
 | world.ts             |   7 | Infrastructure/telemetry | Tick/background-clock service wiring; keep                                      |
@@ -198,8 +212,9 @@ native/managed overhead is not evidence that 60 ES modules or Boogle's kind walk
    clearer ownership with zero migration churn; **no runtime gain claimed**. **S, low risk.** A full category migration
    touches up to 60 paths, CSS imports, docs, glob/allowlists and startup order: **M/L**, with no measured benefit.
 2. **Make layout finalization explicit when that area next changes (STATIC).** Evidence: walk-layout's documented
-   alphabetic dependency above. Expected gain: prevent rename-induced home-layout/save regressions; **0 ms expected**.
-   **S/M, medium correctness risk.** A local composition call is enough; no general dependency framework.
+   alphabetic dependency above, active only with `?layout=`; without that debug flag it does nothing. Expected gain:
+   preserve debug-layout ordering after renames, not prevent normal home-layout/save regressions; **0 ms expected**.
+   **S/M, low priority, debug-flag-only ordering risk.** A local composition call is enough; no general dependency framework.
 3. **Extract pause implementation selectively, leaving its entry (STATIC).** At 525 lines it is 8.8% of feature TS;
    pause.ts:477–524 combines menu/input/lifetime setup with page builders. Expected gain: one coherent implementation
    boundary; load opportunity quantified below. **M, medium input/first-open risk.** `ui/` or `player/` is a natural home.
@@ -475,7 +490,7 @@ speed 9.9 m/s, height 31.0→3.3 m and 22% airborne samples. Consecutive video f
 inspection (`.look/audit-consecutive-01.png` through `03.png`, all opened): the three adjacent poses show the avatar
 running beside the machine before leaving the route. This does not establish smoothness. No source repair was authorized or attempted.
 
-Remaining unknowns: exclusive GPU usage and exact Mac model; real M1 Max/M4 iPad budgets and Safari behavior; GPU-pass
+Remaining unknowns: exclusive GPU usage; DPR 2, iPad, 8 players, burst moments and water; Safari behavior; individual GPU-pass
 timings, audio DSP and peak particles; heap/GC and browser layout/paint cost; open-menu and multiplayer costs; production
 cold/warm network boot and isolated feature evaluation; exact marginal compressed feature size; adaptive-resolution
 response; all unfinished bot beats and real-time motion/feel. The samples locate costs, but an optimization claim needs
