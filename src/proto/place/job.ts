@@ -87,7 +87,19 @@ export const resetJob = () => {
 // ---------------------------------------------------------------- the save
 // A new key each round: an older save's shape can't break this one.
 const KEY = COOP ? `boogle-place-coop-v2:${getRoomId()}` : `boogle-place-v4:${getRoomId()}`;
+let saving = true;
+/** Forget this person's round-four saves, including every personal slice in either mode. */
+export function forgetSaves() {
+  saving = false; // pagehide and late gift/co-op callbacks must not write the old run back
+  try {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith('boogle-place-v4:') || key.startsWith('boogle-place-coop-v2:')) localStorage.removeItem(key);
+  } catch {
+    // Storage is unavailable: there is no persistent run to clear.
+  }
+}
 export function save() {
+  if (!saving) return;
   try {
     localStorage.setItem(KEY, JSON.stringify({ shared: captureShared(), personal: gather(personal) }));
   } catch {

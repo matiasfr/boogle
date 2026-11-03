@@ -17,6 +17,7 @@ import { GROUP } from '../../physics/physics.ts';
 import { camForward, me } from '../../player/player.ts';
 import { registerAction, wrapAction } from '../../player/controls.ts';
 import { inputState } from '../../player/input-state.ts';
+import { fallArrival } from '../../fall/arrival.ts';
 import { camera } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
@@ -67,7 +68,8 @@ export const move = {
 const vp = { x: 0, z: 0 };
 
 const grounded = () => me.coyote > 0;
-const canAct = () => !me.swimming && !inputState.seated && !inputState.held && !me.down && !!me.body;
+const canAct = () =>
+  !fallArrival.active && !me.swimming && !inputState.seated && !inputState.held && !me.down && !!me.body;
 
 // ---------------------------------------------------------------- the second jump
 function secondJump() {

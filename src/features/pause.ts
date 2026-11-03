@@ -23,6 +23,7 @@ import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
 import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 import { youEditor } from '../player/you-editor.ts';
+import { freshButton } from '../player/fresh-button.ts';
 import { backToSpawn } from '../entities/player/state.ts';
 import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
@@ -232,7 +233,7 @@ function renderMain() {
     unstuck.dataset.act = 'unstuck';
     list.append(unstuck);
   }
-  list.append(leave);
+  list.append(...freshButton(), leave);
   return list;
 }
 

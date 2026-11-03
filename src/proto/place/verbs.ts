@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { NO_TARGETS, onInteractPress, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { myBundleNext } from '../../features/haul-stack.ts';
 import { me } from '../../player/player.ts';
+import { fallArrival } from '../../fall/arrival.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -211,7 +212,7 @@ function chopTree(t: Tree) {
   }
 }
 registerInteractable(() => {
-  if (!me.body) return NO_TARGETS;
+  if (!me.body || fallArrival.active) return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   let out: Interactable[] | null = null;
   // Sitting, the one thing the button does is stand you up.
@@ -369,5 +370,5 @@ registerInteractable(() => {
 });
 // Pressing with nothing in reach: you're wondering what to do.
 onInteractPress((t) => {
-  if (!t) showObjective();
+  if (!t && !fallArrival.active) showObjective();
 });

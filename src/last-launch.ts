@@ -2,7 +2,7 @@
 // them. Pure: no DOM, used by src/features/home-app.ts and test/last-launch.test.ts.
 
 // Harness and debug flags that never carry over to the next launch.
-const DROP = ['dpr', 'debugcam', 'netdebug', 'prof', 'look'];
+const DROP = ['dpr', 'debugcam', 'netdebug', 'prof', 'look', 'intro'];
 
 // The part of a URL's query worth reopening: '' when it names neither a room, a prototype nor the playtest playlist
 // (`?play`) (the default island), else the query without debug flags, prototype parameters (?v=, ?hero=, ...) included.
