@@ -58,7 +58,7 @@ softWall.at = Infinity; // this world runs well past the 510 m square the player
 // Prototype-only Owner movement, through the existing Rapier body. Space/A remains swim up.
 let diving = false;
 registerAction('water-dive', {
-  pad: 'rb',
+  pad: 'right',
   key: 'KeyC',
   label: 'Swim down',
   group: 'move',
