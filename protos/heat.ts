@@ -6,10 +6,9 @@
 import './heat.css';
 import islandUrl from './island.png';
 import type { Proto } from './protos.ts';
-import { IDLE_S, SITTINGS, markColor, sittingLine, sittings, type Sitting } from './store.ts';
+import { IDLE_S, ISLAND_MAP, SITTINGS, markColor, sittingLine, sittings, type Sitting } from './store.ts';
 
-/** protos/island.png: `npm run island-map -- --protos` prints these (1 m per pixel, +z down). */
-const MAP = { x0: -130, z0: -140, w: 270, h: 210 };
+const MAP = ISLAND_MAP;
 const CELL = 2; // m, the heat map's cells (the layout lab's)
 const PAD = 14; // m around what was recorded
 const MIN_SPAN = 60; // m: the closest the map zooms in

@@ -42,6 +42,7 @@
     "video:publish": "node dev/video/publish.ts",
     "assets": "node dev/assets/build.ts",
     "verdicts": "node scripts/verdicts.ts",
+    "playtest": "node dev/playtest/cli.ts",
     "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
     "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",
     "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts"

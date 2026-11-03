@@ -103,7 +103,7 @@ Sandboxed and can't do this (`npm run look` needs a local port, `npm run infligh
 
 ## Tools and skills
 - `.agents/skills` links to `.claude/skills`, so Codex and other agents that read it get the same skills: the workflows plus `threejs-*` (use the WebGPU/TSL parts), `game-feel`, `camera-systems` and `audio-design`. They're written for Claude Code: `/look` is `npm run look`, `/ship` is `npm run ship`, and "Read" a PNG means open the image.
-- `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run verdicts`: the owner's notes from the prototype bar; read them from a checkout with the token rather than asking the owner to paste them.
+- `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run playtest`: what `?proto=` sessions did, uploaded on their own (`-- latest` prints the summary and a heat map; prototypes add beats with `playMark` from `src/proto/mark.ts`). `npm run verdicts`: the owner's notes from the prototype bar; read them from a checkout with the token rather than asking the owner to paste them.
 - One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
 
 ### Codex tasks
