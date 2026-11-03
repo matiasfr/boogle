@@ -44,7 +44,7 @@ export const freePort = () =>
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
-export type Stack = { base: string; close: () => Promise<void> };
+export type Stack = { base: string; close: () => Promise<void>; dataDir?: string };
 export async function startStack({
   url = null,
   root: dir = root,
@@ -52,7 +52,13 @@ export async function startStack({
   if (url) return { base: url, close: async () => {} };
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
   // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
-  const env = { DATA_DIR: dataDir, SERVER_ROOMS: '*', UPGRADES_PER_MIN: '1000000', MAX_HOSTED_ROOMS: '1000' };
+  const env = {
+    DATA_DIR: dataDir,
+    SERVER_ROOMS: '*',
+    UPGRADES_PER_MIN: '1000000',
+    MAX_HOSTED_ROOMS: '1000',
+    PLAY_RATE_PER_MIN: '1000000', // a warped page's five-second batches arrive many times a second
+  };
   const server = createService(loadConfig(env, { log: () => {} }));
   const sigPort = await server.listen(0);
   const port = await freePort();
@@ -80,6 +86,7 @@ export async function startStack({
   }
   return {
     base,
+    dataDir,
     async close() {
       if (!vite.killed) vite.kill('SIGTERM');
       await server.close({ save: false });
@@ -177,8 +184,8 @@ export class Game {
         window.matchMedia = (q: string) =>
           q === '(pointer: coarse)' ? ({ ...mm(q), matches: true, media: q } as MediaQueryList) : mm(q);
       });
-    if (opts.init) await g.ctx.addInitScript(opts.init);
     if (opts.warp) await g.ctx.addInitScript(installWarp);
+    if (opts.init) await g.ctx.addInitScript(opts.init);
     const doc = new URL(stack.base);
     if (opts.isolated)
       await g.ctx.route(
@@ -282,7 +289,14 @@ export class Game {
     until,
     speed = Infinity,
     wallLimit = 540,
-  }: { seconds?: number; until?: string; speed?: number; wallLimit?: number } = {}) {
+    stalled,
+  }: {
+    seconds?: number;
+    until?: string;
+    speed?: number;
+    wallLimit?: number;
+    stalled?: (gameSeconds: number) => Promise<boolean>;
+  } = {}) {
     const v = () => this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now());
     const start = await v();
     const t0 = Date.now();
@@ -293,6 +307,7 @@ export class Game {
       await sleep(100);
       at = await v();
       done = at - start >= seconds || (until ? !!(await this.page.evaluate(`!!(${until})`)) : false);
+      if (!done && (await stalled?.(at))) break;
     }
     await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.go(1));
     await sleep(500); // real frames again, and drawn

@@ -36,6 +36,7 @@ type PlayFn = (name: string, data: PlayData | undefined, ms: number) => void;
 let playFn: PlayFn | null = null;
 const early: [string, PlayData | undefined, number][] = []; // before the recorder's chunk arrives
 const EARLY = 100;
+const watchers: PlayFn[] = [];
 let whereFn: (() => string | null) | null = null;
 
 /** One beat of a playtest happened, at your position: `playMark('crate opened', { kind: 'hat' })`. Name it as a person
@@ -43,12 +44,15 @@ let whereFn: (() => string | null) | null = null;
 export function playMark(name: string, data?: PlayData) {
   if (playFn) playFn(name, data, performance.now());
   else if (early.length < EARLY) early.push([name, data, performance.now()]);
+  for (const fn of watchers) fn(name, data, performance.now());
 }
 /** The objective line now says `text`: the summary times each one. Repeats of the same text are ignored. */
 export const playObjective = (text: string) => playMark('objective', { text });
 /** Names the place you're in now ('village', 'the mine'; null: nowhere in particular), asked once a second. */
 export const playWhere = (fn: () => string | null) => void (whereFn = fn);
 export const playWhereNow = () => whereFn?.() ?? null;
+/** Tools see the marks too, as they come: `npm run playthrough` (dev/look/observe.ts). */
+export const watchPlayMarks = (fn: PlayFn) => void watchers.push(fn);
 /** The recorder takes the marks, those made so far first. */
 export function onPlayMark(fn: PlayFn) {
   playFn = fn;

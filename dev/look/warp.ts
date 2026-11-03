@@ -105,6 +105,12 @@ export function installWarp() {
     }
   }
 
+  // CSS runs on the wall clock. Warped, a half-second fade would last half a minute of game time.
+  const cssOff = document.createElement('style');
+  cssOff.textContent =
+    '*, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important }';
+  const freezeCss = (on: boolean) => (on ? document.head.append(cssOff) : cssOff.remove());
+
   const channel = new MessageChannel();
   const handle: WarpHandle = {
     speed: 1,
@@ -114,6 +120,7 @@ export function installWarp() {
     skipped: 0,
     skip: false,
     go(speed: number) {
+      freezeCss(speed !== 1);
       const was = handle.speed;
       handle.speed = speed;
       handle.skip = false;

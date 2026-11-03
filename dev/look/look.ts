@@ -7,6 +7,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
 import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.ts';
 import type { Stack } from './lib.ts';
+import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
 
 const opt: {
   view: string;
@@ -30,6 +31,8 @@ const opt: {
   hud: boolean;
   warp: boolean;
   until: string | null;
+  at: string | null;
+  root?: string;
 } = {
   view: 'hill',
   cam: null,
@@ -51,6 +54,7 @@ const opt: {
   hud: false,
   warp: false,
   until: null,
+  at: null,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -89,12 +93,18 @@ for (let k = 0; k < argv.length; k++) {
     opt.warp = true; // spend --warm in game time, far faster than real (./warp.ts); captures still run at real speed
   else if (a === '--until')
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
+  else if (a === '--at')
+    opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
+  else if (a === '--root')
+    opt.root = v(); // serve another checkout's build
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
   [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
-  [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come`);
+  [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come
+  [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
+  [--root <checkout>]                       serve another checkout's build`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
@@ -129,6 +139,13 @@ const pose = opt.cam ? { cam: opt.cam, look: opt.look || [0, 0, 0] } : VIEWS[opt
 if (!pose) throw new Error('unknown view ' + opt.view);
 const label = opt.name || (opt.cam ? 'custom' : opt.view);
 
+if (opt.at === 'list') {
+  for (const b of listSaves()) console.log(b);
+  process.exit(0);
+}
+const save = opt.at ? findSave(opt.at) : null;
+if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
+
 let stack: Stack | undefined, browser: Browser | undefined;
 async function pageScript(g: Game, file: string) {
   let body = fs.readFileSync(path.resolve(file), 'utf8');
@@ -138,13 +155,15 @@ async function pageScript(g: Game, file: string) {
   if (out !== undefined) console.log('eval result:', JSON.stringify(out));
 }
 try {
-  stack = await startStack({ url: opt.url });
+  stack = await startStack({ url: opt.url, root: opt.root });
   browser = await launch();
   const g = await Game.open(browser, stack, {
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
-    room: opt.room,
+    room: save?.room ?? opt.room,
+    query: save?.pageQuery,
+    init: save ? SEED(save) : undefined,
     warp: opt.warp,
   });
   // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
@@ -152,9 +171,16 @@ try {
   console.log(
     `question: ${opt.question}\nview: ${JSON.stringify(pose)}\naction: ${opt.action ?? 'none (observe only)'}`,
   );
-  if (opt.eval) await pageScript(g, opt.eval);
-  await g.view(pose, opt.fov ?? undefined);
-  const limit = opt.until && !argv.includes('--warm') ? 3600 : opt.warm;
+  if (save) await g.eval(POSE_AT(save));
+  // Warped, the setup's own waits take no time.
+  const warpNow = (n: number) => g.page.evaluate((s) => window.__warp?.go(s ?? Infinity), n);
+  if (opt.eval) {
+    if (opt.warp) await warpNow(Infinity);
+    await pageScript(g, opt.eval);
+    if (opt.warp) await warpNow(1);
+  }
+  if (!save || opt.cam) await g.view(pose, opt.fov ?? undefined);
+  const limit = opt.until && !argv.includes('--warm') ? 3600 : save && !argv.includes('--warm') ? 2 : opt.warm;
   console.log(
     `warming up ${opt.warp ? 'warped, ' : ''}${limit}s of game time${opt.until ? ` or until ${opt.until}` : ''} ...`,
   );
