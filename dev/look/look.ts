@@ -34,7 +34,7 @@ const opt: {
   fov: number | null;
   name: string | null;
   room?: string;
-  query: string;
+  query: string | undefined;
   hud: boolean;
   warp: boolean;
   until: string | null;
@@ -70,7 +70,7 @@ const opt: {
   warp: true,
   until: null,
   at: null,
-  query: '',
+  query: undefined,
   curves: false,
   curvesVs: null,
   target: null,
@@ -228,7 +228,9 @@ try {
     size: opt.size,
     hud: opt.hud,
     room: opt.players > 1 ? (opt.room ?? 'look-two') : (save?.room ?? opt.room),
-    query: [opt.query, save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') || undefined,
+    query:
+      [opt.query, save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') ||
+      (opt.query === '' ? '' : undefined),
     init: [
       "localStorage.getItem('boogle.color') || localStorage.setItem('boogle.color', '1');", // comparable pictures
       save ? SEED(save) : '',

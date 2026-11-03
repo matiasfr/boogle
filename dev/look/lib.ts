@@ -237,12 +237,14 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(
-      `${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}${EXTRA_QUERY}`,
-      {
-        timeout: 90000,
-      },
-    );
+    const query = new URLSearchParams([opts.query, EXTRA_QUERY].filter(Boolean).join('&'));
+    const selected = new URLSearchParams(`${doc.search}&${query}`);
+    // Existing scenarios, clips and measurements target the classic island. An explicit empty query tests the
+    // default game; proto/play/classic selectors (including BOOGLE_QUERY or --url) always win.
+    if (opts.query !== '' && !['proto', 'play', 'classic'].some((key) => selected.has(key))) query.set('classic', '1');
+    await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}&${query}`, {
+      timeout: 90000,
+    });
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
     // every shader before the lobby opens.
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });

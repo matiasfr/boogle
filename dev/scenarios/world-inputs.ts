@@ -31,7 +31,7 @@ export default {
   about: 'the world inputs (grid size, state and op order, gifts layout) match the fixture',
   timeout: 180000,
   async run(t: T) {
-    const g = await t.open({ name: 'inputs', size: [192, 120] });
+    const g = await t.open({ name: 'inputs', size: [192, 120], query: 'classic=1' });
     const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
     if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
     const got = await g.eval(READ);
