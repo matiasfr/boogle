@@ -163,24 +163,8 @@ function ifft1(re: Float64Array, im: Float64Array) {
   }
 }
 
-/** Cascade c at t = 0 as a tile of slope moments, and its mean square slope (what the demo reads from the 1×1 mip). */
-export function bakeSlopeTile(c: number) {
-  const h0 = bakeH0(c),
-    L = CASCADE_LENGTHS[c]!,
-    dk = (2 * Math.PI) / L;
-  const re = new Float64Array(N * N),
-    im = new Float64Array(N * N);
-  for (let j = 0; j < N; j++)
-    for (let i = 0; i < N; i++) {
-      const k = j * N + i,
-        kx = (i - N / 2) * dk,
-        kz = (j - N / 2) * dk;
-      const hr = h0[k * 4]! + h0[k * 4 + 2]!,
-        hi = h0[k * 4 + 1]! + h0[k * 4 + 3]!;
-      // dh/dx + i dh/dz: i kx h + i (i kz h), two real fields as one complex one.
-      re[k] = -hi * kx - hr * kz;
-      im[k] = hr * kx - hi * kz;
-    }
+// The same transform over rows, then columns.
+function ifft2(re: Float64Array, im: Float64Array) {
   const rowR = new Float64Array(N),
     rowI = new Float64Array(N);
   for (let j = 0; j < N; j++) {
@@ -205,14 +189,44 @@ export function bakeSlopeTile(c: number) {
       im[j * N + i] = rowI[j]!;
     }
   }
+}
+
+/** Cascade c at t = 0 as a tile of slope moments, and its mean square slope (what the demo reads from the 1×1 mip). */
+export function bakeSlopeTile(c: number) {
+  const h0 = bakeH0(c),
+    L = CASCADE_LENGTHS[c]!,
+    dk = (2 * Math.PI) / L;
+  const re = new Float64Array(N * N),
+    im = new Float64Array(N * N),
+    re2 = new Float64Array(N * N),
+    im2 = new Float64Array(N * N);
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const k = j * N + i,
+        kx = (i - N / 2) * dk,
+        kz = (j - N / 2) * dk,
+        kl = Math.hypot(kx, kz),
+        ik = kl > 1e-6 ? 1 / kl : 0;
+      const hr = h0[k * 4]! + h0[k * 4 + 2]!,
+        hi = h0[k * 4 + 1]! + h0[k * 4 + 3]!;
+      // dh/dx + i dh/dz: i kx h + i (i kz h), two real fields as one complex one.
+      re[k] = -hi * kx - hr * kz;
+      im[k] = hr * kx - hi * kz;
+      // dDx/dx + i dDz/dz, the choppy waves' stretch: -kx²/k h + i (-kz²/k h).
+      re2[k] = -hr * kx * kx * ik + hi * kz * kz * ik;
+      im2[k] = -hi * kx * kx * ik - hr * kz * kz * ik;
+    }
+  ifft2(re, im);
+  ifft2(re2, im2);
   const half = new Uint16Array(N * N * 4);
   let mss = 0;
   for (let j = 0; j < N; j++)
     for (let i = 0; i < N; i++) {
       const k = j * N + i,
         s = (i + j) & 1 ? -1 : 1, // undo the centred-k frequency shift
-        sx = re[k]! * s,
-        sz = im[k]! * s;
+        // Slopes in the displaced surface's own space, as OceanSim's ASSEMBLE, before their moments.
+        sx = (re[k]! * s) / Math.max(1 + OCEAN.choppiness * re2[k]! * s, 0.2),
+        sz = (im[k]! * s) / Math.max(1 + OCEAN.choppiness * im2[k]! * s, 0.2);
       half[k * 4] = THREE.DataUtils.toHalfFloat(sx);
       half[k * 4 + 1] = THREE.DataUtils.toHalfFloat(sz);
       half[k * 4 + 2] = THREE.DataUtils.toHalfFloat(sx * sx);

@@ -87,8 +87,13 @@ export function analyticWaves(): WaveSource {
         variance.addAssign(vec2(lost.mul(p.dx * p.dx), lost.mul(p.dz * p.dz)));
         sq.addAssign(ak.mul(p.q).mul(c).mul(res));
       }
+      // Wind slicks: surfactant patches damp the short waves (capillaries most), so the far field breaks into calm and rough
+      // streaks instead of a uniform speckle.
+      const slick = smoothstep(0.3, 0.7, vnoise(xz.mul(0.006).add(uTime.mul(0.01)))).toVar();
+      const sl3 = mix(0.4, 1, slick).toVar();
+      const slicked = [float(1), mix(0.75, 1, slick), sl3];
       TILES.forEach((tile, i) => {
-        const dampC = i === 0 ? damp.y : damp.z;
+        const dampC = (i === 0 ? damp.y : damp.z).mul(slicked[i]);
         for (const dr of DRIFT[i]!) {
           const uv = xz
             .add(vec2(dr[0]!, dr[1]!).mul(uTime))
@@ -101,10 +106,6 @@ export function analyticWaves(): WaveSource {
           variance.addAssign(max(m.zw.mul(w).mul(w).sub(sxz.mul(sxz)), 0));
         }
       });
-      // Wind slicks: surfactant patches damp the short waves, so the far field breaks into calm and rough streaks instead
-      // of a uniform speckle.
-      const slick = smoothstep(0.3, 0.7, vnoise(xz.mul(0.006).add(uTime.mul(0.01)))).toVar();
-      const sl3 = mix(0.4, 1, slick);
       const unresolved = float(UNRESOLVED).mul(damp.z).mul(damp.z).mul(sl3).mul(sl3);
       // Whitecaps from the squeeze, as the demo's from its Jacobian: broken up, since these waves are too regular to do it
       // themselves. The FFT's real history replaces this.

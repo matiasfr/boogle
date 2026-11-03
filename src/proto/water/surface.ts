@@ -3,7 +3,7 @@
 // - No opaque colour or depth to read (stage 3 decides that). The body is built from the bed the shore field knows. Over the
 //   first few metres the real ground shows through by blending; deeper, the bed is the shader's.
 // - No sky cube. skyAt() is the one place the reflection asks the sky, so a baked cube can replace it.
-// - No planar reflection, underwater branch or floater shadows.
+// - No planar reflection, underwater branch, or shadows on the water (the terrain's or floaters').
 // - Waves come from a source (./waves.ts), which is what the FFT replaces.
 // Every reversed smoothstep of the source is written as smoothstep(lo, hi, x).oneMinus(): reversed edges are undefined in WGSL.
 import * as THREE from 'three/webgpu';
@@ -21,6 +21,7 @@ import {
   uTime,
   vnoise,
   type ShoreBake,
+  type ShoreFields,
   shoreFields,
 } from './shore-nodes.ts';
 import { TSL, type N } from './tsl.ts';
@@ -81,7 +82,7 @@ const cascadeDamp = (depth: N) => {
 // propagation direction, Green's law + ray-tube shoaling, breaking limit A <= 0.42 depth. Breaking crests pitch forward of
 // their base, glow where thin (lip) and leave lace behind in the surf zone (residual).
 // cell: the sampling interval (m); trains only a few cells long fade out instead of aliasing.
-function shoreWaves(xz: N, sh: N, tr: N, surf: N, cell: N) {
+function shoreWaves(xz: N, sh: N, f: ShoreFields, surf: N, cell: N) {
   const o = {
     disp: vec3(0).toVar(),
     slope: vec2(0).toVar(),
@@ -100,6 +101,7 @@ function shoreWaves(xz: N, sh: N, tr: N, surf: N, cell: N) {
     .mul(smoothstep(-0.9, 0.5, depth))
     .toVar();
   If(env0.greaterThan(0), () => {
+    const tr = f.travel(xz).toVar();
     const dir = shoreDir(sh, tr).toVar();
     o.dir.assign(dir);
     // Coasts facing the swell get the big sets, lee shores only small ones.
@@ -365,12 +367,11 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
   material.positionNode = Fn(() => {
     const { xz, cell } = vertex;
     const sh = f.shore(xz).toVar(),
-      tr = f.travel(xz).toVar(),
       surf = f.surf(xz).toVar();
     const damp = cascadeDamp(sh.x.negate()).toVar();
     const d = source.displace(xz, cell, damp).toVar();
-    d.addAssign(shoreWaves(xz, sh, tr, surf, cell).disp);
-    d.y.addAssign(impactWaves(xz.add(d.xz), float(2 * PI).div(max(cell, 1e-3))).x);
+    d.addAssign(shoreWaves(xz, sh, f, surf, cell).disp);
+    d.y.addAssign(impactWaves(xz.add(d.xz), float(2).div(max(cell, 1e-3))).x);
     const p = vec3(xz.x.add(d.x), d.y, xz.y.add(d.z)).toVar();
     // Water can't drain below the bed: a trough over a bar only thins the water. The clearance grows with distance, as
     // the depth buffer's precision falls off.
@@ -393,7 +394,6 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     // Everything that samples implicitly or takes a derivative comes first: what follows branches.
     const xz = vXZ;
     const sh = f.shore(xz).toVar();
-    const tr = f.travel(xz).toVar();
     const depthBelow = sh.x.negate().toVar();
     const damp = cascadeDamp(depthBelow).toVar();
     const fwXZ = abs(dFdx(xz))
@@ -401,7 +401,7 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
       .toVar();
     const footprint = max(fwXZ.x, fwXZ.y).toVar();
     const surfaces = source.shade(xz, footprint, damp);
-    const shore = shoreWaves(xz, sh, tr, vSurf, footprint);
+    const shore = shoreWaves(xz, sh, f, vSurf, footprint);
     const imp = impactWaves(vWorld.xz, float(2).div(max(footprint, 1e-3))).toVar();
     const slope = surfaces.slope.add(shore.slope).add(imp.yz).toVar();
     const variance = surfaces.variance.toVar();
@@ -429,8 +429,8 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     const vth = max(depthBelow.add(vWorld.y), 0).toVar();
     // Contact foam where the water gets thin: in the shallows only, broken into drifting patches so it never traces the
     // waterline as a continuous rim, and mostly where bores arrive (a lee shore gets almost none, not an outline).
-    If(depthBelow.lessThan(6), () => {
-      const act = clamp(shore.residual.mul(1.5).add(shoreFoam), 0, 1);
+    const act = clamp(shore.residual.mul(1.5).add(shoreFoam), 0, 1).toVar();
+    If(depthBelow.lessThan(6).and(act.greaterThan(0)).and(vth.lessThan(ULTRA.foamBand)).and(dist.lessThan(600)), () => {
       const contact = smoothstep(0, ULTRA.foamBand, vth)
         .oneMinus()
         .mul(smoothstep(2, 6, depthBelow).oneMinus())
@@ -518,17 +518,17 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     const turb = clamp(shore.residual.mul(0.8).add(shoreFoam.mul(0.6)), 0, 1)
       .mul(smoothstep(1, 5, depthBelow).oneMinus())
       .mul(smoothstep(0.1, 0.8, vth))
-      .mul(
-        vnoise(xz.mul(0.08).sub(shore.dir.mul(uTime).mul(0.3)))
-          .mul(0.4)
-          .add(0.6),
-      )
       .toVar();
     const body = bed
       .mul(T.sub(Tm))
       .add(glow.mul(vec3(1).sub(T)))
       .toVar();
     If(turb.greaterThan(0), () => {
+      turb.mulAssign(
+        vnoise(xz.mul(0.08).sub(shore.dir.mul(uTime).mul(0.3)))
+          .mul(0.4)
+          .add(0.6),
+      );
       const ext = turb.mul(0.7);
       const Tt = T.mul(exp(ext.mul(thick).negate())).toVar();
       const wm = min(ext.div(ext.add(dot(absorption, vec3(0.333)))), 0.4);
@@ -575,7 +575,7 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     // Glitter: the lobe as a finite number of sub-pixel facets. Per cell of about the pixel footprint the expected count
     // mirroring the sun is lam; a Poisson draw / lam scales the smooth lobe (mean 1, energy kept). Dense cells stay smooth,
     // sparse ones break into points; each cell crossfades between draws so they twinkle.
-    If(dot(spec, vec3(1)).greaterThan(0.02), () => {
+    If(dot(spec, vec3(1)).greaterThan(0.02).and(dist.greaterThan(4)).and(vth.greaterThan(0.05)), () => {
       const FACETS = 2e4; // per m² (calibration knob)
       const lf = log2(max(footprint, 1e-3)).add(1).toVar();
       const l0 = floor(lf).toVar();
