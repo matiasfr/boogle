@@ -7,7 +7,7 @@
 
 ### Project skills
 - `/ship`: commit and ship with `npm run ship`.
-- `/simplify` is the cleanup pass and `/code-review` the code review from AGENTS.md, "Shipping".
+- `/simplify` is the cleanup pass and `/code-review` the code review required by AGENTS.md, "Shipping" (procedure: AGENT-SHIPPING.md).
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
 - `/feature <name> <request>`: for work spanning several files or shared state. The `planner` agent writes `docs/plans/<name>.md`, you wait for approval, then the `implementer` agent builds it.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
@@ -63,9 +63,9 @@ resuming a Codex **conversation**. Sandboxed task workers use the broker command
 ### Working in parallel
 - One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
 - Give each agent a concrete stage and include the files, errors and decisions in its brief. Resume the same Codex job for feedback, fixes and repeated checks; use a new job for independent work or a new starting snapshot.
-- Each worker sees its own result (AGENTS.md, "See it before you ship"). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
+- Each worker sees its own result (AGENT-VERIFICATION.md, "See it before you ship", required by AGENTS.md). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
 - Research before deep facets (AGENTS.md, "Owner's standing calls") runs as a deep-research subagent.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
 - `npm ci && npm run check` before committing (`check:full` per AGENTS.md, "Tests"). The runner has no GPU, so `check:gpu` (smoke) can't run there; for networking or rendering changes say so in the PR, and the live smoke after the deploy (`smoke.yml`) is the check.
-- Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENTS.md, "Shipping"): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.
+- Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (AGENT-SHIPPING.md, "Shipping", required by AGENTS.md): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.

@@ -18,6 +18,34 @@ const look = 'npm run check; look at the changed action (motion: curves/video; r
 const rulesDocs = ['src/world/rules/README.md', 'src/world/README.md', 'docs/game-design/haul.md'];
 
 export const TASK_ROUTES: Record<string, Route[]> = {
+  tooling: [
+    {
+      scope: 'Developer tooling with no game behavior or design change',
+      owners: ['dev', 'scripts', '.github'],
+      example: 'dev/map.ts',
+      copy: 'Existing CLI entry and shared scanner ownership; map the affected folder next',
+      docs: ['AGENTS.md', 'AGENT-TOOLS.md', 'AGENT-SHIPPING.md', 'AGENT-VERIFICATION.md'],
+      sync: 'No game state; take the game route too if scope reaches runtime behavior',
+      checks: 'npm run check; exercise the changed tool locally; no browser for tooling-only work',
+      lookalikes: ['src/debug'],
+      warning:
+        'Use the pure-tooling reading exception in AGENTS.md, Required reading by task; read affected contracts. src/debug is in-game tooling and needs its game route and visual verification.',
+    },
+  ],
+  docs: [
+    {
+      scope: 'Documentation with no game design decision',
+      owners: ['docs', 'AGENTS.md', 'src/README.md'],
+      example: 'docs/game-design.md',
+      copy: 'As-built index with chapters owned by their systems; distinguish current guidance from dated records',
+      docs: ['AGENTS.md', 'AGENT-TOOLS.md', 'AGENT-SHIPPING.md', 'AGENT-VERIFICATION.md'],
+      sync: 'No game state; design decisions also take the relevant game route',
+      checks: 'npm run check; verify links and guidance against owners; no browser for documentation-only work',
+      lookalikes: ['docs/ideas.md', 'docs/proposals'],
+      warning:
+        'Use the pure-documentation reading exception in AGENTS.md, Required reading by task. Proposals and parked ideas are not implementation authority; preserve dated decisions.',
+    },
+  ],
   hat: [
     {
       scope: 'Built-in wear_head meshes',
