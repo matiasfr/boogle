@@ -22,6 +22,14 @@ const put = (x: number, z: number, up = 1.4) => {
   me.body!.velocity.set(0, 0, 0);
 };
 while (!me.body) await wait(100);
+if (who === '2') {
+  const { snapGifts } = (await import(
+    '/src/proto/place/gifts.ts' as string
+  )) as typeof import('../../../src/proto/place/gifts.ts');
+  snapGifts(['hat', 'scarf', 'overalls'], 0, [], { hat: 'hat', accessory: 'scarf', outfit: 'overalls' });
+  put(903, 14);
+} else put(900, 14);
+console.log(`COOP clothing view ground ${place.H(903, 14)}`);
 await wait(4000);
 void (async () => {
   say('start');
