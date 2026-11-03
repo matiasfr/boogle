@@ -56,7 +56,7 @@ Put what you already know in the brief (paths, errors, the snippet, the decision
 
 Clean up a finished worktree with `git worktree remove ../boogle-codex/<topic>` (and `git branch -D codex/<topic>` once it's merged).
 
-Run a queue with `npm run queue -- jobs.json [--max 3]`; dependencies can name another topic or `{ "onMain": "path" }`. It exits on failure, stall, or a Codex usage limit.
+Run a queue with `npm run queue -- jobs.json [--max 5]`; dependencies can name another topic or `{ "onMain": "path" }`. It exits on failure, stall, or a Codex usage limit.
 
 Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or branch.
 

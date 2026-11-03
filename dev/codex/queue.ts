@@ -15,9 +15,9 @@ type Job = {
 type Entry = { job: Job; state: string; child?: ChildProcess; started?: number; detail?: string };
 const [file, ...args] = process.argv.slice(2);
 const maxIndex = args.indexOf('--max');
-const max = maxIndex < 0 ? 3 : Number(args[maxIndex + 1]);
-if (!file || !Number.isInteger(max) || max < 1 || max > 3 || args.length !== (maxIndex < 0 ? 0 : 2))
-  throw new Error('Usage: npm run queue -- <file.json> [--max 1..3]');
+const max = maxIndex < 0 ? 5 : Number(args[maxIndex + 1]);
+if (!file || !Number.isInteger(max) || max < 1 || max > 8 || args.length !== (maxIndex < 0 ? 0 : 2))
+  throw new Error('Usage: npm run queue -- <file.json> [--max 1..8]');
 const jobs: Job[] = JSON.parse(fs.readFileSync(file, 'utf8'));
 if (!Array.isArray(jobs) || !jobs.length) throw new Error('Queue must be a nonempty array');
 const entries: Entry[] = jobs.map((job) => {
