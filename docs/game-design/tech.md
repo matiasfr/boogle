@@ -42,7 +42,7 @@ folder map in [src/README.md](../../src/README.md).
   dependencies (including types). Answered cards with no other experiment importing them are owner-review notes only;
   nothing is archived automatically. The protos page's retired onehand and arrive cards link to their merged game
   features on the classic island; ride links to the wagon, with the destination named instead of a stale Play button.
-- **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the
+- **Shipping.** `npm run ship` and self-merging PRs; the steps are in [AGENT-SHIPPING.md](../../AGENT-SHIPPING.md#shipping), required by AGENTS.md. `smoke.yml` runs the
   nightly live two-tab test; `deploy-server.yml` deploys `server/` when a token exists, on changes to `server/` and to
   what its image carries (`src/world/`, `src/sim/`, `src/net/ids.ts`, `src/net/ws-wire.ts`), since the server runs the
   same rules as the tabs.

@@ -11,7 +11,7 @@ import type { camera, scene } from './render/scene.ts';
 /**
  * The debug handle for the console and the look and scenario harness (src/main.ts). What's commonly read is typed. The
  * rest is a grab bag from the features' onStart hooks: new code asks `inspect()`, and a read moves over when someone
- * touches it (AGENTS.md, "Tests").
+ * touches it (AGENT-VERIFICATION.md, "Tests", required by AGENTS.md).
  */
 export interface BoogleHandle {
   /** The way to look at entities: every kind, its phases, entities, positions, state and cost (src/entity/inspect.ts). */
