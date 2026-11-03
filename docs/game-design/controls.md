@@ -8,13 +8,12 @@ from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/co
 in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.ts](../../src/features/feel.ts),
 [held.ts](../../src/features/held.ts), [honk.ts](../../src/features/honk.ts),
 [ping.ts](../../src/features/ping.ts), [pause.ts](../../src/features/pause.ts), [dino.ts](../../src/features/dino.ts),
-[water-controls.ts](../../src/features/water-controls.ts) and [updates.ts](../../src/features/updates.ts).
+and [updates.ts](../../src/features/updates.ts).
 
 | Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
 |---|---|---|---|---|---|---|
 | Move (`move`) | described | WASD, ↑ ↓ (← → too while the mouse is locked) | Left stick | Drag on the left | Getting around | |
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
-| Swim down (`water-dive`) | action, `water=new` or `proto=water` only | Hold C | Hold D-pad → | Hold Dive, visible while swimming | Getting around | swimming |
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | Push the stick far | Getting around | |
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
@@ -55,15 +54,15 @@ Notes:
   pad's brand (`body[data-pad]`, set from `Gamepad.id` in [src/features/gamepad.ts](../../src/features/gamepad.ts)):
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
-- **Free pad slots** (`npm run registry -- --json`): LB, RB, R3, D-pad ↑ and D-pad ↓. The staged water path reserves
-  D-pad → for Dive; without it that slot is also free. Place uses LB, RB and R3 for its moves. D-pad ↓ opens the prototype bar on
+- **Free pad slots** (`npm run registry -- --json`): LB, RB, R3, D-pad ↑, D-pad ↓ and D-pad →.
+  Place uses LB, RB and R3 for its moves. D-pad ↓ opens the prototype bar on
   prototype pages only ([src/proto/bar/pad.ts](../../src/proto/bar/pad.ts)); claims in `src/proto/` don't count as taken
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by [held.ts](../../src/features/held.ts).
-- The staged Dive button sits above Jump while swimming. Release, touch cancellation/lost capture, blur, hidden tab,
-  a menu or talk, sitting, knockdown, leaving water and respawn all clear dive. Jump takes priority when both are held.
+- There is no Dive action, C binding, touch button or guide row. On `water=new`, high falls plunge and resurface
+  automatically; ordinary entries stay at the surface ([player swimming](player.md#swim)).
 - **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
   steer (no arrow-key camera turn), a two-finger scroll does not look, and `body.seated` shows the driving touch layout:
   Jump takes the vehicle's label, and Toss, Honk and Ping hide.

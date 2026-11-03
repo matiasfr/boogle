@@ -30,12 +30,15 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 - With the staged `water=new` opt-in, that surface is a bounded asynchronous sample of the visible waves, and damping
   is relative to bounded surface velocity. The threshold and Jump swim-up stay the same; stale samples ease to mean
   water. The old default path is unchanged. Query limits and cave composition: [island water](island.md).
-- The staged `water=new` path and retained `proto=water` demo add Dive: hold C, D-pad Right or the touch Dive button
-  while swimming. It replaces buoyancy with a target of 2.5 m/s down (gain 8, acceleration bounded to 30 m/s²);
-  Rapier still handles collisions. Release restores buoyancy with passive ascent capped toward 2.5 m/s, so a deep
-  release does not launch you out of the sea. Jump/Space/A wins over Dive and bypasses that cap. Blur, hidden tab, menus,
-  talks, sitting, knockdown, leaving water and respawn clear the intent. This is local input driving the existing
-  Owner body, with no new presence field. The default old water still has no dive.
+- With `water=new`, swimming stays at the surface unless you enter falling at least **14 m/s**. Slower entries shed
+  downward momentum to **1 m/s relative to the surface**, so walking in and ordinary low-bank jumps stay afloat.
+  Fast entries retain momentum (the existing fall cap is **20 m/s**); downward water drag is **1.2/s**, versus **3/s**
+  upward. Existing depth buoyancy (up to **2.4× weight**) arrests the fall: faster hits go deeper, bounded by the bed.
+  Passive ascent targets at most **2.5 m/s**, gain **8/s**, then settles back to wave-following surface swimming.
+  Space/A/Jump retains its existing swim-up impulse and bypasses that passive cap. No input is needed to resurface;
+  no breath mechanic. This is the existing Owner body, with no new presence field or lockstep state.
+  Manual Dive, C, D-pad Right and its touch/guide entry are removed, including from the retained water demo.
+  Without `water=new`, the old sea's forces are unchanged.
 
 ## Flops (cosmetic)
 

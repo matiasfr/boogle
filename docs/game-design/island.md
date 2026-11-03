@@ -71,9 +71,10 @@ the replacement resources and restores the prior resolution/material visibility;
 
 The same current-frame wave function drives the underwater lens grid, Snell window, absorption, half-resolution
 sun shafts and a bounded 6000-seed marine-snow field. Surfacing leaves brief lens droplets. The cave pond uses its
-own flat level and ellipse; dry caves exclude the sea. Hold C, D-pad right or the swimming-only touch Dive button to
-descend; release to rise, with Jump taking priority. These remain Local input and optics over the existing Owner body,
-with no new presence fields or drowning mechanic.
+own flat level and ellipse; dry caves exclude the sea. Swimming stays at the surface; a fast high fall carries the
+player under and buoyancy floats them back up automatically ([plunge tuning](player.md#swim)). Manual dive controls
+are removed. Optics stay Local over the existing Owner body, with no new presence fields or drowning mechanic;
+they also show whenever the camera dips under independently of the player.
 
 With `water=new`, swimming, the owned ball and entry splashes request the same inverse-displacement GPU kernel as
 the surface. One 64-point batch, at most two reusable readbacks, publishes only before physics; the player and ball

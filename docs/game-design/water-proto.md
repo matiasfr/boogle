@@ -17,8 +17,8 @@ The owner's 2 November feedback is recorded under Look in [boogle-2.md](../propo
 - The source's 90 shore rocks and hero rock use its positions, RNG sequence and orientation; the hero scale is
   `(9,6,7.5)`, placed at ground height minus 1.6 m. The old toy terrain/tree branch is removed rather than maintained.
 - The camera opens on the source Lagoon shot (50° FOV); movement returns to normal player follow. Walk, wade and
-  swim as usual. Hold C / D-pad Right / touch Dive to swim down; Space / A / Jump swims up and takes priority.
-  The action and controller are shared with the staged production water, with no later force-cancelling override.
+  swim as usual; Space / A / Jump swims up. Manual dive controls were removed on 3 November; the underwater look
+  remains whenever the camera dips under. The automatic plunge is staged on `water=new` in the player controller.
   Rendering is Local; the existing Rapier player remains Owner.
 - Four FFT cascades are the default. Source depth damping replaces long swell with shore waves near land, and
   troughs clamp above the bed at the displaced position. Shore wavelength is 30 m and amplitude .55 m.
