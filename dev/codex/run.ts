@@ -86,16 +86,24 @@ Do this:
 Your final message: the pitch paragraph and one line per shot.`;
 }
 
+// AGENTS.md says to run npm ci in a fresh checkout, but through worktree()'s link that empties the main checkout's modules.
+const SHARED_MODULES =
+  "node_modules here is a link to the main checkout's, shared with other running jobs. Never run npm ci or npm install, which would empty it for everyone; if a dependency is missing, say so in your final message.";
+
 const researchPrompt =
   () => `${HOUSE} Then read docs/research/README.md and two existing docs in docs/research/ for the format.
 
 Deep-research this facet with live web search: ${brief}
+
+${SHARED_MODULES}
 
 Use primary sources where you can: GDC talks, developer postmortems and blogs, papers, engine docs, shipped games. Write docs/research/${topic}.md in the house format, with sources inline and numbered recommendations specific to Boogle (cite the code or plan they touch). Add a line for it to docs/research/README.md. Run \`npx prettier --write\` on the files you changed, then commit on this branch with an imperative subject (no push). Your final message: the recommendations, one line each.`;
 
 const taskPrompt = () => `${HOUSE}
 
 Task: ${brief}
+
+${SHARED_MODULES}
 
 Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship; network is off. Your final message: what you changed, what check printed, and anything you were unsure of or could not verify (you cannot see the running game).`;
 
