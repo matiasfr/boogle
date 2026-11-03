@@ -72,3 +72,43 @@
   border: 2px solid var(--ink);
   border-radius: 10px;
 }
+/* The big moments, once each: a line through, the first crystal. */
+.place-banner {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 30px 14px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 6px 0 var(--ink);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.place-banner.on {
+  display: flex;
+  animation: place-banner 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.place-banner b {
+  font: 900 40px/1.1 var(--font-body);
+}
+.place-banner span {
+  font: 700 19px/1.2 var(--font-body);
+}
+@keyframes place-banner {
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}

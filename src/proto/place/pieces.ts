@@ -7,8 +7,8 @@ import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
 import { makeSet, type Box, type BoxSet } from '../net/boxes.ts';
-import { LOOK } from './look.ts';
-import { kitLogs } from './look-kit.ts';
+import { LOOK, STEEL, lookBackLogs } from './look.ts';
+import { kitBatch, kitLogs } from './look-kit.ts';
 
 // ---------------------------------------------------------------- falling into place
 const GRAVITY = 24; // m/s²
@@ -23,6 +23,8 @@ export type DropSet = BoxSet & {
   snap: (k: number, on: boolean) => void;
   update: (dt: number) => void;
   busy: () => boolean;
+  /** Whatever's in the air stops where it is: start over. */
+  clear: () => void;
 };
 export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
   const set = makeSet(boxes);
@@ -68,6 +70,7 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
       }
     },
     busy: () => air.length > 0,
+    clear: () => void (air.length = 0),
   };
 }
 
@@ -79,7 +82,9 @@ const railGeo = new THREE.BoxGeometry(1, 1, 1);
 const railMat = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
 const MAX = 96;
 const logs = LOOK.kit ? kitLogs(MAX) : pieceMesh(MAX);
-const rails = new THREE.InstancedMesh(railGeo, railMat, MAX);
+const rails = LOOK.kit ? kitBatch('rail', STEEL, MAX) : new THREE.InstancedMesh(railGeo, railMat, MAX);
+const RAIL_DRAW = LOOK.kit ? new THREE.Vector3(1, 1, 1) : RAIL_SIZE; // the kit's rail comes at its own size
+lookBackLogs(pieceMesh(1).material as THREE.Material, pieceColor(0));
 rails.count = 0;
 rails.frustumCulled = false;
 rails.castShadow = true;
@@ -151,7 +156,7 @@ export function updatePieces(dt: number) {
       logs.setMatrixAt(nl, m.compose(v, q, sc.set(s, 1 + (s - 1) * 0.4, 1 + (s - 1) * 0.4)));
       logs.setColorAt(nl++, color);
     } else if (t.kind === 'rail' && nr < MAX) {
-      rails.setMatrixAt(nr++, m.compose(v, q.setFromEuler(e.set(0, u * 0.8, 0)), RAIL_SIZE));
+      rails.setMatrixAt(nr++, m.compose(v, q.setFromEuler(e.set(0, u * 0.8, 0)), RAIL_DRAW));
     }
     if (u >= 1) {
       trips.splice(k, 1);

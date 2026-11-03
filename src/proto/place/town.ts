@@ -1,207 +1,210 @@
-// The village of ?proto=place and what the camps do to it: timber builds the north side (halls and a clock tower), stone
-// the south side (streets and a keep). Rows are the shape of
-// src/proto/net/stages.ts and rise the way src/proto/net/town.ts does: rippling from the middle, the landmark last, then
-// fireworks. The owner's "trains growing the town" is the part that landed (docs/playtests.md, the depot entry). Local.
+// The village of ?proto=place and what the camps do to it. Cargo builds it: each step-up starts a few buildings, on
+// scaffolding, with their pieces dropping in as the forge's do (./sites.ts), the landmark last, then fireworks. Fewer
+// buildings than before, and every one of them solid. The plots are in `TOWN` (./layout.ts). The owner's "trains growing
+// the town" is the part that landed (docs/playtests.md, the depot entry); "it feels weird to just be able to walk through
+// the town like it's all billboard" is what this round fixes. Local.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
-import { thump, whistle } from '../../render/machine-sfx.ts';
+import { whistle } from '../../render/machine-sfx.ts';
 import { fanfare } from '../minis/common.ts';
-import { blockBoxes, draw, makeSet, type BoxSet, type Smoke } from '../net/boxes.ts';
-import { easeBack, LANDMARK_AFTER, puff, RIPPLE_MPS, shell, SHELLS, smooth, soot } from '../net/town-fx.ts';
+import { blockBoxes, makeSet } from '../net/boxes.ts';
+import { shell, SHELLS } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
+import {
+  blockPlan,
+  buildSites,
+  housePlan,
+  siteSmokes,
+  snapSite,
+  startSite,
+  towerPlan,
+  updateSites,
+  addSite,
+  type Plan,
+  type Site,
+} from './sites.ts';
 import { H } from './land.ts';
-import { VILLAGE, toWorld, type LineSpec } from './layout.ts';
+import { LOOK } from './look.ts';
+import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
 
-const WOOD = '#8a6a48',
+const PLASTER = '#e8dcc0',
   THATCH = '#c9a86a',
+  OAK = '#7f5630',
   TIMBER = '#a9794c',
   RED = '#c4453a',
   STONE = '#c8c3b4',
   STONE2 = '#b2ad9f',
   SLATE = '#4d5560',
-  CREAM = '#efe3c8',
-  GOLD = '#f2b134',
   BRICK = '#9a4a3a',
+  BRICK2 = '#8a4032',
+  GLASS = '#3f4a57',
+  GOLD = '#f2b134',
+  WHITE = '#f4f1e8',
   IRON = '#3f4145',
-  GLASS = '#55606c',
-  TERRACOTTA = '#c9663c',
-  WHITE = '#f4f1e8';
+  TERRACOTTA = '#c9663c';
 
-const hut = (x: number, z: number, yaw = 0): Block => ({
-  kind: 'hut',
-  x: toWorld(x),
-  z,
-  w: 2.8,
-  h: 1,
-  d: 2.6,
-  yaw,
-  color: WOOD,
-  pitch: { rise: 2.3, color: THATCH, over: 0.6 },
-});
-const hall = (x: number, z: number, w: number, h: number, d: number, yaw = 0, smokes = false): Block => ({
-  kind: 'hall',
-  x: toWorld(x),
-  z,
-  w,
-  h,
-  d,
-  yaw,
-  color: TIMBER,
-  pitch: { rise: Math.max(w, d) * 0.75, color: RED, over: 1 },
-  chimney: smokes ? { h: 2.5, dx: w * 0.28, dz: d * 0.2 } : undefined,
-});
-const WALLS = ['#d9d2c0', '#b9b5a8', '#d8b98c', '#c6c9c4', '#cf9f7e'];
-let blocks = 0;
-const block = (x: number, z: number, w: number, h: number, d: number, yaw = 0, smokes = false): Block[] => {
-  const k = blocks++;
-  const roof =
-    k % 3 === 1 ? { pitch: { rise: 2.6, color: TERRACOTTA, over: 0.7 } } : { top: { h: 0.8, color: SLATE, over: 0.7 } };
-  const floors: Block[] = [];
-  for (let y = 1.5; y < h - 1.2; y += 3)
-    floors.push({ kind: 'windows', x: toWorld(x), z, y, w: w + 0.12, h: 1, d: d + 0.12, yaw, color: GLASS });
-  return [
-    {
-      kind: 'stone block',
-      x: toWorld(x),
-      z,
-      w,
-      h,
-      d,
-      yaw,
-      color: WALLS[k % WALLS.length]!,
-      ...roof,
-      chimney: smokes ? { h: 3.5, dx: w * 0.28, dz: d * 0.2 } : undefined,
-    },
-    ...floors,
-  ];
-};
-const tower = (kind: string, x: number, z: number, y: number, w: number, h: number, color: string): Block => ({
-  kind: `landmark ${kind}`,
-  x: toWorld(x),
-  z,
-  y,
-  w,
-  h,
-  d: w,
-  color,
-});
-
-const CAMPFIRE: Block[] = [
-  { kind: 'campfire', x: toWorld(-101), z: 13, w: 1, h: 0.6, d: 1, color: '#e8742c', chimney: { h: 0 } },
-  { kind: 'log seat', x: toWorld(-99), z: 13, w: 0.5, h: 0.35, d: 1.7, color: '#6b4a2b' },
-];
-const HUTS_N = [hut(-108, 0, 0.2), hut(-104, 8, -0.3), hut(-118, 8, 0.1), hut(-114, -4, 0.3)];
-const HUTS_S = [hut(-108, 26, -0.2), hut(-98, 28, 0.15), hut(-90, 24, 0.3), hut(-115, 18, 0.1)];
-const KEPT = [hut(-90, 20, 0.1), ...CAMPFIRE];
-
-/** The steps: `wood` on the village's north side, `stone` on its south. */
-const STEPS: Record<'wood' | 'stone', Block[][]> = {
-  wood: [
-    [
-      tower('clock shaft', -104, -18, 0, 4.5, 21, WHITE),
-      tower('clock face', -104, -18, 21, 5.6, 3.6, GOLD),
-      tower('clock roof', -104, -18, 24.6, 6.6, 1, RED),
-      tower('clock spire', -104, -18, 25.6, 2.4, 6, RED),
-      hall(-112, -8, 7, 6, 6, 0.1, true),
-      hall(-88, -30, 7, 6, 6, -0.15),
-      hall(-124, -8, 6, 5, 6, 0.1),
-      hall(-112, 12, 6, 6, 7, 0.05, true),
-      hall(-118, 2, 6, 5, 5, -0.2),
-      {
-        kind: 'station',
-        x: toWorld(-59),
-        z: 2,
-        w: 3,
-        h: 3.2,
-        d: 9,
-        color: CREAM,
-        top: { h: 0.5, color: RED, over: 1 },
-      },
-    ],
-    [
-      hall(-120, -18, 8, 8, 7, 0.15, true),
-      hall(-108, -24, 8, 7, 6, -0.1),
-      hall(-72, -28, 7, 9, 7, 0.1),
-      hall(-56, -2, 7, 6, 6, -0.2, true),
-      hall(-96, -32, 9, 10, 8),
-      {
-        kind: 'water tower',
-        x: toWorld(-130),
-        z: -6,
-        w: 4,
-        h: 14,
-        d: 4,
-        color: TIMBER,
-        top: { h: 2.2, color: RED, over: 1 },
-      },
-    ],
-  ],
-  stone: [
-    [
-      tower('keep base', -98, 44, 0, 12, 14, STONE),
-      tower('keep shaft', -98, 44, 14, 8, 22, STONE2),
-      tower('keep cap', -98, 44, 36, 10.5, 2.5, SLATE),
-      tower('keep crown', -98, 44, 38.5, 4.8, 10, GOLD),
-      ...block(-112, 28, 6, 8, 6, 0.05, true),
-      ...block(-103, 30, 6, 11, 5, -0.05),
-      ...block(-90, 30, 6, 9, 6, 0.08),
-      ...block(-82, 32, 6, 12, 6, 0, true),
-      ...block(-114, 40, 6, 10, 5, 0.1),
-      ...block(-84, 44, 6, 14, 6, -0.05),
-    ],
-    [
-      ...block(-114, 54, 7, 12, 7, 0.05, true),
-      ...block(-103, 60, 6, 15, 6),
-      ...block(-90, 58, 6, 11, 6, -0.1),
-      ...block(-78, 54, 7, 17, 6, 0.1, true),
-      { kind: 'works stack', x: toWorld(-124), z: 42, w: 3, h: 28, d: 3, color: BRICK, chimney: { h: 0 } },
-      { kind: 'works shed', x: toWorld(-122), z: 50, w: 8, h: 5, d: 7, color: IRON },
-    ],
-  ],
-};
-
-// ---------------------------------------------------------------- building parts on this land
-type Part = BoxSet & { delay: Float32Array; smokes: Smoke[]; top: { x: number; y: number; z: number } | null };
-
-/** Builds a set of blocks standing on this land, rippling out from (cx, cz) when it rises. */
-export function makePart(rows: Block[], cx: number, cz: number): Part {
-  const smokes: Smoke[] = [];
-  const boxes = rows.flatMap((b) => {
-    const own: Smoke[] = [];
-    const out = blockBoxes(b, own);
-    const y = H(b.x, b.z);
-    for (const q of out) q.y = y;
-    for (const m of own) smokes.push({ x: m.x, y: y + (b.y ?? 0) + b.h + (b.chimney?.h ?? 0), z: m.z });
-    return out;
-  });
-  const set = makeSet(boxes);
-  const delay = Float32Array.from(set.boxes, (b) => {
-    const d = Math.hypot(b.x - cx, b.z - cz) / RIPPLE_MPS;
-    return b.pop > 1 ? Math.max(d, LANDMARK_AFTER) : d;
-  });
-  let top: Part['top'] = null;
-  for (const b of rows.filter((q) => q.kind.startsWith('landmark'))) {
-    const y = H(b.x, b.z) + (b.y ?? 0) + b.h;
-    if (!top || y > top.y) top = { x: b.x, y, z: b.z };
+function planOf(p: Plot): Plan {
+  const x = toWorld(p.x),
+    z = p.z,
+    yaw = p.yaw ?? 0,
+    w = p.w ?? 6,
+    d = p.d ?? 5;
+  const chimney = p.smoke ? { dx: w * 0.28, dz: d * 0.22, n: 5, a: BRICK, b: BRICK2 } : undefined;
+  switch (p.type) {
+    case 'cottage':
+      return housePlan({
+        x,
+        z,
+        yaw,
+        w,
+        d,
+        high: 3,
+        rise: 2.5,
+        wall: PLASTER,
+        post: OAK,
+        roof: THATCH,
+        door: { w: 1.5, rows: 3 },
+        windows: GLASS,
+        chimney,
+      });
+    case 'hall':
+      return housePlan({
+        x,
+        z,
+        yaw,
+        w,
+        d,
+        high: p.h ?? 5.2,
+        rise: 3.6,
+        wall: TIMBER,
+        post: OAK,
+        roof: RED,
+        door: { w: 2.6, rows: 4 },
+        windows: GLASS,
+        chimney: chimney && { ...chimney, n: 7 },
+      });
+    case 'stone':
+      return housePlan({
+        x,
+        z,
+        yaw,
+        w,
+        d,
+        high: p.h ?? 6,
+        rise: 2.6,
+        wall: STONE,
+        post: STONE2,
+        roof: p.tile ? TERRACOTTA : SLATE,
+        door: { w: 1.6, rows: 2 },
+        windows: GLASS,
+        rowH: 1,
+        chimney: chimney && { ...chimney, n: 6 },
+      });
+    case 'shed':
+      return housePlan({
+        x,
+        z,
+        yaw,
+        w,
+        d,
+        high: p.h ?? 4,
+        rise: 2.8,
+        wall: p.tile ? STONE2 : TIMBER,
+        post: OAK,
+        roof: p.tile ? SLATE : RED,
+        door: { w: 3.2, rows: 3 },
+      });
+    case 'clock':
+      return towerPlan({
+        x,
+        z,
+        w: 5,
+        high: 19,
+        course: 1.6,
+        a: WHITE,
+        b: '#e4dfd2',
+        tops: [
+          { w: 6.2, h: 3.6, color: GOLD },
+          { w: 7, h: 0.8, color: RED },
+          { w: 3.6, h: 2.6, color: RED },
+          { w: 1.6, h: 3.4, color: RED },
+        ],
+      });
+    case 'keep':
+      return towerPlan({
+        x,
+        z,
+        w: 9,
+        high: 22,
+        course: 1.8,
+        a: STONE,
+        b: STONE2,
+        tops: [
+          { w: 10.6, h: 1.2, color: SLATE },
+          { w: 5, h: 5, color: STONE2 },
+          { w: 3, h: 4, color: GOLD },
+        ],
+      });
+    case 'water':
+      return towerPlan({
+        x,
+        z,
+        w: 3.6,
+        high: 11,
+        course: 2,
+        a: TIMBER,
+        b: OAK,
+        tops: [
+          { w: 5.2, h: 3, color: '#8a6236' },
+          { w: 5.8, h: 0.6, color: RED },
+        ],
+      });
+    case 'stack':
+      return towerPlan({
+        x,
+        z,
+        w: 2.4,
+        high: p.h ?? 12,
+        course: 1.6,
+        a: BRICK,
+        b: BRICK2,
+        tops: [{ w: 3, h: 0.5, color: IRON }],
+      });
+    case 'rock':
+      return blockPlan({ x, z, yaw, w, h: p.h ?? 4, d, color: p.color ?? '#9b978c' }, 2);
+    case 'block':
+      return blockPlan({ x, z, yaw, w, h: p.h ?? 2, d, color: p.color ?? '#8a6236' }, 3, p.top);
+    case 'derrick':
+      return blockPlan({ x, z, w: 1, h: 14, d: 1, color: OAK }, 4, IRON);
   }
-  return { ...set, delay, smokes, top };
 }
-const endOf = (p: Part) => p.boxes.reduce((e, b, k) => Math.max(e, p.delay[k]! + b.pop), 0);
+const site = (p: Plot, k: string) => addSite(k, planOf(p), p.type === 'clock' || p.type === 'keep' ? 2 : 1);
+const LANDMARK = new Set<Plot['type']>(['clock', 'keep']);
 
-type Rise = { part: Part; t: number; end: number; puffed: Set<number>; show: boolean };
-const RISE_SPEED = 2; // the town and the camps rise, and the fireworks go up, this much faster than ?proto=net's
-const rises: Rise[] = [];
-export function rise(part: Part) {
-  rises.push({ part, t: 0, end: endOf(part) + 0.1, puffed: new Set(), show: true });
-}
+const STARTS = TOWN.start.map((p, k) => site(p, `start${k}`));
+const STEPS = {
+  wood: TOWN.wood.map((row, n) => row.map((p, k) => site(p, `wood${n}-${k}`))),
+  stone: TOWN.stone.map((row, n) => row.map((p, k) => site(p, `stone${n}-${k}`))),
+};
+const LANDMARKS = new Map<Site, boolean>();
+TOWN.wood.forEach((row, n) => row.forEach((p, k) => LANDMARKS.set(STEPS.wood[n]![k]!, LANDMARK.has(p.type))));
+TOWN.stone.forEach((row, n) => row.forEach((p, k) => LANDMARKS.set(STEPS.stone[n]![k]!, LANDMARK.has(p.type))));
+const CAMPS = TOWN.camps.map((c, n) => ({
+  asleep: c.asleep.map((p, k) => site(p, `camp${n}a${k}`)),
+  awake: c.awake.map((p, k) => site(p, `camp${n}w${k}`)),
+}));
+buildSites();
+
+// ---------------------------------------------------------------- fireworks
 const shells: { t: number; x: number; y: number; z: number; c: THREE.Color }[] = [];
-export function fireworks(top: { x: number; y: number; z: number }) {
-  for (let k = 0; k < 6; k++)
+/** `n` shells over this point, about `gap` s apart, wide enough to fill the sky over a town. */
+export function fireworks(top: { x: number; y: number; z: number }, n = 6, gap = 0.45, spread = 18) {
+  for (let k = 0; k < n; k++)
     shells.push({
-      t: k * 0.45,
-      x: top.x + (Math.random() - 0.5) * 18,
+      t: k * gap,
+      x: top.x + (Math.random() - 0.5) * spread,
       y: top.y + 8 + Math.random() * 14,
-      z: top.z + (Math.random() - 0.5) * 18,
+      z: top.z + (Math.random() - 0.5) * spread,
       c: SHELLS[Math.floor(Math.random() * SHELLS.length)]!,
     });
 }
@@ -209,89 +212,57 @@ export function fireworks(top: { x: number; y: number; z: number }) {
 // ---------------------------------------------------------------- the village
 const cx = toWorld(VILLAGE.x),
   cz = VILLAGE.z;
-let sets: { kept: Part; north: Part; south: Part; wood: Part[]; stone: Part[] } | null = null;
 const drawn = { wood: 0, stone: 0 };
-const sinking: { part: Part; t: number }[] = [];
-let smokeAcc = 0;
-function ensure() {
-  if (sets) return sets;
-  sets = {
-    kept: makePart(KEPT, cx, cz),
-    north: makePart(HUTS_N, cx, cz),
-    south: makePart(HUTS_S, cx, cz),
-    wood: STEPS.wood.map((r) => makePart(r, cx, cz)),
-    stone: STEPS.stone.map((r) => makePart(r, cx, cz)),
-  };
-  draw(sets.kept, () => 1);
-  draw(sets.north, () => 1);
-  draw(sets.south, () => 1);
-  return sets;
-}
-function setTo(kind: 'wood' | 'stone', n: number) {
-  const s = ensure();
-  s[kind].forEach((p, k) => draw(p, () => (k < n ? 1 : 0)));
-  draw(kind === 'wood' ? s.north : s.south, () => (n ? 0 : 1));
-  drawn[kind] = n;
-}
+const camps = [false, false];
 /** Start over, or a reload: the town as it stands, without the show. */
 export function snapTown(wood: number, stone: number) {
-  rises.length = 0;
-  sinking.length = 0;
   shells.length = 0;
-  setTo('wood', wood);
-  setTo('stone', stone);
+  for (const q of STARTS) snapSite(q, true);
+  for (const kind of ['wood', 'stone'] as const) {
+    const want = kind === 'wood' ? wood : stone;
+    STEPS[kind].forEach((row, n) => row.forEach((q) => snapSite(q, n < want)));
+    drawn[kind] = want;
+  }
 }
-/** The town at these steps; a step higher than drawn plays. */
+/** A camp as it stands: its old buildings, and the new ones once its line is open. */
+export function snapCamp(k: number, open: boolean) {
+  const c = CAMPS[k]!;
+  for (const q of c.asleep) snapSite(q, true);
+  for (const q of c.awake) snapSite(q, open);
+  camps[k] = open;
+}
+/** Its line just opened: the camp builds itself up, the same way. */
+export function wakeCamp(k: number) {
+  if (camps[k]) return;
+  camps[k] = true;
+  CAMPS[k]!.awake.forEach((q, n) => startSite(q, 1.5 + n * 2.2));
+}
+/** The next thing the town will show: a step that's started this frame, with its landmark, or null. */
+export const onStepUp = { fn: null as null | ((kind: 'wood' | 'stone', first: Site) => void) };
+/** The town at these steps; a step higher than drawn starts building. */
 export function updateTown(wood: number, stone: number, dt: number) {
-  const s = ensure();
   for (const kind of ['wood', 'stone'] as const) {
     const want = kind === 'wood' ? wood : stone;
     if (want <= drawn[kind]) continue;
-    const part = s[kind][drawn[kind]]!;
-    rise(part);
-    if (drawn[kind] === 0) sinking.push({ part: kind === 'wood' ? s.north : s.south, t: 0 });
+    const row = STEPS[kind][drawn[kind]]!;
     drawn[kind]++;
-    fanfare(drawn[kind] >= 2);
+    // Plain buildings first, about 2.5 s apart; the landmark rises behind them and ends in fireworks.
+    let at = 0.6;
+    for (const q of row) {
+      const landmark = LANDMARKS.get(q);
+      startSite(q, landmark ? at + 1 : at, () => {
+        if (landmark) {
+          fireworks(q.plan.top, 8);
+          fanfare(true, 0.7);
+        }
+      });
+      if (!landmark) at += 2.5;
+    }
+    onStepUp.fn?.(kind, row[0]!);
+    fanfare(drawn[kind] >= 2, 0.7);
     whistle(cx, cz);
   }
-  updateRises(dt * RISE_SPEED);
-  for (let k = sinking.length - 1; k >= 0; k--) {
-    const q = sinking[k]!;
-    q.t += dt;
-    draw(q.part, () => 1 - smooth(Math.min(1, q.t / 0.6)));
-    if (q.t > 0.6) sinking.splice(k, 1);
-  }
-  smokeAcc += dt * 1.4;
-  for (; smokeAcc >= 1; smokeAcc--) {
-    const list = [s.kept, ...s.wood.slice(0, drawn.wood), ...s.stone.slice(0, drawn.stone)];
-    for (const p of list) for (const c of p.smokes) chimney(c);
-  }
-}
-function updateRises(dt: number) {
-  for (let k = rises.length - 1; k >= 0; k--) {
-    const a = rises[k]!,
-      p = a.part;
-    draw(p, (n) => {
-      const b = p.boxes[n]!;
-      const u = (a.t - p.delay[n]!) / b.pop;
-      if (u > 0 && b.tall && !a.puffed.has(n)) {
-        a.puffed.add(n);
-        puff(b.x, b.y, b.z, b.pop > 1 ? 5 : 3);
-        thump(b.x, b.z);
-      }
-      if (u <= 0) return 0;
-      return u >= 1 ? 1 : b.pop > 1 ? smooth(u) : easeBack(u);
-    });
-    if (p.top && a.t > a.end - 0.2 && a.show) {
-      a.show = false;
-      fireworks(p.top);
-    }
-    a.t += dt;
-    if (a.t > a.end) {
-      draw(p, () => 1);
-      rises.splice(k, 1);
-    }
-  }
+  updateSites(dt);
   for (let k = shells.length - 1; k >= 0; k--) {
     const c = shells[k]!;
     c.t -= dt;
@@ -299,8 +270,12 @@ function updateRises(dt: number) {
     shell(c.x, c.y, c.z, c.c);
     shells.splice(k, 1);
   }
+  smokeAcc += dt * 1.1;
+  for (; smokeAcc >= 1; smokeAcc--) for (const c of siteSmokes()) chimney(c);
 }
-function chimney(c: Smoke) {
+let smokeAcc = 0;
+const smoke = new THREE.Color(LOOK.light ? '#ede9e0' : '#8d8780');
+function chimney(c: { x: number; y: number; z: number }) {
   emit({
     x: c.x,
     y: c.y + 0.2,
@@ -309,101 +284,26 @@ function chimney(c: Smoke) {
     vy: 2.2 + Math.random() * 0.8,
     vz: (Math.random() - 0.5) * 0.4,
     life: 4,
-    size: 1,
-    grow: [1, 3.4],
-    alpha: 0.7,
+    size: 0.9,
+    grow: [1, 3.2],
+    alpha: 0.55,
     fade: 0.5,
-    color: soot,
+    color: smoke,
     drag: 0.25,
   });
 }
 
-// ---------------------------------------------------------------- the camps' buildings
-const X = (x: number) => toWorld(x);
-export function campBlocks(spec: LineSpec): { asleep: Block[]; awake: Block[] } {
-  const { x, z } = spec.camp;
-  if (spec.kind === 'wood')
-    return {
-      asleep: [
-        { kind: 'kiln', x: X(x + 10), z: z - 16, w: 3.4, h: 5, d: 3.4, color: BRICK },
-        { kind: 'kiln stack', x: X(x + 10), z: z - 16, y: 5, w: 1.6, h: 7, d: 1.6, color: IRON },
-        {
-          kind: 'camp shed',
-          x: X(x - 2),
-          z: z - 18,
-          w: 5,
-          h: 2.5,
-          d: 4,
-          color: WOOD,
-          pitch: { rise: 2, color: THATCH, over: 0.5 },
-        },
-      ],
-      awake: [
-        {
-          kind: 'sawmill frame',
-          x: X(x + 34),
-          z: z + 16,
-          w: 12,
-          h: 4.5,
-          d: 7,
-          color: TIMBER,
-          pitch: { rise: 3.6, color: RED, over: 1 },
-        },
-        { kind: 'mill wheel', x: X(x + 42), z: z + 17, w: 1.4, h: 6, d: 6, color: WOOD },
-        { kind: 'log stack', x: X(x + 26), z: z + 24, w: 7, h: 2.4, d: 3, color: '#8a6236' },
-        { kind: 'log stack', x: X(x + 34), z: z + 28, w: 6, h: 3, d: 3, color: '#9a7446' },
-        {
-          kind: 'hall',
-          x: X(x + 40),
-          z: z + 28,
-          w: 7,
-          h: 5,
-          d: 6,
-          color: TIMBER,
-          pitch: { rise: 3.4, color: RED, over: 1 },
-        },
-      ],
-    };
-  return {
-    asleep: [
-      { kind: 'crusher', x: X(x + 8), z: z - 45, w: 4, h: 5, d: 4, color: STONE2 },
-      { kind: 'crusher stack', x: X(x + 8), z: z - 45, y: 5, w: 1.8, h: 8, d: 1.8, color: IRON },
-      { kind: 'quarry face', x: X(x + 20), z: z + 4, w: 10, h: 9, d: 22, color: '#9b978c' },
-      { kind: 'quarry step', x: X(x + 14), z: z + 12, w: 8, h: 4, d: 10, color: '#a8a498' },
-    ],
-    awake: [
-      {
-        kind: 'derrick',
-        x: X(x + 2),
-        z: z + 10,
-        w: 1,
-        h: 14,
-        d: 1,
-        color: '#7f5630',
-        top: { h: 0.6, color: IRON, over: 6 },
-      },
-      {
-        kind: 'stone shed',
-        x: X(x - 4),
-        z: z - 4,
-        w: 10,
-        h: 5,
-        d: 7,
-        color: STONE,
-        top: { h: 0.8, color: SLATE, over: 0.8 },
-      },
-      { kind: 'stone stack', x: X(x - 12), z: z + 4, w: 5, h: 2.2, d: 4, color: STONE2 },
-      { kind: 'stone stack', x: X(x - 6), z: z + 8, w: 4, h: 3, d: 4, color: '#a8a498' },
-      {
-        kind: 'works',
-        x: X(x + 10),
-        z: z + 2,
-        w: 7,
-        h: 7,
-        d: 6,
-        color: STONE2,
-        top: { h: 0.8, color: SLATE, over: 0.7 },
-      },
-    ],
-  };
+/** Plain things that just stand there, from the start. */
+export function staticPart(rows: Block[]) {
+  const set = makeSet(
+    rows.flatMap((b) => {
+      const y = H(b.x, b.z);
+      const out = blockBoxes(b, []);
+      for (const q of out) q.y = y;
+      return out;
+    }),
+  );
+  return set;
 }
+/** Where a camp's smoke comes from, asleep or awake. */
+export const campSmoke = (k: number) => CAMPS[k]!.asleep[0]!.plan.top;

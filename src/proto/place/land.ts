@@ -20,6 +20,7 @@ import {
   ORIGIN,
   PATHS,
   SPIRE,
+  TOWN,
   VILLAGE,
   lineAt,
   railY,
@@ -168,6 +169,13 @@ function bake() {
   for (const l of LINKS) pad(l.camp.x, l.camp.z, l.camp.y, 34, 22);
   pad(-82, 2, VILLAGE.y, 26, 10);
   pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
+  // Every plot sits on a level pad, which also keeps the random trees out of it.
+  const plots = [TOWN.start, ...TOWN.wood, ...TOWN.stone].flat();
+  for (const p of plots) pad(p.x, p.z, VILLAGE.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
+  TOWN.camps.forEach((c, k) => {
+    for (const p of [...c.asleep, ...c.awake])
+      pad(p.x, p.z, LINKS[k]!.camp.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
+  });
   // Rail on the land: a cutting or low bank along it, none in the gorge (that's what the trestle's for).
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   for (const line of Object.values(LINES)) {
@@ -221,8 +229,8 @@ function buildMesh() {
     col = new Float32Array(N * N * 3);
   const c = new THREE.Color();
   const SAND = new THREE.Color('#e8d39a'),
-    GRASS = new THREE.Color(LOOK.ground ? '#7ebb2e' : '#79b84a'),
-    GRASS2 = new THREE.Color(LOOK.ground ? '#6fa928' : '#5ea241'),
+    GRASS = new THREE.Color(LOOK.ground ? '#6c9a42' : '#79b84a'),
+    GRASS2 = new THREE.Color(LOOK.ground ? '#568740' : '#5ea241'),
     ROCK = new THREE.Color('#a08a70'),
     ROCK_LOW = new THREE.Color('#6d6f78'),
     DIRT = new THREE.Color('#e0b271'),

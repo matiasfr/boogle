@@ -3,6 +3,9 @@
 // shots: sign, wake, chop, stack, laying, target, layingm, trestle, crane, lit, line2, far, reload, reset. shot=fall stands on the finished trestle and on
 // the machine and the train, and logs what holds you. shot=play runs the whole thing with real input (it needs a long
 // --warm) and writes times per beat on the screen.
+// Third round: arrive (&at=metres along the line), site, blocked, shelf, shelf2, ornaments, guys, guys2, crystal, cost; and,
+// with `--action dev/look/evals/place-act.ts` to set them off on the motion sheet or the video, waking, pullout, crate,
+// crystalgo. &look=off for the old look.
 const q = new URLSearchParams(location.search);
 const shot = q.get('shot') || 'sign';
 type P3 = { x: number; y: number; z: number };
@@ -26,7 +29,7 @@ type LineRun = {
       stop: number;
       cars: { body: { position: P3 } }[];
     };
-    clock: { t: number };
+    clock: { t: number; running: boolean };
   };
 };
 type Tree = { x: number; y: number; z: number; fall: number; index: number };
@@ -50,7 +53,18 @@ const place = window.__place as {
   skipLine2: () => void;
   startOver: () => void;
   wake: () => void;
+  give: (n: number) => void;
+  setForge: (n: number) => void;
+  snapCrystals: (l: number[]) => void;
+  giftState: { got: string[]; crates: () => { x: number; y: number; z: number }[] };
+  openCrate: (c: { x: number; z: number }) => void;
+  crystals: { found: number[] };
+  crystalAt: (k: number) => { x: number; y: number; z: number };
+  folk: { count: () => number };
+  RACK: { x: number; z: number };
+  SHELF: { x: number; z: number; yaw: number };
 };
+const act = window as unknown as { __placeAct?: () => unknown };
 if (!place) throw new Error('no place: add proto=place to the query');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { input } = (await import('/src/player/input.ts' as string)) as typeof import('../../../src/player/input.ts');
@@ -291,6 +305,172 @@ if (shot === 'reload') {
     const u = Math.min(1, Math.max(0, (s - 50) / (118 - 50)));
     return u * u * (3 - 2 * u);
   }
+} else if (shot === 'waking') {
+  // The machine waking, from where you'd stand to press it.
+  const f = place.machine.flatbed;
+  put(f.x - 5, f.z + 6, yawTo(f.x - 5, f.z + 6, f.x, f.z - 1), -0.12);
+  act.__placeAct = () => place.wake();
+} else if (shot === 'pullout') {
+  // Stops a metre short of finishing line 1, then lets it finish: what the player sees as the line comes through.
+  place.skipDelivery();
+  await waitMode('idle');
+  place.skipDelivery();
+  await waitMode('idle');
+  const st = L1.stations[2]!;
+  place.skipDelivery();
+  await waitMode('laying');
+  while (place.run.head > 31.2) await wait(16);
+  place.run.mode = 'frozen';
+  await wait(1000);
+  put(st.x + 2, st.z + 5, yawTo(st.x + 2, st.z + 5, place.machine.flatbed.x, place.machine.flatbed.z), -0.1);
+  act.__placeAct = () => void (place.run.mode = 'laying');
+} else if (shot === 'arrive') {
+  // Riding the train in, facing the way it goes: the forge should be in front of you.
+  place.skipForge();
+  place.setForge(Number(q.get('crates') ?? 7));
+  const tr = L1.train.tr;
+  while (tr.stop !== 1) await wait(50);
+  const c = tr.cars[1]!.body.position;
+  putW(c.x, c.y + 1.4, c.z, 0);
+  await wait(400);
+  while (tr.stop === 1) await wait(50);
+  const at = Number(q.get('at') ?? 42);
+  while (tr.s > at) {
+    const ln = L1.spec.line;
+    const k = Math.max(0, Math.round(tr.s - 14));
+    cam.yaw = me.yaw = yawTo(body.position.x, body.position.z, ln.xs[k]! + O, ln.zs[k]!);
+    cam.pitch = -0.1;
+    await wait(16);
+  }
+  L1.train.clock.running = false;
+} else if (shot === 'platform') {
+  // Standing on the platform, as the crates land.
+  place.skipForge();
+  place.setForge(Number(q.get('crates') ?? 7));
+  const x = O - 73,
+    z = -1.5;
+  putW(x, 20.5, z, yawTo(x, z, O - 87, -3), -0.06);
+} else if (shot === 'site') {
+  // A town building on its poles.
+  place.skipLine2();
+  await wait(1500);
+  place.s.wood = 6;
+  put(O - 84, 14, yawTo(O - 84, 14, O - 92, 34), 0.02);
+  await wait(Number(q.get('t') ?? 3500));
+} else if (shot === 'blocked') {
+  // Walks straight at a cottage, for real, and says where it stopped.
+  const say = document.createElement('div');
+  say.style.cssText =
+    'position:fixed;left:8px;top:80px;z-index:9999;font:bold 15px monospace;color:#000;background:#fff;padding:6px;white-space:pre';
+  document.body.append(say);
+  const tx = O - 108,
+    tz = -4;
+  put(tx + 8, tz + 2, yawTo(tx + 8, tz + 2, tx, tz), -0.1);
+  await wait(500);
+  input.keys.add('KeyW');
+  for (let k = 0; k < 60; k++) {
+    cam.yaw = me.yaw = yawTo(body.position.x, body.position.z, tx, tz);
+    await wait(50);
+  }
+  input.keys.delete('KeyW');
+  const d = Math.hypot(body.position.x - tx, body.position.z - tz);
+  say.textContent = `walked 3 s at the cottage: stopped ${d.toFixed(2)} m from its middle ${d > 2 ? '(blocked)' : '(WENT THROUGH)'}`;
+  console.log(say.textContent);
+} else if (shot === 'crate') {
+  // The first stretch's crate, delivered; the action opens it.
+  place.skipDelivery();
+  await waitMode('idle');
+  await wait(1000);
+  const c = place.giftState.crates()[0]!;
+  put(c.x + 5.5, c.z + 3.5, yawTo(c.x + 5.5, c.z + 3.5, c.x, c.z), -0.08);
+  act.__placeAct = () => place.openCrate(c);
+} else if (shot === 'shelf' || shot === 'shelf2') {
+  const { x, z, yaw } = place.SHELF;
+  if (shot === 'shelf2') {
+    place.give(5);
+    place.snapCrystals([0, 1, 2]);
+  }
+  const fx = x + Math.sin(yaw) * 4.6,
+    fz = z + Math.cos(yaw) * 4.6;
+  put(fx, fz, yawTo(fx, fz, x, z), -0.05);
+} else if (shot === 'ornaments') {
+  // The machine, or the train if it's open, with what you've been given.
+  place.skipForge();
+  place.give(Number(q.get('n') ?? 8));
+  const tr = L1.train.tr;
+  const stop = 0;
+  while (tr.stop !== stop) await wait(50);
+  L1.train.clock.running = false;
+  const c = tr.cars[1]!.body.position;
+  put(c.x - 6, c.z - 5, yawTo(c.x - 6, c.z - 5, c.x, c.z), -0.1);
+} else if (shot === 'mounts') {
+  // The empty mounts: what you see when you reach the machine.
+  const f = place.machine.flatbed;
+  const lo = place.machine.loco;
+  put(lo.x - 4, lo.z + 4, yawTo(lo.x - 4, lo.z + 4, (f.x + lo.x) / 2, (f.z + lo.z) / 2), -0.12);
+} else if (shot === 'guys') {
+  // The village with some people in it, on the platform and round the forge.
+  place.s.people = Number(q.get('people') ?? 28);
+  place.skipForge();
+  await wait(1000);
+  put(O - 92, 10, yawTo(O - 92, 10, O - 78, -6), -0.1);
+  await wait(6000);
+} else if (shot === 'guys2') {
+  // A station's helpers, and the camp's.
+  place.skipDelivery();
+  await waitMode('idle');
+  await wait(600);
+  const st = L1.stations[1]!;
+  put(st.x + 6, st.z + 4, yawTo(st.x + 6, st.z + 4, st.x, st.z), -0.14);
+} else if (shot === 'crystal' || shot === 'crystalgo') {
+  const c = place.crystalAt(Number(q.get('k') ?? 0));
+  put(c.x + 5.5, c.z + 2, yawTo(c.x + 5.5, c.z + 2, c.x, c.z), -0.1);
+  act.__placeAct = () => {
+    input.keys.add('KeyW');
+    setTimeout(() => input.keys.delete('KeyW'), 1600);
+  };
+} else if (shot === 'cost') {
+  // What a late frame costs, at what an iPad runs (src/render/scene.ts 1024 shadow map, 0.8x): counts on the screen.
+  const say = document.createElement('div');
+  say.style.cssText =
+    'position:fixed;left:8px;top:80px;z-index:9999;font:bold 15px monospace;color:#000;background:#fff;padding:6px;white-space:pre';
+  document.body.append(say);
+  const { sun, renderer } = (await import('/src/render/scene.ts' as string)) as {
+    sun: { shadow: { mapSize: { setScalar: (n: number) => void }; map: { dispose: () => void } | null } };
+    renderer: {
+      setPixelRatio: (r: number) => void;
+      info: { frame: number; render: { drawCalls: number; triangles: number } };
+    };
+  };
+  sun.shadow.mapSize.setScalar(1024);
+  sun.shadow.map?.dispose();
+  sun.shadow.map = null;
+  renderer.setPixelRatio(0.8);
+  const frame = () =>
+    new Promise<{ drawCalls: number; triangles: number }>((res) => {
+      const at = renderer.info.frame;
+      const t = setInterval(() => renderer.info.frame > at && (clearInterval(t), res({ ...renderer.info.render })), 20);
+    });
+  const row = async (name: string) => {
+    await wait(2500);
+    await frame();
+    const a = await frame();
+    say.textContent += `${name}: ${a.drawCalls} draws, ${Math.round(a.triangles / 1000)}k tris, ${place.folk.count()} guys\n`;
+    console.log('COST ' + name, a.drawCalls, a.triangles);
+  };
+  await row('spawn, start of the run');
+  place.give(8);
+  place.s.people = 40;
+  place.skipLine2();
+  place.s.wood = 16;
+  place.s.stone = 16;
+  await wait(1000);
+  put(O - 92, 16, yawTo(O - 92, 16, O - 84, 0), -0.06);
+  await row('village, everything built or building');
+  await wait(18000);
+  await row('village, 20 s on');
+  put(O - 72, 34, yawTo(O - 72, 34, O - 90, 50), -0.04);
+  await row('stone street');
 } else if (shot === 'play') {
   // The whole run, as a first-time player would, with real input: walk, wake, chop, carry, ride, take rails, line 2.
   // Not awaited: `--warm` is how long it gets, and the still at the end shows the log.
@@ -357,6 +537,7 @@ if (shot === 'reload') {
         await chopFill(Math.min(place.TUNE.carry!, st.wants('logs')));
         if (k === 2) await alongLine(L1, 118, 74); // the machine stands on the track from 70 on
         await go(st.x, st.z, 3);
+        await openCrate(); // the last stretch's, waiting by the frame
         await wait(1400);
         if (k === 2 && !st.full()) await alongLine(L1, 74, 118);
       }
@@ -366,11 +547,34 @@ if (shot === 'reload') {
       await waitMode(k < 2 ? 'idle' : 'running', 60000);
       note(`stretch ${k + 1} laid (${(now() - lay0).toFixed(1)} s)`);
     };
+    // The crate the machine just handed down: walk into it, watch it.
+    const openCrate = async () => {
+      const c = place.giftState.crates()[0];
+      if (!c) return;
+      const n = place.giftState.got.length;
+      await go(c.x, c.z, 1.2, 40000);
+      while (place.giftState.got.length === n && place.giftState.crates().length) await wait(50);
+      await wait(3300);
+      note(`crate open: ${place.giftState.got.at(-1)}`);
+    };
+    const at = (n: number, lat: number): [number, number] => {
+      const ln = L1.spec.line;
+      const ux = ln.xs[n + 1]! - ln.xs[n]!,
+        uz = ln.zs[n + 1]! - ln.zs[n]!;
+      return [ln.xs[n]! + O - uz * lat, ln.zs[n]! + ux * lat];
+    };
     const board = async (l: LineRun, stop: 0 | 1) => {
       const ln = l.spec.line;
       const tr = l.train.tr;
       const sAt = stop ? ln.len - place.TUNE.stopIn! : place.TUNE.stopIn!;
-      await go(ln.xs[Math.round(sAt)]! + O + 2, ln.zs[Math.round(sAt)]! + 2.4, 2.5);
+      // Line 1's village platform is on the forge's side of the track, its far one on the other.
+      if (stop) await go(ln.xs[Math.round(sAt)]! + O + 2, ln.zs[Math.round(sAt)]! + 2.4, 2.5);
+      else {
+        // Up its side ramp and along it to where the train stops.
+        await go(...at(24, -10.5), 1.5);
+        await go(...at(24, -3), 1);
+        await go(...at(Math.round(sAt), -2.9), 1.5);
+      }
       for (;;) {
         while (tr.stop !== stop) await wait(50);
         const c = tr.cars[1]!.body.position;
@@ -380,6 +584,15 @@ if (shot === 'reload') {
           if (Math.hypot(body.position.x - c.x, body.position.z - c.z) < 2.3) me.jumpQueued = 0.2;
           await wait(40);
           if (Math.hypot(body.position.x - c.x, body.position.z - c.z) < 0.5) input.keys.delete('KeyW');
+        }
+        // To the middle of the deck, as anyone would.
+        for (
+          let n = 0;
+          n < 25 && plat.carry.on && Math.hypot(body.position.x - c.x, body.position.z - c.z) > 0.6;
+          n++
+        ) {
+          cam.yaw = me.yaw = yawTo(body.position.x, body.position.z, c.x, c.z);
+          await wait(40);
         }
         input.keys.delete('KeyW');
         if (plat.carry.on) break;
@@ -391,10 +604,40 @@ if (shot === 'reload') {
       while (tr.stop !== (stop ? 0 : 1)) await wait(40);
       note(`ride ${(now() - left).toFixed(1)} s`);
     };
+    const rest = async () => {
+      await board(L1, 1);
+      note(`home, forge ${place.forge.crates}/${place.TUNE.forgeCost}`);
+      // Off the train at once, as anyone would: it leaves again in 5 s.
+      const pos = (w: string) =>
+        q.get('legs') &&
+        note(
+          `${w} ${body.position.x.toFixed(1)},${body.position.y.toFixed(1)},${body.position.z.toFixed(1)} carry ${plat.carry.on ? 'y' : 'n'}`,
+        );
+      pos('home');
+      await go(...at(14, -3.4), 1, 4000);
+      pos('platform');
+      await go(place.RACK.x, place.RACK.z, 3.2);
+      note('off the train, at the rack');
+      const t2 = performance.now();
+      while (!place.forge.lit && performance.now() - t2 < 120000) await wait(200);
+      note(`forge lit ${place.forge.lit}`);
+      await waitMode('idle', 20000);
+      note('machine on line 2');
+      await wait(1000);
+    };
     note('start');
     if (q.get('from') === 'line2') {
       place.skipLine2();
       await wait(4500);
+    } else if (q.get('from') === 'home') {
+      // From the first ride home: for a quick look at the run's second half.
+      place.skipForge();
+      const tr = L1.train.tr;
+      while (tr.stop !== 1) await wait(50);
+      const c = tr.cars[1]!.body.position;
+      putW(c.x, c.y + 1.4, c.z, 0);
+      await wait(600);
+      await rest();
     } else {
       const path = place.PATH_SAMPLES[0]!;
       for (let n = 0; n < path.length; n += 3) await go(path[n]![0] + O, path[n]![1], 1.8);
@@ -405,31 +648,23 @@ if (shot === 'reload') {
       press();
       await wait(300);
       if (!place.s.awake) note('WAKE FAILED');
-      note('woke');
+      await waitMode('idle', 8000);
+      note('woke (the show)');
       await deliverLine1(0);
       await deliverLine1(1);
       await deliverLine1(2);
       note('line 1 open');
       await wait(4000);
+      await openCrate(); // by the platform
       // The first train comes in. Hop on at the village and ride it out and back with the next load.
       await board(L1, 0);
-      await board(L1, 1);
-      note(`home, forge ${place.forge.crates}/${place.TUNE.forgeCost}`);
-      // Off the train at once, as anyone would: it leaves again in 5 s.
-      await go(O - 85.5, -5, 3.2);
-      note('off the train, at the rack');
-      const t2 = performance.now();
-      while (!place.forge.lit && performance.now() - t2 < 120000) await wait(200);
-      note(`forge lit ${place.forge.lit}`);
-      await waitMode('idle', 20000);
-      note('machine on line 2');
-      await wait(1000);
+      await rest();
     }
     const carryOut = async (k: number) => {
       const st = L2.stations[k]!;
       const started = now();
       while (!st.full()) {
-        const rack = { x: O - 85.5, z: -5 };
+        const rack = place.RACK;
         if (st.wants('rails') - place.back.rails > 0 && place.back.room() > 0) {
           await go(rack.x, rack.z, 3.2);
           while (place.forge.rails <= 0) await wait(200);
@@ -446,6 +681,7 @@ if (shot === 'reload') {
         }
         await alongLine(L2, 12, Math.max(12, st.spec.s - 12));
         await go(st.x, st.z, 3);
+        await openCrate();
         if (q.get('legs')) note(`at the frame, wants ${st.wants('rails')}, ${st.wants('logs')}`);
         await wait(1500);
         if (!st.full()) await alongLine(L2, Math.max(12, st.spec.s - 12), 12);
@@ -460,6 +696,8 @@ if (shot === 'reload') {
     await carryOut(1);
     await carryOut(2);
     note('line 2 open');
+    await alongLine(L2, L2.stations[2]!.spec.s, L2.spec.line.len - 10);
+    await openCrate();
     const t3 = performance.now();
     while (place.s.stone === 0 && performance.now() - t3 < 120000) await wait(200);
     note(`stone reached the village: ${place.s.stone}`);
