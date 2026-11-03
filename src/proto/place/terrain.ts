@@ -12,6 +12,7 @@ import {
   LOBE,
   ORIGIN,
   PATHS,
+  ROOM_PLOTS,
   SPIRE,
   TOWN,
   VILLAGE,
@@ -175,7 +176,7 @@ function bake() {
   pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
   pad(HEAD.x, HEAD.z + 10, HEAD.y, 42, 14);
   // Every plot sits on a level pad, which also keeps the random trees out of it.
-  const plots = [TOWN.start, ...TOWN.wood, ...TOWN.stone].flat();
+  const plots = [TOWN.start, ...TOWN.wood, ...TOWN.stone, Object.values(ROOM_PLOTS)].flat();
   for (const p of plots) pad(p.x, p.z, VILLAGE.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
   TOWN.camps.forEach((c, k) => {
     for (const p of [...c.asleep, ...c.awake])

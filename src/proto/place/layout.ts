@@ -437,13 +437,7 @@ export const TOWN: {
   stone: Plot[][];
   camps: { asleep: Plot[]; awake: Plot[] }[];
 } = {
-  start: [
-    cottage(-108, -4, 0.5, true),
-    cottage(-113, 11, 1.4),
-    cottage(-110, 26, 2.2, true),
-    cottage(-123, 19, 1.6),
-    cottage(-122, -3, 0.9),
-  ],
+  start: [cottage(-108, -4, 0.5, true), cottage(-123, 19, 1.6), cottage(-135, 24, 1.1, true), cottage(-139, 5, 1.5)],
   wood: [
     [
       { type: 'hall', x: -88, z: 31, w: 11, d: 8, yaw: 2.73, smoke: true },
@@ -495,6 +489,14 @@ export const TOWN: {
       ],
     },
   ],
+};
+/** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
+ * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
+export type RoomId = 'house' | 'shop' | 'museum';
+export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
+  house: { x: -114, z: 11, yaw: 1.42, w: 7.4, d: 7.4, high: 3.7 },
+  shop: { x: -116, z: 31, yaw: 2.05, w: 10, d: 8, high: 3.9 },
+  museum: { x: -125, z: -8, yaw: 0.97, w: 13, d: 12, high: 5 },
 };
 /** Where the depot's cart starts, by the camp; and where its logs pile up. */
 export const DEPOT = { x: -2, z: -152 };

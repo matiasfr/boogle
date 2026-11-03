@@ -24,6 +24,11 @@ const BEATS: Record<string, [string, RegExp][]> = {
     ['entered a building', /building/],
     ['talked to a resident', /resident/],
     ['visited shop or museum', /shop|museum/],
+    ['heard a rumour', /rumour/],
+    ['a resident noticed', /resident noticed/],
+    ['tried something on', /shop tried on/],
+    ['took something from the shop', /shop kept/],
+    ['swapped on the rail', /shop swapped/],
     ['did something together', /co-?op/],
   ],
 };

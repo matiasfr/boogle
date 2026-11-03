@@ -13,7 +13,7 @@ import { toWorld } from './layout.ts';
 // ---------------------------------------------------------------- boards you can read
 const PAPER = '#fff3d6',
   INK = '#2a1c10';
-function board(lines: { t: string; px: number; color?: string }[], w: number, h: number) {
+export function paintBoard(lines: { t: string; px: number; color?: string }[], w: number, h: number) {
   const c = document.createElement('canvas');
   c.width = 1024;
   c.height = Math.round((1024 * h) / w);
@@ -47,7 +47,7 @@ export function sign(
   w: number,
   h: number,
   up: number,
-  lines: Parameters<typeof board>[0],
+  lines: Parameters<typeof paintBoard>[0],
 ) {
   const wx = toWorld(x),
     y = H(wx, z),
@@ -58,7 +58,7 @@ export function sign(
   const back = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.2), flat('#7f5630'));
   back.position.y = up + h / 2;
   back.castShadow = true;
-  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), board(lines, w, h));
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintBoard(lines, w, h));
   front.position.set(0, up + h / 2, 0.11);
   g.add(back, front);
   for (const dx of [-w / 2 + 0.3, w / 2 - 0.3]) {

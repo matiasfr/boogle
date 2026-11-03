@@ -95,10 +95,18 @@ function buildMesh() {
   addStatic({ kind: 'heightfield', heights: hf, cell: CELL }, { x: ORIGIN.x + GRID.x0, y: 0, z: ORIGIN.z + GRID.z1 });
 }
 
-export function addStatic(shape: Shape, position: { x: number; y: number; z: number }, rotation?: THREE.Quaternion) {
+/** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
+ * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
+export const ROOM_GROUP = 8;
+export function addStatic(
+  shape: Shape,
+  position: { x: number; y: number; z: number },
+  rotation?: THREE.Quaternion,
+  group: number = GROUP.SCENERY,
+) {
   const body = createBody({
     material: groundMat,
-    group: GROUP.SCENERY,
+    group,
     position,
     ...(rotation ? { rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w } } : {}),
     shapes: [shape],

@@ -54,6 +54,7 @@ import { backUp } from './verbs.ts';
 import { boilerAt, lookThrough } from './props.ts';
 import { snapCamp, snapTown } from './town.ts';
 import { money, spend, earn } from './score.ts';
+import { townLife } from './town-life.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const hop = (x: number, z: number, yaw: number) => {
@@ -242,6 +243,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
     money,
     earn,
     spend,
+    town: townLife,
     /** The first n gifts in their order, with no show. */
     give: (n: number, wear?: Record<string, GiftId>) => {
       const all: GiftId[] = [

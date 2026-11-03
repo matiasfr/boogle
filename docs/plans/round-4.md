@@ -43,7 +43,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [ ] **Research and pictures:** movement abilities and glide feel; interiors in a third-person camera.
 - [x] **The job:** steps 1 to 4, and the fixes above.
 - [ ] **Exploring:** step 5.
-- [ ] **Town:** step 6.
+- [x] **Town:** step 6.
 - [ ] **Two players:** step 7.
 - [ ] **Whole run:** full play-through, tune from data, first-time pass, then hand to the owner. Left from the job track's review: watch the rock break and the cart moving, and watch and hear each new moment and reveal in real time; the pack frame reads like a picture frame and sits in the camera's view; "Take rails" still shows 8 times; line 2's stations 3 to 5 are the longest stretch with no new toy; the first path's camera snap against the T3 frame; a partner can't see your clothes; the M4 iPad.
 

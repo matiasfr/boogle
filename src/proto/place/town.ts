@@ -24,6 +24,7 @@ import {
   type Site,
 } from './sites.ts';
 import { H } from './land.ts';
+import { snapRooms } from './rooms.ts';
 import { LOOK } from './look.ts';
 import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
 
@@ -223,6 +224,7 @@ export function snapTown(wood: number, stone: number) {
     STEPS[kind].forEach((row, n) => row.forEach((q) => snapSite(q, n < want)));
     drawn[kind] = want;
   }
+  snapRooms();
 }
 /** A camp as it stands: its old buildings, and the new ones once its line is open. */
 export function snapCamp(k: number, open: boolean) {

@@ -88,7 +88,7 @@ export function makeBot(opts: BotOptions = {}) {
 
   // ---------------------------------------------------------------- the world, from the player's height
   const hit = rayHit();
-  const mask = () => getMask(body()) & (GROUP.SCENERY | GROUP.CAVE); // static floors, never your own body
+  const mask = () => getMask(body()) & ~GROUP.DEFAULT; // every static thing you'd walk into, never your own body
   /** Where you'd stand at (x, z), coming from height y: null if nothing's there, or a wall stands in it. */
   function ground(x: number, y: number, z: number, steepest = WALKABLE_NY) {
     // A little off the exact spot: a ray straight down an edge of a heightfield's cell goes through it.

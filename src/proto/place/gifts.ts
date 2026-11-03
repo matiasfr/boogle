@@ -86,7 +86,12 @@ export type GiftId =
   | 'festival'
   | 'critter'
   | 'egg'
-  | 'scope';
+  | 'scope'
+  | 'paperhat'
+  | 'bigbutton'
+  | 'sandwich'
+  | 'tallhat'
+  | 'whistle';
 export type Slot = 'hat' | 'accessory' | 'outfit' | 'pet';
 export type Tier = 'common' | 'rare' | 'wonder';
 type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier };
@@ -247,6 +252,79 @@ const GIFTS: Gift[] = [
     ],
   },
 ];
+/** What the shop sells (./shop.ts): never in a box, and never counted with what boxes gave you, so the boxes' order doesn't move.
+ * `price` is a real number that you don't pay. `after`: it arrives with that. */
+export type Stock = Gift & { price: number; after?: 'forge' | 'trains' };
+export const STOCK: Stock[] = [
+  {
+    id: 'paperhat',
+    slot: 'hat',
+    name: 'A paper work hat',
+    line: '',
+    price: 40_000_000,
+    parts: [
+      ['k', 0, 0.22, 0, 0.43, 0.44, 0.38, '#f4f1e8'],
+      ['b', 0, 0.03, 0, 0.74, 0.07, 0.62, '#e4dfd2'],
+      ['b', 0, 0.1, 0.33, 0.16, 0.08, 0.02, '#c4453a'],
+    ],
+  },
+  {
+    id: 'bigbutton',
+    slot: 'accessory',
+    name: 'A very large button',
+    line: '',
+    price: 8_000_000,
+    parts: [
+      ['c', 0, 0.14, 0.29, 0.17, 0.05, 0.17, '#e4574a', Math.PI / 2],
+      ['c', 0, 0.14, 0.32, 0.11, 0.02, 0.11, '#fff0c9', Math.PI / 2],
+    ],
+  },
+  {
+    id: 'sandwich',
+    slot: 'outfit',
+    name: 'A sandwich board',
+    line: '',
+    price: 125_000_000,
+    parts: [
+      ['b', 0, -0.12, 0.33, 0.66, 0.92, 0.05, '#fff3d6'],
+      ['b', 0, -0.12, -0.33, 0.66, 0.92, 0.05, '#fff3d6'],
+      ['b', 0, 0.12, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', 0, -0.12, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', 0, -0.36, 0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', 0, 0.12, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', 0, -0.12, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', 0, -0.36, -0.36, 0.5, 0.14, 0.02, '#c4453a'],
+      ['b', -0.2, 0.38, 0, 0.05, 0.03, 0.68, '#7f5630'],
+      ['b', 0.2, 0.38, 0, 0.05, 0.03, 0.68, '#7f5630'],
+    ],
+  },
+  {
+    id: 'tallhat',
+    slot: 'hat',
+    name: 'A very tall hat',
+    line: '',
+    price: 900_000_000,
+    after: 'forge',
+    parts: [
+      ['c', 0, 0.03, 0, 0.42, 0.05, 0.42, '#24262c'],
+      ['c', 0, 0.62, 0, 0.27, 1.15, 0.27, '#24262c'],
+      ['c', 0, 0.12, 0, 0.28, 0.1, 0.28, '#d8392b'],
+    ],
+  },
+  {
+    id: 'whistle',
+    slot: 'accessory',
+    name: "A station master's whistle",
+    line: '',
+    price: 3_000_000_000,
+    after: 'trains',
+    parts: [
+      ['t', 0, 0.3, 0, 0.26, 0.2, 0.26, '#3f6fb0'],
+      ['c', 0, 0.02, 0.28, 0.06, 0.2, 0.06, '#d9a23a', Math.PI / 2],
+      ['s', 0, 0.02, 0.2, 0.09, 0.09, 0.09, '#d9a23a'],
+    ],
+  },
+];
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
 const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
@@ -270,7 +348,9 @@ const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
     ],
   },
 };
-const byId = (id: GiftId) => GIFTS.find((g) => g.id === id)!;
+const byId = (id: GiftId) => GIFTS.find((g) => g.id === id) ?? STOCK.find((g) => g.id === id)!;
+/** A gift's shape, for standing it somewhere else. */
+export const giftParts = (id: GiftId) => byId(id).parts;
 const geos = new Map<GiftId, THREE.BufferGeometry>();
 const geoOf = (id: GiftId) => {
   let g = geos.get(id);
@@ -419,6 +499,11 @@ const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: 
   overalls: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   raincoat: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   festival: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  paperhat: { bone: 'Head', y: 0.36, z: 0, scale: 0.92 },
+  bigbutton: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  sandwich: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  tallhat: { bone: 'Head', y: 0.33, z: 0, scale: 0.86 },
+  whistle: { bone: 'neck_01', y: -0.22, z: 0, scale: 0.62 },
 };
 const on: Partial<Record<Slot, GiftId>> = {};
 const worn = new Map<Slot, { id: GiftId; m: THREE.Mesh }>();
@@ -494,9 +579,53 @@ function updateWorn(a: Named | null | undefined, items: Map<Slot, { id: GiftId; 
     m.position.z += w.z;
   }
 }
-export const owned = (slot: Slot) => GIFTS.filter((g) => g.slot === slot && giftState.got.includes(g.id));
+export const owned = (slot: Slot) =>
+  [...GIFTS, ...STOCK].filter(
+    (g) => g.slot === slot && (giftState.got.includes(g.id) || giftState.bought.includes(g.id)),
+  );
+// Trying something on: it's on you, it isn't yours yet, and what it replaced comes back if you try something else.
+let trying: { id: GiftId; slot: Slot; was: GiftId | null } | null = null;
+export const tried = () => trying?.id ?? null;
+export const isOwned = (id: GiftId) => giftState.got.includes(id) || giftState.bought.includes(id);
+export const isWorn = (id: GiftId) => on[byId(id).slot!] === id;
+function untry() {
+  if (!trying) return;
+  putOn(trying.was, trying.slot);
+  trying = null;
+}
+export function tryOn(id: GiftId) {
+  const slot = byId(id).slot!;
+  const was = trying?.slot === slot ? trying.was : (on[slot] ?? null);
+  if (trying?.slot !== slot) untry();
+  putOn(id, slot);
+  trying = { id, slot, was };
+  pop(4, 0.5);
+}
+/** What you're trying on is yours: free, personal, and it stays on. */
+export function keepTried() {
+  if (!trying) return null;
+  const { id } = trying;
+  trying = null;
+  if (!giftState.bought.includes(id)) giftState.bought.push(id);
+  pop(6, 0.7);
+  saveHook();
+  return id;
+}
+export function wearOwned(id: GiftId) {
+  untry();
+  putOn(id, byId(id).slot!);
+  pop(5, 0.5);
+  saveHook();
+}
+export function takeOff(id: GiftId) {
+  untry();
+  putOn(null, byId(id).slot!);
+  pop(2, 0.5);
+  saveHook();
+}
 /** On to the next thing you own in this slot, or nothing. */
 export function swapSlot(slot: Slot) {
+  untry();
   const list = owned(slot),
     k = list.findIndex((g) => g.id === on[slot]);
   const next = list[k + 1];
@@ -750,6 +879,7 @@ const BIG = 3;
 export const showing = () => !!show;
 export const giftState = {
   got: [] as GiftId[],
+  bought: [] as GiftId[], // what you took from the shop: apart from `got`, which sets what the next box is
   dry: 0, // boxes in a row with no Wonder: saved, so a reload can't dodge the ceiling
   /** Crates waiting to be opened, as where they stand. */
   crates: () => crates.map((c) => ({ x: c.x, y: c.y, z: c.z, content: c.content })),
@@ -834,13 +964,15 @@ export const onGiftSaved = (fn: () => void) => void (saveHook = fn);
 personalSlice('gifts', {
   get: () => ({
     got: giftState.got,
+    bought: giftState.bought,
     dry: giftState.dry,
-    on,
+    on: trying ? { ...on, [trying.slot]: trying.was ?? undefined } : on,
     crates: giftState.crates().filter((c) => !isChest(c.content)),
   }),
   set: (v) => {
     const j = (v ?? {}) as {
       got?: GiftId[];
+      bought?: GiftId[];
       dry?: unknown;
       on?: Partial<Record<Slot, GiftId>>;
       crates?: { x: number; y: number; z: number; content?: Content }[];
@@ -850,6 +982,7 @@ personalSlice('gifts', {
       typeof j.dry === 'number' ? j.dry : 0,
       Array.isArray(j.crates) ? j.crates : [],
       j.on,
+      Array.isArray(j.bought) ? j.bought.filter((id) => STOCK.some((g) => g.id === id)) : [],
     );
   },
 });
@@ -975,7 +1108,10 @@ export function snapGifts(
   dry: number,
   waiting: { x: number; y: number; z: number; content?: Content }[],
   wearing?: Partial<Record<Slot, GiftId>>,
+  bought: GiftId[] = [],
 ) {
+  trying = null;
+  giftState.bought = bought.slice();
   while (crates.length) dropCrate(crates[0]!);
   open_.clear();
   redrawShelf();

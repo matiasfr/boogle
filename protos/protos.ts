@@ -114,7 +114,7 @@ export const PROTOS: Proto[] = [
     status: 'live',
     url: '/?room=proto-place&proto=place',
     question: 'Did you get hungry for a better way, and did finding one feel great?',
-    what: 'More chopping and carrying by hand until a path opens, with no train: you walk it. Then a better axe, a bigger pack, a cart of logs, a long line out over the sea, and trains last.',
+    what: 'More chopping and carrying by hand until a path opens, with no train: you walk it. Then a better axe, a bigger pack, a cart of logs, a long line out over the sea, and trains last. The village has doors now: a new neighbour, a shop of fine prices and a museum.',
     since: '2026-11-02',
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the shelf, the path, the forge and the stub ahead
     verb: 'chops',
