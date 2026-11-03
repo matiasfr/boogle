@@ -8,8 +8,9 @@
 // something's missing. Local, or shared by ./coop.ts behind the flag. Never read by the sim.
 import { getRoomId } from '../../netplay/net.ts';
 import { TUNE } from './layout.ts';
+import { pageQuery } from '../flags.ts';
 
-export const COOP = new URLSearchParams(location.search).get('coop') === '1';
+export const COOP = pageQuery().get('coop') === '1';
 
 export type ChestId = 'axe' | 'pack';
 /** The ladder: each rung answers something you were already wishing for. */

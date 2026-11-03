@@ -14,7 +14,21 @@
  * (protos/protos.ts says why on each). */
 export const ISLAND = ['haul', 'wagon', 'lay', 'minis', 'assets'] as const;
 
-const q = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
+/** Effective launch flags. The address always wins; headless tools keep the classic island.
+ * Round 4 is the default entry, without rewriting the URL or moving prototype code. */
+export function pageQuery(): URLSearchParams {
+  const q = new URLSearchParams(typeof location === 'undefined' ? 'classic=1' : location.search);
+  if (!q.has('proto') && !q.has('play') && q.get('classic') !== '1') {
+    q.set('proto', 'place');
+    if (!q.has('fresh')) q.set('fresh', '1');
+    if (!q.has('coop')) q.set('coop', '1');
+  }
+  if (q.get('proto') === 'place' && !q.has('room'))
+    q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
+  return q;
+}
+
+const q = pageQuery();
 /** The page's `?proto=` ('' for none). */
 export const PROTO = q.get('proto') ?? '';
 /** The playlist is on: the island or a chapter. */

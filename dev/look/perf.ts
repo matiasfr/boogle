@@ -143,7 +143,7 @@ try {
     name: 'perf',
     isolated: doSim || hardware,
     init,
-    query: q.toString(),
+    query: q.toString() || undefined,
     ...(size ? { size } : {}),
   });
   if (doRender) {

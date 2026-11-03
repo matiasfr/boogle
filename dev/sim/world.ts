@@ -42,7 +42,7 @@ export async function joinRoom(room: string) {
   // All a room wants of a page: the address it reads the room from, and pagehide, which never comes here.
   const noop = () => {};
   Object.assign(globalThis, {
-    location: { search: `?room=${room}` },
+    location: { search: `?classic=1&room=${room}` },
     addEventListener: noop,
     removeEventListener: noop,
   });

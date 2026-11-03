@@ -1,5 +1,6 @@
 // A level as the checks read it: the same data the game composes (POI sites, the route, scattered props), for today's
 // island or with a dev/layouts/*.json applied, on the same ground the game builds, with no scene or renderer.
+// No browser location: proto/flags.ts explicitly resolves the classic island for these Node imports.
 import fs from 'node:fs';
 import path from 'node:path';
 import { BALL_SPAWN, CELL, COURT, GRID_RES, HALF, SPAWN } from '../../src/constants.ts';

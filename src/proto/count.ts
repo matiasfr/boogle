@@ -6,10 +6,10 @@
 // nouns a person reads. Local only: never synced, never read by the sim.
 import { cardFor, vName, write } from '../../protos/store.ts';
 import type { Proto } from '../../protos/protos.ts';
-import { protoV } from './flags.ts';
+import { pageQuery, protoV } from './flags.ts';
 import { playMark, protoMark } from './mark.ts';
 
-let card: Proto | undefined = cardFor(location.search);
+let card: Proto | undefined = cardFor(pageQuery().toString());
 let v = card ? vName(card, protoV(card.id)) : '';
 let pending: Record<string, number> = {};
 let timer = 0;
