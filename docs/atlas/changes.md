@@ -6,6 +6,7 @@
 - The server learned to keep playtest notes: a prototype page can send what happened in a session, and the team reads it back later, like a flight recorder. Nothing a player sees changed.
 - Everything else was only in your own tab: the place prototype got sea and gull sounds, little guys who walk and chatter, decks you can sit on, and crystals; touch players can sprint by pushing the stick far; the soapbox left the island. Nothing else in the picture moved.
 - Later the same day: those playtest notes now actually get written. Any prototype page quietly sends a diary of the session to the server (where you walked, what you pressed, where you got stuck, how smooth it ran), unless you add `&notrack=1`, and the team reads it back with a heat map, like a coach watching game tape. It travels straight to the server, not to other players, so no arrow in the picture moved.
+- Later still, only small fixes landed: the server guards that playtest diary better, limiting how many sessions one visitor can send in an hour and keeping real play sessions longest, like a guestbook that throws out spam before signatures. Nothing in the picture moved.
 
 ## 2026-11-02
 
