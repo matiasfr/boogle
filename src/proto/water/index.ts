@@ -28,6 +28,7 @@ import { createSnow } from './snow.ts';
 import { GRID, ISLAND_AT, SHORE } from './tuning.ts';
 
 const t0 = performance.now();
+const comparisonSky = new URLSearchParams(location.search).get('sky') === 'demo';
 const bake = bakeShoreMap(islandHeight, SHORE.extent, SHORE.size, rockObstacle);
 void import('./spray.ts').then(({ startSpray }) => startSpray(bake));
 const t1 = performance.now();
@@ -115,7 +116,7 @@ let hidGameSea = false,
 // day-night.ts runs updateSky at update -5; this page then holds the source view's sun and atmosphere over it.
 onFrame(
   () => {
-    demoSky.update({ elevation: demoView.elevation, azimuth: demoView.azimuth });
+    if (!comparisonSky) demoSky.update({ elevation: demoView.elevation, azimuth: demoView.azimuth });
     const fog = scene.fog as THREE.Fog;
     fog.near = 18000;
     fog.far = 80000;

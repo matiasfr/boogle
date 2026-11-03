@@ -1,5 +1,15 @@
 # 6.18 Graphics and devices
 
+- **Opt-in frozen demo sky.** `sky=demo` on any page lazily loads Ultra Water's Hillaire atmosphere and cloud cube,
+  with the sun frozen at `tod=0.24` unless specified (the game's clock: 0 sunrise, 0.3 noon, 0.6 sunset).
+  The cube supplies background, directional fog and environment; its upper/lower mip supplies hemisphere fill
+  for the Lambert toys. It hides the game's dome, sun/moon billboards and faceted clouds, and drives the real
+  sun and shadows. `tod=0.56` is golden hour; `tod=0.605` is dusk. Reload to change it deliberately.
+  This is a Local comparison, not the default integration. Combine with `tone=neutral|agx` for the matched meter
+  and curve trims below. Without the sky flag, behaviour is unchanged. Outside `proto=water`, the old sea remains.
+  `skyBake=1&prof=1` measures the initial six cube draws with GPU timestamps. Reproduction and limits:
+  [sky comparison](../research/sky-comparison.md).
+
 - **What.** The island draws with WebGPU only: Chrome and Edge, Safari 26 on iPhone, iPad and Mac, Firefox on
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
   (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
