@@ -61,7 +61,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **First reaching a far island:** the line builds out over the sea, and you ride it.
 - **The network:** preset links, your choice of order, and a last link from Home to the port. So the chain closes into a ring. Which links appear when is still open.
 - **Home:** a busy town at most.
-- **Danger:** no hazards at all. Nothing decays.
+- **Danger:** open. Was "no hazards at all, nothing decays", see Changed.
 - **While nobody plays:** the network banks one project, and the next step waits for players.
 - **Thanks:** credit people with no order or ranking.
 - **Mini-games pass:** after the rail loop has its answer.
@@ -178,7 +178,6 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **Kept from SETTLED:**
   - every system is ignorable;
   - mini-games never gate progress;
-  - nothing decays;
   - the beach ball never produces income.
 
 ### Characters and story
@@ -269,6 +268,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ## Changed
 
+- **2026-11-02:** "no hazards at all, nothing decays" was withdrawn along with DESIGN.md's "Nothing is the antagonist": the owner called the guidance outdated. Danger is open; nothing replaces it yet.
 - **2026-11-02:** "the island grows through technology eras" became "you find better materials and upgrade": the world doesn't change era, your things do. The era lists above are history; asset limits and the round structure still apply.
 - **2026-11-02:** "curios to collect" became "abilities to find": what you discover opens new paths.
 - **2026-11-02:** "the ending is parked" became "it ends on the original island, meeting The Boogler". All other narrative detail stays parked.
