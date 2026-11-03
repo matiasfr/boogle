@@ -47,7 +47,10 @@ export type BotOptions = {
 export function makeBot(opts: BotOptions = {}) {
   const water = opts.water ?? ((_x: number, y: number) => y < SEA + 1.2); // you swim before the ground's under the sea, and it has waves
   const body = () => me.body!;
-  const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+  const wait = async (ms: number) => {
+    await new Promise<void>((r) => setTimeout(r, ms));
+    sample();
+  };
   const t0 = performance.now();
   const now = () => (performance.now() - t0) / 1000;
 
@@ -114,7 +117,7 @@ export function makeBot(opts: BotOptions = {}) {
   function nearEdge(x: number, y: number, z: number) {
     for (const [dx, dz] of EDGE) {
       const g = ground(x + dx, y, z + dz, 0.2);
-      if (g === null ? !solidBeside(x + dx, y, z + dz) : y - g > DROP * 0.7) return true;
+      if (g === null ? !solidBeside(x + dx, y, z + dz) : water(x + dx, g, z + dz) || y - g > DROP * 0.7) return true;
     }
     return false;
   }
@@ -129,10 +132,11 @@ export function makeBot(opts: BotOptions = {}) {
       const x = a.x + ((b.x - a.x) * k) / n,
         z = a.z + ((b.z - a.z) * k) / n;
       const y = step(at, x, z);
-      if (y === null || nearEdge(x, y, z)) return false;
+      if (y === null || y - at.y > STEP_UP || nearEdge(x, y, z)) return false;
       at = { x, y, z };
     }
-    return true;
+    // A clear route underneath a bridge is not a shortcut to a waypoint on its deck.
+    return Math.abs(at.y - b.y) < 0.4;
   }
 
   // ---------------------------------------------------------------- finding a way
@@ -189,6 +193,7 @@ export function makeBot(opts: BotOptions = {}) {
     const clock = performance.now();
     while (open.length && expanded++ < MAX_NODES) {
       const a = pop();
+      if (a.g > (seen.get(a.key) ?? Infinity)) continue;
       const d = h(a.x, a.z);
       if (d < bestH) {
         best = a;
@@ -208,9 +213,9 @@ export function makeBot(opts: BotOptions = {}) {
         if ((blocked.get(cell) ?? 0) > clock) continue;
         // You may be standing somewhere steep already, and the way off it counts.
         const y = step(a, x, z, a.g < 3 ? 0.3 : WALKABLE_NY);
-        if (y === null) continue;
+        if (y === null || nearEdge(x, y, z)) continue;
         const key = `${cell},${Math.round(y / 2)}`;
-        const g = a.g + Math.hypot(dx, dz) * CELL + (y - a.y > STEP_UP ? 4 : 0) + (nearEdge(x, y, z) ? 3 : 0);
+        const g = a.g + Math.hypot(dx, dz) * CELL + (y - a.y > STEP_UP ? 4 : 0);
         if ((seen.get(key) ?? Infinity) <= g) continue;
         seen.set(key, g);
         push({ x, y, z, ix, iz, g, f: g + 1.4 * h(x, z), from: a, key });
@@ -231,6 +236,29 @@ export function makeBot(opts: BotOptions = {}) {
     cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
   };
   const dist = (x: number, z: number) => Math.hypot(body().position.x - x, body().position.z - z);
+  let motion = 'idle';
+  let destination: { x: number; z: number } | null = null;
+  let waypoint: Point | null = null;
+  let wet = false;
+  const trace: unknown[] = [];
+  function sample() {
+    const p = here();
+    trace.push({
+      t: +now().toFixed(2),
+      ...p,
+      v: { ...body().velocity },
+      ground: ground(p.x, p.y, p.z),
+      motion,
+      destination,
+      waypoint,
+    });
+    if (trace.length > 200) trace.shift();
+    if (me.swimming && !wet) {
+      note(`FALL water at (${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}) during ${motion}`);
+      console.log('BOT TRACE ' + JSON.stringify(trace));
+    }
+    wet = me.swimming;
+  }
   function swimCheck() {
     if (!me.swimming) return false;
     note('in the water: back on land');
@@ -239,13 +267,14 @@ export function makeBot(opts: BotOptions = {}) {
   }
   /** Walks to within `r` of (x, z), round whatever's there. False if it couldn't, and it says so. */
   async function walk(x: number, z: number, r = 1.5, { limit = 0, sprint = false } = {}) {
+    destination = { x, z };
+    motion = 'plan';
     if (dist(x, z) <= r) return true;
     const budget = (limit || Math.max(30000, dist(x, z) * 1000)) + performance.now();
     if (sprint) input.keys.add('ShiftLeft');
     input.keys.add('KeyW');
     let holdups = 0;
     let recovered = false;
-    let pushed = false;
     let forgiven = false;
     let nearest = Infinity;
     let ok = true;
@@ -262,11 +291,11 @@ export function makeBot(opts: BotOptions = {}) {
           `no way yet to (${x.toFixed(0)}, ${z.toFixed(0)}): as near as ${dist(path.at(-1)!.x, path.at(-1)!.z).toFixed(0)} m from here`,
         );
       if (path.length < 2 && !arrives) {
-        // Hemmed in, somehow. Push on a moment, then once the way a person gets out.
-        if (!pushed) {
-          pushed = true;
-          await straight(x, z, r, 1500);
-          input.keys.add('KeyW');
+        console.log('BOT HEMMED ' + JSON.stringify({ at: here(), destination, tries, blocked: [...blocked], trace }));
+        // A temporary obstacle must not fence in the start (or the next walk's start).
+        if (blocked.size && !forgiven) {
+          forgiven = true;
+          blocked.clear();
           continue;
         }
         if (opts.recover && !recovered) {
@@ -281,6 +310,7 @@ export function makeBot(opts: BotOptions = {}) {
         break;
       }
       let k = 1;
+      motion = 'follow';
       let lookedAt = 0;
       let target = path[Math.min(k, path.length - 1)]!;
       let was = { x: body().position.x, z: body().position.z, at: performance.now() };
@@ -291,9 +321,10 @@ export function makeBot(opts: BotOptions = {}) {
           continue planning;
         }
         // The furthest of the next few waypoints in a straight line, so it walks like a person, not along a grid.
-        if (performance.now() - lookedAt > 500) {
+        if (performance.now() - lookedAt > 100) {
           lookedAt = performance.now();
-          while (k < path.length - 1 && dist(path[k]!.x, path[k]!.z) < 1.2) k++;
+          while (k < path.length - 1 && dist(path[k]!.x, path[k]!.z) < 0.4 && Math.abs(here().y - path[k]!.y) < 0.6)
+            k++;
           target = path[k]!;
           const me0 = here();
           for (let n = Math.min(path.length - 1, k + 20); n > k; n -= 5)
@@ -302,10 +333,11 @@ export function makeBot(opts: BotOptions = {}) {
               k = n;
               break;
             }
-          if (dist(target.x, target.z) < 1.2 && k >= path.length - 1) break; // the end of this way
+          if (dist(target.x, target.z) < 0.4 && k >= path.length - 1) break; // the end of this way
           if (target.y - me0.y > STEP_UP * 0.6 && dist(target.x, target.z) < 2.5) me.jumpQueued = 0.2;
         }
         faceTo(target.x, target.z);
+        waypoint = target;
         await wait(40);
         if (performance.now() - was.at > 900) {
           if (Math.hypot(body().position.x - was.x, body().position.z - was.z) < 0.6) {
@@ -313,10 +345,7 @@ export function makeBot(opts: BotOptions = {}) {
             holdups++;
             me.jumpQueued = 0.2;
             await wait(250);
-            const ix = Math.round((body().position.x + (target.x - body().position.x) * 0.2) / CELL),
-              iz = Math.round((body().position.z + (target.z - body().position.z) * 0.2) / CELL);
-            for (const [dx, dz] of [[0, 0], ...TURNS])
-              blocked.set(`${ix + dx!},${iz + dz!}`, performance.now() + 15000);
+            blocked.set(`${Math.round(target.x / CELL)},${Math.round(target.z / CELL)}`, performance.now() + 15000);
             if (holdups > 8) {
               ok = false;
               why = `held up ${holdups} times, last at (${body().position.x.toFixed(0)}, ${body().position.z.toFixed(0)})`;
@@ -327,12 +356,17 @@ export function makeBot(opts: BotOptions = {}) {
           was = { x: body().position.x, z: body().position.z, at: performance.now() };
         }
       }
-      // The last step, straight at it: what you're walking to is often solid itself (a frame, a tree), so close enough counts.
+      // Only approach within a checked route. A partial plan may end at a cliff, far from the goal.
       const end = performance.now() + 1200;
+      motion = 'final approach';
       let before = dist(x, z);
-      while (dist(x, z) > r && performance.now() < end) {
+      while (arrives && dist(x, z) > r && performance.now() < end) {
+        const p = here();
+        const d = dist(x, z);
+        const f = (d - r) / d;
+        if (!lineClear(p, { x: p.x + (x - p.x) * f, y: p.y, z: p.z + (z - p.z) * f })) break;
         faceTo(x, z);
-        await wait(120);
+        await wait(40);
         if (before - dist(x, z) < 0.05) break;
         before = dist(x, z);
       }
@@ -356,11 +390,14 @@ export function makeBot(opts: BotOptions = {}) {
     }
     input.keys.delete('KeyW');
     input.keys.delete('ShiftLeft');
+    motion = 'idle';
     if (!ok) never(`reached (${x.toFixed(0)}, ${z.toFixed(0)}); stopped ${dist(x, z).toFixed(1)} m short: ${why}`);
     return ok;
   }
   /** Straight at it, no planning: onto a moving deck, or the last step up to a thing. */
   async function straight(x: number, z: number, r = 1.2, limit = 8000) {
+    motion = 'straight';
+    destination = { x, z };
     const end = performance.now() + limit;
     input.keys.add('KeyW');
     while (dist(x, z) > r && performance.now() < end) {
