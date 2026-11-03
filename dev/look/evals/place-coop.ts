@@ -30,7 +30,80 @@ const put = (x: number, z: number, up = 1.4) => {
   teleport(me.body!, x, place.H(x, z) + up, z);
   me.body!.velocity.set(0, 0, 0);
 };
-if (q.has('pair')) {
+if (q.has('beam')) {
+  const { net } = await import('/src/netplay/net.ts' as string);
+  const { BEAM, beamEnd, pair } = await import('/src/proto/place/pair.ts' as string);
+  const { makeBot } = await import('/dev/look/bot.ts' as string);
+  const { input } = await import('/src/player/input.ts' as string);
+  const hands = await import('/src/player/hands.ts' as string);
+  const bot = makeBot();
+  const marks = new Set<string>();
+  net.room.onMessage((m: { t: string; k: string; ack?: boolean }) => {
+    if (m.t !== 'beamProbe') return;
+    marks.add(m.k);
+    if (!m.ack) net.room.send({ t: 'beamProbe', k: m.k, ack: true });
+  });
+  const barrier = async (k: string) => {
+    net.room.send({ t: 'beamProbe', k });
+    const retry = setInterval(() => net.room.send({ t: 'beamProbe', k }), 200);
+    try {
+      await until(() => marks.has(k), k, 30000);
+    } finally {
+      clearInterval(retry);
+    }
+  };
+  const press = async (verb: string) => {
+    await until(() => hands.interactTarget()?.verb === verb, `${verb} offered`);
+    hands.interactDown();
+    hands.interactUp();
+  };
+  const end = who === '1' ? 0 : 1;
+  setInterval(() => {
+    const b = place.job.longBeam;
+    window.__debugCam?.set([b.x + 14, place.H(b.x, b.z) + 9, b.z + 14], [b.x, place.H(b.x, b.z) + 0.8, b.z]);
+  }, 30);
+  void (async () => {
+    await until(() => place.coop.debug().peers.length > 0, 'partner arrived');
+    await barrier('ready');
+    await wait(1500); // the initial authority snapshot must precede the skip
+    if (who === '1') place.coop.skip('path', place.skipPath);
+    await until(() => place.job.awake && place.lines[0].open, 'path opened');
+    await wait(1200);
+    const at = beamEnd(end);
+    put(at.x, at.z);
+    await wait(600);
+    await barrier('at ends');
+    const before = { ...place.job.longBeam };
+    if (who === '2') await press('Lift');
+    await wait(800);
+    if (place.job.longBeam.x !== before.x || place.job.longBeam.z !== before.z)
+      throw new Error('Lone lift moved the beam');
+    console.log(`COOP ${who} lone grip ${pair.grip()} unmoved ${place.job.longBeam.x},${place.job.longBeam.z}`);
+    if (q.get('beam') === 'lone') {
+      Object.assign(window, { __coopDone: true });
+      return;
+    }
+    if (who === '1') await press('Lift');
+    await until(() => pair.carrying(), 'both carrying');
+    await barrier('carrying');
+    input.sprint = true;
+    input.keys.add('ShiftLeft');
+    await bot.walk(at.x + 20, at.z, 0.7);
+    input.keys.delete('ShiftLeft');
+    await barrier('walked');
+    if (!pair.carrying() || place.job.longBeam.x < before.x + 15 || me.sprint)
+      throw new Error('Beam carry or walking-only check failed');
+    console.log(`COOP ${who} carried beam ${JSON.stringify(place.job.longBeam)} sprint ${me.sprint}`);
+    if (q.get('beam') === 'carry') {
+      Object.assign(window, { __coopDone: true });
+      return;
+    }
+    put(place.ORIGIN.x + BEAM.site.x, BEAM.site.z + ((end === 0 ? -1 : 1) * BEAM.len) / 2);
+    await until(() => place.job.longBeam.set && pair.grip() === null, 'beam set');
+    console.log(`COOP ${who} beam set ${JSON.stringify(place.job.longBeam)}`);
+    Object.assign(window, { __coopDone: true });
+  })();
+} else if (q.has('pair')) {
   const { remotes } = await import('/src/netplay/net.ts' as string);
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
   const { snapRun } = await import('/src/proto/place/run.ts' as string);

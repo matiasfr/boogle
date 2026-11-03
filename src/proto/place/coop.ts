@@ -150,6 +150,7 @@ const discrete = (j: Record<string, unknown>) => {
     gate: unknown;
     boiler: number;
     forgeBill: number;
+    longBeam?: { set: boolean };
   };
   const r = j.run as { k: number };
   return JSON.stringify([
@@ -160,6 +161,7 @@ const discrete = (j: Record<string, unknown>) => {
     q.gate,
     q.boiler,
     q.forgeBill,
+    q.longBeam?.set ?? false,
     r.k,
     linesOf(j).map((l) => [l.stage, l.open]),
   ]);
@@ -241,13 +243,16 @@ function reconcile(a: Api, j: Snap) {
     if ((q.trunk === true) !== trunkTaken()) setTrunkTaken(q.trunk === true);
   }
   Object.assign(job.score, (j.shared.job as typeof job).score);
+  const theirs = (j.shared.job as typeof job).longBeam;
+  if (!pairHook.busy?.() && theirs && typeof theirs === 'object' && num(theirs.x) && num(theirs.z) && num(theirs.yaw))
+    Object.assign(job.longBeam, { x: theirs.x, z: theirs.z, yaw: theirs.yaw, set: theirs.set === true });
   // Crates and people: each tab counts them as they land, so a moment's difference is normal.
   numMiss = volatile(j.shared) === volatile(mine) ? 0 : numMiss + 1;
   if (numMiss < 4) return;
   numMiss = 0;
   applyShared({
     ...mine,
-    job: j.shared.job,
+    job: pairHook.busy?.() ? { ...(j.shared.job as typeof job), longBeam: { ...job.longBeam } } : j.shared.job,
     heaps: j.shared.heaps,
     lines: j.shared.lines,
     depot: j.shared.depot,

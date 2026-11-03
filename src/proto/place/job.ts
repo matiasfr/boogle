@@ -32,6 +32,7 @@ export const job = {
   gate: { quarry: false, sea: false },
   chest: null as ChestId | null, // a tool chest is waiting
   boiler: 0, // 0 not cast, 1 standing by the forge, 2 on someone's shoulder, 3 fitted
+  longBeam: { x: 868, z: -30, yaw: 0, set: false }, // optional co-op toy; world coordinates, clear of the museum
   forgeBill: 0, // which of FORGE_BILLS its frame is on
   kitSent: 0, // crates of the pier's kit that have gone aboard a train
   ended: false, // the pier's out: the test is over, and you can wander

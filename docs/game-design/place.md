@@ -76,6 +76,8 @@ Deposit replies are matched to their sender and request, even after the active f
 
 If a partner leaves holding the great beam or the boiler, it returns to its pickup spot so the remaining player can finish. Already delivered beams and fitted boilers stay consumed. Owner presence `placeBig` identifies the carrier; snapshots propagate the return and clear stale cargo from a returning shoulder. Reconnecting tabs rejoin behind the surviving authority, including when the carrier used to be the authority. Serves DESIGN.md 8 (Designed for drop-in, drop-out).
 
+The optional **9 m beam** starts at the village's west edge (868, -30). **Lift** an end or **Let go** with Interact. Alone, one end lifts while the other stays planted; two people carry it at walking speed. Being more than 11 m apart for a second drops it. A departing partner leaves it at its last midpoint, saved, with the remaining player's grip intact. Carrying its midpoint within 5 m of (944, 6) sets it on a fulcrum. Nothing in progression requires it or pays for it.
+
 ## Ancient technology (round 4, exploring)
 
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
