@@ -215,6 +215,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-03, the real sea uses the demo's sky, with time of day frozen at a pleasant state** (owner): change the time only intentionally, in parts of the game. It replaces the 20-minute cycle, so the Design Table's day-only and night-only things hang off those chosen moments. Bake each chosen time once, ahead of time.
 - **2026-11-03, the water uses the demo's mobile settings on mobile and its default on desktop, as a starting point** (owner). Cost work keeps the look and aims to leave margin for the rest of the game's graphics, which get more advanced over time.
 - **2026-11-03, Neutral is open** (owner): "a malleable rule". If AgX with exposure looks better, switch; decide from a side-by-side with our characters. The demo's difference from the previz grade is "totally acceptable".
 - **2026-11-03, the original lighter blue stays** (owner, comparing today's sky with the deeper-blue prototype: "the original is looking pretty nice, honestly."). Keep the game's lighter blue, not the deeper `#2a6fe0`. The next `?proto=sky` pass improves the rounded clouds and softens the sea horizon on that existing sky, following its normal daylight, sunset and moonlit night; it does not replace the sun or fill light.
