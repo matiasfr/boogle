@@ -1,12 +1,16 @@
 // What changed since the last video: `npm run video:changes [-- --since <ref>]`. Lists main's commits since the newest
 // video-* tag (made by dev/video/publish.ts) and flags the ones that touch what a player sees, so an agent can judge
 // whether there's enough for a new patch video (.claude/skills/video/SKILL.md, "Patch video loop"). `--count` prints
-// only the number of commits that touch game files (the cheap gate in .github/workflows/patch-video.yml).
+// only the number of commits that touch game files (the cheap gate in dev/daily/run.ts).
 import { execFileSync } from 'node:child_process';
 
 const git = (...a: string[]) => execFileSync('git', a, { encoding: 'utf8' }).trim();
 const argv = process.argv.slice(2);
-git('fetch', '-q', '--tags', 'origin');
+// Daily jobs already fetched and pinned a build; don't count newer commits that their footage cannot show.
+if (!argv.includes('--no-fetch')) git('fetch', '-q', '--tags', 'origin');
+const untilAt = argv.indexOf('--until');
+const until = untilAt >= 0 ? argv[untilAt + 1] : 'origin/main';
+if (!until) throw new Error('--until needs a commit');
 const at = argv.indexOf('--since');
 const since = at >= 0 ? argv[at + 1] : git('tag', '-l', 'video-*', '--sort=-creatordate').split('\n')[0];
 if (!since) {
@@ -16,9 +20,9 @@ if (!since) {
 // Paths that change the game a player sees. Tooling, docs and tests don't count.
 const PLAYER = /^(src\/|index\.html|public\/)/;
 const count = argv.includes('--count');
-const log = git('log', '--no-merges', '--format=%h%x09%an%x09%s', `${since}..origin/main`);
+const log = git('log', '--no-merges', '--format=%h%x09%an%x09%s', `${since}..${until}`);
 const rows = log ? log.split('\n') : [];
-if (!count) console.log(`Since ${since}: ${rows.length} commits on origin/main\n`);
+if (!count) console.log(`Since ${since}: ${rows.length} commits through ${until}\n`);
 let game = 0;
 for (const row of rows) {
   const [hash, author, subject] = row.split('\t');
