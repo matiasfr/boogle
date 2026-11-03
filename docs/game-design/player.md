@@ -73,7 +73,8 @@ you enter, it slowly circles the island.
 
 - Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows if the Buddy can't load, or hasn't within the loading screen's 8 s.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
-  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
+  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord. Every avatar also
+  gives off a little of its own colour (emissive 0.15, day and night), so its shaded side and a player at night still read.
 - Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage
   (`boogle.name`, `boogle.color`); a first visit's card offers a friendly random name and a random colour, later
   visits go straight in with them, and the pause view's Room page changes them ([identity.md](identity.md)).

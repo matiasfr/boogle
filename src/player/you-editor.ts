@@ -5,6 +5,7 @@
 // name changes).
 import './you-editor.css';
 import { COLORS } from '../constants.ts';
+import { paintAvatar } from './avatars.ts';
 import { sanitizeName } from '../math.ts';
 import { startFresh } from './arrival.ts';
 import { me } from './player.ts';
@@ -19,7 +20,7 @@ function save() {
   } catch {
     // not remembered past this visit
   }
-  me.avatar?.userData.mat.color.set(COLORS[me.colorIdx]!);
+  if (me.avatar) paintAvatar(me.avatar.userData.mat, me.colorIdx);
   renderPeople(); // the Room page's list follows on its own (it watches who is on the island)
 }
 

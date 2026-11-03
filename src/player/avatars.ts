@@ -49,11 +49,20 @@ export function setAvatarSkin(s: AvatarSkin, existing: (Avatar | null | undefine
   for (const a of existing) if (a) s.dress(a, a.userData.colorIdx);
 }
 
+// A little of a Buddy's own colour as light, so its shaded side and a night-time Buddy still read as that player.
+export const AVATAR_FILL = 0.15;
+export function paintAvatar(mat: THREE.MeshStandardMaterial, colorIdx: number, fill = AVATAR_FILL) {
+  mat.color.set(COLORS[colorIdx]!);
+  mat.emissive.copy(mat.color);
+  mat.emissiveIntensity = fill;
+}
+
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.
 export function makeAvatar(colorIdx: number): Avatar {
   const group = new THREE.Group();
   const inner = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: COLORS[colorIdx], roughness: 0.55 });
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.55 });
+  paintAvatar(mat, colorIdx);
   const body = new THREE.Mesh(capsuleGeo, mat);
   body.position.y = HEAD_OFFSET / 2;
   body.castShadow = true;
