@@ -31,6 +31,10 @@ import { SUN_DIR } from './sun-dir.ts';
 import { clamp } from '../math.ts';
 import { heights } from '../island/terrain.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
+import { protoOn } from '../proto/flags.ts';
+
+// Temporary ?proto=sky seam. The plain sea builds its original graph; ?proto=water owns its future.
+const softHorizon = protoOn('sky');
 
 // Ground height packed into 16 bits (R = high byte, G = low byte), for a smooth shore depth.
 const heightTex = (() => {
@@ -58,6 +62,7 @@ export const seaU = {
   uSky: uniform(new THREE.Color('#a9dcf3')),
   uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.ts)
   uSpecCol: uniform(new THREE.Color(1.0, 0.97, 0.88)), // glint colour of the key light (sun or moon)
+  uHaze: uniform(new THREE.Color()), // ?proto=sky copies the dome's existing horizon, no new palette
 };
 const uRip = uniformArray(seaRipples, 'vec4');
 
@@ -148,12 +153,21 @@ const color = Fn(() => {
   col.mulAssign(seaU.uLight as unknown as typeof col); // a color uniform; three's TSL types want a float
   col.addAssign(seaU.uSpecCol.mul(spec).mul(0.9));
   const alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5, depth)), foam.mul(0.95));
+  if (softHorizon) {
+    // Fold glints and transparency into the horizon before the finite plane ends, in the existing pass.
+    const distance = length(w.xz.sub(cameraPosition.xz));
+    const grazing = smoothstep(0.015, 0.22, viewDir.y)
+      .oneMinus()
+      .mul(smoothstep(20, 70, distance));
+    const haze = max(smoothstep(70, 300, distance), grazing);
+    return vec4(mix(col, seaU.uHaze, haze), mix(alpha, 1, haze));
+  }
   return vec4(col, alpha);
 });
 
-// The sea plane never moves, so local = world. Fog is three's own (scene.fog, set by sky.ts). Exported so a prototype can
-// give it another look; nothing else in the game touches it.
-export const waterMat = new MeshBasicNodeMaterial({ transparent: true });
+// The sea plane never moves, so local = world. Fog is three's own except for ?proto=sky's material haze above.
+// Exported so a prototype can give it another look; nothing else in the game touches it.
+export const waterMat = new MeshBasicNodeMaterial({ transparent: true, fog: !softHorizon });
 waterMat.positionNode = Fn(() => {
   const p = positionLocal;
   const wave = sin(p.x.mul(0.21).add(seaU.uTime.mul(1.3)))
