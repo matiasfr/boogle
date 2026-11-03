@@ -1,0 +1,27 @@
+{
+  "id": "water-demo",
+  "title": "Sunlight through the prototype sea",
+  "kind": "local",
+  "order": 95,
+  "steps": [
+    {
+      "go": [["you.features", "you.systems"]],
+      "text": "The water prototype bakes one island shore field. Current-frame FFT waves and the depth field share the same metre scale.",
+      "cite": [{ "file": "src/proto/water/index.ts" }, { "file": "src/proto/water/fft.ts" }]
+    },
+    {
+      "hl": ["you.systems"],
+      "text": "The 12 m wave slopes refract a grid onto three depth planes. Area-ratio splats redistribute sunlight into the bright net on sand and rocks.",
+      "cite": [{ "file": "src/proto/water/caustics.ts" }, { "file": "src/proto/water/ground.ts" }]
+    },
+    {
+      "go": [["you.systems", "you.screen"]],
+      "text": "The water reads real opaque colour and depth in the existing pass. A sun-dependent sky cube, metered exposure and prototype-only AgX finish the image.",
+      "cite": [
+        { "file": "src/proto/water/surface.ts" },
+        { "file": "src/proto/water/sky.ts" },
+        { "file": "src/proto/water/post.ts" }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 import { renderer } from '../../render/scene.ts';
 import { bakeH0, CASCADE_LENGTHS, OCEAN } from './spectrum.ts';
 import { uTime, vnoise } from './shore-nodes.ts';
-import { FFT, ULTRA } from './tuning.ts';
+import { FFT, ISLAND_AT, ULTRA } from './tuning.ts';
 import { TSL, type N } from './tsl.ts';
 import type { WaveSource } from './waves.ts';
 
@@ -96,7 +96,7 @@ function simulation(size: number, bands: number[], probe = false) {
   const a = attributeArray(count * stride, 'vec4'),
     b = attributeArray(count * stride, 'vec4');
   const initial = new Float32Array(count * size * size * 4);
-  bands.forEach((c, layer) => initial.set(bakeH0(c, size), layer * size * size * 4));
+  bands.forEach((c, layer) => initial.set(bakeH0(c, size, probe ? 1 : ULTRA.waveScale), layer * size * size * 4));
   const h0 = attributeArray(initial, 'vec4').toReadOnly();
   const lengths = uniformArray(
     bands.map((c) => CASCADE_LENGTHS[c]!),
@@ -256,21 +256,23 @@ function simulation(size: number, bands: number[], probe = false) {
   };
 }
 
-export function fftWaves(): WaveSource {
+export function fftWaves(): WaveSource & { fft: { displacement: N; moments: N; bands: number[]; size: number } } {
   const { size, bands } = FFT;
   const sim = simulation(size, bands),
     lodMax = Math.log2(size);
   return {
+    fft: { displacement: sim.displacement, moments: sim.moments, bands, size },
     displace(xz, cell, damp) {
+      const local = xz.sub(vec2(ISLAND_AT.x, ISLAND_AT.z));
       const d = vec3(0).toVar();
       bands.forEach((c, layer) => {
         if (c === 3) return; // gravity-capillary detail adds slopes only, never geometry
         const L = CASCADE_LENGTHS[c]!;
         // OceanSurface line 339: +1 LOD bias, since box-filtered mips still leak a little past Nyquist.
-        const lod = log2(max(cell.mul(size / L), 1e-6)).add(1);
+        const lod = max(log2(max(cell.mul(size / L), 1e-6)).add(1), 0);
         d.addAssign(
           sim.displacement
-            .sample(xz.div(L))
+            .sample(local.div(L))
             .depth(layer)
             .level(lod)
             .xyz.mul(c === 0 ? damp.x : c === 1 ? damp.y : damp.z),
@@ -279,15 +281,16 @@ export function fftWaves(): WaveSource {
       return d;
     },
     shade(xz, _footprint, damp) {
+      const local = xz.sub(vec2(ISLAND_AT.x, ISLAND_AT.z));
       const slope = vec2(0).toVar(),
         variance = vec2(0).toVar(),
         carried = float(0).toVar();
       const jac = float(1).toVar();
-      const slick = smoothstep(0.3, 0.7, vnoise(xz.mul(0.006).add(uTime.mul(0.01)))).toVar();
+      const slick = smoothstep(0.3, 0.7, vnoise(local.mul(0.006).add(uTime.mul(0.01)))).toVar();
       const sl2 = mix(0.75, 1, slick),
         sl3 = mix(0.4, 1, slick);
       bands.forEach((c, layer) => {
-        const uv = xz.div(CASCADE_LENGTHS[c]!);
+        const uv = local.div(CASCADE_LENGTHS[c]!);
         const dampC = c === 0 ? damp.x : c === 1 ? damp.y : damp.z;
         const w = dampC.mul(c === 2 ? sl2 : c === 3 ? sl3 : 1).toVar();
         // Implicit derivatives stay in uniform control flow. Slopes scale by damp, second moments by damp².

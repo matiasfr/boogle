@@ -83,15 +83,34 @@ const BANDS: Band[] = [
   },
 ];
 
-/** Cascade c's initial spectrum, N×N×4: h0(k), conj(h0(-k)). Seeded per cascade, like the demo's PCG (not the same draw). */
-export function bakeH0(c: number, resolution = N) {
-  const N = resolution;
+/** One directional JONSWAP cell's integrated variance, before the source's Gaussian/pair convention.
+ * Exported for dev/water-diagnose.ts: the source convention produces 8× this variance, not 1×.
+ */
+export function spectrumCellVariance(c: number, i: number, j: number, resolution = N) {
   const L = CASCADE_LENGTHS[c]!,
     dk = (2 * Math.PI) / L;
   // Cascade c owns [cut[c-1], cut[c]); each cut sits at 6 fundamentals of the next cascade.
   const lo = c === 0 ? 1e-4 : ((2 * Math.PI) / CASCADE_LENGTHS[c]!) * 6;
   const hi = c === CASCADE_LENGTHS.length - 1 ? 1e4 : ((2 * Math.PI) / CASCADE_LENGTHS[c + 1]!) * 6;
   const fade = c === CASCADE_LENGTHS.length - 1 ? OCEAN.capillaryFade : OCEAN.shortWavesFade;
+  const kx = (i - resolution / 2) * dk,
+    kz = (j - resolution / 2) * dk,
+    kl = Math.hypot(kx, kz);
+  if (kl < lo || kl > hi) return 0;
+  const w = omega(kl),
+    dwdk = (G + 3 * ST * kl * kl) / (2 * w),
+    theta = Math.atan2(kz, kx);
+  let S = 0;
+  for (const b of BANDS) S += jonswap(w, b) * directional(theta, w, b) * Math.exp(-fade * fade * kl * kl);
+  return ((S * dwdk) / kl) * dk * dk;
+}
+
+/** Cascade c's initial spectrum, N×N×4: h0(k), conj(h0(-k)). Seeded per cascade, like the demo's PCG (not the same draw).
+ * waveScale scales energy, exactly like OceanSim's parameter: amplitude changes by its square root. It does not reshape
+ * or renormalise the source spectrum. The default 1 preserves the reference for the numerical diagnosis.
+ */
+export function bakeH0(c: number, resolution = N, waveScale = 1) {
+  const N = resolution;
   const rng = mulberry32(1337 + c * 7919);
   const re = new Float32Array(N * N),
     im = new Float32Array(N * N);
@@ -102,16 +121,7 @@ export function bakeH0(c: number, resolution = N) {
       const r = Math.sqrt(-2 * Math.log(u1)),
         gx = r * Math.cos(2 * Math.PI * u2),
         gy = r * Math.sin(2 * Math.PI * u2);
-      const kx = (i - N / 2) * dk,
-        kz = (j - N / 2) * dk,
-        kl = Math.hypot(kx, kz);
-      if (kl < lo || kl > hi) continue;
-      const w = omega(kl),
-        dwdk = (G + 3 * ST * kl * kl) / (2 * w),
-        theta = Math.atan2(kz, kx);
-      let S = 0;
-      for (const b of BANDS) S += jonswap(w, b) * directional(theta, w, b) * Math.exp(-fade * fade * kl * kl);
-      const a = Math.sqrt(((2 * S * dwdk) / kl) * dk * dk);
+      const a = Math.sqrt(2 * spectrumCellVariance(c, i, j, N) * waveScale);
       re[j * N + i] = gx * a;
       im[j * N + i] = gy * a;
     }
@@ -165,7 +175,7 @@ function ifft1(re: Float64Array, im: Float64Array) {
 }
 
 // The same transform over rows, then columns.
-function ifft2(re: Float64Array, im: Float64Array, N: number) {
+export function ifft2(re: Float64Array, im: Float64Array, N: number) {
   const rowR = new Float64Array(N),
     rowI = new Float64Array(N);
   for (let j = 0; j < N; j++) {
@@ -193,9 +203,9 @@ function ifft2(re: Float64Array, im: Float64Array, N: number) {
 }
 
 /** Cascade c at t = 0 as a tile of slope moments, and its mean square slope (what the demo reads from the 1×1 mip). */
-export function bakeSlopeTile(c: number, resolution = N, choppiness = OCEAN.choppiness) {
+export function bakeSlopeTile(c: number, resolution = N, choppiness = OCEAN.choppiness, waveScale = 1) {
   const N = resolution;
-  const h0 = bakeH0(c, N),
+  const h0 = bakeH0(c, N, waveScale),
     L = CASCADE_LENGTHS[c]!,
     dk = (2 * Math.PI) / L;
   const re = new Float64Array(N * N),
