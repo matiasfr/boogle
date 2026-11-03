@@ -59,7 +59,7 @@ const opt: {
   fov: null,
   name: null,
   hud: false,
-  warp: false,
+  warp: true,
   until: null,
   at: null,
   curves: false,
@@ -101,7 +101,9 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--warp')
-    opt.warp = true; // spend --warm in game time, far faster than real (./warp.ts); captures still run at real speed
+    opt.warp = true; // the default: --warm and an eval's waits pass in game time, far faster than real (./warp.ts). Captures run at real speed
+  else if (a === '--real')
+    opt.warp = false; // the warm-up in real time too: for what warps can't show, like how long something takes to load
   else if (a === '--until')
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
   else if (a === '--at')
@@ -123,7 +125,7 @@ for (let k = 0; k < argv.length; k++) {
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
   [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
-  [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come
+  [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2

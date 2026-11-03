@@ -12,7 +12,8 @@ export type WarpHandle = {
   speed: number;
   /** Virtual seconds since the page began. */
   now: () => number;
-  go: (speed: number) => void;
+  /** Ahead at this speed; at game second `stopAt`, if given, it returns to 1x on its own, on the exact frame. */
+  go: (speed: number, stopAt?: number) => void;
   /** Draw one frame in this many while warped. */
   drawEvery: number;
   /** Virtual frames run so far, and those skipped drawing. */
@@ -119,7 +120,8 @@ export function installWarp() {
     frames: 0,
     skipped: 0,
     skip: false,
-    go(speed: number) {
+    go(speed: number, at?: number) {
+      stopAt = at ?? Infinity;
       freezeCss(speed !== 1);
       const was = handle.speed;
       handle.speed = speed;
@@ -160,12 +162,14 @@ export function installWarp() {
   })();
 
   // Warped: a frame per task, so microtasks settle between frames and the socket's messages get in.
+  let stopAt = Infinity;
   let budgetFrom = 0;
   let budgetBase = 0;
   let frame = 0;
   const post = () => channel.port1.postMessage(0);
   channel.port2.onmessage = () => {
     if (handle.speed === 1) return;
+    if (virtual / 1000 >= stopAt) return handle.go(1);
     // Over the speed asked for: wait for the wall to catch up.
     const ahead = virtual - budgetBase - (real.perf() - budgetFrom) * handle.speed;
     if (ahead > 0) return void real.setTimeout(post, Math.min(50, ahead / handle.speed));

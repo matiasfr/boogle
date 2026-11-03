@@ -5,8 +5,8 @@
 //   --query 'proto=place&shot=play'       the page and the bot's own settings; &from=line2 starts part way
 //   --eval dev/look/evals/place-job.ts    the file with the bot; it must set window.__placeDone
 //   --root <checkout>                     play another checkout's build, with this harness
-//   --stall 300                           give up after this many game seconds with nothing new
-// Everything lands in .look/playthrough/<name>/: report.txt (what's printed), summary.txt (the full session, as
+//   --stall 600                           give up after this many game seconds with no new beat or bot line
+// Everything lands in .look/playthrough/<name>/: report.txt (what's printed), bot.txt (all it said), summary.txt (the full session, as
 // `npm run playtest` reads one), session.jsonl, text.json, saves/ (a state per beat, for `npm run look -- --at <beat>`), a
 // still at the end. The bot plays at a person's speed but already knows the way: these are a floor for a first-timer's
 // times, not an estimate of them. Not for feel or frame rate: nothing here runs in real time.
@@ -62,7 +62,15 @@ function report(s: Session, text: Observed, wall: { game: number; wall: number; 
   say(
     `${s.card}: ${span(s.end / 1000 - s.start / 1000)} of game in ${span(wall.wall)} (${(wall.game / wall.wall).toFixed(0)}x)`,
   );
-  say(wall.done ? 'The bot finished.' : 'THE BOT DID NOT FINISH: see the last bot lines and the still.');
+  const missed = botLog.filter((l) => /NEVER:/.test(l));
+  say(
+    wall.done
+      ? missed.length
+        ? `The bot reached the end, but ${missed.length} things it expected never came:`
+        : 'The bot finished, and everything it expected came.'
+      : 'THE BOT DID NOT FINISH: see the last bot lines and the still.',
+  );
+  for (const l of missed.slice(0, 12)) say('  ' + l.replace(/^PLAY /, '').slice(0, 110));
   say();
   say('Beats (first time, then the wait before it; x how often):');
   for (const b of beats(s))
@@ -163,8 +171,7 @@ async function main() {
   const checkout = path.resolve(opt('--root', root));
   const stallS = Number(opt('--stall', '600'));
   const job = path.join(checkout, 'dev/look/evals/place-job.ts');
-  const hasBot = fs.existsSync(job) && fs.readFileSync(job, 'utf8').includes('__placeDone');
-  const evalFile = path.resolve(checkout, opt('--eval', hasBot ? job : 'dev/look/evals/place.ts'));
+  const evalFile = path.resolve(checkout, opt('--eval', fs.existsSync(job) ? job : 'dev/look/evals/place.ts'));
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);
   const dir = path.join(OUT, name);
@@ -186,11 +193,18 @@ async function main() {
     });
     const botLog: string[] = [];
     let heardAt = 0;
+    const heard = new Set<string>();
     const gameNow = () => g.page.evaluate(() => performance.now() / 1000);
     g.page.on('console', (m) => {
       if (/^[A-Z]{3,} /.test(m.text())) {
         botLog.push(m.text());
-        heardAt = Date.now();
+        // Only something new counts as getting somewhere: the numbers differ every time round a loop.
+        const words = m
+          .text()
+          .replace(/\([^)]*\)/g, '')
+          .replace(/[\d.]+/g, '#');
+        if (!heard.has(words)) heardAt = Date.now();
+        heard.add(words);
       }
     });
     const watching = await g.eval(WATCH_MARKS);
@@ -202,6 +216,7 @@ async function main() {
     let wallAt = Date.now();
     const w = await g.warp({
       until: 'window.__placeDone',
+      wallLimit: 300,
       stalled: async (at) => {
         const last = await g.page.evaluate(
           () => (window as unknown as { __observe: { lastBeat: number } }).__observe.lastBeat,
@@ -211,6 +226,7 @@ async function main() {
           beatAt = at;
         }
         if (last > beatAt) beatAt = last;
+        if (at - beatAt > stallS) console.log(`Stopped: nothing new for ${stallS} s of game (--stall).`);
         return at - beatAt > stallS;
       },
     });
@@ -239,6 +255,7 @@ async function main() {
       const file = `${String(k).padStart(2, '0')}-${slug}.json`;
       fs.writeFileSync(path.join(dir, 'saves', file), JSON.stringify({ ...st, room: ROOM, query, run: name }));
     });
+    fs.writeFileSync(path.join(dir, 'bot.txt'), botLog.join('\n') + '\n');
     const session = onGameClock(parseSession(name, fs.readFileSync(biggest, 'utf8')));
     const lines = report(session, observed, w, botLog);
     lines.push(
@@ -258,7 +275,7 @@ async function main() {
     const latest = path.join(OUT, 'latest');
     if (fs.existsSync(latest)) fs.unlinkSync(latest);
     fs.symlinkSync(name, latest);
-    if (!w.done) process.exitCode = 1;
+    if (!w.done || botLog.some((l) => /NEVER:/.test(l))) process.exitCode = 1;
   } finally {
     await browser?.close().catch(() => {});
     await stack?.close();
