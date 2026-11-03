@@ -24,6 +24,7 @@
     "check:gpu": "node dev/scenarios/run.ts smoke",
     "look": "node dev/look/look.ts",
     "playthrough": "node dev/look/playthrough.ts",
+    "before-after": "node dev/look/before-after.ts",
     "registry": "node dev/registry/check.ts",
     "atlas": "node dev/atlas/cli.ts",
     "inflight": "node dev/inflight.ts",

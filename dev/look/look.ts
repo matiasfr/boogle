@@ -39,6 +39,7 @@ const opt: {
   curves: boolean;
   curvesVs: string | null;
   target: string | null;
+  players: number;
 } = {
   view: 'hill',
   cam: null,
@@ -64,6 +65,7 @@ const opt: {
   curves: false,
   curvesVs: null,
   target: null,
+  players: 1,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -104,6 +106,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
   else if (a === '--at')
     opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
+  else if (a === '--players')
+    opt.players = Number(v()); // 2: a second player in the same room, each in its own browser profile, so neither takes over
   else if (a === '--curves')
     opt.curves = true; // every frame's speed, height, camera distance: a CSV, a plot and readings (./curves.ts)
   else if (a === '--curves-vs') {
@@ -122,12 +126,19 @@ for (let k = 0; k < argv.length; k++) {
   [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--root <checkout>]                       serve another checkout's build
+  [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
   [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
     process.exit(2);
   }
+}
+if (opt.players > 1 && opt.warp) {
+  console.error(
+    "--players and --warp don't mix: the two pages only agree through the server, which runs in real time.",
+  );
+  process.exit(2);
 }
 const region = opt.region;
 if (
@@ -179,9 +190,12 @@ try {
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
-    room: save?.room ?? opt.room,
-    query: save?.pageQuery,
-    init: save ? SEED(save) : undefined,
+    room: opt.players > 1 ? (opt.room ?? 'look-two') : (save?.room ?? opt.room),
+    query: [save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') || undefined,
+    init: [
+      "localStorage.getItem('boogle.color') || localStorage.setItem('boogle.color', '1');", // comparable pictures
+      save ? SEED(save) : '',
+    ].join('\n'),
     warp: opt.warp,
   });
   // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
@@ -190,11 +204,26 @@ try {
     `question: ${opt.question}\nview: ${JSON.stringify(pose)}\naction: ${opt.action ?? 'none (observe only)'}`,
   );
   if (save) await g.eval(POSE_AT(save));
+  // Its own browser profile, as a friend's machine would be: one profile is one player, and a second tab of it takes over.
+  const g2 =
+    opt.players > 1
+      ? await Game.open(browser, stack, {
+          out: opt.out,
+          size: opt.size,
+          hud: opt.hud,
+          name: 'Second',
+          room: opt.room ?? 'look-two',
+          query: 'player=2',
+          prefix: 'p2-',
+        })
+      : null;
+  g2?.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(`[2] ${m.text()}`));
   // Warped, the setup's own waits take no time.
   const warpNow = (n: number) => g.page.evaluate((s) => window.__warp?.go(s ?? Infinity), n);
   if (opt.eval) {
     if (opt.warp) await warpNow(Infinity);
     await pageScript(g, opt.eval);
+    if (g2) await pageScript(g2, opt.eval);
     if (opt.warp) await warpNow(1);
   }
   if (!save || opt.cam) await g.view(pose, opt.fov ?? undefined);
@@ -234,6 +263,15 @@ try {
       for (const line of readings(data.rows, target)) console.log('  ' + line);
     }
     console.log(`still:   ${await g.still(label)}\nmotion:  ${m.sheet}`);
+    if (g2) {
+      console.log(`still 2: ${await g2.still(label)}`);
+      const two = await g.eval(`return { first: window.boogle.remotes.size }`);
+      const other = await g2.eval(`return { second: window.boogle.remotes.size }`);
+      console.log(`players seen: ${JSON.stringify({ ...two, ...other })}`);
+      if (two.first < 1 || other.second < 1) throw new Error('The two players never saw each other');
+      const more = g2.healthErrors();
+      if (more.length) throw new Error(more.join('\n'));
+    }
     if (m.heat) console.log(`heatmap: ${m.heat}`);
     if (region)
       console.log(
