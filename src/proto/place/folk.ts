@@ -49,7 +49,7 @@ for (const m of [heads, coats, limbs, held]) {
   m.frustumCulled = false;
   scene.add(m);
 }
-heads.castShadow = coats.castShadow = true;
+coats.castShadow = true; // the hat and the coat are the shadow's outline: the head inside it adds nothing but triangles
 const COLORS = ['#e4574a', '#3f8ee0', '#f0c030', '#42b887', '#ef8a3a', '#a569e0'].map((c) => new THREE.Color(c));
 const HAND = new THREE.Color(SKIN),
   BOOT = new THREE.Color('#4a3424'),
@@ -458,11 +458,15 @@ const base = new THREE.Matrix4(),
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 for (let k = 0; k < COUNT * 4; k++) limbs.setColorAt(k, k % 4 < 2 ? BOOT : HAND); // before the first frame compiles them
 for (let k = 0; k < COUNT * 2; k++) held.setColorAt(k, LOG);
-const limb = (k: number, slot: number, x: number, y: number, z: number, rx: number, ry: number, rz: number) => {
-  const n = k * 4 + slot;
+const limb = (k: number, part: number, x: number, y: number, z: number, rx: number, ry: number, rz: number) => {
+  const n = k * 4 + part;
   limbs.setMatrixAt(n, m.compose(p.set(x, y, z), q.identity(), s.set(rx, ry, rz)).premultiply(base));
 };
+// Who's drawn this frame go in the first `slot` instances: someone indoors or behind you costs nothing.
+let slot = 0;
 function pose(g: Guy) {
+  const k = slot++;
+  coats.setColorAt(k, COLORS[g.k % COLORS.length]!);
   const t = g.t;
   let hop = 0,
     tilt = 0,
@@ -570,14 +574,14 @@ function pose(g: Guy) {
   const gy = g.fy ?? g.y;
   q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
-  heads.setMatrixAt(g.k, base);
-  coats.setMatrixAt(g.k, base);
-  limb(g.k, 0, -0.13, 0.06 + liftL, fl + 0.02, 0.1, 0.07, 0.14);
-  limb(g.k, 1, 0.13, 0.06 + liftR, fr + 0.02, 0.1, 0.07, 0.14);
-  limb(g.k, 2, hl[0]!, hl[1]!, hl[2]!, 0.075, 0.075, 0.075);
-  limb(g.k, 3, hr[0]!, hr[1]!, hr[2]!, 0.075, 0.075, 0.075);
-  const i0 = g.k * 2,
-    i1 = g.k * 2 + 1;
+  heads.setMatrixAt(k, base);
+  coats.setMatrixAt(k, base);
+  limb(k, 0, -0.13, 0.06 + liftL, fl + 0.02, 0.1, 0.07, 0.14);
+  limb(k, 1, 0.13, 0.06 + liftR, fr + 0.02, 0.1, 0.07, 0.14);
+  limb(k, 2, hl[0]!, hl[1]!, hl[2]!, 0.075, 0.075, 0.075);
+  limb(k, 3, hr[0]!, hr[1]!, hr[2]!, 0.075, 0.075, 0.075);
+  const i0 = k * 2,
+    i1 = k * 2 + 1;
   if (itemA) {
     held.setMatrixAt(i0, m.compose(p.set(0, 0.44, 0.3), q.identity(), s.set(0.95, 0.16, 0.16)).premultiply(base));
     held.setColorAt(i0, LOG);
@@ -609,14 +613,9 @@ function pose(g: Guy) {
   }
 }
 const tr = new THREE.Matrix4();
-function hide(g: Guy) {
-  heads.setMatrixAt(g.k, ZERO);
-  coats.setMatrixAt(g.k, ZERO);
-  for (let n = 0; n < 4; n++) limbs.setMatrixAt(g.k * 4 + n, ZERO);
-  held.setMatrixAt(g.k * 2, ZERO);
-  held.setMatrixAt(g.k * 2 + 1, ZERO);
-}
 const NEAR_CAM = 2.5; // m
+const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: past their shadow's reach into the view
+const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
 function ride(g: Guy, car: { mesh: THREE.Object3D; top: number }, x: number, z: number, yaw: number) {
   car.mesh.updateWorldMatrix(false, false);
@@ -842,11 +841,10 @@ export function updateFolk(dt: number) {
   const cx = camera.position.x,
     cz = camera.position.z;
   const e_ = env;
+  camera.getWorldDirection(look);
+  slot = 0;
   for (const g of guys) {
-    if (!g.on) {
-      hide(g);
-      continue;
-    }
+    if (!g.on) continue;
     const d2 = (g.x - cx) ** 2 + (g.z - cz) ** 2;
     const far = d2 > 150 * 150;
     // Out of sight of the camera, they're looked at less often.
@@ -856,7 +854,6 @@ export function updateFolk(dt: number) {
         brain(g, Math.min(0.5, g.far));
         g.far = 0;
       }
-      hide(g);
       continue;
     }
     if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {
@@ -872,19 +869,21 @@ export function updateFolk(dt: number) {
       ride(g, car, g.seat ? 0.62 : -0.62, -1.15, g.seat ? -0.7 : 0.7);
     } else if (e_ && g.job === 'rider') {
       const car = e_.trainCar(g.camp);
-      if (!car) {
-        hide(g);
-        continue;
-      }
+      if (!car) continue;
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
     }
     // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
     const nx = g.x - cx,
       ny = (g.fy ?? g.y) + 0.5 - camera.position.y,
       nz = g.z - cz;
-    if (nx * nx + ny * ny + nz * nz < NEAR_CAM * NEAR_CAM) hide(g);
-    else pose(g);
+    if (nx * nx + ny * ny + nz * nz < NEAR_CAM * NEAR_CAM) continue;
+    if (nx * look.x + ny * look.y + nz * look.z < -BEHIND) continue;
+    pose(g);
   }
+  heads.count = coats.count = slot;
+  limbs.count = slot * 4;
+  held.count = slot * 2;
+  if (coats.instanceColor) coats.instanceColor.needsUpdate = true;
   heads.instanceMatrix.needsUpdate = coats.instanceMatrix.needsUpdate = true;
   limbs.instanceMatrix.needsUpdate = held.instanceMatrix.needsUpdate = true;
   if (held.instanceColor) held.instanceColor.needsUpdate = true;

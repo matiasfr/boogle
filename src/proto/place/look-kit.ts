@@ -154,6 +154,8 @@ export function lookTrack(set: DropSet, kinds: string[]): DropSet {
       plates.castShadow = false;
       list.push({ mesh: plates, inv });
     }
+    // What lies flat on its bed has no shadow worth a second draw: the bed's contact blobs already ground it.
+    if (kind === 'sleeper' || kind === 'rail') for (const q of list) q.mesh.castShadow = false;
     for (const q of list) scene.add(q.mesh);
     parts.set(kind, list);
   }
@@ -201,37 +203,55 @@ const POST: Paint = { color: '#7f5630', grain: { axis: 'y', honey: honeyOf('#7f5
   ROLLER: Paint = { color: '#a9adb5', steel: true, rough: 0.5 };
 /** The frame and feeder of a station, in its own space (+z along the line, +x across): the greybox's sizes, real pieces. */
 export function stationKit(g: THREE.Group, away: number, FRAME_D: number, FRAME_W: number, SPAN: number) {
-  const at = (m: THREE.Object3D, x: number, y: number, z: number, parent: THREE.Object3D = g) => {
-    m.position.set(x, y, z);
-    parent.add(m);
-    return m;
-  };
+  // Every station's pieces go in one batch per piece: nothing here moves, and six stations are no more draws than one.
+  g.updateMatrix();
+  const feederAt = new THREE.Matrix4().makeTranslation(-away * (FRAME_D / 2 + SPAN / 2), 0, 0).premultiply(g.matrix);
+  const at = (name: string, p: Paint, x: number, y: number, z: number, frame = g.matrix) =>
+    stationPiece(name, p, stationM.makeTranslation(x, y, z).premultiply(frame));
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) {
-      at(piece('frame_post', POST), (sx * FRAME_D) / 2, 0, (sz * FRAME_W) / 2);
-      at(piece('frame_tip', AMBER), (sx * FRAME_D) / 2, 1.24, (sz * FRAME_W) / 2);
+      at('frame_post', POST, (sx * FRAME_D) / 2, 0, (sz * FRAME_W) / 2);
+      at('frame_tip', AMBER, (sx * FRAME_D) / 2, 1.24, (sz * FRAME_W) / 2);
     }
-  for (const sx of [-1, 1]) at(piece('beam_long', LONG), (sx * FRAME_D) / 2, 0.16, 0);
-  for (const sz of [-1, 1]) at(piece('beam_short', SHORT), 0, 0.16, (sz * FRAME_W) / 2);
-  at(piece('frame_floor', FLOOR), 0, 0.01, 0);
-  at(piece('frame_board', CREAM), away * (FRAME_D / 2 + 0.1), 0.15, 0);
-  const logGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2); // the board's log pictogram
-  const pict = new THREE.Mesh(LOOK.contact ? bakeContact(logGeo) : logGeo, paint({ color: '#3a2a1a' }));
-  at(pict, away * (FRAME_D / 2 + 0.15), 0.42, 0);
-  const feeder = new THREE.Group();
-  at(piece('feeder_bed', BED), 0, 0, 0, feeder);
-  const rollers = kitBatch('roller', ROLLER, Math.round(SPAN / 0.3));
-  const o = new THREE.Object3D();
-  for (let k = 0; k < rollers.count; k++) {
-    o.position.set((k + 0.5) * 0.3 - SPAN / 2, 0.58, 0);
-    o.updateMatrix();
-    rollers.setMatrixAt(k, o.matrix);
-  }
-  feeder.add(rollers);
-  for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) at(piece('feeder_leg', DARK), dx, 0, 0, feeder);
-  feeder.position.set(-away * (FRAME_D / 2 + SPAN / 2), 0, 0);
-  g.add(feeder);
+  for (const sx of [-1, 1]) at('beam_long', LONG, (sx * FRAME_D) / 2, 0.16, 0);
+  for (const sz of [-1, 1]) at('beam_short', SHORT, 0, 0.16, (sz * FRAME_W) / 2);
+  at('frame_floor', FLOOR, 0, 0.01, 0);
+  at('frame_board', CREAM, away * (FRAME_D / 2 + 0.1), 0.15, 0);
+  stationPict.setMatrixAt(
+    stationPict.count++,
+    stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix),
+  );
+  stationPict.instanceMatrix.needsUpdate = true;
+  at('feeder_bed', BED, 0, 0, 0, feederAt);
+  const rollers = Math.round(SPAN / 0.3);
+  for (let k = 0; k < rollers; k++) at('roller', ROLLER, (k + 0.5) * 0.3 - SPAN / 2, 0.58, 0, feederAt);
+  for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) at('feeder_leg', DARK, dx, 0, 0, feederAt);
 }
+const STATION_PIECES = 64, // the most of a piece, all stations together; only what's placed is drawn
+  ROLLERS = 256;
+const stationM = new THREE.Matrix4();
+const stationBatches = new Map<string, THREE.InstancedMesh>();
+function stationPiece(name: string, p: Paint, m: THREE.Matrix4) {
+  let b = stationBatches.get(name);
+  if (!b) {
+    b = kitBatch(name, p, name === 'roller' ? ROLLERS : STATION_PIECES);
+    b.count = 0;
+    stationBatches.set(name, b);
+    scene.add(b);
+  }
+  b.setMatrixAt(b.count++, m);
+  b.instanceMatrix.needsUpdate = true;
+}
+// The board's log pictogram.
+const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2);
+const stationPict = new THREE.InstancedMesh(
+  LOOK.contact ? bakeContact(stationPictGeo) : stationPictGeo,
+  paint({ color: '#3a2a1a' }),
+  8,
+);
+stationPict.count = 0;
+stationPict.frustumCulled = false;
+scene.add(stationPict);
 
 // ---------------------------------------------------------------- the machine
 const RED: Paint = { color: '#e8392a', rough: 0.55 },
@@ -244,6 +264,26 @@ const RED: Paint = { color: '#e8392a', rough: 0.55 },
 const SLEEPER_ON_FORK: Paint = { color: '#8a6236', grain: { axis: 'x', honey: honeyOf('#8a6236') } };
 export type MachineLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D; heldRail: THREE.Object3D };
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
+type Wheel = { x: number; y: number; z: number; at: number };
+const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
+  WHEEL_AXIS = new THREE.Vector3(1, 0, 0),
+  wheelQ = new THREE.Quaternion(),
+  wheelP = new THREE.Vector3(),
+  wheelS = new THREE.Vector3(),
+  wheelM = new THREE.Matrix4();
+const wheelSet = (p: Paint, n: number) => {
+  let b: THREE.InstancedMesh | null = null;
+  return () => {
+    if (b) return b;
+    b = kitBatch('wheel', p, n);
+    b.castShadow = false;
+    b.count = 0;
+    scene.add(b);
+    return b;
+  };
+};
+const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
+  trainWheels = wheelSet(IRON, 24); // two lines: three cars each, four wheels each
 export const machineLook = (): MachineLook => kitCars(1, true);
 /** A train's look: the same loco, the same livery, and plain flatbeds. */
 export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
@@ -254,21 +294,19 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     parent.add(m);
     return m;
   };
-  const wheels = (parent: THREE.Object3D, hz: number, r: number) => {
-    const list: THREE.Mesh[] = [];
+  // The wheels of all the cars are one batch, posed each frame, and cast no shadow: they're under the deck.
+  const wheelBatch = working ? machineWheels() : trainWheels();
+  const wheels = (hz: number, r: number) => {
+    const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
-      for (const sz of [-1, 1]) {
-        const w = add(parent, 'wheel', IRON, sx, r + 0.15, sz * (hz - 0.5));
-        w.scale.set(1, r, r);
-        list.push(w);
-      }
+      for (const sz of [-1, 1]) list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
     return list;
   };
   const loco = new THREE.Group();
   add(loco, 'loco_body', RED);
   add(loco, 'loco_brass', BRASS);
   add(loco, 'loco_black', BLACK);
-  const locoWheels = wheels(loco, LOCO.hz, 0.36);
+  const locoWheels = wheels(LOCO.hz, 0.36);
   const chimneyTop = new THREE.Object3D();
   chimneyTop.position.set(0, 2.5, 1.05);
   loco.add(chimneyTop);
@@ -283,7 +321,7 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     const flatbed = new THREE.Group();
     add(flatbed, 'flat_deck', DECK);
     add(flatbed, 'flat_black', BLACK);
-    return { flatbed, wheels: wheels(flatbed, TRAILER.hz, 0.22) };
+    return { flatbed, wheels: wheels(TRAILER.hz, 0.22) };
   });
   // The machine's flatbed works for a living.
   const bed0 = beds[0]!.flatbed;
@@ -316,15 +354,29 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     () => {
       cars.forEach((car, n) => {
         const parent = car.parent;
-        if (!parent?.visible) return void last[n]!.set(NaN, 0, 0);
+        const { wheels: list, r } = sets[n]!;
+        if (!parent?.visible) {
+          for (const w of list) wheelBatch.setMatrixAt(w.at, WHEEL_ZERO);
+          wheelBatch.instanceMatrix.needsUpdate = true;
+          return void last[n]!.set(NaN, 0, 0);
+        }
         const at = parent.position,
           yaw = parent.rotation.y;
         const dx = at.x - last[n]!.x,
           dz = at.z - last[n]!.z;
         const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
         last[n]!.copy(at);
-        angle[n]! += ds / sets[n]!.r;
-        for (const w of sets[n]!.wheels) w.rotation.x = angle[n]!;
+        angle[n]! += ds / r;
+        // In the car's own frame, rock and shudder included, as when they were its children.
+        const inner = car.children[0]!;
+        inner.updateWorldMatrix(true, false);
+        wheelQ.setFromAxisAngle(WHEEL_AXIS, angle[n]!);
+        wheelS.set(1, r, r);
+        for (const w of list) {
+          wheelP.set(w.x, w.y, w.z);
+          wheelBatch.setMatrixAt(w.at, wheelM.compose(wheelP, wheelQ, wheelS).premultiply(inner.matrixWorld));
+        }
+        wheelBatch.instanceMatrix.needsUpdate = true;
         if (n === 1) travel += Math.abs(ds);
       });
       for (const { m } of rods) {

@@ -442,10 +442,13 @@ if (shot === 'reload') {
       info: { frame: number; render: { drawCalls: number; triangles: number } };
     };
   };
-  sun.shadow.mapSize.setScalar(1024);
-  sun.shadow.map?.dispose();
-  sun.shadow.map = null;
-  renderer.setPixelRatio(0.8);
+  // &mac=1: what this Mac draws by default (the owner's target), not the iPad's settings.
+  if (!q.get('mac')) {
+    sun.shadow.mapSize.setScalar(1024);
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+    renderer.setPixelRatio(0.8);
+  }
   const frame = () =>
     new Promise<{ drawCalls: number; triangles: number }>((res) => {
       const at = renderer.info.frame;
