@@ -48,3 +48,4 @@ queries, or less displacement; larger shoreline reshaping would also need matchi
 Source: `src/proto/shore/`. DESIGN.md: **Code first, images by approval**, **Small and readable**,
 **Pick how each feature shares state**. Research: [stylized terrain](../research/stylized-terrain.md),
 recommendations 6 and 9, and [Ultra Water](../research/ultra-water.md), recommendations 4 and 7.
+Boards, contact measurements, costs and recommendation: [shore slice validation](../research/shore-slice-validation.md).
