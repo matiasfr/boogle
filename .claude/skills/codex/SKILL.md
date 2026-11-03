@@ -11,6 +11,12 @@ index untouched). Default remains `origin/main`. Each job installs its own depen
 the worker's assessment, machine evidence and copied artifacts; read it before shipping. A snapshot includes unfinished
 caller changes: review those too.
 
+For follow-up feedback, run `node dev/codex/run.ts resume <topic> "<feedback and checks to repeat>"` in the original
+launching checkout, in the background as before. This keeps the explicit session ID, conversation, worktree and bot
+checkpoints, and restarts the broker. Review the latest handoff after every turn; previous reports are in `turns/` and
+earlier failures remain in the evidence. Keep the worktree and local Codex session until done. Do not start a new topic
+or use `codex exec resume --last` for a follow-up. Caller edits aren't recopied; describe the fix or start a new snapshot.
+
 The worker's `.look/see-client.ts` supports `playthrough`, `look` and named existing `scenario` operations. Ask it to run the
 relevant bot, open the generated PNGs, explain what it saw, and report failures and unverified feel. `look --at` reads this
 job's own bot checkpoints. The broker is already running; the worker should not start another or run Chromium directly.
