@@ -51,6 +51,15 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 
 Set with `node dev/economy/model.ts round4`; timed by `npm run playthrough`; each rung's before and after in [place.md](../game-design/place.md#measured). Your back 8, then 16. An axe of 5 strokes at 2 logs, then 3 at 5. Bills: stations 24, 32 + 8 stone, 40 + the great beam (`Q0 + j * delta`, a short finite table); the forge 24 then 32; line 2: 16+6, 24+12, 16+12, 16+16, 24+24, and the pier 32+32 off a train. Target for the first path, 6 to 9 minutes of real play: the bot takes 5:57 with no reading, looking or sprinting, so a person should land in it, unverified. Trains at about 26 minutes.
 
+## Queue (Codex, until the playtest)
+
+Stop at the owner's playtest: when this list is done, or what's left needs the owner, no agent develops further and no check-in keeps running. Tell the owner round 4 is ready. Nothing past round 4 starts until they've played and given notes.
+
+1. [ ] Astra: check abilities with two players; capture the rim slab and tower posts.
+2. [ ] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
+3. [ ] Terra, low: build `docs/plans/two-player.md`, once it exists.
+4. [ ] Astra: the whole-run pass above, last, once 1 to 3 are on main.
+
 ## Left out for now
 
 Chained physics, Boogler story beats beyond rumours, rail grinding, crystal cards, hand-built level tools, bombs and the sledgehammer, the roundhouse, mini-games, voice chat, things only at night, materials beyond the first, maps and fast travel. `rail-slice.md` gets redrafted after this.
