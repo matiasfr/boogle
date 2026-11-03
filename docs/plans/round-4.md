@@ -32,7 +32,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 ## Tracks, in order
 
 - [x] **Character:** remove the avatar's ear bumps and rosy cheeks.
-- [ ] **Playtest data:** consented auto-upload to our server, fetched with one command, so we understand a session before hearing about it.
+- [x] **Playtest data:** consented auto-upload to our server, fetched with one command, so we understand a session before hearing about it. `npm run playtest`; prototypes add beats with `playMark`.
 - [ ] **Research and pictures:** movement abilities and glide feel; interiors in a third-person camera.
 - [ ] **The job:** steps 1 to 4, and the fixes above.
 - [ ] **Exploring:** step 5.

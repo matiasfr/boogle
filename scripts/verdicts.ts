@@ -4,16 +4,12 @@
 // The bar sends on the verdict tap and again with the note, so by default only the latest report per card and variant
 // in a sitting (reports less than SITTING_MS apart) shows; --all shows every send.
 //   --md   print draft lines in docs/playtests.md's entry format instead, one `## <day>` block per day.
-// Token: REPORT_TOKEN from the environment, else a `REPORT_TOKEN=...` line in `.env.local` at the repo root
-// (gitignored). It is the Fly secret of the same name; it is sent only as the Authorization header, never printed.
+// Token: scripts/report-token.ts.
 // Server: BOOGLE_SERVER if set, else the production server (the VITE_BOOGLE_SERVER repo variable that deploy.yml builds
 // the site with).
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { PROTOS } from '../protos/protos.ts';
+import { reportToken } from './report-token.ts';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
 const args = process.argv.slice(2);
 const days = Math.max(1, Math.min(30, Number(args[args.indexOf('--days') + 1]) || 3));
@@ -37,20 +33,8 @@ type Playtest = {
 };
 
 function token(): string {
-  if (process.env.REPORT_TOKEN) return process.env.REPORT_TOKEN;
-  try {
-    const line = fs
-      .readFileSync(path.join(ROOT, '.env.local'), 'utf8')
-      .split('\n')
-      .find((l) => l.startsWith('REPORT_TOKEN='));
-    if (line)
-      return line
-        .slice('REPORT_TOKEN='.length)
-        .trim()
-        .replace(/^['"]|['"]$/g, '');
-  } catch {
-    // no file: fall through
-  }
+  const t = reportToken();
+  if (t) return t;
   console.error('No REPORT_TOKEN: set it in the environment or as REPORT_TOKEN=... in .env.local (see the header).');
   process.exit(1);
 }

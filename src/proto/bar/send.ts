@@ -7,6 +7,7 @@ import { getRoomId } from '../../netplay/net.ts';
 import { BUILD } from '../../build-id.ts';
 import { read, sittingLine, sittings, vName } from '../../../protos/store.ts';
 import { PROTOS } from '../../../protos/protos.ts';
+import { playMark } from '../mark.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const last = new Map<string, string>(); // card/variant -> the last payload sent
@@ -39,6 +40,7 @@ export function sendVerdict(id: string, v: string): boolean {
   const key = `${id}/${v}`;
   const same = sig(m.verdict, m.note);
   if (last.get(key) === same) return false;
+  playMark('verdict', { verdict: m.verdict, note: detail.note, variant: v });
   try {
     const body = JSON.stringify({ room: getRoomId(), kind: 'playtest', detail, build: BUILD });
     if (!navigator.sendBeacon(new URL('/report', SERVER), body)) return false;

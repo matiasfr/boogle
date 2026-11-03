@@ -7,7 +7,8 @@
 // ride, drive or carry, or the card's own `verb`: a counter, an activity, or `protoMark('verb')`); and where and when it ended. Saved to this
 // browser's protos store (protos/store.ts) every few seconds and when the tab hides, the card's last 10 sittings; the
 // protos page draws them as heat maps. Loaded by the prototype bar.
-// Local: never synced, never sent anywhere. Serves DESIGN.md "How we work".
+// Local: never synced, never sent anywhere (what reaches our server is src/proto/playdata/record.ts). Serves DESIGN.md
+// "How we work".
 import { onFrame } from '../../loop.ts';
 import { me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';

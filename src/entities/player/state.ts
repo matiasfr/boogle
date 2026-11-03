@@ -74,6 +74,7 @@ export function enterIsland(name: string) {
 export function pressJump() {
   me.jumpQueued = 0.15;
   me.jumpHeld = true;
+  me.jumpPresses++;
 }
 export function releaseJump() {
   me.jumpHeld = false;
