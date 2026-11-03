@@ -649,6 +649,85 @@ if (shot === 'reload') {
     }
     (window as unknown as { __rideDone: boolean }).__rideDone = true;
   })();
+} else if (shot === 'sit') {
+  // Real presses: on a deck the prompt says Sit, Interact sits you, a ride holds you, Interact or Jump stands you up; a nearer
+  // target keeps the button. SIT lines on the console. &keep=1 stays seated, facing &yaw from the deck, for stills and video.
+  const note = (t: string) => console.log('SIT ' + t);
+  const seat = (place as unknown as { seat: { seated: () => boolean } }).seat;
+  const target = () => hands.interactTarget()?.verb ?? 'none';
+  place.skipForge();
+  const tr = L1.train.tr;
+  while (tr.stop !== 1) await wait(50);
+  const c = tr.cars[1]!.body.position;
+  putW(c.x + 0.8, c.y + 1.4, c.z, 0, -0.2);
+  await wait(500);
+  note(`on the deck, prompt: ${target()}`);
+  press();
+  await wait(300);
+  note(`pressed: seated ${seat.seated()}, prompt: ${target()}`);
+  if (q.get('keep')) {
+    if (q.get('moving') !== '0') {
+      while (tr.stop === 1) await wait(50);
+      while (tr.s > Number(q.get('at') ?? 130)) await wait(50);
+    }
+    cam.yaw = me.yaw + Number(q.get('yaw') ?? 1.4);
+    cam.pitch = Number(q.get('pitch') ?? -0.3);
+  } else {
+    void (async () => {
+      const local = { x: 0, y: 0, z: 0, yaw: 0 };
+      const p = (tr.cars[1] as unknown as { platform: import('../../../src/physics/platforms.ts').Platform }).platform;
+      plat.toPlatform(p, body.position, 0, local);
+      const x0 = local.x,
+        z0 = local.z;
+      let most = 0;
+      input.keys.add('KeyW'); // pushing the stick: seated, nothing should come of it
+      await wait(400);
+      input.keys.delete('KeyW');
+      while (tr.stop === 1) {
+        plat.toPlatform(p, body.position, 0, local);
+        most = Math.max(most, Math.hypot(local.x - x0, local.z - z0));
+        await wait(16);
+      }
+      while (tr.stop !== 0) {
+        plat.toPlatform(p, body.position, 0, local);
+        most = Math.max(most, Math.hypot(local.x - x0, local.z - z0));
+        cam.yaw += 0.01; // looking round
+        await wait(16);
+      }
+      note(
+        `rode home seated: still seated ${seat.seated()}, moved ${most.toFixed(3)} m on the deck, on deck ${!!plat.carry.on}`,
+      );
+      press();
+      await wait(300);
+      note(`Interact: seated ${seat.seated()}, prompt: ${target()}`);
+      press();
+      await wait(300);
+      note(`Interact again: seated ${seat.seated()}`);
+      me.jumpQueued = 0.15;
+      await wait(300);
+      note(`Jump: seated ${seat.seated()}, on deck ${!!plat.carry.on}`);
+      // A thing in reach keeps the button: the sleeping machine's Wake, you on its deck. Then sit on it through a stretch.
+      place.startOver();
+      await wait(800);
+      const f = place.machine.flatbed;
+      putW(f.x, f.y + 1.4, f.z, 0);
+      await wait(600);
+      note(`on the sleeping machine, prompt: ${target()}`);
+      place.wake();
+      place.skipDelivery();
+      await waitMode('laying');
+      const b0 = f.body.position;
+      putW(b0.x, b0.y + 1.4, b0.z, 0);
+      await wait(500);
+      note(`on the machine, prompt: ${target()}`);
+      press();
+      await wait(200);
+      note(`pressed: seated ${seat.seated()}`);
+      await waitMode('idle');
+      note(`stretch laid: seated ${seat.seated()}, on deck ${!!plat.carry.on}, prompt: ${target()}`);
+      (window as unknown as { __sitDone: boolean }).__sitDone = true;
+    })();
+  }
 } else if (shot === 'layride') {
   // The same on the machine's flatbed through each stretch it lays, line 1 then the shunt and line 2. &spots as for `ride`.
   void (async () => {

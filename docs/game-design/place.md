@@ -35,6 +35,8 @@ Along the way, seven **crystals** are tucked at spots worth stopping at, the sam
 
 **The town and camps are solid**: every building has a collider, its walls from when its frame is up. Standing in a plot when they go up moves you to the nearest edge.
 
+**You can sit.** On a train's or the machine's deck, with nothing nearer to press for, Interact reads **Sit**: you sit down on the deck in the avatars' seated pose, a little inboard if you were at the edge, and stay there through curves and stops. The stick does nothing and the camera works as ever, so you can look around. Interact (**Stand up**) or Jump gets you up.
+
 **The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
 
 Falling is harmless: in the water, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current station), Skip to the forge and Skip to line 2.
