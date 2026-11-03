@@ -1,6 +1,7 @@
 // What tells you what to do in ?proto=place: a signpost at the fork, a beacon over the next thing, one line of objective on
 // the HUD and the shared numbers (the train's capacity, the town's people). "A small prompt is direction enough" (the
 // owner, 2 November): no big sign. Local.
+import { playObjective } from '../mark.ts';
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
@@ -147,6 +148,7 @@ export function setObjective(text: string) {
   const news = text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '');
   lastObj = text;
   obj.textContent = text;
+  playObjective(text);
   if (news) showObjective();
 }
 /** Up it comes for a few seconds, with a little pop. */

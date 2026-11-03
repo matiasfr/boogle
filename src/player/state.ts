@@ -14,6 +14,7 @@ export const me = {
   yaw: 0,
   coyote: 0,
   jumpQueued: 0,
+  jumpPresses: 0, // ever, for the playtest data's summary (src/proto/playdata/record.ts)
   jumpHeld: false,
   swimming: false,
   sprint: false,

@@ -58,7 +58,7 @@ import {
 } from '../net/crates.ts';
 import { playPanel } from '../flags.ts';
 import { protoCount } from '../count.ts';
-import { protoMark } from '../mark.ts';
+import { playMark, protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, addStatics, buildLand, insidePlace } from './land.ts';
 import {
   after,
@@ -800,7 +800,10 @@ function landAtStation(l: LineRun, st: StationRun, kind: 'logs' | 'rails', count
 
 // ---------------------------------------------------------------- the verbs
 const log: [string, number][] = [];
-const mark = (name: string) => void log.push([name, performance.now()]);
+const mark = (name: string) => {
+  log.push([name, performance.now()]);
+  playMark(name);
+};
 const atPrompt = new THREE.Vector3();
 const prompts = new Map<string, THREE.Vector3>();
 const promptAt = (id: string, x: number, y: number, z: number) => {
