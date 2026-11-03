@@ -5,7 +5,7 @@ description: "Custom shading with TSL node materials on WebGPU, plus GLSL refere
 
 # Three.js Shaders
 
-Targets three.js r186. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
+Targets three.js r187. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
 
 **In Boogle:** the game runs on `WebGPURenderer` with TSL node materials only (three r187). Use the WebGPU and TSL guidance here; the GLSL, `ShaderMaterial`, `onBeforeCompile`, `EffectComposer` and `THREE.Points` examples don't apply (lint bans them). Boogle's own contract: `src/render/README.md`.
 
@@ -466,6 +466,7 @@ Rewrite GLSL functions as `Fn`s instead of pasting shader strings: `glslFn` runs
 
 ## Common Mistakes
 
+- Assuming mixed-type TSL math keeps the first operand's type: r187 coerces operands and math-function parameters to a broader common type; use explicit casts when the result type matters.
 - `const clock = new THREE.Clock();` → `const timer = new THREE.Timer(); timer.connect(document);`: Clock is deprecated in r183; call timer.update() first in each frame, then timer.getElapsed() or timer.getDelta().
 - `"#include <output_fragment>"` → `"#include <opaque_fragment>"`: output_fragment does not exist, so a string replace targeting it silently matches nothing.
 - `fragmentShader: "uniform vec3 color;\nvoid main() {\n  gl_FragColor = vec4(color, 1.0);\n}"` → `fragmentShader: "uniform vec3 color;\nvoid main() {\n  gl_FragColor = vec4(color, 1.0);\n  #include <tonemapping_fragment>\n  #include <colorspace_fragment>\n}"`: color uniforms hold linear values and without the two includes, each on its own line, the output is never encoded, so mid-tones render darker than on built-in materials.

@@ -5,7 +5,7 @@ description: "Choosing and configuring three.js materials - unlit, diffuse, spec
 
 # Three.js Materials
 
-Targets three.js r186. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
+Targets three.js r187. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
 
 **In Boogle:** the game runs on `WebGPURenderer` with TSL node materials only (three r187). Use the WebGPU and TSL guidance here; the GLSL, `ShaderMaterial`, `onBeforeCompile`, `EffectComposer` and `THREE.Points` examples don't apply (lint bans them). Boogle's own contract: `src/render/README.md`.
 
@@ -167,7 +167,8 @@ const material = new THREE.MeshPhysicalMaterial({
   // Iridescence (soap bubbles, oil slicks)
   iridescence: 1.0,
   iridescenceIOR: 1.3,
-  iridescenceThicknessRange: [100, 400], // nanometers
+  iridescenceThicknessMinimum: 100, // nanometers
+  iridescenceThicknessMaximum: 400,
   // Anisotropy (brushed metal); direction with anisotropyRotation
   anisotropy: 1.0,
   // Dispersion (prismatic glass); retroreflectivity (road signs, safety gear)
@@ -475,6 +476,7 @@ scene.add(points);
 
 ## Common Mistakes
 
+- `iridescenceThicknessRange: [100, 400]` → `iridescenceThicknessMinimum: 100, iridescenceThicknessMaximum: 400`: the range property is deprecated in r187.
 - `geometry.setAttribute("uv2", geometry.attributes.uv)` → `const material = new THREE.MeshStandardMaterial({ aoMap });`: aoMap samples the attribute picked by `aoMap.channel`, 0 (`uv`) by default, so it needs no extra attribute and uv2 is read only with `aoMap.channel = 2`; only a separate unwrap goes in `uv1` with `aoMap.channel = 1`.
 - `new RGBELoader()` → `new HDRLoader()`: HDRLoader was renamed from RGBELoader in r180; RGBELoader is deprecated and still loads, with a warning - import HDRLoader from "three/addons/loaders/HDRLoader.js".
 - `"three/examples/jsm/loaders/HDRLoader.js"` → `"three/addons/loaders/HDRLoader.js"`: the browser import maps map `three/addons/` to examples/jsm/ and define no `three/examples/` key, so the examples path fails there.

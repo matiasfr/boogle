@@ -5,7 +5,7 @@ description: "Light types and physical units, shadow maps, HDR environment light
 
 # Three.js Lighting
 
-Targets three.js r186. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
+Targets three.js r187. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
 
 **In Boogle:** the game runs on `WebGPURenderer` with TSL node materials only (three r187). Use the WebGPU and TSL guidance here; the GLSL, `ShaderMaterial`, `onBeforeCompile`, `EffectComposer` and `THREE.Points` examples don't apply (lint bans them). Boogle's own contract: `src/render/README.md`.
 
@@ -440,7 +440,7 @@ import { ClusteredLighting } from "three/addons/lighting/ClusteredLighting.js";
 // RectAreaLight: register the LTC textures once (replaces RectAreaLightUniformsLib)
 THREE.RectAreaLightNode.setLTC(RectAreaLightTexturesLib.init());
 // SunLight: register its node implementation once
-renderer.library.addLight(SunLightNode, SunLight);
+SunLight.registerNode(SunLightNode);
 // Many point lights: clustered Forward+ shading (DynamicLighting instead avoids recompiles when unshadowed lights come and go)
 renderer.lighting = new ClusteredLighting();
 ```
@@ -461,6 +461,7 @@ Colored shadows: with `renderer.shadowMap.transmitted = true`, casters write col
 
 ## Common Mistakes
 
+- `renderer.library.addLight(SunLightNode, SunLight)` → `SunLight.registerNode(SunLightNode)`: register the node on the light class; the library method is deprecated in r187.
 - `light.layers.set(1);` → `material.lightsNode = lights([keyLight, fillLight]);`: lights are not filtered per mesh by layers — a light's layers are tested against the camera's, so this switches the light off for the whole scene; per-material selection needs a node material, under WebGPURenderer or under WebGLRenderer through the WebGLNodesHandler addon.
 - `new THREE.PointLight(0xffffff, 1, 100);` → `new THREE.PointLight(0xffffff, 100, 20);`: point and spot intensity is candela with inverse-square falloff, so 1 contributes almost nothing at range; typical values run to the hundreds.
 - `renderer.useLegacyLights = true;` → `const bulb = new THREE.PointLight(0xffffff, 100, 20);`: legacy light units no longer exist and neither useLegacyLights nor physicallyCorrectLights does anything, so retune point and spot lights in candela instead.
