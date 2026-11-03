@@ -55,3 +55,13 @@ Put what you already know in the brief (paths, errors, the snippet, the decision
 - Review: run it on branches touching `src/world/`, `src/net*`, `src/sim/` or `server/` before shipping. Verify each finding against the code before acting on it.
 
 Clean up a finished worktree with `git worktree remove ../boogle-codex/<topic>` (and `git branch -D codex/<topic>` once it's merged).
+
+Run a queue with `npm run queue -- jobs.json [--max 3]`; dependencies can name another topic or `{ "onMain": "path" }`. It exits on failure, stall, or a Codex usage limit.
+
+Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or branch.
+
+Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.
+
+Directors: put the relevant files, errors and decisions in the brief.
+
+Jobs end with a structured JSON result saved as `.look/codex/<topic>/result.json`; the queue includes its outcome and summary.

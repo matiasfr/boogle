@@ -5,6 +5,29 @@ import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
 
+export function reportText(file: string): string {
+  const message = fs.readFileSync(file, 'utf8');
+  const match = /```json\s*([\s\S]*?)\s*```\s*$/i.exec(message);
+  if (match) {
+    try {
+      const result = JSON.parse(match[1]!);
+      if (
+        ['done', 'partial', 'blocked'].includes(result.outcome) &&
+        ['summary', 'numbers', 'unverified', 'departures'].every((key) => Object.hasOwn(result, key))
+      ) {
+        const fields = Object.fromEntries(
+          ['outcome', 'summary', 'numbers', 'unverified', 'departures'].map((key) => [key, result[key]]),
+        );
+        fs.writeFileSync(path.join(path.dirname(file), 'result.json'), JSON.stringify(fields, null, 2) + '\n');
+        return JSON.stringify(fields, null, 2);
+      }
+    } catch {
+      /* Keep the original report when the block is invalid. */
+    }
+  }
+  return message;
+}
+
 export function alive(pid: unknown): pid is number {
   if (typeof pid !== 'number' || !Number.isSafeInteger(pid) || pid <= 0) return false;
   try {
@@ -107,7 +130,7 @@ export async function launchJob(logs: string, args: string[], detach: boolean): 
         console.log(`exit ${meta.status}; report: ${report}`);
         if (meta.mode === 'task')
           console.log(`Handoff: ${path.join(logs, 'handoff.md')}\nEvidence: ${path.join(logs, 'evidence.json')}`);
-        if (fs.existsSync(report)) console.log('\n' + fs.readFileSync(report, 'utf8'));
+        if (fs.existsSync(report)) console.log('\n' + reportText(report));
         return meta.status ?? 1;
       }
       if (detach) return 0;
@@ -207,7 +230,15 @@ export function archiveTurn(logs: string, turn: number, previous: unknown) {
   if (fs.existsSync(dest)) throw new Error(`Turn archive already exists: ${dest}`);
   const staging = dest + `.tmp-${process.pid}`;
   fs.mkdirSync(staging, { recursive: true });
-  for (const name of ['meta.json', 'log.txt', 'events.jsonl', 'report.md', 'handoff.md', 'evidence.json']) {
+  for (const name of [
+    'meta.json',
+    'log.txt',
+    'events.jsonl',
+    'report.md',
+    'result.json',
+    'handoff.md',
+    'evidence.json',
+  ]) {
     const source = path.join(logs, name);
     if (!fs.existsSync(source)) continue;
     const target = path.join(staging, name);

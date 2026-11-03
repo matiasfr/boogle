@@ -20,7 +20,15 @@ import path from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { git, snapshot } from './source.ts';
 import { handoff } from './evidence.ts';
-import { archiveTurn, launchJob, supervise, runSession, type Lifecycle, type JobControl } from './session.ts';
+import {
+  archiveTurn,
+  launchJob,
+  supervise,
+  runSession,
+  reportText,
+  type Lifecycle,
+  type JobControl,
+} from './session.ts';
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
@@ -34,9 +42,17 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i]!.startsWith('--')) {
     const flag = args[i]!;
     if (
-      !['--effort', '--model', '--base-ref', '--ref', '--shots', '--ref-branch', '--eyes', '--supervisor'].includes(
-        flag,
-      )
+      ![
+        '--effort',
+        '--model',
+        '--base-ref',
+        '--base',
+        '--ref',
+        '--shots',
+        '--ref-branch',
+        '--eyes',
+        '--supervisor',
+      ].includes(flag)
     )
       throw new Error(`Unknown option: ${flag}`);
     const value = args[++i];
@@ -58,6 +74,8 @@ const topic = rawTopic
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-|-$/g, '');
 if (!topic) throw new Error('Use a nonempty topic');
+if (opts.base && opts['base-ref']) throw new Error('Use only one of --base and --base-ref');
+if (opts.base) opts['base-ref'] = opts.base;
 if (opts.snapshot && (command !== 'task' || opts['base-ref']))
   throw new Error('--snapshot is for tasks and uses the caller HEAD; do not combine it with --base-ref');
 if (opts['base-ref'] && command !== 'task') throw new Error('--base-ref is for tasks');
@@ -124,7 +142,7 @@ async function worktree(job: JobControl, ref: string, branch?: string): Promise<
   return dir;
 }
 
-const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). Read AGENTS.md and DESIGN.md first; they bind you. For design, level, art or character work, also read docs/proposals/boogle-2.md.`;
+const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). AGENTS.md and its referenced requirements bind you. Read the docs named in the brief and the sections needed for this task, including any reading required by AGENTS.md; use npm run map before reading whole source files.`;
 
 function previzPrompt(out: string, refs: string[]): string {
   const shots = Number(opts.shots) || 4;
@@ -202,7 +220,7 @@ async function main(job?: JobControl): Promise<number> {
   let cwd: string;
   let argv: string[];
   let prompt: string;
-  if (!previous && job && mode !== 'previz' && !opts.snapshot)
+  if (!previous && job && mode !== 'previz' && !opts.snapshot && !opts['base-ref'])
     await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
   const sourceCommit = previous
     ? previous.sourceCommit
@@ -240,7 +258,7 @@ async function main(job?: JobControl): Promise<number> {
   } else if (mode === 'review') {
     cwd = job ? await worktree(job, sourceCommit) : repo;
     argv = ['exec', 'review', ...base, '--base', 'origin/main'];
-    if (brief) argv.push('-');
+    argv.push('-');
     prompt = brief;
   } else {
     if (opts.dry) cwd = repo;
@@ -265,6 +283,8 @@ async function main(job?: JobControl): Promise<number> {
     argv.push('-');
   }
 
+  prompt +=
+    '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
   if (!argv.includes('--json')) argv.splice(1, 0, '--json');
   Object.assign(meta, { cwd, sourceCommit, argv, launchArgv: previous?.launchArgv ?? previous?.argv ?? argv });
   if (opts.dry) {
@@ -335,7 +355,7 @@ async function main(job?: JobControl): Promise<number> {
   console.log(`exit ${status}; report: ${reportFile}`);
   if (mode === 'task')
     console.log(`Handoff: ${path.join(logs, 'handoff.md')}\nEvidence: ${path.join(logs, 'evidence.json')}`);
-  if (fs.existsSync(reportFile)) console.log('\n' + fs.readFileSync(reportFile, 'utf8'));
+  if (fs.existsSync(reportFile)) console.log('\n' + reportText(reportFile));
   return status;
 }
 
@@ -358,7 +378,7 @@ else {
   process.exitCode = await supervise(logs, opts.supervisor, meta, async (job) => {
     if (previous) {
       archiveTurn(logs, previous.turn ?? 1, previous);
-      for (const name of ['report.md', 'handoff.md', 'evidence.json', 'events.jsonl'])
+      for (const name of ['report.md', 'result.json', 'handoff.md', 'evidence.json', 'events.jsonl'])
         fs.rmSync(path.join(logs, name), { force: true });
     }
     return main(job);
