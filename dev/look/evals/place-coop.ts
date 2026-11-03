@@ -1,6 +1,6 @@
 // Two players exploring: --query 'proto=place&coop=1' --players 2 --real --eval dev/look/evals/place-coop.ts
 // --until window.__placeExplore?.done --warm 90. The place-exploring scenario also opens a fresh third profile.
-// Add &railway=1 for the original railway observation below.
+// Add &railway=1 for the original railway observation below, or &deposits=1 for the conservation check.
 // Does the new job stay together: a wake, a deposit from the follower, a chest opened by the follower (the rung is everyone's),
 // a skip to trains, and a train called from a platform. Each says what it sees; read the COOP lines side by side.
 const q = new URLSearchParams(location.search);
@@ -30,7 +30,59 @@ const put = (x: number, z: number, up = 1.4) => {
   teleport(me.body!, x, place.H(x, z) + up, z);
   me.body!.velocity.set(0, 0, 0);
 };
-if (!q.has('railway')) {
+if (q.has('deposits')) {
+  const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+  const { cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
+  const st = place.stationOf(place.lines[0]);
+  const started = performance.now();
+  let go = false;
+  let otherBack = 0;
+  const trace = (m: Record<string, unknown>) =>
+    console.log(`COOP wire ${who} ${Math.round(performance.now() - started)} ${JSON.stringify(m)}`);
+  net.room!.onMessage((raw) => {
+    const m = raw as Record<string, unknown>;
+    if (m.t === 'coopProbe' && m.k === 'ready' && who === '1') go = true;
+    if (m.t === 'coopProbe' && m.k === 'go' && who === '2') go = true;
+    if (m.t === 'coopProbe' && m.k === 'back') otherBack = Number(m.n);
+    if (q.has('trace') && m.t === 'placeCoop' && ['dep', 'stock', 'no'].includes(String(m.k))) trace(m);
+  });
+  void (async () => {
+    while (!me.body || !net.room || place.coop.debug().peers.length < 1) await wait(100);
+    put(st.x + 10, st.z + 5);
+    cam.yaw = 0.5;
+    place.back.logs = 0;
+    if (who === '1') place.wake();
+    await wait(5000);
+    console.log(`COOP baseline ${who} back ${place.back.logs} frame ${st.have.logs} coming ${st.coming.logs}`);
+    if (place.back.logs || st.have.logs || st.coming.logs)
+      throw new Error('Conservation check needs an empty baseline');
+    if (who === '2') net.room!.send({ t: 'coopProbe', k: 'ready' });
+    while (!go) await wait(50);
+    if (who === '1') {
+      await wait(1500);
+      net.room!.send({ t: 'coopProbe', k: 'go' });
+      const until = performance.now() + 5000;
+      while (performance.now() < until) {
+        /* stalled authority */
+      }
+    } else {
+      place.back.logs = 8;
+      put(st.x + 2.5, st.z + 1);
+      await wait(1500);
+      put(st.x + 10, st.z + 5); // refunds cannot be deposited again before measurement
+    }
+    await wait(10000);
+    net.room!.send({ t: 'coopProbe', k: 'back', n: place.back.logs });
+    await wait(5000);
+    const total = place.back.logs + otherBack + st.have.logs;
+    console.log(
+      `COOP conserved ${total} player ${who} back ${place.back.logs} other ${otherBack} frame ${st.have.logs} coming ${st.coming.logs}`,
+    );
+    if (total !== 8 || st.coming.logs !== 0) throw new Error(`Expected 8 settled logs, got ${total}`);
+    put(st.x + 5, st.z + 5);
+    Object.assign(window, { __coopDone: true });
+  })();
+} else if (!q.has('railway')) {
   const { explore } = await import('/dev/look/evals/place-exploring.ts' as string);
   void explore(who);
 } else {

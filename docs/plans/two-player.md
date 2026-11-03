@@ -26,8 +26,12 @@ Splitting up beats staying together, with an optional toy only two can make. Bil
 
 Found by reading the code; step 1 reproduces it. The in-flight delivery itself is safe: `stock` and the `lines` and `forgeFrame` slices all send `have + coming`, so the authority leaving mid-arc loses nothing. The fault is in how the answer is matched:
 1. `case 'stock'` returns on `amAuthority()` or `activeFrame() !== st` **before** `settle`. An accepted piece then gets refunded at 4 s, so it exists twice.
-2. `PENDING_MS` is a 4 s clock with no ids. If either tab stalls past 4 s (shader compile, throttling), the refund runs and then the accepted `stock` lands: back and frame both have it. `allow()` can also silently drop a `stock`.
+2. `PENDING_MS` was a 4 s clock with no ids. If either tab stalls past 4 s (shader compile, throttling), the refund runs and then the accepted `stock` lands: back and frame both have it. `allow()` could also silently drop a `stock`.
 3. `refund('beam')` does nothing. A rejected or unanswered great beam is gone with `trunk.taken` still true, so T3 can never fill: a softlock.
+
+**Step 1 evidence (3 November):** the old independent waits sometimes printed 8 even before fixing anything: the tabs' evals start at different times. The controlled `&deposits=1` leg starts with empty backs and an empty T1, signals the follower immediately before the authority's five-second stall, deposits exactly eight, then moves the follower away so refunds cannot be redeposited. Count **both personal backs plus one shared frame**, after flights settle; summing the two tabs' frame counts double-counts the shared stock. Baseline: **16 on both tabs** (8 frame + 8 refunded). The supplied first patch: **10 on both** (8 frame + 2 refunded), reproducing its insufficiency, though not the earlier 13/14/15. Its `settled && amAuthority()` refund was wrong: the five-second presence gap briefly elects the follower, even while acceptance replies arrive. Final: **8 on both** (8 frame, empty backs, zero coming), no graphics errors. Inspected `.look/coop-stall-after-{still,motion}.png` and the second tab's still: 8/24 on the frame and empty backs.
+
+**Plan correction:** no timeout or presence-election refund. A slow reliable reply is not a rejection, and reclaimed refunds may already have been spent. Target each request at its chosen authority; match answers by sender, id and kind before frame/authority guards. Refund a matching rejection or unanswered request on actual peer removal. A targeted authority that has since stepped down answers `no`. Answers bypass the traffic budget, and over-budget requests get a rejection. This remains a prototype protocol, not a server transaction across an unrecoverable partition.
 
 ## State and messages
 
@@ -41,7 +45,7 @@ Found by reading the code; step 1 reproduces it. The in-flight delivery itself i
 
 **Authority:** the existing coop authority alone decides `set`. Everything else is per tab.
 
-New `placeCoop` messages (additive; old tabs ignore unknown `k`): `{k:"cartCall"}`; `{k:"cartLoad", n}`, up to `CART.rails`; `{k:"beamSet", x, z, yaw}`; `{k:"beamBounce", end}`, 0 or 1. `dep`, `stock` and `no` gain an integer `q`; a missing `q` means 0, which matches by kind.
+New `placeCoop` messages (additive; old tabs ignore unknown `k`): `{k:"cartCall"}`; `{k:"cartLoad", n}`, up to `CART.rails`; `{k:"beamSet", x, z, yaw}`; `{k:"beamBounce", end}`, 0 or 1. `dep`, `stock` and `no` gain an integer `q`; a missing `q` means 0, which matches by kind and sender. `dep.to` names its chosen authority; older requests without it use the current authority.
 
 **Controls:** interact verbs only, no new key or pad slot. Register them with `registerInteractable` in the new file, leaving `verbs.ts` alone.
 
@@ -60,7 +64,7 @@ Both sites are local coordinates; add `ORIGIN.x`. They were checked at flat grou
 
 Run `npm run check` after each. Don't edit `verbs.ts`, `town.ts`, `folk.ts`, `gifts.ts`, `land.ts`, `crystals.ts`, `sites.ts`, `objective.ts` or `signs.ts`: the abilities and town tracks work there.
 
-- [ ] **1. Fix deposit answers (`coop.ts`), proving it first.** In `dev/look/evals/place-coop.ts`, in the deposit leg, have player 1 wait 1.5 s and then busy-loop 5 s. Add `COOP conserved <back.logs + st.have.logs>` to the following `say`, expecting 8. Run it and note the value before the fix (over 8 confirms the risk). `pending` entries become `{ q, kind, at, to }`, with `let depQ = 0`. `deposited()` sets `q = ++depQ`, `to = authorityPeer()`, and sends `q`. `settle(q, kind)` returns a boolean, and `q === 0` matches the first of that kind. `dep` passes `q` to `no` and to `sendStock`, which gains a last parameter `q = 0`. `refund`: for `beam`, `if (!back.big) shoulder('beam')`. Add `takeBack(kind)`: for `beam`, `putDownBig()`; otherwise `back[kind] = Math.max(0, back[kind] - 1)`. `case 'stock'`, right after validation and before the guards. If `m.by === net.myPeer`: when settled and `amAuthority()`, `refund` and return (we took over and our frame lacks it); when not settled and not authority, `takeBack` (we already refunded it). Then the existing `amAuthority` and `activeFrame` guards. The `coming++` and `flyIn` branch runs only when `by` isn't us. `case 'no'`: refund only if `settle` returned true. `tick`: refund when `authorityPeer() !== p.to` or `now - p.at > PENDING_MS`, with `PENDING_MS = 15000`. The `onMessage` wrapper: `stock` or `no` from `authorityPeer()` skip `allow`. An over-budget `dep` on the authority answers `no`. Verify: the eval prints `conserved 8`.
+- [x] **1. Fix deposit answers (`coop.ts`), proving it first.** Implemented with the evidence-based correction above, not the proposed 15-second refund or `takeBack`. Request ids and recipient matching settle accepted/rejected pieces once; beam rejections restore the shoulder. Verified the synchronized eval prints `COOP conserved 8` on both tabs.
 
 - [ ] **2. Return big things on departure (`coop.ts`).** Add presence `placeBig`, returning `back.big`, and a `peerBig` map filled in `onRemotePresence`. In `onPeerRemoved`: `'beam'` calls `setTrunkTaken(false)`; `'boiler'` sets `job.boiler = 1`. In `applyFull`, after `applyShared`: `putDownBig()` if `back.big === 'beam' && !trunkTaken()` or `back.big === 'boiler' && job.boiler !== 2`, so a returning tab can't duplicate it. In `reconcile`, replace `if (q.trunk === true) setTrunkTaken(true)` with `if ((q.trunk === true) !== trunkTaken()) setTrunkTaken(q.trunk === true)`, so a third tab follows the return. Verify in step 6's last leg.
 
@@ -89,6 +93,8 @@ npm run playthrough -- --name two-player
 npm run playthrough -- --compare <base> two-player
 BOOGLE_QUERY='proto=place&coop=1&mode=split' node dev/codex/see.ts --players 2 --real --eval dev/look/evals/place-split.ts
 ```
+
+Steps 1–2 use `&deposits=1 --until window.__coopDone --warm 55` with `place-coop.ts` for the synchronized conservation leg (add `&trace=1` for requests/replies). The old railway tour requires `&railway=1`; without either flag this eval runs exploration. If no broker is available, `npm run look -- --query 'proto=place&coop=1&deposits=1' --players 2 --real --eval dev/look/evals/place-coop.ts --until window.__coopDone --warm 55` starts the same local stack directly.
 
 Run the last line for `mode=walk` too (2 players), and for `mode=solo` with `--players 1`.
 

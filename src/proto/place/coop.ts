@@ -7,6 +7,8 @@
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
+// - Deposit answers match sender + request id before authority/frame guards. Slow presence isn't a rejection: only
+//   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
 // - Every tab runs the rest of the game as ever, so nothing waits on the network. Chops, wakes, rungs and calls go out as they
 //   happen and anyone can send them; the machine, cart, trains and town run on each tab.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
@@ -35,6 +37,7 @@ import {
   TREES,
   back,
   chopHooks,
+  shoulder,
   rockStruck,
   setTrunkTaken,
   standing,
@@ -301,15 +304,18 @@ function allow(from: string) {
 }
 
 // ---------------------------------------------------------------- deposits
-const pending: { kind: Goods; at: number }[] = [];
-const PENDING_MS = 4000; // no answer (the authority went): back on your back
-function settle(kind: Goods) {
-  const k = pending.findIndex((p) => p.kind === kind);
-  if (k >= 0) pending.splice(k, 1);
+const pending: { q: number; kind: Goods; to: string }[] = [];
+let depQ = 0;
+function settle(q: number, kind: Goods, from: string) {
+  const k = pending.findIndex((p) => p.to === from && p.kind === kind && (q === 0 || p.q === q));
+  if (k < 0) return false;
+  pending.splice(k, 1);
+  return true;
 }
 function refund(kind: Goods) {
-  if (kind === 'beam') return; // the frame has it, or it's a moment's glitch in a throwaway; never two beams
-  back[kind]++;
+  if (kind === 'beam') {
+    if (!back.big) shoulder('beam');
+  } else back[kind]++;
 }
 const flyFrom = new THREE.Vector3();
 function flyIn(a: Api, st: StationRun, kind: Goods, x: number, y: number, z: number, n: number, counted: boolean) {
@@ -395,33 +401,36 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     }
     case 'dep': {
-      if (!ready || !amAuthority()) return;
+      if (!ready || (typeof m.to === 'string' ? m.to !== net.myPeer : !amAuthority())) return;
       const st = frameById(m.id);
       if (!st || !isKind(m.kind) || !num(m.x) || !num(m.y) || !num(m.z)) return;
-      if (coopWire.activeFrame?.() !== st || st.wants(m.kind) <= 0) return msg({ k: 'no', to: from, kind: m.kind });
+      const q = count(m.q) ? m.q : 0;
+      if (!amAuthority() || coopWire.activeFrame?.() !== st || st.wants(m.kind) <= 0)
+        return msg({ k: 'no', to: from, kind: m.kind, q });
       st.coming[m.kind]++;
       const slot = st.have[m.kind] + st.coming[m.kind] - 1;
       flyIn(a, st, m.kind, m.x, m.y, m.z, slot, true);
-      sendStock(st, from, m.kind, m.x, m.y, m.z);
+      sendStock(st, from, m.kind, m.x, m.y, m.z, q);
       return;
     }
     case 'no':
-      if (m.to === net.myPeer && isKind(m.kind)) {
-        settle(m.kind);
-        refund(m.kind);
-      }
+      if (m.to === net.myPeer && isKind(m.kind) && settle(count(m.q) ? m.q : 0, m.kind, from)) refund(m.kind);
       return;
     case 'stock': {
-      if (!ready || amAuthority()) return;
+      if (!ready) return;
       const st = frameById(m.id);
       if (!st || !isKind(m.kind) || !Array.isArray(m.have) || !num(m.x) || !num(m.y) || !num(m.z)) return;
-      if (coopWire.activeFrame?.() !== st) return;
+      if (m.by === net.myPeer) {
+        // Acceptance stays acceptance even if a presence gap briefly made us the authority,
+        // or the frame already advanced. Never refund an accepted piece.
+        settle(count(m.q) ? m.q : 0, m.kind, from);
+      }
+      if (amAuthority() || coopWire.activeFrame?.() !== st) return;
       GOODS.forEach((g, n) => {
         const v = (m.have as unknown[])[n];
         if (count(v, 400)) st.have[g] = v;
       });
-      if (m.by === net.myPeer) settle(m.kind);
-      else {
+      if (m.by !== net.myPeer) {
         st.coming[m.kind]++;
         flyIn(a, st, m.kind, m.x, m.y, m.z, st.have[m.kind] - 1, false);
       }
@@ -484,13 +493,14 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     }
   }
 }
-function sendStock(st: StationRun, by: string | null, kind: Goods, x: number, y: number, z: number) {
+function sendStock(st: StationRun, by: string | null, kind: Goods, x: number, y: number, z: number, q = 0) {
   msg({
     k: 'stock',
     id: st.spec.id,
     kind,
     have: GOODS.map((g) => st.have[g] + st.coming[g]),
     by,
+    q,
     x,
     y,
     z,
@@ -519,12 +529,14 @@ export const coop = {
   /** A piece left your back for a frame. True: it counts when it lands (solo, or you decide). */
   deposited(st: StationRun, kind: Goods, p: { x: number; y: number; z: number }) {
     if (!COOP) return true;
-    if (amAuthority()) {
+    const to = authorityPeer();
+    if (to === null) {
       sendStock(st, net.myPeer, kind, p.x, p.y, p.z);
       return true;
     }
-    pending.push({ kind, at: performance.now() });
-    msg({ k: 'dep', id: st.spec.id, kind, x: p.x, y: p.y, z: p.z });
+    const q = ++depQ;
+    pending.push({ q, kind, to });
+    msg({ k: 'dep', id: st.spec.id, kind, q, to, x: p.x, y: p.y, z: p.z });
     return false;
   },
   fed: (st: StationRun) => COOP && amAuthority() && msg({ k: 'feed', id: st.spec.id }),
@@ -594,12 +606,6 @@ export const coop = {
     if (!COOP || !api || !ready) return;
     const a = api,
       lead = amAuthority();
-    // A deposit nobody answered: the authority went with it.
-    for (let k = pending.length - 1; k >= 0; k--)
-      if (now - pending[k]!.at > PENDING_MS) {
-        refund(pending[k]!.kind);
-        pending.splice(k, 1);
-      }
     // Trains drift back to the authority's place.
     lines.forEach((l, k) => {
       const d = nudge[k]!;
@@ -649,6 +655,11 @@ export const coop = {
       peers.set(r.peer, { since: v, visible: r.visible, seen: performance.now() });
     });
     onPeerRemoved((r) => {
+      for (let k = pending.length - 1; k >= 0; k--)
+        if (pending[k]!.to === r.peer) {
+          refund(pending[k]!.kind);
+          pending.splice(k, 1);
+        }
       budget.delete(r.peer);
       peerBack.delete(r.peer);
       if (peers.delete(r.peer)) showBanner('Your partner left', 'The railway is still here. It just takes longer.', 3);
@@ -656,7 +667,14 @@ export const coop = {
     onRoomReady((room) =>
       room.onMessage((raw, from) => {
         const m = raw as Record<string, unknown> | null;
-        if (m?.t !== 'placeCoop' || typeof from !== 'string' || !allow(from)) return;
+        if (m?.t !== 'placeCoop' || typeof from !== 'string') return;
+        const answer = m.k === 'stock' || m.k === 'no';
+        const expected = answer && pending.some((p) => p.to === from && p.kind === m.kind && (!m.q || p.q === m.q));
+        if (!(answer && (from === authorityPeer() || expected)) && !allow(from)) {
+          if (m.k === 'dep' && (m.to === net.myPeer || (!m.to && amAuthority())) && isKind(m.kind))
+            msg({ k: 'no', to: from, kind: m.kind, q: count(m.q) ? m.q : 0 });
+          return;
+        }
         try {
           onMsg(a, m, from);
         } catch (e) {
