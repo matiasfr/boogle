@@ -10,6 +10,7 @@ import { newWaterEnabled } from '../render/water/flags.ts';
 import { registerWaterReceiver } from '../render/water/receivers.ts';
 
 import { heights } from './heights.ts';
+import { shoreMode } from './shore-options.ts';
 
 export { heights, cellX, cellZ, cellOf, groundHeight } from './heights.ts';
 
@@ -121,6 +122,7 @@ export function createTerrainMesh() {
   poiPaint = null;
   spawn({ kind: 'terrain', mesh: group });
   freezeStatic(group); // never moves: no per-frame matrix work
+  if (shoreMode) void import('../proto/shore/slice.ts').then((m) => m.buildShore(group, terrainMat));
   return group;
 }
 
