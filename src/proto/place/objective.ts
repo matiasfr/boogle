@@ -15,6 +15,7 @@ import { L1, L2, TX, TZ, machine } from './lines.ts';
 import { activeFrame, run, stationOf } from './run.ts';
 import { beaconAt, setBeacon } from './signs.ts';
 import { boilerAt } from './props.ts';
+import { techGoal } from './tech.ts';
 
 const nearest = <T extends { x: number; z: number }>(list: T[], ok: (t: T) => boolean) => {
   const b = me.body;
@@ -76,6 +77,12 @@ export function objective(now: number) {
   if (run.mode === 'asleep') {
     beam(machine.flatbed.x, machine.flatbed.y + 2, machine.flatbed.z);
     return dist(machine.flatbed.x, machine.flatbed.z) < 25 ? '' : 'Follow the path.';
+  }
+  // Ancient technology you've got within reach, or what lets a slab down: the world says what it's for, so no line.
+  const tech = techGoal();
+  if (tech) {
+    beam(tech.x, tech.y, tech.z);
+    return '';
   }
   // A chest is what you wanted: go and get it.
   if (job.chest) {

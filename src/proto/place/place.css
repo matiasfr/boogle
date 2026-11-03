@@ -13,6 +13,42 @@ body.touch.place-no-target .tbtn.grab {
 body.touch .place-objective {
   bottom: calc(150px + env(safe-area-inset-bottom, 0px));
 }
+/* The moves' touch buttons, once you've found them; a right thumb still reaches Jump, and each is a toggle or one press. */
+.tbtn.place-hook-btn,
+.tbtn.place-glide-btn {
+  display: none;
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  background: rgba(47, 183, 160, 0.55);
+}
+body.place-has-hook .tbtn.place-hook-btn,
+body.place-has-glide .tbtn.place-glide-btn {
+  display: block;
+}
+.tbtn.place-hook-btn {
+  right: calc(196px + env(safe-area-inset-right, 0px));
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+}
+.tbtn.place-glide-btn {
+  right: calc(196px + env(safe-area-inset-right, 0px));
+  bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+}
+/* The button's own glyph, on the ring you're aiming at or under you in the air: not a sentence, and only the first few times. */
+.place-key {
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: none;
+  pointer-events: none;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(14, 40, 38, 0.72);
+  z-index: 6;
+}
+.place-key.on {
+  display: block;
+}
 /* Not until you're in: the lobby has its own job. */
 body:not(.playing) .place-objective,
 body:not(.playing) .place-nums,

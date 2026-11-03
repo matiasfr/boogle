@@ -17,6 +17,7 @@ import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
+import { FINDERS } from './tech-layout.ts';
 import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
 import { addFoot } from './sites.ts';
@@ -86,10 +87,21 @@ export type GiftId =
   | 'festival'
   | 'critter'
   | 'egg'
-  | 'scope';
+  | 'scope'
+  | 'strawhat'
+  | 'lampcap'
+  | 'mossscarf'
+  | 'whistle'
+  | 'goggles'
+  | 'bucket'
+  | 'pennant'
+  | 'hardhat'
+  | 'aviator'
+  | 'diving';
 export type Slot = 'hat' | 'accessory' | 'outfit' | 'pet';
 export type Tier = 'common' | 'rare' | 'wonder';
-type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier };
+// `area`: a find, not a box's luck: it comes only from its own hidden place in the world (./tech.ts), or the hub if you missed it.
+type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier; area?: string };
 // Each drawn at about the size it sits on the shelf, base at y = 0.
 const overalls = (body: string, strap: string, trim: string): Part[] => [
   ['s', 0, -0.06, 0, 0.3, 0.36, 0.25, body],
@@ -225,6 +237,139 @@ const GIFTS: Gift[] = [
       ['s', 0, 0.2, -0.26, 0.08, 0.08, 0.13, '#c9601f'],
     ],
   },
+  // What's hidden in each area (./tech-layout.ts, SECRETS). They carry no line yet either.
+  {
+    id: 'strawhat',
+    slot: 'hat',
+    tier: 'common',
+    area: 'village',
+    name: 'A straw hat',
+    line: '',
+    parts: [
+      ['c', 0, 0.03, 0, 0.56, 0.04, 0.56, '#e6c76a'],
+      ['c', 0, 0.16, 0, 0.27, 0.24, 0.27, '#e0bd5c'],
+      ['c', 0, 0.1, 0, 0.28, 0.07, 0.28, '#c4453a'],
+    ],
+  },
+  {
+    id: 'lampcap',
+    slot: 'hat',
+    tier: 'common',
+    area: 'timber',
+    name: "A lamplighter's cap",
+    line: '',
+    parts: [
+      ['s', 0, 0.1, 0, 0.32, 0.2, 0.32, '#5a4a3a'],
+      ['b', 0, 0.03, 0.3, 0.3, 0.03, 0.2, '#463a2e'],
+      ['s', 0, 0.2, 0.28, 0.07, 0.07, 0.05, '#ffd76a'],
+    ],
+  },
+  {
+    id: 'mossscarf',
+    slot: 'accessory',
+    tier: 'common',
+    area: 'timber',
+    name: 'A mossy scarf',
+    line: '',
+    parts: [
+      ['t', 0, 0.32, 0, 0.28, 0.24, 0.28, '#5f8f3e'],
+      ['b', -0.14, 0.14, 0.26, 0.11, 0.42, 0.04, '#4f7f36'],
+    ],
+  },
+  {
+    id: 'whistle',
+    slot: 'accessory',
+    tier: 'common',
+    area: 'timber',
+    name: 'A brass whistle on a cord',
+    line: '',
+    parts: [
+      ['t', 0, 0.3, 0, 0.26, 0.05, 0.26, '#3a302c'],
+      ['c', 0, 0.02, 0.26, 0.05, 0.16, 0.05, '#d9a23a', Math.PI / 2],
+    ],
+  },
+  {
+    id: 'goggles',
+    slot: 'accessory',
+    tier: 'rare',
+    area: 'timber',
+    name: 'Cable goggles',
+    line: '',
+    parts: [
+      ['c', -0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
+      ['c', 0.13, 0.17, 0.26, 0.1, 0.06, 0.1, '#d9a23a', Math.PI / 2],
+      ['c', -0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
+      ['c', 0.13, 0.17, 0.29, 0.07, 0.02, 0.07, '#7fe0d0', Math.PI / 2],
+      ['b', 0, 0.17, 0, 0.62, 0.05, 0.56, '#3a302c'],
+    ],
+  },
+  {
+    id: 'bucket',
+    slot: 'hat',
+    tier: 'common',
+    area: 'tower',
+    name: 'A bucket',
+    line: '',
+    parts: [
+      ['c', 0, 0.17, 0, 0.33, 0.34, 0.33, '#9aa0a8'],
+      ['t', 0, 0.34, 0, 0.33, 0.1, 0.33, '#7d838b'],
+      ['t', 0, 0.42, 0, 0.3, 0.05, 0.3, '#5c6168'],
+    ],
+  },
+  {
+    id: 'pennant',
+    slot: 'accessory',
+    tier: 'rare',
+    area: 'tower',
+    name: 'A tower pennant',
+    line: '',
+    parts: [
+      ['c', 0.06, 0.3, -0.26, 0.018, 1.0, 0.018, '#7f5630'],
+      ['b', 0.26, 0.62, -0.26, 0.38, 0.22, 0.02, '#f0752c'],
+    ],
+  },
+  {
+    id: 'hardhat',
+    slot: 'hat',
+    tier: 'rare',
+    area: 'quarry',
+    name: 'A hard hat',
+    line: '',
+    parts: [
+      ['s', 0, 0.08, 0, 0.34, 0.26, 0.34, '#f2c81a'],
+      ['c', 0, 0.03, 0, 0.42, 0.03, 0.42, '#e8bc14'],
+      ['b', 0, 0.24, 0, 0.06, 0.04, 0.5, '#d4aa10'],
+    ],
+  },
+  {
+    id: 'aviator',
+    slot: 'hat',
+    tier: 'rare',
+    area: 'village',
+    name: "An aviator's cap",
+    line: '',
+    parts: [
+      ['s', 0, 0.08, 0, 0.33, 0.26, 0.33, '#7a4b28'],
+      ['c', -0.3, -0.06, 0, 0.09, 0.05, 0.13, '#6a3f20', 0, Math.PI / 2],
+      ['c', 0.3, -0.06, 0, 0.09, 0.05, 0.13, '#6a3f20', 0, Math.PI / 2],
+      ['c', -0.12, 0.2, 0.25, 0.08, 0.05, 0.08, '#7fd0e0', Math.PI / 2],
+      ['c', 0.12, 0.2, 0.25, 0.08, 0.05, 0.08, '#7fd0e0', Math.PI / 2],
+    ],
+  },
+  {
+    id: 'diving',
+    slot: 'hat',
+    tier: 'wonder',
+    area: 'Far Head',
+    name: 'A brass diving helmet',
+    line: '',
+    parts: [
+      ['s', 0, 0.08, 0, 0.42, 0.42, 0.42, '#c79a3e'],
+      ['c', 0, 0.1, 0.36, 0.17, 0.08, 0.17, '#3a302c', Math.PI / 2],
+      ['c', 0, 0.1, 0.39, 0.13, 0.03, 0.13, '#7fd0e0', Math.PI / 2],
+      ['c', 0, -0.3, 0, 0.46, 0.08, 0.46, '#8a6a2c'],
+    ],
+  },
   // Shapes that never come out of this run's crates. They promise more.
   {
     id: 'egg',
@@ -340,10 +485,16 @@ addFoot(SX, SZ, SHELF.yaw, WIDE / 2 + 0.3, 0.6);
 // What's on the shelf is two meshes, whatever's uncovered and whatever's still under its sheet, remade when a sheet comes
 // off: two draws however many shapes it holds.
 const slots = new Map<GiftId, { x: number; y: number }>();
-GIFTS.forEach((g, k) => {
+const isFind = (g: Gift) => !!g.area;
+GIFTS.filter((g) => !isFind(g)).forEach((g, k) => {
   const col = k % COLS,
     row = Math.floor(k / COLS);
   slots.set(g.id, { x: (col - (COLS - 1) / 2) * (WIDE / COLS), y: ROWS_Y[1 - row]! });
+});
+GIFTS.filter(isFind).forEach((g, k) => {
+  const col = k % 5,
+    row = Math.floor(k / 5);
+  slots.set(g.id, { x: (col - 2) * (WIDE / 5), y: ROWS_Y[1 - row]! });
 });
 const open_ = new Set<GiftId>();
 const placed = (g: Gift, parts: Part[]): Part[] => {
@@ -359,20 +510,63 @@ const placed = (g: Gift, parts: Part[]): Part[] => {
 const shelfReal = new THREE.Mesh(new THREE.BufferGeometry(), giftMat);
 const shelfCover = new THREE.Mesh(new THREE.BufferGeometry(), sheetMat);
 shelf.add(shelfReal, shelfCover);
-function redrawShelf() {
-  shelfReal.geometry.dispose();
-  shelfCover.geometry.dispose();
-  const real = GIFTS.filter((g) => open_.has(g.id));
-  const covered = GIFTS.filter((g) => !open_.has(g.id));
-  shelfReal.visible = real.length > 0;
-  shelfCover.visible = covered.length > 0;
-  if (real.length) shelfReal.geometry = merged(real.flatMap((g) => placed(g, g.parts)));
+// The finders' bay, across the path from the wardrobe, in the village: what's hidden out there, under sheets until it's yours.
+const FX = toWorld(FINDERS.x),
+  FZ = FINDERS.z,
+  FY = H(FX, FZ);
+const finders = new THREE.Group();
+finders.position.set(FX, FY, FZ);
+finders.rotation.y = FINDERS.yaw;
+scene.add(finders);
+{
+  const o = '#6a5a48',
+    b = '#8f7a60';
+  const frame = new THREE.Mesh(
+    merged([
+      ['b', 0, 1.3, -0.3, WIDE, 2.4, 0.1, '#4c4238'],
+      ['b', -WIDE / 2, 1.3, 0, 0.18, 2.6, 0.7, o],
+      ['b', WIDE / 2, 1.3, 0, 0.18, 2.6, 0.7, o],
+      ['b', 0, 1.26, 0.04, WIDE, 0.1, 0.68, b],
+      ['b', 0, 2.14, 0.04, WIDE, 0.1, 0.68, b],
+      ['b', 0, 2.62, 0.04, WIDE + 0.5, 0.14, 1.1, o],
+      ['b', 0, 2.76, 0, WIDE + 0.1, 0.16, 0.5, '#2fb7a0'],
+    ]),
+    giftMat,
+  );
+  frame.castShadow = frame.receiveShadow = true;
+  finders.add(frame);
+}
+addStatic(
+  { kind: 'box', hx: WIDE / 2 + 0.1, hy: 1.4, hz: 0.4 },
+  { x: FX, y: FY + 1.4, z: FZ },
+  new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, FINDERS.yaw),
+);
+addFoot(FX, FZ, FINDERS.yaw, WIDE / 2 + 0.3, 0.6);
+const findReal = new THREE.Mesh(new THREE.BufferGeometry(), giftMat);
+const findCover = new THREE.Mesh(new THREE.BufferGeometry(), sheetMat);
+finders.add(findReal, findCover);
+function drawBay(real: THREE.Mesh, cover: THREE.Mesh, list: Gift[]) {
+  real.geometry.dispose();
+  cover.geometry.dispose();
+  const out = list.filter((g) => open_.has(g.id));
+  const covered = list.filter((g) => !open_.has(g.id));
+  real.visible = out.length > 0;
+  cover.visible = covered.length > 0;
+  if (out.length) real.geometry = merged(out.flatMap((g) => placed(g, g.parts)));
   // Under its sheet: the same shape, a little fuller, in cloth, with a skirt to the shelf.
   if (covered.length)
-    shelfCover.geometry = merged(
+    cover.geometry = merged(
       covered.flatMap((g) => placed(g, [...g.parts, ['k', 0, 0.2, 0, 0.36, 0.4, 0.36, '#fff']])),
       1.12,
     );
+}
+function redrawShelf() {
+  drawBay(
+    shelfReal,
+    shelfCover,
+    GIFTS.filter((g) => !isFind(g)),
+  );
+  drawBay(findReal, findCover, GIFTS.filter(isFind));
 }
 redrawShelf();
 const sheet = new THREE.Color('#ded5c2'),
@@ -383,7 +577,7 @@ function reveal(id: GiftId, show: boolean) {
   open_.add(id);
   redrawShelf();
   if (!show) return;
-  shelf.localToWorld(v.set(q.x, q.y, 0.08));
+  (isFind(byId(id)) ? finders : shelf).localToWorld(v.set(q.x, q.y, 0.08));
   for (let k = 0; k < 18; k++) {
     const a = Math.random() * Math.PI * 2;
     emit({
@@ -419,6 +613,16 @@ const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: 
   overalls: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   raincoat: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   festival: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  strawhat: { bone: 'Head', y: 0.33, z: 0, scale: 0.9 },
+  lampcap: { bone: 'Head', y: 0.31, z: 0, scale: 0.92 },
+  mossscarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
+  whistle: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
+  goggles: { bone: 'Head', y: 0.1, z: 0.01, scale: 0.92 },
+  bucket: { bone: 'Head', y: 0.3, z: 0, scale: 0.9 },
+  pennant: { bone: 'spine_02', y: 0.1, z: 0, scale: 1 },
+  hardhat: { bone: 'Head', y: 0.32, z: 0, scale: 0.92 },
+  aviator: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
+  diving: { bone: 'Head', y: 0.22, z: 0, scale: 0.92 },
 };
 const on: Partial<Record<Slot, GiftId>> = {};
 const worn = new Map<Slot, { id: GiftId; m: THREE.Mesh }>();
@@ -623,8 +827,12 @@ chestGlow.mat.blending = THREE.NormalBlending;
 let crateFlare = 0;
 const beamGeo = new THREE.CylinderGeometry(0.75, 1.1, 34, 12, 1, true).translate(0, 18.3, 0); // from over the crate's lid
 /** What's in a crate: the next gift, or a rung of the ladder. */
-export type Content = 'gift' | Extra;
+export type Content = 'gift' | Extra | GiftId;
 const isChest = (c: Content) => c === 'axe' || c === 'pack';
+/** A find: its box says what it is, and it doesn't stand under a shaft for the whole place to see. */
+const isFound = (c: Content) => c !== 'gift' && !isChest(c);
+/** Boxes opened that count towards the order of the run's boxes: a find isn't one of them. */
+const boxesGot = () => giftState.got.filter((id) => !isFind(byId(id))).length;
 type Crate = {
   content: Content;
   x: number;
@@ -640,12 +848,14 @@ const crates: Crate[] = [];
 let crateId = 0;
 function makeCrate(x: number, y: number, z: number, from: THREE.Vector3 | null, content: Content = 'gift') {
   const chest = isChest(content);
-  const tier =
-    BOXES[Math.min(BOXES.length - 1, giftState.got.length + crates.filter((c) => !isChest(c.content)).length)]!;
+  const tier = isFound(content)
+    ? byId(content as GiftId).tier!
+    : BOXES[Math.min(BOXES.length - 1, boxesGot() + crates.filter((c) => c.content === 'gift').length)]!;
   const mesh = new THREE.Mesh(chest ? chestGeo : crateGeos[tier], giftMat);
   mesh.castShadow = true;
   const beam = new THREE.Mesh(beamGeo, chest ? chestGlow.mat : TIER_GLOW[tier].mat);
   beam.position.set(x, y, z);
+  beam.visible = !isFound(content);
   mesh.position.set(x, y, z);
   scene.add(mesh, beam);
   crates.push({ content, x, y, z, mesh, beam, t: from ? 0 : 1, from: from?.clone() ?? null, id: crateId++ });
@@ -759,11 +969,13 @@ export const giftState = {
 export const prizeHooks = {
   /** `what`: a gift's id, or a rung of the ladder coming out of its chest. */
   opened: null as ((what: string) => void) | null,
+  /** A find came out of its box (./tech.ts). */
+  found: null as ((id: GiftId) => void) | null,
 };
-const inTier = (t: Tier) => GIFTS.filter((g) => g.tier === t && !giftState.got.includes(g.id));
+const inTier = (t: Tier) => GIFTS.filter((g) => g.tier === t && !isFind(g) && !giftState.got.includes(g.id));
 /** What's in the next box. The first two are authored: a hat, then an accessory; then a Wonder; then an outfit if you've none. */
 function nextGift(): GiftId | null {
-  const n = giftState.got.length;
+  const n = boxesGot();
   if (n === 0) return 'hat';
   if (n === 1) return 'scarf';
   const box = BOXES[Math.min(BOXES.length - 1, n)]!;
@@ -805,16 +1017,20 @@ export function openCrate(c: { x: number; z: number }) {
   const content = crate.content;
   const id = content === 'gift' ? nextGift() : content;
   if (!id) return dropCrate(crate);
-  const gift = content === 'gift' ? byId(id as GiftId) : { id, ...EXTRAS[content as Extra] };
-  if (content === 'gift') {
+  crate.t = -1; // shaking
+  const chest = isChest(content);
+  const gift = chest ? { id, ...EXTRAS[content as Extra] } : byId(id as GiftId);
+  if (!chest) {
     giftState.got.push(id as GiftId); // saved before the show: a reload mid-reveal keeps what you got
-    giftState.dry = byId(id as GiftId).tier === 'wonder' ? 0 : giftState.dry + 1;
+    // A find's outside the boxes' odds and their count of how long it's been since a Wonder.
+    if (content === 'gift') giftState.dry = byId(id as GiftId).tier === 'wonder' ? 0 : giftState.dry + 1;
   }
-  prizeHooks.opened?.(content === 'gift' ? id : content);
+  prizeHooks.opened?.(chest ? content : id);
+  if (isFound(content)) prizeHooks.found?.(content as GiftId);
   show = {
     gift,
     content,
-    tier: content === 'gift' ? byId(id as GiftId).tier! : 'wonder',
+    tier: chest ? 'wonder' : byId(id as GiftId).tier!,
     t: 0,
     x: crate.x,
     y: crate.y,
@@ -825,8 +1041,7 @@ export function openCrate(c: { x: number; z: number }) {
     from: new THREE.Vector3(),
     n: giftState.got.length,
   };
-  crate.t = -1; // shaking
-  shown.geometry = content === 'gift' ? geoOf(id as GiftId) : extraGeo(id as Extra);
+  shown.geometry = chest ? extraGeo(id as Extra) : geoOf(id as GiftId);
   saveHook();
 }
 let saveHook = () => {};
@@ -836,7 +1051,7 @@ personalSlice('gifts', {
     got: giftState.got,
     dry: giftState.dry,
     on,
-    crates: giftState.crates().filter((c) => !isChest(c.content)),
+    crates: giftState.crates().filter((c) => c.content === 'gift'), // ./tech.ts puts the finds back
   }),
   set: (v) => {
     const j = (v ?? {}) as {
@@ -913,7 +1128,7 @@ function updateShow(dt: number) {
     shaft.position.set(s.x, s.y, s.z);
     shown.visible = true;
     tag.sprite.visible = true;
-    const tier = s.content === 'gift' ? byId(s.gift.id as GiftId).tier : null;
+    const tier = !isChest(s.content) ? byId(s.gift.id as GiftId).tier : null;
     tag.set(s.gift.name, s.gift.line || (tier ? TIER_MARKS[tier] : ''), tier ? TIER_COLOR[tier] : TIER_COLOR.rare);
     tag.punch();
   }
@@ -946,7 +1161,7 @@ function updateShow(dt: number) {
     s.from.copy(shown.position);
     tag.sprite.visible = false;
     pop(3, 0.6);
-    if (s.content === 'gift') reveal(s.gift.id as GiftId, near(SX, SZ));
+    if (!isChest(s.content)) reveal(s.gift.id as GiftId, near(SX, SZ));
   }
   const fu = Math.min(1, (u - HOLD) / FLY);
   target(v);
@@ -959,7 +1174,7 @@ function updateShow(dt: number) {
   sparkles(v.x, v.y, v.z, 26, 4);
   pop(7, 0.8);
   pop(5, 0.5);
-  if (s.content === 'gift') wearIt(s.gift.id as GiftId);
+  if (!isChest(s.content)) wearIt(s.gift.id as GiftId);
   show = null;
   saveHook();
 }
@@ -1001,8 +1216,11 @@ export function snapGifts(
 const pendingWear = new Map<Slot, GiftId>();
 const bump = new THREE.Vector3();
 export function nearestCrate(x: number, z: number, reach: number) {
+  const y = me.body?.position.y;
   for (const c of crates) {
     if (c.t < 1) continue;
+    // One up on a ledge isn't in reach from under it.
+    if (y !== undefined && Math.abs(y - c.y) > 2.6) continue;
     if (Math.hypot(c.x - x, c.z - z) < reach) return { c, at: bump.set(c.x, c.y + 1.5, c.z) };
   }
   return null;
