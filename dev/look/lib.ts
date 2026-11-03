@@ -50,9 +50,10 @@ export type Stack = { base: string; close: () => Promise<void>; dataDir?: string
 export async function startStack({
   url = null,
   root: dir = root,
-}: { url?: string | null; root?: string } = {}): Promise<Stack> {
+  dataRoot = os.tmpdir(),
+}: { url?: string | null; root?: string; dataRoot?: string } = {}): Promise<Stack> {
   if (url) return { base: url, close: async () => {} };
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
+  const dataDir = fs.mkdtempSync(path.join(dataRoot, 'boogle-look-'));
   // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
   const env = {
     DATA_DIR: dataDir,

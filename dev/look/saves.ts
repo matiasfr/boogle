@@ -11,12 +11,12 @@ import type { SaveState } from './observe.ts';
 const DIR = path.join(root, '.look/playthrough/latest/saves');
 export type Save = SaveState & { room: string; query: string; run: string; pageQuery: string };
 
-const files = () => {
-  if (!fs.existsSync(DIR)) throw new Error('No saves yet: npm run playthrough makes them, in about a minute.');
+const files = (dir = DIR) => {
+  if (!fs.existsSync(dir)) throw new Error('No saves yet: npm run playthrough makes them, in about a minute.');
   return fs
-    .readdirSync(DIR)
+    .readdirSync(dir)
     .sort()
-    .map((f) => path.join(DIR, f));
+    .map((f) => path.join(dir, f));
 };
 const read = (f: string): Save => {
   const s = JSON.parse(fs.readFileSync(f, 'utf8')) as Save;
@@ -25,14 +25,14 @@ const read = (f: string): Save => {
   q.delete('shot');
   return { ...s, pageQuery: q.toString() };
 };
-export const listSaves = () =>
-  files().map((f) => {
+export const listSaves = (dir?: string) =>
+  files(dir).map((f) => {
     const s = read(f);
     return `${String(Math.round(s.t)).padStart(5)} s  ${s.beat}`;
   });
 /** The first beat whose name holds `what`. */
-export function findSave(what: string): Save {
-  const all = files().map(read);
+export function findSave(what: string, dir?: string): Save {
+  const all = files(dir).map(read);
   const hit = all.find((s) => s.beat.toLowerCase().includes(what.toLowerCase()));
   if (!hit) throw new Error(`No beat like "${what}". npm run look -- --at list names them.`);
   return hit;

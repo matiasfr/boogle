@@ -16,13 +16,12 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
-import { Game, launch, root, sleep, startStack, type Stack } from './lib.ts';
+import { Game, launch, root, sleep, startStack, reportGfxErrors, type Stack } from './lib.ts';
 import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './observe.ts';
 import { beatsOf } from '../playtest/beats.ts';
 import { clock, parseSession, span, str, num, type Ev, type Session } from '../playtest/read.ts';
 import { marksByName, objectiveSteps, summarize, compare } from '../playtest/summary.ts';
 
-export const OUT = path.join(root, '.look/playthrough');
 const SIZE = [1180, 820];
 const ROOM = 'proto-place'; // a save belongs to its room
 
@@ -32,6 +31,7 @@ const opt = (name: string, fallback: string) => {
   return i < 0 ? fallback : args[i + 1]!;
 };
 const has = (name: string) => args.includes(name);
+export const OUT = path.resolve(opt('--out', path.join(root, '.look/playthrough')));
 
 /** A session's times on the game's clock: a warped run's wall clock says nothing. */
 function onGameClock(s: Session): Session {
@@ -230,8 +230,9 @@ async function main() {
   const stallS = Number(opt('--stall', '600'));
   const job = path.join(checkout, 'dev/look/evals/place-job.ts');
   const evalFile = path.resolve(checkout, opt('--eval', fs.existsSync(job) ? job : 'dev/look/evals/place.ts'));
-  const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);
+  if (!/^[a-zA-Z0-9_-]+$/.test(name) || name === 'latest') throw new Error('Use a simple run name, other than latest');
   const dir = path.join(OUT, name);
   // The last run, before this one can replace it: the report is what changed since.
   let before: ReturnType<typeof readRun> | null = null;
@@ -245,7 +246,13 @@ async function main() {
 
   let stack: Stack | undefined, browser: Browser | undefined;
   try {
-    stack = await startStack({ root: checkout });
+    const url = opt('--url', '');
+    stack = await startStack({ root: checkout, url: url || null });
+    if (url) {
+      const dataDir = opt('--data-dir', '');
+      if (!dataDir) throw new Error('--url needs --data-dir (the local server playtest data)');
+      stack.dataDir = path.resolve(dataDir);
+    }
     browser = await launch();
     const g = await Game.open(browser, stack, {
       out: dir,
@@ -296,6 +303,12 @@ async function main() {
       },
     });
     const still = await g.still('end');
+    const fps = await g.fps();
+    const health = g.healthErrors();
+    if (fps <= 0) health.push('No completed game frames during the sample');
+    console.log(`completed game frames/s: ${fps.toFixed(1)} (1s sample; not a GPU benchmark)`);
+    reportGfxErrors([g]);
+    for (const error of health) console.error(error);
     const observed = (await g.page.evaluate(() =>
       (window as unknown as { __observe: { read(): Observed } }).__observe.read(),
     )) as Observed;
@@ -342,7 +355,7 @@ async function main() {
     const latest = path.join(OUT, 'latest');
     if (fs.existsSync(latest)) fs.unlinkSync(latest);
     fs.symlinkSync(name, latest);
-    if (!w.done || botLog.some((l) => /NEVER:/.test(l))) process.exitCode = 1;
+    if (!w.done || health.length || botLog.some((l) => /NEVER:/.test(l))) process.exitCode = 1;
   } finally {
     await browser?.close().catch(() => {});
     await stack?.close();

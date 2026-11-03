@@ -45,6 +45,14 @@ const files = new Map(
 );
 const all = [...files.keys()].sort();
 const args = process.argv.slice(2);
+const outAt = args.indexOf('--out');
+let outputRoot = path.resolve('.look/scenarios');
+if (outAt >= 0) {
+  const value = args[outAt + 1];
+  if (!value || value.startsWith('--')) throw new Error('--out needs a directory');
+  outputRoot = path.resolve(value);
+  args.splice(outAt, 2);
+}
 const trace = !args.includes('--no-trace');
 if (!trace) args.splice(args.indexOf('--no-trace'), 1);
 const at = args.findIndex((a) => a === '--url' || a.startsWith('--url='));
@@ -74,7 +82,7 @@ try {
   const base = st.base;
   for (const name of names) {
     const mod: Scenario = (await import(path.join(here, files.get(name)!))).default;
-    const out = path.resolve('.look/scenarios', name);
+    const out = path.join(outputRoot, name);
     fs.rmSync(out, { recursive: true, force: true });
     fs.mkdirSync(out, { recursive: true });
     console.log(`\n== ${name}: ${mod.about || ''}`);

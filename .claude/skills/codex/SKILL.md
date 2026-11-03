@@ -5,6 +5,16 @@ description: Hand work to Codex CLI (GPT-6-Astra, on the owner's ChatGPT subscri
 
 # Codex jobs
 
+For exact-build handoffs and gameplay evidence, see [dev/codex/README.md](../../../dev/codex/README.md).
+Task jobs accept `--base-ref HEAD` (or another commit/branch) and `--snapshot` (the caller's working files, leaving its
+index untouched). Default remains `origin/main`. Each job installs its own dependencies. The returned `handoff.md` links
+the worker's assessment, machine evidence and copied artifacts; read it before shipping. A snapshot includes unfinished
+caller changes: review those too.
+
+The worker's `.look/see-client.ts` supports `playthrough`, `look` and named existing `scenario` operations. Ask it to run the
+relevant bot, open the generated PNGs, explain what it saw, and report failures and unverified feel. `look --at` reads this
+job's own bot checkpoints. The broker is already running; the worker should not start another or run Chromium directly.
+
 From inside Codex this is how you start a worker on its own branch and worktree: run it in the background and carry on.
 
 `node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job and prints its final message. Always start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
