@@ -27,7 +27,8 @@ void import('./spray.ts').then(({ startSpray }) => startSpray(bake));
 const t1 = performance.now();
 const foamTex = bakeFoam();
 const t2 = performance.now();
-const source = analyticWaves();
+const source =
+  new URLSearchParams(location.search).get('waves') === 'fft' ? (await import('./fft.ts')).fftWaves() : analyticWaves();
 const t3 = performance.now();
 buildIsland(bake);
 const ocean = createOcean(source, bake, foamTex);

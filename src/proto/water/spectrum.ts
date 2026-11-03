@@ -84,7 +84,8 @@ const BANDS: Band[] = [
 ];
 
 /** Cascade c's initial spectrum, N×N×4: h0(k), conj(h0(-k)). Seeded per cascade, like the demo's PCG (not the same draw). */
-export function bakeH0(c: number) {
+export function bakeH0(c: number, resolution = N) {
+  const N = resolution;
   const L = CASCADE_LENGTHS[c]!,
     dk = (2 * Math.PI) / L;
   // Cascade c owns [cut[c-1], cut[c]); each cut sits at 6 fundamentals of the next cascade.
@@ -164,7 +165,7 @@ function ifft1(re: Float64Array, im: Float64Array) {
 }
 
 // The same transform over rows, then columns.
-function ifft2(re: Float64Array, im: Float64Array) {
+function ifft2(re: Float64Array, im: Float64Array, N: number) {
   const rowR = new Float64Array(N),
     rowI = new Float64Array(N);
   for (let j = 0; j < N; j++) {
@@ -192,8 +193,9 @@ function ifft2(re: Float64Array, im: Float64Array) {
 }
 
 /** Cascade c at t = 0 as a tile of slope moments, and its mean square slope (what the demo reads from the 1×1 mip). */
-export function bakeSlopeTile(c: number) {
-  const h0 = bakeH0(c),
+export function bakeSlopeTile(c: number, resolution = N) {
+  const N = resolution;
+  const h0 = bakeH0(c, N),
     L = CASCADE_LENGTHS[c]!,
     dk = (2 * Math.PI) / L;
   const re = new Float64Array(N * N),
@@ -216,8 +218,8 @@ export function bakeSlopeTile(c: number) {
       re2[k] = -hr * kx * kx * ik + hi * kz * kz * ik;
       im2[k] = -hi * kx * kx * ik - hr * kz * kz * ik;
     }
-  ifft2(re, im);
-  ifft2(re2, im2);
+  ifft2(re, im, N);
+  ifft2(re2, im2, N);
   const half = new Uint16Array(N * N * 4);
   let mss = 0;
   for (let j = 0; j < N; j++)

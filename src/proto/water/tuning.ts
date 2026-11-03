@@ -80,3 +80,18 @@ export const TERRAIN = {
   flatGround: terrainParams.get('groundFlat') === '1',
   flatRocks: terrainParams.get('rockFlat') === '1',
 };
+
+// Stage 2 is opt-in (&waves=fft). Keep all four source bands and 256² by default; &n=128 and &cascades=1..4
+// let the director compare cost. &band=0..3 starts at a particular band without widening its spectral cutoffs.
+const fftQuery = new URLSearchParams(location.search);
+const fftInteger = (key: string, fallback: number, lo: number, hi: number) => {
+  const v = Number(fftQuery.get(key) ?? fallback);
+  return Number.isInteger(v) && v >= lo && v <= hi ? v : fallback;
+};
+const firstBand = fftInteger('band', 0, 0, 3);
+export const FFT = {
+  size: fftQuery.get('n') === '128' ? 128 : 256,
+  bands: Array.from({ length: Math.min(fftInteger('cascades', 4, 1, 4), 4 - firstBand) }, (_, c) => firstBand + c),
+  loop: 300, // OceanSim: quantised dispersion makes the loop seamless and keeps fp32 phase bounded
+  foamRecovery: 0.7, // defaultOceanParams (the constructor's 0.45 placeholder is overwritten each frame)
+};
