@@ -48,9 +48,8 @@ import { skyAt, skyState } from '../sim/sky-clock.ts';
 import { protoOn } from '../proto/flags.ts';
 
 // Temporary ?proto=sky seam: build the original graph verbatim on every other page.
-// Palette/light/cloud ownership stays in src/proto/sky/; remove this seam when the experiment graduates or archives.
-const sculptSky = protoOn('sky');
-export const skyDayLook = uniform(0);
+// Only a horizon haze blend remains; palettes, lighting and clock are the plain game's.
+const softHorizon = protoOn('sky');
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)
 const SUN_R = 24; // the disc; its billboard is twice as wide, for the glow around it
@@ -133,23 +132,11 @@ const hash = Fn(([p0]: [any]) => {
 
 const skyColor = Fn(() => {
   const d = normalize(positionGeometry);
-  const oldRamp = pow(max(d.y, 0), skyU.uCurve);
-  const ramp = sculptSky
-    ? mix(
-        oldRamp,
-        tslSmoothstep(0, 0.25, d.y)
-          .mul(0.68)
-          .add(tslSmoothstep(0.12, 0.85, d.y).mul(0.32)),
-        skyDayLook,
-      )
-    : oldRamp;
+  const ramp = pow(max(d.y, 0), skyU.uCurve);
   const col = mix(skyU.uHorizon, skyU.uTop, ramp).toVar();
   const s = max(dot(d, skyU.uSun), 0);
   // The sun's glow: a wide warm wash and a tight halo that the disc's own glow fades into.
-  const oldGlow = pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45));
-  const glow = sculptSky
-    ? mix(oldGlow, pow(s, 18).mul(0.06).add(pow(s, 120).mul(0.35)).add(pow(s, 1200).mul(3)), skyDayLook)
-    : oldGlow;
+  const glow = pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45));
   col.addAssign(skyU.uGlow.mul(glow));
   const m = max(dot(d, skyU.uMoon), 0);
   col.addAssign(
@@ -177,7 +164,9 @@ const skyColor = Fn(() => {
         .mul(step(0.991, h)),
     );
   });
-  return vec4(sculptSky ? mix(min(col, 1), col, skyDayLook) : min(col, 1), 1);
+  // Temporary ?proto=sky seam: the existing horizon colour meets the fogged sea/land, with a soft shoulder.
+  // Blend after glow so sun-facing and moon-facing horizons meet the same fog colour too. No new palette.
+  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, 1), tslSmoothstep(0, 0.025, d.y)) : min(col, 1), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

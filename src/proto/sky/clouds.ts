@@ -1,5 +1,5 @@
 // Five opaque merged groups, not a volume or a full-screen noise field. Research recommendation 3.
-// Camera-relative sky scenery: continuous slow orbit, no wrap/respawn boundary and no origin-ring gap at sea.
+// Follows the camera horizontally at world-space heights: continuous slow orbit, no wrap/respawn boundary.
 import * as THREE from 'three/webgpu';
 import { dot, mix, normalWorld, smoothstep as ss, uniform } from 'three/tsl';
 import { defineKind, spawn } from '../../entity/entity.ts';
@@ -10,9 +10,9 @@ import { skyNow } from '../../render/sky.ts';
 
 const PALETTE = {
   top: new THREE.Color('#fffdf7'),
-  base: new THREE.Color('#9ab6dc'),
-  setTop: new THREE.Color('#ffca9e'),
-  setBase: new THREE.Color('#9b7998'),
+  base: new THREE.Color('#dce8f5'),
+  setTop: new THREE.Color('#ffd091').multiplyScalar(1.35),
+  setBase: new THREE.Color('#d98b5e'),
   nightTop: new THREE.Color('#526b99'),
   nightBase: new THREE.Color('#283b63'),
 };
@@ -65,7 +65,7 @@ export function createSkyClouds() {
     kind: 'sky-clouds',
     mesh: root,
     update({ dt }) {
-      root.position.copy(camera.position);
+      root.position.set(camera.position.x, 0, camera.position.z);
       drift += dt * 0.0012; // about 0.35 m/s at the horizon groups; no jump at camera/world boundaries
       for (const g of groups) {
         const angle = g.angle + drift;
