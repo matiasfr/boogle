@@ -113,7 +113,4 @@ export function duckForVoice(on: boolean) {
 }
 
 // Musical sound effects currently play at the requested time and pitch, without added latency.
-export const onBeat = (t: number, freq = 0, grid: 8 | 16 = 16) => {
-  void grid;
-  return { t, freq };
-};
+export const onBeat = (t: number, freq = 0) => ({ t, freq });
