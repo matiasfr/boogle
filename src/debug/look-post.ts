@@ -72,6 +72,13 @@ const texel = uniform(new THREE.Vector2(1 / 960, 1 / 600));
 const size = new THREE.Vector2();
 
 let live: { dispose(): void }[] = [];
+// The opt-in tone comparison supplies the display transform, before this lab's screen-space looks.
+let outputTone: ((source: N, hdr: N) => N) | undefined;
+let currentFlags: PostFlags | undefined;
+export function setOutputTone(map: (source: N, hdr: N) => N) {
+  outputTone = map;
+  if (currentFlags) buildPost(currentFlags);
+}
 
 const postActive = (f: PostFlags) => Object.values(f).some(Boolean);
 
@@ -81,11 +88,13 @@ export function updatePostUniforms() {
 }
 
 export function buildPost(f: PostFlags) {
+  currentFlags = f;
   for (const n of live) n.dispose();
   live = [];
   pipeline.outputColorTransform = true;
   if (!postActive(f)) {
-    pipeline.outputNode = scenePass;
+    pipeline.outputNode = outputTone ? outputTone(scenePass.getTextureNode(), scenePass.getTextureNode()) : scenePass;
+    pipeline.outputColorTransform = !outputTone;
     pipeline.needsUpdate = true;
     return;
   }
@@ -139,9 +148,9 @@ export function buildPost(f: PostFlags) {
     col = vec4(col.rgb.add(b.rgb), 1);
   }
 
-  if (f.outline || f.softline || f.grade || f.tilt) {
+  if (outputTone || f.outline || f.softline || f.grade || f.tilt) {
     pipeline.outputColorTransform = false; // tone map here, so the screen-space looks work on display colours
-    col = renderOutput(col);
+    col = outputTone ? outputTone(col, colorTex) : renderOutput(col);
   }
   if (f.outline) col = vec4(mix(col.rgb, vec3(0.13, 0.09, 0.1), inkEdge(depthTex, normalTex).mul(postU.ink)), 1);
   else if (f.softline)

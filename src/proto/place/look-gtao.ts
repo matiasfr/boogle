@@ -24,6 +24,7 @@ p.getTexture('normal').type = THREE.UnsignedByteType;
 const color: N = p.getTextureNode('output'),
   depth: N = p.getTextureNode('depth'),
   normal: N = p.getTextureNode('normal');
+export const toneSource: N = color; // the comparison meters this pass, without drawing the scene a second time
 const a: N = ao(
   depth,
   sample((uv: N) => colorToDirection(normal.sample(uv))),
