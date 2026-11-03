@@ -48,6 +48,9 @@ Progress persists between sessions, and the world can keep changing while everyo
 ### 10. Slapstick over precision
 Loose physics, splashes and tumbling toys are features. Prefer mechanics that produce funny moments between players over ones that reward precise execution.
 
+### 11. Show, don't tell
+The world and how its things relate should explain what's happening. The train moving says the logs went in; no note needs to. Use helper text sparingly: reaching for it usually means the world is unclear, so fix the world first. What's on screen is true, including what you're holding.
+
 ## Technical principles
 
 ### Pick how each feature shares state

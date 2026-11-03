@@ -4,7 +4,7 @@ Approved by the owner, 2 November: "build everything from the feedback as best y
 
 **Gut question:** did you get hungry for a better way, and did finding one feel great?
 
-Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegraph everything. The hour-to-hour game is building the railway, exploring with abilities and an incremental climb, all equally.
+Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegraph everything; 11, Show, don't tell. The hour-to-hour game is building the railway, exploring with abilities and an incremental climb, all equally.
 
 ## The run
 
@@ -12,8 +12,8 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 2. **The first path opens:** a walkable shortcut, with no train. Walking it is the reward, with a real celebration.
 3. **The efficiency ladder,** each rung arriving when you're wanting it: a better axe, a bigger carry, materials brought closer (a depot, a little guy helper).
 4. **Trains come last,** as their own big unlock once a long route makes walking slow. Cargo is their job; riding comes with it.
-5. **Abilities from connecting:** double jump first, then hook shot targets up the middle tower that unlock the glide, tuned towards Breath of the Wild. One or two key gates on the main line; the rest are optional secrets on paths already walked. Each area has cosmetics. Missed prizes appear in the hub.
-6. **Town:** a house interior with a funny resident ("I just moved in here for the jobs"), a shop and a museum. Buildings have roles. Money is a comic score, The Boogler's prices are a gag, and residents plant rumours about him.
+5. **Abilities from connecting:** double jump first, then hook shot targets up the middle tower that unlock the glide, matching Breath of the Wild as closely as we can. They're ancient technology you find, and getting one closes out the session. One or two key gates on the main line; the rest are optional secrets on paths already walked. Each area has cosmetics. Missed prizes appear in the hub.
+6. **Town:** a house interior with the first resident, a funny one ("I just moved in here for the jobs"), a shop and a museum. Buildings have roles. Money is a comic score, The Boogler's prices are a gag, and residents plant rumours about him: prophet, mystic, none of it true. The museum shows a striking specimen and the changing town, not a curio shelf.
 7. **Two players:** splitting up pays off, like one chopping while the other rides cargo, plus optional co-op-only rewards like a beam only two can carry. Not required chains.
 
 ## Fixes from the round 3 notes
@@ -27,7 +27,14 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] The sun moves.
 - [ ] The platform's purpose is obvious.
 - [ ] Something points to the next island.
-- [ ] Crates and gifts vary, since "one tree and boxes" stopped feeling different.
+- [ ] Crates and gifts vary, since "one tree and boxes" stopped feeling different: cosmetic boxes with rarity, common first and rarer later, filling swappable hat, accessory and outfit slots. No curios as prizes. Train slots wait for the roundhouse.
+
+## From the Design Table call (boogle-2.md, "The shape of the game")
+
+- [ ] Show, don't tell: go through every line this round puts on screen. Cut any that narrate what the world already shows, and fix the world where cutting leaves it unclear. Keep The Boogler's copy.
+- [ ] Try showing the tool in a lo-fi way: an axe you can see while chopping, which visibly changes with the better axe. Drop it if it looks wrong; the full answer waits for the systems to lock.
+- [ ] The pet hops on your shoulder when you board a train.
+- [ ] Mostly daylight, with a brief night.
 
 ## Tracks, in order
 
@@ -42,4 +49,8 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 
 ## Left out for now
 
-Chained physics, Boogler story beats beyond rumours, rail grinding, crystal cards and hand-built level tools. The beautiful corner waits a round, and `rail-slice.md` gets redrafted after this.
+Chained physics, Boogler story beats beyond rumours, rail grinding, crystal cards, hand-built level tools, bombs and the sledgehammer, the roundhouse, mini-games, voice chat, things only at night, materials beyond the first, maps and fast travel. `rail-slice.md` gets redrafted after this.
+
+## After this round
+
+Real multiplayer gets priority; the beautiful corner came up but has no slot yet. The main URL starts on this build, prototype code goes, and an architecture pass comes with the move to the main game.
