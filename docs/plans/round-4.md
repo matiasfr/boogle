@@ -45,7 +45,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] **Exploring:** step 5.
 - [x] **Town:** step 6.
 - [x] **Two players:** step 7. Split takes 49.8% of solo on Q5 (81 s against 162 s; two walkers 115 s). Implementation and targeted co-op checks are done ([evidence](two-player.md#implementation-evidence-3-november-steps-48)); Q5 split is 80.90 s versus 162.40 solo and 115.14 for walkers. The literal solo comparison gate is still open: final ambient rumour +11.22%, resident notice +2.04%; all other beats within 0.13%, all expected actions passed. No protected town code changed to force those ambient times.
-- [ ] **Whole run:** full play-through, tune from data, first-time pass, then hand to the owner. Left from the job track's review: watch the rock break and the cart moving, and watch and hear each new moment and reveal in real time; the pack frame reads like a picture frame and sits in the camera's view; "Take rails" still shows 8 times; line 2's stations 3 to 5 are the longest stretch with no new toy; the first path's camera snap against the T3 frame; a partner can't see your clothes; the M4 iPad.
+- [x] **Whole run:** agent pass and handoff complete, with [explicit validation gaps and beat table](round-4-whole-run.md). Solo completed all expected actions; pack, repeated rails objective, sealed gate, empty-frame collision and remote shop clothes fixed locally. Full two-player route and blind first visit are blocked by this job's broker; return-train rider loss, real-time feel, sound and M4 iPad remain for the [owner's playtest](round-4-playtest.md). This tick does not claim those checks passed or that the branch shipped.
 
 ## The job's numbers (hypotheses)
 
@@ -61,7 +61,7 @@ Stop at the owner's playtest: when this list is done, or what's left needs the o
 2. [x] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
 3. [x] Terra, then Astra: build `docs/plans/two-player.md`.
 4. [x] Astra: simplify round 4's whole batch once 1 to 3 are on main: fold duplicates, remove dead code, no behaviour change. Check with `npm run playthrough -- --compare` and `npm run sim -- replay`. Keep The Boogler's copy. Folded spatial searches, room floors and deposit flights; removed unused helpers. All expected solo actions completed, replay unchanged, `check` passed. [Mainline architecture findings](mainline-architecture.md) are recorded for later, not implemented.
-5. [ ] Astra: the whole-run pass above, last.
+5. [x] Astra: the whole-run pass above, last. [Assessment](round-4-whole-run.md) and [owner brief](round-4-playtest.md); partial validation, local commits only. Stop here until the owner has played.
 
 ## Left out for now
 
