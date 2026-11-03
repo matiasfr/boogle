@@ -238,3 +238,12 @@ With the opt-in, the terrain includes its real submerged triangles and receives 
 through material patches, preserving the look's colour/normal nodes. Only built trestle legs register water contacts;
 resetting/removing their solids removes the corresponding contacts. Their analytic foam/spray footprints do not rebake
 the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces remain dry receivers.
+
+### Shore profile comparison
+
+`?proto=place&water=new&shelf=demo` is a Local geometry-only A/B experiment. It copies the owner's measured Ultra
+Water bearing-95 beach profile onto the east shore at world (1219.513, 8.505), oriented 95° clockwise from north.
+The exact-profile strip is 70 m wide, blending to unchanged terrain by 110 m; cross-shore blending runs from
+−30 to −10 m inland and +60 to +90 m offshore. Its offshore bar is intentional. The finished 2 m height grid supplies
+the existing faceted mesh, heightfield collider, ground lookup and shore bake. Colour rules and water code are unchanged.
+Without both `proto=place` and `shelf=demo`, the original heights are retained. This is a comparison, not a new shore default.
