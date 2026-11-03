@@ -53,6 +53,8 @@ Set with `node dev/economy/model.ts round4`; timed by `npm run playthrough`; eac
 
 ## Queue (Codex, until the playtest)
 
+**Resuming as a new director:** run `npm run codex-status`, read this Queue, and carry on from the first unticked item: review and ship finished jobs, restart dead ones with `node dev/codex/run.ts resume <topic> "<feedback>"`, and never start a duplicate of a running one. Jobs outlive sessions, and nothing watches them between sessions: this command is how a finished job gets noticed. Still stop at the owner's playtest.
+
 Stop at the owner's playtest: when this list is done, or what's left needs the owner, no agent develops further and no check-in keeps running. Tell the owner round 4 is ready. Nothing past round 4 starts until they've played and given notes.
 
 1. [ ] Astra: check abilities with two players; capture the rim slab and tower posts.
