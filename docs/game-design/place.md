@@ -4,8 +4,11 @@
 Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything) and 9 (Leave something for the next visitor). Layout:
 Threefold Reach (`.look/previz/home-redesign/`, section 3). Research: [construction you can watch](../research/construction-you-can-watch.md),
 [harvest feel](../research/harvest-feel.md), [big walk level design](../research/big-walk-level-design.md), [maximal rewards](../research/maximal-rewards.md) (Gift Freight), [growing towns](../research/growing-towns.md). The stations are
-Death Stranding's auto-pavers; the look of the frame, feeder and cradle follows `.look/previz/visible-materials/`; the little guys take the stubby proportions of Castle Story's Bricktrons, as our own character. Without the
-flag nothing loads: `src/features/proto-place.ts` imports `src/proto/place/` only with it, in the room `proto-place`.*
+Death Stranding's auto-pavers; the look of the frame, feeder and cradle follows `.look/previz/visible-materials/`; the little guys take the stubby proportions of Castle Story's Bricktrons, as our own character.*
+
+**Entry (3 November):** the bare `https://boogle.club/` opens round 4 with the clean tester view and co-op enabled, equivalent to `?proto=place&fresh=1&coop=1`, in the existing shared room `proto-place-coop`. Alone, you still do the whole job; co-op snapshots are skipped until a partner is present. `?classic=1` opens the old island. Explicit `?proto=` and `?play` links keep their behaviour, `?room=` always wins, and explicit `fresh` or `coop` values override the defaults. The protos page stays available. `?proto=place` alone still uses `proto-place` without the clean-view/co-op defaults. `src/features/proto-place.ts` still imports `src/proto/place/`; retiring it and reviewing the architecture come later.
+
+The first-run card is remembered separately for this place and the classic island. Playtest reports label the default visit as `place` and include its effective flags. Update notices keep reloading the current address, preserving either entry and any explicit flags.
 
 ## The place
 

@@ -1,4 +1,5 @@
 import { BUILD } from '../build-id.ts';
+import { pageQuery } from '../proto/flags.ts';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
@@ -68,7 +69,7 @@ export const remotes = new Map<string, Remote>();
 export function getRoomId() {
   let raw = '';
   try {
-    const q = new URLSearchParams(location.search);
+    const q = pageQuery();
     raw = q.get('room') ?? (q.has('play') ? 'proto-play' : '');
   } catch {
     // no URL available; use the default room

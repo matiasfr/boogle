@@ -2,6 +2,8 @@
 
 ## 8.1 Topology
 
+The default URL opens round 4 in the shared `proto-place-coop` room, with co-op enabled. A `?room=` in the address overrides it. `?classic=1` opens the old island in its original default room (or the explicit room); `?proto=` links retain their own mode. See [place.md](place.md) for the entry flags.
+
 Our server hosts every room ([src/net/ws-room.ts](../../src/net/ws-room.ts), [src/net/README.md](../../src/net/README.md),
 [server/README.md](../../server/README.md)). Each tab opens one WebSocket to it at `/room/<world room>`, where the
 world room is `v02-<room>` (the world namespace, [src/world/namespace.ts](../../src/world/namespace.ts); the `?room=`

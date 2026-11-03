@@ -69,4 +69,4 @@ Chained physics, Boogler story beats beyond rumours, rail grinding, crystal card
 
 ## After this round
 
-Real multiplayer gets priority; the beautiful corner came up but has no slot yet. The speed device from [traversal-at-speed.md](../research/traversal-at-speed.md) waits until after this round too. The main URL starts on this build, prototype code goes, and an architecture pass comes with the move to the main game.
+Real multiplayer gets priority; the beautiful corner came up but has no slot yet. The speed device from [traversal-at-speed.md](../research/traversal-at-speed.md) waits until after this round too. The main URL switch came early by the owner's decision of 3 November: round 4 is the default, with the clean tester view and co-op enabled; `?classic=1` keeps the old island reachable. Retiring prototype code and the architecture pass still follow after this round. The switch does not move or rename `src/proto/place`.

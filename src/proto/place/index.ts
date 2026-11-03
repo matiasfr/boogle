@@ -36,6 +36,7 @@ import { extendSky } from '../crossing/sky.ts';
 import { fanfare } from '../minis/common.ts';
 import { clearCrates, drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
 import { protoCount } from '../count.ts';
+import { pageQuery } from '../flags.ts';
 import { playObjective, playWhere } from '../mark.ts';
 import { H, buildLand, insidePlace } from './land.ts';
 import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
@@ -100,7 +101,7 @@ import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
 import { resetTownLife, updateTownLife } from './town-life.ts';
 
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
-if (new URLSearchParams(location.search).get('fresh') === '1') document.body.classList.add('place-fresh');
+if (pageQuery().get('fresh') === '1') document.body.classList.add('place-fresh');
 
 buildLand();
 buildTech();

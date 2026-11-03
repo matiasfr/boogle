@@ -23,7 +23,7 @@ import { getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/n
 import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S, cardFor } from '../../../protos/store.ts';
-import { ISLAND, ON_ISLAND, PROTO, currentStep, onStep, protoV } from '../flags.ts';
+import { ISLAND, ON_ISLAND, PROTO, currentStep, onStep, protoV, pageQuery } from '../flags.ts';
 import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 
@@ -162,7 +162,7 @@ function sayWho() {
     room: getRoomId(),
     card: card(),
     v: protoV(card()),
-    flags: location.search.slice(1, 200),
+    flags: pageQuery().toString().slice(0, 199),
     build: BUILD,
     device: device(),
     browser: coarseUa(navigator.userAgent || ''),

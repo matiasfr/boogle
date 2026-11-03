@@ -71,6 +71,8 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### The shape of the game
 
+- **2026-11-03, bring the default switch forward** (owner). The bare main URL now opens round 4, equivalent to `?proto=place&fresh=1&coop=1`, in the existing shared `proto-place-coop` room. Explicit URL flags and rooms win; `?classic=1` opens the old island, which stays for later. Solo remains fully playable. This is the entry switch only: `src/proto/place` stays where it is; retiring prototype code and the architecture pass still follow after the round.
+
 - **2026-11-02, the call on the Design Table** (owner and Grant, spoken while going through the table; Granola note of 2 November; the table's own database stayed empty, so this entry is its record). About 17 minutes of the call didn't transcribe, and they recapped it quickly, so this may be short of what was said.
   - **Show, don't tell** is a principle now: DESIGN.md 11. In-game helper text is usually a sign the world is unclear, and the fix goes in the world.
   - **Where it ends:** back on the original island, meeting The Boogler. The old island gets redesigned into a proper endgame hangout worth reaching, with little games to play with friends. Later in the game you can build your own track from certain places instead of following one set route, and that may be part of how you get there.

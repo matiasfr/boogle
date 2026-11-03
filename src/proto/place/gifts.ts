@@ -15,7 +15,7 @@ import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../.
 import { carry } from '../../physics/platforms.ts';
 import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
-import { personalSlice } from './job.ts';
+import { COOP, personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
 import { FINDERS } from './tech-layout.ts';
 import { dustRing } from './pieces.ts';
@@ -718,7 +718,7 @@ const remoteClothes = new Map<
   string,
   { ids: PlaceClothes; avatar: THREE.Object3D | null; worn: Map<Slot, { id: GiftId; m: THREE.Mesh }> }
 >();
-const coopClothes = new URLSearchParams(location.search).get('coop') === '1';
+const coopClothes = COOP;
 addPresenceField('placeClothes', () => {
   const ids: PlaceClothes = {};
   for (const slot of clothesSlots) if (on[slot]) ids[slot] = on[slot];

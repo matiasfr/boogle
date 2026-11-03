@@ -655,7 +655,7 @@ export const coop = {
       st.drawStock(st.have);
       a.beginFeed(l, st);
     }
-    if (now >= hbAt) {
+    if (peers.size && now >= hbAt) {
       hbAt = now + 1000;
       msg({ k: 'snap', snap: snapshot() });
     }
