@@ -49,7 +49,10 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
     return vec4(transmission.mul(mix(1, 0.72, wet)).mul(focused), wet);
   })().toVar();
   patchNode(mat, 'colorNode', (previous: N) => (previous ?? materialColor).mul(surface.rgb));
-  patchNode(mat, 'roughnessNode', (previous: N) => mix(previous ?? materialRoughness, 0.26, surface.a));
+  // The thin wet shoreline is glossy; submerged ground retains its own roughness rather than a faceted sun mirror.
+  patchNode(mat, 'roughnessNode', (previous: N) =>
+    mix(previous ?? materialRoughness, 0.26, surface.a.mul(smoothstep(-0.35, 0, positionWorld.y))),
+  );
   const color = mat.colorNode,
     roughness = mat.roughnessNode;
   restore.set(mat, () => {

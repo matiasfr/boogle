@@ -7,16 +7,17 @@ import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { sky } from '../render/scene.ts';
 import { createSky, updateSky, skyDebug } from '../render/sky.ts';
+import { frozenSkyActive, updateFrozenDay } from '../render/water/frozen-sky.ts';
 
 const q = new URLSearchParams(location.search);
 const num = (k: string) => (q.has(k) && Number.isFinite(Number(q.get(k))) ? Number(q.get(k)) : null);
 const tod = num('tod');
 
 onStart(() => {
-  createSky();
+  if (!frozenSkyActive) createSky();
   if (tod !== null) skyDebug.preview(tod, num('moon'));
   if (window.boogle) window.boogle.sky = skyDebug; // debug handle: boogle.sky.preview(0.55)
 });
 // After the world tick (order -10), before the other per-frame features.
 defineKind('sky', { update: -5 });
-spawn({ kind: 'sky', mesh: sky, update: ({ dt }) => updateSky(dt) });
+spawn({ kind: 'sky', mesh: sky, update: ({ dt }) => (frozenSkyActive ? updateFrozenDay() : updateSky(dt)) });

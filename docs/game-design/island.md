@@ -50,7 +50,7 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 
 ---
 
-Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–4). The old sea remains active by default.
+Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–6). The old sea remains active by default.
 Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
 the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
 The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
@@ -59,13 +59,21 @@ fields select one coherent region. No shore bake or new texture allocation runs 
 
 `?classic=1&water=new` opts into the staged replacement surface: four 256² FFT bands at `.25` energy, real shore
 attenuation, refraction from one opaque HDR colour/depth snapshot pair, crest/contact foam and impact rings. One sea
-entity owns its FFT, foam, shore atlas and snapshots. The current game sky supplies a live analytic reflection through
-`skyAt`; no atmosphere LUT/cube or tone-map change is installed. Camera near/far/FOV stay unchanged. The polar detail
+entity owns its FFT, foam, shore atlas and snapshots. The demo atmosphere is baked once behind loading, frozen at
+late morning (`tod=0.24`), with the matching fixed real sun. Its cube supplies sky and reflections, replacing the toon
+dome, sun/moon billboards, faceted clouds and cycle on this path. Metered AgX maps the final underwater HDR once;
+the old path retains Neutral and its cycle. Camera near/far/FOV stay unchanged. The polar detail
 ends by half the route's far range, with a monotonic altitude scale and a flat skirt inside the clip range.
 Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
 (`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases
 the replacement resources and restores the prior resolution/material visibility; the main sea remains absent until
 `createWaterMesh()` recreates it. This opt-in is not the default game.
+
+The same current-frame wave function drives the underwater lens grid, Snell window, absorption, half-resolution
+sun shafts and a bounded 6000-seed marine-snow field. Surfacing leaves brief lens droplets. The cave pond uses its
+own flat level and ellipse; dry caves exclude the sea. Hold C, D-pad right or the swimming-only touch Dive button to
+descend; release to rise, with Jump taking priority. These remain Local input and optics over the existing Owner body,
+with no new presence fields or drowning mechanic.
 
 With `water=new`, swimming, the owned ball and entry splashes request the same inverse-displacement GPU kernel as
 the surface. One 64-point batch, at most two reusable readbacks, publishes only before physics; the player and ball
@@ -83,7 +91,8 @@ samples. Its prediction error compares the consumed estimate with a GPU evaluati
 position; it does not measure rasterized triangle error. Renderer teardown removes the provider and all query resources.
 
 The opt-in draws the actual submerged home tiles, applies shared FFT caustics and swash wetness to ground and rocks,
-and retains their colour, roughness, normals, shadow and cave-mask nodes. Two caustic targets share three splat draws
+and retains their colour, normals, shadow and cave-mask nodes. Wet-shore roughness blends toward 0.26 only near
+mean sea level; submerged terrain retains its original roughness. Two caustic targets share three splat draws
 and 17 mip draws. Receiver caustics modulate lit albedo, including ambient fill, with depth/orientation/daylight/shelter
 gates; this is not a separate sun-only lighting model. Dry cave interiors receive no ocean receiver patch.
 Refraction retreats foreground offsets and samples colour/depth at the final matching UV; resolved bank-edge pixels

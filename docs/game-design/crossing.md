@@ -1,5 +1,10 @@
 # 6.26 Prototype: the long crossing (`?proto=crossing`)
 
+With `water=new`, the shared range-fitted polar sea replaces the outer water rectangles; the existing route clip
+and fog distances stay. Actual viaduct pillars register conservative circular water contacts, removed with their
+geometry. The shared frozen late-morning sky and metered AgX own the light on this opt-in path. Without the flag,
+the original sea, sky palette and clock remain unchanged.
+
 *A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 7: "Does the crossing feel vast in a good way,
 and would you ride it again?" The owner's direction is that the train is far faster than walking and islands may be
 vastly far apart ([boogle-2.md](../proposals/boogle-2.md), "Trains and the world"); this finds what that means in

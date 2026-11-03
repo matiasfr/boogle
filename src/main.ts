@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
 import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
-import { createWaterMesh } from './render/water-render.ts';
+import { createWaterMesh, waterReady } from './render/water-render.ts';
 import { stepPhysics, physicsReady } from './physics/engine.ts';
 import { createProps, createClouds } from './render/props.ts';
 import { ball } from './entities/ball/state.ts';
@@ -69,6 +69,7 @@ function start() {
 }
 
 async function play() {
+  await waterReady; // the opt-in frozen sky completes its single bake behind loading, before the shader deadline
   // Slow GPUs (and software rendering) can take many seconds: past 8 s the game opens anyway and the rest builds on.
   const giveUp = new Promise((r) => setTimeout(r, 8000));
   splashStage(0.45, 0.95, 'Warming up the shaders');
