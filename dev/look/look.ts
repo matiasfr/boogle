@@ -140,12 +140,8 @@ for (let k = 0; k < argv.length; k++) {
     process.exit(2);
   }
 }
-if (opt.players > 1 && opt.warp) {
-  console.error(
-    "--players and --warp don't mix: the two pages only agree through the server, which runs in real time.",
-  );
-  process.exit(2);
-}
+// Two pages only agree through the server, which runs in real time; a built site has no modules to skip its draws through.
+if (opt.players > 1 || opt.url) opt.warp = false;
 const region = opt.region;
 if (
   !Number.isInteger(opt.frames) ||
@@ -232,7 +228,8 @@ try {
     if (g2) await pageScript(g2, opt.eval);
     if (opt.warp) await warpNow(1);
   }
-  if (!save || opt.cam) await g.view(pose, opt.fov ?? undefined);
+  // At a beat or with two players, the follow camera shows the player unless a camera was asked for.
+  if ((!save && opt.players < 2) || opt.cam) await g.view(pose, opt.fov ?? undefined);
   const limit = opt.until && !argv.includes('--warm') ? 3600 : save && !argv.includes('--warm') ? 2 : opt.warm;
   console.log(
     `warming up ${opt.warp ? 'warped, ' : ''}${limit}s of game time${opt.until ? ` or until ${opt.until}` : ''} ...`,
