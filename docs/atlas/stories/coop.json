@@ -59,6 +59,19 @@
           "file": "src/proto/place/coop.ts"
         }
       ]
+    },
+    {
+      "go": [["fr.netplay", "lane:owner", "you.netplay", "you.features"]],
+      "text": "A great beam or boiler on your shoulder is in your presence too. If you leave carrying one, your partner's tab puts it back where it was picked up, so the railway never loses a piece.",
+      "code": "addPresenceField('placeBig', () => back.big)",
+      "cite": [
+        {
+          "presence": "placeBig"
+        },
+        {
+          "file": "src/proto/place/coop.ts"
+        }
+      ]
     }
   ]
 }
