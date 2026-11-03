@@ -11,7 +11,7 @@ import { DAY } from './look.ts';
 import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken } from './chop.ts';
 import { clearMoments, pullOn } from './celebrate.ts';
 import { coop } from './coop.ts';
-import { cart, rack, snapCart } from './depot.ts';
+import { cart, drawRack, rack, snapCart } from './depot.ts';
 import { folk, setPushers } from './folk.ts';
 import { forge, snapForge } from './forge.ts';
 import { HAND_LOGS } from './forge.ts';
@@ -131,6 +131,25 @@ function skipLine2() {
   hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2);
   save();
 }
+/** A repeatable Q5 bill for the solo/walk/split eval; no free frontier stock. */
+function skipQ5() {
+  if (!job.turned) skipLine2();
+  job.tech.hook = job.tech.glide = true;
+  job.gate.quarry = job.gate.sea = true;
+  L2.stage = L2.stations.findIndex((s) => s.spec.id === 'Q5');
+  L2.open = false;
+  job.rung.depot = true;
+  job.awake = true;
+  run.mode = 'idle';
+  L2.track.snapTo(L2.track.u(L2.stations[L2.stage]!.spec.s));
+  Object.assign(cart, { d: 0, leg: 'rest', t: 0, load: 0, rails: 0, called: false, speed: 0 });
+  snapRun();
+  snapCart();
+  rack.logs = rack.rails = 0;
+  drawRack();
+  hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2);
+  save();
+}
 /** Line 2 through to Far Head: the depot's on, the boiler's cast. */
 function skipHead() {
   if (!job.turned) skipLine2();
@@ -204,6 +223,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
     line2: skipLine2,
     tower: skipTower,
     head: skipHead,
+    q5: skipQ5,
     trains: skipTrains,
   });
   window.__place = {
@@ -242,6 +262,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
     skipLine2,
     skipTower,
     skipHead,
+    skipQ5,
     skipTrains,
     startOver: a.startOver,
     wake,
