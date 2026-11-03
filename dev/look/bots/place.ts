@@ -8,6 +8,8 @@ import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { carry, type Platform } from '../../../src/physics/platforms.ts';
+import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
+import { nearest } from '../../../src/proto/place/nearest.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -28,21 +30,6 @@ export async function play() {
   };
   const unreachable = new Set<unknown>();
   const standing = (t: { fall: number; great?: boolean }) => t.fall < 0 && !t.great && !unreachable.has(t);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nearestOf = (list: any[], ok: (t: any) => boolean) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let best: any = null,
-      bd = Infinity;
-    for (const t of list) {
-      if (!ok(t)) continue;
-      const d = Math.hypot(t.x - body.position.x, t.z - body.position.z);
-      if (d < bd) {
-        bd = d;
-        best = t;
-      }
-    }
-    return best;
-  };
   const openCrates = async () => {
     for (const c of place.giftState.crates()) {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
@@ -63,7 +50,7 @@ export async function play() {
   };
   const chopUntil = async (fn: () => boolean) => {
     while (!fn() && place.back.room() > 0) {
-      const t = nearestOf(place.TREES, standing);
+      const t = nearest<Tree>(place.TREES, body.position, standing);
       if (!t) {
         note('NO TREES LEFT');
         await wait(5000);
@@ -112,7 +99,7 @@ export async function play() {
         continue;
       }
       if (st.wants('stone') - b.stone > 0 && b.room() > 0) {
-        const r = nearestOf(place.ROCK_LIST, (q: { strokes: number }) => q.strokes < 4);
+        const r = nearest<Rock>(place.ROCK_LIST, body.position, (q) => q.strokes < 4);
         if (r) {
           await travel(r.x, r.z, 2.8);
           while (r.strokes < 4 && st.wants('stone') - b.stone > 0 && b.room() > 0) {
@@ -379,10 +366,6 @@ export async function play() {
     await wait(5000);
   }
   // Ride home on line 1, then out on line 2, to the pier.
-  const onDeck = () => {
-    const pl = place.haltUnder();
-    return pl;
-  };
   const ride = async (
     l: {
       k: number;
@@ -391,7 +374,7 @@ export async function play() {
     h: { x: number; z: number; stop: number; k: number },
   ) => {
     await travel(h.x, h.z, 1);
-    note(`on the platform: ${onDeck()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
+    note(`on the platform: ${place.haltUnder()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
     const callAt = now();
     await waitFor(() => l.train.tr.stop === h.stop, 90000, 'the train coming');
     note(`waited ${(now() - callAt).toFixed(1)} s`);

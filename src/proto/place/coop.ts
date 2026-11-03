@@ -58,9 +58,9 @@ import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
 import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
-import { chips, clearTrips, send } from './pieces.ts';
+import { chips, clearTrips } from './pieces.ts';
 import { callTrain } from './rail.ts';
-import { type StationRun } from './stations.ts';
+import { flyToStock, type StationRun } from './stations.ts';
 
 type Api = {
   snapAll: () => void;
@@ -345,12 +345,7 @@ function refund(kind: Goods) {
 const flyFrom = new THREE.Vector3();
 function flyIn(a: Api, st: StationRun, kind: Goods, x: number, y: number, z: number, n: number, counted: boolean) {
   flyFrom.set(x, y + 0.9, z);
-  const land = () => a.landAtStation(st, kind, counted);
-  if (kind === 'logs')
-    send('log', flyFrom, st.logSlot(n, new THREE.Vector3()), { dur: 0.32, apex: 0.9, size: [1, 2.2], land });
-  else if (kind === 'rails') send('rail', flyFrom, st.railSlot(n, new THREE.Vector3()), { dur: 0.36, apex: 0.9, land });
-  else if (kind === 'stone') send('stone', flyFrom, st.stoneAt(n, new THREE.Vector3()), { dur: 0.34, apex: 0.9, land });
-  else send('log', flyFrom, st.at, { dur: 0.5, apex: 1.4, size: [4, 4], land });
+  flyToStock(st, kind, n, flyFrom, () => a.landAtStation(st, kind, counted));
 }
 const shownNow = (st: StationRun) => {
   const out = { logs: 0, rails: 0, stone: 0, beam: 0 };

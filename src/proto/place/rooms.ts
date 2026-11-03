@@ -256,6 +256,19 @@ const enterFns: ((r: Room, inside: boolean) => void)[] = [];
 export const onRoom = (fn: (r: Room, inside: boolean) => void) => void enterFns.push(fn);
 
 // ---------------------------------------------------------------- helpers for what goes in them
+/** Eight alternating planks, shared by the house and shop; sizes stay in room space. */
+export function plankFloor({ w, d }: Room, even: string, odd: string): Part[] {
+  return Array.from({ length: 8 }, (_, k) => [
+    'b',
+    0,
+    0.015,
+    -d / 2 + (k + 0.5) * (d / 8),
+    w - 0.3,
+    0.03,
+    d / 8 - 0.03,
+    k % 2 ? odd : even,
+  ]);
+}
 /** Room space to world. */
 export function roomToWorld(r: Room, lx: number, ly: number, lz: number, out: THREE.Vector3) {
   const c = Math.cos(r.yaw),

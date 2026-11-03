@@ -131,13 +131,6 @@ for (const y of [0.3, 1.2]) {
 }
 packFrame.traverse((o) => void (o.castShadow = true));
 packFrame.visible = false;
-/** The pack on show when its chest opens. */
-export const packShape = () => {
-  const g = packFrame.clone();
-  g.visible = true;
-  g.position.set(0, -0.6, -0.5);
-  return g;
-};
 
 // ---------------------------------------------------------------- what you can hit
 export type Tree = {
@@ -443,12 +436,6 @@ AXES[1]!.add(edge);
 const axe = new THREE.Group();
 axe.add(AXES[0]!, AXES[1]!);
 axe.visible = false;
-/** The proper axe on show when its chest opens. */
-export const axeShape = () => {
-  const g = AXES[1]!.clone();
-  g.visible = true;
-  return g;
-};
 
 const swing = { t: 99, target: null as Tree | null, rock: null as Rock | null, hit: true };
 const RAISED = 1.5,

@@ -57,7 +57,6 @@ export const PILLARS = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.7) },
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
 ];
-const stem = beside(E, 92, -1, 0);
 
 export const PADS: Pad[] = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, hx: 3.4, hz: 3.4, look: 'stone' },
@@ -265,6 +264,3 @@ export const SECRETS: Secret[] = [
 ];
 /** Where the boxes for what you missed stand: the finders' bay across the path from the wardrobe, in the village. */
 export const FINDERS = { x: -104, z: 7, yaw: Math.PI / 2 };
-
-/** The lesson's first pull: the pillar on the stem looks straight across at it. */
-export const STEM = stem;

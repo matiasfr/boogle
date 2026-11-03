@@ -40,7 +40,7 @@ import { L1, L2, TX, TY, TZ, disc, forgeFrame, heading, lines, machine, type Lin
 import { dustRing, send } from './pieces.ts';
 import { besideLine } from './rail.ts';
 import { delivered, earn } from './score.ts';
-import type { StationRun } from './stations.ts';
+import { flyToStock, type StationRun } from './stations.ts';
 import { snapCamp, wakeCamp } from './town.ts';
 
 export type Mode =
@@ -430,31 +430,20 @@ export function unload(dt: number) {
   if (kind === 'logs') {
     myBundleNext(Math.max(0, back.logs - 1), scratch, bundleRot);
     back.logs--;
-    const to = st.logSlot(st.have.logs + st.coming.logs - 1, new THREE.Vector3());
-    send('log', scratch, to, { dur: 0.32, apex: 0.9, size: [1, 2.2], land: () => landAtStation(st, 'logs', counted) });
   } else if (kind === 'rails') {
     scratch.set(p.x, p.y + 0.9, p.z);
     back.rails--;
-    const to = st.railSlot(st.have.rails + st.coming.rails - 1, new THREE.Vector3());
-    send('rail', scratch, to, { dur: 0.36, apex: 0.9, land: () => landAtStation(st, 'rails', counted) });
   } else if (kind === 'stone') {
     scratch.set(p.x, p.y + 0.7, p.z);
     back.stone--;
-    const to = st.stoneAt(st.have.stone + st.coming.stone - 1, new THREE.Vector3());
-    send('stone', scratch, to, { dur: 0.34, apex: 0.9, land: () => landAtStation(st, 'stone', counted) });
   } else {
     scratch.set(p.x, p.y + 1.1, p.z);
     putDownBig();
-    send('log', scratch, st.at, {
-      dur: 0.5,
-      apex: 1.4,
-      size: [4, 4],
-      land: () => {
-        shakeView(0.12);
-        landAtStation(st, 'beam', counted);
-      },
-    });
   }
+  flyToStock(st, kind, st.have[kind] + st.coming[kind] - 1, scratch, () => {
+    if (kind === 'beam') shakeView(0.12);
+    landAtStation(st, kind, counted);
+  });
 }
 let depositAt = 0;
 export function landAtStation(st: StationRun, kind: Goods, counted = true) {

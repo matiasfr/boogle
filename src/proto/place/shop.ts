@@ -26,7 +26,18 @@ import {
   type Slot,
   type Stock,
 } from './gifts.ts';
-import { DOOR, addSolid, onRoom, plate, roomMesh, roomToWorld, rooms, worldToRoom, type Part } from './rooms.ts';
+import {
+  DOOR,
+  addSolid,
+  onRoom,
+  plate,
+  plankFloor,
+  roomMesh,
+  roomToWorld,
+  rooms,
+  worldToRoom,
+  type Part,
+} from './rooms.ts';
 import { residentSay } from './residents.ts';
 import { dollars, money } from './score.ts';
 import { BOARDS, SHOP } from './town-lines.ts';
@@ -48,18 +59,7 @@ const available = (s: Stock) => !s.after || hasFact(s.after);
 export const listPrice = (s: Stock) => s.price + Math.round(money()) * 1000;
 
 // ---------------------------------------------------------------- the room
-const fixtures: Part[] = [];
-for (let k = 0; k < 8; k++)
-  fixtures.push([
-    'b',
-    0,
-    0.015,
-    -d / 2 + (k + 0.5) * (d / 8),
-    w - 0.3,
-    0.03,
-    d / 8 - 0.03,
-    k % 2 ? '#b0875a' : '#a57d51',
-  ]);
+const fixtures = plankFloor(r, '#a57d51', '#b0875a');
 fixtures.push(
   // The counter and its till, with one enormous button.
   ['b', -3.0, 0.52, -2.45, 3.6, 1.04, 1.0, OAK],

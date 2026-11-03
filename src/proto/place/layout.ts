@@ -501,7 +501,5 @@ export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: 
   shop: { x: -116, z: 31, yaw: 2.05, w: 10, d: 8, high: 3.9 },
   museum: { x: -125, z: -8, yaw: 0.97, w: 13, d: 12, high: 5 },
 };
-/** Where the depot's cart starts, by the camp; and where its logs pile up. */
-export const DEPOT = { x: -2, z: -152 };
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

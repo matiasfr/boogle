@@ -12,7 +12,7 @@ import { playMark } from '../mark.ts';
 import { H } from './land.ts';
 import { job, type ChestId } from './job.ts';
 import { OAK, toWorld } from './layout.ts';
-import { deliver, dropChest, giftState, prizeHooks } from './gifts.ts';
+import { deliver, dropChest, prizeHooks } from './gifts.ts';
 import { showBanner } from './celebrate.ts';
 import { coop } from './coop.ts';
 
@@ -38,7 +38,6 @@ export function snapChest() {
   dropChest('pack');
   if (job.chest) grantChest(job.chest, true);
 }
-const CHESTS: ChestId[] = ['axe', 'pack'];
 function applyRung(id: ChestId) {
   job.chest = null;
   if (id === 'axe') job.rung.axe = 1;
@@ -61,4 +60,3 @@ prizeHooks.opened = (c) => {
     coop.rung(c);
   }
 };
-export const isChestWaiting = () => giftState.crates().some((c) => CHESTS.includes(c.content as ChestId));

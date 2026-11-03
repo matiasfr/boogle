@@ -2,7 +2,7 @@
 // of a tray, next to an ordinary mug. Serves DESIGN.md 11: the joke reads with the sound off. It has no task and gives nothing.
 // What's happened to the town turns up on Pip's desk: a model of your bridge, a rail for a paperweight, a toy train. Local.
 import { stageOf } from './growth.ts';
-import { DOOR, addSolid, plate, roomMesh, rooms, type Part } from './rooms.ts';
+import { DOOR, addSolid, plate, plankFloor, roomMesh, rooms, type Part } from './rooms.ts';
 import { BOARDS, type Fact } from './town-lines.ts';
 
 const r = rooms.house;
@@ -12,13 +12,8 @@ const OAK = '#7f5630',
   LEAF = '#5fa83a';
 const FACTS: Fact[] = ['path', 'forge', 'trains', 'town'];
 
-const floor: Part[] = [];
-for (let k = 0; k < 8; k++) {
-  const z = -d / 2 + (k + 0.5) * (d / 8);
-  floor.push(['b', 0, 0.015, z, w - 0.3, 0.03, d / 8 - 0.03, k % 2 ? '#c7a06e' : '#bb9360']);
-}
 const room: Part[] = [
-  ...floor,
+  ...plankFloor(r, '#bb9360', '#c7a06e'),
   ['c', 0, 0.04, 0.6, 1.9, 0.03, 1.9, '#b5533c'], // a rug
   ['c', 0, 0.05, 0.6, 1.5, 0.03, 1.5, '#d4a24e'],
   // The bed, in its corner.
