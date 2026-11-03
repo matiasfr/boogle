@@ -19,6 +19,7 @@ Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, 
 - **Research is fair game.** Learning how existing games solve a problem isn't copying any one of them. No copyright caveats or avoidance guidance in research docs, briefs or repo files.
 - **The owner playtests fast.** An experienced player with little time reads feel within minutes: one gut question and one line on what's new, for prototypes, playtest kits and briefs alike. Agents check edge cases themselves.
 - **Usage is not a reason to hold back.** Do what the work needs: read what's relevant, verify properly, take the deeper fix. Saving tokens or subscription usage never justifies a shallower result, and no one should write guidance that says otherwise.
+- **An M1 Max is the average target.** The M4 iPad Pro stays the floor, but don't over-index on it: judge looks and budgets on the Mac the agents run on, test locally, and let the iPad scale down (owner, 2 November). It still has to run there.
 - **Decisions live in the repo.** An owner decision or working preference binds every agent unless it's specific to one tool, so it goes in this section or the decision log, not only in one tool's private memory.
 
 ## TypeScript everywhere
