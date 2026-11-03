@@ -83,7 +83,7 @@
     "fr.netplay": "presence and the room",
     "fr.world": "the same copy, kept in step",
     "fr.screen": "three.js draws it",
-    "server": "hosts rooms · runs the world · saves · problem reports"
+    "server": "hosts rooms · runs the world · saves · problem reports · playtest data"
   },
   "concepts": [
     {
