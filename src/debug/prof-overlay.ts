@@ -354,13 +354,15 @@ if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
   onStart(() => {
     const panel = document.createElement('section');
     panel.style.cssText =
-      'position:fixed;right:8px;top:72px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;padding:8px;border-radius:6px;background:#001b26e8;color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;z-index:50;pointer-events:auto';
+      'position:fixed;right:8px;top:72px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;padding:8px;border-radius:6px;background:#001b26e8;color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;z-index:50;pointer-events:none';
     const run = document.createElement('button');
     run.textContent = 'Measure 5 seconds';
     const copy = document.createElement('button');
     copy.textContent = 'Copy';
     const output = document.createElement('pre');
     output.style.cssText = 'white-space:pre-wrap;margin:6px 0;user-select:text';
+    // The panel lets touches through to the lobby and game; only its controls take them.
+    run.style.pointerEvents = copy.style.pointerEvents = 'auto';
     panel.append(run, copy, output);
     document.body.append(panel);
     // Debug controls must not also throw/jump/interact in the game.
@@ -423,6 +425,7 @@ if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
         const area = document.createElement('textarea');
         area.value = text;
         area.setAttribute('aria-label', 'Profiling report to copy');
+        area.style.pointerEvents = 'auto';
         panel.append(area);
         area.focus();
         area.select();
