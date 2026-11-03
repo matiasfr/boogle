@@ -19,11 +19,11 @@ the deeper `#2a6fe0` take and its sun/fill overrides are removed.
 - A soft low dome band blends toward its existing horizon colour, including at sunset and night. The original
   sun glow, moon and stars remain above it. The existing sea material blends its colour, glints and transparency
   toward that same horizon over view-direction heights 0–0.05, keeping blue water visible below a soft,
-  steady angular band even from a low camera. There is no distance fade; the dome shoulder spans direction heights 0–0.025.
-  A safety fade over the plane's outer 610–640 m square rim hides its 650 m edge from oblique shore views.
+  steady angular band even from a low camera. The dome shoulder spans direction heights 0–0.025.
+  Three's scene fog still fades the distant sea into the sky and hides the plane's square edge; there is no rim fade.
   No new water design or palette.
 - Distant land keeps the plain game's fog range, 110–520 m, and caves retain their own fog range.
-  The sea uses its material haze instead of applying scene fog a second time.
+  The sea keeps scene fog on, with the prototype's angular haze applied before it.
 - No new meshes beyond the existing five cloud groups, cloud shadow casters, textures, volumes or render passes.
   Ground cloud shadows remain deferred. Real-time smoothness and iPad cost need device playtesting.
 

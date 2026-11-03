@@ -154,19 +154,16 @@ const color = Fn(() => {
   col.addAssign(seaU.uSpecCol.mul(spec).mul(0.9));
   const alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5, depth)), foam.mul(0.95));
   if (softHorizon) {
-    // Angular height keeps the soft horizon band readable even from a low camera.
-    // The outer rim still hides the square's 650 m edge when viewed from high up.
+    // Angular haze softens the low-view join; three's scene fog still hides the distant plane edge.
     const horizon = smoothstep(0, 0.05, viewDir.y).oneMinus();
-    const rim = smoothstep(610, 640, max(w.x.abs(), w.z.abs()));
-    const haze = max(horizon, rim);
-    return vec4(mix(col, seaU.uHaze, haze), mix(alpha, 1, haze));
+    return vec4(mix(col, seaU.uHaze, horizon), mix(alpha, 1, horizon));
   }
   return vec4(col, alpha);
 });
 
-// The sea plane never moves, so local = world. Fog is three's own except for ?proto=sky's material haze above.
+// The sea plane never moves, so local = world. Three's fog applies on every page, after any prototype haze above.
 // Exported so a prototype can give it another look; nothing else in the game touches it.
-export const waterMat = new MeshBasicNodeMaterial({ transparent: true, fog: !softHorizon });
+export const waterMat = new MeshBasicNodeMaterial({ transparent: true, fog: true });
 waterMat.positionNode = Fn(() => {
   const p = positionLocal;
   const wave = sin(p.x.mul(0.21).add(seaU.uTime.mul(1.3)))
