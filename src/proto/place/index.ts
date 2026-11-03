@@ -13,6 +13,7 @@
 //
 // Sync: Local, all of it, kept in localStorage per room. The back bundle's count is here too (`backSeam`, ./chop.ts), so
 // chopping never waits on the host.
+// With `&coop=1`, ./coop.ts shares the railway between the tabs in the room.
 import './place.css';
 import './ambience.ts';
 import * as THREE from 'three/webgpu';
@@ -126,6 +127,7 @@ import {
 } from './rail.ts';
 import { seated, sitDown, standUp } from './seat.ts';
 import { buildStation, type StationRun } from './stations.ts';
+import { COOP, coop, coopKey } from './coop.ts';
 import {
   TREES,
   back,
@@ -326,7 +328,7 @@ forgeBoard.sprite.position.set(toWorld(FORGE.x), VILLAGE.y + 9, FORGE.z + 4.6);
 scene.add(forgeBoard.sprite);
 
 // ---------------------------------------------------------------- local state, kept per room
-const KEY = `boogle-place-v3:${getRoomId()}`; // a new key each round: an older save's shape can't break this one
+const KEY = coopKey(`boogle-place-v3:${getRoomId()}`, getRoomId()); // a new key each round: an older save's shape can't break this one
 const s = {
   awake: false,
   turned: false, // the machine has gone over to line 2
@@ -351,6 +353,7 @@ function save() {
         fellen: fellenList(),
         gifts: { got: giftState.got, order: giftState.order, crates: giftState.crates() },
         crystals: crystals.found,
+        coop: coop.saved(),
         lines: lines.map((l) => ({
           stage: l.stage,
           open: l.open,
@@ -387,6 +390,7 @@ function restore() {
       crates: j.gifts?.crates ?? [],
     };
     crystals0 = j.crystals ?? [];
+    coop.restored(j.coop);
     j.lines?.forEach(
       (q: { stage: number; open: boolean; pile: Kind[]; have: { logs: number; rails: number }[] }, k: number) => {
         const l = lines[k];
@@ -440,6 +444,7 @@ function beginFeed(l: LineRun, st: StationRun) {
   run.feedLeft = st.shown.logs + st.shown.rails;
   run.feedAir = 0;
   whistle(st.x, st.z);
+  coop.fed(l);
 }
 function stepFeed(dt: number) {
   const l = run.line,
@@ -510,7 +515,7 @@ function stepLay(dt: number) {
     rackNow = l === L1 ? rackForLine1(run.head) : Math.ceil(run.rack0 * (1 - done));
   if (cradleNow !== run.cradle) machine.setCradle((run.cradle = cradleNow));
   if (rackNow !== run.rack) machine.setRack((run.rack = rackNow));
-  if (left - step <= 0.001) finishStretch(l);
+  if (left - step <= 0.001 && !coop.follower()) finishStretch(l);
 }
 /** Line 1's rails come off the machine's own rack: it's empty when the line is done. */
 const rackForLine1 = (head: number) => {
@@ -560,6 +565,7 @@ function handCrate(l: LineRun, to: number, side: number) {
 }
 function finishStretch(l: LineRun) {
   const st = stationOf(l)!;
+  coop.stretched(l);
   whistle(st.x, st.z);
   dustRing(st.x, st.y, st.z, 8, 2, 0.3);
   handCrate(l, st.spec.to, st.spec.side);
@@ -628,7 +634,8 @@ function setStationTags() {
     });
 }
 
-function wake() {
+function wake(fromPeer = false) {
+  if (!fromPeer) coop.woke();
   s.awake = true;
   run.mode = 'waking';
   protoMark('verb');
@@ -702,6 +709,7 @@ function unload(dt: number) {
   if (!kind) return;
   unloadT = TUNE.unloadS;
   st.coming[kind]++;
+  const counted = coop.deposited(l, st, kind, p);
   if (kind === 'logs') {
     myBundleNext(Math.max(0, back.logs - 1), scratch, bundleRot);
     back.logs--;
@@ -710,7 +718,7 @@ function unload(dt: number) {
       dur: 0.32,
       apex: 0.9,
       size: [1, 2.2],
-      land: () => landAtStation(l, st, 'logs'),
+      land: () => landAtStation(l, st, 'logs', counted),
     });
   } else {
     scratch.set(p.x, p.y + 0.9, p.z);
@@ -719,20 +727,22 @@ function unload(dt: number) {
     send('rail', scratch, to, {
       dur: 0.36,
       apex: 0.9,
-      land: () => landAtStation(l, st, 'rails'),
+      land: () => landAtStation(l, st, 'rails', counted),
     });
   }
 }
-function landAtStation(l: LineRun, st: StationRun, kind: 'logs' | 'rails') {
+function landAtStation(l: LineRun, st: StationRun, kind: 'logs' | 'rails', counted = true) {
   st.coming[kind]--;
-  st.have[kind]++;
-  st.drawStock({ logs: st.have.logs, rails: st.have.rails });
-  st.setTag(true);
+  if (counted) st.have[kind]++;
+  if (counted || (run.mode === 'idle' && stationOf(l) === st)) {
+    st.drawStock(coop.shown(st));
+    st.setTag(true);
+  }
   if (kind === 'logs') knock(0.7, 1);
   else clank(st.x, st.z);
   thump(st.x, st.z);
   dustRing(st.x, st.y + 0.4, st.z, 2, 0.8, 0.14);
-  if (st.full() && run.mode === 'idle' && stationOf(l) === st) beginFeed(l, st);
+  if (st.full() && run.mode === 'idle' && stationOf(l) === st && !coop.follower()) beginFeed(l, st);
   save();
 }
 
@@ -794,6 +804,7 @@ function takeRails(st: StationRun) {
     });
   }
   if (want > 0) mark('took rails');
+  coop.took('rails', want);
   save();
 }
 let railsIncoming = 0;
@@ -827,6 +838,7 @@ function takeTimber(st: StationRun) {
     });
   }
   if (sent) {
+    coop.took('timber', sent);
     knock(0.6, 0.8);
     save();
   }
@@ -864,7 +876,7 @@ registerInteractable(() => {
       id: 'place-wake',
       verb: 'Wake it up',
       at: promptAt('wake', machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
-      run: wake,
+      run: () => wake(),
     });
   if (s.awake)
     for (const t of TREES) {
@@ -1281,7 +1293,7 @@ function placeMachine() {
   setStationTags();
   if (run.mode === 'idle') {
     const st = stationOf(l);
-    if (st?.full()) beginFeed(l, st);
+    if (st?.full() && !coop.follower()) beginFeed(l, st);
   }
 }
 function snapLines() {
@@ -1339,7 +1351,7 @@ function startOver() {
   atSpawn();
   save();
 }
-onApplied((e: { op: string }) => e.op === 'tune.reset' && startOver());
+onApplied((e: { op: string }) => e.op === 'tune.reset' && !COOP && startOver());
 onGiftSaved(save);
 // A step-up: a crate off the heap sails over to the first new plot, so you can see which cargo built what.
 onStepUp.fn = (kind, first) => {
@@ -1400,6 +1412,7 @@ onFrame(
       snapGifts(gifts0.got, gifts0.order, gifts0.crates);
       snapCrystals(crystals0);
       if (s.awake) setCamp(0, true);
+      coop.arrived();
     }
     if (run.mode === 'feeding') stepFeed(dt);
     if (run.mode === 'waiting' && forge.lit) {
@@ -1492,6 +1505,7 @@ onFrame(
     }
     if (!riding_ && wasRiding) mark('off');
     wasRiding = riding_;
+    coop.tick(dt, now);
   },
   { phase: 'update', order: 10 },
 );
@@ -1506,12 +1520,13 @@ const btn = (text: string, fn: () => void) => {
   e.addEventListener('click', fn);
   box.append(e);
 };
-btn('Start over', () => {
+btn(COOP ? 'Start over (both)' : 'Start over', () => {
+  if (COOP) return coop.askStartOver(box.firstElementChild as HTMLElement);
   if (!submitEdit({ op: 'tune.reset', i: 0, j: 0 })) startOver();
 });
 const hop = (x: number, z: number, yaw: number) => {
   const b = me.body;
-  if (!b) return;
+  if (!b || coop.noHop) return;
   teleport(b, x, H(x, z) + PLAYER_R + 0.4, z);
   b.velocity.set(0, 0, 0);
   carry.x = carry.z = 0;
@@ -1574,11 +1589,34 @@ function skipLine2() {
   save();
 }
 btn('Skip the walk', skipWalk);
-btn('Skip chop and carry', skipDelivery);
-btn('Skip to the forge', skipForge);
-btn('Skip to line 2', skipLine2);
+btn('Skip chop and carry', () => coop.skip('delivery', skipDelivery));
+btn('Skip to the forge', () => coop.skip('forge', skipForge, () => hop(toWorld(-68), 2, -2.3)));
+btn('Skip to line 2', () => coop.skip('line2', skipLine2, () => hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2)));
 (document.querySelector('.hud') ?? document.body).append(box);
 playPanel('place', box);
+coop.setup({
+  lines,
+  machine,
+  run,
+  s,
+  hub,
+  dock,
+  yard,
+  allHeaps,
+  stepsOf,
+  wake,
+  beginFeed,
+  finishStretch,
+  landAtStation,
+  setStationTags,
+  startOver,
+  snapLines,
+  placeMachine,
+  folkState,
+  clearIncoming: () => void (railsIncoming = logsIncoming = 0),
+  save,
+  skips: { delivery: skipDelivery, forge: skipForge, line2: skipLine2 },
+});
 
 // For the look evals (dev/look/evals/place.ts).
 window.__place = {
@@ -1592,6 +1630,7 @@ window.__place = {
   dock,
   yard,
   log,
+  coop,
   TREES,
   TUNE,
   CRANE,

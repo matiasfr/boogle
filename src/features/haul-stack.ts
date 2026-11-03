@@ -112,7 +112,11 @@ function bandAt(f: THREE.Object3D, fit: Fit, k: number, len: number, side: numbe
 // Seams for a haul variant that draws pickups its own way (?proto=haul&v=magnet, src/proto/haul/magnet.ts): with
 // `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
 // count is n (the magnet moves it one arrival at a time). Local.
-export const backSeam = { flyIns: true, count: (n: number) => n };
+export const backSeam = {
+  flyIns: true,
+  count: (n: number) => n,
+  remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
+};
 export const BUNDLE_SCALE = RS;
 /** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
 export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {
@@ -163,7 +167,7 @@ spawn({
     for (const r of remotes.values()) {
       if (!r.visible || !r.avatar) continue;
       const st = stackOf(r.pid);
-      draw(r.avatar, st.n, st.k);
+      draw(r.avatar, backSeam.remote?.(r.peer) ?? st.n, st.k);
     }
     // fly-ins: a short hop from the pile to the top of your bundle
     for (let f = flights.length - 1; f >= 0; f--) {

@@ -185,8 +185,10 @@ export function chop(t: Tree) {
   if (inner) inner.rotation.x = 0.28; // the wind-up, for this one frame's start
   return true;
 }
+/** Under `&coop=1`, ./coop.ts tells the other tab about each stroke. */
+export const chopHooks = { stroke: null as ((t: Tree) => void) | null };
 function contact(t: Tree) {
-  if (!me.body) return;
+  if (!me.body || t.fall >= 0) return; // someone else's stroke can fell it mid-swing
   t.strokes++;
   t.shake = 1;
   const p = me.body.position;
@@ -220,6 +222,7 @@ function contact(t: Tree) {
     logsLanded = 0;
     thump(t.x, t.z);
   }
+  chopHooks.stroke?.(t);
 }
 export const felled = { n: 0 };
 /** Each frame. */

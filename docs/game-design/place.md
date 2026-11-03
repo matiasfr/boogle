@@ -49,6 +49,8 @@ Falling is harmless: in the water, or down on a shore or a river bank more than 
 
 **The tester's link** adds `&fresh=1`: no prototype bar (so no gut question or verdict buttons, and its D-pad and P do nothing), no panel, no shared numbers on the HUD, and no Honk or Ping touch buttons. The counters still run. On touch, the main button dims while nothing's in reach, and the objective sits above the buttons. On every `?proto=place` page the first-run card lists only what this place uses, and the objective and numbers wait until you're in.
 
+**Two players, one railway** (`&coop=1`, its own room `proto-place-coop`; throwaway, for one playtest): waking the machine, trees felled, every deposit, the machine's run, laid track, the forge, line 2 and the town are shared, and the costs stay the same. Your back, chopping response, crates and gifts (each of you gets your own crate), crystals and gold finds are yours; you see your partner's logs on their back and them on your copy of a moving deck. The oldest visible tab decides what a deposit gets and when a run starts, so the last log can't start two, and what doesn't fit stays on your back; if it leaves, the next tab takes over. A newcomer picks up the current job. Start over asks twice and resets you both. How: `src/proto/place/coop.ts`, reliable room messages and a whole-state message once a second; trains run from the world's tick. Serves DESIGN.md 4 (Cooperation is automatic).
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
