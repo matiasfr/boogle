@@ -7,8 +7,15 @@ import ts from 'typescript';
 import type { Allow } from '../level/allow.ts';
 
 export const DEBT_FILES = ['eslint-suppressions.json', 'dev/registry/knots.ts', 'dev/level/allow.ts'];
-type Budget = { label: string; entries: Record<string, number>; countEntries?: boolean };
+type DebtList = 'eslint-suppressions.json' | 'KNOTS' | 'dev/level/allow.ts';
+type Budget = { label: DebtList; entries: Record<string, number>; countEntries?: boolean };
 export type Debt = { budgets: Budget[]; groups: number };
+type Approval = { list: DebtList; key: string; max: number; reason: string };
+
+// Only the owner approves additions; agents must never add entries on their own.
+// Copy the exact list/key printed in a failure; max is the approved total for that key, not an open-ended waiver.
+// Keep the owner's reason here in the diff. Plain registry/check and CI all read this same list.
+export const APPROVED_DEBT: Approval[] = [];
 
 // KNOTS' module imports the source reader; only its literal declaration belongs to this baseline.
 function knotsOf(text: string): string[][] {
@@ -71,13 +78,28 @@ export function debtCounts(debt: Debt): string {
   return `suppressions ${total(s!)}; knots ${debt.groups} groups/${total(k!)} members; allowances ${Object.keys(a!.entries).length} entries/${total(a!)} max`;
 }
 
-export function compareDebt(base: Debt, head: Debt): string[] {
+export function compareDebt(base: Debt, head: Debt, approvals: Approval[] = APPROVED_DEBT): string[] {
+  for (const a of approvals) {
+    if (!a.reason.trim() || !a.key.trim() || !Number.isSafeInteger(a.max) || a.max < 1)
+      return [
+        `invalid APPROVED_DEBT entry for ${a.list} / ${a.key}: needs an owner's reason and a positive integer max`,
+      ];
+  }
   return head.budgets.flatMap((h, i) => {
     const b = base.budgets[i]!;
-    const count = Object.keys(h.entries).length;
+    // Remove only the approved increment at its exact key. It cannot subsidize growth at another key or list,
+    // and once the addition is in the base it grants no extra budget to future branches.
+    const entries = Object.fromEntries(
+      Object.entries(h.entries).flatMap(([key, n]) => {
+        const a = approvals.find((a) => a.list === h.label && a.key === key);
+        const approved = a ? Math.max(0, Math.min(n, a.max) - (b.entries[key] ?? 0)) : 0;
+        return n > approved ? [[key, n - approved]] : [];
+      }),
+    );
+    const count = Object.keys(entries).length;
     const oldCount = Object.keys(b.entries).length;
-    if (total(h) <= total(b) && (!h.countEntries || count <= oldCount)) return [];
-    const additions = Object.entries(h.entries)
+    if (total({ ...h, entries }) <= total(b) && (!h.countEntries || count <= oldCount)) return [];
+    const additions = Object.entries(entries)
       .filter(([key, n]) => n > (b.entries[key] ?? 0))
       .map(([key, n]) => `${key} (+${n - (b.entries[key] ?? 0)})`);
     return [

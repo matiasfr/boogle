@@ -1,8 +1,8 @@
 // npm run registry [-- --base <ref>]: checks the shared registries (dev/registry/scan.ts) and the import knots
 // (dev/registry/knots.ts) in this tree, then diffs the registries against <ref> (default origin/main, skipped if it
 // isn't there) for changes that break mixed-build rooms.
-// `--json` prints this tree's registry instead. --owner-approved-debt <reason> permits intentional debt growth
-// only with explicit owner approval; agents must never select it themselves.
+// `--json` prints this tree's registry instead. Intentional debt growth needs a committed, key-specific owner
+// approval in debt.ts, so plain registry and check enforce the same policy locally and in CI.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -85,16 +85,13 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
       env: { ...process.env, GIT_NO_LAZY_FETCH: '1' },
     });
   try {
-    if (git('rev-parse', '--is-shallow-repository').toString().trim() === 'true')
-      return {
-        dir: null,
-        note: 'shallow checkout: skipped mixed-build and debt baseline comparisons (local history only; no fetch)',
-      };
+    // CI has shallow history but fetches main's tree. Comparing trees needs no merge base or parent history.
     git('rev-parse', '--verify', '-q', `${ref}^{commit}`);
   } catch {
     return { dir: null, note: `no local base ${ref}: skipped mixed-build and debt baseline comparisons (no fetch)` };
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-registry-'));
+  let tar: Buffer;
   try {
     // Old bases may predate one of the lists. Archive only paths actually in that local tree.
     const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES)
@@ -102,9 +99,7 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
       .trim()
       .split('\n')
       .filter(Boolean);
-    const tar = git('archive', ref, 'src', 'test/helpers', 'test/fixtures', ...debtPaths);
-    execFileSync('tar', ['-x', '-C', dir], { input: tar });
-    return { dir };
+    tar = git('archive', ref, 'src', 'test/helpers', 'test/fixtures', ...debtPaths);
   } catch {
     fs.rmSync(dir, { recursive: true, force: true });
     return {
@@ -112,14 +107,19 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
       note: `base ${ref} unavailable locally: skipped mixed-build and debt baseline comparisons (no fetch)`,
     };
   }
+  try {
+    execFileSync('tar', ['-x', '-C', dir], { input: tar });
+    return { dir };
+  } catch (error) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    throw error; // A local extraction failure is not permission to skip a readable base.
+  }
 }
 
 const args = process.argv.slice(2);
-const approvalAt = args.indexOf('--owner-approved-debt');
-const approval = approvalAt < 0 ? undefined : args[approvalAt + 1];
-if (approvalAt >= 0 && (!approval?.trim() || approval.startsWith('--'))) {
+if (args.includes('--owner-approved-debt')) {
   console.error(
-    'registry: --owner-approved-debt needs the explicit owner-approved reason; agents must not use it on their own',
+    'registry: --owner-approved-debt was removed; owner-approved additions must be committed in APPROVED_DEBT in dev/registry/debt.ts. Agents must never add entries on their own.',
   );
   process.exit(1);
 }
@@ -151,15 +151,12 @@ if (dir) {
     else {
       const baseDebt = await debtOf(dir);
       notes.push(`debt base ${baseRef}: ${debtCounts(baseDebt)}`);
-      const growth = compareDebt(baseDebt, currentDebt);
-      if (growth.length && approval) notes.push(`OWNER-APPROVED debt growth (${approval}): ${growth.join('; ')}`);
-      else
-        errors.push(
-          ...growth.map(
-            (g) =>
-              `${g}. Remove the growth; only an explicit owner-approved change may use --owner-approved-debt <reason>. Agents must not use it on their own.`,
-          ),
-        );
+      errors.push(
+        ...compareDebt(baseDebt, currentDebt).map(
+          (g) =>
+            `${g}. If these additions aren't yours, main may have shrunk the list since your branch was cut; rebase on main. Otherwise remove the growth or obtain owner approval recorded by list/key/count/reason in APPROVED_DEBT in dev/registry/debt.ts. Only the owner approves; agents must never add entries on their own.`,
+        ),
+      );
     }
     const diff = compareRegistries(await registryOf(dir), head);
     errors.push(...diff.errors);
