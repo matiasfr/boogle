@@ -1,4 +1,4 @@
-// The same confirmed local restart on the pause menu and its You page.
+// The confirmed local restart on the main pause menu.
 import { freshStart, startFresh } from './arrival.ts';
 
 export function freshButton(): HTMLElement[] {
