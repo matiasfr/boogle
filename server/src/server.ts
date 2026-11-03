@@ -77,10 +77,12 @@ export function loadConfig(
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
     upgradesPerMin: Number(env.UPGRADES_PER_MIN) || 20, // room sockets per IP
-    playRatePerMin: Number(env.PLAY_RATE_PER_MIN ?? 240), // POST /playdata per IP: 8 friends on one network, batching
-    playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES ?? 4 * 1024 * 1024),
-    playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES ?? 200 * 1024 * 1024),
-    playMaxSessions: Number(env.PLAY_MAX_SESSIONS ?? 2000),
+    // || so a malformed value falls back rather than a NaN turning a cap off.
+    playRatePerMin: Number(env.PLAY_RATE_PER_MIN) || 240, // POST /playdata per IP: 8 friends on one network, batching
+    playNewSessionsPerHour: Number(env.PLAY_NEW_SESSIONS_PER_HOUR) || 40, // per IP; each page load is a session
+    playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES) || 4 * 1024 * 1024,
+    playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES) || 200 * 1024 * 1024,
+    playMaxSessions: Number(env.PLAY_MAX_SESSIONS) || 2000,
     log: (...a: unknown[]) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -99,10 +101,10 @@ export type ServerConfig = {
   maxPlayers: number;
   upgradesPerMin: number;
   playRatePerMin: number;
+  playNewSessionsPerHour: number;
   playMaxSessionBytes: number;
   playMaxTotalBytes: number;
   playMaxSessions: number;
-  playCards?: string[]; // tests only (./playdata.ts)
   serverSaveMs: number;
   roomIdleMs: number;
   maxHostedRooms: number;

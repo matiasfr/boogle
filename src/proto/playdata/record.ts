@@ -115,7 +115,7 @@ async function pump() {
         backoff = SEND_MS;
         if (pending === body) pending = null;
         if (sentBytes > SESSION_BYTES) stop('this session is full');
-      } else if (status === 400 || status === 413 || status === 422 || status === 507) {
+      } else if (status === 400 || status === 413 || status === 507) {
         stop(`the server says ${status}`); // sending the same again won't help
       } else {
         backoff = Math.min(BACKOFF_MAX_MS, backoff * 2);

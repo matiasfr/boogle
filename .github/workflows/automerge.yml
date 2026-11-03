@@ -170,7 +170,7 @@ jobs:
         run: |
           gh workflow run deploy.yml --ref main
           gh workflow run ci.yml --ref main
-          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/net/ids\.ts|src/net/ws-wire\.ts|protos/protos\.ts|\.dockerignore)'; then
+          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/net/ids\.ts|src/net/ws-wire\.ts|\.dockerignore)'; then
             gh workflow run deploy-server.yml --ref main
           fi
           # The atlas upkeep's gate (atlas.yml) decides whether a merge matters; this only wakes it. A GITHUB_TOKEN
