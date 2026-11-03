@@ -7,6 +7,7 @@ import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { teleport } from '../../../src/physics/engine.ts';
+import { carry, type Platform } from '../../../src/physics/platforms.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -137,11 +138,13 @@ export async function play() {
       }
       if (st.wants('logs') - b.logs > 0 && b.room() > 0) {
         if (place.rack.on && (st as unknown as { spec: { rack?: string } }).spec.rack) {
-          let w = 0;
           await travel(place.rack.x, place.rack.z, 2.6);
-          while (place.rack.logs <= 0 && w++ < 300) await wait(200);
+          // A delivery lands one log at a time. Taking its first log races the rest of the stream and
+          // turns one carry into several trips (and sometimes a whole extra cart cycle).
+          const load = Math.min(st.wants('logs') - b.logs, b.room());
+          await waitFor(() => place.rack.logs >= load, 60000, `${st.spec.id} rack load of ${load} logs`);
           press();
-          await wait(800);
+          await waitFor(() => b.incoming === 0, 3000, `${st.spec.id} logs on the back`);
         } else await chopUntil(() => st.wants('logs') - b.logs <= 0);
       }
       if (b.logs + b.rails + b.stone > 0 || b.big) {
@@ -381,7 +384,10 @@ export async function play() {
     return pl;
   };
   const ride = async (
-    l: { k: number; train: { tr: { stop: number; cars: { body: { position: { x: number; z: number } } }[] } } },
+    l: {
+      k: number;
+      train: { tr: { stop: number; cars: { body: { position: { x: number; z: number } }; platform: Platform }[] } };
+    },
     h: { x: number; z: number; stop: number; k: number },
   ) => {
     await travel(h.x, h.z, 1);
@@ -389,9 +395,22 @@ export async function play() {
     const callAt = now();
     await waitFor(() => l.train.tr.stop === h.stop, 90000, 'the train coming');
     note(`waited ${(now() - callAt).toFixed(1)} s`);
-    const c = l.train.tr.cars[1]!.body.position;
-    await bot.straight(c.x, c.z, 0.9, 5000);
-    note('aboard?');
+    const car = l.train.tr.cars[1]!;
+    const c = car.body.position;
+    face(c.x, c.z);
+    pressJump();
+    input.keys.add('KeyW');
+    await wait(330);
+    releaseJump();
+    const end = performance.now() + 3500;
+    while (carry.on !== car.platform && performance.now() < end) {
+      face(c.x, c.z);
+      if (bot.dist(c.x, c.z) < 0.5) input.keys.delete('KeyW');
+      await wait(40);
+    }
+    input.keys.delete('KeyW');
+    bot.check('aboard the train', carry.on === car.platform);
+    note('aboard');
   };
   const halts = place.halts;
   if (lobe(body.position.x, body.position.z) === 'n') {
