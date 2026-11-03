@@ -7,6 +7,7 @@
 - Everything else was only in your own tab: the place prototype got sea and gull sounds, little guys who walk and chatter, decks you can sit on, and crystals; touch players can sprint by pushing the stick far; the soapbox left the island. Nothing else in the picture moved.
 - Later the same day: those playtest notes now actually get written. Any prototype page quietly sends a diary of the session to the server (where you walked, what you pressed, where you got stuck, how smooth it ran), unless you add `&notrack=1`, and the team reads it back with a heat map, like a coach watching game tape. It travels straight to the server, not to other players, so no arrow in the picture moved.
 - Later still, only small fixes landed: the server guards that playtest diary better, limiting how many sessions one visitor can send in an hour and keeping real play sessions longest, like a guestbook that throws out spam before signatures. Nothing in the picture moved.
+- Last of the day: the place prototype grew a whole job (chop by hand, then a better axe, a cart, a second line over the sea, trains that come when you call), and the two-player version now sends those new pieces through the same referee and the same once-a-second scoreboard, so [two of you build one railway](#story/coop) still tells it right. A new water prototype (`?proto=water`) paints waves and shoreline foam only in your own tab, like a painted backdrop, and the rest was tools for agents to watch and measure the game. Nothing in the picture moved.
 
 ## 2026-11-02
 

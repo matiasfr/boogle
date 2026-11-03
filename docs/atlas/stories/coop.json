@@ -50,7 +50,7 @@
     {
       "go": [["fr.features", "lane:msg", "you.features", "you.screen"]],
       "text": "Once a second the authority sends the whole shared railway. A late joiner is caught up by it, and a tab that drifted is put right.",
-      "code": "msg({ k: 'snap', snap: snapshot(a) })",
+      "code": "msg({ k: 'snap', snap: snapshot() })",
       "cite": [
         {
           "message": "placeCoop"
