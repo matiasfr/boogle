@@ -60,7 +60,7 @@ Stop at the owner's playtest: when this list is done, or what's left needs the o
 1. [x] Astra: check abilities with two players; capture the rim slab and tower posts.
 2. [x] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
 3. [x] Terra, then Astra: build `docs/plans/two-player.md`.
-4. [ ] Astra: simplify round 4's whole batch once 1 to 3 are on main: fold duplicates, remove dead code, no behaviour change. Check with `npm run playthrough -- --compare` and `npm run sim -- replay`. Keep The Boogler's copy.
+4. [x] Astra: simplify round 4's whole batch once 1 to 3 are on main: fold duplicates, remove dead code, no behaviour change. Check with `npm run playthrough -- --compare` and `npm run sim -- replay`. Keep The Boogler's copy. Folded spatial searches, room floors and deposit flights; removed unused helpers. All expected solo actions completed, replay unchanged, `check` passed. [Mainline architecture findings](mainline-architecture.md) are recorded for later, not implemented.
 5. [ ] Astra: the whole-run pass above, last.
 
 ## Left out for now
