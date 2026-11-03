@@ -21,6 +21,8 @@ export type DropSet = BoxSet & {
   drop: (k: number, h: number, delay?: number) => void;
   /** Piece k is there, or not, with no show. */
   snap: (k: number, on: boolean) => void;
+  /** Piece k, `y` metres above or below its place. */
+  lift: (k: number, y: number) => void;
   update: (dt: number) => void;
   busy: () => boolean;
   /** Whatever's in the air stops where it is: start over. */
@@ -68,6 +70,10 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
         }
         set.mesh.instanceMatrix.needsUpdate = true;
       }
+    },
+    lift(k, y) {
+      write(k, y, 0);
+      set.mesh.instanceMatrix.needsUpdate = true;
     },
     busy: () => air.length > 0,
     clear: () => void (air.length = 0),

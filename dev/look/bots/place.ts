@@ -1,7 +1,8 @@
 // The bot for ?proto=place, `shot=play` in ./../evals/place-job.ts: plays the whole round with real input, at a person's pace.
 // `npm run playthrough` runs it. Moving about, notes and checks are ../bot.ts; this is only what this round asks of you. A new
 // beat goes here: say what you expect with `bot.until(..., what)`, so a beat that doesn't come is on the record.
-import { makeBot } from '../bot.ts';
+import { makeBot, type Bot } from '../bot.ts';
+import { interactTarget } from '../../../src/player/hands.ts';
 import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
@@ -410,8 +411,104 @@ export async function play() {
   const pier = L2.stations[5];
   await bill(pier);
   await lay(pier);
+  note(`THE JOB IS DONE at ${now().toFixed(1)}`);
+  // Home the way a person would by now: the train.
+  const head = halts.find((h: { name: string }) => h.name === 'Far Head');
+  await ride(L2, head);
+  await waitFor(() => L2.train.tr.stop === 0, 120000, 'the ride home from Far Head');
+  await wait(800);
+  await townTour(bot, place);
   await tour();
   bot.finish(
     `$${place.money()}, ${place.job.people} people, ${place.job.score.logs} logs, ${(place.job.score.metres / 1000).toFixed(2)} km`,
   );
+}
+// The town, after the job, so a visit doesn't move the job's times: in and out of each building with real input, every talk and the
+// shop's three presses. `bot.walk` finds the doors by itself.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function townTour(bot: Bot, place: any) {
+  const town = place.town;
+  const at = (id: string, lx: number, lz: number) => {
+    const r = town.rooms[id];
+    return {
+      x: r.x + lx * Math.cos(r.yaw) + lz * Math.sin(r.yaw),
+      z: r.z - lx * Math.sin(r.yaw) + lz * Math.cos(r.yaw),
+    };
+  };
+  const walkIn = async (id: string) => {
+    const r = town.rooms[id];
+    const q = at(id, 0, r.d / 2 - 1.2);
+    await bot.walk(q.x, q.z, 0.8, { limit: 240000 });
+    bot.check(`walked into the ${id}`, await bot.until(() => town.indoors.inside?.id === id, 4000));
+    bot.note(`in the ${id}`);
+  };
+  const walkOut = async (id: string) => {
+    const r = town.rooms[id];
+    const q = at(id, 0, r.d / 2 + 6);
+    await bot.walk(q.x, q.z, 1);
+    bot.check(`walked out of the ${id}`, town.indoors.inside?.id !== id);
+    bot.note(`out of the ${id}`);
+  };
+  const tap = async (code: string) => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    await bot.wait(120);
+  };
+  /** Says hello, reads each line (skipping the typing), asks `asks`, then Bye. */
+  const talk = async (who: string, asks: string[]) => {
+    const g = town.guys[who];
+    await bot.use(g.x, g.z, `a talk with ${who}`, /Talk/);
+    await bot.until(() => town.talking(), 2000, `talked to ${who}`);
+    for (let k = 0; k < 12 && town.talking(); k++) {
+      // The typing; only while it types, since on a finished line the same key says the picked answer.
+      if (document.querySelector<HTMLElement>('.place-talk-opts')?.hidden) await tap('KeyE');
+      await bot.wait(500);
+      const opts = [...document.querySelectorAll('.place-talk-opts button')].map((b) => b.textContent ?? '');
+      bot.note(`${who}: ${document.querySelector('.place-talk-say')?.textContent ?? ''}`);
+      const next = opts.findIndex((o) => asks.includes(o));
+      if (next >= 0) {
+        asks.splice(asks.indexOf(opts[next]!), 1);
+        await tap(`Digit${next + 1}`);
+      } else await tap(`Digit${(opts.includes('Go on') ? 0 : opts.indexOf('Bye')) + 1}`);
+      await bot.wait(400);
+    }
+    bot.check(`said everything to ${who}`, asks.length === 0);
+  };
+  const stand = (id: string, lx: number, lz: number) => at(id, lx, lz);
+  bot.note('the town');
+  await walkIn('house');
+  await talk('pip', ['What sort of job?', 'The Boogler?']);
+  await walkOut('house');
+  await walkIn('shop');
+  // Right up to the stand: the button goes to whichever's nearest.
+  const up = (lz: number) => bot.walk(stand('shop', 2.9, lz).x, stand('shop', 2.9, lz).z, 0.5);
+  await up(-1.9);
+  const hat = stand('shop', 3.8, -1.9);
+  await bot.use(hat.x, hat.z, 'trying on the paper hat', /Try on/);
+  await bot.wait(600);
+  bot.check(`the shop offered it for $0, not ${interactTarget()?.verb}`, /\$0/.test(interactTarget()?.verb ?? ''));
+  bot.press();
+  await bot.wait(1500);
+  bot.check('took the paper hat', place.giftState.bought.includes('paperhat'));
+  const rail = stand('shop', 1, -3.45);
+  await bot.use(rail.x, rail.z, 'the rail', /Swap/);
+  await bot.wait(600);
+  // Round Nell, who's nearer on the way: the button talks to whoever's closest.
+  await bot.walk(stand('shop', -3, -1.1).x, stand('shop', -3, -1.1).z, 0.8);
+  await talk('button', ['Who sets the prices?', 'The Boogler?']);
+  await talk('nell', ['The Boogler?']);
+  await up(0.2);
+  const badge = stand('shop', 3.8, 0.2);
+  await bot.use(badge.x, badge.z, 'trying on the button', /Try on/);
+  await bot.wait(500);
+  await walkOut('shop');
+  await bot.wait(2500);
+  bot.check('walking out wearing it keeps it', place.giftState.bought.includes('bigbutton'));
+  await walkIn('museum');
+  await talk('moss', ['Where did the stone come from?', 'The Boogler?']);
+  await talk('wren', ['The Boogler?']);
+  const q = stand('museum', 3.9, 1.05);
+  await bot.walk(q.x, q.z, 1);
+  await bot.wait(2500);
+  await walkOut('museum');
+  bot.note(`kept from the shop: ${place.giftState.bought.join(', ')}`);
 }

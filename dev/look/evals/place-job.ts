@@ -34,6 +34,17 @@ const toStage = async (k: number) => {
   }
   await wait(200);
 };
+/** The room in &in=, with the town at &stage=. */
+const townAt = async () => {
+  const stage = q.get('stage') ?? 'path';
+  if (stage === 'path') place.skipPath();
+  if (stage === 'line2') place.skipLine2();
+  if (stage === 'trains') place.skipTrains();
+  const r = place.town.rooms[q.get('in') ?? 'house'];
+  while (r.site.state !== 'done') await wait(200);
+  await wait(600);
+  return r;
+};
 const SHOTS: Record<string, () => Promise<unknown> | unknown> = {
   /** The day at &u=: 0.26 the start, 0.7 late afternoon, 0.76 golden, 0.85 night. */
   async day() {
@@ -319,6 +330,72 @@ const SHOTS: Record<string, () => Promise<unknown> | unknown> = {
     if (to === 'head') place.skipHead();
     if (to === 'trains') place.skipTrains();
     follow();
+  },
+  /** A building: &in=house,shop,museum. Starts outside its door; the action walks in, stops in the middle, turns right round and
+   * walks out. &stage= (`path`, the default; `line2`, `trains`; anything else leaves it at the start). */
+  async room() {
+    const r = await townAt();
+    const out = r.d / 2 + 9;
+    put(r.x + Math.sin(r.yaw) * out, r.z + Math.cos(r.yaw) * out, r.yaw);
+    follow();
+    act(async () => {
+      const { input } = (await import(
+        '/src/player/input.ts' as string
+      )) as typeof import('../../../src/player/input.ts');
+      input.keys.add('KeyW');
+      await wait(Math.round((out + 1) * 180));
+      input.keys.delete('KeyW');
+      await wait(1800);
+      for (let k = 0; k < 100; k++) {
+        cam.yaw += 0.063;
+        await wait(40);
+      }
+      const door = { x: r.x + Math.sin(r.yaw) * (r.d / 2 + 7), z: r.z + Math.cos(r.yaw) * (r.d / 2 + 7) };
+      input.keys.add('KeyW');
+      for (let k = 0; k < 90; k++) {
+        cam.yaw = me.yaw = Math.atan2(-(door.x - body.position.x), -(door.z - body.position.z));
+        await wait(40);
+      }
+      input.keys.delete('KeyW');
+    });
+  },
+  /** Stands by a resident or a shop's stand and presses Interact, with the follow camera: &in=house &stand=1.6,-0.9 &face=1.6,-3 &press=1. */
+  async press() {
+    const r = await townAt();
+    place.earn(Number(q.get('money') ?? 16000));
+    const world = (lx: number, lz: number) => ({
+      x: r.x + lx * Math.cos(r.yaw) + lz * Math.sin(r.yaw),
+      z: r.z - lx * Math.sin(r.yaw) + lz * Math.cos(r.yaw),
+    });
+    const [sx, sz] = (q.get('stand') ?? '1.6,-0.9').split(',').map(Number) as [number, number];
+    const [fx, fz] = (q.get('face') ?? '1.6,-3').split(',').map(Number) as [number, number];
+    const at = world(sx, sz),
+      to = world(fx, fz);
+    put(at.x, at.z, Math.atan2(-(to.x - at.x), -(to.z - at.z)), 0.9);
+    follow();
+    act(async () => {
+      const h = await import('/src/player/hands.ts' as string);
+      for (let k = 0; k < Number(q.get('press') ?? 1); k++) {
+        console.log('PRESS', h.interactTarget()?.verb);
+        h.interactDown();
+        h.interactUp();
+        await wait(1100);
+      }
+    });
+  },
+  /** A building seen from room space: &in=house,shop,museum &cam=x,y,z &at=x,y,z &stand=x,y,z &stage=... */
+  async roomcam() {
+    const r = await townAt();
+    const world = (s: string) => {
+      const [x, y, z] = s.split(',').map(Number) as [number, number, number];
+      const c = Math.cos(r.yaw),
+        n = Math.sin(r.yaw);
+      return [r.x + x * c + z * n, r.y + y, r.z - x * n + z * c] as V3t;
+    };
+    const stand = world(q.get('stand') ?? '0,0,0');
+    put(stand[0], stand[2], r.yaw + Math.PI, 0.9);
+    await wait(1500);
+    frame(world(q.get('cam') ?? '0,6,8'), world(q.get('at') ?? '0,1,0'), 50);
   },
   /** The whole job with real input: dev/look/bots/place.ts. &from=path,line2,head,trains starts part way. */
   play: async () => {
