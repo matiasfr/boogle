@@ -14,7 +14,8 @@ import type { PlaySession } from '../../server/src/playdata.ts';
 import { sketchOf } from './beats.ts';
 import { writeHeatMap } from './heat.ts';
 import { parseSession, span, str, type Session } from './read.ts';
-import { compare, summarize } from './summary.ts';
+import { UNTRUSTED, compare, summarize } from './summary.ts';
+import { cleanText } from '../../server/src/clean-text.ts';
 
 const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
 const OUT = path.join(ROOT, '.look/playtest');
@@ -68,6 +69,7 @@ function resolve(list: PlaySession[], want: string) {
 function printList(list: PlaySession[]) {
   const rows = list.filter(isPerson).slice(0, 25);
   if (!rows.length) return console.log('No sessions yet.');
+  console.log(UNTRUSTED);
   for (const s of rows) {
     const when = s.first.slice(0, 16).replace('T', ' ');
     const secs = (Date.parse(s.last) - Date.parse(s.first)) / 1000;
@@ -76,12 +78,12 @@ function printList(list: PlaySession[]) {
       [
         s.id.padEnd(24),
         when,
-        (s.card || '?').padEnd(10),
-        (str(m.name) || '?').padEnd(12),
-        (str(m.device) || '?').padEnd(8),
+        (cleanText(s.card) || '?').padEnd(10),
+        (cleanText(str(m.name)) || '?').padEnd(12),
+        (cleanText(str(m.device)) || '?').padEnd(8),
         span(secs).padEnd(11),
         `${Math.round(s.bytes / 1024)} KB`,
-        str(m.room),
+        cleanText(str(m.room)),
       ].join('  '),
     );
   }
@@ -94,7 +96,7 @@ try {
     if (!a || !b) throw new Error('--compare needs two sessions');
     const left = await download(resolve(list, a).id);
     const right = await download(resolve(list, b).id);
-    console.log(compare(left, right).join('\n'));
+    console.log([UNTRUSTED, '', ...compare(left, right)].join('\n'));
   } else if (!args[0]) {
     printList(list);
   } else {
@@ -110,7 +112,7 @@ try {
       }
     const sketch = await sketchOf(session.card);
     const places = sketch?.places ?? [];
-    const lines = summarize(session, mates, places);
+    const lines = [UNTRUSTED, '', ...summarize(session, mates, places)];
     for (const m of mates) lines.push('', ...summarize(m, [], places));
     const text = lines.join('\n');
     console.log(text);

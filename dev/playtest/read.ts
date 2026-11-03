@@ -2,6 +2,7 @@
 // time `at` and the page's clock `now`, so `wall = at - (now - t)` puts two players' events on one timeline whatever
 // their own clocks say. A retried batch arrives twice with one number: the repeat goes.
 import type { PlayEvent, PlayLine } from '../../server/src/playdata.ts';
+import { cleanText } from '../../server/src/clean-text.ts';
 
 export type Ev = PlayEvent & { wall: number };
 export type Session = {
@@ -30,9 +31,14 @@ export function parseSession(id: string, text: string): Session {
     }
     if (seen.has(l.n)) continue;
     seen.add(l.n);
-    card ||= l.card;
+    card ||= cleanText(String(l.card));
     const at = Date.parse(l.at);
-    for (const e of l.ev) events.push({ ...e, wall: at - (l.now - e.t) * 1000 });
+    for (const e of l.ev) {
+      // Stripped here too: what's on disk may be older than the server's cleaning, and this ends up in a terminal.
+      const clean: PlayEvent = { ...e };
+      for (const [k, v] of Object.entries(e)) if (typeof v === 'string') clean[k] = cleanText(v);
+      events.push({ ...clean, wall: at - (l.now - e.t) * 1000 });
+    }
   }
   events.sort((a, b) => a.t - b.t);
   let meta: Record<string, unknown> = {};

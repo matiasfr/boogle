@@ -11,9 +11,6 @@ COPY server/src ./server/src
 COPY src/world ./src/world
 COPY src/sim ./src/sim
 COPY src/net/ids.ts src/net/ws-wire.ts ./src/net/
-# The cards POST /playdata accepts (server/src/playdata.ts).
-COPY protos/protos.ts ./protos/
-COPY src/proto/flags.ts ./src/proto/
 # su-exec (a tiny Alpine package) lets the start command drop root; see CMD.
 RUN apk add --no-cache su-exec && mkdir -p /data && chown -R node:node /data /app
 ENV DATA_DIR=/data PORT=9000

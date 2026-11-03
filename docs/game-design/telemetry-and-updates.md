@@ -15,8 +15,8 @@
   CPU section line every 30 s, and each different error once. No audio and no typed text but the name and the verdict's
   note; no GPU time, since it needs `?prof=1`'s timestamps. Batches go every 5 s and when the tab hides (`sendBeacon`),
   with a queue of 4000 events while offline and 3.5 MB per session.
-  The server (`POST /playdata`) validates and caps it: 64 KB a body, 4 MB a session, 200 MB in all with the oldest sessions
-  deleted first, cards in `protos/protos.ts` only. `npm run playtest` lists sessions; `npm run playtest -- latest` (or an
+  The server (`POST /playdata`) validates and caps it: 64 KB a body, 4 MB a session, 40 new sessions per IP an hour, 200 MB
+  in all with the oldest sessions deleted first, those that look played (a name, over a minute) last. `npm run playtest` lists sessions; `npm run playtest -- latest` (or an
   id, or `--compare a b`) downloads to `.look/playtest/`, prints a summary and draws a heat map.
   A prototype adds beats with `playMark('crate opened', { kind: 'hat' })`, `playObjective(text)` and `playWhere(fn)` from
   `src/proto/mark.ts`; `protoMark` and `protoCount` already reach it. Local.

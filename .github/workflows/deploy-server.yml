@@ -13,7 +13,6 @@ on:
       - 'src/sim/**'
       - 'src/net/ids.ts'
       - 'src/net/ws-wire.ts'
-      - 'protos/protos.ts' # the cards POST /playdata accepts
       - 'package.json'
       - '.dockerignore'
       - '.github/workflows/deploy-server.yml'
