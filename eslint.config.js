@@ -8,7 +8,8 @@ const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) 
   message: 'Physics goes through src/physics/engine.ts (docs/plans/done/rapier.md).',
 }));
 const simMessage = 'src/sim/ is pure logic: no three.js, physics, DOM or other src/ modules.';
-const rulesMessage = 'src/world/rules/ is lockstep only: src/sim/, ../grid.js and sibling rules (see its README).';
+const rulesMessage =
+  'src/world/rules/ is lockstep only: src/sim/, ../grid.ts and sibling rules (docs/agents/lockstep.md).';
 const netplayMessage = 'src/netplay/ is infrastructure: expose a hook and let the game side subscribe (see net.ts).';
 // Browser and timer globals a rules module must not read (src/world/rules/README.md).
 const RULES_GLOBALS = [
@@ -26,7 +27,7 @@ const syncBan = {
   group: ['**/world/sync.{js,ts}', './sync.{js,ts}'],
   importNames: ['registerOp', 'registerState', 'onTick'],
   message:
-    'Lockstep ops/state/ticks live in src/world/rules/<name>.js (see its README). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
+    'Lockstep ops/state/ticks live in src/world/rules/<name>.ts (docs/agents/lockstep.md). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
 };
 // src/world/ runs on the server too (server/src/host/world-host.ts) and src/net/ is only the room layer: neither may
 // reach the renderer, the player or a feature.
@@ -48,7 +49,7 @@ const debugBan = {
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
 export const LOCKSTEP_FILES = ['src/sim/**/*.{js,ts}', 'src/world/rules/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
-const det = (what) => `${what} is not deterministic across browsers; see DESIGN.md "Determinism from day one".`;
+const det = (what) => `${what} is not deterministic across browsers; see docs/agents/lockstep.md.`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh']
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
   .map((property) => ({ object: 'Math', property, message: det(`Math.${property}`) + ' Use a table or polynomial.' }));

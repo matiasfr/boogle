@@ -4,6 +4,8 @@ Before reviewing instruction coverage or proposing enforcement, use this audit o
 
 Evidence: [lint configuration](../../eslint.config.js), [registry comparison](../../dev/registry/scan.ts), [sync tests](../../test/world-sync.test.ts), [replay](../../test/world-replay.test.ts), [snapshot tests](../../test/world-snapshots.test.ts), [presence tests](../../test/presence-fields.test.ts). “Prose only” means no general enforcement of the obligation: a helper test or import ban does not prove every consumer obeys it. Tests cover exercised cases, not arbitrary future code. No listed room rule is enforced by level-check; it checks level reachability and geometry.
 
+Count: 20 rows are primarily prose-only; 8 more have an explicitly named prose-only remainder alongside enforcement. All 28 gaps have path reminders. These are obligations grouped as shown below, not a count of sentences or test cases.
+
 Path key: W = src/world/AGENTS.md; S = src/sim/AGENTS.md; N = src/net/AGENTS.md; P = src/netplay/AGENTS.md; F = src/features/AGENTS.md; E = src/entities/AGENTS.md; R = src/render/AGENTS.md; H = server/AGENTS.md; C = .claude/rules/state-consumers.md (adapters/player). Each nested file has a matching Claude paths rule. Codex at root must read the nested file explicitly, as its launch loader does not follow touched paths.
 
 | Source / rule | Enforcement and limits | Path reminder |

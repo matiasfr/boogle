@@ -15,6 +15,7 @@ import { checkTaskRoutes } from '../scan/task-routes.ts';
 import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
 import { PROTOS } from '../../protos/protos.ts';
 import { prototypeReport } from './prototypes.ts';
+import { checkAgentDocs } from './agent-docs.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -131,16 +132,18 @@ if (baseRef === undefined) {
   process.exit(1);
 }
 const head = await registryOf(ROOT);
+const agentDocs = checkAgentDocs(ROOT);
 const prototypeStarted = performance.now();
 const prototypeFacts = prototypeReport(sources(ROOT), PROTOS);
 prototypeFacts.elapsedMs = Number((performance.now() - prototypeStarted).toFixed(2));
 
 if (args.includes('--json')) {
-  console.log(JSON.stringify({ ...head, ...prototypeFacts }, null, 2));
-  process.exit(prototypeFacts.errors.length ? 1 : 0);
+  console.log(JSON.stringify({ ...head, ...prototypeFacts, agentDocs }, null, 2));
+  process.exit(prototypeFacts.errors.length || agentDocs.errors.length ? 1 : 0);
 }
 
 const errors = [
+  ...agentDocs.errors,
   ...checkRegistry(head),
   ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS),
   ...checkTaskRoutes(ROOT),
@@ -148,6 +151,7 @@ const errors = [
 ];
 const { dir, note } = baseTree(baseRef);
 const notes: string[] = [];
+notes.push(`agent launch docs: ${agentDocs.elapsedMs} ms (3,000/1,000-byte budgets and launch imports)`);
 notes.push(
   `prototype dependencies: ${prototypeFacts.prototypes.length} cards, ${prototypeFacts.elapsedMs} ms (JSON has owner-review notes)`,
 );

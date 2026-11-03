@@ -69,4 +69,3 @@ resuming a Codex **conversation**. Sandboxed task workers use the broker command
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
 - `npm ci && npm run check` before committing (`check:full` per docs/agents/tests.md, "Tests"). The runner has no GPU, so `check:gpu` (smoke) can't run there; for networking or rendering changes say so in the PR, and the live smoke after the deploy (`smoke.yml`) is the check.
 - Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (docs/agents/shipping.md, "Shipping", required by AGENTS.md): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.
-

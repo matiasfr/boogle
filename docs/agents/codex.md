@@ -12,4 +12,3 @@ Codex can do what Claude Code does here; `.codex/` sets it up (config, `rules/bo
 - **Shipping.** `npm run ship` hands a rebase conflict back to you rather than starting Claude Code. Resolve it keeping both changes and rerun. A push, green CI, merge and deployment are separate states; report only the ones verified.
 
 Codex discovers AGENTS.md only along the path from the repository root to its working directory; touching a deeper file does not load its nested instructions. Root-started workers must follow the root trigger table and explicitly read the matching nested AGENTS.md. Claude path rules provide matching-file pointers; none are launch imports.
-
