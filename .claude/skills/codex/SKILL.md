@@ -30,6 +30,8 @@ Previz is not concept art: it pictures *this* game at its best (DESIGN.md, the r
 
 ## Research, task, review
 
+Put what you already know in the brief (paths, errors, the snippet, the decision), so it doesn't explore the repo again; its report is all that comes back into your context, so ask for a short one.
+
 - Research: name the facet and the questions. Read the doc when it lands; it ships like any other change (from the worktree: `npm run ship`).
 - Task: lockstep logic with tests (`src/sim/`, rules), JS-to-TS conversion, tooling, docs, and visuals it can judge from stills and motion sheets. Not feel: it reads frames and numbers, and doesn't play or watch in real time. A task's sandbox can't start Chromium, so `dev/codex/see.ts` runs the job's server and Vite inside it, and `dev/codex/look-broker.ts`, started by `run.ts`, runs this checkout's harness and the browser outside it. That takes network access in the job's sandbox; the brief limits it to the local server, and `--eyes off` turns it all off. Before starting, `npm run inflight` so it doesn't collide with in-flight work. Read its diff (`git -C ../boogle-codex/<topic> log -p origin/main..`), run `/look` yourself if a player could see it, then ship from the worktree.
 - Review: run it on branches touching `src/world/`, `src/net*`, `src/sim/` or `server/` before shipping. Verify each finding against the code before acting on it.

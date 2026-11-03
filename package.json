@@ -23,6 +23,7 @@
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
     "check:gpu": "node dev/scenarios/run.ts smoke",
     "patch": "node dev/patch.ts",
+    "map": "node dev/map.ts",
     "look": "node dev/look/look.ts",
     "playthrough": "node dev/look/playthrough.ts",
     "before-after": "node dev/look/before-after.ts",
