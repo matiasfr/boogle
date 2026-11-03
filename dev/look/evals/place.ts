@@ -728,6 +728,124 @@ if (shot === 'reload') {
       (window as unknown as { __sitDone: boolean }).__sitDone = true;
     })();
   }
+} else if (shot === 'chat') {
+  // Two little guys chattering, the camera a few metres off, and what the voice measures (rendered offline: nothing here can
+  // listen). &walk=1 instead frames a stroller on the move. CHAT lines on the console.
+  const note = (t: string) => console.log('CHAT ' + t);
+  const f = place.folk as unknown as {
+    guys: { x: number; z: number; on: boolean; mood: string; job: string; chat: number }[];
+    talkSoon: () => void;
+    talking: () => { x: number; z: number }[] | null;
+    chats: number;
+    lines: number;
+  };
+  place.s.people = 28;
+  place.skipForge();
+  await wait(5000);
+  const stand = (x: number, z: number) => {
+    const a = q.get('a') ? Number(q.get('a')) : 0.9;
+    const px = x + Math.sin(a) * 6,
+      pz = z + Math.cos(a) * 6;
+    put(px, pz, yawTo(px, pz, x, z) + 0.28, -0.08); // off to one side: you'd stand in the way
+  };
+  if (q.get('walk')) {
+    const walker = () => f.guys.find((g) => g.on && g.mood === 'walk' && g.job === 'stroll');
+    while (!walker()) await wait(100);
+    const g = walker()!;
+    stand(g.x, g.z);
+  } else {
+    // Somewhere two strollers are close, and you near them.
+    const pair = () => {
+      for (const g of f.guys)
+        for (const h of f.guys)
+          if (
+            g !== h &&
+            g.on &&
+            h.on &&
+            g.job === 'stroll' &&
+            h.job === 'stroll' &&
+            Math.hypot(g.x - h.x, g.z - h.z) < 5
+          )
+            return g;
+      return null;
+    };
+    while (!pair()) await wait(100);
+    const g = pair()!;
+    stand(g.x, g.z);
+    await wait(300);
+    if (q.get('long')) {
+      const { TALK } = (await import(
+        '/src/proto/place/folk.ts' as string
+      )) as typeof import('../../../src/proto/place/folk.ts');
+      TALK.lines = [8, 8]; // long enough to frame it
+      for (const g of f.guys) (g as unknown as { cooldown: number }).cooldown = 999; // and nobody tagging along into the shot
+    }
+    f.talkSoon();
+    const t0 = performance.now();
+    while (!f.talking() && performance.now() - t0 < 8000) await wait(100);
+    const two = f.talking();
+    note(`talking ${!!two}: ${f.chats} exchanges, ${f.lines} lines`);
+    if (two) {
+      const g2 = two as unknown as { chat: number }[];
+      while (f.talking() && g2[0]!.chat !== 1 && g2[1]!.chat !== 1) await wait(50);
+      stand((two[0]!.x + two[1]!.x) / 2, (two[0]!.z + two[1]!.z) / 2);
+      const named = two as unknown as { k: number; x: number; z: number; mood: string; chat: number }[];
+      for (let n = 0; n < 8 && f.talking(); n++) {
+        note(
+          `${named[0]!.k} ${named[0]!.mood} ${named[0]!.chat} / ${named[1]!.k} ${named[1]!.mood} ${named[1]!.chat}, ${Math.hypot(named[0]!.x - named[1]!.x, named[0]!.z - named[1]!.z).toFixed(1)} m apart, ${f.lines} lines`,
+        );
+        await wait(30);
+        if (!q.get('verbose')) break;
+        await wait(400);
+      }
+    }
+  }
+  // The voice, offline: level and length against The Boogler's own spec, on the same lane.
+  const v = (await import('/src/render/npc-voice.ts' as string)) as typeof import('../../../src/render/npc-voice.ts');
+  const c = (await import(
+    '/src/proto/place/chatter.ts' as string
+  )) as typeof import('../../../src/proto/place/chatter.ts');
+  const render = async (text: string, spec: import('../../../src/render/npc-voice.ts').VoiceSpec, gain: number) => {
+    const { syllables } = v.buildPlan(text, 'smile', spec);
+    const ctx = new OfflineAudioContext(1, 44100 * 3, 44100);
+    const out = ctx.createGain();
+    out.gain.value = gain;
+    out.connect(ctx.destination);
+    const lane = v.createLane(ctx, out, spec);
+    for (const s of syllables) lane.grain(s, 0.05 + s.at / 1000);
+    lane.end(0.05 + (syllables.at(-1)!.at + syllables.at(-1)!.ms) / 1000 + 0.05);
+    const d = (await ctx.startRendering()).getChannelData(0);
+    let peak = 0,
+      sum = 0,
+      n = 0;
+    for (const x of d) {
+      peak = Math.max(peak, Math.abs(x));
+      if (Math.abs(x) > 1e-4) {
+        sum += x * x;
+        n++;
+      }
+    }
+    const db = (x: number) => (20 * Math.log10(x)).toFixed(1);
+    return `peak ${db(peak)} dBFS, rms ${db(Math.sqrt(sum / Math.max(1, n)))} dBFS, ${(n / 44.1).toFixed(0)} ms sounding`;
+  };
+  const boogler = {
+    baseHz: 155,
+    rangeSemis: 4,
+    formantScale: 0.9,
+    brightnessHz: 3500,
+    cps: 48,
+    grainMs: [65, 95] as const,
+    vowels: [0.3, 0.15, 0.1, 0.25, 0.2] as const,
+  };
+  note('Boogler-ish at full: ' + (await render('Mip mop? Oh, bobo!', boogler, 1)));
+  for (const k of [0, 3, 5]) {
+    const spec = c.voiceOf(k);
+    note(
+      `guy ${k} (${spec.baseHz} Hz) at the chatter's level: ` +
+        (await render('Mip mop?', spec, 10 ** (c.CHATTER.levelDb / 20))),
+    );
+  }
+  (window as unknown as { __chatDone: boolean }).__chatDone = true;
 } else if (shot === 'layride') {
   // The same on the machine's flatbed through each stretch it lays, line 1 then the shunt and line 2. &spots as for `ride`.
   void (async () => {
@@ -1049,6 +1167,8 @@ if (shot === 'reload') {
     while (place.s.stone === 0 && performance.now() - t3 < 120000) await wait(200);
     note(`stone reached the village: ${place.s.stone}`);
     note(`WHOLE RUN ${now().toFixed(1)} s`);
+    const talk = place.folk as unknown as { chats: number; lines: number };
+    note(`chatter: ${talk.chats} exchanges, ${talk.lines} lines`);
     (window as unknown as { __placeDone: boolean }).__placeDone = true;
   })();
 }
