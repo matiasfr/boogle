@@ -112,12 +112,8 @@ export function duckForVoice(on: boolean) {
   if (ctx && duck) duck.gain.setTargetAtTime(on ? dbToGain(DUCK_DB) : 1, ctx.currentTime, on ? 0.03 : 0.25);
 }
 
-// When (AudioContext time) and at what pitch a musical sound effect plays: as asked (no music installs a snap today,
-// so this adds no latency), unless music snaps sound effects to its beat grid (`grid`: 16 = the next 16th note, 8 = the next 8th) and to its current chord (a
-// pitch in Hz; 0 leaves an unpitched sound alone). The action itself never waits, only its sound.
-type NoteSnap = (t: number, freq: number, grid: 8 | 16) => { t: number; freq: number };
-let snap: NoteSnap | null = null;
-export function setNoteSnap(fn: NoteSnap | null) {
-  snap = fn;
-}
-export const onBeat = (t: number, freq = 0, grid: 8 | 16 = 16) => (snap ? snap(t, freq, grid) : { t, freq });
+// Musical sound effects currently play at the requested time and pitch, without added latency.
+export const onBeat = (t: number, freq = 0, grid: 8 | 16 = 16) => {
+  void grid;
+  return { t, freq };
+};
