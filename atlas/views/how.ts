@@ -27,7 +27,7 @@ function edgeToward(b: Box, [tx, ty]: Pt): Pt {
 }
 
 // Box and lane ids -> points. A route between ROUTE_VIA's two ends bends through its waypoint (both directions).
-export function routePts(ids: string[]): Pt[] {
+function routePts(ids: string[]): Pt[] {
   const items: { pt?: Pt; id: string }[] = [];
   ids.forEach((id, i) => {
     if (i)

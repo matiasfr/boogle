@@ -54,7 +54,7 @@ const picking = { dir: '', next: 0 };
 // The brand by the USB vendor id or the name in Gamepad.id (Sony 054c, Nintendo 057e); anything else reads as Xbox,
 // the standard mapping's own names. Safari on iPad names a Backbone "Wireless Controller Extended Gamepad" (the MFi
 // profile; the owner's, 2026-11-02), which "wireless controller" reads as PlayStation on purpose: the shapes he saw.
-export function brandOf(id: string) {
+function brandOf(id: string) {
   if (/054c|playstation|dualsense|dualshock|wireless controller/i.test(id)) return 'ps';
   if (/057e|nintendo|pro controller|joy-?con/i.test(id)) return 'nintendo';
   return 'xbox';

@@ -3,10 +3,10 @@
 // stops filling the view, while at mid range and beyond it reads at full size. Local, cosmetic.
 import type * as THREE from 'three/webgpu';
 
-export const NEAR_FADE = { near: 4, far: 14, minAlpha: 0.3, minScale: 0.55 };
+const NEAR_FADE = { near: 4, far: 14, minAlpha: 0.3, minScale: 0.55 };
 
 /** 0 at `near` metres or closer, 1 at `far` or beyond, smooth between. */
-export function nearness(sprite: THREE.Object3D, camera: THREE.Camera): number {
+function nearness(sprite: THREE.Object3D, camera: THREE.Camera): number {
   const d = sprite.position.distanceTo(camera.position);
   const t = Math.min(1, Math.max(0, (d - NEAR_FADE.near) / (NEAR_FADE.far - NEAR_FADE.near)));
   return t * t * (3 - 2 * t);

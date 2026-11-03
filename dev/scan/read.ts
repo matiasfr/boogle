@@ -223,7 +223,7 @@ const uniq = <T>(list: T[]): T[] => [...new Set(list)];
 // A hook is core when it is outside src/features/ and sits in a range src/loop.ts reserves for the core modules:
 // below the feature range, or 3000 and up in 'late'. Lazy feature parts outside src/features/ use the feature range.
 export const MIN_FEATURE_ORDER = -10;
-export const CORE_LATE = 3000;
+const CORE_LATE = 3000;
 export const isCoreHook = (file: string, order: number | null): boolean =>
   !file.startsWith('src/features/') && typeof order === 'number' && (order < MIN_FEATURE_ORDER || order >= CORE_LATE);
 

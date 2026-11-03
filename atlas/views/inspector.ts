@@ -26,7 +26,7 @@ export function stackBar({ kc }: Pick<Ctx, 'kc'>, list: ModelFile[]): string {
     .join('')}</span>`;
 }
 
-export function fileList({ kc, esc }: Pick<Ctx, 'kc' | 'esc'>, list: ModelFile[], max = 8): string {
+function fileList({ kc, esc }: Pick<Ctx, 'kc' | 'esc'>, list: ModelFile[], max = 8): string {
   return `<div class="list">${list
     .slice(0, max)
     .map(
