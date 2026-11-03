@@ -31,10 +31,10 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 
 ## From the Design Table call (boogle-2.md, "The shape of the game")
 
-- [ ] Show, don't tell: go through every line this round puts on screen. Cut any that narrate what the world already shows, and fix the world where cutting leaves it unclear. Keep The Boogler's copy.
-- [ ] Try showing the tool in a lo-fi way: an axe you can see while chopping, which visibly changes with the better axe. Drop it if it looks wrong; the full answer waits for the systems to lock.
-- [ ] The pet hops on your shoulder when you board a train.
-- [ ] Mostly daylight, with a brief night.
+- [x] Show, don't tell: go through every line this round puts on screen. Cut any that narrate what the world already shows, and fix the world where cutting leaves it unclear. Keep The Boogler's copy.
+- [x] Try showing the tool in a lo-fi way: an axe you can see while chopping, which visibly changes with the better axe. Drop it if it looks wrong; the full answer waits for the systems to lock.
+- [x] The pet hops on your shoulder when you board a train.
+- [x] Mostly daylight, with a brief night.
 
 ## Tracks, in order
 

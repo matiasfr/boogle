@@ -1,7 +1,7 @@
 // A real place (?proto=place, src/proto/place/; ec7fb2f, ba717dd, a3ad0b9), behind its flag: the sign at spawn, waking the
 // stranded track layer, chopping timber, stocking a station, the machine laying those logs as track and trestle, the
 // train's crates craned into the forge, and the lit forge pouring rails. Recorded through the card's look variant
-// (&v=look&look=all). Staging goes through window.__place, the same handle as dev/look/evals/place.ts.
+// (&v=look&look=all). Staging goes through window.__place, the same handle as dev/look/evals/place-job.ts.
 import type { ClipGame, Shot } from '../clip.ts';
 
 // Page helpers: the place, the player, and putting the player somewhere on its land.
