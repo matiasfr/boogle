@@ -168,13 +168,13 @@ function applyHeight(h: number, op: Op | null, w: number, v: number) {
 
 // sites: [{ id, x, z, dir?, stamps?: [...], keepOut?: [{ x, z, r }] }] in a fixed order.
 type Compiled = ReturnType<typeof compile>;
-export function createIsland(sites: Site[]) {
+export function createIsland(sites: Site[], natural = naturalHeight) {
   const height: Compiled[] = [],
     paint: { c: Compiled; rgb: number[]; strength: number; stripes: number; frame: Frame }[] = [],
     keepOut: { x: number; z: number; r: number }[] = [];
   for (const site of sites) {
     const frame = siteFrame(site);
-    const groundY = naturalHeight(site.x, site.z);
+    const groundY = natural(site.x, site.z);
     for (const st of site.stamps ?? []) {
       const c = compile(st, frame, groundY);
       if (c.op) height.push(c);
@@ -189,7 +189,7 @@ export function createIsland(sites: Site[]) {
   return {
     keepOut,
     heightAt(x: number, z: number) {
-      let h = naturalHeight(x, z);
+      let h = natural(x, z);
       for (const c of height) {
         const r = c.weight(x, z);
         if (r) h = applyHeight(h, c.op, r.w, r.v);

@@ -18,6 +18,16 @@ export const ISLAND = ['haul', 'wagon', 'lay', 'minis', 'assets'] as const;
  * Round 4 is the default entry, without rewriting the URL or moving prototype code. */
 export function pageQuery(): URLSearchParams {
   const q = new URLSearchParams(typeof location === 'undefined' ? 'classic=1' : location.search);
+  // Explicit prototypes win over the home comparison and may never join its reserved room.
+  if (q.has('proto') || q.has('play')) {
+    q.delete('island');
+    if (q.get('room') === 'island-low') q.delete('room');
+  } else if (q.get('island') === 'low' || q.get('room') === 'island-low') {
+    // One terrain per comparison room, including a visitor following only its room link.
+    q.set('island', 'low');
+    q.set('room', 'island-low');
+    q.set('classic', '1');
+  }
   if (!q.has('proto') && !q.has('play') && q.get('classic') !== '1') {
     q.set('proto', 'place');
     if (!q.has('fresh')) q.set('fresh', '1');
@@ -29,6 +39,7 @@ export function pageQuery(): URLSearchParams {
 }
 
 const q = pageQuery();
+export const LOW_ISLAND = q.get('island') === 'low' && !q.has('proto') && !q.has('play');
 /** The page's `?proto=` ('' for none). */
 export const PROTO = q.get('proto') ?? '';
 /** The playlist is on: the island or a chapter. */

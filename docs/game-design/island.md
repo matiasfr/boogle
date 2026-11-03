@@ -12,6 +12,30 @@
 - After the 2026-10-29 playtest the land was cut to about a third, roughly **23,300 m²**
   ([playtests.md](../playtests.md)). Everything is meant to be a 10 to 15 s sprint from spawn (comment in `shape.ts`).
 
+## Opt-in low island
+
+`?classic=1&water=new&island=low&room=island-low` compares a lower home island with the original. Without
+`island=low` (or its reserved `island-low` room), all original heights remain unchanged. A lone `island=low` selects
+home automatically; explicit `proto` or `play` selectors take precedence and cannot enter the reserved room.
+
+The natural layer keeps its coastline and lowers the inland rolling ground, softens the beaches and extends a
+shallow shelf. At the four non-cliff comparison bearings the shelf reaches 1 m depth about 46–66 m offshore; the
+north-west headland remains a deliberate steep coast. Broad low sand bars vary the shelf as it gradually deepens,
+instead of leaving a uniform shallow ring. The lighthouse pad stays at 11 m and the cave massif
+retains its authored cover, floors and portals, making two high regions above the lower ground. Court levelling,
+POI positions, painted paths, saturated colours and faceted geometry remain. Scenery keeps its original scatter
+layout and is reprojected onto the new heightfield, including the palms beside the fixed log-source cells.
+
+The same final centimetre grid supplies terrain mesh, physics, placements and the water's shore field. Heights
+are Local static geometry, but tree/perch cells feed shared rules, so the existing layout-comparison startup path
+pins those inputs to the server's canonical `home-land.json`. The flag forces its own room; no shared rule or save
+shape changes. Graduation needs the owner's playtest, removal of the comparison pin, regenerated canonical land
+if cells move, and a `WORLD_NS` bump with history if static lockstep layout or saved cell meaning changes.
+
+`npm run level-check -- --island=low --all` checks the selected surface. No target is newly unreachable; the known
+court/stall overlap, touching massif boulders and over-grade old track sections 2 and 3 remain. POI walls, cave
+holes and collision masks are outside that headless check and need browser traversal.
+
 ## Regions
 
 | Region | Where | Notes |

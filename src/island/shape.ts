@@ -12,6 +12,7 @@
 // them to centimetres once, so the shared sim never sees raw floats.
 import { lerp, smoothstep, fbm } from '../math-pure.ts';
 import { SEABED } from '../world/grid.ts';
+import { LOW_ISLAND } from '../proto/flags.ts';
 
 const HOME_R = 52;
 const HOME_KEEP = 22; // metres from the origin where the home ground is untouched
@@ -76,7 +77,7 @@ function smax(a: number, b: number, k: number) {
   return Math.max(a, b) + h * h * k * 0.25;
 }
 
-export function naturalHeight(x: number, z: number) {
+export function originalNaturalHeight(x: number, z: number) {
   const home = homeHeight(x, z);
   const r = Math.sqrt(x * x + z * z);
   if (r < HOME_KEEP) return home;
@@ -84,4 +85,26 @@ export function naturalHeight(x: number, z: number) {
   // the seed stand keep the ground they always had.
   const main = lerp(SEABED, mainlandHeight(x, z), smoothstep(HOME_KEEP, HOME_KEEP + 12, r));
   return smax(home, main, 2);
+}
+
+// Local static geometry: shared rules use the pinned home-land layout, never this height.
+// Keep the original zero contour, soften its beach, then carry a shallow shelf beyond the
+// old bed's saturation. The north-west rocky headland is the deliberate cliff exception.
+export function naturalHeight(x: number, z: number) {
+  const h = originalNaturalHeight(x, z);
+  if (!LOW_ISLAND) return h;
+  const headland = 1 - smoothstep(22, 48, Math.hypot(x + 70, z + 104));
+  if (h >= 0) {
+    const rolling = h * (0.5 + 0.08 * smoothstep(2, 8, h)) * smoothstep(0, 1.2, h);
+    return lerp(rolling, h, headland);
+  }
+  const homeD = Math.hypot(x, z * 1.12) / HOME_R + fbm(x * 0.03 + 11, z * 0.03 - 7) * 0.16;
+  const offshore = Math.min((homeD - 0.94) * HOME_R, (mainlandDistance(x, z) - 0.94) * MAINLAND.rz);
+  // A gentle seaward fall with broad sand bars, rather than a uniform shallow ring.
+  // The old shore factor keeps the zero contour and its softened slope unchanged.
+  const fall = smoothstep(0, 3, -h) * smoothstep(3, 40, offshore);
+  const bed = h * 0.065 - fall * (0.35 + 0.15 * fbm(x * 0.055 + 5, z * 0.055 - 9));
+  const shelf = lerp(bed, SEABED, smoothstep(42, 90, offshore));
+  const cliffSea = 1 - smoothstep(0, 28, Math.max(x + 60, z + 82));
+  return lerp(shelf, h, Math.max(headland, cliffSea));
 }
