@@ -111,7 +111,7 @@ Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockste
 
 ${
   eyes
-    ? `You can see the running game. \`BOOGLE_QUERY='proto=x' node dev/codex/see.ts <options>\` takes the same options as \`npm run look\` (.claude/skills/look/SKILL.md; not --url or --out), runs on the real GPU and takes a minute or two. Open the PNGs it writes to .look/ with view_image. Use it for anything a player can see: name the question, frame it, look, fix what's off, up to three rounds (AGENTS.md, "See it before you ship"). You can't watch a video, so judge motion from the motion sheet and say that real-time motion is unverified.`
+    ? `You can see the running game. \`BOOGLE_QUERY='proto=x' node dev/codex/see.ts <options>\` takes the same options as \`npm run look\` (.claude/skills/look/SKILL.md; not --url or --out), runs on the real GPU and takes a minute or two. Open the PNGs it writes to .look/ with view_image. Use it for anything a player can see: name the question, frame it, look, fix what's off, up to three rounds (AGENTS.md, "See it before you ship"). To play, use --action: page code that holds keys and queues jumps (dev/look/evals/sprint-jump.ts), framing the player itself, since a fixed --cam may not see them; then decide your next action from what you saw. --curves writes the motion as numbers. view_image takes no video: pull frames from a --video recording with ffmpeg and open consecutive ones. That is frames and scripted input, not watching or playing in real time, so say that feel and smoothness are unverified. run.ts already started the broker: don't start another.`
     : 'You cannot see the running game.'
 }
 

@@ -90,6 +90,11 @@ function halfTex(data: Float32Array, size: number, format: THREE.PixelFormat) {
   return tex;
 }
 
+// CPU consumers must see the same half-float values the shader filters, not the unrounded bake.
+function cpuTex(tex: THREE.DataTexture) {
+  return Float32Array.from(tex.image.data as Uint16Array, (h) => THREE.DataUtils.fromHalfFloat(h));
+}
+
 // ---------------------------------------------------------------- the wave travel-time field
 // tau = seconds a shallow-water front needs from the coastline to here: eikonal |grad tau| = 1/c, c = sqrt(g clamp(depth)),
 // solved unsigned on both sides of the coast by fast sweeping (first-order Godunov, Gauss-Seidel in 4 orders), negated on
@@ -432,9 +437,13 @@ function bakeTravel(height: Float32Array, sea: Uint8Array, sdf: Float32Array, si
   const kappa = boxBlur(boxBlur(curvature(dirX, dirZ, coh, size, texel), size, 2), size, 2);
   const fade = boxBlur(boxBlur(coh, size, 2), size, 2);
   const data = pack(tau, dirX, dirZ, rayTube(kappa, dirX, dirZ, sdf, size, texel), height, fade, size);
+  const travel = halfTex(data, size, THREE.RGBAFormat);
+  const surf = halfTex(surfShelter(height, dirX, dirZ, sdf, size, texel), size, THREE.RedFormat);
   return {
-    travel: halfTex(data, size, THREE.RGBAFormat),
-    surf: halfTex(surfShelter(height, dirX, dirZ, sdf, size, texel), size, THREE.RedFormat),
+    travel,
+    surf,
+    travelData: cpuTex(travel),
+    surfData: cpuTex(surf),
   };
 }
 
@@ -482,5 +491,6 @@ export function bakeShoreMap(
       data[k * 4 + 2] = (s(i + 1, j) - s(i - 1, j)) / (2 * texel);
       data[k * 4 + 3] = (s(i, j + 1) - s(i, j - 1)) / (2 * texel);
     }
-  return { shore: halfTex(data, size, THREE.RGBAFormat), extent, size, ...bakeTravel(height, sea, sdf, size, texel) };
+  const shore = halfTex(data, size, THREE.RGBAFormat);
+  return { shore, data: cpuTex(shore), extent, size, ...bakeTravel(height, sea, sdf, size, texel) };
 }
