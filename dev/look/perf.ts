@@ -1,7 +1,7 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
-// `--seconds N` (1–30), `--view NAME` and `--query proto=place` select the sample. Counts stay timing-free.
+// `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query proto=place` select the sample. Counts stay timing-free.
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
@@ -23,6 +23,7 @@ const seconds = argv.includes('--seconds') ? Number(argv[argv.indexOf('--seconds
 const viewName = argv.includes('--view') ? argv[argv.indexOf('--view') + 1] : null;
 const query = argv.includes('--query') ? argv[argv.indexOf('--query') + 1] : '';
 const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
+const size = argv.includes('--size') ? argv[argv.indexOf('--size') + 1]!.split('x').map(Number) : undefined;
 const IDLE_TICKS = 100;
 
 // The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
@@ -138,7 +139,13 @@ try {
   const init = jsonOut ? SEEDED_RANDOM : undefined;
   const q = new URLSearchParams(query);
   if (hardware) q.set('prof', '1');
-  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim || hardware, init, query: q.toString() });
+  const g = await Game.open(browser, stack, {
+    name: 'perf',
+    isolated: doSim || hardware,
+    init,
+    query: q.toString(),
+    ...(size ? { size } : {}),
+  });
   if (doRender) {
     if (jsonOut || viewName) {
       const { cam, look } = VIEWS[viewName ?? 'overview']!;
