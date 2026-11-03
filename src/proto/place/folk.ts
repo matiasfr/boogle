@@ -74,6 +74,10 @@ type Guy = {
   z: number;
   yaw: number;
   t: number; // phase of whatever it's doing
+  stride: number; // distance-driven feet, independent of idle/hammer time
+  poseMood: Mood;
+  poseTime: number;
+  gaze: number; // Local head turn; never steers the route
   wait: number;
   tx: number;
   tz: number;
@@ -127,6 +131,10 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     z,
     yaw: rng() * 6.28,
     t: rng() * 6,
+    stride: 0,
+    poseMood: 'idle',
+    poseTime: 0,
+    gaze: 0,
     wait: rng() * 3,
     tx: x,
     tz: z,
@@ -254,7 +262,7 @@ export const setFolkEnv = (e: FolkEnv) => void (env = e);
 // ---------------------------------------------------------------- moving
 const SPEED = { walk: 1.7, run: 4.6 };
 // The walk. Tune these by eye at about 10 m.
-const WALK = { bob: 0.11, squash: 0.05, rock: 0.17, lean: 0.07, stride: 0.2, lift: 0.13, stepsPerMetre: 4.4 };
+const WALK = { bob: 0.035, squash: 0.035, rock: 0.09, lean: 0.07, lift: 0.12, stepsPerMetre: 5.8 };
 // Round a building, not through it. They head straight for where they're going until a footprint's on the line, then for
 // the corner of it that makes the shorter way round. Plots count before they're built, so nobody's standing there when a
 // building rises. A goal that takes far longer than the walk should is given up on, as if they'd got there.
@@ -525,6 +533,7 @@ function brain(g: Guy, dt: number) {
         const b = underway();
         for (let k = 0; k < b.length; k++) {
           const s = b[k]!;
+          if (s.state !== 'building') continue; // underway can still contain this frame's just-finished site
           if (Math.hypot(s.plan.x - g.x, s.plan.z - g.z) < 34 && hammering(s) < 3) {
             g.site = s;
             const n = hammering(s) - 1;
@@ -540,8 +549,11 @@ function brain(g: Guy, dt: number) {
       }
       if (g.site) {
         if (g.site.state !== 'building') {
+          // A paid building finished: one pleased response, with no say in when it completes.
+          if (g.site.state === 'done') g.cheer = 1.3;
           g.site = null;
           g.hasTarget = false;
+          g.mood = 'idle';
           return;
         }
         if (g.hasTarget) {
@@ -690,21 +702,35 @@ function pose(g: Guy) {
   let lift = 0,
     liftL = 0,
     liftR = 0;
+  const walking = g.mood === 'walk' || g.mood === 'run' || g.mood === 'carry';
+  if (walking) {
+    // Stance travels backwards at root speed; only the returning foot lifts. One half-cycle is pi / stepsPerMetre m.
+    const reach = Math.PI / (2 * WALK.stepsPerMetre);
+    for (let foot = 0; foot < 2; foot++) {
+      const u = ((g.stride / Math.PI + foot) % 2) / 2;
+      const swing = Math.max(0, (u - 0.5) * 2);
+      const z = u < 0.5 ? reach * (1 - 4 * u) : reach * (-1 + 2 * swing * swing * (3 - 2 * swing));
+      const up = Math.sin(swing * Math.PI) * WALK.lift;
+      if (foot === 0) {
+        fl = z;
+        liftL = up;
+      } else {
+        fr = z;
+        liftR = up;
+      }
+    }
+  }
   switch (g.mood) {
     case 'walk':
     case 'run': {
       // A waddle you can read from across the street: a big rock from foot to foot, up over each step and down onto the
       // next, feet that lift, hands swinging against them, leaning into it. All of it from one phase, on shared instances.
       const f = g.mood === 'run' ? 1.45 : 1,
-        step = Math.sin(t);
+        step = Math.sin(g.stride);
       hop = Math.abs(step) * WALK.bob * f;
       sq = 1 - (1 - Math.abs(step)) * WALK.squash; // low and wide as each foot lands
       tilt = step * WALK.rock * f;
       pitch = g.mood === 'run' ? 0.24 : WALK.lean;
-      fl = step * WALK.stride * f;
-      fr = -fl;
-      liftL = Math.max(0, Math.cos(t)) * WALK.lift * f;
-      liftR = Math.max(0, -Math.cos(t)) * WALK.lift * f;
       hl = [-0.27, 0.3 + Math.max(0, -step) * 0.05, -fl * 0.8];
       hr = [0.27, 0.3 + Math.max(0, step) * 0.05, fl * 0.8];
       break;
@@ -717,13 +743,9 @@ function pose(g: Guy) {
       break;
     }
     case 'carry':
-      hop = Math.abs(Math.sin(t)) * 0.05;
-      tilt = Math.sin(t) * 0.1;
+      hop = Math.abs(Math.sin(g.stride)) * 0.025;
+      tilt = Math.sin(g.stride) * 0.06;
       pitch = -0.05;
-      fl = Math.sin(t) * 0.15;
-      fr = -fl;
-      liftL = Math.max(0, Math.cos(t)) * WALK.lift * 0.8;
-      liftR = Math.max(0, -Math.cos(t)) * WALK.lift * 0.8;
       hl = [-0.18, 0.42, 0.22];
       hr = [0.18, 0.42, 0.22];
       itemA = true;
@@ -740,22 +762,27 @@ function pose(g: Guy) {
     }
     case 'wave': {
       const w = Math.sin(t * 2.2);
+      const reach = Math.min(1, g.poseTime / 0.22);
       tilt = w * 0.08;
-      hr = [0.3 + w * 0.07, 0.86, 0.02];
+      hr = [0.3 + (0.1 + w * 0.03) * reach, 0.28 + 0.58 * reach, 0.02];
       break;
     }
     case 'cheer': {
-      // The hop, from the last round's villagers.
-      const h = Math.abs(Math.sin(t));
-      hop = h * 0.78;
-      sq = h < 0.15 ? 1 - (0.15 - h) * 1.6 : 1 + h * 0.08;
-      hl = [-0.32, 0.86, 0];
-      hr = [0.32, 0.86, 0];
+      // Staggered anticipation, one small ballistic hop, a landing and a grounded arm cheer.
+      const u = Math.max(0, g.poseTime - (g.k % 4) * 0.07) % 1.3;
+      const air = Math.max(0, Math.min(1, (u - 0.18) / 0.5));
+      hop = 4 * air * (1 - air) * 0.32 * Math.min(1, g.cheer / 0.22);
+      const crouch =
+        u < 0.18 ? Math.sin((u / 0.18) * Math.PI) : u < 0.88 && u >= 0.68 ? Math.sin(((u - 0.68) / 0.2) * Math.PI) : 0;
+      sq = 1 - crouch * 0.16;
+      const hands = Math.min(1, u / 0.25);
+      hl = [-0.4, 0.36 + hands * 0.5, 0];
+      hr = [0.4, 0.36 + hands * 0.5, 0];
       fl = fr = 0;
       break;
     }
     case 'sit':
-      hop = -0.14;
+      hop = -0.035;
       sq = 0.9;
       hl = [-0.22, 0.34, 0.14];
       hr = [0.22, 0.34, 0.14];
@@ -772,6 +799,8 @@ function pose(g: Guy) {
       break;
     default:
       sq = 1 + Math.sin(t * 0.8) * 0.02;
+      tilt = Math.sin(t * 0.35 + g.k) * 0.035;
+      pitch = Math.sin(t * 0.5 + g.k) * 0.025;
   }
   // Saying something: a quick bob and a nod, so you can see who it is, whatever else they're doing.
   if (g.chat === 1) {
@@ -780,13 +809,11 @@ function pose(g: Guy) {
     pitch += talk * 0.1;
     sq *= 1 + talk * 0.05;
   }
-  const gy = g.fy ?? g.y;
+  const gy = g.fy ?? H(g.x, g.z);
   q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
-  heads.setMatrixAt(k, base);
   coats.setMatrixAt(k, base);
-  limb(k, 0, -0.13, 0.06 + liftL, fl + 0.02, 0.1, 0.07, 0.14);
-  limb(k, 1, 0.13, 0.06 + liftR, fr + 0.02, 0.1, 0.07, 0.14);
+  heads.setMatrixAt(k, m.copy(base).multiply(tr.makeRotationY(g.gaze)));
   limb(k, 2, hl[0]!, hl[1]!, hl[2]!, 0.075, 0.075, 0.075);
   limb(k, 3, hr[0]!, hr[1]!, hr[2]!, 0.075, 0.075, 0.075);
   const i0 = k * 2,
@@ -819,6 +846,18 @@ function pose(g: Guy) {
   } else {
     held.setMatrixAt(i0, ZERO);
     held.setMatrixAt(i1, ZERO);
+  }
+  // Torso rock, breath and chat never lift a planted boot. Sample each sole on slopes; decks supply their own height.
+  const airborne = g.mood === 'cheer' ? hop : 0;
+  const seatDrop = g.mood === 'ride' ? -0.14 : 0; // ride() raises the seated root above its deck
+  q.setFromEuler(e.set(0, g.yaw, 0));
+  base.compose(p.set(g.x, gy + airborne, g.z), q, s.set(1, 1, 1));
+  for (let foot = 0; foot < 2; foot++) {
+    const x = foot === 0 ? -0.13 : 0.13,
+      z = (foot === 0 ? fl : fr) + 0.02;
+    const ground =
+      g.fy ?? H(g.x + x * Math.cos(g.yaw) + z * Math.sin(g.yaw), g.z - x * Math.sin(g.yaw) + z * Math.cos(g.yaw));
+    limb(k, foot, x, ground - gy + seatDrop + 0.07 + (foot === 0 ? liftL : liftR), z, 0.1, 0.07, 0.14);
   }
 }
 const tr = new THREE.Matrix4();
@@ -1083,6 +1122,7 @@ export function updateFolk(dt: number) {
     if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {
       const moved = Math.min(0.5, Math.hypot(g.x - g.px, g.z - g.pz));
       g.t += moved * WALK.stepsPerMetre;
+      g.stride += moved * WALK.stepsPerMetre;
     } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
     g.px = g.x;
     g.pz = g.z;
@@ -1100,6 +1140,15 @@ export function updateFolk(dt: number) {
       if (!car) continue;
       ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
     }
+    g.poseTime = g.poseMood === g.mood ? g.poseTime + dt : 0;
+    g.poseMood = g.mood;
+    let glance = 0;
+    if (you.ok && !g.chat && g.mood !== 'hammer' && Math.hypot(you.x - g.x, you.z - g.z) < 6) {
+      const angle = Math.atan2(you.x - g.x, you.z - g.z) - g.yaw;
+      const wrapped = Math.atan2(Math.sin(angle), Math.cos(angle));
+      if (Math.abs(wrapped) < 1.4) glance = Math.max(-0.55, Math.min(0.55, wrapped));
+    }
+    g.gaze += (glance - g.gaze) * (1 - Math.exp(-dt * 5));
     // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
     const nx = g.x - cx,
       ny = (g.fy ?? g.y) + 0.5 - camera.position.y,
