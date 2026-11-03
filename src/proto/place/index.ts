@@ -523,7 +523,14 @@ function handCrate(l: LineRun, to: number, side: number) {
     for (const along of [-dir * 3.4, dir * 3.4]) {
       const at = next.spec.s - dir * 1.5 + along;
       const q = besideLine(line, at, next.spec.side * 5.4);
-      if (Math.abs(H(q.x, q.z) - next.y) > 1) continue;
+      // Solid ground all round: nobody should go over a rim for it.
+      const ground = (x: number, z: number) => Math.abs(H(x, z) - next.y) <= 1;
+      if (
+        ![0, 3.5].every(
+          (r) => ground(q.x + r, q.z) && ground(q.x - r, q.z) && ground(q.x, q.z + r) && ground(q.x, q.z - r),
+        )
+      )
+        continue;
       scratch.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z);
       deliver(q.x, H(q.x, q.z), q.z, scratch);
       return;
