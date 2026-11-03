@@ -9,10 +9,10 @@ import { clamp } from '../../math.ts';
 import { precompile } from '../../render/precompile.ts';
 import { loadAsset } from '../../render/assets.ts';
 import { me } from '../../player/player.ts';
-import { remotes } from '../../netplay/net.ts';
 import { paintAvatar, setAvatarSkin, type Avatar } from '../../player/avatars.ts';
 import { makeLife, type LifeState } from './life.ts';
 import { retargetClip } from './retarget.ts';
+import { bootMark } from '../../boot/timeline.ts';
 import clipsUrl from '../../../assets/built/hero-clips.glb?url';
 import buddyUrl from '../../../assets/built/buddy.glb?url';
 
@@ -152,8 +152,10 @@ function boundsOf(holder: THREE.Object3D) {
 export let bakeMs = 0;
 
 export async function startBuddy() {
+  bootMark('buddy-start');
   const hat = 'wear_head_' + new URLSearchParams(location.search).get('hat');
   const [clips, model] = await Promise.all([loadAsset(clipsUrl), loadAsset(buddyUrl)]);
+  bootMark('buddy-assets');
   const src = clips.instance();
   const tgt = model.instance();
   let ratio = 1;
@@ -168,11 +170,13 @@ export async function startBuddy() {
     await new Promise((go) => setTimeout(go)); // a clip at a time, so the bake isn't one long task
   }
   bakeMs = Math.round(bake);
+  bootMark('buddy-clips', { bakeMs });
   const dress = (a: Avatar, colorIdx: number) => {
     if (rigs.has(a)) return;
     const holder = model.instance();
     const bounds = boundsOf(holder);
     const root = holder.children[0]!;
+    let mat = a.userData.mat;
     holder.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
@@ -183,15 +187,11 @@ export async function startBuddy() {
         const own = shared.clone();
         paintAvatar(own as unknown as THREE.MeshStandardMaterial, colorIdx);
         m.material = own;
-        a.userData.mat = own as unknown as THREE.MeshStandardMaterial;
+        mat = own as unknown as THREE.MeshStandardMaterial;
       }
     });
     holder.position.y = -PLAYER_R;
     holder.rotation.y = Math.PI; // the model faces +z; avatars face -z
-    for (const child of a.userData.inner.children) child.visible = false; // the capsule and its eyes
-    a.userData.inner.add(holder);
-    a.userData.leanScale = 0; // the clips lean on their own
-    a.userData.flopY = -0.24; // flat on its back, a slimmer body than the capsule's
     holder.updateMatrix();
     const mixer = new THREE.AnimationMixer(root);
     const acts: Record<string, THREE.AnimationAction> = {};
@@ -206,8 +206,6 @@ export async function startBuddy() {
     }
     const life = makeLife(root, tgt);
     const sockets = life.sockets(holder.matrix);
-    a.userData.loadFit = { frame: sockets.back, back: 0.215, floor: 0.14, len: 0.86, round: true };
-    a.userData.handSocket = sockets.hand;
     rigs.set(a, {
       mixer,
       acts,
@@ -221,7 +219,15 @@ export async function startBuddy() {
       life,
       lastY: a.position.y,
     });
+    // Install only after the whole rig is valid; a failure must leave the capsule usable.
+    for (const child of a.userData.inner.children) child.visible = false;
+    a.userData.inner.add(holder);
+    a.userData.mat = mat;
+    a.userData.leanScale = 0; // the clips lean on their own
+    a.userData.flopY = -0.24; // flat on its back, a slimmer body than the capsule's
+    a.userData.loadFit = { frame: sockets.back, back: 0.215, floor: 0.14, len: 0.86, round: true };
+    a.userData.handSocket = sockets.hand;
   };
   await precompile(model.instance());
-  setAvatarSkin({ dress, animate }, [me.avatar, ...[...remotes.values()].map((r) => r.avatar)]);
+  bootMark(setAvatarSkin({ dress, animate }) ? 'buddy-ready' : 'buddy-late');
 }

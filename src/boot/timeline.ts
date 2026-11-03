@@ -21,6 +21,8 @@
 
 import { BUILD } from '../build-id.ts';
 
+performance.setResourceTimingBufferSize(1500); // dev's unbundled modules must not hide the later model downloads
+
 export type BootMark = { name: string; t: number; detail?: Record<string, number | string> };
 const marks: BootMark[] = [];
 const spans: Record<string, number> = {};

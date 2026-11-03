@@ -23,6 +23,7 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { renderer, rendererReady } from './scene.ts';
 import { onFrame } from '../loop.ts';
 import { assetUrl } from './asset-manifest.ts';
+import { bootSpan } from '../boot/timeline.ts';
 
 export type Asset = {
   url: string;
@@ -40,6 +41,19 @@ async function gltfLoader() {
   await MeshoptDecoder.ready;
   const ktx2 = new KTX2Loader().detectSupport(renderer);
   loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2);
+  const parse = loader.parse.bind(loader);
+  loader.parse = (data, path, onLoad, onError) => {
+    const start = performance.now();
+    parse(
+      data,
+      path,
+      (gltf) => {
+        bootSpan('gltfParse', performance.now() - start);
+        onLoad(gltf);
+      },
+      onError,
+    );
+  };
   return loader;
 }
 
