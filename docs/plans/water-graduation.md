@@ -4,7 +4,7 @@
 
 Replace the sea on the default Round 4 place and the classic home island with the water proved by `?proto=water`, including its waves, shore response and below-water treatment, using the real terrain. Serves DESIGN.md **Show, don't tell** (the visible surface is the water you enter), **Toys before chores** and **Small and readable**; physics remains **Owner**, never Lockstep.
 
-**Approved for steps 1–3 on 3 November 2026.** Stop for review after those steps; steps 4–8 are not part of this implementation and still await owner approval: they are implementation instructions after approval, not permission to start now. The owner explicitly permits this work during Round 4. Retain `.25` spectral energy, mobile 0.6 world resolution and desktop high. Neutral and `proto/water/post.ts` belong to the separate tone comparison and remain unchanged. The sky decision is open: keep `skyAt` and the demo sky files. The old sea stays the default, with the new sea opt-in only. No push or ship; no external network access in this worktree. The separate Neutral/AgX comparison remains separate. Do not graduate or redesign Round 4 along with the water.
+**Approved through steps 1–6 on 3 November 2026.** Steps 7–8 await review. The owner's subsequent call supersedes the original sky recommendation below: under `water=new`, bake the demo atmosphere **once behind loading**, frozen at late morning (`tod=0.24`), and use metered AgX from `render/tone.ts`. The real light follows that fixed sun. The old path retains Neutral and its 20-minute cycle. Retain `.25` spectral energy, mobile 0.6 world resolution and desktop high. No `scene.ts` edits, push, ship or external network access. Do not graduate or redesign Round 4 along with the water.
 
 ## Design
 
@@ -86,7 +86,9 @@ Only the polar mesh's sampling footprint follows camera **x/z** and its grid den
 
 **`src/render/scene.ts` need not change for the recommended plan.** Existing `scenePass`, `pipeline`, `rendererReady` and camera exports suffice, as they did in the validated prototype. Keep one linear HDR scene pass, stored 4× MSAA colour/depth and one final tone-map/sRGB output. The underwater module should return an HDR node to the water coordinator instead of assigning `pipeline.outputNode` behind another effect's back. Compose from the existing HDR chain once and restore it on teardown. Any need to change renderer construction, depth mode, MSAA storage, global tone mapping or boot ownership is a new approval item, not a reason to quietly expand this plan.
 
-### Sun, moon and the separate tone decision
+### Sun, moon and the separate tone decision (historical recommendation)
+
+**Superseded on 3 November:** the owner selected the single frozen demo-sky bake and metered AgX described above. The following paragraphs preserve the reasoning for the original recommendation, not the operative implementation direction.
 
 `water/sky.ts` currently compares an exact string of all sky parameters. A changed sun rebuilds atmosphere LUTs on the CPU (about one second in the recorded initial bake), renders six 1024² cube faces, generates mips and invalidates native PMREM. The demo pins its sun after `day-night.ts`; the game continuously updates sun/moon from `worldMs(dt)`. Passing that continuously changing angle to `demoSky.update()` would turn an infrequent demo bake into recurring frame stalls.
 
@@ -280,7 +282,15 @@ No protected source, tone switch, demo sky or post file changed. Steps 4–8 rem
 - **Lifecycle and startup:** no imports forming a sky↔water or terrain↔water cycle, no extra `scene.add`/`onFrame` suppressions, no GPU work before initialization, no stale async callback into disposed state, no duplicate opaque snapshots or tone maps. `src/main.ts` is a hotspot and should need no change; any necessary loader tweak is at most a line or two. Boogler copy stays untouched.
 - **Verification limits:** there is no new-water-on-real-terrain build yet. Earlier demo images, the one gorge baseline and the reported short stationary iPad result cannot approve motion, query latency, cave behavior, sustained performance or the final art integration. Follow the three-round inspect/fix limit and identify remaining uncertainty; do not present a successful capture as a visual verdict or a push as a deployment.
 
-## Open questions for the owner
+### Step 4 evidence (3 November 2026)
+
+Real submerged home/place triangles now remain in the opaque depth/colour snapshot. Refraction retreats from foreground samples, re-reads depth at its final UV, fades distortion in thin water and preserves opaque bank coverage at the resolved water edge. Real terrain materials receive reversible caustic/wetness patches; real rocks and only constructed place legs register bounded contact sites. Coast spray shares the particle pool and cleans up its preparation callback. Caustics retain two targets, three draws and 17 mip passes. Receiver modulation preserves masks and standard lighting/shadows, but modulates ambient albedo too: it is not strictly sun-only illumination.
+
+Three look/fix rounds were used. Opened the baseline home, repaired home, old-water diagnostic, step4 home and place stills, and all four consecutive home video frames. The broad diagonal home wedge also exists with old water: it is faceted terrain shading. The caustic net moves across submerged sand; wet banks darken while dry sand and the avatar remain readable. Final [bank manifest](../../.look/evidence/1793733062979-27833/evidence.json) shows the earlier saturated blue right-bank slit removed. The overhead [cost manifest](../../.look/evidence/1793733100803-28698/evidence.json) still leaves a narrow ragged orange/dark bank strip whose relation to refracted terrain faceting is uncertain; no claim of tear-free results at every angle. Earlier [home and consecutive frames](../../.look/evidence/1793732857441-23415/evidence.json) and [place](../../.look/evidence/1793732875480-23577/evidence.json) show caustics and the avatar.
+
+Final overhead GPU **span** means were 6.23/6.49/6.77 ms, with the last p95 7.31 ms, at 1210×702, world/output DPR 1, stored 4× MSAA. There were 24 native raster passes, 237 direct draws plus 17 bundle executions, one colour and one depth copy. This camera differs from the live before capture, so no matched delta is claimed. No gfx errors or >33 ms sampled frame gaps. `npm run check` passed. Physical-device performance, real-time motion feel, dense fully built support cost and all-angle bank integrity remain unverified. Dawn/night receiver comparisons are superseded by the owner's fixed late-morning production direction; final cave/bridge exclusions are checked with steps 5–6.
+
+## Historical open questions (resolved scope superseded by the approval above)
 
 1. **Approve this graduation scope and sequence?** In particular, real-world surface/FFT, caustics, foam/spray, Owner wave-following and dive/underwater graduate together before the default switch; the demo scene is tagged and removed at completion. This approval is the build gate.
 2. **Water look and motion on the actual banks:** retain the demo `.25` energy baseline and let real bathymetry shelter it, then judge any further reduction in offshore swell, swash or grade from the character/shore views. No storm, drowning or breath mechanic is implied.

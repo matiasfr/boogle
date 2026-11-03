@@ -50,7 +50,7 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 
 ---
 
-Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–3). The old sea remains active by default.
+Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–4). The old sea remains active by default.
 Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
 the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
 The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
@@ -81,5 +81,15 @@ heights or mean sea/pond, so their hypothetical arcs are approximate, not synchr
 `waterRuntime.inspect().queries` reports consumed/accepted/rejected age summaries, rejection reasons and per-ID
 samples. Its prediction error compares the consumed estimate with a GPU evaluation at matching request time and
 position; it does not measure rasterized triangle error. Renderer teardown removes the provider and all query resources.
+
+The opt-in draws the actual submerged home tiles, applies shared FFT caustics and swash wetness to ground and rocks,
+and retains their colour, roughness, normals, shadow and cave-mask nodes. Two caustic targets share three splat draws
+and 17 mip draws. Receiver caustics modulate lit albedo, including ambient fill, with depth/orientation/daylight/shelter
+gates; this is not a separate sun-only lighting model. Dry cave interiors receive no ocean receiver patch.
+Refraction retreats foreground offsets and samples colour/depth at the final matching UV; resolved bank-edge pixels
+blend back to their undisplaced opaque colour. The broad facets in the home bed are the original terrain geometry.
+World-fixed shore/contact spray sites use the common crest clock and shared particle pool (96/frame, 420/second max).
+Real shoreline rocks register bounded analytic contacts; their disposal removes those contacts. These sub-texel
+contacts add foam/spray without rebuilding the large coast travel field.
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

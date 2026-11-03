@@ -28,6 +28,8 @@ const providers = new Map<string, ShoreProvider>();
 let version = 0;
 const within = (b: ShoreBounds, x: number, z: number) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
 const ordered = () => [...providers.values()].sort((a, b) => a.id.localeCompare(b.id));
+export const shoreProviders = ordered;
+export const shoreRevision = () => version;
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
 /** A finalized grid, including its last row/column. Axis signs are explicit and exterior points stay invalid. */

@@ -199,3 +199,8 @@ the normal page keeps them. Existing place lighting, sky, camera clip distances 
 In this opt-in, swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
 bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
 The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.
+
+With the opt-in, the terrain includes its real submerged triangles and receives wave-driven caustics plus swash wetness
+through material patches, preserving the look's colour/normal nodes. Only built trestle legs register water contacts;
+resetting/removing their solids removes the corresponding contacts. Their analytic foam/spray footprints do not rebake
+the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces remain dry receivers.

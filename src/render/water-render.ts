@@ -37,7 +37,12 @@ import { fftWaves } from './water/fft.ts';
 import { bakeFoam } from './water/foam.ts';
 import { shoreFields } from './water/shore-nodes.ts';
 import { createWaterQuality } from './water/quality.ts';
+import { newWaterEnabled } from './water/flags.ts';
 import { createWaterQueries } from './water/queries.ts';
+import { createCaustics } from './water/caustics.ts';
+import { installWaterReceivers } from './water/receivers.ts';
+import { createSpray } from './water/spray.ts';
+import { contactDistance } from './water/contacts.ts';
 import { waterField } from '../physics/water-field.ts';
 import { GRID } from './water/tuning.ts';
 import { TSL } from './water/tsl.ts';
@@ -181,7 +186,7 @@ waterMat.colorNode = color();
 // late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
 defineKind('sea', { prePhysics: -110, lateUpdate: 3010 });
 
-export const newWaterEnabled = new URLSearchParams(location.search).get('water') === 'new' && !protoOn('water');
+export { newWaterEnabled } from './water/flags.ts';
 let waterMesh: THREE.Mesh | null = null;
 export const waterRuntime: { inspect(): Record<string, unknown>; dispose(): void } = {
   inspect: () => ({ mode: 'legacy' }),
@@ -194,14 +199,19 @@ function createRealSea() {
     foam = bakeFoam(),
     quality = createWaterQuality();
   const fogRange = TSL.uniform(new THREE.Vector2(110, 520));
-  const ocean = createOcean(source, shoreFields(atlas), foam, {
+  const field = shoreFields(atlas);
+  const caustics = createCaustics(source.fft.moments, source.fft.bands.indexOf(2), source.fft.size);
+  const removeReceivers = installWaterReceivers(field, caustics.sample);
+  const ocean = createOcean(source, field, foam, {
     sky: gameWaterSky,
+    contactDistance,
     grid: { ...GRID, far: camera.far, outer: Math.min(3000, camera.far * 0.5) },
     fitCameraRange: true,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
   });
   const queries = createWaterQueries(ocean.heightAt, atlas);
   const removeProvider = waterField.install(queries.provider);
+  const spray = createSpray(atlas);
   let ready = false,
     disposed = false;
   const previousVisibility = waterMat.visible;
@@ -220,6 +230,7 @@ function createRealSea() {
       const fog = scene.fog as THREE.Fog;
       fogRange.value.set(fog.near, fog.far);
       ocean.update(camera, elapsed, sun);
+      caustics.update(seaU.uSun.value);
       queries.dispatch(elapsed);
       quality.update(); // after adaptive-res, normalize once against its actual DPR
     },
@@ -241,6 +252,9 @@ function createRealSea() {
       waterRuntime.inspect = () => ({ mode: 'new', ready: false, disposed: true });
       waterRuntime.dispose = () => {};
       removeProvider();
+      removeReceivers();
+      spray.dispose();
+      caustics.dispose();
       queries.dispose();
       ocean.dispose();
       source.dispose?.();

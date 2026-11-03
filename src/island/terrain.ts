@@ -6,6 +6,8 @@ import { smoothstep, valueNoise } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { island } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
+import { newWaterEnabled } from '../render/water/flags.ts';
+import { registerWaterReceiver } from '../render/water/receivers.ts';
 
 import { heights } from './heights.ts';
 
@@ -36,6 +38,7 @@ const TILE = 51;
 const terrainMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 if (new URLSearchParams(location.search).get('terrain') === 'demo')
   void import('../proto/water/terrain-demo.ts').then((m) => m.applyTerrainDemo(terrainMat));
+registerWaterReceiver(terrainMat);
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.
 function paintVertex(out: Float32Array, o: number, k: number, x: number, h: number, z: number, ny: number) {
@@ -93,7 +96,7 @@ export function createTerrainMesh() {
         h = Math.min(TILE, n - 1 - tj) + 1;
       let top = -Infinity;
       for (let i = ti; i < ti + w; i++) for (let j = tj; j < tj + h; j++) top = Math.max(top, heights[i]![j]!);
-      if (top < SEABED + 1.2) continue; // open sea floor: the sea draws over it
+      if (!newWaterEnabled && top < SEABED + 1.2) continue; // transparent new water needs the real seabed
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
       geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(w * h * 3), 3));
