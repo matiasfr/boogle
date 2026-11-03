@@ -12,7 +12,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 2. **The first path opens:** a walkable shortcut, with no train. Walking it is the reward, with a real celebration.
 3. **The efficiency ladder,** each rung arriving when you're wanting it: a better axe, a bigger carry, materials brought closer (a depot, a little guy helper).
 4. **Trains come last,** as their own big unlock once a long route makes walking slow. Cargo is their job; riding comes with it.
-5. **Abilities from connecting:** double jump first, then hook shot targets up the middle tower that unlock the glide, matching Breath of the Wild as closely as we can. They're ancient technology you find, and getting one closes out the session. A speed device turns up after you've walked a useful shortcut: short bursts you choose, charged by fast travel, kept when you stop ([traversal-at-speed.md](../research/traversal-at-speed.md), starting at 14 m/s). Its speed stays out of the glide. One or two key gates on the main line; the rest are optional secrets on paths already walked. Each area has cosmetics. Missed prizes appear in the hub.
+5. **Abilities from connecting:** double jump first, then hook shot targets up the middle tower that unlock the glide, matching Breath of the Wild as closely as we can. They're ancient technology you find, and getting one closes out the session. One or two key gates on the main line; the rest are optional secrets on paths already walked. Each area has cosmetics. Missed prizes appear in the hub.
 6. **Town:** a house interior with the first resident, a funny one ("I just moved in here for the jobs"), a shop and a museum. Buildings have roles. Money is a comic score, The Boogler's prices are a gag, and residents plant rumours about him: prophet, mystic, none of it true. The museum shows a striking specimen and the changing town, not a curio shelf.
 7. **Two players:** splitting up pays off, like one chopping while the other rides cargo, plus optional co-op-only rewards like a beam only two can carry. Not required chains.
 
@@ -53,4 +53,4 @@ Chained physics, Boogler story beats beyond rumours, rail grinding, crystal card
 
 ## After this round
 
-Real multiplayer gets priority; the beautiful corner came up but has no slot yet. The main URL starts on this build, prototype code goes, and an architecture pass comes with the move to the main game.
+Real multiplayer gets priority; the beautiful corner came up but has no slot yet. The speed device from [traversal-at-speed.md](../research/traversal-at-speed.md) waits until after this round too. The main URL starts on this build, prototype code goes, and an architecture pass comes with the move to the main game.
