@@ -11,6 +11,7 @@ import type { Browser, BrowserContext, Page } from 'playwright';
 import { createService, loadConfig } from '../../server/src/server.ts';
 import { installWarp, SKIP_DRAWS } from './warp.ts';
 import type { WarpHandle } from './warp.ts';
+import { startWarpServer } from './server-process.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -46,12 +47,13 @@ export const freePort = () =>
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
-export type Stack = { base: string; close: () => Promise<void>; dataDir?: string };
+export type Stack = { base: string; close: () => Promise<void>; dataDir?: string; clockUrl?: string };
 export async function startStack({
   url = null,
   root: dir = root,
   dataRoot = os.tmpdir(),
-}: { url?: string | null; root?: string; dataRoot?: string } = {}): Promise<Stack> {
+  warp = false,
+}: { url?: string | null; root?: string; dataRoot?: string; warp?: boolean } = {}): Promise<Stack> {
   if (url) return { base: url, close: async () => {} };
   const dataDir = fs.mkdtempSync(path.join(dataRoot, 'boogle-look-'));
   // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
@@ -62,8 +64,9 @@ export async function startStack({
     MAX_HOSTED_ROOMS: '1000',
     PLAY_RATE_PER_MIN: '1000000', // a warped page's five-second batches arrive many times a second
   };
-  const server = createService(loadConfig(env, { log: () => {} }));
-  const sigPort = await server.listen(0);
+  const child = warp ? await startWarpServer(env) : null;
+  const server = child ? null : createService(loadConfig(env, { log: () => {} }));
+  const sigPort = child ? child.port : await server!.listen(0);
   const port = await freePort();
   const vite = spawn(
     process.execPath,
@@ -89,16 +92,19 @@ export async function startStack({
   }
   if (!up) {
     vite.kill('SIGTERM');
-    await server.close({ save: false });
+    await child?.close();
+    await server?.close({ save: false });
     fs.rmSync(dataDir, { recursive: true, force: true });
     throw new Error(`vite did not start${viteError ? ': ' + viteError.trim() : ''}`);
   }
   return {
     base,
     dataDir,
+    clockUrl: child?.clockUrl,
     async close() {
       if (!vite.killed) vite.kill('SIGTERM');
-      await server.close({ save: false });
+      await child?.close();
+      await server?.close({ save: false });
       fs.rmSync(dataDir, { recursive: true, force: true });
     },
   };

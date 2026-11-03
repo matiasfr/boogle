@@ -11,6 +11,7 @@ import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
 import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } from './curves.ts';
 import type { CurveData } from './curves.ts';
 import { TARGETS } from './targets.ts';
+import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 
 const opt: {
   view: string;
@@ -44,6 +45,7 @@ const opt: {
   curvesVs: string | null;
   target: string | null;
   players: number;
+  clockUrl?: string;
 } = {
   view: 'hill',
   cam: null,
@@ -123,6 +125,10 @@ for (let k = 0; k < argv.length; k++) {
     opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
   else if (a === '--players')
     opt.players = Number(v()); // 2: a second player in the same room, each in its own browser profile, so neither takes over
+  else if (a === '--warp-speed')
+    v(); // validated by coopWarpOptions below
+  else if (a === '--clock-url')
+    opt.clockUrl = v(); // local server owned by dev/codex/see.ts
   else if (a === '--curves')
     opt.curves = true; // every frame's speed, height, camera distance: a CSV, a plot and readings (./curves.ts)
   else if (a === '--curves-vs') {
@@ -144,6 +150,7 @@ for (let k = 0; k < argv.length; k++) {
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
+  [--warp-speed 5]                          cap both pages and accelerate the local server; --real opts out
   [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
   } else {
@@ -164,8 +171,11 @@ if (
   console.error('--filmstrip and --every require positive integers; --every requires --filmstrip');
   process.exit(2);
 }
-// Two pages only agree through the server, which runs in real time; a built site has no modules to skip its draws through.
-if (opt.players > 1 || opt.url) opt.warp = false;
+const coopOptions = coopWarpOptions(argv);
+// Only a locally controlled server can share the pages' warp. External sites retain real time.
+if (opt.url && !opt.clockUrl) opt.warp = false;
+if (opt.clockUrl && (opt.players !== 2 || !opt.warp)) throw new Error('--clock-url requires two-player warp');
+if (opt.players !== 1 && opt.players !== 2) throw new Error('--players must be 1 or 2');
 const region = opt.region;
 if (
   !Number.isInteger(opt.frames) ||
@@ -202,6 +212,7 @@ const save = opt.at ? findSave(opt.at, opt.saves) : null;
 if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
 
 let stack: Stack | undefined, browser: Browser | undefined;
+let coopWarp: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
 async function pageScript(g: Game, file: string) {
   let body = fs.readFileSync(path.resolve(file), 'utf8');
   // TS evals are modules (top-level await); remove the module marker after stripping types for page evaluation.
@@ -210,7 +221,7 @@ async function pageScript(g: Game, file: string) {
   if (out !== undefined) console.log('eval result:', JSON.stringify(out));
 }
 try {
-  stack = await startStack({ url: opt.url, root: opt.root });
+  stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
   browser = await launch();
   const g = await Game.open(browser, stack, {
     out: opt.out,
@@ -241,24 +252,38 @@ try {
           room: opt.room ?? 'look-two',
           query: [opt.query, 'player=2'].filter(Boolean).join('&'),
           prefix: 'p2-',
+          warp: opt.warp,
         })
       : null;
   g2?.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(`[2] ${m.text()}`));
+  if (g2) {
+    coopWarp = await startCoopWarp(
+      [g, g2],
+      opt.warp ? (opt.clockUrl ?? stack.clockUrl) : undefined,
+      opt.warp ? coopOptions.speed : 1,
+      path.join(g.out, `${label}-warp.json`),
+    );
+  }
   // Warped, the setup's own waits take no time.
   const warpNow = (n: number) => g.page.evaluate((s) => window.__warp?.go(s ?? Infinity), n);
   if (opt.eval) {
-    if (opt.warp) await warpNow(Infinity);
-    await pageScript(g, opt.eval);
-    if (g2) await pageScript(g2, opt.eval);
-    if (opt.warp) await warpNow(1);
+    if (opt.warp && !g2) await warpNow(Infinity);
+    await Promise.all([pageScript(g, opt.eval), ...(g2 ? [pageScript(g2, opt.eval)] : [])]);
+    if (opt.warp && !g2) await warpNow(1);
   }
   // At a beat or with two players, the follow camera shows the player unless a camera was asked for.
   if ((!save && opt.players < 2) || opt.cam) await g.view(pose, opt.fov ?? undefined);
+  if (g2 && opt.cam) await g2.view(pose, opt.fov ?? undefined);
   const limit = opt.until && !argv.includes('--warm') ? 3600 : save && !argv.includes('--warm') ? 2 : opt.warm;
   console.log(
     `warming up ${opt.warp ? 'warped, ' : ''}${limit}s of game time${opt.until ? ` or until ${opt.until}` : ''} ...`,
   );
-  if (opt.warp) {
+  if (coopWarp) {
+    await coopWarp.warm(limit, opt.until);
+    const running = coopWarp;
+    coopWarp = undefined;
+    await running.stop();
+  } else if (opt.warp) {
     const w = await g.warp({ seconds: limit, until: opt.until ?? undefined });
     console.log(`warped: ${w.game.toFixed(0)} s of game in ${w.wall.toFixed(0)} s (${(w.game / w.wall).toFixed(0)}x)`);
     if (opt.until && !w.done) console.log(`NOT REACHED: ${opt.until}`);
@@ -315,7 +340,7 @@ try {
       );
     const fps = await g.fps();
     console.log(`completed game frames/s: ${fps.toFixed(1)} (1s sample; not a GPU benchmark)`);
-    reportGfxErrors([g]);
+    reportGfxErrors(g2 ? [g, g2] : [g]);
     const errors = g.healthErrors();
     if (fps <= 0) errors.push('No completed game frames during the sample');
     if (errors.length) throw new Error(errors.join('\n'));
@@ -332,6 +357,7 @@ try {
   console.error(e);
   process.exitCode = 1;
 } finally {
+  await coopWarp?.stop().catch((e) => console.error('warp cleanup:', e));
   await browser?.close().catch(() => {});
   await stack?.close();
   process.exit(process.exitCode || 0);
