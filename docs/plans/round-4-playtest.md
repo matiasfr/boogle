@@ -1,6 +1,6 @@
 # Round 4: owner's playtest
 
-[Play Boogle](https://boogle.club/) — the bare URL. This worktree's last fixes are committed locally, not pushed or deployed; integrate them before treating this as their playtest.
+[Play Boogle](https://boogle.club/) — the bare URL.
 
 **Gut question:** did you get hungry for a better way, and did finding one feel great?
 
