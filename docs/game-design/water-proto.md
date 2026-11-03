@@ -18,6 +18,9 @@ states, presence or messages. Adapted code's notices ship at `/THIRD_PARTY_NOTIC
   banded rocks with a tide line. Each wave runs up the beach, drains back and leaves a darker band that dries in seconds; rocks
   shelter a dry wedge behind them.
 - **Splashes** ripple through the game's own splash slots and throw a crown of droplets.
+- **The underside shader** now has Ultra Water's rough Snell window, transmitted sun and total internal reflection.
+  A diagnostic camera can inspect it; the regular camera still stays above until the volume treatment is connected.
+  Above-water objects through the window are omitted until an opaque colour read exists.
 
 ## Options
 

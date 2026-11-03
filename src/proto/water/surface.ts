@@ -3,7 +3,7 @@
 // - No opaque colour or depth to read (stage 3 decides that). The body is built from the bed the shore field knows. Over the
 //   first few metres the real ground shows through by blending; deeper, the bed is the shader's.
 // - No sky cube. skyAt() is the one place the reflection asks the sky, so a baked cube can replace it.
-// - No planar reflection, underwater branch, or shadows on the water (the terrain's or floaters').
+// - No planar reflection or shadows on the water (the terrain's or floaters').
 // - Waves come from a source (./waves.ts), which is what the FFT replaces.
 // Every reversed smoothstep of the source is written as smoothstep(lo, hi, x).oneMinus(): reversed edges are undefined in WGSL.
 import * as THREE from 'three/webgpu';
@@ -30,7 +30,21 @@ import type { WaveSource } from './waves.ts';
 
 const { Break, Fn, If, Loop, abs, cameraPosition, clamp, color, cos, dFdx, dFdy, dot, exp, exp2, float, floor } = TSL;
 const { fract, length, log, log2, max, min, mix, mod, normalize, positionGeometry, positionWorld, pow, reflect } = TSL;
-const { select, sin, smoothstep, sqrt, texture, uniform, uniformArray, varying, vec2, vec3, vec4 } = TSL;
+const {
+  frontFacing,
+  refract,
+  select,
+  sin,
+  smoothstep,
+  sqrt,
+  texture,
+  uniform,
+  uniformArray,
+  varying,
+  vec2,
+  vec3,
+  vec4,
+} = TSL;
 
 const PI = Math.PI;
 
@@ -330,8 +344,20 @@ function skyAt(dir: N, blur: N) {
   return mix(sharp, mix(skyU.uHorizon, skyU.uTop, 0.6), blur);
 }
 
+// Shared by the underside, volume and snow: the reference's deep-water in-scatter, in linear HDR.
+export const waterSun = () => seaU.uSpecCol.mul(LOOK.sunGain);
+export const waterScatter = () => lin3(LOOK.scatter);
+export const waterAbsorption = () => lin3(LOOK.absorption);
+export function deepWater(dir: N) {
+  return waterScatter()
+    .mul(skyAt(vec3(0, 1, 0), float(1)).add(waterSun().mul(max(seaU.uSun.y, 0))))
+    .mul(mix(0.55, 1.35, dir.y.mul(0.5).add(0.5)));
+}
+
 export type Ocean = {
   mesh: THREE.Mesh;
+  /** World-height query for the near-plane grid, including shore waves and horizontal displacement inversion. */
+  heightAt: (xz: N) => N;
   update: (camera: THREE.Camera, time: number, sun: THREE.DirectionalLight, hemi?: THREE.HemisphereLight) => void;
 };
 
@@ -339,6 +365,21 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
   const uGridScale = uniform(1),
     uCellStep = uniform((2 * PI) / GRID.angular);
   const f = shoreFields(bake);
+
+  const heightAt = Fn(([at]: [N]) => {
+    const q = at.toVar();
+    const displacement = (xz: N) => {
+      const sh = f.shore(xz).toVar();
+      return source
+        .displace(xz, float(0), cascadeDamp(sh.x.negate()))
+        .add(shoreWaves(xz, sh, f, f.surf(xz), float(0)).disp);
+    };
+    // WaterQuery/OceanSurface waterAt: invert the Gerstner push before querying height.
+    Loop(4, () => q.assign(at.sub(displacement(q).xz)));
+    const d = displacement(q).toVar();
+    const y = d.y.add(impactWaves(at, float(32)).x);
+    return max(y, min(f.shore(at).x.add(0.04), 0));
+  });
 
   // ---------------------------------------------------------------- vertex
   // The undisplaced point and the displaced one both go to the fragment shader.
@@ -354,6 +395,8 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
   const vSurf = varying(f.surf(vertex.xz), 'vSurf');
 
   const material = new THREE.MeshBasicNodeMaterial({
+    side: THREE.DoubleSide,
+    forceSinglePass: true,
     transparent: true,
     fog: false,
     blending: THREE.CustomBlending,
@@ -425,335 +468,372 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     // --- foam --------------------------------------------------------------------------
     const foam = surfaces.whitecap.toVar();
     const shoreFoam = clamp(shore.foam, 0, 1).toVar();
-    // Vertical water thickness, from the bed the field knows rather than a depth buffer.
-    const vth = max(depthBelow.add(vWorld.y), 0).toVar();
-    // Contact foam where the water gets thin: in the shallows only, broken into drifting patches so it never traces the
-    // waterline as a continuous rim, and mostly where bores arrive (a lee shore gets almost none, not an outline).
-    const act = clamp(shore.residual.mul(1.5).add(shoreFoam), 0, 1).toVar();
-    If(depthBelow.lessThan(6).and(act.greaterThan(0)).and(vth.lessThan(ULTRA.foamBand)).and(dist.lessThan(600)), () => {
-      const contact = smoothstep(0, ULTRA.foamBand, vth)
-        .oneMinus()
-        .mul(smoothstep(2, 6, depthBelow).oneMinus())
-        .mul(act.mul(0.5))
-        .mul(
-          smoothstep(
-            0.3,
-            0.6,
-            vnoise(xz.mul(0.7).add(shore.dir.mul(uTime).mul(0.4)))
-              .mul(0.65)
-              .add(vnoise(xz.mul(2.3)).mul(0.35)),
-          ),
-        )
-        // Gone before the mesh edge, which would otherwise wear it as a row of white beads; far off, only sparkle.
-        .mul(smoothstep(0.03, 0.2, vth))
-        .mul(smoothstep(300, 600, dist).oneMinus());
-      foam.assign(max(foam, contact));
-    });
-    // The surf rock: each crest slams into it and leaves a churned skirt that fades until the next one and trails off into
-    // the lee. Phase of the main train, so it pulses with the sets.
-    const rd = vWorld.xz.sub(vec2(ISLAND_AT.x + ROCK.x, ISLAND_AT.z + ROCK.z)).toVar();
-    const rl = length(rd).toVar();
-    If(rl.lessThan(ROCK.r * 3), () => {
-      const lee = max(dot(rd, shore.dir).div(max(rl, 1e-3)), 0);
-      const since = mod(shore.wave0.w, 2 * PI);
-      const hit = exp(since.mul(-0.7)).toVar();
-      const reach = lee.mul(0.9).add(0.3).mul(hit.mul(0.7).add(0.3)).add(1.15).mul(ROCK.r);
-      const ring = smoothstep(ROCK.r * 0.95, reach, rl)
-        .oneMinus()
-        .toVar();
-      const n = vnoise(xz.mul(0.55).sub(shore.dir.mul(uTime).mul(0.9)))
-        .mul(0.6)
-        .add(vnoise(xz.mul(1.9).add(uTime.mul(0.35))).mul(0.4));
-      const skirt = ring.mul(
-        smoothstep(float(0.62).sub(hit.mul(0.3).mul(ring)), float(0.85).sub(hit.mul(0.3).mul(ring)), n),
-      );
-      foam.assign(max(foam, skirt.mul(mix(0.35, 0.75, hit))));
-      // The demo finds the water against a rock from the depth buffer (its `obst` contact). No depth read here, so the known
-      // rock stands in: a churned band hard against its foot, breathing with each hit.
-      const foot = smoothstep(ROCK.r * 1.05, ROCK.r * 1.75, rl.sub(hit.mul(1.2))).oneMinus();
-      foam.assign(max(foam, foot.mul(smoothstep(0.2, 0.5, n)).mul(hit.mul(0.4).add(0.6))));
-    });
 
-    // --- lighting ----------------------------------------------------------------------
-    const ambient = skyAt(vec3(0, 1, 0), float(1)).toVar();
-    const sunI = seaU.uSpecCol.mul(LOOK.sunGain).toVar();
-    const sunY = max(seaU.uSun.y, 0).toVar();
-    const absorption = lin3(LOOK.absorption);
-    const scatter = lin3(LOOK.scatter);
-    // No depth buffer: the path through the water along the view, from the field's bed.
-    const thick = vth.div(max(V.y, 0.1)).toVar();
-    const T = exp(absorption.negate().mul(thick)).toVar();
-    // In-scatter of the water column (sun and sky), then Atlas-style subsurface scatter on crests.
-    const inscatter = scatter
-      .mul(ambient.add(sunI.mul(sunY)))
-      // Over shallow bright sand the light scattered back up has crossed little water: turquoise.
-      .mul(exp(max(depthBelow, 0).mul(-0.3)).mul(1.5).add(1))
-      .toVar();
-    const h = max(vWorld.y, 0);
-    const toward = clamp(dot(seaU.uSun, V.negate()), 0, 1).toVar();
-    const k1 = float(ULTRA.sss[0]!)
-      .mul(h)
-      .mul(pow(toward, 4))
-      .mul(pow(NoL.mul(-0.5).add(0.5), 3));
-    const k2 = float(ULTRA.sss[1]!).mul(pow(NoV, 2));
-    const sss = scatter
-      .mul(sunI)
-      .mul(k1.add(k2).add(max(NoL, 0).mul(ULTRA.sss[2]!)))
-      // Thin breaking lips: sunlight through about a metre of water glows turquoise, strongest looking into the sun.
-      .add(
-        sunI
-          .mul(shore.lip)
-          .mul(exp(absorption.mul(-2)))
-          .mul(0.06)
-          .mul(pow(toward, 3).mul(2.5).add(0.3)),
-      )
-      .toVar();
-    const glow = inscatter.add(sss).toVar();
-    // The bed the shader knows, tinted per channel: the body is its own colour, so nothing can shimmer between two beds.
-    // Only the last hand of water blends with the real ground (feet, the wet edge): Tm is how much of it the blend keeps, and
-    // T - Tm tints that part per channel, exact where the real ground looks like `bed`. Stage 3 is what would show the rest.
-    const bedFade = smoothstep(20, 45, depthBelow).oneMinus();
-    // Lit as three lights the real one: the hemisphere plus the sun, each over pi.
-    const bed = seabed.mul(uSunCol.mul(sunY).add(uHemi).div(PI)).mul(bedFade).toVar();
-    const Tm = dot(T, vec3(1 / 3))
-      .mul(smoothstep(0.25, 0.9, vth).oneMinus())
-      .toVar();
-    // Surf-zone turbidity: sand stirred up behind the bores clouds the water a little, sandy-green, never white.
-    const turb = clamp(shore.residual.mul(0.8).add(shoreFoam.mul(0.6)), 0, 1)
-      .mul(smoothstep(1, 5, depthBelow).oneMinus())
-      .mul(smoothstep(0.1, 0.8, vth))
-      .toVar();
-    const body = bed
-      .mul(T.sub(Tm))
-      .add(glow.mul(vec3(1).sub(T)))
-      .toVar();
-    If(turb.greaterThan(0), () => {
-      turb.mulAssign(
-        vnoise(xz.mul(0.08).sub(shore.dir.mul(uTime).mul(0.3)))
-          .mul(0.4)
-          .add(0.6),
-      );
-      const ext = turb.mul(0.7);
-      const Tt = T.mul(exp(ext.mul(thick).negate())).toVar();
-      const wm = min(ext.div(ext.add(dot(absorption, vec3(0.333)))), 0.4);
-      body.assign(bed.mul(Tt.sub(Tm)).add(mix(glow, inscatter.mul(vec3(1.2, 1.1, 0.75)), wm).mul(vec3(1).sub(Tt))));
-    });
-    // The grade: saturation of the body only, so foam and the sun stay as they are.
-    if (LOOK.saturation !== 1) body.assign(mix(vec3(dot(body, vec3(0.2126, 0.7152, 0.0722))), body, LOOK.saturation));
-
-    // Fresnel with roughness-aware F90 (Lagarde), so the rough far field doesn't go white.
-    const F0 = 0.02;
-    const F90 = max(float(1).sub(sqrt(alpha).mul(0.7)), F0);
-    const F = min(
-      float(F0)
-        .add(F90.sub(F0).mul(pow(float(1).sub(NoV), 5)))
-        .mul(LOOK.reflectGain),
-      LOOK.reflectCap,
-    ).toVar();
-
-    // --- reflection: the sky ------------------------------------------------------------
-    const Rr = reflect(V.negate(), Nrm).toVar();
-    const R = vec3(Rr.x, abs(Rr.y), Rr.z);
-    const refl = skyAt(R, clamp(alpha.mul(2), 0, 1))
-      .mul(lin3(LOOK.reflectTint))
-      .toVar();
-
-    // --- sun specular: GGX, alpha floored so the sun acts as a small area light -----------
-    const aS = max(alpha, 0.015).toVar();
-    const aS2 = aS.mul(aS).toVar();
-    const H = normalize(seaU.uSun.add(V)).toVar();
-    const NoH = max(dot(Nrm, H), 0).toVar();
-    const nl = max(NoL, 0).toVar();
-    const dd = NoH.mul(NoH).mul(aS2.sub(1)).add(1).toVar();
-    const D = aS2.div(dd.mul(dd).mul(PI)).toVar();
-    const vis = float(0.5).div(
-      nl
-        .mul(sqrt(NoV.mul(NoV).mul(aS2.oneMinus()).add(aS2)))
-        .add(NoV.mul(sqrt(nl.mul(nl).mul(aS2.oneMinus()).add(aS2))))
-        .add(1e-5),
-    );
-    const VoH = max(dot(V, H), 0).toVar();
-    const Fs = float(F0).add(pow(VoH.oneMinus(), 5).mul(1 - F0));
-    const spec = sunI.mul(D.mul(vis).mul(Fs).mul(nl).mul(PI)).toVar();
-
-    // Glitter: the lobe as a finite number of sub-pixel facets. Per cell of about the pixel footprint the expected count
-    // mirroring the sun is lam; a Poisson draw / lam scales the smooth lobe (mean 1, energy kept). Dense cells stay smooth,
-    // sparse ones break into points; each cell crossfades between draws so they twinkle.
-    If(dot(spec, vec3(1)).greaterThan(0.02).and(dist.greaterThan(4)).and(vth.greaterThan(0.05)), () => {
-      const FACETS = 2e4; // per m² (calibration knob)
-      const lf = log2(max(footprint, 1e-3)).add(1).toVar();
-      const l0 = floor(lf).toVar();
-      const per = D.mul(NoH)
-        .mul(FACETS * 6.8e-5)
-        .div(max(dot(V, H), 0.05).mul(4))
-        .toVar();
-      const m = float(0).toVar();
-      for (let j = 0; j < 2; j++) {
-        const l = l0.add(j);
-        const sz = exp2(l).toVar();
-        const cell = floor(xz.div(sz)).toVar();
-        const lam = per.mul(sz).mul(sz).toVar();
-        const tt = uTime
-          .mul(3)
-          .add(hash12(cell.add(l.mul(17.17))).mul(64))
-          .toVar();
-        const it = floor(tt).toVar();
-        const n0 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.mul(3.7))), 1e-4, 0.9999));
-        const n1 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.add(1).mul(3.7))), 1e-4, 0.9999));
-        const weight = j === 0 ? float(1).sub(lf.sub(l0)) : lf.sub(l0);
-        m.addAssign(weight.mul(min(mix(n0, n1, smoothstep(0, 1, tt.sub(it))).div(max(lam, 1e-4)), 30)));
-      }
-      spec.mulAssign(
-        mix(
-          1,
-          m,
-          smoothstep(4, 30, dist)
-            .mul(smoothstep(0.05, 0.3, vth))
-            .mul(ULTRA.glint),
-        ),
-      );
-    });
-
-    // The thin wash is churned and aerated, so it mirrors only a dim, broken sky.
-    const mirror = F.mul(mix(0.45, 1, smoothstep(0.08, 0.8, vth))).toVar();
-    // col and keep: this pixel, premultiplied, and how much of what's behind it survives.
-    const col = mix(body, refl, mirror).add(spec).toVar();
-    const keep = Tm.mul(mirror.oneMinus()).toVar();
-    // A vanishing film at the waterline: no reflection or specular seam where the mesh cuts the sand. The edge melts.
-    const film = smoothstep(0, dist.mul(5e-4).add(0.12), vth).toVar();
-    col.mulAssign(film);
-    keep.assign(mix(1, keep, film));
-
-    // --- foam surface: eroded by age via the pattern threshold, kills specular -------------
-    // Dense foam is nearly solid, ageing foam thins out to the lace network. Explicit LODs: these taps sit in branches, only
-    // where there is foam; most of the ocean has none.
-    const foamLod = (scale: number) => log2(max(footprint.mul(512 * scale), 1e-3)).sub(0.5);
-    const foamAt = (uv: N, scale: number) => texture(foamTex, uv).level(foamLod(scale));
-    const cover = float(0).toVar(),
-      pat = float(0).toVar(),
-      fh = float(0.5).toVar(),
-      dens = float(0).toVar();
-    const fg = vec2(0).toVar();
-    If(foam.greaterThan(0), () => {
-      const t0 = foamAt(xz.mul(0.11), 0.11).toVar();
-      pat.assign(t0.r.mul(0.65).add(foamAt(xz.mul(0.031).add(0.37), 0.031).r.mul(0.35)));
-      cover.assign(smoothstep(float(1.05).sub(foam), float(1.3).sub(foam), pat).mul(sqrt(foam)));
-      fh.assign(t0.g);
-      fg.assign(t0.ba.sub(0.5).mul(64 * 0.11));
-      dens.assign(foam);
-    });
-    If(shoreFoam.greaterThan(0), () => {
-      // Whitewater rides shoreward with the bore: a world-space flow map at the phase speed, two phases crossfaded every half
-      // period (which also makes it churn). On the displaced surface, so the crest pinch doesn't squash it into streaks.
-      const FLOW_T = 2.5;
-      const vel = shore.dir.mul(shore.wave0.z).div(max(shore.wave0.y, 1e-3)).toVar();
-      const f0 = fract(uTime.div(FLOW_T)).toVar(),
-        f1 = fract(uTime.div(FLOW_T).add(0.5)).toVar(),
-        wb = abs(f0.mul(2).sub(1)).toVar();
-      const b0 = foamAt(vWorld.xz.sub(vel.mul(f0.mul(FLOW_T))).mul(0.15), 0.15).toVar();
-      const b1 = foamAt(
-        vWorld.xz
-          .sub(vel.mul(f1.mul(FLOW_T)))
-          .mul(0.15)
-          .add(0.43),
-        0.15,
-      ).toVar();
-      const sh_ = mix(b0.g, b1.g, wb).toVar();
-      const sPattern = mix(b0.r, b1.r, wb)
-        .mul(0.3)
-        .add(sh_.mul(0.45))
-        .add(foamAt(vWorld.xz.mul(0.023).add(0.5), 0.023).r.mul(0.25))
-        .toVar();
-      // Lace over a thin, patchy veil on the fresh bore only: an even sheet over the whole surf zone reads as ice.
-      const sCover = smoothstep(float(1).sub(shoreFoam.mul(1.1)), float(1.45).sub(shoreFoam.mul(1.1)), sPattern)
-        .mul(sqrt(shoreFoam))
-        .toVar();
-      sCover.assign(
-        max(
-          sCover,
-          smoothstep(0.45, 0.9, shoreFoam)
-            .mul(smoothstep(0.35, 0.7, sPattern))
-            .mul(smoothstep(0.1, 0.5, vth))
-            .mul(0.3),
-        ),
-      );
-      sCover.mulAssign(mix(0.55, 1, smoothstep(0.05, 0.4, vth)));
-      If(sCover.greaterThanEqual(cover), () => {
-        pat.assign(sPattern);
-        fh.assign(sh_);
-        dens.assign(shoreFoam);
-        fg.assign(
-          mix(b0.ba, b1.ba, wb)
-            .mul(64 * 0.15)
-            .sub(32 * 0.15),
+    // OceanSurface.js 469-506. No opaque scene colour yet: the window transmits the sky only.
+    // All derivatives and implicit samples above remain in uniform flow before the front/back branch.
+    const result = vec4(0).toVar();
+    If(frontFacing.not(), () => {
+      const Nu = Nrm.negate();
+      const cosI = dot(V, Nu);
+      const deep = deepWater(reflect(V.negate(), Nu)).toVar();
+      const col = deep.toVar();
+      const edge = max(alpha.mul(1.5), 0.02);
+      const win = smoothstep(float(0.6614).sub(edge), float(0.6614).add(edge), cosI);
+      If(win.greaterThan(0), () => {
+        const td = refract(V.negate(), Nu, 1.33).toVar();
+        If(dot(td, td).lessThan(1e-8), () => td.assign(normalize(V.negate().sub(Nu.mul(dot(V.negate(), Nu))))));
+        const cosT = max(dot(td, Nrm), 0);
+        const fresnel = pow(cosT.oneMinus(), 5).mul(0.98).add(0.02);
+        const aT = max(alpha.mul(1.4), 0.03);
+        const mu = max(dot(td, seaU.uSun), 0);
+        const den = mu.mul(mu).mul(aT.mul(aT).sub(1)).add(1);
+        const sunLobe = aT.mul(aT).div(den.mul(den).mul(PI)).mul(0.25);
+        col.assign(
+          mix(deep, mix(skyAt(td, clamp(alpha.mul(2), 0, 1)).add(waterSun().mul(sunLobe)), deep, fresnel), win),
         );
       });
-      cover.assign(max(cover, sCover));
-    });
-    If(shore.residual.greaterThan(0), () => {
-      // Lace left behind in the surf zone, drifting shoreward (two-phase flow map).
-      const fp = fract(uTime.div(8)).toVar();
-      const drift = shore.dir.mul(2.8).toVar();
-      const r0 = foamAt(vWorld.xz.sub(drift.mul(fp)).mul(0.06), 0.06).r;
-      const r1 = foamAt(
-        vWorld.xz
-          .sub(drift.mul(fract(fp.add(0.5))))
-          .mul(0.06)
-          .add(0.5),
-        0.06,
-      ).r;
-      const rp = mix(r0, r1, abs(fp.mul(2).sub(1))).toVar();
-      const rCover = smoothstep(float(1.2).sub(shore.residual), float(1.35).sub(shore.residual), rp)
-        .mul(shore.residual)
-        .toVar();
-      If(rCover.greaterThanEqual(cover), () => {
-        pat.assign(rp);
-        fh.assign(0.5);
-        fg.assign(vec2(0));
-        dens.assign(shore.residual.mul(0.5));
+      col.mulAssign(max(foam, shoreFoam).mul(0.55).oneMinus());
+      // The existing premultiplied blend must replace the background; no alpha-tag MRT is needed by our lens grid.
+      result.assign(vec4(col, 1));
+    }).Else(() => {
+      // Vertical water thickness, from the bed the field knows rather than a depth buffer.
+      const vth = max(depthBelow.add(vWorld.y), 0).toVar();
+      // Contact foam where the water gets thin: in the shallows only, broken into drifting patches so it never traces the
+      // waterline as a continuous rim, and mostly where bores arrive (a lee shore gets almost none, not an outline).
+      const act = clamp(shore.residual.mul(1.5).add(shoreFoam), 0, 1).toVar();
+      If(
+        depthBelow.lessThan(6).and(act.greaterThan(0)).and(vth.lessThan(ULTRA.foamBand)).and(dist.lessThan(600)),
+        () => {
+          const contact = smoothstep(0, ULTRA.foamBand, vth)
+            .oneMinus()
+            .mul(smoothstep(2, 6, depthBelow).oneMinus())
+            .mul(act.mul(0.5))
+            .mul(
+              smoothstep(
+                0.3,
+                0.6,
+                vnoise(xz.mul(0.7).add(shore.dir.mul(uTime).mul(0.4)))
+                  .mul(0.65)
+                  .add(vnoise(xz.mul(2.3)).mul(0.35)),
+              ),
+            )
+            // Gone before the mesh edge, which would otherwise wear it as a row of white beads; far off, only sparkle.
+            .mul(smoothstep(0.03, 0.2, vth))
+            .mul(smoothstep(300, 600, dist).oneMinus());
+          foam.assign(max(foam, contact));
+        },
+      );
+      // The surf rock: each crest slams into it and leaves a churned skirt that fades until the next one and trails off into
+      // the lee. Phase of the main train, so it pulses with the sets.
+      const rd = vWorld.xz.sub(vec2(ISLAND_AT.x + ROCK.x, ISLAND_AT.z + ROCK.z)).toVar();
+      const rl = length(rd).toVar();
+      If(rl.lessThan(ROCK.r * 3), () => {
+        const lee = max(dot(rd, shore.dir).div(max(rl, 1e-3)), 0);
+        const since = mod(shore.wave0.w, 2 * PI);
+        const hit = exp(since.mul(-0.7)).toVar();
+        const reach = lee.mul(0.9).add(0.3).mul(hit.mul(0.7).add(0.3)).add(1.15).mul(ROCK.r);
+        const ring = smoothstep(ROCK.r * 0.95, reach, rl)
+          .oneMinus()
+          .toVar();
+        const n = vnoise(xz.mul(0.55).sub(shore.dir.mul(uTime).mul(0.9)))
+          .mul(0.6)
+          .add(vnoise(xz.mul(1.9).add(uTime.mul(0.35))).mul(0.4));
+        const skirt = ring.mul(
+          smoothstep(float(0.62).sub(hit.mul(0.3).mul(ring)), float(0.85).sub(hit.mul(0.3).mul(ring)), n),
+        );
+        foam.assign(max(foam, skirt.mul(mix(0.35, 0.75, hit))));
+        // The demo finds the water against a rock from the depth buffer (its `obst` contact). No depth read here, so the known
+        // rock stands in: a churned band hard against its foot, breathing with each hit.
+        const foot = smoothstep(ROCK.r * 1.05, ROCK.r * 1.75, rl.sub(hit.mul(1.2))).oneMinus();
+        foam.assign(max(foam, foot.mul(smoothstep(0.2, 0.5, n)).mul(hit.mul(0.4).add(0.6))));
       });
-      cover.assign(max(cover, rCover));
-    });
-    // No foam on the vanishing film at the waterline, whose thickness flickers as the far mesh slides.
-    cover.mulAssign(smoothstep(0, dist.mul(3e-4).add(0.05), vth));
-    If(cover.greaterThan(0), () => {
-      // Billows bump the normal and shade their creases; thin foam is a bubble film tinted by the water under it, dense foam
-      // a bright diffuse white with a little sheen on the bubble tops.
-      const fN = normalize(Nrm.sub(vec3(fg.x, 0, fg.y).mul(dens.mul(0.12).add(0.03)))).toVar();
-      const fl = dot(fN, seaU.uSun);
-      const ao = mix(0.45, 1, smoothstep(0.15, 0.75, fh)).toVar();
-      const solid = smoothstep(0.2, 0.9, dens.mul(fh.mul(0.7).add(0.55))).toVar();
-      const albedo = mix(lin3(ULTRA.foamTint), vec3(0.93, 0.92, 0.88), max(solid, smoothstep(0.3, 0.9, pat).mul(0.6)));
-      const lit = sunI
-        .mul(clamp(fl.mul(0.8).add(0.2), 0, 1).mul(0.85).add(0.15))
-        .mul(mix(ao, 1, 0.4))
-        .add(ambient.mul(1.1).mul(ao))
-        // Sun behind the crest shines through the thin foam on top.
-        .add(sunI.mul(pow(toward, 4)).mul(0.4).mul(solid.oneMinus()));
-      const foamCol = lit
-        .mul(albedo)
-        .mul(ULTRA.foamBright)
+
+      // --- lighting ----------------------------------------------------------------------
+      const ambient = skyAt(vec3(0, 1, 0), float(1)).toVar();
+      const sunI = seaU.uSpecCol.mul(LOOK.sunGain).toVar();
+      const sunY = max(seaU.uSun.y, 0).toVar();
+      const absorption = lin3(LOOK.absorption);
+      const scatter = lin3(LOOK.scatter);
+      // No depth buffer: the path through the water along the view, from the field's bed.
+      const thick = vth.div(max(V.y, 0.1)).toVar();
+      const T = exp(absorption.negate().mul(thick)).toVar();
+      // In-scatter of the water column (sun and sky), then Atlas-style subsurface scatter on crests.
+      const inscatter = scatter
+        .mul(ambient.add(sunI.mul(sunY)))
+        // Over shallow bright sand the light scattered back up has crossed little water: turquoise.
+        .mul(exp(max(depthBelow, 0).mul(-0.3)).mul(1.5).add(1))
+        .toVar();
+      const h = max(vWorld.y, 0);
+      const toward = clamp(dot(seaU.uSun, V.negate()), 0, 1).toVar();
+      const k1 = float(ULTRA.sss[0]!)
+        .mul(h)
+        .mul(pow(toward, 4))
+        .mul(pow(NoL.mul(-0.5).add(0.5), 3));
+      const k2 = float(ULTRA.sss[1]!).mul(pow(NoV, 2));
+      const sss = scatter
+        .mul(sunI)
+        .mul(k1.add(k2).add(max(NoL, 0).mul(ULTRA.sss[2]!)))
+        // Thin breaking lips: sunlight through about a metre of water glows turquoise, strongest looking into the sun.
         .add(
           sunI
-            .mul(pow(max(dot(fN, H), 0), 90))
-            .mul(0.5)
-            .mul(smoothstep(0.55, 0.85, fh))
-            .mul(solid),
+            .mul(shore.lip)
+            .mul(exp(absorption.mul(-2)))
+            .mul(0.06)
+            .mul(pow(toward, 3).mul(2.5).add(0.3)),
+        )
+        .toVar();
+      const glow = inscatter.add(sss).toVar();
+      // The bed the shader knows, tinted per channel: the body is its own colour, so nothing can shimmer between two beds.
+      // Only the last hand of water blends with the real ground (feet, the wet edge): Tm is how much of it the blend keeps, and
+      // T - Tm tints that part per channel, exact where the real ground looks like `bed`. Stage 3 is what would show the rest.
+      const bedFade = smoothstep(20, 45, depthBelow).oneMinus();
+      // Lit as three lights the real one: the hemisphere plus the sun, each over pi.
+      const bed = seabed.mul(uSunCol.mul(sunY).add(uHemi).div(PI)).mul(bedFade).toVar();
+      const Tm = dot(T, vec3(1 / 3))
+        .mul(smoothstep(0.25, 0.9, vth).oneMinus())
+        .toVar();
+      // Surf-zone turbidity: sand stirred up behind the bores clouds the water a little, sandy-green, never white.
+      const turb = clamp(shore.residual.mul(0.8).add(shoreFoam.mul(0.6)), 0, 1)
+        .mul(smoothstep(1, 5, depthBelow).oneMinus())
+        .mul(smoothstep(0.1, 0.8, vth))
+        .toVar();
+      const body = bed
+        .mul(T.sub(Tm))
+        .add(glow.mul(vec3(1).sub(T)))
+        .toVar();
+      If(turb.greaterThan(0), () => {
+        turb.mulAssign(
+          vnoise(xz.mul(0.08).sub(shore.dir.mul(uTime).mul(0.3)))
+            .mul(0.4)
+            .add(0.6),
         );
-      const a = cover.mul(mix(0.8, 1, solid)).toVar();
-      col.assign(mix(col, foamCol, a));
-      keep.mulAssign(a.oneMinus());
+        const ext = turb.mul(0.7);
+        const Tt = T.mul(exp(ext.mul(thick).negate())).toVar();
+        const wm = min(ext.div(ext.add(dot(absorption, vec3(0.333)))), 0.4);
+        body.assign(bed.mul(Tt.sub(Tm)).add(mix(glow, inscatter.mul(vec3(1.2, 1.1, 0.75)), wm).mul(vec3(1).sub(Tt))));
+      });
+      // The grade: saturation of the body only, so foam and the sun stay as they are.
+      if (LOOK.saturation !== 1) body.assign(mix(vec3(dot(body, vec3(0.2126, 0.7152, 0.0722))), body, LOOK.saturation));
+
+      // Fresnel with roughness-aware F90 (Lagarde), so the rough far field doesn't go white.
+      const F0 = 0.02;
+      const F90 = max(float(1).sub(sqrt(alpha).mul(0.7)), F0);
+      const F = min(
+        float(F0)
+          .add(F90.sub(F0).mul(pow(float(1).sub(NoV), 5)))
+          .mul(LOOK.reflectGain),
+        LOOK.reflectCap,
+      ).toVar();
+
+      // --- reflection: the sky ------------------------------------------------------------
+      const Rr = reflect(V.negate(), Nrm).toVar();
+      const R = vec3(Rr.x, abs(Rr.y), Rr.z);
+      const refl = skyAt(R, clamp(alpha.mul(2), 0, 1))
+        .mul(lin3(LOOK.reflectTint))
+        .toVar();
+
+      // --- sun specular: GGX, alpha floored so the sun acts as a small area light -----------
+      const aS = max(alpha, 0.015).toVar();
+      const aS2 = aS.mul(aS).toVar();
+      const H = normalize(seaU.uSun.add(V)).toVar();
+      const NoH = max(dot(Nrm, H), 0).toVar();
+      const nl = max(NoL, 0).toVar();
+      const dd = NoH.mul(NoH).mul(aS2.sub(1)).add(1).toVar();
+      const D = aS2.div(dd.mul(dd).mul(PI)).toVar();
+      const vis = float(0.5).div(
+        nl
+          .mul(sqrt(NoV.mul(NoV).mul(aS2.oneMinus()).add(aS2)))
+          .add(NoV.mul(sqrt(nl.mul(nl).mul(aS2.oneMinus()).add(aS2))))
+          .add(1e-5),
+      );
+      const VoH = max(dot(V, H), 0).toVar();
+      const Fs = float(F0).add(pow(VoH.oneMinus(), 5).mul(1 - F0));
+      const spec = sunI.mul(D.mul(vis).mul(Fs).mul(nl).mul(PI)).toVar();
+
+      // Glitter: the lobe as a finite number of sub-pixel facets. Per cell of about the pixel footprint the expected count
+      // mirroring the sun is lam; a Poisson draw / lam scales the smooth lobe (mean 1, energy kept). Dense cells stay smooth,
+      // sparse ones break into points; each cell crossfades between draws so they twinkle.
+      If(dot(spec, vec3(1)).greaterThan(0.02).and(dist.greaterThan(4)).and(vth.greaterThan(0.05)), () => {
+        const FACETS = 2e4; // per m² (calibration knob)
+        const lf = log2(max(footprint, 1e-3)).add(1).toVar();
+        const l0 = floor(lf).toVar();
+        const per = D.mul(NoH)
+          .mul(FACETS * 6.8e-5)
+          .div(max(dot(V, H), 0.05).mul(4))
+          .toVar();
+        const m = float(0).toVar();
+        for (let j = 0; j < 2; j++) {
+          const l = l0.add(j);
+          const sz = exp2(l).toVar();
+          const cell = floor(xz.div(sz)).toVar();
+          const lam = per.mul(sz).mul(sz).toVar();
+          const tt = uTime
+            .mul(3)
+            .add(hash12(cell.add(l.mul(17.17))).mul(64))
+            .toVar();
+          const it = floor(tt).toVar();
+          const n0 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.mul(3.7))), 1e-4, 0.9999));
+          const n1 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.add(1).mul(3.7))), 1e-4, 0.9999));
+          const weight = j === 0 ? float(1).sub(lf.sub(l0)) : lf.sub(l0);
+          m.addAssign(weight.mul(min(mix(n0, n1, smoothstep(0, 1, tt.sub(it))).div(max(lam, 1e-4)), 30)));
+        }
+        spec.mulAssign(
+          mix(
+            1,
+            m,
+            smoothstep(4, 30, dist)
+              .mul(smoothstep(0.05, 0.3, vth))
+              .mul(ULTRA.glint),
+          ),
+        );
+      });
+
+      // The thin wash is churned and aerated, so it mirrors only a dim, broken sky.
+      const mirror = F.mul(mix(0.45, 1, smoothstep(0.08, 0.8, vth))).toVar();
+      // col and keep: this pixel, premultiplied, and how much of what's behind it survives.
+      const col = mix(body, refl, mirror).add(spec).toVar();
+      const keep = Tm.mul(mirror.oneMinus()).toVar();
+      // A vanishing film at the waterline: no reflection or specular seam where the mesh cuts the sand. The edge melts.
+      const film = smoothstep(0, dist.mul(5e-4).add(0.12), vth).toVar();
+      col.mulAssign(film);
+      keep.assign(mix(1, keep, film));
+
+      // --- foam surface: eroded by age via the pattern threshold, kills specular -------------
+      // Dense foam is nearly solid, ageing foam thins out to the lace network. Explicit LODs: these taps sit in branches, only
+      // where there is foam; most of the ocean has none.
+      const foamLod = (scale: number) => log2(max(footprint.mul(512 * scale), 1e-3)).sub(0.5);
+      const foamAt = (uv: N, scale: number) => texture(foamTex, uv).level(foamLod(scale));
+      const cover = float(0).toVar(),
+        pat = float(0).toVar(),
+        fh = float(0.5).toVar(),
+        dens = float(0).toVar();
+      const fg = vec2(0).toVar();
+      If(foam.greaterThan(0), () => {
+        const t0 = foamAt(xz.mul(0.11), 0.11).toVar();
+        pat.assign(t0.r.mul(0.65).add(foamAt(xz.mul(0.031).add(0.37), 0.031).r.mul(0.35)));
+        cover.assign(smoothstep(float(1.05).sub(foam), float(1.3).sub(foam), pat).mul(sqrt(foam)));
+        fh.assign(t0.g);
+        fg.assign(t0.ba.sub(0.5).mul(64 * 0.11));
+        dens.assign(foam);
+      });
+      If(shoreFoam.greaterThan(0), () => {
+        // Whitewater rides shoreward with the bore: a world-space flow map at the phase speed, two phases crossfaded every half
+        // period (which also makes it churn). On the displaced surface, so the crest pinch doesn't squash it into streaks.
+        const FLOW_T = 2.5;
+        const vel = shore.dir.mul(shore.wave0.z).div(max(shore.wave0.y, 1e-3)).toVar();
+        const f0 = fract(uTime.div(FLOW_T)).toVar(),
+          f1 = fract(uTime.div(FLOW_T).add(0.5)).toVar(),
+          wb = abs(f0.mul(2).sub(1)).toVar();
+        const b0 = foamAt(vWorld.xz.sub(vel.mul(f0.mul(FLOW_T))).mul(0.15), 0.15).toVar();
+        const b1 = foamAt(
+          vWorld.xz
+            .sub(vel.mul(f1.mul(FLOW_T)))
+            .mul(0.15)
+            .add(0.43),
+          0.15,
+        ).toVar();
+        const sh_ = mix(b0.g, b1.g, wb).toVar();
+        const sPattern = mix(b0.r, b1.r, wb)
+          .mul(0.3)
+          .add(sh_.mul(0.45))
+          .add(foamAt(vWorld.xz.mul(0.023).add(0.5), 0.023).r.mul(0.25))
+          .toVar();
+        // Lace over a thin, patchy veil on the fresh bore only: an even sheet over the whole surf zone reads as ice.
+        const sCover = smoothstep(float(1).sub(shoreFoam.mul(1.1)), float(1.45).sub(shoreFoam.mul(1.1)), sPattern)
+          .mul(sqrt(shoreFoam))
+          .toVar();
+        sCover.assign(
+          max(
+            sCover,
+            smoothstep(0.45, 0.9, shoreFoam)
+              .mul(smoothstep(0.35, 0.7, sPattern))
+              .mul(smoothstep(0.1, 0.5, vth))
+              .mul(0.3),
+          ),
+        );
+        sCover.mulAssign(mix(0.55, 1, smoothstep(0.05, 0.4, vth)));
+        If(sCover.greaterThanEqual(cover), () => {
+          pat.assign(sPattern);
+          fh.assign(sh_);
+          dens.assign(shoreFoam);
+          fg.assign(
+            mix(b0.ba, b1.ba, wb)
+              .mul(64 * 0.15)
+              .sub(32 * 0.15),
+          );
+        });
+        cover.assign(max(cover, sCover));
+      });
+      If(shore.residual.greaterThan(0), () => {
+        // Lace left behind in the surf zone, drifting shoreward (two-phase flow map).
+        const fp = fract(uTime.div(8)).toVar();
+        const drift = shore.dir.mul(2.8).toVar();
+        const r0 = foamAt(vWorld.xz.sub(drift.mul(fp)).mul(0.06), 0.06).r;
+        const r1 = foamAt(
+          vWorld.xz
+            .sub(drift.mul(fract(fp.add(0.5))))
+            .mul(0.06)
+            .add(0.5),
+          0.06,
+        ).r;
+        const rp = mix(r0, r1, abs(fp.mul(2).sub(1))).toVar();
+        const rCover = smoothstep(float(1.2).sub(shore.residual), float(1.35).sub(shore.residual), rp)
+          .mul(shore.residual)
+          .toVar();
+        If(rCover.greaterThanEqual(cover), () => {
+          pat.assign(rp);
+          fh.assign(0.5);
+          fg.assign(vec2(0));
+          dens.assign(shore.residual.mul(0.5));
+        });
+        cover.assign(max(cover, rCover));
+      });
+      // No foam on the vanishing film at the waterline, whose thickness flickers as the far mesh slides.
+      cover.mulAssign(smoothstep(0, dist.mul(3e-4).add(0.05), vth));
+      If(cover.greaterThan(0), () => {
+        // Billows bump the normal and shade their creases; thin foam is a bubble film tinted by the water under it, dense foam
+        // a bright diffuse white with a little sheen on the bubble tops.
+        const fN = normalize(Nrm.sub(vec3(fg.x, 0, fg.y).mul(dens.mul(0.12).add(0.03)))).toVar();
+        const fl = dot(fN, seaU.uSun);
+        const ao = mix(0.45, 1, smoothstep(0.15, 0.75, fh)).toVar();
+        const solid = smoothstep(0.2, 0.9, dens.mul(fh.mul(0.7).add(0.55))).toVar();
+        const albedo = mix(
+          lin3(ULTRA.foamTint),
+          vec3(0.93, 0.92, 0.88),
+          max(solid, smoothstep(0.3, 0.9, pat).mul(0.6)),
+        );
+        const lit = sunI
+          .mul(clamp(fl.mul(0.8).add(0.2), 0, 1).mul(0.85).add(0.15))
+          .mul(mix(ao, 1, 0.4))
+          .add(ambient.mul(1.1).mul(ao))
+          // Sun behind the crest shines through the thin foam on top.
+          .add(sunI.mul(pow(toward, 4)).mul(0.4).mul(solid.oneMinus()));
+        const foamCol = lit
+          .mul(albedo)
+          .mul(ULTRA.foamBright)
+          .add(
+            sunI
+              .mul(pow(max(dot(fN, H), 0), 90))
+              .mul(0.5)
+              .mul(smoothstep(0.55, 0.85, fh))
+              .mul(solid),
+          );
+        const a = cover.mul(mix(0.8, 1, solid)).toVar();
+        col.assign(mix(col, foamCol, a));
+        keep.mulAssign(a.oneMinus());
+      });
+
+      // --- aerial perspective into the horizon sky --------------------------------------------
+      const fog = float(1)
+        .sub(exp(dist.mul(-LOOK.fogDensity)))
+        .toVar();
+      col.assign(mix(col, skyAt(V.negate(), float(0)), fog));
+      keep.mulAssign(fog.oneMinus());
+      col.mulAssign(seaU.uLight);
+
+      result.assign(vec4(col, keep.oneMinus()));
     });
-
-    // --- aerial perspective into the horizon sky --------------------------------------------
-    const fog = float(1)
-      .sub(exp(dist.mul(-LOOK.fogDensity)))
-      .toVar();
-    col.assign(mix(col, skyAt(V.negate(), float(0)), fog));
-    keep.mulAssign(fog.oneMinus());
-    col.mulAssign(seaU.uLight);
-
-    return vec4(col, keep.oneMinus());
+    return result;
   })();
 
   const geo = buildGrid(GRID.angular);
@@ -762,6 +842,7 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
   mesh.renderOrder = -1; // before the other see-through things: it writes depth
   return {
     mesh,
+    heightAt,
     update(camera, time, sun, hemi) {
       uTime.value = time;
       (uSunCol.value as THREE.Color).copy(sun.color).multiplyScalar(sun.intensity);
