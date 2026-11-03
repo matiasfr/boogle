@@ -118,24 +118,27 @@ old `video-*` releases. To preview pages locally: copy `.look/publish/<tag>` int
 
 ## 5. Patch video loop
 
-`.github/workflows/patch-video.yml` runs this every morning, Pacific time (and on demand from the Actions tab, with `force` to skip the
-gate and `notes` for instructions to that one run, such as featuring a prototype). A shell gate first counts commits touching game files since the last video (`npm run video:changes --
---count`, at least 3), so quiet days cost nothing. Claude then does steps 1-4 and opens a `claude/*` PR instead of
-step 6. It writes `.look/publish.json` (the `video:publish` fields as JSON) instead of step 5. The workflow then
-publishes with `--from .look/publish.json` and comments the share link in the "Patch videos" issue, mentioning the
-owner, instead of step 7. It runs on a macOS runner, which has a GPU (Linux runners only have software GL: 1-2 s per frame). To run the loop by
-hand, follow the steps below. It is unattended: never stop to ask.
+`npm run daily -- patch-video` runs this on the owner's Mac with Codex on the owner's subscription. The director
+installs the launchd calendar with `npm run daily:install`; [setup, schedule and recovery](../../../dev/daily/README.md).
+`--dry-run` previews without side effects; `--force` bypasses the three-game-commit gate and `--notes "..."` adds
+editorial instructions. The daily loop covers main only, never prototypes. It always uses a fresh worktree and skips
+overlapping runs. Codex records and cuts the video; a separate Codex session checks and fixes the cut. It writes
+`.look/publish.json` rather than publishing itself. The runner checks and ships changed shots with `npm run ship`,
+publishes the approved video, then posts to the "Patch videos" issue mentioning the owner. CI still deploys Pages;
+the old Claude patch-video workflow is removed. For the daily agent, the runner owns steps 5-7 below and the separate
+review session. New edit lists use `.look/reels/<name>.ts` and `npm run reel -- .look/reels/<name>.ts`.
+The following describes the editorial sequence; the daily agent must not pull or switch the caller's checkout.
 
-1. `git pull` on `main`, then `npm run video:changes`. Count the new things a player would notice and enjoy (a new
+1. Start from fresh `origin/main` (the daily runner does this), then `npm run video:changes`. Count the new things a player would notice and enjoy (a new
    place, creature, toy, mechanic or interaction). A `+` line is a lead, not a count. Fixes, tuning, performance,
    tooling and QoL don't count (they can go on a QoL card). Fewer than 3: stop and report "not enough yet" (no video,
    no notification).
 2. For each feature, read its commit and code, then write or extend a shot in `dev/video/shots/` (one shot file per
    area, a few clips each). Record with `npm run clip`, read every contact sheet (section 2), and fix framing until
    each payoff is clearly on screen.
-3. Write `.look/reels/patch-<mon><day>.mjs` (the structure of the example in section 3): an intro card, one captioned
+3. Write `.look/reels/patch-<mon><day>.ts` (the structure of the example in section 3): an intro card, one captioned
    clip per feature, a QoL card if there are enough small changes, an outro card. 45-75 s. It is not committed.
-4. `npm run reel -- patch-<mon><day>`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
+4. `npm run reel -- .look/reels/patch-<mon><day>.ts`, then have a reviewer subagent check the cut (framing, captions vs. what's shown, pacing, payoffs
    inside captions, HUD overlap). Apply its fixes, re-render, and check the final contact sheet yourself.
 5. `npm run video:publish` with a title, a one-sentence summary, one `--feature` per feature and `--target` set to
    the newest commit the video covers (`npm run video:changes` starts from that tag next time).

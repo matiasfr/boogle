@@ -52,7 +52,7 @@ if (!arg || !fs.existsSync(file)) {
   process.exit(2);
 }
 const reel: Reel = (await import(file)).default;
-const name = path.basename(file, '.mjs');
+const name = path.basename(file, path.extname(file));
 const [W, H] = reel.size || [1280, 720];
 const FPS = reel.fps || 30;
 const FADE = reel.fade ?? 0.4;
