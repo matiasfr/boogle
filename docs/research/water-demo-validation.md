@@ -153,7 +153,7 @@ Savings are milliseconds of GPU span at a 1920×1200 canvas. They are not additi
 Both profiles retain stored **4× MSAA colour and depth**, all four 256² FFT bands, wave energy, the 384-segment
 polar grid, per-frame caustic updates and the dynamic 4096² shadow map. The source demo's coarse-pointer selection
 and 0.6 mobile resolution are adapted from `_refs/ultra-water/src/main.js`; its 2× mobile MSAA is deliberately
-not adopted. Every device defaults to high (changed after the owner's iPad held 60 fps on it); `q=mobile` asks for mobile.
+not adopted. Coarse pointers default to mobile, desktop to high; `q=` overrides (owner's call). Mobile is now only the 0.6 resolution: half-size caustics and the removed terrain octaves had no clear saving and stay behind `waterCaustics=cheap` and `waterTerrain=cheap`.
 
 ### Final counts and timings
 

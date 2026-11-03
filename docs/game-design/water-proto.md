@@ -59,7 +59,7 @@ and trough clamp; finite GPU triangulation and the 10 Hz sample interval limit t
 ## Options
 
 - `?proto=water`: demo scene and Lagoon opening; `&v=pop`: previous saturation/absorption/reflection grade.
-- `&q=high|mobile`: high by default; a coarse pointer selects mobile unless `q=high` is explicit.
+- `&q=high|mobile`: touch devices start on mobile, the demo's 0.6 resolution; everything else on high. `q=` overrides.
   Mobile draws the world at 0.6 of the maximum device pixel ratio, normalized against adaptive resolution's
   current 0.6–1 ratio so the scales never multiply down to 0.36. AgX/output remains at the adaptive canvas size.
   Stored 4× MSAA, all four FFT bands, wave energy, 384-segment grid and the 4096 shadow map stay the same.
