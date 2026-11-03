@@ -6,9 +6,11 @@
 import * as THREE from 'three/webgpu';
 import { softWall } from '../../entities/player/state.ts';
 import { onFrame } from '../../loop.ts';
-import { setCcd, teleport } from '../../physics/engine.ts';
-import { PLAYER_R } from '../../constants.ts';
-import { cam, camConstraints, me } from '../../player/player.ts';
+import { onPreStep, setCcd, teleport } from '../../physics/engine.ts';
+import { waterField } from '../../physics/water-field.ts';
+import { GRAVITY, PLAYER_MASS, PLAYER_R, SWIM_DEPTH } from '../../constants.ts';
+import { cam, me } from '../../player/player.ts';
+import { registerAction } from '../../player/controls.ts';
 import { precompile } from '../../render/precompile.ts';
 import { camera, scene, sun } from '../../render/scene.ts';
 import { seaU, waterMat } from '../../render/water-render.ts';
@@ -18,6 +20,8 @@ import { islandHeight, rockObstacle } from './height.ts';
 import { buildIsland } from './island.ts';
 import { bakeShoreMap } from './shore.ts';
 import { createOcean } from './surface.ts';
+import { createUnderwater } from './underwater.ts';
+import { createSnow } from './snow.ts';
 import { GRID, ISLAND_AT, SHORE, SPAWN } from './tuning.ts';
 import { analyticWaves } from './waves.ts';
 
@@ -34,7 +38,10 @@ const source =
 const t3 = performance.now();
 buildIsland(bake);
 const ocean = createOcean(source, bake, foamTex);
+const underwater = createUnderwater(ocean);
+const snow = createSnow();
 scene.add(ocean.mesh);
+scene.add(snow.mesh);
 ocean.mesh.visible = new URLSearchParams(location.search).get('ocean') !== 'off'; // for cost: `perf --query`, with and without
 void precompile(ocean.mesh);
 console.info(
@@ -48,11 +55,44 @@ camera.near = 0.25;
 camera.updateProjectionMatrix();
 softWall.at = Infinity; // this world runs well past the 510 m square the player's soft wall guards
 
-// Stands in for what the water can't do yet: from below the surface draws nothing, so the camera stays above it.
-camConstraints.push((_, pos) => {
-  if (Math.hypot(pos.x - ISLAND_AT.x, pos.z - ISLAND_AT.z) > 40) pos.y = Math.max(pos.y, 0.4);
-  return false;
+// Prototype-only Owner movement, through the existing Rapier body. Space/A remains swim up.
+let diving = false;
+registerAction('water-dive', {
+  pad: 'rb',
+  key: 'KeyC',
+  label: 'Swim down',
+  group: 'move',
+  context: 'swimming',
+  down: () => {
+    diving = true;
+  },
+  up: () => {
+    diving = false;
+  },
 });
+addEventListener('blur', () => {
+  diving = false;
+});
+onPreStep(
+  () => {
+    const b = me.body;
+    if (!b || !diving) return;
+    const depth = waterField.surfaceAt(b.position.x, b.position.z) - (b.position.y + SWIM_DEPTH);
+    if (depth < -0.15) return;
+    // Cancel the existing buoyancy while held, then steer to 2.5 m/s down. Collisions still own the position.
+    if (depth > 0)
+      b.force.y -= PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
+    b.force.y += PLAYER_MASS * (GRAVITY + (-2.5 - b.velocity.y) * 8);
+  },
+  { order: 1001 },
+);
+onFrame(
+  ({ elapsed, dt }) => {
+    underwater.update(elapsed, dt);
+    snow.update(underwater.near.value as boolean);
+  },
+  { phase: 'late', order: 1100 }, // after the look harness's debug camera (1000), before render
+);
 
 const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
   THREE.HemisphereLight | undefined;

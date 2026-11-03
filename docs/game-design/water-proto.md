@@ -18,9 +18,22 @@ states, presence or messages. Adapted code's notices ship at `/THIRD_PARTY_NOTIC
   banded rocks with a tide line. Each wave runs up the beach, drains back and leaves a darker band that dries in seconds; rocks
   shelter a dry wedge behind them.
 - **Splashes** ripple through the game's own splash slots and throw a crown of droplets.
-- **The underside shader** now has Ultra Water's rough Snell window, transmitted sun and total internal reflection.
-  A diagnostic camera can inspect it; the regular camera still stays above until the volume treatment is connected.
-  Above-water objects through the window are omitted until an opaque colour read exists.
+- **Below water:** the camera can cross the surface. Hold **C / RB** to swim down at a target 2.5 m/s; release to
+  float up, or use the existing Space / A swim-up action. This prototype's dive cancels buoyancy only while held and keeps
+  Rapier collisions. The player remains Owner state; the rendering is Local.
+- **Looking up:** Ultra Water's roughness-blurred Snell's window squeezes the sky into the refracted direction, with a
+  transmitted sun lobe. Outside the critical angle, the underside reflects the deep-water in-scatter colour. Objects above
+  water through the window are omitted until an opaque colour read exists.
+- **Crossing the lens:** a 64×36 GPU near-plane grid queries the displaced FFT/analytic and shore waves (four iterations
+  undo horizontal displacement). Its interpolated depth splits the screen per pixel, with a two-pixel meniscus. It uses
+  the wave-height query rather than the source's surface alpha tags; the finest mesh triangles can disagree at the edge.
+- **The volume:** scene depth controls Beer–Lambert extinction toward the same in-scatter colour as the underside.
+  Half-resolution sun shafts integrate 24 jittered single-scattering steps over 40 m, then upsample with depth agreement.
+  Illumination is plain: no caustics or floater shadows exist here. This is a light-facing haze, without their shadow stripes.
+- **Marine snow:** the source's 6000 seeded, drifting discs wrap in a 24 m box around the camera. One instanced sprite
+  field writes depth so the volume fogs each speck by its distance; it is not a new particle pool.
+- **After surfacing:** refracting lens drops and two sliding trails dry individually over five seconds. The GPU wave query
+  detects the crossing, so wave motion can wet the lens even with a stationary camera.
 
 ## Options
 
@@ -33,7 +46,46 @@ states, presence or messages. Adapted code's notices ship at `/THIRD_PARTY_NOTIC
 
 1. Surface, slope moments, foam and shore field, over a few analytic waves and frozen slope tiles. **Built.**
 2. FFT as native compute, in `fft.ts`: all cascades in one compute pass and one queue submission. **Built, opt-in.**
-3. Reading the opaque scene for refraction and depth contact, and the underwater treatment. Not built; changes the frame graph.
+3. Underwater treatment. **Built in the prototype:** reads `scenePass` colour/depth and extends `pipeline.outputNode` before
+   its existing Neutral tone mapping and sRGB output. Stored 4× MSAA attachments and `src/render/scene.ts` are unchanged.
+   Opaque colour refraction and depth contact on the top surface remain separate work.
+
+## Underwater cost and limits
+
+- Near/below water: one 64×36 compute pass/dispatch for lens depth and wetness, one half-resolution render pass/draw for
+  shafts, and one snow draw in the existing scene pass. The composite and droplets share the existing output draw.
+  The double-sided ocean uses `forceSinglePass`, so it still draws once.
+- Dry and away from water: zero added passes, dispatches or draws; the output checks one uniform branch. The CPU uses a
+  conservative +4 m envelope to activate the GPU query, and keeps it alive for five seconds after leaving that envelope
+  so surfacing droplets finish drying. During that dry-out tail only the lens compute remains; shafts and snow stop.
+- Below −4 m the lens is wholly submerged and skips its per-pixel wave queries; its single camera query still updates
+  wetness. The full-submersion in-scatter uses the source's 10 m lens-depth proxy. No CPU readback decides the waterline.
+  Scene depth already belongs to the existing MSAA scene pass.
+- This ports UnderwaterPass.js, MarineSnow.js, OceanSurface.js's underside and PostFX.js's droplets at reference revision
+  `30ea65e`; source coefficients remain in `UNDER` and the existing `ULTRA`/`LOOK` colour knobs. Research and engine
+  comparison: [ultra-water.md](../research/ultra-water.md), recommendations 1–2 and its source audit, with the owner's
+  later decision to import the complete below-water treatment superseding the original selective recommendation.
+
+## Builder check (2 November 2026)
+
+Three visual rounds, using the local GPU broker with `proto=water&tod=0.15`: the final captures had WebGPU, advancing
+completed frames and no page/console/graphics errors. Inspected the PNGs and consecutive frames extracted from the
+recording; this does not establish real-time feel or smoothness, and no iPad was available.
+
+- Best sun view: camera `2590,-3,-65`, look `2589.1335,8.8393,-55.8305`; `.look/underwater-r3-sun-still.png`.
+- Bed view: camera `2565,-3,-48`, look `2553,-1,-41`; `.look/underwater-r2-bed-still.png`. The rock and nearby bed remain
+  readable in the volume, with snow flecks and bright underside patches.
+- Straddle at `2565,0,-48`, look `2553,2,-41`; `.look/underwater-r2-transition-motion.png` shows the wave split, then
+  surfacing droplets, then a dry lens. The near-plane grid can disagree with the surface triangles at the moving edge.
+- The registered C action took the player from −0.4 m to −5.61 m, with vertical speed −2.497 m/s, in 2.2 seconds.
+  The normal camera reached −3 m; releasing C restored buoyancy. Touch has no dedicated dive button yet; RB is registered
+  but a physical gamepad was not tested. The existing camera floor and player buoyancy still govern the follow and rise.
+- Runtime counts changed by one render call and two draws below/near water (shaft quad and snow), plus the one lens
+  compute dispatch. Dry/away disables them. The captured scene target reported four samples and both MSAA store flags true.
+- `npm run check`: 292/292 unit tests, registry OK, five levels checked, four fresh assets, production build passed.
+  `npm run sim -- replay`: 1103 frames, no difference. These guard integration; they do not grade underwater appearance.
+  Final source comparison restored waterAt's fourth inversion iteration and the fully submerged 10 m proxy after the
+  third visual round; those two constant corrections were checked statically, without a fourth capture round.
 
 ## Numbers
 
