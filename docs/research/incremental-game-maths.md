@@ -2,6 +2,8 @@
 
 _Research report, 2 November 2026. Live primary-source research into cost curves, useful upgrades, unfolding play, offline limits and 1–2-hour sittings within Boogle's roughly eight-hour adventure. Repository inspected at `3280c6ff`; existing economy tables and sensitivities rerun with Node 24. This is research and proposed model work, not gameplay implementation, a new playtest or approval of campaign tuning._
 
+_Note added 2 November: this was researched before the Design Table call, where materials replaced eras ([boogle-2.md](../proposals/boogle-2.md#the-shape-of-the-game)). Read "era" below as a stage of better materials; the world itself doesn't change era._
+
 **Evidence:** **[V]** means inspected repository code, an owner decision or a fetched primary source; **[C]** means reproduced calculation; **[H]** means a design hypothesis or proposed experiment. Source code establishes a mechanism, not why everyone enjoys it. GDC slides were read; talks and gameplay videos were not watched, and reference games were not played for this report. All proposed minutes, percentages and costs below are **[H]**, even where their arithmetic is exact.
 
 ## Answer first
