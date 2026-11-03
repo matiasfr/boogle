@@ -16,8 +16,9 @@ export function registerPlaceShore() {
     id: 'place',
     bounds,
     seaLevel: SEA,
-    revision: 'finished-place-1',
+    revision: 'finished-place-triangles-2',
     extent: 1024,
+    vertexBed: true, // 2 m atlas corners align with land.ts's 2 m vertices and anti-diagonal.
     bedAt: gridBedAt({
       x0: bounds.minX,
       z0: bounds.minZ,
@@ -26,6 +27,7 @@ export function registerPlaceShore() {
       nx: NX,
       nz: NZ,
       height: (i, j) => heights[at(i, j)]!,
+      triangles: true,
     }),
   });
 }

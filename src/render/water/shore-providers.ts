@@ -17,6 +17,8 @@ export type ShoreProvider = {
   bedAt(x: number, z: number): BedSample;
   obstacles?: readonly ShoreObstacle[];
   extent: number; // core extent: home 512 m, place 1024 m
+  /** Bed vertices align with the atlas texel corners, with the grid's +x/+z anti-diagonal. */
+  vertexBed?: boolean;
 };
 
 export const SHORE_CAPACITY = 8;
@@ -41,6 +43,7 @@ export function gridBedAt(grid: {
   nx: number;
   nz: number;
   height(i: number, j: number): number;
+  triangles?: boolean;
 }) {
   return (x: number, z: number): BedSample => {
     const u = (x - grid.x0) / grid.dx,
@@ -50,11 +53,17 @@ export function gridBedAt(grid: {
       j = Math.min(grid.nz - 2, Math.floor(v));
     const a = u - i,
       b = v - j;
+    const h00 = grid.height(i, j),
+      h10 = grid.height(i + 1, j),
+      h01 = grid.height(i, j + 1),
+      h11 = grid.height(i + 1, j + 1);
     return {
       valid: true,
-      height:
-        (grid.height(i, j) * (1 - a) + grid.height(i + 1, j) * a) * (1 - b) +
-        (grid.height(i, j + 1) * (1 - a) + grid.height(i + 1, j + 1) * a) * b,
+      height: grid.triangles
+        ? a + b <= 1
+          ? h00 + (h10 - h00) * a + (h01 - h00) * b
+          : h11 + (h01 - h11) * (1 - a) + (h10 - h11) * (1 - b)
+        : (h00 * (1 - a) + h10 * a) * (1 - b) + (h01 * (1 - a) + h11 * a) * b,
     };
   };
 }
@@ -208,6 +217,7 @@ export function createShoreAtlas() {
   const bounds = Array.from({ length: SHORE_CAPACITY }, () => new THREE.Vector4());
   const uTransforms = uniformArray(transforms, 'vec4'),
     uBounds = uniformArray(bounds, 'vec4'),
+    vertexBeds = uniformArray(Array<number>(SHORE_CAPACITY).fill(0), 'float'),
     count = uniform(0);
   const cache = new Map<string, Solved>();
   let regions: Region[] = [],
@@ -260,6 +270,7 @@ export function createShoreAtlas() {
         const b = r.provider.bounds;
         transforms[r.layer]!.set(r.centerX, r.centerZ, r.extent, r.provider.seaLevel);
         bounds[r.layer]!.set(b.minX, b.maxX, b.minZ, b.maxZ);
+        vertexBeds.array[r.layer] = r.provider.vertexBed ? 1 : 0;
         for (let j = 0; j < SHORE_SIZE; j++)
           for (let i = 0; i < SHORE_SIZE; i++) {
             const x = r.centerX + ((i + 0.5) / SHORE_SIZE - 0.5) * r.extent;
@@ -273,6 +284,14 @@ export function createShoreAtlas() {
                 target[k * output + c] = THREE.DataUtils.toHalfFloat(bilinear(data, solved!.bake.size, u, v, n, c));
             };
             pack(shore, solved.bake.data, 4, 4);
+            // Keep bathymetry on the authored vertices. Filtering centre samples rounded steep banks into
+            // metre-high false beds; travel/distance still need their independently smoothed centre samples.
+            if (r.provider.vertexBed) {
+              const halfCell = r.extent / SHORE_SIZE / 2;
+              (shore.image.data as Uint16Array)[k * 4] = THREE.DataUtils.toHalfFloat(
+                bedForBake(ps, x - halfCell, z - halfCell, r.provider.seaLevel),
+              );
+            }
             pack(travel, solved.bake.travelData, 4, 4);
             pack(surf, solved.bake.surfData, 1, 2);
             (surf.image.data as Uint16Array)[k * 2 + 1] = THREE.DataUtils.toHalfFloat(
@@ -309,12 +328,12 @@ export function createShoreAtlas() {
       };
     const i = ((x - r.centerX) / r.extent) * SHORE_SIZE + SHORE_SIZE / 2 - 0.5;
     const j = ((z - r.centerZ) / r.extent) * SHORE_SIZE + SHORE_SIZE / 2 - 0.5;
-    const read = (tex: THREE.DataArrayTexture, n: number) => {
+    const read = (tex: THREE.DataArrayTexture, n: number, vertexBed = false) => {
       const raw = tex.image.data as Uint16Array;
       const offset = r.layer * SHORE_SIZE * SHORE_SIZE * n;
       // Four half-float texels only; diagnostics and physics do not copy a whole texture per lookup.
-      const u = clamp(i, 0, SHORE_SIZE - 1),
-        v = clamp(j, 0, SHORE_SIZE - 1);
+      const u = clamp(i + (vertexBed ? 0.5 : 0), 0, SHORE_SIZE - 1),
+        v = clamp(j + (vertexBed ? 0.5 : 0), 0, SHORE_SIZE - 1);
       const ix = Math.min(SHORE_SIZE - 2, Math.floor(u)),
         iz = Math.min(SHORE_SIZE - 2, Math.floor(v));
       const a = u - ix,
@@ -322,6 +341,15 @@ export function createShoreAtlas() {
       return Array.from({ length: n }, (_, c) => {
         const k = offset + (iz * SHORE_SIZE + ix) * n + c;
         const f = (q: number) => THREE.DataUtils.fromHalfFloat(raw[q]!);
+        if (vertexBed) {
+          const h00 = f(k),
+            h10 = f(k + n),
+            h01 = f(k + SHORE_SIZE * n),
+            h11 = f(k + (SHORE_SIZE + 1) * n);
+          return a + b <= 1
+            ? h00 + (h10 - h00) * a + (h01 - h00) * b
+            : h11 + (h01 - h11) * (1 - a) + (h10 - h11) * (1 - b);
+        }
         return (
           (f(k) * (1 - a) + f(k + n) * a) * (1 - b) +
           (f(k + SHORE_SIZE * n) * (1 - a) + f(k + (SHORE_SIZE + 1) * n) * a) * b
@@ -332,7 +360,7 @@ export function createShoreAtlas() {
       tr = read(travel, 4),
       su = read(surf, 2);
     return {
-      bed: sh[0]! + r.provider.seaLevel,
+      bed: (r.provider.vertexBed ? read(shore, 4, true)[0]! : sh[0]!) + r.provider.seaLevel,
       distance: sh[1]!,
       normal: [sh[2]!, sh[3]!],
       travel: tr,
@@ -347,6 +375,7 @@ export function createShoreAtlas() {
     surf,
     transforms: uTransforms,
     bounds: uBounds,
+    vertexBeds,
     count,
     sync,
     sampleAt,
