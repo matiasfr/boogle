@@ -1,4 +1,4 @@
-# The server image (server/Dockerfile) is built from the repo root; it needs server/, src/ and package.json only.
+# The server image (server/Dockerfile) is built from the repo root; it needs server/, src/, protos/protos.ts and package.json only.
 **/node_modules
 .git
 .github
