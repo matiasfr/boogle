@@ -6,8 +6,17 @@ import path from 'node:path';
 import { docLabel, searchDocs } from './scan/docs.ts';
 import { TASK_ROUTES, taskRouteLines } from './scan/task-routes.ts';
 import { readFile } from './scan/read.ts';
+import { readSection } from './scan/sections.ts';
 
 const asked = process.argv.slice(2);
+if (asked[0] === '--section') {
+  if (!asked[1] || !asked[2]) throw new Error('npm run map -- --section <file> <heading-or-anchor>');
+  const reference = `${asked[1]}#${asked.slice(2).join(' ')}`;
+  const section = readSection('.', reference);
+  console.log(`${reference} (lines ${section.start}-${section.end}; ${[...section.text].length} characters)`);
+  console.log(section.text);
+  process.exit(0);
+}
 if (asked[0] === '--kind') {
   if (!asked[1]) console.log(`Task kinds: ${Object.keys(TASK_ROUTES).join(', ')}`);
   else {
