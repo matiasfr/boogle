@@ -111,8 +111,16 @@ export function readings(rows: Row[], target?: Target | null) {
     for (const [k, b] of Object.entries(target.bands)) {
       const v = avg(third.map((r) => r[k as keyof Row]));
       const ok = v >= b.lo && v <= b.hi;
+      // When it came inside for good: the time to settle, on the same clock as the plot and the marks.
+      const outside = rows.findLastIndex((r) => r[k as keyof Row] < b.lo || r[k as keyof Row] > b.hi);
+      const settled =
+        outside < 0
+          ? 'inside throughout'
+          : outside === rows.length - 1
+            ? 'not settled'
+            : `settled at ${rows[outside + 1]!.t.toFixed(2)} s`;
       out.push(
-        `  ${k} over the last third ${v.toFixed(2)}: ${ok ? 'inside' : 'OUTSIDE'} ${b.lo} to ${b.hi} (${b.note})`,
+        `  ${k} over the last third ${v.toFixed(2)}: ${ok ? 'inside' : 'OUTSIDE'} ${b.lo} to ${b.hi}, ${settled} (${b.note})`,
       );
     }
   }
