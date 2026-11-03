@@ -63,3 +63,5 @@ Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or 
 Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.
 
 Directors: put the relevant files, errors and decisions in the brief.
+
+Jobs end with a structured JSON result saved as `.look/codex/<topic>/result.json`; the queue includes its outcome and summary.

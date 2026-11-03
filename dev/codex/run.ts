@@ -20,7 +20,15 @@ import path from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { git, snapshot } from './source.ts';
 import { handoff } from './evidence.ts';
-import { archiveTurn, launchJob, supervise, runSession, type Lifecycle, type JobControl } from './session.ts';
+import {
+  archiveTurn,
+  launchJob,
+  supervise,
+  runSession,
+  reportText,
+  type Lifecycle,
+  type JobControl,
+} from './session.ts';
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
@@ -250,7 +258,7 @@ async function main(job?: JobControl): Promise<number> {
   } else if (mode === 'review') {
     cwd = job ? await worktree(job, sourceCommit) : repo;
     argv = ['exec', 'review', ...base, '--base', 'origin/main'];
-    if (brief) argv.push('-');
+    argv.push('-');
     prompt = brief;
   } else {
     if (opts.dry) cwd = repo;
@@ -275,6 +283,8 @@ async function main(job?: JobControl): Promise<number> {
     argv.push('-');
   }
 
+  prompt +=
+    '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
   if (!argv.includes('--json')) argv.splice(1, 0, '--json');
   Object.assign(meta, { cwd, sourceCommit, argv, launchArgv: previous?.launchArgv ?? previous?.argv ?? argv });
   if (opts.dry) {
@@ -345,7 +355,7 @@ async function main(job?: JobControl): Promise<number> {
   console.log(`exit ${status}; report: ${reportFile}`);
   if (mode === 'task')
     console.log(`Handoff: ${path.join(logs, 'handoff.md')}\nEvidence: ${path.join(logs, 'evidence.json')}`);
-  if (fs.existsSync(reportFile)) console.log('\n' + fs.readFileSync(reportFile, 'utf8'));
+  if (fs.existsSync(reportFile)) console.log('\n' + reportText(reportFile));
   return status;
 }
 
@@ -368,7 +378,7 @@ else {
   process.exitCode = await supervise(logs, opts.supervisor, meta, async (job) => {
     if (previous) {
       archiveTurn(logs, previous.turn ?? 1, previous);
-      for (const name of ['report.md', 'handoff.md', 'evidence.json', 'events.jsonl'])
+      for (const name of ['report.md', 'result.json', 'handoff.md', 'evidence.json', 'events.jsonl'])
         fs.rmSync(path.join(logs, name), { force: true });
     }
     return main(job);

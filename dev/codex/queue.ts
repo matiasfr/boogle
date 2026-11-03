@@ -68,6 +68,16 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
       break;
     }
     try {
+      const modified = fs.statSync(path.join(dir, 'log.txt')).mtimeMs;
+      if (now - modified > 20 * 60_000) {
+        entry.state = 'stalled';
+        stop = `${entry.job.topic} stalled (no log activity for 20 minutes)`;
+        break;
+      }
+    } catch {
+      /* setup has not opened the log yet */
+    }
+    try {
       const meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
       if (meta.state === 'running' && (!alive(meta.pid) || Date.now() - Date.parse(meta.heartbeat) > 120_000)) {
         entry.state = 'stalled';
@@ -83,7 +93,7 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
         stop = `${entry.job.topic} failed`;
         break;
       }
-    } else if (now - entry.started! > 120_000 && !fs.existsSync(path.join(dir, 'meta.json'))) {
+    } else if (now - entry.started! > 10 * 60_000 && !fs.existsSync(path.join(dir, 'meta.json'))) {
       entry.state = 'stalled';
       stop = `${entry.job.topic} stalled during startup`;
       break;
@@ -123,8 +133,16 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
   }
   if (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state === 'running')) await pause(1000);
 }
-for (const entry of entries)
-  console.log(`${entry.job.topic}: ${entry.state}${entry.detail ? ` (${entry.detail})` : ''}`);
+for (const entry of entries) {
+  let result = '';
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(root, '.look/codex', entry.job.topic, 'result.json'), 'utf8'));
+    result = ` — ${data.outcome}: ${String(data.summary).replace(/\s+/g, ' ')}`;
+  } catch {
+    /* No structured result. */
+  }
+  console.log(`${entry.job.topic}: ${entry.state}${entry.detail ? ` (${entry.detail})` : ''}${result}`);
+}
 if (stop) {
   console.log(stop);
   process.exitCode = 1;
