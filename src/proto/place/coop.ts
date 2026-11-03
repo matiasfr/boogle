@@ -17,6 +17,10 @@
 // - Trains are nudged to the authority's place, and platforms get stable ids so a rider stands on your copy of the deck.
 // - Owner presence tracks a carried great beam or boiler. Departure returns it to its pickup; snapshots clear a
 //   returning carrier's stale shoulder, including ordinary reconciliation after reconnecting.
+// - Cart calls and rail loads are reliable events; cargo rides on a stable platform on each tab. Bills stay fixed.
+// - The optional long beam has Owner grips (`placeLongBeam`) and a saved shared pose. While held, snapshots leave its
+//   midpoint alone; only the authority sets it on the fulcrum. A departing grip leaves the other end usable.
+// - See-saw bounces are one-off events: tilt is Local, and only the receiving tab launches its own player.
 //
 // Personal: your back, crates and gifts (each tab gets its own crate at each stretch), crystals, gold finds. Shared: the rungs,
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.

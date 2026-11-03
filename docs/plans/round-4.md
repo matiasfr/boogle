@@ -44,7 +44,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] **The job:** steps 1 to 4, and the fixes above.
 - [x] **Exploring:** step 5.
 - [x] **Town:** step 6.
-- [ ] **Two players:** step 7.
+- [ ] **Two players:** step 7. Implementation and targeted co-op checks are done ([evidence](two-player.md#implementation-evidence-3-november-steps-48)); Q5 split is 80.90 s versus 162.40 solo and 115.14 for walkers. The literal solo comparison gate is still open: final ambient rumour +11.22%, resident notice +2.04%; all other beats within 0.13%, all expected actions passed. No protected town code changed to force those ambient times.
 - [ ] **Whole run:** full play-through, tune from data, first-time pass, then hand to the owner. Left from the job track's review: watch the rock break and the cart moving, and watch and hear each new moment and reveal in real time; the pack frame reads like a picture frame and sits in the camera's view; "Take rails" still shows 8 times; line 2's stations 3 to 5 are the longest stretch with no new toy; the first path's camera snap against the T3 frame; a partner can't see your clothes; the M4 iPad.
 
 ## The job's numbers (hypotheses)
