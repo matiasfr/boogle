@@ -325,11 +325,16 @@ function update({ dt }: { dt: number }) {
 
 onStart(() => {
   // The pond is real water: you can wade and swim, and the ball floats.
-  const surfaceAt = waterField.surfaceAt;
-  waterField.surfaceAt = (x, z) => {
-    const q = ((x - POND.x) / POND.rx) ** 2 + ((z - POND.z) / POND.rz) ** 2;
-    return q < 0.81 ? Math.max(surfaceAt(x, z), POND.level) : surfaceAt(x, z);
-  };
+  waterField.registerPond({
+    id: 'cave-pond',
+    level: POND.level,
+    contains: ({ x, y, z }) => {
+      const q = ((x - POND.x) / POND.rx) ** 2 + ((z - POND.z) / POND.rz) ** 2;
+      return q < 0.81 && (!waterField.moving || y === Infinity || inCave(x, y, z));
+    },
+    bedAt: ({ x, z }) => floorBelow(x, POND.level, z),
+  });
+  waterField.excludeSea('caves', ({ x, y, z }) => waterField.moving && inCave(x, y, z));
   const under0 = groundProbe.under;
   groundProbe.under = (x, y, z) => (inCave(x, y, z) ? floorBelow(x, y, z) : under0(x, y, z));
   const netted0 = groundProbe.netted;

@@ -4,7 +4,7 @@
 
 Replace the sea on the default Round 4 place and the classic home island with the water proved by `?proto=water`, including its waves, shore response and below-water treatment, using the real terrain. Serves DESIGN.md **Show, don't tell** (the visible surface is the water you enter), **Toys before chores** and **Small and readable**; physics remains **Owner**, never Lockstep.
 
-**Plan only; awaiting owner approval.** This commit builds nothing. The steps below are implementation instructions after approval, not permission to start now. The separate Neutral/AgX comparison remains separate. Do not graduate or redesign Round 4 along with the water.
+**Approved for steps 1–3 on 3 November 2026.** Stop for review after those steps; steps 4–8 are not part of this implementation and still await owner approval: they are implementation instructions after approval, not permission to start now. The owner explicitly permits this work during Round 4. Retain `.25` spectral energy, mobile 0.6 world resolution and desktop high. Neutral and `proto/water/post.ts` belong to the separate tone comparison and remain unchanged. The sky decision is open: keep `skyAt` and the demo sky files. The old sea stays the default, with the new sea opt-in only. No push or ship; no external network access in this worktree. The separate Neutral/AgX comparison remains separate. Do not graduate or redesign Round 4 along with the water.
 
 ## Design
 
@@ -139,14 +139,136 @@ Account for the ten FFT dispatches; high caustics' two raster targets, three spl
 
 Every numbered item is an implementation commit or small group of commits **after approval**, leaves `npm run check` green, formats only changed files, and updates affected as-built docs in the same commit. No new unit tests or scenarios for this Local rendering/feel work. Use existing diagnostics and harnesses; no source edits during a capture.
 
-- [ ] **1. Establish the production water contract and real shore providers.** Create `src/render/water/{state,shore,shore-nodes,shore-providers,tuning,tsl}.ts`, extracting the existing bake and removing fixed demo coordinates; add `src/proto/place/water.ts` and its minimal registration in `place/index.ts`. Register home from finalized `island/heights.ts` data through the water facade. Keep the current renderer active until the replacement is complete. Verify axis orientation, known home/place bed samples, invalid exterior, wet/dry-only regions, paired region borders and obstacle-vs-bed separation with inspection/diagnostic outputs; inspect the gorge and home shore in the broker. Run `npm run check`.
-- [ ] **2. Move the surface/FFT/refraction/foam into one owned sea and lighting adapter.** Move reusable `surface.ts`, `fft.ts`, `spectrum.ts`, `foam.ts` into `src/render/water/`; keep the prototype scene temporarily as a client of those same modules, with explicit demo settings. Make `water-render.ts` the resource/lifecycle facade; keep one sea instance and update ordering, no duplicate FFT or particle pools. Create `sky-radiance.ts` and adjust `sky.ts` to share its existing sky calculation, without changing its look or scene.ts. Verify reference Lagoon/Breakers and real-bank captures, one colour/depth copy, shader health and resource disposal; run `npm run check` and record a before/after performance baseline on an idle GPU. New real-world rendering can remain a local debug opt-in until step 7.
-- [ ] **3. Connect moving-water queries to swimming, the ball, splashes and cave volumes.** Create `water/queries.ts`; edit `physics/water-field.ts`, `entities/player/state.ts`, `entities/ball/state.ts`, `render/splash.ts`, `physics/flight.ts`, `pois/caves/index.ts`, `entities/camera/index.ts`, and the fixed-SEA contact readers in `features/impact.ts`, `features/ping.ts`, `player/throw.ts`. Preserve ownership APIs and existing wire data. Exercise jumps, entry, a stationary crest, fast throws, teleport, ownership/held changes, late readbacks, and the cave pond with captured query-age/error readings. Run `npm run sim -- replay` because player/ball physics changed; explain intended replay differences rather than silently replacing fixtures. Run existing broker `scenario caves` on the classic route (make that existing scenario select `classic=1` if needed) and `scenario smoke` for two-player ball authority, plus `npm run check`.
+- [x] **1. Establish the production water contract and real shore providers.** Create `src/render/water/{state,shore,shore-nodes,shore-providers,tuning,tsl}.ts`, extracting the existing bake and removing fixed demo coordinates; add `src/proto/place/water.ts` and its minimal registration in `place/index.ts`. Register home from finalized `island/heights.ts` data through the water facade. Keep the current renderer active until the replacement is complete. Verify axis orientation, known home/place bed samples, invalid exterior, wet/dry-only regions, paired region borders and obstacle-vs-bed separation with inspection/diagnostic outputs; inspect the gorge and home shore in the broker. Run `npm run check`.
+- [x] **2. Move the surface/FFT/refraction/foam into one owned sea and lighting adapter.** Move reusable `surface.ts`, `fft.ts`, `spectrum.ts`, `foam.ts` into `src/render/water/`; keep the prototype scene temporarily as a client of those same modules, with explicit demo settings. Make `water-render.ts` the resource/lifecycle facade; keep one sea instance and update ordering, no duplicate FFT or particle pools. Create `sky-radiance.ts` and adjust `sky.ts` to share its existing sky calculation, without changing its look or scene.ts. Verify reference Lagoon/Breakers and real-bank captures, one colour/depth copy, shader health and resource disposal; run `npm run check` and record a before/after performance baseline on an idle GPU. New real-world rendering can remain a local debug opt-in until step 7.
+- [x] **3. Connect moving-water queries to swimming, the ball, splashes and cave volumes.** Create `water/queries.ts`; edit `physics/water-field.ts`, `entities/player/state.ts`, `entities/ball/state.ts`, `render/splash.ts`, `physics/flight.ts`, `pois/caves/index.ts`, `entities/camera/index.ts`, and the fixed-SEA contact readers in `features/impact.ts`, `features/ping.ts`, `player/throw.ts`. Preserve ownership APIs and existing wire data. Exercise jumps, entry, a stationary crest, fast throws, teleport, ownership/held changes, late readbacks, and the cave pond with captured query-age/error readings. Run `npm run sim -- replay` because player/ball physics changed; explain intended replay differences rather than silently replacing fixtures. Run existing broker `scenario caves` on the classic route (make that existing scenario select `classic=1` if needed) and `scenario smoke` for two-player ball authority, plus `npm run check`.
 - [ ] **4. Apply caustics, swash/wetness and spray to real receivers.** Create `water/{receivers,caustics,spray}.ts`; minimally attach receiver patches in `island/terrain.ts` and `proto/place/land.ts`/`look.ts`, retaining terrain colour, roughness, shadow and cave mask nodes through `patchNode`. Register real contact obstacles, generate world-fixed emitter sites, and spawn a spray entity before the shared particle upload. Gate receiver light by depth, orientation, daylight and shelter; verify no caustics shine through dry bridges or cave roofs. Compare a bank, rock/support and beach at dawn/noon/night; inspect stills and consecutive recorded frames, count mip work and run `npm run check`.
 - [ ] **5. Integrate underwater composition and accessible dive controls.** Move `underwater.ts`/`snow.ts` into production water, refactor their body masks and return an HDR output node; add `features/water-controls.ts`/`.css` and a renderer-free dive intent consumed by the player controller. Remove the old prototype action/force override in the same commit. Verify keyboard, runtime free pad slots, actual pad hold/release and touch cancel, plus surface/waterline/full-submersion/wet-exit captures in sea and pond and a dry cave view. Use `--video --curves` with consecutive-frame extraction; record that real-time feel remains for the owner. Run `npm run check`, replay if forces changed again, and the existing cave scenario.
 - [ ] **6. Fit route ranges, day/night and quality without changing scene.ts.** Add range/quality helpers under `src/render/water/`; adapt `crossing/sky.ts` and the small place setup to use one polar surface at existing clip ranges, removing rectangle creation and obsolete sea-only colour writes. Retain unrelated crossing fog/day behavior and place's lighting. Extract only the mobile resolution normalization from `proto/water/post.ts`. Inspect horizon, region transitions, Far Head, 20/50 m/s train views, high fall/glide, near-face/held-object views, rooms/caves, sunset/moonlight and resize/resume. Run `npm run check` and matched M1 Max before/after `npm run perf`; use the supplied broker for browser work when running in a launched task, never another Chromium.
 - [ ] **7. Switch the real sea and remove the replaced prototype/seams.** Enable the completed water for default place and classic home in `water-render.ts`; delete `dressSea()` imports/calls and `src/proto/crossing/sea.ts` after checking every caller. Tag the last intact demo `archive/water`, then remove `src/proto/water/` and `features/proto-water.ts`, retire the local opt-in switch, and mark the water card `archived` in `protos/protos.ts` with its graduation destination. Update its playlist entry. Remove the old packed home texture, sine material, `seaDepth`/`seaFoam`/`seaRings` material-patch API, hidden-old-sea traversal, demo teleport/CCD/soft-wall overrides, camera/sun/fog overrides and superseded diagnostics/URL options. Migrate reusable `dev/water-diagnose.ts` and `dev/look/evals/water-*.ts` imports; archive demo-only diagnostics with the tag instead of leaving broken imports. The parked sky prototype must stop depending on the removed water horizon seam: remove `water-render.ts`'s `protoOn('sky')`/`uHaze` branch and its write in `proto/sky/index.ts`, without graduating or deleting that unrelated prototype. Prune only removed ESLint suppressions. Search all references to old exports, `ISLAND_AT`, `ROCK`, `dressSea`, `proto=water` and old module paths; classify documentation/archive references explicitly. Run `npm run check`.
 - [ ] **8. Document, verify the real round, and hand it to the owner.** Move/replace `docs/game-design/water-proto.md` with `docs/game-design/water.md`; update the index, island/player/ball/place/crossing/cave/control entries that changed, `src/render/README.md`, the related find-the-fun checkbox and `docs/atlas/stories/` water story. Keep research as historical evidence and retain `public/THIRD_PARTY_NOTICES.md` attribution in the built output. Run the supplied broker's full `playthrough`, read its report even on failure, inspect saved relevant shore/train/dive views, and run existing `world-inputs`, `caves` and `smoke` scenarios with the appropriate route. Run `npm run check`, `npm run atlas -- --check` (advisory), final matched perf/device checks and a diff simplification review. No `check:full` solely for rendering; protected network/world files should be unchanged. Stop when ready for the owner's playtest; do not start additional development/check-in loops while waiting. One line: “The new water now meets our real shores and you can dive into it.” One question: “Does this water feel at home here, from the bank and when you jump in?”
+
+### Step 1 evidence (3 November 2026)
+
+`npm run check` passed (292 unit tests, registry, five levels, assets and build). Diagnostics found finite all-wet/all-dry
+fields, exact home grid samples with correct z orientation, valid endpoints and invalid exterior, matching paired-region
+border bed/distance, and obstacle top 2 m retaining bed −4 m. At place `(1000,20)`, source bed is −2.200000 m and the
+half-float atlas reads −2.198242 m. The atlas retains 80 halo texels around each 512² core: 672² resident layers,
+capacity eight, 72,253,440 texture bytes. Browser CPU bake/upload preparation measured about 1.08 s for home and 2.26 s
+for home plus place; this cost is absent from the default old sea.
+
+Opened home still/motion ([manifest](../../.look/evidence/1793729382663-62006/evidence.json)) and gorge still/motion
+([manifest](../../.look/evidence/1793729416317-63044/evidence.json)): the original sea and shores remain visible and
+unchanged in treatment, with no graphics errors. Home includes the avatar; the gorge avatar is occluded, so step 2 must
+improve that framing. This step establishes bathymetry, not the new surface's appearance or real-time feel.
+
+### Step 2 evidence (3 November 2026)
+
+The new sea is local opt-in `?water=new`; default and demo routes retain their selection. Surface, FFT, spectrum and
+foam now share production modules. One sea owns four 256² FFT bands, shore atlas, opaque snapshots and disposal.
+The existing sky calculation is shared through `skyAt`; Neutral, scene.ts, demo sky and post remain untouched.
+`npm run check` passed (292 tests, registry, levels, assets and build). The first two capture rounds exposed TSL
+scope and cross-stage uniform problems; the third fixed both. All final captures report no graphics/page errors.
+
+Opened PNGs: home still/motion ([manifest](../../.look/evidence/1793730279387-82512/evidence.json)); place bank
+still, curves and four consecutive video frames ([manifest](../../.look/evidence/1793730297930-82769/evidence.json));
+Lagoon and Breakers stills ([Lagoon](../../.look/evidence/1793730314252-83049/evidence.json),
+[Breakers](../../.look/evidence/1793730489854-85927/evidence.json)); default still
+([manifest](../../.look/evidence/1793730522844-86291/evidence.json)); lifecycle still
+([manifest](../../.look/evidence/1793730549214-86590/evidence.json)); mobile bank still
+([manifest](../../.look/evidence/1793730562350-86753/evidence.json)). Clear shallow colour follows real ground;
+the avatar is visible at both banks, Lagoon retains refracted sand, and Breakers retains curved foam crests.
+The default gorge stays flat blue. A thin dark water/terrain edge and missing receiver effects remain for step 4.
+Consecutive frames show advancing water detail without an obvious jump; real-time smoothness remains unverified.
+
+GPU-span method from water-demo-validation, matching 1210×702 world/output, DPR 1, stored 4× MSAA, Metal-3 adapter,
+HeadlessChrome 156: old means **3.947 / 3.666 / 3.572 ms**, p95 **4.505 / 4.162 / 4.094 ms**
+([baseline](../../.look/evidence/1793728982475-52995/evidence.json)); opt-in means **5.387 / 5.135 / 5.017 ms**,
+p95 **6.402 / 5.699 / 5.668 ms** ([gorge still and cost manifest](../../.look/evidence/1793730505873-86152/evidence.json)).
+The apparent mean delta is about **+1.45 ms**, with 11.3 ms to the 16.7 ms frame budget in these stationary windows.
+No exclusive GPU reservation or clock telemetry: this is provisional, not sustained device acceptance. Broker runs
+did not overlap. Neither set had >33 ms frame gaps. New sea counts: 234 draws, five native raster passes, one colour
+and one depth copy; old: 237 draws, three passes, no copies. New FFT contributes ten dispatches.
+
+Disposal removed the sea entity and about 113.76 MB of reported GPU resources; recreation restored one sea and
+the same geometry/storage/program counts, with a 36-byte reported residual needing lifecycle follow-up.
+Mobile confirmed 726×421 world / 1210×702 output, four bands and unchanged camera clips; softer edges remain readable.
+No swimming/ball wave agreement, cave integration, long travel, iPad or ten-minute device test is claimed by step 2.
+
+### Step 3 evidence (3 November 2026)
+
+The opt-in now publishes bounded GPU water samples before physics, preserving existing Owner APIs and wire data.
+Swimming, the owned ball, splashes and camera constraints use the shared surface; previews use nearby cached/mean
+water. Cave pond identity and the cave's 3D ocean exclusion replace the load-order wrapper. The default player/ball
+replay is unchanged: **1,103 frames match both the trace and recorded browser session within 0.01**, with no fixture
+replacement. `npm run check` passed: 292 tests, registry, levels, assets and production build.
+
+Opened home still, motion, curves and consecutive recorded frames
+([manifest](../../.look/evidence/1793731328146-99907/evidence.json)): the swimmer and owned ball bob at the real
+shallow shore, with sand visible below. Opened the confirmed-wet place still, curves and consecutive frames
+([manifest](../../.look/evidence/1793731470957-1895/evidence.json)): the avatar is in the gorge beside the bank,
+with body height varying from −0.8 to −0.2 m. Earlier framing attempts put the home camera behind a bank and the
+place avatar on dry ground; those are not swimming acceptance. No rendering/physics fix was needed for those poses.
+Ordinary consumed query age p95/max was **16.7/16.8 ms at home**, **16.8/16.8 ms at place**. Matching-time/position
+GPU-kernel prediction error p95/max was **0.00133/0.02145 m at home**, **0.00138/0.01413 m at place**. These satisfy
+the 0.15 m initial query target in those captures; they do **not** establish exact rasterized triangle agreement.
+
+Opened action curves ([manifest](../../.look/evidence/1793731422793-1344/evidence.json)): a stationary ball had four
+water-height zero crossings, two suppressed crest entries and **zero new landing splashes**; drop entry, swim jump,
+held state, release and teleport recovered. This diagnostic's first fast-throw attempt was blocked after its delayed
+hand setup; a separate immediate grab/throw actually launched at **25 m/s**, stayed finite and owner-simulated
+([manifest](../../.look/evidence/1793731647856-3879/evidence.json)). The jump/drop action's maximum prediction error
+was 0.122 m; the separate throw's was 0.059 m.
+
+Artificially delayed and reordered existing readback promises exercised rejection and recovery
+([manifest](../../.look/evidence/1793731505918-2644/evidence.json), recovered still opened): **47 age**, **50 position**,
+**3 generation**, **104 order** and **20 capacity** rejections, no readback failures. Rejected samples reached 200.1 ms;
+the table stopped at 64 and pending readbacks at two. Stale player/ball heights eased to zero, then recovered to fresh
+wave samples; both force consumers remained valid when observer capacity was exhausted.
+
+Existing broker **caves and smoke passed** ([manifest](../../.look/evidence/1793731357856-271/evidence.json)). Opened
+pond/hub and Bob stills: the pond stays flat, the hub is dry and both avatars render. Caves walked all 11 route points
+with no stuck point and 0.01 m maximum floor sinking; eight hard throws stayed safe and the ball settled at 3.17 m
+on the 3 m pond. Smoke verified two-client ball authority, toss delivery and all world hashes. No bot failure; the
+full Round 4 playthrough belongs to step 8 and was not run here.
+
+Opened the larger pond still ([manifest](../../.look/evidence/1793731541407-2978/evidence.json)): swimmer and ball
+share its flat surface. Three new pond entries left all sea ripple slots unchanged; pond samples have zero age and
+velocity. Height-aware diagnostics ([manifest](../../.look/evidence/1793731677444-4173/evidence.json)) identify the
+hub as dry, the pond and inside ellipse as still water, the outside ellipse as dry, and above the roof as outdoor.
+The first diagnostic used points inside the solid floor at the hub/ellipse edge; the corrected volume check samples
+the actual room interior above that floor.
+
+Matched gorge GPU-span means with queries were **5.071 / 4.965 / 4.811 ms**, p95 **5.510 / 5.389 / 5.265 ms**
+([manifest](../../.look/evidence/1793731572570-3499/evidence.json)); same 1210×702 world/output, DPR 1 and stored
+4× MSAA as step 2. No >33 ms gaps in these stationary windows. Five native raster passes, 234 draws and one colour/depth
+copy each remain; queries add one compute dispatch to the ten FFT dispatches. Shared-machine drift exceeds the
+apparent difference from step 2, so this does not isolate query milliseconds or prove a saving. About 11.6 ms remains
+to 16.7 ms in the slowest mean window; future receiver/underwater work and sustained device testing are still ahead.
+
+The source review simplified duplicated demo tuning into shared constants. Teardown testing with two delayed
+readbacks found no stale callback into live state and removed the provider/readback buffers. It also identified two
+1×1 viewport clones retained by shader precompilation (12 bytes per recreation), beyond the active snapshot and seed:
+[allocation audit](../../.look/evidence/1793731753045-5499/evidence.json). The final lifecycle correction owns every
+clone of each explicit sea snapshot seed. Final teardown/recreation twice, including disposal with two pending
+readbacks, passed ([manifest](../../.look/evidence/1793731886322-7464/evidence.json), recreated still opened): texture
+count/bytes return to **54 / 155,480,211** on both recreations, and to **43 / 63,249,455** on both disposals. Readback
+storage returns from 2,048 to zero bytes; one sea becomes zero and the moving provider is removed. The tiny first
+recompile program-text variation is 24 bytes and does not grow on the second cycle. No stale callback or graphics error.
+
+Final affected-build rechecks were opened: [default still](../../.look/evidence/1793731887485-7507/evidence.json)
+retains the original flat blue sea; [Lagoon](../../.look/evidence/1793731904330-8164/evidence.json) retains clear sand;
+[Breakers](../../.look/evidence/1793731905599-8325/evidence.json) retains curved foamy crests; and
+[home contact](../../.look/evidence/1793731906646-8371/evidence.json) retains swimmer/ball contact. All report no graphics
+or page errors. Final home query prediction p95/max is 0.00131/0.03373 m, with 16.7/16.8 ms consumed age p95/max.
+Full checks passed again after the lifecycle fix. Only lifecycle ownership changed after the earlier physics/scenario
+and cost runs; no further rendering, forces or query-kernel change was made.
+
+Remaining limits: shore-edge/refraction tears are visible in some frames, beyond a thin seam at the bank; real receiver
+materials and submerged-mesh inclusion belong to step 4. Body bobbing is visible in curves, but real-time feel and
+smoothness cannot be established from these stills/consecutive frames. Underwater composition, dive controls, exact
+triangle/query error, long travel, sustained M1/iPad performance and the final sky choice remain unverified or deferred.
+No protected source, tone switch, demo sky or post file changed. Steps 4–8 remain unchecked, and no push/ship occurred.
 
 ## Risks
 

@@ -39,6 +39,7 @@ import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
 import { playObjective, playWhere } from '../mark.ts';
 import { H, buildLand, insidePlace } from './land.ts';
+import { registerPlaceShore } from './water.ts';
 import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
 import { snapCrystals, updateCrystals, onCrystal, crystals } from './crystals.ts';
 import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from './folk.ts';
@@ -107,6 +108,7 @@ import { resetTownLife, updateTownLife } from './town-life.ts';
 if (pageQuery().get('fresh') === '1') document.body.classList.add('place-fresh');
 
 buildLand();
+registerPlaceShore();
 buildTech();
 dressSea();
 extendSky();

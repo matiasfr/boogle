@@ -179,3 +179,17 @@ sea, sky and far plane (`src/proto/crossing/sea.ts`, `sky.ts`), the speed put ba
 off. Numbers: `TUNE`, the bills (`LINKS`, `FORGE_BILLS`) and the plots (`TOWN`) in `src/proto/place/layout.ts`. The run: `run.ts`. Rungs: `ladder.ts`. Cart and rack: `depot.ts`. Trains and cargo: `cargo.ts`; stations: `halts.ts`. Moments and the pull-out: `celebrate.ts`, through the existing `camConstraints` seam. Gifts, shelf and mounts: `gifts.ts`. Little guys: `folk.ts`. Crystals: `crystals.ts`. The town you go into: `town-life.ts` wires `rooms.ts`, `house.ts`, `shop.ts`, `museum.ts`, `residents.ts`, `talk.ts`, `growth.ts`; every word in `town-lines.ts`. Look evals: `dev/look/evals/place-job.ts`, `place-act.ts` and `place-town-coop.ts`.
 
 The look (`src/proto/place/look.ts`) is the default. It overrides `tod`. `&look=off` gives the old look; `&look=ground,light,contact,kit,mats,gtao` gives single layers (`all`, the default, leaves `gtao` out). To-dos: [look-pass.md](../plans/look-pass.md).
+
+The staged [water graduation](../plans/water-graduation.md) registers the finalized `terrain.ts` grid after
+`buildLand()`, through `water.ts`. Its valid world bounds are x 740–1520, z −280–260; the last row and column are
+included explicitly rather than accepting `H`'s exterior −6 fallback as real ground. The Local shore atlas uses a
+1024 m / 512² core and an 80-texel halo (2 m/texel); all eight resident layers are bounded, and an overflow reports
+instead of evicting a visible shore. Bed/coast stays separate from projected obstacles used by wave shelter.
+This registration does not change the current sea or Round 4 terrain.
+
+`?proto=place&water=new` uses the same staged replacement sea as [home](island.md), sampling the actual gorge/shore
+provider. The old crossing material and its outer rectangles are hidden only while this opt-in sea is active;
+the normal page keeps them. Existing place lighting, sky, camera clip distances and terrain remain owned by place.
+In this opt-in, swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
+bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
+The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.

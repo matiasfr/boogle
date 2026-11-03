@@ -50,4 +50,36 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 
 ---
 
+Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–3). The old sea remains active by default.
+Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
+the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
+The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
+edges receive a separate deep-water apron. Connected regions share one travel/shelter solve, and all sampled
+fields select one coherent region. No shore bake or new texture allocation runs for the default old sea.
+
+`?classic=1&water=new` opts into the staged replacement surface: four 256² FFT bands at `.25` energy, real shore
+attenuation, refraction from one opaque HDR colour/depth snapshot pair, crest/contact foam and impact rings. One sea
+entity owns its FFT, foam, shore atlas and snapshots. The current game sky supplies a live analytic reflection through
+`skyAt`; no atmosphere LUT/cube or tone-map change is installed. Camera near/far/FOV stay unchanged. The polar detail
+ends by half the route's far range, with a monotonic altitude scale and a flat skirt inside the clip range.
+Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
+(`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases
+the replacement resources and restores the prior resolution/material visibility; the main sea remains absent until
+`createWaterMesh()` recreates it. This opt-in is not the default game.
+
+With `water=new`, swimming, the owned ball and entry splashes request the same inverse-displacement GPU kernel as
+the surface. One 64-point batch, at most two reusable readbacks, publishes only before physics; the player and ball
+have reserved capacity. Results more than 100 ms old or 0.5 m away are rejected, as are old generations and sequences.
+Surface velocity is estimated at a fixed position and bounded to ±3 m/s. Fresh heights extrapolate briefly; stale
+heights ease toward mean sea over 250 ms and cannot trigger entry splashes. Transfers, held-state changes and
+teleports invalidate the consumer. The unwrapped frame clock also drives breakers and ripple ages; only FFT phase loops.
+The cave pond is a named still-water volume at its original level and ellipse (`q < .81`); the 3D cave predicate excludes
+ocean waves under the roof. Pond splashes do not send rings to the sea. A stationary body overtaken by a crest does
+not emit a landing splash. Cameras use moving-water constraints; throw/flight/ping previews use nearby fresh cached
+heights or mean sea/pond, so their hypothetical arcs are approximate, not synchronous GPU queries.
+
+`waterRuntime.inspect().queries` reports consumed/accepted/rejected age summaries, rejection reasons and per-ID
+samples. Its prediction error compares the consumed estimate with a GPU evaluation at matching request time and
+position; it does not measure rasterized triangle error. Renderer teardown removes the provider and all query resources.
+
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

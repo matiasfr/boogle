@@ -27,6 +27,9 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 
 - You swim when the water surface (the sea or the cave pond) is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
+- With the staged `water=new` opt-in, that surface is a bounded asynchronous sample of the visible waves, and damping
+  is relative to bounded surface velocity. The threshold and Jump swim-up stay the same; stale samples ease to mean
+  water. The old default path is unchanged. Query limits and cave composition: [island water](island.md).
 - There is no dive (removed 2026-10-30, [plans/done/cleanup-dig-water-junk.md](../plans/done/cleanup-dig-water-junk.md)).
 
 ## Flops (cosmetic)

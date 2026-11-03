@@ -41,7 +41,9 @@ import { SUN_DIR } from './sun-dir.ts';
 import { lerp, smoothstep } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { renderer, scene, camera, sun, sky } from './scene.ts';
-import { seaU } from './water-render.ts';
+import { seaU } from './water/state.ts';
+import { skyU, skyRadiance } from './sky-radiance.ts';
+export { skyU } from './sky-radiance.ts';
 import { clouds } from './props.ts';
 import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
@@ -108,17 +110,6 @@ const SUN_I = 2.5,
   HEMI_NIGHT = 0.7;
 
 // ---------------------------------------------------------------- sky dome
-export const skyU = {
-  uTop: uniform(C.dayTop.clone()),
-  uCurve: uniform(0.6), // how the dome climbs from horizon to top; only ?proto=crossing's day changes it
-  uHorizon: uniform(C.dayHorizon.clone()),
-  uSun: uniform(new THREE.Vector3()),
-  uMoon: uniform(new THREE.Vector3()),
-  uGlow: uniform(C.glow.clone()),
-  uMoonGlow: uniform(0),
-  uStars: uniform(0),
-  uStarRot: uniform(new THREE.Matrix3()),
-};
 // The dome's colours as updateSky left them this frame. A feature may tint them after it (onFrame order > -5) for a
 // Local look; updateSky sets them afresh every frame, so a tint never sticks (the era prototype, src/proto/era/).
 export const skyColors = { top: skyU.uTop.value as THREE.Color, horizon: skyU.uHorizon.value as THREE.Color };
@@ -132,18 +123,7 @@ const hash = Fn(([p0]: [any]) => {
 
 const skyColor = Fn(() => {
   const d = normalize(positionGeometry);
-  const ramp = pow(max(d.y, 0), skyU.uCurve);
-  const col = mix(skyU.uHorizon, skyU.uTop, ramp).toVar();
-  const s = max(dot(d, skyU.uSun), 0);
-  // The sun's glow: a wide warm wash and a tight halo that the disc's own glow fades into.
-  const glow = pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45));
-  col.addAssign(skyU.uGlow.mul(glow));
-  const m = max(dot(d, skyU.uMoon), 0);
-  col.addAssign(
-    vec3(0.5, 0.58, 0.88)
-      .mul(pow(m, 40).mul(0.3).add(pow(m, 700).mul(0.45)))
-      .mul(skyU.uMoonGlow),
-  );
+  const col = skyRadiance(d);
   // Stars: one jittered point per lit cell of a 3D grid. Skipped by day; the branch is on a uniform and holds no
   // texture sample or derivative, so it is safe in WGSL.
   If(skyU.uStars.greaterThan(0.001), () => {
@@ -166,7 +146,7 @@ const skyColor = Fn(() => {
   });
   // Temporary ?proto=sky seam: the existing horizon colour meets the fogged sea/land, with a soft shoulder.
   // Blend after glow so sun-facing and moon-facing horizons meet the same fog colour too. No new palette.
-  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, 1), tslSmoothstep(0, 0.025, d.y)) : min(col, 1), 1);
+  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, vec3(1)), tslSmoothstep(0, 0.025, d.y)) : min(col, vec3(1)), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

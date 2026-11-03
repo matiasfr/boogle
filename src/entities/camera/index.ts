@@ -6,6 +6,8 @@ import { SEA, reducedMotion } from '../../constants.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { getMask } from '../../physics/engine.ts';
+import { groundProbe } from '../../physics/physics.ts';
+import { waterField } from '../../physics/water-field.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { cam, camConstraints, camForward, me } from '../../player/player.ts';
 import { camera, sky, sun } from '../../render/scene.ts';
@@ -25,7 +27,11 @@ function constrained(look: THREE.Vector3, pos: THREE.Vector3) {
   return false;
 }
 const ORIGIN = { x: 0, y: 0, z: 0 };
-const camFloor = (x: number, z: number) => Math.max(groundHeight(x, z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
+const camFloor = (x: number, z: number) => {
+  if (!waterField.moving) return Math.max(groundHeight(x, z) + 0.45, me.swimming ? SEA - 3 : SEA + 0.3);
+  const water = waterField.sampleAt('camera', { x, y: camPos.y, z });
+  return Math.max(groundProbe.under(x, camPos.y, z) + 0.45, water.height + (me.swimming ? -3 : 0.3));
+};
 function updateCamera(elapsed: number) {
   if (!me.entered || !me.body) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;

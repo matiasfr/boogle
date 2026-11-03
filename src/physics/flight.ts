@@ -59,7 +59,8 @@ const hit = rayHit(),
   RAY = { mask: GROUP.SCENERY, skipBackfaces: true };
 const cast = (a: V3, b: V3) => (raycastClosest(a, b, RAY, hit) ? hit : null);
 
-const underwater = (p: V3) => waterField.surfaceAt(p.x, p.z) > p.y + 0.05;
+// A whole hypothetical flight is synchronous: nearby accepted heights or mean/pond fallback, never live query IDs.
+const underwater = (p: V3) => waterField.nearby(p).height > p.y + 0.05;
 const normal = new THREE.Vector3(),
   vBefore = new THREE.Vector3();
 

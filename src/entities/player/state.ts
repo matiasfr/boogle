@@ -128,7 +128,7 @@ let jumpActive = false; // a player-made jump is rising (only those get the shor
 export function shapeJump() {
   const b = me.body!;
   const vy = b.velocity.y;
-  const surf = waterField.surfaceAt(b.position.x, b.position.z);
+  const surf = waterField.sampleAt('player', b.position).height;
   const under = surf - (b.position.y + SWIM_DEPTH) > 0;
   // Clear first, then set: the jump's velocity lands later this step (the controller), so vy is still <= 0 here.
   if (vy <= 0) jumpActive = false;
@@ -160,7 +160,8 @@ export function steerPlayer() {
   const b = me.body!;
   me.coyote -= FIXED;
   carryStep(b, me); // a deck under you (src/physics/platforms.ts): steering below is relative to its motion
-  const surfY = waterField.surfaceAt(b.position.x, b.position.z);
+  const water = waterField.sampleAt('player', b.position);
+  const surfY = water.height;
   const depth = surfY - (b.position.y + SWIM_DEPTH);
   me.swimming = depth > 0;
   const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
@@ -189,7 +190,10 @@ export function steerPlayer() {
       me.jumpQueued = 0;
     }
   }
-  if (depth > 0) b.force.y += PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
+  if (depth > 0)
+    b.force.y +=
+      PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) -
+      PLAYER_MASS * 3 * (b.velocity.y - water.verticalVelocity);
   // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
   if (Math.abs(b.position.x) > softWall.at) b.velocity.x = turnedBack(b.position.x, b.velocity.x);
   if (Math.abs(b.position.z) > softWall.at) b.velocity.z = turnedBack(b.position.z, b.velocity.z);
@@ -215,6 +219,7 @@ export function fallRespawn() {
 /** Puts you back at the spawn: falling off the world, or the pause view's Get unstuck. */
 export function backToSpawn() {
   const b = me.body!;
+  waterField.invalidate('player');
   teleport(b, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
   b.velocity.set(0, 0, 0);
 }

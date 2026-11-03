@@ -5,6 +5,7 @@
 // code read or reset it), but only startCharge here starts one.
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
+import { waterField } from '../physics/water-field.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
@@ -81,7 +82,8 @@ function updatePreview() {
       if (profile.flight === 'ball') stepBall(p, v, DT);
       else stepFlight(p, v, glide, DT);
     }
-    if (p.y < groundHeight(p.x, p.z) || p.y < SEA - 0.3) {
+    const surface = waterField.moving ? waterField.nearby(p).height : SEA;
+    if (p.y < groundHeight(p.x, p.z) || p.y < surface - 0.3) {
       n++;
       break;
     }
