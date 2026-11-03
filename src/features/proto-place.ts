@@ -7,7 +7,7 @@ import { protoOn } from '../proto/flags.ts';
 if (protoOn('place')) {
   const q = new URLSearchParams(location.search);
   if (!q.get('room')?.startsWith('proto-place')) {
-    q.set('room', 'proto-place');
+    q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place'); // &coop=1: src/proto/place/coop.ts
     location.replace(`${location.pathname}?${q}`);
   } else void import('../proto/place/index.ts');
 }
