@@ -132,7 +132,7 @@ async function serve() {
   const step = async (seconds: number) => {
     const g = game!;
     const before = await g.eval<number>('return window.boogle.prof.last.frames;');
-    await g.eval(`await window.__warp.step(${seconds});`);
+    await g.eval(`await window.__warp.run(${seconds});`);
     // A rAF can start an async GPU draw. Wait for its completed-frame counter, without advancing the clock.
     if (
       seconds > 0 &&
