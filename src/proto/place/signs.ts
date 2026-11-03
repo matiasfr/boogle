@@ -109,9 +109,10 @@ nums.className = 'place-nums';
 let lastObj = '';
 export function setObjective(text: string) {
   if (text === lastObj) return;
+  // A number ticking over (a count, a countdown) isn't news: only a new line pops.
+  if (text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '')) replay(obj, 'place-pop');
   lastObj = text;
   obj.textContent = text;
-  replay(obj, 'place-pop');
 }
 let lastNums = '';
 export function setNumbers(train: number | null, people: number) {

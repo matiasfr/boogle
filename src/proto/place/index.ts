@@ -856,7 +856,7 @@ registerInteractable(() => {
   if (run.mode === 'asleep' && machine.distance(p.x, p.z) < 6)
     (out ??= []).push({
       id: 'place-wake',
-      verb: 'Wake the track layer',
+      verb: 'Wake it up',
       at: promptAt('wake', machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
       run: wake,
     });
@@ -867,7 +867,7 @@ registerInteractable(() => {
       const room = back.room();
       (out ??= []).push(
         room <= 0
-          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, blocked: 'Full' }
+          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, blocked: 'Your back is full' }
           : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, run: () => void chopTree(t) },
       );
     }
@@ -878,7 +878,7 @@ registerInteractable(() => {
         !st || st.wants('rails') - back.rails - railsIncoming <= 0
           ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Station has enough' }
           : back.room() <= 0
-            ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Full' }
+            ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Your back is full' }
             : forge.rails <= 0
               ? { id: 'place-rack', verb: 'Take rails', at: rackFrom, blocked: 'Forge is pouring' }
               : { id: 'place-rack', verb: 'Take rails', at: rackFrom, run: () => takeRails(st) },
@@ -889,7 +889,7 @@ registerInteractable(() => {
         !st || st.wants('logs') - back.logs - logsIncoming <= 0
           ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'Station has enough' }
           : back.room() <= 0
-            ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'Full' }
+            ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'Your back is full' }
             : !hasTimber()
               ? { id: 'place-heap', verb: 'Take timber', at, blocked: 'The train is bringing more' }
               : { id: 'place-heap', verb: 'Take timber', at, run: () => takeTimber(st) },
@@ -1109,18 +1109,25 @@ const nearestTree = () => {
   }
   return best;
 };
+const farStop = besideLine(L1.spec.line, L1.spec.line.len - TUNE.stopIn, 2.9); // on the camp's platform
+/** Whole seconds from clock `t` until line 1's train pulls in at `stop` (0 the village, 1 the far end). rail.ts's cycle. */
+function secondsTo(t: number, stop: 0 | 1) {
+  const C = cycleOf(L1.spec.line);
+  const at = stop === 0 ? 0 : TUNE.dwell + runSeconds(L1.spec.line);
+  return Math.ceil((at - (t % C) + C) % C);
+}
 function objective(now: number) {
   const b = me.body;
   const beam = (x: number, y: number, z: number) => setBeacon({ x, y, z }, now);
   if (run.mode === 'waking') {
     setBeacon(null, now);
-    return 'The boiler is catching...';
+    return "It's waking up...";
   }
   if (run.mode === 'asleep') {
     beam(machine.flatbed.x, machine.flatbed.y + 2, machine.flatbed.z);
     return b && machine.distance(b.position.x, b.position.z) < 25
-      ? 'Wake the track layer.'
-      : 'Follow the path across the gorge. Wake the track layer at the timber camp.';
+      ? 'Wake up the old machine.'
+      : 'Follow the path to the old machine.';
   }
   const carried = back.logs + back.rails + back.incoming;
   if (run.mode === 'feeding') {
@@ -1129,47 +1136,64 @@ function objective(now: number) {
   }
   if (run.mode === 'laying') {
     setBeacon(null, now);
-    return 'Laying track. Ride the machine, or walk on the fresh track.';
+    return 'Your logs are becoming track! Ride along, or walk behind it.';
   }
   if (run.mode === 'running') {
     setBeacon(null, now);
-    return 'The line is through! The first train is on its way.';
+    return 'The line is through! A train is bringing timber home.';
   }
   if (run.mode === 'turning' || run.mode === 'shunting') {
     setBeacon(rackFrom, now);
-    return 'The forge is lit. The track layer turns for line 2.';
+    return 'The forge is lit! Rails are pouring.';
   }
   if (run.mode === 'waiting') {
-    if (b && Math.hypot(b.position.x - TX, b.position.z - TZ) > 90)
-      return 'Ride the train home. Its cargo is building the forge.';
+    // Nothing you do hurries this and nothing waits on you: say what's coming and when, and lead to the nearer way home.
+    const { tr, clock } = L1.train;
+    const count = `${forge.crates}/${TUNE.forgeCost}`;
+    if (L1.train.onTrain(carry.on)) {
+      beam(toWorld(FORGE.x), VILLAGE.y + 8, FORGE.z);
+      if (tr.stop === 0) return 'This is the village. Step off and see the forge.';
+      return tr.stop === 1 ? 'It leaves for the village in a moment.' : 'Enjoy the ride! Get off at the village.';
+    }
+    if (
+      b &&
+      Math.hypot(b.position.x - farStop.x, b.position.z - farStop.z) < Math.hypot(b.position.x - TX, b.position.z - TZ)
+    ) {
+      beam(farStop.x, railY(L1.spec.line, L1.spec.line.len - TUNE.stopIn), farStop.z);
+      if (tr.stop === 1) return 'The train is here. Step on a flat car to ride home.';
+      return `Next train in ${secondsTo(clock.t, 1)} s. Wait at the platform to ride home.`;
+    }
     beam(toWorld(FORGE.x), VILLAGE.y + 8, FORGE.z);
-    return `Hop on the train and ride your line. Its timber builds the forge: ${forge.crates}/${TUNE.forgeCost}.`;
+    if (tr.stop === 0) return `The train is in. Its timber builds the forge: ${count}.`;
+    return `A train brings timber for the forge in ${secondsTo(clock.t, 0)} s: ${count}.`;
   }
   if (run.mode === 'done') {
     setBeacon(null, now);
     return L2.open && s.stone > 0
-      ? 'Stone is reaching the village. And what is that, far across the sea?'
-      : 'Line 2 is through! Ride the first stone home. Then look across the sea.';
+      ? 'That was the whole test. Thanks for playing!'
+      : 'Line 2 is through! The first stone is on its way home.';
   }
   // Idle at a station: what's next depends on what it wants and what you carry.
   const st = stationOf(run.line);
   if (!st) return '';
-  const name = st.spec.label;
+  const name = st.spec.label.replace('Line 2, s', 'S'); // as its board calls it
   const counts =
     st.spec.logs && st.spec.rails
       ? `rails ${st.have.rails}/${st.spec.rails}, logs ${st.have.logs}/${st.spec.logs}`
       : `${st.have.logs}/${st.spec.logs}`;
   if (run.line === L1) {
     const stillNeeds = st.wants('logs') - carried;
-    if (stillNeeds > 0 && back.room() > 0) {
+    const unloading = carried > 0 && !!b && Math.hypot(b.position.x - st.x, b.position.z - st.z) <= TUNE.reachStation;
+    if (stillNeeds > 0 && back.room() > 0 && !unloading) {
       const t = nearestTree();
       if (t) beam(t.x, t.y + 9, t.z);
-      return carried
-        ? `Chop more, or carry what you have to ${name}: ${counts}.`
-        : `Chop trees for timber. ${name} needs logs: ${counts}.`;
+      if (carried) return `${carried}/${TUNE.carry} on your back. Chop more, or carry them to ${name}.`;
+      return st.have.logs
+        ? `${name} needs ${st.wants('logs')} more logs. Chop a tree.`
+        : 'Chop a tree with an orange band.';
     }
     beam(st.x, st.y + 2, st.z);
-    if (run.line.stage === 2) return `Carry your logs over the trestle to ${name}: ${counts}.`;
+    if (run.line.stage === 2 && !unloading) return `Carry your logs over the new bridge to ${name}: ${counts}.`;
     return `Carry your logs to ${name}: ${counts}.`;
   }
   // Line 2: rails from the rack, timber from the heap.
@@ -1177,20 +1201,18 @@ function objective(now: number) {
     needL = st.wants('logs') - back.logs - logsIncoming;
   if (b && Math.hypot(b.position.x - TX, b.position.z - TZ) > 120 && back.rails + back.logs === 0) {
     beam(rackFrom.x, rackFrom.y + 1, rackFrom.z);
-    return 'Rails are ready at home. Ride the train home.';
+    return 'More rails are ready in the village. Head back.';
   }
   if (back.room() > 0 && needR > 0) {
     beam(rackFrom.x, rackFrom.y + 1, rackFrom.z);
-    return `Take rails from the forge rack for ${name}: ${counts}.`;
+    return 'Take rails from the rack by the forge.';
   }
   if (back.room() > 0 && needL > 0) {
     beam(hub.x, VILLAGE.y + 3, hub.z);
-    return hasTimber()
-      ? `Take timber from the heap for ${name}: ${counts}.`
-      : `The train brings timber to the heap. ${name} needs: ${counts}.`;
+    return hasTimber() ? 'Take timber from the heap.' : 'The train is bringing more timber to the heap.';
   }
   beam(st.x, st.y + 2, st.z);
-  return `Carry it out to ${name}: ${counts}.`;
+  return `Carry it all to ${name}: ${counts}.`;
 }
 
 // ---------------------------------------------------------------- start over and the frame
@@ -1413,7 +1435,7 @@ onFrame(
     setNumbers(L1.open ? TUNE.deckCrates : null, s.people);
     forgeBoard.set(
       forge.lit ? 'Forge lit' : `Forge: timber ${forge.crates}/${TUNE.forgeCost}`,
-      forge.lit ? `${forge.made} rails poured` : forgePhase(),
+      forge.lit ? `${forge.made} rails poured` : forge.crates ? forgePhase() : 'waiting for your timber',
     );
     forgeBoard.sprite.visible = true;
     heapBoard.sprite.visible = s.turned || hub.list.length > 0;
