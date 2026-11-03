@@ -24,7 +24,6 @@ import {
   positionLocal,
   If,
   positionWorld,
-  positionView,
   cameraPosition,
 } from 'three/tsl';
 import { GRID_RES, HALF, CELL } from '../constants.ts';
@@ -155,9 +154,9 @@ const color = Fn(() => {
   col.addAssign(seaU.uSpecCol.mul(spec).mul(0.9));
   const alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5, depth)), foam.mul(0.95));
   if (softHorizon) {
-    // View depth makes the thin transition straight across the screen, rather than a camera-centred arc.
-    // The outer rim is a safety fade for oblique views from the shore: finish before the square's 650 m edge.
-    const horizon = smoothstep(280, 390, positionView.z.negate());
+    // Angular height keeps the soft horizon band readable even from a low camera.
+    // The outer rim still hides the square's 650 m edge when viewed from high up.
+    const horizon = smoothstep(0, 0.05, viewDir.y).oneMinus();
     const rim = smoothstep(610, 640, max(w.x.abs(), w.z.abs()));
     const haze = max(horizon, rim);
     return vec4(mix(col, seaU.uHaze, haze), mix(alpha, 1, haze));

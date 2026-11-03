@@ -18,8 +18,8 @@ the deeper `#2a6fe0` take and its sun/fill overrides are removed.
   groups), with no wrapping boundary or cloud-free travel beyond the island.
 - A soft low dome band blends toward its existing horizon colour, including at sunset and night. The original
   sun glow, moon and stars remain above it. The existing sea material blends its colour, glints and transparency
-  toward that same horizon over 280–390 m of view depth, keeping blue water visible out to a thin, straight
-  horizon transition. There is no shallow-angle haze; the dome shoulder spans direction heights 0–0.025.
+  toward that same horizon over view-direction heights 0–0.05, keeping blue water visible below a soft,
+  steady angular band even from a low camera. There is no distance fade; the dome shoulder spans direction heights 0–0.025.
   A safety fade over the plane's outer 610–640 m square rim hides its 650 m edge from oblique shore views.
   No new water design or palette.
 - Distant land keeps the plain game's fog range, 110–520 m, and caves retain their own fog range.
