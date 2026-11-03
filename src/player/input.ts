@@ -19,6 +19,7 @@ export { input, inputState } from './input-state.ts';
 // (touch.css; research/cross-device-input.md rec 11): Jump gets the vehicle's label, the buttons that do nothing hide.
 export function setSeated(on: boolean, jumpLabel = 'Jump') {
   inputState.seated = on;
+  if (on) setStickSprint(false);
   document.body.classList.toggle('seated', on);
   dom.jumpBtn.textContent = on ? jumpLabel : 'Jump';
 }
@@ -28,6 +29,18 @@ const WHEEL_PITCH = 0.0028;
 // Touch stick: travel radius in CSS px (larger on tablets, rec 7) and a scaled radial dead zone as a share of it.
 const tablet = matchMedia('(min-width: 700px) and (min-height: 700px)');
 const STICK_DEAD = 0.12;
+// The stick also sprints (rec 9, Sky's and Apple's one control for walk and run): a push to this share of the travel
+// starts it, and it holds until the push falls under the lower one, so a thumb resting at the edge doesn't flicker it.
+// It only writes input.sprint on a change, so the pad's latch keeps its own rules.
+const STICK_SPRINT_ON = 0.9;
+const STICK_SPRINT_OFF = 0.8;
+let stickSprint = false;
+function setStickSprint(on: boolean) {
+  if (on === stickSprint) return;
+  stickSprint = on;
+  input.sprint = on;
+  dom.stickEl.classList.toggle('sprinting', on); // the ring lights up (touch.css)
+}
 let everLocked = false; // a refused lock is only permanent if none ever worked (Chrome refuses one just after Esc)
 const lockRefused = () => {
   if (!everLocked) inputState.lockFailed = true;
@@ -189,6 +202,9 @@ export function initInput() {
       const out = mag < STICK_DEAD ? 0 : (mag - STICK_DEAD) / (1 - STICK_DEAD) / mag;
       input.stickX = (dx / r) * out;
       input.stickY = (dy / r) * out;
+      // Seated, the stick steers; in a talk or the fall's intro, it does nothing.
+      const free = !inputState.seated && !inputState.held;
+      setStickSprint(free && mag >= (stickSprint ? STICK_SPRINT_OFF : STICK_SPRINT_ON));
       knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
     } else if (e.pointerId === look.id) {
       cam.yaw -= (e.clientX - look.x) * 0.006;
@@ -200,6 +216,7 @@ export function initInput() {
   function releaseStick() {
     stick.id = null;
     input.stickX = input.stickY = 0;
+    setStickSprint(false);
     stickEl.style.display = 'none';
   }
   // pointerup is not guaranteed (system gestures, backgrounding), so any of these ends the touch.
@@ -309,8 +326,12 @@ export function initInput() {
   registerAction('sprint', {
     pad: 'l3',
     label: 'Sprint',
-    detail: { pad: 'Click once; stays on while you move' },
+    detail: {
+      pad: 'Click once; stays on while you move',
+      touch: 'A smaller push walks; the ring lights up while you sprint',
+    },
     keys: ['ShiftLeft'],
+    touch: 'Push the stick far',
     group: 'move',
     order: 2,
     down: () => (input.sprint = true),

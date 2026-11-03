@@ -13,7 +13,7 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 |---|---|---|---|---|---|---|
 | Move (`move`) | described | WASD, ↑ ↓ (← → too while the mouse is locked) | Left stick | Drag on the left | Getting around | |
 | Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
-| Sprint (`sprint`) | action | Left Shift | L3 (latches) | none | Getting around | |
+| Sprint (`sprint`) | action | Left Shift | L3 (latches) | Push the stick far | Getting around | |
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
 | Talk, pick up, take (`interact`) | action | E | X (only this: nothing in reach, it does nothing) | Grab (the main button; its label follows what it would do) | Hands | |
@@ -87,6 +87,12 @@ Notes:
   never starts the stick or a touch look. So an iPad with a Magic Keyboard plays with the keyboard, trackpad look
   (Safari on iPad has no Pointer Lock: click-drag or two-finger scroll, and the hint says so until you have looked) and
   the keyboard guide. HUD buttons sit above the touch overlay in both modes.
+- **Touch sprint** (2026-11-02; [cross-device-input.md](../research/cross-device-input.md), rec 9): the stick is one
+  control for walk and sprint. A push to 90% of its travel (45 px on a phone, 54 px on a tablet) sprints, and it holds
+  until the push falls under 80%, so a thumb at the edge doesn't flicker it. Below that the stick walks, in proportion
+  to the push. While it sprints the ring lights up in sun yellow. No button, so the screen stays clear. It writes the
+  same `input.sprint` as the pad, so it does whatever sprint does elsewhere, on a moving deck too; seated in a vehicle
+  (the stick steers) and in a talk (you stand still) it doesn't sprint or light up.
 - On tablets (both sides at least 700 CSS px) the touch buttons are 1.45 times their phone size (about 110 px on the
   11-inch iPad), 1.6 times on the 13-inch (about 122 px, XAG's 24 mm), and the stick ring grows with its travel
   ([src/player/touch.css](../../src/player/touch.css)).

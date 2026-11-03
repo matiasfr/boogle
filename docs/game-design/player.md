@@ -19,7 +19,8 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
   1.6 m/s) while held. Ground snap pulls you back onto a crest within 0.45 m,
   measured to the floor under you (terrain, stair, deck or cave floor), so ramps and stairs don't trigger it; rising
   faster than 6 m/s is a launch (a mushroom bounce), which it leaves alone.
-- Pad sprint is a latch: click L3 once and it stays on until the stick rests.
+- Pad sprint is a latch: click L3 once and it stays on until the stick rests. Touch sprint is automatic: pushing the
+  stick to the edge of its travel sprints ([controls.md](controls.md)).
 - A soft wall 18 m inside the map edge turns you back from the open sea.
 
 ## Swim
