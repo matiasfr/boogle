@@ -16,6 +16,7 @@ const kinds: [string, RegExp][] = [
   ['typecheck/lint', /\b(?:typecheck|eslint|lint)\b/],
   ['map', /\b(?:npm run map|dev\/map)\b/],
   ['patch', /\b(?:npm run patch|dev\/patch\.ts)\b/],
+  ['waiting', /\bwaitfor\b|\bsleep\b/],
   ['python', /\bpython(?:3)?\b/],
   ['git', /\bgit\b/],
 ];

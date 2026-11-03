@@ -104,6 +104,19 @@ For anything a player can see or feel, close the loop yourself before shipping; 
 Sandboxed and can't do this (`npm run look` needs a local port, `npm run inflight` and commits need to write `.git`, `ship` needs the network)? Ask for the access if your tool can. Otherwise don't ship a change a player can see without having seen it: commit it, say what you couldn't check, and leave it for whoever gave you the job.
 
 ## Tools and skills
+**Check here before writing a shot, a script or a workaround.** Details: `.claude/skills/look/SKILL.md`.
+| You want to | Use |
+|---|---|
+| See a beat of the run | `npm run look -- --at "<beat>"` (`--at list` names them); warm-ups are warped, so `--warm` costs little |
+| Pacing, what never happened, on-screen text | `npm run playthrough` (about 90 s); new beats go in `dev/look/bots/place.ts` |
+| Ask several questions of the running game | `npm run session -- start`, then `keys`, `press`, `state`, `still` (under a second each) |
+| Judge motion or feel from evidence | `look --curves`, `--target glide`; `look --filmstrip N` for exact frames |
+| Compare with an earlier build | `npm run before-after -- <ref>` |
+| Two players | `look --players 2` (warped at 5x) |
+| Know a folder without reading it | `npm run map -- <folder>`, then `grep` and line ranges |
+| Make many edits at once | `npm run patch -- <file>` |
+| See where a session's time and tokens went | `npm run transcript -- <id>` |
+
 - `npm run transcript -- <path|id>` summarizes a finished Claude or Codex session; `--latest claude|codex`, `--compare a b`, and `--json` select other views.
 - `.agents/skills` links to `.claude/skills`, so Codex and other agents that read it get the same skills: the workflows plus `threejs-*` (use the WebGPU/TSL parts), `game-feel`, `camera-systems` and `audio-design`. They're written for Claude Code; "Codex" below maps the names.
 - `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run playtest`: what `?proto=` sessions did, uploaded on their own (`-- latest` prints the summary and a heat map; prototypes add beats with `playMark` from `src/proto/mark.ts`). `npm run verdicts`: the owner's notes from the prototype bar; read them from a checkout with the token rather than asking the owner to paste them.
