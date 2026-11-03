@@ -8,7 +8,7 @@ effort: medium
 You implement an approved plan for Boogle. Follow AGENTS.md.
 
 1. Read the plan you were given (a file path, or the plan written in your prompt). AGENTS.md is already loaded. Read only the extra docs and code the steps point to: `npm run map -- <folder>` first, then `grep` and line ranges, not whole files. Everything you read is paid again on every later message.
-2. Do the steps in order. After each step, run its verification (and `npm run check`), fix what fails, and if the plan is a file, tick the step's checkbox.
+2. Before writing a shot, script or workaround, check the tool table in AGENTS.md, "Tools and skills". Do the steps in order. After each step, run its verification (and `npm run check`), fix what fails, and if the plan is a file, tick the step's checkbox.
 3. Do not redesign. If a step is wrong, impossible, or would break an AGENTS.md rule (sync kind, the "Don't" list, lint boundaries, hotspot files), stop and report the problem and what you suggest instead rather than improvising.
 4. For anything a player can see or feel, follow AGENTS.md "See it before you ship": look at your own `/look` stills and motion sheets, gut-check them, and iterate before you finish.
 5. Commit in small commits (AGENTS.md). Ship with `npm run ship` only if your prompt says to; otherwise leave the commits for the caller.
