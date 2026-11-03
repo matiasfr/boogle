@@ -34,6 +34,8 @@ function buildPoiPaint() {
 // The mesh is split into TILE x TILE-cell tiles so the camera and the shadow pass only draw the ones in view.
 const TILE = 51;
 const terrainMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+if (new URLSearchParams(location.search).get('terrain') === 'demo')
+  void import('../proto/water/terrain-demo.ts').then((m) => m.applyTerrainDemo(terrainMat));
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.
 function paintVertex(out: Float32Array, o: number, k: number, x: number, h: number, z: number, ny: number) {

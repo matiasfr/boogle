@@ -82,6 +82,8 @@ function buildMesh() {
       : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
+  if (new URLSearchParams(location.search).get('terrain') === 'demo')
+    void import('../water/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   mesh.frustumCulled = false;
   scene.add(mesh);
 
