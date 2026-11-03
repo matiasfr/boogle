@@ -23,6 +23,7 @@ import { analyticWaves } from './waves.ts';
 
 const t0 = performance.now();
 const bake = bakeShoreMap(islandHeight, SHORE.extent, SHORE.size, rockObstacle);
+void import('./spray.ts').then(({ startSpray }) => startSpray(bake));
 const t1 = performance.now();
 const foamTex = bakeFoam();
 const t2 = performance.now();
