@@ -56,7 +56,7 @@ export const ROCK = (() => {
   const a = (ULTRA.swellBearing * Math.PI) / 180;
   let r = 60;
   while (r < 500 && islandHeight(Math.cos(a) * r, Math.sin(a) * r) > -2.5) r += 1;
-  return { x: Math.cos(a) * r, z: Math.sin(a) * r, r: 4.2 };
+  return { x: Math.cos(a) * r, z: Math.sin(a) * r, r: 8.5 }; // the demo's radius: smaller, the bake's blur all but erases it
 })();
 
 export const rockObstacle = (x: number, z: number) => {
