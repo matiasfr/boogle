@@ -11,6 +11,7 @@ import { registerInteractable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { scene } from '../../render/scene.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { flat } from '../flat.ts';
 import { pop } from '../minis/common.ts';
 import { shakeView } from './celebrate.ts';
@@ -78,7 +79,7 @@ let tilt = 0,
 function bounce(end: End, received: boolean) {
   if (!job.longBeam.set) return;
   tilt = end === 0 ? -SEESAW.tilt : SEESAW.tilt;
-  thump(job.longBeam.x, job.longBeam.z);
+  placeSound('seesaw', job.longBeam.x, job.longBeam.z);
   const b = me.body;
   if (
     received &&

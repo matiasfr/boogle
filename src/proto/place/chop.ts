@@ -14,6 +14,7 @@ import { input } from '../../player/input-state.ts';
 import { me } from '../../player/player.ts';
 import { backSeam, myBundleNext } from '../../features/haul-stack.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
@@ -517,7 +518,8 @@ function contact(t: Tree) {
     logsLanded = 0;
     if (t.body) removeBody(t.body);
     t.body = null;
-    thump(t.x, t.z);
+    if (t.great) placeSound('treeFall', t.x, t.z);
+    else thump(t.x, t.z);
   }
   chopHooks.stroke?.(t);
 }
@@ -566,7 +568,7 @@ function contactRock(q: Rock) {
   poseRock(q);
   if (!whole(q)) {
     dustRing(q.x, q.y + 0.2, q.z, 10, 2.4, 0.4);
-    thump(q.x, q.z);
+    placeSound('rockBreak', q.x, q.z);
     solidRock(q);
   }
   chopHooks.rock?.(q);
@@ -583,7 +585,11 @@ export function shoulder(what: Exclude<BigThing, null>) {
   back.logs = back.rails = back.stone = 0;
   back.big = what;
   back.beam = what === 'beam' ? 1 : 0;
-  if (what === 'beam') setTrunkTaken(true);
+  if (what === 'beam') {
+    setTrunkTaken(true);
+    const p = me.body?.position;
+    if (p) placeSound('shoulder', p.x, p.z);
+  }
 }
 export function setTrunkTaken(v: boolean) {
   trunk.taken = v;
@@ -674,7 +680,8 @@ export function updateChop(dt: number, now: number) {
       if (t.fall >= 0.75) {
         t.fall = 1;
         felled.n++;
-        thump(t.x, t.z);
+        if (t.great) placeSound('treeLand', t.x, t.z);
+        else thump(t.x, t.z);
         dustRing(
           t.x + Math.sin(t.fallYaw) * 5,
           t.y + 0.2,
@@ -686,8 +693,6 @@ export function updateChop(dt: number, now: number) {
         shedCrown(t);
         if (t.great) {
           shakeView(0.3);
-          thump(t.x, t.z);
-          knock(0.3, 1.4);
         }
         pose(t, now);
         solidTree(t);

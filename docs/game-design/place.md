@@ -169,6 +169,35 @@ Cost: not measured on an iPad this round. M1 Max held 60 fps in every capture (n
 
 ## Sound
 
+Round 4's action cues use the existing SFX bus (`src/render/place-sfx.ts`), with camera-distance falloff and finite procedural sources. They replace the generic sounds at the same presentation beats; no gameplay timing, costs, routes or copy changes. The cart's quiet wheel and paired effort cues follow its travel in the existing render update; snapshot jumps skip accumulated contacts. At most eight of these new cue events overlap (at most forty sources), separate from legacy audio. Rarity adds notes and tail length, not level. This follows construction-sound recommendations 1–5 and 10, audio-architecture recommendation 11, and collect-sounds' attack/body/bounce recipe; DESIGN.md **11. Show, don't tell**.
+
+Listening list for the owner (the implementing agent cannot hear; timbre, balance in play and fatigue need a person's judgment):
+
+| Moment | Intended sound |
+| --- | --- |
+| Rock breaks | Dry stone crack, low body and a short scatter of grit. |
+| Great tree starts falling | Descending wooden groan with a splintering attack. |
+| Great tree lands | Broad, dull trunk impact with a soft crown rustle. |
+| Trunk reaches your shoulder | Wooden knock and a brief rising effort. |
+| Common box reveal | One warm bell with a tiny bright bounce. |
+| Rare box reveal | Root and fifth with a short metal sparkle. |
+| Wonder box reveal | Three rising notes with a longer, quiet shimmer. |
+| Second-jump pickup | Two rising elastic notes. |
+| Hook pickup | Small metal strike resolving upward. |
+| Glider pickup | Airy swell opening into a soft fifth. |
+| Second jump used | Short air puff with a subtle rising body. |
+| Hook fired | Tight cable zip dropping away from the hand. |
+| Hook released or pull finished | Dry metal tug. |
+| Glider opened | Cloth-like snap and a short breath of air. |
+| Glider closed | Small folding swish that settles quickly. |
+| Cart rolling | Quiet paired wooden wheel knocks. |
+| Cart pushers | Two soft breathy efforts as they shove. |
+| Cart stops | Brief brake rub and a wooden settling knock. |
+| First path opens | Restrained root, fifth and octave. |
+| See-saw bounces | Springy wooden creak rising into the launch. |
+
+Render the same recipes without normalization via `node dev/audio/render.ts --offline-place` using this job's browser broker. Its manifest distinguishes raw SFX-bus peaks from the live master mix; it cannot establish perceived loudness or speaker quality. The existing glide wind remains on the ambience bus.
+
 Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience bus, so it starts with the first press, ducks under voices and follows the volume): slow swells of low-passed brown noise, one on each side on its own clock; far gulls every half a minute to two minutes (a lone mew, a pair, a long call, sometimes an answer), panned around; a faint wandering breeze that gives way to the sea at the shore. The sea is loudest within about 18 m of the shore, a little under that on the river bank, and fades by 150 m to 11 dB down, with height counting as distance; it leans towards the water's side as you turn. Numbers: `LEVELS` and `FEEL`. `&ambience=off` turns it off and `&ambience=-6` moves it in dB. Hear it away from the game: `node dev/audio/render.ts --only place`.
 
 ## How it's built

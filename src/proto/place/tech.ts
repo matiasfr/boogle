@@ -21,6 +21,7 @@ import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { getAudio } from '../../render/audio.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { knock, pop } from '../minis/common.ts';
@@ -350,7 +351,7 @@ function gainTech(id: TechId, here: boolean) {
   syncControls();
   if (here) {
     coop.tech(id);
-    chord(id === 'jump' ? 196 : id === 'hook' ? 165 : 131, 1);
+    placeSound(id === 'jump' ? 'pickupJump' : id === 'hook' ? 'pickupHook' : 'pickupGlider', d.x, d.z);
     shakeView(id === 'glide' ? 0.22 : 0.12);
     const b = d;
     barrage(b.x, b.y, b.z, id === 'glide' ? 12 : 6, 0.3, 26, 1.8);
