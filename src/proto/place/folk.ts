@@ -12,6 +12,7 @@ import { scene, camera } from '../../render/scene.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
+import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
 import { merged } from './gifts.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
@@ -58,7 +59,7 @@ const HAND = new THREE.Color(SKIN),
 
 // ---------------------------------------------------------------- what each one is doing
 type Job = 'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider';
-type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride';
+type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
   job: Job;
@@ -87,6 +88,9 @@ type Guy = {
   seat: number;
   side: number;
   far: number;
+  px: number; // where it stood last frame: the stride follows how fast it really goes
+  pz: number;
+  chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
 };
 const rng = mulberry32(2211);
 const X = toWorld;
@@ -120,6 +124,9 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     seat: 0,
     side: rng() < 0.5 ? 1 : -1,
     far: 0,
+    px: x,
+    pz: z,
+    chat: 0,
     ...extra,
   };
   guys.push(g);
@@ -197,12 +204,16 @@ export type FolkEnv = {
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
   platform: { x: number; y: number; z: number; ux: number; uz: number };
   forgeLit: () => boolean;
+  /** Something's on that nobody should talk over (a crate opening, a moment). */
+  hush: () => boolean;
 };
 let env: FolkEnv | null = null;
 export const setFolkEnv = (e: FolkEnv) => void (env = e);
 
 // ---------------------------------------------------------------- moving
 const SPEED = { walk: 1.7, run: 4.6 };
+// The walk. Tune these by eye at about 10 m.
+const WALK = { bob: 0.11, squash: 0.05, rock: 0.17, lean: 0.07, stride: 0.2, lift: 0.13, stepsPerMetre: 4.4 };
 function steer(g: Guy, dt: number, speed: number) {
   const dx = g.tx - g.x,
     dz = g.tz - g.z,
@@ -463,26 +474,43 @@ function pose(g: Guy) {
     hr = [0.25, 0.28, 0.02];
   let itemA = false,
     itemB = false;
-  let lift = 0;
+  let lift = 0,
+    liftL = 0,
+    liftR = 0;
   switch (g.mood) {
     case 'walk':
     case 'run': {
-      const f = g.mood === 'run' ? 1.5 : 1;
-      hop = Math.abs(Math.sin(t)) * 0.06 * f;
-      tilt = Math.sin(t) * 0.1 * f;
-      pitch = g.mood === 'run' ? 0.2 : 0.04;
-      fl = Math.sin(t) * 0.14 * f;
+      // A waddle you can read from across the street: a big rock from foot to foot, up over each step and down onto the
+      // next, feet that lift, hands swinging against them, leaning into it. All of it from one phase, on shared instances.
+      const f = g.mood === 'run' ? 1.45 : 1,
+        step = Math.sin(t);
+      hop = Math.abs(step) * WALK.bob * f;
+      sq = 1 - (1 - Math.abs(step)) * WALK.squash; // low and wide as each foot lands
+      tilt = step * WALK.rock * f;
+      pitch = g.mood === 'run' ? 0.24 : WALK.lean;
+      fl = step * WALK.stride * f;
       fr = -fl;
-      hl = [-0.26, 0.3, -fl * 0.7];
-      hr = [0.26, 0.3, fl * 0.7];
+      liftL = Math.max(0, Math.cos(t)) * WALK.lift * f;
+      liftR = Math.max(0, -Math.cos(t)) * WALK.lift * f;
+      hl = [-0.27, 0.3 + Math.max(0, -step) * 0.05, -fl * 0.8];
+      hr = [0.27, 0.3 + Math.max(0, step) * 0.05, fl * 0.8];
+      break;
+    }
+    case 'chat': {
+      // The one talking talks with a hand; the other just takes it in.
+      const w = Math.sin(t * 3);
+      if (g.chat === 1) hr = [0.28, 0.5 + w * 0.09, 0.14];
+      else tilt = 0.05 * g.side;
       break;
     }
     case 'carry':
-      hop = Math.abs(Math.sin(t)) * 0.04;
-      tilt = Math.sin(t) * 0.06;
+      hop = Math.abs(Math.sin(t)) * 0.05;
+      tilt = Math.sin(t) * 0.1;
       pitch = -0.05;
-      fl = Math.sin(t) * 0.11;
+      fl = Math.sin(t) * 0.15;
       fr = -fl;
+      liftL = Math.max(0, Math.cos(t)) * WALK.lift * 0.8;
+      liftR = Math.max(0, -Math.cos(t)) * WALK.lift * 0.8;
       hl = [-0.18, 0.42, 0.22];
       hr = [0.18, 0.42, 0.22];
       itemA = true;
@@ -532,13 +560,20 @@ function pose(g: Guy) {
     default:
       sq = 1 + Math.sin(t * 0.8) * 0.02;
   }
+  // Saying something: a quick bob and a nod, so you can see who it is, whatever else they're doing.
+  if (g.chat === 1) {
+    const talk = Math.abs(Math.sin(t * 4.2));
+    hop += talk * 0.05;
+    pitch += talk * 0.1;
+    sq *= 1 + talk * 0.05;
+  }
   const gy = g.fy ?? g.y;
   q.setFromEuler(e.set(pitch, g.yaw, tilt, 'YXZ'));
   base.compose(p.set(g.x, gy + hop, g.z), q, s.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)));
   heads.setMatrixAt(g.k, base);
   coats.setMatrixAt(g.k, base);
-  limb(g.k, 0, -0.13, 0.06, fl + 0.02, 0.1, 0.07, 0.14);
-  limb(g.k, 1, 0.13, 0.06, fr + 0.02, 0.1, 0.07, 0.14);
+  limb(g.k, 0, -0.13, 0.06 + liftL, fl + 0.02, 0.1, 0.07, 0.14);
+  limb(g.k, 1, 0.13, 0.06 + liftR, fr + 0.02, 0.1, 0.07, 0.14);
   limb(g.k, 2, hl[0]!, hl[1]!, hl[2]!, 0.075, 0.075, 0.075);
   limb(g.k, 3, hr[0]!, hr[1]!, hr[2]!, 0.075, 0.075, 0.075);
   const i0 = g.k * 2,
@@ -634,6 +669,8 @@ export function setRiders(line: number, on: boolean) {
 }
 /** Start over. */
 export function resetFolk() {
+  endTalk();
+  rest = TALK.firstAfter;
   wanted = 0;
   followers = 0;
   for (let k = 0; k < VILLAGE_MAX; k++) {
@@ -654,6 +691,125 @@ export function resetFolk() {
   setRiders(0, false);
   setRiders(1, false);
   campBusy[0] = campBusy[1] = false;
+}
+
+// ---------------------------------------------------------------- chatter (docs/research/little-guys.md: rare, nearby, one at a time)
+export const TALK = {
+  firstAfter: 10, // s into the run before anybody says anything
+  rest: [20, 38], // s of quiet after an exchange
+  hear: 11, // m from you: they only strike one up this close
+  meet: 3.6, // m apart to talk as they are
+  stroll: 7, // m apart for a stroller to wander over first
+  lines: [2, 4], // lines an exchange runs to, turn about
+  gap: 0.28, // s between one line and its answer
+};
+type Exchange = {
+  a: Guy;
+  b: Guy;
+  left: number; // lines still to say
+  t: number; // s till the next thing
+  stop: () => void;
+  walking: number; // s left to walk over; 0 once they're talking
+};
+let ex: Exchange | null = null,
+  rest: number = TALK.firstAfter,
+  lineNo = Math.floor(rng() * 12);
+const canTalk = (g: Guy) =>
+  g.on &&
+  g.cheer <= 0 &&
+  g.follow <= 0 &&
+  !g.site &&
+  !g.chat &&
+  (g.job === 'stroll' || g.job === 'platform' || g.job === 'camp' || g.job === 'station') &&
+  (g.mood === 'idle' || g.mood === 'sit' || g.mood === 'walk' || (g.job === 'station' && g.mood === 'ride'));
+function endTalk() {
+  if (!ex) return;
+  ex.stop();
+  for (const g of [ex.a, ex.b]) {
+    g.chat = 0;
+    if (g.mood === 'chat') g.mood = 'idle';
+    g.wait = 0.4 + rng() * 2;
+  }
+  ex = null;
+  rest = TALK.rest[0]! + rng() * (TALK.rest[1]! - TALK.rest[0]!);
+}
+function strikeUp() {
+  let best: Guy | null = null,
+    other: Guy | null = null,
+    bd = Infinity;
+  for (const g of guys) {
+    if (!canTalk(g) || Math.hypot(g.x - you.x, g.z - you.z) > TALK.hear) continue;
+    for (const h of guys) {
+      if (h === g || !canTalk(h)) continue;
+      const d = Math.hypot(g.x - h.x, g.z - h.z);
+      const reach = h.job === 'stroll' && g.job === 'stroll' ? TALK.stroll : TALK.meet;
+      if (d < reach && d < bd) {
+        bd = d;
+        best = g;
+        other = h;
+      }
+    }
+  }
+  if (!best || !other) return false;
+  const lines = TALK.lines[0]! + Math.floor(rng() * (TALK.lines[1]! - TALK.lines[0]! + 1));
+  ex = { a: best, b: other, left: lines, t: 0, stop: () => {}, walking: bd > TALK.meet ? 4 : 0 };
+  best.chat = 2;
+  other.chat = 2;
+  folk.chats++;
+  return true;
+}
+function chatBrain(g: Guy, dt: number) {
+  const o = ex ? (ex.a === g ? ex.b : ex.a) : null;
+  if (!o) return;
+  if (ex!.walking > 0 && g === ex!.b) {
+    // Over to the other one, and stop a step short.
+    const d = Math.hypot(o.x - g.x, o.z - g.z);
+    g.tx = g.x + ((o.x - g.x) / Math.max(d, 0.01)) * Math.max(0, d - 1.5);
+    g.tz = g.z + ((o.z - g.z) / Math.max(d, 0.01)) * Math.max(0, d - 1.5);
+    g.mood = steer(g, dt, SPEED.walk) ? 'chat' : 'walk';
+    return;
+  }
+  g.mood = 'chat';
+  // A step back if they've met nose to nose.
+  const apart = Math.hypot(o.x - g.x, o.z - g.z);
+  if (apart < 1.25 && apart > 0.01) {
+    g.x -= ((o.x - g.x) / apart) * dt * 0.9;
+    g.z -= ((o.z - g.z) / apart) * dt * 0.9;
+  }
+  let dy = Math.atan2(o.x - g.x, o.z - g.z) - g.yaw;
+  while (dy > Math.PI) dy -= Math.PI * 2;
+  while (dy < -Math.PI) dy += Math.PI * 2;
+  g.yaw += dy * Math.min(1, dt * 7);
+}
+function updateTalk(dt: number) {
+  if (!ex) {
+    rest -= dt;
+    if (rest > 0 || !you.ok || env?.hush()) return;
+    if (!strikeUp()) rest = 1.5; // nobody near: look again in a moment
+    return;
+  }
+  const { a, b } = ex;
+  // Anything bigger than a chat ends it: a cheer, a crate, you wandering off, a stroller noticing you doesn't (it can't).
+  const away = Math.hypot(a.x - you.x, a.z - you.z) > CHATTER.earshot + 4;
+  if (!a.on || !b.on || a.cheer > 0 || b.cheer > 0 || env?.hush() || away) return endTalk();
+  if (ex.walking > 0) {
+    ex.walking -= dt;
+    if (Math.hypot(a.x - b.x, a.z - b.z) < 1.9) ex.walking = 0;
+    return;
+  }
+  ex.t -= dt;
+  if (ex.t > 0) return;
+  if (ex.left <= 0) return endTalk();
+  // Turn about, starting with whoever was there first.
+  const who = ex.left % 2 ? a : b,
+    other = who === a ? b : a;
+  who.chat = 1;
+  other.chat = 2;
+  const said = babble(lineNo++, who.k, who.x, who.z);
+  ex.stop = said.stop;
+  folk.lines++;
+  ex.left--;
+  ex.t = said.ms / 1000 + TALK.gap;
 }
 
 let frame = 0;
@@ -682,6 +838,7 @@ export function updateFolk(dt: number) {
       g.y = H(d.x, d.z);
     }
   }
+  updateTalk(dt);
   const cx = camera.position.x,
     cz = camera.position.z;
   const e_ = env;
@@ -702,8 +859,14 @@ export function updateFolk(dt: number) {
       hide(g);
       continue;
     }
-    g.t += dt * (g.mood === 'walk' || g.mood === 'carry' ? 7.5 : g.mood === 'run' ? 11 : g.mood === 'hammer' ? 0 : 3);
-    brain(g, dt);
+    if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {
+      const moved = Math.min(0.5, Math.hypot(g.x - g.px, g.z - g.pz));
+      g.t += moved * WALK.stepsPerMetre;
+    } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
+    g.px = g.x;
+    g.pz = g.z;
+    if (g.chat && g.job !== 'station' && g.job !== 'rider') chatBrain(g, dt);
+    else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();
       ride(g, car, g.seat ? 0.62 : -0.62, -1.15, g.seat ? -0.7 : 0.7);
@@ -726,4 +889,14 @@ export function updateFolk(dt: number) {
   limbs.instanceMatrix.needsUpdate = held.instanceMatrix.needsUpdate = true;
   if (held.instanceColor) held.instanceColor.needsUpdate = true;
 }
-export const folk = { guys, count: () => guys.filter((g) => g.on).length, stationGuys, campGuys, riders };
+export const folk = {
+  guys,
+  count: () => guys.filter((g) => g.on).length,
+  stationGuys,
+  campGuys,
+  riders,
+  chats: 0, // exchanges and lines so far, for the evals
+  lines: 0,
+  talking: () => (ex ? [ex.a, ex.b] : null),
+  talkSoon: () => void (rest = 0),
+};

@@ -293,6 +293,7 @@ setFolkEnv({
   },
   platform: platformAt,
   forgeLit: () => forge.lit,
+  hush: () => !!showing(),
 });
 function folkState() {
   setCamp(0, s.awake);
