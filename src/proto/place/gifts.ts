@@ -455,8 +455,12 @@ const CRATE: Part[] = [
   ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, RED],
 ];
 const crateGeo = merged(CRATE);
-const crateBeam = softGlow('#ffcf6a', 0.22, true).mat;
-const beamGeo = new THREE.CylinderGeometry(0.75, 1.1, 34, 12, 1, true).translate(0, 17, 0);
+// The shaft over a waiting crate: soft all the time, reads from across the place, and it flares as the crate lands.
+const crateGlow = softGlow('#ffb52e', 0.5, 'up'),
+  crateBeam = crateGlow.mat;
+crateBeam.blending = THREE.NormalBlending; // gold, not added light: added to a bright sky it's gone
+let crateFlare = 0;
+const beamGeo = new THREE.CylinderGeometry(0.75, 1.1, 34, 12, 1, true).translate(0, 18.3, 0); // from over the crate's lid
 type Crate = {
   x: number;
   y: number;
@@ -800,6 +804,8 @@ export function updateGifts(dt: number, now: number) {
       pendingWear.delete(id);
     }
   }
+  crateFlare = Math.max(0, crateFlare - dt / 1.6);
+  crateGlow.strength.value = 0.42 + Math.sin(now * 0.0025) * 0.07 + crateFlare * crateFlare * 0.55;
   for (const c of crates) {
     if (c.t === -1) continue;
     if (c.t < 1) {
@@ -809,6 +815,7 @@ export function updateGifts(dt: number, now: number) {
       c.mesh.position.y += Math.sin(c.t * Math.PI) * 2.4;
       c.mesh.rotation.x = (1 - c.t) * 3;
       if (c.t >= 1) {
+        crateFlare = 1;
         thump(c.x, c.z);
         knock(0.5, 0.9);
         dustRing(c.x, c.y + 0.1, c.z, 10, 2.4, 0.4);

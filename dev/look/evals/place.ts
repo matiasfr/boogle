@@ -652,6 +652,28 @@ if (shot === 'reload') {
     }
     (window as unknown as { __rideDone: boolean }).__rideDone = true;
   })();
+} else if (shot === 'cratefar') {
+  // Walking toward the next frame, &d metres out, right after the machine hands its crate down. &st=stretches first.
+  const stops = Number(q.get('st') ?? 1);
+  const landing = !!q.get('land'); // &land=1: nothing done yet, and the action hands the crate down, for the sheet
+  place.wake();
+  for (let n = 0; n < stops && !landing; n++) {
+    place.skipDelivery();
+    await waitMode('laying');
+    await waitMode('idle', 60000);
+  }
+  await wait(1000);
+  const st = L1.stations[stops]!;
+  if (landing) await wait(3000);
+  const c = landing ? { x: st.x, z: st.z } : place.giftState.crates()[0]!;
+  if (landing) act.__placeAct = () => (place as unknown as { handCrate: () => void }).handCrate();
+  const line = L1.spec.line;
+  const d = Number(q.get('d') ?? 30);
+  const s = Math.min(line.len - 1, Math.round(st.spec.s + d));
+  const x = line.xs[s]! + O,
+    z = line.zs[s]!;
+  put(x, z, yawTo(x, z, c.x, c.z) + 0.1, -0.03);
+  console.log('CRATE', `from frame ${Math.hypot(c.x - st.x, c.z - st.z).toFixed(1)} m`);
 } else if (shot === 'sit') {
   // Real presses: on a deck the prompt says Sit, Interact sits you, a ride holds you, Interact or Jump stands you up; a nearer
   // target keeps the button. SIT lines on the console. &keep=1 stays seated, facing &yaw from the deck, for stills and video.
