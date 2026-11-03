@@ -63,7 +63,12 @@ function card(p: Proto): HTMLElement {
   c.append(head);
 
   if (p.archived) c.append(el('p', 'note', `Archived: git tag ${p.archived}.`));
-  else {
+  else if (p.merged) {
+    const destination = el('a', 'btn', `Merged into: ${p.merged.label}`);
+    destination.href = import.meta.env.BASE_URL + p.merged.url.replace(/^\//, '');
+    if (!touch) destination.target = '_blank';
+    c.append(destination);
+  } else {
     const play = el('a', 'btn play', 'Play');
     const ph = p.url.match(PLACEHOLDER);
     const setHref = (name: string) => {

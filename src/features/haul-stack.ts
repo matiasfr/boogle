@@ -75,7 +75,7 @@ const stackOf = (pid: string | null | undefined): Stack => {
   const k = pid ? rules.roster.indexOf(pid) : -1;
   return k < 0 ? { n: 0, k: -1 } : { n: rules.stacks.countAt(k), k: rules.stacks.kindAt(k) };
 };
-export const myStack = () => stackOf(identity.pid);
+const myStack = () => stackOf(identity.pid);
 protoActivity(() => (myStack().n ? 'carrying' : null)); // for the playtest trace (src/proto/trace/)
 
 // The bundle's frame: the avatar's inner group (it bobs, leans and squashes with the walk), so the logs ride along, or

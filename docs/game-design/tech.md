@@ -38,6 +38,10 @@ folder map in [src/README.md](../../src/README.md).
   (`npm run atlas` prints them, [dev/atlas/](../../dev/atlas/)); the explanations live in
   [docs/atlas/](../atlas/) and `atlas.yml` keeps them current daily. Not part of the game.
 - **Video.** `npm run clip`, `reel`, `video:changes`, `video:publish` ([dev/video/](../../dev/video/)).
+- **Prototype inventory.** `npm run registry -- --json` lists each card's selector, loaders, core seams and incoming
+  dependencies (including types). Answered cards with no other experiment importing them are owner-review notes only;
+  nothing is archived automatically. The protos page's retired onehand and arrive cards link to their merged game
+  features on the classic island; ride links to the wagon, with the destination named instead of a stale Play button.
 - **Shipping.** `npm run ship` and self-merging PRs; the steps are in AGENTS.md, "Shipping". `smoke.yml` runs the
   nightly live two-tab test; `deploy-server.yml` deploys `server/` when a token exists, on changes to `server/` and to
   what its image carries (`src/world/`, `src/sim/`, `src/net/ids.ts`, `src/net/ws-wire.ts`), since the server runs the

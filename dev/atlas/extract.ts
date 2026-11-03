@@ -17,7 +17,7 @@ const uniq = <T>(list: T[]): T[] => [...new Set(list)];
 
 // LOCKSTEP_FILES from eslint.config.js (the files whose math must be deterministic), read as text so the config is
 // never executed. Globs: `**` crosses folders, `*` does not, `{a,b}` is a choice.
-export function readLockstepGlobs(root: string): string[] {
+function readLockstepGlobs(root: string): string[] {
   try {
     const text = fs.readFileSync(path.join(root, 'eslint.config.js'), 'utf8');
     const sf = ts.createSourceFile('eslint.config.js', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -79,7 +79,7 @@ export const extractFile = (file: string, text: string, lockstep: string[] = [])
   project(readFile(file, text), lockstep);
 
 // Every .js and .ts file under src/ and server/src/, as posix paths sorted with localeCompare.
-export function listSources(root: string): string[] {
+function listSources(root: string): string[] {
   const out: string[] = [];
   for (const dir of ['src', 'server/src']) {
     const abs = path.join(root, dir);
@@ -96,7 +96,7 @@ export function listSources(root: string): string[] {
 
 // { head, commits, first } (the short sha, the commit count and the date of the first commit), or null when this is
 // not a git checkout. Never throws. A shallow clone has no usable history, so it reports only the head.
-export function gitFacts(root: string): GitFacts | null {
+function gitFacts(root: string): GitFacts | null {
   try {
     git(root, 'rev-parse', '--git-dir');
     const head = git(root, 'rev-parse', '--short', 'HEAD');

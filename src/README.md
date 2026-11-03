@@ -1,5 +1,7 @@
 # src/ map
+
 Start with `npm run map -- --kind <kind>` for task owners, safe examples, companion docs, sync and checks; bare `--kind` lists the routes.
+Use `npm run unused` (or `-- --json`) for advisory file/export/CSS/asset/dependency evidence; flags are not deletion authority. Manual FFT diagnostic: `npm run look -- --query 'proto=water&waves=fft&n=256&cascades=1' --eval dev/look/evals/water-fft-check.ts`.
 
 Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `loop.ts` (`onFrame`/`onStart` phases), `style.css`, `constants.ts`,
 `math.ts` and `math-pure.ts` (the pure half, also used in Node), `build-id.ts` (this page's build, read from the page

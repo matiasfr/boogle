@@ -13,6 +13,8 @@ import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 import { checkTaskRoutes } from '../scan/task-routes.ts';
 import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
+import { PROTOS } from '../../protos/protos.ts';
+import { prototypeReport } from './prototypes.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -129,19 +131,26 @@ if (baseRef === undefined) {
   process.exit(1);
 }
 const head = await registryOf(ROOT);
+const prototypeStarted = performance.now();
+const prototypeFacts = prototypeReport(sources(ROOT), PROTOS);
+prototypeFacts.elapsedMs = Number((performance.now() - prototypeStarted).toFixed(2));
 
 if (args.includes('--json')) {
-  console.log(JSON.stringify(head, null, 2));
-  process.exit(0);
+  console.log(JSON.stringify({ ...head, ...prototypeFacts }, null, 2));
+  process.exit(prototypeFacts.errors.length ? 1 : 0);
 }
 
 const errors = [
   ...checkRegistry(head),
   ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS),
   ...checkTaskRoutes(ROOT),
+  ...prototypeFacts.errors,
 ];
 const { dir, note } = baseTree(baseRef);
 const notes: string[] = [];
+notes.push(
+  `prototype dependencies: ${prototypeFacts.prototypes.length} cards, ${prototypeFacts.elapsedMs} ms (JSON has owner-review notes)`,
+);
 const currentDebt = await debtOf(ROOT);
 notes.push(`debt now: ${debtCounts(currentDebt)}`);
 if (dir) {

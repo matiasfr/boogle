@@ -49,6 +49,8 @@ export type Proto = {
   answer?: { on: string; verdict: string; next: string };
   /** Removed from `main` and saved under this git tag (`archive/<name>`): there's nothing to play. */
   archived?: string;
+  /** A retired experiment's current home, shown instead of a stale Play selector. */
+  merged?: { label: string; url: string };
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
   /** Why a live prototype can't share the `?play` island (it reshapes the world or clashes with another toy): the
@@ -79,7 +81,8 @@ export const PROTOS: Proto[] = [
     title: 'One thing in your hands',
     step: 'depth',
     status: 'retired',
-    url: '/?room=proto-onehand&proto=onehand',
+    url: '/?classic=1',
+    merged: { label: 'One held thing in the game', url: '/?classic=1' },
     question: 'Do you miss the hotbar?',
     what: 'No hotbar on screen and nothing to cycle: pick something up and what you held lands at your feet.',
     since: '2026-11-02',
@@ -199,7 +202,8 @@ export const PROTOS: Proto[] = [
     title: 'Ride: platform carry',
     step: 2,
     status: 'retired',
-    url: '/?proto=ride',
+    url: '/?room=proto-wagon&proto=wagon',
+    merged: { label: 'The wagon', url: '/?room=proto-wagon&proto=wagon' },
     question: 'Does riding feel good enough to ride twice for no reason?',
     what: 'Stand on a moving flatbed; jump off at speed.',
     since: '2026-11-01',
@@ -522,7 +526,8 @@ export const PROTOS: Proto[] = [
     title: 'Arrival: the first 30 seconds',
     step: 'depth',
     status: 'retired',
-    url: '/?room=proto-arrive&proto=arrive&v=direct',
+    url: '/?classic=1',
+    merged: { label: 'Returning-player arrival in the game', url: '/?classic=1' },
     question: 'Opening the link cold, were you playing within 10 seconds without reading anything?',
     verb: 'first moves',
     what: 'No lobby: you land facing the court with the ball rolling toward you, a two-line controls card, and timings on the bar. Rename in the menu’s Room page.',

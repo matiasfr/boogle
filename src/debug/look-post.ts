@@ -73,7 +73,7 @@ const size = new THREE.Vector2();
 
 let live: { dispose(): void }[] = [];
 
-export const postActive = (f: PostFlags) => Object.values(f).some(Boolean);
+const postActive = (f: PostFlags) => Object.values(f).some(Boolean);
 
 export function updatePostUniforms() {
   renderer.getDrawingBufferSize(size);
