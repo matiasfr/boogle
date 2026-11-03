@@ -6,12 +6,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.ts';
 import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 function sources(root: string): Source[] {
   const out: Source[] = [];
