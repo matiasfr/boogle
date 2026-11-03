@@ -161,3 +161,16 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Felt off: trains came too soon. "everything kind of ramped up too quickly, and suddenly the small amount of frction i was feeling was resolved"; "i would have liked just having a path to an area"; "being able to walk across the shortcut was already a big help. Too soon." Wished for "some control over the train schedule".
 - Broke: the guiding UI at the bottom is always on and obscures the game. The hat floats above the head. You can walk through some stacks. Little guys float in front of the deposit site. The pet frantically keeps up beside the train, clipping through it.
 
+Raw brainstorm from the same session, typed while Matias and Grant talked. Not decisions; the owner says not to over-index on them, and to organise and ask more first:
+
+- Minigames: progression; helpful; wonder. Each area should have cosmetics to get (Grant). The hat is motivating. Prizes appear in the hub if you missed them.
+- Movement: more abilities, with double jump, glide and rail grind already prototyped; hook shots and bobble walls; item- and ability-gated locations, hidden secrets, "good game itch". Curios are movement abilities, claimed for fully connecting an island, which open new paths on earlier islands. Hook shot targets up the middle tower unlock the glide; glide should feel like Breath of the Wild. The first island teaches the base mechanics in a Great Plateau way.
+- Trains: the key function is carrying cargo; then you can ride wherever. Speed gives a reason to go between visited areas. Riding could boost like Burnout, faster with upgrades. "Felt at the whims of if a train happened to show up"; waiting for one was unintuitive.
+- Incremental: "it has to be a bit of a slog at the start. Should be doing something enjoyable but it just takes a bit too long"; chopping does feel good. Earning money, a score, the new ride earning money, having to get back to the city.
+- Co-op: co-carrying; resource management mixed with Human Fall Flat elements; chained-together goofy physics.
+- The Boogler: everyone's talking about him; a reveal; rescue him and bring him back to the hub; the prophet, the entrepreneur, really into trains; we're doing his project for him; he starts charging; at the end you can decide to kill him; an epilogue rebirth arc.
+- Buildings: should serve a purpose and have interiors, like a Pokemon town, with the surprise of talking to people inside ("I just moved in here for the Jobs"). Shops, museums, offices; a reward for a building existing, like seeing something you couldn't before.
+- Crystals: dispensed, so they're diegetic and everyone can see where they are; a crystal card slides into a machine and it pops one out; not lit if you already have it.
+- Notes on this round: the moment of discovery was nice; the train should show it's waking up without saying so; the sun doesn't go away; what is the platform?; point to the next island; take off the character's ear bumps and rosy cheeks.
+- Tools: dev tools for making levels by hand.
+
