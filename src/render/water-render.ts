@@ -24,6 +24,7 @@ import {
   positionLocal,
   If,
   positionWorld,
+  positionView,
   cameraPosition,
 } from 'three/tsl';
 import { GRID_RES, HALF, CELL } from '../constants.ts';
@@ -154,12 +155,11 @@ const color = Fn(() => {
   col.addAssign(seaU.uSpecCol.mul(spec).mul(0.9));
   const alpha = max(mix(0.5, 0.97, smoothstep(0.2, 5, depth)), foam.mul(0.95));
   if (softHorizon) {
-    // Fold glints and transparency into the horizon before the finite plane ends, in the existing pass.
-    const distance = length(w.xz.sub(cameraPosition.xz));
-    const grazing = smoothstep(0.015, 0.22, viewDir.y)
-      .oneMinus()
-      .mul(smoothstep(20, 70, distance));
-    const haze = max(smoothstep(70, 300, distance), grazing);
+    // View depth makes the thin transition straight across the screen, rather than a camera-centred arc.
+    // The outer rim is a safety fade for oblique views from the shore: finish before the square's 650 m edge.
+    const horizon = smoothstep(280, 390, positionView.z.negate());
+    const rim = smoothstep(610, 640, max(w.x.abs(), w.z.abs()));
+    const haze = max(horizon, rim);
     return vec4(mix(col, seaU.uHaze, haze), mix(alpha, 1, haze));
   }
   return vec4(col, alpha);

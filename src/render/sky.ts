@@ -166,7 +166,7 @@ const skyColor = Fn(() => {
   });
   // Temporary ?proto=sky seam: the existing horizon colour meets the fogged sea/land, with a soft shoulder.
   // Blend after glow so sun-facing and moon-facing horizons meet the same fog colour too. No new palette.
-  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, 1), tslSmoothstep(0, 0.16, d.y)) : min(col, 1), 1);
+  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, 1), tslSmoothstep(0, 0.025, d.y)) : min(col, 1), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

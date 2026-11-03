@@ -18,11 +18,12 @@ the deeper `#2a6fe0` take and its sun/fill overrides are removed.
   groups), with no wrapping boundary or cloud-free travel beyond the island.
 - A soft low dome band blends toward its existing horizon colour, including at sunset and night. The original
   sun glow, moon and stars remain above it. The existing sea material blends its colour, glints and transparency
-  toward that same horizon: distance hides the finite plane edge, and a shallow-angle fade spreads haze across
-  the far sea from low shore views. Nearby water retains its existing look. No new water design or palette.
-- Distant land uses the same fog colour, with its far distance shortened from 520 m to 360 m on the prototype.
-  Near distance stays 110 m, and caves retain their own fog range. The sea uses its material haze instead of
-  applying scene fog a second time.
+  toward that same horizon over 280–390 m of view depth, keeping blue water visible out to a thin, straight
+  horizon transition. There is no shallow-angle haze; the dome shoulder spans direction heights 0–0.025.
+  A safety fade over the plane's outer 610–640 m square rim hides its 650 m edge from oblique shore views.
+  No new water design or palette.
+- Distant land keeps the plain game's fog range, 110–520 m, and caves retain their own fog range.
+  The sea uses its material haze instead of applying scene fog a second time.
 - No new meshes beyond the existing five cloud groups, cloud shadow casters, textures, volumes or render passes.
   Ground cloud shadows remain deferred. Real-time smoothness and iPad cost need device playtesting.
 
