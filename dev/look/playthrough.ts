@@ -135,6 +135,7 @@ function report(s: Session, text: Observed, wall: { game: number; wall: number; 
     say();
     say("The bot's last lines:");
     for (const l of botLog.slice(-6)) say('  ' + l.slice(0, 120));
+    say(`  (all of them: ${botLog.length} lines, bot.log)`);
   }
   const errors = of('error');
   say();
@@ -307,6 +308,7 @@ async function main() {
       .sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)[0];
     if (!biggest) throw new Error('no playtest data reached the local server');
     fs.copyFileSync(biggest, path.join(dir, 'session.jsonl'));
+    fs.writeFileSync(path.join(dir, 'bot.log'), botLog.join('\n'));
     fs.writeFileSync(
       path.join(dir, 'text.json'),
       JSON.stringify({ lines: observed.lines, painted: observed.painted }, null, 1),

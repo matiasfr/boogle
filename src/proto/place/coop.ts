@@ -69,11 +69,12 @@ type Api = {
   forgeBill?: () => void;
   wakeTrains?: (fromPeer: boolean) => void;
   activeFrame?: () => StationRun | null;
+  tech?: (what: unknown) => void;
 };
 let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
-export const coopWire: Pick<Api, 'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame'> = {};
+export const coopWire: Pick<Api, 'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech'> = {};
 
 // ---------------------------------------------------------------- the whole shared state, once a second
 type Snap = { gen: number; shared: Record<string, unknown> };
@@ -129,12 +130,22 @@ function applyFull(a: Api, j: Snap) {
 }
 
 const discrete = (j: Record<string, unknown>) => {
-  const q = j.job as { awake: boolean; turned: boolean; rung: unknown; boiler: number; forgeBill: number };
+  const q = j.job as {
+    awake: boolean;
+    turned: boolean;
+    rung: unknown;
+    tech: unknown;
+    gate: unknown;
+    boiler: number;
+    forgeBill: number;
+  };
   const r = j.run as { k: number };
   return JSON.stringify([
     q.awake,
     q.turned,
     q.rung,
+    q.tech,
+    q.gate,
     q.boiler,
     q.forgeBill,
     r.k,
@@ -361,6 +372,9 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     case 'rung':
       if (ready) a.rung?.(m.id);
       return;
+    case 'tech':
+      if (ready) a.tech?.(m.what);
+      return;
     case 'bill':
       if (ready) a.forgeBill?.();
       return;
@@ -518,6 +532,8 @@ export const coop = {
   took: (what: 'rails' | 'timber' | 'rack', n: number, r = 0) => COOP && n + r > 0 && msg({ k: 'took', what, n, r }),
   /** A chest opened here: the rung is everyone's. */
   rung: (id: string) => COOP && msg({ k: 'rung', id }),
+  /** A device taken or a slab let down, here: the room's. */
+  tech: (what: string) => COOP && msg({ k: 'tech', what }),
   forgeBill: () => COOP && msg({ k: 'bill' }),
   big: (what: Exclude<BigThing, null>) => COOP && msg({ k: 'big', what }),
   boilerFitted: () => COOP && msg({ k: 'fit' }),

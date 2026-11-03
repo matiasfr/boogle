@@ -70,6 +70,22 @@ Falling is harmless: in the water, or down on a shore or a river bank more than 
 
 **Two players, one railway** (`&coop=1`, its own room `proto-place-coop`; throwaway): waking the machine, trees and rocks felled, every deposit, the machine's run, laid track, the bills, the rungs (one chest, for you both; a newcomer inherits them), the money, the cart and rack, the forge, the boiler, trains and the town are shared, and the costs stay the same. Your back, chopping response, crates and gifts (each of you gets your own crate), crystals and gold finds are yours; you see your partner's logs on their back and them on your copy of a moving deck. Calling a train calls it for you both. The oldest visible tab decides what a deposit gets and when a run starts, so the last log can't start two, and what doesn't fit stays on your back; if it leaves, the next tab takes over. How: `src/proto/place/coop.ts`, reliable room messages and a whole-state message once a second, built from the slices in `job.ts`. Serves DESIGN.md 4 (Cooperation is automatic).
 
+## Ancient technology (round 4, exploring)
+
+Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
+
+1. **A second jump.** On a pillar beside the first path's deck, seen from the footbridge on your first walk, with a stone lip reaching for where the trestle will go. Taking it hops you up and up again, once. Press Jump in the air: at least 6.8 m/s up, once per take-off, back when you stand on something, and it turns you towards the stick. Beside it, a block 2.2 m high with a box on it.
+2. **The hook shot** (RB, F, or the touch button). On a second pillar beside line 2 over the stem, 2.2 m above the deck, so it takes two jumps. Taking it pulls you across to the first slab, onto a box. A press pulls you to the ring nearest the middle of the view: 24 m, 25 degrees, 16 m/s, one press, no aim needed beyond that. Same ring everywhere: brass until you've got the hook, teal in range, bright when it's the pick. Jump, Back or the button lets go. The button's glyph shows on the ring for your first three pulls.
+3. **The glider** (LB, Q, or the touch button: a toggle). At the top of Needle Bell, six pulls up slabs that hang in the air; every drum of the spire is solid now. Toggle in the air: 10 m/s at full stick, 3.2 m/s down moving or not, 18 m/s² up to speed, 12 m/s² stopping when you let go, heading up to 360 degrees a second, opening in 0.1 s from any fall, closing keeps your velocity. It never gives height back and has no boost. Landing, water or sitting closes it. The camera eases to Breath of the Wild's normal framing, 5.2 m and 50 degrees (`&glidecam=pull` or `off` to compare). The glyph shows under you if you're falling with it shut, until you've flown twice.
+
+**Two gates on the line, both slabs across the track bed.** You can walk round one; the machine can't, and its frame takes nothing until it's down. *The quarry:* a chain runs from the slab up to a lever on a ledge 2.2 m high, banded in the devices' teal (**Pull**). *The rim, before the sea:* dark posts lead from the slab back to the tower. Taking the glider sends light down them, one by one, and the slab falls. It's a 76 m, 24 s glide from the top to the frame. While a gate waits the beacon stands at its answer. No line of words says any of this.
+
+**Secrets**, each a cosmetic that comes only from its own place, outside the boxes' odds and order, with no shaft over it: *village:* a yard behind a cottage, past the washing line (walk), a balcony on a column under a canopy-shaped vane (glide). *Timber:* the block by the first device (two jumps), a shelf by the lookout with a scarf on a branch (two jumps), a bell you hear from the footbridge, on the far bank (walk), a catwalk under the trestle (hook). *Tower:* the first slab (hook), a slab behind a hanging cloth (hook). *Quarry:* up on the low rock (hook). *Far Head:* a sea stack with a flag off the trestle (glide). **Missed prizes** turn up as boxes at the **finders' bay**, in the village across the path from the wardrobe, once you've gone on past: village and timber walks with the hook, the rest with the glider, trains or the end. Open either box and the other goes. The bay shows them under sheets until they're yours; swap at the shelf as ever.
+
+**Shared:** `job.tech` and `job.gate`, so the save and the `&coop=1` snapshot have them, and `coop.tech` says so at once: a partner gets the ability and a small cue where they stand, and a newcomer inherits it. Physics is Owner; presence `placeMove` carries mode, ring and a puff count, so a partner sees the wing, the cable and the puff. Finds are personal.
+
+**Reach:** `node dev/economy/place-level.ts` checks what each state of the run can stand on, and that nothing is reachable early. Known harmless skip: riding the machine across the stem as it lays gets you up onto the second pillar with one jump. The second device is still there on your way.
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
@@ -88,12 +104,14 @@ Buildings are solid blocks you can't go inside; plots leave room for interiors.
 | Station 2 laid | 201 | 75 s |
 | Felled the great tree | 326 | |
 | **First path open** | 357 (5:57) | station 3: 136 s |
+| Second jump | about 6:14 | 13 s over the new deck |
 | Proper axe | 384 | a walk across the new path |
 | Pack frame | 528 | forge frame, 24 logs: 141 s |
 | Forge lit | 689 (11:29) | walls and chimney, 32 logs: 159 s |
 | Depot (line 2, station 1 laid) | 859 | 158 s |
 | Stations 2, 3, 4 laid | 919, 977, 1110 | 44, 45, 117 s |
-| **Far Head open** | 1380 (23:00) | station 5: 238 s |
+| The climb and the glide | adds about 2:40 by the end | the hook after station 2, the lever, the tower |
+| **Far Head open** | 1380 (23:00) | station 5: 238 s; these rows' times are from before the climb |
 | Walked home | 1533 | |
 | **Trains** | 1597 (26:37) | boiler to the camp |
 | The pier out, the end | 1772 (29:32) | 27 s to carry its kit |

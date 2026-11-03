@@ -257,6 +257,7 @@ export type Station = {
   label: string;
   crate?: boolean; // the machine hands down a crate when it's laid (./gifts.ts)
   rack?: 'cart' | 'train'; // a rack by the frame that something brings logs (and rails) to; you do the last carry
+  gate?: 'quarry' | 'sea'; // a slab stands across the line here: this frame takes nothing until it's down (./tech.ts)
 };
 export type LineSpec = {
   id: 'timber' | 'quarry';
@@ -333,6 +334,7 @@ export const LINKS: LineSpec[] = [
         label: 'Line 2, station 4',
         rack: 'cart',
         crate: true,
+        gate: 'quarry',
       },
       {
         id: 'Q5',
@@ -345,6 +347,7 @@ export const LINKS: LineSpec[] = [
         label: 'Line 2, station 5',
         rack: 'cart',
         crate: true,
+        gate: 'sea',
       },
       {
         id: 'Q6',

@@ -178,6 +178,8 @@ function buildSpire() {
     m.rotation.y = y * 0.7;
     m.castShadow = true;
     scene.add(m);
+    // Round 4: every drum's solid, as high as it's drawn. You climb this now.
+    addStatic({ kind: 'cylinder', rTop: r1, rBottom: r0, h, segments: 8 }, { x: X + dx, y: y + h / 2, z: Z + dz });
     y += h - 0.5;
   }
   // The lookout and the orange vane that say "that one" from every lobe.
@@ -189,7 +191,6 @@ function buildSpire() {
   const vane = new THREE.Mesh(new THREE.BoxGeometry(5, 1.6, 0.25), FLAT('#f0752c'));
   vane.position.set(X + 9.6, top + 4.4, Z - 1);
   scene.add(deck, mast, vane);
-  addStatic({ kind: 'cylinder', rTop: 5, rBottom: 11, h: 50, segments: 8 }, { x: X, y: 25, z: Z });
 }
 
 // ---------------------------------------------------------------- footbridges, trees, a few places to stop at

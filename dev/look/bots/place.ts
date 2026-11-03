@@ -2,7 +2,10 @@
 // `npm run playthrough` runs it. Moving about, notes and checks are ../bot.ts; this is only what this round asks of you. A new
 // beat goes here: say what you expect with `bot.until(..., what)`, so a beat that doesn't come is on the record.
 import { makeBot } from '../bot.ts';
-import { me } from '../../../src/player/player.ts';
+import { cam, me } from '../../../src/player/player.ts';
+import { input } from '../../../src/player/input.ts';
+import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
+import { teleport } from '../../../src/physics/engine.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -40,6 +43,7 @@ export async function play() {
   };
   const openCrates = async () => {
     for (const c of place.giftState.crates()) {
+      if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
       if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 60) continue;
       const before = place.giftState.count();
       await travel(c.x, c.z, 1);
@@ -152,6 +156,145 @@ export async function play() {
     await waitFor(() => place.run.mode !== 'laying' && place.run.mode !== 'feeding', 90000, `${st.spec.id} laid`);
     note(`${st.spec.id} laid (${(now() - t).toFixed(1)} s)`);
   };
+  // ------------------------------------------------------------ the moves: real presses. The walking planner doesn't know them.
+  const tech = place.tech;
+  const padOf = (id: string) => tech.PADS.find((p: { id: string }) => p.id === id);
+  const face = (x: number, z: number) =>
+    void (cam.yaw = me.yaw = Math.atan2(-(x - body.position.x), -(z - body.position.z)));
+  /** Off the ground and up onto a ledge: jump, near the top jump again, steering at it all the way. */
+  const twoJumps = async (x: number, z: number) => {
+    face(x, z);
+    input.keys.add('KeyW');
+    await wait(120);
+    pressJump();
+    await wait(330);
+    releaseJump();
+    await wait(30);
+    pressJump();
+    const t = performance.now();
+    await wait(160);
+    releaseJump();
+    while (performance.now() - t < 1700 && bot.dist(x, z) > 0.8) {
+      face(x, z);
+      await wait(30);
+    }
+    input.keys.delete('KeyW');
+    await wait(350);
+  };
+  const hookTo = async (id: string) => {
+    const r = tech.RINGS.find((x: { pad: { id: string } }) => x.pad.id === id);
+    face(r.at.x, r.at.z);
+    // Aimed as a person would: the ring up in the view, not dead centre.
+    const up = Math.atan2(r.at.y - (body.position.y + 1.35), bot.dist(r.at.x, r.at.z));
+    cam.pitch = Math.min(0.85, up - 0.3);
+    await wait(350);
+    if (!tech.fireHook())
+      bot.never(`a pull to ${id}: picked ${tech.move.pick?.pad.id ?? 'nothing'}, ${tech.whyNot(r)}`);
+    await waitFor(() => !tech.move.pull, 5000, `arrived at ${id}`);
+    cam.pitch = -0.1;
+    await wait(500);
+  };
+  const takeTech = async (id: 'jump' | 'hook' | 'glide') => {
+    const d = tech.devices[id];
+    await bot.use(d.x, d.z, `the ${id} device`, /Take/);
+    await waitFor(() => place.job.tech[id], 3000, `took ${id}`);
+    note(`ability: ${id}`);
+    await wait(id === 'hook' ? 3800 : 3000); // its show
+  };
+  const glideTo = async (x: number, z: number, limit = 90000) => {
+    // Walk off the edge towards it; open as soon as you're off; steer to it, and land.
+    face(x, z);
+    input.keys.add('KeyW');
+    let t = performance.now();
+    while (me.coyote > 0 && performance.now() - t < 5000) {
+      face(x, z);
+      await wait(30);
+    }
+    await wait(150);
+    tech.toggleGlide();
+    t = performance.now();
+    const y0 = body.position.y;
+    while (me.coyote <= 0 && performance.now() - t < limit && !me.swimming) {
+      face(x, z);
+      await wait(40);
+    }
+    input.keys.delete('KeyW');
+    const off = bot.dist(x, z);
+    note(
+      `glided ${Math.round(y0 - body.position.y)} m down, ${((performance.now() - t) / 1000).toFixed(1)} s, ${Math.round(off)} m from where it was going`,
+    );
+    bot.check(`a glide that reached (${x.toFixed(0)}, ${z.toFixed(0)}), ${off.toFixed(0)} m off`, off < 25);
+    await wait(500);
+  };
+  const stem = 92; // where each line passes its pillar
+  const deck = (l: { spec: { line: { xs: Float32Array; zs: Float32Array } } }) => ({
+    x: l.spec.line.xs[stem]! + O,
+    z: l.spec.line.zs[stem]!,
+  });
+  const firstDevice = async () => {
+    const d1 = deck(L1);
+    await bot.walk(d1.x, d1.z, 1.2);
+    await takeTech('jump');
+    // The block beside it, straight away.
+    const b = padOf('p1-block');
+    await bot.walk(b.x + O + 3.2, b.z, 0.8);
+    await twoJumps(b.x + O, b.z);
+    await waitFor(() => tech.found.has('block'), 5000, 'the box on the block');
+    await wait(2500);
+    await bot.straight(d1.x, d1.z, 1.2, 5000); // back down onto the deck
+  };
+  const ontoSecondPillar = async () => {
+    const d2 = deck(L2);
+    await bot.walk(d2.x, d2.z, 1);
+    const p = padOf('p2');
+    await twoJumps(p.x + O, p.z);
+    bot.check('the second jump up onto the second pillar', body.position.y > p.top);
+  };
+  const secondDevice = async () => {
+    await ontoSecondPillar();
+    await takeTech('hook'); // and it pulls you over to the first slab, where a box is waiting: you land on it
+    await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
+    await wait(2500);
+    await hookTo('p2');
+    const d2 = deck(L2);
+    await bot.straight(d2.x, d2.z, 1.2, 4000);
+  };
+  const firstGate = async () => {
+    const a = padOf('apron');
+    await bot.walk(a.x + O, a.z + a.hz + 2.1, 1);
+    await twoJumps(a.x + O, a.z);
+    await bot.use(tech.LEVER.x + O, tech.LEVER.z, 'the lever', /Pull/);
+    await waitFor(() => place.job.gate.quarry, 3000, 'the quarry slab');
+    note('gate: the quarry');
+    await wait(2000);
+    await bot.straight(a.x + O, a.z + a.hz + 3, 1.5, 3000); // off the ledge
+  };
+  const climb = async () => {
+    await ontoSecondPillar();
+    for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(id);
+    note('at the top');
+    await takeTech('glide');
+    await waitFor(() => place.job.gate.sea, 8000, 'the sea slab');
+    note('gate: the sea');
+  };
+  /** Everything hidden that the run didn't pass through, to show it can be had: put near it, then the real move. */
+  const tour = async () => {
+    for (const s of tech.SECRETS) {
+      if (tech.found.has(s.id)) continue;
+      const at = s.from;
+      teleport(body, at.x + O, (at.y ?? place.H(at.x + O, at.z)) + 1.3, at.z);
+      body.velocity.set(0, 0, 0);
+      await wait(900);
+      if (s.how === 'walk') await bot.walk(s.x + O, s.z, 0.8);
+      else if (s.how === 'jump') await twoJumps(s.x + O, s.z);
+      else if (s.how === 'hook') await hookTo(s.id === 'firstpull' ? 't0' : s.id);
+      else await glideTo(s.x + O, s.z);
+      await bot.straight(s.x + O, s.z, 0.9, 2500);
+      await waitFor(() => tech.found.has(s.id), 3000, `the secret ${s.id}, by ${s.how}`);
+      note(`found ${s.id} (${s.how})`);
+      await wait(2200);
+    }
+  };
   const from = q.get('from');
   note('start');
   if (from === 'path') place.skipPath();
@@ -173,6 +316,7 @@ export async function play() {
     }
     note(`FIRST PATH OPEN at ${now().toFixed(1)}`);
     await wait(6000);
+    await firstDevice();
   }
   if (from === 'path' || !from) {
     await openCrates();
@@ -203,8 +347,15 @@ export async function play() {
   }
   if (from !== 'head' && from !== 'trains') {
     for (const st of L2.stations.slice(0, 5)) {
+      if (st.spec.gate === 'quarry' && !place.job.gate.quarry) await firstGate();
+      if (st.spec.gate === 'sea' && !place.job.gate.sea) {
+        await climb();
+        await wait(4500);
+        await glideTo(st.x, st.z);
+      }
       await bill(st);
       await lay(st);
+      if (st.spec.id === 'Q2' && !place.job.tech.hook) await secondDevice();
     }
     note(`FAR HEAD OPEN at ${now().toFixed(1)}`);
     await wait(5000);
@@ -259,6 +410,7 @@ export async function play() {
   const pier = L2.stations[5];
   await bill(pier);
   await lay(pier);
+  await tour();
   bot.finish(
     `$${place.money()}, ${place.job.people} people, ${place.job.score.logs} logs, ${(place.job.score.metres / 1000).toFixed(2)} km`,
   );

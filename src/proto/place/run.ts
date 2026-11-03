@@ -66,13 +66,22 @@ const scratch = new THREE.Vector3(),
 export const stationOf = (l: LineRun) => l.stations[l.stage] ?? null;
 /** The pier waits for trains: until then no frame takes anything out there. */
 const pierWaits = (st: StationRun | null) => st?.spec.rack === 'train' && !job.rung.trains;
+/** A slab stands across the line here (./tech.ts): nothing goes in until it's down. */
+const gateWaits = (st: StationRun | null) => !!st?.spec.gate && !job.gate[st.spec.gate];
+/** The gate the machine is standing at, if it's stopped by one. */
+export const gateHere = () => {
+  const st = run.mode === 'idle' ? stationOf(run.line) : null;
+  return gateWaits(st) ? st!.spec.gate! : null;
+};
 /** The one frame that takes what you carry right now, or null. */
 export function activeFrame(): StationRun | null {
   if (run.mode === 'waiting' && !forge.lit) return forgeFrame;
   if (run.mode !== 'idle') return null;
   const st = stationOf(run.line);
-  return pierWaits(st) ? null : st;
+  return pierWaits(st) || gateWaits(st) ? null : st;
 }
+/** What else there is to put right with the rest of the state: ./tech.ts. */
+export const snapHooks: (() => void)[] = [];
 setDepotFrame(() => (run.mode === 'idle' || run.mode === 'laying' || run.mode === 'feeding' ? stationOf(L2) : null));
 export const laySpeedOf = (st: StationRun | null) => st?.spec.speed ?? TUNE.laySpeed;
 
@@ -469,7 +478,7 @@ export function landAtStation(st: StationRun, kind: Goods, counted = true) {
     if (kind === 'logs') feedForge(counted);
     return;
   }
-  if (st.full() && run.mode === 'idle' && stationOf(run.line) === st && !coop.follower()) {
+  if (st.full() && run.mode === 'idle' && stationOf(run.line) === st && !gateWaits(st) && !coop.follower()) {
     // The whole bill's landed: drawn as it stands, and off it goes.
     st.drawStock(st.have);
     beginFeed(run.line, st);
@@ -585,6 +594,7 @@ export function snapRun() {
   setCamp(0, job.awake);
   setCommuters(L1.open);
   setPushers(job.rung.depot && !job.rung.trains);
+  for (const fn of snapHooks) fn();
 }
 sharedSlice('run', {
   get: () => ({

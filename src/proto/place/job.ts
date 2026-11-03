@@ -27,6 +27,9 @@ export const job = {
   stone: 0,
   loose: 0, // logs out of an opened crate at the heap, not yet taken
   rung: { axe: 0, pack: 0, depot: false, trains: false } as Rungs,
+  /** Ancient technology you've found (./tech.ts), the room's, and the two slabs across the line. */
+  tech: { jump: false, hook: false, glide: false },
+  gate: { quarry: false, sea: false },
   chest: null as ChestId | null, // a tool chest is waiting
   boiler: 0, // 0 not cast, 1 standing by the forge, 2 on someone's shoulder, 3 fitted
   forgeBill: 0, // which of FORGE_BILLS its frame is on

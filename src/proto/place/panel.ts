@@ -116,6 +116,7 @@ function skipPath() {
 /** The forge lit, its rack full: line 2's first station is next. */
 function skipLine2() {
   if (!L1.open) skipPath();
+  job.tech.jump = true;
   job.rung.axe = 1;
   job.rung.pack = 1;
   job.chest = null;
@@ -132,6 +133,8 @@ function skipLine2() {
 /** Line 2 through to Far Head: the depot's on, the boiler's cast. */
 function skipHead() {
   if (!job.turned) skipLine2();
+  job.tech.hook = job.tech.glide = true;
+  job.gate.quarry = job.gate.sea = true;
   L2.stage = L2.spec.freeUpTo + 1;
   L2.open = true;
   job.rung.depot = true;
@@ -142,6 +145,21 @@ function skipHead() {
   snapRun();
   snapCart();
   hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2);
+  save();
+}
+/** Line 2 as far as the rim, slabs up, with the second jump and the hook: the climb's next. */
+function skipTower() {
+  if (!job.turned) skipLine2();
+  job.tech.hook = true;
+  job.gate.quarry = true;
+  job.rung.depot = true;
+  job.awake = true;
+  L2.stage = 4;
+  L2.track.snapTo(L2.track.u(L2.stations[L2.stage]!.spec.s));
+  run.mode = 'idle';
+  snapRun();
+  snapCart();
+  hop(toWorld(8), 8, 0);
   save();
 }
 /** Trains running. */
@@ -174,11 +192,19 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   btn('Skip chop and carry', () => coop.skip('delivery', skipDelivery));
   btn('Skip to the first path', () => coop.skip('path', skipPath, () => hop(toWorld(-68), 2, -2.3)));
   btn('Skip to line 2', () => coop.skip('line2', skipLine2, () => hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2)));
+  btn('Skip to the tower', () => coop.skip('tower', skipTower));
   btn('Skip to Far Head', () => coop.skip('head', skipHead));
   btn('Skip to trains', () => coop.skip('trains', skipTrains));
   (document.querySelector('.hud') ?? document.body).append(box);
   playPanel('place', box);
-  coop.skips({ delivery: skipDelivery, path: skipPath, line2: skipLine2, head: skipHead, trains: skipTrains });
+  coop.skips({
+    delivery: skipDelivery,
+    path: skipPath,
+    line2: skipLine2,
+    tower: skipTower,
+    head: skipHead,
+    trains: skipTrains,
+  });
   window.__place = {
     day: DAY,
     job,
@@ -213,6 +239,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
     skipPath,
     skipForge: skipPath, // dev/video/shots/place.ts's name for it
     skipLine2,
+    skipTower,
     skipHead,
     skipTrains,
     startOver: a.startOver,
