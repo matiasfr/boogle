@@ -16,6 +16,10 @@ export type WarpHandle = {
   go: (speed: number, stopAt?: number) => void;
   /** Pause with go(0), then advance and present exactly n drawn frames. */
   step: (n: number) => Promise<void>;
+  /** Stop page time. Socket traffic and the server still run on wall time. */
+  pause: () => void;
+  /** From a pause: fixed 60 Hz frames for this long, mostly undrawn, then pause again. `step` draws one to look at. */
+  run: (seconds: number) => Promise<void>;
   /** Draw one frame in this many while warped. */
   drawEvery: number;
   /** Virtual frames run so far, and those skipped drawing. */
@@ -115,6 +119,7 @@ export function installWarp() {
   const freezeCss = (on: boolean) => (on ? document.head.append(cssOff) : cssOff.remove());
 
   const channel = new MessageChannel();
+  let finishStep: (() => void) | undefined;
   const handle: WarpHandle = {
     speed: 1,
     now: () => virtual / 1000,
@@ -122,6 +127,22 @@ export function installWarp() {
     frames: 0,
     skipped: 0,
     skip: false,
+    pause() {
+      handle.speed = 0;
+      handle.skip = false;
+      freezeCss(true);
+      finishStep?.();
+      finishStep = undefined;
+    },
+    run(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > 60) throw new Error('run needs 0–60 seconds');
+      if (handle.speed !== 0) throw new Error('pause before running');
+      if (!seconds) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        finishStep = resolve;
+        handle.go(Infinity, (virtual + Math.ceil(seconds * 60) * STEP) / 1000);
+      });
+    },
     go(speed: number, at?: number) {
       stopAt = at ?? Infinity;
       freezeCss(speed !== 1);
@@ -187,8 +208,8 @@ export function installWarp() {
   let frame = 0;
   const post = () => channel.port1.postMessage(0);
   channel.port2.onmessage = () => {
-    if (handle.speed === 1 || handle.speed === 0) return;
-    if (virtual / 1000 >= stopAt) return handle.go(1);
+    if (handle.speed === 0 || handle.speed === 1) return;
+    if (virtual / 1000 >= stopAt - 1e-9) return finishStep ? handle.pause() : handle.go(1);
     // Over the speed asked for: wait for the wall to catch up.
     const ahead = virtual - budgetBase - (real.perf() - budgetFrom) * handle.speed;
     if (ahead > 0) return void real.setTimeout(post, Math.min(50, ahead / handle.speed));

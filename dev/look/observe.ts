@@ -19,6 +19,7 @@ export function installObserver(ignore: string) {
   const SAMPLE_MS = 500;
   const lines = new Map<string, SeenLine & { on: boolean }>();
   const painted = new Map<string, PaintedLine>();
+  let visible: { text: string; where: string }[] = [];
   const template = (s: string) => s.replace(/\d[\d,.]*/g, '#');
   const now = () => performance.now() / 1000;
 
@@ -33,7 +34,8 @@ export function installObserver(ignore: string) {
     }
     return b as HTMLElement;
   }
-  function sample() {
+  function sample(record = true) {
+    visible = [];
     if (!document.body?.classList.contains('playing')) return;
     const seen = new Set<string>();
     const blocks = new Set<HTMLElement>();
@@ -48,9 +50,12 @@ export function installObserver(ignore: string) {
     for (const b of blocks) {
       if (!b.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const r = b.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight) continue;
+      if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth)
+        continue;
       const text = (b.innerText || b.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 200);
       if (!text) continue;
+      visible.push({ text, where: b.className.toString().slice(0, 40) });
+      if (!record) continue;
       const key = template(text);
       seen.add(key);
       let l = lines.get(key);
@@ -71,7 +76,7 @@ export function installObserver(ignore: string) {
       l.last = now();
       l.shown += SAMPLE_MS / 1000;
     }
-    for (const [key, l] of lines) if (!seen.has(key)) l.on = false;
+    if (record) for (const [key, l] of lines) if (!seen.has(key)) l.on = false;
   }
   setInterval(sample, SAMPLE_MS);
 
@@ -93,12 +98,17 @@ export function installObserver(ignore: string) {
     __observe: {
       take(beat: string): void;
       read(): Observed;
+      current(): { text: string; where: string }[];
       pose: () => SaveState['pose'];
       flush?: () => void;
       lastBeat: number;
     };
   };
   w.__observe = {
+    current: () => {
+      sample(false);
+      return visible;
+    },
     pose: () => null, // WATCH_MARKS fills these in, once the player exists
     lastBeat: 0,
     take(beat) {

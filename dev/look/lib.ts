@@ -73,9 +73,13 @@ export async function startStack({
       env: { ...process.env, VITE_BOOGLE_SERVER: `http://127.0.0.1:${sigPort}` },
     },
   );
+  let viteError = '';
+  vite.stderr.on('data', (data) => (viteError = (viteError + String(data)).slice(-4000)));
+  vite.on('error', (error) => (viteError = error.message));
   const base = `http://127.0.0.1:${port}/`;
   let up = false;
   for (let t = 0; t < 150 && !up; t++) {
+    if (vite.exitCode !== null || vite.signalCode !== null) break;
     try {
       up = (await fetch(base)).ok;
     } catch {
@@ -84,7 +88,9 @@ export async function startStack({
   }
   if (!up) {
     vite.kill('SIGTERM');
-    throw new Error('vite did not start');
+    await server.close({ save: false });
+    fs.rmSync(dataDir, { recursive: true, force: true });
+    throw new Error(`vite did not start${viteError ? ': ' + viteError.trim() : ''}`);
   }
   return {
     base,
