@@ -43,7 +43,7 @@ const caustics =
 buildIsland(bake, caustics?.sample);
 const ocean = createOcean(source, bake, foamTex);
 const underwater = createUnderwater(ocean);
-const post = installDemoPost();
+export const post = installDemoPost();
 const snow = createSnow();
 scene.add(ocean.mesh);
 scene.add(snow.mesh);
