@@ -76,7 +76,7 @@ export const shoreDir = (sh: N, tr: N) =>
  * Swash on the beach: every bore reaching the waterline runs up the sand to a height R and drains back. Returns (film
  * thickness m, edge foam 0..1, wetness 0..1). hgt is the height above the sea.
  */
-export function swashNodes(xz: N, hgt: N, f: ShoreFields) {
+export function swashNodes(xz: N, hgt: N, f: ShoreFields, rockInfluence?: (xz: N, dir: N) => N) {
   const sh = f.shore(xz).toVar(),
     tr = f.travel(xz).toVar(),
     surf = f.surf(xz).toVar();
@@ -87,21 +87,25 @@ export function swashNodes(xz: N, hgt: N, f: ShoreFields) {
     .and(hgt.lessThan(1.74 * SHORE_WAVE.amp));
   If(near, () => {
     const dir = shoreDir(sh, tr).toVar();
+    const rk = rockInfluence ? rockInfluence(xz, dir).toVar() : vec2(0);
     // The run-up of what's left of the breakers: lagoon and lee beaches only lap.
     const A = min(float(SHORE_WAVE.amp).mul(shoreExposure(dir)).mul(shoreGroup(xz)), surf.mul(0.42).add(0.02));
     const R = A.mul(0.55)
       .mul(smoothstep(0.35, 0.8, length(sh.zw)))
+      .mul(float(1).sub(rk.x.mul(0.9))) // SWASH_ROCKS: a dry wedge in the lee
       .toVar();
+    // The bore's momentum carries it up the seaward face (~u²/2g), draining before the rest of the backwash.
+    const surge = rk.y.mul(1.1).add(1);
     const w = Math.sqrt((9.81 * 6.2831853) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
     const s = fract(uTime.mul(w).add(shoreNoisePhase(xz)).div(6.2831853)).toVar();
     If(R.greaterThan(0.02), () => {
-      If(hgt.greaterThan(R), () => {
+      If(hgt.greaterThan(R.mul(surge)), () => {
         // Reached by bigger sets.
-        out.assign(vec3(0, 0, smoothstep(R, R.mul(1.5), hgt).oneMinus().mul(0.5)));
+        out.assign(vec3(0, 0, smoothstep(R.mul(surge), R.mul(surge).mul(1.5), hgt).oneMinus().mul(0.5)));
       }).Else(() => {
         const up = sin(s.div(0.3).mul(1.5708));
         const down = cos(s.sub(0.3).div(0.7).mul(1.5708));
-        const eta = R.mul(select(s.lessThan(0.3), up, down));
+        const eta = R.mul(select(s.lessThan(0.3), up, down)).mul(mix(surge, 1, smoothstep(0.25, 0.45, s)));
         const th = eta.sub(hgt).toVar();
         // A bubbly front while it runs up (a band behind the tip), then only sparse remnants, thinning as they drain.
         const dist = length(xz.sub(TSL.cameraPosition.xz));
@@ -110,7 +114,11 @@ export function swashNodes(xz: N, hgt: N, f: ShoreFields) {
         const back = smoothstep(0, 0.03, th)
           .mul(smoothstep(0.35, 0.6, s).oneMinus())
           .mul(0.3);
-        const edge = select(s.lessThan(0.35), front, back);
+        // Churned foam against the face while the water is up, torn apart during backwash.
+        const edge = max(
+          select(s.lessThan(0.35), front, back),
+          rk.y.mul(smoothstep(0, 0.02, th)).mul(smoothstep(0.15, 0.55, s).oneMinus()),
+        );
         // Drying since the backwash uncovered this height.
         const sPass = acos(clamp(hgt.div(R), 0, 1))
           .div(1.5708)

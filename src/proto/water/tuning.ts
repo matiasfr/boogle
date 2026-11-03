@@ -72,3 +72,11 @@ export const WAVES = [
 
 // The shore field, over the island: 512² over 1400 m is 2.7 m a texel (the demo: 3.5).
 export const SHORE = { extent: 1400, size: 512 };
+
+// Independent of the water grade. Keep the same mesh/heightfield for a useful terrain-only comparison.
+const terrainParams = new URLSearchParams(location.search);
+export const TERRAIN = {
+  ultra: terrainParams.get('terrain') !== 'toy',
+  flatGround: terrainParams.get('groundFlat') === '1',
+  flatRocks: terrainParams.get('rockFlat') === '1',
+};
