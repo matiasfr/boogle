@@ -142,9 +142,17 @@ export const WATCH_MARKS = `
   await import('/src/proto/place/job.ts').then((m) => (o.flush = m.save)).catch(() => {});
   const marks = await import('/src/proto/mark.ts');
   if (!marks.watchPlayMarks) return false;
+  let line = '';
   marks.watchPlayMarks((name, data) => {
+    if (name === 'objective') {
+      // It calls in every frame: only new words count as something happening.
+      const text = String(data?.text ?? '').replace(/[0-9]+/g, '#').slice(0, 60);
+      if (text === line) return;
+      line = text;
+      o.lastBeat = performance.now() / 1000;
+      return o.take('objective: ' + text);
+    }
     o.lastBeat = performance.now() / 1000;
-    if (name === 'objective') return o.take('objective: ' + String(data?.text ?? '').replace(/[0-9]+/g, '#').slice(0, 60));
     const what = data && typeof data.rung === 'string' ? ' ' + data.rung : '';
     o.take(name + what);
   });
