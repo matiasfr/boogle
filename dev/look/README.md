@@ -1,0 +1,79 @@
+# Two-player warp
+
+Serves DESIGN.md's **Light tests, real playtests**: exercise the real room and both renderers quickly, with measured clocks.
+
+```sh
+BOOGLE_QUERY='proto=place&coop=1' npm run look -- --players 2 --eval dev/look/evals/place-coop.ts
+# Same run at real speed:
+node dev/look/look.ts --query 'proto=place&coop=1' --players 2 --real --eval dev/look/evals/place-coop.ts
+# Three extra game minutes of trains, with the same camera on both pages:
+node dev/look/look.ts --query 'proto=place&coop=1&coopMinutes=3' --players 2 --eval dev/look/evals/place-coop.ts --name coop-long --cam 918,40,-18 --look 930,18,-54
+```
+
+Two local players default to a 10x cap. `--warp-speed N` changes it; `--real` opts out. Loading and captures stay at
+1x. Setup runs concurrently on both pages, so one eval can await the other's deposit. The supplied co-op eval awaits
+its entire sequence and checks that the deposit, path, chest upgrade and running trains actually arrive. It uses
+prototype shortcuts to reach trains; this is not a complete player-driven round.
+
+The normal `startStack()` path used by scenarios and real-time runs still uses the in-process server. Only
+`startStack({ warp: true })` starts a disposable server child. Its preload changes Date, performance.now and the
+callback timeout/interval APIs, including their node:timers exports. An IPC disconnect shuts it down. Vite, the
+parent harness and Playwright retain real time. A loopback-only control endpoint switches the server's rate with
+both pages; it isn't part of the game/server application.
+
+The server clock advances in small steps, at most the requested rate, yielding to socket traffic between bounded batches (at most eight steps or two real milliseconds).
+Simply multiplying elapsed wall time lets an OS pause exceed the world's existing catch-up cap and discard ticks.
+The preload avoids that jump without changing the cap or any game state. Its pump stays referenced while the child
+lives: an unreferenced immediate can otherwise wait for socket traffic to wake Node. The pages use the existing
+fixed 60 Hz warp and draw one frame in 30. No clock is copied into another clock and no network state is corrected
+by this harness. If a process cannot keep up, its deficit is reported.
+
+Every two-player run writes `<name>-warp.json`, including `--real` runs. Samples are taken about once per real
+second, concurrently but not atomically. The report includes:
+
+- Actual server/page clock rates and peak deficits against the requested rate.
+- Actual world-tick progress, using TICK_MS, so an apparently fast clock cannot hide a slow world.
+- The maximum sampled tick gap between pages and wall-time skew between the reads.
+- Machine state and train positions. Train gaps include network latency and read skew. Both the all-sample gaps
+  and gaps while both train clocks are running are printed; a scripted skip can produce a large transient jump.
+
+A peak deficit over one game second prints **DRIFT**, even if the process catches up. Remaining clock or world-tick
+deficit over one game second at the end fails the run. These are harness diagnostics, not proof of tight
+synchronization throughout the run. Use a lower cap on a busy machine. The measured interval covers setup and
+warm-up; shader loading, browser startup and captures add real time. Background work on the shared Mac changes the
+achievable rate. Warp is not a feel, smoothness, GPU-performance or real-network-latency test.
+
+## Sandbox bridge
+
+Use `node dev/codex/see.ts` with the same flags. It owns the local child and passes its loopback clock URL through
+the existing broker. The broker itself needs no new privilege or protocol: it continues running only its own
+checkout's trusted look harness. That checkout must also contain this updated harness. An old checkout rejects
+`--clock-url` explicitly; the bridge never silently substitutes real time or restarts the broker.
+
+During development the already-running broker belonged to an older parent checkout. A `--real` baseline through
+`see.ts` passed; the warped bridge request was rejected with `unknown option --clock-url`. The edited harness was
+verified directly with local GPU access, without editing the parent checkout or starting another broker.
+
+## Measurements on the shared Mac
+
+The final 10x run (`coop-verified10`) measured 237.8 game seconds in 23.8 real seconds: both page clocks,
+the server clock and world ticks averaged 10.00x. The pages were at most one tick apart in the samples. Their
+clock deficits peaked at 0.059/0.124 game seconds. The server briefly fell 4.415 game seconds behind and recovered;
+the run explicitly printed DRIFT. Train-position gaps peaked at 7.254/10.030 m, ending at 0.256/0.016 m. This
+supports fast co-op checks, not a claim that all three clocks stay tightly aligned under load.
+
+With `--warp-speed 5` (`coop-verified5`), 234.5 game seconds took 46.9 real seconds and all clocks/world ticks
+averaged 5.00x. Peak server deficit was 0.742 game seconds; page deficits were 0.006/0.003 seconds, with at most
+two ticks between pages. While both train clocks ran, position gaps peaked at 3.398/6.090 m, ending at
+0.379/0.094 m. The all-sample maxima were 193/507 m at the scripted skip before the follower started its trains;
+those samples remain in the report. Use 5x when the lower measured drift is preferable to the default 10x.
+
+The real baseline showed the follower's 8 logs on the authority, matching money ($120), machine mode, chest upgrade
+and train unlocks. The same outcomes occurred warped. An early 30x trial only achieved about 16x on the pages and
+accumulated about 200 game seconds of page-clock deficit: 30x is not a supported rate on that run. A later short
+30x trial exited with a clock-drift error. 10x is a target to measure, not a guarantee or a machine maximum.
+
+The final measurements and capture paths are recorded in the local `.look/` artifacts; these are intentionally
+not committed. Capture checks establish WebGPU, advancing game frames and no graphics/page/console errors. Opened
+motion sheets show a train descending the bridge; they do not establish real-time smoothness. No 30-minute
+end-to-end bot playthrough was performed.
