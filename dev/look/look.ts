@@ -8,6 +8,9 @@ import type { Browser } from 'playwright';
 import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.ts';
 import type { Stack } from './lib.ts';
 import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
+import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } from './curves.ts';
+import type { CurveData } from './curves.ts';
+import { TARGETS } from './targets.ts';
 
 const opt: {
   view: string;
@@ -33,6 +36,9 @@ const opt: {
   until: string | null;
   at: string | null;
   root?: string;
+  curves: boolean;
+  curvesVs: string | null;
+  target: string | null;
 } = {
   view: 'hill',
   cam: null,
@@ -55,6 +61,9 @@ const opt: {
   warp: false,
   until: null,
   at: null,
+  curves: false,
+  curvesVs: null,
+  target: null,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -95,7 +104,15 @@ for (let k = 0; k < argv.length; k++) {
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
   else if (a === '--at')
     opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
-  else if (a === '--root')
+  else if (a === '--curves')
+    opt.curves = true; // every frame's speed, height, camera distance: a CSV, a plot and readings (./curves.ts)
+  else if (a === '--curves-vs') {
+    opt.curves = true;
+    opt.curvesVs = v(); // an earlier run's CSV, drawn underneath
+  } else if (a === '--target') {
+    opt.curves = true;
+    opt.target = v(); // a reference to draw and score against (./targets.ts)
+  } else if (a === '--root')
     opt.root = v(); // serve another checkout's build
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
@@ -104,7 +121,8 @@ for (let k = 0; k < argv.length; k++) {
   [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
   [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
-  [--root <checkout>]                       serve another checkout's build`);
+  [--root <checkout>]                       serve another checkout's build
+  [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
@@ -200,8 +218,21 @@ try {
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
   try {
+    if (opt.curves) await g.eval(START_CURVES);
     if (opt.action) await pageScript(g, opt.action);
     const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region, heatmap: opt.heatmap });
+    if (opt.curves) {
+      const target = opt.target ? TARGETS[opt.target] : null;
+      if (opt.target && !target) throw new Error(`no target ${opt.target}: ${Object.keys(TARGETS).join(', ')}`);
+      const data = (await g.eval(STOP_CURVES)) as CurveData;
+      const vs = opt.curvesVs ? readCsv(opt.curvesVs) : null;
+      const csv = path.join(g.out, `${label}-curves.csv`);
+      const png = path.join(g.out, `${label}-curves.png`);
+      writeCsv(csv, data.rows);
+      await plotCurves(g, png, { ...data, vs, target: target ?? null, label: opt.question });
+      console.log(`curves:  ${png}\ncsv:     ${csv}`);
+      for (const line of readings(data.rows, target)) console.log('  ' + line);
+    }
     console.log(`still:   ${await g.still(label)}\nmotion:  ${m.sheet}`);
     if (m.heat) console.log(`heatmap: ${m.heat}`);
     if (region)
