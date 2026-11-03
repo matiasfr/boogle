@@ -1,69 +1,439 @@
-// `?prof=1`: the frame's most expensive sections (avg and p95 CPU ms over the last 240 frames), twice a second, and
-// the GPU's time per frame (every render pass: shadow, scene, output) from WebGPU timestamp queries where the device
-// has `timestamp-query` (scene.ts turns three's trackTimestamp on for ?prof=1). 'frame' is the whole frame's
-// main-thread CPU, from before the physics step to the end of the render call; GPU time is not in it. Names are module
-// paths (src/loop.ts). Above them, the boot timeline's phases (src/boot/timeline.ts), also logged to the console as one
-// line once the game is interactive and in a room. Also logs the adapter's features and limits to the console once (src/debug/gpu-info.ts).
+// Debug-only measurements, shared by ?prof=1 and dev/look/perf.ts. See ultra-water.md, audit and recommendation 2.
+// Never render an extra frame: RenderPipeline's scene pass only runs once per animation frame.
 import { onFrame, onStart, prof } from '../loop.ts';
-import { renderer, rendererReady } from '../render/scene.ts';
+import { camera, renderer, rendererReady, scenePass } from '../render/scene.ts';
+import { ISLAND, ON_ISLAND, PROTO, protoV } from '../proto/flags.ts';
 import { gpuInfo } from './gpu-info.ts';
 import { bootDone, bootLine } from '../boot/timeline.ts';
+import type { RenderTarget, Texture } from 'three/webgpu';
 
-let bootRow = '';
-bootDone.then((tl) => {
-  console.info('[boot] ' + bootLine());
-  const wanted = ['modules', 'gpu', 'shaders', 'first', 'interactive', 'room'];
-  const at = tl.marks.filter((m) => wanted.includes(m.name)).map((m) => `${m.name} ${m.t}`);
-  bootRow = `boot ms: ${at.join(' · ')}\n`;
-});
-
-const WINDOW = 240;
-const gpu = new Float32Array(WINDOW);
-const sorted = new Float32Array(WINDOW);
-let gpuN = 0,
-  gpuHead = 0,
-  timestamps = false;
-
-rendererReady.then(
-  () => {
-    timestamps = !!(renderer.backend as unknown as { trackTimestamp?: boolean }).trackTimestamp;
-    gpuInfo().then((t) => console.info('[gpuinfo]\n' + t));
-  },
-  () => {},
-);
-
-// Resolve last frame's queries each frame (three returns the pending promise if one is still mapping, and its query
-// pool overflows if nobody resolves). Asynchronous, so the value lands a frame or two late.
-const record = (ms: number | undefined) => {
-  if (!ms || !(ms > 0)) return;
-  gpu[gpuHead] = ms;
-  gpuHead = (gpuHead + 1) % WINDOW;
-  if (gpuN < WINDOW) gpuN++;
+// r187's backend observation surface (not in @types/three). Keep it here, out of the renderer. Wrappers forward
+// every argument and preserve receivers; no targets, queries or command buffers are created by the observer.
+type GpuTexture = { width: number; height: number; depthOrArrayLayers: number; format: string; sampleCount: number };
+type Context = { renderTarget: RenderTarget | null; textures: Texture[] | null; depthTexture: Texture | null };
+type QueryPool = { timestamps: Map<string, number>; currentQueryIndex: number; pendingResolve: unknown };
+type Backend = {
+  beginRender: (context: Context) => void;
+  compute: (...args: unknown[]) => void;
+  get: (texture: Texture) => { texture?: GpuTexture; msaaTexture?: GpuTexture; msaaTextures?: GpuTexture[] };
+  device?: {
+    adapterInfo?: {
+      vendor?: string;
+      architecture?: string;
+      device?: string;
+      description?: string;
+      isFallbackAdapter?: boolean;
+    };
+  };
+  trackTimestamp?: boolean;
+  timestampQueryPool?: Partial<Record<'render' | 'compute', QueryPool>>;
 };
-onFrame(
-  () => {
-    if (timestamps) renderer.resolveTimestampsAsync('render').then(record, () => {});
-  },
-  { phase: 'late', order: 1990 },
-);
+const backend = renderer.backend as unknown as Backend;
 
-onStart(() => {
-  const el = document.createElement('pre');
-  el.style.cssText =
-    'position:fixed;right:8px;top:72px;margin:0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.6);' +
-    'color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;pointer-events:none;z-index:50;white-space:pre';
-  document.body.append(el);
-  const ms = (x: number) => x.toFixed(2).padStart(6);
-  setInterval(() => {
-    const rows = prof.table(14);
-    let gpuRow = timestamps ? '     -      -  GPU (waiting)\n' : '  GPU: no timestamp-query\n';
-    if (gpuN) {
-      sorted.set(gpu);
-      const s = sorted.subarray(0, gpuN).sort();
-      const avg = s.reduce((a, b) => a + b, 0) / gpuN;
-      gpuRow = `${ms(avg)} ${ms(s[Math.floor(gpuN * 0.95)]!)}  GPU, all passes\n`;
+function textureInfo(texture: Texture) {
+  const data = backend.get(texture);
+  const describe = (t: GpuTexture) => ({
+    width: t.width,
+    height: t.height,
+    layers: t.depthOrArrayLayers,
+    format: t.format,
+    samples: t.sampleCount,
+  });
+  return {
+    name: texture.name || null,
+    format: texture.format,
+    type: texture.type,
+    gpu: data.texture ? describe(data.texture) : null,
+    multisampled: [data.msaaTexture, ...(data.msaaTextures ?? [])].filter((t) => t !== undefined).map(describe),
+  };
+}
+
+/** Observe only work that really executes. Stop in finally; counts can use this without enabling timestamps/UI. */
+export async function observeGpu() {
+  await rendererReady;
+  const placeLook = PROTO === 'place' ? (await import('../proto/place/look.ts')).LOOK : null;
+  const targets = new Map<RenderTarget, Context>();
+  let frame = -1,
+    renderPasses = 0,
+    computeDispatches = 0;
+  const touch = () => {
+    if (frame === renderer.info.frame) return;
+    frame = renderer.info.frame;
+    renderPasses = computeDispatches = 0;
+  };
+  const disposed = (event: { target?: RenderTarget }) => {
+    if (event.target) {
+      targets.delete(event.target);
+      event.target.removeEventListener('dispose', disposed);
     }
-    el.textContent =
-      bootRow + '   avg    p95  ms\n' + gpuRow + rows.map((r) => `${ms(r.avg)} ${ms(r.p95)}  ${r.name}`).join('\n');
-  }, 500);
-});
+  };
+  const work = () => {
+    touch();
+    return { frame, renderPasses, computeDispatches, computePasses: renderer.info.compute.frameCalls };
+  };
+  const begin = backend.beginRender;
+  const compute = backend.compute;
+  const beginWrapped: Backend['beginRender'] = function (context) {
+    begin.call(backend, context);
+    touch();
+    renderPasses++;
+    if (context.renderTarget) {
+      if (!targets.has(context.renderTarget)) context.renderTarget.addEventListener('dispose', disposed);
+      targets.set(context.renderTarget, context);
+    }
+  };
+  const computeWrapped: Backend['compute'] = function (...args) {
+    compute.apply(backend, args);
+    touch();
+    computeDispatches++; // r187: one direct or indirect dispatch per backend.compute (not per renderer.compute).
+  };
+  backend.beginRender = beginWrapped;
+  backend.compute = computeWrapped;
+  return {
+    work,
+    snapshot() {
+      touch();
+      const q = new URLSearchParams(location.search);
+      const prototypes = ON_ISLAND ? [...ISLAND] : PROTO ? [PROTO] : [];
+      return {
+        ...work(),
+        internalPixels: { width: renderer.domElement.width, height: renderer.domElement.height },
+        devicePixelRatio,
+        rendererPixelRatio: renderer.getPixelRatio(),
+        msaaSamples: Math.max(1, scenePass.renderTarget.samples),
+        adapter: backend.device?.adapterInfo
+          ? {
+              vendor: backend.device.adapterInfo.vendor ?? null,
+              architecture: backend.device.adapterInfo.architecture ?? null,
+              device: backend.device.adapterInfo.device ?? null,
+              description: backend.device.adapterInfo.description ?? null,
+              isFallbackAdapter: backend.device.adapterInfo.isFallbackAdapter ?? null,
+            }
+          : null,
+        workCountScope:
+          'backend beginRender contexts and compute dispatches; excludes internal copy/clear/mipmap passes and XR layer splits',
+        renderTargets: [...targets].map(([target, context]) => ({
+          id: target.texture.uuid,
+          name: target.texture.name || (target === scenePass.renderTarget ? 'scenePass' : null),
+          width: target.width,
+          height: target.height,
+          depth: target.depth,
+          samples: Math.max(1, target.samples),
+          colors: (context.textures ?? []).map(textureInfo),
+          depthStencil: context.depthTexture ? textureInfo(context.depthTexture) : null,
+        })),
+        targetInventoryScope:
+          'offscreen targets observed since collection began; not total residency; GPU descriptors are actual allocations, null means unavailable',
+        route: { pathname: location.pathname, query: Object.fromEntries(q), hash: location.hash },
+        view: {
+          position: camera.position.toArray(),
+          quaternion: camera.quaternion.toArray(),
+          fov: camera.fov,
+          near: camera.near,
+          far: camera.far,
+        },
+        flags: {
+          prototypes: prototypes.map((id) => ({ id, variant: protoV(id) || 'default' })),
+          look: q.get('look'),
+          fx: q.get('fx'),
+          activeLook: window.boogle?.lookLab?.on() ?? placeLook,
+          dpr: q.get('dpr') ?? 'adaptive',
+        },
+      };
+    },
+    stop() {
+      if (backend.beginRender === beginWrapped) backend.beginRender = begin;
+      if (backend.compute === computeWrapped) backend.compute = compute;
+      for (const target of targets.keys()) target.removeEventListener('dispose', disposed);
+      targets.clear();
+    },
+  };
+}
+
+type FrameSample = {
+  frame: number;
+  cpuMs: number;
+  intervalMs: number | null;
+  renderPasses: number;
+  computeDispatches: number;
+  computePasses: number;
+};
+type GpuSample = { frame: number; ms: number; contexts: number };
+type Timing = { frames: FrameSample[]; render: GpuSample[]; compute: GpuSample[] };
+const emptyTiming = (): Timing => ({ frames: [], render: [], compute: [] });
+let recent = emptyTiming();
+let session: Timing | null = null;
+let collecting = false;
+let observer: Awaited<ReturnType<typeof observeGpu>> | null = null;
+let previousNow: number | null = null;
+let bootRow = '';
+const pending: Record<'render' | 'compute', Promise<void> | null> = { render: null, compute: null };
+const lastGpuFrame = { render: -1, compute: -1 };
+
+function stats(values: number[]) {
+  if (!values.length) return null;
+  const s = values.slice().sort((a, b) => a - b);
+  return {
+    samples: s.length,
+    avgMs: s.reduce((a, b) => a + b, 0) / s.length,
+    p95Ms: s[Math.ceil(s.length * 0.95) - 1]!,
+    maxMs: s.at(-1)!,
+  };
+}
+
+// Never use resolveTimestampsAsync's return value: it can be cached. r187's timestamp map keys end in :f<frame>.
+// Read every freshly resolved frame once, with one promise in flight per type. Query failures leave the old map;
+// frame IDs therefore reject cached results, even when a driver returns exactly the same duration on two frames.
+async function resolveGpu(type: 'render' | 'compute') {
+  if (pending[type]) return pending[type];
+  const pool = backend.timestampQueryPool?.[type];
+  if (!backend.trackTimestamp || !pool || (!pool.currentQueryIndex && !pool.pendingResolve)) return;
+  pending[type] = (async () => {
+    try {
+      await renderer.resolveTimestampsAsync(type);
+      const frames = new Map<number, GpuSample>();
+      for (const [uid, ms] of pool.timestamps) {
+        const match = /:f(\d+)$/.exec(uid);
+        if (!match || !Number.isFinite(ms) || ms < 0) continue;
+        const frame = Number(match[1]);
+        if (frame <= lastGpuFrame[type]) continue;
+        const row = frames.get(frame) ?? { frame, ms: 0, contexts: 0 };
+        row.ms += ms;
+        row.contexts++;
+        frames.set(frame, row);
+      }
+      for (const row of [...frames.values()].sort((a, b) => a.frame - b.frame)) {
+        lastGpuFrame[type] = row.frame;
+        recent[type].push(row);
+        if (recent[type].length > 240) recent[type].shift();
+        if (session?.frames.some((f) => f.frame === row.frame)) session[type].push(row);
+      }
+    } finally {
+      pending[type] = null;
+    }
+  })();
+  return pending[type];
+}
+
+function summarize(timing: Timing) {
+  const gpu = (type: 'render' | 'compute') => {
+    const eligible = timing.frames.filter((f) => (type === 'render' ? f.renderPasses > 0 : f.computeDispatches > 0));
+    const ids = new Set(eligible.map((f) => f.frame));
+    const rows = timing[type].filter((f) => ids.has(f.frame));
+    return {
+      status: !backend.trackTimestamp
+        ? 'unavailable: timestamp-query not supported/enabled'
+        : !eligible.length
+          ? 'no observed work'
+          : !rows.length
+            ? 'unavailable: no fresh timestamps'
+            : 'available',
+      stats: stats(rows.map((r) => r.ms)),
+      eligibleFrames: eligible.length,
+      missingFrames: eligible.length - rows.length,
+      partialFrames: rows.filter((r) => {
+        const frame = eligible.find((f) => f.frame === r.frame)!;
+        return r.contexts < (type === 'render' ? frame.renderPasses : frame.computePasses);
+      }).length,
+      samples: rows,
+    };
+  };
+  return {
+    cpu: {
+      scope: 'completed game frame main-thread CPU, including submission; excludes GPU execution',
+      stats: stats(timing.frames.map((f) => f.cpuMs)),
+    },
+    gpu: {
+      render: gpu('render'),
+      compute: gpu('compute'),
+      scope:
+        'three.js timestamp contexts grouped by unique renderer frame ID; asynchronous, gaps reported; render + compute is not end-to-end latency',
+    },
+    presentedFrameIntervals: {
+      scope:
+        'animation callback timestamps for completed visible game frames; presentation proxy, not actual display/scan-out timestamps',
+      stats: stats(timing.frames.flatMap((f) => (f.intervalMs === null ? [] : [f.intervalMs]))),
+      actualPresentationTimestamps: 'unavailable',
+    },
+    completedFrames: timing.frames.length,
+  };
+}
+
+/** Bounded real-frame sample. No fake clock, extra render calls, GPU fences, or claim of headless FPS. */
+export async function hardwareTiming(seconds = 5) {
+  if (!observer) throw new Error('Hardware timing needs ?prof=1 and a ready renderer');
+  if (session) throw new Error('Hardware timing already running');
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('Sample duration must be 1–30 seconds');
+  if (document.hidden) throw new Error('Keep the page visible while measuring');
+  const timing = emptyTiming();
+  session = timing;
+  collecting = true;
+  const start = observer.snapshot();
+  let hidden = false;
+  const visibility = () => {
+    hidden ||= document.hidden;
+  };
+  document.addEventListener('visibilitychange', visibility);
+  const started = performance.now();
+  try {
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    collecting = false;
+    const end = observer.snapshot();
+    const elapsedMs = performance.now() - started;
+    // Do not wait indefinitely for a GPU/driver. Late results count as missing, never zero.
+    await Promise.race([
+      Promise.all([resolveGpu('render'), resolveGpu('compute')]),
+      new Promise((r) => setTimeout(r, 250)),
+    ]);
+    return {
+      status: hidden
+        ? 'invalid: page was hidden'
+        : timing.frames.length
+          ? 'complete'
+          : 'unavailable: no completed frames',
+      elapsedMs,
+      userAgent: navigator.userAgent,
+      start,
+      end,
+      ...summarize(timing),
+    };
+  } finally {
+    session = null;
+    collecting = false;
+    document.removeEventListener('visibilitychange', visibility);
+  }
+}
+
+// Importing this module from the counts harness alone must not install UI, frame hooks or timestamp collection.
+if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
+  bootDone.then(() => {
+    bootRow = bootLine();
+    console.info('[boot] ' + bootRow);
+  });
+  void observeGpu()
+    .then((value) => {
+      observer = value;
+    })
+    .catch(() => {});
+  void rendererReady
+    .then(() => gpuInfo())
+    .then(
+      (text) => console.info('[gpuinfo]\n' + text),
+      () => {},
+    );
+  onFrame(
+    ({ now }) => {
+      const completed = prof.last.frames;
+      // Runs after main's renderFrame/endFrame, so CPU and queries belong to this completed animation frame.
+      queueMicrotask(() => {
+        if (!observer || prof.last.frames === completed) return;
+        const snapshot = observer.work();
+        const row = {
+          frame: renderer.info.frame,
+          cpuMs: prof.last.ms,
+          intervalMs: previousNow === null || document.hidden ? null : now - previousNow,
+          renderPasses: snapshot.renderPasses,
+          computeDispatches: snapshot.computeDispatches,
+          computePasses: snapshot.computePasses,
+        };
+        previousNow = document.hidden ? null : now;
+        recent.frames.push(row);
+        if (recent.frames.length > 240) recent.frames.shift();
+        if (session && collecting)
+          session.frames.push({ ...row, intervalMs: session.frames.length ? row.intervalMs : null });
+        void resolveGpu('render').catch(() => {});
+        void resolveGpu('compute').catch(() => {});
+      });
+    },
+    { phase: 'late', order: 1990 },
+  );
+  document.addEventListener('visibilitychange', () => {
+    previousNow = null;
+    recent = emptyTiming();
+  });
+  onStart(() => {
+    const panel = document.createElement('section');
+    panel.style.cssText =
+      'position:fixed;right:8px;top:72px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;padding:8px;border-radius:6px;background:#001b26e8;color:#d8f3ff;font:11px/1.35 ui-monospace,monospace;z-index:50;pointer-events:none';
+    const run = document.createElement('button');
+    run.textContent = 'Measure 5 seconds';
+    const copy = document.createElement('button');
+    copy.textContent = 'Copy';
+    const output = document.createElement('pre');
+    output.style.cssText = 'white-space:pre-wrap;margin:6px 0;user-select:text';
+    // The panel lets touches through to the lobby and game; only its controls take them.
+    run.style.pointerEvents = copy.style.pointerEvents = 'auto';
+    panel.append(run, copy, output);
+    document.body.append(panel);
+    // Debug controls must not also throw/jump/interact in the game.
+    for (const event of ['pointerdown', 'pointerup', 'click', 'keydown', 'keyup'])
+      panel.addEventListener(event, (e) => e.stopPropagation());
+    let report: Awaited<ReturnType<typeof hardwareTiming>> | null = null;
+    let message = '';
+    const format = (s: ReturnType<typeof stats>) =>
+      s ? `${s.avgMs.toFixed(2)} avg / ${s.p95Ms.toFixed(2)} p95 ms (${s.samples})` : 'unavailable';
+    const refresh = () => {
+      const data = report ?? summarize(recent);
+      const context = report?.end ?? observer?.snapshot();
+      output.textContent = [
+        message,
+        report ? 'Captured sample (press Measure to repeat)' : 'Live: last 240 frames',
+        `CPU: ${format(data.cpu.stats)}`,
+        ...(['render', 'compute'] as const).map(
+          (type) =>
+            `GPU ${type}: ${format(data.gpu[type].stats)}\n  ${data.gpu[type].status}; missing ${data.gpu[type].missingFrames}/${data.gpu[type].eligibleFrames}; partial ${data.gpu[type].partialFrames}`,
+        ),
+        `Presented interval proxy: ${format(data.presentedFrameIntervals.stats)}`,
+        'Actual presentation times: unavailable',
+        context
+          ? `${context.internalPixels.width}×${context.internalPixels.height} px · DPR ${context.devicePixelRatio} / render ${context.rendererPixelRatio} · MSAA ${context.msaaSamples}\npasses ${context.renderPasses} · dispatches ${context.computeDispatches}\n${context.route.pathname} ${JSON.stringify(context.flags)}`
+          : 'Waiting for renderer',
+        report
+          ? ''
+          : '\navg / p95 CPU sections\n' +
+            prof
+              .table(8)
+              .map((r) => `${r.avg.toFixed(2)} / ${r.p95.toFixed(2)} ${r.name}`)
+              .join('\n'),
+        bootRow,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    };
+    run.onclick = async () => {
+      run.disabled = true;
+      report = null;
+      message = 'Measuring real animation frames…';
+      refresh();
+      try {
+        report = await hardwareTiming();
+        message = report.status;
+      } catch (e) {
+        message = String(e);
+      } finally {
+        run.disabled = false;
+        refresh();
+      }
+    };
+    copy.onclick = async () => {
+      const text = JSON.stringify(report ?? { context: observer?.snapshot(), ...summarize(recent) }, null, 2);
+      try {
+        await navigator.clipboard.writeText(text);
+        message = 'Copied JSON';
+      } catch {
+        // Safari/private mode/clipboard denial: a selectable fallback still works without Web Inspector.
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('aria-label', 'Profiling report to copy');
+        area.style.pointerEvents = 'auto';
+        panel.append(area);
+        area.focus();
+        area.select();
+        message = 'Select and copy the report below';
+      }
+      refresh();
+    };
+    setInterval(refresh, 500);
+    refresh();
+  });
+}

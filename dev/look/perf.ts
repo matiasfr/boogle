@@ -1,6 +1,7 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
-// dev/look/counts.ts).
+// dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
+// `--seconds N` (1–30), `--view NAME` and `--query proto=place` select the sample. Counts stay timing-free.
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
@@ -10,13 +11,17 @@
 // rendering, so compare before/after on your change, not absolute numbers.
 import fs from 'node:fs';
 import type { Browser } from 'playwright';
-import { startStack, launch, Game, sleep, VIEWS } from './lib.ts';
+import { startStack, launch, Game, sleep, VIEWS, reportGfxErrors } from './lib.ts';
 import type { Stack } from './lib.ts';
 
 const argv = process.argv.slice(2);
 const url = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null;
+const hardware = argv.includes('--hardware');
 const doRender = !argv.includes('--sim');
-const doSim = !argv.includes('--render');
+const doSim = !hardware && !argv.includes('--render');
+const seconds = argv.includes('--seconds') ? Number(argv[argv.indexOf('--seconds') + 1]) : 5;
+const viewName = argv.includes('--view') ? argv[argv.indexOf('--view') + 1] : null;
+const query = argv.includes('--query') ? argv[argv.indexOf('--query') + 1] : '';
 const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
 const IDLE_TICKS = 100;
 
@@ -27,21 +32,38 @@ const IDLE_TICKS = 100;
 const STATS = `
   const { renderer, sun } = await import('/src/render/scene.ts');
   const { skyDebug } = await import('/src/render/sky.ts');
-  const frame = () => new Promise((res) => {
-    const at = renderer.info.frame;
-    const t = setInterval(() => renderer.info.frame > at && (clearInterval(t), res({ ...renderer.info.render })), 20);
+  const { observeGpu } = await import('/src/debug/prof-overlay.ts');
+  const observer = await observeGpu();
+  const frame = () => new Promise((res, reject) => {
+    const at = window.boogle.prof.last.frames;
+    const deadline = performance.now() + 30000;
+    const t = setInterval(() => {
+      if (window.boogle.prof.last.frames > at) {
+        clearInterval(t);
+        res({ ...renderer.info.render, measurement: observer.snapshot() });
+      } else if (performance.now() > deadline) {
+        clearInterval(t);
+        reject(new Error('No completed game frame in 30 seconds'));
+      }
+    }, 20);
   });
-  await frame();
-  const a = await frame(); // with the shadow pass
-  skyDebug.shadowPass(false);
-  sun.shadow.needsUpdate = false;
-  await frame();
-  const b = await frame(); // no shadow pass
-  skyDebug.shadowPass(true);
-  return {
-    backend: window.boogle.gfx,
-    calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,
-    geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs };`;
+  try {
+    await frame();
+    const a = await frame(); // with the shadow pass
+    skyDebug.shadowPass(false);
+    sun.shadow.needsUpdate = false;
+    await frame();
+    const b = await frame(); // no shadow pass
+    return {
+      backend: window.boogle.gfx,
+      calls: a.drawCalls, shadowCalls: a.drawCalls - b.drawCalls, tris: a.triangles,
+      geometries: renderer.info.memory.geometries, programs: renderer.info.memory.programs,
+      ...a.measurement,
+      shadowCountScope: 'draw-call difference between separate animation frames; moving objects can affect it' };
+  } finally {
+    skyDebug.shadowPass(true);
+    observer.stop();
+  }`;
 
 // Run `n` ticks under profileTicks, yielding to the page every few so frames and timers still run. A host hashes every state every 20 ticks; a solo page is not a host, so
 // this does it in its place.
@@ -105,33 +127,62 @@ async function profile(g: Game, label: string, ticks: number) {
 
 let stack: Stack | undefined, browser: Browser | undefined;
 try {
+  if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
+  if (argv.includes('--view') && (!viewName || !VIEWS[viewName]))
+    throw new Error('Unknown --view; use ' + Object.keys(VIEWS).join(', '));
   stack = await startStack({ url });
-  browser = await launch();
+  browser = await launch({ hardware });
   // The spawn is a random spot, the sky follows the clock and the shadow pass culls around all that, so counts that must
   // repeat (--json) take a seeded Math.random, a fixed camera and a fixed sun, once the lazy props are in.
   const init = jsonOut ? SEEDED_RANDOM : undefined;
-  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim, init });
+  const q = new URLSearchParams(query);
+  if (hardware) q.set('prof', '1');
+  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim || hardware, init, query: q.toString() });
   if (doRender) {
-    if (jsonOut) {
-      const { cam, look } = VIEWS.overview!;
+    if (jsonOut || viewName) {
+      const { cam, look } = VIEWS[viewName ?? 'overview']!;
       const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, null`;
       await g.eval(`window.boogle.sky.preview(0.3); window.__debugCam.set(${pose});`);
       await sleep(6000);
     }
-    const rows: Record<string, unknown> = { island: await g.eval(STATS) };
-    if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(rows.island));
+    const measuredView = viewName ?? (jsonOut ? 'overview' : 'player camera');
+    const row = { ...(await g.eval(STATS)), measuredView };
+    if (hardware) {
+      // The shadow-difference sample above perturbs a few frames; settle before the separate timing window.
+      await sleep(1000);
+      row.hardwareTiming = await g.eval(`
+        const { hardwareTiming } = await import('/src/debug/prof-overlay.ts');
+        return await hardwareTiming(${seconds});`);
+      console.log('hardware timing (visible browser; verify adapter and exclusive GPU use)');
+      console.log(JSON.stringify(row.hardwareTiming, null, 2));
+    }
+    if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(row));
     console.log('render');
-    console.table(rows);
+    console.table({
+      island: {
+        backend: row.backend,
+        calls: row.calls,
+        shadowCalls: row.shadowCalls,
+        tris: row.tris,
+        geometries: row.geometries,
+        programs: row.programs,
+      },
+    });
+    const metadata = { ...row };
+    delete metadata.hardwareTiming;
+    console.log(JSON.stringify(metadata, null, 2));
     // CPU per frame section (src/loop.ts), averaged over the last 240 frames. Headless: compare before/after only.
-    console.log(
-      '\nmain-thread CPU per frame section (ms over the last 240 frames; headless, so compare, do not trust)',
-    );
+    console.log('\nmain-thread CPU per frame section (ms over the last 240 frames; compare on the same device)');
     console.table(await g.eval('return window.boogle.prof.table(10);'));
   }
   if (doSim) {
     await sleep(1000);
     await profile(g, 'sim, idle island', IDLE_TICKS);
   }
+  reportGfxErrors([g]);
+  const errors = g.healthErrors();
+  if (errors.length) throw new Error(errors.join('\n'));
 } catch (e) {
   console.error(e);
   process.exitCode = 1;

@@ -88,17 +88,18 @@ export async function startStack({
 
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
-export const launch = (): Promise<Browser> => {
+export const launch = ({ hardware = false }: { hardware?: boolean } = {}): Promise<Browser> => {
   // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
   if (process.platform === 'darwin') args.push('--use-angle=metal');
   // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
-  else
+  else if (!hardware)
     args.push(
       ...['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
       ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
     );
-  return chromium.launch({ args });
+  // Hardware timing is explicitly headed and never forces SwiftShader. The normal harness stays unchanged.
+  return chromium.launch({ args, headless: !hardware });
 };
 
 // Prints the THREE.* console errors a game collected (once each), if any.
