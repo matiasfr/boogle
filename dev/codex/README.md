@@ -35,6 +35,7 @@ node .look/see-client.ts scenario world-inputs
 - **Look:** accepts the normal capture/action/curve options, including `--query`. `--at` reads the most recent playthrough
   from **this job**, including a partial failed run; `--saves <directory>` selects another run explicitly. Never infer
   full completion from a checkpoint. Open the images with `view_image` and state the observation separately from status.
+  Frame-exact `--filmstrip` remains a direct-harness operation: it does not support the broker's `--url` transport.
 - **Scenario:** accepts names of existing scenarios from the launcher's trusted checkout, plus `--no-trace`. It runs them
   against the worker's game and server. New or edited worker scenario code does not execute outside the sandbox; promote
   it through the normal review workflow first. A scenario may need a matching build's interfaces.
@@ -53,7 +54,8 @@ Operations have a seven-minute timeout. Do not edit source or launch simultaneou
 - `evidence.json`: final commit/tree plus every operation's commit/tree before and after, arguments, query, timestamps,
   exit status, artifact paths, the trusted harness's commit/tree, and whether it matches the final source tree.
 - `evidence/<request>/`: copies of each run's logs, images, curves, video, reports, checkpoints and traces. These survive
-  removing the worker worktree. `output.txt` includes renderer/runtime diagnostics; `evidence.json` describes the run.
+  removing the worker worktree; assessment links are repointed to these copies. `output.txt` includes renderer/runtime
+  diagnostics; `evidence.json` describes the run.
 - `meta.json` and `log.txt`: job provenance and the full worker log.
 
 Each operation also returns its manifest immediately in the worker's `.look/evidence/`. A build that changes during a run

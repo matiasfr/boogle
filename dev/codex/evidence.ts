@@ -79,6 +79,18 @@ export function handoff(cwd: string, logs: string) {
       lines.push(`  - [${file}](${base}/${file.split(path.sep).map(encodeURIComponent).join('/')})`);
   }
   if (!runs.length) lines.push('No broker evidence was collected.');
+  // The assessment must keep working after the caller removes the worker worktree too.
+  const report = path.join(logs, 'report.md');
+  if (fs.existsSync(report)) {
+    const text = fs.readFileSync(report, 'utf8');
+    fs.writeFileSync(
+      report,
+      text
+        .replaceAll(source + path.sep, out + path.sep)
+        .replaceAll('](.look/evidence/', '](evidence/')
+        .replaceAll('](./.look/evidence/', '](evidence/'),
+    );
+  }
   lines.push(
     '',
     'Limits: warped playthroughs do not establish first-time-player pacing, real-time smoothness, or subjective feel. Images and curves need interpretation.',
