@@ -1,5 +1,11 @@
 # What changed
 
+## 2026-11-03
+
+- The real place prototype can now be played by two people at once (`?proto=place&coop=1`). The oldest tab in the room acts as the referee: when you drop a log at a station, it decides whether that log counts, so two people can't both drop the last one. Once a second it sends everyone the whole railway, like a scorekeeper reading the scoreboard aloud. New story: [two of you build one railway](#story/coop).
+- The server learned to keep playtest notes: a prototype page can send what happened in a session, and the team reads it back later, like a flight recorder. Nothing a player sees changed.
+- Everything else was only in your own tab: the place prototype got sea and gull sounds, little guys who walk and chatter, decks you can sit on, and crystals; touch players can sprint by pushing the stick far; the soapbox left the island. Nothing else in the picture moved.
+
 ## 2026-11-02
 
 - Last of the day: a new player's first visit, riding a cart off a rail and smashing through the BOOGLE title in mid-air, graduated from a prototype into the game and got its own folder. It only plays in your own tab, like a welcome film shown to each guest alone, so nothing shared changed and no arrow in the picture moved.
