@@ -112,7 +112,7 @@ Sandboxed and can't do this (`npm run look` needs a local port, `npm run infligh
 - Keep independent tasks in separate worktrees. Install dependencies in each; don't share `node_modules`, Vite caches or `.boogle-data/` between active checkouts. Run `npm run inflight` before substantial work; don't reset, stash or commit someone else's changes.
 - `.claude/settings.json` permissions and format hooks apply to Claude Code only. Codex runs the changed-file formatting and lint commands in "Shipping" itself, and requests scoped access when Git metadata, network, local ports or Chromium are blocked.
 - Shared skills' `/simplify` means review and simplify the diff; `/code-review` means use Codex's review capability. Claude-specific agent/model names are not Codex commands: use supported equivalents and read the referenced agent brief, preserving any plan approval gate. A skill's `$ARGUMENTS` or `$0` means the user's task text or feature name.
-- Follow the "Test diet" above if an older skill asks for broader tests. Use the existing `look` harness and open its PNGs; no new UI unit tests or scenarios unless a sync contract needs one.
+- Follow the "Test diet" above if an older skill asks for broader tests. Use the existing `look` harness and open its PNGs; no new UI unit tests or scenarios unless a sync contract needs one. A job from `dev/codex/run.ts task` can't start Chromium in its sandbox: use `node dev/codex/see.ts`, which takes the same options.
 - When shipping from Codex, use `SHIP_NO_AI=1 npm run ship` so a rebase conflict returns to the current agent instead of starting Claude Code. Resolve it keeping both changes and rerun shipping. A push, green CI, merge and deployment are separate states; report only the ones verified.
 
 ## Shipping
