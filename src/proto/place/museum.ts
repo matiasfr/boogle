@@ -68,7 +68,25 @@ const fixtures: Part[] = [
   // Labels on their stands.
   ['b', -2.8, 0.55, -2.5, 0.08, 1.1, 0.08, '#3f4145'],
   ['b', TABLE.x, 0.55, TABLE.z + TABLE.d / 2 + 0.55, 0.08, 1.1, 0.08, '#3f4145'],
+  // Brass-lined display cabinetry: the island is an exhibit, not a crate.
+  ['b', 0, 0.17, TABLE.z + TABLE.d / 2 + 0.06, 5.8, 0.04, 0.025, '#d9a23a'],
+  ['b', 0, 0.79, TABLE.z + TABLE.d / 2 + 0.06, 5.8, 0.04, 0.025, '#d9a23a'],
+  // Cushions on the existing visitor bench, clear of the walkway.
+  ['b', -4.5, 0.52, -1.3, 1.05, 0.08, 0.58, '#356b74'],
+  ['b', -3.3, 0.52, -1.3, 1.05, 0.08, 0.58, '#356b74'],
 ];
+for (const x of [-2, 0, 2])
+  fixtures.push(
+    ['b', x, 0.48, TABLE.z + TABLE.d / 2 + 0.06, 1.75, 0.48, 0.025, '#7f6244'],
+    ['b', x, 0.52, TABLE.z + TABLE.d / 2 + 0.09, 0.22, 0.04, 0.04, '#d9a23a'],
+  );
+// Mounts and warm reflector dishes sit on the specimen's plinth, within its existing solid.
+for (const x of [-2.7, 2.7])
+  fixtures.push(
+    ['c', x, 0.51, SPEC.z + 0.85, 0.16, 0.08, 0.16, '#3f4145'],
+    ['k', x, 0.65, SPEC.z + 0.85, 0.2, 0.22, 0.2, '#d9a23a', Math.PI],
+    ['c', x, 0.77, SPEC.z + 0.85, 0.14, 0.015, 0.14, '#fff0c9'],
+  );
 addSolid(r, SPEC.x, SPEC.z, 3.3, 1.45, 3.4);
 addSolid(r, TABLE.x, TABLE.z, TABLE.w / 2 + 0.1, TABLE.d / 2 + 0.1, TABLE.top);
 addSolid(r, -3.9, -1.3, 1.2, 0.35, 0.5);

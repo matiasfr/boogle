@@ -79,7 +79,20 @@ fixtures.push(
   ['b', 0.65, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
   ['b', 1.5, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
   ['b', 2.3, 1.45, -3.45, 0.04, 0.5, 0.04, '#d9a23a'],
+  // Panelled counter, folded cloth and a receipt roll: a little haberdashery.
+  ['b', -3, 0.52, -1.94, 3.3, 0.72, 0.03, '#b77a4c'],
+  ['b', -3, 0.52, -1.91, 0.08, 0.78, 0.04, OAK],
+  ['b', -2.05, 1.15, -2.55, 0.75, 0.12, 0.55, '#3f6fb0'],
+  ['b', -2.02, 1.26, -2.55, 0.7, 0.1, 0.5, '#e4574a'],
+  ['b', -2.02, 1.32, -2.55, 0.1, 0.025, 0.5, CREAM],
+  ['c', -3.4, 1.28, -2.35, 0.1, 0.32, 0.1, CREAM, 0, Math.PI / 2],
 );
+for (const x of [-0.2, 0.65, 1.5, 2.3])
+  fixtures.push(
+    ['b', x - 0.11, 1.29, -3.45, 0.3, 0.035, 0.05, '#d9a23a', 0, 0.5],
+    ['b', x + 0.11, 1.29, -3.45, 0.3, 0.035, 0.05, '#d9a23a', 0, -0.5],
+    ['b', x, 1.22, -3.45, 0.5, 0.035, 0.05, '#d9a23a'],
+  );
 for (const s of STANDS)
   fixtures.push(
     ['b', s.x, 0.45, s.z, 0.8, 0.9, 0.8, '#c9a86a'],
@@ -271,6 +284,18 @@ for (let k = 0; k < STRIPES; k++)
     1.8,
     k % 2 ? '#fff3d6' : '#c4453a',
     0.36,
+  ]);
+// A scalloped valance makes the shop's silhouette readable from along the street.
+for (let k = 0; k < STRIPES; k++)
+  awning.push([
+    's',
+    -AW / 2 + ((k + 0.5) * AW) / STRIPES,
+    2.36,
+    d / 2 + 1.7,
+    AW / STRIPES / 2,
+    0.18,
+    0.055,
+    k % 2 ? CREAM : '#c4453a',
   ]);
 r.over.add(roomMesh(awning), plate(BOARDS.shop, 4.4, 0.72, 0, 3.42, d / 2 + 0.34));
 r.outside.add(
