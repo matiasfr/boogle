@@ -24,6 +24,7 @@
     "check:gpu": "node dev/scenarios/run.ts smoke",
     "patch": "node dev/patch.ts",
     "map": "node dev/map.ts",
+    "unused": "node dev/scan/unused.ts",
     "look": "node dev/look/look.ts",
     "session": "node dev/look/session.ts",
     "playthrough": "node dev/look/playthrough.ts",
