@@ -45,6 +45,12 @@ import { seaU } from './water-render.ts';
 import { clouds } from './props.ts';
 import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
+import { protoOn } from '../proto/flags.ts';
+
+// Temporary ?proto=sky seam: build the original graph verbatim on every other page.
+// Palette/light/cloud ownership stays in src/proto/sky/; remove this seam when the experiment graduates or archives.
+const sculptSky = protoOn('sky');
+export const skyDayLook = uniform(0);
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)
 const SUN_R = 24; // the disc; its billboard is twice as wide, for the glow around it
@@ -127,10 +133,24 @@ const hash = Fn(([p0]: [any]) => {
 
 const skyColor = Fn(() => {
   const d = normalize(positionGeometry);
-  const col = mix(skyU.uHorizon, skyU.uTop, pow(max(d.y, 0), skyU.uCurve)).toVar();
+  const oldRamp = pow(max(d.y, 0), skyU.uCurve);
+  const ramp = sculptSky
+    ? mix(
+        oldRamp,
+        tslSmoothstep(0, 0.25, d.y)
+          .mul(0.68)
+          .add(tslSmoothstep(0.12, 0.85, d.y).mul(0.32)),
+        skyDayLook,
+      )
+    : oldRamp;
+  const col = mix(skyU.uHorizon, skyU.uTop, ramp).toVar();
   const s = max(dot(d, skyU.uSun), 0);
   // The sun's glow: a wide warm wash and a tight halo that the disc's own glow fades into.
-  col.addAssign(skyU.uGlow.mul(pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45))));
+  const oldGlow = pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45));
+  const glow = sculptSky
+    ? mix(oldGlow, pow(s, 18).mul(0.06).add(pow(s, 120).mul(0.35)).add(pow(s, 1200).mul(3)), skyDayLook)
+    : oldGlow;
+  col.addAssign(skyU.uGlow.mul(glow));
   const m = max(dot(d, skyU.uMoon), 0);
   col.addAssign(
     vec3(0.5, 0.58, 0.88)
@@ -157,7 +177,7 @@ const skyColor = Fn(() => {
         .mul(step(0.991, h)),
     );
   });
-  return vec4(min(col, 1), 1);
+  return vec4(sculptSky ? mix(min(col, 1), col, skyDayLook) : min(col, 1), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

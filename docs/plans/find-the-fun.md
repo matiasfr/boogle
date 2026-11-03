@@ -86,6 +86,10 @@ switch variant (another reload) → back to the page to copy notes. Research rec
 
 ## Depth tracks (off the critical path)
 
+- [x] **Procedural sky (3 November):** `?proto=sky` tries the accepted daylight light palette, a deeper dome,
+  five soft cloud groups and a localized sun glow on the main island. Owner question: “Does this feel like the
+  place in the painting?” [As built](../game-design/sky-proto.md). This completes the prototype build, not look approval.
+
 Work that can run beside the prototypes when there's attention or agents to spare. None of it ships into the game
 until a look is picked; none of it blocks a playtest.
 
