@@ -302,17 +302,22 @@ export class Game {
     const v = () => this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now());
     const start = await v();
     const t0 = Date.now();
-    await this.page.evaluate((n) => (window as unknown as { __warp: WarpHandle }).__warp.go(n ?? Infinity), speed);
+    await this.page.evaluate(
+      ([n, stop]) => (window as unknown as { __warp: WarpHandle }).__warp.go(n ?? Infinity, stop ?? undefined),
+      [speed, Number.isFinite(seconds) ? start + seconds : null] as const,
+    );
     let done = false;
     let at = start;
     while (!done && !this.errors.length && Date.now() - t0 < wallLimit * 1000) {
-      await sleep(100);
+      await sleep(Number.isFinite(seconds) && seconds < 30 ? 20 : 100);
       at = await v();
       done = at - start >= seconds || (until ? !!(await this.page.evaluate(`!!(${until})`)) : false);
       if (!done && (await stalled?.(at))) break;
     }
     await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.go(1));
-    await sleep(500); // real frames again, and drawn
+    // Real time again. Fetches and shader builds ran on the wall clock, so give what the warp outran the time to land.
+    await this.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+    await sleep(500);
     return { game: at - start, wall: (Date.now() - t0) / 1000, done };
   }
 

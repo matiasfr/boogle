@@ -104,6 +104,7 @@ export function installObserver(ignore: string) {
     take(beat) {
       if (named.has(beat)) return;
       named.add(beat);
+      w.__observe.lastBeat = now(); // only what's new: a bot opening one crate forever is stuck, however busy it looks
       setTimeout(() => {
         w.__observe.flush?.();
         const storage: Record<string, string> = {};
@@ -149,10 +150,8 @@ export const WATCH_MARKS = `
       const text = String(data?.text ?? '').replace(/[0-9]+/g, '#').slice(0, 60);
       if (text === line) return;
       line = text;
-      o.lastBeat = performance.now() / 1000;
       return o.take('objective: ' + text);
     }
-    o.lastBeat = performance.now() / 1000;
     const what = data && typeof data.rung === 'string' ? ' ' + data.rung : '';
     o.take(name + what);
   });
