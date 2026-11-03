@@ -153,7 +153,7 @@ export function objective(now: number) {
   if (!reach || carried === 0) {
     if (room > 0 && stillRails > 0) {
       beam(rackFrom.x, rackFrom.y + 1, rackFrom.z);
-      return "Take rails from the forge's rack.";
+      return ''; // the beacon, visible rails and the rack's Interact prompt already say this
     }
     if (room > 0 && stillLogs > 0 && st.spec.rack === 'cart') {
       if (rack.logs > 0) beam(rack.x, rack.y + 2, rack.z);

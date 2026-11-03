@@ -430,8 +430,39 @@ function buildGates() {
     const slab = new THREE.Group();
     slab.position.copy(frame.position);
     slab.rotation.copy(frame.rotation);
-    const face = new THREE.Mesh(new THREE.BoxGeometry(SLAB.w, SLAB.h, SLAB.d), flat('#4e4c46', 0.95));
-    face.position.y = SLAB.h / 2;
+    // Two weathered leaves, recessed joints and a locked circular seal. Merge the relief into the face:
+    // this costs the same draw as the old blank box, and the faint stone fill keeps its shaded side readable.
+    const stoneParts: Parameters<typeof merged>[0] = [['b', 0, SLAB.h / 2, 0, SLAB.w, SLAB.h, SLAB.d, '#726e60']];
+    for (const side of [-1, 1]) {
+      const z = side * (SLAB.d / 2 + 0.045);
+      for (const leaf of [-1, 1]) {
+        for (let course = 0; course < 3; course++)
+          stoneParts.push([
+            'b',
+            leaf * 1.58,
+            0.88 + course * 1.78,
+            z,
+            3.08,
+            1.7,
+            0.12,
+            course % 2 ? '#aaa18c' : '#928b78',
+          ]);
+        stoneParts.push(['b', leaf * 2.75, 2.7, z + side * 0.08, 0.2, 4.8, 0.16, '#b5ac92']);
+      }
+      stoneParts.push(
+        ['t', 0, SLAB.h / 2, z + side * 0.14, 0.65, 0.16, 0.65, BRASS, Math.PI / 2],
+        ['b', 0, SLAB.h / 2, z + side * 0.18, 0.28, 1.1, 0.16, TEAL_DIM],
+      );
+    }
+    const face = new THREE.Mesh(
+      merged(stoneParts),
+      new THREE.MeshStandardNodeMaterial({
+        vertexColors: true,
+        roughness: 0.95,
+        emissive: '#686354',
+        emissiveIntensity: 0.18,
+      }),
+    );
     face.castShadow = true;
     slab.add(face);
     // A dead seam of the same light, on both faces: you've seen that colour on a device.
