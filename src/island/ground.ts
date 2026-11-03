@@ -31,6 +31,15 @@ export function islandBaseCm(island: Island) {
   return out;
 }
 
+/** A quantized sampler for a second authored surface, used only to retain comparison palm positions. */
+export function islandSampler(island: Island) {
+  const cm = islandBaseCm(island);
+  const columns = Array.from({ length: GRID_RES }, (_, i) =>
+    Array.from(cm.subarray(i * GRID_RES, (i + 1) * GRID_RES), (h) => h / 100),
+  );
+  return (x: number, z: number) => heightIn(columns, x, z);
+}
+
 /** The ground at world x, z from heights in metres, where h[i][j] sits at x = i*CELL - HALF, z = HALF - j*CELL. Off the grid: the seabed. */
 export function heightIn(h: number[][], x: number, z: number) {
   const fi = (x + HALF) / CELL,

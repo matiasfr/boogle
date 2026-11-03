@@ -52,13 +52,33 @@ the railway for that tab only (`layout.ts`; options and the layout lab: [docs/pr
   quantized to centimetres once (`ground.ts`), so every client builds the same heightfield (`npm run island-map` composes it the
   same way in Node, `dev/island/map.ts`).
 - **Home is special.** `HOME` (`src/world/grid.ts`) is the original island's square, and the ground within `HOME_KEEP` of the origin (spawn, court, seed stand) must stay
-  exactly as it is: a stamp's `fade` counts, so check its reach. A POI may sit inside `HOME`; the lighthouse
+  exactly as it is by default: a stamp's `fade` counts, so check its reach. The explicit low-island comparison below
+  is the exception. A POI may sit inside `HOME`; the lighthouse
   hill and the west end of the windmill farm do.
 - **Changing the grid** (`GRID_RES`, `HALF`) moves every saved cell. Saves from the old 129-cell grid (before
   2026-10-29) are no longer migrated: their mushrooms load fresh, and their loose items (gifts saved without `v`)
   stay at their old cells, now open sea in the far corner, until they rot away. A future grid change needs a new state
   version and a migration for every state that stores cells (`registerState(key, { version, migrate })`,
   `src/world/README.md`).
+
+## Low-island comparison
+
+`?classic=1&water=new&island=low&room=island-low` lowers the natural ground before the same POI stamps,
+court levelling and centimetre quantization. Most shores gain a shallow shelf and softer beach; the north-west
+headland retains its cliff. Lighthouse and cave geometry retain their authored elevations. The original footprint,
+POI x/z coordinates, materials and faceting remain. Mesh, heightfield, prop heights and water shore data read the
+same final grid. Scenery uses the original placement sampler and is reprojected onto the low surface, keeping the
+home palms beside their canonical log sources. Cave trench heights are still composed from the selected surface.
+
+`island=low` selects home even without `classic=1` and forces the dedicated `island-low` room; a room-only link
+selects low too. Explicit `proto`/`play` selectors ignore this experiment and cannot use its reserved room.
+The rules do not read terrain heights, but tree/perch placement is a shared input: `features/walk-layout.ts` pins
+that input to the server's `home-land.json` before world ticks. No rule, op or saved shape changes.
+
+`npm run level-check -- --island=low --all` checks this exact flagged surface; POI-built walls and cave collision
+masks still require browser traversal. To graduate, settle the geometry and scenery, regenerate canonical land
+if its cells change, remove the comparison pin and flag, and bump `WORLD_NS` with history when changing static
+lockstep layout or saved cell meaning. The unflagged branch remains unchanged.
 
 ## Underground POIs (the caves)
 
