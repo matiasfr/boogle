@@ -21,7 +21,7 @@ function valueNoise(x: number, z: number, seed: number) {
     d = hash2(xi + 1, zi + 1, seed);
   return (a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v) * 2 - 1;
 }
-function fbm(x: number, z: number, octaves: number, seed: number) {
+export function fbm(x: number, z: number, octaves: number, seed: number) {
   let sum = 0,
     amp = 0.5,
     norm = 0;
