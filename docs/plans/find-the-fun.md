@@ -180,4 +180,4 @@ real slice does.
       wakes with drama, a first-line celebration with the one camera move, a forge you can't miss from the train, a solid town
       built on scaffolding, a crate with a cosmetic gift per stretch, a curio shelf and empty mounts that promise them, little
       guys and crystals.
-- [ ] **Playtest 10.**
+- [x] **Playtest 10.** "Nice, but I would have carried on anyway" ([playtests.md](../playtests.md), 2 November).
