@@ -5,6 +5,8 @@ description: Hand work to Codex CLI (GPT-6-Astra, on the owner's ChatGPT subscri
 
 # Codex jobs
 
+Jobs outlive the session that started them. A director runs `npm run codex-status` first to find running and finished jobs.
+
 For exact-build handoffs and gameplay evidence, see [dev/codex/README.md](../../../dev/codex/README.md).
 Task jobs accept `--base-ref HEAD` (or another commit/branch) and `--snapshot` (the caller's working files, leaving its
 index untouched). Default remains `origin/main`. Each job installs its own dependencies. The returned `handoff.md` links

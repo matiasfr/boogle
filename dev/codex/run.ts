@@ -3,7 +3,7 @@
 //
 //   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6-astra]
 //                         [--base-ref <ref> | --snapshot] [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>]
-//                         [--eyes off] [--dry] "<brief>"
+//                         [--eyes off] [--dry] [--detach] "<brief>"
 //
 // Modes:
 // - previz: art-directs the idealized look of a moment, prototype or effect and paints it with $imagegen. Output in
@@ -17,10 +17,10 @@
 // go to .look/codex/<topic>/. Nothing is pushed: whoever ran it reviews the report and ships.
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { git, snapshot } from './source.ts';
 import { handoff } from './evidence.ts';
-import { archiveTurn, lockJob, runSession } from './session.ts';
+import { archiveTurn, launchJob, supervise, runSession, type Lifecycle, type JobControl } from './session.ts';
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
@@ -30,9 +30,15 @@ const args = process.argv.slice(2);
 const opts: Record<string, string> = {};
 const pos: string[] = [];
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--dry' || args[i] === '--snapshot') opts[args[i]!.slice(2)] = '1';
+  if (['--dry', '--snapshot', '--detach'].includes(args[i]!)) opts[args[i]!.slice(2)] = '1';
   else if (args[i]!.startsWith('--')) {
     const flag = args[i]!;
+    if (
+      !['--effort', '--model', '--base-ref', '--ref', '--shots', '--ref-branch', '--eyes', '--supervisor'].includes(
+        flag,
+      )
+    )
+      throw new Error(`Unknown option: ${flag}`);
     const value = args[++i];
     if (value === undefined) {
       console.error(`${flag} needs a value`);
@@ -59,7 +65,7 @@ if (opts['base-ref'] && command !== 'task') throw new Error('--base-ref is for t
 const repo = git(process.cwd(), 'rev-parse', '--show-toplevel');
 const gitDir = path.resolve(repo, git(repo, 'rev-parse', '--git-common-dir'));
 const logs = path.join(repo, '.look/codex', topic);
-type Job = {
+type Job = Lifecycle & {
   mode: Mode;
   topic: string;
   model: string;
@@ -75,8 +81,6 @@ type Job = {
   sessionId?: string;
   turn?: number;
   feedback?: string;
-  finished?: string;
-  status?: number;
 };
 const metaFile = path.join(logs, 'meta.json');
 const previous: Job | undefined = command === 'resume' ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : undefined;
@@ -87,8 +91,10 @@ const eyes =
   mode === 'task' &&
   (previous ? previous.argv.includes('sandbox_workspace_write.network_access=true') : opts.eyes !== 'off');
 if (previous) {
-  if (Object.keys(opts).some((key) => !['dry', 'model', 'effort'].includes(key)))
-    throw new Error('Resume accepts only --dry, --model and --effort; it keeps the original build and permissions');
+  if (Object.keys(opts).some((key) => !['dry', 'detach', 'model', 'effort', 'supervisor'].includes(key)))
+    throw new Error(
+      'Resume accepts only --dry, --detach, --model and --effort; it keeps the original build and permissions',
+    );
   if (previous.mode === 'review') throw new Error('Start a task for review fixes; review jobs cannot resume');
   // Old jobs logged the explicit ID in the CLI header, before JSON events were enabled.
   previous.sessionId ??= /^session id: ([a-f0-9-]{36})$/im.exec(
@@ -104,11 +110,17 @@ if (previous) {
 }
 
 // Install each job's actual lockfile. A branch or working snapshot can need different dependencies from the caller.
-function worktree(ref: string, branch?: string): string {
+async function worktree(job: JobControl, ref: string, branch?: string): Promise<string> {
   const dir = path.resolve(gitDir, '../..', 'boogle-codex', topic);
   if (fs.existsSync(dir)) throw new Error(`${dir} exists; pick another topic or \`git worktree remove\` it`);
-  git(repo, 'worktree', 'add', '-q', ...(branch ? ['-b', branch, dir, ref] : ['--detach', dir, ref]));
-  execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: dir, stdio: 'inherit' });
+  await job.command(
+    'git',
+    ['worktree', 'add', '-q', ...(branch ? ['-b', branch, dir, ref] : ['--detach', dir, ref])],
+    repo,
+  );
+  meta.cwd = dir;
+  job.save();
+  await job.command('npm', ['ci', '--no-audit', '--no-fund'], dir);
   return dir;
 }
 
@@ -163,16 +175,35 @@ Your final message is Claude's assessment: keep it short. State what changed, ch
 
 const FORMAT_HOOK = `hooks.PostToolUse=[{matcher="apply_patch|Edit|Write",hooks=[{type="command",timeout=30,command='node "$(git rev-parse --show-toplevel)/.claude/hooks/format-lint.ts"'}]}]`;
 
-async function main() {
-  if (!previous && fs.existsSync(metaFile)) throw new Error(`${logs} already has a job; use resume or a new topic`);
+const sourceRef = opts.snapshot
+  ? 'HEAD (working snapshot)'
+  : opts['base-ref'] || (mode === 'review' ? opts['ref-branch'] || 'HEAD' : 'origin/main');
+const meta: Job = {
+  ...previous,
+  mode,
+  topic,
+  model,
+  effort,
+  cwd:
+    previous?.cwd ??
+    (mode === 'previz' ? path.join(repo, '.look/previz', topic) : path.resolve(gitDir, '../..', 'boogle-codex', topic)),
+  brief: previous?.brief ?? brief,
+  sourceRef: previous?.sourceRef ?? sourceRef,
+  sourceCommit: previous?.sourceCommit ?? '',
+  snapshot: previous?.snapshot ?? !!opts.snapshot,
+  started: new Date().toISOString(),
+  argv: previous?.argv ?? [],
+  turn: (previous?.turn ?? (previous ? 1 : 0)) + 1,
+  ...(previous ? { feedback: brief } : {}),
+};
+
+async function main(job?: JobControl): Promise<number> {
   const reportFile = path.join(logs, 'report.md');
   let cwd: string;
   let argv: string[];
   let prompt: string;
-  const sourceRef = opts.snapshot
-    ? 'HEAD (working snapshot)'
-    : opts['base-ref'] || (mode === 'review' ? opts['ref-branch'] || 'HEAD' : 'origin/main');
-  if (!previous && !opts.dry && mode !== 'previz' && !opts.snapshot) git(repo, 'fetch', '-q', 'origin', 'main');
+  if (!previous && job && mode !== 'previz' && !opts.snapshot)
+    await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
   const sourceCommit = previous
     ? previous.sourceCommit
     : mode === 'previz'
@@ -180,6 +211,8 @@ async function main() {
       : opts.snapshot && !opts.dry
         ? snapshot(repo)
         : git(repo, 'rev-parse', '--verify', `${opts.snapshot ? 'HEAD' : sourceRef}^{commit}`);
+  meta.sourceCommit = sourceCommit;
+  job?.save();
   const base = ['-m', model, '-c', `model_reasoning_effort="${effort}"`, '-o', reportFile];
 
   if (previous) {
@@ -193,25 +226,25 @@ async function main() {
     prompt = `Continue this same job in ${cwd}. Keep its earlier context and work. Do not push or ship.\n\nFollow-up feedback: ${brief}\n\nFix the requested issues, rerun affected checks after your last edit, and report what changed and any remaining failures. Earlier evidence may be stale. ${eyes ? 'The browser broker has been restarted; use node .look/see-client.ts as before. This job retains its bot checkpoints. Open new PNGs and distinguish execution success from visual quality.' : ''}`;
   } else if (mode === 'previz') {
     cwd = path.join(repo, '.look/previz', topic);
-    fs.mkdirSync(cwd, { recursive: true });
+    if (job) fs.mkdirSync(cwd, { recursive: true });
     const refs = (opts.ref || '')
       .split(',')
       .filter(Boolean)
       .map((r, k) => {
         const name = `ref-${k + 1}${path.extname(r) || '.png'}`;
-        fs.copyFileSync(path.resolve(r), path.join(cwd, name));
+        if (job) fs.copyFileSync(path.resolve(r), path.join(cwd, name));
         return name;
       });
     prompt = previzPrompt(cwd, refs);
     argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--skip-git-repo-check', '-'];
   } else if (mode === 'review') {
-    cwd = opts.dry ? repo : worktree(sourceCommit);
+    cwd = job ? await worktree(job, sourceCommit) : repo;
     argv = ['exec', 'review', ...base, '--base', 'origin/main'];
     if (brief) argv.push('-');
     prompt = brief;
   } else {
     if (opts.dry) cwd = repo;
-    else cwd = worktree(sourceCommit, `codex/${topic}`);
+    else cwd = await worktree(job!, sourceCommit, `codex/${topic}`);
     prompt = mode === 'research' ? researchPrompt() : taskPrompt();
     // This repository's own format hook, passed here because a job can't stop to approve the project's copy.
     argv = [
@@ -233,36 +266,12 @@ async function main() {
   }
 
   if (!argv.includes('--json')) argv.splice(1, 0, '--json');
-  const meta: Job = {
-    mode,
-    topic,
-    model,
-    effort,
-    cwd,
-    brief: previous?.brief ?? brief,
-    sourceRef: previous?.sourceRef ?? sourceRef,
-    sourceCommit,
-    snapshot: previous?.snapshot ?? !!opts.snapshot,
-    started: new Date().toISOString(),
-    argv,
-    launchArgv: previous?.launchArgv ?? previous?.argv ?? argv,
-    sessionId: previous?.sessionId,
-    turn: (previous?.turn ?? (previous ? 1 : 0)) + 1,
-    ...(previous ? { feedback: brief } : {}),
-  };
+  Object.assign(meta, { cwd, sourceCommit, argv, launchArgv: previous?.launchArgv ?? previous?.argv ?? argv });
   if (opts.dry) {
     console.log(JSON.stringify(meta, null, 2) + '\n\n' + prompt);
-    return;
+    return 0;
   }
-  if (previous) {
-    archiveTurn(logs, previous.turn ?? 1);
-    for (const name of ['report.md', 'handoff.md', 'evidence.json', 'events.jsonl'])
-      fs.rmSync(path.join(logs, name), { force: true });
-  }
-  const saveMeta = () => {
-    fs.writeFileSync(metaFile + '.tmp', JSON.stringify(meta, null, 2) + '\n');
-    fs.renameSync(metaFile + '.tmp', metaFile);
-  };
+  const { save: saveMeta, signal, track } = job!;
   saveMeta();
   console.log(
     `codex ${command} "${topic}" turn ${meta.turn} (${model}, ${effort}) in ${cwd}\nlog: ${path.join(logs, 'log.txt')}`,
@@ -271,6 +280,7 @@ async function main() {
   let broker: ChildProcess | null = null;
   let status: number;
   try {
+    signal.throwIfAborted();
     if (eyes) {
       fs.mkdirSync(path.join(cwd, '.look'), { recursive: true });
       fs.copyFileSync(path.join(repo, 'dev/codex/see.ts'), path.join(cwd, '.look/see-client.ts'));
@@ -278,19 +288,36 @@ async function main() {
         stdio: ['ignore', log, log],
       });
       broker.on('error', (error) => fs.writeSync(log, String(error) + '\n'));
+      track(broker);
+      meta.brokerPid = broker.pid ?? null;
+      saveMeta();
       const ready = path.join(cwd, '.look/see/ready.json');
       const deadline = Date.now() + 10000;
       while (!fs.existsSync(ready) || JSON.parse(fs.readFileSync(ready, 'utf8')).pid !== broker.pid) {
+        signal.throwIfAborted();
         if (broker.exitCode !== null || Date.now() > deadline)
           throw new Error('Browser broker did not start; see log.txt');
         await new Promise((r) => setTimeout(r, 100));
       }
     }
-    status = await runSession(argv, cwd, prompt, log, path.join(logs, 'events.jsonl'), (id) => {
-      if (meta.sessionId && meta.sessionId !== id) throw new Error('Codex resumed a different session');
-      meta.sessionId = id;
-      saveMeta(); // Keep the session resumable even if this turn fails or is interrupted.
-    });
+    status = await runSession(
+      argv,
+      cwd,
+      prompt,
+      log,
+      path.join(logs, 'events.jsonl'),
+      (id) => {
+        if (meta.sessionId && meta.sessionId !== id) throw new Error('Codex resumed a different session');
+        meta.sessionId = id;
+        saveMeta(); // Keep the session resumable even if this turn fails or is interrupted.
+      },
+      (child) => {
+        track(child);
+        meta.codexPid = child.pid ?? null;
+        saveMeta();
+      },
+      signal,
+    );
     if (!meta.sessionId && mode !== 'review') status = 1;
   } catch (error) {
     console.error(error);
@@ -305,19 +332,35 @@ async function main() {
     console.error(error);
     status = 1;
   }
-  meta.finished = new Date().toISOString();
-  meta.status = status;
-  saveMeta();
   console.log(`exit ${status}; report: ${reportFile}`);
   if (mode === 'task')
     console.log(`Handoff: ${path.join(logs, 'handoff.md')}\nEvidence: ${path.join(logs, 'evidence.json')}`);
   if (fs.existsSync(reportFile)) console.log('\n' + fs.readFileSync(reportFile, 'utf8'));
-  process.exitCode = status;
+  return status;
 }
 
-const unlock = opts.dry ? () => {} : lockJob(logs);
-try {
-  await main();
-} finally {
-  unlock();
+if (!previous && fs.existsSync(metaFile)) throw new Error(`${logs} already has a job; use resume or a new topic`);
+if (!previous && mode !== 'previz' && fs.existsSync(meta.cwd))
+  throw new Error(`${meta.cwd} exists; pick another topic`);
+if (!['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) throw new Error(`Invalid effort: ${effort}`);
+if (opts.eyes && !['on', 'off'].includes(opts.eyes)) throw new Error('--eyes must be on or off');
+if (opts.shots && (!Number.isSafeInteger(Number(opts.shots)) || Number(opts.shots) < 1))
+  throw new Error('--shots must be a positive integer');
+if (opts.ref)
+  for (const ref of opts.ref.split(',').filter(Boolean)) fs.accessSync(path.resolve(ref), fs.constants.R_OK);
+if (opts['base-ref']) git(repo, 'rev-parse', '--verify', `${opts['base-ref']}^{commit}`);
+if (opts['ref-branch']) git(repo, 'rev-parse', '--verify', `${opts['ref-branch']}^{commit}`);
+if (!previous && ['task', 'research'].includes(mode) && git(repo, 'branch', '--list', `codex/${topic}`))
+  throw new Error(`Branch codex/${topic} exists; pick another topic`);
+if (opts.dry) process.exitCode = await main();
+else if (!opts.supervisor) process.exitCode = await launchJob(logs, [process.argv[1]!, ...args], !!opts.detach);
+else {
+  process.exitCode = await supervise(logs, opts.supervisor, meta, async (job) => {
+    if (previous) {
+      archiveTurn(logs, previous.turn ?? 1, previous);
+      for (const name of ['report.md', 'handoff.md', 'evidence.json', 'events.jsonl'])
+        fs.rmSync(path.join(logs, name), { force: true });
+    }
+    return main(job);
+  });
 }

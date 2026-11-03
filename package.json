@@ -31,6 +31,7 @@
     "registry": "node dev/registry/check.ts",
     "atlas": "node dev/atlas/cli.ts",
     "inflight": "node dev/inflight.ts",
+    "codex-status": "node dev/codex/status.ts",
     "wip": "node dev/inflight.ts wip",
     "perf": "node dev/look/perf.ts",
     "hitches": "node dev/look/hitches.ts",

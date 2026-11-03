@@ -16,6 +16,21 @@ caller's. Review that snapshot along with the worker's changes before shipping: 
 `meta.json` records the selected source ref and exact starting commit. Dependencies are installed separately from that
 build's lockfile. Don't edit the caller while a snapshot is being made; detected changes stop it rather than mix versions.
 
+## Jobs outlive sessions
+
+Every job (including `resume`) runs in a detached supervisor, reparented to launchd, with its own session. Closing or
+killing the caller leaves the worktree setup, Codex and browser broker running. The caller waits and prints the final
+report and exit status; `--detach` returns once the supervisor starts. `--dry` starts nothing. Supervisor output goes to
+`.look/codex/<topic>/launcher.txt`. Atomic `meta.json` updates include the supervisor `pid`, `codexPid`, `brokerPid`,
+`state`, timestamps, exit `status` and a heartbeat every 30 seconds, starting before worktree creation and dependency setup.
+
+Start a director session with `npm run codex-status`: it reads jobs from every Git worktree, newest first. It shows
+running, stale (alive but no heartbeat for five minutes), dead (including any surviving child PIDs), failed, unknown
+legacy jobs, and successful jobs finished in the last 24 hours. Use `-- --all` for history and `-- --json` for machine
+output. This command only reads; nothing watches jobs between sessions. Stop a job with `kill <pid>` using the supervisor
+PID from metadata or JSON status: it stops Codex and the broker and records exit 130. SIGINT does the same. A forced
+`kill -9` cannot clean up; status lists surviving children so you can inspect them before resuming.
+
 ## Follow-up feedback
 
 From the original launching checkout, after the job finishes:
@@ -34,9 +49,9 @@ resume command. Task, research and previz jobs can resume; review jobs need a ne
 worktree/output folder and local Codex session storage until follow-ups are finished. Older jobs can resume if their
 `log.txt` contains the CLI's explicit `session id:` header.
 
-Only one launcher can run a job at once. A failed turn with a recorded session ID can resume too. If a force-killed
-launcher left `.look/codex/<topic>/active/`, check its `pid` file and remove that lock directory **only after that launcher
-has stopped**. Interrupted browser requests return a failure on restart; ask Codex to rerun them.
+Only one launcher can run a job at once. A failed turn with a recorded session ID can resume too. `resume` automatically
+reclaims `.look/codex/<topic>/active/` when its recorded PID is dead; live locks still fail immediately. Interrupted browser
+requests return a failure on restart; ask Codex to rerun them.
 
 Latest reports remain at the job root. Before each follow-up replaces them, the prior turn's metadata, feedback, report,
 log, JSON events and evidence summary are preserved under `turns/001/`, `turns/002/`, etc. Copied capture artifacts stay

@@ -53,10 +53,12 @@ Set with `node dev/economy/model.ts round4`; timed by `npm run playthrough`; eac
 
 ## Queue (Codex, until the playtest)
 
+**Resuming as a new director:** run `npm run codex-status`, read this Queue, and carry on from the first unticked item: review and ship finished jobs, restart dead ones with `node dev/codex/run.ts resume <topic> "<feedback>"`, and never start a duplicate of a running one. Jobs outlive sessions, and nothing watches them between sessions: this command is how a finished job gets noticed. `unknown` is a job from the older launcher, which may still be running: check `ps` before restarting it. Still stop at the owner's playtest.
+
 Stop at the owner's playtest: when this list is done, or what's left needs the owner, no agent develops further and no check-in keeps running. Tell the owner round 4 is ready. Nothing past round 4 starts until they've played and given notes.
 
-1. [ ] Astra: check abilities with two players; capture the rim slab and tower posts.
-2. [ ] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
+1. [x] Astra: check abilities with two players; capture the rim slab and tower posts.
+2. [x] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
 3. [ ] Terra, low: build `docs/plans/two-player.md`, once it exists.
 4. [ ] Astra: simplify round 4's whole batch once 1 to 3 are on main: fold duplicates, remove dead code, no behaviour change. Check with `npm run playthrough -- --compare` and `npm run sim -- replay`. Keep The Boogler's copy.
 5. [ ] Astra: the whole-run pass above, last.
