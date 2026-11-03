@@ -11,6 +11,7 @@ import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { me } from '../../player/player.ts';
+import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { carry } from '../../physics/platforms.ts';
 import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
@@ -421,6 +422,49 @@ const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: 
 };
 const on: Partial<Record<Slot, GiftId>> = {};
 const worn = new Map<Slot, { id: GiftId; m: THREE.Mesh }>();
+type ClothesSlot = 'hat' | 'accessory' | 'outfit';
+export type PlaceClothes = Partial<Record<ClothesSlot, GiftId>>;
+const clothesSlots: ClothesSlot[] = ['hat', 'accessory', 'outfit'];
+const remoteClothes = new Map<
+  string,
+  { ids: PlaceClothes; avatar: THREE.Object3D | null; worn: Map<Slot, { id: GiftId; m: THREE.Mesh }> }
+>();
+const coopClothes = new URLSearchParams(location.search).get('coop') === '1';
+addPresenceField('placeClothes', () => {
+  const ids: PlaceClothes = {};
+  for (const slot of clothesSlots) if (on[slot]) ids[slot] = on[slot];
+  return coopClothes && Object.keys(ids).length ? ids : null;
+});
+onRemotePresence((r, pr) => {
+  const ids: PlaceClothes = {};
+  const value = pr.placeClothes;
+  if (coopClothes && r.entered && value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const slot of clothesSlots) {
+      const id = (value as Record<string, unknown>)[slot];
+      const gift = GIFTS.find((g) => g.id === id && g.slot === slot);
+      if (gift && WEAR[gift.id]) ids[slot] = gift.id;
+    }
+  }
+  const entry = remoteClothes.get(r.peer) ?? { ids: {}, avatar: null, worn: new Map() };
+  entry.ids = ids;
+  remoteClothes.set(r.peer, entry);
+});
+function clearRemoteClothes(peer: string) {
+  const entry = remoteClothes.get(peer);
+  if (!entry) return;
+  for (const { m } of entry.worn.values()) m.removeFromParent();
+  remoteClothes.delete(peer);
+}
+onPeerRemoved((r) => clearRemoteClothes(r.peer));
+function makeWorn(id: GiftId, avatar: THREE.Object3D) {
+  const w = WEAR[id]!;
+  const m = new THREE.Mesh(geoOf(id), giftMat);
+  m.castShadow = true;
+  m.scale.setScalar(w.scale);
+  m.rotation.y = Math.PI;
+  avatar.add(m);
+  return m;
+}
 function putOn(id: GiftId | null, slot: Slot) {
   worn.get(slot)?.m.removeFromParent();
   worn.delete(slot);
@@ -433,20 +477,15 @@ function putOn(id: GiftId | null, slot: Slot) {
   const w = id ? WEAR[id] : null;
   const a = me.avatar;
   if (!id || !w || !a) return;
-  const m = new THREE.Mesh(geoOf(id), giftMat);
-  m.castShadow = true;
-  m.scale.setScalar(w.scale);
-  m.rotation.y = Math.PI; // the avatar faces -z, and these have their fronts at +z
-  a.add(m);
+  const m = makeWorn(id, a);
   worn.set(slot, { id, m });
 }
 /** Each frame: on the avatar, upright, where the bone has got to in its clip. Works in the avatar's space, so a fast train
  * can't leave it a frame behind. */
-function updateWorn() {
-  const a = me.avatar as Named | null | undefined;
+function updateWorn(a: Named | null | undefined, items: Map<Slot, { id: GiftId; m: THREE.Mesh }>) {
   if (!a) return;
   a.updateWorldMatrix(true, false);
-  for (const { id, m } of worn.values()) {
+  for (const { id, m } of items.values()) {
     const w = WEAR[id]!;
     const bone = a.getObjectByName(w.bone);
     if (bone) a.worldToLocal(bone.getWorldPosition(m.position));
@@ -1041,5 +1080,23 @@ export function updateGifts(dt: number, now: number) {
     }
   }
   updateCritter(dt);
-  updateWorn();
+  updateWorn(me.avatar as Named | null, worn);
+  for (const [peer, entry] of remoteClothes) {
+    const avatar = remotes.get(peer)?.avatar ?? null;
+    if (entry.avatar !== avatar) {
+      for (const { m } of entry.worn.values()) m.removeFromParent();
+      entry.worn.clear();
+      entry.avatar = avatar;
+    }
+    for (const slot of clothesSlots) {
+      const id = entry.ids[slot];
+      const existing = entry.worn.get(slot);
+      if (existing && existing.id !== id) {
+        existing.m.removeFromParent();
+        entry.worn.delete(slot);
+      }
+      if (avatar && id && !entry.worn.has(slot)) entry.worn.set(slot, { id, m: makeWorn(id, avatar) });
+    }
+    updateWorn(avatar as Named | null, entry.worn);
+  }
 }
