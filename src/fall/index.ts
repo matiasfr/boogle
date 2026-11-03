@@ -53,7 +53,8 @@ const CRUISE = 5, // m/s the cart is already doing behind the card
   CAR_LATE_S = 0.8, // how long after you it lands
   CLEAR_AFTER_S = 40, // the cart lies where it landed this long
   CART_FADE_S = 4, // and shrinks away over the last of it
-  FALL_FOV = 10; // degrees wider on the way down
+  FALL_FOV = 10, // degrees wider on the way down
+  FRONT_FILL = 0.42; // the sun is behind your Buddy on the card, and this is where you pick the colour: light its front
 
 type State = 'card' | 'roll' | 'fall' | 'down' | 'done';
 let state: State = 'card';
@@ -83,6 +84,7 @@ function standOnCar(out: THREE.Vector3, carAt: THREE.Vector3) {
     .addScaledVector(UP, STAND.up + PLAYER_R);
 }
 const buddyAt = new THREE.Vector3();
+const stageAt = new THREE.Vector3();
 
 function updatePreview(dt: number) {
   retry -= dt;
@@ -101,11 +103,10 @@ function updatePreview(dt: number) {
   if (me.colorIdx !== shownColor) {
     if (shownColor >= 0) hop = 0;
     shownColor = me.colorIdx;
-    // The sun is behind it from here, and this is where you pick the colour: light its front so the colour reads.
     const m = preview.userData.mat;
     m.color.set(COLORS[me.colorIdx]!);
     m.emissive.set(COLORS[me.colorIdx]!);
-    m.emissiveIntensity = 0.42;
+    m.emissiveIntensity = FRONT_FILL;
   }
   hop += dt;
   const up = hop < 0.34 ? Math.sin((hop / 0.34) * Math.PI) * 0.55 : 0;
@@ -347,9 +348,20 @@ let blendT = 0,
   fov = 0,
   restT = 0;
 
+// You take over from the preview still lit as it was, and the fill goes as the camera swings round to your sunlit back.
+let filled = true;
+function fadeFrontFill(e: number) {
+  const m = me.avatar?.userData.mat;
+  if (!m || !filled) return;
+  filled = e < 1;
+  m.emissive.set(filled ? COLORS[me.colorIdx]! : 0x000000);
+  m.emissiveIntensity = filled ? FRONT_FILL * (1 - e) : 1;
+}
+
 function blendCamera(dt: number) {
   blendT += dt;
   const e = smoothstep(0, BLEND_S, blendT);
+  fadeFrontFill(e);
   if (e >= 1) return;
   const ip = me.body!.interpolatedPosition;
   focus.set(ip.x, ip.y + 1, ip.z);
@@ -373,27 +385,32 @@ function blendCamera(dt: number) {
   camera.lookAt(followAim.lerp(stageLook, 1 - e));
 }
 
-// The director: runs the whole fall, then takes itself and the cart away. Its camera comes after every other camera.
-defineKind('fall', { fixedPre: 1000, lateUpdate: 1200 });
+// The director: runs the whole fall, then takes itself and the cart away. Its camera comes straight after the camera
+// entity (-200), before the clouds (-190) and the sky (-5), which place themselves around wherever the camera is: from the
+// orbit that entity falls back on before you enter, the sun's disc sat well off its glow and jumped back on Jump in.
+defineKind('fall', { fixedPre: 1000, update: -195, lateUpdate: 1200 });
 const director = spawn({
   kind: 'fall',
   fixedPre: holdOrSteer,
   describe: () => ({ state, height: HEIGHT }),
+  update({ dt }) {
+    if (state === 'card') {
+      standOnCar(stageAt, CAR_START); // not the cart's rumble: the camera holds still
+      stageShot(stageAt);
+      camera.position.copy(stagePos);
+      camera.quaternion.copy(stageQ);
+      sky.position.copy(camera.position);
+      lightStage(stageAt);
+    } else if (me.body) blendCamera(dt);
+  },
   lateUpdate({ now, dt }) {
     updateCar(dt);
     if (state === 'card') {
       updatePreview(dt);
-      standOnCar(buddyAt, CAR_START); // not the cart's rumble: the camera holds still
-      stageShot(buddyAt);
-      camera.position.copy(stagePos);
-      camera.quaternion.copy(stageQ);
-      sky.position.copy(camera.position);
-      lightStage(buddyAt);
       return;
     }
     const b = me.body;
     if (!b) return;
-    blendCamera(dt);
 
     if (state === 'fall') {
       if (!titleHit && b.position.y <= TITLE_Y) smashTitle();
