@@ -50,4 +50,11 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 
 ---
 
+Water graduation is staged ([plan](../plans/water-graduation.md), steps 1–3). The old sea remains active by default.
+Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
+the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
+The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
+edges receive a separate deep-water apron. Connected regions share one travel/shelter solve, and all sampled
+fields select one coherent region. No shore bake or new texture allocation runs for the default old sea.
+
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

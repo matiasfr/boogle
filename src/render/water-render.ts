@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
   Fn,
-  uniform,
   uniformArray,
   texture,
   vec2,
@@ -26,12 +25,15 @@ import {
   positionWorld,
   cameraPosition,
 } from 'three/tsl';
-import { GRID_RES, HALF, CELL } from '../constants.ts';
-import { SUN_DIR } from './sun-dir.ts';
+import { GRID_RES, HALF, CELL, SEA } from '../constants.ts';
 import { clamp } from '../math.ts';
-import { heights } from '../island/terrain.ts';
+import { heights } from '../island/heights.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { protoOn } from '../proto/flags.ts';
+import { seaU, seaRipples } from './water/state.ts';
+import { registerShoreProvider, gridBedAt } from './water/shore-providers.ts';
+export { seaU, seaRipples } from './water/state.ts';
+export { registerShoreProvider } from './water/shore-providers.ts';
 
 // Temporary ?proto=sky seam. The plain sea builds its original graph; ?proto=water owns its future.
 const softHorizon = protoOn('sky');
@@ -55,15 +57,6 @@ const heightTex = (() => {
 
 // Uniform handles (TSL nodes): the sea's clock is the frame's `elapsed` (splash.ts stamps ripple starts with it), the
 // ripple slots are written by src/render/splash.ts, and src/render/sky.ts tints the sea through uLight, uSky and uSpecCol.
-export const seaRipples = Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)); // x, z, start time, strength
-export const seaU = {
-  uTime: uniform(0),
-  uSun: uniform(SUN_DIR), // the key light's direction (sun-dir.ts), mutated in place by sky.ts
-  uSky: uniform(new THREE.Color('#a9dcf3')),
-  uLight: uniform(new THREE.Color(1, 1, 1)), // overall light tint (day/night, src/render/sky.ts)
-  uSpecCol: uniform(new THREE.Color(1.0, 0.97, 0.88)), // glint colour of the key light (sun or moon)
-  uHaze: uniform(new THREE.Color()), // ?proto=sky copies the dome's existing horizon, no new palette
-};
 const uRip = uniformArray(seaRipples, 'vec4');
 
 // Shader constants were authored as display (sRGB) values; the maths now runs in linear light.
@@ -177,6 +170,22 @@ waterMat.colorNode = color();
 defineKind('sea', { lateUpdate: 3010 });
 
 export function createWaterMesh() {
+  registerShoreProvider({
+    id: 'home',
+    bounds: { minX: -HALF, maxX: HALF, minZ: -HALF, maxZ: HALF },
+    seaLevel: SEA,
+    revision: 'stamped-home-1',
+    extent: 512,
+    bedAt: gridBedAt({
+      x0: -HALF,
+      z0: HALF,
+      dx: CELL,
+      dz: -CELL,
+      nx: GRID_RES,
+      nz: GRID_RES,
+      height: (i, j) => heights[i]![j]!,
+    }),
+  });
   const geo = new THREE.PlaneGeometry(1300, 1300, 100, 100); // ~13 m quads; the vertex wave is ~30 m long
   geo.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geo, waterMat);
