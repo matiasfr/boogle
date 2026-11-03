@@ -5,14 +5,14 @@ Served with the game at `/THIRD_PARTY_NOTICES.md`. Scope: code adapted into Boog
 ## Ultra Water
 
 - Source: https://github.com/Humpalumps/Ultra-Water, revision `30ea65ecb0a66b137aa200d099965634bdd84d51`
-- Adapted in: `src/proto/water/` (`shore.ts` from `src/water/shoreMap.js`; `surface.ts`, `shore-nodes.ts` and `island.ts` from `src/water/OceanSurface.js` and `src/scene/terrain.js`; `spectrum.ts` and `fft.ts` from `src/water/OceanSim.js`; `foam.ts` from `src/water/bakeTextures.js`; `ground.ts` from `src/scene/terrain.js`; `spray.ts` from `src/water/Spray.js`; `height.ts` from `src/scene/islandHeight.js` and `src/scene/noise.js`; values in `tuning.ts`), rewritten in TypeScript and TSL.
+- Adapted in: `src/proto/water/` (`shore.ts` from `src/water/shoreMap.js`; `surface.ts`, `shore-nodes.ts` and `island.ts` from `src/water/OceanSurface.js` and `src/scene/terrain.js`; `spectrum.ts` and `fft.ts` from `src/water/OceanSim.js`; `foam.ts` from `src/water/bakeTextures.js`; `ground.ts` from `src/scene/terrain.js`; `spray.ts` from `src/water/Spray.js`; `underwater.ts` from `src/water/UnderwaterPass.js` and the lens droplets in `src/engine/PostFX.js`; `snow.ts` from `src/water/MarineSnow.js`; `height.ts` from `src/scene/islandHeight.js` and `src/scene/noise.js`; values in `tuning.ts`), rewritten in TypeScript and TSL.
 - Copyright (c) 2026 Humpalumps
 - MIT License
 
 ## Hash without Sine (Dave Hoskins)
 
 - Source: https://www.shadertoy.com/view/4djSRW
-- Used in: `src/proto/water/shore-nodes.ts` (`hash12`), `src/proto/water/foam.ts` (`hash22`), through Ultra Water
+- Used in: `src/proto/water/shore-nodes.ts` (`hash12`), `src/proto/water/foam.ts` (`hash22`), `src/proto/water/underwater.ts` (`hash33`), through Ultra Water
 - Copyright (c) 2014 David Hoskins
 - MIT License
 

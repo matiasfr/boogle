@@ -95,3 +95,19 @@ export const FFT = {
   loop: 300, // OceanSim: quantised dispersion makes the loop seamless and keeps fp32 phase bounded
   foamRecovery: 0.7, // defaultOceanParams (the constructor's 0.45 placeholder is overwritten each frame)
 };
+
+// UnderwaterPass.js, MarineSnow.js and main.js: source values, independent of the water colour grade.
+export const UNDER = {
+  scattering: 0.03,
+  shafts: 2,
+  shaftRange: 40,
+  shaftSteps: 24,
+  meniscus: 0.5,
+  lensWidth: 64,
+  lensHeight: 36,
+  snowCount: 6000,
+  snowBox: 24,
+  drySeconds: 5,
+  // A conservative CPU envelope; the GPU uses the actual displaced surface for the split and wet-lens transition.
+  nearHeight: 4,
+};
