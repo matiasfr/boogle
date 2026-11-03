@@ -9,11 +9,12 @@ import { onFrame } from '../../loop.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, type Remote } from '../../netplay/net.ts';
 import { cam, camConstraints, me } from '../../player/player.ts';
 import { getAudio } from '../../render/audio.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { emit } from '../../render/particles.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { glyph } from '../../player/glyphs.ts';
-import { knock, pop } from '../minis/common.ts';
+import { pop } from '../minis/common.ts';
 import { merged } from './gifts.ts';
 import { COOP, count, job } from './job.ts';
 import { RINGS, move } from './moves.ts';
@@ -235,67 +236,6 @@ function puff(x: number, y: number, z: number) {
     });
   }
 }
-function airPuff() {
-  const au = getAudio();
-  if (!au) return;
-  const { ctx, out } = au;
-  const t = ctx.currentTime + 0.005;
-  const j = 0.94 + Math.random() * 0.12;
-  const n = ctx.createBufferSource();
-  n.buffer = noiseBuffer(ctx, 0.25);
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.Q.value = 1.1;
-  bp.frequency.setValueAtTime(700 * j, t);
-  bp.frequency.exponentialRampToValueAtTime(1500 * j, t + 0.12);
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.13, t + 0.025);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
-  n.connect(bp).connect(g).connect(out);
-  n.start(t);
-  n.stop(t + 0.2);
-}
-function zip(rise: number, dur: number, vol: number) {
-  const au = getAudio();
-  if (!au) return;
-  const { ctx, out } = au;
-  const t = ctx.currentTime + 0.003;
-  const o = ctx.createOscillator();
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(240, t);
-  o.frequency.exponentialRampToValueAtTime(240 * rise, t + dur);
-  const f = ctx.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.value = 1800;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(f).connect(g).connect(out);
-  o.start(t);
-  o.stop(t + dur + 0.02);
-}
-/** A soft fwump: cloth catching air. */
-function fwump() {
-  const au = getAudio();
-  if (!au) return;
-  const { ctx, out } = au;
-  const t = ctx.currentTime + 0.003;
-  const n = ctx.createBufferSource();
-  n.buffer = noiseBuffer(ctx, 0.3);
-  const f = ctx.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.setValueAtTime(1400, t);
-  f.frequency.exponentialRampToValueAtTime(240, t + 0.2);
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.22, t + 0.03);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
-  n.connect(f).connect(g).connect(out);
-  n.start(t);
-  n.stop(t + 0.3);
-}
 // The air going past while you glide: a low band of noise that follows your speed, so a glide isn't silent.
 let wind: { g: GainNode; f: BiquadFilterNode } | null = null;
 function windAt(level: number, speed: number) {
@@ -404,17 +344,15 @@ onFrame(
     if (jumps !== move.jumps) {
       jumps = move.jumps;
       puff(p.x, p.y - PLAYER_R, p.z);
-      airPuff();
+      placeSound('secondJump', p.x, p.z);
     }
     if (pulls !== move.pulls) {
       pulls = move.pulls;
-      zip(2.4, 0.2, 0.09);
-      knock(0.35, 0.6);
+      placeSound('hookFire', p.x, p.z);
     }
     if (ended !== move.ended) {
       ended = move.ended;
-      zip(0.5, 0.1, 0.05);
-      knock(0.55, 0.9);
+      placeSound('hookLatch', p.x, p.z);
     }
     if (denied !== move.denied) {
       denied = move.denied;
@@ -422,8 +360,7 @@ onFrame(
     }
     if (move.open !== wasOpen) {
       wasOpen = move.open;
-      if (move.open) fwump();
-      else knock(0.8, 0.35);
+      placeSound(move.open ? 'gliderOpen' : 'gliderClose', p.x, p.z);
     }
     placeCanopy(root, mine, move.open || showCanopy > 0 ? 1 : 0, dt, now);
     showCanopy = Math.max(0, showCanopy - dt);

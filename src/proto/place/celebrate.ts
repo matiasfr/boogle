@@ -7,6 +7,7 @@ import { reducedMotion } from '../../constants.ts';
 import { camConstraints, camForward, me } from '../../player/player.ts';
 import { input } from '../../player/input.ts';
 import { chuff, thump, whistle } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { fanfare } from '../minis/common.ts';
 import { SHELLS } from '../net/town-fx.ts';
@@ -343,7 +344,7 @@ export function wakeShow(m: Machine, onLamps: () => void, done: () => void) {
 }
 
 // ---------------------------------------------------------------- a path opening
-/** The first path: you can't miss this. Whistles wherever you stand, rockets down the gorge, a shake, the pull-out along what
+/** The first path: a warm opening chord, rockets down the gorge, a shake, the pull-out along what
  * you built, with the village running out onto it. Any input ends the camera move at once; you keep control throughout. */
 export function firstPathShow(o: {
   village: THREE.Vector3;
@@ -352,11 +353,10 @@ export function firstPathShow(o: {
   shotTo: THREE.Vector3;
   at: THREE.Vector3;
 }) {
-  fanfare(true);
+  const p = me.body?.position;
+  if (p) placeSound('pathOpen', p.x, p.z);
   shakeView(0.22);
   showBanner('A way across!', '', 4);
-  for (const t of [0, 1.1, 2.2]) after(t, whistleHere);
-  after(0.7, () => fanfare(true, 0.8));
   barrage(o.village.x, o.village.y, o.village.z, 14, 0.38, 44, 2.6);
   barrage(o.gorge.x, o.gorge.y, o.gorge.z, 14, 0.42, 70, 3.2);
   after(0.6, () => pullOut(o.shot, o.shotTo, o.at, 4.2));

@@ -7,7 +7,8 @@ import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { FIXED } from '../../constants.ts';
 import { scene } from '../../render/scene.ts';
-import { clank, thump, whistle } from '../../render/machine-sfx.ts';
+import { clank, thump } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 import { removeBody, setShapes, stepAlpha, type Body } from '../../physics/engine.ts';
 import { flat } from '../flat.ts';
 import { pop } from '../minis/common.ts';
@@ -271,7 +272,6 @@ function stepCart(dt: number) {
       }
       if (cart.t >= CART.loadS) {
         cart.leg = 'out';
-        whistle(car.x, car.z);
       }
       break;
     case 'out': {
@@ -289,7 +289,6 @@ function stepCart(dt: number) {
       cart.t += dt;
       if (cart.t >= (cart.rails > 0 ? CART.leaveS : CART.forgeS)) {
         cart.called = false;
-        whistle(car.x, car.z);
         cart.leg = 'out';
       }
       break;
@@ -338,7 +337,43 @@ function stepCart(dt: number) {
   }
   poseOnRoad(car, cart.d);
 }
-onFrame(() => drawCar(car, stepAlpha()), { phase: 'update', order: 6 });
+// Listen to travel in the existing presentation loop, never schedule a backlog from physics ticks or a snapshot jump.
+let heardD: number | null = null,
+  rollDistance = 0,
+  pushDistance = 0,
+  wasMoving = false;
+onFrame(
+  ({ dt }) => {
+    drawCar(car, stepAlpha());
+    const first = heardD === null;
+    const distance = first ? 0 : Math.abs(cart.d - heardD!);
+    heardD = cart.d;
+    const moving =
+      job.rung.depot && !job.rung.trains && (cart.leg === 'out' || cart.leg === 'back') && cart.speed > 0.05;
+    if (first || distance > CART.speed * Math.max(dt, 1 / 60) * 3) {
+      rollDistance = pushDistance = 0;
+      wasMoving = moving;
+      return;
+    }
+    if (moving) {
+      rollDistance += distance;
+      pushDistance += distance;
+      if (rollDistance >= 2.4) {
+        placeSound('cartRoll', car.x, car.z);
+        rollDistance = 0;
+      }
+      if (!wasMoving || pushDistance >= 9) {
+        placeSound('cartPush', car.x, car.z);
+        pushDistance = 0;
+      }
+    } else {
+      if (wasMoving) placeSound('cartStop', car.x, car.z);
+      rollDistance = pushDistance = 0;
+    }
+    wasMoving = moving;
+  },
+  { phase: 'update', order: 6 },
+);
 export const cartHere = () => ({ x: car.x, z: car.z });
 export const onCart = (p: unknown) => p === car.platform;
 /** For the two who shove it: their feet on the rail. */
