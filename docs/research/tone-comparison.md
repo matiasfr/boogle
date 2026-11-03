@@ -29,7 +29,8 @@ are existing repo research and installed source, not newly verified claims about
    it is already installed and offers a different shoulder/contrast response without a new implementation.
 2. Reuse the water meter for **all four** curves: 32×32 log-luminance, 16 samples per texel, 1×1 adaptation with 256
    samples, clamped exposure 0.05–20; darkening rate 2.5/s, brightening 1/s. Use a real-time warmup of at least
-   10 seconds: warped warmups skip draws, so GPU adaptation does not get every simulation update.
+   10 seconds (15 seconds also settles it): warped warmups skip draws, so GPU adaptation does not get every simulation
+   update.
 3. Match middle grey rather than the whole image histogram, which would hide the curve's contrast. At input 0.18,
    Neutral at 1 maps to linear 0.14. Numerical evaluation of the installed equations gives trims Neutral 1,
    water AgX 0.771116, AgX-sat 0.771116, ACES 0.729587 for the same output luminance. Keep these constant across
