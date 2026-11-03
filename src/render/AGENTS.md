@@ -1,3 +1,3 @@
-Before touching src/render, read [rendering](../../docs/agents/rendering.md), [lint-boundaries](../../docs/agents/lint-boundaries.md), [verification](../../docs/agents/verification.md) and the owning contract found by npm run map.
+Read the safety reminders below before edits or reviews here. Follow AGENTS.md’s literal triggers for the detailed contracts: [rendering](../../docs/agents/rendering.md), [lint-boundaries](../../docs/agents/lint-boundaries.md), [verification](../../docs/agents/verification.md). Read the owning contract section only when changing or reviewing that contract; links are not recursive reading lists.
 
 - Use WebGPU + TSL node materials, one linear-HDR RenderPipeline and renderFrame. Extend materials through patchNode; colours are linear. No second audio context or frame loop. Local cosmetic randomness or trig must never feed lockstep state.

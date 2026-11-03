@@ -1,28 +1,18 @@
-Before choosing checks or changing game code, read these test requirements.
+# Tests
 
-## Tests
-Before choosing checks, read [docs/agents/tests.md, Tests](tests.md#tests) for the full triggers and tool catalogue.
+Read this core when choosing checks, then only the references whose triggers are met. No browser for docs/tooling changes with no player-visible effect.
 
 - Unit tests (`test/*.test.ts`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
 - `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.
 - `npm run check:full` (+ server tests, headless network test, ~30 s): CI runs it on every PR anyway; run it locally only when you touch `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
 - **Test diet.** Iteration speed matters more than coverage this early. Write new tests only for lockstep code (`src/sim/`, `src/world/rules/`: determinism, conservation, validation). Features, UI, tuning and feel get no unit tests and no new scenario; they get looked at ("See it before you ship"). A new scenario only when a sync contract needs one. The owner's one exception: the entity core's `test/entity-walker.test.ts` and `test/entity-state-node.test.ts`, for walker ordering bugs no still can show; no precedent for testing features.
 
-Required checks by trigger: replay for player/ball physics; load before/after presence, room or relay changes; perf before/after many meshes, lights or post passes; check:gpu for networking or render-pipeline changes; level-check for a new level/static object. PR CI's world-inputs must pass. Every harness is WebGPU; gfx errors are bugs. Add/update an Atlas story for a new sync system or big feature. The full procedure specifies limitations, evidence and nonblocking checks.
-
-## Tests
-- Unit tests (`test/*.test.ts`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
-- `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.
-- `npm run check:full` (+ server tests, headless network test, ~30 s): CI runs it on every PR anyway; run it locally only when you touch `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
-- Browser scenarios (`dev/scenarios/`, `npm run scenario -- <name>`, `npm run look`; `.claude/skills/look/SKILL.md`): PR CI runs single-player scenarios only (`world-inputs`; must pass): it can't run two rendering tabs reliably, and `SCENARIO_GATE=pr` makes the runner refuse a second one. Multiplayer scenarios run on a device (`check:gpu`, below) or nightly (never block). Other local runs are optional, for iterating on visuals and feel; a failed leg's images and Playwright traces (`npx playwright show-trace <zip>`) are its `scenario-<name>` artifact. Commit scenarios, not ad-hoc Playwright scripts.
-- `npm run sim -- <name>` (`dev/sim/`): game state and Rapier in Node, no browser or GPU, far faster than real time. For gameplay you'd otherwise test on the shared GPU; what can run: [dev/sim/README.md](../../dev/sim/README.md).
-- `npm run sim -- replay` (about a second; not in `check`): a real play session replayed on this build and compared, first differing frame and field. Run it when you touch player or ball physics; record your own with `?record=1`. What it can't check: [dev/sim/README.md](../../dev/sim/README.md).
-- `npm run inspect` (`-- --browser` for the real game, `-- --json`) lists entities, their state and per-kind cost; in a page, `window.boogle.inspect()`. Use it instead of reaching into the `window.boogle` grab bag, whose existing reads move over as agents touch them.
-- `npm run load`: an 8-player room (the cap) for 30 s; prints host upload, CPU and presence latency. Before/after changes to presence, the room or the relay.
-- `npm run perf`: before/after adding many meshes, lights or post passes. Not for UI, tuning or a single prop. Its numbers mean something only while no other agent is rendering on the same machine.
-- `npm run counts`: draw calls, shadow draws, programs and first-load gzip as JSON; `counts-nightly.yml` keeps one a night from SwiftShader. Counts only: no times, no budget yet.
-- Every harness run is WebGPU (SwiftShader over Vulkan on Linux and CI, Metal on a Mac; `?dpr=fixed`). A `gfx errors` line with entries is a bug.
-- `smoke` is the backbone, but two tabs on CI's software WebGPU are too slow for it, so it runs against the live site after every deploy and nightly (`smoke.yml`; a failure opens a `smoke` issue, and fixing it beats new work). `npm run ship -- --gpu` (or `npm run check:gpu`) also runs it on a Mac before shipping: do that for networking or render-pipeline changes, not every ship.
-- **Test diet.** Iteration speed matters more than coverage this early. Write new tests only for lockstep code (`src/sim/`, `src/world/rules/`: determinism, conservation, validation). Features, UI, tuning and feel get no unit tests and no new scenario; they get looked at ("See it before you ship"). A new scenario only when a sync contract needs one. The owner's one exception: the entity core's `test/entity-walker.test.ts` and `test/entity-state-node.test.ts`, for walker ordering bugs no still can show; no precedent for testing features.
-- **`npm run level-check`** (in `check`; `dev/level/`): there's no level editor, so this stands in for a designer. It composes today's island and each `dev/layouts/*.json` from the same data the game reads (`Site`, `src/sim/route.ts`, `src/blueprints/`) and fails on what can't be reached from spawn at the player's real slope and jump, overlaps, track and path grades, ground too steep to stand on, things out of bounds or under the sea. Budgets only report, and POI colliders aren't in it yet (`src/pois/` builds them as it draws), so a wall a POI builds doesn't block the walk. A new level or static object goes through it; `npm run level-check -- my-layout.json` tries one file, `-- --all` lists what's known. Known problems are in `dev/level/allow.ts`, each with a reason; fix a problem rather than listing it. Give a POI's places a player must get to as `reach` in its `site.ts`.
-- **Atlas** (internal, boogle.club/atlas; docs/atlas/README.md): shipping a new sync system or a big feature, add or update a story in docs/atlas/stories/. `npm run atlas -- --check` lists citations your change broke; fixing them is welcome but never blocks (the daily agent fixes what's left).
+| Trigger | Required details |
+| --- | --- |
+| Choosing/running browser scenarios or GPU checks | [scenarios](test-details/scenarios.md) |
+| Headless simulation, player/ball physics or inspecting state | [simulation](test-details/simulation.md) |
+| Presence, room or relay changes | [load](test-details/load.md) |
+| Many meshes, lights or post passes; count diagnostics | [performance](test-details/performance.md) |
+| Any harness run; networking or render-pipeline changes | [gpu](test-details/gpu.md) |
+| New level or static object | [level](test-details/level.md) |
+| New sync system or big feature | [atlas](test-details/atlas.md) |

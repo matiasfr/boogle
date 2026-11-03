@@ -1,10 +1,6 @@
 Before substantial work, committing or shipping, read this shipping procedure.
 
 ## Shipping
-Before substantial work, committing or shipping, read [docs/agents/shipping.md](shipping.md#shipping). Run inflight before substantial work; keep others' changes intact. Format and lint changed files, run the required checks, review and simplify a diff over ~3 files or ~150 lines, and code-review net/world/server changes. Follow the plan approval requirement there. Update prototype cards in the same PR; visible changes need an inspected PR still. Small commits, imperative subject; the body names the DESIGN.md principle served. Ship with `npm run ship` and report only verified push, CI, merge and deployment states. Keep both sides of rebase conflicts.
-- Never force-push, skip hooks (`--no-verify`) or push to `main` unless a human asks. Red `main`: fixing it beats starting something new.
-
-## Shipping
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too); split work so parallel tracks don't touch the same files. Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.
 - A large or risky change (several files with shared state, or `src/sim/`, `src/world/`, `src/net*`, `server/`) can start from a plan in `docs/plans/<name>.md` when asked for one, using the format in `.claude/agents/planner.md`; wait for approval before building it.
 - PRs merge without review, so over ~3 files or ~150 lines, re-read your diff and simplify it before shipping; for `src/net*`, `src/world/` or `server/`, also run your tool's code review. The GitHub Action flows skip this.

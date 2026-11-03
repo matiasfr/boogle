@@ -11,24 +11,24 @@ Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket se
 - Never force-push, skip hooks or push main unless a human asks.
 - Ship with npm run ship; report only verified states.
 
-Start ownership discovery: `npm run map -- --kind <kind>` (bare `--kind` lists kinds). Follow its companion docs and affected contracts. Combine matching rows below; each is mandatory at its trigger. Topic paths below are under `docs/agents/`; [index](docs/agents/README.md).
+Start with `npm run map -- --kind <kind>`. Read its must-read sections. A row applies only when its trigger is literally met, including in a review; read-if-relevant becomes required at its stated trigger. Read what the work needs; relevance, never usage, decides. Use `map -- --section <file> <heading>` or line ranges; links are not recursive reading lists.
 
-| Before | Read |
+| When the task actually does this | Read |
 | --- | --- |
-| Applying owner preferences; research, architecture, prototypes | [owner-calls](docs/agents/owner-calls.md) (full calls bind) |
-| Game/design/level/art/character work | [DESIGN.md](DESIGN.md), [context](docs/agents/context.md), [routes](docs/agents/routes.md) |
-| Game or prototype work | [find-the-fun](docs/plans/find-the-fun.md) |
-| Pure docs/tooling | DESIGN.md: Understandable at a glance; Small and readable |
-| Design/level/art/characters | [decision index](docs/proposals/boogle-2.md#current-decision-index) and routed dated sections |
-| Adding/changing code or module boundaries | [typescript](docs/agents/typescript.md), [lint-boundaries](docs/agents/lint-boundaries.md) |
-| Features/entities/HUD/level objects | [plugins](docs/agents/plugins.md) |
-| Rendering/art | [rendering](docs/agents/rendering.md) |
-| State/events, net*, server, adapters | [sync](docs/agents/sync.md), [room-safety](docs/agents/room-safety.md), [mixed-builds](docs/agents/mixed-builds.md) |
-| Touching src/sim or src/world/rules | [lockstep](docs/agents/lockstep.md), sync, room-safety, mixed-builds |
-| Controls/interactions/particles/shared registrations | [registries](docs/agents/registries.md) |
-| Choosing checks or changing game code | [tests](docs/agents/tests.md) |
-| Player-visible/feel changes | [verification](docs/agents/verification.md), look skill |
-| Tools/scripts; Codex work | [tools](docs/agents/tools.md); [codex](docs/agents/codex.md) |
-| Substantial work/commit/ship | [shipping](docs/agents/shipping.md) |
+| Applies an owner preference; researches or decides architecture | [owner-calls](docs/agents/owner-calls.md), applicable calls |
+| Makes a design decision, adds a mechanic, or prototypes | [context](docs/agents/context.md), DESIGN.md, relevant find-the-fun sections; [decision index](docs/proposals/boogle-2.md#current-decision-index), then only routed topics |
+| Adds or edits code | [typescript](docs/agents/typescript.md) |
+| Changes imports, module boundaries or service/loop ownership | [lint-boundaries](docs/agents/lint-boundaries.md) |
+| Adds or changes feature/entity lifecycle, DOM or loading | [plugins](docs/agents/plugins.md) |
+| Changes materials, lights, shaders or render pipeline | [rendering](docs/agents/rendering.md), affected contract sections |
+| Chooses/changes state ownership or event delivery | [sync](docs/agents/sync.md) |
+| Changes apply, accepted effects, presence, transport or saves | [room-safety](docs/agents/room-safety.md) |
+| Changes wire shapes/meaning, ops, catalogs or persistence | [mixed-builds](docs/agents/mixed-builds.md) |
+| Touches or reviews lockstep math (including cosmetic helpers in sim) | [lockstep](docs/agents/lockstep.md) |
+| Changes actions, interactions, particles or shared registrations | [registries](docs/agents/registries.md) |
+| Chooses checks | [tests](docs/agents/tests.md), triggered references only |
+| Changes what a player sees or feels | [verification](docs/agents/verification.md), look skill; update owning game-design section |
+| Uses tools/scripts; runs as Codex | [tools](docs/agents/tools.md); [codex](docs/agents/codex.md) |
+| Substantial work, commit or ship | [shipping](docs/agents/shipping.md); principle names in [context](docs/agents/context.md#principle-index) |
 
-Before touching high-risk folders, read their nested AGENTS.md; Codex at root must do this explicitly.
+Read nested AGENTS.md before high-risk edits or reviews (Codex too). For src/adapters and src/player read .claude/rules/state-consumers.md. Safety rules stay binding.

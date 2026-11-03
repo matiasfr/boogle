@@ -2,10 +2,6 @@ Before using tools or writing a shot, script or workaround, read this tool table
 
 ## Tools and skills
 Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lists routes); `--docs <text>` searches docs with authority labels and current replacement pointers.
-Before using tools or writing a shot, script or workaround, read the table and details in [docs/agents/tools.md](tools.md#tools-and-skills). Codex work also requires its [Codex section](codex.md#codex).
-
-## Tools and skills
-Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lists routes); `--docs <text>` searches docs with authority labels and current replacement pointers.
 **Check here before writing a shot, a script or a workaround.** Details: `.claude/skills/look/SKILL.md`.
 | You want to | Use |
 |---|---|

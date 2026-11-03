@@ -4,18 +4,47 @@
 
 Authoritative routing as of 3 November 2026. Read this index, then the linked sections for the task, including the named dated entries and their qualifications. This index records explicit supersessions; it does not approve new work. The dated record below is retained unchanged. A later explicit owner decision wins over an earlier one; a heading's position or an old struck-through question is not evidence of currency. [AGENTS.md's standing calls](../agents/owner-calls.md#owners-standing-calls) apply to every task. [DESIGN.md](../../DESIGN.md) owns principles, [find-the-fun](../plans/find-the-fun.md) the prototype work order, and [game-design.md](../game-design.md) what is built. A direction here is not proof of implementation.
 
-| Task | Current decision and required dated record |
-| --- | --- |
-| Current build and next round | [The shape of the game](#the-shape-of-the-game): **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses. |
-| Core loop, pacing and progression | [The shape of the game](#the-shape-of-the-game): **direction after round 3** and **Design Table call**, 2 November. Building, exploration with abilities and incremental growth matter equally; path first, train later; staged efficiency; about eight hours. Materials and upgrades replace global eras; abilities replace curios. Read [Changed](#changed) and [Progress and rewards](#progress-and-rewards) with those overrides; the eight/six-era lists and rails-from-start notes are history. |
-| Rail, construction, levels and travel | [Trains and the world](#trains-and-the-world), especially the 2 November physical construction, solid objects, visible cargo/town growth and crossing decisions; also the **Design Table call** and **direction after round 3** above. Threefold Reach/Two-Bay Weave are working layout picks; later free track is a direction, not a new level specification. The later **you can sit on the train** entry restores a sitting pose, not the cut bench camera. Maps/fast-travel research is deferred by the Design Table call. |
-| Rewards, co-op and town roles | [The shape of the game](#the-shape-of-the-game), **Design Table call** and **direction after round 3**; [The audit picks](#the-audit-picks-2-november); [Progress and rewards](#progress-and-rewards). Cosmetic boxes have rarity; co-op mini-games reward boxes; tools/carry upgrades follow satisfying manual work. Som and knacks stay parked. Read [Open questions](#open-questions-round-8-and-the-architecture-review) for helpers and crystal pillars; these are not blanket implementation approvals. |
-| Characters, cosmetics and story | [Characters and story](#characters-and-story): the **Buddy is the default**, **no ears and no cheeks**, gaze/shoulder/hat decisions, 2 November. Older Tracklayer choices are history. The **Design Table call** in [The shape of the game](#the-shape-of-the-game) owns the newer character/train cosmetic slots, entrepreneur Boogler, rumours and original-island ending. Read [Parked by the owner](#parked-by-the-owner) and [Changed](#changed): other narrative detail stays parked; his existing copy stays. |
-| Graphics, water, sky and devices | [Look](#look): 3 November **real sea uses the demo's sky**, intentionally chosen frozen times and desktop/mobile starting settings; **Neutral is open** pending a character comparison; **original sky and clouds stay; sky is parked**. These qualify the older cycle/rounded-cloud entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor. |
-| Audio | [Sound](#sound-listening-pack-audit-2026-11-01) for specific keep/cut/tweak calls and undecided wave; the 2 November **Design Table call** in [The shape of the game](#the-shape-of-the-game) sets procedural sound/music. It does not reinstate the cut groove or sounds. |
-| Controls, HUD and arrival | [Decided](#decided): one thing in hand, no hotbar or empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, confirmed fresh start, Get unstuck and stopped Leave menu. Later return/menu entries supersede earlier arrival descriptions. Invite links wait. |
-| Architecture, tools and prototype lifecycle | [Process](#process): entity methods, pipeline, solo-first evidence, no automatic rollback, and **2 November, be cautious removing prototypes for now** (ask before further archiving). Read that qualification before the older archive policy. AGENTS' **Codex first**, verification and test-diet calls supersede older tool/model assignments in [How the owner works](#how-the-owner-works) and Process. |
-| Unresolved scope | [Open questions](#open-questions-round-8-and-the-architecture-review), [Parked by the owner](#parked-by-the-owner), and **Design Table call**: danger, tool/axe visibility and other explicitly unresolved matters remain open. [Next: find the fun](#next-find-the-fun-agreed-direction-1-november) is the original sequence; use the current plan and later playtest decisions for today's work. |
+Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`, then select only the relevant topic below. Each linked heading is an exact section boundary; use line ranges for the named dated entry inside it. For Controls, “Decided” means only its introductory lines before “The audit picks”, not all descendants.
+
+### Current build and next round
+
+[The shape of the game](#the-shape-of-the-game): **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses.
+
+### Core loop, pacing and progression
+
+[The shape of the game](#the-shape-of-the-game): **direction after round 3** and **Design Table call**, 2 November. Building, exploration with abilities and incremental growth matter equally; path first, train later; staged efficiency; about eight hours. Materials and upgrades replace global eras; abilities replace curios. Read [Changed](#changed) and [Progress and rewards](#progress-and-rewards) with those overrides; the eight/six-era lists and rails-from-start notes are history.
+
+### Rail, construction, levels and travel
+
+[Trains and the world](#trains-and-the-world), especially the 2 November physical construction, solid objects, visible cargo/town growth and crossing decisions; also the **Design Table call** and **direction after round 3** above. Threefold Reach/Two-Bay Weave are working layout picks; later free track is a direction, not a new level specification. The later **you can sit on the train** entry restores a sitting pose, not the cut bench camera. Maps/fast-travel research is deferred by the Design Table call.
+
+### Rewards, co-op and town roles
+
+[The shape of the game](#the-shape-of-the-game), **Design Table call** and **direction after round 3**; [The audit picks](#the-audit-picks-2-november); [Progress and rewards](#progress-and-rewards). Cosmetic boxes have rarity; co-op mini-games reward boxes; tools/carry upgrades follow satisfying manual work. Som and knacks stay parked. Read [Open questions](#open-questions-round-8-and-the-architecture-review) for helpers and crystal pillars; these are not blanket implementation approvals.
+
+### Characters, cosmetics and story
+
+[Characters and story](#characters-and-story): the **Buddy is the default**, **no ears and no cheeks**, gaze/shoulder/hat decisions, 2 November. Older Tracklayer choices are history. The **Design Table call** in [The shape of the game](#the-shape-of-the-game) owns the newer character/train cosmetic slots, entrepreneur Boogler, rumours and original-island ending. Read [Parked by the owner](#parked-by-the-owner) and [Changed](#changed): other narrative detail stays parked; his existing copy stays.
+
+### Graphics, water, sky and devices
+
+[Look](#look): 3 November **real sea uses the demo's sky**, intentionally chosen frozen times and desktop/mobile starting settings; **Neutral is open** pending a character comparison; **original sky and clouds stay; sky is parked**. These qualify the older cycle/rounded-cloud entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
+
+### Audio
+
+[Sound](#sound-listening-pack-audit-2026-11-01) for specific keep/cut/tweak calls and undecided wave; the 2 November **Design Table call** in [The shape of the game](#the-shape-of-the-game) sets procedural sound/music. It does not reinstate the cut groove or sounds.
+
+### Controls, HUD and arrival
+
+[Decided](#decided): one thing in hand, no hotbar or empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, confirmed fresh start, Get unstuck and stopped Leave menu. Later return/menu entries supersede earlier arrival descriptions. Invite links wait.
+
+### Architecture, tools and prototype lifecycle
+
+[Process](#process): entity methods, pipeline, solo-first evidence, no automatic rollback, and **2 November, be cautious removing prototypes for now** (ask before further archiving). Read that qualification before the older archive policy. AGENTS' **Codex first**, verification and test-diet calls supersede older tool/model assignments in [How the owner works](#how-the-owner-works) and Process.
+
+### Unresolved scope
+
+[Open questions](#open-questions-round-8-and-the-architecture-review), [Parked by the owner](#parked-by-the-owner), and **Design Table call**: danger, tool/axe visibility and other explicitly unresolved matters remain open. [Next: find the fun](#next-find-the-fun-agreed-direction-1-november) is the original sequence; use the current plan and later playtest decisions for today's work.
 
 *Decision log, 1 November 2026. The owner's picks from the Boogle 2.0 design thread (rounds 1–8, 29 October to 1 November 2026), written down so another agent can pick it up. On design, this file is authoritative over [docs/research/0.1/SETTLED.md](../research/0.1/SETTLED.md), where the two disagree; `main`'s code is the architecture to build on. Nothing here is built unless [docs/game-design.md](../game-design.md) says so.*
 
