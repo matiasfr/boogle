@@ -4,7 +4,7 @@ Brief; the rules for contributors are in [AGENTS.md](../../AGENTS.md) (imported 
 folder map in [src/README.md](../../src/README.md).
 
 - **Stack.** three.js 0.187 (`WebGPURenderer`, WebGPU only; shaders in TSL, see
-  [src/render/README.md](../../src/render/README.md)), Rapier 0.19.3 (physics, WASM, loaded behind the splash), WebSocket to our server (`ws` 8 on Node 24), TypeScript (strict, converting from JavaScript), bundled with Vite ([package.json](../../package.json));
+  [src/render/README.md](../../src/render/README.md)), Rapier 0.19.3 (physics, WASM, loaded behind the splash), WebSocket to our server (`ws` 8 on Node 24), TypeScript (strict), bundled with Vite ([package.json](../../package.json));
   the build splits three into a vendor chunk; Rapier is its own chunk and WASM file ([vite.config.ts](../../vite.config.ts)).
   The server ([server/README.md](../../server/README.md)) is Node with Express and `ws`, and runs hosted
   rooms with the game's own `src/world/` and `src/sim/` code (section 8).
@@ -12,8 +12,8 @@ folder map in [src/README.md](../../src/README.md).
   `sim/` (pure logic), `net/` and `netplay/`, `island/` and `pois/`, `adapters/` (the game side of lockstep state),
   `physics/`, `player/`, `render/`, `boogler/`, `guest/` and `decomp/` (the dino's guest), `boot/` (the loading
   screen), `debug/`.
-- **Plug-ins.** A feature registers `onFrame(fn, { phase, order })` and `onStart(fn)` ([src/loop.ts](../../src/loop.ts),
-  which lists the core hooks' orders; features use −10 and up). `main.ts` only wires modules and renders. Heavy or
+- **Plug-ins.** Feature entries register entities for world/screen objects and use `onStart(fn)` for one-time setup. Only allow-listed services and prototypes use `onFrame(fn, { phase, order })` ([src/loop.ts](../../src/loop.ts),
+  which lists the core hooks' orders; features use −10 and up). `main.ts` wires modules and renders. Heavy or
   rarely used parts load with a dynamic `import()` ("Lazy parts" in `loop.ts`): today the caves, the Boogler's
   conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared
   registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit(...)` in
@@ -21,8 +21,7 @@ folder map in [src/README.md](../../src/README.md).
 - **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
   `registerState`/`onTick` only in `world/rules/`), `tsc` typecheck, unit tests (`node:test`, pure logic only), the
   registry check (`npm run registry`: wire shapes against `main`, for mixed builds) and build.
-  `npm run check:full` adds server tests and the headless network tests (`dev/peer-test/run.mjs` for peer rooms,
-  `ws-run.ts` for server-hosted rooms and the room picker). Key tests:
+  `npm run check:full` adds server tests and the headless WebSocket room tests (`dev/peer-test/ws-run.ts`); local triggers are `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. Key tests:
   [test/world-replay.test.ts](../../test/world-replay.test.ts) (seeded edits for every op, host killed midway, late
   joiner, identical hashes) and [test/world-snapshots.test.ts](../../test/world-snapshots.test.ts).
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in

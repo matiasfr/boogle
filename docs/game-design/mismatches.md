@@ -1,23 +1,15 @@
 # 12. Doc and code mismatches found while writing this
 
-Still open:
+Rechecked 2026-11-03 against the owning code:
 
-- PLAN Phase 0 says three.js 0.160.0 is pinned; `package.json` has 0.187.
-- DESIGN.md's authority table names "weather", which does not exist yet.
-- DESIGN principle 9 says growth is computed from elapsed time; only the helper bank reads `world.epochMs` (as
-  `src/world/README.md` now says), and fruit and the day count ticks.
-- DESIGN.md's "Server hosts every room" describes [plans/server-host.md](../plans/server-host.md) step 9, which is not
-  built: the code still has peer-hosted rooms, host migration and the fallback (`src/net/room.ts`), the server hosts
-  only the rooms in `SERVER_ROOMS`, and `server/fly.toml` sets none. AGENTS.md's first paragraph ("PeerJS with one
-  browser as host") is closer to today.
-- DESIGN.md's "Small and readable" says everything is TypeScript; 103 files in `src/` are still `.js` (59 are `.ts`).
-- AGENTS.md and CLAUDE.md say PR CI runs `world-inputs`, `smoke` and `two-player-dig`; `ci.yml` runs only
-  `world-inputs`, and there is no `two-player-dig` scenario. AGENTS.md also lists F, Q and Z as keys `input.ts` binds
-  by hand; it binds Space, E and R.
+- Every room uses `src/net/ws-room.ts`, called by `src/netplay/net.ts`; the server defaults to hosting all rooms and `server/fly.toml` sets `SERVER_ROOMS = "*"`. There is no PeerJS fallback.
+- `src/` contains TypeScript, with no remaining `.js` source files. Stack versions live in `package.json`.
+- PR CI runs `world-inputs`; `smoke` runs separately. AGENTS.md already describes this correctly and correctly names Space, E and R as the hand-bound keys.
+- DESIGN.md no longer names weather in its authority table or promises elapsed-time growth in principle 9. The helper bank is the explicit offline-time system (`src/world/rules/bank.ts`).
 
-Fixed since: the Boogler friendship is now global; `src/world/README.md` now says what reads `world.epochMs`; the spring API and `dev/water-lab/` are gone (#31), frame logic left `main.ts` (#29); the lighthouse
-header, DESIGN's Lockstep examples, PLAN Phase 4's slosh and worker items and the tech plan's legacy-code line now match
-the code.
+The old PLAN version pin is historical, not a mismatch in current guidance. Current work is in [find-the-fun.md](../plans/find-the-fun.md); owner decisions are in [boogle-2.md](../proposals/boogle-2.md). Recipes and ownership pointers corrected in this pass are in [src/README.md](../../src/README.md), [world rules](../../src/world/rules/README.md), [island](../../src/island/README.md), [glossary](glossary.md) and [tech](tech.md).
+
+This is a bounded recheck of the navigation audit's claims, not proof that every document matches the code.
 
 ---
 

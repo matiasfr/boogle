@@ -1,25 +1,38 @@
 // npm run map -- <folder> [more folders or files]: what's in a folder, without reading it. Each file's size, what its opening
-// comment says, and what it exports, generated so it can't go stale. Read this first, then only what you need, with line
-// ranges: a whole-file read stays in an agent's context for the rest of its session and is paid again on every message.
+// comment says, and what it exports. Start here, then use focused line ranges to follow ownership and dependencies;
+// read everything needed to understand and verify the task.
 import fs from 'node:fs';
 import path from 'node:path';
+import { docLabel, searchDocs } from './scan/docs.ts';
 
 const asked = process.argv.slice(2);
+if (asked[0] === '--docs') {
+  if (!asked[1]) {
+    console.error('npm run map -- --docs <text>');
+    process.exit(2);
+  }
+  console.log(searchDocs('.', asked.slice(1).join(' ')).join('\n') || '(no matching documents)');
+  process.exit(0);
+}
 if (!asked.length) {
-  console.error('npm run map -- <folder> [more]');
+  console.error('npm run map -- <folder> [more] | --docs <text>');
   process.exit(2);
 }
 const files = asked.flatMap((a) =>
   fs.statSync(a).isDirectory()
     ? fs
         .readdirSync(a)
-        .filter((f) => /\.ts$/.test(f))
+        .filter((f) => /\.(ts|md)$/.test(f))
         .sort()
         .map((f) => path.join(a, f))
     : [a],
 );
 for (const f of files) {
   const text = fs.readFileSync(f, 'utf8');
+  if (f.endsWith('.md')) {
+    console.log(docLabel(f, text));
+    continue;
+  }
   const lines = text.split('\n');
   const about: string[] = [];
   for (const l of lines) {

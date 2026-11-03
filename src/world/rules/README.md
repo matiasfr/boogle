@@ -7,21 +7,22 @@ else (meshes, sounds, input, inventory), reading the rules' API and reacting thr
 
 ## Adding a lockstep system
 
-Four files, nothing else edited:
+The sim, rules and adapter have distinct owners; registration also updates the typed API:
 
 1. `src/sim/<x>.ts` plus `test/<x>.test.ts`: the pure logic (typed arrays, integers, seeded `mulberry32`), with a
    test that the same inputs give the same hash and that serialize/load round-trips.
-2. `src/world/rules/<x>.js`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
+2. `src/world/rules/<x>.ts`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
 3. One line appended to `RULES` in `index.ts`. Append only: states snapshot, load and hash in its order, so
    reordering it desyncs rooms where peers run different builds.
-4. `src/features/<x>.js`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
+   Add its API to `Rules` in `src/world/rules/types.ts` too (see `PilesApi`).
+4. `src/features/<x>.ts`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
    `onAfterTick` and `onSnapshot`. Host-only facts that validate needs go in through `setEnv` (below, "env keys").
-   If other modules (hands) must import the adapter, put it in `src/adapters/<x>.js` instead, with a thin
+   If other modules (hands) must import the adapter, put it in `src/adapters/<x>.ts` instead, with a thin
    feature file, since features cannot import each other. Example: `src/adapters/gifts.ts`.
 
-Run `npm run check:full`. Notes:
+Update the system's `docs/game-design/` chapter (new system: add a chapter and index line), and its atlas story for a new sync system or big feature. Run `npm run check`. Run `check:full` locally only when touching `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New tests are for lockstep determinism, conservation and validation; UI, features, tuning and feel use `look`, with a new scenario only for a sync contract (see AGENTS.md's entity-core exception). Notes:
 
 - A system on the ground (markers, castles) stores grid cells `g = i*n + j`. The ground is fixed (digging was removed
   2026-10-30) and is not a lockstep input: `land` holds only `n` and the gifts `layout`. A height that validate needs
@@ -36,9 +37,9 @@ Run `npm run check:full`. Notes:
 
 ## Contract
 
-```js
-// src/world/rules/<name>.js
-// Imports allowed: ../grid.ts, ../../sim/*, ./<earlier rule>.js (constants only).
+```ts
+// src/world/rules/<name>.ts
+// Imports allowed: ../grid.ts, ../../sim/*, sibling rules (including types.ts).
 export const name = 'thing'; // key in the rules handle; equals its state key when it has one
 export function install(sync, land, rules) {
   // register ops, state, ticks and sim listeners on `sync`; return the API adapters and later rules use
@@ -49,7 +50,7 @@ export function install(sync, land, rules) {
 | Input | What it is | Where it may be read |
 |---|---|---|
 | `sync` | `{ world, registerOp, registerState, onTick, onApplied, onSnapshot }`. No `submitEdit`: rules react to edits, they never make them. Call `sync.registerOp(...)`, do not destructure it. | install |
-| `land` | `{ n, base, layout }`: grid size, base heights (`Int16Array`, cm, index `i*n+j`) and `layout` (`trees`, `perches`). Static, the same on every peer. `layout` is filled before tick 1, so do not read it at install. | anywhere |
+| `land` | `{ n, layout }`: grid size and `layout` (`trees`, `perches`), as typed in `types.ts`. Static, the same on every peer. `layout` is filled before tick 1, so do not read it at install. | anywhere |
 | `rules` | The APIs of the modules before this one in `RULES`, keyed by `name`. | anywhere |
 | `ctx.env` | Host-only facts handed to `validate(edit, { from, tick, env })`. They may differ per machine, so never use them in apply or ticks. A missing one makes validate throw, and the edit is rejected. | validate only |
 
@@ -72,7 +73,7 @@ fresh tab, and requires every peer to hash every state the same at every shared 
 second run with the same seed to give the same result. It fails when a registered op has no generator, or when no
 edit of that op was ever accepted. So a module with ops exports:
 
-```js
+```ts
 import { JUNK, bad } from './edit-gen.ts';
 // r: the peer's seeded stream { int(lo, hi), pick(a), chance(p), next() }; view: { rules, land, tick } of that peer.
 export const edits = {
@@ -106,9 +107,9 @@ The server hosts rooms with no renderer (docs/plans/server-host.md), so a new ke
 
 ## Template
 
-```js
+```ts
 // <What the system is.> Lockstep: runs the same on every peer (see ./README.md).
-import { createThing } from '../../sim/thing.js';
+import { createThing } from '../../sim/thing.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
 export const name = 'thing';
@@ -127,7 +128,7 @@ export const edits = {
 };
 ```
 
-Then append `thing` to `RULES` in `index.ts`, and read `rules.thing` from `../game-world.ts` in the adapter.
+This sketch shows the wiring; copy `piles.ts` for typed `SyncView`, `Land`, edit fields, generators and API. Then append `thing` to `RULES` in `index.ts`, add its API to `Rules` in `types.ts`, and read `rules.thing` from `../game-world.ts` in the adapter.
 
 ## Modules
 

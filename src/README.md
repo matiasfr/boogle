@@ -5,8 +5,7 @@ Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `lo
 so hashed file names don't depend on it).
 
 - `boot/`: the page's entry and the loading screen (key art, progress bar), shown before the game downloads; the boot timeline (`timeline.ts`) and the service worker (`sw*.ts`; docs/plans/loading.md).
-- `features/`: self-contained plug-ins, auto-loaded by `main.ts` (`import.meta.glob('./features/*.{js,ts}')`). Add new
-  features here, not in the folders below.
+- `features/`: plug-in entry registration, auto-loaded by `main.ts` (`import.meta.glob('./features/*.{js,ts}')`). Keep feature-owned implementation here; reusable code belongs to its domain below, long-lived objects to `entities/`, and POI content to `pois/`.
 - `world/`: shared state, edit sync and snapshots (see [world/README.md](world/README.md)); `world/rules/` holds the
   lockstep rules modules.
 - `sim/`: pure, deterministic logic (no three.js, no DOM), unit-tested in `test/`.
@@ -31,7 +30,7 @@ so hashed file names don't depend on it).
 - `physics/`: the physics facade (`engine.ts`; `backend-rapier.ts` is the only module that imports Rapier), step hooks, thrown-item flights, the water-field bridge (sea and cave pond).
 - `player/`: the local player and camera, avatars, hands and what you hold, input, the control registry, glyphs, the controls
   guide, modal, HUD, item icons and models. `state.ts` (`me`, `cam`, poses), `dom.ts` and `input-state.ts` are leaf
-  modules, so what `player.ts` and `input.ts` drive can read them without an import cycle.
+  modules. `entities/player/state.ts` owns the movement controller; `player.ts` is a small facade, not the driver. `buddy/` owns the Buddy body, animation and follow camera; `input.ts` feeds intent without owning movement.
 - `render/`: the WebGPU renderer, render pipeline and camera, lights pool, sky, sea, props, particles, splashes,
   node-material patching (`patchNode`), and the shared (cosmetic) audio context. How to draw things:
   [render/README.md](render/README.md).

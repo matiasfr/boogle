@@ -1,8 +1,6 @@
 # 10. Status
 
-The roadmap and its checkboxes are in [PLAN.md](../../PLAN.md); the tech plan's items and the owner's keep/cut and server
-decisions are in [tech-plan.md](../tech-plan.md) ("Decided"). This file does not copy them, so they have one place to be
-ticked.
+The current prototype work and its checkboxes are in [find-the-fun.md](../plans/find-the-fun.md); owner decisions live in [boogle-2.md](../proposals/boogle-2.md). [PLAN.md](../../PLAN.md) and older proposals are historical, not today's roadmap. This file does not duplicate the checkboxes.
 
 ## Related ideas (not built)
 
