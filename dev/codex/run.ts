@@ -2,7 +2,8 @@
 // .claude/skills/codex/SKILL.md.
 //
 //   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6-astra]
-//                         [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>] [--eyes off] [--dry] "<brief>"
+//                         [--base-ref <ref> | --snapshot] [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>]
+//                         [--eyes off] [--dry] "<brief>"
 //
 // Modes:
 // - previz: art-directs the idealized look of a moment, prototype or effect and paints it with $imagegen. Output in
@@ -12,11 +13,13 @@
 //   its sandbox gets network access for a local server, and ./look-broker.ts runs the browser outside it (./see.ts).
 // - review: `codex exec review` of a branch (default: this checkout's HEAD) against origin/main, in a detached worktree.
 //
-// Worktrees live in ../boogle-codex/<topic> and share this checkout's node_modules. The log, last message (report.md)
-// and meta.json go to .look/codex/<topic>/. Nothing is pushed: whoever ran it reviews the report and ships.
+// Worktrees live beside the main repo in boogle-codex/<topic>, with their own dependencies. Reports, evidence and metadata
+// go to .look/codex/<topic>/. Nothing is pushed: whoever ran it reviews the report and ships.
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { git, snapshot } from './source.ts';
+import { handoff } from './evidence.ts';
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
@@ -26,7 +29,7 @@ const args = process.argv.slice(2);
 const opts: Record<string, string> = {};
 const pos: string[] = [];
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === '--dry') opts.dry = '1';
+  if (args[i] === '--dry' || args[i] === '--snapshot') opts[args[i]!.slice(2)] = '1';
   else if (args[i]!.startsWith('--')) {
     const flag = args[i]!;
     const value = args[++i];
@@ -50,24 +53,24 @@ const topic = rawTopic
 const effort = opts.effort || DEFAULT_EFFORT[mode];
 const model = opts.model || 'gpt-6-astra';
 const eyes = mode === 'task' && opts.eyes !== 'off';
+if (!topic) throw new Error('Use a nonempty topic');
+if (opts.snapshot && (mode !== 'task' || opts['base-ref']))
+  throw new Error('--snapshot is for tasks and uses the caller HEAD; do not combine it with --base-ref');
+if (opts['base-ref'] && mode !== 'task') throw new Error('--base-ref is for tasks');
 
-const git = (cwd: string, ...a: string[]) =>
-  execFileSync('git', a, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const repo = git(process.cwd(), 'rev-parse', '--show-toplevel');
 const gitDir = path.resolve(repo, git(repo, 'rev-parse', '--git-common-dir'));
 const logs = path.join(repo, '.look/codex', topic);
-fs.mkdirSync(logs, { recursive: true });
+if (!opts.dry && fs.existsSync(path.join(logs, 'meta.json')))
+  throw new Error(`${logs} already has a job; choose a new topic`);
+if (!opts.dry) fs.mkdirSync(logs, { recursive: true });
 
-// A fresh worktree outside the repo, with this checkout's node_modules linked in so check scripts run offline.
+// Install each job's actual lockfile. A branch or working snapshot can need different dependencies from the caller.
 function worktree(ref: string, branch?: string): string {
-  const dir = path.resolve(repo, '..', 'boogle-codex', topic);
+  const dir = path.resolve(gitDir, '../..', 'boogle-codex', topic);
   if (fs.existsSync(dir)) throw new Error(`${dir} exists; pick another topic or \`git worktree remove\` it`);
-  git(repo, 'fetch', '-q', 'origin', 'main');
   git(repo, 'worktree', 'add', '-q', ...(branch ? ['-b', branch, dir, ref] : ['--detach', dir, ref]));
-  for (const nm of ['node_modules', 'server/node_modules']) {
-    const from = path.join(repo, nm);
-    if (fs.existsSync(from)) fs.symlinkSync(from, path.join(dir, nm), 'dir');
-  }
+  execFileSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: dir, stdio: 'inherit' });
   return dir;
 }
 
@@ -88,16 +91,15 @@ Do this:
 Your final message: the pitch paragraph and one line per shot.`;
 }
 
-// AGENTS.md says to run npm ci in a fresh checkout, but through worktree()'s link that empties the main checkout's modules.
-const SHARED_MODULES =
-  "node_modules here is a link to the main checkout's, shared with other running jobs. Never run npm ci or npm install, which would empty it for everyone; if a dependency is missing, say so in your final message.";
+const DEPENDENCIES =
+  "Dependencies are already installed from this worktree's lockfile; they are not shared with the caller.";
 
 const researchPrompt =
   () => `${HOUSE} Then read docs/research/README.md and two existing docs in docs/research/ for the format.
 
 Deep-research this facet with live web search: ${brief}
 
-${SHARED_MODULES}
+${DEPENDENCIES}
 
 Use primary sources where you can: GDC talks, developer postmortems and blogs, papers, engine docs, shipped games. Write docs/research/${topic}.md in the house format, with sources inline and numbered recommendations specific to Boogle (cite the code or plan they touch). Add a line for it to docs/research/README.md. Run \`npx prettier --write\` on the files you changed, then commit on this branch with an imperative subject (no push). Your final message: the recommendations, one line each.`;
 
@@ -105,25 +107,39 @@ const taskPrompt = () => `${HOUSE}
 
 Task: ${brief}
 
-${SHARED_MODULES}
+${DEPENDENCIES}
 
 Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship. Network access is only for the local server below: no other network use.
 
 ${
   eyes
-    ? `You can see the running game. \`BOOGLE_QUERY='proto=x' node dev/codex/see.ts <options>\` takes the same options as \`npm run look\` (.claude/skills/look/SKILL.md; not --url or --out), runs on the real GPU and takes a minute or two. Open the PNGs it writes to .look/ with view_image. Use it for anything a player can see: name the question, frame it, look, fix what's off, up to three rounds (AGENTS.md, "See it before you ship"). To play, use --action: page code that holds keys and queues jumps (dev/look/evals/sprint-jump.ts), framing the player itself, since a fixed --cam may not see them; then decide your next action from what you saw. --curves writes the motion as numbers. view_image takes no video: pull frames from a --video recording with ffmpeg and open consecutive ones. That is frames and scripted input, not watching or playing in real time, so say that feel and smoothness are unverified. run.ts already started the broker: don't start another.`
+    ? `Use the broker already started by run.ts, not Chromium directly:
+- \`node .look/see-client.ts playthrough\`: the full place bot, reports, saved checkpoints and end still. Optional --query, --eval and --stall. A missed expected beat fails the run; read its report even on failure.
+- \`node .look/see-client.ts look --at list\`: names this job's bot checkpoints. Then --at "<beat>" captures one; --query 'proto=x', --eval, --action, --curves and other look options work too. --saves selects an explicit checkpoint directory.
+- \`node .look/see-client.ts scenario world-inputs\`: existing trusted scenarios against YOUR running build. Name the relevant scenario(s), not a new harness.
+The broker owns --url, --root, --data-dir and --out. Each command prints a manifest in .look/evidence with the tested commit/tree, status, logs and artifact paths. Open the PNGs with view_image; a successful command is not a visual verdict. Name a visual question, frame the action, inspect and iterate up to three rounds. For motion use --curves and consecutive frames extracted from --video with ffmpeg; real-time feel and smoothness remain unverified. Never edit source while a run is in progress. After code changes, repeat the affected checks so the evidence matches the final tree.`
     : 'You cannot see the running game.'
 }
 
-Your final message: what you changed, what check printed, what you saw, and anything you were unsure of or could not verify.`;
+Your final message is Claude's assessment: keep it short. State what changed, check results, which images you actually opened, what you observed against the visual question, bot failures, and anything unverified. Link the evidence manifests. The launcher also returns handoff.md and evidence.json, copying the artifacts beside them.`;
 
 const FORMAT_HOOK = `hooks.PostToolUse=[{matcher="apply_patch|Edit|Write",hooks=[{type="command",timeout=30,command='node "$(git rev-parse --show-toplevel)/.claude/hooks/format-lint.ts"'}]}]`;
 
-function main() {
+async function main() {
   const reportFile = path.join(logs, 'report.md');
   let cwd: string;
   let argv: string[];
   let prompt: string;
+  const sourceRef = opts.snapshot
+    ? 'HEAD (working snapshot)'
+    : opts['base-ref'] || (mode === 'review' ? opts['ref-branch'] || 'HEAD' : 'origin/main');
+  if (!opts.dry && mode !== 'previz' && !opts.snapshot) git(repo, 'fetch', '-q', 'origin', 'main');
+  const sourceCommit =
+    mode === 'previz'
+      ? git(repo, 'rev-parse', 'HEAD')
+      : opts.snapshot && !opts.dry
+        ? snapshot(repo)
+        : git(repo, 'rev-parse', '--verify', `${opts.snapshot ? 'HEAD' : sourceRef}^{commit}`);
   const base = ['-m', model, '-c', `model_reasoning_effort="${effort}"`, '-o', reportFile];
 
   if (mode === 'previz') {
@@ -140,14 +156,13 @@ function main() {
     prompt = previzPrompt(cwd, refs);
     argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--skip-git-repo-check', '-'];
   } else if (mode === 'review') {
-    const ref = opts['ref-branch'] || git(repo, 'rev-parse', 'HEAD');
-    cwd = opts.dry ? repo : worktree(ref);
+    cwd = opts.dry ? repo : worktree(sourceCommit);
     argv = ['exec', 'review', ...base, '--base', 'origin/main'];
     if (brief) argv.push('-');
     prompt = brief;
   } else {
     if (opts.dry) cwd = repo;
-    else cwd = worktree('origin/main', `codex/${topic}`);
+    else cwd = worktree(sourceCommit, `codex/${topic}`);
     prompt = mode === 'research' ? researchPrompt() : taskPrompt();
     // This repository's own format hook, passed here because a job can't stop to approve the project's copy.
     argv = [
@@ -168,7 +183,19 @@ function main() {
     argv.push('-');
   }
 
-  const meta = { mode, topic, model, effort, cwd, brief, started: new Date().toISOString(), argv };
+  const meta = {
+    mode,
+    topic,
+    model,
+    effort,
+    cwd,
+    brief,
+    sourceRef,
+    sourceCommit,
+    snapshot: !!opts.snapshot,
+    started: new Date().toISOString(),
+    argv,
+  };
   if (opts.dry) {
     console.log(JSON.stringify(meta, null, 2) + '\n\n' + prompt);
     return;
@@ -177,15 +204,47 @@ function main() {
   console.log(`codex ${mode} "${topic}" (${model}, ${effort}) in ${cwd}\nlog: ${path.join(logs, 'log.txt')}`);
   const log = fs.openSync(path.join(logs, 'log.txt'), 'w');
   let broker: ChildProcess | null = null;
-  if (eyes) broker = spawn(process.execPath, [path.join(repo, 'dev/codex/look-broker.ts'), cwd], { stdio: 'ignore' });
-  const r = spawnSync('codex', argv, { cwd, input: prompt, stdio: ['pipe', log, log] });
-  broker?.kill();
-  fs.closeSync(log);
-  const done = { ...meta, finished: new Date().toISOString(), status: r.status };
+  let status: number;
+  try {
+    if (eyes) {
+      fs.mkdirSync(path.join(cwd, '.look'), { recursive: true });
+      fs.copyFileSync(path.join(repo, 'dev/codex/see.ts'), path.join(cwd, '.look/see-client.ts'));
+      broker = spawn(process.execPath, [path.join(repo, 'dev/codex/look-broker.ts'), cwd], {
+        stdio: ['ignore', log, log],
+      });
+      const ready = path.join(cwd, '.look/see/ready.json');
+      const deadline = Date.now() + 10000;
+      while (!fs.existsSync(ready)) {
+        if (broker.exitCode !== null || Date.now() > deadline)
+          throw new Error('Browser broker did not start; see log.txt');
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    }
+    status = await new Promise<number>((resolve) => {
+      const child = spawn('codex', argv, { cwd, stdio: ['pipe', log, log] });
+      child.on('error', (error) => {
+        console.error(error);
+        resolve(1);
+      });
+      child.on('close', (code) => resolve(code ?? 1));
+      child.stdin!.on('error', () => {}); // an early CLI error may close stdin before reading the brief
+      child.stdin!.end(prompt);
+    });
+  } catch (error) {
+    console.error(error);
+    status = 1;
+  } finally {
+    broker?.kill();
+    fs.closeSync(log);
+    if (mode === 'task') handoff(cwd, logs);
+  }
+  const done = { ...meta, finished: new Date().toISOString(), status };
   fs.writeFileSync(path.join(logs, 'meta.json'), JSON.stringify(done, null, 2));
-  console.log(`exit ${r.status}; report: ${reportFile}`);
+  console.log(`exit ${status}; report: ${reportFile}`);
+  if (mode === 'task')
+    console.log(`Handoff: ${path.join(logs, 'handoff.md')}\nEvidence: ${path.join(logs, 'evidence.json')}`);
   if (fs.existsSync(reportFile)) console.log('\n' + fs.readFileSync(reportFile, 'utf8'));
-  process.exit(r.status ?? 1);
+  process.exit(status);
 }
 
-main();
+await main();

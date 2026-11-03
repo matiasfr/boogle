@@ -1,0 +1,66 @@
+# Claude → Codex → gameplay evidence
+
+Run from the checkout whose tools you want to use. `run.ts` starts a worker and its browser broker; it never pushes.
+
+```sh
+# A committed Claude branch, rather than origin/main (which remains the default).
+node dev/codex/run.ts task inspect-forge --base-ref HEAD "Evaluate the forge reveal. Run the bot, inspect its checkpoint and report what reads clearly."
+
+# Exactly the caller's current working files, without changing its index, branch or files.
+node dev/codex/run.ts task inspect-wip --snapshot "Evaluate this working version. Do not change source. Run the place bot, inspect the forge checkpoint, and report findings."
+```
+
+Give every job a new topic. `--snapshot` uses HEAD plus tracked changes/deletions and nonignored untracked files; it cannot
+be combined with `--base-ref`. Ignored assets are not copied. It creates a snapshot commit on the worker's branch, not the
+caller's. Review that snapshot along with the worker's changes before shipping: it contains the caller's unfinished work.
+`meta.json` records the selected source ref and exact starting commit. Dependencies are installed separately from that
+build's lockfile. Don't edit the caller while a snapshot is being made; detected changes stop it rather than mix versions.
+
+Run jobs in the background in Claude Code. The worker receives `.look/see-client.ts`, a copy of the launcher's client, so
+even an older `--base-ref` can use today's broker. From the worker's checkout:
+
+```sh
+node .look/see-client.ts playthrough
+node .look/see-client.ts look --at list
+node .look/see-client.ts look --at "forge lit" --hud --question "Can I see what the train delivery built?"
+node .look/see-client.ts scenario world-inputs
+```
+
+`dev/codex/see.ts` is the same client in an updated checkout. Omitting `look` keeps its old capture syntax working.
+
+- **Playthrough:** runs the full existing bot. `--query`, `--eval`, `--stall` and `--full` are accepted. Each run gets its own
+  reports, session, bot log, end still and saved checkpoints. Missing expected beats, runtime errors and stopped frames
+  fail the operation. A failed run still returns its evidence. Bot pathfinding can vary: preserve a failure and rerun
+  before calling it a consistent gameplay regression.
+- **Look:** accepts the normal capture/action/curve options, including `--query`. `--at` reads the most recent playthrough
+  from **this job**, including a partial failed run; `--saves <directory>` selects another run explicitly. Never infer
+  full completion from a checkpoint. Open the images with `view_image` and state the observation separately from status.
+- **Scenario:** accepts names of existing scenarios from the launcher's trusted checkout, plus `--no-trace`. It runs them
+  against the worker's game and server. New or edited worker scenario code does not execute outside the sandbox; promote
+  it through the normal review workflow first. A scenario may need a matching build's interfaces.
+
+The broker owns `--url`, `--root`, `--data-dir` and `--out`. The worker starts Vite and the game server in its sandbox;
+the trusted launcher's harness runs Chromium on the local GPU. Only page eval/action code crosses into the browser.
+Operations have a seven-minute timeout. Do not edit source or launch simultaneous commands while collecting evidence.
+
+## What Claude gets
+
+`.look/codex/<topic>/` contains:
+
+- `report.md`: the worker's short assessment, including the images it opened, concrete visual observations, bot findings,
+  and what remains unverified.
+- `handoff.md`: links to that assessment and the captured evidence, with statuses and stale-build flags.
+- `evidence.json`: final commit/tree plus every operation's commit/tree before and after, arguments, query, timestamps,
+  exit status, artifact paths, the trusted harness's commit/tree, and whether it matches the final source tree.
+- `evidence/<request>/`: copies of each run's logs, images, curves, video, reports, checkpoints and traces. These survive
+  removing the worker worktree. `output.txt` includes renderer/runtime diagnostics; `evidence.json` describes the run.
+- `meta.json` and `log.txt`: job provenance and the full worker log.
+
+Each operation also returns its manifest immediately in the worker's `.look/evidence/`. A build that changes during a run
+fails verification. Committing identical files keeps the tree fingerprint, so valid evidence stays valid. Changes after
+the run are flagged in the final handoff; rerun affected checks. Ignored files and external dependencies are outside this
+source fingerprint.
+
+An exit-zero capture proves execution health, not visual quality. Warped bots establish scripted completion and reveal
+missed beats; they don't establish first-timer pacing or subjective feel. Sampled frames and curves don't prove real-time
+smoothness. Claude reviews the evidence and uses the normal shipping workflow; no extra approval step is added here.

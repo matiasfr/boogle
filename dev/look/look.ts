@@ -38,6 +38,7 @@ const opt: {
   warp: boolean;
   until: string | null;
   at: string | null;
+  saves?: string;
   root?: string;
   curves: boolean;
   curvesVs: string | null;
@@ -116,6 +117,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.warp = false; // the warm-up in real time too: for what warps can't show, like how long something takes to load
   else if (a === '--until')
     opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
+  else if (a === '--saves')
+    opt.saves = v(); // explicit checkpoint directory, including another worktree's bot run
   else if (a === '--at')
     opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
   else if (a === '--players')
@@ -138,6 +141,7 @@ for (let k = 0; k < argv.length; k++) {
   [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
+  [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
   [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
@@ -191,10 +195,10 @@ if (!pose) throw new Error('unknown view ' + opt.view);
 const label = opt.name || (opt.cam ? 'custom' : opt.view);
 
 if (opt.at === 'list') {
-  for (const b of listSaves()) console.log(b);
+  for (const b of listSaves(opt.saves)) console.log(b);
   process.exit(0);
 }
-const save = opt.at ? findSave(opt.at) : null;
+const save = opt.at ? findSave(opt.at, opt.saves) : null;
 if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
 
 let stack: Stack | undefined, browser: Browser | undefined;
