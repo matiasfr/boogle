@@ -16,25 +16,15 @@ import { activeFrame, run, stationOf } from './run.ts';
 import { beaconAt, setBeacon } from './signs.ts';
 import { boilerAt } from './props.ts';
 import { techGoal } from './tech.ts';
+import { nearest } from './nearest.ts';
 
-const nearest = <T extends { x: number; z: number }>(list: T[], ok: (t: T) => boolean) => {
+const nearestToPlayer = <T extends { x: number; z: number }>(list: T[], ok: (t: T) => boolean) => {
   const b = me.body;
-  if (!b) return null;
-  let best: T | null = null,
-    bd = Infinity;
-  for (const t of list) {
-    if (!ok(t)) continue;
-    const d = Math.hypot(b.position.x - t.x, b.position.z - t.z);
-    if (d < bd) {
-      bd = d;
-      best = t;
-    }
-  }
-  return best;
+  return b ? nearest(list, b.position, ok) : null;
 };
 const canChop = (t: Tree) => standing(t) && !t.great;
-export const nearestTree = () => nearest<Tree>(TREES, canChop);
-export const nearestRock = () => nearest<Rock>(ROCK_LIST, whole);
+const nearestTree = () => nearestToPlayer<Tree>(TREES, canChop);
+const nearestRock = () => nearestToPlayer<Rock>(ROCK_LIST, whole);
 const dist = (x: number, z: number) => {
   const b = me.body;
   return b ? Math.hypot(b.position.x - x, b.position.z - z) : Infinity;

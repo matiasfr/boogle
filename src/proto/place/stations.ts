@@ -20,7 +20,7 @@ import {
   type Station,
   type Stock,
 } from './layout.ts';
-import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from './pieces.ts';
+import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from './pieces.ts';
 import { addFoot } from './sites.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -30,6 +30,14 @@ const FRAME_W = 2.6, // along the line
 const PER_ROW = 5;
 
 export type StationRun = ReturnType<typeof buildStation>;
+/** The same deposit flight locally and on a partner's screen. Origins and landing effects belong to the caller. */
+export function flyToStock(st: StationRun, kind: Goods, n: number, from: THREE.Vector3, land: () => void) {
+  if (kind === 'logs')
+    send('log', from, st.logSlot(n, new THREE.Vector3()), { dur: 0.32, apex: 0.9, size: [1, 2.2], land });
+  else if (kind === 'rails') send('rail', from, st.railSlot(n, new THREE.Vector3()), { dur: 0.36, apex: 0.9, land });
+  else if (kind === 'stone') send('stone', from, st.stoneAt(n, new THREE.Vector3()), { dur: 0.34, apex: 0.9, land });
+  else send('log', from, st.at, { dur: 0.5, apex: 1.4, size: [4, 4], land });
+}
 /** Where a frame stands: `yaw` along the thing it feeds, (lx, lz) the way out from it. */
 export type FrameAt = { x: number; z: number; yaw: number; lx: number; lz: number };
 export function frameBesideLine(spec: Station, line: Line, dir: number): FrameAt {
