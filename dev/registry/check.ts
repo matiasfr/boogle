@@ -192,7 +192,7 @@ for (const [file, rules] of Object.entries(suppressions)) {
 
 for (const n of notes) console.log(`registry: ${n}`);
 if (errors.length) {
-  console.error(`\nregistry: ${errors.length} problem(s) (AGENTS.md, "Shared registries" and "Mixed builds"):`);
+  console.error(`\nregistry: ${errors.length} problem(s) (docs/agents/registries.md and docs/agents/mixed-builds.md):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }

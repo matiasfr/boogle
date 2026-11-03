@@ -6,7 +6,7 @@ Boogle is a friends' project: keep changes small, readable and fun. [DESIGN.md](
 
 Use Node 24 (`.nvmrc`; `nvm use` if you use nvm). Run `npm ci`, then `npm run dev` and open the URL Vite prints. Installation includes the server dependencies and pre-push hook. The dev server starts the game server automatically; no production secrets are needed. The `?room=` / `?netdebug=1` options are in [README.md](README.md#multiplayer).
 
-For browser checks, install the pinned Playwright browser with `npx playwright install chromium` (Linux: `npx playwright install --with-deps chromium`). Start with `npm run check`; the change-specific checks are in [AGENTS.md](AGENTS.md#tests).
+For browser checks, install the pinned Playwright browser with `npx playwright install chromium` (Linux: `npx playwright install --with-deps chromium`). Start with `npm run check`; the change-specific checks are in [AGENTS.md](docs/agents/tests.md#tests).
 
 ## How we work
 
@@ -50,4 +50,4 @@ Open this repository in Codex and trust it. `AGENTS.md` is the shared entry poin
 
 The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it needs no running dev server. Name the question with `--question`, frame the feature, use `--action` after warm-up and open the still and sheet with `view_image`. A successful capture still needs a visual judgment (the shared `look` skill).
 
-Commit only the task's files and ship with `npm run ship`, with the same `ship/` branch, CI and automerge rules as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification.
+Commit only the task's files and ship with `npm run ship`, with the same `ship/` branch, CI and automerge rules as every other agent. Follow [AGENTS.md](docs/agents/shipping.md#shipping) for review and verification.

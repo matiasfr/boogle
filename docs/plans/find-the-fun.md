@@ -13,10 +13,10 @@
 - **Behind a flag.** `?proto=<name>` turns it on; without the flag the game is unchanged. A prototype that changes
   lockstep numbers runs in its own room (`?room=proto-<name>`) so it never touches the real world's save.
 - **Evidence before a playtest.** The builder looks at its own `/look` stills and motion sheets and iterates before
-  shipping ([AGENT-VERIFICATION.md, See it before you ship](../../AGENT-VERIFICATION.md#see-it-before-you-ship), required by AGENTS.md). Tests only for lockstep code; `perf` only for heavy rendering.
+  shipping ([AGENT-VERIFICATION.md, See it before you ship](../agents/verification.md#see-it-before-you-ship), required by AGENTS.md). Tests only for lockstep code; `perf` only for heavy rendering.
 - **On the protos page and in the playlist.** [boogle.club/protos/](https://boogle.club/protos/) lists every
   prototype with its Play link, one gut question and a copyable playtest entry (no checklists: the owner is an
-  experienced player and judges feel fast); its entry lives in `protos/protos.ts` ([AGENT-SHIPPING.md, Shipping](../../AGENT-SHIPPING.md#shipping)), and a live
+  experienced player and judges feel fast); its entry lives in `protos/protos.ts` ([AGENT-SHIPPING.md, Shipping](../agents/shipping.md#shipping)), and a live
   card goes in `PLAYTEST_ORDER` and either joins the `?play` island (`ISLAND` in `src/proto/flags.ts`, its loader
   asking `protoOn`, a `spawn` of its own) or says why it is a `chapter` ("One path", below).
 - **Into the verb in seconds.** On any `?proto=` page the prototype bar (`src/proto/bar/`) shows the card's question,

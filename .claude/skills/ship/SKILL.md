@@ -5,7 +5,7 @@ argument-hint: '[commit message]'
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git add *) Bash(git commit *) Bash(npm run ship) Bash(npm run ship -- --wait) Bash(git rebase --continue)
 ---
 
-Ship the current work to `main` (it auto-deploys) through a PR that merges itself once CI is green. Follow the Shipping obligations in AGENTS.md and the full procedure in AGENT-SHIPPING.md, "Shipping".
+Ship the current work to `main` (it auto-deploys) through a PR that merges itself once CI is green. Follow the Shipping obligations in AGENTS.md and the full procedure in docs/agents/shipping.md, "Shipping".
 
 1. `git status` and `git diff`. Leave out unrelated or half-finished changes and anything that looks like another person's work in progress; ask if unsure.
    If the change spans more than ~3 files or ~150 lines, run `/simplify` on it first (and `/code-review` if it touches `src/net*`, `src/world/` or `server/`), then re-read the diff.
