@@ -28,10 +28,20 @@ import {
 import { GRID_RES, HALF, CELL, SEA } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { heights } from '../island/heights.ts';
-import { defineKind, spawn } from '../entity/entity.ts';
+import { defineKind, spawn, despawn } from '../entity/entity.ts';
 import { protoOn } from '../proto/flags.ts';
 import { seaU, seaRipples } from './water/state.ts';
-import { registerShoreProvider, gridBedAt } from './water/shore-providers.ts';
+import { registerShoreProvider, gridBedAt, createShoreAtlas } from './water/shore-providers.ts';
+import { createOcean } from './water/surface.ts';
+import { fftWaves } from './water/fft.ts';
+import { bakeFoam } from './water/foam.ts';
+import { shoreFields } from './water/shore-nodes.ts';
+import { createWaterQuality } from './water/quality.ts';
+import { GRID } from './water/tuning.ts';
+import { TSL } from './water/tsl.ts';
+import { gameWaterSky } from './sky-radiance.ts';
+import { camera, rendererReady, scene, sun } from './scene.ts';
+import { precompile } from './precompile.ts';
 export { seaU, seaRipples } from './water/state.ts';
 export { registerShoreProvider } from './water/shore-providers.ts';
 
@@ -167,9 +177,85 @@ waterMat.positionNode = Fn(() => {
 waterMat.colorNode = color();
 
 // late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
-defineKind('sea', { lateUpdate: 3010 });
+defineKind('sea', { prePhysics: -110, lateUpdate: 3010 });
+
+export const newWaterEnabled = new URLSearchParams(location.search).get('water') === 'new' && !protoOn('water');
+let waterMesh: THREE.Mesh | null = null;
+export const waterRuntime: { inspect(): Record<string, unknown>; dispose(): void } = {
+  inspect: () => ({ mode: 'legacy' }),
+  dispose() {},
+};
+
+function createRealSea() {
+  const atlas = createShoreAtlas(),
+    source = fftWaves(),
+    foam = bakeFoam(),
+    quality = createWaterQuality();
+  const fogRange = TSL.uniform(new THREE.Vector2(110, 520));
+  const ocean = createOcean(source, shoreFields(atlas), foam, {
+    sky: gameWaterSky,
+    grid: { ...GRID, far: camera.far, outer: Math.min(3000, camera.far * 0.5) },
+    fitCameraRange: true,
+    fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
+  });
+  let ready = false,
+    disposed = false;
+  const previousVisibility = waterMat.visible;
+  waterMat.visible = false; // also hides crossing's retained rectangles, without changing their default path
+  const entity = spawn({
+    kind: 'sea',
+    mesh: ocean.mesh,
+    prePhysics({ elapsed }) {
+      seaU.uTime.value = elapsed;
+    },
+    lateUpdate({ elapsed }) {
+      if (!ready || disposed) return;
+      atlas.sync();
+      gameWaterSky.sunColor.value.copy(sun.color).multiplyScalar(sun.intensity);
+      const fog = scene.fog as THREE.Fog;
+      fogRange.value.set(fog.near, fog.far);
+      ocean.update(camera, elapsed, sun);
+      quality.update(); // after adaptive-res, normalize once against its actual DPR
+    },
+    describe: () => ({
+      mode: 'new',
+      ready,
+      disposed,
+      fftBands: source.fft.bands,
+      quality: quality.name,
+      resolution: quality.resolution,
+      ...atlas.inspect(),
+    }),
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      ready = false;
+      waterMesh = null;
+      waterRuntime.inspect = () => ({ mode: 'new', ready: false, disposed: true });
+      waterRuntime.dispose = () => {};
+      ocean.dispose();
+      source.dispose?.();
+      atlas.dispose();
+      foam.dispose();
+      quality.dispose();
+      waterMat.visible = previousVisibility;
+    },
+  });
+  waterRuntime.inspect = () => entity.describe!();
+  waterRuntime.dispose = () => despawn(entity);
+  // CPU resources exist before the loading precompile. GPU work begins only after the existing renderer is ready.
+  void rendererReady.then(() => {
+    if (disposed || !entity.alive) return;
+    atlas.sync();
+    source.update(0);
+    ready = true;
+    void precompile(ocean.mesh);
+  });
+  return ocean.mesh;
+}
 
 export function createWaterMesh() {
+  if (waterMesh) return waterMesh;
   registerShoreProvider({
     id: 'home',
     bounds: { minX: -HALF, maxX: HALF, minZ: -HALF, maxZ: HALF },
@@ -186,6 +272,7 @@ export function createWaterMesh() {
       height: (i, j) => heights[i]![j]!,
     }),
   });
+  if (newWaterEnabled) return (waterMesh = createRealSea());
   const geo = new THREE.PlaneGeometry(1300, 1300, 100, 100); // ~13 m quads; the vertex wave is ~30 m long
   geo.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geo, waterMat);
@@ -196,5 +283,5 @@ export function createWaterMesh() {
       seaU.uTime.value = elapsed;
     },
   });
-  return mesh;
+  return (waterMesh = mesh);
 }

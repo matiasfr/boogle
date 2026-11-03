@@ -65,8 +65,8 @@ and trough clamp; finite GPU triangulation and the 10 Hz sample interval limit t
   Mobile draws the world at 0.6 of the maximum device pixel ratio, normalized against adaptive resolution's
   current 0.6–1 ratio so the scales never multiply down to 0.36. AgX/output remains at the adaptive canvas size.
   Stored 4× MSAA, all four FFT bands, wave energy, 384-segment grid and the 4096 shadow map stay the same.
-  Mobile halves the two caustic targets (256²/128²) and their three splat grids (64/32/16 cells), updating every
-  frame; it omits the finest sand ripple octave and rock bump detail. Both profiles omit bloom.
+  Both profiles retain full caustic and terrain detail and omit bloom. The cheap caustic/terrain options below are
+  diagnostics, not the mobile defaults.
 - `&shot=lagoon|breakers|surf-rock|open-ocean`: source camera and sun presets, translated only by the island offset.
 - `&waves=analytic`: earlier analytic wave diagnostic; it has no FFT caustics.
 - `&n=128`, `&cascades=1..4`, `&band=0..3`: FFT cost diagnostics. Caustics require band 2.
@@ -99,3 +99,8 @@ and trough clamp; finite GPU triangulation and the 10 Hz sample interval limit t
 Final camera tables, comparison boards, consecutive recording frames and validation are recorded in
 [water-demo-validation.md](../research/water-demo-validation.md). Captured frames are not real-time viewing:
 feel, frame pacing and iPad performance remain unverified.
+
+The staged [water graduation](../plans/water-graduation.md) makes this demo a client of the shared production
+surface, FFT, spectrum, foam and shore bake under `src/render/water/`. Its wrapper supplies the same explicit demo
+origin, look, reference sky, hero-rock foam and diagnostic settings. Its sky files, scene and `post.ts` remain;
+`water=new` is ignored on this demo page, preventing a second FFT/sea instance. The default game still uses its old sea.

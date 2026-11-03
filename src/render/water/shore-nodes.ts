@@ -21,7 +21,7 @@ export const uSwellDir = vec2(-Math.cos(a), -Math.sin(a));
 
 /** The field's lookups for world xz. Out of the tile: deep open water, no shore. */
 export function shoreFields(atlas: ShoreAtlas) {
-  const region = (xz: N) => {
+  const region = Fn(([xz]: [N]) => {
     const layer = float(-1).toVar();
     // Reverse iteration means the first stable provider wins. Real data always wins over an apron.
     for (let pass = 0; pass < 2; pass++)
@@ -42,24 +42,26 @@ export function shoreFields(atlas: ShoreAtlas) {
           layer.assign(i);
         });
       }
-    return layer;
-  };
-  const lookup = (xz: N, tex: ShoreAtlas['shore'], fallback: N) => {
-    const layer = region(xz);
     const t: N = atlas.transforms.element(TSL.int(max(layer, 0)));
     const uv = xz.sub(t.xy).div(max(t.z, 1)).add(0.5);
-    return select(
-      layer.greaterThanEqual(0),
-      texture(tex, uv)
-        .depth(TSL.int(max(layer, 0)))
-        .level(0),
-      fallback,
-    );
-  };
+    return vec3(uv, layer);
+  }); // Inline Fn: the captured uniform arrays must be bound independently in vertex, fragment and compute stages.
+  const lookup = (tex: ShoreAtlas['shore'], fallback: N) =>
+    Fn(([xz]: [N]) => {
+      const r = region(xz).toVar();
+      return select(
+        r.z.greaterThanEqual(0),
+        texture(tex, r.xy)
+          .depth(TSL.int(max(r.z, 0)))
+          .level(0),
+        fallback,
+      );
+    });
+  const surf = lookup(atlas.surf, vec4(6, 0, 0, 1));
   return {
-    shore: (xz: N) => lookup(xz, atlas.shore, vec4(-60, 1e4, 0, 0)),
-    travel: (xz: N) => lookup(xz, atlas.travel, vec4(0)),
-    surf: (xz: N) => lookup(xz, atlas.surf, vec4(6, 0, 0, 1)).r,
+    shore: lookup(atlas.shore, vec4(-60, 1e4, 0, 0)),
+    travel: lookup(atlas.travel, vec4(0)),
+    surf: (xz: N) => surf(xz).r,
   };
 }
 export type ShoreFields = ReturnType<typeof shoreFields>;

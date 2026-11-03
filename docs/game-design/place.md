@@ -186,3 +186,7 @@ included explicitly rather than accepting `H`'s exterior −6 fallback as real g
 1024 m / 512² core and an 80-texel halo (2 m/texel); all eight resident layers are bounded, and an overflow reports
 instead of evicting a visible shore. Bed/coast stays separate from projected obstacles used by wave shelter.
 This registration does not change the current sea or Round 4 terrain.
+
+`?proto=place&water=new` uses the same staged replacement sea as [home](island.md), sampling the actual gorge/shore
+provider. The old crossing material and its outer rectangles are hidden only while this opt-in sea is active;
+the normal page keeps them. Existing place lighting, sky, camera clip distances and terrain remain owned by place.

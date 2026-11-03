@@ -2,19 +2,14 @@
 // and whitecaps in the fragment shader; stage 1 answers with a few analytic Gerstner waves over baked tiles of filtered
 // slope moments, and stage 2's FFT answers with cascades, so the surface doesn't change.
 import { uTime, vnoise } from './shore-nodes.ts';
-import { TSL, type N } from './tsl.ts';
+import { TSL } from './tsl.ts';
 import { ULTRA, WAVES } from './tuning.ts';
 import { bakeSlopeTile } from './spectrum.ts';
 
 const { clamp, cos, float, max, mix, sin, smoothstep, texture, vec2, vec3 } = TSL;
 
-export type WaveSource = {
-  /** The vertex's displacement: damp is (swell, chop, chop) by depth, cell the mesh's spacing here. */
-  displace: (xz: N, cell: N, damp: N) => N;
-  /** Slope, per-axis slope variance, unresolved roughness and a whitecap amount for this pixel. Runs in uniform control flow. */
-  shade: (xz: N, footprint: N, damp: N) => { slope: N; variance: N; unresolved: N; whitecap: N };
-  update: (time: number) => void;
-};
+import type { WaveSource } from '../../render/water/waves.ts';
+export type { WaveSource } from '../../render/water/waves.ts';
 
 const TWO_PI = Math.PI * 2;
 const G = 9.81;

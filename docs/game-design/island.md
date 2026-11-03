@@ -57,4 +57,14 @@ The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texe
 edges receive a separate deep-water apron. Connected regions share one travel/shelter solve, and all sampled
 fields select one coherent region. No shore bake or new texture allocation runs for the default old sea.
 
+`?classic=1&water=new` opts into the staged replacement surface: four 256² FFT bands at `.25` energy, real shore
+attenuation, refraction from one opaque HDR colour/depth snapshot pair, crest/contact foam and impact rings. One sea
+entity owns its FFT, foam, shore atlas and snapshots. The current game sky supplies a live analytic reflection through
+`skyAt`; no atmosphere LUT/cube or tone-map change is installed. Camera near/far/FOV stay unchanged. The polar detail
+ends by half the route's far range, with a monotonic altitude scale and a flat skirt inside the clip range.
+Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
+(`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases
+the replacement resources and restores the prior resolution/material visibility; the main sea remains absent until
+`createWaterMesh()` recreates it. Moving-water physics is the next staged step, so this opt-in is not the default game.
+
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

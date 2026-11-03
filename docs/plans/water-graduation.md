@@ -140,7 +140,7 @@ Account for the ten FFT dispatches; high caustics' two raster targets, three spl
 Every numbered item is an implementation commit or small group of commits **after approval**, leaves `npm run check` green, formats only changed files, and updates affected as-built docs in the same commit. No new unit tests or scenarios for this Local rendering/feel work. Use existing diagnostics and harnesses; no source edits during a capture.
 
 - [x] **1. Establish the production water contract and real shore providers.** Create `src/render/water/{state,shore,shore-nodes,shore-providers,tuning,tsl}.ts`, extracting the existing bake and removing fixed demo coordinates; add `src/proto/place/water.ts` and its minimal registration in `place/index.ts`. Register home from finalized `island/heights.ts` data through the water facade. Keep the current renderer active until the replacement is complete. Verify axis orientation, known home/place bed samples, invalid exterior, wet/dry-only regions, paired region borders and obstacle-vs-bed separation with inspection/diagnostic outputs; inspect the gorge and home shore in the broker. Run `npm run check`.
-- [ ] **2. Move the surface/FFT/refraction/foam into one owned sea and lighting adapter.** Move reusable `surface.ts`, `fft.ts`, `spectrum.ts`, `foam.ts` into `src/render/water/`; keep the prototype scene temporarily as a client of those same modules, with explicit demo settings. Make `water-render.ts` the resource/lifecycle facade; keep one sea instance and update ordering, no duplicate FFT or particle pools. Create `sky-radiance.ts` and adjust `sky.ts` to share its existing sky calculation, without changing its look or scene.ts. Verify reference Lagoon/Breakers and real-bank captures, one colour/depth copy, shader health and resource disposal; run `npm run check` and record a before/after performance baseline on an idle GPU. New real-world rendering can remain a local debug opt-in until step 7.
+- [x] **2. Move the surface/FFT/refraction/foam into one owned sea and lighting adapter.** Move reusable `surface.ts`, `fft.ts`, `spectrum.ts`, `foam.ts` into `src/render/water/`; keep the prototype scene temporarily as a client of those same modules, with explicit demo settings. Make `water-render.ts` the resource/lifecycle facade; keep one sea instance and update ordering, no duplicate FFT or particle pools. Create `sky-radiance.ts` and adjust `sky.ts` to share its existing sky calculation, without changing its look or scene.ts. Verify reference Lagoon/Breakers and real-bank captures, one colour/depth copy, shader health and resource disposal; run `npm run check` and record a before/after performance baseline on an idle GPU. New real-world rendering can remain a local debug opt-in until step 7.
 - [ ] **3. Connect moving-water queries to swimming, the ball, splashes and cave volumes.** Create `water/queries.ts`; edit `physics/water-field.ts`, `entities/player/state.ts`, `entities/ball/state.ts`, `render/splash.ts`, `physics/flight.ts`, `pois/caves/index.ts`, `entities/camera/index.ts`, and the fixed-SEA contact readers in `features/impact.ts`, `features/ping.ts`, `player/throw.ts`. Preserve ownership APIs and existing wire data. Exercise jumps, entry, a stationary crest, fast throws, teleport, ownership/held changes, late readbacks, and the cave pond with captured query-age/error readings. Run `npm run sim -- replay` because player/ball physics changed; explain intended replay differences rather than silently replacing fixtures. Run existing broker `scenario caves` on the classic route (make that existing scenario select `classic=1` if needed) and `scenario smoke` for two-player ball authority, plus `npm run check`.
 - [ ] **4. Apply caustics, swash/wetness and spray to real receivers.** Create `water/{receivers,caustics,spray}.ts`; minimally attach receiver patches in `island/terrain.ts` and `proto/place/land.ts`/`look.ts`, retaining terrain colour, roughness, shadow and cave mask nodes through `patchNode`. Register real contact obstacles, generate world-fixed emitter sites, and spawn a spray entity before the shared particle upload. Gate receiver light by depth, orientation, daylight and shelter; verify no caustics shine through dry bridges or cave roofs. Compare a bank, rock/support and beach at dawn/noon/night; inspect stills and consecutive recorded frames, count mip work and run `npm run check`.
 - [ ] **5. Integrate underwater composition and accessible dive controls.** Move `underwater.ts`/`snow.ts` into production water, refactor their body masks and return an HDR output node; add `features/water-controls.ts`/`.css` and a renderer-free dive intent consumed by the player controller. Remove the old prototype action/force override in the same commit. Verify keyboard, runtime free pad slots, actual pad hold/release and touch cancel, plus surface/waterline/full-submersion/wet-exit captures in sea and pond and a dry cave view. Use `--video --curves` with consecutive-frame extraction; record that real-time feel remains for the owner. Run `npm run check`, replay if forces changed again, and the existing cave scenario.
@@ -161,6 +161,39 @@ Opened home still/motion ([manifest](../../.look/evidence/1793729382663-62006/ev
 ([manifest](../../.look/evidence/1793729416317-63044/evidence.json)): the original sea and shores remain visible and
 unchanged in treatment, with no graphics errors. Home includes the avatar; the gorge avatar is occluded, so step 2 must
 improve that framing. This step establishes bathymetry, not the new surface's appearance or real-time feel.
+
+### Step 2 evidence (3 November 2026)
+
+The new sea is local opt-in `?water=new`; default and demo routes retain their selection. Surface, FFT, spectrum and
+foam now share production modules. One sea owns four 256² FFT bands, shore atlas, opaque snapshots and disposal.
+The existing sky calculation is shared through `skyAt`; Neutral, scene.ts, demo sky and post remain untouched.
+`npm run check` passed (292 tests, registry, levels, assets and build). The first two capture rounds exposed TSL
+scope and cross-stage uniform problems; the third fixed both. All final captures report no graphics/page errors.
+
+Opened PNGs: home still/motion ([manifest](../../.look/evidence/1793730279387-82512/evidence.json)); place bank
+still, curves and four consecutive video frames ([manifest](../../.look/evidence/1793730297930-82769/evidence.json));
+Lagoon and Breakers stills ([Lagoon](../../.look/evidence/1793730314252-83049/evidence.json),
+[Breakers](../../.look/evidence/1793730489854-85927/evidence.json)); default still
+([manifest](../../.look/evidence/1793730522844-86291/evidence.json)); lifecycle still
+([manifest](../../.look/evidence/1793730549214-86590/evidence.json)); mobile bank still
+([manifest](../../.look/evidence/1793730562350-86753/evidence.json)). Clear shallow colour follows real ground;
+the avatar is visible at both banks, Lagoon retains refracted sand, and Breakers retains curved foam crests.
+The default gorge stays flat blue. A thin dark water/terrain edge and missing receiver effects remain for step 4.
+Consecutive frames show advancing water detail without an obvious jump; real-time smoothness remains unverified.
+
+GPU-span method from water-demo-validation, matching 1210×702 world/output, DPR 1, stored 4× MSAA, Metal-3 adapter,
+HeadlessChrome 156: old means **3.947 / 3.666 / 3.572 ms**, p95 **4.505 / 4.162 / 4.094 ms**
+([baseline](../../.look/evidence/1793728982475-52995/evidence.json)); opt-in means **5.387 / 5.135 / 5.017 ms**,
+p95 **6.402 / 5.699 / 5.668 ms** ([gorge still and cost manifest](../../.look/evidence/1793730505873-86152/evidence.json)).
+The apparent mean delta is about **+1.45 ms**, with 11.3 ms to the 16.7 ms frame budget in these stationary windows.
+No exclusive GPU reservation or clock telemetry: this is provisional, not sustained device acceptance. Broker runs
+did not overlap. Neither set had >33 ms frame gaps. New sea counts: 234 draws, five native raster passes, one colour
+and one depth copy; old: 237 draws, three passes, no copies. New FFT contributes ten dispatches.
+
+Disposal removed the sea entity and about 113.76 MB of reported GPU resources; recreation restored one sea and
+the same geometry/storage/program counts, with a 36-byte reported residual needing lifecycle follow-up.
+Mobile confirmed 726×421 world / 1210×702 output, four bands and unchanged camera clips; softer edges remain readable.
+No swimming/ball wave agreement, cave integration, long travel, iPad or ten-minute device test is claimed by step 2.
 
 ## Risks
 
