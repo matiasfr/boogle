@@ -19,6 +19,7 @@ import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot, type PieceKind }
 
 type Pile = { x: number; y: number; z: number; yaw: number; logs: number; rails: number; stone: number };
 const piles: Pile[] = [];
+const flying = new Set<{ pile: Pile; key: 'logs' | 'rails' | 'stone' }>();
 const MAX = 64; // pieces of each kind drawn, across every pile
 const JOIN_R = 2.2; // a drop this close to a pile goes on it
 const REACH = 2.8;
@@ -88,10 +89,13 @@ function dropOne() {
   let pile = piles.find((q) => Math.hypot(q.x - x, q.z - z) < JOIN_R && Math.abs(q.y - y) < 1);
   if (!pile) piles.push((pile = { x, y, z, yaw: me.yaw, logs: 0, rails: 0, stone: 0 }));
   const to = pile;
+  const trip = { pile: to, key: kind === 'log' ? 'logs' : kind === 'rail' ? 'rails' : 'stone' } as const;
+  flying.add(trip);
   send(kind, p4.set(p.x, p.y + 0.9, p.z), at.set(x, y + 0.2, z), {
     dur: 0.28,
     apex: 0.5,
     land: () => {
+      if (!flying.delete(trip)) return;
       if (kind === 'rail') to.rails++;
       else if (kind === 'stone') to.stone++;
       else to.logs++;
@@ -113,14 +117,18 @@ function pickUp(p: Pile) {
     while (p[key] > 0 && back.room() > 0) {
       p[key]--;
       back.incoming++;
+      const trip = { pile: p, key } as const;
+      flying.add(trip);
       send(kind, at.set(p.x, p.y + 0.3, p.z), at, {
         dur: 0.3,
         apex: 0.9,
         aim: (to) => void to.set(b.position.x, b.position.y + 0.7, b.position.z),
         land: () => {
+          if (!flying.delete(trip)) return;
           back.incoming--;
           back[key]++;
           pop(3, 0.4);
+          save();
         },
       });
     }
@@ -164,6 +172,7 @@ addEventListener('mousedown', (e) => {
 
 /** Start over: the piles go with everything else. */
 export function resetDrops() {
+  flying.clear();
   piles.length = 0;
   draw();
 }
@@ -174,8 +183,16 @@ export function updateDrop() {
 }
 
 personalSlice('dropped', {
-  get: () => piles.map((p) => ({ ...p })),
+  get: () => {
+    const saved = new Map(piles.map((p) => [p, { ...p }]));
+    for (const { pile, key } of flying) {
+      if (!saved.has(pile)) saved.set(pile, { ...pile });
+      saved.get(pile)![key]++;
+    }
+    return [...saved.values()];
+  },
   set: (v) => {
+    flying.clear();
     piles.length = 0;
     if (Array.isArray(v))
       for (const j of v as Partial<Pile>[]) {

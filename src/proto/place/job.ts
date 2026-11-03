@@ -70,6 +70,7 @@ sharedSlice('job', {
   set: (v) => {
     Object.assign(job, JSON.parse(fresh));
     fill(job, v);
+    if (job.awake) job.rung.multi = true;
   },
 });
 const gather = (list: Slice[]) => Object.fromEntries(list.map((s) => [s.key, s.get()]));
