@@ -82,7 +82,12 @@ you enter, it slowly circles the island.
 
 ## Avatar, colours and names
 
-- Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows if the Buddy can't load, or hasn't within the loading screen's 8 s.
+- Avatar: the Buddy (below). Its model and clips preload from the HTML, alongside the game modules. Local players,
+  partners, late arrivals and the sky-card preview stay hidden until Buddy is ready; the loading screen's 8 s deadline
+  does not reveal a temporary capsule. A genuine load failure or 15 s Buddy deadline reveals the older coloured capsule
+  for the rest of that visit, so nobody stays invisible and a late completion cannot switch their body.
+  `?body=capsule` explicitly selects that capsule with two eyes, bobbing and squashing with speed
+  ([avatars.ts](../../src/player/avatars.ts)). This loading visibility is Local, with no presence or physics changes.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
   `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord. Every avatar also
   gives off a little of its own colour (emissive 0.15, day and night), so its shaded side and a player at night still read.

@@ -75,7 +75,7 @@ let label: THREE.Sprite | null = null;
 let labelText = '';
 let hop = 1; // s since the last colour change
 let shownColor = -1;
-let retry = 0;
+let shownMaterial: THREE.MeshStandardMaterial | null = null;
 const nameBox = document.getElementById('name-input') as HTMLInputElement | null;
 
 function standOnCar(out: THREE.Vector3, carAt: THREE.Vector3) {
@@ -88,11 +88,8 @@ const buddyAt = new THREE.Vector3();
 const stageAt = new THREE.Vector3();
 
 function updatePreview(dt: number) {
-  retry -= dt;
-  // The Buddy dresses avatars only once it has loaded; until then this is a capsule.
-  if (retry <= 0 && !preview?.userData.handSocket) {
-    retry = 0.25;
-    preview?.removeFromParent();
+  // makeAvatar keeps the body hidden until Buddy is ready, including this preview.
+  if (!preview) {
     preview = makeAvatar(me.colorIdx);
     preview.rotation.y = YAW;
     previewHolder.add(preview);
@@ -101,9 +98,11 @@ function updatePreview(dt: number) {
     shownColor = -1;
   }
   if (!preview) return;
-  if (me.colorIdx !== shownColor) {
-    if (shownColor >= 0) hop = 0;
+  if (me.colorIdx !== shownColor || preview.userData.mat !== shownMaterial) {
+    if (shownColor >= 0 && me.colorIdx !== shownColor) hop = 0;
     shownColor = me.colorIdx;
+    shownMaterial = preview.userData.mat;
+    preview.userData.colorIdx = me.colorIdx;
     paintAvatar(preview.userData.mat, me.colorIdx, FRONT_FILL);
   }
   hop += dt;

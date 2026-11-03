@@ -45,9 +45,26 @@ export type AvatarSkin = {
   animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean): void;
 };
 let skin: AvatarSkin | null = null;
-export function setAvatarSkin(s: AvatarSkin, existing: (Avatar | null | undefined)[]) {
+let fallback = new URLSearchParams(location.search).get('body') === 'capsule';
+// Local presentation only. Includes the sky-card preview and avatars arriving while the model is loading.
+const waiting = new Set<Avatar>();
+export function setAvatarSkin(s: AvatarSkin) {
+  if (fallback) return false; // a failed/timed-out load stays a capsule for this visit, even if it finishes later
+  for (const a of waiting) {
+    s.dress(a, a.userData.colorIdx);
+    a.userData.inner.visible = true;
+  }
   skin = s;
-  for (const a of existing) if (a) s.dress(a, a.userData.colorIdx);
+  waiting.clear();
+  return true;
+}
+
+/** A real load error or the Buddy deadline: nobody remains invisible indefinitely. */
+export function failAvatarSkin() {
+  if (skin) return;
+  fallback = true;
+  for (const a of waiting) a.userData.inner.visible = true;
+  waiting.clear();
 }
 
 // A little of a Buddy's own colour as light, so its shaded side and a night-time Buddy still read as that player.
@@ -77,6 +94,8 @@ export function makeAvatar(colorIdx: number): Avatar {
   }
   group.add(inner);
   group.userData = { inner, mat, phase: 0, colorIdx } satisfies AvatarData;
+  inner.visible = !!skin || fallback;
+  if (!skin && !fallback) waiting.add(group as Avatar);
   skin?.dress(group as Avatar, colorIdx);
   return group as Avatar;
 }
