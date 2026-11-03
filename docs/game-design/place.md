@@ -74,6 +74,10 @@ Scripted at 1180 x 820 with real input (walking, no sprint, one scripted press p
 
 Cost (`npm run counts`, its fixed pose): 224 draws, 82 shadow draws and 128 programs last round with this look on; 217, 77 and 145 now. With `&look=off`: 189, 62 and 100 last round; 182, 57 and 106 now. At touch settings (1024 shadow map, 0.8x; `shot=cost`), frames seen from this round: 290 draws and 531k triangles at spawn at the start, 364 and 558k in a finished village with everything given and 38 little guys, 214 and 552k on the stone street. Then, on the owner's call that this Mac (M1 Max, 60 fps here) is the average target and the iPad the floor, the cheap, invisible cuts only: stations and wheels in shared batches, trains not yet needed not drawn, sleepers and rails on the ground and heads no longer casting, and little guys drawn only when in front of you. Same frames, after: 203 draws and 404k at spawn, 244 and 436k in the finished village, 164 and 436k on the stone street. Real iPad frame rate is still unmeasured; it adapts resolution if it has to.
 
+## Sound
+
+Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience bus, so it starts with the first press, ducks under voices and follows the volume): slow swells of low-passed brown noise, one on each side on its own clock; far gulls every half a minute to two minutes (a lone mew, a pair, a long call, sometimes an answer), panned around; a faint wandering breeze that gives way to the sea at the shore. The sea is loudest within about 18 m of the shore, a little under that on the river bank, and fades by 150 m to 11 dB down, with height counting as distance; it leans towards the water's side as you turn. Numbers: `LEVELS` and `FEEL`. `&ambience=off` turns it off and `&ambience=-6` moves it in dB. Hear it away from the game: `node dev/audio/render.ts --only place`.
+
 ## How it's built
 
 Local, all of it, in localStorage per room (`boogle-place-v3`, a new key so an old save can't break it). Your back's log count is kept in the prototype and drawn by the
