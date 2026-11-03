@@ -2,7 +2,9 @@
 const { observeGpu, hardwareTiming } = (await import(
   '/src/debug/prof-overlay.ts' as string
 )) as typeof import('../../../src/debug/prof-overlay.ts');
-const { renderer } = (await import('/src/render/scene.ts' as string)) as typeof import('../../../src/render/scene.ts');
+const { renderer, pipeline, scenePass } = (await import(
+  '/src/render/scene.ts' as string
+)) as typeof import('../../../src/render/scene.ts');
 const observer = await observeGpu();
 try {
   const timing = await hardwareTiming(3);
@@ -19,10 +21,14 @@ try {
         gpuStatus: timing.gpu.render.status,
         partial: timing.gpu.render.partialFrames,
         missing: timing.gpu.render.missingFrames,
-        loadedTone: performance.getEntriesByType('resource').some((e) => e.name.includes('/src/proto/tone.ts')),
+        outputColorTransform: pipeline.outputColorTransform,
+        outputIsScenePass: pipeline.outputNode === scenePass,
       }),
   );
 } finally {
   observer.stop();
 }
+// Keep the measurement in the log, not over the comparison image.
+for (const panel of document.querySelectorAll<HTMLElement>('body > section'))
+  if (panel.textContent?.includes('Measure 5 seconds')) panel.style.display = 'none';
 export {};

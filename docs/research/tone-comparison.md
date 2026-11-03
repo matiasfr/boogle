@@ -28,7 +28,8 @@ are existing repo research and installed source, not newly verified claims about
 1. Compare `tone=neutral|agx|agx-sat|aces` on each requested scene. ACES Filmic is a useful fourth candidate because
    it is already installed and offers a different shoulder/contrast response without a new implementation.
 2. Reuse the water meter for **all four** curves: 32×32 log-luminance, 16 samples per texel, 1×1 adaptation with 256
-   samples, clamped exposure 0.05–20; darkening rate 2.5/s, brightening 1/s. A 15-second warmup settles it.
+   samples, clamped exposure 0.05–20; darkening rate 2.5/s, brightening 1/s. Use a real-time warmup of at least
+   10 seconds: warped warmups skip draws, so GPU adaptation does not get every simulation update.
 3. Match middle grey rather than the whole image histogram, which would hide the curve's contrast. At input 0.18,
    Neutral at 1 maps to linear 0.14. Numerical evaluation of the installed equations gives trims Neutral 1,
    water AgX 0.771116, AgX-sat 0.771116, ACES 0.729587 for the same output luminance. Keep these constant across
@@ -56,7 +57,7 @@ are existing repo research and installed source, not newly verified claims about
 `dev/look/evals/tone.ts` holds the camera, recolours the actual avatar purple, stages the real train and timber,
 and uses the existing sunset/night evals. The train is parked for colour comparison; this is not a progression
 playthrough. Through the job's broker, run `node .look/see-client.ts look --query 'classic=1&tone=agx-sat&toneShot=home'
---eval dev/look/evals/tone.ts --warm 15 --frames 2 --seconds 0.2`. Use `proto=place&toneShot=place`,
+--eval dev/look/evals/tone.ts --real --warm 10 --frames 2 --seconds 0.2`. Use `proto=place&toneShot=place`,
 `proto=crossing&toneShot=crossing`, `proto=water&toneShot=beach`, or `classic=1&toneShot=home&toneTime=sunset|night`.
 Optional `--action dev/look/evals/tone-cost.ts` with `prof=1` reports counts and bounded timing through the existing
 observer. Boards use ffmpeg `hstack`, ordered Neutral / AgX / AgX-sat / ACES; source manifests stay beside them.
