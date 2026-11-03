@@ -72,6 +72,8 @@ Falling is harmless: in the water, or down on a shore or a river bank more than 
 
 Deposit replies are matched to their sender and request, even after the active frame or temporary authority changes. A stalled tab does not refund accepted goods: rejected pieces (including the great beam) return once, and unanswered requests return when their authority actually leaves. This prevents a five-second stall from leaving the same logs both on a back and in the frame.
 
+If a partner leaves holding the great beam or the boiler, it returns to its pickup spot so the remaining player can finish. Already delivered beams and fitted boilers stay consumed. Owner presence `placeBig` identifies the carrier; snapshots propagate the return and clear stale cargo from a returning shoulder. Reconnecting tabs rejoin behind the surviving authority, including when the carrier used to be the authority. Serves DESIGN.md 8 (Designed for drop-in, drop-out).
+
 ## Ancient technology (round 4, exploring)
 
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).

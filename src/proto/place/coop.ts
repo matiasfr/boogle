@@ -15,6 +15,8 @@
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.
 // - Trains are nudged to the authority's place, and platforms get stable ids so a rider stands on your copy of the deck.
+// - Owner presence tracks a carried great beam or boiler. Departure returns it to its pickup; snapshots clear a
+//   returning carrier's stale shoulder, including ordinary reconciliation after reconnecting.
 //
 // Personal: your back, crates and gifts (each tab gets its own crate at each stretch), crystals, gold finds. Shared: the rungs,
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
@@ -37,10 +39,12 @@ import {
   TREES,
   back,
   chopHooks,
+  putDownBig,
   shoulder,
   rockStruck,
   setTrunkTaken,
   standing,
+  trunkTaken,
   type BigThing,
   type Rock,
   type Tree,
@@ -126,6 +130,7 @@ function applyFull(a: Api, j: Snap) {
   back.incoming = 0;
   a.clearIncoming();
   applyShared(j.shared);
+  reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
   a.putMachine(j.shared.run);
@@ -228,7 +233,7 @@ function reconcile(a: Api, j: Snap) {
         t.fall = 0;
       }
     });
-    if (q.trunk === true) setTrunkTaken(true);
+    if ((q.trunk === true) !== trunkTaken()) setTrunkTaken(q.trunk === true);
   }
   Object.assign(job.score, (j.shared.job as typeof job).score);
   // Crates and people: each tab counts them as they land, so a moment's difference is normal.
@@ -259,11 +264,17 @@ function onSnap(a: Api, j: Snap, force: boolean) {
   if (j.gen < gen) return; // from before a Start over
   if (force || j.gen > gen) return applyFull(a, j);
   reconcile(a, j);
+  reconcileBig();
+}
+
+function reconcileBig() {
+  if ((back.big === 'beam' && !trunkTaken()) || (back.big === 'boiler' && job.boiler !== 2)) putDownBig();
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
 const peers = new Map<string, { since: number; visible: boolean; seen: number }>();
 const peerBack = new Map<string, number>();
+const peerBig = new Map<string, BigThing>();
 const SEEN_MS = 5000; // no presence for this long (a tab stuck or gone): it doesn't decide
 /** The tab that decides, null for this one. */
 function authorityPeer(): string | null {
@@ -386,6 +397,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     case 'big':
       if (!ready) return;
+      if (m.what === 'beam' || m.what === 'boiler') peerBig.set(from, m.what);
       if (m.what === 'beam') setTrunkTaken(true);
       else if (m.what === 'boiler') job.boiler = 2;
       return;
@@ -645,10 +657,13 @@ export const coop = {
     keepPresenceWhile(() => since >= 0);
     // A partner's back reads at a glance: their logs on their avatar (the rails stay personal, a small glitch).
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
+    addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;
     onRemotePresence((r, pr) => {
       const b = (pr as { placeBack?: unknown }).placeBack;
       peerBack.set(r.peer, count(b, 64) ? b : 0);
+      const big = (pr as { placeBig?: unknown }).placeBig;
+      peerBig.set(r.peer, big === 'beam' || big === 'boiler' ? big : null);
       const v = (pr as { placeCoop?: unknown }).placeCoop;
       if (!count(v, Number.MAX_SAFE_INTEGER)) return void peers.delete(r.peer);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
@@ -660,11 +675,30 @@ export const coop = {
           refund(pending[k]!.kind);
           pending.splice(k, 1);
         }
+      const big = peerBig.get(r.peer);
+      // A last presence packet may precede a deposit/fit; never return a consumed piece.
+      const beamDelivered = lines.some((l) => l.stations.some((st) => st.have.beam > 0 || st.coming.beam > 0));
+      if (big === 'beam' && trunkTaken() && !beamDelivered) {
+        setTrunkTaken(false);
+        save();
+      } else if (big === 'boiler' && job.boiler === 2) {
+        job.boiler = 1;
+        save();
+      }
       budget.delete(r.peer);
       peerBack.delete(r.peer);
+      peerBig.delete(r.peer);
       if (peers.delete(r.peer)) showBanner('Your partner left', 'The railway is still here. It just takes longer.', 3);
     });
-    onRoomReady((room) =>
+    onRoomReady((room) => {
+      room.onConnection((connected) => {
+        // The survivors may have returned our cargo while we were gone. Rejoin
+        // behind them, just as a newly visible tab does, and take their snapshot.
+        if (!connected && since >= 0) {
+          since = world.tick;
+          synced = false;
+        }
+      });
       room.onMessage((raw, from) => {
         const m = raw as Record<string, unknown> | null;
         if (m?.t !== 'placeCoop' || typeof from !== 'string') return;
@@ -680,8 +714,8 @@ export const coop = {
         } catch (e) {
           console.warn('[place coop] bad message', e);
         }
-      }),
-    );
+      });
+    });
     // Back from a hidden tab: behind on everything, so it goes to the back of the queue and catches up.
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && since >= 0) since = world.tick;
