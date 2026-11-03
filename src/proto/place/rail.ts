@@ -10,9 +10,10 @@ import { emit } from '../../render/particles.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
-import { BODY, addBody, createBody, removeBody, stepAlpha, type Body } from '../../physics/engine.ts';
+import { BODY, addBody, createBody, onPreStep, removeBody, stepAlpha, type Body } from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
-import { registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
+import { carry, registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
+import { me } from '../../player/player.ts';
 import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
 import { box, place } from '../net/boxes.ts';
 import { deck, type Deck } from '../net/crates.ts';
@@ -299,6 +300,36 @@ export function buildPlatform(line: Line, s0: number, s1: number, lat: number, r
 
 // ---------------------------------------------------------------- a car: a kinematic body following a planned pose
 const BOTTOM = 0.4;
+// The deck's edge holds you while you stand. The body is a sphere on a box and counts as standing up to CARRY.edge past the
+// box (src/physics/platforms.ts). With its centre past the box, though, the contact's normal leans outward, so a player who
+// stopped at the edge crept off at about 0.1 m/s, moving or not, until the deck let go of them over the river. Standing with
+// no stick pushed, you're eased back inside instead. Push out and you walk off, and a jump's a jump, so no railing: nothing
+// here looks solid that isn't. Serves "you can stand on it", docs/proposals/boogle-2.md.
+const HOLD = { inset: 0.04, speed: 1.2 }; // m inside the box's edge you settle; m/s you're eased back
+const decks = new Set<Platform>();
+onPreStep(
+  () => {
+    const b = me.body,
+      p = carry.on;
+    if (!b || !p || !decks.has(p) || me.wish.lengthSq() > 0.01 || me.jumpQueued > 0) return;
+    const q = p.body.position,
+      yaw = yawOf(p.body.quaternion),
+      c = Math.cos(yaw),
+      s = Math.sin(yaw);
+    const rx = b.position.x - q.x,
+      rz = b.position.z - q.z;
+    const lx = rx * c - rz * s,
+      lz = rx * s + rz * c;
+    const most = HOLD.speed * FIXED,
+      overX = Math.abs(lx) - (p.hx - HOLD.inset),
+      overZ = Math.abs(lz) - (p.hz - HOLD.inset);
+    if (overX <= 0 && overZ <= 0) return;
+    const inX = overX > 0 ? -Math.sign(lx) * Math.min(most, overX) : 0,
+      inZ = overZ > 0 ? -Math.sign(lz) * Math.min(most, overZ) : 0;
+    b.position.set(b.position.x + inX * c + inZ * s, b.position.y, b.position.z - inX * s + inZ * c);
+  },
+  { order: 20 }, // after the decks move (10), before the player's controller (40)
+);
 type Car = {
   spec: CarSpec;
   hy: number;
@@ -352,6 +383,7 @@ function makeCar(spec: CarSpec, rock: THREE.Object3D, before: () => void, extra:
     },
   };
   registerPlatform(car.platform);
+  decks.add(car.platform);
   return car;
 }
 function moveCar(c: Car, dt: number) {
