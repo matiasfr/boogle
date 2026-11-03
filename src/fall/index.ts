@@ -9,10 +9,11 @@ import './fall.css';
 import * as THREE from 'three/webgpu';
 import { FIXED, PLAYER_R, reducedMotion } from '../constants.ts';
 import { onEntered } from '../entities/player/state.ts';
-import { groundHeight } from '../island/heights.ts';
+import { fallArrival } from './arrival.ts';
 import { clamp, smoothstep } from '../math.ts';
 import { defineKind, despawn, spawn } from '../entity/entity.ts';
-import { teleport } from '../physics/engine.ts';
+import { getMask, setMask, teleport } from '../physics/engine.ts';
+import { GROUP } from '../physics/physics.ts';
 import { AVATAR_FILL, animateAvatar, makeAvatar, makeLabel, paintAvatar, type Avatar } from '../player/avatars.ts';
 import { input, inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
@@ -158,12 +159,16 @@ function rollPlace(t: number) {
   carAt.copy(CAR_START).addScaledVector(FWD, CRUISE * k + (((RELEASE - CRUISE) / ROLL_S) * k * k) / 2);
 }
 const standAt = new THREE.Vector3();
+let playerMask = -1;
 
 onEntered(() => {
   state = 'roll';
   document.body.classList.remove('fall-stage');
   despawn(previewProp);
   inputState.held = true;
+  // Two arrivals can overlap in the sky. A remote body must not become a floor or fling us off the opening.
+  playerMask = getMask(me.body!);
+  setMask(me.body!, playerMask & (GROUP.SCENERY | GROUP.CAVE));
   standOnCar(standAt, CAR_START);
   teleport(me.body!, standAt.x, standAt.y, standAt.z);
   me.body!.velocity.set(0, 0, 0);
@@ -250,7 +255,7 @@ function updateCar(dt: number) {
   carSpin += dt * 2.6;
   g.rotation.x = -carSpin;
   g.rotation.z = carSpin * 0.45;
-  const ground = groundHeight(g.position.x, g.position.z);
+  const ground = fallArrival.ground(g.position.x, g.position.z);
   if (g.position.y <= ground + 0.4) {
     carDown = true;
     g.position.y = ground + 0.45;
@@ -427,10 +432,15 @@ const director = spawn({
             alpha: 0.5,
             color: STREAK,
           });
-      if (me.coyote > 0 || me.swimming) land(now);
+      const nearGround = b.position.y <= fallArrival.ground(b.position.x, b.position.z) + PLAYER_R + 0.6;
+      if (nearGround && (me.coyote > 0 || me.swimming)) land(now);
     } else if (state === 'down') {
       if (now - downSince > GET_UP_MS && pressing()) me.downUntil = now;
-      if (!me.down) state = 'done';
+      if (!me.down) {
+        state = 'done';
+        setMask(b, playerMask);
+        fallArrival.active = false;
+      }
     }
     if (state === 'down' || (state === 'done' && restT < 1.2)) {
       restT += dt;

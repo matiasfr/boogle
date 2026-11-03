@@ -24,6 +24,8 @@ import { onFrame } from '../../loop.ts';
 import { worldStatus, world, onApplied } from '../../world/sync.ts';
 import { FOG_FAR, PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
+import { freshStart } from '../../player/arrival.ts';
+import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
 import { setCcd, teleport } from '../../physics/engine.ts';
@@ -67,7 +69,7 @@ import { besideLine } from './rail.ts';
 import { TREES, back, resetRocks, resetTrees, updateChop, felled } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
 import { rungFromPeer } from './ladder.ts';
-import { job, resetJob, restore, save, personalSlice, num } from './job.ts';
+import { job, resetJob, restore, save, personalSlice, num, forgetSaves } from './job.ts';
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, solidHeaps, stepsOf, yard } from './lines.ts';
 import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
@@ -106,6 +108,18 @@ import { resetTownLife, updateTownLife } from './town-life.ts';
 
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
 if (pageQuery().get('fresh') === '1') document.body.classList.add('place-fresh');
+freshStart.warning = coop.on
+  ? "Are you sure? You'll lose your own progress and fall in as someone new on a fresh railway. Your partners keep this room and its railway."
+  : "Are you sure? You'll lose your own progress and railway, and fall in as someone new.";
+freshStart.prepare = () => {
+  forgetSaves();
+  if (!coop.on) return;
+  // Joining this room again would inherit its railway. Leave it intact and start in a new room instead.
+  const url = new URL(location.href);
+  url.search = pageQuery().toString();
+  url.searchParams.set('room', `place-${crypto.randomUUID().slice(0, 8)}`);
+  return url.href;
+};
 
 buildLand();
 registerPlaceShore();
@@ -348,14 +362,14 @@ personalSlice('position', {
 });
 function capturePose() {
   const b = me.body;
-  if (!b) return;
+  if (!b || fallArrival.active) return;
   const p = { x: b.position.x, z: b.position.z, yaw: me.yaw };
   // Never leave a stale safe position behind when quitting on a moving deck or in an unsafe spot.
   savedPose = !carry.on && !me.swimming && safePose(p) ? p : null;
 }
 function restorePose() {
   const b = me.body;
-  if (!b || !savedPose || !safePose(savedPose)) return;
+  if (!b || fallArrival.active || !savedPose || !safePose(savedPose)) return;
   teleport(b, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
   b.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = savedPose.yaw;
@@ -387,7 +401,10 @@ onFrame(
       placed = true;
       // Above a falling deck at train speed, the player body's CCD stops whole steps (src/proto/crossing/index.ts).
       setCcd(b, false);
-      atSpawn();
+      if (!fallArrival.active) {
+        atSpawn();
+        if (ready) restorePose(); // the room can be ready before the character is created
+      }
     }
     // A spawn or a teleport lands by the old island's ground height, and that's under this land: lift it onto the top.
     if (b && insidePlace(b.position.x, b.position.z)) {
@@ -423,6 +440,10 @@ onFrame(
       save();
     });
     updatePieces(dt);
+    if (fallArrival.active) {
+      coop.tick(dt, now);
+      return; // keep the shared railway running while the opening owns this player's camera and input
+    }
     updateMoments(dt);
     updateGifts(dt, now);
     updateGot(dt);

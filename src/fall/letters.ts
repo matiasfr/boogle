@@ -3,7 +3,7 @@
 // can kick them about until each one shrinks away. Local: each player's own, never sent and never read by the sim, so a
 // friend sees you land on nothing.
 import * as THREE from 'three/webgpu';
-import { groundHeight } from '../island/heights.ts';
+import { fallArrival } from './arrival.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
@@ -215,7 +215,7 @@ export function fallWithYou(at: { x: number; y: number; z: number }, dt: number)
 /** You've landed, at `at`: every letter gets a body and comes down around you. */
 export function blastLetters(at: THREE.Vector3, now: number) {
   letters.forEach((l, k) => {
-    l.mesh.position.y = Math.max(l.mesh.position.y, groundHeight(l.mesh.position.x, l.mesh.position.z) + 1.6);
+    l.mesh.position.y = Math.max(l.mesh.position.y, fallArrival.ground(l.mesh.position.x, l.mesh.position.z) + 1.6);
     const body = createBody({
       mass: MASS,
       group: GROUP.DEFAULT,

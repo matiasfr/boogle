@@ -12,6 +12,7 @@
 import './bar.css';
 import { onFrame } from '../../loop.ts';
 import { me, cam } from '../../player/player.ts';
+import { fallArrival } from '../../fall/arrival.ts';
 import { teleport } from '../../physics/engine.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -329,7 +330,9 @@ if (card) {
 
   // The drop next to the verb: where you stood before a variant reload, else the variant's or the card's spawn.
   begin(true);
-  place(takeHint(card.id) ?? spawnOf(card, playing(card)));
+  const hint = takeHint(card.id);
+  // Place owns its spawn and saved-position restore; a late-loading bar must not overwrite either.
+  if (!fallArrival.active && (card.id !== 'place' || hint)) place(hint ?? spawnOf(card, playing(card)));
   onFrame(
     ({ dt }) => {
       if (!me.entered || !me.body) return;

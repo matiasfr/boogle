@@ -172,12 +172,19 @@ export function leaveIsland() {
 const PERSON = ['boogle.name', 'boogle.color', 'boogle.pid', 'boogle.key', 'boogle.lastVisit', 'boogle.boogler'];
 const PERSON_PREFIX = ['boogle.visit.', 'boogle.minis.', 'boogle.soapbox.'];
 let fresh = false;
+/** A place can clear its own saves and choose a fresh destination without resetting a partner's room. */
+export const freshStart = {
+  warning: "Are you sure? You'll fall in as someone new, and lose your own progress. The island keeps everything.",
+  prepare: (): string | undefined => undefined,
+};
 export function startFresh() {
   fresh = true; // pagehide must not write the old person back
+  const destination = freshStart.prepare();
   const s = store('localStorage');
   if (s) {
     for (const k of PERSON) s.removeItem(k);
     for (const k of Object.keys(s)) if (PERSON_PREFIX.some((p) => k.startsWith(p))) s.removeItem(k);
   }
-  location.reload();
+  if (destination) location.assign(destination);
+  else location.reload();
 }

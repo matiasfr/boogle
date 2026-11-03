@@ -3,5 +3,9 @@
 // game; flags.ts resolves its room and clean co-op defaults, with ?classic=1 retaining the old island. Serves
 // DESIGN.md 1 (Toys before chores) and 9 (Leave something for the next visitor).
 import { protoOn } from '../proto/flags.ts';
+import { warmUp } from '../render/precompile.ts';
 
-if (protoOn('place')) void import('../proto/place/index.ts');
+if (protoOn('place')) {
+  const loaded = import('../proto/place/index.ts');
+  warmUp(() => loaded); // the opening must never become playable before its land and colliders exist
+}

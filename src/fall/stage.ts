@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { defineKind, despawn, spawn } from '../entity/entity.ts';
 import { SPAWN } from '../constants.ts';
-import { groundHeight } from '../island/heights.ts';
+import { fallArrival } from './arrival.ts';
 import { cam } from '../player/player.ts';
 import { addPart, mergeParts } from '../render/props.ts';
 
@@ -12,14 +12,16 @@ import { addPart, mergeParts } from '../render/props.ts';
 export const HEIGHT = 150;
 
 // The whole shot lines up with the camera's starting direction: the line runs forward, the title reads left to right.
-export const YAW = cam.yaw;
+export const YAW = fallArrival.yaw ?? cam.yaw;
 export const FWD = new THREE.Vector3(-Math.sin(YAW), 0, -Math.cos(YAW));
 export const RIGHT = new THREE.Vector3(Math.cos(YAW), 0, -Math.sin(YAW));
 export const UP = new THREE.Vector3(0, 1, 0);
 
 /** The spot under the title, on the ground: where you land. */
-export const TARGET = new THREE.Vector3(SPAWN.x, 0, SPAWN.z).addScaledVector(FWD, -3);
-TARGET.y = groundHeight(TARGET.x, TARGET.z);
+export const TARGET = fallArrival.target
+  ? new THREE.Vector3(fallArrival.target.x, 0, fallArrival.target.z)
+  : new THREE.Vector3(SPAWN.x, 0, SPAWN.z).addScaledVector(FWD, -3);
+TARGET.y = fallArrival.ground(TARGET.x, TARGET.z);
 
 const LANDS_PAST = 2; // m past the rail's end you come down, once the air has braked the roll
 export const RAIL_END = TARGET.clone()

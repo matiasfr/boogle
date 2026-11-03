@@ -7,11 +7,9 @@ import './you-editor.css';
 import { COLORS } from '../constants.ts';
 import { paintAvatar } from './avatars.ts';
 import { sanitizeName } from '../math.ts';
-import { startFresh } from './arrival.ts';
+import { freshButton } from './fresh-button.ts';
 import { me } from './player.ts';
 import { renderPeople } from './hud.ts';
-
-const FRESH_MS = 6000; // how long Start fresh stays asking
 
 function save() {
   try {
@@ -64,30 +62,6 @@ export function youEditor(): HTMLElement {
     swatches.append(b);
   });
   paint();
-  // Start fresh, asked twice: the first press says what it does and turns into the yes.
-  const fresh = document.createElement('button');
-  fresh.type = 'button';
-  fresh.className = 'pause-btn pause-fresh';
-  fresh.dataset.act = 'fresh';
-  fresh.textContent = 'Start fresh';
-  const warn = document.createElement('p');
-  warn.className = 'pause-fresh-warn';
-  warn.textContent =
-    "Are you sure? You'll fall in as someone new, and lose your own progress. The island keeps everything.";
-  warn.hidden = true;
-  let sure: ReturnType<typeof setTimeout> | 0 = 0;
-  fresh.addEventListener('click', () => {
-    if (sure) return startFresh();
-    fresh.textContent = 'Yes, start fresh';
-    fresh.classList.add('sure');
-    warn.hidden = false;
-    sure = setTimeout(() => {
-      sure = 0;
-      fresh.textContent = 'Start fresh';
-      fresh.classList.remove('sure');
-      warn.hidden = true;
-    }, FRESH_MS);
-  });
-  you.append(h, name, swatches, fresh, warn);
+  you.append(h, name, swatches, ...freshButton());
   return you;
 }
