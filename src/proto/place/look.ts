@@ -287,7 +287,7 @@ export function bakeContact(geo: THREE.BufferGeometry, k = 0.42, fade?: number) 
   return geo;
 }
 /** A glow with no hard edge: fades where a surface turns away from you, and, with `fade`, along the geometry's v. */
-export function softGlow(color: string, strength: number, fade = false) {
+export function softGlow(color: string, strength: number, fade: boolean | 'up' = false) {
   const m = new THREE.MeshBasicNodeMaterial({
     color,
     transparent: true,
@@ -298,7 +298,8 @@ export function softGlow(color: string, strength: number, fade = false) {
   const u = uniform(strength);
   const face: N = abs(normalView.z);
   const a: N = face.mul(face).mul(u);
-  m.opacityNode = fade ? a.mul(uv().y.mul(uv().y)) : a;
+  const up: N = float(1).sub(uv().y);
+  m.opacityNode = fade === 'up' ? a.mul(up.mul(up)) : fade ? a.mul(uv().y.mul(uv().y)) : a;
   return { mat: m, strength: u };
 }
 /** What buildings are made of (./sites.ts): each piece a little lighter or darker than the next and a little shaded along

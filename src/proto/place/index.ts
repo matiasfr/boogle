@@ -515,6 +515,18 @@ const rackForLine1 = (head: number) => {
 // The machine hands a crate down beside where it stopped, on ground you can stand on, on the side you came from if it can.
 function handCrate(l: LineRun, to: number, side: number) {
   const { line, dir } = l.spec;
+  // Right by the next frame, on the side you'll come from: the beacon brings you here anyway and unloading your logs is
+  // within Interact's reach of it, so there's no walking past it. (The frame's middle is 1.5 m along from its s, ./stations.ts.)
+  const next = l.stations[l.stations.findIndex((st) => st.spec.to === to) + 1];
+  if (next)
+    for (const along of [-dir * 3.4, dir * 3.4]) {
+      const at = next.spec.s - dir * 1.5 + along;
+      const q = besideLine(line, at, next.spec.side * 5.4);
+      if (Math.abs(H(q.x, q.z) - next.y) > 1) continue;
+      scratch.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z);
+      deliver(q.x, H(q.x, q.z), q.z, scratch);
+      return;
+    }
   const options: [number, number][] = [
     [7, side * 3.2],
     [3, side * 3.2],
