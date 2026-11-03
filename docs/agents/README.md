@@ -26,3 +26,5 @@ The root trigger table replaces the former universal-reading requirements preser
 | [claude](claude.md) | For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relevant section here. |
 
 Migration baseline: local origin/main and HEAD both 0c5676206372a6d7ce99c647f1037fefe8524437; AGENTS.md 25,311 bytes and CLAUDE.md 6,310 bytes, 31,621 combined. No network refresh was authorized. The original owner-playtest bullet is unchanged.
+
+Before reviewing enforcement gaps, read the [safety audit](safety-audit.md). It maps every Don't, math, sync, mixed-build and lint-boundary obligation to evidence, path reminders and director follow-ups.
