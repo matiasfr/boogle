@@ -12,6 +12,7 @@ import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { H } from './land.ts';
+import { LOOK, STEEL, paint } from './look.ts';
 import { GROVES, ORIGIN, TUNE } from './layout.ts';
 import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
 
@@ -32,7 +33,7 @@ const frameOf = () => {
 };
 const railsWorn = new THREE.InstancedMesh(
   new THREE.BoxGeometry(RAIL_SIZE.x * 0.6, RAIL_SIZE.z * 0.5, RAIL_SIZE.y * 0.6),
-  flat('#4c5058', 0.6),
+  LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6),
   TUNE.carry,
 );
 railsWorn.castShadow = true;

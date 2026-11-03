@@ -1,7 +1,7 @@
-// The look chase of ?proto=place: `&look=ground,light,contact,kit,mats,gtao` (or `all`, which leaves gtao out), each layer
-// on its own at the same camera, to measure which ones close the gap to .look/previz/visible-materials/shot-3.png. Without
-// the flag nothing here does anything and the page is the one you know. This file: the flags, the land's material, the
-// light, the materials and the contact shading. The Blender kit is ./look-kit.ts, the AO pass ./look-gtao.ts. Local.
+// The look of ?proto=place, the default since its third round (owner, on the look test: "it looks pretty great"):
+// docs/plans/look-pass.md. `&look=off` gives the old look for comparison, and `&look=ground,light,contact,kit,mats,gtao`
+// turns on single layers (`all`, the default, leaves gtao out). This file: the flags, the land's material, the light, the
+// materials and the contact shading. The Blender kit is ./look-kit.ts, the AO pass ./look-gtao.ts. Local.
 import * as THREE from 'three/webgpu';
 import {
   abs,
@@ -13,12 +13,14 @@ import {
   mix,
   normalFlat,
   normalGeometry,
+  normalView,
   normalViewGeometry,
   positionGeometry,
   positionWorld,
   reflectVector,
   sin,
   smoothstep as ss,
+  uniform,
   uv,
   vec4,
   cameraViewMatrix,
@@ -31,7 +33,7 @@ import { scene, sun } from '../../render/scene.ts';
 import { skyColors, skyDebug, skyU } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 
-const asked = new Set((new URLSearchParams(location.search).get('look') ?? '').split(','));
+const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
 const on = (name: string) => asked.has('all') || asked.has(name);
 export const LOOK = {
   ground: on('ground'),
@@ -70,7 +72,21 @@ export function groundMaterial() {
   const breathe: N = slow.add(mid).add(fine).mul(0.5).add(0.5);
   const v: N = vertexColor().rgb;
   const paths: N = ss(float(-0.05), float(0.1), v.r.sub(v.g)); // the green shift is for green: dirt and sand stay themselves
-  const grass: N = mix(v.mul(mix(vec3(0.82, 0.94, 0.78), vec3(1.1, 1.08, 0.8), breathe)), v.mul(0.85), paths);
+  // Dry patches where two slow fields agree, and a little mottling up close, so no two lawns match.
+  const dry: N = ss(
+    float(0.25),
+    float(0.75),
+    sin(p.x.mul(0.052).sub(p.z.mul(0.038)).add(0.7))
+      .mul(sin(p.z.mul(0.071).add(p.x.mul(0.019))))
+      .mul(1.1)
+      .add(0.3),
+  );
+  const mottle: N = sin(p.x.mul(2.3).add(sin(p.z.mul(1.7)).mul(1.4)))
+    .mul(sin(p.z.mul(2.9).sub(p.x.mul(0.9))))
+    .mul(0.05);
+  const tint: N = mix(vec3(0.74, 0.9, 0.78), vec3(1.04, 1.04, 0.82), breathe);
+  const lawn: N = mix(v.mul(tint), v.mul(vec3(1.24, 1.1, 0.72)), dry.mul(0.55)).mul(mottle.add(1));
+  const grass: N = mix(lawn, v.mul(0.85), paths);
   // Rock: warm tan, darker low down, in soft strata that lean a little.
   const strata: N = sin(
     p.y
@@ -107,7 +123,9 @@ const LIGHT = {
   fogFar: 1500,
 };
 export function installLight() {
-  skyDebug.preview(LIGHT.frac); // a late morning: a higher sun, for short shadows and lit grass, its disc and light together
+  // A late morning: a higher sun, for short shadows and lit grass. Phase 0.5 keeps the moon under the horizon, where its
+  // pale disc can't stand out against the deeper sky.
+  skyDebug.preview(LIGHT.frac, 0.5);
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
     THREE.HemisphereLight | undefined;
   onFrame(
@@ -141,7 +159,11 @@ export type Paint = {
   rough?: number;
   /** The geometry brings colours of its own (the log's bark, band and cut ends). */
   own?: boolean;
+  /** Goes to rust and dust with `rustU`: the machine, stranded. */
+  rust?: boolean;
 };
+/** 1 asleep, rusty and dusty; 0 awake. */
+export const rustU = uniform(0);
 const made = new Map<string, THREE.MeshStandardNodeMaterial>();
 /** A piece's material, built from what's on: plain and flat with no layer, grain or metal with `mats`, soft with `kit`. */
 export function paint(p: Paint) {
@@ -159,6 +181,16 @@ export function paint(p: Paint) {
   });
   if (wood) m.colorNode = materialColor.mul(grainOf(p.grain!.axis, p.grain!.scale ?? [1, 1, 1]));
   if (steel) m.emissiveNode = skyOnSteel();
+  if (p.rust) {
+    const pw: N = positionWorld;
+    const patch: N = sin(pw.x.mul(7.1).add(sin(pw.z.mul(5.3)).mul(2)))
+      .mul(sin(pw.y.mul(9.7)))
+      .mul(0.5)
+      .add(0.5);
+    const base: N = m.colorNode ?? materialColor;
+    m.colorNode = mix(base, mix(vec3(0.27, 0.13, 0.06), vec3(0.42, 0.36, 0.28), patch), rustU.mul(0.9));
+    m.metalness = 0;
+  }
   made.set(key, m);
   return m;
 }
@@ -177,6 +209,34 @@ export function honeyOf(color: string) {
   return color === '#6e4c2a' || color === '#7f5630' ? '#a56a2c' : color === '#8a6236' ? '#c98a3e' : '#d59a4e';
 }
 export const STEEL: Paint = { color: '#4c5058', steel: true, rough: 0.6 };
+
+// The logs on your back, in the game's own piece meshes (src/render/haul-pieces.ts share one material): bark, one amber
+// band and pale cut ends, as the kit's log has. The game tints each piece by its kind; this divides that tint back out.
+export function lookBackLogs(mat: THREE.Material, tint: THREE.Color) {
+  if (!LOOK.mats) return;
+  const m = mat as THREE.MeshStandardNodeMaterial;
+  m.flatShading = false;
+  const p: N = positionGeometry;
+  const c = (hex: string): N => {
+    const k = new THREE.Color(hex);
+    return vec3(k.r / tint.r, k.g / tint.g, k.b / tint.b);
+  };
+  const band: N = ss(float(0.11), float(0.12), p.x).mul(ss(float(0.17), float(0.16), p.x));
+  const grain: N = sin(
+    p.y
+      .add(p.z)
+      .mul(90)
+      .add(sin(p.x.mul(9)).mul(1.4)),
+  )
+    .mul(0.08)
+    .add(1);
+  m.colorNode = mix(
+    mix(c('#6a4526').mul(grain), c('#f2a51a'), band),
+    c('#e3b877'),
+    ss(float(0.7), float(0.9), abs(normalGeometry.x)),
+  );
+  m.needsUpdate = true;
+}
 
 // A little wood: bands across the grain's axis that wander slowly along it, and rings on the cut ends. Each piece its own.
 function grainOf(axis: 'x' | 'y' | 'z', scale: [number, number, number]) {
@@ -225,6 +285,31 @@ export function bakeContact(geo: THREE.BufferGeometry, k = 0.42, fade?: number) 
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   return geo;
+}
+/** A glow with no hard edge: fades where a surface turns away from you, and, with `fade`, along the geometry's v. */
+export function softGlow(color: string, strength: number, fade = false) {
+  const m = new THREE.MeshBasicNodeMaterial({
+    color,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+  });
+  const u = uniform(strength);
+  const face: N = abs(normalView.z);
+  const a: N = face.mul(face).mul(u);
+  m.opacityNode = fade ? a.mul(uv().y.mul(uv().y)) : a;
+  return { mat: m, strength: u };
+}
+/** What buildings are made of (./sites.ts): each piece a little lighter or darker than the next and a little shaded along
+ * its underside, so a wall reads as boards and courses. The colours are the instances'. */
+export function boardMaterial(plain: THREE.Material) {
+  if (!LOOK.mats) return plain;
+  const m = new THREE.MeshStandardNodeMaterial({ roughness: 0.85, flatShading: true });
+  const each: N = sin(float(instanceIndex).mul(12.9898)).mul(43758.5453).fract();
+  const under: N = mix(float(0.74), float(1), ss(float(0), float(0.3), positionGeometry.y));
+  m.colorNode = materialColor.mul(mix(float(0.88), float(1.08), each)).mul(under);
+  return m;
 }
 /** A centred box for the greybox, baked when `contact` is on. */
 export function lookBox(w: number, h: number, d: number) {

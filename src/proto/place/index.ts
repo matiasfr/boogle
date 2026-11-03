@@ -1,13 +1,15 @@
-// A real place, second round (docs/plans/find-the-fun.md, step 9; loaded by src/features/proto-place.ts behind ?proto=place).
-// A slice of Threefold Reach with the crossing's sea. A sign at the village says what to do; you walk the long way round to
-// a stranded track layer, wake it, chop timber and carry it to auto-paver stations along the route. The machine takes those
-// same logs and lays the line home piece by piece, trestle and all, and you can stand on any of it. The first train's
-// cargo is craned straight into a forge in town, the lit forge pours rails on a rack, and those rails, with timber from
-// the village's heap, build line 2 out from home to the quarry. Past it all, something strange across the sea.
-// Gut question: did carrying materials out to the track feel like building something, or like a chore?
+// A real place, third round (docs/plans/find-the-fun.md, step 10; loaded by src/features/proto-place.ts behind ?proto=place).
+// A slice of Threefold Reach with the crossing's sea. You walk the long way round to a stranded track layer, wake it, chop
+// timber and carry it to auto-paver stations along the route. The machine takes those same logs and lays the line home
+// piece by piece, trestle and all, and you can stand on any of it. The first train's cargo is craned straight into a forge
+// in town, the lit forge pours rails on a rack, and those rails, with timber from the village's heap, build line 2 out from
+// home to the quarry. This round adds motivation and life around that job: every stretch delivers a crate with a gift in it,
+// a curio shelf and empty mounts on the train promise more from the start, little guys work the place and crystals hide
+// along the way. Past it all, something strange across the sea.
+// Gut question: did the crates and the little guys give you a reason to keep carrying?
 // Serves DESIGN.md 1 (Toys before chores), 7 (Telegraph everything) and 9 (Leave something for the next visitor).
-// Research: docs/research/construction-you-can-watch.md, docs/research/harvest-feel.md; Death Stranding's auto-pavers;
-// the decision log's 2 November entries.
+// Research: docs/research/construction-you-can-watch.md, docs/research/harvest-feel.md, docs/research/maximal-rewards.md;
+// Death Stranding's auto-pavers; the decision log's 2 November entries.
 //
 // Sync: Local, all of it, kept in localStorage per room. The back bundle's count is here too (`backSeam`, ./chop.ts), so
 // chopping never waits on the host.
@@ -50,6 +52,41 @@ import { playPanel } from '../flags.ts';
 import { protoCount } from '../count.ts';
 import { protoMark } from '../mark.ts';
 import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
+import {
+  after,
+  clearMoments,
+  firstLineShow,
+  nextLineShow,
+  pullOn,
+  showBanner,
+  updateMoments,
+  wakeShow,
+} from './celebrate.ts';
+import { CRYSTALS, crystalAt, crystals, onCrystal, snapCrystals, updateCrystals } from './crystals.ts';
+import {
+  cheerAround,
+  folk,
+  pourOut,
+  resetFolk,
+  setCamp,
+  setFolkEnv,
+  setPopulation,
+  setRiders,
+  updateFolk,
+} from './folk.ts';
+import {
+  deliver,
+  fitMounts,
+  giftState,
+  nearestCrate,
+  onGiftSaved,
+  openCrate,
+  showing,
+  snapGifts,
+  updateGifts,
+  type GiftId,
+} from './gifts.ts';
+import { addFoot, clearDrops } from './sites.ts';
 import { LOOK, installLight } from './look.ts';
 import { installContact } from './look-kit.ts';
 import {
@@ -60,6 +97,7 @@ import {
   LINKS,
   ORIGIN,
   RACK,
+  SHELF,
   SPAWN,
   STUB,
   TURNTABLE,
@@ -112,8 +150,8 @@ import {
   takeRail,
   updateForge,
 } from './forge.ts';
-import { buildSigns, cheerNow, setBeacon, setNumbers, setObjective, updateCrowd } from './signs.ts';
-import { campBlocks, fireworks, makePart, rise, snapTown, updateTown } from './town.ts';
+import { buildSigns, setBeacon, setNumbers, setObjective } from './signs.ts';
+import { campSmoke, onStepUp, snapCamp, snapTown, staticPart, updateTown, wakeCamp } from './town.ts';
 
 buildLand();
 dressSea();
@@ -144,6 +182,7 @@ const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const FLAT = (color: string) => flat(color, 0.9);
 
 const machine = buildMachine();
+fitMounts(machine.look.cars);
 if (LOOK.light) installLight();
 if (LOOK.contact) installContact([machine.flatbed, machine.loco], TREES);
 if (LOOK.gtao) void import('./look-gtao.ts');
@@ -157,18 +196,11 @@ type LineRun = {
   open: boolean;
   train: TrainRun;
   pile: Heap;
-  camp: { awake: ReturnType<typeof makePart>; smoke: { x: number; y: number; z: number } };
+  smoke: { x: number; y: number; z: number };
   madeAt: number;
 };
 const lines: LineRun[] = LINKS.map((spec, k) => {
   const { line } = spec;
-  const { asleep, awake } = campBlocks(spec);
-  const campX = toWorld(spec.camp.x);
-  const sleep = makePart(asleep, campX, spec.camp.z),
-    wake = makePart(awake, campX, spec.camp.z);
-  draw(sleep, () => 1);
-  const stack = asleep[1]!;
-  const smoke = { x: stack.x, y: H(stack.x, stack.z) + (stack.y ?? 0) + stack.h, z: stack.z };
   // Survey stakes beside the line: where it'll go.
   const stakes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 1.5, 0.14), FLAT('#f0752c'), 30);
   const o = new THREE.Object3D();
@@ -185,7 +217,13 @@ const lines: LineRun[] = LINKS.map((spec, k) => {
   stakes.frustumCulled = false;
   scene.add(stakes);
   // Platforms: at the village, and at the far end.
-  buildPlatform(line, 6, 28, 2.9, 34);
+  // Line 1's stands on the village's side, facing the forge.
+  const [s0, s1, lat] = k === 0 ? [8, 30, -2.9] : [6, 28, 2.9];
+  if (k === 0) buildPlatform(line, s0, s1, lat, 36, 24);
+  else buildPlatform(line, s0, s1, lat, 34);
+  lineAt(line, (s0 + s1) / 2, P);
+  const mid = besideLine(line, (s0 + s1) / 2, lat);
+  addFoot(mid.x, mid.z, Math.atan2(P.ux, P.uz), 1.4, (s1 - s0) / 2 + 0.3);
   buildPlatform(line, line.len - 26, line.len - 2, 2.9, line.len + 5);
   const pileAt = besideLine(line, line.len - TUNE.stopIn - 3.7, -5);
   return {
@@ -197,11 +235,12 @@ const lines: LineRun[] = LINKS.map((spec, k) => {
     open: false,
     train: buildTrain(line),
     pile: heap(pileAt.x, pileAt.z, 3, H(pileAt.x, pileAt.z)),
-    camp: { awake: wake, smoke },
+    smoke: campSmoke(k),
     madeAt: 0,
   };
 });
 const [L1, L2] = lines as [LineRun, LineRun];
+for (const l of lines) fitMounts(l.train.look.cars);
 
 // The turntable where line 1 ends and line 2 begins: a low disc that turns with the machine.
 const TX = toWorld(TURNTABLE.x),
@@ -221,12 +260,54 @@ addStatic(
   { kind: 'cylinder', rTop: TURNTABLE.r, rBottom: TURNTABLE.r, h: 0.24, segments: 12 },
   { x: TX, y: TY, z: TZ },
 );
+addFoot(TX, TZ, 0, TURNTABLE.r * 0.8, TURNTABLE.r * 0.8);
+
+// The little guys' idea of the place.
+const platformAt = (() => {
+  lineAt(L1.spec.line, 19, P);
+  const q = besideLine(L1.spec.line, 19, -2.9);
+  return { x: q.x, y: railY(L1.spec.line, 19) + 0.72, z: q.z, ux: P.ux, uz: P.uz };
+})();
+const gatherFrom = besideLine(L1.spec.line, 6, -4.6);
+setFolkEnv({
+  station: () => {
+    const st = stationOf(run.line);
+    return s.awake && st && (run.mode === 'idle' || run.mode === 'feeding') ? { x: st.x, y: st.y, z: st.z } : null;
+  },
+  machineBusy: () =>
+    run.mode === 'laying' || run.mode === 'running' || run.mode === 'shunting' || run.mode === 'turning',
+  machine: () => ({ mesh: machine.flatbed.mesh, top: 0.15 }),
+  trainCar: (k) => {
+    const l = lines[k]!;
+    return l.open ? { mesh: l.train.tr.cars[0]!.mesh, top: 0.97 } : null; // up on the cab's roof
+  },
+  gather: {
+    x: gatherFrom.x,
+    z: gatherFrom.z,
+    ux: platformAt.ux,
+    uz: platformAt.uz,
+    lx: platformAt.uz,
+    lz: -platformAt.ux,
+    len: 28,
+  },
+  platform: platformAt,
+  forgeLit: () => forge.lit,
+});
+function folkState() {
+  setCamp(0, s.awake);
+  setCamp(1, L2.open);
+  setRiders(0, L1.open);
+  setRiders(1, L2.open);
+}
 
 // ---------------------------------------------------------------- the village's heaps
 const dock = heap(toWorld(DOCK.x), DOCK.z, 3, VILLAGE.y);
 const hub = heap(toWorld(HEAP.x), HEAP.z, 4, VILLAGE.y);
 const yard = heap(toWorld(YARD.x), YARD.z, 4, VILLAGE.y);
 const allHeaps: Heap[] = [dock, hub, yard, L1.pile, L2.pile];
+addFoot(dock.x, dock.z, 0, 1.8, 1.8);
+addFoot(hub.x, hub.z, 0, 2.2, 2.2);
+addFoot(yard.x, yard.z, 0, 2.2, 2.2);
 const heapBoard = label(3, 1.5);
 heapBoard.sprite.position.set(toWorld(HEAP.x), VILLAGE.y + 3, HEAP.z);
 scene.add(heapBoard.sprite);
@@ -238,7 +319,7 @@ forgeBoard.sprite.position.set(toWorld(FORGE.x), VILLAGE.y + 9, FORGE.z + 4.6);
 scene.add(forgeBoard.sprite);
 
 // ---------------------------------------------------------------- local state, kept per room
-const KEY = `boogle-place-v2:${getRoomId()}`;
+const KEY = `boogle-place-v3:${getRoomId()}`; // a new key each round: an older save's shape can't break this one
 const s = {
   awake: false,
   turned: false, // the machine has gone over to line 2
@@ -261,6 +342,8 @@ function save() {
         dock: dock.list,
         yard: yard.list,
         fellen: fellenList(),
+        gifts: { got: giftState.got, order: giftState.order, crates: giftState.crates() },
+        crystals: crystals.found,
         lines: lines.map((l) => ({
           stage: l.stage,
           open: l.open,
@@ -273,6 +356,12 @@ function save() {
     // private mode: a reload starts over
   }
 }
+let gifts0: { got: GiftId[]; order: GiftId[]; crates: { x: number; y: number; z: number }[] } = {
+  got: [],
+  order: [],
+  crates: [],
+};
+let crystals0: number[] = [];
 function restore() {
   try {
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -285,6 +374,12 @@ function restore() {
     dock.list = j.dock ?? [];
     yard.list = j.yard ?? [];
     restoreFellen(j.fellen ?? []);
+    gifts0 = {
+      got: (j.gifts?.got ?? []) as GiftId[],
+      order: (j.gifts?.order ?? []) as GiftId[],
+      crates: j.gifts?.crates ?? [],
+    };
+    crystals0 = j.crystals ?? [];
     j.lines?.forEach(
       (q: { stage: number; open: boolean; pile: Kind[]; have: { logs: number; rails: number }[] }, k: number) => {
         const l = lines[k];
@@ -301,7 +396,8 @@ function restore() {
 }
 
 // ---------------------------------------------------------------- the machine's run
-type Mode = 'asleep' | 'idle' | 'feeding' | 'laying' | 'running' | 'waiting' | 'turning' | 'shunting' | 'done';
+type Mode =
+  'asleep' | 'waking' | 'idle' | 'feeding' | 'laying' | 'running' | 'waiting' | 'turning' | 'shunting' | 'done';
 const run = {
   mode: 'asleep' as Mode,
   head: 0, // metres along the machine's line where pieces land
@@ -414,10 +510,34 @@ const rackForLine1 = (head: number) => {
   const total = STUB.camp - STUB.village;
   return Math.ceil(TUNE.rackStart * Math.max(0, (head - STUB.village) / total));
 };
+// The machine hands a crate down beside where it stopped, on ground you can stand on, on the side you came from if it can.
+function handCrate(l: LineRun, to: number, side: number) {
+  const { line, dir } = l.spec;
+  const options: [number, number][] = [
+    [7, side * 3.2],
+    [3, side * 3.2],
+    [-3, side * 3.2],
+    [-6, side * 3.2],
+    [7, -side * 3.6],
+    [-6, -side * 3.6],
+  ];
+  for (const [back, lat] of options) {
+    const at = to - dir * back;
+    const q = besideLine(line, at, lat);
+    if (Math.abs(H(q.x, q.z) - railY(line, at)) > 1.4) continue;
+    scratch.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z);
+    deliver(q.x, H(q.x, q.z), q.z, scratch);
+    return;
+  }
+  const q = besideLine(line, to, side * 3.2);
+  deliver(q.x, H(q.x, q.z), q.z, null);
+}
 function finishStretch(l: LineRun) {
   const st = stationOf(l)!;
   whistle(st.x, st.z);
   dustRing(st.x, st.y, st.z, 8, 2, 0.3);
+  handCrate(l, st.spec.to, st.spec.side);
+  cheerAround(st.x, st.z, 26, 3);
   l.stage++;
   mark(`laid ${st.spec.label}`);
   if (l.stage < l.stations.length) run.mode = 'idle';
@@ -484,15 +604,32 @@ function setStationTags() {
 
 function wake() {
   s.awake = true;
-  run.mode = 'idle';
-  machine.wake(true);
-  whistle(machine.flatbed.x, machine.flatbed.z);
-  thump(machine.flatbed.x, machine.flatbed.z);
-  fanfare(false);
+  run.mode = 'waking';
   protoMark('verb');
   mark('woke');
-  setStationTags();
+  wakeShow(
+    machine,
+    () => cheerAround(machine.flatbed.x, machine.flatbed.z, 34, 4),
+    () => {
+      run.mode = 'idle';
+      machine.wake(true);
+      setCamp(0, true);
+      mark('awake');
+      setStationTags();
+      save();
+    },
+  );
   save();
+}
+/** The skips: awake now, with no show. */
+function wakeNow() {
+  clearMoments();
+  s.awake = true;
+  run.mode = 'idle';
+  machine.wake(true);
+  setCamp(0, true);
+  mark('woke');
+  setStationTags();
 }
 
 function openLine(l: LineRun) {
@@ -500,12 +637,26 @@ function openLine(l: LineRun) {
   l.madeAt = performance.now() + 2000;
   if (l === L1) l.train.start(true);
   else l.train.start(false, TUNE.dwell - 0.5);
-  rise(l.camp.awake);
-  fanfare(true);
+  wakeCamp(l.k);
   s.people += 8;
-  whistle(TX, TZ);
-  fireworks({ x: TX + 8, y: VILLAGE.y + 22, z: TZ - 4 });
-  cheerNow();
+  setRiders(l.k, true);
+  if (l === L1) {
+    // The one camera move in the run: out and up, over the village's shoulder, along everything you just built.
+    firstLineShow({
+      village: new THREE.Vector3(TX - 4, VILLAGE.y, TZ - 4),
+      gorge: new THREE.Vector3(toWorld(-34), 24, -82),
+      shot: new THREE.Vector3(toWorld(-142), 78, -116),
+      shotTo: new THREE.Vector3(toWorld(-148), 84, -124),
+      at: new THREE.Vector3(toWorld(-36), 16, -74),
+    });
+    pourOut(10);
+  } else {
+    const end = besideLine(l.spec.line, l.spec.line.len - 6, 0);
+    nextLineShow(new THREE.Vector3(end.x, VILLAGE.y + 6, end.z), new THREE.Vector3(TX - 4, VILLAGE.y, TZ + 8));
+    pourOut(6);
+    setCamp(1, true);
+    cheerAround(end.x, end.z, 40, 6);
+  }
   protoCount('links');
   mark(`open ${l.spec.id}`);
 }
@@ -660,6 +811,17 @@ registerInteractable(() => {
     atPrompt.set(p.x, p.y + 1.2, p.z);
     return [{ id: 'place-back', verb: 'Back up the path', at: atPrompt, run: backUp }];
   }
+  const crate = nearestCrate(p.x, p.z, 3.4);
+  if (crate && !showing())
+    (out ??= []).push({
+      id: 'place-crate',
+      verb: 'Open the crate',
+      at: crate.at,
+      run: () => {
+        openCrate(crate.c);
+        protoCount('gifts');
+      },
+    });
   if (run.mode === 'asleep' && machine.distance(p.x, p.z) < 6)
     (out ??= []).push({
       id: 'place-wake',
@@ -727,6 +889,9 @@ function make(l: LineRun, now: number) {
 function arrive(l: LineRun, stop: number) {
   const { tr } = l.train;
   if (stop === 0) {
+    whistle(tr.cars[0]!.x, tr.cars[0]!.z);
+    if (giftState.got.includes('bell')) after(0.2, () => clank(tr.cars[0]!.x, tr.cars[0]!.z));
+    cheerAround(platformAt.x, platformAt.z, 16, 2.5);
     const onto = l === L1 ? dock : yard;
     let n = 0;
     tr.load.held.forEach((c, k) => {
@@ -738,6 +903,9 @@ function arrive(l: LineRun, stop: number) {
       const delay = 0.4 + n++ * 0.22;
       hopOff(tr.load, k, to, delay, () => {
         onto.list.push(kind);
+        thump(to.x, to.z);
+        knock(0.5, 0.65);
+        dustRing(to.x, to.y - 0.3, to.z, 6, 1.8, 0.3);
         if (onto === yard) {
           s.stone++;
           s.people++;
@@ -853,39 +1021,38 @@ function buildStops() {
     yaw,
     color,
   });
-  const part = makePart(
-    [
-      // an arch on the commons, north path
-      row(-146.5, -70, 3, 6.5, 3.4, rock),
-      row(-137.5, -70, 3, 7.2, 3.4, rock),
-      row(-142, -70, 13, 2.2, 4, rock, 6.5, 0.05),
-      // a lookout on the rim
-      row(-104, -122, 5, 0.3, 2.2, wood, 0.6),
-      row(-106, -122, 0.3, 0.6, 2, wood),
-      row(-102, -122, 0.3, 0.6, 2, wood),
-      row(-110, -128, 0.25, 6, 0.25, wood),
-      row(-109.1, -128, 1.6, 0.9, 0.08, '#f0752c', 5),
-      // an old cart at the bank, south path
-      row(-68, 150, 2.4, 1, 4, wood, 0.5, 0.5),
-      row(-69.5, 148, 0.3, 1.2, 1.2, '#3a302c'),
-      row(-66.5, 152, 0.3, 1.2, 1.2, '#3a302c'),
-      // an arch at the far shoulder, east path
-      row(16, 156, 3, 6, 3.2, rock),
-      row(25, 164, 3, 7, 3.2, rock),
-      row(20.5, 160, 13.5, 2.2, 3.8, rock, 6.2, -0.72),
-    ],
-    toWorld(0),
-    0,
-  );
+  const rows = [
+    // an arch on the commons, north path
+    row(-146.5, -70, 3, 6.5, 3.4, rock),
+    row(-137.5, -70, 3, 7.2, 3.4, rock),
+    row(-142, -70, 13, 2.2, 4, rock, 6.5, 0.05),
+    // a lookout on the rim
+    row(-104, -122, 5, 0.3, 2.2, wood, 0.6),
+    row(-106, -122, 0.3, 0.6, 2, wood),
+    row(-102, -122, 0.3, 0.6, 2, wood),
+    row(-110, -128, 0.25, 6, 0.25, wood),
+    row(-109.1, -128, 1.6, 0.9, 0.08, '#f0752c', 5),
+    // an old cart at the bank, south path
+    row(-68, 150, 2.4, 1, 4, wood, 0.5, 0.5),
+    row(-69.5, 148, 0.3, 1.2, 1.2, '#3a302c'),
+    row(-66.5, 152, 0.3, 1.2, 1.2, '#3a302c'),
+    // an arch at the far shoulder, east path
+    row(16, 156, 3, 6, 3.2, rock),
+    row(25, 164, 3, 7, 3.2, rock),
+    row(20.5, 160, 13.5, 2.2, 3.8, rock, 6.2, -0.72),
+  ];
+  const part = staticPart(rows);
   draw(part, () => 1);
-  // Colliders for the arches' legs, so the path threads them.
-  for (const [x, z] of [
-    [-146.5, -70],
-    [-137.5, -70],
-    [16, 156],
-    [25, 164],
-  ] as const)
-    addStatic({ kind: 'box', hx: 1.5, hy: 3.5, hz: 1.7 }, { x: toWorld(x), y: H(toWorld(x), z) + 3.5, z });
+  // What looks solid is solid, all of it: the arches' legs (the path threads them) and what's on them, the lookout, the cart.
+  for (const r of rows) {
+    const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
+    addStatic(
+      { kind: 'box', hx: r.w / 2, hy: r.h / 2, hz: r.d / 2 },
+      { x: r.x, y: H(r.x, r.z) + r.y + r.h / 2, z: r.z },
+      q,
+    );
+    addFoot(r.x, r.z, r.yaw, r.w / 2 + 0.2, r.d / 2 + 0.2);
+  }
 }
 buildStops();
 
@@ -908,6 +1075,10 @@ const nearestTree = () => {
 function objective(now: number) {
   const b = me.body;
   const beam = (x: number, y: number, z: number) => setBeacon({ x, y, z }, now);
+  if (run.mode === 'waking') {
+    setBeacon(null, now);
+    return 'The boiler is catching...';
+  }
   if (run.mode === 'asleep') {
     beam(machine.flatbed.x, machine.flatbed.y + 2, machine.flatbed.z);
     return b && machine.distance(b.position.x, b.position.z) < 25
@@ -1021,7 +1192,7 @@ function placeMachine() {
 }
 function snapLines() {
   for (const l of lines) {
-    draw(l.camp.awake, () => (l.open ? 1 : 0));
+    snapCamp(l.k, l.open);
     if (l.open) l.train.resume(cycleOf(l.spec.line) / 2);
     else if (l === L1) l.train.park();
     else l.train.hide();
@@ -1044,6 +1215,9 @@ function startOver() {
     }
   }
   fillPiles();
+  clearMoments();
+  clearDrops();
+  resetFolk();
   s.awake = s.turned = false;
   s.wood = s.stone = 0;
   s.people = TUNE.people;
@@ -1064,11 +1238,28 @@ function startOver() {
   placeMachine();
   drawHeaps(allHeaps);
   snapTown(0, 0);
+  folkState();
+  snapGifts([], [], []);
+  snapCrystals([]);
   log.length = 0;
   atSpawn();
   save();
 }
 onApplied((e: { op: string }) => e.op === 'tune.reset' && startOver());
+onGiftSaved(save);
+// A step-up: a crate off the heap sails over to the first new plot, so you can see which cargo built what.
+onStepUp.fn = (kind, first) => {
+  const from = topSlot(kind === 'wood' ? hub : yard, new THREE.Vector3());
+  const to = new THREE.Vector3(first.plan.x, first.plan.y + 1, first.plan.z);
+  hopTo(kind, from, to, 0, () => {
+    thump(to.x, to.z);
+    dustRing(to.x, to.y - 0.4, to.z, 10, 3, 0.5);
+  });
+};
+onCrystal((n) => {
+  save();
+  if (n === 1) showBanner('A crystal', 'It went to the shelf at the station. No idea what it does.', 2.6);
+});
 function atSpawn() {
   const b = me.body;
   if (!b) return;
@@ -1111,6 +1302,10 @@ onFrame(
       snapForge();
       drawHeaps(allHeaps);
       snapTown(stepsOf(s.wood), stepsOf(s.stone));
+      folkState();
+      snapGifts(gifts0.got, gifts0.order, gifts0.crates);
+      snapCrystals(crystals0);
+      if (s.awake) setCamp(0, true);
     }
     if (run.mode === 'feeding') stepFeed(dt);
     if (run.mode === 'waiting' && forge.lit) {
@@ -1135,19 +1330,31 @@ onFrame(
       mark('forge lit');
       protoCount('forge');
       fanfare(true);
+      showBanner('The forge is lit', 'Your timber built that. Rails are pouring.');
       save();
     });
     updatePieces(dt);
+    updateMoments(dt);
+    updateGifts(dt, now);
+    updateCrystals(dt, now);
+    setPopulation(s.people);
+    updateFolk(dt);
+    if (b) {
+      const bumped = nearestCrate(b.position.x, b.position.z, 1.25);
+      if (bumped && !showing()) {
+        openCrate(bumped.c);
+        protoCount('gifts');
+      }
+    }
     updateChop(dt, now);
     updateCrates(dt);
     updateTown(stepsOf(s.wood), stepsOf(s.stone), dt);
     updateFinds(dt);
-    updateCrowd(dt, now);
     // The two smoke columns: tall, slow and white, the first thing you read across the gorge.
     smokeAcc += dt * 3;
     for (; smokeAcc >= 1; smokeAcc--)
       for (const l of lines) {
-        const c = l.camp.smoke;
+        const c = l.smoke;
         emit({
           x: c.x + (Math.random() - 0.5),
           y: c.y,
@@ -1224,7 +1431,7 @@ function skipWalk() {
 }
 /** The chop and the carry: the current station has what it needs, and the machine starts. */
 function skipDelivery() {
-  if (run.mode === 'asleep') wake();
+  if (run.mode === 'asleep' || run.mode === 'waking') wakeNow();
   if (run.mode !== 'idle') return;
   const st = stationOf(run.line);
   if (!st) return;
@@ -1239,11 +1446,13 @@ function skipDelivery() {
 /** Line 1 finished, the train running and the forge waiting on its timber. */
 function skipForge() {
   if (L1.open) return hop(toWorld(-68), 2, -2.3);
+  clearMoments();
   L1.stage = L1.stations.length;
   L1.open = true;
   s.awake = true;
   s.people += 8;
-  rise(L1.camp.awake);
+  snapCamp(0, true);
+  folkState();
   L1.madeAt = performance.now();
   L1.train.start(true);
   L1.track.snapTo(L1.track.u(STUB.village));
@@ -1265,7 +1474,7 @@ function skipLine2() {
   run.line = L2;
   placeMachine();
   drawHeaps(allHeaps);
-  hop(toWorld(RACK.x + 3.5), RACK.z + 2, -0.8);
+  hop(toWorld(RACK.x + 1), RACK.z + 3.4, 0.2);
   save();
 }
 btn('Skip the walk', skipWalk);
@@ -1302,4 +1511,26 @@ window.__place = {
   startOver,
   wake,
   backUp,
+  giftState,
+  openCrate,
+  nearestCrate,
+  crystals,
+  crystalAt,
+  CRYSTALS,
+  folk,
+  pullOn,
+  openLine: () => openLine(L1),
+  /** The first n gifts in their order, with no show. */
+  give: (n: number) => {
+    const all: GiftId[] = ['hat', 'flag', 'critter', 'cap', 'bunting', 'bell', 'lantern', 'scarf'];
+    snapGifts(all.slice(0, n), all, []);
+  },
+  setForge: (n: number) => {
+    forge.crates = n;
+    snapForge();
+  },
+  snapCrystals,
+  RACK: { x: toWorld(RACK.x), z: RACK.z },
+  SHELF: { x: toWorld(SHELF.x), z: SHELF.z, yaw: SHELF.yaw },
+  handCrate: () => handCrate(run.line, stationOf(run.line)?.spec.to ?? run.head, stationOf(run.line)?.spec.side ?? 1),
 };

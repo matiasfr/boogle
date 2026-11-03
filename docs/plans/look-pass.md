@@ -22,11 +22,11 @@ With `all` (no `gtao`) on this Mac at 2x, GPU time went from 3.3 ms to 4.2 ms, a
 ## To-dos
 
 ### Next round of `?proto=place`
-- [ ] Make `all` (without `gtao`) the default look of `?proto=place` in the next round (owner's call). Keep a way to turn it off for comparison.
+- [x] Make `all` (without `gtao`) the default look of `?proto=place` in the next round (owner's call). `&look=off` turns it off for comparison.
 - [ ] Measure it on the owner's iPad: frame rate and the resolution it settles at.
-- [ ] Extend the look to what `all` leaves alone: the logs on your back, flying rails, the trains.
-- [ ] Fix what it exposed: the dark smoke smudges at spawn, and the moon's pale disc against the deeper sky.
-- [ ] Pull the grass back from lime and add variation; it's too uniform at the moment.
+- [x] Extend the look to what `all` leaves alone: the logs on your back, flying rails, the trains. Buildings got a cheap per-piece shade too (`boardMaterial`).
+- [x] Fix what it exposed: the dark smoke smudges at spawn (soot from a campfire 4 m away and the chimneys; now pale and further off), and the moon's pale disc (kept under the horizon).
+- [x] Pull the grass back from lime and add variation; it's too uniform at the moment.
 - [ ] Replace the kit's machine with one built for this: the docked feeder, cutter and gripper from the painting. This is design work too: logs have to stay in the frame while laying, which changes the run's logic.
 - [ ] Rounder, solid-looking steam puffs, and three-tier trees. Both are cheap.
 

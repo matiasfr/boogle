@@ -20,8 +20,9 @@ import { H, addStatic, plank, slab } from './land.ts';
 import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
 import { flat } from '../flat.ts';
-import { LOOK, STEEL, paint } from './look.ts';
-import { kitBatch, lookTrack, machineLook } from './look-kit.ts';
+import { LOOK, STEEL, paint, rustU, softGlow } from './look.ts';
+import { merged } from './gifts.ts';
+import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -272,7 +273,7 @@ function removeBodies(so: Solid) {
 
 // ---------------------------------------------------------------- platforms
 /** A platform along one side of the track, with a ramp at its far end and one off its side, down to the ground. */
-export function buildPlatform(line: Line, s0: number, s1: number, lat: number, rampAt: number) {
+export function buildPlatform(line: Line, s0: number, s1: number, lat: number, rampAt: number, sideAt = (s0 + s1) / 2) {
   const a = { x: 0, z: 0 },
     b = { x: 0, z: 0 };
   lineAt(line, s0, P);
@@ -287,8 +288,7 @@ export function buildPlatform(line: Line, s0: number, s1: number, lat: number, r
   const from = rampAt < s0 ? a : b;
   plank(r.x, r.z, from.x, from.z, H(r.x, r.z) + 0.05, low, 2.5, '#bdb8ac', 0.4);
   // Off the side, at the middle: so you can walk up from where you are.
-  const mid = (s0 + s1) / 2;
-  lineAt(line, mid, P);
+  lineAt(line, sideAt, P);
   const sign = Math.sign(lat);
   const t0 = { x: 0, z: 0 },
     t1 = { x: 0, z: 0 };
@@ -484,7 +484,45 @@ export function buildMachine() {
     heldRail.visible = n > 0;
   }
 
-  const st = { awake: false, moved: 0, bump: 0, idle: 0 };
+  // Headlamps, a beam each, and the fire in the cab: all dark until the boiler catches.
+  const lampSpots = [
+    [flatRock, [-0.72, onDeck + 0.5, 1.6]],
+    [flatRock, [0.72, onDeck + 0.5, 1.6]],
+    [locoRock, [0, 1.75, 1.62]],
+  ] as const;
+  const glass = new THREE.MeshStandardNodeMaterial({ color: '#59584e', roughness: 0.35 });
+  const shine = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3.2, 2.7, 1.5) });
+  const beamMat = softGlow('#ffe4a0', 0.3, true).mat;
+  const beamGeo = new THREE.ConeGeometry(0.85, 6.5, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 3.25);
+  const lamps = lampSpots.map(([parent, at]) => {
+    const lamp = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(
+      merged([
+        ['c', 0, 0, -0.07, 0.15, 0.14, 0.15, '#24262c', Math.PI / 2],
+        ['s', 0, 0, 0, 0.14, 0.14, 0.07, '#ffffff'],
+      ]),
+      glass,
+    );
+    lamp.position.set(at[0], at[1], at[2]);
+    parent.add(lamp);
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.copy(lamp.position);
+    beam.visible = false;
+    parent.add(beam);
+    return { lamp, beam };
+  });
+  const fire = new THREE.MeshStandardNodeMaterial({ color: '#1c0d05', emissive: '#ff4a08', emissiveIntensity: 0 });
+  const firebox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.04), fire);
+  firebox.position.set(0, 1.05, -1.57);
+  locoRock.add(firebox);
+  let fireOn = 0;
+  const setLamps = (on: boolean) => {
+    for (const l of lamps) {
+      l.lamp.material = on ? shine : glass;
+      l.beam.visible = on;
+    }
+  };
+
+  const st = { awake: false, moved: 0, bump: 0, idle: 0, shudder: 0, was: false };
   const smoke = new THREE.Color('#ece8e0'),
     v = new THREE.Vector3();
   const flatY = flatRock.position.y;
@@ -543,8 +581,17 @@ export function buildMachine() {
     },
     wake(on: boolean) {
       st.awake = on;
+      st.shudder = 0;
+      rustU.value = on ? 0 : 1;
+      setLamps(on);
+      fireOn = on ? 1 : 0;
       if (on) for (let k = 0; k < 3; k++) puff(1);
     },
+    /** For the waking: how hard it shakes (0 stops), how rusty (1) or clean (0), the fire, the lamps. */
+    shudder: (a: number) => void (st.shudder = a),
+    setRust: (v: number) => void (rustU.value = v),
+    setFire: (v: number) => void (fireOn = v),
+    setLamps,
     moved(d: number) {
       st.moved += d;
       if (st.moved > 2.4) {
@@ -565,10 +612,21 @@ export function buildMachine() {
     GAP,
   };
   onFrame(
-    ({ dt }) => {
+    ({ dt, now }) => {
       const alpha = stepAlpha();
       drawCar(flatbed, alpha);
       drawCar(loco, alpha);
+      fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.021) * 0.3 + Math.sin(now * 0.037) * 0.2);
+      if (st.shudder > 0 || st.was) {
+        st.was = st.shudder > 0;
+        for (const [rock, phase] of [
+          [flatRock, 0],
+          [locoRock, 1.3],
+        ] as const) {
+          rock.rotation.z = Math.sin(now * 0.073 + phase) * 0.018 * st.shudder;
+          rock.position.x = Math.sin(now * 0.097 + phase) * 0.035 * st.shudder;
+        }
+      }
       if (st.bump > 0) {
         st.bump = Math.max(0, st.bump - dt * 7);
         flatRock.position.y = flatY - st.bump * 0.04;
@@ -677,7 +735,7 @@ function trainAt(tr: Train, t: number) {
 /** One train on a line. It stands at the far end with its load until `start`. */
 export function buildTrain(line: Line) {
   const clock = { t: 0, running: false };
-  const look = wagonLook(CARS.length - 1, false);
+  const look = LOOK.kit ? trainLook(CARS.length - 1) : wagonLook(CARS.length - 1, false);
   const tr: Train = {
     line,
     s: line.len - TUNE.stopIn,
@@ -774,6 +832,8 @@ export function buildTrain(line: Line) {
       for (const c of tr.cars) snapCar(c);
     },
     onTrain: (p: Platform | null) => tr.cars.some((c) => c.platform === p),
+    look,
+    clockRunning: () => clock.running,
   };
 }
 export type TrainRun = ReturnType<typeof buildTrain>;

@@ -11,6 +11,7 @@ import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
 import { kitBatch, stationKit } from './look-kit.ts';
 import { ORIGIN, lineAt, type Line, type LinePoint, type Station } from './layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from './pieces.ts';
+import { addFoot } from './sites.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const FRAME_W = 2.6, // along the line
@@ -93,6 +94,7 @@ export function buildStation(spec: Station, line: Line, dir: number) {
   // Solid: the frame, and the feeder's bed, which you can step over.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
   addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 0.7, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 0.7, z }, turn);
+  addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3);
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
   const railAt = new THREE.Vector3(x + lx * (FRAME_D / 2 + 0.9), y, z + lz * (FRAME_D / 2 + 0.9));
   if (spec.rails) {

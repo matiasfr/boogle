@@ -61,9 +61,9 @@ export const PATHS: Foot[] = [
     // on the rim, down the wall to the river under where the trestle will go, over the bridge, then up the far wall and
     // round the shoulder of the ridge to the machine.
     pts: [
-      [-97, 8, 18],
-      [-94, -6, 18],
-      [-100, -14, 18],
+      [-98, 9, 18],
+      [-98, -6, 18],
+      [-102, -14, 18],
       [-122, -30, 18],
       [-142, -70, 17.5],
       [-130, -125, 17],
@@ -85,7 +85,7 @@ export const PATHS: Foot[] = [
     // To the quarry: south along the commons, down to the bank behind a shoulder, over the bridge with the spire up the
     // gorge, then up the far wall and along the table's edge.
     pts: [
-      [-97, 8, 18],
+      [-98, 9, 18],
       [-100, 62, 18],
       [-78, 108, 17.5],
       [-70, 146, 12],
@@ -263,13 +263,108 @@ export const GROVES = [
 ];
 
 // ---------------------------------------------------------------- the village's working yard, by the end of line 1
-export const FORGE = { x: -86, z: -14, w: 10, d: 8 };
-export const CRANE = { x: -80, z: -3 };
-export const DOCK = { x: -79.6, z: 1 }; // where crates off the train land for the crane
-export const HEAP = { x: -88, z: 3 }; // the village's timber heap, once the forge has what it needs
-export const RACK = { x: -85.5, z: -5 }; // where the forge's rails stack
+// The platform is on the forge's side of the track, and the forge stands just past where the train stops, so what your
+// cargo builds fills the view as you pull in and from the platform (the owner "had to go and look for what cargo built").
+export const FORGE = { x: -87, z: -3, w: 10, d: 8 };
+export const CRANE = { x: -80, z: 2.5 };
+export const DOCK = { x: -78.6, z: -1.5 }; // where crates off the train land for the crane
+export const HEAP = { x: -78, z: -9.5 }; // the village's timber heap, once the forge has what it needs
+export const RACK = { x: -85.5, z: 5.4 }; // where the forge's rails stack
 export const YARD = { x: -62, z: 20 }; // where the stone lands
-/** Spawn: at the village's edge, with the path, the sign, the forge, the stub and the gorge ahead. */
+/** The curio shelf at the station, between where you start and the turntable. */
+export const SHELF = { x: -90.5, z: 8.5, yaw: -0.87 };
+/** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
 export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
+
+// ---------------------------------------------------------------- the town's plots
+export type Plot = {
+  type: 'cottage' | 'hall' | 'stone' | 'shed' | 'clock' | 'keep' | 'water' | 'stack' | 'rock' | 'block' | 'derrick';
+  x: number;
+  z: number;
+  yaw?: number;
+  w?: number;
+  d?: number;
+  h?: number;
+  smoke?: boolean;
+  tile?: boolean;
+  color?: string;
+  top?: string;
+};
+const cottage = (x: number, z: number, yaw: number, smoke = false): Plot => ({
+  type: 'cottage',
+  x,
+  z,
+  yaw,
+  w: 5.4,
+  d: 4.4,
+  smoke,
+});
+/** Fewer buildings than the last round, placed for the views: the arriving train looks down the line at the great hall and
+ * the clock behind it; the stone street lines the way in from the quarry. */
+export const TOWN: {
+  start: Plot[];
+  wood: Plot[][];
+  stone: Plot[][];
+  camps: { asleep: Plot[]; awake: Plot[] }[];
+} = {
+  start: [
+    cottage(-108, -4, 0.5, true),
+    cottage(-113, 11, 1.4),
+    cottage(-110, 26, 2.2, true),
+    cottage(-123, 19, 1.6),
+    cottage(-122, -3, 0.9),
+  ],
+  wood: [
+    [
+      { type: 'hall', x: -88, z: 31, w: 11, d: 8, yaw: 2.73, smoke: true },
+      { type: 'hall', x: -84, z: -18, w: 7, d: 6, h: 4.2, yaw: 0.1 },
+      { type: 'clock', x: -105, z: 37 },
+    ],
+    [
+      { type: 'shed', x: -71, z: -21, w: 8, d: 6, yaw: -0.5 },
+      { type: 'hall', x: -96, z: -25, w: 8, d: 6, yaw: 0.2, smoke: true },
+      { type: 'water', x: -131, z: 8 },
+    ],
+  ],
+  stone: [
+    [
+      { type: 'stone', x: -83, z: 44, w: 6, d: 6, h: 7, yaw: 0.6, smoke: true },
+      { type: 'stone', x: -71, z: 47, w: 6, d: 5, h: 8, yaw: 0.5, tile: true },
+      { type: 'keep', x: -89, z: 57 },
+    ],
+    [
+      { type: 'stone', x: -74, z: 61, w: 7, d: 6, h: 10, yaw: 0.3, smoke: true },
+      { type: 'stone', x: -60, z: 54, w: 6, d: 6, h: 7, yaw: 0.8, tile: true },
+      { type: 'stack', x: -112, z: 50, h: 22 },
+      { type: 'shed', x: -112, z: 60, w: 9, d: 7, tile: true },
+    ],
+  ],
+  camps: [
+    {
+      asleep: [
+        { type: 'stack', x: -3, z: -158, h: 11 },
+        { type: 'shed', x: 9, z: -163, w: 6, d: 5, h: 2.6 },
+      ],
+      awake: [
+        { type: 'shed', x: 20, z: -137, w: 12, d: 7, h: 4.5 },
+        { type: 'block', x: 27.2, z: -137, w: 1.4, h: 6, d: 6, color: '#8a6a48' },
+        { type: 'block', x: 32, z: -144, w: 5, h: 2.4, d: 3 },
+      ],
+    },
+    {
+      asleep: [
+        { type: 'stack', x: 106, z: 7, h: 13 },
+        { type: 'rock', x: 118, z: 56, w: 10, h: 9, d: 22 },
+        { type: 'rock', x: 112, z: 64, w: 8, h: 4, d: 10, color: '#a8a498' },
+      ],
+      awake: [
+        { type: 'derrick', x: 100, z: 62 },
+        { type: 'shed', x: 76, z: 50, w: 10, d: 7, h: 5, tile: true },
+        { type: 'block', x: 84, z: 58, w: 5, h: 2.2, d: 4, color: '#b2ad9f' },
+        { type: 'stone', x: 108, z: 54, w: 7, d: 6, h: 7 },
+      ],
+    },
+  ],
+};
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

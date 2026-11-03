@@ -173,3 +173,11 @@ real slice does.
 - [x] **`?proto=place`, second round:** a sign at the village, a stranded track layer to wake, chop, three auto-paver
       stations along the route, the same logs laid as sleepers, and a forge your cargo builds, whose rails start line 2.
 - [x] **Playtest 9.** Yes: "it felt like my work became the track" ([playtests.md](../playtests.md), 2 November).
+
+## 10. Did the crates and the little guys give you a reason to keep carrying?
+
+- [x] **`?proto=place`, third round:** the same job with motivation and life around it. The look by default, a machine that
+      wakes with drama, a first-line celebration with the one camera move, a forge you can't miss from the train, a solid town
+      built on scaffolding, a crate with a cosmetic gift per stretch, a curio shelf and empty mounts that promise them, little
+      guys and crystals.
+- [ ] **Playtest 10.**

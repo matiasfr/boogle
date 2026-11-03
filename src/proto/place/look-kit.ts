@@ -1,4 +1,4 @@
-// `&look=kit`, from assets/src/place-kit.py (Blender, through `npm run assets`): real pieces in place of the greybox's
+// The look's kit, from assets/src/place-kit.py (Blender, through `npm run assets`): real pieces in place of the greybox's
 // boxes, batched by part and material the way the board asks. The track keeps its run, timing and colliders: `lookTrack`
 // only reroutes where its matrices land. The file loads after the first frame, so each mesh starts on a speck of geometry
 // and takes its piece when the kit arrives. With `mats` or `contact` and no kit, the same routing draws today's unit boxes
@@ -244,9 +244,12 @@ const RED: Paint = { color: '#e8392a', rough: 0.55 },
 const SLEEPER_ON_FORK: Paint = { color: '#8a6236', grain: { axis: 'x', honey: honeyOf('#8a6236') } };
 export type MachineLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D; heldRail: THREE.Object3D };
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
-export function machineLook(): MachineLook {
+export const machineLook = (): MachineLook => kitCars(1, true);
+/** A train's look: the same loco, the same livery, and plain flatbeds. */
+export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
+function kitCars(trailers: number, working: boolean): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
-    const m = piece(name, p);
+    const m = piece(name, working ? { ...p, rust: true } : p);
     m.position.set(x, y, z);
     parent.add(m);
     return m;
@@ -276,34 +279,38 @@ export function machineLook(): MachineLook {
     return { m, side };
   });
 
-  const flatbed = new THREE.Group();
-  add(flatbed, 'flat_deck', DECK);
-  add(flatbed, 'flat_black', BLACK);
-  add(flatbed, 'flat_cream', HOPPER);
-  add(flatbed, 'flat_guard', RED);
-  add(flatbed, 'flat_slot', BLACK);
-  add(flatbed, 'flat_amber', ARM);
-  const flatWheels = wheels(flatbed, TRAILER.hz, 0.22);
-  // The rail the gripper holds out over the head.
-  const heldRail = add(flatbed, 'rail', STEEL, 0.5, 0.68, 2.3);
-  // The fork, with the next sleeper on it, going down as each one lands.
+  const beds = Array.from({ length: trailers }, () => {
+    const flatbed = new THREE.Group();
+    add(flatbed, 'flat_deck', DECK);
+    add(flatbed, 'flat_black', BLACK);
+    return { flatbed, wheels: wheels(flatbed, TRAILER.hz, 0.22) };
+  });
+  // The machine's flatbed works for a living.
+  const bed0 = beds[0]!.flatbed;
   const fork = new THREE.Group();
-  add(fork, 'fork', ARM);
-  add(fork, 'sleeper', SLEEPER_ON_FORK, 0, 0.05, 0);
-  fork.position.z = 2.05;
-  flatbed.add(fork);
+  let heldRail: THREE.Object3D = fork;
+  if (working) {
+    add(bed0, 'flat_cream', HOPPER);
+    add(bed0, 'flat_guard', RED);
+    add(bed0, 'flat_slot', BLACK);
+    add(bed0, 'flat_amber', ARM);
+    // The rail the gripper holds out over the head.
+    heldRail = add(bed0, 'rail', STEEL, 0.5, 0.68, 2.3);
+    // The fork, with the next sleeper on it, going down as each one lands.
+    add(fork, 'fork', ARM);
+    add(fork, 'sleeper', SLEEPER_ON_FORK, 0, 0.05, 0);
+    fork.position.z = 2.05;
+    bed0.add(fork);
+  }
 
-  const cars = [loco, flatbed].map((inner) => {
+  const cars = [loco, ...beds.map((b) => b.flatbed)].map((inner) => {
     const outer = new THREE.Group();
     outer.add(inner);
     return outer;
   });
-  const sets = [
-    { wheels: locoWheels, r: 0.36 },
-    { wheels: flatWheels, r: 0.22 },
-  ];
+  const sets = [{ wheels: locoWheels, r: 0.36 }, ...beds.map((b) => ({ wheels: b.wheels, r: 0.22 }))];
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
-  const angle = [0, 0];
+  const angle = cars.map(() => 0);
   let travel = 0;
   onFrame(
     () => {
@@ -324,7 +331,7 @@ export function machineLook(): MachineLook {
         m.position.y = 0.51 + 0.12 * Math.cos(angle[0]!);
         m.position.z = 0.12 * Math.sin(angle[0]!);
       }
-      fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
+      if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
     },
     { phase: 'update', order: 8 },
   );

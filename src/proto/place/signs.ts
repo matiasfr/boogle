@@ -1,13 +1,12 @@
-// What tells you what to do in ?proto=place: the big sign at spawn, signposts along the way, a beacon over the next thing,
-// one line of objective on the HUD and the shared numbers (the train's capacity, the town's people). The owner, on the
-// last test: "I didn't know what to do". More directed than Death Stranding: you always know the next thing. The crowd is
-// here too: little people who jump when the first line comes in. Local.
+// What tells you what to do in ?proto=place: a signpost at the fork, a beacon over the next thing, one line of objective on
+// the HUD and the shared numbers (the train's capacity, the town's people). "A small prompt is direction enough" (the
+// owner, 2 November): no big sign. Local.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
 import { replay } from '../../ui/ui-sound.ts';
-import { H, PATH_SAMPLES, addStatic } from './land.ts';
-import { ORIGIN, toWorld } from './layout.ts';
+import { H, addStatic } from './land.ts';
+import { toWorld } from './layout.ts';
 
 // ---------------------------------------------------------------- boards you can read
 const PAPER = '#fff3d6',
@@ -76,48 +75,9 @@ export function sign(
   return g;
 }
 export function buildSigns() {
-  // At spawn: what, where, why.
-  sign(-99.5, -3, -97, 14, 9, 4.4, 1.4, [
-    { t: 'THE TRACK LAYER IS STRANDED', px: 96 },
-    { t: 'AT THE TIMBER CAMP, ACROSS THE GORGE.', px: 74 },
-    { t: 'FOLLOW THE PATH AND WAKE IT.', px: 96, color: '#c4501a' },
-    { t: 'THEN BUILD THE LINE HOME.', px: 74 },
-  ]);
-  // The fork at your feet, and the turns where you could lose it.
-  sign(-101.5, 8, -97, 16, 3.2, 1, 1.0, [{ t: '↑ TIMBER CAMP', px: 130 }]);
-  sign(-103, 20, -97, 14, 3.2, 1, 1.0, [{ t: 'QUARRY, LATER ↓', px: 110 }]);
-  sign(-127, -62, -142, -70, 3.2, 1, 1.2, [{ t: 'TIMBER CAMP', px: 130 }]);
-  sign(-117, -111, -130, -125, 3.2, 1, 1.2, [{ t: 'TO THE BRIDGE', px: 120 }]);
-  sign(-68, -128, -61, -121, 3.2, 1, 1.2, [{ t: 'TIMBER CAMP', px: 130 }]);
-  sign(-72, -172, -61, -147, 3.2, 1, 1.2, [{ t: 'ALMOST THERE', px: 120 }]);
-  // Little orange arrows every so often on the way to the camp, so you can't doubt it.
-  const path = PATH_SAMPLES[0]!;
-  const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.16, 1.3, 0.16), flat('#f4f1e8'), 40);
-  const heads = new THREE.InstancedMesh(new THREE.ConeGeometry(0.3, 0.7, 4).rotateX(-Math.PI / 2), flat('#f0752c'), 40);
-  posts.frustumCulled = heads.frustumCulled = false;
-  const o = new THREE.Object3D();
-  let n = 0;
-  for (let k = 26; k < path.length - 10 && n < 40; k += 26) {
-    const q = path[k]!,
-      r = path[k + 4]!;
-    const dx = r[0] - q[0],
-      dz = r[1] - q[1],
-      len = Math.hypot(dx, dz) || 1;
-    if (q[2] < 3) continue;
-    const x = q[0] + ORIGIN.x - (dz / len) * 4.2,
-      z = q[1] + (dx / len) * 4.2,
-      y = H(x, z);
-    o.rotation.set(0, 0, 0);
-    o.position.set(x, y + 0.65, z);
-    o.updateMatrix();
-    posts.setMatrixAt(n, o.matrix);
-    o.position.y = y + 1.45;
-    o.rotation.y = Math.atan2(dx, dz);
-    o.updateMatrix();
-    heads.setMatrixAt(n++, o.matrix);
-  }
-  posts.count = heads.count = n;
-  scene.add(posts, heads);
+  // Only the fork at your feet: the owner found the big sign heavy-handed, and the bold path and the objective do the rest.
+  sign(-104, 1, -98, 9, 2.4, 0.8, 1.0, [{ t: '↑ TIMBER CAMP', px: 130 }]);
+  sign(-104.5, 18, -98, 9, 2.4, 0.8, 1.0, [{ t: 'QUARRY, LATER ↓', px: 110 }]);
 }
 
 // ---------------------------------------------------------------- the beacon over the next thing
@@ -159,39 +119,4 @@ export function setNumbers(train: number | null, people: number) {
   if (s === lastNums) return;
   lastNums = s;
   nums.innerHTML = s;
-}
-
-// ---------------------------------------------------------------- little people
-const CROWD = 14;
-const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.28, 0.5, 2, 6), flat('#e9a14a'), CROWD);
-const headM = new THREE.InstancedMesh(new THREE.SphereGeometry(0.3, 7, 6), flat('#f4d0a8'), CROWD);
-const COLORS = ['#e05a4a', '#4a8ae0', '#e0c04a', '#58b56b', '#b46ae0'].map((c) => new THREE.Color(c));
-const crowd = Array.from({ length: CROWD }, (_, k) => {
-  const a = (k / CROWD) * Math.PI * 2;
-  // around the platform and the yard
-  const x = toWorld(-72 + Math.cos(a) * 9 + ((k * 7) % 5)),
-    z = 10 + Math.sin(a) * 7 + ((k * 3) % 4);
-  return { x, z, y: H(x, z), phase: k * 1.3 };
-});
-body.frustumCulled = headM.frustumCulled = false;
-body.castShadow = headM.castShadow = true;
-crowd.forEach((_, k) => body.setColorAt(k, COLORS[k % COLORS.length]!));
-scene.add(body, headM);
-const pm = new THREE.Matrix4();
-let cheer = 0;
-export const cheerNow = (s = 9) => void (cheer = s);
-function drawCrowd(now: number) {
-  crowd.forEach((p, k) => {
-    const hop = cheer > 0 ? Math.abs(Math.sin(now * 0.008 + p.phase)) * 1 : 0;
-    body.setMatrixAt(k, pm.makeTranslation(p.x, p.y + 0.55 + hop, p.z));
-    headM.setMatrixAt(k, pm.makeTranslation(p.x, p.y + 1.25 + hop, p.z));
-  });
-  body.instanceMatrix.needsUpdate = headM.instanceMatrix.needsUpdate = true;
-}
-drawCrowd(0);
-export function updateCrowd(dt: number, now: number) {
-  if (cheer <= 0) return;
-  cheer -= dt;
-  drawCrowd(now);
-  if (cheer <= 0) drawCrowd(0);
 }
