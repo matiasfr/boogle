@@ -9,7 +9,17 @@ import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
 import { kitBatch, stationKit } from './look-kit.ts';
-import { ORIGIN, lineAt, type Line, type LinePoint, type Station } from './layout.ts';
+import {
+  GOODS,
+  ORIGIN,
+  lineAt,
+  noStock,
+  type Goods,
+  type Line,
+  type LinePoint,
+  type Station,
+  type Stock,
+} from './layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from './pieces.ts';
 import { addFoot } from './sites.ts';
 
@@ -20,14 +30,19 @@ const FRAME_W = 2.6, // along the line
 const PER_ROW = 5;
 
 export type StationRun = ReturnType<typeof buildStation>;
-export function buildStation(spec: Station, line: Line, dir: number) {
+/** Where a frame stands: `yaw` along the thing it feeds, (lx, lz) the way out from it. */
+export type FrameAt = { x: number; z: number; yaw: number; lx: number; lz: number };
+export function frameBesideLine(spec: Station, line: Line, dir: number): FrameAt {
   lineAt(line, spec.s - dir * 1.5, P);
-  const yaw = Math.atan2(P.ux, P.uz);
   const lx = -P.uz * spec.side,
     lz = P.ux * spec.side;
-  const x = P.x + ORIGIN.x + lx * OUT,
-    z = P.z + ORIGIN.z + lz * OUT,
-    y = H(x, z);
+  return { x: P.x + ORIGIN.x + lx * OUT, z: P.z + ORIGIN.z + lz * OUT, yaw: Math.atan2(P.ux, P.uz), lx, lz };
+}
+const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
+  stoneMat = new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true });
+export function buildStation(spec0: Station, place: FrameAt) {
+  const { x, z, yaw, lx, lz } = place;
+  const y = H(x, z);
   const at = new THREE.Vector3(x, y + 0.12, z);
 
   const g = new THREE.Group();
@@ -91,9 +106,10 @@ export function buildStation(spec: Station, line: Line, dir: number) {
     g.add(feeder);
   }
   scene.add(g);
-  // Solid: the frame as high as its stack can get, and the feeder's bed, which you can hop over.
+  // Solid: the frame about as high as it looks (taller, it's an invisible wall for you and the camera arm), and the feeder's bed,
+  // which you can hop over.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 1.5, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 1.5, z }, turn);
+  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 0.95, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 0.95, z }, turn);
   addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3);
   addStatic(
     { kind: 'box', hx: 0.5, hy: 0.28, hz: SPAN / 2 },
@@ -102,7 +118,7 @@ export function buildStation(spec: Station, line: Line, dir: number) {
   );
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
   const railAt = new THREE.Vector3(x + lx * (FRAME_D / 2 + 0.9), y, z + lz * (FRAME_D / 2 + 0.9));
-  if (spec.rails) {
+  if (spec0.rails) {
     addStatic(
       { kind: 'box', hx: 0.5, hy: 0.45, hz: 1.35 },
       { x: railAt.x, y: y + 0.45, z: railAt.z },
@@ -117,18 +133,36 @@ export function buildStation(spec: Station, line: Line, dir: number) {
     }
   }
 
-  const logs = logStackMesh(Math.max(1, spec.logs));
+  const logs = logStackMesh(Math.max(1, 56));
   const rails = LOOK.kit
-    ? kitBatch('rail', STEEL, spec.rails)
+    ? kitBatch('rail', STEEL, Math.max(1, spec0.rails))
     : new THREE.InstancedMesh(
         new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z),
         LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6),
-        Math.max(1, spec.rails),
+        Math.max(1, spec0.rails),
       );
   rails.castShadow = true;
   rails.frustumCulled = false;
   rails.count = 0;
   scene.add(rails);
+  // Stone in a low heap beside the frame; the great beam, when it comes, across the frame's top.
+  const stones = spec0.stone ? new THREE.InstancedMesh(stoneGeo, stoneMat, spec0.stone) : null;
+  if (stones) {
+    stones.castShadow = true;
+    stones.frustumCulled = false;
+    stones.count = 0;
+    scene.add(stones);
+  }
+  const beam = spec0.beam
+    ? new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 5.6, 8).rotateX(Math.PI / 2), flat('#7a5430'))
+    : null;
+  if (beam) {
+    beam.castShadow = true;
+    beam.position.set(x, y + 1.7, z);
+    beam.rotation.y = yaw;
+    beam.visible = false;
+    scene.add(beam);
+  }
 
   const tag = label(3.4, 1.7);
   tag.sprite.position.set(x, y + 2.9, z);
@@ -137,15 +171,21 @@ export function buildStation(spec: Station, line: Line, dir: number) {
   const slot = new THREE.Vector3();
   const logSlot = (n: number, out = slot) => stackSlot(n, PER_ROW, at, yaw, out);
   const railSlot = (n: number, out = slot) => {
-    const across = (n % 4) - 1.5,
-      row = Math.floor(n / 4);
-    return out.set(railAt.x + lx * across * 0.2, y + 0.28 + row * 0.18, railAt.z + lz * across * 0.2);
+    const across = (n % 8) - 3.5,
+      row = Math.floor(n / 8);
+    return out.set(railAt.x + lx * across * 0.17, y + 0.28 + row * 0.18, railAt.z + lz * across * 0.17);
   };
+  const stoneAt = (n: number, out = slot) =>
+    out.set(
+      railAt.x + Math.sin(n * 2.4) * (0.3 + n * 0.06),
+      y + 0.18 + (n % 3) * 0.14,
+      railAt.z + Math.cos(n * 2.4) * (0.3 + n * 0.06),
+    );
   const railM = new THREE.Matrix4(),
     railQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw),
     one = new THREE.Vector3(1, 1, 1);
   const run = {
-    spec,
+    spec: spec0, // the forge's frame takes its next bill here
     at,
     x,
     z,
@@ -154,14 +194,17 @@ export function buildStation(spec: Station, line: Line, dir: number) {
     /** Where a log leaves the rollers for the machine. */
     feederEnd: new THREE.Vector3(x - lx * (OUT - 1.2), y + 0.7, z - lz * (OUT - 1.2)),
     feederStart: new THREE.Vector3(x - lx * (FRAME_D / 2), y + 0.7, z - lz * (FRAME_D / 2)),
-    have: { logs: 0, rails: 0 }, // landed
-    coming: { logs: 0, rails: 0 }, // in the air
-    shown: { logs: 0, rails: 0 }, // standing in the frame (the machine takes them down)
+    have: noStock(), // landed
+    coming: noStock(), // in the air
+    shown: noStock(), // standing in the frame (the machine takes them down)
     logSlot,
     railSlot,
-    drawStock(n: { logs: number; rails: number }) {
+    stoneAt,
+    drawStock(n: Stock) {
       run.shown.logs = n.logs;
       run.shown.rails = n.rails;
+      run.shown.stone = n.stone;
+      run.shown.beam = n.beam;
       for (let k = 0; k < n.logs; k++) setStackLog(logs, k, logSlot(k), yaw);
       logs.count = n.logs;
       logs.visible = n.logs > 0;
@@ -170,17 +213,25 @@ export function buildStation(spec: Station, line: Line, dir: number) {
       for (let k = 0; k < n.rails; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
       rails.count = n.rails;
       rails.instanceMatrix.needsUpdate = true;
+      if (stones) {
+        for (let k = 0; k < n.stone; k++) stones.setMatrixAt(k, railM.compose(stoneAt(k), railQ, one));
+        stones.count = n.stone;
+        stones.instanceMatrix.needsUpdate = true;
+      }
+      if (beam) beam.visible = n.beam > 0;
     },
     /** The sign over it; off when it's not its turn or it's done. */
     setTag(on: boolean) {
       tag.sprite.visible = on;
       if (!on) return;
-      const a = spec.logs ? `logs ${run.have.logs}/${spec.logs}` : '';
-      const b = spec.rails ? `rails ${run.have.rails}/${spec.rails}` : '';
-      tag.set(spec.label.replace('Line 2, s', 'S'), [b, a].filter(Boolean).join('  '));
+      const parts = GOODS.filter((g) => run.need(g) > 0).map(
+        (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
+      );
+      tag.set(run.spec.label.replace('Line 2, s', 'S'), parts.join('  '));
     },
-    full: () => run.have.logs >= spec.logs && run.have.rails >= spec.rails,
-    wants: (kind: 'logs' | 'rails') => spec[kind] - run.have[kind] - run.coming[kind],
+    need: (kind: Goods) => run.spec[kind] ?? 0,
+    full: () => GOODS.every((g) => run.have[g] >= run.need(g)),
+    wants: (kind: Goods) => run.need(kind) - run.have[kind] - run.coming[kind],
   };
   run.setTag(false);
   return run;

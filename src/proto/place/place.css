@@ -1,7 +1,6 @@
 /* The tester's link (&fresh=1): nothing that primes them or lets them skip. The counters still run. */
 .place-fresh .proto-bar,
 .place-fresh .place-proto,
-.place-fresh .place-nums,
 .place-fresh .guide-row[data-id='proto-bar'],
 .place-fresh .tbtn.honk-btn,
 .place-fresh .tbtn.ping-btn {
@@ -107,7 +106,7 @@ body:not(.playing) .place-proto {
 .place-arrow.on {
   opacity: 1;
 }
-/* What everyone shares: the train's capacity and the town's people. */
+/* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
 .place-nums {
   position: absolute;
   right: 14px;
@@ -115,16 +114,20 @@ body:not(.playing) .place-proto {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-  font: 700 15px var(--font-body);
+  gap: 3px;
+  font: 700 13px var(--font-body);
   color: var(--ink);
   pointer-events: none;
 }
 .place-nums span {
-  padding: 3px 10px;
+  padding: 2px 8px;
   background: var(--paper);
   border: 2px solid var(--ink);
-  border-radius: 10px;
+  border-radius: 9px;
+}
+.place-nums .place-money {
+  font-size: 16px;
+  background: #e8f5d0;
 }
 /* The big moments, once each: a line through, the first crystal. */
 .place-banner {

@@ -11,7 +11,7 @@ import { emit } from '../../render/particles.ts';
 import { fanfare } from '../minis/common.ts';
 import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from './pieces.ts';
-import type { Machine } from './rail.ts';
+import type { Car } from './rail.ts';
 
 // ---------------------------------------------------------------- a little timeline
 const queue: { t: number; fn: () => void }[] = [];
@@ -156,6 +156,19 @@ camConstraints.push((look, pos) => {
 });
 
 // ---------------------------------------------------------------- the machine waking
+/** What a waking needs of something: the machine, or the old train. */
+export type Waker = {
+  flatbed: Car;
+  loco: Car;
+  look: { chimneyTop: THREE.Object3D };
+  shudder: (a: number) => void;
+  setRust: (v: number) => void;
+  setFire: (v: number) => void;
+  setLamps: (on: boolean) => void;
+  setSlip: (rate: number) => void;
+  distance: (x: number, z: number) => number;
+};
+type Machine = Waker;
 const rust = new THREE.Color('#8a5a34'),
   flake = new THREE.Color('#6d4426'),
   dustC = new THREE.Color('#cdb48c'),
@@ -293,8 +306,14 @@ export function wakeShow(m: Machine, onLamps: () => void, done: () => void) {
       shakeView(0.08 * near());
     });
   for (let k = 0; k <= 16; k++) after(0.2 + k * 0.11, () => m.setRust(1 - k / 16));
-  after(1.0, () => m.setFire(0.4));
-  after(1.5, () => m.setFire(0.7));
+  after(1.0, () => {
+    m.setFire(0.4);
+    m.setSlip(5); // the wheels try
+  });
+  after(1.5, () => {
+    m.setFire(0.7);
+    m.setSlip(11);
+  });
   after(1.95, () => {
     m.setFire(1);
     steamBurst(m);
@@ -310,20 +329,23 @@ export function wakeShow(m: Machine, onLamps: () => void, done: () => void) {
     onLamps();
     m.shudder(0.25);
   });
+  after(2.35, () => m.setSlip(4));
   after(2.6, () => {
     whistleHere();
     whistle(x, z);
     fanfare(false);
   });
+  after(2.9, () => m.setSlip(0));
   after(3.1, () => {
     m.shudder(0);
     done();
   });
 }
 
-// ---------------------------------------------------------------- a line coming through
-/** The first line. You can't miss this one: a long whistle, a big show over the village and the gorge, and the pull-out. */
-export function firstLineShow(o: {
+// ---------------------------------------------------------------- a path opening
+/** The first path: you can't miss this. Whistles wherever you stand, rockets down the gorge, a shake, the pull-out along what
+ * you built, with the village running out onto it. Any input ends the camera move at once; you keep control throughout. */
+export function firstPathShow(o: {
   village: THREE.Vector3;
   gorge: THREE.Vector3;
   shot: THREE.Vector3;
@@ -331,19 +353,38 @@ export function firstLineShow(o: {
   at: THREE.Vector3;
 }) {
   fanfare(true);
-  showBanner('The line is through!', 'Your timber is on its way home.', 4.2);
-  for (const t of [0, 1.3, 2.6]) after(t, whistleHere);
-  barrage(o.village.x, o.village.y, o.village.z, 12, 0.42, 40, 2.6);
-  barrage(o.gorge.x, o.gorge.y, o.gorge.z, 10, 0.5, 70, 3);
-  after(0.5, () => pullOut(o.shot, o.shotTo, o.at, 3));
+  shakeView(0.22);
+  showBanner('A way across!', '', 4);
+  for (const t of [0, 1.1, 2.2]) after(t, whistleHere);
+  after(0.7, () => fanfare(true, 0.8));
+  barrage(o.village.x, o.village.y, o.village.z, 14, 0.38, 44, 2.6);
+  barrage(o.gorge.x, o.gorge.y, o.gorge.z, 14, 0.42, 70, 3.2);
+  after(0.6, () => pullOut(o.shot, o.shotTo, o.at, 4.2));
 }
-/** Line 2: no camera, but still an event. */
-export function nextLineShow(at: THREE.Vector3, village: THREE.Vector3) {
+/** Line 2 reaches Far Head: no camera, but rockets at both ends and everyone's whistle. */
+export function headShow(at: THREE.Vector3, village: THREE.Vector3) {
   fanfare(true);
-  showBanner('Line 2 is through!', 'Stone is coming to the village.');
+  shakeView(0.1);
+  showBanner('Far Head!', '', 3.5);
   for (const t of [0, 1.4]) after(t, whistleHere);
-  barrage(at.x, at.y, at.z, 7, 0.5, 24, 1.6);
+  barrage(at.x, at.y, at.z, 10, 0.5, 36, 2.2);
   barrage(village.x, village.y, village.z, 5, 0.6, 26, 1.6);
+}
+/** Trains. The top of the ladder: the biggest show after the first path. */
+export function trainsShow(at: THREE.Vector3, shot: THREE.Vector3, shotTo: THREE.Vector3) {
+  fanfare(true);
+  showBanner('TRAINS', '', 4);
+  for (const t of [0, 0.9, 1.8, 2.7]) after(t, whistleHere);
+  barrage(at.x, at.y, at.z, 14, 0.36, 50, 2.6);
+  after(0.5, () => pullOut(shot, shotTo, at, 3.4));
+}
+/** The pier's out. */
+export function pierShow(at: THREE.Vector3, shot: THREE.Vector3, shotTo: THREE.Vector3, look: THREE.Vector3) {
+  fanfare(true);
+  showBanner('Thanks for playing!', '', 7);
+  for (const t of [0, 1.2]) after(t, whistleHere);
+  barrage(at.x, at.y, at.z, 16, 0.42, 40, 2.8);
+  after(0.4, () => pullOut(shot, shotTo, look, 4.2));
 }
 
 // ---------------------------------------------------------------- each frame

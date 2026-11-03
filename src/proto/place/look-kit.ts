@@ -247,7 +247,7 @@ const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(
 const stationPict = new THREE.InstancedMesh(
   LOOK.contact ? bakeContact(stationPictGeo) : stationPictGeo,
   paint({ color: '#3a2a1a' }),
-  8,
+  16,
 );
 stationPict.count = 0;
 stationPict.frustumCulled = false;
@@ -262,7 +262,13 @@ const RED: Paint = { color: '#e8392a', rough: 0.55 },
   HOPPER: Paint = { color: '#e8d3a2', rough: 0.75 },
   ARM: Paint = { color: '#f0752c', rough: 0.55 };
 const SLEEPER_ON_FORK: Paint = { color: '#8a6236', grain: { axis: 'x', honey: honeyOf('#8a6236') } };
-export type MachineLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D; heldRail: THREE.Object3D };
+export type MachineLook = {
+  cars: THREE.Object3D[];
+  chimneyTop: THREE.Object3D;
+  heldRail: THREE.Object3D;
+  /** Rad/s the wheels spin with no ground going by: the wake's slipping start. */
+  slip: { rate: number };
+};
 /** The track layer's look, the shape of wagonLook's: a red toy loco and a flatbed with its cradle, guard, arm and fork. */
 type Wheel = { x: number; y: number; z: number; at: number };
 const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
@@ -283,13 +289,13 @@ const wheelSet = (p: Paint, n: number) => {
   };
 };
 const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
-  trainWheels = wheelSet(IRON, 24); // two lines: three cars each, four wheels each
+  trainWheels = wheelSet({ ...IRON, rust: 'train' }, 24); // two lines: three cars each, four wheels each
 export const machineLook = (): MachineLook => kitCars(1, true);
 /** A train's look: the same loco, the same livery, and plain flatbeds. */
 export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
 function kitCars(trailers: number, working: boolean): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
-    const m = piece(name, working ? { ...p, rust: true } : p);
+    const m = piece(name, { ...p, rust: working ? true : 'train' });
     m.position.set(x, y, z);
     parent.add(m);
     return m;
@@ -350,8 +356,9 @@ function kitCars(trailers: number, working: boolean): MachineLook {
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
   const angle = cars.map(() => 0);
   let travel = 0;
+  const slip = { rate: 0 };
   onFrame(
-    () => {
+    ({ dt }) => {
       cars.forEach((car, n) => {
         const parent = car.parent;
         const { wheels: list, r } = sets[n]!;
@@ -366,7 +373,7 @@ function kitCars(trailers: number, working: boolean): MachineLook {
           dz = at.z - last[n]!.z;
         const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
         last[n]!.copy(at);
-        angle[n]! += ds / r;
+        angle[n]! += ds / r + slip.rate * dt;
         // In the car's own frame, rock and shudder included, as when they were its children.
         const inner = car.children[0]!;
         inner.updateWorldMatrix(true, false);
@@ -387,7 +394,7 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     },
     { phase: 'update', order: 8 },
   );
-  return { cars, chimneyTop, heldRail };
+  return { cars, chimneyTop, heldRail, slip };
 }
 
 // ---------------------------------------------------------------- what sits on the ground and moves

@@ -25,9 +25,9 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] The pet doesn't chase the train frantically or clip through it.
 - [x] The train shows it's waking, without saying so.
 - [x] The sun moves.
-- [ ] The platform's purpose is obvious.
-- [ ] Something points to the next island.
-- [ ] Crates and gifts vary, since "one tree and boxes" stopped feeling different: cosmetic boxes with rarity, common first and rarer later, filling swappable hat, accessory and outfit slots. No curios as prizes. Train slots wait for the roundhouse.
+- [x] The platform's purpose is obvious.
+- [x] Something points to the next island.
+- [x] Crates and gifts vary, since "one tree and boxes" stopped feeling different: cosmetic boxes with rarity, common first and rarer later, filling swappable hat, accessory and outfit slots. No curios as prizes. Train slots wait for the roundhouse.
 
 ## From the Design Table call (boogle-2.md, "The shape of the game")
 
@@ -41,11 +41,15 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] **Character:** remove the avatar's ear bumps and rosy cheeks.
 - [x] **Playtest data:** consented auto-upload to our server, fetched with one command, so we understand a session before hearing about it. `npm run playtest`; prototypes add beats with `playMark`.
 - [ ] **Research and pictures:** movement abilities and glide feel; interiors in a third-person camera.
-- [ ] **The job:** steps 1 to 4, and the fixes above.
+- [x] **The job:** steps 1 to 4, and the fixes above.
 - [ ] **Exploring:** step 5.
 - [ ] **Town:** step 6.
 - [ ] **Two players:** step 7.
 - [ ] **Whole run:** full play-through, tune from data, first-time pass, then hand to the owner.
+
+## The job's numbers (hypotheses)
+
+Set with `node dev/economy/model.ts round4`; timed by `npm run playthrough`; each rung's before and after in [place.md](../game-design/place.md#measured). Your back 8, then 16. An axe of 5 strokes at 2 logs, then 3 at 5. Bills: stations 24, 32 + 8 stone, 40 + the great beam (`Q0 + j * delta`, a short finite table); the forge 24 then 32; line 2: 16+6, 24+12, 16+12, 16+16, 24+24, and the pier 32+32 off a train. Target for the first path, 6 to 9 minutes of real play: the bot takes 5:57 with no reading, looking or sprinting, so a person should land in it, unverified. Trains at about 26 minutes.
 
 ## Left out for now
 

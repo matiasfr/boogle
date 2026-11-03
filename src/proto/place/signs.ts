@@ -1,5 +1,5 @@
 // What tells you what to do in ?proto=place: a signpost at the fork, a beacon over the next thing, one line of objective on
-// the HUD and the shared numbers (the train's capacity, the town's people). "A small prompt is direction enough" (the
+// the HUD and the numbers (logs, kilometres, town, money). "A small prompt is direction enough" (the
 // owner, 2 November): no big sign. Local.
 import { playObjective } from '../mark.ts';
 import * as THREE from 'three/webgpu';
@@ -165,9 +165,20 @@ export function updateObjective(dt: number, busy: boolean) {
   objT = Math.max(0, objT - dt);
   obj.classList.toggle('on', objT > 0 && !!lastObj);
 }
+// The numbers: logs, kilometres, town and a running money count, a comic score. They tick up one by one, so you can feel them.
+const shownNum = { logs: 0, km: 0, people: 0, money: 0 };
 let lastNums = '';
-export function setNumbers(train: number | null, people: number) {
-  const s = `${train === null ? '' : `<span>Train holds <b>${train}</b> crates</span>`}<span>Village <b>${people}</b> people</span>`;
+export function setNumbers(score: { money: number; logs: number; metres: number }, people: number) {
+  const ease = (a: number, b: number, k: number) => (Math.abs(b - a) < 1 ? b : a + (b - a) * k);
+  shownNum.logs = ease(shownNum.logs, score.logs, 0.2);
+  shownNum.km = score.metres / 1000;
+  shownNum.people = people;
+  shownNum.money = ease(shownNum.money, score.money, 0.12);
+  const s =
+    `<span>Logs <b>${Math.round(shownNum.logs)}</b></span>` +
+    `<span>Track <b>${shownNum.km.toFixed(2)}</b> km</span>` +
+    `<span>Town <b>${shownNum.people}</b></span>` +
+    `<span class="place-money"><b>$${Math.round(shownNum.money).toLocaleString('en-US')}</b></span>`;
   if (s === lastNums) return;
   lastNums = s;
   nums.innerHTML = s;

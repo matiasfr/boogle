@@ -1,8 +1,8 @@
-// The forge of ?proto=place: bare foundations and scaffolding from the start, and a crane that lifts each crate off the
-// dock straight into it. Every crate adds its pieces (frame, walls, roof, chimney), and they drop into place: no scaling.
-// Every other building copies its plan (./sites.ts). It stands just past where the train stops, on the platform's side,
-// so you can't miss it on the way in. When it's done the chimney lights, the poles come down and rails pour onto a rack in
-// plain sight, which is why you go home.
+// The forge of ?proto=place: bare foundations and scaffolding from the start. You build it first, by hand, across the path you
+// just opened: logs into its frame, and for each log its pieces drop into place, no scaling: the timber frame, then walls and a
+// chimney. Then the chimney lights and rails pour onto a rack in plain sight, roof or no roof. When trains come they take over:
+// a crane lifts each crate off the dock onto it, the roof goes on, the poles come down and it pours twice as fast. Every other
+// building copies its plan (./sites.ts).
 // docs/proposals/boogle-2.md, 2026-11-02 "construction is physical" and "the next test". Local.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
@@ -15,7 +15,8 @@ import { flat } from '../flat.ts';
 import { draw, makeSet } from '../net/boxes.ts';
 import { smooth } from '../net/town-fx.ts';
 import { H, addStatic } from './land.ts';
-import { CRANE, FORGE, ORIGIN, RACK, TUNE } from './layout.ts';
+import { CRANE, FORGE, FORGE_BILLS, ORIGIN, RACK, TUNE } from './layout.ts';
+import { count, sharedSlice } from './job.ts';
 import { LOOK, STEEL, boardMaterial } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
@@ -68,8 +69,23 @@ set.mesh.material = boardMaterial(set.mesh.material as THREE.Material);
 pieces.forEach((_, k) => set.snap(k, false));
 set.mesh.visible = true;
 
-/** Pieces shown for this many crates. */
-const piecesFor = (crates: number) => Math.min(TOTAL, Math.round((crates / TUNE.forgeCost) * TOTAL));
+// The order things go on: the frame (first bill), walls and chimney (second), the roof (trains).
+const KS = [...pieces.keys()];
+const ORDER = [
+  ...KS.filter((k) => k < WALLS),
+  ...KS.filter((k) => k >= ROOFED),
+  ...KS.filter((k) => k >= WALLS && k < ROOFED),
+];
+const HAND = FRAME + (WALLS - FRAME) + (TOTAL - ROOFED);
+const F1 = FORGE_BILLS[0]!.logs,
+  F2 = FORGE_BILLS[1]!.logs;
+export const HAND_LOGS = F1 + F2;
+/** Pieces shown for what's gone in. */
+const piecesFor = (logs: number, crates: number) => {
+  if (crates > 0) return HAND + Math.round((Math.min(crates, TUNE.roofCrates) / TUNE.roofCrates) * (TOTAL - HAND));
+  if (logs <= F1) return Math.round((logs / F1) * FRAME);
+  return Math.min(HAND, FRAME + Math.round(((logs - F1) / F2) * (HAND - FRAME)));
+};
 
 // A glowing mouth for when it's lit.
 const mouth = new THREE.Mesh(
@@ -237,60 +253,77 @@ export const rackFrom = new THREE.Vector3(RX, RY + 1.6, RZ);
 
 // ---------------------------------------------------------------- state
 export const forge = {
-  crates: 0, // crates that have landed in it
+  logs: 0, // logs that have gone in by hand
+  crates: 0, // crates the crane has put on it
   rails: 0, // rails standing on the rack
   made: 0, // how many it has poured
   pour: 0,
   drawn: 0,
   lit: false,
 };
+export const roofed = () => forge.crates >= TUNE.roofCrates;
 /** Where the crane lowers the next crate: into the part it builds. */
 export function nextDrop(out: THREE.Vector3) {
-  const k = Math.min(TOTAL - 1, piecesFor(forge.crates));
+  const k = ORDER[Math.min(TOTAL - 1, piecesFor(HAND_LOGS, forge.crates))]!;
   const b = pieces[k]!;
-  return out.set(b.x, Y + Math.max(FLOOR + 1, k >= WALLS ? HIGH + 1.5 : k >= FRAME ? 2.5 : 2), b.z);
+  return out.set(b.x, Y + HIGH + 1.5, b.z);
 }
-function dropPieces(k0: number, k1: number) {
-  for (let k = k0; k < k1; k++) set.drop(k, 3.2, (k - k0) * 0.13);
+function dropPieces(n0: number, n1: number) {
+  for (let n = n0; n < n1; n++) set.drop(ORDER[n]!, 3.2, (n - n0) * 0.13);
+}
+/** The next piece a log's about to become, for the log to fly to. */
+export function nextPiece(out: THREE.Vector3) {
+  const k = ORDER[Math.min(TOTAL - 1, piecesFor(forge.logs, 0))]!;
+  const b = pieces[k]!;
+  return out.set(b.x, Y + 1.4, b.z);
 }
 const smokeCol = new THREE.Color(LOOK.light ? '#d9d5cc' : '#5d5a55');
 let smokeAcc = 0;
-/** A crate just landed in the forge: its pieces drop. */
+/** A log just went in by hand: its pieces drop. */
+export function logIn() {
+  const was = piecesFor(forge.logs, 0);
+  forge.logs++;
+  dropPieces(was, piecesFor(forge.logs, 0));
+  if (piecesFor(forge.logs, 0) >= FRAME) wallsSolid(true);
+}
+/** A crate just landed on it, off the first trains. */
 export function crateIn() {
-  const was = piecesFor(forge.crates);
+  const was = piecesFor(HAND_LOGS, forge.crates);
   forge.crates++;
-  dropPieces(was, piecesFor(forge.crates));
-  if (piecesFor(forge.crates) >= FRAME) wallsSolid(true);
+  dropPieces(was, piecesFor(HAND_LOGS, forge.crates));
+  if (roofed()) poles(false);
 }
 export function snapForge() {
-  const shown = piecesFor(forge.crates);
-  pieces.forEach((_, k) => set.snap(k, k < shown));
+  const shown = piecesFor(forge.logs, forge.crates);
+  ORDER.forEach((k, n) => set.snap(k, n < shown));
   set.mesh.visible = true;
   wallsSolid(shown >= FRAME);
-  forge.lit = forge.crates >= TUNE.forgeCost;
+  forge.lit = forge.logs >= HAND_LOGS;
   mouth.visible = forge.lit;
-  poles(!forge.lit);
+  poles(!roofed());
   forge.drawn = forge.rails;
   drawRack(forge.rails);
 }
-export const forgePhase = () =>
-  forge.crates >= TUNE.forgeCost
-    ? 'chimney lit'
-    : piecesFor(forge.crates) < FRAME
-      ? 'frame'
-      : piecesFor(forge.crates) < WALLS
-        ? 'walls'
-        : piecesFor(forge.crates) < ROOFED
-          ? 'roof'
-          : 'chimney';
+sharedSlice('forge', {
+  get: () => ({ logs: forge.logs, crates: forge.crates, rails: forge.rails, made: forge.made }),
+  set: (v) => {
+    const j = (v ?? {}) as Partial<typeof forge>;
+    forge.logs = count(j.logs, HAND_LOGS) ? j.logs : 0;
+    forge.crates = count(j.crates, 200) ? j.crates : 0;
+    forge.rails = count(j.rails, TUNE.rackMax) ? j.rails : 0;
+    forge.made = count(j.made) ? j.made : 0;
+    forge.lit = forge.logs >= HAND_LOGS;
+    forge.pour = 0;
+    inFlight = 0;
+  },
+});
 
 export function updateForge(dt: number, onLit: () => void) {
   set.update(dt);
   updateCrane(dt);
-  if (!forge.lit && forge.crates >= TUNE.forgeCost && !set.busy()) {
+  if (!forge.lit && forge.logs >= HAND_LOGS && !set.busy()) {
     forge.lit = true;
     mouth.visible = true;
-    poles(false);
     dustRing(X, Y + 0.4, Z, 16, 3.2, 0.5);
     whistle(X, Z);
     onLit();
@@ -315,7 +348,7 @@ export function updateForge(dt: number, onLit: () => void) {
     });
   // Rails come out of the mouth one at a time and land on the rack.
   forge.pour += dt;
-  if (forge.pour >= TUNE.railEvery && forge.made < TUNE.rackMax) {
+  if (forge.pour >= (roofed() ? TUNE.railEveryRoofed : TUNE.railEvery) && forge.rails + inFlight < TUNE.rackMax) {
     forge.pour = 0;
     const n = forge.made++;
     const to = slot(Math.min(TUNE.rackMax - 1, forge.rails + inFlight), new THREE.Vector3());
@@ -333,7 +366,7 @@ export function updateForge(dt: number, onLit: () => void) {
     });
   }
 }
-/** The poles stand until the forge is lit; the foundation stays. */
+/** The poles stand until the roof's on; the foundation stays. */
 function poles(on: boolean) {
   draw(scaffold, (k) => (on || k === 0 ? 1 : 0));
   if (on && !poleBodies.length) poleBodies.push(...hullBodies(plan, plan.poles));
@@ -349,6 +382,7 @@ export function takeRail() {
   drawRack(forge.rails);
 }
 export function resetForge() {
+  forge.logs = 0;
   forge.crates = 0;
   forge.rails = 0;
   forge.made = 0;
