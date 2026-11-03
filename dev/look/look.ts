@@ -28,6 +28,8 @@ const opt: {
   name: string | null;
   room?: string;
   hud: boolean;
+  warp: boolean;
+  until: string | null;
 } = {
   view: 'hill',
   cam: null,
@@ -47,6 +49,8 @@ const opt: {
   fov: null,
   name: null,
   hud: false,
+  warp: false,
+  until: null,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -81,11 +85,16 @@ for (let k = 0; k < argv.length; k++) {
     opt.room = v(); // e.g. proto-wagon: a playtest room, where tune and shortcut ops are allowed
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
+  else if (a === '--warp')
+    opt.warp = true; // spend --warm in game time, far faster than real (./warp.ts); captures still run at real speed
+  else if (a === '--until')
+    opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
-  [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]`);
+  [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--warp] [--until "window.__placeDone"]   long stretches of play in seconds; PLAY-style console lines print as they come`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
@@ -131,14 +140,36 @@ async function pageScript(g: Game, file: string) {
 try {
   stack = await startStack({ url: opt.url });
   browser = await launch();
-  const g = await Game.open(browser, stack, { out: opt.out, size: opt.size, hud: opt.hud, room: opt.room });
+  const g = await Game.open(browser, stack, {
+    out: opt.out,
+    size: opt.size,
+    hud: opt.hud,
+    room: opt.room,
+    warp: opt.warp,
+  });
+  // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
+  g.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(m.text()));
   console.log(
     `question: ${opt.question}\nview: ${JSON.stringify(pose)}\naction: ${opt.action ?? 'none (observe only)'}`,
   );
   if (opt.eval) await pageScript(g, opt.eval);
   await g.view(pose, opt.fov ?? undefined);
-  console.log(`warming up ${opt.warm}s ...`);
-  await new Promise((r) => setTimeout(r, opt.warm * 1000));
+  const limit = opt.until && !argv.includes('--warm') ? 3600 : opt.warm;
+  console.log(
+    `warming up ${opt.warp ? 'warped, ' : ''}${limit}s of game time${opt.until ? ` or until ${opt.until}` : ''} ...`,
+  );
+  if (opt.warp) {
+    const w = await g.warp({ seconds: limit, until: opt.until ?? undefined });
+    console.log(`warped: ${w.game.toFixed(0)} s of game in ${w.wall.toFixed(0)} s (${(w.game / w.wall).toFixed(0)}x)`);
+    if (opt.until && !w.done) console.log(`NOT REACHED: ${opt.until}`);
+  } else {
+    const t0 = Date.now();
+    while (Date.now() - t0 < limit * 1000 && !g.errors.length) {
+      await new Promise((r) => setTimeout(r, 200));
+      if (opt.until && (await g.page.evaluate(`!!(${opt.until})`))) break;
+    }
+  }
+  if (g.errors.length) throw new Error(`Stopped during warm-up:\n${g.healthErrors().join('\n')}`);
   const video = opt.video ? path.join(g.out, `${label}-realtime.webm`) : null;
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
