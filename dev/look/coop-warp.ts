@@ -6,7 +6,7 @@ import { TICK_MS } from '../../src/world/sync.ts';
 
 export function coopWarpOptions(args: string[]) {
   const value = (flag: string) => (args.includes(flag) ? args[args.lastIndexOf(flag) + 1] : undefined);
-  const speed = args.includes('--warp-speed') ? Number(value('--warp-speed')) : 10;
+  const speed = args.includes('--warp-speed') ? Number(value('--warp-speed')) : 5;
   if (!Number.isFinite(speed) || speed <= 1 || speed > 50) throw new Error('--warp-speed must be >1 and <=50');
   return {
     enabled:

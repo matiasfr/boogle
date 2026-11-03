@@ -1,5 +1,5 @@
 // One persistent browser/stack per harness checkout. The CLI talks to a private loopback HTTP endpoint;
-// only `start` boots anything. See playtester.md for the screenshot-only protocol and session-report.md for limits.
+// only `start` boots anything. See playtester.md for the screenshot-only protocol.
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';

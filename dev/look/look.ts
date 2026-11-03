@@ -150,7 +150,7 @@ for (let k = 0; k < argv.length; k++) {
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
-  [--warp-speed 10]                         cap both pages and accelerate the local server; --real opts out
+  [--warp-speed 5]                          cap both pages and accelerate the local server; --real opts out
   [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
   } else {

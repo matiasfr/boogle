@@ -10,7 +10,7 @@ node dev/look/look.ts --query 'proto=place&coop=1' --players 2 --real --eval dev
 node dev/look/look.ts --query 'proto=place&coop=1&coopMinutes=3' --players 2 --eval dev/look/evals/place-coop.ts --name coop-long --cam 918,40,-18 --look 930,18,-54
 ```
 
-Two local players default to a 10x cap. `--warp-speed N` changes it; `--real` opts out. Loading and captures stay at
+Two local players default to a 5x cap. `--warp-speed N` changes it; `--real` opts out. Loading and captures stay at
 1x. Setup runs concurrently on both pages, so one eval can await the other's deposit. The supplied co-op eval awaits
 its entire sequence and checks that the deposit, path, chest upgrade and running trains actually arrive. It uses
 prototype shortcuts to reach trains; this is not a complete player-driven round.
@@ -66,7 +66,7 @@ With `--warp-speed 5` (`coop-verified5`), 234.5 game seconds took 46.9 real seco
 averaged 5.00x. Peak server deficit was 0.742 game seconds; page deficits were 0.006/0.003 seconds, with at most
 two ticks between pages. While both train clocks ran, position gaps peaked at 3.398/6.090 m, ending at
 0.379/0.094 m. The all-sample maxima were 193/507 m at the scripted skip before the follower started its trains;
-those samples remain in the report. Use 5x when the lower measured drift is preferable to the default 10x.
+those samples remain in the report. On the build of 3 November, 10x failed on drift and 5x held (174.6 game seconds in 34.9 s, server deficit 0.8 s, running trains within 5.3 m), so 5x is the default.
 
 The real baseline showed the follower's 8 logs on the authority, matching money ($120), machine mode, chest upgrade
 and train unlocks. The same outcomes occurred warped. An early 30x trial only achieved about 16x on the pages and
