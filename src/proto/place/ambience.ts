@@ -1,7 +1,7 @@
 // The sound of the place when nothing is happening: the sea, far gulls and a little breeze, under everything. Local and
 // cosmetic, on the shared audio context's ambience bus (src/render/audio.ts), so it starts after the first gesture, ducks
 // under voices and follows the player's volume. docs/research/audio-and-music.md, section 12: brown noise rather than
-// hiss, slow unrelated periods, one-shots far away on long gaps. Serves DESIGN.md 9 (alive island).
+// hiss, slow unrelated periods, one-shots far away on long gaps. Serves DESIGN.md 1 (Toys before chores: a place worth being in with nothing to do).
 //
 // Turn it off with &ambience=off; shift the whole bed with &ambience=-6 (dB). Everything else is in LEVELS and FEEL.
 import { onFrame } from '../../loop.ts';
