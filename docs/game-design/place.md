@@ -45,6 +45,8 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 Falling is harmless: in the water, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current station), Skip to the forge and Skip to line 2.
 
+**The tester's link** adds `&fresh=1`: no prototype bar (so no gut question or verdict buttons, and its D-pad and P do nothing), no panel, no shared numbers on the HUD. The counters still run. On every `?proto=place` page the first-run card lists only what this place uses, and the objective and numbers wait until you're in.
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
